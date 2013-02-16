@@ -25,18 +25,23 @@
 #  include <simgear_config.h>
 #endif
 
+#include "xmlsound.hxx"
+
+
 #include <simgear/compiler.h>
 
 #include <string.h>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/props/condition.hxx>
-#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
 
-#include "xmlsound.hxx"
+#include "sample_group.hxx"
+#include "sample_openal.hxx"
 
+using std::string;
 
 // static double _snd_lin(double v)   { return v; }
 static double _snd_inv(double v)   { return (v == 0) ? 1e99 : 1/v; }
@@ -93,7 +98,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    //
 
    _name = node->getStringValue("name", "");
-   SG_LOG(SG_GENERAL, SG_DEBUG, "Loading sound information for: " << _name );
+   SG_LOG(SG_SOUND, SG_DEBUG, "Loading sound information for: " << _name );
 
    string mode_str = node->getStringValue("mode", "");
    if ( mode_str == "looped" ) {
@@ -120,7 +125,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
       _condition = sgReadCondition(root, condition);
 
    if (!_property && !_condition)
-      SG_LOG(SG_GENERAL, SG_WARN,
+      SG_LOG(SG_SOUND, SG_WARN,
              "  Neither a condition nor a property specified");
 
    _delay = node->getDoubleValue("delay-sec", 0.0);
@@ -160,19 +165,19 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
             }
 
          if (!volume.fn)
-            SG_LOG(SG_GENERAL,SG_INFO,
+            SG_LOG(SG_SOUND,SG_INFO,
                    "  Unknown volume type, default to 'lin'");
       }
 
       volume.offset = kids[i]->getDoubleValue("offset", 0.0);
 
       if ((volume.min = kids[i]->getDoubleValue("min", 0.0)) < 0.0)
-         SG_LOG( SG_GENERAL, SG_WARN,
+         SG_LOG( SG_SOUND, SG_WARN,
           "Volume minimum value below 0. Forced to 0.");
 
       volume.max = kids[i]->getDoubleValue("max", 0.0);
       if (volume.max && (volume.max < volume.min) )
-         SG_LOG(SG_GENERAL,SG_ALERT,
+         SG_LOG(SG_SOUND,SG_ALERT,
                 "  Volume maximum below minimum. Neglected.");
 
       _volume.push_back(volume);
@@ -218,19 +223,19 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
             }
 
          if (!pitch.fn)
-            SG_LOG(SG_GENERAL,SG_INFO,
+            SG_LOG(SG_SOUND,SG_INFO,
                    "  Unknown pitch type, default to 'lin'");
       }
      
       pitch.offset = kids[i]->getDoubleValue("offset", 1.0);
 
       if ((pitch.min = kids[i]->getDoubleValue("min", 0.0)) < 0.0)
-         SG_LOG(SG_GENERAL,SG_WARN,
+         SG_LOG(SG_SOUND,SG_WARN,
                 "  Pitch minimum value below 0. Forced to 0.");
 
       pitch.max = kids[i]->getDoubleValue("max", 0.0);
       if (pitch.max && (pitch.max < pitch.min) )
-         SG_LOG(SG_GENERAL,SG_ALERT,
+         SG_LOG(SG_SOUND,SG_ALERT,
                 "  Pitch maximum below minimum. Neglected");
 
       _pitch.push_back(pitch);
@@ -268,7 +273,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    //
    // Initialize the sample
    //
-   if (is_avionics) {
+   if ((is_avionics)&&(avionics)) {
       _sgrp = avionics;
    } else {
       _sgrp = sgrp;
@@ -325,7 +330,7 @@ SGXmlSound::update (double dt)
        if ((_mode != SGXmlSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME))
        {
            if (_sample->is_playing()) {
-               SG_LOG(SG_GENERAL, SG_DEBUG, "Stopping audio after " << _dt_play
+               SG_LOG(SG_SOUND, SG_DEBUG, "Stopping audio after " << _dt_play
                       << " sec: " << _name );
 
                _sample->stop();
@@ -446,7 +451,7 @@ SGXmlSound::update (double dt)
 
    double vol = volume_offset + volume;
    if (vol > 1.0) {
-      SG_LOG(SG_GENERAL, SG_DEBUG, "Sound volume too large for '"
+      SG_LOG(SG_SOUND, SG_DEBUG, "Sound volume too large for '"
               << _name << "':  " << vol << "  ->  clipping to 1.0");
       vol = 1.0;
    }
@@ -465,9 +470,9 @@ SGXmlSound::update (double dt)
       else
          _sample->play(true);
 
-      SG_LOG(SG_GENERAL, SG_DEBUG, "Playing audio after " << _dt_stop 
+      SG_LOG(SG_SOUND, SG_DEBUG, "Playing audio after " << _dt_stop
                                    << " sec: " << _name);
-      SG_LOG(SG_GENERAL, SG_DEBUG,
+      SG_LOG(SG_SOUND, SG_DEBUG,
                          "Playing " << ((_mode == ONCE) ? "once" : "looped"));
 
       _active = true;

@@ -1,8 +1,18 @@
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef NDEBUG
+// Always enable DEBUG mode in test application, otherwise "assert" test
+// statements have no effect and don't actually test anything (catch 17 ;-) ).
+#undef NDEBUG
+#endif
 
 #include <simgear/compiler.h>
 
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
 #include <cstring>
 
 #include "propertyObject.hxx"
@@ -37,9 +47,11 @@ bool testBasic()
 
   double ff(aFoo);
   assert(ff == 12.0); // comparison with literal
+  if (ff != 12.0) cout << "Error: a/foo != 12!" << endl;
   
   const float fff(12.0f);
   assert(fff == aFoo); // comparion with float value
+  if (fff != aFoo) cout << "Error: 12 != a/foo" << endl;
 
   return true;
 }
@@ -98,6 +110,27 @@ void testAssignment()
   a3 = 44;
   assert(a1 == 44);
 
+  // Compound assignment ops
+  a1 *= 2;
+  assert(a1 == 88);
+  a1 /= 2;
+  assert(a1 == 44);
+  a1 += 2;
+  assert(a1 == 46);
+  a1 -= 16;
+  assert(a1 == 30);
+  a1 %= 28;
+  assert(a1 == 2);
+  a1 >>= 1;
+  assert(a1 == 1);
+  a1 <<= 2;
+  assert(a1 == 4);
+  a1 &= 1;
+  assert(a1 == 0);
+  a1 ^= 2;
+  assert(a1 == 2);
+  a1 |= 1;
+  assert(a1 == 3);
 }
 
 void testSTLContainer()
@@ -135,8 +168,9 @@ void testReadMissing()
   PropertyObject<bool> b("not/found/honest");
 
   try {
-    bool v = b;    
+    bool v = b;
     assert(false && "read of missing property didn't throw");
+    (void) v; // don't warn about unused variable
   } catch (sg_exception& e) {
     // expected
   }

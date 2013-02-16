@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -15,34 +15,74 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include "RTI13ObjectClass.hxx"
 #include "RTI13Ambassador.hxx"
 
 namespace simgear {
 
-RTI13ObjectClass::RTI13ObjectClass(HLAObjectClass* hlaObjectClass, RTI::ObjectClassHandle& handle, RTI13Ambassador* ambassador) :
+RTI13ObjectClass::RTI13ObjectClass(HLAObjectClass* hlaObjectClass, const RTI::ObjectClassHandle& handle, RTI13Ambassador* ambassador) :
     RTIObjectClass(hlaObjectClass),
     _handle(handle),
     _ambassador(ambassador)
 {
-    if (0 != getOrCreateAttributeIndex("privilegeToDelete") &&
-        0 != getOrCreateAttributeIndex("HLAprivilegeToDeleteObject"))
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI13ObjectClass: Cannot find object root attribute.");
 }
 
 RTI13ObjectClass::~RTI13ObjectClass()
 {
 }
 
-std::string
-RTI13ObjectClass::getName() const
+bool
+RTI13ObjectClass::resolveAttributeIndex(const std::string& name, unsigned index)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
-        return std::string();
+        return false;
     }
-    return ambassador->getObjectClassName(_handle);
+
+    if (index != _attributeHandleVector.size()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Resolving needs to happen in growing index order!");
+        return false;
+    }
+
+    try {
+        RTI::AttributeHandle attributeHandle = _ambassador->getAttributeHandle(name, _handle);
+
+        AttributeHandleIndexMap::const_iterator i = _attributeHandleIndexMap.find(attributeHandle);
+        if (i != _attributeHandleIndexMap.end()) {
+            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Resolving attributeIndex for attribute \"" << name << "\" twice!");
+            return false;
+        }
+
+        _attributeHandleIndexMap[attributeHandle] = index;
+        _attributeHandleVector.push_back(attributeHandle);
+
+        return true;
+
+    } catch (RTI::ObjectClassNotDefined& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::NameNotFound& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
+        return false;
+    } catch (...) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute.");
+        return false;
+    }
 }
 
 unsigned
@@ -51,133 +91,18 @@ RTI13ObjectClass::getNumAttributes() const
     return _attributeHandleVector.size();
 }
 
-unsigned
-RTI13ObjectClass::getAttributeIndex(const std::string& name) const
-{
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
-        return ~0u;
-    }
-
-    try {
-        RTI::AttributeHandle attributeHandle = ambassador->getAttributeHandle(name, _handle);
-
-        AttributeHandleIndexMap::const_iterator i = _attributeHandleIndexMap.find(attributeHandle);
-        if (i !=  _attributeHandleIndexMap.end())
-            return i->second;
-
-        return ~0u;
-
-    } catch (RTI::ObjectClassNotDefined& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::NameNotFound& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (...) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute.");
-        return ~0u;
-    }
-}
-
-unsigned
-RTI13ObjectClass::getOrCreateAttributeIndex(const std::string& name)
-{
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
-        return ~0u;
-    }
-
-    try {
-        RTI::AttributeHandle attributeHandle = ambassador->getAttributeHandle(name, _handle);
-
-        AttributeHandleIndexMap::const_iterator i = _attributeHandleIndexMap.find(attributeHandle);
-        if (i !=  _attributeHandleIndexMap.end())
-            return i->second;
-
-        unsigned index = _attributeHandleVector.size();
-        _attributeHandleIndexMap[attributeHandle] = index;
-        _attributeHandleVector.push_back(attributeHandle);
-        _attributeDataVector.push_back(name);
-
-        return index;
-
-    } catch (RTI::ObjectClassNotDefined& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::NameNotFound& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute: " << e._name << " " << e._reason);
-        return ~0u;
-    } catch (...) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute.");
-        return ~0u;
-    }
-}
-
-// std::string
-// RTI13ObjectClass::getAttributeName(unsigned index) const
-// {
-//     SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-//     if (!ambassador.valid()) {
-//         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
-//         return std::string();
-//     }
-
-//     try {
-//         return ambassador->getAttributeName(getAttributeHandle(index), _handle);
-//     } catch (RTI::ObjectClassNotDefined& e) {
-//         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute name: " << e._name << " " << e._reason);
-//         return std::string();
-//     } catch (RTI::AttributeNotDefined& e) {
-//         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute name: " << e._name << " " << e._reason);
-//         return std::string();
-//     } catch (RTI::FederateNotExecutionMember& e) {
-//         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute name: " << e._name << " " << e._reason);
-//         return std::string();
-//     } catch (RTI::ConcurrentAccessAttempted& e) {
-//         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute name: " << e._name << " " << e._reason);
-//         return std::string();
-//     } catch (RTI::RTIinternalError& e) {
-//         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute name: " << e._name << " " << e._reason);
-//         return std::string();
-//     } catch (...) {
-//         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class attribute name.");
-//         return std::string();
-//     }
-// }
-
 bool
-RTI13ObjectClass::publish(const std::set<unsigned>& indexSet)
+RTI13ObjectClass::publish(const HLAIndexList& indexList)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return false;
     }
 
     try {
-        std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(indexSet.size()));
-        for (std::set<unsigned>::const_iterator i = indexSet.begin(); i != indexSet.end(); ++i) {
+        unsigned numAttributes = getNumAttributes();
+        std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(numAttributes));
+        for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
             if (_attributeHandleVector.size() <= *i) {
                 SG_LOG(SG_NETWORK, SG_WARN, "RTI13ObjectClass::publish(): Invalid attribute index!");
                 continue;
@@ -185,11 +110,7 @@ RTI13ObjectClass::publish(const std::set<unsigned>& indexSet)
             attributeHandleSet->add(_attributeHandleVector[*i]);
         }
 
-        ambassador->publishObjectClass(_handle, *attributeHandleSet);
-
-        for (unsigned i = 0; i < getNumAttributes(); ++i) {
-            _attributeDataVector[i]._published = true;
-        }
+        _ambassador->publishObjectClass(_handle, *attributeHandleSet);
 
         return true;
     } catch (RTI::ObjectClassNotDefined& e) {
@@ -225,18 +146,13 @@ RTI13ObjectClass::publish(const std::set<unsigned>& indexSet)
 bool
 RTI13ObjectClass::unpublish()
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return false;
     }
 
     try {
-        ambassador->unpublishObjectClass(_handle);
-
-        for (unsigned i = 0; i < getNumAttributes(); ++i) {
-            _attributeDataVector[i]._published = false;
-        }
+        _ambassador->unpublishObjectClass(_handle);
 
         return true;
     } catch (RTI::ObjectClassNotDefined& e) {
@@ -270,18 +186,17 @@ RTI13ObjectClass::unpublish()
 }
 
 bool
-RTI13ObjectClass::subscribe(const std::set<unsigned>& indexSet, bool active)
+RTI13ObjectClass::subscribe(const HLAIndexList& indexList, bool active)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return false;
     }
 
     try {
-        std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(indexSet.size()));
-        for (std::set<unsigned>::const_iterator i = indexSet.begin();
-             i != indexSet.end(); ++i) {
+        unsigned numAttributes = getNumAttributes();
+        std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(numAttributes));
+        for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
             if (_attributeHandleVector.size() <= *i) {
                 SG_LOG(SG_NETWORK, SG_WARN, "RTI13ObjectClass::subscribe(): Invalid attribute index!");
                 continue;
@@ -289,11 +204,7 @@ RTI13ObjectClass::subscribe(const std::set<unsigned>& indexSet, bool active)
             attributeHandleSet->add(_attributeHandleVector[*i]);
         }
 
-        ambassador->subscribeObjectClassAttributes(_handle, *attributeHandleSet, active);
-
-        for (unsigned i = 0; i < getNumAttributes(); ++i) {
-            _attributeDataVector[i]._subscribed = true;
-        }
+        _ambassador->subscribeObjectClassAttributes(_handle, *attributeHandleSet, active);
 
         return true;
     } catch (RTI::ObjectClassNotDefined& e) {
@@ -326,18 +237,13 @@ RTI13ObjectClass::subscribe(const std::set<unsigned>& indexSet, bool active)
 bool
 RTI13ObjectClass::unsubscribe()
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return 0;
     }
 
     try {
-        ambassador->unsubscribeObjectClass(_handle);
-
-        for (unsigned i = 0; i < getNumAttributes(); ++i) {
-            _attributeDataVector[i]._subscribed = false;
-        }
+        _ambassador->unsubscribeObjectClass(_handle);
 
         return true;
     } catch (RTI::ObjectClassNotDefined& e) {
@@ -370,14 +276,22 @@ RTI13ObjectClass::unsubscribe()
 RTIObjectInstance*
 RTI13ObjectClass::registerObjectInstance(HLAObjectInstance* hlaObjectInstance)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return 0;
     }
 
+    SGSharedPtr<RTI13Federate> federate = _ambassador->_federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Error: Federate is zero.");
+        return 0;
+    }
+
     try {
-        return ambassador->registerObjectInstance(this, hlaObjectInstance);
+        RTI::ObjectHandle objectHandle = _ambassador->registerObjectInstance(getHandle());
+        RTI13ObjectInstance* objectInstance = new RTI13ObjectInstance(objectHandle, hlaObjectInstance, this, _ambassador.get());
+        federate->insertObjectInstance(objectInstance);
+        return objectInstance;
     } catch (RTI::ObjectClassNotDefined& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not register object instance: " << e._name << " " << e._reason);
         return 0;

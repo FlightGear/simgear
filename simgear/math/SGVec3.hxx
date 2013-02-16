@@ -18,16 +18,18 @@
 #ifndef SGVec3_H
 #define SGVec3_H
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Vec3f>
-#include <osg/Vec3d>
-#endif
+#include <iosfwd>
 
 /// 3D Vector Class
 template<typename T>
 class SGVec3 {
 public:
   typedef T value_type;
+
+#ifdef __GNUC__
+// Avoid "_data not initialized" warnings (see comment below).
+#   pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
 
   /// Default constructor. Does not initialize at all.
   /// If you need them zero initialized, use SGVec3::zeros()
@@ -41,6 +43,12 @@ public:
       data()[i] = SGLimits<T>::quiet_NaN();
 #endif
   }
+
+#ifdef __GNUC__
+  // Restore warning settings.
+#   pragma GCC diagnostic warning "-Wuninitialized"
+#endif
+
   /// Constructor. Initialize by the given values
   SGVec3(T x, T y, T z)
   { data()[0] = x; data()[1] = y; data()[2] = z; }
@@ -493,27 +501,5 @@ inline
 SGVec3d
 toVec3d(const SGVec3f& v)
 { return SGVec3d(v(0), v(1), v(2)); }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-inline
-SGVec3d
-toSG(const osg::Vec3d& v)
-{ return SGVec3d(v[0], v[1], v[2]); }
-
-inline
-SGVec3f
-toSG(const osg::Vec3f& v)
-{ return SGVec3f(v[0], v[1], v[2]); }
-
-inline
-osg::Vec3d
-toOsg(const SGVec3d& v)
-{ return osg::Vec3d(v[0], v[1], v[2]); }
-
-inline
-osg::Vec3f
-toOsg(const SGVec3f& v)
-{ return osg::Vec3f(v[0], v[1], v[2]); }
-#endif
 
 #endif

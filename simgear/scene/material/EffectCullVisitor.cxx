@@ -19,6 +19,7 @@
 #endif
 
 #include <osg/StateSet>
+#include <osg/Texture2D>
 
 #include "EffectCullVisitor.hxx"
 
@@ -26,16 +27,20 @@
 #include "Effect.hxx"
 #include "Technique.hxx"
 
+#include <simgear/scene/util/RenderConstants.hxx>
+
 namespace simgear
 {
 
 using osgUtil::CullVisitor;
 
-EffectCullVisitor::EffectCullVisitor()
+EffectCullVisitor::EffectCullVisitor(bool collectLights) :
+    _collectLights(collectLights)
 {
 }
 
 EffectCullVisitor::EffectCullVisitor(const EffectCullVisitor& rhs) :
+    osg::Referenced(rhs),
     CullVisitor(rhs)
 {
 }
@@ -53,6 +58,9 @@ void EffectCullVisitor::apply(osg::Geode& node)
     if (!eg) {
         CullVisitor::apply(node);
         return;
+    }
+    if (_collectLights && ( eg->getNodeMask() & MODELLIGHT_BIT ) ) {
+        _lightList.push_back( eg );
     }
     Effect* effect = eg->getEffect();
     Technique* technique = 0;
@@ -77,4 +85,27 @@ void EffectCullVisitor::apply(osg::Geode& node)
         popStateSet();
 
 }
+
+void EffectCullVisitor::reset()
+{
+    _lightList.clear();
+
+    osgUtil::CullVisitor::reset();
+}
+
+void EffectCullVisitor::clearBufferList()
+{
+    _bufferList.clear();
+}
+
+void EffectCullVisitor::addBuffer(std::string b, osg::Texture2D* tex)
+{
+    _bufferList.insert(std::make_pair(b,tex));
+}
+
+osg::Texture2D* EffectCullVisitor::getBuffer(std::string b)
+{
+    return _bufferList[b];
+}
+
 }

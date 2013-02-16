@@ -34,6 +34,7 @@
 #include <simgear/compiler.h>
 
 #  include <istream>
+#  include <ostream>
 
 #include <string>
 
@@ -115,6 +116,58 @@ std::istream& skipws( std::istream& in );
  */
 std::istream& skipcomment( std::istream& in );
 
+/**
+ * An envelope class for gzofstream.
+ */
+class sg_gzofstream : private gzofstream_base, public std::ostream
+{
+public:
+    /** Default constructor */
+    sg_gzofstream();
+
+    /**
+     * Constructor to open a file for writing.
+     * @param name name of file
+     * @param io_mode file open mode(s) "or'd" together
+     */
+    sg_gzofstream( const std::string& name,
+           ios_openmode io_mode = ios_out | ios_binary );
+
+    /**
+     * Constructor that attaches itself to an existing file descriptor.
+     * @param fd file descriptor
+     * @param io_mode file open mode(s) "or'd" together
+     */
+    sg_gzofstream( int fd, ios_openmode io_mode = ios_out|ios_binary );
+
+    /**
+     * Attempt to open a file for writing.
+     * @param name name of file
+     * @param io_mode file open mode(s) "or'd" together
+     */
+    void open( const std::string& name,
+           ios_openmode io_mode = ios_out|ios_binary );
+
+    /**
+     * Attach to an existing file descriptor.
+     * @param fd file descriptor
+     * @param io_mode file open mode(s) "or'd" together
+     */
+    void attach( int fd, ios_openmode io_mode = ios_out|ios_binary );
+
+    /**
+     * Close the stream.
+     */
+    void close() { gzbuf.close(); }
+
+    /** @return true if the file is successfully opened, false otherwise. */
+    bool is_open() { return gzbuf.is_open(); }
+
+private:
+    // Not defined!
+    sg_gzofstream( const sg_gzofstream& );
+    void operator= ( const sg_gzofstream& );
+};
 
 #endif /* _SGSTREAM_HXX */
 

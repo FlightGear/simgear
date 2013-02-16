@@ -59,6 +59,11 @@ void mt_init(mt *mt, unsigned int seed)
     mt->index = MT_N+1;
 }
 
+void mt_init_time_10(mt *mt)
+{
+  mt_init(mt, (unsigned int) time(NULL) / 600);  
+}
+
 unsigned int mt_rand32(mt *mt)
 {
     unsigned int i, y;

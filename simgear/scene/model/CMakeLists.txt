@@ -2,16 +2,17 @@ include (SimGearComponent)
 
 set(HEADERS 
     BoundingVolumeBuildVisitor.hxx
+    BVHDebugCollectVisitor.hxx
+    BVHPageNodeOSG.hxx
     CheckSceneryVisitor.hxx
     ConditionNode.hxx
     ModelRegistry.hxx
+    PrimitiveCollector.hxx
     SGClipGroup.hxx
     SGInteractionAnimation.hxx
     SGMaterialAnimation.hxx
     SGOffsetTransform.hxx
-    SGPagedLOD.hxx
     SGReaderWriterXML.hxx
-    SGReaderWriterXMLOptions.hxx
     SGRotateTransform.hxx
     SGScaleTransform.hxx
     SGText.hxx
@@ -25,14 +26,16 @@ set(HEADERS
     )
 
 set(SOURCES 
+    BVHPageNodeOSG.cxx
     CheckSceneryVisitor.cxx
     ConditionNode.cxx
     ModelRegistry.cxx
+    PrimitiveCollector.cxx
     SGClipGroup.cxx
     SGInteractionAnimation.cxx
+    SGLightAnimation.cxx
     SGMaterialAnimation.cxx
     SGOffsetTransform.cxx
-    SGPagedLOD.cxx
     SGReaderWriterXML.cxx
     SGRotateTransform.cxx
     SGScaleTransform.cxx
@@ -47,4 +50,4 @@ set(SOURCES
     shadanim.cxx
     )
 
-simgear_component(model scene/model "${SOURCES}" "${HEADERS}")
+simgear_scene_component(model scene/model "${SOURCES}" "${HEADERS}")

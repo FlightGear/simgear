@@ -144,7 +144,7 @@
 #include <windows.h>
 #endif
 
-#include <simgear/math/project.hxx>
+#include <simgear/scene/util/project.hxx>
 
 #include "tr.h"
 
@@ -408,7 +408,7 @@ void trBeginTile(TRcontext *tr)
 {
    GLint matrixMode;
    GLint tileWidth, tileHeight, border;
-   GLdouble left, right, bottom, top;
+//   GLdouble left, right, bottom, top;
 
    if (!tr)
       return;
@@ -459,7 +459,9 @@ void trBeginTile(TRcontext *tr)
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
 
+   // OSGFIXME
    /* compute projection parameters */
+   /*
    left = tr->Left + (tr->Right - tr->Left)
         * (tr->CurrentColumn * tr->TileWidthNB - border) / tr->ImageWidth;
    right = left + (tr->Right - tr->Left) * tileWidth / tr->ImageWidth;
@@ -467,8 +469,8 @@ void trBeginTile(TRcontext *tr)
           * (tr->CurrentRow * tr->TileHeightNB - border) / tr->ImageHeight;
    top = bottom + (tr->Top - tr->Bottom) * tileHeight / tr->ImageHeight;
 
-   // OSGFIXME
-//    ssgSetFrustum ( left, right, bottom, top, tr->Near, tr->Far );
+    ssgSetFrustum ( left, right, bottom, top, tr->Near, tr->Far );
+   */
 
    /* restore user's matrix mode */
    glMatrixMode( (GLenum)matrixMode );

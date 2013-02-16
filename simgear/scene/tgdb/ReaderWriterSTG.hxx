@@ -24,6 +24,8 @@
 
 #include <osgDB/ReaderWriter>
 
+class SGBucket;
+
 namespace simgear {
 
 class ReaderWriterSTG : public osgDB::ReaderWriter {
@@ -33,9 +35,11 @@ public:
 
     virtual const char* className() const;
 
-    virtual ReadResult readNode(const std::string& fileName,
-                                const osgDB::ReaderWriter::Options* options)
-        const;
+    virtual ReadResult
+    readNode(const std::string&, const osgDB::Options*) const;
+
+private:
+    struct _ModelBin;
 };
 
 }

@@ -26,39 +26,38 @@
 #ifndef _SG_MAT_HXX
 #define _SG_MAT_HXX
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <simgear/compiler.h>
 
 #include <string>      // Standard C++ string library
 #include <vector>
 #include <map>
 
-#include <simgear/math/SGMath.hxx>
+#include "Effect.hxx"
 
 #include <osg/ref_ptr>
+#include <osg/Texture2D>
 
 namespace osg
 {
 class StateSet;
 }
 
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
-#include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/scene/util/SGSceneFeatures.hxx>
-
-#include "matmodel.hxx"
+#include <simgear/math/SGMath.hxx>
+#include <simgear/bvh/BVHMaterial.hxx>
 
 namespace simgear
 {
 class Effect;
 void reload_shaders();
+class SGReaderWriterOptions;
 }
 
+class SGMatModelGroup;
+class SGCondition;
+class SGPropertyNode;
 class SGMaterialGlyph;
+class SGTexturedTriangleBin;
 
 /**
  * A material in the scene graph.
@@ -69,7 +68,7 @@ class SGMaterialGlyph;
  * defined in the $FG_ROOT/materials.xml file, and can be changed
  * at runtime.
  */
-class SGMaterial : public SGReferenced {
+class SGMaterial : public simgear::BVHMaterial {
 
 public:
 
@@ -85,10 +84,13 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const osgDB::ReaderWriter::Options*, const SGPropertyNode *props);
+  SGMaterial( const osgDB::Options*, 
+              const SGPropertyNode *props, 
+              SGPropertyNode *prop_root);
 
-  SGMaterial(const simgear::SGReaderWriterXMLOptions*,
-             const SGPropertyNode *props);
+  SGMaterial(const simgear::SGReaderWriterOptions*,
+             const SGPropertyNode *props,
+             SGPropertyNode *prop_root);
   /**
    * Destructor.
    */
@@ -103,7 +105,14 @@ public:
   /**
    * Get the textured state.
    */
-  simgear::Effect *get_effect(int n = -1);
+  simgear::Effect* get_effect(const SGTexturedTriangleBin& triangleBin);
+  simgear::Effect* get_effect();
+
+  /**
+   * Get the textured state.
+   */
+  osg::Texture2D* get_object_mask(const SGTexturedTriangleBin& triangleBin);
+
 
   /**
    * Get the number of textures assigned to this material.
@@ -131,6 +140,79 @@ public:
    * @return The area (m^2) covered by each light.
    */
   inline double get_light_coverage () const { return light_coverage; }
+  
+  /**
+   * Get the building coverage.
+   *
+   * A smaller number means more generated buildings.
+   *
+   * @return The area (m^2) covered by each light.
+   */
+  inline double get_building_coverage () const { return building_coverage; }
+
+  /**
+   * Get the building spacing.
+   *
+   * This is the minimum spacing between buildings
+   *
+   * @return The minimum distance between buildings
+   */
+  inline double get_building_spacing () const { return building_spacing; }
+
+  /**
+   * Get the building texture.
+   *
+   * This is the texture used for auto-generated buildings.
+   *
+   * @return The texture for auto-generated buildings.
+   */
+  inline std::string get_building_texture () const { return building_texture; }
+
+  /**
+   * Get the building lightmap.
+   *
+   * This is the lightmap used for auto-generated buildings.
+   *
+   * @return The lightmap for auto-generated buildings.
+   */
+  inline std::string get_building_lightmap () const { return building_lightmap; }
+  
+  // Ratio of the 3 random building sizes
+  inline double get_building_small_fraction () const { return building_small_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
+  inline double get_building_medium_fraction () const { return building_medium_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
+  inline double get_building_large_fraction () const { return building_large_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
+  
+  // Proportion of buildings with pitched roofs
+  inline double get_building_small_pitch () const { return building_small_pitch; }
+  inline double get_building_medium_pitch () const { return building_medium_pitch; }
+  inline double get_building_large_pitch () const { return building_large_pitch; }
+
+  // Min/Max number of floors for each size
+  inline int get_building_small_min_floors () const { return  building_small_min_floors; }
+  inline int get_building_small_max_floors () const { return  building_small_max_floors; }
+  inline int get_building_medium_min_floors () const { return building_medium_min_floors; }
+  inline int get_building_medium_max_floors () const { return building_medium_max_floors; }
+  inline int get_building_large_min_floors () const { return building_large_min_floors; }
+  inline int get_building_large_max_floors () const { return building_large_max_floors; }
+  
+  // Minimum width and depth for each size
+  inline double get_building_small_min_width () const { return building_small_min_width; }
+  inline double get_building_small_max_width () const { return building_small_max_width; }
+  inline double get_building_small_min_depth () const { return building_small_min_depth; }
+  inline double get_building_small_max_depth () const { return building_small_max_depth; }
+  
+  inline double get_building_medium_min_width () const { return building_medium_min_width; }
+  inline double get_building_medium_max_width () const { return building_medium_max_width; }
+  inline double get_building_medium_min_depth () const { return building_medium_min_depth; }
+  inline double get_building_medium_max_depth () const { return building_medium_max_depth; }
+  
+  inline double get_building_large_min_width () const { return building_large_min_width; }
+  inline double get_building_large_max_width () const { return building_large_max_width; }
+  inline double get_building_large_min_depth () const { return building_large_min_depth; }
+  inline double get_building_large_max_depth () const { return building_large_max_depth; }
+  
+  inline double get_cos_object_max_density_slope_angle () const { return cos_object_max_density_slope_angle; }
+  inline double get_cos_object_zero_density_slope_angle () const { return cos_object_zero_density_slope_angle; }
 
   /**
    * Get the wood coverage.
@@ -140,20 +222,6 @@ public:
    * @return The area (m^2) covered by each wood.
    */
   inline double get_wood_coverage () const { return wood_coverage; }
-
-  /**
-   * Get the density of the wood
-   *
-   * @return The area (m^2) covered by each tree in the wood.
-   */
-  inline double get_tree_density () const { return tree_density; }
-  
-  /**
-   * Get the size of each wood
-   *
-   * @return the average area (m^2) of each wood
-   */
-  inline double get_wood_size () const { return wood_size; }
   
   /**
    * Get the tree height.
@@ -189,33 +257,25 @@ public:
    * @return the texture to use for trees.
    */
   inline std::string get_tree_texture () const { return  tree_texture; }
-
+  
   /**
-   * Return if the surface material is solid, if it is not solid, a fluid
-   * can be assumed, that is usually water.
+   * Get the cosine of the maximum tree density slope angle. We
+   * use the cosine as it can be compared directly to the z component
+   * of a triangle normal.
+   * 
+   * @return the cosine of the maximum tree density slope angle.
    */
-  bool get_solid () const { return solid; }
-
+  inline double get_cos_tree_max_density_slope_angle () const { return cos_tree_max_density_slope_angle; }
+  
   /**
-   * Get the friction factor for that material
+   * Get the cosine of the maximum tree density slope angle. We
+   * use the cosine as it can be compared directly to the z component
+   * of a triangle normal.
+   * 
+   * @return the cosine of the maximum tree density slope angle.
    */
-  double get_friction_factor () const { return friction_factor; }
-
-  /**
-   * Get the rolling friction for that material
-   */
-  double get_rolling_friction () const { return rolling_friction; }
-
-  /**
-   * Get the bumpines for that material
-   */
-  double get_bumpiness () const { return bumpiness; }
-
-  /**
-   * Get the load resistance
-   */
-  double get_load_resistance () const { return load_resistance; }
-
+  inline double get_cos_tree_zero_density_slope_angle () const { return cos_tree_zero_density_slope_angle; }
+  
   /**
    * Get the list of names for this material
    */
@@ -237,6 +297,12 @@ public:
   SGMatModelGroup * get_object_group (int index) const {
     return object_groups[index];
   }
+  
+  /**
+   * Evaluate whether this material is valid given the current global
+   * property state.
+   */
+     bool valid() const;
 
   /**
    * Return pointer to glyph class, or 0 if it doesn't exist.
@@ -256,7 +322,7 @@ public:
     return SGVec2f((0 < tex_width) ? 1000.0f/tex_width : 1.0f,
                    (0 < tex_height) ? 1000.0f/tex_height : 1.0f);
   }
-
+  
 protected:
 
 
@@ -273,14 +339,14 @@ protected:
 
   struct _internal_state {
       _internal_state(simgear::Effect *e, bool l,
-                      const simgear::SGReaderWriterXMLOptions *o);
+                      const simgear::SGReaderWriterOptions *o);
       _internal_state(simgear::Effect *e, const std::string &t, bool l,
-                      const simgear::SGReaderWriterXMLOptions *o);
+                      const simgear::SGReaderWriterOptions *o);
       void add_texture(const std::string &t, int i);
       osg::ref_ptr<simgear::Effect> effect;
       std::vector<std::pair<std::string,int> > texture_paths;
       bool effect_realized;
-      osg::ref_ptr<const simgear::SGReaderWriterXMLOptions> options;
+      osg::ref_ptr<const simgear::SGReaderWriterOptions> options;
   };
 
 private:
@@ -292,9 +358,6 @@ private:
 
   // texture status
   std::vector<_internal_state> _status;
-
-  // Round-robin counter
-  mutable unsigned int _current_ptr;
 
   // texture size
   double xsize, ysize;
@@ -308,14 +371,58 @@ private:
   // coverage of night lighting.
   double light_coverage;
   
+  // coverage of buildings
+  double building_coverage;
+  
+  // building spacing
+  double building_spacing;
+  
+  // building texture & lightmap
+  std::string building_texture;
+  std::string building_lightmap;
+
+  // Ratio of the 3 random building sizes
+  double building_small_ratio;
+  double building_medium_ratio;
+  double building_large_ratio;
+  
+  // Proportion of buildings with pitched roofs
+  double building_small_pitch;
+  double building_medium_pitch;
+  double building_large_pitch;
+
+  // Min/Max number of floors for each size
+  int building_small_min_floors; 
+  int building_small_max_floors;
+  int building_medium_min_floors;
+  int building_medium_max_floors;
+  int building_large_min_floors;
+  int building_large_max_floors;
+  
+  // Minimum width and depth for each size
+  double building_small_min_width;
+  double building_small_max_width;
+  double building_small_min_depth;
+  double building_small_max_depth;
+  
+  double building_medium_min_width;
+  double building_medium_max_width;
+  double building_medium_min_depth;
+  double building_medium_max_depth;
+  
+  double building_large_min_width;
+  double building_large_max_width;
+  double building_large_min_depth;
+  double building_large_max_depth;
+  
+  // Cosine of the angle of maximum and zero density, 
+  // used to stop buildings and random objects from being 
+  // created on too steep a slope.
+  double cos_object_max_density_slope_angle;
+  double cos_object_zero_density_slope_angle;
+  
   // coverage of woods
   double wood_coverage;
-
-  // The size of each wood
-  double wood_size;
-
-  // Tree density within the wood
-  double tree_density;
 
   // Range at which trees become visible
   double tree_range;
@@ -328,21 +435,11 @@ private:
 
   // Number of varieties of tree texture
   int tree_varieties;
-
-  // True if the material is solid, false if it is a fluid
-  bool solid;
-
-  // the friction factor of that surface material
-  double friction_factor;
-
-  // the rolling friction of that surface material
-  double rolling_friction;
-
-  // the bumpiness of that surface material
-  double bumpiness;
-
-  // the load resistance of that surface material
-  double load_resistance;
+  
+  // cosine of the tile angle of maximum and zero density,
+  // used to stop trees from being created on too steep a slope.
+  double cos_tree_max_density_slope_angle;
+  double cos_tree_zero_density_slope_angle;
 
   // material properties
   SGVec4f ambient, diffuse, specular, emission;
@@ -361,14 +458,26 @@ private:
   
   // Tree texture, typically a strip of applicable tree textures
   std::string tree_texture;
-
+  
+  // Object mask, a simple RGB texture used as a mask when placing
+  // random vegetation, objects and buildings
+  std::vector<osg::Texture2D*> _masks;
+  
+  // Condition, indicating when this material is active
+  SGSharedPtr<const SGCondition> condition;
+  
+  // Parameters from the materials file
+  const SGPropertyNode* parameters;
+
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.
   ////////////////////////////////////////////////////////////////////
 
-  void read_properties(const simgear::SGReaderWriterXMLOptions* options,
-                        const SGPropertyNode *props);
-  void buildEffectProperties(const simgear::SGReaderWriterXMLOptions* options);
+  void read_properties(const simgear::SGReaderWriterOptions* options,
+                        const SGPropertyNode *props,
+                        SGPropertyNode *prop_root);
+  void buildEffectProperties(const simgear::SGReaderWriterOptions* options);
+  simgear::Effect* get_effect(int i);
 };
 
 

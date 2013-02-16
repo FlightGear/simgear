@@ -4,13 +4,22 @@
  * This file is in the Public Domain, and comes with NO WARRANTY of any kind.
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+     
 #include <simgear/compiler.h>
 
 #include <string.h>		// strcmp()
 
 #include "easyxml.hxx"
-#include "xmlparse.h"
-
+     
+#ifdef SYSTEM_EXPAT
+#  include <expat.h>
+#else
+#  include "xmlparse.h"     
+#endif
+     
 #include <fstream>
 #include <iostream>
 

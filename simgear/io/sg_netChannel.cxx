@@ -16,7 +16,7 @@
  
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the Free Software
-     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
  
      For further information visit http://plib.sourceforge.net
 
@@ -34,8 +34,10 @@
 #include <memory>
 #include <cassert>
 #include <cstring>
+#include <errno.h>
 
 #include <simgear/debug/logstream.hxx>
+
 
 namespace simgear  {
 
@@ -45,6 +47,7 @@ NetChannel::NetChannel ()
 {
   closed = true ;
   connected = false ;
+  resolving_host  = false;
   accepting = false ;
   write_blocked = false ;
   should_delete = false ;
@@ -82,7 +85,6 @@ NetChannel::setHandle (int handle, bool is_connected)
   close () ;
   Socket::setHandle ( handle ) ;
   connected = is_connected ;
-  //if ( connected ) this->handleConnect();
   closed = false ;
 }
 
@@ -106,21 +108,12 @@ NetChannel::listen ( int backlog )
 }
 
 int
-NetChannel::connect ( const char* host, int port )
+NetChannel::connect ( const char* h, int p )
 {
-  int result = Socket::connect ( host, port ) ;
-  if (result == 0) {
-    connected = true ;
-    //this->handleConnect();
-    return 0;
-  } else if (isNonBlockingError ()) {
-    return 0;
-  } else {
-    // some other error condition
-    this->handleError (result);
-    close();
-    return -1;
-  }
+  host = h;
+  port = p;
+  resolving_host = true;
+  return handleResolve();
 }
 
 int
@@ -188,12 +181,10 @@ NetChannel::handleReadEvent (void)
   if (accepting) {
     if (!connected) {
       connected = true ;
-      //this->handleConnect();
     }
     this->handleAccept();
   } else if (!connected) {
     connected = true ;
-    //this->handleConnect();
     this->handleRead();
   } else {
     this->handleRead();
@@ -205,10 +196,40 @@ NetChannel::handleWriteEvent (void)
 {
   if (!connected) {
     connected = true ;
-    //this->handleConnect();
   }
   write_blocked = false ;
   this->handleWrite();
+}
+
+int
+NetChannel::handleResolve()
+{
+    IPAddress addr;
+    if (!IPAddress::lookupNonblocking(host.c_str(), addr)) {
+        return 0; // not looked up yet, wait longer
+    }
+    
+    if (!addr.isValid()) {
+        SG_LOG(SG_IO, SG_WARN, "Network: host lookup failed:" << host);
+        handleError (ENOENT);
+        close();
+        return -1;
+    }
+    
+    resolving_host = false;
+    addr.setPort(port);
+    int result = Socket::connect ( &addr ) ;
+    if (result == 0) {
+        connected = true ;
+        return 0;
+    } else if (isNonBlockingError ()) {
+        return 0;
+    } else {
+        // some other error condition
+        handleError (result);
+        close();
+        return -1;
+    }
 }
 
 bool
@@ -235,6 +256,12 @@ NetChannel::poll (unsigned int timeout)
     }
     else if ( ! ch -> closed )
     {
+      if (ch -> resolving_host )
+      {
+          ch -> handleResolve();
+          continue;
+      }
+      
       nopen++ ;
       if (ch -> readable()) {
         assert(nreads<MAX_SOCKETS);
@@ -300,8 +327,13 @@ void NetChannel::handleAccept (void) {
   SG_LOG(SG_IO, SG_WARN, "Network:" << getHandle() << ": unhandled accept");
 }
 
-void NetChannel::handleError (int error) {
-  SG_LOG(SG_IO, SG_WARN,"Network:" << getHandle() << ": errno: " << strerror(errno) <<"(" << errno << ")");
+void NetChannel::handleError (int error)
+{
+    // warn about address lookup failures seperately, don't warn again.
+    // (and we (ab-)use ENOENT to mean 'name not found'.
+    if (error != ENOENT) {
+        SG_LOG(SG_IO, SG_WARN,"Network:" << getHandle() << ": errno: " << strerror(errno) <<"(" << errno << ")");
+    }
 }
 
 } // of namespace simgear

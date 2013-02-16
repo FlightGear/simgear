@@ -1,8 +1,0 @@
-
-#ifndef __SG_ITERATOR
-#define __SG_ITERATOR 1
-
-# include <iterator.h>
-
-#endif // !__SG_ITERATOR
-

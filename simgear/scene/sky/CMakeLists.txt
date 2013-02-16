@@ -26,4 +26,4 @@ set(SOURCES
     stars.cxx
     )
 
-simgear_component(sky scene/sky "${SOURCES}" "${HEADERS}")
+simgear_scene_component(sky scene/sky "${SOURCES}" "${HEADERS}")

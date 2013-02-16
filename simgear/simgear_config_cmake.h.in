@@ -10,10 +10,14 @@
 #cmakedefine HAVE_RINT
 #cmakedefine HAVE_TIMEGM
 #cmakedefine HAVE_ISNAN
+#cmakedefine HAVE_STD_ISNAN
 #cmakedefine HAVE_WINDOWS_H
+#cmakedefine HAVE_MKDTEMP
 
 #cmakedefine HAVE_SVN_CLIENT_H
 #cmakedefine HAVE_LIBSVN_CLIENT_1
 
-// set if building headless (no OSG or OpenGL libs)
-#cmakedefine NO_OPENSCENEGRAPH_INTERFACE
+#cmakedefine GCC_ATOMIC_BUILTINS_FOUND
+
+#cmakedefine SYSTEM_EXPAT
+#cmakedefine ENABLE_SOUND

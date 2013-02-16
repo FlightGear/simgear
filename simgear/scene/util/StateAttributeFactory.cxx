@@ -27,9 +27,14 @@
 #include <osg/Depth>
 #include <osg/ShadeModel>
 #include <osg/Texture2D>
+#include <osg/Texture3D>
 #include <osg/TexEnv>
 
 #include <osg/Image>
+
+#include <simgear/debug/logstream.hxx>
+
+#include "Noise.hxx"
 
 using namespace osg;
 
@@ -86,4 +91,71 @@ StateAttributeFactory::StateAttributeFactory()
     _depthWritesDisabled->setDataVariance(Object::STATIC);
 }
 
+osg::Image* make3DNoiseImage(int texSize)
+{
+    osg::Image* image = new osg::Image;
+    image->setImage(texSize, texSize, texSize,
+                    4, GL_RGBA, GL_UNSIGNED_BYTE,
+                    new unsigned char[4 * texSize * texSize * texSize],
+                    osg::Image::USE_NEW_DELETE);
+
+    const int startFrequency = 4;
+    const int numOctaves = 4;
+
+    int f, i, j, k, inc;
+    double ni[3];
+    double inci, incj, inck;
+    int frequency = startFrequency;
+    GLubyte *ptr;
+    double amp = 0.5;
+
+    SG_LOG(SG_TERRAIN, SG_BULK, "creating 3D noise texture... ");
+
+    for (f = 0, inc = 0; f < numOctaves; ++f, frequency *= 2, ++inc, amp *= 0.5)
+    {
+        SetNoiseFrequency(frequency);
+        ptr = image->data();
+        ni[0] = ni[1] = ni[2] = 0;
+
+        inci = 1.0 / (texSize / frequency);
+        for (i = 0; i < texSize; ++i, ni[0] += inci)
+        {
+            incj = 1.0 / (texSize / frequency);
+            for (j = 0; j < texSize; ++j, ni[1] += incj)
+            {
+                inck = 1.0 / (texSize / frequency);
+                for (k = 0; k < texSize; ++k, ni[2] += inck, ptr += 4)
+                {
+                    *(ptr+inc) = (GLubyte) (((noise3(ni) + 1.0) * amp) * 128.0);
+                }
+            }
+        }
+    }
+
+    SG_LOG(SG_TERRAIN, SG_BULK, "DONE");
+
+    return image;
+}
+
+osg::Texture3D* StateAttributeFactory::getNoiseTexture(int size)
+{
+    NoiseMap::iterator itr = _noises.find(size);
+    if (itr != _noises.end())
+        return itr->second.get();
+    Texture3D* noiseTexture = new osg::Texture3D;
+    noiseTexture->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture3D::LINEAR);
+    noiseTexture->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture3D::LINEAR);
+    noiseTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::REPEAT);
+    noiseTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture3D::REPEAT);
+    noiseTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::REPEAT);
+    noiseTexture->setImage( make3DNoiseImage(size) );
+    _noises.insert(std::make_pair(size, noiseTexture));
+    return noiseTexture;
+}
+
+// anchor the destructor into this file, to avoid ref_ptr warnings
+StateAttributeFactory::~StateAttributeFactory()
+{
+  
+}
 }

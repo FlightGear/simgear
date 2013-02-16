@@ -11,9 +11,12 @@
 #endif
 
 #include "props.hxx"
+#include "vectorPropTemplates.hxx"
 
 #include <algorithm>
+#include <limits>
 
+#include <set>
 #include <sstream>
 #include <iomanip>
 #include <iterator>
@@ -26,8 +29,6 @@
 #include <boost/bind.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/range.hpp>
-
-#include <simgear/math/SGMath.hxx>
 
 #if PROPS_STANDALONE
 #include <iostream>
@@ -56,7 +57,6 @@ using std::stringstream;
 
 using namespace simgear;
 
-
 ////////////////////////////////////////////////////////////////////////
 // Local classes.
 ////////////////////////////////////////////////////////////////////////
@@ -73,14 +73,12 @@ public:
 };
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Convenience macros for value access.
 ////////////////////////////////////////////////////////////////////////
 
 #define TEST_READ(dflt) if (!getAttribute(READ)) return dflt
 #define TEST_WRITE if (!getAttribute(WRITE)) return false
-
 
 ////////////////////////////////////////////////////////////////////////
 // Local path normalization code.
@@ -152,7 +150,6 @@ inline bool validateName(const string& name)
              is_alnum() || is_any_of("_-."));
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Other static utility functions.
 ////////////////////////////////////////////////////////////////////////
@@ -161,7 +158,7 @@ inline bool validateName(const string& name)
 static char *
 copy_string (const char * s)
 {
-  unsigned long int slen = strlen(s);
+  size_t slen = strlen(s);
   char * copy = new char[slen + 1];
 
   // the source string length is known so no need to check for '\0'
@@ -184,15 +181,15 @@ template<typename Itr>
 static int
 find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
 {
-  int nNodes = nodes.size();
+  size_t nNodes = nodes.size();
   boost::iterator_range<Itr> name(begin, end);
-  for (int i = 0; i < nNodes; i++) {
+  for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
 
-    // searching for a mathing index is a lot less time consuming than
+    // searching for a matching index is a lot less time consuming than
     // comparing two strings so do that first.
     if (node->getIndex() == index && boost::equals(node->getName(), name))
-      return i;
+      return static_cast<int>(i);
   }
   return -1;
 }
@@ -203,10 +200,10 @@ find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
 static int
 find_last_child (const char * name, const PropertyList& nodes)
 {
-  int nNodes = nodes.size();
-  int index = 0;
+  size_t nNodes = nodes.size();
+  int index = -1;
 
-  for (int i = 0; i < nNodes; i++) {
+  for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
     if (compare_strings(node->getName(), name))
     {
@@ -215,6 +212,26 @@ find_last_child (const char * name, const PropertyList& nodes)
     }
   }
   return index;
+}
+
+/**
+ * Get first unused index for child nodes with the given name
+ */
+static int
+first_unused_index( const char * name,
+                    const PropertyList& nodes,
+                    int min_index )
+{
+  const char* nameEnd = name + strlen(name);
+
+  for( int index = min_index; index < std::numeric_limits<int>::max(); ++index )
+  {
+    if( find_child(name, nameEnd, index, nodes) < 0 )
+      return index;
+  }
+
+  SG_LOG(SG_GENERAL, SG_ALERT, "Too many nodes: " << name);
+  return -1;
 }
 
 template<typename Itr>
@@ -349,7 +366,6 @@ find_node (SGPropertyNode * current,
      return find_node_aux(current, itr, create, last_index);
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Private methods from SGPropertyNode (may be inlined for speed).
 ////////////////////////////////////////////////////////////////////////
@@ -633,7 +649,6 @@ SGPropertyNode::trace_read () const
 #endif
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Public methods from SGPropertyNode.
 ////////////////////////////////////////////////////////////////////////
@@ -664,7 +679,8 @@ SGPropertyNode::SGPropertyNode ()
  * Copy constructor.
  */
 SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
-  : _index(node._index),
+  : SGReferenced(node),
+    _index(node._index),
     _name(node._name),
     _parent(0),			// don't copy the parent
     _type(node._type),
@@ -777,13 +793,41 @@ SGPropertyNode::~SGPropertyNode ()
 bool
 SGPropertyNode::alias (SGPropertyNode * target)
 {
-  if (target == 0 || _type == props::ALIAS || _tied)
-    return false;
-  clearValue();
-  get(target);
-  _value.alias = target;
-  _type = props::ALIAS;
-  return true;
+  if (target && (_type != props::ALIAS) && (!_tied))
+  {
+    clearValue();
+    get(target);
+    _value.alias = target;
+    _type = props::ALIAS;
+    return true;
+  }
+
+#if PROPS_STANDALONE
+#else
+  if (!target)
+  {
+    SG_LOG(SG_GENERAL, SG_ALERT,
+           "Failed to create alias for " << getPath() << ". "
+           "The target property does not exist.");
+  }
+  else
+  if (_type == props::ALIAS)
+  {
+    if (_value.alias == target)
+        return true; // ok, identical alias requested
+    SG_LOG(SG_GENERAL, SG_ALERT,
+           "Failed to create alias at " << target->getPath() << ". "
+           "Source "<< getPath() << " is already aliasing another property.");
+  }
+  else
+  if (_tied)
+  {
+    SG_LOG(SG_GENERAL, SG_ALERT, "Failed to create alias at " << target->getPath() << ". "
+           "Source " << getPath() << " is a tied property.");
+  }
+#endif
+
+  return false;
 }
 
 
@@ -830,9 +874,11 @@ SGPropertyNode::getAliasTarget () const
  * create a non-const child by name after the last node with the same name.
  */
 SGPropertyNode *
-SGPropertyNode::addChild (const char * name)
+SGPropertyNode::addChild(const char * name, int min_index, bool append)
 {
-  int pos = find_last_child(name, _children)+1;
+  int pos = append
+          ? std::max(find_last_child(name, _children) + 1, min_index)
+          : first_unused_index(name, _children, min_index);
 
   SGPropertyNode_ptr node;
   node = new SGPropertyNode(name, name + strlen(name), pos, this);
@@ -841,6 +887,52 @@ SGPropertyNode::addChild (const char * name)
   return node;
 }
 
+/**
+ * Create multiple children with unused indices
+ */
+simgear::PropertyList
+SGPropertyNode::addChildren( const std::string& name,
+                             size_t count,
+                             int min_index,
+                             bool append )
+{
+  simgear::PropertyList nodes;
+  std::set<int> used_indices;
+
+  if( !append )
+  {
+    // First grab all used indices. This saves us of testing every index if it
+    // is used for every element to be created
+    for( size_t i = 0; i < nodes.size(); i++ )
+    {
+      const SGPropertyNode* node = nodes[i];
+
+      if( node->getNameString() == name && node->getIndex() >= min_index )
+        used_indices.insert(node->getIndex());
+    }
+  }
+  else
+  {
+    // If we don't want to fill the holes just find last node
+    min_index = std::max(find_last_child(name.c_str(), _children) + 1, min_index);
+  }
+
+  for( int index = min_index;
+            index < std::numeric_limits<int>::max() && nodes.size() < count;
+          ++index )
+  {
+    if( used_indices.find(index) == used_indices.end() )
+    {
+      SGPropertyNode_ptr node;
+      node = new SGPropertyNode(name, index, this);
+      _children.push_back(node);
+      fireChildAdded(node);
+      nodes.push_back(node);
+    }
+  }
+
+  return nodes;
+}
 
 /**
  * Get a non-const child by index.
@@ -916,9 +1008,9 @@ PropertyList
 SGPropertyNode::getChildren (const char * name) const
 {
   PropertyList children;
-  int max = _children.size();
+  size_t max = _children.size();
 
-  for (int i = 0; i < max; i++)
+  for (size_t i = 0; i < max; i++)
     if (compare_strings(_children[i]->getName(), name))
       children.push_back(_children[i]);
 
@@ -974,7 +1066,7 @@ SGPropertyNode::removeChildren (const char * name, bool keep)
 {
   PropertyList children;
 
-  for (int pos = _children.size() - 1; pos >= 0; pos--)
+  for (int pos = static_cast<int>(_children.size() - 1); pos >= 0; pos--)
     if (compare_strings(_children[pos]->getName(), name))
       children.push_back(removeChild(pos, keep));
 
@@ -1741,7 +1833,6 @@ SGPropertyNode::getNode (const char * relative_path, int index) const
   return ((SGPropertyNode *)this)->getNode(relative_path, index, false);
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Convenience methods using relative paths.
 ////////////////////////////////////////////////////////////////////////
@@ -2048,9 +2139,35 @@ SGPropertyNode::fireChildAdded (SGPropertyNode * child)
 }
 
 void
+SGPropertyNode::fireCreatedRecursive(bool fire_self)
+{
+  if( fire_self )
+  {
+    _parent->fireChildAdded(this);
+
+    if( _children.empty() && getType() != simgear::props::NONE )
+      return fireValueChanged();
+  }
+
+  for(size_t i = 0; i < _children.size(); ++i)
+    _children[i]->fireCreatedRecursive(true);
+}
+
+void
 SGPropertyNode::fireChildRemoved (SGPropertyNode * child)
 {
   fireChildRemoved(this, child);
+}
+
+void
+SGPropertyNode::fireChildrenRemovedRecursive()
+{
+  for(size_t i = 0; i < _children.size(); ++i)
+  {
+    SGPropertyNode* child = _children[i];
+    fireChildRemoved(this, child);
+    child->fireChildrenRemovedRecursive();
+  }
 }
 
 void
@@ -2091,14 +2208,13 @@ SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
     _parent->fireChildRemoved(parent, child);
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGPropertyChangeListener.
 ////////////////////////////////////////////////////////////////////////
 
 SGPropertyChangeListener::~SGPropertyChangeListener ()
 {
-  for (int i = _properties.size() - 1; i >= 0; i--)
+  for (int i = static_cast<int>(_properties.size() - 1); i >= 0; i--)
     _properties[i]->removeChangeListener(this);
 }
 

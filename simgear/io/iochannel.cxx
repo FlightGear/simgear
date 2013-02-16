@@ -73,6 +73,6 @@ bool SGIOChannel::close() {
 
 
 // dummy eof routine
-bool SGIOChannel::eof() {
+bool SGIOChannel::eof() const {
     return false;
 }

@@ -10,6 +10,7 @@
 #include "placement.hxx"
 
 #include <simgear/compiler.h>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 
 
@@ -25,6 +26,7 @@ SGModelPlacement::SGModelPlacement () :
     _selector(new osg::Switch),
     _transform(new osg::PositionAttitudeTransform)
 {
+    _selector->addChild(_transform.get());
 }
 
 SGModelPlacement::~SGModelPlacement ()
@@ -34,10 +36,11 @@ SGModelPlacement::~SGModelPlacement ()
 void
 SGModelPlacement::init( osg::Node * model )
 {
+  // remove previous model (in case of reinit)
+  _transform->removeChild(0,1);
   if (model != 0) {
       _transform->addChild(model);
   }
-  _selector->addChild(_transform.get());
   _selector->setValue(0, 1);
 }
 

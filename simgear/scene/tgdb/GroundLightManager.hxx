@@ -24,7 +24,7 @@
 #include <osg/StateSet>
 
 
-#include <simgear/structure/Singleton.hxx>
+#include <simgear/scene/util/OsgSingleton.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 
 namespace simgear

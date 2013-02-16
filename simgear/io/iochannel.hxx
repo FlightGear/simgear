@@ -30,15 +30,6 @@
 
 #include <simgear/compiler.h>
 
-// #include "protocol.hxx"
-
-#include <string>
-#include <vector>
-
-using std::vector;
-using std::string;
-
-
 #define SG_IO_MAX_MSG_SIZE 16384
 
 /**
@@ -158,7 +149,7 @@ public:
      * false.
      * @return result of eof check
      */
-    virtual bool eof();
+    virtual bool eof() const;
 
     inline void set_type( SGChannelType t ) { type = t; }
     inline SGChannelType get_type() const { return type; }

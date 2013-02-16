@@ -16,7 +16,7 @@
  
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the Free Software
-     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
  
      For further information visit http://plib.sourceforge.net
 
@@ -54,14 +54,17 @@
 #define SG_NET_CHANNEL_H
 
 #include <simgear/io/raw_socket.hxx>
+#include <string>
 
 namespace simgear
 {
 
 class NetChannel : public Socket
 {
-  bool closed, connected, accepting, write_blocked, should_delete ;
+  bool closed, connected, accepting, write_blocked, should_delete, resolving_host ;
   NetChannel* next_channel ;
+  std::string host;
+  int port;
   
   friend bool netPoll (unsigned int timeout);
 
@@ -96,6 +99,7 @@ public:
   
   void handleReadEvent (void);
   void handleWriteEvent (void);
+  int handleResolve (void);
   
 // These are meant to be overridden.
   virtual void handleClose (void) {

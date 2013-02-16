@@ -14,21 +14,22 @@
 
 #include <simgear/compiler.h>
 
-#include <stdlib.h>		// atof() atoi()
+#include <stdlib.h>     // atof() atoi()
 
 #include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/xml/easyxml.hxx>
+#include <simgear/misc/ResourceManager.hxx>
 
 #include "props.hxx"
 #include "props_io.hxx"
+#include "vectorPropTemplates.hxx"
 
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <cstring>		// strcmp()
+#include <cstring>      // strcmp()
 #include <vector>
 #include <map>
 
@@ -170,12 +171,15 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 				// Check for an include.
     attval = atts.getValue("include");
     if (attval != 0) {
-      SGPath path(SGPath(_base).dir());
-      path.append(attval);
       try {
-	readProperties(path.str(), _root, 0, _extended);
+          SGPath path = simgear::ResourceManager::instance()->findPath(attval, SGPath(_base).dir());
+          if (path.isNull())
+          {
+              throw sg_io_exception("Cannot open file", sg_location(attval));
+          }
+          readProperties(path.str(), _root, 0, _extended);
       } catch (sg_io_exception &e) {
-	setException(e);
+          setException(e);
       }
     }
 
@@ -242,12 +246,15 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     bool omit = false;
     attval = atts.getValue("include");
     if (attval != 0) {
-      SGPath path(SGPath(_base).dir());
-      path.append(attval);
       try {
-	readProperties(path.str(), node, 0, _extended);
+          SGPath path = simgear::ResourceManager::instance()->findPath(attval, SGPath(_base).dir());
+          if (path.isNull())
+          {
+              throw sg_io_exception("Cannot open file", sg_location(attval));
+          }
+          readProperties(path.str(), node, 0, _extended);
       } catch (sg_io_exception &e) {
-	setException(e);
+          setException(e);
       }
 
       attval = atts.getValue("omit-node");
@@ -255,7 +262,10 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     }
 
     const char *type = atts.getValue("type");
-    if (type)
+    // if a type is given and the node is tied,
+    // don't clear the value because
+    // clearValue() unties the property
+    if (type && false == node->isTied() )
       node->clearValue();
     push_state(node, type, mode, omit);
   }

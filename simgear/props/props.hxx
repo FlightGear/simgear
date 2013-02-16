@@ -63,13 +63,6 @@ inline T parseString(const std::string& str)
     return result;
 }
 
-// Extended properties
-template<>
-std::istream& readFrom<SGVec3d>(std::istream& stream, SGVec3d& result);
-template<>
-std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result);
-
-    
 /**
  * Property value types.
  */
@@ -164,25 +157,11 @@ DEFINTERNALPROP(const char *, STRING);
 DEFINTERNALPROP(const char[], STRING);
 #undef DEFINTERNALPROP
 
-template<>
-struct PropertyTraits<SGVec3d>
-{
-    static const Type type_tag = VEC3D;
-    enum  { Internal = 0 };
-};
-
-template<>
-struct PropertyTraits<SGVec4d>
-{
-    static const Type type_tag = VEC4D;
-    enum  { Internal = 0 };
-};
 }
 }
 
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // A raw value.
 //
@@ -689,12 +668,6 @@ std::istream& SGRawBase<T, 0>::readFrom(std::istream& stream)
     return stream;
 }
 
-template<>
-std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const;
-template<>
-std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const;
-
-
 /**
  * The smart pointer that manage reference counting
  */
@@ -707,7 +680,6 @@ namespace simgear
 typedef std::vector<SGPropertyNode_ptr> PropertyList;
 }
 
-
 /**
  * The property change listener interface.
  *
@@ -732,7 +704,6 @@ private:
 };
 
 
-
 /**
  * A node in a property tree.
  */
@@ -772,7 +743,6 @@ public:
    * Update as needed when enum Attribute is changed
    */
   static const int LAST_USED_ATTRIBUTE;
-
 
   /**
    * Default constructor.
@@ -877,9 +847,32 @@ public:
   }
 
   /**
-   * Create a child node after the last node with the same name.
+   * Create a new child node with the given name and an unused index
+   *
+   * @param min_index Minimal index for new node (skips lower indices)
+   * @param append    Whether to simply use the index after the last used index
+   *                  or use a lower, unused index if it exists
    */
-  SGPropertyNode * addChild (const char * name);
+  SGPropertyNode * addChild ( const char* name,
+                              int min_index = 0,
+                              bool append = true );
+  SGPropertyNode * addChild ( const std::string& name,
+                              int min_index = 0,
+                              bool append = true )
+  { return addChild(name.c_str(), min_index, append); }
+
+  /**
+   * Create multiple child nodes with the given name an unused indices
+   *
+   * @param count     The number of nodes create
+   * @param min_index Minimal index for new nodes (skips lower indices)
+   * @param append    Whether to simply use the index after the last used index
+   *                  or use a lower, unused index if it exists
+   */
+  simgear::PropertyList addChildren ( const std::string& name,
+                                      size_t count,
+                                      int min_index = 0,
+                                      bool append = true );
 
   /**
    * Get a child node by name and index.
@@ -1168,6 +1161,18 @@ public:
   template<typename T>
   T getValue(typename boost::disable_if_c<simgear::props::PropertyTraits<T>::Internal>
              ::type* dummy = 0) const;
+
+  /**
+   * Get a list of values from all children with the given name
+   */
+  template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
+  std::vector<T> getChildValues(const std::string& name) const;
+
+  /**
+   * Get a list of values from all children with the given name
+   */
+  template<typename T>
+  std::vector<T> getChildValues(const std::string& name) const;
 
   /**
    * Set a bool value for this node.
@@ -1590,11 +1595,30 @@ public:
    */
   void fireChildAdded (SGPropertyNode * child);
 
+  /**
+   * Trigger a child-added and value-changed event for every child (Unlimited
+   * depth).
+   *
+   * @param fire_self   Whether to trigger the events also for the node itself.
+   *
+   * It can be used to simulating the creation of a property tree, eg. for
+   * (re)initializing a subsystem which is controlled through the property tree.
+   */
+  void fireCreatedRecursive(bool fire_self = false);
 
   /**
    * Fire a child-removed event to all listeners.
    */
   void fireChildRemoved (SGPropertyNode * child);
+
+  /**
+   * Fire a child-removed event for every child of this node (Unlimited depth)
+   *
+   * Upon removal of a child node only for this single node a child-removed
+   * event is triggered. If eg. resource cleanup relies on receiving a
+   * child-removed event for every child this method can be used.
+   */
+  void fireChildrenRemovedRecursive();
 
 
   /**
@@ -1690,7 +1714,6 @@ private:
 
   std::vector<SGPropertyChangeListener *> * _listeners;
 
-
   // Pass name as a pair of iterators
   template<typename Itr>
   SGPropertyNode * getChildImpl (Itr begin, Itr end, int index = 0, bool create = false);
@@ -1837,6 +1860,25 @@ inline T SGPropertyNode::getValue(typename boost::enable_if_c<simgear::props
   return ::getValue<T>(this);
 }
 
+template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
+std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
+{
+  const simgear::PropertyList& props = getChildren(name);
+  std::vector<T> values( props.size() );
+
+  for( size_t i = 0; i < props.size(); ++i )
+    values[i] = props[i]->getValue<T_get>();
+
+  return values;
+}
+
+template<typename T>
+inline
+std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
+{
+  return getChildValues<T, T>(name);
+}
+
 template<typename T>
 bool SGPropertyNode::setValue(const T& val,
                               typename boost::disable_if_c<simgear::props
@@ -1938,6 +1980,36 @@ struct Hash
 };
 }
 }
+
+/** Convenience class for change listener callbacks without
+ * creating a derived class implementing a "valueChanged" method.
+ * Also removes listener on destruction automatically.
+ */
+template<class T>
+class SGPropertyChangeCallback
+    : public SGPropertyChangeListener
+{
+public:
+    SGPropertyChangeCallback(T* obj, void (T::*method)(SGPropertyNode*),
+                             SGPropertyNode_ptr property,bool initial=false)
+        : _obj(obj), _callback(method), _property(property)
+    {
+        _property->addChangeListener(this,initial);
+    }
+    virtual ~SGPropertyChangeCallback()
+    {
+        _property->removeChangeListener(this);
+    }
+    void valueChanged (SGPropertyNode * node)
+    {
+        (_obj->*_callback)(node);
+    }
+private:
+    T* _obj;
+    void (T::*_callback)(SGPropertyNode*);
+    SGPropertyNode_ptr _property;
+};
+
 #endif // __PROPS_HXX
 
 // end of props.hxx

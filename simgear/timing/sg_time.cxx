@@ -65,12 +65,11 @@ static const double MJD0    = 2415020.0;
 static const double J2000   = 2451545.0 - MJD0;
 static const double SIDRATE = 0.9972695677;
 
+// tzContainer stores all the current Timezone control points/
+std::auto_ptr<SGTimeZoneContainer> static_tzContainer;
 
-void SGTime::init( double lon_rad, double lat_rad,
-                   const string& root, time_t init_time )
+void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time )
 {
-    SG_LOG( SG_EVENT, SG_INFO, "Initializing Time" );
-
     gst_diff = -9999.0;
 
     if ( init_time ) {
@@ -79,51 +78,49 @@ void SGTime::init( double lon_rad, double lat_rad,
 	cur_time = time(NULL); 
     }
 
-    SG_LOG( SG_EVENT, SG_INFO,
+    SG_LOG( SG_EVENT, SG_DEBUG,
                 "Current greenwich mean time = " << asctime(gmtime(&cur_time)));
-    SG_LOG( SG_EVENT, SG_INFO,
+    SG_LOG( SG_EVENT, SG_DEBUG,
              "Current local time          = " << asctime(localtime(&cur_time)));
 
-    if ( !root.empty()) {
-        SGPath zone( root );
-        zone.append( "zone.tab" );
-        SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: "
-                << zone.str() );
-        tzContainer = new SGTimeZoneContainer( zone.c_str() );
-        SGGeod location(SGGeod::fromRad(lon_rad, lat_rad));
-        SGTimeZone* nearestTz = tzContainer->getNearest(location);
+    if ( !root.isNull()) {
+        if (!static_tzContainer.get()) {
+            SGPath zone( root );
+            zone.append( "zone.tab" );
+            SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: "
+                   << zone.str() );
+            static_tzContainer.reset(new SGTimeZoneContainer( zone.c_str() ));
+        }
+
+        SGTimeZone* nearestTz = static_tzContainer->getNearest(location);
 
         SGPath name( root );
         name.append( nearestTz->getDescription() );
         zonename = name.str();
-        SG_LOG( SG_EVENT, SG_INFO, "Using zonename = " << zonename );
+        SG_LOG( SG_EVENT, SG_DEBUG, "Using zonename = " << zonename );
     } else {
-        SG_LOG( SG_EVENT, SG_INFO, "*** NO TIME ZONE NAME ***" );
-        tzContainer = NULL;
         zonename.erase();
     }
 }
 
-SGTime::SGTime( double lon_rad, double lat_rad, const string& root,
-                time_t init_time )
+SGTime::SGTime( const SGGeod& location, const SGPath& root,
+           time_t init_time )
 {
-    init( lon_rad, lat_rad, root, init_time );
+    init(location, root, init_time);
 }
 
-
-SGTime::SGTime( const string& root ) {
-    init( 0.0, 0.0, root, 0 );
+SGTime::SGTime( const SGPath& root ) {
+    init( SGGeod(), root, 0 );
 }
 
 
 SGTime::SGTime() {
-    init( 0.0, 0.0, "", 0 );
+    init( SGGeod(), SGPath(), 0 );
 }
 
 
 SGTime::~SGTime()
 {
-    delete tzContainer;
 }
 
 
@@ -185,18 +182,21 @@ static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng
     return lstTmp;
 }
 
+/** Deprecated method. To be removed after the next release... */
+void SGTime::update( double lon_rad, double lat_rad, time_t ct, long int warp )
+{
+    const SGGeod& location = SGGeod::fromRad(lon_rad, lat_rad);
+    update(location, ct, warp);
+}
 
 // Update the time related variables
-void SGTime::update( double lon_rad, double lat_rad,
-                     time_t ct, long int warp )
+void SGTime::update( const SGGeod& location, time_t ct, long int warp )
 {
     double gst_precise, gst_course;
 
 
     tm * gmt = &m_gmt;
 
-
-    SG_LOG( SG_EVENT, SG_DEBUG, "Updating time" );
 
     // get current Unix calendar time (in seconds)
     // warp += warp_delta;
@@ -235,57 +235,40 @@ void SGTime::update( double lon_rad, double lat_rad,
     if ( gst_diff < -100.0 ) {
 	// first time through do the expensive calculation & cheap
         // calculation to get the difference.
-	SG_LOG( SG_EVENT, SG_INFO, "  First time, doing precise gst" );
+	SG_LOG( SG_EVENT, SG_DEBUG, "  First time, doing precise gst" );
 	gst_precise = gst = sidereal_precise( mjd, 0.00 );
 	gst_course = sidereal_course( cur_time, gmt, 0.00 );
       
 	gst_diff = gst_precise - gst_course;
 
 	lst = sidereal_course( cur_time, gmt,
-                               -(lon_rad * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
+                               -location.getLongitudeDeg() ) + gst_diff;
     } else {
 	// course + difference should drift off very slowly
 	gst = sidereal_course( cur_time, gmt, 0.00 ) + gst_diff;
 	lst = sidereal_course( cur_time, gmt,
-                               -(lon_rad * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
+                               -location.getLongitudeDeg()  ) + gst_diff;
     }
 
     SG_LOG( SG_EVENT, SG_DEBUG,
 	    "  Current lon=0.00 Sidereal Time = " << gst );
     SG_LOG( SG_EVENT, SG_DEBUG,
 	    "  Current LOCAL Sidereal Time = " << lst << " (" 
-	    << sidereal_precise( mjd, -(lon_rad * SGD_RADIANS_TO_DEGREES) ) 
+	    << sidereal_precise( mjd, -location.getLongitudeDeg()  ) 
 	    << ") (diff = " << gst_diff << ")" );
 }
 
 
 // Given lon/lat, update timezone information and local_offset
-void SGTime::updateLocal( double lon_rad, double lat_rad, const string& root ) {
-    // sanity checking
-    if ( lon_rad < -SGD_PI || lon_rad> SGD_PI ) {
-        // not within -180 ... 180
-        lon_rad = 0.0;
+void SGTime::updateLocal( const SGGeod& aLocation, const string& root ) {
+  SGGeod location(aLocation);
+    if (!aLocation.isValid()) {
+        location = SGGeod();
     }
-    if ( lat_rad < -SGD_PI_2 || lat_rad > SGD_PI_2 ) {
-        // not within -90 ... 90
-        lat_rad = 0.0;
-    }
-    if ( lon_rad != lon_rad ) {
-        // only true if lon_rad == nan
-        SG_LOG( SG_EVENT, SG_ALERT,
-                "  Detected lon_rad == nan, resetting to 0.0" );
-        lon_rad = 0.0;
-    }
-    if ( lat_rad != lat_rad ) {
-        // only true if lat_rad == nan
-        SG_LOG( SG_EVENT, SG_ALERT,
-                "  Detected lat_rad == nan, resetting to 0.0" );
-        lat_rad = 0.0;
-    }
+    
     time_t currGMT;
     time_t aircraftLocalTime;
-    SGGeod location(SGGeod::fromRad(lon_rad, lat_rad));
-    SGTimeZone* nearestTz = tzContainer->getNearest(location);
+    SGTimeZone* nearestTz = static_tzContainer->getNearest(location);
     SGPath zone( root );
     zone.append ( nearestTz->getDescription() );
     zonename = zone.str();

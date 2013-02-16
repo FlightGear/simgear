@@ -29,8 +29,8 @@
 #include "cloudfield.hxx"
 #include "newcloud.hxx"
 
-#include <simgear/math/sg_random.h>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/sg_inlines.h>
 
 #include <osg/StateSet>
@@ -39,6 +39,7 @@
 // Constructor
 SGSky::SGSky( void ) {
     effective_visibility = visibility = 10000.0;
+    minimum_sky_visibility = 1000;
 
     // near cloud visibility state variables
     in_puff = false;
@@ -66,6 +67,10 @@ SGSky::SGSky( void ) {
     pre_transform = new osg::Group;
 
     _ephTransform = new osg::MatrixTransform;
+    
+    // Set up a RNG that is repeatable within 10 minutes to ensure that clouds
+    // are synced up in multi-process deployments.
+    mt_init_time_10(&seed);
 }
 
 
@@ -79,10 +84,11 @@ SGSky::~SGSky( void )
 // the provided branch
 void SGSky::build( double h_radius_m, double v_radius_m,
                    double sun_size, double moon_size,
-                   const SGEphemeris& eph, SGPropertyNode *property_tree_node )
+                   const SGEphemeris& eph, SGPropertyNode *property_tree_node,
+                   simgear::SGReaderWriterOptions* options )
 {
     dome = new SGSkyDome;
-    pre_transform->addChild( dome->build( h_radius_m, v_radius_m ) );
+    pre_transform->addChild( dome->build( h_radius_m, v_radius_m, options ) );
 
     pre_transform->addChild(_ephTransform.get());
     planets = new SGStars;
@@ -112,7 +118,7 @@ void SGSky::build( double h_radius_m, double v_radius_m,
 // 180 degrees = darkest midnight
 bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 {
-    if ( effective_visibility > 1000.0 ) {
+    if ( effective_visibility > minimum_sky_visibility ) {
 	enable();
 	dome->repaint( sc.adj_sky_color, sc.sky_color, sc.fog_color,
                        sc.sun_angle, effective_visibility );
@@ -233,8 +239,72 @@ void SGSky::set_3dCloudVisRange(float vis)
 {
     SGCloudField::setVisRange(vis);
     for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-        cloud_layers[i]->get_layer3D()->applyVisRange();
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
     }
+}
+
+float SGSky::get_3dCloudImpostorDistance() const {
+    return SGCloudField::getImpostorDistance();
+}
+
+void SGSky::set_3dCloudImpostorDistance(float vis)
+{
+    SGCloudField::setImpostorDistance(vis);
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
+    }
+}
+
+float SGSky::get_3dCloudLoD1Range() const {
+    return SGCloudField::getLoD1Range();
+}
+
+void SGSky::set_3dCloudLoD1Range(float vis)
+{
+    SGCloudField::setLoD1Range(vis);
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
+    }
+}
+
+float SGSky::get_3dCloudLoD2Range() const {
+    return SGCloudField::getLoD2Range();
+}
+
+void SGSky::set_3dCloudLoD2Range(float vis)
+{
+    SGCloudField::setLoD2Range(vis);
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
+    }
+}
+
+bool SGSky::get_3dCloudWrap() const {
+    return SGCloudField::getWrap();
+}
+
+void SGSky::set_3dCloudWrap(bool wrap)
+{
+    SGCloudField::setWrap(wrap);
+}
+
+bool SGSky::get_3dCloudUseImpostors() const {
+    return SGCloudField::getUseImpostors();
+}
+
+void SGSky::set_3dCloudUseImpostors(bool imp)
+{
+    SGCloudField::setUseImpostors(imp);
+}
+
+float SGSky::get_minimum_sky_visibility() const 
+{
+    return minimum_sky_visibility;
+}
+
+void SGSky::set_minimum_sky_visibility( float value )
+{
+    minimum_sky_visibility = value;
 }
 
 void SGSky::texture_path( const string& path ) {
@@ -306,11 +376,11 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	if ( ratio < 1.0 ) {
 	    if ( ! in_puff ) {
 		// calc chance of entering cloud puff
-		double rnd = sg_random();
+		double rnd = mt_rand(&seed);
 		double chance = rnd * rnd * rnd;
 		if ( chance > 0.95 /* * (diff - 25) / 50.0 */ ) {
 		    in_puff = true;
-		    puff_length = sg_random() * 2.0; // up to 2 seconds
+		    puff_length = mt_rand(&seed) * 2.0; // up to 2 seconds
 		    puff_progression = 0.0;
 		}
 	    }

@@ -18,7 +18,6 @@
 #include "props.hxx"
 #include "condition.hxx"
 
-#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGExpression.hxx>
 
 using std::istream;
@@ -126,21 +125,27 @@ public:
                                 const char * propname );
   virtual void setRightProperty( SGPropertyNode *prop_root,
                                  const char * propname );
+  virtual void setPrecisionProperty( SGPropertyNode *prop_root,
+                                 const char * propname );
   // will make a local copy
   virtual void setLeftValue (const SGPropertyNode * value);
   virtual void setRightValue (const SGPropertyNode * value);
+  virtual void setPrecisionValue (const SGPropertyNode * value);
   
   void setLeftDExpression(SGExpressiond* dexp);
   void setRightDExpression(SGExpressiond* dexp);
+  void setPrecisionDExpression(SGExpressiond* dexp);
   
 private:
   Type _type;
   bool _reverse;
   SGPropertyNode_ptr _left_property;
   SGPropertyNode_ptr _right_property;
+  SGPropertyNode_ptr _precision_property;
   
   SGSharedPtr<SGExpressiond> _left_dexp;
   SGSharedPtr<SGExpressiond> _right_dexp;
+  SGSharedPtr<SGExpressiond> _precision_dexp;
 };
 
 
@@ -261,8 +266,20 @@ SGOrCondition::addCondition (SGCondition * condition)
 // Implementation of SGComparisonCondition.
 ////////////////////////////////////////////////////////////////////////
 
+template<typename T> 
+static int doComp( T v1, T v2, T e )
+{
+  T d = v1 - v2;
+  if( d < -e )
+    return SGComparisonCondition::LESS_THAN;
+  else if( d > e )
+    return SGComparisonCondition::GREATER_THAN;
+  else
+    return SGComparisonCondition::EQUALS;
+}
+
 static int
-doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
+doComparison (const SGPropertyNode * left, const SGPropertyNode * right, const SGPropertyNode * precision )
 {
   using namespace simgear;
   switch (left->getType()) {
@@ -277,55 +294,28 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
       return SGComparisonCondition::EQUALS;
     break;
   }
-  case props::INT: {
-    int v1 = left->getIntValue();
-    int v2 = right->getIntValue();
-    if (v1 < v2)
-      return SGComparisonCondition::LESS_THAN;
-    else if (v1 > v2)
-      return SGComparisonCondition::GREATER_THAN;
-    else
-      return SGComparisonCondition::EQUALS;
-    break;
-  }
-  case props::LONG: {
-    long v1 = left->getLongValue();
-    long v2 = right->getLongValue();
-    if (v1 < v2)
-      return SGComparisonCondition::LESS_THAN;
-    else if (v1 > v2)
-      return SGComparisonCondition::GREATER_THAN;
-    else
-      return SGComparisonCondition::EQUALS;
-    break;
-  }
-  case props::FLOAT: {
-    float v1 = left->getFloatValue();
-    float v2 = right->getFloatValue();
-    if (v1 < v2)
-      return SGComparisonCondition::LESS_THAN;
-    else if (v1 > v2)
-      return SGComparisonCondition::GREATER_THAN;
-    else
-      return SGComparisonCondition::EQUALS;
-    break;
-  }
-  case props::DOUBLE: {
-    double v1 = left->getDoubleValue();
-    double v2 = right->getDoubleValue();
-    if (v1 < v2)
-      return SGComparisonCondition::LESS_THAN;
-    else if (v1 > v2)
-      return SGComparisonCondition::GREATER_THAN;
-    else
-      return SGComparisonCondition::EQUALS;
-    break;
-  }
+  case props::INT:
+    return doComp<int>(left->getIntValue(), right->getIntValue(), 
+           precision ? std::abs(precision->getIntValue()/2) : 0 );
+
+  case props::LONG:
+    return doComp<long>(left->getLongValue(), right->getLongValue(), 
+           precision ? std::abs(precision->getLongValue()/2L) : 0L );
+
+  case props::FLOAT:
+    return doComp<float>(left->getFloatValue(), right->getFloatValue(), 
+           precision ? std::fabs(precision->getFloatValue()/2.0f) : 0.0f );
+
+  case props::DOUBLE:
+    return doComp<double>(left->getDoubleValue(), right->getDoubleValue(), 
+           precision ? std::fabs(precision->getDoubleValue()/2.0) : 0.0 );
+
   case props::STRING:
   case props::NONE:
   case props::UNSPECIFIED: {
-    string v1 = left->getStringValue();
-    string v2 = right->getStringValue();
+    size_t l = precision ? precision->getLongValue() : string::npos;
+    string v1 = string(left->getStringValue()).substr(0,l);
+    string v2 = string(right->getStringValue()).substr(0,l);
     if (v1 < v2)
       return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
@@ -367,8 +357,12 @@ SGComparisonCondition::test () const
   if (_right_dexp) {
     _right_property->setDoubleValue(_right_dexp->getValue(NULL));
   }
+
+  if (_precision_dexp) {
+    _precision_property->setDoubleValue(_precision_dexp->getValue(NULL));
+  }
         
-  int cmp = doComparison(_left_property, _right_property);
+  int cmp = doComparison(_left_property, _right_property, _precision_property );
   if (!_reverse)
     return (cmp == _type);
   else
@@ -390,11 +384,23 @@ SGComparisonCondition::setRightProperty( SGPropertyNode *prop_root,
 }
 
 void
+SGComparisonCondition::setPrecisionProperty( SGPropertyNode *prop_root,
+                                         const char * propname )
+{
+  _precision_property = prop_root->getNode(propname, true);
+}
+
+void
 SGComparisonCondition::setLeftValue (const SGPropertyNode *node)
 {
   _left_property = new SGPropertyNode(*node);
 }
 
+void
+SGComparisonCondition::setPrecisionValue (const SGPropertyNode *node)
+{
+  _precision_property = new SGPropertyNode(*node);
+}
 
 void
 SGComparisonCondition::setRightValue (const SGPropertyNode *node)
@@ -414,6 +420,13 @@ SGComparisonCondition::setRightDExpression(SGExpressiond* dexp)
 {
   _right_property = new SGPropertyNode();
   _right_dexp = dexp;
+}
+
+void
+SGComparisonCondition::setPrecisionDExpression(SGExpressiond* dexp)
+{
+  _precision_property = new SGPropertyNode();
+  _precision_dexp = dexp;
 }
 ////////////////////////////////////////////////////////////////////////
 // Read a condition and use it if necessary.
@@ -479,34 +492,54 @@ readComparison( SGPropertyNode *prop_root,
 		bool reverse)
 {
   SGComparisonCondition * condition = new SGComparisonCondition(type, reverse);
-  if (node->nChildren() != 2) {
-    throw sg_exception("condition: comparison without two children");
+  if (node->nChildren() < 2 || node->nChildren() > 3 ) {
+    throw sg_exception("condition: comparison without two or three children");
   }
   
   const SGPropertyNode* left = node->getChild(0), 
     *right = node->getChild(1);
-  string leftName(left->getName());
-  if (leftName == "property") {
-    condition->setLeftProperty(prop_root, left->getStringValue());
-  } else if (leftName == "value") {
-    condition->setLeftValue(left);
-  } else if (leftName == "expression") {
-    SGExpressiond* exp = SGReadDoubleExpression(prop_root, left->getChild(0));
-    condition->setLeftDExpression(exp);
-  } else {
-    throw sg_exception("Unknown condition comparison left child:" + leftName);
+
+  {
+    string leftName(left->getName());
+    if (leftName == "property") {
+      condition->setLeftProperty(prop_root, left->getStringValue());
+    } else if (leftName == "value") {
+      condition->setLeftValue(left);
+    } else if (leftName == "expression") {
+      SGExpressiond* exp = SGReadDoubleExpression(prop_root, left->getChild(0));
+      condition->setLeftDExpression(exp);
+    } else {
+      throw sg_exception("Unknown condition comparison left child:" + leftName);
+    }
   }
     
-  string rightName(right->getName());
-  if (rightName == "property") {
-    condition->setRightProperty(prop_root, right->getStringValue());
-  } else if (rightName == "value") {
-    condition->setRightValue(right);
-  } else if (rightName == "expression") {
-    SGExpressiond* exp = SGReadDoubleExpression(prop_root, right->getChild(0));
-    condition->setRightDExpression(exp);
-  } else {
-    throw sg_exception("Unknown condition comparison right child:" + rightName);
+  {
+    string rightName(right->getName());
+    if (rightName == "property") {
+      condition->setRightProperty(prop_root, right->getStringValue());
+    } else if (rightName == "value") {
+      condition->setRightValue(right);
+    } else if (rightName == "expression") {
+      SGExpressiond* exp = SGReadDoubleExpression(prop_root, right->getChild(0));
+      condition->setRightDExpression(exp);
+    } else {
+      throw sg_exception("Unknown condition comparison right child:" + rightName);
+    }
+  }
+  
+  if( node->nChildren() == 3 ) {
+    const SGPropertyNode *n = node->getChild(2);
+    string name(n->getName());
+    if (name == "precision-property") {
+      condition->setPrecisionProperty(prop_root, n->getStringValue());
+    } else if (name == "precision-value") {
+      condition->setPrecisionValue(n);
+    } else if (name == "precision-expression") {
+      SGExpressiond* exp = SGReadDoubleExpression(prop_root, n->getChild(0));
+      condition->setPrecisionDExpression(exp);
+    } else {
+      throw sg_exception("Unknown condition comparison precision child:" + name );
+    }
   }
   
   return condition;

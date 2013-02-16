@@ -29,6 +29,7 @@
 
 #include <simgear/constants.h>
 #include <osg/ClipNode>
+#include <simgear/scene/util/RenderConstants.hxx>
 
 /**
  * @brief SGPrecipitation constructor
@@ -78,6 +79,8 @@ osg::Group* SGPrecipitation::build(void)
     {
         group->addChild(_precipitationEffect.get());
     }
+
+    group->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
     return group;
 }

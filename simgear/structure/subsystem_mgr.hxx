@@ -1,3 +1,4 @@
+
 // Written by David Megginson, started 2000-12
 //
 // Copyright (C) 2000  David Megginson, david@megginson.com
@@ -31,8 +32,7 @@
 
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include "SGSmplstat.hxx"
-
+#include <simgear/misc/strutils.hxx>
 
 class TimingInfo
 {
@@ -48,9 +48,12 @@ public:
     const SGTimeStamp& getTime() const { return time; }
 };
 
+class SampleStatistic;
+
 typedef std::vector<TimingInfo> eventTimeVec;
 typedef std::vector<TimingInfo>::iterator eventTimeVecIterator;
 
+typedef void (*SGSubsystemTimingCb)(void* userData, const std::string& name, SampleStatistic* pStatistic);
 
 
 /**
@@ -147,6 +150,13 @@ public:
    */
   virtual void init ();
 
+  typedef enum
+  {
+    INIT_DONE,      ///< subsystem is fully initialised
+    INIT_CONTINUE   ///< init should be called again
+  } InitStatus;
+  
+  virtual InitStatus incrementalInit ();
 
   /**
    * Initialize parts that depend on other subsystems having been initialized.
@@ -227,7 +237,7 @@ public:
 
 
   /**
-   * Suspend or resum operation of this subsystem.
+   * Suspend or resume operation of this subsystem.
    *
    * @param suspended true if the subsystem should be suspended, false
    * otherwise.
@@ -253,43 +263,25 @@ public:
    */
   virtual bool is_suspended () const;
 
-
   /**
-   * Keep track of execution time.
-   *
-   * <p>This method keeps track of timing statistics for each subsystem.</p>
-   * 
-   * @param time execution time in ms of last call.
+   * Trigger the callback to report timing information for all subsystems.
    */
-  void updateExecutionTime(double time);
-
-  /**
-   * Print details of execution time.
-   *
-   * <p>For debugging purposes, developers can place stamp() calls
-   * at strategic points in the update() function of each subsystem, which 
-   * record the time between the successive calls to stamp. This method,
-   * printExecutionTime() is called after exectution of the subsystem
-   * update function itself to conduct a post-hoc analysis of excecution
-   * time</p>
-   */ 
-  void printTimingInformation();
+  void reportTiming(void);
 
   /**
    * Place time stamps at strategic points in the execution of subsystems 
    * update() member functions. Predominantly for debugging purposes.
    */
   void stamp(const std::string& name);
-  
-
 
 protected:
 
   bool _suspended;
 
   eventTimeVec timingInfo;
-  //int test;
 
+  static SGSubsystemTimingCb reportTimingCb;
+  static void* reportTimingUserData;
 };
 
 
@@ -304,7 +296,8 @@ public:
     SGSubsystemGroup ();
     virtual ~SGSubsystemGroup ();
 
-    virtual void init ();
+    virtual void init();
+    virtual InitStatus incrementalInit ();
     virtual void postinit ();
     virtual void reinit ();
     virtual void shutdown ();
@@ -322,45 +315,30 @@ public:
     virtual void remove_subsystem (const std::string &name);
     virtual bool has_subsystem (const std::string &name) const;
 
-    void collectDebugTiming(bool collect);
-    void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
+    void reportTiming(void);
 
     /**
-     * 
+     *
      */
     void set_fixed_update_time(double fixed_dt);
+	 
+	/**
+	 * retrive list of member subsystem names
+	 */ 
+    string_list member_names() const;
+	 
 private:
 
-    class Member {
-
-    private:
-        Member (const Member &member);
-    public:
-        Member ();
-        virtual ~Member ();
-
-        virtual void update (double delta_time_sec);
-        void printTimingInformation(double time);
-        void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
-        void updateExecutionTime(double time);
-        double getTimeWarningThreshold();
-        void collectDebugTiming (bool collect) { collectTimeStats = collect; };
-
-        SampleStatistic timeStat;
-        std::string name;
-        SGSubsystem * subsystem;
-        double min_step_sec;
-        double elapsed_sec;
-        bool collectTimeStats;
-        int exceptionCount;
-    };
-
-    Member * get_member (const std::string &name, bool create = false);
+    class Member;
+    Member* get_member (const std::string &name, bool create = false);
 
     std::vector<Member *> _members;
     
     double _fixedUpdateTime;
     double _updateTimeRemainder;
+    
+  /// index of the member we are currently init-ing
+    unsigned int _initPosition;
 };
 
 
@@ -392,9 +370,10 @@ public:
     enum GroupType {
         INIT = 0,
         GENERAL,
-        FDM,  ///< flight model, autopilot, instruments that run coupled
+        FDM,        ///< flight model, autopilot, instruments that run coupled
         POST_FDM,   ///< certain subsystems depend on FDM data
         DISPLAY,    ///< view, camera, rendering updates
+        SOUND/*I want to be last!*/,  ///< needs to run AFTER display, to allow concurrent GPU/sound processing
         MAX_GROUPS
     };
 
@@ -402,6 +381,7 @@ public:
     virtual ~SGSubsystemMgr ();
 
     virtual void init ();
+    virtual InitStatus incrementalInit ();
     virtual void postinit ();
     virtual void reinit ();
     virtual void shutdown ();
@@ -427,16 +407,15 @@ public:
 
     virtual SGSubsystem * get_subsystem(const std::string &name) const;
 
-   void collectDebugTiming(bool collect);
-   void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
+    void reportTiming();
+    void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
 
 private:
-
     SGSubsystemGroup* _groups[MAX_GROUPS];
-    
+    unsigned int _initPosition;
+  
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;
     SubsystemDict _subsystem_map;
-
 };
 
 

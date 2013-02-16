@@ -26,6 +26,10 @@
  *
  ************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
@@ -132,14 +136,15 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
     char buffer[256];
     FILE* infile = fopen(filename, "rb");
     if (!(infile)) {
-        string e = "Unable to open time zone file '";
+        std::string e = "Unable to open time zone file '";
         throw sg_exception(e + filename + '\'');
     }
     
     errno = 0;
 
     while (1) {
-        fgets(buffer, 256, infile);
+        if (0 == fgets(buffer, 256, infile))
+            break;
         if (feof(infile)) {
             break;
         }

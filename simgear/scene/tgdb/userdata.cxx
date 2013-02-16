@@ -32,10 +32,12 @@
 #include <simgear/math/sg_random.h>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matmodel.hxx>
+#include <simgear/scene/model/ModelRegistry.hxx>
 
-#include "SGModelBin.hxx"
 #include "userdata.hxx"
 #include "SGReaderWriterBTG.hxx"
+#include "ReaderWriterSPT.hxx"
+#include "ReaderWriterSTG.hxx"
 
 // the following are static values needed by the runtime object
 // loader.  However, the loading is done via a call back so these
@@ -52,16 +54,20 @@ static SGPropertyNode *root_props = NULL;
 // none of the other object files in this library would be included in
 // the executable! Sticking the static proxy here forces the BTG code
 // to be sucked in.
+namespace {
 osgDB::RegisterReaderWriterProxy<SGReaderWriterBTG> g_readerWriter_BTG_Proxy;
+
+osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterSTG> g_readerWriterSTGProxy;
+simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_stgCallbackProxy("stg");
+
+osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterSPT> g_readerWriterSPTProxy;
+simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_sptCallbackProxy("spt");
+}
 
 void sgUserDataInit( SGPropertyNode *p ) {
     _inited = true;
     root_props = p;
 }
-
-osg::Node* sgGetRandomModel(SGMatModel *obj, mt seed) {
-   return obj->get_random_model( root_props, seed );
- }
 
 namespace simgear
 {

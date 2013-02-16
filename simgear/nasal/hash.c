@@ -179,17 +179,18 @@ void naiGCMarkHash(naRef hash)
 static void tmpStr(naRef* out, struct naStr* str, const char* key)
 {
     str->type = T_STR;
-    str->hashcode = str->emblen = 0;
+    str->hashcode = 0;
+    str->emblen = -1;
     str->data.ref.ptr = (unsigned char*)key;
     str->data.ref.len = strlen(key);
     SETPTR(*out, str);
 }
 
-int naMember_cget(naRef obj, const char* field, naRef* out)
+int naMember_cget(naContext c, naRef obj, const char* field, naRef* out)
 {
     naRef key; struct naStr str;
     tmpStr(&key, &str, field);
-    return naMember_get(obj, key, out);
+    return naMember_get(c, obj, key, out);
 }
 
 naRef naHash_cget(naRef hash, char* key)

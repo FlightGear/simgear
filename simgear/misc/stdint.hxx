@@ -84,6 +84,9 @@ inline bool sgIsBigEndian() {
     return (*((char *) &sgEndianTest ) == 0);
 }
 
+inline void sgEndianSwap(int32_t *x) { *x = (int32_t) sg_bswap_32((int32_t) *x); }
+inline void sgEndianSwap(float *x) { *x = (float) sg_bswap_32((float) *x); }
+
 inline void sgEndianSwap(uint16_t *x) { *x = sg_bswap_16(*x); }
 inline void sgEndianSwap(uint32_t *x) { *x = sg_bswap_32(*x); }
 inline void sgEndianSwap(uint64_t *x) { *x = sg_bswap_64(*x); }

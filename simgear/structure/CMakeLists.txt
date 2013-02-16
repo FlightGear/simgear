@@ -1,7 +1,7 @@
 
 include (SimGearComponent)
 
-set(HEADERS 
+set(HEADERS
     OSGUtils.hxx
     OSGVersion.hxx
     SGAtomic.hxx
@@ -13,6 +13,8 @@ set(HEADERS
     SGSmplstat.hxx
     SGWeakPtr.hxx
     SGWeakReferenced.hxx
+    SGPerfMon.hxx
+    singleton.hpp
     Singleton.hxx
     StringTable.hxx
     callback.hxx
@@ -22,13 +24,14 @@ set(HEADERS
     intern.hxx
     subsystem_mgr.hxx
     )
-    
-set(SOURCES 
+
+set(SOURCES
     SGAtomic.cxx
     SGBinding.cxx
     SGExpression.cxx
     SGSmplhist.cxx
     SGSmplstat.cxx
+    SGPerfMon.cxx
     StringTable.cxx
     commands.cxx
     event_mgr.cxx

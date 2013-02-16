@@ -4,7 +4,6 @@ set(HEADERS
     EffectCullVisitor.hxx
     EffectGeode.hxx
     GLPredicate.hxx
-    Noise.hxx
     Pass.hxx
     Technique.hxx
     TextureBuilder.hxx
@@ -20,7 +19,6 @@ set(SOURCES
     EffectCullVisitor.cxx
     EffectGeode.cxx
     GLPredicate.cxx
-    Noise.cxx
     Pass.cxx
     Technique.cxx
     TextureBuilder.cxx
@@ -31,5 +29,5 @@ set(SOURCES
     mipmap.cxx
     )
 
-simgear_component(material scene/material "${SOURCES}" "${HEADERS}")
+simgear_scene_component(material scene/material "${SOURCES}" "${HEADERS}")
 

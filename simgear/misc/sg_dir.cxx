@@ -18,33 +18,116 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include <simgear/misc/sg_dir.hxx>
+#include <math.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
+#  include <direct.h>
 #else
 #  include <sys/types.h>
 #  include <dirent.h>
+#  include <sys/stat.h>
+#  include <unistd.h>
+#  include <errno.h>
 #endif
 
 #include <simgear/debug/logstream.hxx>
+#include <boost/foreach.hpp>
 
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
+#include <algorithm> // for std::sort
+
+using std::string;
 
 namespace simgear
 {
 
-Dir::Dir(const SGPath& path) :
-  _path(path)
+Dir::Dir() :
+    _removeOnDestroy(false)
 {
 }
 
-Dir::Dir(const Dir& rel, const SGPath& relPath) :
-  _path(rel.file(relPath.str()))
+Dir::Dir(const SGPath& path) :
+  _path(path),
+  _removeOnDestroy(false)
 {
+    _path.set_cached(false); // disable caching, so create/remove work
+}
+
+Dir::Dir(const Dir& rel, const SGPath& relPath) :
+  _path(rel.file(relPath.str())),
+  _removeOnDestroy(false)
+{
+    _path.set_cached(false); // disable caching, so create/remove work
+}
+
+Dir::~Dir()
+{
+    if (_removeOnDestroy) {
+        remove(true);
+    }
+}
+
+void Dir::setRemoveOnDestroy()
+{
+    _removeOnDestroy = true;
+}
+
+Dir Dir::current()
+{
+#ifdef _WIN32
+    char* buf = _getcwd(NULL, 0);
+#else
+    char* buf = ::getcwd(NULL, 0);
+#endif
+    SGPath p(buf);
+    free(buf);
+    return Dir(p);
+}
+
+Dir Dir::tempDir(const std::string& templ)
+{
+#ifdef HAVE_MKDTEMP
+    char buf[1024];
+    const char* tempPath = ::getenv("TMPDIR");
+    if (!tempPath) {
+        tempPath = "/tmp";
+    }
+    SGPath p(tempPath);
+    p.append(templ);
+    // Mac OS-X / BSD manual says any number of 'X's, but GLibc manual
+    // says exactly six, so that's what I'm going with
+    p.concat("-XXXXXX");
+    ::snprintf(buf, 1024, "%s", p.c_str());
+    if (!mkdtemp(buf)) {
+        SG_LOG(SG_IO, SG_WARN, "mkdtemp failed:" << strerror(errno));
+        return Dir();
+    }
+    
+    return Dir(SGPath(buf));
+#else
+    SGPath p(tempnam(0, templ.c_str()));
+    Dir t(p);
+    if (!t.create(0700)) {
+        SG_LOG(SG_IO, SG_WARN, "failed to create temporary directory at " << p.str());
+    }
+    
+    return t;
+#endif
+}
+
+static bool pathSortPredicate(const SGPath& p1, const SGPath& p2)
+{
+  return p1.file() < p2.file();
 }
 
 PathList Dir::children(int types, const std::string& nameFilter) const
@@ -115,7 +198,8 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     }
     
     // skip hidden files (names beginning with '.') unless requested
-    if (!(types & INCLUDE_HIDDEN) && (entry->d_name[0] == '.')) {
+    if (!(types & INCLUDE_HIDDEN) && (entry->d_name[0] == '.') &&
+         strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
       continue;
     }
     
@@ -163,6 +247,11 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   
   closedir(dp);
 #endif
+
+  // File system order is random. Make things deterministic,
+  // so it's the same for every user.
+  std::sort(result.begin(), result.end(), pathSortPredicate);
+
   return result;
 }
 
@@ -174,8 +263,79 @@ bool Dir::exists() const
 SGPath Dir::file(const std::string& name) const
 {
   SGPath childPath = _path;
+  childPath.set_cached(true);
   childPath.append(name);
   return childPath;  
+}
+
+#ifdef _WIN32
+#  define sgMkDir(d,m)       _mkdir(d)
+#else
+#  define sgMkDir(d,m)       mkdir(d,m)
+#endif
+
+bool Dir::create(mode_t mode)
+{
+    if (exists()) {
+        return false; // already exists
+    }
+    
+// recursively create parent directories
+    Dir pr(parent());
+    if (!pr.path().isNull() && !pr.exists()) {
+        bool ok = pr.create(mode);
+        if (!ok) {
+            return false;
+        }
+    }
+    
+// finally, create ourselves
+    int err = sgMkDir(_path.c_str(), mode);
+    if (err) {
+        SG_LOG(SG_IO, SG_WARN,  "directory creation failed: (" << _path.str() << ") " << strerror(errno) );
+    }
+    
+    return (err == 0);
+}
+
+bool Dir::remove(bool recursive)
+{
+    if (!exists()) {
+        SG_LOG(SG_IO, SG_WARN, "attempt to remove non-existant dir:" << _path.str());
+        return false;
+    }
+    
+    if (recursive) {
+        bool ok;
+        PathList cs = children(NO_DOT_OR_DOTDOT | INCLUDE_HIDDEN | TYPE_FILE | TYPE_DIR);
+        BOOST_FOREACH(SGPath path, cs) {
+            if (path.isDir()) {
+                Dir childDir(path);
+                ok = childDir.remove(true);
+            } else {
+                ok = path.remove();
+            }
+            
+            if (!ok) {
+                return false;
+            }
+        } // of child iteration
+    } // of recursive deletion
+    
+#ifdef _WIN32
+    int err = _rmdir(_path.c_str());
+#else
+    int err = rmdir(_path.c_str());
+#endif
+    if (err) {
+        SG_LOG(SG_IO, SG_WARN, "rmdir failed:" << _path.str() << ":" << strerror(errno));
+    }
+    return (err == 0);
+}
+
+Dir Dir::parent() const
+{
+    return Dir(_path.dir());
 }
 
 } // of namespace simgear

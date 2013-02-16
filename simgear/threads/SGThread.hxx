@@ -3,6 +3,7 @@
 // Written by Bernie Bright, started April 2001.
 //
 // Copyright (C) 2001  Bernard Bright - bbright@bigpond.net.au
+// Copyright (C) 2011  Mathias Froehlich
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -18,41 +19,18 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
-// $Id$
 
 #ifndef SGTHREAD_HXX_INCLUDED
 #define SGTHREAD_HXX_INCLUDED 1
 
 #include <simgear/compiler.h>
 
-#include <pthread.h>
-#include <cassert>
-#include <cerrno>
-
-class SGThread;
-
-extern "C" {
-    void* start_handler( void* );
-};
-
 /**
  * Encapsulate generic threading methods.
  * Users derive a class from SGThread and implement the run() member function.
  */
-class SGThread
-{
+class SGThread {
 public:
-    /**
-     * SGThread cancelation modes.
-     */
-    enum cancel_t
-    {
-	CANCEL_DISABLE = 0,
-	CANCEL_DEFERRED,
-	CANCEL_IMMEDIATE
-    };
-public:
-
     /**
      * Create a new thread object.
      * When a SGThread object is created it does not begin execution
@@ -62,24 +40,20 @@ public:
 
     /**
      * Start the underlying thread of execution.
-     * @param cpu An optional parameter to specify on which CPU to run this
-     * thread (only supported on IRIX at this time).
      * @return Pthread error code if execution fails, otherwise returns 0.
      */
-    int start( unsigned cpu = 0 );
-
-    /**
-     * Sends a cancellation request to the underlying thread.  The target
-     * thread will either ignore the request, honor it immediately or defer
-     * it until it reaches a cancellation point.
-     */
-    void cancel();
+    bool start();
 
     /**
      * Suspends the exection of the calling thread until this thread
      * terminates.
      */
     void join();
+
+    /**
+     *Retreive the current thread id.
+     */
+    static long current( void );
 
 protected:
     /**
@@ -90,81 +64,30 @@ protected:
     virtual ~SGThread();
 
     /**
-     * Set the threads cancellation mode.
-     * @param mode The required cancellation mode.
-     */
-    void set_cancel( cancel_t mode );
-
-    /**
      * All threads execute by deriving the run() method of SGThread.
      * If this function terminates then the thread also terminates.
      */
     virtual void run() = 0;
 
 private:
-
-    /**
-     * Pthread thread identifier.
-     */
-    pthread_t tid;
-
-    friend void* start_handler( void* );
-
-private:
     // Disable copying.
-    SGThread( const SGThread& );
-    SGThread& operator=( const SGThread& );
+    SGThread(const SGThread&);
+    SGThread& operator=(const SGThread&);
+
+    struct PrivateData;
+    PrivateData* _privateData;
+
+    friend struct PrivateData;
 };
 
-inline
-SGThread::SGThread()
-{
-}
-
-inline
-SGThread::~SGThread()
-{
-}
-
-inline int
-SGThread::start( unsigned cpu )
-{
-    int status = pthread_create( &tid, 0, start_handler, this );
-    assert( status == 0 );
-    (void)status;
-#if defined( sgi )
-    if ( !status && !cpu )
-        pthread_setrunon_np( cpu );
-#endif
-    return status;
-}
-
-inline void
-SGThread::join()
-{
-    int status = pthread_join( tid, 0 );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline void
-SGThread::cancel()
-{
-    int status = pthread_cancel( tid );
-    assert( status == 0 );
-    (void)status;
-}
+class SGWaitCondition;
 
 /**
  * A mutex is used to protect a section of code such that at any time
  * only a single thread can execute the code.
  */
-class SGMutex
-{
-    friend class SGPthreadCond;
-
+class SGMutex {
 public:
-
     /**
      * Create a new mutex.
      * Under Linux this is a 'fast' mutex.
@@ -186,18 +109,8 @@ public:
      * mutex is already locked and owned by the calling thread, the calling
      * thread is suspended until the mutex is unlocked, effectively causing
      * the calling thread to deadlock.
-     *
-     * @see SGMutex::trylock
      */
     void lock();
-
-    /**
-     * Try to lock the mutex for the current thread.  Behaves like lock except
-     * that it doesn't block the calling thread.
-     * @return true if mutex was successfully locked, otherwise false.
-     * @see SGMutex::lock
-     */
-    bool trylock();
 
     /**
      * Unlock this mutex.
@@ -205,67 +118,37 @@ public:
      */
     void unlock();
 
-protected:
+private:
+    struct PrivateData;
+    PrivateData* _privateData;
 
-    /**
-     * Pthread mutex.
-     */
-    pthread_mutex_t mutex;
+    friend class SGWaitCondition;
 };
 
-inline SGMutex::SGMutex()
-{
-    int status = pthread_mutex_init( &mutex, 0 );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline SGMutex::~SGMutex()
-{
-    int status = pthread_mutex_destroy( &mutex );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline void SGMutex::lock()
-{
-    int status = pthread_mutex_lock( &mutex );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline void SGMutex::unlock()
-{
-    int status = pthread_mutex_unlock( &mutex );
-    assert( status == 0 );
-    (void)status;
-}
-
 /**
- * A condition variable is a synchronization device that allows threads to 
+ * A condition variable is a synchronization device that allows threads to
  * suspend execution until some predicate on shared data is satisfied.
  * A condition variable is always associated with a mutex to avoid race
- * conditions. 
+ * conditions.
  */
-class SGPthreadCond
-{
+class SGWaitCondition {
 public:
     /**
      * Create a new condition variable.
      */
-    SGPthreadCond();
+    SGWaitCondition();
 
     /**
      * Destroy the condition object.
      */
-    ~SGPthreadCond();
+    ~SGWaitCondition();
 
     /**
      * Wait for this condition variable to be signaled.
      *
      * @param SGMutex& reference to a locked mutex.
      */
-    void wait( SGMutex& );
+    void wait(SGMutex&);
 
     /**
      * Wait for this condition variable to be signaled for at most
@@ -274,9 +157,9 @@ public:
      * @param mutex reference to a locked mutex.
      * @param ms milliseconds to wait for a signal.
      *
-     * @return 
+     * @return
      */
-    bool wait( SGMutex& mutex, unsigned long ms );
+    bool wait(SGMutex& mutex, unsigned msec);
 
     /**
      * Wake one thread waiting on this condition variable.
@@ -294,50 +177,11 @@ public:
 
 private:
     // Disable copying.
-    SGPthreadCond(const SGPthreadCond& );
-    SGPthreadCond& operator=(const SGPthreadCond& );
+    SGWaitCondition(const SGWaitCondition&);
+    SGWaitCondition& operator=(const SGWaitCondition&);
 
-private:
-
-    /**
-     * The Pthread conditon variable.
-     */
-    pthread_cond_t cond;
+    struct PrivateData;
+    PrivateData* _privateData;
 };
-
-inline SGPthreadCond::SGPthreadCond()
-{
-    int status = pthread_cond_init( &cond, 0 );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline SGPthreadCond::~SGPthreadCond()
-{
-    int status = pthread_cond_destroy( &cond );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline void SGPthreadCond::signal()
-{
-    int status = pthread_cond_signal( &cond );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline void SGPthreadCond::broadcast()
-{
-    int status = pthread_cond_broadcast( &cond );
-    assert( status == 0 );
-    (void)status;
-}
-
-inline void SGPthreadCond::wait( SGMutex& mutex )
-{
-    int status = pthread_cond_wait( &cond, &mutex.mutex );
-    assert( status == 0 );
-    (void)status;
-}
 
 #endif /* SGTHREAD_HXX_INCLUDED */

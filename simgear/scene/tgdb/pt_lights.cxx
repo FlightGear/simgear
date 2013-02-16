@@ -60,6 +60,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGEnlargeBoundingBox.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 
 #include <simgear/scene/material/Effect.hxx>
@@ -158,7 +159,7 @@ gen_standard_light_sprite(void)
 namespace
 {
 typedef boost::tuple<float, osg::Vec3, float, float, bool> PointParams;
-typedef std::map<PointParams, ref_ptr<Effect> > EffectMap;
+typedef std::map<PointParams, observer_ptr<Effect> > EffectMap;
 
 EffectMap effectMap;
 
@@ -174,7 +175,11 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     ScopedLock<Mutex> lock(lightMutex);
     EffectMap::iterator eitr = effectMap.find(pointParams);
     if (eitr != effectMap.end())
-        return eitr->second.get();
+    {
+        ref_ptr<Effect> effect;
+        if (eitr->second.lock(effect))
+            return effect.release();
+    }
     // Basic stuff; no sprite or attenuation support
     Pass *basicPass = new Pass;
     basicPass->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
@@ -203,7 +208,7 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     spritePass->setTextureAttribute(0, attrFact->getStandardTexEnv());
     Pass *combinedPass = clone(spritePass, CopyOp::SHALLOW_COPY);
     combinedPass->setAttributeAndModes(point);
-    Effect* effect = new Effect;
+    ref_ptr<Effect> effect = new Effect;
     std::vector<std::string> parameterExtensions;
 
     if (SGSceneFeatures::instance()->getEnablePointSpriteLights())
@@ -231,8 +236,11 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     Technique* basicTniq = new Technique(true);
     basicTniq->passes.push_back(basicPass);
     effect->techniques.push_back(basicTniq);
-    effectMap.insert(std::make_pair(pointParams, effect));
-    return effect;
+    if (eitr == effectMap.end())
+        effectMap.insert(std::make_pair(pointParams, effect));
+    else
+        eitr->second = effect; // update existing, but empty observer
+    return effect.release();
 }
 
 
@@ -407,8 +415,21 @@ buildVasi(const SGDirectionalLightBin& lights, const SGVec3f& up,
     drawable->addLight(lights.getLight(3).position,
                        lights.getLight(3).normal, up, 2.5);
     return drawable;
-  }
-  else if (count == 12) {
+
+  } else if (count == 6) {
+    SGVasiDrawable* drawable = new SGVasiDrawable(red, white);
+
+    // probably vasi, first 3 are downwind bar (2.5 deg)
+    for (unsigned i = 0; i < 3; ++i)
+      drawable->addLight(lights.getLight(i).position,
+                         lights.getLight(i).normal, up, 2.5);
+    // last 3 are upwind bar (3.0 deg)
+    for (unsigned i = 3; i < 6; ++i)
+      drawable->addLight(lights.getLight(i).position,
+                         lights.getLight(i).normal, up, 3.0);
+    return drawable;
+
+  } else if (count == 12) {
     SGVasiDrawable* drawable = new SGVasiDrawable(red, white);
     
     // probably vasi, first 6 are downwind bar (2.5 deg)
@@ -419,8 +440,8 @@ buildVasi(const SGDirectionalLightBin& lights, const SGVec3f& up,
     for (unsigned i = 6; i < 12; ++i)
       drawable->addLight(lights.getLight(i).position,
                          lights.getLight(i).normal, up, 3.0);
-    
     return drawable;
+
   } else {
     // fail safe
     SG_LOG(SG_TERRAIN, SG_ALERT,
@@ -494,7 +515,7 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
                                   6.0, 10.0, false);
   // centerline lights
-  for (int i = lights.getNumLights() - 1; 2 <= i; --i) {
+  for (int i = lights.getNumLights(); i > 1; --i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
     egeode->addDrawable(getLightDrawable(lights.getLight(i)));
@@ -511,11 +532,70 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   sequence->addChild(group, flashTime);
 
   // add an extra empty group for a break
-  sequence->addChild(new osg::Group, 9 + 1e-1*sg_random());
+  sequence->addChild(new osg::Group, 2 + 1e-1*sg_random());
   sequence->setInterval(osg::Sequence::LOOP, 0, -1);
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
   sequence->setSync(true);
 
+  return sequence;
+}
+
+// Blinking hold short line lights
+osg::Node*
+SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
+{
+  if (lights.getNumLights() < 2)
+    return 0;
+
+  sg_srandom(unsigned(lights.getLight(0).position[0]));
+  float flashTime = 1 + 0.1 * sg_random();
+  osg::Sequence* sequence = new osg::Sequence;
+
+  // start with lights off
+  sequence->addChild(new osg::Group, flashTime);
+  // ...and increase the lights in steps
+  for (int i = 2; i < 7; i+=2) {
+      Effect* effect = getLightEffect(i, osg::Vec3(1, 0.001, 0.000002),
+                                      0.0f, i, true);
+      EffectGeode* egeode = new EffectGeode;
+      for (unsigned int j = 0; j < lights.getNumLights(); ++j) {
+          egeode->addDrawable(getLightDrawable(lights.getLight(j)));
+          egeode->setEffect(effect);
+      }
+      sequence->addChild(egeode, (i==6) ? flashTime : 0.1);
+  }
+
+  sequence->setInterval(osg::Sequence::SWING, 0, -1);
+  sequence->setDuration(1.0f, -1);
+  sequence->setMode(osg::Sequence::START);
+
+  return sequence;
+}
+
+// Alternating runway guard lights ("wig-wag")
+osg::Node*
+SGLightFactory::getGuard(const SGDirectionalLightBin& lights)
+{
+  if (lights.getNumLights() < 2)
+    return 0;
+
+  // generate a repeatable random seed
+  sg_srandom(unsigned(lights.getLight(0).position[0]));
+  float flashTime = 1.0f + 1*sg_random();
+  osg::Sequence* sequence = new osg::Sequence;
+  sequence->setDefaultTime(flashTime);
+  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.001, 0.000002),
+                                  0.0f, 8.0f, true);
+  for (unsigned int i = 0; i < lights.getNumLights(); ++i) {
+    EffectGeode* egeode = new EffectGeode;
+    egeode->setEffect(effect);
+    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    sequence->addChild(egeode, flashTime);
+  }
+  sequence->setInterval(osg::Sequence::LOOP, 0, -1);
+  sequence->setDuration(1.0f, -1);
+  sequence->setMode(osg::Sequence::START);
+  sequence->setSync(true);
   return sequence;
 }

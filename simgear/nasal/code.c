@@ -269,7 +269,7 @@ static void setupArgs(naContext ctx, struct Frame* f, naRef* args, int nargs)
     args += c->nOptArgs;
     if(c->needArgVector || nargs > 0) {
         naRef argv = naNewVector(ctx);
-        naVec_setsize(argv, nargs > 0 ? nargs : 0);
+        naVec_setsize(ctx, argv, nargs > 0 ? nargs : 0);
         for(i=0; i<nargs; i++)
             PTR(argv).vec->rec->array[i] = *args++;
         naiHash_newsym(PTR(f->locals).hash, &c->constants[c->restArgSym], &argv);
@@ -349,7 +349,7 @@ static naRef evalCat(naContext ctx, naRef l, naRef r)
     if(IS_VEC(l) && IS_VEC(r)) {
         int i, ls = naVec_size(l), rs = naVec_size(r);
         naRef v = naNewVector(ctx);
-        naVec_setsize(v, ls + rs);
+        naVec_setsize(ctx, v, ls + rs);
         for(i=0; i<ls; i+=1) naVec_set(v, i, naVec_get(l, i));
         for(i=0; i<rs; i+=1) naVec_set(v, i+ls, naVec_get(r, i));
         return v;
@@ -424,23 +424,37 @@ static void setSymbol(struct Frame* f, naRef sym, naRef val)
             naHash_set(f->locals, sym, val);
 }
 
+static const char* ghostGetMember(naContext ctx, naRef obj, naRef field, naRef* out)
+{
+    naGhostType* gtype = PTR(obj).ghost->gtype;
+    if (!gtype->get_member) return "ghost does not support member access";
+    return gtype->get_member(ctx, PTR(obj).ghost->ptr, field, out);
+}
+    
 // Funky API: returns null to indicate no member, an empty string to
 // indicate success, or a non-empty error message.  Works this way so
 // we can generate smart error messages without throwing them with a
 // longjmp -- this gets called under naMember_get() from C code.
-static const char* getMember_r(naRef obj, naRef field, naRef* out, int count)
+static const char* getMember_r(naContext ctx, naRef obj, naRef field, naRef* out, int count)
 {
     int i;
     naRef p;
     struct VecRec* pv;
     if(--count < 0) return "too many parents";
-    if(!IS_HASH(obj)) return "non-objects have no members";
-    if(naHash_get(obj, field, out)) return "";
-    if(!naHash_get(obj, globals->parentsRef, &p)) return 0;
+    if(!IS_HASH(obj) && !IS_GHOST(obj)) return "non-objects have no members";
+    
+    if (IS_GHOST(obj)) {
+        if (ghostGetMember(ctx, obj, field, out)) return "";
+        if(!ghostGetMember(ctx, obj, globals->parentsRef, &p)) return 0;
+    } else {
+        if(naHash_get(obj, field, out)) return "";
+        if(!naHash_get(obj, globals->parentsRef, &p)) return 0;
+    }
+    
     if(!IS_VEC(p)) return "object \"parents\" field not vector";
     pv = PTR(p).vec->rec;
     for(i=0; pv && i<pv->size; i++) {
-        const char* err = getMember_r(pv->array[i], field, out, count);
+        const char* err = getMember_r(ctx, pv->array[i], field, out, count);
         if(err) return err; /* either an error or success */
     }
     return 0;
@@ -449,14 +463,29 @@ static const char* getMember_r(naRef obj, naRef field, naRef* out, int count)
 static void getMember(naContext ctx, naRef obj, naRef fld,
                       naRef* result, int count)
 {
-    const char* err = getMember_r(obj, fld, result, count);
+    const char* err = getMember_r(ctx, obj, fld, result, count);
     if(!err)   naRuntimeError(ctx, "No such member: %s", naStr_data(fld));
     if(err[0]) naRuntimeError(ctx, err);
 }
 
-int naMember_get(naRef obj, naRef field, naRef* out)
+static void setMember(naContext ctx, naRef obj, naRef fld, naRef value)
 {
-    const char* err = getMember_r(obj, field, out, 64);
+    if (IS_GHOST(obj)) {
+        naGhostType* gtype = PTR(obj).ghost->gtype;
+        if (!gtype->set_member) ERR(ctx, "ghost does not support member access");
+        gtype->set_member(ctx, PTR(obj).ghost->ptr, fld, value);
+        ctx->opTop -= 2;
+        return;
+    }
+    
+    if(!IS_HASH(obj)) ERR(ctx, "non-objects have no members");
+    naHash_set(obj, fld, value);
+    ctx->opTop -= 2;
+}
+
+int naMember_get(naContext ctx, naRef obj, naRef field, naRef* out)
+{
+    const char* err = getMember_r(ctx, obj, field, out, 64);
     return err && !err[0];
 }
 
@@ -619,9 +648,7 @@ static naRef run(naContext ctx)
             getMember(ctx, STK(1), CONSTARG(), &STK(1), 64);
             break;
         case OP_SETMEMBER:
-            if(!IS_HASH(STK(2))) ERR(ctx, "non-objects have no members");
-            naHash_set(STK(2), STK(1), STK(3));
-            ctx->opTop -= 2;
+            setMember(ctx, STK(2), STK(1), STK(3));
             break;
         case OP_INSERT:
             containerSet(ctx, STK(2), STK(1), STK(3));

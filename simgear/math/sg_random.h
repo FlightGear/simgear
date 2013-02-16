@@ -40,12 +40,19 @@ extern "C" {
  * Structure to hold MT algorithm state to easily allow independant
  * sets of random numbers with different seeds.
  */
-struct {unsigned int array[MT_N]; int index; } typedef mt;
+typedef struct {unsigned int array[MT_N]; int index; } mt;
 
 /**
  * Initialize a new MT state with a given seed.
  */
 void mt_init(mt *mt, unsigned int seed);
+
+/**
+ * Initialize a new MT state with a seed that only
+ * changes every 10 minutes.  Used to synchronize
+ * multi-process deployments.
+ */
+void mt_init_time_10(mt *mt);
 
 /**
  * Generate a new 32-bit random number based on the given MT state.

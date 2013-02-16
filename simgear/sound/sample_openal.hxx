@@ -30,20 +30,19 @@
 #ifndef _SG_SAMPLE_HXX
 #define _SG_SAMPLE_HXX 1
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <string>
-#include <cstdlib>
 
 #include <simgear/compiler.h>
-#include <simgear/debug/logstream.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
-
+     
 class SGPath;
+
+#ifndef AL_FORMAT_MONO8
+     #define AL_FORMAT_MONO8    0x1100
+#endif
+ 
 
 /**
  * manages everything we need to know for an individual audio sample
@@ -69,7 +68,7 @@ public:
      * Constructor.
      * @param data Pointer to a memory buffer containing this audio sample data
        The application may free the data by calling free_data(), otherwise it
-       will be resident untill the class is destroyed. This pointer will be
+       will be resident until the class is destroyed. This pointer will be
        set to NULL after calling this function.
      * @param len Byte length of array
      * @param freq Frequency of the provided data (bytes per second)
@@ -82,10 +81,10 @@ public:
     /**
      * Destructor
      */
-    ~SGSoundSample ();
+    virtual ~SGSoundSample ();
 
     /**
-     * Detect wheter this audio sample holds the information of a sound file.
+     * Detect whether this audio sample holds the information of a sound file.
      * @return Return true if this audio sample is to be constructed from a file.
      */
     inline bool is_file() const { return _is_file; }
@@ -103,7 +102,7 @@ public:
     }
 
     /**
-     * Test if static dataa of audio sample configuration has changed.
+     * Test if static data of audio sample configuration has changed.
      * Calling this function will reset the flag so calling it a second
      * time in a row will return false.
      * @return Return true is the static data has changed in the mean time.
@@ -118,7 +117,7 @@ public:
      * @param _loop Define whether this sound should be played in a loop.
      */
     void play( bool loop = false ) {
-        _playing = true; _loop = loop; _changed = true;
+        _playing = true; _loop = loop; _changed = true; _static_changed = true;
     }
 
     /**
@@ -152,6 +151,22 @@ public:
      */
     inline bool is_playing() { return _playing; }
 
+
+    /**
+     * Set this sample to out-of-range (or not) and
+     * Schedule this audio sample to stop (or start) playing.
+     */
+    inline void set_out_of_range(bool oor = true) {
+        _out_of_range = oor; _playing = (!oor && _loop); _changed = true;
+    }
+
+    /**
+     * Test if this sample to out-of-range or not.
+     */
+    inline bool test_out_of_range() {
+        return _out_of_range;
+    }
+
     /**
      * Set the data associated with this audio sample
      * @param data Pointer to a memory block containg this audio sample data.
@@ -173,15 +188,13 @@ public:
     /**
      * Free the data associated with this audio sample
      */
-    void free_data() {
-        if ( _data != NULL ) free( _data ); _data = NULL;
-    }
+    void free_data();
 
     /**
      * Set the source id of this source
      * @param sid OpenAL source-id
      */
-    virtual inline void set_source(unsigned int sid) {
+    virtual void set_source(unsigned int sid) {
         _source = sid; _valid_source = true; _changed = true;
     }
 
@@ -189,18 +202,18 @@ public:
      * Get the OpenAL source id of this source
      * @return OpenAL source-id
      */
-    virtual inline unsigned int get_source() { return _source; }
+    virtual unsigned int get_source() { return _source; }
 
     /**
      * Test if the source-id of this audio sample may be passed to OpenAL.
      * @return true if the source-id is valid
      */
-    virtual inline bool is_valid_source() const { return _valid_source; }
+    virtual bool is_valid_source() const { return _valid_source; }
 
     /**
      * Set the source-id of this audio sample to invalid.
      */
-    virtual inline void no_valid_source() { _valid_source = false; }
+    virtual void no_valid_source() { _valid_source = false; }
 
     /**
      * Set the OpenAL buffer-id of this source
@@ -449,6 +462,16 @@ public:
 
     void update_pos_and_orientation();
 
+protected:
+    int _format;
+    size_t _size;
+    int _freq;
+    bool _changed;
+    
+    // Sources are points emitting sound.
+    bool _valid_source;
+    unsigned int _source;
+
 private:
 
     // Position of the source sound.
@@ -468,17 +491,10 @@ private:
     unsigned char* _data;
 
     // configuration values
-    int _format;
-    size_t _size;
-    int _freq;
-
+    
     // Buffers hold sound data.
     bool _valid_buffer;
     unsigned int _buffer;
-
-    // Sources are points emitting sound.
-    bool _valid_source;
-    unsigned int _source;
 
     // The orientation of this sound (direction and cut-off angles)
     float _inner_angle;
@@ -493,11 +509,11 @@ private:
     bool _loop;
 
     bool _playing;
-    bool _changed;
     bool _static_changed;
+    bool _out_of_range;
     bool _is_file;
 
-    string random_string();
+    std::string random_string();
 };
 
 

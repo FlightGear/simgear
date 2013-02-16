@@ -15,173 +15,107 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include "HLADataElement.hxx"
 
 #include <simgear/debug/logstream.hxx>
 
+#include "HLADataElementVisitor.hxx"
+
 namespace simgear {
-
-HLADataElement::PathElement::Data::~Data()
-{
-}
-
-const HLADataElement::PathElement::FieldData*
-HLADataElement::PathElement::Data::toFieldData() const
-{
-    return 0;
-}
-
-const HLADataElement::PathElement::IndexData*
-HLADataElement::PathElement::Data::toIndexData() const
-{
-    return 0;
-}
-
-HLADataElement::PathElement::FieldData::FieldData(const std::string& name) :
-    _name(name)
-{
-}
-
-HLADataElement::PathElement::FieldData::~FieldData()
-{
-}
-
-const HLADataElement::PathElement::FieldData*
-HLADataElement::PathElement::FieldData::toFieldData() const
-{
-    return this;
-}
-
-bool
-HLADataElement::PathElement::FieldData::less(const Data* data) const
-{
-    const FieldData* fieldData = data->toFieldData();
-    // IndexData is allways smaller than FieldData
-    if (!fieldData)
-        return false;
-    return _name < fieldData->_name;
-}
-
-bool
-HLADataElement::PathElement::FieldData::equal(const Data* data) const
-{
-    const FieldData* fieldData = data->toFieldData();
-    // IndexData is allways smaller than FieldData
-    if (!fieldData)
-        return false;
-    return _name == fieldData->_name;
-}
-
-void
-HLADataElement::PathElement::FieldData::append(std::string& s) const
-{
-    s.append(1, std::string::value_type('.'));
-    s.append(_name);
-}
-
-HLADataElement::PathElement::IndexData::IndexData(unsigned index) :
-    _index(index)
-{
-}
-
-HLADataElement::PathElement::IndexData::~IndexData()
-{
-}
-
-const HLADataElement::PathElement::IndexData*
-HLADataElement::PathElement::IndexData::toIndexData() const
-{
-    return this;
-}
-
-bool
-HLADataElement::PathElement::IndexData::less(const Data* data) const
-{
-    const IndexData* indexData = data->toIndexData();
-    // IndexData is allways smaller than FieldData
-    if (!indexData)
-        return true;
-    return _index < indexData->_index;
-}
-
-bool
-HLADataElement::PathElement::IndexData::equal(const Data* data) const
-{
-    const IndexData* indexData = data->toIndexData();
-    // IndexData is allways smaller than FieldData
-    if (!indexData)
-        return false;
-    return _index == indexData->_index;
-}
-
-void
-HLADataElement::PathElement::IndexData::append(std::string& s) const
-{
-    s.append(1, std::string::value_type('['));
-    unsigned value = _index;
-    do {
-        s.append(1, std::string::value_type('0' + value % 10));
-    } while (value /= 10);
-    s.append(1, std::string::value_type(']'));
-}
 
 HLADataElement::~HLADataElement()
 {
 }
 
-std::string
-HLADataElement::toString(const Path& path)
+bool
+HLADataElement::setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement)
 {
-    std::string s;
-    for (Path::const_iterator i = path.begin(); i != path.end(); ++i)
-        i->append(s);
-    return s;
+    return false;
 }
 
-HLADataElement::AttributePathPair
-HLADataElement::toAttributePathPair(const std::string& s)
+HLADataElement*
+HLADataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end)
 {
-    Path path;
-    // Skip the initial attribute name if given
-    std::string::size_type i = s.find_first_of("[.");
-    std::string attribute = s.substr(0, i);
-    while (i < s.size()) {
-        if (s[i] == '[') {
-            ++i;
-            unsigned index = 0;
-            while (i < s.size()) {
-                if (s[i] == ']')
-                    break;
-                unsigned v = s[i] - '0';
-                // Error, no number
-                if (10 <= v) {
-                    SG_LOG(SG_NETWORK, SG_WARN, "HLADataElement: invalid character in array subscript for \""
-                           << s << "\" at \"" << attribute << toString(path) << "\"!");
-                    return AttributePathPair();
-                }
-                index *= 10;
-                index += v;
-                ++i;
-            }
-            path.push_back(index);
-            ++i;
-            continue;
-        }
-        if (s[i] == '.') {
-            // Error, . cannot be last
-            if (s.size() <= ++i) {
-                SG_LOG(SG_NETWORK, SG_WARN, "HLADataElement: invalid terminating '.' for \""
-                       << s << "\"!");
-                return AttributePathPair();
-            }
-            std::string::size_type e = s.find_first_of("[.", i);
-            path.push_back(s.substr(i, e - i));
-            i = e;
-            continue;
-        }
-    }
+    if (begin != end)
+        return 0;
+    return this;
+}
 
-    return AttributePathPair(attribute, path);
+const HLADataElement*
+HLADataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const
+{
+    if (begin != end)
+        return 0;
+    return this;
+}
+
+void
+HLADataElement::setTimeStamp(const SGTimeStamp& timeStamp)
+{
+    if (!_stamp.valid())
+        return;
+    _stamp->setTimeStamp(timeStamp);
+}
+
+void
+HLADataElement::setTimeStampValid(bool timeStampValid)
+{
+    if (!_stamp.valid())
+        return;
+    _stamp->setTimeStampValid(timeStampValid);
+}
+
+double
+HLADataElement::getTimeDifference(const SGTimeStamp& timeStamp) const
+{
+    if (!_stamp.valid())
+        return 0;
+    if (!_stamp->getTimeStampValid())
+        return 0;
+    return (timeStamp - _stamp->getTimeStamp()).toSecs();
+}
+
+void
+HLADataElement::createStamp()
+{
+    _setStamp(new Stamp);
+    setDirty(true);
+}
+
+void
+HLADataElement::attachStamp(HLADataElement& dataElement)
+{
+    _setStamp(dataElement._getStamp());
+}
+
+void
+HLADataElement::clearStamp()
+{
+    _setStamp(0);
+}
+
+void
+HLADataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLADataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
+}
+
+void
+HLADataElement::_setStamp(HLADataElement::Stamp* stamp)
+{
+    _stamp = stamp;
 }
 
 }

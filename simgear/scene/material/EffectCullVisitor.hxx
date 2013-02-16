@@ -19,21 +19,35 @@
 
 #include <osgUtil/CullVisitor>
 
+#include <map>
+
 namespace osg
 {
 class Geode;
+class Texture2D;
 }
 
 namespace simgear
 {
+class EffectGeode;
 class EffectCullVisitor : public osgUtil::CullVisitor
 {
 public:
-    EffectCullVisitor();
+    EffectCullVisitor(bool collectLights = false);
     EffectCullVisitor(const EffectCullVisitor&);
     virtual osgUtil::CullVisitor* clone() const;
     using osgUtil::CullVisitor::apply;
     virtual void apply(osg::Geode& node);
+    virtual void reset();
+
+    void clearBufferList();
+    void addBuffer(std::string b, osg::Texture2D* tex);
+    osg::Texture2D* getBuffer(std::string b);
+
+private:
+    std::map<std::string,osg::ref_ptr<osg::Texture2D> > _bufferList;
+    std::vector<osg::ref_ptr<EffectGeode> > _lightList;
+    bool _collectLights;
 };
 }
 #endif

@@ -26,10 +26,6 @@
 #undef max
 #endif
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Quat>
-#endif
-
 /// Quaternion Class
 template<typename T>
 class SGQuat {
@@ -230,7 +226,7 @@ public:
     T absv1 = fabs(v(0));
     T absv2 = fabs(v(1));
     T absv3 = fabs(v(2));
-    
+
     SGVec3<T> axis;
     if (absv2 < absv1 && absv3 < absv1) {
       T quot = v(1)/v(0);
@@ -279,7 +275,7 @@ public:
       xRad = 0;
     else
       xRad = atan2(num, den);
-    
+
     T tmp = 2*(x()*z() - w()*y());
     if (tmp <= -1)
       yRad = T(0.5)*SGMisc<T>::pi();
@@ -287,8 +283,8 @@ public:
       yRad = -T(0.5)*SGMisc<T>::pi();
     else
       yRad = -asin(tmp);
-   
-    num = 2*(x()*y() + w()*z()); 
+
+    num = 2*(x()*y() + w()*z());
     den = sqrQW + sqrQX - sqrQY - sqrQZ;
     if (fabs(den) <= SGLimits<T>::min() &&
         fabs(num) <= SGLimits<T>::min())
@@ -323,7 +319,7 @@ public:
       T sAng = sin(angle);
       if (fabs(sAng) <= SGLimits<T>::min())
         axis = SGVec3<T>(1, 0, 0);
-      else 
+      else
         axis = (rNrm/sAng)*imag(*this);
       angle *= 2;
     }
@@ -449,8 +445,44 @@ public:
     deriv.x() = T(0.5)*( w()*angVel(0) - z()*angVel(1) + y()*angVel(2));
     deriv.y() = T(0.5)*( z()*angVel(0) + w()*angVel(1) - x()*angVel(2));
     deriv.z() = T(0.5)*(-y()*angVel(0) + x()*angVel(1) + w()*angVel(2));
-    
+
     return deriv;
+  }
+
+  /// Return the angular velocity w that makes q0 translate to q1 using
+  /// an explicit euler step with stepsize h.
+  /// That is, look for an w where
+  /// q1 = normalize(q0 + h*q0.derivative(w))
+  static SGVec3<T>
+  forwardDifferenceVelocity(const SGQuat& q0, const SGQuat& q1, const T& h)
+  {
+    // Let D_q0*w = q0.derivative(w), D_q0 the above 4x3 matrix.
+    // Then D_q0^t*D_q0 = 0.25*Id and D_q0*q0 = 0.
+    // Let lambda be a nonzero normailzation factor, then
+    //  q1 = normalize(q0 + h*q0.derivative(w))
+    // can be rewritten
+    //  lambda*q1 = q0 + h*D_q0*w.
+    // Multiply left by the transpose D_q0^t and reorder gives
+    //  4*lambda/h*D_q0^t*q1 = w.
+    // Now compute lambda by substitution of w into the original
+    // equation
+    //  lambda*q1 = q0 + 4*lambda*D_q0*D_q0^t*q1,
+    // multiply by q1^t from the left
+    //  lambda*<q1,q1> = <q0,q1> + 4*lambda*<D_q0^t*q1,D_q0^t*q1>
+    // and solving for lambda gives
+    //  lambda = <q0,q1>/(1 - 4*<D_q0^t*q1,D_q0^t*q1>).
+
+    // The transpose of the derivative matrix
+    // the 0.5 factor is handled below
+    // also note that the initializer uses x, y, z, w instead of w, x, y, z
+    SGQuat d0(q0.w(), q0.z(), -q0.y(), -q0.x());
+    SGQuat d1(-q0.z(), q0.w(), q0.x(), -q0.y());
+    SGQuat d2(q0.y(), -q0.x(), q0.w(), -q0.z());
+    // 2*D_q0^t*q1
+    SGVec3<T> Dq(dot(d0, q1), dot(d1, q1), dot(d2, q1));
+    // Like above, but take into account that Dq = 2*D_q0^t*q1
+    T lambda = dot(q0, q1)/(T(1) - dot(Dq, Dq));
+    return (2*lambda/h)*Dq;
   }
 
 private:
@@ -478,7 +510,7 @@ private:
 
     // Now our assumption of angles <= 90 deg comes in play.
     // For that reason, we know that cos05ang is not zero.
-    // It is even more, we can see from the above formula that 
+    // It is even more, we can see from the above formula that
     // sqrt(0.5) < cos05ang.
 
 
@@ -743,17 +775,5 @@ inline
 SGQuatd
 toQuatd(const SGQuatf& v)
 { return SGQuatd(v(0), v(1), v(2), v(3)); }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-inline
-SGQuatd
-toSG(const osg::Quat& q)
-{ return SGQuatd(q[0], q[1], q[2], q[3]); }
-
-inline
-osg::Quat
-toOsg(const SGQuatd& q)
-{ return osg::Quat(q[0], q[1], q[2], q[3]); }
-#endif
 
 #endif

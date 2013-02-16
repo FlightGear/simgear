@@ -30,7 +30,7 @@ public:
  
     virtual bool acceptsExtension(const std::string& /*extension*/) const;
     virtual ReadResult readNode(const std::string& fileName,
-                                const osgDB::ReaderWriter::Options* options)
+                                const osgDB::Options* options)
         const;
 };
 

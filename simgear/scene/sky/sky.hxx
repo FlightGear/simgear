@@ -34,6 +34,7 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
@@ -53,14 +54,15 @@
 #include <simgear/scene/sky/oursun.hxx>
 #include <simgear/scene/sky/stars.hxx>
 
-using std::vector;
-
+namespace simgear {
+class SGReaderWriterOptions;
+}
 
 typedef struct {
-        SGVec3d pos;
-        SGGeod pos_geod;
-        SGQuatd ori;
-        double spin;
+    SGVec3d pos;
+    SGGeod pos_geod;
+    SGQuatd ori;
+    double spin;
 	double gst;
 	double sun_dist;
 	double moon_dist;
@@ -69,8 +71,8 @@ typedef struct {
 
 typedef struct {
 	SGVec3f sky_color;
-        SGVec3f adj_sky_color;
-        SGVec3f fog_color;
+    SGVec3f adj_sky_color;
+    SGVec3f fog_color;
 	SGVec3f cloud_color;
 	double sun_angle, moon_angle;
 } SGSkyColor;
@@ -232,6 +234,7 @@ private:
     // visibility
     float visibility;
     float effective_visibility;
+    float minimum_sky_visibility;
 
     int in_cloud;
     int cur_layer_pos;
@@ -248,6 +251,9 @@ private:
 
     // 3D cloud density
     double clouds_3d_density;
+    
+    // RNG seed
+    mt seed;
 
 public:
 
@@ -274,7 +280,8 @@ public:
      */
     void build( double h_radius_m, double v_radius_m,
                 double sun_size, double moon_size,
-                const SGEphemeris& eph, SGPropertyNode *property_tree_node );
+                const SGEphemeris& eph, SGPropertyNode *property_tree_node,
+                simgear::SGReaderWriterOptions* options);
 
     /**
      * Repaint the sky components based on current value of sun_angle,
@@ -425,22 +432,66 @@ public:
     }
 
     /** Get 3D cloud density */
-    virtual double get_3dCloudDensity() const;
+    double get_3dCloudDensity() const;
 
     /** Set 3D cloud density 
      * @param density 3D cloud density
      */
-    virtual void set_3dCloudDensity(double density);
+    void set_3dCloudDensity(double density);
 
     /** Get 3D cloud visibility range*/
-    virtual float get_3dCloudVisRange() const;
+    float get_3dCloudVisRange() const;
 
     /** Set 3D cloud visibility range
      * @param density 3D cloud visibility range
      */
-    virtual void set_3dCloudVisRange(float vis);
+    void set_3dCloudVisRange(float vis);
 
+    /** Get 3D cloud impostor distance*/
+    float get_3dCloudImpostorDistance() const;
+
+    /** Set 3D cloud impostor distance
+     * @param density 3D cloud impostor distance
+     */
+    void set_3dCloudImpostorDistance(float vis);
+
+    /** Get 3D cloud LoD1 Range*/
+    float get_3dCloudLoD1Range() const;
+
+    /** Set 3D cloud LoD1 Range
+     * @param vis LoD1 Range
+     */
+    void set_3dCloudLoD1Range(float vis);
+
+    /** Get 3D cloud LoD2 Range*/
+    float get_3dCloudLoD2Range() const;
+
+    /** Set 3D cloud LoD2 Range
+     * @param vis LoD2 Range
+     */
+    void set_3dCloudLoD2Range(float vis);
+
+    /** Get 3D cloud impostor usage */
+    bool get_3dCloudUseImpostors() const;
+
+    /** Set 3D cloud impostor usage
+     * @param wrap whether use impostors for 3D clouds
+     */
+    void set_3dCloudUseImpostors(bool imp);
+
+    /** Get 3D cloud wrapping */
+    bool get_3dCloudWrap() const;
+
+    /** Set 3D cloud wrapping
+     * @param wrap whether to wrap 3D clouds
+     */
+    void set_3dCloudWrap(bool wrap);
+
+
+    /** Get minimum sky visibility */
+    float get_minimum_sky_visibility() const;
+
+    /** Set minimum sky visibility */
+    void set_minimum_sky_visibility( float value );
 };
-
-
 #endif // _SG_SKY_HXX

@@ -31,10 +31,9 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 
-#include <simgear/math/SGMath.hxx>
 #include <simgear/props/AtomicChangeListener.hxx>
 #include <simgear/props/props.hxx>
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/structure/Singleton.hxx>
@@ -48,7 +47,7 @@ namespace simgear
 {
 class Effect;
 class Pass;
-class SGReaderWriterXMLOptions;
+class SGReaderWriterOptions;
 
 /**
  * Builder that returns an object, probably an OSG object.
@@ -58,16 +57,16 @@ class EffectBuilder : public SGReferenced
 {
 public:
     virtual ~EffectBuilder() {}
-    virtual T* build(Effect* effect, const SGPropertyNode*,
-                     const SGReaderWriterXMLOptions* options) = 0;
-    static T* buildFromType(Effect* effect, const std::string& type,
+    virtual T* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                     const SGReaderWriterOptions* options) = 0;
+    static T* buildFromType(Effect* effect, Pass* pass, const std::string& type,
                             const SGPropertyNode*props,
-                            const SGReaderWriterXMLOptions* options)
+                            const SGReaderWriterOptions* options)
     {
         BuilderMap& builderMap = getMap();
         typename BuilderMap::iterator iter = builderMap.find(type);
         if (iter != builderMap.end())
-            return iter->second->build(effect, props, options);
+            return iter->second->build(effect, pass, props, options);
         else
             return 0;
     }
@@ -168,7 +167,7 @@ EffectPropertyMap<T>::EffectPropertyMap(const EffectNameValue<T> (&attrs)[N])
 template<typename T>
 struct SimplePropertyMap
 {
-    typedef std::map<string, T> map_type;
+    typedef std::map<std::string, T> map_type;
     map_type _map;
     template<int N>
     SimplePropertyMap(const EffectNameValue<T> (&attrs)[N])
@@ -196,10 +195,10 @@ void findAttr(const effect::EffectPropertyMap<T>& pMap,
 {
     using namespace effect;
     typename EffectPropertyMap<T>::BMap::iterator itr
-        = pMap._map.get<from>().find(name);
+        = pMap._map.template get<from>().find(name);
     if (itr == pMap._map.end()) {
-        throw effect::BuilderException(string("findAttr: could not find attribute ")
-                               + string(name));
+        throw effect::BuilderException(std::string("findAttr: could not find attribute ")
+                                       + std::string(name));
     } else {
         result = itr->second;
     }
@@ -234,7 +233,7 @@ const T* findAttr(const effect::EffectPropertyMap<T>& pMap,
 {
     using namespace effect;
     typename EffectPropertyMap<T>::BMap::iterator itr
-        = pMap._map.get<from>().find(name);
+        = pMap._map.template get<from>().find(name);
     if (itr == pMap._map.end())
         return 0;
     else 
@@ -268,8 +267,8 @@ std::string findName(const effect::EffectPropertyMap<T>& pMap, T value)
     using namespace effect;
     std::string result;
     typename EffectPropertyMap<T>::BMap::template index_iterator<to>::type itr
-        = pMap._map.get<to>().find(value);
-    if (itr != pMap._map.get<to>().end())
+        = pMap._map.template get<to>().find(value);
+    if (itr != pMap._map.template get<to>().end())
         result = itr->first;
     return result;
 }
@@ -302,12 +301,12 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
  * mentioned node name.
  */
 std::string getGlobalProperty(const SGPropertyNode* prop,
-                              const SGReaderWriterXMLOptions *);
+                              const SGReaderWriterOptions *);
 
 template<typename NameItr>
 std::vector<std::string>
 getVectorProperties(const SGPropertyNode* prop,
-                    const SGReaderWriterXMLOptions *options, size_t vecSize,
+                    const SGReaderWriterOptions *options, size_t vecSize,
                     NameItr defaultNames)
 {
     using namespace std;
@@ -318,7 +317,7 @@ getVectorProperties(const SGPropertyNode* prop,
     if (useProps.size() == 1) {
         string parentName = useProps[0]->getStringValue();
         if (parentName.size() == 0 || parentName[0] != '/')
-            parentName = options->getPropRoot()->getPath() + "/" + parentName;
+            parentName = options->getPropertyNode()->getPath() + "/" + parentName;
         if (parentName[parentName.size() - 1] != '/')
             parentName.append("/");
         NameItr itr = defaultNames;
@@ -350,11 +349,14 @@ protected:
     struct PassAttrMapSingleton : public simgear::Singleton<PassAttrMapSingleton>
     {
         PassAttrMap passAttrMap;
+      
     };
 public:
+    virtual ~PassAttributeBuilder(); // anchor into the compilation unit.
+  
     virtual void buildAttribute(Effect* effect, Pass* pass,
                                 const SGPropertyNode* prop,
-                                const SGReaderWriterXMLOptions* options)
+                                const SGReaderWriterOptions* options)
     = 0;
     static PassAttributeBuilder* find(const std::string& str)
     {
@@ -371,7 +373,7 @@ public:
 template<typename T>
 struct InstallAttributeBuilder
 {
-    InstallAttributeBuilder(const string& name)
+    InstallAttributeBuilder(const std::string& name)
     {
         PassAttributeBuilder::PassAttrMapSingleton::instance()
             ->passAttrMap.insert(make_pair(name, new T));
@@ -607,15 +609,15 @@ inline void setDynamicVariance(osg::Object* obj)
 template<typename OSGParamType, typename ObjType, typename F>
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
-                   const F& setter, const SGReaderWriterXMLOptions* options)
+                   const F& setter, const SGReaderWriterOptions* options)
 {
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
-    setDynamicVariance(obj);
     if (valProp->nChildren() == 0) {
         setter(obj, valProp->getValue<OSGParamType>());
     } else {
+        setDynamicVariance(obj);
         std::string propName = getGlobalProperty(valProp, options);
         ScalarChangeListener<OSGParamType, ObjType, F>* listener
             = new ScalarChangeListener<OSGParamType, ObjType, F>(obj, setter,
@@ -628,7 +630,7 @@ template<typename OSGParamType, typename ObjType, typename SetterReturn>
 inline void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    SetterReturn (ObjType::*setter)(const OSGParamType),
-                   const SGReaderWriterXMLOptions* options)
+                   const SGReaderWriterOptions* options)
 {
     initFromParameters<OSGParamType>(effect, prop, obj,
                                      boost::bind(setter, _1, _2), options);
@@ -658,17 +660,17 @@ template<typename OSGParamType, typename ObjType, typename NameItrType,
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    const F& setter,
-                   NameItrType nameItr, const SGReaderWriterXMLOptions* options)
+                   NameItrType nameItr, const SGReaderWriterOptions* options)
 {
     typedef typename Bridge<OSGParamType>::sg_type sg_type;
     const int numComponents = props::NumComponents<sg_type>::num_components;
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
-    setDynamicVariance(obj);
     if (valProp->nChildren() == 0) { // Has <use>?
         setter(obj, Bridge<OSGParamType>::get(valProp->getValue<sg_type>()));
     } else {
+        setDynamicVariance(obj);
         std::vector<std::string> paramNames
             = getVectorProperties(valProp, options,numComponents, nameItr);
         if (paramNames.empty())
@@ -687,7 +689,7 @@ template<typename OSGParamType, typename ObjType, typename NameItrType,
 inline void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    SetterReturn (ObjType::*setter)(const OSGParamType&),
-                   NameItrType nameItr, const SGReaderWriterXMLOptions* options)
+                   NameItrType nameItr, const SGReaderWriterOptions* options)
 {
     initFromParameters<OSGParamType>(effect, prop, obj,
                                      boost::bind(setter, _1, _2), nameItr,

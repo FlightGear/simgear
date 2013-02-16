@@ -10,7 +10,8 @@
 #include <simgear/misc/sg_path.hxx>
 
 #include "soundmgr_openal.hxx"
-
+#include "sample_group.hxx"
+#include "sample_openal.hxx"
 
 int main( int argc, char *argv[] ) {
     SGSampleGroup *sgr;
@@ -42,7 +43,7 @@ int main( int argc, char *argv[] ) {
 
     printf("source at lat,lon = (10,-10), listener at (9.99,-9.99)\n");
     pos = SGGeod::fromDeg(9.99,-9.99);
-    sample1->set_position( SGVec3d::fromGeod(SGGeod::fromDeg(10,-10)) );
+    sgr->set_position_geod( SGGeod::fromDeg(10,-10) );
     smgr->set_position( SGVec3d::fromGeod(pos), pos );
     sample1->play_looped();
     smgr->update(1.0);

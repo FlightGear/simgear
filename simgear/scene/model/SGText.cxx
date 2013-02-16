@@ -84,7 +84,7 @@ void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
 }
 
 osg::Node * SGText::appendText(const SGPropertyNode* configNode, 
-  SGPropertyNode* modelRoot, const osgDB::ReaderWriter::Options* options)
+  SGPropertyNode* modelRoot, const osgDB::Options* options)
 {
   SGConstPropertyNode_ptr p;
 

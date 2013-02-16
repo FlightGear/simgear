@@ -1,6 +1,6 @@
 // particles.cxx - classes to manage particles
-// started in 2008 by Tiago Gusmão, using animation.hxx as reference
-// Copyright (C) 2008 Tiago Gusmão
+// started in 2008 by Tiago Gusmï¿½o, using animation.hxx as reference
+// Copyright (C) 2008 Tiago Gusmï¿½o
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -21,11 +21,10 @@
 #  include <simgear_config.h>
 #endif
 
-#include <simgear/math/SGMath.hxx>
-#include <simgear/math/SGGeod.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/structure/OSGVersion.hxx>
 
 #include <osgParticle/SmokeTrailEffect>
@@ -80,7 +79,7 @@ SGConstPropertyNode_ptr GlobalParticleCallback::enabledNode = 0;
 
 osg::ref_ptr<osg::Group> Particles::commonRoot;
 osg::ref_ptr<osgParticle::ParticleSystemUpdater> Particles::psu = new osgParticle::ParticleSystemUpdater;
-osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;;
+osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;
 osg::Vec3 Particles::_wind;
 bool Particles::_frozen = false;
 
@@ -115,6 +114,7 @@ osg::Group* Particles::getCommonRoot()
         commonGeode.get()->setName("common particle system geode");
         commonRoot.get()->addChild(commonGeode.get());
         commonRoot.get()->addChild(psu.get());
+        commonRoot->setNodeMask( ~simgear::MODELLIGHT_BIT );
     }
     return commonRoot.get();
 }
@@ -135,7 +135,7 @@ void transformParticles(osgParticle::ParticleSystem* particleSys,
 
 osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                                           SGPropertyNode* modelRoot,
-                                          const osgDB::ReaderWriter::Options*
+                                          const osgDB::Options*
                                           options)
 {
     SG_LOG(SG_GENERAL, SG_DEBUG, "Setting up a particle system!\n");
@@ -558,7 +558,7 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
                 // Make new frame for particle system, coincident with
                 // the emitter frame, but oriented with local Z.
                 SGGeod geod = SGGeod::fromCart(toSG(emitOrigin));
-                Matrix newParticleMat = geod.makeZUpFrame();
+                Matrix newParticleMat = makeZUpFrame(geod);
                 Matrix changeParticleFrame
                     = particleMat * Matrix::inverse(newParticleMat);
                 particleFrame->setMatrix(newParticleMat);

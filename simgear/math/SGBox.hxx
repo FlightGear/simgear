@@ -97,7 +97,7 @@ public:
     return (_max[0] - _min[0])*(_max[1] - _min[1])*(_max[2] - _min[2]);
   }
 
-  const bool empty() const
+  bool empty() const
   { return !valid(); }
 
   bool valid() const

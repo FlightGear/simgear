@@ -32,18 +32,18 @@
 #include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
 #include <osgDB/FileUtils>
+#include <osgDB/ReadFile>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
-#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/OSGUtils.hxx>
-
-#include "Noise.hxx"
+#include <simgear/props/vectorPropTemplates.hxx>
 
 namespace simgear
 {
@@ -54,16 +54,16 @@ using namespace effect;
 
 TexEnvCombine* buildTexEnvCombine(Effect* effect,
                                   const SGPropertyNode* envProp,
-                                  const SGReaderWriterXMLOptions* options);
+                                  const SGReaderWriterOptions* options);
 TexGen* buildTexGen(Effect* Effect, const SGPropertyNode* tgenProp);
 
 // Hack to force inclusion of TextureBuilder.cxx in library
-osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
+osg::Texture* TextureBuilder::buildFromType(Effect* effect, Pass* pass, const string& type,
                                             const SGPropertyNode*props,
-                                            const SGReaderWriterXMLOptions*
+                                            const SGReaderWriterOptions*
                                             options)
 {
-    return EffectBuilder<Texture>::buildFromType(effect, type, props, options);
+    return EffectBuilder<Texture>::buildFromType(effect, pass, type, props, options);
 }
 
 typedef boost::tuple<string, Texture::FilterMode, Texture::FilterMode,
@@ -102,7 +102,7 @@ TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
 
 void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                         const SGPropertyNode* prop,
-                                        const SGReaderWriterXMLOptions* options)
+                                        const SGReaderWriterOptions* options)
 {
     if (!isAttributeActive(effect, prop))
         return;
@@ -129,11 +129,11 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
         type = pType->getStringValue();
     Texture* texture = 0;
     try {
-        texture = TextureBuilder::buildFromType(effect, type, prop,
+        texture = TextureBuilder::buildFromType(effect, pass, type, prop,
                                                 options);
     }
     catch (BuilderException& e) {
-        SG_LOG(SG_INPUT, SG_ALERT, e.getFormattedMessage() << ", "
+        SG_LOG(SG_INPUT, SG_DEBUG, e.getFormattedMessage() << ", "
             << "maybe the reader did not set the filename attribute, "
             << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath() );
         texture = StateAttributeFactory::instance()->getWhiteTexture();
@@ -183,7 +183,7 @@ EffectNameValue<Texture::WrapMode> wrapModesInit[] =
 EffectPropertyMap<Texture::WrapMode> wrapModes(wrapModesInit);
 
 TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
-                      const SGReaderWriterXMLOptions* options,
+                      const SGReaderWriterOptions* options,
                       const string& texType)
 {
     Texture::FilterMode minFilter = Texture::LINEAR_MIPMAP_LINEAR;
@@ -234,16 +234,19 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
 }
 
 void setAttrs(const TexTuple& attrs, Texture* tex,
-              const SGReaderWriterXMLOptions* options)
+              const SGReaderWriterOptions* options)
 {
     const string& imageName = attrs.get<0>();
     if (imageName.empty()) {
         throw BuilderException("no image file");
     } else {
-        osgDB::ReaderWriter::ReadResult result
-            = osgDB::Registry::instance()->readImage(imageName, options);
-        if (result.success()) {
-            osg::ref_ptr<osg::Image> image = result.getImage();
+        osgDB::ReaderWriter::ReadResult result;
+        result = osgDB::readImageFile(imageName, options);
+        osg::ref_ptr<osg::Image> image;
+        if (result.success())
+            image = result.getImage();
+        if (image.valid())
+        {
             image = computeMipmap( image.get(), attrs.get<7>() );
             tex->setImage(GL_FRONT_AND_BACK, image.get());
             int s = image->s();
@@ -274,26 +277,35 @@ class TexBuilder : public TextureBuilder
 {
 public:
     TexBuilder(const string& texType) : _type(texType) {}
-    Texture* build(Effect* effect, const SGPropertyNode*,
-                   const SGReaderWriterXMLOptions* options);
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
 protected:
-    typedef map<TexTuple, ref_ptr<T> > TexMap;
+    typedef map<TexTuple, observer_ptr<T> > TexMap;
     TexMap texMap;
     const string _type;
 };
 
 template<typename T>
-Texture* TexBuilder<T>::build(Effect* effect, const SGPropertyNode* props,
-                              const SGReaderWriterXMLOptions* options)
+Texture* TexBuilder<T>::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+                              const SGReaderWriterOptions* options)
 {
     TexTuple attrs = makeTexTuple(effect, props, options, _type);
     typename TexMap::iterator itr = texMap.find(attrs);
-    if (itr != texMap.end())
-        return itr->second.get();
-    T* tex = new T;
+
+    ref_ptr<T> tex;
+    if ((itr != texMap.end())&&
+        (itr->second.lock(tex)))
+    {
+        return tex.release();
+    }
+
+    tex = new T;
     setAttrs(attrs, tex, options);
-    texMap.insert(make_pair(attrs, tex));
-    return tex;
+    if (itr == texMap.end())
+        texMap.insert(make_pair(attrs, tex));
+    else
+        itr->second = tex; // update existing, but empty observer
+    return tex.release();
 }
 
 
@@ -307,12 +319,12 @@ TextureBuilder::Registrar install3D("3d", new TexBuilder<Texture3D>("3d"));
 class WhiteTextureBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, const SGPropertyNode*,
-                   const SGReaderWriterXMLOptions* options);
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
 };
 
-Texture* WhiteTextureBuilder::build(Effect* effect, const SGPropertyNode*,
-                                    const SGReaderWriterXMLOptions* options)
+Texture* WhiteTextureBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                                    const SGReaderWriterOptions* options)
 {
     return StateAttributeFactory::instance()->getWhiteTexture();
 }
@@ -325,12 +337,12 @@ TextureBuilder::Registrar installWhite("white", new WhiteTextureBuilder);
 class TransparentTextureBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, const SGPropertyNode*,
-                   const SGReaderWriterXMLOptions* options);
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
 };
 
-Texture* TransparentTextureBuilder::build(Effect* effect, const SGPropertyNode*,
-                                    const SGReaderWriterXMLOptions* options)
+Texture* TransparentTextureBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                                    const SGReaderWriterOptions* options)
 {
     return StateAttributeFactory::instance()->getTransparentTexture();
 }
@@ -341,81 +353,26 @@ TextureBuilder::Registrar installTransparent("transparent",
                                              new TransparentTextureBuilder);
 }
 
-osg::Image* make3DNoiseImage(int texSize)
-{
-    osg::Image* image = new osg::Image;
-    image->setImage(texSize, texSize, texSize,
-                    4, GL_RGBA, GL_UNSIGNED_BYTE,
-                    new unsigned char[4 * texSize * texSize * texSize],
-                    osg::Image::USE_NEW_DELETE);
-
-    const int startFrequency = 4;
-    const int numOctaves = 4;
-
-    int f, i, j, k, inc;
-    double ni[3];
-    double inci, incj, inck;
-    int frequency = startFrequency;
-    GLubyte *ptr;
-    double amp = 0.5;
-
-    osg::notify(osg::WARN) << "creating 3D noise texture... ";
-
-    for (f = 0, inc = 0; f < numOctaves; ++f, frequency *= 2, ++inc, amp *= 0.5)
-    {
-        SetNoiseFrequency(frequency);
-        ptr = image->data();
-        ni[0] = ni[1] = ni[2] = 0;
-
-        inci = 1.0 / (texSize / frequency);
-        for (i = 0; i < texSize; ++i, ni[0] += inci)
-        {
-            incj = 1.0 / (texSize / frequency);
-            for (j = 0; j < texSize; ++j, ni[1] += incj)
-            {
-                inck = 1.0 / (texSize / frequency);
-                for (k = 0; k < texSize; ++k, ni[2] += inck, ptr += 4)
-                {
-                    *(ptr+inc) = (GLubyte) (((noise3(ni) + 1.0) * amp) * 128.0);
-                }
-            }
-        }
-    }
-
-    osg::notify(osg::WARN) << "DONE" << std::endl;
-    return image;
-}
-
 class NoiseBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, const SGPropertyNode*,
-                   const SGReaderWriterXMLOptions* options);
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
 protected:
     typedef map<int, ref_ptr<Texture3D> > NoiseMap;
     NoiseMap _noises;
 };
 
-Texture* NoiseBuilder::build(Effect* effect, const SGPropertyNode* props,
-                             const SGReaderWriterXMLOptions* options)
+Texture* NoiseBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+                             const SGReaderWriterOptions* options)
 {
     int texSize = 64;
     const SGPropertyNode* sizeProp = getEffectPropertyChild(effect, props,
                                                             "size");
     if (sizeProp)
         texSize = sizeProp->getValue<int>();
-    NoiseMap::iterator itr = _noises.find(texSize);
-    if (itr != _noises.end())
-        return itr->second.get();
-    Texture3D* noiseTexture = new osg::Texture3D;
-    noiseTexture->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture3D::LINEAR);
-    noiseTexture->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture3D::LINEAR);
-    noiseTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::REPEAT);
-    noiseTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture3D::REPEAT);
-    noiseTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::REPEAT);
-    noiseTexture->setImage( make3DNoiseImage(texSize) );
-    _noises.insert(make_pair(texSize, noiseTexture));
-    return noiseTexture;
+
+    return StateAttributeFactory::instance()->getNoiseTexture(texSize);
 }
 
 namespace
@@ -457,8 +414,8 @@ CubeMapTuple makeCubeMapTuple(Effect* effect, const SGPropertyNode* props)
 class CubeMapBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, const SGPropertyNode*,
-                   const SGReaderWriterXMLOptions* options);
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
 protected:
     typedef map<CubeMapTuple, ref_ptr<TextureCubeMap> > CubeMap;
     typedef map<string, ref_ptr<TextureCubeMap> > CrossCubeMap;
@@ -480,8 +437,8 @@ void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, i
 }
 
 
-Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
-                               const SGReaderWriterXMLOptions* options)
+Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+                               const SGReaderWriterOptions* options)
 {
     // First check that there is a <images> tag
     const SGPropertyNode* texturesProp = getEffectPropertyChild(effect, props, "images");
@@ -511,33 +468,33 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
         cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
         cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 
-        osgDB::ReaderWriter::ReadResult result =
-            osgDB::Registry::instance()->readImage(_tuple.get<0>(), options);
+        osgDB::ReaderWriter::ReadResult result;
+        result = osgDB::readImageFile(_tuple.get<0>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<1>(), options);
+        result = osgDB::readImageFile(_tuple.get<1>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<2>(), options);
+        result = osgDB::readImageFile(_tuple.get<2>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<3>(), options);
+        result = osgDB::readImageFile(_tuple.get<3>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<4>(), options);
+        result = osgDB::readImageFile(_tuple.get<4>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<5>(), options);
+        result = osgDB::readImageFile(_tuple.get<5>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
@@ -560,8 +517,8 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
         if (itr != _crossmaps.end())
             return itr->second.get();
 
-        osgDB::ReaderWriter::ReadResult result =
-            osgDB::Registry::instance()->readImage(texname, options);
+        osgDB::ReaderWriter::ReadResult result;
+        result = osgDB::readImageFile(texname, options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones
@@ -690,7 +647,7 @@ EffectNameValue<TexEnvCombine::OperandParam> opParamInit[] =
 EffectPropertyMap<TexEnvCombine::OperandParam> operandParams(opParamInit);
 
 TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp,
-                                  const SGReaderWriterXMLOptions* options)
+                                  const SGReaderWriterOptions* options)
 {
     if (!isAttributeActive(effect, envProp))
         return 0;
@@ -870,6 +827,81 @@ bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
     makeChild(texUnit, "wrap-t")->setStringValue(wrapT);
     makeChild(texUnit, "wrap-r")->setStringValue(wrapR);
     return true;
+}
+
+class GBufferBuilder : public TextureBuilder
+{
+public:
+    GBufferBuilder() {}
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+private:
+    string buffer;
+};
+
+class BufferNameChangeListener : public SGPropertyChangeListener, public InitializeWhenAdded,
+      public Effect::Updater {
+public:
+    BufferNameChangeListener(Pass* p, int u, const std::string& pn) : pass(p), unit(u)
+    {
+        propName = new std::string(pn);
+    }
+    ~BufferNameChangeListener()
+    {
+        delete propName;
+        propName = 0;
+    }
+    void valueChanged(SGPropertyNode* node)
+    {
+        const char* buffer = node->getStringValue();
+        pass->setBufferUnit(unit, buffer);
+    }
+    void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot)
+    {
+        SGPropertyNode* listenProp = makeNode(propRoot, *propName);
+        delete propName;
+        propName = 0;
+        if (listenProp)
+            listenProp->addChangeListener(this, true);
+    }
+
+private:
+    ref_ptr<Pass> pass;
+    int unit;
+    std::string* propName;
+};
+
+Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                                    const SGReaderWriterOptions* options)
+{
+    int unit = 0;
+    const SGPropertyNode* pUnit = prop->getChild("unit");
+    if (pUnit) {
+        unit = pUnit->getValue<int>();
+    } else {
+        SG_LOG(SG_INPUT, SG_ALERT, "no texture unit");
+    }
+    const SGPropertyNode* nameProp = getEffectPropertyChild(effect, prop,
+                                                            "name");
+    if (!nameProp)
+        return 0;
+
+    if (nameProp->nChildren() == 0) {
+        buffer = nameProp->getStringValue();
+        pass->setBufferUnit( unit, buffer );
+    } else {
+        std::string propName = getGlobalProperty(nameProp, options);
+        BufferNameChangeListener* listener = new BufferNameChangeListener(pass, unit, propName);
+        effect->addUpdater(listener);
+    }
+
+    // Return white for now. Would be overridden in Technique::ProcessDrawable
+    return StateAttributeFactory::instance()->getWhiteTexture();
+}
+
+namespace
+{
+    TextureBuilder::Registrar installBuffer("buffer", new GBufferBuilder);
 }
 
 }

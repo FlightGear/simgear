@@ -1,0 +1,56 @@
+How to build SimGear
+====================
+
+SimGear uses the CMake build system to generate a platform-specific
+build environment.  CMake reads the CMakeLists.txt files that you'll
+find throughout the source directories, checks for installed
+dependencies and then generates the appropriate build system.
+
+If you don't already have CMake installed on your system you can grab
+it from http://www.cmake.org, use version 2.6.4 or later.
+
+Under unices (i.e. Linux, Solaris, Free-BSD, HP-Ux, OSX) use the cmake
+or ccmake command-line utils. Preferably, create an out-of-source
+build directory and run cmake or ccmake from there. The advantage to
+this approach is that the temporary files created by CMake won't
+clutter the source directory, and also makes it possible to have
+multiple independent build targets by creating multiple build
+directories. In a directory alongside the SimGear source directory
+use:
+
+    mkdir sgbuild
+    cd sgbuild
+    cmake ../simgear -DCMAKE_BUILD_TYPE=Release
+    make
+    sudo make install
+
+
+Build Dependencies
+==================
+SimGear depends on a number of 3rd party libraries, the most notable
+being:
+
+* OpenSceneGraph (OSG) - see README.OSG
+* zlib compression library - see README.zlib
+* Open Audio Library (OpenAL) - see README.OpenAL
+* Subversion Client Library (optional dependency)
+
+
+Further information
+===================
+* README.cmake
+  for more detailed CMake instructions
+
+* README.msvc
+  in the FlightGear source package for more Windows-specific instructions
+
+* FlightGear Wiki
+  http://wiki.flightgear.org/Building_Flightgear
+
+* FlightGear Forums
+  For help on building see: http://www.flightgear.org/forums
+  => Support/Compiling
+
+* FlightGear Mailing lists
+  http://wiki.flightgear.org/index.php/Mailing_list
+

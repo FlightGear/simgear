@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -37,17 +37,15 @@ class RTIObjectInstance;
 
 class RTI13ObjectClass : public RTIObjectClass {
 public:
-    RTI13ObjectClass(HLAObjectClass* hlaObjectClass, RTI::ObjectClassHandle& handle, RTI13Ambassador* ambassador);
+    RTI13ObjectClass(HLAObjectClass* hlaObjectClass, const RTI::ObjectClassHandle& handle, RTI13Ambassador* ambassador);
     virtual ~RTI13ObjectClass();
 
     const RTI::ObjectClassHandle& getHandle() const
     { return _handle; }
 
-    virtual std::string getName() const;
+    virtual bool resolveAttributeIndex(const std::string& name, unsigned index);
 
     virtual unsigned getNumAttributes() const;
-    virtual unsigned getAttributeIndex(const std::string& name) const;
-    virtual unsigned getOrCreateAttributeIndex(const std::string& name);
 
     unsigned getAttributeIndex(const RTI::AttributeHandle& handle) const
     {
@@ -63,17 +61,17 @@ public:
         return _attributeHandleVector[index];
     }
 
-    virtual bool publish(const std::set<unsigned>& indexSet);
+    virtual bool publish(const HLAIndexList& indexList);
     virtual bool unpublish();
 
-    virtual bool subscribe(const std::set<unsigned>& indexSet, bool);
+    virtual bool subscribe(const HLAIndexList& indexList, bool);
     virtual bool unsubscribe();
 
     virtual RTIObjectInstance* registerObjectInstance(HLAObjectInstance* hlaObjectInstance);
 
 private:
     RTI::ObjectClassHandle _handle;
-    SGWeakPtr<RTI13Ambassador> _ambassador;
+    SGSharedPtr<RTI13Ambassador> _ambassador;
 
     typedef std::map<RTI::AttributeHandle, unsigned> AttributeHandleIndexMap;
     AttributeHandleIndexMap _attributeHandleIndexMap;

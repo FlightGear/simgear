@@ -47,6 +47,7 @@
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 #include <simgear/scene/util/SGTextureStateAttributeVisitor.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/NodeAndDrawableVisitor.hxx>
 
 #include <simgear/structure/exception.hxx>
@@ -56,7 +57,6 @@
 
 #include "BoundingVolumeBuildVisitor.hxx"
 #include "model.hxx"
-#include "SGReaderWriterXMLOptions.hxx"
 
 using namespace std;
 using namespace osg;
@@ -64,29 +64,7 @@ using namespace osgUtil;
 using namespace osgDB;
 using namespace simgear;
 
-// Little helper class that holds an extra reference to a
-// loaded 3d model.
-// Since we clone all structural nodes from our 3d models,
-// the database pager will only see one single reference to
-// top node of the model and expire it relatively fast.
-// We attach that extra reference to every model cloned from
-// a base model in the pager. When that cloned model is deleted
-// this extra reference is deleted too. So if there are no
-// cloned models left the model will expire.
 namespace {
-class SGDatabaseReference : public Observer {
-public:
-  SGDatabaseReference(Referenced* referenced) :
-    mReferenced(referenced)
-  { }
-  virtual void objectDeleted(void*)
-  {
-    mReferenced = 0;
-  }
-private:
-  ref_ptr<Referenced> mReferenced;
-};
-
 // Set the name of a Texture to the simple name of its image
 // file. This can be used to do livery substitution after the image
 // has been deallocated.
@@ -193,7 +171,7 @@ public:
 } // namespace
 
 Node* DefaultProcessPolicy::process(Node* node, const string& filename,
-                                    const ReaderWriter::Options* opt)
+                                    const Options* opt)
 {
     TextureNameVisitor nameVisitor;
     node->accept(nameVisitor);
@@ -202,7 +180,7 @@ Node* DefaultProcessPolicy::process(Node* node, const string& filename,
 
 ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,
-                         const ReaderWriter::Options* opt)
+                         const Options* opt)
 {
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
@@ -231,13 +209,76 @@ ModelRegistry::readImage(const string& fileName,
             SG_LOG(SG_IO, SG_BULK, "Reading image \""
                    << res.getImage()->getFileName() << "\"");
 
+        // Check for precompressed textures that depend on an extension
+        switch (res.getImage()->getPixelFormat()) {
+
+            // GL_EXT_texture_compression_s3tc
+            // patented, no way to decompress these
+#ifndef GL_EXT_texture_compression_s3tc
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT  0x83F2
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
+#endif
+        case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+            
+            // GL_EXT_texture_sRGB
+            // patented, no way to decompress these
+#ifndef GL_EXT_texture_sRGB
+#define GL_COMPRESSED_SRGB_S3TC_DXT1_EXT  0x8C4C
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
+#endif
+        case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+            
+            // GL_TDFX_texture_compression_FXT1
+            // can decompress these in software but
+            // no code present in simgear.
+#ifndef GL_3DFX_texture_compression_FXT1
+#define GL_COMPRESSED_RGB_FXT1_3DFX       0x86B0
+#define GL_COMPRESSED_RGBA_FXT1_3DFX      0x86B1
+#endif
+        case GL_COMPRESSED_RGB_FXT1_3DFX:
+        case GL_COMPRESSED_RGBA_FXT1_3DFX:
+            
+            // GL_EXT_texture_compression_rgtc
+            // can decompress these in software but
+            // no code present in simgear.
+#ifndef GL_EXT_texture_compression_rgtc
+#define GL_COMPRESSED_RED_RGTC1_EXT       0x8DBB
+#define GL_COMPRESSED_SIGNED_RED_RGTC1_EXT 0x8DBC
+#define GL_COMPRESSED_RED_GREEN_RGTC2_EXT 0x8DBD
+#define GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT 0x8DBE
+#endif
+        case GL_COMPRESSED_RED_RGTC1_EXT:
+        case GL_COMPRESSED_SIGNED_RED_RGTC1_EXT:
+        case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
+        case GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT:
+
+            SG_LOG(SG_IO, SG_ALERT, "Image \"" << fileName << "\"\n"
+                   "uses compressed textures which cannot be supported on "
+                   "some systems.\n"
+                   "Please decompress this texture for improved portability.");
+            break;
+
+        default:
+            break;
+        }
+
         return res;
     }
 }
 
 
 osg::Node* DefaultCachePolicy::find(const string& fileName,
-                                    const ReaderWriter::Options* opt)
+                                    const Options* opt)
 {
     Registry* registry = Registry::instance();
     osg::Node* cached
@@ -273,13 +314,15 @@ OptimizeModelPolicy::OptimizeModelPolicy(const string& extension) :
     _osgOptions(Optimizer::SHARE_DUPLICATE_STATE
                 | Optimizer::MERGE_GEOMETRY
                 | Optimizer::FLATTEN_STATIC_TRANSFORMS
-                | Optimizer::TRISTRIP_GEOMETRY)
+                | Optimizer::INDEX_MESH
+                | Optimizer::VERTEX_POSTTRANSFORM
+                | Optimizer::VERTEX_PRETRANSFORM)
 {
 }
 
 osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
                                          const string& fileName,
-                                         const osgDB::ReaderWriter::Options* opt)
+                                         const osgDB::Options* opt)
 {
     osgUtil::Optimizer optimizer;
     optimizer.optimize(node, _osgOptions);
@@ -295,7 +338,7 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
 }
 
 string OSGSubstitutePolicy::substitute(const string& name,
-                                       const ReaderWriter::Options* opt)
+                                       const Options* opt)
 {
     string fileSansExtension = getNameLessExtension(name);
     string osgFileName = fileSansExtension + ".osg";
@@ -350,7 +393,7 @@ ModelRegistry::addNodeCallbackForExtension(const string& extension,
 
 ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
-                        const ReaderWriter::Options* opt)
+                        const Options* opt)
 {
     ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
@@ -373,10 +416,10 @@ public:
     Referenced::setThreadSafeReferenceCounting(true);
 
     Registry* registry = Registry::instance();
-    ReaderWriter::Options* options = new ReaderWriter::Options;
-    int cacheOptions = ReaderWriter::Options::CACHE_ALL;
+    Options* options = new Options;
+    int cacheOptions = Options::CACHE_ALL;
     options->
-      setObjectCacheHint((ReaderWriter::Options::CacheHintOptions)cacheOptions);
+      setObjectCacheHint((Options::CacheHintOptions)cacheOptions);
     registry->setOptions(options);
     registry->getOrCreateSharedStateManager()->
       setShareMode(SharedStateManager::SHARE_STATESETS);
@@ -394,7 +437,7 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
         _osgOptions &= ~Optimizer::TRISTRIP_GEOMETRY;
     }
     Node* optimize(Node* node, const string& fileName,
-                   const ReaderWriter::Options* opt)
+                   const Options* opt)
     {
         ref_ptr<Node> optimized
             = OptimizeModelPolicy::optimize(node, fileName, opt);
@@ -410,8 +453,8 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
                 && group->getNumChildren() == 1)
                 optimized = static_cast<Node*>(group->getChild(0));
         }
-        const SGReaderWriterXMLOptions* sgopt
-            = dynamic_cast<const SGReaderWriterXMLOptions*>(opt);
+        const SGReaderWriterOptions* sgopt
+            = dynamic_cast<const SGReaderWriterOptions*>(opt);
         if (sgopt && sgopt->getInstantiateEffects())
             optimized = instantiateEffects(optimized.get(), sgopt);
         return optimized.release();
@@ -421,7 +464,7 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
 struct ACProcessPolicy {
     ACProcessPolicy(const string& extension) {}
     Node* process(Node* node, const string& filename,
-                  const ReaderWriter::Options* opt)
+                  const Options* opt)
     {
         Matrix m(1, 0, 0, 0,
                  0, 0, 1, 0,

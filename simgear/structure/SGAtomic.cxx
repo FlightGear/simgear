@@ -1,6 +1,6 @@
 /* -*-c++-*-
  *
- * Copyright (C) 2005-2009 Mathias Froehlich 
+ * Copyright (C) 2005-2009,2011 Mathias Froehlich 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,58 +18,105 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include "SGAtomic.hxx"
 
-#if defined(SGATOMIC_USE_GCC4_BUILTINS) && defined (__i386__)
+#if defined(SGATOMIC_USE_LIBRARY_FUNCTIONS)
 
-// Usually the appropriate functions are inlined by gcc.
-// But if gcc is called with something equivalent to -march=i386,
-// it will not assume that there is a lock instruction and instead
-// calls this pair of functions. We will provide them here in this case.
-// Note that this assembler code will not work on a i386 chip anymore.
-// But I firmly believe that we can assume to run at least on a i486 ...
+#if defined(_WIN32)
+# include <windows.h>
+#elif defined(GCC_ATOMIC_BUILTINS_FOUND)
+#elif defined(__GNUC__) && defined(__i386__)
+#elif defined(SGATOMIC_USE_MUTEX)
+# include <simgear/threads/SGGuard.hxx>
+#else
+# error
+#endif
 
-extern "C" {
-
-unsigned __sync_sub_and_fetch_4(volatile void *ptr, unsigned value)
+unsigned
+SGAtomic::operator++()
 {
-  register volatile unsigned* mem = reinterpret_cast<volatile unsigned*>(ptr);
-  register unsigned result;
-  __asm__ __volatile__("lock; xadd{l} {%0,%1|%1,%0}"
-                       : "=r" (result), "=m" (*mem)
-                       : "0" (-value), "m" (*mem)
-                       : "memory");
-  return result - value;
+#if defined(_WIN32)
+    return InterlockedIncrement(reinterpret_cast<long volatile*>(&mValue));
+#elif defined(GCC_ATOMIC_BUILTINS_FOUND)
+    return __sync_add_and_fetch(&mValue, 1);
+#elif defined(__GNUC__) && defined(__i386__)
+    register volatile unsigned* mem = reinterpret_cast<volatile unsigned*>(&mValue);
+    register unsigned result;
+    __asm__ __volatile__("lock; xadd{l} {%0,%1|%1,%0}"
+                         : "=r" (result), "=m" (*mem)
+                         : "0" (1), "m" (*mem)
+                         : "memory");
+    return result + 1;
+#else
+    SGGuard<SGMutex> lock(mMutex);
+    return ++mValue;
+#endif
 }
 
-unsigned __sync_add_and_fetch_4(volatile void *ptr, unsigned value)
+unsigned
+SGAtomic::operator--()
 {
-  register volatile unsigned* mem = reinterpret_cast<volatile unsigned*>(ptr);
-  register unsigned result;
-  __asm__ __volatile__("lock; xadd{l} {%0,%1|%1,%0}"
-                       : "=r" (result), "=m" (*mem)
-                       : "0" (value), "m" (*mem)
-                       : "memory");
-  return result + value;
+#if defined(_WIN32)
+    return InterlockedDecrement(reinterpret_cast<long volatile*>(&mValue));
+#elif defined(GCC_ATOMIC_BUILTINS_FOUND)
+    return __sync_sub_and_fetch(&mValue, 1);
+#elif defined(__GNUC__) && defined(__i386__)
+    register volatile unsigned* mem = reinterpret_cast<volatile unsigned*>(&mValue);
+    register unsigned result;
+    __asm__ __volatile__("lock; xadd{l} {%0,%1|%1,%0}"
+                         : "=r" (result), "=m" (*mem)
+                         : "0" (-1), "m" (*mem)
+                         : "memory");
+    return result - 1;
+#else
+    SGGuard<SGMutex> lock(mMutex);
+    return --mValue;
+#endif
 }
 
-unsigned __sync_bool_compare_and_swap_4(volatile void *ptr,
-                                        unsigned oldValue, unsigned newValue)
+SGAtomic::operator unsigned() const
 {
-  register volatile unsigned* mem = reinterpret_cast<volatile unsigned*>(ptr);
-  unsigned before;
-  __asm__ __volatile__("lock; cmpxchg{l} {%1,%2|%1,%2}"
-                       : "=a"(before)
-                       : "q"(newValue), "m"(*mem), "0"(oldValue)
-                       : "memory");
-  return before == oldValue;
+#if defined(_WIN32)
+    return static_cast<unsigned const volatile &>(mValue);
+#elif defined(GCC_ATOMIC_BUILTINS_FOUND)
+    __sync_synchronize();
+    return mValue;
+#elif defined(__GNUC__) && defined(__i386__)
+    __asm__ __volatile__("": : : "memory");
+    return mValue;
+#else
+    SGGuard<SGMutex> lock(mMutex);
+    return mValue;
+#endif
 }
 
-void __sync_synchronize()
+bool
+SGAtomic::compareAndExchange(unsigned oldValue, unsigned newValue)
 {
-  __asm__ __volatile__("": : : "memory");
+#if defined(_WIN32)
+    long volatile* lvPtr = reinterpret_cast<long volatile*>(&mValue);
+    return oldValue == InterlockedCompareExchange(lvPtr, newValue, oldValue);
+#elif defined(GCC_ATOMIC_BUILTINS_FOUND)
+    return __sync_bool_compare_and_swap(&mValue, oldValue, newValue);
+#elif defined(__GNUC__) && defined(__i386__)
+    register volatile unsigned* mem = reinterpret_cast<volatile unsigned*>(&mValue);
+    unsigned before;
+    __asm__ __volatile__("lock; cmpxchg{l} {%1,%2|%1,%2}"
+                         : "=a"(before)
+                         : "q"(newValue), "m"(*mem), "0"(oldValue)
+                         : "memory");
+    return before == oldValue;
+#else
+    SGGuard<SGMutex> lock(mMutex);
+    if (mValue != oldValue)
+        return false;
+    mValue = newValue;
+    return true;
+#endif
 }
-
-} // extern "C"
 
 #endif

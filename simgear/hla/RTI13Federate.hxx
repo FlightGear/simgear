@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -25,6 +25,7 @@
 #include <RTI.hh>
 
 #include "RTIFederate.hxx"
+#include "RTI13InteractionClass.hxx"
 #include "RTI13ObjectClass.hxx"
 #include "RTI13ObjectInstance.hxx"
 
@@ -34,39 +35,58 @@ class RTI13Ambassador;
 
 class RTI13Federate : public RTIFederate {
 public:
-    RTI13Federate();
+    RTI13Federate(const std::list<std::string>& stringList);
     virtual ~RTI13Federate();
 
-    virtual bool createFederationExecution(const std::string& federation, const std::string& objectModel);
-    virtual bool destroyFederationExecution(const std::string& federation);
+    /// Create a federation execution
+    /// Semantically this methods should be static,
+    virtual FederationManagementResult createFederationExecution(const std::string& federation, const std::string& objectModel);
+    virtual FederationManagementResult destroyFederationExecution(const std::string& federation);
 
     /// Join with federateName the federation execution federation
-    virtual bool join(const std::string& federateType, const std::string& federation);
+    virtual FederationManagementResult join(const std::string& federateType, const std::string& federation);
     virtual bool resign();
+    virtual bool getJoined() const;
 
     /// Synchronization Point handling
     virtual bool registerFederationSynchronizationPoint(const std::string& label, const RTIData& tag);
-    virtual bool waitForFederationSynchronizationPointAnnounced(const std::string& label);
+    virtual bool getFederationSynchronizationPointAnnounced(const std::string& label);
     virtual bool synchronizationPointAchieved(const std::string& label);
-    virtual bool waitForFederationSynchronized(const std::string& label);
+    virtual bool getFederationSynchronized(const std::string& label);
 
     /// Time management
     virtual bool enableTimeConstrained();
     virtual bool disableTimeConstrained();
+    virtual bool getTimeConstrainedEnabled();
 
     virtual bool enableTimeRegulation(const SGTimeStamp& lookahead);
     virtual bool disableTimeRegulation();
+    virtual bool modifyLookahead(const SGTimeStamp& timeStamp);
+    virtual bool getTimeRegulationEnabled();
 
-    virtual bool timeAdvanceRequestBy(const SGTimeStamp& dt);
-    virtual bool timeAdvanceRequest(const SGTimeStamp& fedTime);
+    virtual bool timeAdvanceRequest(const SGTimeStamp& timeStamp);
+    virtual bool timeAdvanceRequestAvailable(const SGTimeStamp& timeStamp);
+    virtual bool flushQueueRequest(const SGTimeStamp& timeStamp);
+    virtual bool getTimeAdvancePending();
+
+    virtual bool queryFederateTime(SGTimeStamp& timeStamp);
+    virtual bool queryLookahead(SGTimeStamp& timeStamp);
+    virtual bool queryGALT(SGTimeStamp& timeStamp);
+    virtual bool queryLITS(SGTimeStamp& timeStamp);
 
     /// Process messages
-    virtual bool tick();
-    virtual bool tick(const double& minimum, const double& maximum);
+    virtual ProcessMessageResult processMessage();
+    virtual ProcessMessageResult processMessages(const double& minimum, const double& maximum);
+
+    // helper functions for the above
+    ProcessMessageResult _tick();
+    ProcessMessageResult _tick(const double& minimum, const double& maximum);
 
     virtual RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass);
+    virtual RTI13InteractionClass* createInteractionClass(const std::string& name, HLAInteractionClass* interactionClass);
 
     virtual RTI13ObjectInstance* getObjectInstance(const std::string& name);
+    void insertObjectInstance(RTI13ObjectInstance* objectInstance);
 
 private:
     RTI13Federate(const RTI13Federate&);
@@ -74,13 +94,14 @@ private:
 
     /// The federate handle
     RTI::FederateHandle _federateHandle;
-
-    /// The timeout for the single callback tick function in
-    /// syncronous operations that need to wait for a callback
-    double _tickTimeout;
+    bool _joined;
 
     /// RTI connection
     SGSharedPtr<RTI13Ambassador> _ambassador;
+
+    /// Callbacks from the rti are handled here.
+    struct FederateAmbassador;
+    FederateAmbassador* _federateAmbassador;
 };
 
 }

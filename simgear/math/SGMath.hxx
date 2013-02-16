@@ -21,12 +21,6 @@
 /// Just include them all
 
 #include <iosfwd>
-// FIXME, make it compile on IRIX
-
-//#include <osg/GL>
-//#undef GLUT_APIENTRY_DEFINED // GL/glut.h undef APIENTRY when this symbol is defined. osg/GL defines it (?).
-                             // This probably would work if we didn't use plib/pu.h that include GL/glut.h 
-                             //  on its side.
 
 #include "SGMathFwd.hxx"
 
@@ -40,6 +34,7 @@
 #include "SGGeoc.hxx"
 #include "SGGeod.hxx"
 #include "SGQuat.hxx"
+#include "SGLocation.hxx"
 #include "SGMatrix.hxx"
 
 #endif

@@ -25,17 +25,17 @@
 
 namespace simgear
 {
-class SGReaderWriterXMLOptions;
+class SGReaderWriterOptions;
 }
 
 osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const std::string& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true, int mipmaplevels = -1);
 
 inline osg::Texture2D*
 SGLoadTexture2D(const std::string& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true, int mipmaplevels = -1)
 {
     return SGLoadTexture2D(true, path, options, wrapu, wrapv, mipmaplevels);
@@ -43,7 +43,7 @@ SGLoadTexture2D(const std::string& path,
 
 inline osg::Texture2D*
 SGLoadTexture2D(const SGPath& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {
@@ -53,7 +53,7 @@ SGLoadTexture2D(const SGPath& path,
 
 inline osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const SGPath& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {
@@ -102,7 +102,7 @@ public:
 osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
                    PropertyList& effectProps,
-                   const SGReaderWriterXMLOptions* options);
+                   const SGReaderWriterOptions* options);
 
 /**
  * Transform an OSG subgraph by substituting the Effects and
@@ -115,7 +115,7 @@ instantiateEffects(osg::Node* model,
 
 inline osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
-                   const SGReaderWriterXMLOptions* options)
+                   const SGReaderWriterOptions* options)
 {
     PropertyList effectProps;
     return instantiateEffects(model, effectProps, options);

@@ -16,7 +16,7 @@
  
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the Free Software
-     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
  
      For further information visit http://plib.sourceforge.net
 
@@ -61,6 +61,8 @@
 #ifndef SG_NET_CHAT_H
 #define SG_NET_CHAT_H
 
+#include <memory>
+#include <cstdlib>
 #include <simgear/io/sg_netBuffer.hxx>
 
 namespace simgear
@@ -69,15 +71,24 @@ namespace simgear
 class NetChat : public NetBufferChannel
 {
   char* terminator;
-  
+  int bytesToCollect;
   virtual void handleBufferRead (NetBuffer& buffer) ;
 
 public:
 
-  NetChat () : terminator (0) {}
+  NetChat () : 
+    terminator (NULL),
+    bytesToCollect(-1) 
+  {}
 
   void setTerminator (const char* t);
   const char* getTerminator (void);
+
+  /**
+   * set byte count to collect - 'foundTerminator' will be called once
+   * this many bytes have been collected
+   */
+  void setByteCount(int bytes);
 
   bool push (const char* s);
   

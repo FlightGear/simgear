@@ -22,17 +22,22 @@
 #ifndef SG_MAT_MODEL_BIN_HXX
 #define SG_MAT_MODEL_BIN_HXX
 
-#include <math.h>
+#include <vector>
+#include <simgear/math/SGMath.hxx>
 
+// forward decls  
+class SGMatModel;
+   
 class SGMatModelBin {
 public:
   struct MatModel {
-    MatModel(const SGVec3f& p, SGMatModel *m, int l) :
-      position(p), model(m), lod(l)
+    MatModel(const SGVec3f& p, SGMatModel *m, int l, float rot) :
+      position(p), model(m), lod(l), rotation(rot)
     { }
     SGVec3f position;
     SGMatModel *model;
     int lod;
+    float rotation;
   };
   typedef std::vector<MatModel> MatModelList;
 
@@ -41,8 +46,8 @@ public:
     _models.push_back(model);   
   }
   
-  void insert(const SGVec3f& p, SGMatModel *m, int l)
-  { insert(MatModel(p, m, l)); }
+  void insert(const SGVec3f& p, SGMatModel *m, int l, float rot)
+  { insert(MatModel(p, m, l, rot)); }
 
   unsigned getNumModels() const
   { return _models.size(); }

@@ -10,11 +10,11 @@
 #ifndef __SG_CONDITION_HXX
 #define __SG_CONDITION_HXX
 
-#include <simgear/debug/logstream.hxx>
-#include <simgear/props/props.hxx>
-#include <simgear/props/props_io.hxx>
 #include <simgear/structure/SGReferenced.hxx>
-
+#include <simgear/structure/SGSharedPtr.hxx>
+
+class SGPropertyNode;
+
 ////////////////////////////////////////////////////////////////////////
 // Conditions.
 ////////////////////////////////////////////////////////////////////////

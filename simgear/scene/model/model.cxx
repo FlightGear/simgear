@@ -18,14 +18,13 @@
 #include <osgDB/ReadFile>
 #include <osgDB/SharedStateManager>
 
-#include <simgear/math/SGMath.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/CopyOp.hxx>
 #include <simgear/scene/util/SplicingVisitor.hxx>
-
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/Singleton.hxx>
@@ -33,14 +32,13 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 
-#include "SGReaderWriterXMLOptions.hxx"
 #include "model.hxx"
 
 using std::vector;
 
 osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const std::string& path,
-                const osgDB::ReaderWriter::Options* options,
+                const osgDB::Options* options,
                 bool wrapu, bool wrapv, int)
 {
   osg::Image* image;
@@ -210,7 +208,7 @@ class MakeEffectVisitor : public SplicingVisitor
 public:
     typedef std::map<string, SGPropertyNode_ptr> EffectMap;
     using SplicingVisitor::apply;
-    MakeEffectVisitor(const SGReaderWriterXMLOptions* options = 0)
+    MakeEffectVisitor(const SGReaderWriterOptions* options = 0)
         : _options(options)
     {
     }
@@ -226,7 +224,7 @@ public:
 protected:
     EffectMap _effectMap;
     SGPropertyNode_ptr _currentEffectParent;
-    osg::ref_ptr<const SGReaderWriterXMLOptions> _options;
+    osg::ref_ptr<const SGReaderWriterOptions> _options;
 };
 
 void MakeEffectVisitor::apply(osg::Group& node)
@@ -309,7 +307,7 @@ protected:
 
 ref_ptr<Node> instantiateEffects(osg::Node* modelGroup,
                                  PropertyList& effectProps,
-                                 const SGReaderWriterXMLOptions* options)
+                                 const SGReaderWriterOptions* options)
 {
     SGPropertyNode_ptr defaultEffectPropRoot;
     MakeEffectVisitor visitor(options);

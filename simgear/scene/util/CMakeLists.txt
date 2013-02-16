@@ -2,7 +2,13 @@ include (SimGearComponent)
 
 set(HEADERS 
     CopyOp.hxx
+    DeletionManager.hxx
     NodeAndDrawableVisitor.hxx
+    Noise.hxx
+    OptionsReadFileCallback.hxx
+    OsgMath.hxx
+    OsgSingleton.hxx
+    parse_color.hxx
     PrimitiveUtils.hxx
     QuadTreeBuilder.hxx
     RenderConstants.hxx
@@ -10,6 +16,7 @@ set(HEADERS
     SGEnlargeBoundingBox.hxx
     SGNodeMasks.hxx
     SGPickCallback.hxx
+    SGReaderWriterOptions.hxx
     SGSceneFeatures.hxx
     SGSceneUserData.hxx
     SGStateAttributeVisitor.hxx
@@ -19,14 +26,20 @@ set(HEADERS
     StateAttributeFactory.hxx
     UpdateOnceCallback.hxx
     VectorArrayAdapter.hxx
+    project.hxx
     )
 
 set(SOURCES 
     CopyOp.cxx
+    DeletionManager.cxx
     NodeAndDrawableVisitor.cxx
+    Noise.cxx
+    OptionsReadFileCallback.cxx
+    parse_color.cxx
     PrimitiveUtils.cxx
     QuadTreeBuilder.cxx
     SGEnlargeBoundingBox.cxx
+    SGReaderWriterOptions.cxx
     SGSceneFeatures.cxx
     SGSceneUserData.cxx
     SGStateAttributeVisitor.cxx
@@ -34,6 +47,13 @@ set(SOURCES
     SplicingVisitor.cxx
     StateAttributeFactory.cxx
     UpdateOnceCallback.cxx
+    project.cxx
     )
 
-simgear_component(util scene/util "${SOURCES}" "${HEADERS}")
+simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")
+
+if(ENABLE_TESTS)
+add_executable(test_parse_color parse_color_test.cxx )
+add_test(test_parse_color ${EXECUTABLE_OUTPUT_PATH}/test_parse_color)
+target_link_libraries(test_parse_color SimGearScene)
+endif(ENABLE_TESTS)

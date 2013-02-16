@@ -67,7 +67,7 @@ public:
     /**
      * Open a stream
      * @param name file name
-     * @param io_mode mdoe flags
+     * @param io_mode mode flags
      * @return file stream
      */
     gzfilebuf* open( const char* name, ios_openmode io_mode );
@@ -83,14 +83,14 @@ public:
     /** Close stream */
     gzfilebuf* close();
 
-    // int setcompressionlevel( int comp_level );
-    // int setcompressionstrategy( int comp_strategy );
+    int setcompressionlevel( int comp_level );
+    int setcompressionstrategy( int comp_strategy );
 
     /** @return true if open, false otherwise */
     bool is_open() const { return (file != NULL); }
 
     /** @return stream position */
-    virtual std::streampos seekoff( std::streamoff off, ios_seekdir way, int which );
+    virtual std::streampos seekoff( std::streamoff off, ios_seekdir way, ios_openmode which );
 
     /** sync the stream */
     virtual int sync();
@@ -100,6 +100,11 @@ protected:
     virtual int_type underflow();
 
     virtual int_type overflow( int_type c = parent::traits_type::eof() );
+    bool    out_waiting();
+    char*   base() {return obuffer;}
+    int     blen() {return obuf_size;}
+    char    allocate();
+
 private:
 
     int_type flushbuf();
@@ -118,7 +123,11 @@ private:
     int ibuf_size;
     char* ibuffer;
 
-    enum { page_size = 4096 };
+    // Put (output) buffer.
+    int obuf_size;
+    char* obuffer;
+
+    enum { page_size = 65536 };
 
 private:
     // Not defined
@@ -136,5 +145,14 @@ struct gzifstream_base
     gzfilebuf gzbuf;
 };
 
-#endif // _zfstream_hxx
+/**
+ * document me too
+ */
+struct gzofstream_base
+{
+    gzofstream_base() {}
 
+    gzfilebuf gzbuf;
+};
+
+#endif // _zfstream_hxx

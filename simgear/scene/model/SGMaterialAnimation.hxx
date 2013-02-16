@@ -23,7 +23,7 @@ class SGMaterialAnimation : public SGAnimation {
 public:
   SGMaterialAnimation(const SGPropertyNode* configNode,
                       SGPropertyNode* modelRoot,
-                      const osgDB::ReaderWriter::Options* options);
+                      const osgDB::Options* options,const string &path);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
   static SGPropertyNode_ptr makeEffectProperties(const SGPropertyNode* animProp);

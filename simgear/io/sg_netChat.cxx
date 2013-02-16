@@ -16,7 +16,7 @@
  
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the Free Software
-     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
  
      For further information visit http://plib.sourceforge.net
 
@@ -26,20 +26,31 @@
 #include <simgear/io/sg_netChat.hxx>
 
 #include <cstring> // for strdup
+#include <cstdlib>
 
 namespace  simgear {
 
 void
 NetChat::setTerminator (const char* t)
 {
-  if (terminator) delete[] terminator;
+  if (terminator) free(terminator);
   terminator = strdup(t);
+  bytesToCollect = -1;
 }
 
 const char*
 NetChat::getTerminator (void)
 {
   return terminator;
+}
+
+
+void
+NetChat::setByteCount(int count)
+{
+    if (terminator) free(terminator);
+    terminator = NULL;
+    bytesToCollect = count;
 }
 
 // return the size of the largest prefix of needle at the end
@@ -89,13 +100,23 @@ NetChat::handleBufferRead (NetBuffer& in_buffer)
   // necessary because we might read several data+terminator combos
   // with a single recv().
   
-  while (in_buffer.getLength()) {
-
+  while (in_buffer.getLength()) {      
     // special case where we're not using a terminator
-    if (terminator == 0 || *terminator == 0) {
-      collectIncomingData (in_buffer.getData(),in_buffer.getLength());
-      in_buffer.remove ();
-      return;
+    if (terminator == 0 || *terminator == 0) {        
+        if ( bytesToCollect > 0) {
+            const int toRead = std::min(in_buffer.getLength(), bytesToCollect);
+            collectIncomingData(in_buffer.getData(), toRead);
+            in_buffer.remove(0, toRead);
+            bytesToCollect -= toRead;
+            if (bytesToCollect ==  0) { // read all requested bytes
+                foundTerminator();
+            }
+        } else { // read the whole lot
+            collectIncomingData (in_buffer.getData(),in_buffer.getLength());
+            in_buffer.remove ();
+        }
+        
+        continue;
     }
     
     int terminator_len = strlen(terminator);

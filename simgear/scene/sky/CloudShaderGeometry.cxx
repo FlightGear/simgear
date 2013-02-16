@@ -51,79 +51,98 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
     if (!_cloudsprites.size()) return;
     
     osg::State& state = *renderInfo.getState();
-    unsigned int contextID = state.getContextID();
-    SortData& sortData = _sortData[contextID];
+    
     int frameNumber = state.getFrameStamp()->getFrameNumber();
-
-    if (!sortData.spriteIdx)
-        sortData.spriteIdx = new SortData::SortItemList;
-    if (sortData.spriteIdx->size() < _cloudsprites.size()) {
-        for (unsigned i = sortData.spriteIdx->size(); i < (unsigned)_cloudsprites.size(); ++i)
-            sortData.spriteIdx->push_back(SortData::SortItem(i, 0.0f));
-        sortData.frameSorted = frameNumber - (sortData.skip_limit + 1);
-    }
+    unsigned int contextID = state.getContextID();    
+    SortData& sortData = _sortData[contextID];
+    Geometry* g = _geometry->asGeometry();
+    
     // If the cloud is already sorted, then it is likely to still be sorted.
     // Therefore we can avoid re-sorting it for a period. If it is still
     // sorted after that period, then we can wait for a longer period before
     // checking again. In this way, only clouds that are changing regularly
-    // are sorted.
-    if (frameNumber - sortData.skip_limit >= sortData.frameSorted) {
+    // are sorted.        
+    osg::Vec3Array* v = dynamic_cast<osg::Vec3Array*>(g->getVertexArray());
+    if ((v->size() > 4) && 
+        (frameNumber - sortData.skip_limit >= sortData.frameSorted)) {
         Matrix mvp = state.getModelViewMatrix() * state.getProjectionMatrix();
-        for (SortData::SortItemList::iterator itr = sortData.spriteIdx->begin(),
-                 end = sortData.spriteIdx->end();
-             itr != end;
-             ++itr) {
-            Vec4f projPos
-                = Vec4f(toOsg(_cloudsprites[itr->idx].position), 1.0f) * mvp;
-            itr->depth = projPos.z() / projPos.w();
+        
+        osg::Vec4Array* c = dynamic_cast<osg::Vec4Array*>(g->getColorArray());
+        osg::Vec2Array* t = dynamic_cast<osg::Vec2Array*>(g->getTexCoordArray(0));
+        Vec3f av[4];
+        Vec4f ac[4];
+        Vec2f at[4];        
+        
+        // Perform a single pass bubble sort of the array, 
+        // keeping track of whether we've had to make any changes
+        bool sorted = true;                      
+        for (unsigned int i = 4; i < v->size(); i = i + 4) {
+            // The position of the sprite is stored in the colour
+            // array, with the exception of the w() coordinate
+            // which is the z-scaling parameter.
+            Vec4f a = (*c)[i-4];
+            Vec4f aPos = Vec4f(a.x(), a.y(), a.z(), 1.0f) * mvp;
+            Vec4f b = (*c)[i];
+            Vec4f bPos = Vec4f(b.x(), b.y(), b.z(), 1.0f) * mvp;
+            
+            if ((aPos.z()/aPos.w()) < (bPos.z()/bPos.w() - 0.0001)) {
+                // a is non-trivially closer than b, so should be rendered
+                // later. Swap them around
+                for (int j = 0; j < 4; j++) {
+                    av[j] = (*v)[i+j-4];
+                    ac[j] = (*c)[i+j-4];
+                    at[j] = (*t)[i+j-4];
+                    
+                    (*v)[i+j -4] = (*v)[i+j];
+                    (*c)[i+j -4] = (*c)[i+j];
+                    (*t)[i+j -4] = (*t)[i+j];
+                    
+                    (*v)[i+j] = av[j];
+                    (*c)[i+j] = ac[j];
+                    (*t)[i+j] = at[j];
+                }
+                
+                // Indicate that the arrays were not sorted
+                // so we should check them next iteration
+                sorted = false;
+            }
         }
-        // Already sorted?
-        if (std::adjacent_find(sortData.spriteIdx->rbegin(),
-                               sortData.spriteIdx->rend(), SpriteComp())
-            == sortData.spriteIdx->rend()) {
+        
+        if (sorted) {
             // This cloud is sorted, so no need to re-sort.
+            
             sortData.skip_limit = sortData.skip_limit * 2;
             if (sortData.skip_limit > 30) {
                 // Jitter the skip frames to avoid synchronized sorts
                 // which will cause periodic frame-rate drops
                 sortData.skip_limit += sg_random() * 10;
             }
-            if (sortData.skip_limit > 128) {
-                // Maximum of every 128 frames (2 - 4 seconds)
-                sortData.skip_limit = 128 + sg_random() * 10;
+            if (sortData.skip_limit > 500) {
+                // Maximum of every 500 frames (10-20 seconds)
+                sortData.skip_limit = 500 + sg_random() * 10;
             }
-
         } else {
-            std::sort(sortData.spriteIdx->begin(), sortData.spriteIdx->end(),
-                      SpriteComp());
             sortData.skip_limit = 1;
         }
+        
         sortData.frameSorted = frameNumber;
     }
-
+    
     const Extensions* extensions = getExtensions(state.getContextID(),true);
-
-    for(SortData::SortItemList::const_iterator itr = sortData.spriteIdx->begin(),
-            end = sortData.spriteIdx->end();
-        itr != end;
-        ++itr) {
-        const CloudSprite& t = _cloudsprites[itr->idx];
-        GLfloat ua1[3] = { (GLfloat) t.texture_index_x/varieties_x,
-                           (GLfloat) t.texture_index_y/varieties_y,
-			   (GLfloat) t.width };
-        GLfloat ua2[3] = { (GLfloat) t.height,
-		           (GLfloat) t.shade,
-                           (GLfloat) t.cloud_height };
-        extensions->glVertexAttrib3fv(USR_ATTR_1, ua1 );
-        extensions->glVertexAttrib3fv(USR_ATTR_2, ua2 );
-        glColor4f(t.position.x(), t.position.y(), t.position.z(), 1.0);
-        _geometry->draw(renderInfo);
-    }
+    GLfloat ua1[3] = { (GLfloat) 1.0f,
+                       (GLfloat) shade_factor,
+                       (GLfloat) cloud_height };
+    GLfloat ua2[3] = { (GLfloat) bottom_factor,
+                       (GLfloat) middle_factor,
+                       (GLfloat) top_factor };
+                       
+    extensions->glVertexAttrib3fv(USR_ATTR_1, ua1 );
+    extensions->glVertexAttrib3fv(USR_ATTR_2, ua2 );
+    _geometry->draw(renderInfo);    
 }
 
 void CloudShaderGeometry::addSprite(const SGVec3f& p, int tx, int ty,
-                                    float w, float h,
-                                    float s, float cull, float cloud_height)
+                                    float w, float h, float cull)
 {
     // Only add the sprite if it is further than the cull distance to all other sprites
     // except for the center sprite.	
@@ -137,8 +156,77 @@ void CloudShaderGeometry::addSprite(const SGVec3f& p, int tx, int ty,
             return;
         }
     }
+    
+    _cloudsprites.push_back(CloudSprite(p, tx, ty, w, h));
+}
 
-    _cloudsprites.push_back(CloudSprite(p, tx, ty, w, h, s, cloud_height));
+void CloudShaderGeometry::generateGeometry()
+{
+    // Generate a set of geometries as a QuadStrip based on the list of sprites
+    int numsprites = _cloudsprites.size();
+    
+    // Create front and back polygons so we don't need to screw around
+    // with two-sided lighting in the shader.
+    osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec2Array> t = new osg::Vec2Array;
+    
+    int idx = 0;
+
+    for (CloudShaderGeometry::CloudSpriteList::iterator iter = _cloudsprites.begin();
+         iter != _cloudsprites.end();
+         ++iter) 
+    {
+    
+        float cw = 0.5f * iter->width;
+        float ch = 0.5f * iter->height;        
+        
+        // Create the vertices
+        v->push_back(osg::Vec3(0.0f, -cw, -ch));
+        v->push_back(osg::Vec3(0.0f,  cw, -ch));
+        v->push_back(osg::Vec3(0.0f,  cw, ch));
+        v->push_back(osg::Vec3(0.0f, -cw, ch));
+        
+        // The normals aren't actually used in lighting,
+        // but we set them per vertex as this is more
+        // efficient than an overall binding on some
+        // graphics cards.
+        n->push_back(osg::Vec3(1.0f, -1.0f, -1.0f));
+        n->push_back(osg::Vec3(1.0f,  1.0f, -1.0f));
+        n->push_back(osg::Vec3(1.0f,  1.0f,  1.0f));
+        n->push_back(osg::Vec3(1.0f, -1.0f,  1.0f));
+
+        // Set the texture coords for each vertex
+        // from the texture index, and the number
+        // of textures in the image    
+        int x = iter->texture_index_x;
+        int y = iter->texture_index_y;
+        
+        t->push_back(osg::Vec2( (float) x       / varieties_x, (float) y / varieties_y));
+        t->push_back(osg::Vec2( (float) (x + 1) / varieties_x, (float) y / varieties_y));
+        t->push_back(osg::Vec2( (float) (x + 1) / varieties_x, (float) (y + 1) / varieties_y));
+        t->push_back(osg::Vec2( (float) x       / varieties_x, (float) (y + 1) / varieties_y));
+        
+        // The color isn't actually use in lighting, but instead to indicate the center of rotation
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
+        
+        idx++;      
+    }
+    
+    //Quads now created, add it to the geometry.
+    osg::Geometry* geom = new osg::Geometry;
+    geom->setVertexArray(v);
+    geom->setTexCoordArray(0, t);
+    geom->setNormalArray(n);
+    geom->setNormalBinding(Geometry::BIND_PER_VERTEX);
+    geom->setColorArray(c);
+    geom->setColorBinding(Geometry::BIND_PER_VERTEX);
+    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,numsprites*4));
+    _geometry = geom;
 }
 
 bool CloudShaderGeometry_readLocalData(Object& obj, Input& fr)
@@ -166,17 +254,18 @@ bool CloudShaderGeometry_readLocalData(Object& obj, Input& fr)
         while (!fr.eof() && fr[0].getNoNestedBrackets() > entry) {
             SGVec3f v;
             int tx, ty;
-            float w, h, s, ch;
+            float w, h;
             if (fr[0].getFloat(v.x()) && fr[1].getFloat(v.y())
                 && fr[2].getFloat(v.z()) && fr[3].getInt(tx) && fr[4].getInt(ty) &&  
-                fr[5].getFloat(w) && fr[6].getFloat(h)&& fr[7].getFloat(s) && fr[8].getFloat(ch)) {
+                fr[5].getFloat(w) && fr[6].getFloat(h)) {
                     fr += 5;
                     //SGVec3f* v = new SGVec3f(v.x(), v.y(), v.z());
-                    geom._cloudsprites.push_back(CloudShaderGeometry::CloudSprite(v, tx, ty, w, h,s,ch));
+                    geom._cloudsprites.push_back(CloudShaderGeometry::CloudSprite(v, tx, ty, w, h));
             } else {
                 ++fr;
             }
         }
+        geom.generateGeometry();
     }
     return iteratorAdvanced;
 }
@@ -197,8 +286,7 @@ bool CloudShaderGeometry_writeLocalData(const Object& obj, Output& fw)
              fw.indent() << itr->position.x() << " " << itr->position.y() << " " 
                      << itr->position.z() << " " << itr->texture_index_x << " "
                      << itr->texture_index_y << " "  << itr->width << " " 
-                     << itr->height << " " << itr->shade 
-                     << itr->cloud_height << " "<< std::endl;
+                     << itr->height << " " << std::endl;
     }
     fw.moveOut();
     fw.indent() << "}" << std::endl;

@@ -22,9 +22,8 @@
 #include <cstdlib>
 #include <iostream>
 
-#include <plib/sg.h>
-
 #include "SGMath.hxx"
+#include "sg_random.h"
 
 template<typename T>
 bool
@@ -202,6 +201,34 @@ QuatTest(void)
 
 template<typename T>
 bool
+QuatDerivativeTest(void)
+{
+  for (unsigned i = 0; i < 100; ++i) {
+    // Generate the test case:
+    // Give a lower bound to the distance, so avoid testing cancelation
+    T dt = T(0.01) + sg_random();
+    // Start with orientation o0, angular velocity av and a random stepsize
+    SGQuat<T> o0 = SGQuat<T>::fromEulerDeg(T(360)*sg_random(), T(360)*sg_random(), T(360)*sg_random());
+    SGVec3<T> av(sg_random(), sg_random(), sg_random());
+    // Do one euler step and renormalize
+    SGQuat<T> o1 = normalize(o0 + dt*o0.derivative(av));
+
+    // Check if we can restore the angular velocity
+    SGVec3<T> av2 = SGQuat<T>::forwardDifferenceVelocity(o0, o1, dt);
+    if (!equivalent(av, av2))
+      return false;
+
+    // Test with the equivalent orientation
+    o1 = -o1;
+    av2 = SGQuat<T>::forwardDifferenceVelocity(o0, o1, dt);
+    if (!equivalent(av, av2))
+      return false;
+  }
+  return true;
+}
+
+template<typename T>
+bool
 MatrixTest(void)
 {
   // Create some test matrix
@@ -275,17 +302,17 @@ GeodesyTest(void)
   // uses examples from Williams aviation formulary
   SGGeoc lax = SGGeoc::fromRadM(-2.066470, 0.592539, 10.0);
   SGGeoc jfk = SGGeoc::fromRadM(-1.287762, 0.709186, 10.0);
-  
+
   double distNm = SGGeodesy::distanceRad(lax, jfk) * SG_RAD_TO_NM;
   std::cout << "distance is " << distNm << std::endl;
   if (0.5 < fabs(distNm - 2144)) // 2144 nm
 	return false;
-	
+
   double crsDeg = SGGeodesy::courseRad(lax, jfk) * SG_RADIANS_TO_DEGREES;
   std::cout << "course is " << crsDeg << std::endl;
   if (0.5 < fabs(crsDeg - 66)) // 66 degrees
 	return false;
-	
+
   SGGeoc adv;
   SGGeodesy::advanceRadM(lax, crsDeg * SG_DEGREES_TO_RADIANS, 100 * SG_NM_TO_METER, adv);
   std::cout << "lon:" << adv.getLongitudeRad() << ", lat:" << adv.getLatitudeRad() << std::endl;
@@ -300,6 +327,8 @@ GeodesyTest(void)
 int
 main(void)
 {
+  sg_srandom(17);
+
   // Do vector tests
   if (!Vec3Test<float>())
     return EXIT_FAILURE;
@@ -310,6 +339,10 @@ main(void)
   if (!QuatTest<float>())
     return EXIT_FAILURE;
   if (!QuatTest<double>())
+    return EXIT_FAILURE;
+  if (!QuatDerivativeTest<float>())
+    return EXIT_FAILURE;
+  if (!QuatDerivativeTest<double>())
     return EXIT_FAILURE;
 
   // Do matrix tests

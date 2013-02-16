@@ -29,7 +29,7 @@
 #include <osg/Group>
 #include <osg/Matrix>
 
-#include <simgear/math/SGMath.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 
 namespace simgear
 {
@@ -49,7 +49,7 @@ public:
     float height;
     float width;
     std::string texture;
-
+    
     void insert(const Tree& t)
     { _trees.push_back(t); }
     void insert(const SGVec3f& p, int t, float s)
@@ -60,8 +60,15 @@ public:
     const Tree& getTree(unsigned i) const
     { return _trees[i]; }
     TreeList _trees;
+    
+    ~TreeBin() {
+      _trees.clear();
+    }    
 };
 
-osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform);
+typedef std::list<TreeBin*> SGTreeBinList;
+
+osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
+                         const SGReaderWriterOptions* options);
 }
 #endif

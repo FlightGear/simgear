@@ -25,6 +25,7 @@
 #include <OpenThreads/Mutex>
 #include <osg/ref_ptr>
 #include <osg/Array>
+#include <map>
 
 namespace osg
 {
@@ -34,10 +35,11 @@ class CullFace;
 class Depth;
 class ShadeModel;
 class Texture2D;
+class Texture3D;
 class TexEnv;
 }
 
-#include <simgear/structure/Singleton.hxx>
+#include <simgear/scene/util/OsgSingleton.hxx>
 
 // Return read-only instances of common OSG state attributes.
 namespace simgear
@@ -45,6 +47,8 @@ namespace simgear
 class StateAttributeFactory :
         public ReferencedSingleton<StateAttributeFactory> {
 public:
+    ~StateAttributeFactory();
+          
     // Alpha test > .01
     osg::AlphaFunc* getStandardAlphaFunc() { return _standardAlphaFunc.get(); }
     // alpha source, 1 - alpha destination
@@ -67,6 +71,7 @@ public:
     osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
     // Standard depth with writes disabled.
     osg::Depth* getDepthWritesDisabled() { return _depthWritesDisabled.get(); }
+    osg::Texture3D* getNoiseTexture(int size);
     StateAttributeFactory();    
 protected:
     osg::ref_ptr<osg::AlphaFunc> _standardAlphaFunc;
@@ -80,6 +85,8 @@ protected:
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;
     osg::ref_ptr<osg::Depth> _depthWritesDisabled;
+    typedef std::map<int, osg::ref_ptr<osg::Texture3D> > NoiseMap;
+    NoiseMap _noises;
 };
 }
 #endif

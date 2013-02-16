@@ -31,7 +31,7 @@
 #include <osgDB/Registry>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SplicingVisitor.hxx>
@@ -117,12 +117,13 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
 
 Effect* makeEffect(const string& name,
                    bool realizeTechniques,
-                   const SGReaderWriterXMLOptions* options)
+                   const SGReaderWriterOptions* options)
 {
     {
         OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
         EffectMap::iterator itr = effectMap.find(name);
-        if (itr != effectMap.end())
+        if ((itr != effectMap.end())&&
+            itr->second.valid())
             return itr->second.get();
     }
     string effectFileName(name);
@@ -160,7 +161,7 @@ Effect* makeEffect(const string& name,
 
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
-                   const SGReaderWriterXMLOptions* options)
+                   const SGReaderWriterOptions* options)
 {
     // Give default names to techniques and passes
     vector<SGPropertyNode_ptr> techniques = prop->getChildren("technique");
@@ -205,8 +206,9 @@ Effect* makeEffect(SGPropertyNode* prop,
                     lock(effectMutex);
                 cache = parent->getCache();
                 itr = cache->find(key);
-                if (itr != cache->end()) {
-                    effect = itr->second.get();
+                if ((itr != cache->end())&&
+                    itr->second.lock(effect))
+                {
                     effect->generator = parent->generator;  // Copy the generators
                 }
             }
@@ -219,8 +221,13 @@ Effect* makeEffect(SGPropertyNode* prop,
                     lock(effectMutex);
                 pair<Effect::Cache::iterator, bool> irslt
                     = cache->insert(make_pair(key, effect));
-                if (!irslt.second)
-                    effect = irslt.first->second;
+                if (!irslt.second) {
+                    ref_ptr<Effect> old;
+                    if (irslt.first->second.lock(old))
+                        effect = old; // Another thread beat us in creating it! Discard our own...
+                    else
+                        irslt.first->second = effect; // update existing, but empty observer
+                }
                 effect->generator = parent->generator;  // Copy the generators
             }
         } else {

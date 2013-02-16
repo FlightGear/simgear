@@ -15,12 +15,16 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <osgDB/FileNameUtils>
 #include <osgDB/Registry>
 
 #include <simgear/scene/model/ModelRegistry.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
-#include "SGReaderWriterBTGOptions.hxx"
 #include "SGReaderWriterBTG.hxx"
 #include "obj.hxx"
 
@@ -29,6 +33,7 @@ using namespace simgear;
 SGReaderWriterBTG::SGReaderWriterBTG()
 {
     supportsExtension("btg", "SimGear btg database format");
+    // supportsExtension("btg.gz", "SimGear btg database format");
 }
 
 SGReaderWriterBTG::~SGReaderWriterBTG()
@@ -43,35 +48,23 @@ const char* SGReaderWriterBTG::className() const
 bool
 SGReaderWriterBTG::acceptsExtension(const std::string& extension) const
 {
-    std::string lowercase_ext = osgDB::convertToLowerCase(extension);
-    if (lowercase_ext == "gz")
+    // trick the osg extensions match algorithm to accept btg.gz files.
+    if (osgDB::convertToLowerCase(extension) == "gz")
         return true;
     return osgDB::ReaderWriter::acceptsExtension(extension);
 }
 
 osgDB::ReaderWriter::ReadResult
 SGReaderWriterBTG::readNode(const std::string& fileName,
-                            const osgDB::ReaderWriter::Options* options) const
+                            const osgDB::Options* options) const
 {
-    SGMaterialLib* matlib = 0;
-    bool calcLights = false;
-    bool useRandomObjects = false;
-    bool useRandomVegetation = false;
-    const SGReaderWriterBTGOptions* btgOptions
-        = dynamic_cast<const SGReaderWriterBTGOptions*>(options);
-    if (btgOptions) {
-        matlib = btgOptions->getMatlib();
-        calcLights = btgOptions->getCalcLights();
-        useRandomObjects = btgOptions->getUseRandomObjects();
-        useRandomVegetation = btgOptions->getUseRandomVegetation();
-    }
-    osg::Node* result = SGLoadBTG(fileName, matlib, calcLights,
-                                  useRandomObjects,
-                                  useRandomVegetation);
-    if (result)
-        return result;
-    else
+    const SGReaderWriterOptions* sgOptions;
+    sgOptions = dynamic_cast<const SGReaderWriterOptions*>(options);
+    osg::Node* result = SGLoadBTG(fileName, sgOptions);
+    if (!result)
         return ReadResult::FILE_NOT_HANDLED;
+
+    return result;
 }
 
 

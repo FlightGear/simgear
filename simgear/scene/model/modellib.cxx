@@ -21,6 +21,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <osg/PagedLOD>
+#include <osg/ProxyNode>
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osgDB/Registry>
@@ -30,15 +32,12 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/misc/ResourceManager.hxx>
 
-#include "SGPagedLOD.hxx"
 #include "SGReaderWriterXML.hxx"
-#include "SGReaderWriterXMLOptions.hxx"
 
 #include "modellib.hxx"
-
-#include <simgear/math/SGMath.hxx>
 
 using std::string;
 using namespace simgear;
@@ -56,7 +55,6 @@ void SGModelLib::init(const string &root_dir, SGPropertyNode* root)
 {
     osgDB::Registry::instance()->getDataFilePathList().push_front(root_dir);
     static_propRoot = root;
-    SGPagedLOD::setRenderingCache(root->getBoolValue("/sim/rendering/cache",true));
 }
 
 void SGModelLib::setPanelFunc(panel_func pf)
@@ -65,14 +63,16 @@ void SGModelLib::setPanelFunc(panel_func pf)
 }
 
 std::string SGModelLib::findDataFile(const std::string& file, 
-  const osgDB::ReaderWriter::Options* opts,
+  const osgDB::Options* opts,
   SGPath currentPath)
 {
+  if (file.empty())
+    return file;
   SGPath p = ResourceManager::instance()->findPath(file, currentPath);
   if (p.exists()) {
     return p.str();
   }
-      
+
   // finally hand on to standard OSG behaviour
   return osgDB::findDataFile(file, opts);
 }
@@ -87,7 +87,7 @@ SGModelLib::~SGModelLib()
 
 namespace
 {
-osg::Node* loadFile(const string& path, SGReaderWriterXMLOptions* options)
+osg::Node* loadFile(const string& path, SGReaderWriterOptions* options)
 {
     using namespace osg;
     using namespace osgDB;
@@ -107,8 +107,9 @@ SGModelLib::loadModel(const string &path,
                        SGModelData *data,
                        bool load2DPanels)
 {
-    osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
-    opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
+    opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     
     if (load2DPanels) {
@@ -123,23 +124,50 @@ SGModelLib::loadModel(const string &path,
 }
 
 osg::Node*
+SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
+                             SGModelData *data)
+{
+    osg::ProxyNode* proxyNode = new osg::ProxyNode;
+    proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
+    proxyNode->setFileName(0, path);
+
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
+    opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
+    opt->setModelData(data);
+    opt->setLoadPanel(static_panelFunc);
+    if (SGPath(path).lower_extension() == "ac")
+        opt->setInstantiateEffects(true);
+    if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
+        opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
+    else
+        opt->setObjectCacheHint(osgDB::Options::CACHE_NONE);
+    proxyNode->setDatabaseOptions(opt.get());
+
+    return proxyNode;
+}
+
+osg::Node*
 SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
                            SGModelData *data)
 {
-    SGPagedLOD *plod = new SGPagedLOD;
+    osg::PagedLOD *plod = new osg::PagedLOD;
     plod->setName("Paged LOD for \"" + path + "\"");
     plod->setFileName(0, path);
     plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
 
-    osg::ref_ptr<SGReaderWriterXMLOptions> opt
-        = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()
-                                         ->getOptions()));
-    opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
+    opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
-    if (boost::iends_with(path, ".ac"))
+    if (SGPath(path).lower_extension() == "ac")
         opt->setInstantiateEffects(true);
-    plod->setReaderWriterOptions(opt.get());
+    if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
+        opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
+    else
+        opt->setObjectCacheHint(osgDB::Options::CACHE_NONE);
+    plod->setDatabaseOptions(opt.get());
     return plod;
 }
 

@@ -98,6 +98,15 @@ inline void SG_NORMALIZE_RANGE( T &val, const T min, const T max ) {
     T step = max - min;
     while( val >= max )  val -= step;
     while( val < min ) val += step;
-};
+}
 
+// avoid an 'unused parameter' compiler warning.
+#define SG_UNUSED(x) (void)x
+
+// easy way to disable the copy constructor and assignment operator
+// on an object
+#define SG_DISABLE_COPY(Class) \
+    Class(const Class &); \
+    Class &operator=(const Class &);
+   
 #endif // _SG_INLINES_H

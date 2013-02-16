@@ -41,8 +41,9 @@
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
-
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 using namespace simgear;
 // Ocean tile with curvature and apron to hide cracks. The cracks are
@@ -60,12 +61,11 @@ using namespace simgear;
 // it may be superfluous for such a small mesh.
 namespace
 {
-const int lonPoints = 5;
-const int latPoints = 5;
-
 class OceanMesh {
 public:
-    OceanMesh():
+    OceanMesh(int latP, int lonP):
+        latPoints(latP),
+        lonPoints(lonP),
         geoPoints(latPoints * lonPoints + 2 * (lonPoints + latPoints)),
         geod_nodes(latPoints * lonPoints),
         vl(new osg::Vec3Array(geoPoints)),
@@ -75,11 +75,24 @@ public:
         nlArray(*nl, lonPoints + 2, lonPoints, 1),
         tlArray(*tl, lonPoints + 2, lonPoints, 1)
     {
+        int numPoints = latPoints * lonPoints;
+        geod = new SGGeod[numPoints];
+        normals = new SGVec3f[numPoints];
+        rel = new SGVec3d[numPoints];
     }
+    
+    ~OceanMesh()
+    {
+        delete[] geod;
+        delete[] normals;
+        delete[] rel;
+    }
+    
+    const int latPoints, lonPoints;
     const int geoPoints;
-    SGGeod geod[latPoints][lonPoints];
-    SGVec3f normals[latPoints][lonPoints];
-    SGVec3d rel[latPoints][lonPoints];
+    SGGeod* geod;
+    SGVec3f* normals;
+    SGVec3d* rel;
 
     std::vector<SGGeod> geod_nodes;
 
@@ -114,10 +127,11 @@ void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
     for (int j = 0; j < latPoints; j++) {
         double lat = startLat + j * latInc;
         for (int i = 0; i < lonPoints; i++) {
-            geod[j][i] = SGGeod::fromDeg(startLon + i * longInc, lat);
-            SGVec3d cart = SGVec3d::fromGeod(geod[j][i]);
-            rel[j][i] = orient.transform(cart - cartCenter);
-            normals[j][i] = toVec3f(orient.transform(normalize(cart)));
+            int index = (j * lonPoints) + i;
+            geod[index] = SGGeod::fromDeg(startLon + i * longInc, lat);
+            SGVec3d cart = SGVec3d::fromGeod(geod[index]);
+            rel[index] = orient.transform(cart - cartCenter);
+            normals[index] = toVec3f(orient.transform(normalize(cart)));
         }
     }
     
@@ -130,8 +144,9 @@ void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
     VectorArrayAdapter<int_list> rectArray(rectangle, lonPoints);
     for (int j = 0; j < latPoints; j++) {
         for (int i = 0; i < lonPoints; i++) {
-            geodNodesArray(j, i) = geod[j][i];
-            rectArray(j, i) = j * 5 + i;
+            int index = (j * lonPoints) + i;
+            geodNodesArray(j, i) = geod[index];
+            rectArray(j, i) = index;
         }
     }
     
@@ -144,8 +159,9 @@ void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
   
     for (int j = 0; j < latPoints; j++) {
         for (int i = 0; i < lonPoints; ++i) {
-            vlArray(j, i) = toOsg(rel[j][i]);
-            nlArray(j, i) = toOsg(normals[j][i]);
+            int index = (j * lonPoints) + i;
+            vlArray(j, i) = toOsg(rel[index]);
+            nlArray(j, i) = toOsg(normals[index]);
             tlArray(j, i) = toOsg(texsArray(j, i));
         }
     }
@@ -259,7 +275,7 @@ void fillDrawElementsWithApron(short height, short width,
 }
 }
 
-osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
+osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints, int lonPoints)
 {
     Effect *effect = 0;
 
@@ -277,7 +293,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
     } else {
         SG_LOG( SG_TERRAIN, SG_ALERT, "Ack! unknown use material name = Ocean");
     }
-    OceanMesh grid;
+    OceanMesh grid(latPoints, lonPoints);
     // Calculate center point
     SGVec3d cartCenter = SGVec3d::fromGeod(b.get_center());
     SGGeod geodPos = SGGeod::fromCart(cartCenter);
@@ -321,6 +337,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
     transform->setMatrix(osg::Matrix::rotate(toOsg(hlOr))*
                          osg::Matrix::translate(toOsg(cartCenter)));
     transform->addChild(geode);
-  
+    transform->setNodeMask( ~simgear::MODELLIGHT_BIT );
+
     return transform;
 }

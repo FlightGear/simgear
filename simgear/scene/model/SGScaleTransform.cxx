@@ -27,6 +27,8 @@
 #include <osgDB/Input>
 #include <osgDB/Output>
 
+#include <simgear/scene/util/OsgMath.hxx>
+
 #include "SGScaleTransform.hxx"
 
 SGScaleTransform::SGScaleTransform() :

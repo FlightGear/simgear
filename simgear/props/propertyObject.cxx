@@ -21,8 +21,6 @@
 
 #include "propertyObject.hxx"
 
-#include <simgear/math/SGMath.hxx>
-
 #include <simgear/structure/exception.hxx>
 
 namespace simgear
@@ -33,6 +31,13 @@ SGPropertyNode* static_defaultRoot = NULL;
 void PropertyObjectBase::setDefaultRoot(SGPropertyNode* aRoot)
 {
   static_defaultRoot = aRoot;
+}
+  
+PropertyObjectBase::PropertyObjectBase() :
+  _path(NULL),
+  _prop(NULL)
+{
+    
 }
 
 PropertyObjectBase::PropertyObjectBase(const PropertyObjectBase& aOther) :

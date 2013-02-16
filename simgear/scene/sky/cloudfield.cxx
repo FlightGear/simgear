@@ -28,6 +28,7 @@
 #include <osg/Texture2D>
 #include <osg/PositionAttitudeTransform>
 #include <osg/Vec4f>
+#include <osgSim/Impostor>
 
 #include <simgear/compiler.h>
 
@@ -43,7 +44,7 @@ using namespace std;
 
 using std::vector;
 
-#include <simgear/environment/visual_enviro.hxx>
+//#include <simgear/environment/visual_enviro.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include "sky.hxx"
@@ -68,8 +69,15 @@ float SGCloudField::fieldSize = 50000.0f;
 double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 bool SGCloudField::wrap = true;
-float SGCloudField::RADIUS_LEVEL_1 = 20000.0f;
-float SGCloudField::RADIUS_LEVEL_2 = 5000.0f;
+float SGCloudField::MAX_CLOUD_DEPTH = 2000.0f;
+bool SGCloudField::use_impostors = false;
+float SGCloudField::lod1_range = 8000.0f;
+float SGCloudField::lod2_range = 4000.0f;
+float SGCloudField::impostor_distance = 15000.0f;
+
+int impostorcount = 0;
+int lodcount = 0;
+int cloudcount = 0;
 
 SGVec3f SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 
@@ -81,7 +89,9 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     if (placed_root->getNumChildren() == 0) return false;
 
     SGVec3<double> cart;
-    SGGeodesy::SGGeodToCart(SGGeod::fromRadFt(lon, lat, 0.0f), cart);
+    SGGeod new_pos = SGGeod::fromRadFt(lon, lat, 0.0f);
+                            
+    SGGeodesy::SGGeodToCart(new_pos, cart);
     osg::Vec3f osg_pos = toOsg(cart);
     osg::Quat orient = toOsg(SGQuatd::fromLonLatRad(lon, lat) * SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0)));
     
@@ -93,8 +103,6 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     osg::Vec3f wind = osg::Vec3f(-cos((direction + 180)* SGD_DEGREES_TO_RADIANS) * speed * dt,
                                  sin((direction + 180)* SGD_DEGREES_TO_RADIANS) * speed * dt,
                                  0.0f);
-    //cout << "Wind: " << direction << "@" << speed << "\n";
-    
     osg::Vec3f windosg = field_transform->getAttitude() * wind;
     field_transform->setPosition(field_transform->getPosition() + windosg);
     
@@ -108,39 +116,45 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         field_transform->setPosition(osg_pos);
         field_transform->setAttitude(orient);
         old_pos = osg_pos;
-    } else {
+    } else {        
+        osg::Quat fta =  field_transform->getAttitude();
+        osg::Quat ftainv = field_transform->getAttitude().inverse();
+        
         // delta is the vector from the old position to the new position in cloud-coords
-        osg::Vec3f delta = field_transform->getAttitude().inverse() * (osg_pos - old_pos);
-        //cout << "Delta: " << delta.length() << "\n";
-
-        for (unsigned int i = 0; i < placed_root->getNumChildren(); i++) {
-            osg::ref_ptr<osg::LOD> lodnode1 = (osg::LOD*) placed_root->getChild(i);
-            osg::Vec3f v = delta - lodnode1->getCenter();
-
-            if ((v.x() < -0.5*fieldSize) ||
-                (v.x() >  0.5*fieldSize) ||
-                (v.y() < -0.5*fieldSize) ||
-                (v.y() >  0.5*fieldSize)   )  {
-                //cout << "V: " << v.x() << ", " << v.y() << "\n";
-
-                osg::Vec3f shift = osg::Vec3f(0.0f, 0.0f, 0.0f);
-                if (v.x() > 0.5*fieldSize) { shift += osg::Vec3f(fieldSize, 0.0f, 0.0f); }
-                if (v.x() < -0.5*fieldSize) { shift -= osg::Vec3f(fieldSize, 0.0f, 0.0f); }
-
-                if (v.y() > 0.5*fieldSize) { shift += osg::Vec3f(0.0f, fieldSize, 0.0f); }
-                if (v.y() < -0.5*fieldSize) { shift -= osg::Vec3f(0.0f, fieldSize, 0.0f); }
-
-                //cout << "Shift: " << shift.x() << ", " << shift.y() << "\n\n";
-
-                for (unsigned int j = 0; j < lodnode1->getNumChildren(); j++) {
-                    osg::ref_ptr<osg::LOD> lodnode2 = (osg::LOD*) lodnode1->getChild(j);
-                    for (unsigned int k = 0; k < lodnode2->getNumChildren(); k++) {
-                        osg::ref_ptr<osg::PositionAttitudeTransform> pat =(osg::PositionAttitudeTransform*) lodnode2->getChild(k);
-                        pat->setPosition(pat->getPosition() + shift);
-                    }
-                }
+        // osg::Vec3f delta = ftainv * (osg_pos - old_pos);
+        old_pos = osg_pos;
+                
+        // Check if any of the clouds should be moved.
+        for(CloudHash::const_iterator itr = cloud_hash.begin(), end = cloud_hash.end();
+            itr != end;
+            ++itr) {
+              
+             osg::ref_ptr<osg::PositionAttitudeTransform> pat = itr->second;
+            
+             if (pat == 0) {
+                continue;
+             }
+             
+             osg::Vec3f currpos = field_transform->getPosition() + fta * pat->getPosition();
+                                      
+             // Determine the vector from the new position to the cloud in cloud-space.
+             osg::Vec3f w =  ftainv * (currpos - toOsg(cart));               
+              
+             // Determine a course if required. Note that this involves some axis translation.
+             float x = 0.0;
+             float y = 0.0;
+             if (w.x() >  0.6*fieldSize) { y =  fieldSize; }
+             if (w.x() < -0.6*fieldSize) { y = -fieldSize; }
+             if (w.y() >  0.6*fieldSize) { x = -fieldSize; }
+             if (w.y() < -0.6*fieldSize) { x =  fieldSize; }
+              
+             if ((x != 0.0) || (y != 0.0)) {
+                 removeCloudFromTree(pat);
+                 SGGeod p = SGGeod::fromCart(toSG(field_transform->getPosition() + 
+                                                  fta * pat->getPosition()));
+                 addCloudToTree(pat, p, x, y);                
             }
-        }
+        }        
     }
     
     // Render the clouds in order from farthest away layer to nearest one.
@@ -163,10 +177,13 @@ SGCloudField::SGCloudField() :
     field_transform->addChild(altitude_transform.get());
     placed_root = new osg::Group();
     altitude_transform->addChild(placed_root);
+    impostorcount = 0;
+    lodcount = 0;
+    cloudcount = 0;
 }
     
 SGCloudField::~SGCloudField() {
-        }
+}
 
 
 void SGCloudField::clear(void) {
@@ -180,14 +197,15 @@ void SGCloudField::clear(void) {
     cloud_hash.clear();
 }
 
-void SGCloudField::applyVisRange(void)
+void SGCloudField::applyVisAndLoDRange(void)
 {
     for (unsigned int i = 0; i < placed_root->getNumChildren(); i++) {
         osg::ref_ptr<osg::LOD> lodnode1 = (osg::LOD*) placed_root->getChild(i);
         for (unsigned int j = 0; j < lodnode1->getNumChildren(); j++) {
+            lodnode1->setRange(j, 0.0f, lod1_range + lod2_range + view_distance + MAX_CLOUD_DEPTH);
             osg::ref_ptr<osg::LOD> lodnode2 = (osg::LOD*) lodnode1->getChild(j);
             for (unsigned int k = 0; k < lodnode2->getNumChildren(); k++) {
-                lodnode2->setRange(k, 0.0f, view_distance);
+                lodnode2->setRange(k, 0.0f, view_distance + MAX_CLOUD_DEPTH);
             }
         }
     }
@@ -195,7 +213,7 @@ void SGCloudField::applyVisRange(void)
             
 bool SGCloudField::addCloud(float lon, float lat, float alt, int index, osg::ref_ptr<EffectGeode> geode) {
   return addCloud(lon, lat, alt, 0.0f, 0.0f, index, geode);
-        }
+}
 
 bool SGCloudField::addCloud(float lon, float lat, float alt, float x, float y, int index, osg::ref_ptr<EffectGeode> geode) {
     // If this cloud index already exists, don't replace it.
@@ -207,50 +225,89 @@ bool SGCloudField::addCloud(float lon, float lat, float alt, float x, float y, i
     addCloudToTree(transform, lon, lat, alt, x, y);
     cloud_hash[index] = transform;
     return true;
-    }
-    
+}
+
 // Remove a give cloud from inside the tree, without removing it from the cloud hash
 void SGCloudField::removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform)
 {
+    if (transform == 0)
+    {
+        // Ooops!
+        return;
+    }
     osg::ref_ptr<osg::Group> lodnode = transform->getParent(0);
     lodnode->removeChild(transform);
+    cloudcount--;
 
-    // Clean up the LOD nodes if required
     if (lodnode->getNumChildren() == 0) {
         osg::ref_ptr<osg::Group> lodnode1 = lodnode->getParent(0);
-            
+        osg::ref_ptr<osgSim::Impostor> impostornode = (osgSim::Impostor*) lodnode1->getParent(0);
+
         lodnode1->removeChild(lodnode);
-            
+        lodcount--;
+
         if (lodnode1->getNumChildren() == 0) {
-            placed_root->removeChild(lodnode1);
+          impostornode->removeChild(lodnode1);
+          placed_root->removeChild(impostornode);
+          impostorcount--;
         }
     }
 }
 
 void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform,
                                   float lon, float lat, float alt, float x, float y) {
-    // Work out where this cloud should go in OSG coordinates.
-    SGVec3<double> cart;
-    SGGeodesy::SGGeodToCart(SGGeod::fromDegFt(lon, lat, alt), cart);
-
-    // Convert to the scenegraph orientation where we just rotate around
-    // the y axis 180 degrees.
-    osg::Quat orient = toOsg(SGQuatd::fromLonLatDeg(lon, lat) * SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0)));
-    osg::Vec3f pos = toOsg(cart) + orient * osg::Vec3f(x, y, 0.0f);
-
-    if (old_pos == osg::Vec3f(0.0f, 0.0f, 0.0f)) {
-        // First se tup.
-        SGVec3<double> fieldcenter;
-        SGGeodesy::SGGeodToCart(SGGeod::fromDegFt(lon, lat, 0.0f), fieldcenter);
-
-        field_transform->setPosition(toOsg(fieldcenter));
-        field_transform->setAttitude(orient);
-        old_pos = toOsg(fieldcenter);
+    
+    // Get the base position
+    SGGeod loc = SGGeod::fromDegFt(lon, lat, alt);
+    addCloudToTree(transform, loc, x, y);      
 }
 
-    pos = pos - field_transform->getPosition();
 
-    pos = orient.inverse() * pos;
+void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform,
+                                  SGGeod loc, float x, float y) {
+        
+    float alt = loc.getElevationFt();
+    // Determine any shift by x/y
+    if ((x != 0.0f) || (y != 0.0f)) {
+        double crs = 90.0 - SG_RADIANS_TO_DEGREES * atan2(y, x); 
+        double dst = sqrt(x*x + y*y);
+        double endcrs;
+        
+        SGGeod base_pos = SGGeod::fromGeodFt(loc, 0.0f);            
+        SGGeodesy::direct(base_pos, crs, dst, loc, endcrs);
+    }
+    
+    // The direct call provides the position at 0 alt, so adjust as required.      
+    loc.setElevationFt(alt);    
+    addCloudToTree(transform, loc);    
+}
+        
+        
+void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, SGGeod loc) {        
+    // Work out where this cloud should go in OSG coordinates.
+    SGVec3<double> cart;
+    SGGeodesy::SGGeodToCart(loc, cart);
+    osg::Vec3f pos = toOsg(cart);
+
+
+    if (old_pos == osg::Vec3f(0.0f, 0.0f, 0.0f)) {
+        // First setup.
+        SGVec3<double> fieldcenter;
+        SGGeodesy::SGGeodToCart(SGGeod::fromDegFt(loc.getLongitudeDeg(), loc.getLatitudeDeg(), 0.0f), fieldcenter);
+        // Convert to the scenegraph orientation where we just rotate around
+        // the y axis 180 degrees.
+        osg::Quat orient = toOsg(SGQuatd::fromLonLatDeg(loc.getLongitudeDeg(), loc.getLatitudeDeg()) * SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0)));
+        
+        osg::Vec3f osg_pos = toOsg(fieldcenter);            
+        
+        field_transform->setPosition(osg_pos);
+        field_transform->setAttitude(orient);
+        old_pos = osg_pos;
+    }
+    
+    // Convert position to cloud-coordinates
+    pos = pos - field_transform->getPosition();
+    pos = field_transform->getAttitude().inverse() * pos;    
 
     // We have a two level dynamic quad tree which the cloud will be added
     // to. If there are no appropriate nodes in the quad tree, they are
@@ -258,43 +315,55 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
     bool found = false;
     osg::ref_ptr<osg::LOD> lodnode1;
     osg::ref_ptr<osg::LOD> lodnode;
+    osg::ref_ptr<osgSim::Impostor> impostornode;
 
     for (unsigned int i = 0; (!found) && (i < placed_root->getNumChildren()); i++) {
         lodnode1 = (osg::LOD*) placed_root->getChild(i);
-        if ((lodnode1->getCenter() - pos).length2() < RADIUS_LEVEL_1*RADIUS_LEVEL_1) {
-            // New cloud is within RADIUS_LEVEL_1 of the center of the LOD node.
-            //cout << "Adding cloud to existing LoD level 1 node. Distance:" << (lodnode1->getCenter() - pos).length() << "\n";
-            found = true;
-                        }
-                    }
+        if ((lodnode1->getCenter() - pos).length2() < lod1_range*lod1_range) {
+          // New cloud is within RADIUS_LEVEL_1 of the center of the LOD node.
+          found = true;
+        }         
+    }
 
     if (!found) {
-        lodnode1 = new osg::LOD();
-        placed_root->addChild(lodnode1.get());
-        //cout << "Adding cloud to new LoD node\n";
-                }
+        if (use_impostors) {
+          impostornode = new osgSim::Impostor();
+          impostornode->setImpostorThreshold(impostor_distance);
+          //impostornode->setImpostorThresholdToBound();
+          //impostornode->setCenter(pos);                
+          placed_root->addChild(impostornode.get());
+          lodnode1 = (osg::ref_ptr<osg::LOD>) impostornode;
+        } else {
+          lodnode1 = new osg::LOD();
+          placed_root->addChild(lodnode1.get());
+        }
+        impostorcount++;
+    }
 
     // Now check if there is a second level LOD node at an appropriate distance
     found = false;
-
-    for (unsigned int j = 0; (!found) && (j < lodnode1->getNumChildren()); j++) {
+    
+    for (unsigned int j = 0; (!found) && (j < lodnode1->getNumChildren()); j++) {      
         lodnode = (osg::LOD*) lodnode1->getChild(j);
-        if ((lodnode->getCenter() - pos).length2() < RADIUS_LEVEL_2*RADIUS_LEVEL_2) {
+        if ((lodnode->getCenter() - pos).length2() < lod2_range*lod2_range) {
             // We've found the right leaf LOD node
-            //cout << "Found existing LOD leaf node. Distance:"<< (lodnode->getCenter() - pos).length() << "\n";
             found = true;
-            }
         }
+    }
 
     if (!found) {
-        // No suitable leave node was found, so we need to add one.
+        // No suitable leaf node was found, so we need to add one.
         lodnode = new osg::LOD();
-        lodnode1->addChild(lodnode, 0.0f, 4*RADIUS_LEVEL_1);
-        //cout << "Adding cloud to new LoD node\n";
-}
-
+        lodnode1->addChild(lodnode, 0.0f, lod1_range + lod2_range + view_distance + MAX_CLOUD_DEPTH);
+        lodcount++;
+    } 
+    
     transform->setPosition(pos);
-    lodnode->addChild(transform.get(), 0.0f, view_distance);
+    lodnode->addChild(transform.get(), 0.0f, view_distance + MAX_CLOUD_DEPTH);
+    cloudcount++;
+    SG_LOG(SG_ENVIRONMENT, SG_DEBUG, "Impostors: " << impostorcount <<
+                                     " LoD: " << lodcount << 
+                                     " Clouds: " << cloudcount);
 
     lodnode->dirtyBound();
     lodnode1->dirtyBound();
@@ -303,7 +372,7 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
         
 bool SGCloudField::deleteCloud(int identifier) {
     osg::ref_ptr<osg::PositionAttitudeTransform> transform = cloud_hash[identifier];
-    if (transform == NULL) return false;
+    if (transform == 0) return false;
         
     removeCloudFromTree(transform);
     cloud_hash.erase(identifier);

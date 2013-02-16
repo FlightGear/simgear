@@ -25,9 +25,11 @@
 #include <osg/Array>
 #include <osg/Geometry>
 #include <osg/PrimitiveSet>
+#include <osg/Texture2D>
+#include <stdio.h>
 
 #include <simgear/math/sg_random.h>
-#include <simgear/math/SGMath.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include "SGTriangleBin.hxx"
 
 
@@ -106,6 +108,7 @@ public:
   // The points are offsetted away from the triangles in
   // offset * positive normal direction.
   void addRandomSurfacePoints(float coverage, float offset,
+                              osg::Texture2D* object_mask,
                               std::vector<SGVec3f>& points)
   {
     unsigned num = getNumTriangles();
@@ -114,6 +117,9 @@ public:
       SGVec3f v0 = getVertex(triangleRef[0]).vertex;
       SGVec3f v1 = getVertex(triangleRef[1]).vertex;
       SGVec3f v2 = getVertex(triangleRef[2]).vertex;
+      SGVec2f t0 = getVertex(triangleRef[0]).texCoord;
+      SGVec2f t1 = getVertex(triangleRef[1]).texCoord;
+      SGVec2f t2 = getVertex(triangleRef[2]).texCoord;
       SGVec3f normal = cross(v1 - v0, v2 - v0);
       
       // Compute the area
@@ -140,8 +146,24 @@ public:
         }
         float c = 1 - a - b;
         SGVec3f randomPoint = offsetVector + a*v0 + b*v1 + c*v2;
-        points.push_back(randomPoint);
-        unit -= coverage;
+        
+        if (object_mask != NULL) {
+          SGVec2f texCoord = a*t0 + b*t1 + c*t2;
+          
+          // Check this random point against the object mask
+          // red channel.
+          osg::Image* img = object_mask->getImage();            
+          unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
+          unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+          
+          if (mt_rand(&seed) < img->getColor(x, y).r()) {                
+            points.push_back(randomPoint);        
+          }                    
+        } else {      
+          // No object mask, so simply place the object  
+          points.push_back(randomPoint);        
+        }
+        unit -= coverage;        
       }
     }
   }
@@ -149,8 +171,10 @@ public:
   // Computes and adds random surface points to the points list for tree
   // coverage.
   void addRandomTreePoints(float wood_coverage, 
-                           float tree_density,
-                           float wood_size,
+                           osg::Texture2D* object_mask,
+                           float vegetation_density,
+                           float cos_max_density_angle,
+                           float cos_zero_density_angle,
                            std::vector<SGVec3f>& points)
   {
     unsigned num = getNumTriangles();
@@ -159,91 +183,76 @@ public:
       SGVec3f v0 = getVertex(triangleRef[0]).vertex;
       SGVec3f v1 = getVertex(triangleRef[1]).vertex;
       SGVec3f v2 = getVertex(triangleRef[2]).vertex;
+      SGVec2f t0 = getVertex(triangleRef[0]).texCoord;
+      SGVec2f t1 = getVertex(triangleRef[1]).texCoord;
+      SGVec2f t2 = getVertex(triangleRef[2]).texCoord;
       SGVec3f normal = cross(v1 - v0, v2 - v0);
+      
+      // Ensure the slope isn't too steep by checking the
+      // cos of the angle between the slope normal and the
+      // vertical (conveniently the z-component of the normalized
+      // normal) and values passed in.                   
+      float alpha = normalize(normal).z();
+      float slope_density = 1.0;
+      
+      if (alpha < cos_zero_density_angle) 
+        continue; // Too steep for any vegetation      
+      
+      if (alpha < cos_max_density_angle) {
+        slope_density = 
+          (alpha - cos_zero_density_angle) / (cos_max_density_angle - cos_zero_density_angle);
+      }
       
       // Compute the area
       float area = 0.5f*length(normal);
       if (area <= SGLimitsf::min())
         continue;
+        
+      // Determine the number of trees, taking into account vegetation
+      // density (which is linear) and the slope density factor.
+      // Use a zombie door method to create the proper random chance 
+      // of a tree being created for partial values.
+      int woodcount = (int) (vegetation_density * vegetation_density * 
+                             slope_density *
+                             area / wood_coverage + mt_rand(&seed));
       
-      // For partial units of area, use a zombie door method to
-      // create the proper random chance of a point being created
-      // for this triangle
-      float unit = area + mt_rand(&seed)*wood_coverage;
-
-      int woodcount = (int) (unit / wood_coverage);
-
       for (int j = 0; j < woodcount; j++) {
+        float a = mt_rand(&seed);
+        float b = mt_rand(&seed);
 
-        if (wood_size < area) {
-          // We need to place a wood within the triangle and populate it
+        if ( a + b > 1.0f ) {
+          a = 1.0f - a;
+          b = 1.0f - b;
+        }
 
-          // Determine the center of the wood
-          float x = mt_rand(&seed);
-          float y = mt_rand(&seed);
+        float c = 1.0f - a - b;
 
-          // Determine the size of this wood in m^2, and the number
-          // of trees in the wood
-          float ws = wood_size + wood_size * (mt_rand(&seed) - 0.5f);
-          unsigned total_trees = ws / tree_density;
-          float wood_length = sqrt(ws);
-
-          // From our wood size, work out the fraction on the two axis.
-          // This will be used as a factor when placing trees in the wood.
-          float x_tree_factor = wood_length / length(v1 -v0);
-          float y_tree_factor = wood_length / length(v2 -v0);
-
-          for (unsigned k = 0; k <= total_trees; k++) {
-
-            float a = x + x_tree_factor * (mt_rand(&seed) - 0.5f);
-            float b = y + y_tree_factor * (mt_rand(&seed) - 0.5f);
-
-
-            // In some cases, the triangle side lengths are so small that the
-            // tree_factors become so large as to make placing the tree within
-            // the triangle almost impossible. In this case, we place them
-            // randomly across the triangle.
-            if (a < 0.0f || a > 1.0f) a = mt_rand(&seed);
-            if (b < 0.0f || b > 1.0f) b = mt_rand(&seed);
-            
-            if ( a + b > 1.0f ) {
-              a = 1.0f - a;
-              b = 1.0f - b;
-            }
-              
-            float c = 1.0f - a - b;
-
-            SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
-
+        SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
+        
+        if (object_mask != NULL) {
+          SGVec2f texCoord = a*t0 + b*t1 + c*t2;
+          
+          // Check this random point against the object mask
+          // green (for trees) channel. 
+          osg::Image* img = object_mask->getImage();            
+          unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
+          unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+          
+          if (mt_rand(&seed) < img->getColor(x, y).g()) {  
+            // The red channel contains the rotation for this object                                  
             points.push_back(randomPoint);
           }
         } else {
-          // This triangle is too small to contain a complete wood, so just
-          // distribute trees across it.
-          unsigned total_trees = area / tree_density;
-
-          for (unsigned k = 0; k <= total_trees; k++) {
-
-            float a = mt_rand(&seed);
-            float b = mt_rand(&seed);
-
-            if ( a + b > 1.0f ) {
-              a = 1.0f - a;
-              b = 1.0f - b;
-            }
-
-            float c = 1.0f - a - b;
-
-            SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
-            points.push_back(randomPoint);
-          }
-        }
+          points.push_back(randomPoint);
+        }                
       }
     }
   }
   
-   void addRandomPoints(float coverage, 
-                        std::vector<SGVec3f>& points)
+   void addRandomPoints(double coverage, 
+                        double spacing,
+                        osg::Texture2D* object_mask,
+                        std::vector<std::pair<SGVec3f, float> >& points)
   {
     unsigned num = getNumTriangles();
     for (unsigned i = 0; i < num; ++i) {
@@ -251,6 +260,9 @@ public:
       SGVec3f v0 = getVertex(triangleRef[0]).vertex;
       SGVec3f v1 = getVertex(triangleRef[1]).vertex;
       SGVec3f v2 = getVertex(triangleRef[2]).vertex;
+      SGVec2f t0 = getVertex(triangleRef[0]).texCoord;
+      SGVec2f t1 = getVertex(triangleRef[1]).texCoord;
+      SGVec2f t2 = getVertex(triangleRef[2]).texCoord;
       SGVec3f normal = cross(v1 - v0, v2 - v0);
       
       // Compute the area
@@ -273,7 +285,31 @@ public:
         }
         float c = 1 - a - b;
         SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
-        points.push_back(randomPoint);
+        
+        // Check that the point is sufficiently far from
+        // the edge of the triangle by measuring the distance
+        // from the three lines that make up the triangle.        
+        if (((length(cross(randomPoint - v0, randomPoint - v1)) / length(v1 - v0)) > spacing) &&
+            ((length(cross(randomPoint - v1, randomPoint - v2)) / length(v2 - v1)) > spacing) &&
+            ((length(cross(randomPoint - v2, randomPoint - v0)) / length(v0 - v2)) > spacing)   )
+        {
+          if (object_mask != NULL) {
+            SGVec2f texCoord = a*t0 + b*t1 + c*t2;
+            
+            // Check this random point against the object mask
+            // blue (for buildings) channel. 
+            osg::Image* img = object_mask->getImage();            
+            unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
+            unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+            
+            if (mt_rand(&seed) < img->getColor(x, y).b()) {  
+              // The red channel contains the rotation for this object                                  
+              points.push_back(std::make_pair(randomPoint, img->getColor(x,y).r()));
+            }
+          } else {
+            points.push_back(std::make_pair(randomPoint, static_cast<float>(mt_rand(&seed))));
+          }        
+        }
         num -= 1.0;
       }
     }
@@ -338,6 +374,17 @@ public:
 
   osg::Geometry* buildGeometry() const
   { return buildGeometry(getTriangles()); }
+  
+  int getTextureIndex() const
+  {
+    if (empty() || getNumTriangles() == 0)
+      return 0;
+
+    triangle_ref triangleRef = getTriangleRef(0);
+    SGVec3f v0 = getVertex(triangleRef[0]).vertex;
+      
+    return floor(v0.x());
+  }
 
 private:
   // Random seed for the triangle.

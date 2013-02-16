@@ -64,6 +64,9 @@ public:
 
   virtual osg::BoundingSphere computeBound() const;
 
+  // Useful for other classes too.
+  static void set_rotation (osg::Matrix &matrix, double position_rad,
+                            const SGVec3d &center, const SGVec3d &axis);
 private:
   SGVec3d _center;
   SGVec3d _axis;

@@ -27,7 +27,6 @@
 #include "Singleton.hxx"
 
 #include <algorithm>
-#include <functional>
 #include <map>
 #include <utility>
 #include <string>

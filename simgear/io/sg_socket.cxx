@@ -36,6 +36,7 @@
 #include "sg_socket.hxx"
 
 bool SGSocket::init = false;
+using std::string;
 
 SGSocket::SGSocket( const string& host, const string& port_, 
 		    const string& style ) :

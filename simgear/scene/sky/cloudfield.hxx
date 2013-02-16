@@ -70,32 +70,34 @@ private:
 		bool		visible;
 	};
 
-        float Rnd(float);
+  float Rnd(float);
         
-  // Radius of the LoD nodes for the dynamic quadtrees.
-  static float RADIUS_LEVEL_1;
-  static float RADIUS_LEVEL_2;
+  // Theoretical maximum cloud depth, used for fudging the LoD
+  // ranges to ensure that clouds become visible at maximum range
+  static float MAX_CLOUD_DEPTH;
 
-	// this is a relative position only, with that we can move all clouds at once
-	SGVec3f relative_position;
+  // this is a relative position only, with that we can move all clouds at once
+  SGVec3f relative_position;
 
-        osg::ref_ptr<osg::Group> field_root;
+  osg::ref_ptr<osg::Group> field_root;
   osg::ref_ptr<osg::Group> placed_root;
   osg::ref_ptr<osg::PositionAttitudeTransform> field_transform;
-        osg::ref_ptr<osg::PositionAttitudeTransform> altitude_transform;
-        osg::ref_ptr<osg::LOD> field_lod;
+  osg::ref_ptr<osg::PositionAttitudeTransform> altitude_transform;
+  osg::ref_ptr<osg::LOD> field_lod;
 
   osg::Vec3f old_pos;
   CloudHash cloud_hash;
 
-        struct CloudFog : public simgear::Singleton<CloudFog>
-        {
-                CloudFog();
-                osg::ref_ptr<osg::Fog> fog;
-        };
+  struct CloudFog : public simgear::Singleton<CloudFog>
+  {
+    CloudFog();
+    osg::ref_ptr<osg::Fog> fog;
+  };
 
   void removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform);
   void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, float lon, float lat, float alt, float x, float y);
+  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, SGGeod loc, float x, float y);
+  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, SGGeod loc);
   void applyVisRangeAndCoverage(void);
 
 public:
@@ -122,41 +124,57 @@ public:
 
 
   /**
-        * reposition the cloud layer at the specified origin and
-        * orientation.
-        * @param p position vector
-        * @param up the local up vector
-        * @param lon specifies a rotation about the Z axis
-        * @param lat specifies a rotation about the new Y axis
-        * @param dt the time elapsed since the last call
-        * @param asl altitude of the layer
-  * @param speed of cloud layer movement (due to wind)
-  * @param direction of cloud layer movement (due to wind)
-        */
-        bool reposition( const SGVec3f& p, const SGVec3f& up,
-                  double lon, double lat, double dt, int asl, float speed, float direction);
+    * reposition the cloud layer at the specified origin and
+    * orientation.
+    * @param p position vector
+    * @param up the local up vector
+    * @param lon specifies a rotation about the Z axis
+    * @param lat specifies a rotation about the new Y axis
+    * @param dt the time elapsed since the last call
+    * @param asl altitude of the layer
+    * @param speed of cloud layer movement (due to wind)
+    * @param direction of cloud layer movement (due to wind)
+    */
+  bool reposition( const SGVec3f& p, const SGVec3f& up,
+            double lon, double lat, double dt, int asl, float speed, float direction);
 
-        osg::Group* getNode() { return field_root.get(); }
+  osg::Group* getNode() { return field_root.get(); }
 
-	// visibility distance for clouds in meters
-	static float CloudVis;
+  // visibility distance for clouds in meters
+  static float CloudVis;
 
-	static SGVec3f view_vec, view_X, view_Y;
+  static SGVec3f view_vec, view_X, view_Y;
 
-        static float view_distance;
-        static double timer_dt;
-	static float fieldSize;
-	static bool wrap;
+  static float view_distance;
+  static float impostor_distance;
+  static float lod1_range;
+  static float lod2_range;
+  static bool use_impostors;
+  static double timer_dt;
+  static float fieldSize;
+  static bool wrap;
 
-        static float getVisRange(void) { return view_distance; }
-        static void setVisRange(float d) { view_distance = d; }
-        void applyVisRange(void);
-        
-        static osg::Fog* getFog()
-        {
-                return CloudFog::instance()->fog.get();
-        }
-        static void updateFog(double visibility, const osg::Vec4f& color);
+  static bool getWrap(void) { return wrap; }
+  static void setWrap(bool w) { wrap = w; }
+
+  static float getImpostorDistance(void) { return impostor_distance; }
+  static void setImpostorDistance(float d) { impostor_distance = d; }
+  static float getLoD1Range(void) { return lod1_range; }
+  static void setLoD1Range(int d) { lod1_range = d; }
+  static float getLoD2Range(void) { return lod2_range; }
+  static void setLoD2Range(int d) { lod2_range = d; }
+  static void setUseImpostors(bool b) { use_impostors = b; }
+  static bool getUseImpostors(void) { return use_impostors; }
+  
+  static float getVisRange(void) { return view_distance; }
+  static void setVisRange(float d) { view_distance = d; }
+  void applyVisAndLoDRange(void);
+
+  static osg::Fog* getFog()
+  {
+          return CloudFog::instance()->fog.get();
+  }
+  static void updateFog(double visibility, const osg::Vec4f& color);
 };
 
 #endif // _CLOUDFIELD_HXX

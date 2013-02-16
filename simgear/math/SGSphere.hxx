@@ -18,10 +18,22 @@
 #ifndef SGSphere_H
 #define SGSphere_H
 
+
 template<typename T>
 class SGSphere {
 public:
+
+#ifdef __GNUC__
+// Avoid "_center not initialized" warnings.
+#   pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
   SGSphere() :
+     /*
+      * Do not initialize _center to save unneeded initialization time.
+      * Fix 'may be used uninitialized' warnings locally instead
+      */
+//  _center(0.0, 0.0, 0.0),
     _radius(-1)
   { }
   SGSphere(const SGVec3<T>& center, const T& radius) :
@@ -33,6 +45,11 @@ public:
     _center(sphere.getCenter()),
     _radius(sphere.getRadius())
   { }
+
+#ifdef __GNUC__
+  // Restore warning settings.
+#   pragma GCC diagnostic warning "-Wuninitialized"
+#endif
 
   const SGVec3<T>& getCenter() const
   { return _center; }
@@ -54,6 +71,18 @@ public:
 
   void clear()
   { _radius = -1; }
+
+  /// Return true if this is inside sphere
+  bool inside(const SGSphere<T>& sphere) const
+  {
+    if (empty())
+      return false;
+    if (sphere.empty())
+      return false;
+
+    T dist = sphere.getRadius() - getRadius();
+    return distSqr(getCenter(), sphere.getCenter()) <= dist*dist;
+  }
 
   void expandBy(const SGVec3<T>& v)
   {

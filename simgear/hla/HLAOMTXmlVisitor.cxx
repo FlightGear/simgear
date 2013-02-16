@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -15,6 +15,12 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include "HLAOMTXmlVisitor.hxx"
 
 #include <map>
@@ -27,8 +33,9 @@
 #include "HLABasicDataType.hxx"
 #include "HLADataTypeVisitor.hxx"
 #include "HLAEnumeratedDataType.hxx"
+#include "HLAFederate.hxx"
 #include "HLAFixedRecordDataType.hxx"
-#include "HLAVariantDataType.hxx"
+#include "HLAVariantRecordDataType.hxx"
 
 namespace simgear {
 
@@ -68,18 +75,6 @@ HLAOMTXmlVisitor::ObjectClass::getAttribute(unsigned index) const
     return _attributes[index];
 }
 
-const HLAOMTXmlVisitor::Attribute*
-HLAOMTXmlVisitor::ObjectClass::getAttribute(const std::string& name) const
-{
-    for (AttributeList::const_iterator i = _attributes.begin(); i != _attributes.end(); ++i) {
-        if ((*i)->_name != name)
-            continue;
-        return i->get();
-    }
-    SG_LOG(SG_IO, SG_ALERT, "Could not find class attribute \"" << name << "\".");
-    return 0;
-}
-
 const HLAOMTXmlVisitor::ObjectClass*
 HLAOMTXmlVisitor::ObjectClass::getParentObjectClass() const
 {
@@ -108,6 +103,12 @@ HLAOMTXmlVisitor::InteractionClass::getDimensions() const
 }
 
 const std::string&
+HLAOMTXmlVisitor::InteractionClass::getSharing() const
+{
+    return _sharing;
+}
+
+const std::string&
 HLAOMTXmlVisitor::InteractionClass::getTransportation() const
 {
     return _transportation;
@@ -133,18 +134,6 @@ HLAOMTXmlVisitor::InteractionClass::getParameter(unsigned index) const
     return _parameters[index];
 }
 
-const HLAOMTXmlVisitor::Parameter*
-HLAOMTXmlVisitor::InteractionClass::getParameter(const std::string& name) const
-{
-    for (ParameterList::const_iterator i = _parameters.begin(); i != _parameters.end(); ++i) {
-        if ((*i)->_name != name)
-            continue;
-        return i->get();
-    }
-    SG_LOG(SG_IO, SG_ALERT, "Could not find parameter \"" << name << "\".");
-    return 0;
-}
-
 const HLAOMTXmlVisitor::InteractionClass*
 HLAOMTXmlVisitor::InteractionClass::getParentInteractionClass() const
 {
@@ -157,6 +146,89 @@ HLAOMTXmlVisitor::HLAOMTXmlVisitor()
 
 HLAOMTXmlVisitor::~HLAOMTXmlVisitor()
 {
+}
+
+void
+HLAOMTXmlVisitor::setDataTypesToFederate(HLAFederate& federate)
+{
+    // Provide all the data types
+    for (BasicDataMap::iterator i = _basicDataMap.begin(); i != _basicDataMap.end(); ++i)
+        federate.insertDataType(i->first, getDataType(i->first));
+    for (SimpleDataMap::iterator i = _simpleDataMap.begin(); i != _simpleDataMap.end(); ++i)
+        federate.insertDataType(i->first, getDataType(i->first));
+    for (EnumeratedDataMap::iterator i = _enumeratedDataMap.begin(); i != _enumeratedDataMap.end(); ++i)
+        federate.insertDataType(i->first, getDataType(i->first));
+    for (ArrayDataMap::iterator i = _arrayDataMap.begin(); i != _arrayDataMap.end(); ++i)
+        federate.insertDataType(i->first, getDataType(i->first));
+    for (FixedRecordDataMap::iterator i = _fixedRecordDataMap.begin(); i != _fixedRecordDataMap.end(); ++i)
+        federate.insertDataType(i->first, getDataType(i->first));
+    for (VariantRecordDataMap::iterator i = _variantRecordDataMap.begin(); i != _variantRecordDataMap.end(); ++i)
+        federate.insertDataType(i->first, getDataType(i->first));
+
+    // Finish alignment computations
+    federate.recomputeDataTypeAlignment();
+}
+
+void
+HLAOMTXmlVisitor::setToFederate(HLAFederate& federate)
+{
+    setDataTypesToFederate(federate);
+
+    // Provide all interaction classes
+    unsigned numInteractionClasses = getNumInteractionClasses();
+    for (unsigned i = 0; i < numInteractionClasses; ++i) {
+        const InteractionClass* interactionClass = getInteractionClass(i);
+        if (federate.getInteractionClass(interactionClass->getName())) {
+            SG_LOG(SG_IO, SG_ALERT, "Not creating Interaction class \"" << interactionClass->getName() << "\" twice!.");
+            continue;
+        }
+
+        SGSharedPtr<HLAInteractionClass> hlaInteractionClass;
+        hlaInteractionClass = federate.createInteractionClass(interactionClass->getName());
+        if (!hlaInteractionClass.valid()) {
+            SG_LOG(SG_IO, SG_INFO, "Ignoring Interaction class \"" << interactionClass->getName() << "\".");
+            continue;
+        }
+
+        hlaInteractionClass->setSubscriptionType(interactionClass->getSubscriptionType());
+        hlaInteractionClass->setPublicationType(interactionClass->getPublicationType());
+
+        // process the parameters
+        for (unsigned j = 0; j < interactionClass->getNumParameters(); ++j) {
+            const Parameter* parameter = interactionClass->getParameter(j);
+            unsigned index = hlaInteractionClass->addParameter(parameter->getName());
+            hlaInteractionClass->setParameterDataType(index, federate.getDataType(parameter->getDataType()));
+        }
+    }
+
+    // Provide all object classes
+    unsigned numObjectClasses = getNumObjectClasses();
+    for (unsigned i = 0; i < numObjectClasses; ++i) {
+        const ObjectClass* objectClass = getObjectClass(i);
+        if (federate.getObjectClass(objectClass->getName())) {
+            SG_LOG(SG_IO, SG_ALERT, "Not creating Object class \"" << objectClass->getName() << "\" twice!.");
+            continue;
+        }
+
+        SGSharedPtr<HLAObjectClass> hlaObjectClass;
+        hlaObjectClass = federate.createObjectClass(objectClass->getName());
+        if (!hlaObjectClass.valid()) {
+            SG_LOG(SG_IO, SG_INFO, "Ignoring Object class \"" << objectClass->getName() << "\".");
+            continue;
+        }
+
+        // process the attributes
+        for (unsigned j = 0; j < objectClass->getNumAttributes(); ++j) {
+            const Attribute* attribute = objectClass->getAttribute(j);
+
+            unsigned index = hlaObjectClass->addAttribute(attribute->getName());
+            hlaObjectClass->setAttributeDataType(index, federate.getDataType(attribute->getDataType()));
+
+            hlaObjectClass->setAttributeSubscriptionType(index, attribute->getSubscriptionType());
+            hlaObjectClass->setAttributePublicationType(index, attribute->getPublicationType());
+            hlaObjectClass->setAttributeUpdateType(index, attribute->getUpdateType());
+        }
+    }
 }
 
 unsigned
@@ -173,36 +245,6 @@ HLAOMTXmlVisitor::getObjectClass(unsigned i) const
     return _objectClassList[i];
 }
 
-const HLAOMTXmlVisitor::ObjectClass*
-HLAOMTXmlVisitor::getObjectClass(const std::string& name) const
-{
-    for (ObjectClassList::const_iterator i = _objectClassList.begin(); i != _objectClassList.end(); ++i) {
-        if ((*i)->_name != name)
-            continue;
-        return i->get();
-    }
-    SG_LOG(SG_IO, SG_ALERT, "Could not resolve ObjectClass \"" << name << "\".");
-    return 0;
-}
-
-const HLAOMTXmlVisitor::Attribute*
-HLAOMTXmlVisitor::getAttribute(const std::string& objectClassName, const std::string& attributeName) const
-{
-    const ObjectClass* objectClass = getObjectClass(objectClassName);
-    if (!objectClass)
-        return 0;
-    return objectClass->getAttribute(attributeName);
-}
-
-HLADataType*
-HLAOMTXmlVisitor::getAttributeDataType(const std::string& objectClassName, const std::string& attributeName) const
-{
-    const Attribute* attribute = getAttribute(objectClassName, attributeName);
-    if (!attribute)
-        return 0;
-    return getDataType(attribute->_dataType);
-}
-
 unsigned
 HLAOMTXmlVisitor::getNumInteractionClasses() const
 {
@@ -217,59 +259,19 @@ HLAOMTXmlVisitor::getInteractionClass(unsigned i) const
     return _interactionClassList[i];
 }
 
-const HLAOMTXmlVisitor::InteractionClass*
-HLAOMTXmlVisitor::getInteractionClass(const std::string& name) const
-{
-    for (InteractionClassList::const_iterator i = _interactionClassList.begin(); i != _interactionClassList.end(); ++i) {
-        if ((*i)->_name != name)
-            continue;
-        return i->get();
-    }
-    SG_LOG(SG_IO, SG_ALERT, "Could not resolve InteractionClass \"" << name << "\".");
-    return 0;
-}
-
-const HLAOMTXmlVisitor::Parameter*
-HLAOMTXmlVisitor::getParameter(const std::string& interactionClassName, const std::string& parameterName) const
-{
-    const InteractionClass* interactionClass = getInteractionClass(interactionClassName);
-    if (!interactionClass)
-        return 0;
-    return interactionClass->getParameter(parameterName);
-}
-
-HLADataType*
-HLAOMTXmlVisitor::getParameterDataType(const std::string& interactionClassName, const std::string& parameterName) const
-{
-    const Parameter* parameter = getParameter(interactionClassName, parameterName);
-    if (!parameter)
-        return 0;
-    return getDataType(parameter->_dataType);
-}
-
-HLADataType*
-HLAOMTXmlVisitor::getDataType(const std::string& dataTypeName) const
-{
-    SGSharedPtr<HLADataType> dataType;
-    {
-        // Playing dirty things with reference counts
-        StringDataTypeMap dataTypeMap;
-        dataType = getDataType(dataTypeName, dataTypeMap);
-    }
-    return dataType.release();
-}
-
 SGSharedPtr<HLADataType>
-HLAOMTXmlVisitor::getDataType(const std::string& dataTypeName, HLAOMTXmlVisitor::StringDataTypeMap& dataTypeMap) const
+HLAOMTXmlVisitor::getDataType(const std::string& dataTypeName)
 {
-    StringDataTypeMap::const_iterator i = dataTypeMap.find(dataTypeName);
-    if (i != dataTypeMap.end())
-        return new HLADataTypeReference(i->second);
+    StringDataTypeMap::const_iterator i = _dataTypeMap.find(dataTypeName);
+    if (i != _dataTypeMap.end())
+        return i->second;
 
     SGSharedPtr<HLADataType> dataType;
     dataType = getBasicDataType(dataTypeName);
-    if (dataType.valid())
+    if (dataType.valid()) {
+        _dataTypeMap[dataTypeName] = dataType;
         return dataType;
+    }
 
     dataType = getSimpleDataType(dataTypeName);
     if (dataType.valid())
@@ -279,15 +281,15 @@ HLAOMTXmlVisitor::getDataType(const std::string& dataTypeName, HLAOMTXmlVisitor:
     if (dataType.valid())
         return dataType;
 
-    dataType = getArrayDataType(dataTypeName, dataTypeMap);
+    dataType = getArrayDataType(dataTypeName);
     if (dataType.valid())
         return dataType;
 
-    dataType = getFixedRecordDataType(dataTypeName, dataTypeMap);
+    dataType = getFixedRecordDataType(dataTypeName);
     if (dataType.valid())
         return dataType;
 
-    dataType = getVariantDataType(dataTypeName, dataTypeMap);
+    dataType = getVariantRecordDataType(dataTypeName);
     if (dataType.valid())
         return dataType;
 
@@ -296,7 +298,7 @@ HLAOMTXmlVisitor::getDataType(const std::string& dataTypeName, HLAOMTXmlVisitor:
 }
 
 SGSharedPtr<HLABasicDataType>
-HLAOMTXmlVisitor::getBasicDataType(const std::string& dataTypeName) const
+HLAOMTXmlVisitor::getBasicDataType(const std::string& dataTypeName)
 {
     BasicDataMap::const_iterator i = _basicDataMap.find(dataTypeName);
     if (i == _basicDataMap.end())
@@ -369,7 +371,7 @@ HLAOMTXmlVisitor::getBasicDataType(const std::string& dataTypeName) const
 }
 
 SGSharedPtr<HLADataType>
-HLAOMTXmlVisitor::getSimpleDataType(const std::string& dataTypeName) const
+HLAOMTXmlVisitor::getSimpleDataType(const std::string& dataTypeName)
 {
     SimpleDataMap::const_iterator i = _simpleDataMap.find(dataTypeName);
     if (i == _simpleDataMap.end())
@@ -378,13 +380,14 @@ HLAOMTXmlVisitor::getSimpleDataType(const std::string& dataTypeName) const
 }
 
 SGSharedPtr<HLAEnumeratedDataType>
-HLAOMTXmlVisitor::getEnumeratedDataType(const std::string& dataTypeName) const
+HLAOMTXmlVisitor::getEnumeratedDataType(const std::string& dataTypeName)
 {
     EnumeratedDataMap::const_iterator i = _enumeratedDataMap.find(dataTypeName);
     if (i == _enumeratedDataMap.end())
         return 0;
 
     SGSharedPtr<HLAEnumeratedDataType> enumeratedDataType = new HLAEnumeratedDataType(dataTypeName);
+    _dataTypeMap[dataTypeName] = enumeratedDataType;
     enumeratedDataType->setRepresentation(getBasicDataType(i->second._representation));
 
     for (EnumeratorList::const_iterator j = i->second._enumeratorList.begin();
@@ -400,7 +403,7 @@ HLAOMTXmlVisitor::getEnumeratedDataType(const std::string& dataTypeName) const
 }
 
 SGSharedPtr<HLADataType>
-HLAOMTXmlVisitor::getArrayDataType(const std::string& dataTypeName, HLAOMTXmlVisitor::StringDataTypeMap& dataTypeMap) const
+HLAOMTXmlVisitor::getArrayDataType(const std::string& dataTypeName)
 {
     ArrayDataMap::const_iterator i = _arrayDataMap.find(dataTypeName);
     if (i == _arrayDataMap.end())
@@ -428,35 +431,44 @@ HLAOMTXmlVisitor::getArrayDataType(const std::string& dataTypeName, HLAOMTXmlVis
         return 0;
     }
 
-    dataTypeMap[dataTypeName] = arrayDataType;
-    SGSharedPtr<HLADataType> elementDataType = getDataType(i->second._dataType, dataTypeMap);
+    _dataTypeMap[dataTypeName] = arrayDataType;
+    SGSharedPtr<HLADataType> elementDataType = getDataType(i->second._dataType);
     if (!elementDataType.valid()) {
         SG_LOG(SG_IO, SG_ALERT, "Could not interpret dataType \""
                << i->second._dataType << "\" for array data type \""
                << dataTypeName << "\".");
-        dataTypeMap.erase(dataTypeName);
+        _dataTypeMap.erase(dataTypeName);
         return 0;
     }
     arrayDataType->setElementDataType(elementDataType.get());
+
+    // Check if this should be a string data type
+    if (elementDataType->toBasicDataType()) {
+        if (dataTypeName == "HLAopaqueData") {
+            arrayDataType->setIsOpaque(true);
+        } else if (dataTypeName.find("String") != std::string::npos || dataTypeName.find("string") != std::string::npos) {
+            arrayDataType->setIsString(true);
+        }
+    }
 
     return arrayDataType;
 }
 
 SGSharedPtr<HLAFixedRecordDataType>
-HLAOMTXmlVisitor::getFixedRecordDataType(const std::string& dataTypeName, HLAOMTXmlVisitor::StringDataTypeMap& dataTypeMap) const
+HLAOMTXmlVisitor::getFixedRecordDataType(const std::string& dataTypeName)
 {
     FixedRecordDataMap::const_iterator i = _fixedRecordDataMap.find(dataTypeName);
     if (i == _fixedRecordDataMap.end())
         return 0;
 
     SGSharedPtr<HLAFixedRecordDataType> dataType = new HLAFixedRecordDataType(dataTypeName);
-    dataTypeMap[dataTypeName] = dataType;
+    _dataTypeMap[dataTypeName] = dataType;
     for (FieldList::size_type j = 0; j < i->second._fieldList.size(); ++j) {
-        SGSharedPtr<HLADataType> fieldDataType = getDataType(i->second._fieldList[j]._dataType, dataTypeMap);
+        SGSharedPtr<HLADataType> fieldDataType = getDataType(i->second._fieldList[j]._dataType);
         if (!fieldDataType.valid()) {
             SG_LOG(SG_IO, SG_ALERT, "Could not get data type \"" << i->second._fieldList[j]._dataType
                    << "\" for field " << j << "of fixed record data type \"" << dataTypeName << "\".");
-            dataTypeMap.erase(dataTypeName);
+            _dataTypeMap.erase(dataTypeName);
             return 0;
         }
         dataType->addField(i->second._fieldList[j]._name, fieldDataType.get());
@@ -464,14 +476,14 @@ HLAOMTXmlVisitor::getFixedRecordDataType(const std::string& dataTypeName, HLAOMT
     return dataType;
 }
 
-SGSharedPtr<HLAVariantDataType>
-HLAOMTXmlVisitor::getVariantDataType(const std::string& dataTypeName, HLAOMTXmlVisitor::StringDataTypeMap& dataTypeMap) const
+SGSharedPtr<HLAVariantRecordDataType>
+HLAOMTXmlVisitor::getVariantRecordDataType(const std::string& dataTypeName)
 {
     VariantRecordDataMap::const_iterator i = _variantRecordDataMap.find(dataTypeName);
     if (i == _variantRecordDataMap.end())
         return 0;
-    SGSharedPtr<HLAVariantDataType> dataType = new HLAVariantDataType(dataTypeName);
-    dataTypeMap[dataTypeName] = dataType;
+    SGSharedPtr<HLAVariantRecordDataType> dataType = new HLAVariantRecordDataType(dataTypeName);
+    _dataTypeMap[dataTypeName] = dataType;
 
     SGSharedPtr<HLAEnumeratedDataType> enumeratedDataType = getEnumeratedDataType(i->second._dataType);
     if (!enumeratedDataType.valid()) {
@@ -483,11 +495,11 @@ HLAOMTXmlVisitor::getVariantDataType(const std::string& dataTypeName, HLAOMTXmlV
 
     for (AlternativeList::const_iterator j = i->second._alternativeList.begin();
          j != i->second._alternativeList.end(); ++j) {
-        SGSharedPtr<HLADataType> alternativeDataType = getDataType(j->_dataType, dataTypeMap);
+        SGSharedPtr<HLADataType> alternativeDataType = getDataType(j->_dataType);
         if (!alternativeDataType.valid()) {
             SG_LOG(SG_IO, SG_ALERT, "Could not resolve alternative dataType \"" << j->_dataType
                    << "\" for alternative \"" << j->_name << "\".");
-            dataTypeMap.erase(dataTypeName);
+            _dataTypeMap.erase(dataTypeName);
             return 0;
         }
         if (!dataType->addAlternative(j->_name, j->_enumerator, alternativeDataType.get(), j->_semantics)) {
@@ -531,26 +543,26 @@ HLAOMTXmlVisitor::endXML()
         throw sg_exception("Internal parse error!");
 
     // propagate parent attributes to the derived classes
+    // Note that this preserves the order of the attributes starting from the root object
     for (ObjectClassList::const_iterator i = _objectClassList.begin(); i != _objectClassList.end(); ++i) {
         SGSharedPtr<const ObjectClass> objectClass = (*i)->_parentObjectClass;
-        while (objectClass) {
-            for (AttributeList::const_reverse_iterator j = objectClass->_attributes.rbegin();
-                 j != objectClass->_attributes.rend(); ++j) {
-                (*i)->_attributes.insert((*i)->_attributes.begin(), *j);
-            }
-            objectClass = objectClass->_parentObjectClass;
+        if (!objectClass.valid())
+            continue;
+        for (AttributeList::const_reverse_iterator j = objectClass->_attributes.rbegin();
+             j != objectClass->_attributes.rend(); ++j) {
+            (*i)->_attributes.insert((*i)->_attributes.begin(), *j);
         }
     }
 
     // propagate parent parameter to the derived interactions
+    // Note that this preserves the order of the parameters starting from the root object
     for (InteractionClassList::const_iterator i = _interactionClassList.begin(); i != _interactionClassList.end(); ++i) {
         SGSharedPtr<const InteractionClass> interactionClass = (*i)->_parentInteractionClass;
-        while (interactionClass) {
-            for (ParameterList::const_reverse_iterator j = interactionClass->_parameters.rbegin();
-                 j != interactionClass->_parameters.rend(); ++j) {
-                (*i)->_parameters.insert((*i)->_parameters.begin(), *j);
-            }
-            interactionClass = interactionClass->_parentInteractionClass;
+        if (!interactionClass.valid())
+            continue;
+        for (ParameterList::const_reverse_iterator j = interactionClass->_parameters.rbegin();
+             j != interactionClass->_parameters.rend(); ++j) {
+            (*i)->_parameters.insert((*i)->_parameters.begin(), *j);
         }
     }
 }
@@ -719,11 +731,6 @@ HLAOMTXmlVisitor::startElement(const char* name, const XMLAttributes& atts)
         if (getCurrentMode() != DataTypesMode)
             throw sg_exception("enumeratedDataTypes tag outside dataTypes!");
         pushMode(EnumeratedDataTypesMode);
-
-        Enumerator enumerator;
-        enumerator._name = getAttribute("name", atts);
-        enumerator._values = getAttribute("values", atts);
-        _enumeratedDataMap[_enumeratedDataName]._enumeratorList.push_back(enumerator);
 
     } else if (strcmp(name, "arrayData") == 0) {
         if (getCurrentMode() != ArrayDataTypesMode)

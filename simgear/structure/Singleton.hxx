@@ -1,10 +1,7 @@
 #ifndef SIMGEAR_SINGLETON_HXX
 #define SIMGEAR_SINGLETON_HXX 1
 
-#include <boost/pool/detail/singleton.hpp>
-
-#include <osg/Referenced>
-#include <osg/ref_ptr>
+#include "singleton.hpp"
 
 namespace simgear
 {
@@ -27,32 +24,5 @@ public:
     }
 };
 
-template <typename RefClass>
-class SingletonRefPtr
-{
-public:
-    SingletonRefPtr()
-    {
-        ptr = new RefClass;
-    }
-    static RefClass* instance()
-    {
-        SingletonRefPtr& singleton
-            = boost::details::pool::singleton_default<SingletonRefPtr>::instance();
-        return singleton.ptr.get();
-    }
-private:
-    osg::ref_ptr<RefClass> ptr;
-};
-
-template <typename RefClass>
-class ReferencedSingleton : public virtual osg::Referenced
-{
-public:
-    static RefClass* instance()
-    {
-        return SingletonRefPtr<RefClass>::instance();
-    }
-};
 }
 #endif

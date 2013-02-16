@@ -29,17 +29,20 @@
 #ifndef _SG_SOUND_HXX
 #define _SG_SOUND_HXX 1
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
 
 #include <vector>
-
+#include <string>
+     
 #include <simgear/compiler.h>
-#include <simgear/props/condition.hxx>
 
-#include "sample_group.hxx"
-#include "sample_openal.hxx"
+#include <simgear/props/propsfwd.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+
+// forward decls
+class SGSampleGroup;
+class SGSoundSample;
+class SGCondition;
+class SGPath;
 
 static const double MAX_TRANSIT_TIME = 0.1;	// 100 ms.
 
@@ -143,7 +146,7 @@ private:
   SGPropertyNode_ptr _property;
 
   bool _active;
-  string _name;
+  std::string _name;
   int _mode;
   double _prev_value;
   double _dt_play;

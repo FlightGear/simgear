@@ -22,11 +22,13 @@
 
 #include <ctype.h>
 #include <cstring>
+#include <sstream>
 
 #include "strutils.hxx"
 
 using std::string;
 using std::vector;
+using std::stringstream;
 
 namespace simgear {
     namespace strutils {
@@ -213,5 +215,91 @@ namespace simgear {
 		return (n != string::npos) && (n == s.length() - substr.length());
 	}
 
+    string simplify(const string& s)
+    {
+        string result; // reserve size of 's'?
+        string::const_iterator it = s.begin(),
+            end = s.end();
+    
+    // advance to first non-space char - simplifes logic in main loop,
+    // since we can always prepend a single space when we see a 
+    // space -> non-space transition
+        for (; (it != end) && isspace(*it); ++it) { /* nothing */ }
+        
+        bool lastWasSpace = false;
+        for (; it != end; ++it) {
+            char c = *it;
+            if (isspace(c)) {
+                lastWasSpace = true;
+                continue;
+            }
+            
+            if (lastWasSpace) {
+                result.push_back(' ');
+            }
+            
+            lastWasSpace = false;
+            result.push_back(c);
+        }
+        
+        return result;
+    }
+    
+    int to_int(const std::string& s, int base)
+    {
+        stringstream ss(s);
+        switch (base) {
+        case 8:      ss >> std::oct; break;
+        case 16:     ss >> std::hex; break;
+        default: break;
+        }
+        
+        int result;
+        ss >> result;
+        return result;
+    }
+    
+    int compare_versions(const string& v1, const string& v2)
+    {
+        vector<string> v1parts(split(v1, "."));
+        vector<string> v2parts(split(v2, "."));
+
+        int lastPart = std::min(v1parts.size(), v2parts.size());
+        for (int part=0; part < lastPart; ++part) {
+            int part1 = to_int(v1parts[part]);
+            int part2 = to_int(v2parts[part]);
+
+            if (part1 != part2) {
+                return part1 - part2;
+            }
+        } // of parts iteration
+
+        // reached end - longer wins
+        return v1parts.size() - v2parts.size();
+    }
+    
+    string join(const string_list& l, const string& joinWith)
+    {
+        string result;
+        unsigned int count = l.size();
+        for (unsigned int i=0; i < count; ++i) {
+            result += l[i];
+            if (i < (count - 1)) {
+                result += joinWith;
+            }
+        }
+        
+        return result;
+    }
+    
+    string uppercase(const string &s) {
+      string rslt(s);
+      for(string::iterator p = rslt.begin(); p != rslt.end(); p++){
+        *p = toupper(*p);
+      }
+      return rslt;
+    }
+
     } // end namespace strutils
+    
 } // end namespace simgear

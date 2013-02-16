@@ -66,7 +66,8 @@ public:
     enum HeadingType {
         HEADING_FIXED,
         HEADING_BILLBOARD,
-        HEADING_RANDOM
+        HEADING_RANDOM,
+        HEADING_MASK
     };
 
     /**
@@ -82,7 +83,7 @@ public:
      *
      * @return A randomly select model from the variants.
      */
-    osg::Node *get_random_model( SGPropertyNode *prop_root, mt seed );
+    osg::Node *get_random_model( SGPropertyNode *prop_root, mt *seed );
 
 
     /**
@@ -98,6 +99,15 @@ public:
      * @return The visual range.
      */
     double get_range_m () const;
+
+    /**
+     * Get the minimum spacing between this and any
+     * other objects in m
+     *
+     * @return The spacing in m.
+     */
+    double get_spacing_m () const;
+    
     
     /**
      * Get a randomized visual range
@@ -136,6 +146,7 @@ private:
     mutable std::vector<osg::ref_ptr<osg::Node> > _models;
     mutable bool _models_loaded;
     double _coverage_m2;
+    double _spacing_m;
     double _range_m;
     HeadingType _heading_type;
 };

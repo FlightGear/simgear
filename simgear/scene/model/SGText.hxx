@@ -27,7 +27,7 @@
 class SGText : public osg::NodeCallback 
 {
 public:
-  static osg::Node * appendText(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::ReaderWriter::Options* options);
+  static osg::Node * appendText(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::Options* options);
 private:
   class UpdateCallback;
 };

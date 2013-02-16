@@ -17,18 +17,21 @@
  
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the Free Software
-     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
 #ifndef SG_IO_SOCKET_HXX
 #define SG_IO_SOCKET_HXX
 
-#include <errno.h>
+//#include <errno.h>
 
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#  include <netinet/in.h>
-#endif
+//#if defined(__APPLE__) || defined(__FreeBSD__)
+//#  include <netinet/in.h>
+//#endif
 
+struct sockaddr_in;
+struct sockaddr;
+     
 namespace simgear
 {
 
@@ -37,32 +40,31 @@ namespace simgear
  */
 class IPAddress
 {
-  /* DANGER!!!  This MUST match 'struct sockaddr_in' exactly! */
-#if defined(__APPLE__) || defined(__FreeBSD__)
-  __uint8_t      sin_len;
-  __uint8_t      sin_family;
-  in_port_t      sin_port;
-  in_addr_t      sin_addr;
-  char           sin_zero[8];
-#else
-  short          sin_family     ;
-  unsigned short sin_port       ;
-  unsigned int   sin_addr       ;
-  char           sin_zero [ 8 ] ;
-#endif
-
+    mutable struct sockaddr_in* addr;
 public:
-  IPAddress () {}
+  IPAddress () : addr(0) {}
   IPAddress ( const char* host, int port ) ;
+  ~IPAddress();
+  
+  static bool lookupNonblocking(const char* host, IPAddress& addr);
+  
+  IPAddress( const IPAddress& other );
+  const IPAddress& operator=(const IPAddress& other);
 
+  bool isValid () const;
   void set ( const char* host, int port ) ;
   const char* getHost () const ;
   unsigned int getPort() const ;
+  void setPort(int port);
+  
   unsigned int getIP () const ;
   unsigned int getFamily () const ;
   static const char* getLocalHost () ;
 
   bool getBroadcast () const ;
+  
+  unsigned int getAddrLen() const;
+  sockaddr* getAddr() const;
 };
 
 
@@ -72,7 +74,7 @@ public:
 class Socket
 {
   int handle ;
-
+  
 public:
   
   Socket () ;
@@ -89,6 +91,7 @@ public:
   int   listen	    ( int backlog ) ;
   int   accept      ( IPAddress* addr ) ;
   int   connect     ( const char* host, int port ) ;
+  int   connect     ( IPAddress* addr ) ;
   int   send	    ( const void * buffer, int size, int flags = 0 ) ;
   int   sendto      ( const void * buffer, int size, int flags, const IPAddress* to ) ;
   int   recv	    ( void * buffer, int size, int flags = 0 ) ;

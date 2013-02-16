@@ -46,7 +46,8 @@ public:
 
   static bool animate(osg::Node* node, const SGPropertyNode* configNode,
                       SGPropertyNode* modelRoot,
-                      const osgDB::ReaderWriter::Options* options);
+                      const osgDB::Options* options,
+                      const string &path, int i);
 
 protected:
   void apply(osg::Node* node);
@@ -93,7 +94,6 @@ private:
   std::list<std::string> _objectNames;
   std::list<osg::ref_ptr<osg::Node> > _installedAnimations;
   bool _enableHOT;
-  bool _disableShadow;
 };
 
 
@@ -136,8 +136,6 @@ public:
                     SGPropertyNode* modelRoot);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  class UpdateCallback;
-  class SpinUpdateCallback;
   SGSharedPtr<const SGCondition> _condition;
   SGSharedPtr<const SGExpressiond> _animationValue;
   SGVec3d _axis;
@@ -321,7 +319,7 @@ class SGShaderAnimation : public SGAnimation {
 public:
   SGShaderAnimation(const SGPropertyNode* configNode,
                     SGPropertyNode* modelRoot,
-                    const osgDB::ReaderWriter::Options* options);
+                    const osgDB::Options* options);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
@@ -341,6 +339,38 @@ public:
 private:
   class PickCallback;
   class VncCallback;
+};
+
+
+//////////////////////////////////////////////////////////////////////
+// Light animation
+//////////////////////////////////////////////////////////////////////
+
+class SGLightAnimation : public SGAnimation {
+public:
+  SGLightAnimation(const SGPropertyNode* configNode,
+                   SGPropertyNode* modelRoot,
+                   const osgDB::Options* options,
+                   const string &path, int i);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
+  virtual void install(osg::Node& node);
+private:
+  string _light_type;
+  SGVec3d _position;
+  SGVec3d _direction;
+  SGVec4d _ambient;
+  SGVec4d _diffuse;
+  SGVec4d _specular;
+  SGVec3d _attenuation;
+  double _exponent;
+  double _cutoff;
+  double _near;
+  double _far;
+  string _key;
+  class UpdateCallback;
+  friend class UpdateCallback;
+  SGSharedPtr<SGExpressiond> _animationValue;
+  osg::ref_ptr<const osgDB::Options> _options;
 };
 
 #endif // _SG_ANIMATION_HXX

@@ -38,9 +38,11 @@
 #include <osg/ShadeModel>
 #include <osg/PrimitiveSet>
 #include <osg/CullFace>
+#include <osgDB/Registry>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/Math.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
@@ -159,14 +161,14 @@ void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
 
 // initialize the sky object and connect it into our scene graph
 osg::Node*
-SGSkyDome::build( double hscale, double vscale ) {
+SGSkyDome::build( double hscale, double vscale, simgear::SGReaderWriterOptions *options ) {
 
     EffectGeode* geode = new EffectGeode;
 //    Geode* geode = new Geode;
     geode->setName("Skydome");
     geode->setCullingActive(false); // Prevent skydome from being culled away
 
-    Effect *effect = makeEffect("Effects/skydome", true);
+    Effect *effect = makeEffect("Effects/skydome", true, options);
     if(effect)
       geode->setEffect(effect);
 
@@ -234,7 +236,7 @@ static void fade_to_black(osg::Vec3 sky_color[], float asl, int count) {
         sky_color[i] *= d;
 }
 
-inline void clampColor(osg::Vec3& color)
+static inline void clampColor(osg::Vec3& color)
 {
     color.x() = osg::clampTo(color.x(), 0.0f, 1.0f);
     color.y() = osg::clampTo(color.y(), 0.0f, 1.0f);
@@ -294,7 +296,7 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
     const double saif = sun_angle/SG_PI;
     static const SGVec3f blueShift(0.8, 1.0, 1.2);
     const SGVec3f skyFogDelta = sky_color - fog_color;
-    const SGVec3f sunSkyDelta = sun_color - sky_color;
+//    const SGVec3f sunSkyDelta = sun_color - sky_color;
 
     // For now the colors of the upper two rings are linearly
     // interpolated between the zenith color and the first horizon
@@ -310,17 +312,17 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
         int j=0;
         // Color top half by linear interpolation (90...60 degrees)
         for (; j < upperRings; j++)
-            colors(j, i) = simgear::math::lerp(toOsg(sky_color), colors(upperRings, i), j / (float)upperRings);
+            colors(j, i) = SGMiscf::lerp(toOsg(sky_color), colors(upperRings, i), j / (float)upperRings);
 
         j++; // Skip the 60 deg ring
         // From 60 to ~85 degrees
         for (int l = 0; j < upperRings + middleRings + 1; j++, l++)
-            colors(j, i) = simgear::math::lerp(colors(upperRings, i),
+            colors(j, i) = SGMiscf::lerp(colors(upperRings, i),
                        toOsg(sky_color - middleVisFactor * diff + middle_amt), l / (float)middleRings);
 
         // 85 to 90 degrees
         for (int l = 0; j < halfRings; j++, l++)
-            colors(j, i) = simgear::math::lerp(colors(upperRings + middleRings, i), toOsg(fog_color + outer_amt),
+            colors(j, i) = SGMiscf::lerp(colors(upperRings + middleRings, i), toOsg(fog_color + outer_amt),
                         l / (float)(halfRings - upperRings - middleRings));
 
         // Original colors

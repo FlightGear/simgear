@@ -14,8 +14,6 @@
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
 
-#include <simgear/math/SGMath.hxx>
-
 #include <simgear/structure/exception.hxx>
 
 SGBinding::SGBinding()

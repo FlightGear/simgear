@@ -25,7 +25,7 @@
 #include <vector>
 #include <osg/Node>
 #include <osg/Object>
-#include <simgear/scene/bvh/BVHNode.hxx>
+#include <simgear/bvh/BVHNode.hxx>
 #include "SGPickCallback.hxx"
 
 class SGSceneUserData : public osg::Object {
@@ -34,7 +34,8 @@ public:
   SGSceneUserData() {}
   SGSceneUserData(const SGSceneUserData& rhs,
                   const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY)
-    : _bvhNode(rhs._bvhNode), _velocity(rhs._velocity),
+    : osg::Object(rhs,copyOp),
+      _bvhNode(rhs._bvhNode), _velocity(rhs._velocity),
       _pickCallbacks(rhs._pickCallbacks)
   {
   }

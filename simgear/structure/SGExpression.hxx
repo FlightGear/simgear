@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
@@ -195,11 +196,11 @@ private:
 template<typename T>
 class SGBinaryExpression : public SGExpression<T> {
 public:
-  const SGExpression<T>* getOperand(unsigned i) const
+  const SGExpression<T>* getOperand(size_t i) const
   { return _expressions[i]; }
-  SGExpression<T>* getOperand(unsigned i)
+  SGExpression<T>* getOperand(size_t i)
   { return _expressions[i]; }
-  void setOperand(unsigned i, SGExpression<T>* expression)
+  void setOperand(size_t i, SGExpression<T>* expression)
   {
     if (!expression)
       expression = new SGConstExpression<T>(T());
@@ -228,16 +229,16 @@ private:
 template<typename T>
 class SGNaryExpression : public SGExpression<T> {
 public:
-  unsigned getNumOperands() const
+  size_t getNumOperands() const
   { return _expressions.size(); }
-  const SGExpression<T>* getOperand(unsigned i) const
+  const SGExpression<T>* getOperand(size_t i) const
   { return _expressions[i]; }
-  SGExpression<T>* getOperand(unsigned i)
+  SGExpression<T>* getOperand(size_t i)
   { return _expressions[i]; }
-  unsigned addOperand(SGExpression<T>* expression)
+  size_t addOperand(SGExpression<T>* expression)
   {
     if (!expression)
-      return ~unsigned(0);
+      return ~size_t(0);
     _expressions.push_back(expression);
     return _expressions.size() - 1;
   }
@@ -253,14 +254,14 @@ public:
 
   virtual bool isConst() const
   {
-    for (unsigned i = 0; i < _expressions.size(); ++i)
+    for (size_t i = 0; i < _expressions.size(); ++i)
       if (!_expressions[i]->isConst())
         return false;
     return true;
   }
   virtual SGExpression<T>* simplify()
   {
-    for (unsigned i = 0; i < _expressions.size(); ++i)
+    for (size_t i = 0; i < _expressions.size(); ++i)
       _expressions[i] = _expressions[i]->simplify();
     return SGExpression<T>::simplify();
   }
@@ -781,8 +782,8 @@ public:
   virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     value = T(0);
-    unsigned sz = SGNaryExpression<T>::getNumOperands();
-    for (unsigned i = 0; i < sz; ++i)
+    size_t sz = SGNaryExpression<T>::getNumOperands();
+    for (size_t i = 0; i < sz; ++i)
       value += getOperand(i)->getValue(b);
   }
   using SGNaryExpression<T>::getValue;
@@ -800,8 +801,8 @@ public:
   virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     value = getOperand(0)->getValue(b);
-    unsigned sz = SGNaryExpression<T>::getNumOperands();
-    for (unsigned i = 1; i < sz; ++i)
+    size_t sz = SGNaryExpression<T>::getNumOperands();
+    for (size_t i = 1; i < sz; ++i)
       value -= getOperand(i)->getValue(b);
   }
   using SGNaryExpression<T>::getValue;
@@ -819,8 +820,8 @@ public:
   virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     value = T(1);
-    unsigned sz = SGNaryExpression<T>::getNumOperands();
-    for (unsigned i = 0; i < sz; ++i)
+    size_t sz = SGNaryExpression<T>::getNumOperands();
+    for (size_t i = 0; i < sz; ++i)
       value *= getOperand(i)->getValue(b);
   }
   using SGNaryExpression<T>::getValue;
@@ -837,12 +838,12 @@ public:
   { }
   virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
-    unsigned sz = SGNaryExpression<T>::getNumOperands();
+    size_t sz = SGNaryExpression<T>::getNumOperands();
     if (sz < 1)
       return;
     
     value = getOperand(0)->getValue(b);
-    for (unsigned i = 1; i < sz; ++i)
+    for (size_t i = 1; i < sz; ++i)
       value = SGMisc<T>::min(value, getOperand(i)->getValue(b));
   }
   using SGNaryExpression<T>::getOperand;
@@ -858,12 +859,12 @@ public:
   { }
   virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
-    unsigned sz = SGNaryExpression<T>::getNumOperands();
+    size_t sz = SGNaryExpression<T>::getNumOperands();
     if (sz < 1)
       return;
     
     value = getOperand(0)->getValue(b);
-    for (unsigned i = 1; i < sz; ++i)
+    for (size_t i = 1; i < sz; ++i)
       value = SGMisc<T>::max(value, getOperand(i)->getValue(b));
   }
   using SGNaryExpression<T>::getOperand;
@@ -1075,16 +1076,16 @@ namespace simgear
   class GeneralNaryExpression : public ::SGExpression<T> {
   public:
     typedef OpType operand_type;
-    unsigned getNumOperands() const
+    size_t getNumOperands() const
     { return _expressions.size(); }
-    const ::SGExpression<OpType>* getOperand(unsigned i) const
+    const ::SGExpression<OpType>* getOperand(size_t i) const
     { return _expressions[i]; }
-    ::SGExpression<OpType>* getOperand(unsigned i)
+    ::SGExpression<OpType>* getOperand(size_t i)
     { return _expressions[i]; }
-    unsigned addOperand(::SGExpression<OpType>* expression)
+    size_t addOperand(::SGExpression<OpType>* expression)
     {
       if (!expression)
-        return ~unsigned(0);
+        return ~size_t(0);
       _expressions.push_back(expression);
       return _expressions.size() - 1;
     }
@@ -1100,14 +1101,14 @@ namespace simgear
     
     virtual bool isConst() const
     {
-      for (unsigned i = 0; i < _expressions.size(); ++i)
+      for (size_t i = 0; i < _expressions.size(); ++i)
         if (!_expressions[i]->isConst())
           return false;
       return true;
     }
     virtual ::SGExpression<T>* simplify()
     {
-      for (unsigned i = 0; i < _expressions.size(); ++i)
+      for (size_t i = 0; i < _expressions.size(); ++i)
         _expressions[i] = _expressions[i]->simplify();
       return SGExpression<T>::simplify();
     }
@@ -1144,7 +1145,7 @@ namespace simgear
     }
     virtual void eval(bool& value, const simgear::expression::Binding* b) const
     {
-      unsigned sz = this->getNumOperands();
+      size_t sz = this->getNumOperands();
       if (sz != 2)
         return;
       value = _pred(this->getOperand(0)->getValue(b),
@@ -1248,7 +1249,7 @@ namespace simgear
     ConvertExpression() {}
     ConvertExpression(::SGExpression<OpType>* expr0)
     {
-      addOperand(expr0);
+      this->addOperand(expr0);
     }
     virtual void eval(T& value, const simgear::expression::Binding* b) const
     {

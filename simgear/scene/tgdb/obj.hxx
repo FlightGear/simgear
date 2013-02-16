@@ -36,26 +36,15 @@
 #include <osg/Node>
 #include <osg/Group>
 
-#include "SGOceanTile.hxx"
-
 using std::string;
 
-class SGBucket;
 class SGMaterialLib;
-
-// Generate an ocean tile
-inline bool SGGenTile( const std::string&, const SGBucket& b,
-                       SGMaterialLib *matlib, osg::Group* group )
-{
-  // Generate an ocean tile
-  osg::Node* node = SGOceanTile(b, matlib);
-  if (!node)
-    return false;
-  group->addChild(node);
-  return true;
+namespace simgear {
+class SGReaderWriterOptions;
 }
 
 osg::Node*
-SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects, bool use_random_vegetation);
+SGLoadBTG(const std::string& path, 
+          const simgear::SGReaderWriterOptions* options);
 
 #endif // _SG_OBJ_HXX

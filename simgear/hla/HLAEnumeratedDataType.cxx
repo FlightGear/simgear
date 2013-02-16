@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -14,6 +14,12 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
+
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#include <simgear/compiler.h>
 
 #include "HLAEnumeratedDataType.hxx"
 
@@ -174,6 +180,15 @@ HLAEnumeratedDataType::setRepresentation(HLABasicDataType* representation)
     RepresentationVisitor representationVisitor;
     representation->accept(representationVisitor);
     _map.swap(representationVisitor._map);
+}
+
+void
+HLAEnumeratedDataType::_recomputeAlignmentImplementation()
+{
+    unsigned alignment = 1;
+    if (const HLADataType* dataType = getRepresentation())
+        alignment = std::max(alignment, dataType->getAlignment());
+    setAlignment(alignment);
 }
 
 } // namespace simgear

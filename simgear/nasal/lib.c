@@ -56,7 +56,7 @@ static naRef f_pop(naContext c, naRef me, int argc, naRef* args)
 static naRef f_setsize(naContext c, naRef me, int argc, naRef* args)
 {
     if(argc < 2 || !naIsVector(args[0])) ARGERR();
-    naVec_setsize(args[0], (int)naNumValue(args[1]).num);
+    naVec_setsize(c, args[0], (int)naNumValue(args[1]).num);
     return args[0];
 }
 
@@ -74,7 +74,7 @@ static naRef f_subvec(naContext c, naRef me, int argc, naRef* args)
     if(naIsNil(nlen) || len > naVec_size(v) - start)
         len = naVec_size(v) - start;
     result = naNewVector(c);
-    naVec_setsize(result, len);
+    naVec_setsize(c, result, len);
     for(i=0; i<len; i++)
         naVec_set(result, i, naVec_get(v, start + i));
     return result;
@@ -533,7 +533,7 @@ static naRef f_sort(naContext c, naRef me, int argc, naRef* args)
     qsort(sd.recs, sd.n, sizeof(sd.recs[0]),
           (int(*)(const void*,const void*))sortcmp);
     out = naNewVector(c);
-    naVec_setsize(out, sd.n);
+    naVec_setsize(c, out, sd.n);
     for(i=0; i<sd.n; i++)
         PTR(out).vec->rec->array[i] = sd.elems[sd.recs[i].i];
     naFree(sd.recs);

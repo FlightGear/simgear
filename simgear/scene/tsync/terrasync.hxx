@@ -24,7 +24,6 @@
 #include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/props/tiedpropertylist.hxx>
-#include <OpenThreads/Thread>
 
 class SGPath;
 
@@ -32,7 +31,7 @@ namespace simgear
 {
 const int NOWHERE = -9999;
 
-class TileCache;
+typedef void (*SGTerraSyncCallback)(void* userData, long tileIndex);
 
 class SGTerraSync : public SGSubsystem
 {
@@ -48,13 +47,13 @@ public:
 
     bool isIdle();
     bool schedulePosition(int lat, int lon);
-    void setTileCache(TileCache* tile_cache);
+    void setTileRefreshCb(SGTerraSyncCallback refreshCb, void* userData = NULL);
 
 protected:
     void syncAirportsModels();
     void syncArea(int lat, int lon);
     void syncAreas(int lat, int lon, int lat_dir, int lon_dir);
-    void refreshScenery(SGPath path,const string& relativeDir);
+    void refreshScenery(SGPath path,const std::string& relativeDir);
 
     class SvnThread;
 
@@ -63,9 +62,10 @@ private:
     int last_lat;
     int last_lon;
     SGPropertyNode_ptr _terraRoot;
-    SGPropertyNode_ptr _refresh_display;
-    SGPropertyNode_ptr _stalled_node;
-    TileCache* _tile_cache;
+    SGPropertyNode_ptr _refreshDisplay;
+    SGPropertyNode_ptr _stalledNode;
+    SGTerraSyncCallback _refreshCb;
+    void* _userCbData;
     simgear::TiedPropertyList _tiedProperties;
 };
 

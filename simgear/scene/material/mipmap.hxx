@@ -28,7 +28,7 @@ namespace osg {
 namespace simgear
 {
 class Effect;
-class SGReaderWriterXMLOptions;
+class SGReaderWriterOptions;
 
 namespace effect {
 enum MipMapFunction {
@@ -43,7 +43,7 @@ enum MipMapFunction {
 typedef boost::tuple<MipMapFunction, MipMapFunction, MipMapFunction, MipMapFunction> MipMapTuple;
 
 MipMapTuple makeMipMapTuple(Effect* effect, const SGPropertyNode* props,
-                      const SGReaderWriterXMLOptions* options);
+                      const SGReaderWriterOptions* options);
 osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs );
 } }
 

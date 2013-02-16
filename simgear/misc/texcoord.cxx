@@ -213,7 +213,8 @@ std::vector<SGVec2f> sgCalcTexCoords( double centerLat, const std::vector<SGGeod
     // cout << "degree_height = " << degree_height << endl;
 
     // find min/max of fan
-    SGVec2f tmin, tmax;
+    SGVec2f tmin(0.0, 0.0);
+    SGVec2f tmax(0.0, 0.0);
     bool first = true;
 
     int i;

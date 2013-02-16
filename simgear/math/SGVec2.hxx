@@ -18,10 +18,7 @@
 #ifndef SGVec2_H
 #define SGVec2_H
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Vec2f>
-#include <osg/Vec2d>
-#endif
+#include <iosfwd>
 
 /// 2D Vector Class
 template<typename T>
@@ -370,28 +367,5 @@ inline
 SGVec2d
 toVec2d(const SGVec2f& v)
 { return SGVec2d(v(0), v(1)); }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-inline
-SGVec2d
-toSG(const osg::Vec2d& v)
-{ return SGVec2d(v[0], v[1]); }
-
-inline
-SGVec2f
-toSG(const osg::Vec2f& v)
-{ return SGVec2f(v[0], v[1]); }
-
-inline
-osg::Vec2d
-toOsg(const SGVec2d& v)
-{ return osg::Vec2d(v[0], v[1]); }
-
-inline
-osg::Vec2f
-toOsg(const SGVec2f& v)
-{ return osg::Vec2f(v[0], v[1]); }
-
-#endif
 
 #endif

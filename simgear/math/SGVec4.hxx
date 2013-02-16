@@ -18,10 +18,7 @@
 #ifndef SGVec4_H
 #define SGVec4_H
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Vec4f>
-#include <osg/Vec4d>
-#endif
+#include <iosfwd>
 
 /// 4D Vector Class
 template<typename T>
@@ -427,27 +424,5 @@ inline
 SGVec4d
 toVec4d(const SGVec4f& v)
 { return SGVec4d(v(0), v(1), v(2), v(3)); }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-inline
-SGVec4d
-toSG(const osg::Vec4d& v)
-{ return SGVec4d(v[0], v[1], v[2], v[3]); }
-
-inline
-SGVec4f
-toSG(const osg::Vec4f& v)
-{ return SGVec4f(v[0], v[1], v[2], v[3]); }
-
-inline
-osg::Vec4d
-toOsg(const SGVec4d& v)
-{ return osg::Vec4d(v[0], v[1], v[2], v[3]); }
-
-inline
-osg::Vec4f
-toOsg(const SGVec4f& v)
-{ return osg::Vec4f(v[0], v[1], v[2], v[3]); }
-#endif
 
 #endif

@@ -18,13 +18,20 @@
 #ifndef HLALocation_hxx
 #define HLALocation_hxx
 
+#include <simgear/math/SGMath.hxx>
 #include "HLABasicDataElement.hxx"
+#include "HLATypes.hxx"
 
 namespace simgear {
+
+class HLAObjectInstance;
 
 class HLAAbstractLocation : public SGReferenced {
 public:
     virtual ~HLAAbstractLocation() {}
+
+    virtual SGLocationd getLocation() const = 0;
+    virtual void setLocation(const SGLocationd&) = 0;
 
     virtual SGVec3d getCartPosition() const = 0;
     virtual void setCartPosition(const SGVec3d&) = 0;
@@ -33,412 +40,96 @@ public:
     virtual void setCartOrientation(const SGQuatd&) = 0;
 
     virtual SGVec3d getAngularBodyVelocity() const = 0;
-    virtual void setAngularBodyVelocity(const SGVec3d& angular) = 0;
+    virtual void setAngularBodyVelocity(const SGVec3d&) = 0;
 
     virtual SGVec3d getLinearBodyVelocity() const = 0;
-    virtual void setLinearBodyVelocity(const SGVec3d& linear) = 0;
+    virtual void setLinearBodyVelocity(const SGVec3d&) = 0;
+
+    virtual double getTimeDifference(const SGTimeStamp&) const
+    { return 0; }
+
+    // Get the position and orientation extrapolated to the given time stamp.
+    SGLocationd getLocation(const SGTimeStamp& timeStamp) const
+    {
+        SGLocationd location = getLocation();
+        location.eulerStepBodyVelocitiesMidOrientation(getTimeDifference(timeStamp), getLinearBodyVelocity(), getAngularBodyVelocity());
+        return location;
+    }
 };
 
 class HLACartesianLocation : public HLAAbstractLocation {
 public:
-    HLACartesianLocation() :
-        _position(SGVec3d::zeros()),
-        _imag(SGVec3d::zeros()),
-        _angularVelocity(SGVec3d::zeros()),
-        _linearVelocity(SGVec3d::zeros())
-    { }
+    HLACartesianLocation();
+    virtual ~HLACartesianLocation();
 
-    virtual SGVec3d getCartPosition() const
-    { return _position; }
-    virtual void setCartPosition(const SGVec3d& position)
-    { _position = position; }
+    virtual SGLocationd getLocation() const;
+    virtual void setLocation(const SGLocationd& location);
 
-    virtual SGQuatd getCartOrientation() const
-    { return SGQuatd::fromPositiveRealImag(_imag); }
-    virtual void setCartOrientation(const SGQuatd& orientation)
-    { _imag = orientation.getPositiveRealImag(); }
+    virtual SGVec3d getCartPosition() const;
+    virtual void setCartPosition(const SGVec3d& position);
 
-    virtual SGVec3d getAngularBodyVelocity() const
-    { return _angularVelocity; }
-    virtual void setAngularBodyVelocity(const SGVec3d& angularVelocity)
-    { _angularVelocity = angularVelocity; }
+    virtual SGQuatd getCartOrientation() const;
+    virtual void setCartOrientation(const SGQuatd& orientation);
 
-    virtual SGVec3d getLinearBodyVelocity() const
-    { return _linearVelocity; }
-    virtual void setLinearBodyVelocity(const SGVec3d& linearVelocity)
-    { _linearVelocity = linearVelocity; }
+    virtual SGVec3d getAngularBodyVelocity() const;
+    virtual void setAngularBodyVelocity(const SGVec3d& angularVelocity);
 
-    HLADataElementProvider getPositionDataElement(unsigned i)
-    {
-        if (3 <= i)
-            return HLADataElementProvider();
-        return new PositionDataElement(this, i);
-    }
-    HLADataElementProvider getOrientationDataElement(unsigned i)
-    {
-        if (3 <= i)
-            return HLADataElementProvider();
-        return new OrientationDataElement(this, i);
-    }
+    virtual SGVec3d getLinearBodyVelocity() const;
+    virtual void setLinearBodyVelocity(const SGVec3d& linearVelocity);
 
-    HLADataElementProvider getAngularVelocityDataElement(unsigned i)
-    {
-        if (3 <= i)
-            return HLADataElementProvider();
-        return new AngularVelocityDataElement(this, i);
-    }
-    HLADataElementProvider getLinearVelocityDataElement(unsigned i)
-    {
-        if (3 <= i)
-            return HLADataElementProvider();
-        return new LinearVelocityDataElement(this, i);
-    }
+    virtual double getTimeDifference(const SGTimeStamp& timeStamp) const;
+
+    HLADataElement* getPositionDataElement();
+    HLADataElement* getPositionDataElement(unsigned i);
+    HLADataElement* getOrientationDataElement();
+    HLADataElement* getOrientationDataElement(unsigned i);
+    HLADataElement* getAngularVelocityDataElement();
+    HLADataElement* getAngularVelocityDataElement(unsigned i);
+    HLADataElement* getLinearVelocityDataElement();
+    HLADataElement* getLinearVelocityDataElement(unsigned i);
 
 private:
-    class PositionDataElement : public HLAAbstractDoubleDataElement {
-    public:
-        PositionDataElement(HLACartesianLocation* data, unsigned index) :
-            _data(data), _index(index)
-        { }
-        virtual double getValue() const
-        { return _data->_position[_index]; }
-        virtual void setValue(double value)
-        { _data->_position[_index] = value; }
+    HLADoubleData _position[3];
+    HLADoubleData _imag[3];
 
-    private:
-        SGSharedPtr<HLACartesianLocation> _data;
-        unsigned _index;
-    };
-
-    class OrientationDataElement : public HLAAbstractDoubleDataElement {
-    public:
-        OrientationDataElement(HLACartesianLocation* data, unsigned index) :
-            _data(data), _index(index)
-        { }
-        virtual double getValue() const
-        { return _data->_imag[_index]; }
-        virtual void setValue(double value)
-        { _data->_imag[_index] = value; }
-
-    private:
-        SGSharedPtr<HLACartesianLocation> _data;
-        unsigned _index;
-    };
-
-    class AngularVelocityDataElement : public HLAAbstractDoubleDataElement {
-    public:
-        AngularVelocityDataElement(HLACartesianLocation* data, unsigned index) :
-            _data(data), _index(index)
-        { }
-        virtual double getValue() const
-        { return _data->_angularVelocity[_index]; }
-        virtual void setValue(double value)
-        { _data->_angularVelocity[_index] = value; }
-
-    private:
-        SGSharedPtr<HLACartesianLocation> _data;
-        unsigned _index;
-    };
-
-    class LinearVelocityDataElement : public HLAAbstractDoubleDataElement {
-    public:
-        LinearVelocityDataElement(HLACartesianLocation* data, unsigned index) :
-            _data(data), _index(index)
-        { }
-        virtual double getValue() const
-        { return _data->_linearVelocity[_index]; }
-        virtual void setValue(double value)
-        { _data->_linearVelocity[_index] = value; }
-
-    private:
-        SGSharedPtr<HLACartesianLocation> _data;
-        unsigned _index;
-    };
-
-    SGVec3d _position;
-    SGVec3d _imag;
-
-    SGVec3d _angularVelocity;
-    SGVec3d _linearVelocity;
+    HLADoubleData _angularVelocity[3];
+    HLADoubleData _linearVelocity[3];
 };
 
-class HLALocationFactory : public SGReferenced {
+class HLAAbstractLocationFactory : public SGReferenced {
 public:
-    virtual ~HLALocationFactory() {}
-    virtual HLAAbstractLocation* createLocation(HLAAttributePathElementMap&) const = 0;
+    virtual ~HLAAbstractLocationFactory();
+    virtual HLAAbstractLocation* createLocation(HLAObjectInstance&) const = 0;
 };
 
-class HLACartesianLocationFactory : public HLALocationFactory {
+typedef HLAAbstractLocationFactory HLALocationFactory;
+
+class HLACartesianLocationFactory : public HLAAbstractLocationFactory {
 public:
-    virtual HLAAbstractLocation* createLocation(HLAAttributePathElementMap& attributePathElementMap) const
-    {
-        HLACartesianLocation* location = new HLACartesianLocation;
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _positonIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getPositionDataElement(i);
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _orientationIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getOrientationDataElement(i);
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _angularVelocityIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getAngularVelocityDataElement(i);
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _linearVelocityIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getLinearVelocityDataElement(i);
-        }
-        return location;
-    }
+    HLACartesianLocationFactory();
+    virtual ~HLACartesianLocationFactory();
 
-    void setPositionIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _positonIndexPathPair[index] = indexPathPair;
-    }
-    void setOrientationIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _orientationIndexPathPair[index] = indexPathPair;
-    }
+    virtual HLACartesianLocation* createLocation(HLAObjectInstance& objectInstance) const;
 
-    void setAngularVelocityIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _angularVelocityIndexPathPair[index] = indexPathPair;
-    }
-    void setLinearVelocityIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _linearVelocityIndexPathPair[index] = indexPathPair;
-    }
+    void setPositionIndex(const HLADataElementIndex& dataElementIndex);
+    void setPositionIndex(unsigned index, const HLADataElementIndex& dataElementIndex);
+    void setOrientationIndex(const HLADataElementIndex& dataElementIndex);
+    void setOrientationIndex(unsigned index, const HLADataElementIndex& dataElementIndex);
+
+    void setAngularVelocityIndex(const HLADataElementIndex& dataElementIndex);
+    void setAngularVelocityIndex(unsigned index, const HLADataElementIndex& dataElementIndex);
+    void setLinearVelocityIndex(const HLADataElementIndex& dataElementIndex);
+    void setLinearVelocityIndex(unsigned index, const HLADataElementIndex& dataElementIndex);
 
 private:
-    HLADataElement::IndexPathPair _positonIndexPathPair[3];
-    HLADataElement::IndexPathPair _orientationIndexPathPair[3];
+    HLADataElementIndex _positionIndex[3];
+    HLADataElementIndex _orientationIndex[3];
 
-    HLADataElement::IndexPathPair _angularVelocityIndexPathPair[3];
-    HLADataElement::IndexPathPair _linearVelocityIndexPathPair[3];
+    HLADataElementIndex _angularVelocityIndex[3];
+    HLADataElementIndex _linearVelocityIndex[3];
 };
 
-class HLAGeodeticLocation : public HLAAbstractLocation {
-public:
-    HLAGeodeticLocation() :
-        _dirty(true),
-        _cartPosition(SGVec3d::zeros()),
-        _cartOrientation(SGQuatd::unit()),
-        _cartBodyVelocity(SGVec3d::zeros()),
-        _geodPosition(),
-        _geodEulerRad(SGVec3d::zeros()),
-        _groundTrackRad(0),
-        _groundSpeedMPerSec(0),
-        _verticalSpeedMPerSec(0)
-    {
-        updateCartesianFromGeodetic();
-    }
-
-    virtual SGVec3d getCartPosition() const
-    { updateCartesianFromGeodetic(); return _cartPosition; }
-    virtual void setCartPosition(const SGVec3d& position)
-    { _cartPosition = position; _dirty = true; }
-
-    virtual SGQuatd getCartOrientation() const
-    { updateCartesianFromGeodetic(); return _cartOrientation; }
-    virtual void setCartOrientation(const SGQuatd& orientation)
-    { _cartOrientation = orientation; _dirty = true; }
-
-    virtual SGVec3d getAngularBodyVelocity() const
-    { return SGVec3d::zeros(); }
-    virtual void setAngularBodyVelocity(const SGVec3d& angular)
-    { }
-
-    virtual SGVec3d getLinearBodyVelocity() const
-    { updateCartesianFromGeodetic(); return _cartBodyVelocity; }
-    virtual void setLinearBodyVelocity(const SGVec3d& linear)
-    { _cartBodyVelocity = linear; _dirty = true; }
-
-    void setLatitudeDeg(double value)
-    { _geodPosition.setLatitudeDeg(value); _dirty = true; }
-    double getLatitudeDeg() const
-    { updateGeodeticFromCartesian(); return _geodPosition.getLatitudeDeg(); }
-    void setLatitudeRad(double value)
-    { _geodPosition.setLatitudeRad(value); _dirty = true; }
-    double getLatitudeRad() const
-    { updateGeodeticFromCartesian(); return _geodPosition.getLatitudeRad(); }
-    void setLongitudeDeg(double value)
-    { _geodPosition.setLongitudeDeg(value); _dirty = true; }
-    double getLongitudeDeg() const
-    { updateGeodeticFromCartesian(); return _geodPosition.getLongitudeDeg(); }
-    void setLongitudeRad(double value)
-    { _geodPosition.setLongitudeRad(value); _dirty = true; }
-    double getLongitudeRad() const
-    { updateGeodeticFromCartesian(); return _geodPosition.getLongitudeRad(); }
-    void setElevationFt(double value)
-    { _geodPosition.setElevationFt(value); _dirty = true; }
-    double getElevationFt() const
-    { updateGeodeticFromCartesian(); return _geodPosition.getElevationFt(); }
-    void setElevationM(double value)
-    { _geodPosition.setElevationM(value); _dirty = true; }
-    double getElevationM() const
-    { updateGeodeticFromCartesian(); return _geodPosition.getElevationM(); }
-
-    void setHeadingRad(double value)
-    { _geodEulerRad[2] = value; _dirty = true; }
-    double getHeadingRad() const
-    { updateGeodeticFromCartesian(); return _geodEulerRad[2]; }
-    void setHeadingDeg(double value)
-    { setHeadingRad(SGMiscd::deg2rad(value)); }
-    double getHeadingDeg() const
-    { return SGMiscd::rad2deg(getHeadingRad()); }
-    void setPitchRad(double value)
-    { _geodEulerRad[1] = value; _dirty = true; }
-    double getPitchRad() const
-    { updateGeodeticFromCartesian(); return _geodEulerRad[1]; }
-    void setPitchDeg(double value)
-    { setPitchRad(SGMiscd::deg2rad(value)); }
-    double getPitchDeg() const
-    { return SGMiscd::rad2deg(getPitchRad()); }
-    void setRollRad(double value)
-    { _geodEulerRad[0] = value; _dirty = true; }
-    double getRollRad() const
-    { updateGeodeticFromCartesian(); return _geodEulerRad[0]; }
-    void setRollDeg(double value)
-    { setRollRad(SGMiscd::deg2rad(value)); }
-    double getRollDeg() const
-    { return SGMiscd::rad2deg(getRollRad()); }
-
-    void setGroundTrackRad(double value)
-    { _groundTrackRad = value; _dirty = true; }
-    double getGroundTrackRad() const
-    { updateGeodeticFromCartesian(); return _groundTrackRad; }
-    void setGroundTrackDeg(double value)
-    { setGroundTrackRad(SGMiscd::deg2rad(value)); }
-    double getGroundTrackDeg() const
-    { return SGMiscd::rad2deg(getGroundTrackRad()); }
-
-
-    void setGroundSpeedMPerSec(double value)
-    { _groundSpeedMPerSec = value; _dirty = true; }
-    double getGroundSpeedMPerSec() const
-    { updateGeodeticFromCartesian(); return _groundSpeedMPerSec; }
-    void setGroundSpeedFtPerSec(double value)
-    { setGroundSpeedMPerSec(SG_FEET_TO_METER*value); }
-    double getGroundSpeedFtPerSec() const
-    { return SG_METER_TO_FEET*getGroundSpeedMPerSec(); }
-    void setGroundSpeedKnots(double value)
-    { setGroundSpeedMPerSec(SG_KT_TO_MPS*value); }
-    double getGroundSpeedKnots() const
-    { return SG_MPS_TO_KT*getGroundSpeedMPerSec(); }
-
-    void setVerticalSpeedMPerSec(double value)
-    { _verticalSpeedMPerSec = value; _dirty = true; }
-    double getVerticalSpeedMPerSec() const
-    { updateGeodeticFromCartesian(); return _verticalSpeedMPerSec; }
-    void setVerticalSpeedFtPerSec(double value)
-    { setVerticalSpeedMPerSec(SG_FEET_TO_METER*value); }
-    double getVerticalSpeedFtPerSec() const
-    { return SG_METER_TO_FEET*getVerticalSpeedMPerSec(); }
-    void setVerticalSpeedFtPerMin(double value)
-    { setVerticalSpeedFtPerSec(value/60); }
-    double getVerticalSpeedFtPerMin() const
-    { return 60*getVerticalSpeedFtPerSec(); }
-
-#define DATA_ELEMENT(name) \
-    HLADataElementProvider get## name ## DataElement()                  \
-    { return new DataElement<&HLAGeodeticLocation::get## name, &HLAGeodeticLocation::set ## name>(this); }
-
-    DATA_ELEMENT(LatitudeDeg)
-    DATA_ELEMENT(LatitudeRad)
-    DATA_ELEMENT(LongitudeDeg)
-    DATA_ELEMENT(LongitudeRad)
-    DATA_ELEMENT(ElevationFt)
-    DATA_ELEMENT(ElevationM)
-    DATA_ELEMENT(HeadingDeg)
-    DATA_ELEMENT(HeadingRad)
-    DATA_ELEMENT(PitchDeg)
-    DATA_ELEMENT(PitchRad)
-    DATA_ELEMENT(RollDeg)
-    DATA_ELEMENT(RollRad)
-
-    DATA_ELEMENT(GroundTrackDeg)
-    DATA_ELEMENT(GroundTrackRad)
-    DATA_ELEMENT(GroundSpeedMPerSec)
-    DATA_ELEMENT(GroundSpeedFtPerSec)
-    DATA_ELEMENT(GroundSpeedKnots)
-    DATA_ELEMENT(VerticalSpeedMPerSec)
-    DATA_ELEMENT(VerticalSpeedFtPerSec)
-    DATA_ELEMENT(VerticalSpeedFtPerMin)
-
-#undef DATA_ELEMENT
-
-private:
-    template<double (HLAGeodeticLocation::*getter)() const,
-             void (HLAGeodeticLocation::*setter)(double)>
-    class DataElement : public HLAAbstractDoubleDataElement {
-    public:
-        DataElement(HLAGeodeticLocation* data) :
-            _data(data)
-        { }
-        virtual double getValue() const
-        { return (_data->*getter)(); }
-        virtual void setValue(double value)
-        { (_data->*setter)(value); }
-
-    private:
-        SGSharedPtr<HLAGeodeticLocation> _data;
-    };
-
-    void updateGeodeticFromCartesian() const
-    {
-        if (!_dirty)
-            return;
-        _geodPosition = SGGeod::fromCart(_cartPosition);
-        SGQuatd geodOrientation = inverse(SGQuatd::fromLonLat(_geodPosition))*_cartOrientation;
-        geodOrientation.getEulerRad(_geodEulerRad[2], _geodEulerRad[1], _geodEulerRad[0]);
-        SGVec3d nedVel = geodOrientation.backTransform(_cartBodyVelocity);
-        if (SGLimitsd::min() < SGMiscd::max(fabs(nedVel[0]), fabs(nedVel[1])))
-            _groundTrackRad = atan2(nedVel[1], nedVel[0]);
-        else
-            _groundTrackRad = 0;
-        _groundSpeedMPerSec = sqrt(nedVel[0]*nedVel[0] + nedVel[1]*nedVel[1]);
-        _verticalSpeedMPerSec = -nedVel[2];
-        _dirty = false;
-    }
-    void updateCartesianFromGeodetic() const
-    {
-        if (!_dirty)
-            return;
-        _cartPosition = SGVec3d::fromGeod(_geodPosition);
-        SGQuatd geodOrientation = SGQuatd::fromEulerRad(_geodEulerRad[2], _geodEulerRad[1], _geodEulerRad[0]);
-        _cartOrientation = SGQuatd::fromLonLat(_geodPosition)*geodOrientation;
-        SGVec3d nedVel(cos(_groundTrackRad)*_groundSpeedMPerSec,
-                       sin(_groundTrackRad)*_groundSpeedMPerSec,
-                       -_verticalSpeedMPerSec);
-        _cartBodyVelocity = geodOrientation.transform(nedVel);
-        _dirty = false;
-    }
-
-    mutable bool _dirty;
-
-    // the cartesian values
-    mutable SGVec3d _cartPosition;
-    mutable SGQuatd _cartOrientation;
-    mutable SGVec3d _cartBodyVelocity;
-
-    // The geodetic values
-    mutable SGGeod _geodPosition;
-    mutable SGVec3d _geodEulerRad;
-    mutable double _groundTrackRad;
-    mutable double _groundSpeedMPerSec;
-    mutable double _verticalSpeedMPerSec;
-};
-
-class HLAGeodeticLocationFactory : public HLALocationFactory {
+class HLAGeodeticLocationFactory : public HLAAbstractLocationFactory {
 public:
     enum Semantic {
         LatitudeDeg,
@@ -463,85 +154,19 @@ public:
         VerticalSpeedMPerSec
     };
 
-    virtual HLAGeodeticLocation* createLocation(HLAAttributePathElementMap& attributePathElementMap) const
-    {
-        HLAGeodeticLocation* location = new HLAGeodeticLocation;
+    HLAGeodeticLocationFactory();
+    virtual ~HLAGeodeticLocationFactory();
 
-        for (IndexPathPairSemanticMap::const_iterator i = _indexPathPairSemanticMap.begin();
-             i != _indexPathPairSemanticMap.end(); ++i) {
-            switch (i->second) {
-            case LatitudeDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLatitudeDegDataElement();
-                break;
-            case LatitudeRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLatitudeRadDataElement();
-                break;
-            case LongitudeDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLongitudeDegDataElement();
-                break;
-            case LongitudeRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLongitudeRadDataElement();
-                break;
-            case ElevationM:
-                attributePathElementMap[i->first.first][i->first.second] = location->getElevationMDataElement();
-                break;
-            case ElevationFt:
-                attributePathElementMap[i->first.first][i->first.second] = location->getElevationFtDataElement();
-                break;
-            case HeadingDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getHeadingDegDataElement();
-                break;
-            case HeadingRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getHeadingRadDataElement();
-                break;
-            case PitchDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getPitchDegDataElement();
-                break;
-            case PitchRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getPitchRadDataElement();
-                break;
-            case RollDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getRollDegDataElement();
-                break;
-            case RollRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getRollRadDataElement();
-                break;
-            case GroundTrackDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundTrackDegDataElement();
-                break;
-            case GroundTrackRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundTrackRadDataElement();
-                break;
-            case GroundSpeedKnots:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundSpeedKnotsDataElement();
-                break;
-            case GroundSpeedFtPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundSpeedFtPerSecDataElement();
-                break;
-            case GroundSpeedMPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundSpeedMPerSecDataElement();
-                break;
-            case VerticalSpeedFtPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getVerticalSpeedFtPerSecDataElement();
-                break;
-            case VerticalSpeedFtPerMin:
-                attributePathElementMap[i->first.first][i->first.second] = location->getVerticalSpeedFtPerMinDataElement();
-                break;
-            case VerticalSpeedMPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getVerticalSpeedMPerSecDataElement();
-                break;
-            }
-        }
+    virtual HLAAbstractLocation* createLocation(HLAObjectInstance& objectInstance) const;
 
-        return location;
-    }
-
-    void setIndexPathPair(Semantic semantic, const HLADataElement::IndexPathPair& indexPathPair)
-    { _indexPathPairSemanticMap[indexPathPair] = semantic; }
+    void setIndex(Semantic semantic, const HLADataElementIndex& index)
+    { _indexSemanticMap[index] = semantic; }
 
 private:
-    typedef std::map<HLADataElement::IndexPathPair, Semantic> IndexPathPairSemanticMap;
-    IndexPathPairSemanticMap _indexPathPairSemanticMap;
+    class Location;
+
+    typedef std::map<HLADataElementIndex, Semantic> IndexSemanticMap;
+    IndexSemanticMap _indexSemanticMap;
 };
 
 } // namespace simgear

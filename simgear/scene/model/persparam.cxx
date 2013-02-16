@@ -9,8 +9,6 @@
 #include <simgear/props/props.hxx>
 #include "persparam.hxx"
 
-#include <simgear/math/SGMath.hxx>
-
 template <> double
 SGPersonalityParameter<double>::getNodeValue( const SGPropertyNode *props,
                                               const char *name,

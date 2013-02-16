@@ -25,10 +25,6 @@
 #define _MATLIB_HXX
 
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <simgear/compiler.h>
 
 #include <simgear/structure/SGSharedPtr.hxx>
@@ -37,20 +33,11 @@
 #include <map>			// STL associative "array"
 #include <vector>		// STL "array"
 
-#include <osg/Geode>
-
 class SGMaterial;
 class SGPropertyNode;
 
-using std::string;
-using std::map;
-using std::vector;
-using std::less;
-
-namespace simgear
-{
-class Effect;
-}
+namespace simgear { class Effect; }
+namespace osg { class Geode; }
 
 // Material management class
 class SGMaterialLib {
@@ -58,7 +45,9 @@ class SGMaterialLib {
 private:
 
     // associative array of materials
-    typedef map < string, SGSharedPtr<SGMaterial> > material_map;
+    typedef std::vector< SGSharedPtr<SGMaterial> > material_list;    
+    typedef material_list::iterator material_list_iterator;
+    typedef std::map < std::string,  material_list> material_map;
     typedef material_map::iterator material_map_iterator;
     typedef material_map::const_iterator const_material_map_iterator;
 
@@ -70,10 +59,10 @@ public:
     SGMaterialLib ( void );
 
     // Load a library of material properties
-    bool load( const string &fg_root, const string& mpath,
+    bool load( const std::string &fg_root, const std::string& mpath,
             SGPropertyNode *prop_root );
     // find a material record by material name
-    SGMaterial *find( const string& material );
+    SGMaterial *find( const std::string& material );
 
     material_map_iterator begin() { return matlib.begin(); }
     const_material_map_iterator begin() const { return matlib.begin(); }
@@ -81,7 +70,7 @@ public:
     material_map_iterator end() { return matlib.end(); }
     const_material_map_iterator end() const { return matlib.end(); }
 
-    static const SGMaterial* findMaterial(const osg::Geode* geode);
+    static const SGMaterial *findMaterial(const osg::Geode* geode);
 
     // Destructor
     ~SGMaterialLib ( void );

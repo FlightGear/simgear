@@ -43,14 +43,11 @@
 #include <osg/ShadeModel>
 #include <osg/TexEnv>
 #include <osg/Texture2D>
-#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
-#include <osgDB/Options>
-#endif
 
 #include <simgear/constants.h>
 #include <simgear/screen/colors.hxx>
 #include <simgear/scene/model/model.hxx>
-#include <simgear/misc/PathOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "sphere.hxx"
 #include "moon.hxx"
@@ -78,8 +75,8 @@ SGMoon::build( SGPath path, double moon_size ) {
     stateSet->setRenderBinDetails(-5, "RenderBin");
 
     // set up the orb state
-    osg::ref_ptr<osgDB::ReaderWriter::Options> options
-        = makeOptionsFromPath(path);
+    osg::ref_ptr<SGReaderWriterOptions> options;
+    options = SGReaderWriterOptions::fromPath(path.str());
 
     osg::Texture2D* texture = SGLoadTexture2D("moon.png", options.get());
     stateSet->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);

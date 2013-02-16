@@ -89,6 +89,12 @@ public:
 
   static osg::Node*
   getOdal(const SGLightBin& lights);
+
+  static osg::Node*
+  getHoldShort(const SGDirectionalLightBin& lights);
+
+  static osg::Node*
+  getGuard(const SGDirectionalLightBin& lights);
 };
 
 simgear::Effect* getLightEffect(float size, const osg::Vec3& attenuation,

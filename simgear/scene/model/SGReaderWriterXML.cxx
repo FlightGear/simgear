@@ -29,6 +29,7 @@
 
 #include <osg/Geode>
 #include <osg/MatrixTransform>
+#include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osgDB/Registry>
 #include <osg/Switch>
@@ -40,11 +41,10 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "modellib.hxx"
-#include "SGPagedLOD.hxx"
 #include "SGReaderWriterXML.hxx"
-#include "SGReaderWriterXMLOptions.hxx"
 
 #include "animation.hxx"
 #include "particles.hxx"
@@ -58,7 +58,7 @@ using namespace osg;
 
 static osg::Node *
 sgLoad3DModel_internal(const SGPath& path,
-                       const osgDB::ReaderWriter::Options* options,
+                       const osgDB::Options* options,
                        SGPropertyNode *overlay = 0);
 
 
@@ -77,9 +77,11 @@ const char* SGReaderWriterXML::className() const
 }
 
 osgDB::ReaderWriter::ReadResult
-SGReaderWriterXML::readNode(const std::string& fileName,
-                            const osgDB::ReaderWriter::Options* options) const
+SGReaderWriterXML::readNode(const std::string& name,
+                            const osgDB::Options* options) const
 {
+    std::string fileName = osgDB::findDataFile(name, options);
+
     osg::Node *result=0;
     try {
         SGPath p = SGModelLib::findDataFile(fileName);
@@ -198,36 +200,46 @@ void makeEffectAnimations(PropertyList& animation_nodes,
 }
 }
 
+namespace simgear {
+class SetNodeMaskVisitor : public osg::NodeVisitor {
+public:
+    SetNodeMaskVisitor(osg::Node::NodeMask nms, osg::Node::NodeMask nmc) :
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN), nodeMaskSet(nms), nodeMaskClear(nmc)
+    {}
+    virtual void apply(osg::Geode& node) {
+        node.setNodeMask((node.getNodeMask() | nodeMaskSet) & ~nodeMaskClear);
+        traverse(node);
+    }
+private:
+    osg::Node::NodeMask nodeMaskSet;
+    osg::Node::NodeMask nodeMaskClear;
+};
+}
+
 static osg::Node *
 sgLoad3DModel_internal(const SGPath& path,
-                       const osgDB::ReaderWriter::Options* options_,
+                       const osgDB::Options* dbOptions,
                        SGPropertyNode *overlay)
 {
     if (!path.exists()) {
       SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path.str() << "\"");
       return NULL;
     }
-    
-    const SGReaderWriterXMLOptions* xmlOptions;
-    xmlOptions = dynamic_cast<const SGReaderWriterXMLOptions*>(options_);
 
-    SGSharedPtr<SGPropertyNode> prop_root;
-    osg::Node *(*load_panel)(SGPropertyNode *)=0;
-    osg::ref_ptr<SGModelData> data;
+    osg::ref_ptr<SGReaderWriterOptions> options;
+    options = SGReaderWriterOptions::copyOrCreate(dbOptions);
+    
     SGPath modelpath(path);
     SGPath texturepath(path);
     SGPath modelDir(modelpath.dir());
     
-    if (xmlOptions) {
-        prop_root = xmlOptions->getPropRoot();
-        load_panel = xmlOptions->getLoadPanel();
-        data = xmlOptions->getModelData();
-    }
-    
-    if (!prop_root) {
+    SGSharedPtr<SGPropertyNode> prop_root = options->getPropertyNode();
+    if (!prop_root.valid())
         prop_root = new SGPropertyNode;
-    }
-
+    // The model data appear to be only used in the topmost model
+    osg::ref_ptr<SGModelData> data = options->getModelData();
+    options->setModelData(0);
+    
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;
     SGPropertyNode_ptr props = new SGPropertyNode;
@@ -253,10 +265,13 @@ sgLoad3DModel_internal(const SGPath& path,
 
             if (props->hasValue("/texture-path")) {
                 string texturePathStr = props->getStringValue("/texture-path");
-                texturepath = SGModelLib::findDataFile(texturePathStr, NULL, modelDir);
-                if (texturepath.isNull())
-                    throw sg_io_exception("Texture file not found: '" + texturePathStr + "'",
-                            path.str());
+                if (!texturePathStr.empty())
+                {
+                    texturepath = SGModelLib::findDataFile(texturePathStr, NULL, modelDir);
+                    if (texturepath.isNull())
+                        throw sg_io_exception("Texture file not found: '" + texturePathStr + "'",
+                                path.str());
+                }
             }
         } else {
             model = new osg::Node;
@@ -269,11 +284,6 @@ sgLoad3DModel_internal(const SGPath& path,
         // model without wrapper
     }
 
-    osg::ref_ptr<SGReaderWriterXMLOptions> options
-    = new SGReaderWriterXMLOptions(*options_);
-    options->setPropRoot(prop_root);
-    options->setLoadPanel(load_panel);
-    
     // Assume that textures are in
     // the same location as the XML file.
     if (!model) {
@@ -281,9 +291,8 @@ sgLoad3DModel_internal(const SGPath& path,
             texturepath = texturepath.dir();
 
         options->setDatabasePath(texturepath.str());
-        osgDB::ReaderWriter::ReadResult modelResult
-            = osgDB::Registry::instance()->readNode(modelpath.str(),
-                                                    options.get());
+        osgDB::ReaderWriter::ReadResult modelResult;
+        modelResult = osgDB::readNodeFile(modelpath.str(), options.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
                                   modelpath.str());
@@ -306,6 +315,9 @@ sgLoad3DModel_internal(const SGPath& path,
         // but introducing new data for velocities.
         UserDataCopyVisitor userDataCopyVisitor;
         model->accept(userDataCopyVisitor);
+
+        SetNodeMaskVisitor setNodeMaskVisitor(0, simgear::MODELLIGHT_BIT);
+        model->accept(setNodeMaskVisitor);
     }
     model->setName(modelpath.str());
 
@@ -354,11 +366,6 @@ sgLoad3DModel_internal(const SGPath& path,
           continue;
         }
 
-        osg::ref_ptr<SGReaderWriterXMLOptions> options;
-        options = new SGReaderWriterXMLOptions(*options_);
-        options->setPropRoot(prop_root);
-        options->setLoadPanel(load_panel);
-        
         try {
             submodel = sgLoad3DModel_internal(submodelPath, options.get(),
                                               sub_props->getNode("overlay"));
@@ -406,6 +413,7 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     } // end of submodel loading
 
+    osg::Node *(*load_panel)(SGPropertyNode *) = options->getLoadPanel();
     if ( load_panel ) {
         // Load panels
         vector<SGPropertyNode_ptr> panel_nodes = props->getChildren("panel");
@@ -418,18 +426,22 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     }
 
-    std::vector<SGPropertyNode_ptr> particle_nodes;
-    particle_nodes = props->getChildren("particlesystem");
-    for (unsigned i = 0; i < particle_nodes.size(); ++i) {
-        if (i==0) {
-            if (!texturepath.extension().empty())
-                texturepath = texturepath.dir();
-
-            options->setDatabasePath(texturepath.str());
+    if (dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
+        std::vector<SGPropertyNode_ptr> particle_nodes;
+        particle_nodes = props->getChildren("particlesystem");
+        for (unsigned i = 0; i < particle_nodes.size(); ++i) {
+            osg::ref_ptr<SGReaderWriterOptions> options2;
+            options2 = new SGReaderWriterOptions(*options);
+            if (i==0) {
+                if (!texturepath.extension().empty())
+                    texturepath = texturepath.dir();
+                
+                options2->setDatabasePath(texturepath.str());
+            }
+            group->addChild(Particles::appendParticles(particle_nodes[i],
+                                                       prop_root,
+                                                       options2.get()));
         }
-        group->addChild(Particles::appendParticles(particle_nodes[i],
-                        prop_root,
-                        options.get()));
     }
 
     std::vector<SGPropertyNode_ptr> text_nodes;
@@ -439,6 +451,7 @@ sgLoad3DModel_internal(const SGPath& path,
                         prop_root,
                         options.get()));
     }
+
     PropertyList effect_nodes = props->getChildren("effect");
     PropertyList animation_nodes = props->getChildren("animation");
     // Some material animations (eventually all) are actually effects.
@@ -448,10 +461,11 @@ sgLoad3DModel_internal(const SGPath& path,
             = instantiateEffects(group.get(), effect_nodes, options.get());
         group = static_cast<Group*>(modelWithEffects.get());
     }
+
     for (unsigned i = 0; i < animation_nodes.size(); ++i)
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,
-                             options.get());
+                             options.get(), path.str(), i);
 
     if (!needTransform && group->getNumChildren() < 2) {
         model = group->getChild(0);

@@ -2,13 +2,13 @@
 #  include <simgear_config.h>
 #endif
 
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
-
-#include <simgear/math/SGMath.hxx>
 
 #include "EffectBuilder.hxx"
 #include "Effect.hxx"
+
+using std::string;
 
 namespace simgear
 {
@@ -43,7 +43,7 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
 }
 
 string getGlobalProperty(const SGPropertyNode* prop,
-                         const SGReaderWriterXMLOptions* options)
+                         const SGReaderWriterOptions* options)
 {
     if (!prop)
         return string();
@@ -54,7 +54,7 @@ string getGlobalProperty(const SGPropertyNode* prop,
     SGPropertyNode_ptr propRoot;
     if (propName[0] == '/') {
         return propName;
-    } else if ((propRoot = options->getPropRoot())) {
+    } else if ((propRoot = options->getPropertyNode())) {
         string result = propRoot->getPath();
         result.append("/");
         result.append(propName);
@@ -102,4 +102,14 @@ namespace effect
 {
 const char* colorFields[] = {"red", "green", "blue", "alpha"};
 }
+  
+PassAttributeBuilder::~PassAttributeBuilder()
+{
 }
+  
+} // of namespace simgear
+
+
+
+
+

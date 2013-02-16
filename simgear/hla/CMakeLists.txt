@@ -7,6 +7,7 @@ set(HLA_HEADERS
     HLABasicDataElement.hxx
     HLABasicDataType.hxx
     HLADataElement.hxx
+    HLADataElementVisitor.hxx
     HLADataType.hxx
     HLADataTypeVisitor.hxx
     HLAEnumeratedDataElement.hxx
@@ -21,45 +22,53 @@ set(HLA_HEADERS
     HLAOMTXmlVisitor.hxx
     HLAPropertyDataElement.hxx
     HLARawDataElement.hxx
-    HLAVariantDataElement.hxx
-    HLAVariantDataType.hxx
+    HLATypes.hxx
+    HLAVariantRecordDataElement.hxx
+    HLAVariantRecordDataType.hxx
     )
 
 set(HLA_SOURCES
-    RTIObjectClass.cxx
-    RTIObjectInstance.cxx
-    RTIFederate.cxx
     HLAArrayDataElement.cxx
     HLAArrayDataType.cxx
     HLABasicDataElement.cxx
     HLABasicDataType.cxx
     HLADataElement.cxx
     HLADataType.cxx
+    HLADataTypeVisitor.cxx
     HLAEnumeratedDataElement.cxx
     HLAEnumeratedDataType.cxx
     HLAFederate.cxx
+    HLAInteractionClass.cxx
     HLAFixedRecordDataElement.cxx
     HLAFixedRecordDataType.cxx
+    HLALocation.cxx
     HLAObjectClass.cxx
     HLAObjectInstance.cxx
     HLAOMTXmlVisitor.cxx
     HLAPropertyDataElement.cxx
     HLARawDataElement.cxx
-    HLAVariantDataElement.cxx
-    HLAVariantDataType.cxx
+    HLAVariantRecordDataElement.cxx
+    HLAVariantRecordDataType.cxx
     )
 simgear_component(hla hla "${HLA_SOURCES}" "${HLA_HEADERS}")
 
 if(RTI_FOUND)
-  set(HLA13_HEADERS
-    HLA13Federate.hxx
-    )
-  set(HLA13_SOURCES
+  set(RTI13_SOURCES
+    RTI13InteractionClass.cxx
     RTI13ObjectClass.cxx
     RTI13ObjectInstance.cxx
     RTI13Federate.cxx
-    HLA13Federate.cxx
+    RTI13FederateFactory.cxx
     )
-  simgear_component(hla13 hla "${HLA13_SOURCES}" "${HLA13_HEADERS}")
-  set_property(TARGET sghla13 APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIR}")
+  simgear_component(rti13 hla "${RTI13_SOURCES}" "")
 endif()
+
+set(RTI_SOURCES
+  RTIInteractionClass.cxx
+  RTIObjectClass.cxx
+  RTIObjectInstance.cxx
+  RTIFederate.cxx
+  RTIFederateFactory.cxx
+  RTIFederateFactoryRegistry.cxx
+  )
+simgear_component(rti hla "${RTI_SOURCES}" "")

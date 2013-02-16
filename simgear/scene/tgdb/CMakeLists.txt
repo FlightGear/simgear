@@ -2,20 +2,19 @@ include (SimGearComponent)
 
 set(HEADERS 
     GroundLightManager.hxx
+    ReaderWriterSPT.hxx
     ReaderWriterSTG.hxx
+    SGBuildingBin.hxx
     SGDirectionalLightBin.hxx
     SGLightBin.hxx
     SGModelBin.hxx
     SGOceanTile.hxx
     SGReaderWriterBTG.hxx
-    SGReaderWriterBTGOptions.hxx
     SGTexturedTriangleBin.hxx
     SGTriangleBin.hxx
     SGVasiDrawable.hxx
     SGVertexArrayBin.hxx
     ShaderGeometry.hxx
-    TileCache.hxx
-    TileEntry.hxx
     TreeBin.hxx
     apt_signs.hxx
     obj.hxx
@@ -25,13 +24,13 @@ set(HEADERS
 
 set(SOURCES 
     GroundLightManager.cxx
+    ReaderWriterSPT.cxx
     ReaderWriterSTG.cxx
+    SGBuildingBin.cxx
     SGOceanTile.cxx
     SGReaderWriterBTG.cxx
     SGVasiDrawable.cxx
     ShaderGeometry.cxx
-    TileCache.cxx
-    TileEntry.cxx
     TreeBin.cxx
     apt_signs.cxx
     obj.cxx
@@ -39,4 +38,11 @@ set(SOURCES
     userdata.cxx
     )
 
-simgear_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")
+simgear_scene_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")
+
+if(ENABLE_TESTS)
+  add_executable(BucketBoxTest BucketBoxTest.cxx)
+  target_link_libraries(BucketBoxTest SimGearCore)
+  add_test(BucketBoxTest ${EXECUTABLE_OUTPUT_PATH}/BucketBoxTest)
+
+endif(ENABLE_TESTS)

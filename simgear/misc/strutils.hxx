@@ -33,6 +33,7 @@
 #include <vector>
 #include <cstdlib>
 
+typedef std::vector < std::string > string_list;
 
 namespace simgear {
   namespace strutils {
@@ -93,10 +94,16 @@ namespace simgear {
 	 * resulting in at most maxsplit+1 words.
 	 * @return Array of words.
 	 */
-	std::vector<std::string>
+	string_list
 	split( const std::string& s,
 	       const char* sep = 0,
 	       int maxsplit = 0 );
+
+       /**
+        * create a single string by joining the elements of a list with
+        * another string.
+        */
+       std::string join(const string_list& l, const std::string& joinWith = "");
 
 	/**
 	 * Test if a string starts with a string 
@@ -116,6 +123,32 @@ namespace simgear {
 	 */
 	bool ends_with( const std::string & s, const std::string & substr );
   
+    /**
+     * Strip all leading/trailing whitespace, and transform all interal
+     * whitespace into a single ' ' character - i.e newlines/carriage returns/
+     * tabs/multiple spaces will be condensed.
+     */
+    std::string simplify(const std::string& s);
+    
+    /**
+     * convert a string representing a decimal number, to an int
+     */
+    int to_int(const std::string& s, int base = 10);
+    
+    /**
+     * Like strcmp(), but for dotted versions strings NN.NN.NN
+     * any number of terms are support.
+     * @return 0 if versions match, -ve number if v1 is lower, +ve if v1
+     * is greater
+     */
+    int compare_versions(const std::string& v1, const std::string& v2);
+
+    /**
+     * Convert a string to upper case.
+     * @return upper case string
+     */
+    std::string uppercase(const std::string &s);
+
   } // end namespace strutils
 } // end namespace simgear
 

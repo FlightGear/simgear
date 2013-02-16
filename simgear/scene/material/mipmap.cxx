@@ -44,7 +44,7 @@ EffectNameValue<MipMapFunction> mipmapFunctionsInit[] =
 EffectPropertyMap<MipMapFunction> mipmapFunctions(mipmapFunctionsInit);
 
 MipMapTuple makeMipMapTuple(Effect* effect, const SGPropertyNode* props,
-                      const SGReaderWriterXMLOptions* options)
+                      const SGReaderWriterOptions* options)
 {
     const SGPropertyNode* pMipmapR
         = getEffectPropertyChild(effect, props, "function-r");

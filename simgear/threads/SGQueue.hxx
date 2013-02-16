@@ -5,9 +5,8 @@
 
 #include <cassert>
 #include <queue>
-#include <OpenThreads/Mutex>
-#include <OpenThreads/ScopedLock>
-#include <OpenThreads/Condition>
+#include "SGGuard.hxx"
+#include "SGThread.hxx"
 
 /**
  * SGQueue defines an interface for a FIFO.
@@ -66,7 +65,7 @@ public:
 
 protected:
     /**
-     * 
+     *
      */
     std::queue<T> fifo;
 };
@@ -74,7 +73,7 @@ protected:
 /**
  * A simple thread safe queue.  All access functions are guarded with a mutex.
  */
-template<class T, class SGLOCK=OpenThreads::Mutex>
+template<class T>
 class SGLockedQueue : public SGQueue<T>
 {
 public:
@@ -95,7 +94,7 @@ public:
      * @return bool True if queue is empty, otherwisr false.
      */
     virtual bool empty() {
-	OpenThreads::ScopedLock<SGLOCK> g(mutex);
+	SGGuard<SGMutex> g(mutex);
 	return this->fifo.empty();
     }
 
@@ -105,7 +104,7 @@ public:
      * @param T object to add.
      */
     virtual void push( const T& item ) {
-	OpenThreads::ScopedLock<SGLOCK> g(mutex);
+	SGGuard<SGMutex> g(mutex);
 	this->fifo.push( item );
     }
 
@@ -115,7 +114,7 @@ public:
      * @return T next available object.
      */
     virtual T front() {
-	OpenThreads::ScopedLock<SGLOCK> g(mutex);
+	SGGuard<SGMutex> g(mutex);
 	assert( ! this->fifo.empty() );
 	T item = this->fifo.front();
 	return item;
@@ -127,9 +126,9 @@ public:
      * @return T next available object.
      */
     virtual T pop() {
-	OpenThreads::ScopedLock<SGLOCK> g(mutex);
-	//if (fifo.empty()) throw NoSuchElementException();
-	assert( ! this->fifo.empty() );
+	SGGuard<SGMutex> g(mutex);
+	    if (this->fifo.empty()) return T(); // assumes T is default constructable
+        
 //  	if (fifo.empty())
 //  	{
 //  	    mutex.unlock();
@@ -146,7 +145,7 @@ public:
      * @return size_t size of queue.
      */
     virtual size_t size() {
-	OpenThreads::ScopedLock<SGLOCK> g(mutex);
+	SGGuard<SGMutex> g(mutex);
         return this->fifo.size();
     }
 
@@ -155,7 +154,7 @@ private:
     /**
      * Mutex to serialise access.
      */
-    SGLOCK mutex;
+    SGMutex mutex;
 
 private:
     // Prevent copying.
@@ -182,10 +181,10 @@ public:
     ~SGBlockingQueue() {}
 
     /**
-     * 
+     *
      */
     virtual bool empty() {
-	OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+	SGGuard<SGMutex> g(mutex);
 	return this->fifo.empty();
     }
 
@@ -195,7 +194,7 @@ public:
      * @param T object to add.
      */
     virtual void push( const T& item ) {
-	OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+	SGGuard<SGMutex> g(mutex);
 	this->fifo.push( item );
 	not_empty.signal();
     }
@@ -207,7 +206,7 @@ public:
      * @return T next available object.
      */
     virtual T front() {
-	OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+	SGGuard<SGMutex> g(mutex);
 
 	assert(this->fifo.empty() != true);
 	//if (fifo.empty()) throw ??
@@ -223,10 +222,10 @@ public:
      * @return T next available object.
      */
     virtual T pop() {
-	OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+	SGGuard<SGMutex> g(mutex);
 
 	while (this->fifo.empty())
-	    not_empty.wait(&mutex);
+	    not_empty.wait(mutex);
 
 	assert(this->fifo.empty() != true);
 	//if (fifo.empty()) throw ??
@@ -242,7 +241,7 @@ public:
      * @return size_t size of queue.
      */
     virtual size_t size() {
-	OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+	SGGuard<SGMutex> g(mutex);
         return this->fifo.size();
     }
 
@@ -251,12 +250,12 @@ private:
     /**
      * Mutex to serialise access.
      */
-    OpenThreads::Mutex mutex;
+    SGMutex mutex;
 
     /**
      * Condition to signal when queue not empty.
      */
-    OpenThreads::Condition not_empty;
+    SGWaitCondition not_empty;
 
 private:
     // Prevent copying.
@@ -284,18 +283,18 @@ public:
     ~SGBlockingDeque() {}
 
     /**
-     * 
+     *
      */
     virtual void clear() {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
     this->queue.clear();
     }
-    
+
     /**
-     * 
+     *
      */
     virtual bool empty() {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
     return this->queue.empty();
     }
 
@@ -305,7 +304,7 @@ public:
      * @param T object to add.
      */
     virtual void push_front( const T& item ) {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
     this->queue.push_front( item );
     not_empty.signal();
     }
@@ -316,7 +315,7 @@ public:
      * @param T object to add.
      */
     virtual void push_back( const T& item ) {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
     this->queue.push_back( item );
     not_empty.signal();
     }
@@ -328,7 +327,7 @@ public:
      * @return T next available object.
      */
     virtual T front() {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
 
     assert(this->queue.empty() != true);
     //if (queue.empty()) throw ??
@@ -344,10 +343,10 @@ public:
      * @return T next available object.
      */
     virtual T pop_front() {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
 
     while (this->queue.empty())
-        not_empty.wait(&mutex);
+        not_empty.wait(mutex);
 
     assert(this->queue.empty() != true);
     //if (queue.empty()) throw ??
@@ -364,10 +363,10 @@ public:
      * @return T next available object.
      */
     virtual T pop_back() {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
 
     while (this->queue.empty())
-        not_empty.wait(&mutex);
+        not_empty.wait(mutex);
 
     assert(this->queue.empty() != true);
     //if (queue.empty()) throw ??
@@ -383,7 +382,7 @@ public:
      * @return size_t size of queue.
      */
     virtual size_t size() {
-    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    SGGuard<SGMutex> g(mutex);
         return this->queue.size();
     }
 
@@ -392,12 +391,12 @@ private:
     /**
      * Mutex to serialise access.
      */
-    OpenThreads::Mutex mutex;
+    SGMutex mutex;
 
     /**
      * Condition to signal when queue not empty.
      */
-    OpenThreads::Condition not_empty;
+    SGWaitCondition not_empty;
 
 private:
     // Prevent copying.

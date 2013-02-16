@@ -37,9 +37,12 @@ namespace simgear {
 class RTI13Ambassador;
 class RTI13ObjectClass;
 
+typedef std::pair<RTI::AttributeHandle, RTIData> RTI13AttributeHandleDataPair;
+typedef std::list<RTI13AttributeHandleDataPair> RTI13AttributeHandleDataPairList;
+
 class RTI13ObjectInstance : public RTIObjectInstance {
 public:
-    RTI13ObjectInstance(const RTI::ObjectHandle& handle, HLAObjectInstance* hlaObjectInstance, const RTI13ObjectClass* objectClass, RTI13Ambassador* ambassador, bool owned);
+    RTI13ObjectInstance(const RTI::ObjectHandle& handle, HLAObjectInstance* hlaObjectInstance, const RTI13ObjectClass* objectClass, RTI13Ambassador* ambassador);
     virtual ~RTI13ObjectInstance();
 
     const RTI::ObjectHandle& getHandle() const
@@ -52,8 +55,6 @@ public:
 
     unsigned getNumAttributes() const
     { return get13ObjectClass()->getNumAttributes(); }
-    unsigned getAttributeIndex(const std::string& name) const
-    { return get13ObjectClass()->getAttributeIndex(name); }
     unsigned getAttributeIndex(const RTI::AttributeHandle& handle) const
     { return get13ObjectClass()->getAttributeIndex(handle); }
     RTI::AttributeHandle getAttributeHandle(unsigned index) const
@@ -61,33 +62,35 @@ public:
 
     virtual std::string getName() const;
 
-    virtual void addToRequestQueue();
-
     virtual void deleteObjectInstance(const RTIData& tag);
     virtual void deleteObjectInstance(const SGTimeStamp& timeStamp, const RTIData& tag);
     virtual void localDeleteObjectInstance();
 
-    void reflectAttributeValues(const RTI::AttributeHandleValuePairSet& attributeValuePairSet, const RTIData& tag);
-    void reflectAttributeValues(const RTI::AttributeHandleValuePairSet& attributeValuePairSet, const SGTimeStamp& timeStamp, const RTIData& tag);
-    virtual void requestObjectAttributeValueUpdate();
-    void provideAttributeValueUpdate(const RTI::AttributeHandleSet& attributes);
+    void reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList,
+                                const RTIData& tag, HLAIndexList& indexPool);
+    void reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList,
+                                const SGTimeStamp& timeStamp, const RTIData& tag, HLAIndexList& indexPool);
+    virtual void requestObjectAttributeValueUpdate(const HLAIndexList& indexList);
+    void provideAttributeValueUpdate(const std::vector<RTI::AttributeHandle>& attributes);
 
     virtual void updateAttributeValues(const RTIData& tag);
     virtual void updateAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag);
 
-    void attributesInScope(const RTI::AttributeHandleSet& attributes);
-    void attributesOutOfScope(const RTI::AttributeHandleSet& attributes);
+    virtual bool isAttributeOwnedByFederate(unsigned index) const;
 
-    void turnUpdatesOnForObjectInstance(const RTI::AttributeHandleSet& attributes);
-    void turnUpdatesOffForObjectInstance(const RTI::AttributeHandleSet& attributes);
+    void attributesInScope(const std::vector<RTI::AttributeHandle>& attributes);
+    void attributesOutOfScope(const std::vector<RTI::AttributeHandle>& attributes);
+
+    void turnUpdatesOnForObjectInstance(const std::vector<RTI::AttributeHandle>& attributes);
+    void turnUpdatesOffForObjectInstance(const std::vector<RTI::AttributeHandle>& attributes);
 
     // Not yet sure what to do here. But the dispatch functions are already there
-    void requestAttributeOwnershipAssumption(const RTI::AttributeHandleSet& attributes, const RTIData& tag);
-    void attributeOwnershipDivestitureNotification(const RTI::AttributeHandleSet& attributes);
-    void attributeOwnershipAcquisitionNotification(const RTI::AttributeHandleSet& attributes);
-    void attributeOwnershipUnavailable(const RTI::AttributeHandleSet& attributes);
-    void requestAttributeOwnershipRelease(const RTI::AttributeHandleSet& attributes, const RTIData& tag);
-    void confirmAttributeOwnershipAcquisitionCancellation(const RTI::AttributeHandleSet& attributes);
+    void requestAttributeOwnershipAssumption(const std::vector<RTI::AttributeHandle>& attributes, const RTIData& tag);
+    void attributeOwnershipDivestitureNotification(const std::vector<RTI::AttributeHandle>& attributes);
+    void attributeOwnershipAcquisitionNotification(const std::vector<RTI::AttributeHandle>& attributes);
+    void attributeOwnershipUnavailable(const std::vector<RTI::AttributeHandle>& attributes);
+    void requestAttributeOwnershipRelease(const std::vector<RTI::AttributeHandle>& attributes, const RTIData& tag);
+    void confirmAttributeOwnershipAcquisitionCancellation(const std::vector<RTI::AttributeHandle>& attributes);
     void informAttributeOwnership(RTI::AttributeHandle attributeHandle, RTI::FederateHandle federateHandle);
     void attributeIsNotOwned(RTI::AttributeHandle attributeHandle);
     void attributeOwnedByRTI(RTI::AttributeHandle attributeHandle);
@@ -95,7 +98,7 @@ public:
 private:
     RTI::ObjectHandle _handle;
     SGSharedPtr<const RTI13ObjectClass> _objectClass;
-    SGWeakPtr<RTI13Ambassador> _ambassador;
+    SGSharedPtr<RTI13Ambassador> _ambassador;
 
     // cached storage for updates
     std::auto_ptr<RTI::AttributeHandleValuePairSet> _attributeValuePairSet;

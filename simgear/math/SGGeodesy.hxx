@@ -50,6 +50,11 @@ public:
   static bool direct(const SGGeod& p1, double course1,
                      double distance, SGGeod& p2, double& course2);
 
+  /// overloaded version of above, returns new value directly, throws
+  /// an sg_exception on failure.
+  static SGGeod direct(const SGGeod& p1, double course1,
+                     double distance);
+
   static bool inverse(const SGGeod& p1, const SGGeod& p2, double& course1,
                       double& course2, double& distance);
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -18,44 +18,33 @@
 #ifndef RTIInteractionClass_hxx
 #define RTIInteractionClass_hxx
 
-#include <set>
 #include <string>
-#include <vector>
 #include "simgear/structure/SGReferenced.hxx"
-#include "simgear/structure/SGSharedPtr.hxx"
-#include "simgear/structure/SGReferenced.hxx"
-#include "RTIData.hxx"
 
 namespace simgear {
 
+class HLAInteractionClass;
+
 class RTIInteractionClass : public SGReferenced {
 public:
-    RTIInteractionClass(const std::string& name);
+    RTIInteractionClass(HLAInteractionClass* interactionClass);
     virtual ~RTIInteractionClass();
 
-    const std::string& getName() const
-    { return _name; }
+    virtual bool resolveParameterIndex(const std::string& name, unsigned index) = 0;
 
-    virtual unsigned getNumParameters() const = 0;
-    virtual unsigned getParameterIndex(const std::string& name) const = 0;
-    virtual unsigned getOrCreateParameterIndex(const std::string& name) = 0;
-
-    virtual bool publish(const std::set<unsigned>& indexSet) = 0;
+    virtual bool publish() = 0;
     virtual bool unpublish() = 0;
 
-    virtual bool subscribe(const std::set<unsigned>& indexSet, bool) = 0;
+    virtual bool subscribe(bool) = 0;
     virtual bool unsubscribe() = 0;
 
-    virtual void send(const RTIData& tag) = 0;
-    virtual void send(const SGTimeStamp& timeStamp, const RTIData& tag) = 0;
-
-    class ReceiveCallback : public SGReferenced {
-    public:
-        virtual ~ReceiveCallback() {}
-    };
+    // virtual void send(const RTIData& tag) = 0;
+    // virtual void send(const SGTimeStamp& timeStamp, const RTIData& tag) = 0;
 
 private:
-    std::string _name;
+    HLAInteractionClass* _interactionClass;
+
+    friend class HLAInteractionClass;
 };
 
 }

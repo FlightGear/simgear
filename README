@@ -1,1 +1,15 @@
-[ Nothing here at this time. ]
+SimGear - Simulator Construction Tools
+======================================
+http://www.flightgear.org
+
+SimGear is a set of open-source libraries designed to be used as building
+blocks for quickly assembling 3d simulations, games, and visualization
+applications.
+
+SimGear is developed by the FlightGear project and also provides the base
+for the FlightGear Flight Simulator.
+
+Source code for SimGear is released under the GNU Library General Public
+License (LGPL) - see COPYING for license details.
+
+See INSTALL file for help on building SimGear.

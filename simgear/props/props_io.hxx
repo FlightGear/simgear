@@ -15,11 +15,7 @@
 #include <simgear/compiler.h>
 #include <simgear/props/props.hxx>
 
-#include <stdio.h>
-
 #include <string>
-#include <vector>
-#include <map>
 #include <iosfwd>
 
 /**

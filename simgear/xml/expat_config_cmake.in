@@ -1,0 +1,41 @@
+
+#ifndef EXPAT_CONFIG_H
+#define EXPAT_CONFIG_H
+
+#cmakedefine HAVE_WINDOWS_H
+
+#ifdef HAVE_WINDOWS_H
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+    #undef WIN32_LEAN_AND_MEAN
+#endif
+
+/* 1234 = LIL_ENDIAN, 4321 = BIGENDIAN */
+#define BYTEORDER  1234
+
+/* Define to 1 if you have the `bcopy' function. */
+#cmakedefine HAVE_BCOPY
+
+/* Define to 1 if you have the `memmove' function. */
+#define HAVE_MEMMOVE
+
+/* Define to 1 if you have a working `mmap' system call. */
+#cmakedefine HAVE_MMAP
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/* whether byteorder is bigendian */
+#undef WORDS_BIGENDIAN
+
+/* Define to specify how much context to retain around the current parse
+   point. */
+#define XML_CONTEXT_BYTES 1024
+
+/* Define to make parameter entity parsing functionality available. */
+#define XML_DTD
+
+/* Define to make XML Namespaces functionality available. */
+#define XML_NS
+
+#endif /* ifndef EXPAT_CONFIG_H */

@@ -29,17 +29,6 @@
 #ifndef _SG_SAMPLE_GROUP_OPENAL_HXX
 #define _SG_SAMPLE_GROUP_OPENAL_HXX 1
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
-#if defined(__APPLE__)
-# include <OpenAL/al.h>
-#elif defined(OPENALSDK)
-# include <al.h>
-#else
-# include <AL/al.h>
-#endif
 
 #include <string>
 #include <vector>
@@ -54,10 +43,8 @@
 #include "sample_openal.hxx"
 #include "sample_queue.hxx"
 
-using std::map;
-using std::string;
 
-typedef map < string, SGSharedPtr<SGSoundSample> > sample_map;
+typedef std::map < std::string, SGSharedPtr<SGSoundSample> > sample_map;
 typedef sample_map::iterator sample_map_iterator;
 typedef sample_map::const_iterator const_sample_map_iterator;
 
@@ -80,7 +67,7 @@ public:
      * @param smgr Pointer to a pre-initialized sound manager class
      * @param refname Name of this group for reference purposes.
      */
-    SGSampleGroup ( SGSoundMgr *smgr, const string &refname );
+    SGSampleGroup ( SGSoundMgr *smgr, const std::string &refname );
 
     /**
      * Destructor
@@ -106,28 +93,28 @@ public:
      * @param refname Name of this audio sample for reference purposes
      * @return return true if successful
      */
-    bool add( SGSharedPtr<SGSoundSample> sound, const string& refname );
+    bool add( SGSharedPtr<SGSoundSample> sound, const std::string& refname );
 
     /**
      * Remove an audio sample from this group.
      * @param refname Reference name of the audio sample to remove
      * @return return true if successful
      */
-    bool remove( const string& refname );
+    bool remove( const std::string& refname );
 
     /**
      * Test if a specified audio sample is registered at this sample group
      * @param refname Reference name of the audio sample to test for
      * @return true if the specified audio sample exists
      */
-    bool exists( const string& refname );
+    bool exists( const std::string& refname );
 
     /**
      * Find a specified audio sample in this sample group
      * @param refname Reference name of the audio sample to find
      * @return A pointer to the SGSoundSample
      */
-    SGSoundSample *find( const string& refname );
+    SGSoundSample *find( const std::string& refname );
 
     /**
      * Stop all playing samples and set the source id to invalid.
@@ -145,28 +132,28 @@ public:
     void resume();
 
     /**
-     * Request to start playing the refered audio sample.
+     * Request to start playing the referred audio sample.
      * @param refname Reference name of the audio sample to start playing
      * @param looping Define if the sound should loop continuously
      * @return true if the audio sample exsists and is scheduled for playing
      */
-    bool play( const string& refname, bool looping );
+    bool play( const std::string& refname, bool looping );
     
     /**
-     * Request to start playing the refered audio sample looping.
+     * Request to start playing the referred audio sample looping.
      * @param refname Reference name of the audio sample to start playing
      * @return true if the audio sample exsists and is scheduled for playing
      */
-    inline bool play_looped( const string& refname ) {
+    inline bool play_looped( const std::string& refname ) {
         return play( refname, true );
     }
 
     /**
-     * Request to start playing the refered audio sample once.
+     * Request to start playing the referred audio sample once.
      * @param refname Reference name of the audio sample to start playing
-     * @return true if the audio sample exsists and is scheduled for playing
+     * @return true if the audio sample exists and is scheduled for playing
      */
-    inline bool play_once( const string& refname ) {
+    inline bool play_once( const std::string& refname ) {
         return play( refname, false );
     }
 
@@ -175,14 +162,14 @@ public:
      * @param refname Reference name of the audio sample to test for
      * @return True of the specified sound is currently playing
      */
-    bool is_playing( const string& refname );
+    bool is_playing( const std::string& refname );
 
     /**
-     * Request to stop playing the refered audio sample.
+     * Request to stop playing the referred audio sample.
      * @param refname Reference name of the audio sample to stop
-     * @return true if the audio sample exsists and is scheduled to stop
+     * @return true if the audio sample exists and is scheduled to stop
      */
-    bool stop( const string& refname );
+    bool stop( const std::string& refname );
 
     /**
      * Set the master volume for this sample group.
@@ -223,10 +210,14 @@ public:
 
 protected:
     SGSoundMgr *_smgr;
-    string _refname;
+    std::string _refname;
     bool _active;
 
 private:
+    void cleanup_removed_samples();
+    void start_playing_sample(SGSoundSample *sample);
+    void check_playing_sample(SGSoundSample *sample);
+  
     bool _changed;
     bool _pause;
     float _volume;
@@ -239,8 +230,8 @@ private:
     sample_map _samples;
     std::vector< SGSharedPtr<SGSoundSample> > _removed_samples;
 
-    bool testForALError(string s);
-    bool testForError(void *p, string s);
+    bool testForALError(std::string s);
+    bool testForError(void *p, std::string s);
 
     void update_pos_and_orientation();
     void update_sample_config( SGSoundSample *sound );

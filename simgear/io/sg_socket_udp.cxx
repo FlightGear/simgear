@@ -33,6 +33,8 @@
 #include <cstring>
 #include <cstdlib> // for atoi
 
+using std::string;
+
 SGSocketUDP::SGSocketUDP( const string& host, const string& port ) :
     hostname(host),
     port_str(port),
@@ -160,11 +162,8 @@ int SGSocketUDP::write( const char *buf, const int length ) {
 	return 0;
     }
 
-    bool error_condition = false;
-
     if ( sock.send( buf, length, 0 ) < 0 ) {
 	SG_LOG( SG_IO, SG_WARN, "Error writing to socket: " << port );
-	error_condition = true;
 	return 0;
     }
 

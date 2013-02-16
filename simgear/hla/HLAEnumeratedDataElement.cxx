@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -15,9 +15,17 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include "HLAEnumeratedDataElement.hxx"
 
 #include <simgear/debug/logstream.hxx>
+
+#include "HLADataElementVisitor.hxx"
 
 namespace simgear {
 
@@ -28,6 +36,18 @@ HLAAbstractEnumeratedDataElement::HLAAbstractEnumeratedDataElement(const HLAEnum
 
 HLAAbstractEnumeratedDataElement::~HLAAbstractEnumeratedDataElement()
 {
+}
+
+void
+HLAAbstractEnumeratedDataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLAAbstractEnumeratedDataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
 }
 
 bool

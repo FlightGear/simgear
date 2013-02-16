@@ -10,7 +10,8 @@
 #include <simgear/misc/sg_path.hxx>
 
 #include "soundmgr_openal.hxx"
-
+#include "sample_group.hxx"
+#include "sample_openal.hxx"
 
 int main( int argc, char *argv[] ) {
     SGSampleQueue *squeue;
@@ -21,19 +22,22 @@ int main( int argc, char *argv[] ) {
     smgr = new SGSoundMgr;
 
     smgr->bind();
-    smgr->init("OSS Default");
+    smgr->select_device("OSS Default");
+    smgr->init();
     sgr = smgr->find("default", true);
     smgr->set_volume(0.9);
     smgr->activate();
-
+    smgr->set_position( SGVec3d::fromGeod(SGGeod()), SGGeod() );
 
     void *data;
     size_t len;
     int freq, fmt;
-    string file = SRC_DIR"/jet.wav";
+    std::string file = SRC_DIR"/jet.wav";
     smgr->load(file, &data, &fmt, &len, &freq);
 
     squeue = new SGSampleQueue( freq, fmt );
+    squeue->set_volume(1.0);
+  
     sgr->add(squeue, "queue");
 
     squeue->add(  data, len );
@@ -47,7 +51,7 @@ int main( int argc, char *argv[] ) {
 
     printf("source at lat,lon = (10,-10), listener at (9.99,-9.99)\n");
     pos = SGGeod::fromDeg(9.99,-9.99);
-    squeue->set_position( SGVec3d::fromGeod(SGGeod::fromDeg(10,-10)) );
+    sgr->set_position_geod( SGGeod::fromDeg(10,-10) );
     smgr->set_position( SGVec3d::fromGeod(pos), pos );
 
     squeue->add(  data, len );

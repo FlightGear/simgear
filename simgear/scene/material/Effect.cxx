@@ -46,6 +46,7 @@
 #include <osg/Material>
 #include <osg/Math>
 #include <osg/PolygonMode>
+#include <osg/PolygonOffset>
 #include <osg/Program>
 #include <osg/Referenced>
 #include <osg/RenderInfo>
@@ -66,13 +67,14 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 #include <simgear/structure/SGExpression.hxx>
-
+#include <simgear/props/vectorPropTemplates.hxx>
 
 
 namespace simgear
@@ -89,7 +91,7 @@ Effect::Effect()
 }
 
 Effect::Effect(const Effect& rhs, const CopyOp& copyop)
-    : root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
+    : osg::Object(rhs,copyop), root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
       _isRealized(rhs._isRealized)
 {
     typedef vector<ref_ptr<Technique> > TechniqueList;
@@ -153,7 +155,7 @@ Effect::~Effect()
 }
 
 void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
-               const SGReaderWriterXMLOptions* options)
+               const SGReaderWriterOptions* options)
 {
     Pass* pass = new Pass;
     tniq->passes.push_back(pass);
@@ -202,12 +204,12 @@ osg::Vec4f getColor(const SGPropertyNode* prop)
 struct LightingBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options);
+                        const SGReaderWriterOptions* options);
 };
 
 void LightingBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
-                                     const SGReaderWriterXMLOptions* options)
+                                     const SGReaderWriterOptions* options)
 {
     const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
     if (!realProp)
@@ -221,7 +223,7 @@ InstallAttributeBuilder<LightingBuilder> installLighting("lighting");
 struct ShadeModelBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -243,7 +245,7 @@ InstallAttributeBuilder<ShadeModelBuilder> installShadeModel("shade-model");
 struct CullFaceBuilder : PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp) {
@@ -271,7 +273,7 @@ InstallAttributeBuilder<CullFaceBuilder> installCullFace("cull-face");
 struct ColorMaskBuilder : PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -298,7 +300,7 @@ EffectPropertyMap<StateSet::RenderingHint> renderingHints(renderingHintInit);
 struct HintBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -314,7 +316,7 @@ InstallAttributeBuilder<HintBuilder> installHint("rendering-hint");
 struct RenderBinBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -341,7 +343,7 @@ InstallAttributeBuilder<RenderBinBuilder> installRenderBin("render-bin");
 struct MaterialBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options);
+                        const SGReaderWriterOptions* options);
 };
 
 EffectNameValue<Material::ColorMode> colorModeInit[] =
@@ -357,7 +359,7 @@ EffectPropertyMap<Material::ColorMode> colorModes(colorModeInit);
 
 void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
-                                     const SGReaderWriterXMLOptions* options)
+                                     const SGReaderWriterOptions* options)
 {
     if (!isAttributeActive(effect, prop))
         return;
@@ -427,7 +429,7 @@ EffectPropertyMap<BlendFunc::BlendFuncMode> blendFuncModes(blendFuncModesInit);
 struct BlendBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -540,7 +542,7 @@ EffectPropertyMap<Stencil::Operation> stencilOperation(stencilOperationInit);
 struct StencilBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -600,6 +602,28 @@ struct StencilBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<StencilBuilder> installStencil("stencil");
 
+struct AlphaToCoverageBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const SGReaderWriterOptions* options);
+};
+
+#ifndef GL_SAMPLE_ALPHA_TO_COVERAGE_ARB
+#define GL_SAMPLE_ALPHA_TO_COVERAGE_ARB 0x809E
+#endif
+
+void AlphaToCoverageBuilder::buildAttribute(Effect* effect, Pass* pass,
+                                     const SGPropertyNode* prop,
+                                     const SGReaderWriterOptions* options)
+{
+    const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+    if (!realProp)
+        return;
+    pass->setMode(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB, (realProp->getValue<bool>() ? 
+                                    StateAttribute::ON : StateAttribute::OFF));
+}
+
+InstallAttributeBuilder<AlphaToCoverageBuilder> installAlphaToCoverage("alpha-to-coverage");
 
 EffectNameValue<AlphaFunc::ComparisonFunction> alphaComparisonInit[] =
 {
@@ -618,7 +642,7 @@ alphaComparison(alphaComparisonInit);
 struct AlphaTestBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -646,6 +670,7 @@ struct AlphaTestBuilder : public PassAttributeBuilder
                                                              "comparison");
         const SGPropertyNode* pRef = getEffectPropertyChild(effect, prop,
                                                              "reference");
+
         AlphaFunc::ComparisonFunction func = AlphaFunc::ALWAYS;
         float refValue = 1.0f;
         if (pComp)
@@ -669,9 +694,9 @@ InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
 InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 
 // Shader key, used both for shaders with relative and absolute names
-typedef pair<string, Shader::Type> ShaderKey;
+typedef pair<string, int> ShaderKey;
 
-inline ShaderKey makeShaderKey(SGPropertyNode_ptr& ptr, Shader::Type shaderType)
+inline ShaderKey makeShaderKey(SGPropertyNode_ptr& ptr, int shaderType)
 {
     return ShaderKey(ptr->getStringValue(), shaderType);
 }
@@ -735,7 +760,7 @@ void reload_shaders()
 struct ShaderProgramBuilder : PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options);
+                        const SGReaderWriterOptions* options);
 };
 
 
@@ -762,7 +787,7 @@ geometryOutputType(geometryOutputTypeInit);
 
 void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                                           const SGPropertyNode* prop,
-                                          const SGReaderWriterXMLOptions*
+                                          const SGReaderWriterOptions*
                                           options)
 {
     using namespace boost;
@@ -813,7 +838,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     BOOST_FOREACH(const ShaderKey& shaderKey, prgKey.shaders)
     {
         const string& shaderName = shaderKey.first;
-        Shader::Type stype = shaderKey.second;
+        Shader::Type stype = (Shader::Type)shaderKey.second;
         string fileName = SGModelLib::findDataFile(shaderName, options);
         if (fileName.empty())
             throw BuilderException(string("couldn't find shader ") +
@@ -831,12 +856,13 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     BOOST_FOREACH(const ShaderKey& skey, resolvedKey.shaders)
     {
         const string& fileName = skey.first;
-        Shader::Type stype = skey.second;
+        Shader::Type stype = (Shader::Type)skey.second;
         ShaderMap::iterator sitr = shaderMap.find(skey);
         if (sitr != shaderMap.end()) {
             program->addShader(sitr->second.get());
         } else {
             ref_ptr<Shader> shader = new Shader(stype);
+			shader->setName(fileName);
             if (shader->loadShaderSourceFromFile(fileName)) {
                 program->addShader(shader.get());
                 shaderMap.insert(ShaderMap::value_type(skey, shader));
@@ -898,7 +924,7 @@ ref_ptr<Uniform> colorMode[3];
 struct UniformBuilder :public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!texture0.valid()) {
             texture0 = new Uniform(Uniform::SAMPLER_2D, "texture");
@@ -914,6 +940,7 @@ struct UniformBuilder :public PassAttributeBuilder
             return;
         const SGPropertyNode* nameProp = prop->getChild("name");
         const SGPropertyNode* typeProp = prop->getChild("type");
+        const SGPropertyNode* positionedProp = prop->getChild("positioned");
         const SGPropertyNode* valProp = prop->getChild("value");
         string name;
         Uniform::Type uniformType = Uniform::FLOAT;
@@ -958,6 +985,11 @@ struct UniformBuilder :public PassAttributeBuilder
         uniform->setName(name);
         uniform->setType(uniformType);
         switch (uniformType) {
+        case Uniform::BOOL:
+            initFromParameters(effect, valProp, uniform.get(),
+                               static_cast<bool (Uniform::*)(bool)>(&Uniform::set),
+                               options);
+            break;
         case Uniform::FLOAT:
             initFromParameters(effect, valProp, uniform.get(),
                                static_cast<bool (Uniform::*)(float)>(&Uniform::set),
@@ -990,8 +1022,8 @@ struct UniformBuilder :public PassAttributeBuilder
         // optimize common uniforms
         if (uniformType == Uniform::SAMPLER_2D || uniformType == Uniform::INT)
         {
-            int val;
-            uniform->get(val);
+            int val = 0;
+            uniform->get(val); // 'val' remains unchanged in case of error (Uniform is a non-scalar)
             if (uniformType == Uniform::SAMPLER_2D && val == 0
                 && name == "texture") {
                 uniform = texture0;
@@ -1001,6 +1033,11 @@ struct UniformBuilder :public PassAttributeBuilder
             }
         }
         pass->addUniform(uniform.get());
+        if (positionedProp && positionedProp->getBoolValue() && uniformType == Uniform::FLOAT_VEC4) {
+            osg::Vec4 offset;
+            uniform->get(offset);
+            pass->addPositionedUniform( name, offset );
+        }
     }
 };
 
@@ -1012,7 +1049,7 @@ InstallAttributeBuilder<UniformBuilder> installUniform("uniform");
 struct NameBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         // name can't use <use>
         string name = prop->getStringValue();
@@ -1034,7 +1071,7 @@ EffectPropertyMap<PolygonMode::Mode> polygonModeModes(polygonModeModesInit);
 struct PolygonModeBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -1059,10 +1096,38 @@ struct PolygonModeBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<PolygonModeBuilder> installPolygonMode("polygon-mode");
 
+struct PolygonOffsetBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const SGReaderWriterOptions* options)
+    {
+        if (!isAttributeActive(effect, prop))
+            return;
+        
+        const SGPropertyNode* factor
+           = getEffectPropertyChild(effect, prop, "factor");
+        const SGPropertyNode* units
+           = getEffectPropertyChild(effect, prop, "units");
+        
+        ref_ptr<PolygonOffset> polyoffset = new PolygonOffset;
+        
+        polyoffset->setFactor(factor->getFloatValue());
+        polyoffset->setUnits(units->getFloatValue());
+
+        SG_LOG(SG_INPUT, SG_BULK,
+                   "Set PolygonOffset to " << polyoffset->getFactor() << polyoffset->getUnits() );            
+
+        pass->setAttributeAndModes(polyoffset.get(),
+                                   StateAttribute::OVERRIDE|StateAttribute::ON);
+    }
+};
+
+InstallAttributeBuilder<PolygonOffsetBuilder> installPolygonOffset("polygon-offset");
+
 struct VertexProgramTwoSideBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -1079,7 +1144,7 @@ installTwoSide("vertex-program-two-side");
 struct VertexProgramPointSizeBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -1109,7 +1174,7 @@ EffectPropertyMap<Depth::Function> depthFunction(depthFunctionInit);
 struct DepthBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -1128,19 +1193,22 @@ struct DepthBuilder : public PassAttributeBuilder
         const SGPropertyNode* pfar
             = getEffectPropertyChild(effect, prop, "far");
         if (pfar)
-            depth->setZFar(pnear->getValue<double>());
+            depth->setZFar(pfar->getValue<double>());
         const SGPropertyNode* pmask
             = getEffectPropertyChild(effect, prop, "write-mask");
         if (pmask)
             depth->setWriteMask(pmask->getValue<bool>());
-        pass->setAttribute(depth.get());
+        const SGPropertyNode* penabled
+            = getEffectPropertyChild(effect, prop, "enabled");
+        bool enabled = ( penabled == 0 || penabled->getBoolValue() );
+        pass->setAttributeAndModes(depth.get(), enabled ? osg::StateAttribute::ON : osg::StateAttribute::OFF);
     }
 };
 
 InstallAttributeBuilder<DepthBuilder> installDepth("depth");
 
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
-                    const SGReaderWriterXMLOptions* options)
+                    const SGReaderWriterOptions* options)
 {
     Technique* tniq = new Technique;
     effect->techniques.push_back(tniq);
@@ -1249,7 +1317,7 @@ bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
 
 // Walk the techniques property tree, building techniques and
 // passes.
-bool Effect::realizeTechniques(const SGReaderWriterXMLOptions* options)
+bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
     if (_isRealized)
         return true;
@@ -1348,10 +1416,11 @@ public:
     
     void valueChanged(SGPropertyNode* node)
     {
-        _tniq->refreshValidity();
+        if (_tniq.valid())
+            _tniq->refreshValidity();
     }
 protected:
-    osg::ref_ptr<Technique> _tniq;
+    osg::observer_ptr<Technique> _tniq;
 };
 
 template<typename T>

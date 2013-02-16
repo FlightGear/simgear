@@ -536,6 +536,9 @@ static void genAssign(struct Parser* p, struct Token* t)
 {
     struct Token *lv = LEFT(t), *rv = RIGHT(t);
     int len, dummy, var=0;
+    if (!lv)
+        naParseError(p, "bad assignment, missing variable", t->line);
+    else
     if(parListLen(lv) || (lv->type == TOK_VAR && parListLen(RIGHT(lv)))) {
         if(lv->type == TOK_VAR) { lv = RIGHT(lv); var = 1; }
         len = parListLen(lv);

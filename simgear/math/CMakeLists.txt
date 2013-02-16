@@ -1,8 +1,7 @@
 include (SimGearComponent)
 
 
-set(HEADERS 
-    Math.hxx
+set(HEADERS
     SGBox.hxx
     SGCMath.hxx
     SGGeoc.hxx
@@ -13,6 +12,7 @@ set(HEADERS
     SGIntersect.hxx
     SGLimits.hxx
     SGLineSegment.hxx
+    SGLocation.hxx
     SGMath.hxx
     SGMathFwd.hxx
     SGMatrix.hxx
@@ -20,6 +20,7 @@ set(HEADERS
     SGPlane.hxx
     SGQuat.hxx
     SGRay.hxx
+    SGRect.hxx
     SGSphere.hxx
     SGTriangle.hxx
     SGVec2.hxx
@@ -28,20 +29,26 @@ set(HEADERS
     beziercurve.hxx
     interpolater.hxx
     leastsqs.hxx
-    project.hxx
     sg_geodesy.hxx
     sg_types.hxx
-	sg_random.h
+    sg_random.h
     )
 
 set(SOURCES 
-    SGGeod.cxx
     SGGeodesy.cxx
     interpolater.cxx
     leastsqs.cxx
-    project.cxx
-	sg_random.c
+    sg_random.c
     )
 
 simgear_component(math math "${SOURCES}" "${HEADERS}")
 
+if(ENABLE_TESTS)
+add_executable(math_test SGMathTest.cxx)
+target_link_libraries(math_test SimGearCore)
+add_test(math ${EXECUTABLE_OUTPUT_PATH}/math_test)
+
+add_executable(geometry_test SGGeometryTest.cxx)
+target_link_libraries(geometry_test SimGearCore)
+add_test(geometry ${EXECUTABLE_OUTPUT_PATH}/geometry_test)
+endif(ENABLE_TESTS)

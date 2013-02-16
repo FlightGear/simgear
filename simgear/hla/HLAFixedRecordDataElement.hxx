@@ -30,6 +30,9 @@ public:
     HLAAbstractFixedRecordDataElement(const HLAFixedRecordDataType* dataType);
     virtual ~HLAAbstractFixedRecordDataElement();
 
+    virtual void accept(HLADataElementVisitor& visitor);
+    virtual void accept(HLAConstDataElementVisitor& visitor) const;
+
     virtual bool decode(HLADecodeStream& stream);
     virtual bool encode(HLAEncodeStream& stream) const;
 
@@ -55,6 +58,12 @@ public:
     HLAFixedRecordDataElement(const HLAFixedRecordDataType* dataType);
     virtual ~HLAFixedRecordDataElement();
 
+    virtual bool setDataType(const HLADataType* dataType);
+
+    virtual bool setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement);
+    virtual HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end);
+    virtual const HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const;
+
     virtual bool decodeField(HLADecodeStream& stream, unsigned i);
     virtual bool encodeField(HLAEncodeStream& stream, unsigned i) const;
 
@@ -66,6 +75,9 @@ public:
 
     void setField(unsigned index, HLADataElement* value);
     void setField(const std::string& name, HLADataElement* value);
+
+protected:
+    virtual void _setStamp(Stamp* stamp);
 
 private:
     typedef std::vector<SGSharedPtr<HLADataElement> > FieldVector;

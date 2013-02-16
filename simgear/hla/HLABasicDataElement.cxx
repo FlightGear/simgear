@@ -15,8 +15,15 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include "HLABasicDataElement.hxx"
 
+#include "HLADataElementVisitor.hxx"
 #include "HLADataTypeVisitor.hxx"
 
 namespace simgear {
@@ -28,6 +35,18 @@ HLABasicDataElement::HLABasicDataElement(const HLABasicDataType* dataType) :
 
 HLABasicDataElement::~HLABasicDataElement()
 {
+}
+
+void
+HLABasicDataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLABasicDataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
 }
 
 const HLABasicDataType*
@@ -112,8 +131,10 @@ void                                                                            
 HLA##type##DataElement::setValue(ctype value)                                                     \
 {                                                                                                 \
     _value = value;                                                                               \
+    setDirty(true);                                                                               \
 }
 
+IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(Bool, bool);
 IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(Char, char);
 IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(WChar, wchar_t);
 IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(SChar, signed char);

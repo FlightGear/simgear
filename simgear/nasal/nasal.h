@@ -99,8 +99,8 @@ void naRethrowError(naContext subc);
 // Retrieve the specified member from the object, respecting the
 // "parents" array as for "object.field".  Returns zero for missing
 // fields.
-int naMember_get(naRef obj, naRef field, naRef* out);
-int naMember_cget(naRef obj, const char* field, naRef* out);
+int naMember_get(naContext c, naRef obj, naRef field, naRef* out);
+int naMember_cget(naContext c, naRef obj, const char* field, naRef* out);
 
 // Returns a hash containing functions from the Nasal standard library
 // Useful for passing as a namespace to an initial function call
@@ -166,7 +166,7 @@ naRef naVec_get(naRef v, int i);
 void naVec_set(naRef vec, int i, naRef o);
 int naVec_append(naRef vec, naRef o);
 naRef naVec_removelast(naRef vec);
-void naVec_setsize(naRef vec, int sz);
+void naVec_setsize(naContext c, naRef vec, int sz);
 
 // Hash utilities:
 int naHash_size(naRef h);
@@ -175,14 +175,32 @@ naRef naHash_cget(naRef hash, char* key);
 void naHash_set(naRef hash, naRef key, naRef val);
 void naHash_cset(naRef hash, char* key, naRef val);
 void naHash_delete(naRef hash, naRef key);
+/**
+ * Store the keys in ::hash into the vector at ::dst
+ *
+ * @see ::naNewVector
+ */
 void naHash_keys(naRef dst, naRef hash);
 
 // Ghost utilities:
 typedef struct naGhostType {
     void(*destroy)(void*);
     const char* name;
+    const char*(*get_member)(naContext c, void*, naRef key, naRef* out);
+    void(*set_member)(naContext c, void*, naRef key, naRef val);
 } naGhostType;
+
+/**
+ * Create a ghost for an object without any attributes. If ::t contains pointers
+ * to get_member or set_member function they will be ignored.
+ */
 naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
+/**
+ * Create a ghost for an object. This version uses the get_member and set_member
+ * function pointers in ::t upon trying to get or set a member respectively from
+ * Nasal.
+ */
+naRef        naNewGhost2(naContext c, naGhostType* t, void* ghost);
 naGhostType* naGhost_type(naRef ghost);
 void*        naGhost_ptr(naRef ghost);
 int          naIsGhost(naRef r);

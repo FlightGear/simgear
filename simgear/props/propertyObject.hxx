@@ -28,6 +28,8 @@ class PropertyObjectBase
 public:
   static void setDefaultRoot(SGPropertyNode* aRoot);
   
+  PropertyObjectBase();
+  
   PropertyObjectBase(const PropertyObjectBase& aOther);
     
   PropertyObjectBase(const char* aChild);
@@ -57,6 +59,8 @@ template <typename T>
 class PropertyObject : PropertyObjectBase
 {
 public:
+  PropertyObject();
+  
   /**
    * Create from path relative to the default root, and option default value
    */
@@ -104,7 +108,7 @@ public:
 // conversion operators
   operator T () const
   {
-    return getOrThrow()->getValue<T>();
+    return getOrThrow()->template getValue<T>();
   }
 
   T operator=(const T& aValue)
@@ -117,6 +121,28 @@ public:
     n->setValue<T>(aValue);
     return aValue;
   }
+
+#define SG_DEF_ASSIGN_OP(op)\
+  T operator op##=(const T rhs)\
+  {\
+    SGPropertyNode* n = getOrThrow();\
+    T new_val = n->getValue<T>() op rhs;\
+    n->setValue<T>(new_val);\
+    return new_val;\
+  }
+
+  SG_DEF_ASSIGN_OP(+)
+  SG_DEF_ASSIGN_OP(-)
+  SG_DEF_ASSIGN_OP(*)
+  SG_DEF_ASSIGN_OP(/)
+  SG_DEF_ASSIGN_OP(%)
+  SG_DEF_ASSIGN_OP(>>)
+  SG_DEF_ASSIGN_OP(<<)
+  SG_DEF_ASSIGN_OP(&)
+  SG_DEF_ASSIGN_OP(^)
+  SG_DEF_ASSIGN_OP(|)
+
+#undef SG_DEF_ASSIGN_OP
 
   SGPropertyNode* node() const
   {
@@ -220,11 +246,9 @@ private:
 
 } // of namespace simgear
 
-/*
 typedef simgear::PropertyObject<double> SGPropObjDouble;
 typedef simgear::PropertyObject<bool> SGPropObjBool;
 typedef simgear::PropertyObject<std::string> SGPropObjString;
 typedef simgear::PropertyObject<long> SGPropObjInt;
-*/
 
 #endif

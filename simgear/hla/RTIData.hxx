@@ -115,6 +115,13 @@ public:
         ensureCapacity(capacity);
     }
 
+    void swap(RTIData& data)
+    {
+        std::swap(_data, data._data);
+        std::swap(_size, data._size);
+        std::swap(_capacity, data._capacity);
+    }
+
     void setData(char* data, unsigned size)
     {
         if (_capacity)
@@ -423,12 +430,6 @@ private:
     unsigned _size;
     unsigned _capacity;
 };
-
-// A single attribute/parameter update blob
-typedef std::pair<unsigned, RTIData> RTIIndexDataPair;
-
-// A complete set of updates we received in one reflect/receive call
-typedef std::list<RTIIndexDataPair> RTIIndexDataPairList;
 
 /// Gets an own header at some time
 

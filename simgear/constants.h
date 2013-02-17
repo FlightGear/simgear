@@ -1,7 +1,7 @@
 // constants.h -- various constant definitions
 //
 // Written by Curtis Olson, started February 2000.
-// Last change by Eric van den Berg, Dec 2012
+// Last change by Eric van den Berg, Feb 2013
 //
 // Copyright (C) 2000  Curtis L. Olson - http://www.flightgear.org/~curt/
 //
@@ -121,6 +121,9 @@ const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
 
 /**specific gas constant of air*/
 #define SG_R_m2_p_s2_p_K      287.05   // m2/s2/K
+
+/**specific heat constant at constant pressure*/
+#define SG_cp_m2_p_s2_p_K 1004.68      // m2/s2/K   
 
 /**ratio of specific heats of air*/
 #define SG_gamma              1.4         // =cp/cv (cp = 1004.68 m2/s2 K , cv = 717.63 m2/s2 K)

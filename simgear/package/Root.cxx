@@ -78,7 +78,7 @@ Package* Root::getPackageById(const std::string& aName) const
     size_t lastDot = aName.rfind('.');
     
     Package* pkg = NULL;
-    if (lastDot == -1) {
+    if (lastDot == std::string::npos) {
         // naked package ID
         CatalogDict::const_iterator it = m_catalogs.begin();
         for (; it != m_catalogs.end(); ++it) {

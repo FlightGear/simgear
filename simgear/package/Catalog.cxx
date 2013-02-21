@@ -3,6 +3,7 @@
 #include <simgear/package/Catalog.hxx>
 
 #include <boost/foreach.hpp>
+#include <algorithm>
 #include <fstream>
 #include <cstring>
 

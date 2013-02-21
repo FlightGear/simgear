@@ -23,8 +23,8 @@ if (SIMGEAR_SHARED)
     set(APP_LIBS SimGearCore)
 else()
     set(APP_LIBS
-        ${LibArchive_LIBRARIES}
         SimGearCore
+        ${LibArchive_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
         ${WINSOCK_LIBRARY}
         ${ZLIB_LIBRARY}

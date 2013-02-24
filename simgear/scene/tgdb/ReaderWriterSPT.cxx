@@ -159,6 +159,16 @@ struct ReaderWriterSPT::LocalOptions {
         return ss.str();
     }
 
+    float getRangeMultiplier() const
+    {
+        float rangeMultiplier = 2;
+        if (!_options)
+            return rangeMultiplier;
+        std::stringstream ss(_options->getPluginStringData("SimGear::SPT_RANGE_MULTIPLIER"));
+        ss >> rangeMultiplier;
+        return rangeMultiplier;
+    }
+
     const osgDB::Options* _options;
     std::vector<unsigned> _pageLevels;
 };
@@ -294,7 +304,8 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const LocalOptions& 
     pagedLOD->setDatabaseOptions(localOptions.get());
 
     // The break point for the low level of detail to the high level of detail
-    float range = 2*sphere.getRadius();
+    float rangeMultiplier = options.getRangeMultiplier();
+    float range = rangeMultiplier*sphere.getRadius();
 
     // Look for a low level of detail tile
     std::string lodPath = options.getLodPathForBucketBox(bucketBox);

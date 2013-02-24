@@ -307,6 +307,8 @@ ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Opt
     colors->push_back(osg::Vec4(1, 1, 1, 1));
         
     osg::Geometry* geometry = new osg::Geometry;
+    geometry->setDataVariance(osg::Object::STATIC);
+    geometry->setUseVertexBufferObjects(true);
     geometry->setVertexArray(vertices);
     geometry->setNormalArray(normals);
     geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);

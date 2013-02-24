@@ -55,6 +55,18 @@ namespace canvas
       void setImage(osg::Image *img);
       void setFill(const std::string& fill);
 
+      /**
+       * Set image slice (aka. 9-scale)
+       *
+       * @see http://www.w3.org/TR/css3-background/#border-image-slice
+       */
+      void setSlice(const std::string& slice);
+
+      /**
+       * http://www.w3.org/TR/css3-background/#border-image-outset
+       */
+      void setOutset(const std::string& outset);
+
       const SGRect<float>& getRegion() const;
 
     protected:
@@ -65,16 +77,38 @@ namespace canvas
         DEST_SIZE      = SRC_RECT << 1        // Element size
       };
 
+      struct CSSOffsets
+      {
+        CSSOffsets():
+          valid(false)
+        {}
+
+        union
+        {
+          float          offsets[4];
+          struct { float t, r, b, l; };
+        };
+
+        std::string keyword;
+        bool        valid;
+      };
+
       virtual void childChanged(SGPropertyNode * child);
 
       void setupDefaultDimensions();
       SGRect<int> getTextureDimensions() const;
+
+      void setQuad(size_t index, const SGVec2f& tl, const SGVec2f& br);
+      void setQuadUV(size_t index, const SGVec2f& tl, const SGVec2f& br);
+
+      CSSOffsets parseSideOffsets(const std::string& str) const;
 
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas
       CanvasWeakPtr _src_canvas;
 
       osg::ref_ptr<osg::Geometry>  _geom;
+      osg::ref_ptr<osg::DrawArrays>_prim;
       osg::ref_ptr<osg::Vec3Array> _vertices;
       osg::ref_ptr<osg::Vec2Array> _texCoords;
       osg::ref_ptr<osg::Vec4Array> _colors;
@@ -82,6 +116,9 @@ namespace canvas
       SGPropertyNode *_node_src_rect;
       SGRect<float>   _src_rect,
                       _region;
+
+      CSSOffsets      _slice,
+                      _outset;
   };
 
 } // namespace canvas

@@ -29,6 +29,9 @@
 #include <osg/PrimitiveSet>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/range.hpp>
+#include <boost/tokenizer.hpp>
 
 namespace simgear
 {
@@ -91,26 +94,29 @@ namespace canvas
 
     // allocate arrays for the image
     _vertices = new osg::Vec3Array(4);
-    _vertices->setDataVariance(osg::Object::STATIC);
+    _vertices->setDataVariance(osg::Object::DYNAMIC);
     _geom->setVertexArray(_vertices);
 
     _texCoords = new osg::Vec2Array(4);
-    _texCoords->setDataVariance(osg::Object::STATIC);
+    _texCoords->setDataVariance(osg::Object::DYNAMIC);
     _geom->setTexCoordArray(0, _texCoords);
 
-    _colors = new osg::Vec4Array(4);
-    _colors->setDataVariance(osg::Object::STATIC);
-    _geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    _colors = new osg::Vec4Array(1);
+    _colors->setDataVariance(osg::Object::DYNAMIC);
+    _geom->setColorBinding(osg::Geometry::BIND_OVERALL);
     _geom->setColorArray(_colors);
 
-    osg::DrawArrays* prim = new osg::DrawArrays(osg::PrimitiveSet::QUADS);
-    prim->set(osg::PrimitiveSet::QUADS, 0, 4);
-    prim->setDataVariance(osg::Object::STATIC);
-    _geom->addPrimitiveSet(prim);
+    _prim = new osg::DrawArrays(osg::PrimitiveSet::QUADS);
+    _prim->set(osg::PrimitiveSet::QUADS, 0, 4);
+    _prim->setDataVariance(osg::Object::DYNAMIC);
+    _geom->addPrimitiveSet(_prim);
 
     setDrawable(_geom);
 
     addStyle("fill", &Image::setFill, this);
+    addStyle("slice", &Image::setSlice, this);
+    addStyle("outset", &Image::setOutset, this);
+
     setFill("#ffffff"); // TODO how should we handle default values?
 
     setupStyle();
@@ -127,14 +133,97 @@ namespace canvas
   {
     Element::update(dt);
 
+    if( !_attributes_dirty )
+      return;
+
+    const SGRect<int>& tex_dim = getTextureDimensions();
+
+    // http://www.w3.org/TR/css3-background/#border-image-slice
+
+    // The ‘fill’ keyword, if present, causes the middle part of the image to be
+    // preserved. (By default it is discarded, i.e., treated as empty.)
+    bool fill = (_slice.keyword == "fill");
+
     if( _attributes_dirty & DEST_SIZE )
     {
-      (*_vertices)[0].set(_region.l(), _region.t(), 0);
-      (*_vertices)[1].set(_region.r(), _region.t(), 0);
-      (*_vertices)[2].set(_region.r(), _region.b(), 0);
-      (*_vertices)[3].set(_region.l(), _region.b(), 0);
-      _vertices->dirty();
+      size_t num_vertices = (_slice.valid ? (fill ? 9 : 8) : 1) * 4;
 
+      if( num_vertices != _prim->getNumPrimitives() )
+      {
+        _vertices->resize(num_vertices);
+        _texCoords->resize(num_vertices);
+        _prim->setCount(num_vertices);
+        _prim->dirty();
+
+        _attributes_dirty |= SRC_RECT;
+      }
+
+      // http://www.w3.org/TR/css3-background/#border-image-outset
+      SGRect<float> region = _region;
+      if( _outset.valid )
+      {
+        region.t() -= _outset.t;
+        region.r() += _outset.r;
+        region.b() += _outset.b;
+        region.l() -= _outset.l;
+      }
+
+      if( !_slice.valid )
+      {
+        setQuad(0, region.getMin(), region.getMax());
+      }
+      else
+      {
+        /*
+        Image slice, 9-scale, whatever it is called. The four corner images
+        stay unscaled (tl, tr, bl, br) whereas the other parts are scaled to
+        fill the remaining space up to the specified size.
+
+        x[0] x[1]     x[2] x[3]
+          |    |        |    |
+          -------------------- - y[0]
+          | tl |   top  | tr |
+          -------------------- - y[1]
+          |    |        |    |
+          | l  |        |  r |
+          | e  | center |  i |
+          | f  |        |  g |
+          | t  |        |  h |
+          |    |        |  t |
+          -------------------- - y[2]
+          | bl | bottom | br |
+          -------------------- - y[3]
+         */
+
+        float x[4] = {
+          region.l(),
+          region.l() + _slice.l * tex_dim.width(),
+          region.r() - _slice.r * tex_dim.width(),
+          region.r()
+        };
+        float y[4] = {
+          region.t(),
+          region.t() + _slice.t * tex_dim.height(),
+          region.b() - _slice.b * tex_dim.height(),
+          region.b()
+        };
+
+        int i = 0;
+        for(int ix = 0; ix < 3; ++ix)
+          for(int iy = 0; iy < 3; ++iy)
+          {
+            if( ix == 1 && iy == 1 && !fill )
+              // The ‘fill’ keyword, if present, causes the middle part of the
+              // image to be filled.
+              continue;
+
+            setQuad( i++,
+                     SGVec2f(x[ix    ], y[iy    ]),
+                     SGVec2f(x[ix + 1], y[iy + 1]) );
+          }
+      }
+
+      _vertices->dirty();
       _attributes_dirty &= ~DEST_SIZE;
       _geom->dirtyBound();
       setBoundingBox(_geom->getBound());
@@ -142,27 +231,53 @@ namespace canvas
 
     if( _attributes_dirty & SRC_RECT )
     {
-      double u0 = _src_rect.l(),
-             u1 = _src_rect.r(),
-             v0 = _src_rect.b(),
-             v1 = _src_rect.t();
-
+      SGRect<float> src_rect = _src_rect;
       if( !_node_src_rect->getBoolValue("normalized", true) )
       {
-        const SGRect<int>& tex_dim = getTextureDimensions();
-
-        u0 /= tex_dim.width();
-        u1 /= tex_dim.width();
-        v0 /= tex_dim.height();
-        v1 /= tex_dim.height();
+        src_rect.t() /= tex_dim.height();
+        src_rect.r() /= tex_dim.width();
+        src_rect.b() /= tex_dim.height();
+        src_rect.l() /= tex_dim.width();
       }
 
-      (*_texCoords)[0].set(u0, v0);
-      (*_texCoords)[1].set(u1, v0);
-      (*_texCoords)[2].set(u1, v1);
-      (*_texCoords)[3].set(u0, v1);
-      _texCoords->dirty();
+      // Image coordinate systems y-axis is flipped
+      std::swap(src_rect.t(), src_rect.b());
 
+      if( !_slice.valid )
+      {
+        setQuadUV(0, src_rect.getMin(), src_rect.getMax());
+      }
+      else
+      {
+        float x[4] = {
+          src_rect.l(),
+          src_rect.l() + _slice.l,
+          src_rect.r() - _slice.r,
+          src_rect.r()
+        };
+        float y[4] = {
+          src_rect.t(),
+          src_rect.t() - _slice.t,
+          src_rect.b() + _slice.b,
+          src_rect.b()
+        };
+
+        int i = 0;
+        for(int ix = 0; ix < 3; ++ix)
+          for(int iy = 0; iy < 3; ++iy)
+          {
+            if( ix == 1 && iy == 1 && !fill )
+              // The ‘fill’ keyword, if present, causes the middle part of the
+              // image to be filled.
+              continue;
+
+            setQuadUV( i++,
+                       SGVec2f(x[ix    ], y[iy    ]),
+                       SGVec2f(x[ix + 1], y[iy + 1]) );
+          }
+      }
+
+      _texCoords->dirty();
       _attributes_dirty &= ~SRC_RECT;
     }
   }
@@ -212,9 +327,22 @@ namespace canvas
     if( !parseColor(fill, color) )
       return;
 
-    for( int i = 0; i < 4; ++i )
-      (*_colors)[i] = color;
+    _colors->front() = color;
     _colors->dirty();
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setSlice(const std::string& slice)
+  {
+    _slice = parseSideOffsets(slice);
+    _attributes_dirty |= SRC_RECT | DEST_SIZE;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setOutset(const std::string& outset)
+  {
+    _outset = parseSideOffsets(outset);
+    _attributes_dirty |= DEST_SIZE;
   }
 
   //----------------------------------------------------------------------------
@@ -360,6 +488,98 @@ namespace canvas
     }
 
     return dim;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setQuad(size_t index, const SGVec2f& tl, const SGVec2f& br)
+  {
+    int i = index * 4;
+    (*_vertices)[i + 0].set(tl.x(), tl.y(), 0);
+    (*_vertices)[i + 1].set(br.x(), tl.y(), 0);
+    (*_vertices)[i + 2].set(br.x(), br.y(), 0);
+    (*_vertices)[i + 3].set(tl.x(), br.y(), 0);
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setQuadUV(size_t index, const SGVec2f& tl, const SGVec2f& br)
+  {
+    int i = index * 4;
+    (*_texCoords)[i + 0].set(tl.x(), tl.y());
+    (*_texCoords)[i + 1].set(br.x(), tl.y());
+    (*_texCoords)[i + 2].set(br.x(), br.y());
+    (*_texCoords)[i + 3].set(tl.x(), br.y());
+  }
+
+  //----------------------------------------------------------------------------
+  Image::CSSOffsets Image::parseSideOffsets(const std::string& str) const
+  {
+    if( str.empty() )
+      return CSSOffsets();
+
+    const SGRect<int>& dim = getTextureDimensions();
+
+    // [<number>'%'?]{1,4} (top[,right[,bottom[,left]]])
+    //
+    // Percentages are relative to the size of the image: the width of the
+    // image for the horizontal offsets, the height for vertical offsets.
+    // Numbers represent pixels in the image.
+    int c = 0;
+    CSSOffsets ret;
+
+    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+    const boost::char_separator<char> del(" \t\n");
+
+    tokenizer tokens(str.begin(), str.end(), del);
+    for( tokenizer::const_iterator tok = tokens.begin();
+         tok != tokens.end() && c < 4;
+         ++tok )
+    {
+      if( isalpha(*tok->begin()) )
+        ret.keyword = *tok;
+      else
+      {
+        bool rel = (*tok->rbegin() == '%');
+        ret.offsets[c] =
+          // Negative values are not allowed and values bigger than the size of
+          // the image are interpreted as ‘100%’.
+          std::max(0.f,
+          std::min(1.f,
+            boost::lexical_cast<float>
+            (
+              rel ? boost::make_iterator_range(tok->begin(), tok->end() - 1)
+                  : *tok
+            )
+            /
+            (
+              rel ? 100
+                  : (c & 1) ? dim.width() : dim.height()
+            )
+          ));
+
+        ++c;
+      }
+    }
+
+    // When four values are specified, they set the offsets on the top, right,
+    // bottom and left sides in that order.
+    if( c < 4 )
+    {
+      if( c < 3 )
+      {
+        if( c < 2 )
+          // if the right is missing, it is the same as the top.
+          ret.offsets[1] = ret.offsets[0];
+
+        // if the bottom is missing, it is the same as the top
+        ret.offsets[2] = ret.offsets[0];
+      }
+
+      // If the left is missing, it is the same as the right
+      ret.offsets[3] = ret.offsets[1];
+    }
+
+    ret.valid = true;
+    return ret;
   }
 
 } // namespace canvas

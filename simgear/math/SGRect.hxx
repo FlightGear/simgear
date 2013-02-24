@@ -99,6 +99,11 @@ class SGRect
     T t() const { return _min.y(); }
     T b() const { return _max.y(); }
 
+    T& l() { return _min.x(); }
+    T& r() { return _max.x(); }
+    T& t() { return _min.y(); }
+    T& b() { return _max.y(); }
+
     void setLeft(T l) { _min.x() = l; }
     void setRight(T r) { _max.x() = r; }
     void setTop(T t) { _min.y() = t; }

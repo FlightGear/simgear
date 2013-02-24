@@ -27,6 +27,7 @@
 
 #include <osg/LOD>
 #include <osg/MatrixTransform>
+#include <osg/PagedLOD>
 #include <osg/ProxyNode>
 #include <osgUtil/LineSegmentIntersector>
 #include <osgUtil/IntersectionVisitor>
@@ -37,12 +38,14 @@
 #include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
 
+#include <simgear/math/SGGeometry.hxx>
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sgstream.hxx>
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
-#include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/OptionsReadFileCallback.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
 #include <simgear/scene/tgdb/obj.hxx>
 
@@ -109,6 +112,63 @@ struct ReaderWriterSTG::_ModelBin {
         int _size;
     };
 
+    class DelayLoadReadFileCallback : public OptionsReadFileCallback {
+    public:
+        virtual osgDB::ReaderWriter::ReadResult
+        readNode(const std::string&, const osgDB::Options*)
+        {
+            osg::ref_ptr<osg::Group> group = new osg::Group;
+            group->setDataVariance(osg::Object::STATIC);
+            
+            for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
+                osg::ref_ptr<osg::Node> node;
+                if (i->_proxy)  {
+                    osg::ref_ptr<osg::ProxyNode> proxy = new osg::ProxyNode;
+                    proxy->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
+                    proxy->setFileName(0, i->_name);
+                    proxy->setDatabaseOptions(i->_options.get());
+                    node = proxy;
+                } else {
+                    node = osgDB::readRefNodeFile(i->_name, i->_options.get());
+                    if (!node.valid()) {
+                        SG_LOG(SG_TERRAIN, SG_ALERT, i->_errorLocation << ": Failed to load "
+                               << i->_token << " '" << i->_name << "'");
+                        continue;
+                    }
+                }
+                if (SGPath(i->_name).lower_extension() == "ac")
+                    node->setNodeMask(~simgear::MODELLIGHT_BIT);
+                
+                osg::Matrix matrix;
+                matrix = makeZUpFrame(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev));
+                matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_hdg), osg::Vec3(0, 0, 1)));
+                matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_pitch), osg::Vec3(0, 1, 0)));
+                matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_roll), osg::Vec3(1, 0, 0)));
+                
+                osg::MatrixTransform* matrixTransform;
+                matrixTransform = new osg::MatrixTransform(matrix);
+                matrixTransform->setDataVariance(osg::Object::STATIC);
+                matrixTransform->addChild(node.get());
+                group->addChild(matrixTransform);
+            }
+            
+            simgear::AirportSignBuilder signBuilder(_options->getMaterialLib(), _bucket.get_center());
+            for (std::list<_Sign>::iterator i = _signList.begin(); i != _signList.end(); ++i)
+                signBuilder.addSign(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev), i->_hdg, i->_name, i->_size);
+            if (signBuilder.getSignsGroup())
+                group->addChild(signBuilder.getSignsGroup());
+            
+            return group.release();
+        }
+        
+        std::list<_ObjectStatic> _objectStaticList;
+        std::list<_Sign> _signList;
+        
+        /// The original options to use for this bunch of models
+        osg::ref_ptr<SGReaderWriterOptions> _options;
+        SGBucket _bucket;
+    };
+    
     _ModelBin() :
         _foundBase(false)
     { }
@@ -326,58 +386,35 @@ struct ReaderWriterSTG::_ModelBin {
                 continue;
             i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
-        
-        osg::ref_ptr<osg::Group> modelGroup = new osg::Group;
-        modelGroup->setDataVariance(osg::Object::STATIC);
 
-        for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
-            osg::ref_ptr<osg::Node> node;
-            if (i->_proxy)  {
-                osg::ref_ptr<osg::ProxyNode> proxy = new osg::ProxyNode;
-                proxy->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
-                proxy->setFileName(0, i->_name);
-                proxy->setDatabaseOptions(i->_options.get());
-                node = proxy;
-            } else {
-                node = osgDB::readRefNodeFile(i->_name, i->_options.get());
-                if (!node.valid()) {
-                    SG_LOG(SG_TERRAIN, SG_ALERT, i->_errorLocation << ": Failed to load "
-                           << i->_token << " '" << i->_name << "'");
-                    continue;
-                }
-            }
-            if (SGPath(i->_name).lower_extension() == "ac")
-                node->setNodeMask(~simgear::MODELLIGHT_BIT);
+        if (_objectStaticList.empty() && _signList.empty()) {
+            // The simple case, just return the terrain group
+            return terrainGroup.release();
+        } else {
+            osg::PagedLOD* pagedLOD = new osg::PagedLOD;
+            pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
             
-            osg::Matrix matrix;
-            matrix = makeZUpFrame(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev));
-            matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_hdg), osg::Vec3(0, 0, 1)));
-            matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_pitch), osg::Vec3(0, 1, 0)));
-            matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_roll), osg::Vec3(1, 0, 0)));
+            // This should be visible in any case.
+            // If this is replaced by some lower level of detail, the parent LOD node handles this.
+            pagedLOD->addChild(terrainGroup, 0, std::numeric_limits<float>::max());
+
+            // we just need to know about the read file callback that itself holds the data
+            osg::ref_ptr<DelayLoadReadFileCallback> readFileCallback = new DelayLoadReadFileCallback;
+            readFileCallback->_objectStaticList = _objectStaticList;
+            readFileCallback->_signList = _signList;
+            readFileCallback->_options = options;
+            readFileCallback->_bucket = bucket;
+            osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
+            callbackOptions->setReadFileCallback(readFileCallback.get());
+            pagedLOD->setDatabaseOptions(callbackOptions.get());
             
-            osg::MatrixTransform* matrixTransform;
-            matrixTransform = new osg::MatrixTransform(matrix);
-            matrixTransform->setDataVariance(osg::Object::STATIC);
-            matrixTransform->addChild(node.get());
-            modelGroup->addChild(matrixTransform);
+            pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
+            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 30000);
+            
+            return pagedLOD;
         }
-        
-        simgear::AirportSignBuilder signBuilder(options->getMaterialLib(), bucket.get_center());
-        for (std::list<_Sign>::iterator i = _signList.begin(); i != _signList.end(); ++i)
-            signBuilder.addSign(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev), i->_hdg, i->_name, i->_size);
-        if (signBuilder.getSignsGroup())
-            modelGroup->addChild(signBuilder.getSignsGroup());
-
-        osg::LOD* lod = new osg::LOD;
-        lod->setDataVariance(osg::Object::STATIC);
-        if (terrainGroup->getNumChildren())
-            lod->addChild(terrainGroup.get(), 0, std::numeric_limits<float>::max());
-        if (modelGroup->getNumChildren())
-            lod->addChild(modelGroup.get(), 0, 30000);
-        
-        return lod;
     }
-        
+    
     bool _foundBase;
     std::list<_Object> _objectList;
     std::list<_ObjectStatic> _objectStaticList;

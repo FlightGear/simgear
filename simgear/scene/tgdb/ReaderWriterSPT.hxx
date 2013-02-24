@@ -37,10 +37,12 @@ public:
     virtual osgDB::ReaderWriter::ReadResult readNode(const std::string& fileName, const osgDB::Options* options) const;
 
 protected:
-    osg::ref_ptr<osg::Node> createTree(const BucketBox& bucketBox, const osgDB::Options* options, bool topLevel) const;
-    osg::ref_ptr<osg::Node> createPagedLOD(const BucketBox& bucketBox, const osgDB::Options* options) const;
-    osg::ref_ptr<osg::Node> createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Options* options) const;
-    osg::ref_ptr<osg::StateSet> getLowLODStateSet(const osgDB::Options* options) const;
+    struct LocalOptions;
+
+    osg::ref_ptr<osg::Node> createTree(const BucketBox& bucketBox, const LocalOptions& options, bool topLevel) const;
+    osg::ref_ptr<osg::Node> createPagedLOD(const BucketBox& bucketBox, const LocalOptions& options) const;
+    osg::ref_ptr<osg::Node> createSeaLevelTile(const BucketBox& bucketBox, const LocalOptions& options) const;
+    osg::ref_ptr<osg::StateSet> getLowLODStateSet(const LocalOptions& options) const;
 
 private:
     struct CullCallback;

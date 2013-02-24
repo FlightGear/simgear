@@ -111,6 +111,58 @@ struct ReaderWriterSPT::CullCallback : public osg::NodeCallback {
     }
 };
 
+struct ReaderWriterSPT::LocalOptions {
+    LocalOptions(const osgDB::Options* options) :
+        _options(options)
+    {
+        std::string pageLevelsString;
+        if (_options)
+            pageLevelsString = _options->getPluginStringData("SimGear::SPT_PAGE_LEVELS");
+
+        // Get the default if nothing given from outside
+        if (pageLevelsString.empty()) {
+            // We want an other level of indirection for paging
+            // Here we get about 12x12 deg tiles
+            _pageLevels.push_back(3);
+            // We want an other level of indirection for paging
+            // Here we get about 2x2 deg tiles
+            _pageLevels.push_back(5);
+            // We want an other level of indirection for paging
+            // Here we get about 0.5x0.5 deg tiles
+            _pageLevels.push_back(7);
+        } else {
+            // If configured from outside
+            std::stringstream ss(pageLevelsString);
+            while (ss.good()) {
+                unsigned level = ~0u;
+                ss >> level;
+                _pageLevels.push_back(level);
+            }
+        }
+    }
+
+    bool isPageLevel(unsigned level) const
+    {
+        return std::find(_pageLevels.begin(), _pageLevels.end(), level) != _pageLevels.end();
+    }
+
+    std::string getLodPathForBucketBox(const BucketBox& bucketBox) const
+    {
+        std::stringstream ss;
+        ss << "LOD/";
+        for (std::vector<unsigned>::const_iterator i = _pageLevels.begin(); i != _pageLevels.end(); ++i) {
+            if (bucketBox.getStartLevel() <= *i)
+                break;
+            ss << bucketBox.getParentBox(*i) << "/";
+        }
+        ss << bucketBox;
+        return ss.str();
+    }
+
+    const osgDB::Options* _options;
+    std::vector<unsigned> _pageLevels;
+};
+
 ReaderWriterSPT::ReaderWriterSPT()
 {
     supportsExtension("spt", "SimGear paged terrain meta database.");
@@ -160,10 +212,12 @@ ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* o
 osgDB::ReaderWriter::ReadResult
 ReaderWriterSPT::readNode(const std::string& fileName, const osgDB::Options* options) const
 {
+    LocalOptions localOptions(options);
+
     // The file name without path and without the spt extension
     std::string strippedFileName = osgDB::getStrippedName(fileName);
     if (strippedFileName == "earth")
-        return ReadResult(createTree(BucketBox(-180, -90, 360, 180), options, true));
+        return ReadResult(createTree(BucketBox(-180, -90, 360, 180), localOptions, true));
 
     std::stringstream ss(strippedFileName);
     BucketBox bucketBox;
@@ -177,33 +231,23 @@ ReaderWriterSPT::readNode(const std::string& fileName, const osgDB::Options* opt
         return ReadResult::FILE_NOT_FOUND;
 
     if (bucketBoxListSize == 1)
-        return ReadResult(createTree(bucketBoxList[0], options, true));
+        return ReadResult(createTree(bucketBoxList[0], localOptions, true));
 
     assert(bucketBoxListSize == 2);
     osg::ref_ptr<osg::Group> group = new osg::Group;
-    group->addChild(createTree(bucketBoxList[0], options, true));
-    group->addChild(createTree(bucketBoxList[1], options, true));
+    group->addChild(createTree(bucketBoxList[0], localOptions, true));
+    group->addChild(createTree(bucketBoxList[1], localOptions, true));
     return ReadResult(group);
 }
 
 osg::ref_ptr<osg::Node>
-ReaderWriterSPT::createTree(const BucketBox& bucketBox, const osgDB::Options* options, bool topLevel) const
+ReaderWriterSPT::createTree(const BucketBox& bucketBox, const LocalOptions& options, bool topLevel) const
 {
     if (bucketBox.getIsBucketSize()) {
         std::string fileName;
         fileName = bucketBox.getBucket().gen_index_str() + std::string(".stg");
-        return osgDB::readRefNodeFile(fileName, options);
-    } else if (!topLevel && bucketBox.getStartLevel() == 3) {
-        // We want an other level of indirection for paging
-        // Here we get about 12x12 deg tiles
-        return createPagedLOD(bucketBox, options);
-    } else if (!topLevel && bucketBox.getStartLevel() == 5) {
-        // We want an other level of indirection for paging
-        // Here we get about 2x2 deg tiles
-        return createPagedLOD(bucketBox, options);
-    } else if (!topLevel && bucketBox.getStartLevel() == 7) {
-        // We want an other level of indirection for paging
-        // Here we get about 0.5x0.5 deg tiles
+        return osgDB::readRefNodeFile(fileName, options._options);
+    } else if (!topLevel && options.isPageLevel(bucketBox.getStartLevel())) {
         return createPagedLOD(bucketBox, options);
     } else {
         BucketBox bucketBoxList[100];
@@ -229,7 +273,7 @@ ReaderWriterSPT::createTree(const BucketBox& bucketBox, const osgDB::Options* op
 }
 
 osg::ref_ptr<osg::Node>
-ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options* options) const
+ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const LocalOptions& options) const
 {
     osg::PagedLOD* pagedLOD = new osg::PagedLOD;
 
@@ -241,20 +285,36 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
     pagedLOD->setCullCallback(new CullCallback);
 
     osg::ref_ptr<osgDB::Options> localOptions;
-    localOptions = static_cast<osgDB::Options*>(options->clone(osg::CopyOp()));
+    localOptions = static_cast<osgDB::Options*>(options._options->clone(osg::CopyOp()));
     // FIXME:
     // The particle systems have nodes with culling disabled.
     // PagedLOD nodes with childnodes like this will never expire.
     // So, for now switch them off.
     localOptions->setPluginStringData("SimGear::PARTICLESYSTEM", "OFF");
     pagedLOD->setDatabaseOptions(localOptions.get());
-        
-    float range = 3*sphere.getRadius();
 
-    // Add the static sea level textured shell
-    osg::ref_ptr<osg::Node> tile = createSeaLevelTile(bucketBox, options);
-    if (tile.valid())
-        pagedLOD->addChild(tile.get(), range, std::numeric_limits<float>::max());
+    // The break point for the low level of detail to the high level of detail
+    float range = 2*sphere.getRadius();
+
+    // Look for a low level of detail tile
+    std::string lodPath = options.getLodPathForBucketBox(bucketBox);
+    const char* extensions[] = { ".btg.gz", ".flt" };
+    for (unsigned i = 0; i < sizeof(extensions)/sizeof(extensions[0]); ++i) {
+        std::string fileName = osgDB::findDataFile(lodPath + extensions[i], options._options);
+        if (fileName.empty())
+            continue;
+        osg::ref_ptr<osg::Node> node = osgDB::readRefNodeFile(fileName, options._options);
+        if (!node.valid())
+            continue;
+        pagedLOD->addChild(node.get(), range, std::numeric_limits<float>::max());
+        break;
+    }
+    // Add the static sea level textured shell if there is nothing found
+    if (pagedLOD->getNumChildren() == 0) {
+        osg::ref_ptr<osg::Node> node = createSeaLevelTile(bucketBox, options._options);
+        if (node.valid())
+            pagedLOD->addChild(node.get(), range, std::numeric_limits<float>::max());
+    }
 
     // Add the paged file name that creates the subtrees on demand
     std::stringstream ss;
@@ -266,9 +326,9 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
 }
 
 osg::ref_ptr<osg::Node>
-ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Options* options) const
+ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const LocalOptions& options) const
 {
-    if (options->getPluginStringData("SimGear::FG_EARTH") != "ON")
+    if (options._options->getPluginStringData("SimGear::FG_EARTH") != "ON")
         return 0;
 
     SGSpheref sphere = bucketBox.getBoundingSphere();
@@ -335,10 +395,10 @@ ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Opt
 }
 
 osg::ref_ptr<osg::StateSet>
-ReaderWriterSPT::getLowLODStateSet(const osgDB::Options* options) const
+ReaderWriterSPT::getLowLODStateSet(const LocalOptions& options) const
 {
     osg::ref_ptr<osgDB::Options> localOptions;
-    localOptions = static_cast<osgDB::Options*>(options->clone(osg::CopyOp()));
+    localOptions = static_cast<osgDB::Options*>(options._options->clone(osg::CopyOp()));
     localOptions->setObjectCacheHint(osgDB::Options::CACHE_ALL);
 
     osg::ref_ptr<osg::Object> object = osgDB::readRefObjectFile("state.spt", localOptions.get());

@@ -130,6 +130,10 @@ namespace canvas
       _transform->setMatrix(m);
       _transform_dirty = false;
     }
+
+    // Update bounding box on manual update (manual updates pass zero dt)
+    if( dt == 0 && _drawable )
+      _drawable->getBound();
   }
 
   //----------------------------------------------------------------------------

@@ -22,7 +22,9 @@
 
 #include <cassert>
 #include <istream>
+#include <iomanip>
 #include <ostream>
+#include <sstream>
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/math/SGGeometry.hxx>
@@ -482,24 +484,48 @@ template<typename char_type, typename traits_type>
 std::basic_ostream<char_type, traits_type>&
 operator<<(std::basic_ostream<char_type, traits_type>& os, const BucketBox& bucketBox)
 {
+    std::basic_stringstream<char_type, traits_type> ss;
+
+    double minSize = std::min(bucketBox.getWidthDeg(), bucketBox.getHeightDeg());
+    
+    unsigned fieldPrecision = 0;
+    if (minSize <= 0.125) {
+        fieldPrecision = 3;
+    } else if (minSize <= 0.25) {
+        fieldPrecision = 2;
+    } else if (minSize <= 0.5) {
+        fieldPrecision = 1;
+    }
+
+    unsigned lonFieldWidth = 3;
+    if (fieldPrecision)
+        lonFieldWidth += 1 + fieldPrecision;
+
+    ss << std::fixed << std::setfill('0') << std::setprecision(fieldPrecision);
+
     double lon = bucketBox.getLongitudeDeg();
     if (lon < 0)
-        os << "w" << -lon;
+        ss << "w" << std::setw(lonFieldWidth) << -lon << std::setw(0);
     else
-        os << "e" << lon;
+        ss << "e" << std::setw(lonFieldWidth) << lon << std::setw(0);
     
+    unsigned latFieldWidth = 2;
+    if (fieldPrecision)
+        latFieldWidth += 1 + fieldPrecision;
+
     double lat = bucketBox.getLatitudeDeg();
     if (lat < -90)
         lat = -90;
     if (90 < lat)
         lat = 90;
     if (lat < 0)
-        os << "s" << -lat;
+        ss << "s" << std::setw(latFieldWidth) << -lat << std::setw(0);
     else
-        os << "n" << lat;
+        ss << "n" << std::setw(latFieldWidth) << lat << std::setw(0);
     
-    os << "-" << bucketBox.getWidthDeg() << "x" << bucketBox.getHeightDeg();
-    return os;
+    ss << "-" << bucketBox.getWidthDeg() << "x" << bucketBox.getHeightDeg();
+
+    return os << ss.str();
 }
 
 /// Stream inout operator.

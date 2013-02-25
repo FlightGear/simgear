@@ -311,6 +311,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints, 
     cl->push_back(osg::Vec4(1, 1, 1, 1));
   
     osg::Geometry* geometry = new osg::Geometry;
+    geometry->setDataVariance(osg::Object::STATIC);
     geometry->setVertexArray(grid.vl);
     geometry->setNormalArray(grid.nl);
     geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);

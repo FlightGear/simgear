@@ -254,6 +254,7 @@ SGLightFactory::getLightDrawable(const SGLightBin::Light& light)
   colors->push_back(toOsg(light.color));
   
   osg::Geometry* geometry = new osg::Geometry;
+  geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
   geometry->setNormalBinding(osg::Geometry::BIND_OFF);
   geometry->setColorArray(colors);
@@ -291,6 +292,7 @@ SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light)
   colors->push_back(toOsg(invisibleColor));
   
   osg::Geometry* geometry = new osg::Geometry;
+  geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
   geometry->setNormalBinding(osg::Geometry::BIND_OFF);
   geometry->setColorArray(colors);
@@ -327,7 +329,7 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
   }
   
   osg::Geometry* geometry = new osg::Geometry;
-  
+  geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
   geometry->setNormalBinding(osg::Geometry::BIND_OFF);
   geometry->setColorArray(colors);
@@ -380,7 +382,7 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
   }
   
   osg::Geometry* geometry = new osg::Geometry;
-  
+  geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
   geometry->setNormalBinding(osg::Geometry::BIND_OFF);
   geometry->setColorArray(colors);

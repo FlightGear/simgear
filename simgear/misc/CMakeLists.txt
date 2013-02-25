@@ -47,6 +47,10 @@ add_executable(test_strings strutils_test.cxx )
 add_test(test_strings ${EXECUTABLE_OUTPUT_PATH}/test_strings)
 target_link_libraries(test_strings ${TEST_LIBS})
 
+add_executable(test_streams sgstream_test.cxx )
+add_test(test_streams ${EXECUTABLE_OUTPUT_PATH}/test_streams)
+target_link_libraries(test_streams ${TEST_LIBS})
+
 add_executable(test_path path_test.cxx )
 add_test(test_path ${EXECUTABLE_OUTPUT_PATH}/test_path)
 target_link_libraries(test_path ${TEST_LIBS})

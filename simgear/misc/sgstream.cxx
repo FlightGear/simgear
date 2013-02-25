@@ -102,14 +102,17 @@ istream&
 skipeol( istream& in )
 {
     char c = '\0';
-    // skip to end of line.
 
+    // make sure we detect LF, CR and CR/LF
     while ( in.get(c) ) {
-    	if ( (c == '\n') || (c == '\r') ) {
-	    break;
-	}	
+        if (c == '\n')
+            break;
+        else if (c == '\r') {
+            if (in.peek() == '\n')
+                in.get(c);
+            break;
+        }
     }
-
     return in;
 }
 

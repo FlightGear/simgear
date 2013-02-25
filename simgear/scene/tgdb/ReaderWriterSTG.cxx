@@ -61,14 +61,14 @@ static bool isAirportBtg(const std::string& name)
 {
     if (name.size() < 8)
         return false;
-    if (name.substr(4, 8) != ".btg")
+    if (name.substr(4, 4) != ".btg")
         return false;
     for (unsigned i = 0; i < 4; ++i) {
-        if (name[i] < 'A' || 'Z' < name[i])
+        if ('A' <= name[i] && name[i] <= 'Z')
             continue;
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
 
 static SGBucket bucketIndexFromFileName(const std::string& fileName)

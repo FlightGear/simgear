@@ -36,7 +36,9 @@ if(ENABLE_TESTS)
 if (SIMGEAR_SHARED)
     set(TEST_LIBS SimGearCore)
 else()
-    set(TEST_LIBS SimGearCore ${CMAKE_THREAD_LIBS_INIT})
+    set(TEST_LIBS SimGearCore
+            ${CMAKE_THREAD_LIBS_INIT}
+            ${ZLIB_LIBRARY})
 endif()
 
 add_executable(test_tabbed_values tabbed_values_test.cxx)

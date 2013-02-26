@@ -73,7 +73,7 @@ namespace canvas
       virtual void childRemoved(SGPropertyNode * child);
       virtual void childChanged(SGPropertyNode * child);
 
-      void handleZIndexChanged(SGPropertyNode* node, int z_index);
+      void handleZIndexChanged(ChildList::iterator child, int z_index = 0);
 
       ChildList::iterator findChild(const SGPropertyNode* node);
   };

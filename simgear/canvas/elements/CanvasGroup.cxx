@@ -193,6 +193,9 @@ namespace canvas
       _transform->addChild( element->getMatrixTransform() );
       _children.push_back( ChildList::value_type(child, element) );
 
+      // ...and ensure correct ordering
+      handleZIndexChanged( --_children.end() );
+
       return;
     }
 
@@ -239,13 +242,13 @@ namespace canvas
   {
     if(    node->getParent()->getParent() == _node
         && node->getNameString() == "z-index" )
-      return handleZIndexChanged(node->getParent(), node->getIntValue());
+      return handleZIndexChanged( findChild(node->getParent()),
+                                  node->getIntValue() );
   }
 
   //----------------------------------------------------------------------------
-  void Group::handleZIndexChanged(SGPropertyNode* node, int z_index)
+  void Group::handleZIndexChanged(ChildList::iterator child, int z_index)
   {
-    ChildList::iterator child = findChild(node);
     if( child == _children.end() )
       return;
 

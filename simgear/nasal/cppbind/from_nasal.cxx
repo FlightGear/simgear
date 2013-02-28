@@ -56,7 +56,8 @@ namespace nasal
     return std::string(naStr_data(na_str), naStr_len(na_str));
   }
 
-  SGPath from_nasal_helper(naContext c, naRef ref, SGPath*)
+  //----------------------------------------------------------------------------
+  SGPath from_nasal_helper(naContext c, naRef ref, const SGPath*)
   {
       naRef na_str = naStringValue(c, ref);
       return SGPath(std::string(naStr_data(na_str), naStr_len(na_str)));

@@ -21,6 +21,7 @@
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasMgr.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
+#include <simgear/canvas/MouseEvent.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/misc/sg_path.hxx>
 
@@ -115,6 +116,7 @@ namespace canvas
 
     addStyle("fill", &Image::setFill, this);
     addStyle("slice", &Image::setSlice, this);
+    addStyle("slice-width", &Image::setSliceWidth, this);
     addStyle("outset", &Image::setOutset, this);
 
     setFill("#ffffff"); // TODO how should we handle default values?
@@ -162,10 +164,11 @@ namespace canvas
       SGRect<float> region = _region;
       if( _outset.valid )
       {
-        region.t() -= _outset.t;
-        region.r() += _outset.r;
-        region.b() += _outset.b;
-        region.l() -= _outset.l;
+        const CSSOffsets& outset = _outset.getAbsOffsets(tex_dim);
+        region.t() -= outset.t;
+        region.r() += outset.r;
+        region.b() += outset.b;
+        region.l() -= outset.l;
       }
 
       if( !_slice.valid )
@@ -195,16 +198,18 @@ namespace canvas
           -------------------- - y[3]
          */
 
+        const CSSOffsets& slice =
+          (_slice_width.valid ? _slice_width : _slice).getAbsOffsets(tex_dim);
         float x[4] = {
           region.l(),
-          region.l() + _slice.l * tex_dim.width(),
-          region.r() - _slice.r * tex_dim.width(),
+          region.l() + slice.l,
+          region.r() - slice.r,
           region.r()
         };
         float y[4] = {
           region.t(),
-          region.t() + _slice.t * tex_dim.height(),
-          region.b() - _slice.b * tex_dim.height(),
+          region.t() + slice.t,
+          region.b() - slice.b,
           region.b()
         };
 
@@ -249,16 +254,17 @@ namespace canvas
       }
       else
       {
+        const CSSOffsets& slice = _slice.getRelOffsets(tex_dim);
         float x[4] = {
           src_rect.l(),
-          src_rect.l() + _slice.l,
-          src_rect.r() - _slice.r,
+          src_rect.l() + slice.l,
+          src_rect.r() - slice.r,
           src_rect.r()
         };
         float y[4] = {
           src_rect.t(),
-          src_rect.t() - _slice.t,
-          src_rect.b() + _slice.b,
+          src_rect.t() - slice.t,
+          src_rect.b() + slice.b,
           src_rect.b()
         };
 
@@ -339,6 +345,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Image::setSliceWidth(const std::string& width)
+  {
+    _slice_width = parseSideOffsets(width);
+    _attributes_dirty |= DEST_SIZE;
+  }
+
+  //----------------------------------------------------------------------------
   void Image::setOutset(const std::string& outset)
   {
     _outset = parseSideOffsets(outset);
@@ -349,6 +362,57 @@ namespace canvas
   const SGRect<float>& Image::getRegion() const
   {
     return _region;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Image::handleMouseEvent(MouseEventPtr event)
+  {
+    CanvasPtr src_canvas = _src_canvas.lock();
+
+    if( !src_canvas )
+      return false;
+
+    if( _outset.valid )
+    {
+      CSSOffsets outset = _outset.getAbsOffsets(getTextureDimensions());
+
+      event.reset( new MouseEvent(*event) );
+      event->client_pos += osg::Vec2f(outset.l, outset.t);
+      event->client_pos.x() *= src_canvas->getViewWidth()
+                             / (_region.width() + outset.l + outset.r);
+      event->client_pos.y() *= src_canvas->getViewHeight()
+                             / (_region.height() + outset.t + outset.b);
+    }
+
+    return src_canvas->handleMouseEvent(event);
+  }
+
+  //----------------------------------------------------------------------------
+  Image::CSSOffsets
+  Image::CSSBorder::getRelOffsets(const SGRect<int>& dim) const
+  {
+    CSSOffsets ret;
+    for(int i = 0; i < 4; ++i)
+    {
+      ret.val[i] = offsets.val[i];
+      if( !types.rel[i] )
+        ret.val[i] /= (i & 1) ? dim.height() : dim.width();
+    }
+    return ret;
+  }
+
+  //----------------------------------------------------------------------------
+  Image::CSSOffsets
+  Image::CSSBorder::getAbsOffsets(const SGRect<int>& dim) const
+  {
+    CSSOffsets ret;
+    for(int i = 0; i < 4; ++i)
+    {
+      ret.val[i] = offsets.val[i];
+      if( types.rel[i] )
+        ret.val[i] *= (i & 1) ? dim.height() : dim.width();
+    }
+    return ret;
   }
 
   //----------------------------------------------------------------------------
@@ -511,12 +575,10 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  Image::CSSOffsets Image::parseSideOffsets(const std::string& str) const
+  Image::CSSBorder Image::parseSideOffsets(const std::string& str) const
   {
     if( str.empty() )
-      return CSSOffsets();
-
-    const SGRect<int>& dim = getTextureDimensions();
+      return CSSBorder();
 
     // [<number>'%'?]{1,4} (top[,right[,bottom[,left]]])
     //
@@ -524,7 +586,7 @@ namespace canvas
     // image for the horizontal offsets, the height for vertical offsets.
     // Numbers represent pixels in the image.
     int c = 0;
-    CSSOffsets ret;
+    CSSBorder ret;
 
     typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
     const boost::char_separator<char> del(" \t\n");
@@ -538,45 +600,51 @@ namespace canvas
         ret.keyword = *tok;
       else
       {
-        bool rel = (*tok->rbegin() == '%');
-        ret.offsets[c] =
+        bool rel = ret.types.rel[c] = (*tok->rbegin() == '%');
+        ret.offsets.val[c] =
           // Negative values are not allowed and values bigger than the size of
-          // the image are interpreted as ‘100%’.
-          std::max(0.f,
-          std::min(1.f,
+          // the image are interpreted as ‘100%’. TODO check max
+          std::max
+          (
+            0.f,
             boost::lexical_cast<float>
             (
               rel ? boost::make_iterator_range(tok->begin(), tok->end() - 1)
                   : *tok
             )
             /
-            (
-              rel ? 100
-                  : (c & 1) ? dim.width() : dim.height()
-            )
-          ));
-
+            (rel ? 100 : 1)
+          );
         ++c;
       }
     }
 
     // When four values are specified, they set the offsets on the top, right,
     // bottom and left sides in that order.
+
+#define CSS_COPY_VAL(dest, src)\
+  {\
+    ret.offsets.val[dest] = ret.offsets.val[src];\
+    ret.types.rel[dest] = ret.types.rel[src];\
+  }
+
     if( c < 4 )
     {
       if( c < 3 )
       {
         if( c < 2 )
           // if the right is missing, it is the same as the top.
-          ret.offsets[1] = ret.offsets[0];
+          CSS_COPY_VAL(1, 0);
 
         // if the bottom is missing, it is the same as the top
-        ret.offsets[2] = ret.offsets[0];
+        CSS_COPY_VAL(2, 0);
       }
 
       // If the left is missing, it is the same as the right
-      ret.offsets[3] = ret.offsets[1];
+      CSS_COPY_VAL(3, 1);
     }
+
+#undef CSS_COPY_VAL
 
     ret.valid = true;
     return ret;

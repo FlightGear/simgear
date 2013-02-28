@@ -63,11 +63,24 @@ namespace canvas
       void setSlice(const std::string& slice);
 
       /**
+       * Set image slice width.
+       *
+       * By default the size of the 9-scale grid is the same as specified
+       * with setSlice/"slice". Using this method allows setting values
+       * different to the size in the source image.
+       *
+       * @see http://www.w3.org/TR/css3-background/#border-image-width
+       */
+      void setSliceWidth(const std::string& width);
+
+      /**
        * http://www.w3.org/TR/css3-background/#border-image-outset
        */
       void setOutset(const std::string& outset);
 
       const SGRect<float>& getRegion() const;
+
+      bool handleMouseEvent(MouseEventPtr event);
 
     protected:
 
@@ -77,20 +90,31 @@ namespace canvas
         DEST_SIZE      = SRC_RECT << 1        // Element size
       };
 
-      struct CSSOffsets
+      union CSSOffsets
       {
-        CSSOffsets():
+        float          val[4];
+        struct { float t, r, b, l; };
+      };
+
+      union CSSOffsetsTypes
+      {
+        bool          rel[4];
+        struct { bool t_rel, r_rel, b_rel, l_rel; };
+      };
+
+      struct CSSBorder
+      {
+        CSSBorder():
           valid(false)
         {}
 
-        union
-        {
-          float          offsets[4];
-          struct { float t, r, b, l; };
-        };
+        CSSOffsets getRelOffsets(const SGRect<int>& dim) const;
+        CSSOffsets getAbsOffsets(const SGRect<int>& dim) const;
 
-        std::string keyword;
-        bool        valid;
+        CSSOffsets      offsets;
+        CSSOffsetsTypes types;
+        std::string     keyword;
+        bool            valid;
       };
 
       virtual void childChanged(SGPropertyNode * child);
@@ -101,7 +125,7 @@ namespace canvas
       void setQuad(size_t index, const SGVec2f& tl, const SGVec2f& br);
       void setQuadUV(size_t index, const SGVec2f& tl, const SGVec2f& br);
 
-      CSSOffsets parseSideOffsets(const std::string& str) const;
+      CSSBorder parseSideOffsets(const std::string& str) const;
 
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas
@@ -117,7 +141,8 @@ namespace canvas
       SGRect<float>   _src_rect,
                       _region;
 
-      CSSOffsets      _slice,
+      CSSBorder       _slice,
+                      _slice_width,
                       _outset;
   };
 

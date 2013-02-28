@@ -92,6 +92,12 @@ namespace canvas
       void useStencil(bool use = true);
 
       /**
+       * Enable/Disable additive alpha blending (Can improve results with
+       * transparent background)
+       */
+      void useAdditiveBlend(bool use = true);
+
+      /**
        * Set sampling parameters for mipmapping and coverage sampling
        * antialiasing.
        *
@@ -134,21 +140,31 @@ namespace canvas
           _size_y,
           _view_width,
           _view_height;
-      bool _use_image_coords,
-           _use_stencil,
-           _use_mipmapping;
+
+      enum Flags
+      {
+        AVAILABLE           = 1,
+        USE_IMAGE_COORDS    = AVAILABLE << 1,
+        USE_STENCIL         = USE_IMAGE_COORDS << 1,
+        USE_MIPMAPPING      = USE_STENCIL << 1,
+        USE_ADDITIVE_BLEND  = USE_MIPMAPPING << 1
+      };
+
+      uint32_t _flags;
 
       // Multisampling parameters
       int  _coverage_samples,
            _color_samples;
 
-      bool rtAvailable;
       osg::ref_ptr<osg::Camera> camera;
       osg::ref_ptr<osg::Texture2D> texture;
+
+      bool updateFlag(Flags flag, bool enable);
 
       void updateCoordinateFrame();
       void updateStencil();
       void updateSampling();
+      void updateBlendMode();
 
   };
 

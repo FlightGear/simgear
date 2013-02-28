@@ -445,6 +445,10 @@ namespace canvas
       {
         _sampling_dirty = true;
       }
+      else if( node->getNameString() == "additive-blend" )
+      {
+        _texture.useAdditiveBlend( node->getBoolValue() );
+      }
       else if( node->getNameString() == "render-always" )
       {
         _render_always = node->getBoolValue();

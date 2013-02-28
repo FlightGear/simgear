@@ -57,12 +57,9 @@ namespace canvas
     _size_y( -1 ),
     _view_width( -1 ),
     _view_height( -1 ),
-    _use_image_coords( false ),
-    _use_stencil( false ),
-    _use_mipmapping( false ),
+    _flags(0),
     _coverage_samples( 0 ),
-    _color_samples( 0 ),
-    rtAvailable( false )
+    _color_samples( 0 )
   {
 
   }
@@ -104,38 +101,33 @@ namespace canvas
   //----------------------------------------------------------------------------
   void ODGauge::useImageCoords(bool use)
   {
-    if( use == _use_image_coords )
-      return;
-
-    _use_image_coords = use;
-
-    if( texture )
+    if( updateFlag(USE_IMAGE_COORDS, use) && texture )
       updateCoordinateFrame();
   }
 
   //----------------------------------------------------------------------------
   void ODGauge::useStencil(bool use)
   {
-    if( use == _use_stencil )
-      return;
-
-    _use_stencil = use;
-
-    if( texture )
+    if( updateFlag(USE_STENCIL, use) && texture )
       updateStencil();
   }
 
   //----------------------------------------------------------------------------
-  void ODGauge::setSampling( bool mipmapping,
-                               int coverage_samples,
-                               int color_samples )
+  void ODGauge::useAdditiveBlend(bool use)
   {
-    if(    _use_mipmapping == mipmapping
+    if( updateFlag(USE_ADDITIVE_BLEND, use) && camera )
+      updateBlendMode();
+  }
+
+  //----------------------------------------------------------------------------
+  void ODGauge::setSampling( bool mipmapping,
+                             int coverage_samples,
+                             int color_samples )
+  {
+    if(    !updateFlag(USE_MIPMAPPING, mipmapping)
         && _coverage_samples == coverage_samples
         && _color_samples == color_samples )
       return;
-
-    _use_mipmapping = mipmapping;
 
     if( color_samples > coverage_samples )
     {
@@ -164,7 +156,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool ODGauge::serviceable(void)
   {
-    return rtAvailable;
+    return _flags & AVAILABLE;
   }
 
   //----------------------------------------------------------------------------
@@ -196,13 +188,10 @@ namespace canvas
                             osg::PolygonMode::FILL ),
       osg::StateAttribute::ON );
     stateSet->setAttributeAndModes(
-      new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.0f),
+      new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.001f),
       osg::StateAttribute::ON );
     stateSet->setAttribute(new osg::ShadeModel(osg::ShadeModel::FLAT));
-    stateSet->setAttributeAndModes(
-      new osg::BlendFunc( osg::BlendFunc::SRC_ALPHA,
-                          osg::BlendFunc::ONE_MINUS_SRC_ALPHA),
-      osg::StateAttribute::ON );
+
     if( !texture )
     {
       texture = new osg::Texture2D;
@@ -211,11 +200,12 @@ namespace canvas
     }
 
     updateSampling();
+    updateBlendMode();
 
     if( _system_adapter )
       _system_adapter->addCamera(camera.get());
 
-    rtAvailable = true;
+    _flags |= AVAILABLE;
   }
 
   //----------------------------------------------------------------------------
@@ -234,7 +224,17 @@ namespace canvas
     camera.release();
     texture.release();
 
-    rtAvailable = false;
+    _flags &= ~AVAILABLE;
+  }
+
+  //----------------------------------------------------------------------------
+  bool ODGauge::updateFlag(Flags flag, bool enable)
+  {
+    if( (_flags & flag) == enable )
+      return false;
+
+    _flags ^= flag;
+    return true;
   }
 
   //----------------------------------------------------------------------------
@@ -249,7 +249,7 @@ namespace canvas
 
     camera->setViewport(0, 0, _size_x, _size_y);
 
-    if( _use_image_coords )
+    if( _flags & USE_IMAGE_COORDS )
       camera->setProjectionMatrix(
         osg::Matrix::ortho2D(0, _view_width, _view_height, 0)
       );
@@ -267,7 +267,7 @@ namespace canvas
 
     GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
 
-    if( _use_stencil)
+    if( _flags & USE_STENCIL )
     {
       camera->attach( osg::Camera::PACKED_DEPTH_STENCIL_BUFFER,
                        GL_DEPTH_STENCIL_EXT );
@@ -289,17 +289,35 @@ namespace canvas
 
     texture->setFilter(
       osg::Texture2D::MIN_FILTER,
-      _use_mipmapping ? osg::Texture2D::LINEAR_MIPMAP_LINEAR
-                      : osg::Texture2D::LINEAR
+      (_flags & USE_MIPMAPPING) ? osg::Texture2D::LINEAR_MIPMAP_LINEAR
+                                : osg::Texture2D::LINEAR
     );
     camera->attach(
       osg::Camera::COLOR_BUFFER,
       texture.get(),
       0, 0,
-      _use_mipmapping,
+      _flags & USE_MIPMAPPING,
       _coverage_samples,
       _color_samples
     );
+  }
+
+  //----------------------------------------------------------------------------
+  void ODGauge::updateBlendMode()
+  {
+    assert( camera );
+
+    camera->getOrCreateStateSet()
+      ->setAttributeAndModes
+      (
+        (_flags & USE_ADDITIVE_BLEND)
+          ? new osg::BlendFunc( osg::BlendFunc::SRC_ALPHA,
+                                osg::BlendFunc::ONE_MINUS_SRC_ALPHA,
+                                osg::BlendFunc::ONE,
+                                osg::BlendFunc::ONE )
+          : new osg::BlendFunc( osg::BlendFunc::SRC_ALPHA,
+                                osg::BlendFunc::ONE_MINUS_SRC_ALPHA )
+      );
   }
 
 } // namespace canvas

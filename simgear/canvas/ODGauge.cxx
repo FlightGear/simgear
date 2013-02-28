@@ -230,7 +230,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool ODGauge::updateFlag(Flags flag, bool enable)
   {
-    if( (_flags & flag) == enable )
+    if( bool(_flags & flag) == enable )
       return false;
 
     _flags ^= flag;

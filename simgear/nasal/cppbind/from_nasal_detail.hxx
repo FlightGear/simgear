@@ -71,27 +71,28 @@ namespace nasal
   /**
    * Simple pass through for unified handling also of naRef.
    */
-  inline naRef from_nasal_helper(naContext, naRef ref, naRef*) { return ref; }
+  inline naRef from_nasal_helper(naContext, naRef ref, const naRef*)
+  { return ref; }
 
   /**
    * Convert Nasal string to std::string
    */
-  std::string from_nasal_helper(naContext c, naRef ref, std::string*);
+  std::string from_nasal_helper(naContext c, naRef ref, const std::string*);
 
   /**
    * Convert a Nasal string to an SGPath
    */
-  SGPath from_nasal_helper(naContext c, naRef ref, SGPath*);
+  SGPath from_nasal_helper(naContext c, naRef ref, const SGPath*);
 
   /**
    * Convert a Nasal hash to a nasal::Hash
    */
-  Hash from_nasal_helper(naContext c, naRef ref, Hash*);
+  Hash from_nasal_helper(naContext c, naRef ref, const Hash*);
 
   /**
    * Convert a Nasal string to a nasal::String
    */
-  String from_nasal_helper(naContext c, naRef ref, String*);
+  String from_nasal_helper(naContext c, naRef ref, const String*);
 
   /**
    * Convert a Nasal number to a C++ numeric type
@@ -100,7 +101,7 @@ namespace nasal
   typename boost::enable_if< boost::is_arithmetic<T>,
                              T
                            >::type
-  from_nasal_helper(naContext c, naRef ref, T*)
+  from_nasal_helper(naContext c, naRef ref, const T*)
   {
     naRef num = naNumValue(ref);
     if( !naIsNum(num) )
@@ -113,7 +114,8 @@ namespace nasal
    * Convert a Nasal vector to a std::vector
    */
   template<class T>
-  std::vector<T> from_nasal_helper(naContext c, naRef ref, std::vector<T>*)
+  std::vector<T>
+  from_nasal_helper(naContext c, naRef ref, const std::vector<T>*)
   {
     if( !naIsVector(ref) )
       throw bad_nasal_cast("Not a vector");
@@ -132,7 +134,7 @@ namespace nasal
    */
   template<class Vec2>
   typename boost::enable_if<is_vec2<Vec2>, Vec2>::type
-  from_nasal_helper(naContext c, naRef ref, Vec2*)
+  from_nasal_helper(naContext c, naRef ref, const Vec2*)
   {
     std::vector<double> vec =
       from_nasal_helper(c, ref, static_cast<std::vector<double>*>(0));

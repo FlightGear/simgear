@@ -357,15 +357,15 @@ namespace nasal
        * @param setter  Setter for variable (Pass 0 to prevent write access)
        *
        */
-      template<class Var>
+      template<class Ret, class Param>
       Ghost& member( const std::string& field,
-                     Var (raw_type::*getter)() const,
-                     void (raw_type::*setter)(typename boost::call_traits<Var>::param_type) = 0 )
+                     Ret (raw_type::*getter)() const,
+                     void (raw_type::*setter)(Param) )
       {
         member_t m;
         if( getter )
         {
-          typedef typename boost::call_traits<Var>::param_type param_type;
+          typedef typename boost::call_traits<Ret>::param_type param_type;
           naRef (*to_nasal_)(naContext, param_type) = &nasal::to_nasal;
 
           // Getter signature: naRef(naContext, raw_type&)
@@ -374,13 +374,27 @@ namespace nasal
 
         if( setter )
         {
-          Var (*from_nasal_)(naContext, naRef) = &nasal::from_nasal;
+          typename boost::remove_reference<Param>::type
+          (*from_nasal_)(naContext, naRef) = &nasal::from_nasal;
 
           // Setter signature: void(naContext, raw_type&, naRef)
           m.setter = boost::bind(setter, _2, boost::bind(from_nasal_, _1, _3));
         }
 
         return member(field, m.getter, m.setter);
+      }
+
+      /**
+       * Register a read only member variable.
+       *
+       * @param field   Name of member
+       * @param getter  Getter for variable
+       */
+      template<class Ret>
+      Ghost& member( const std::string& field,
+                     Ret (raw_type::*getter)() const )
+      {
+        return member<Ret, Ret>(field, getter, 0);
       }
 
       /**
@@ -393,7 +407,7 @@ namespace nasal
       Ghost& member( const std::string& field,
                      void (raw_type::*setter)(Var) )
       {
-        return member<Var>(field, 0, setter);
+        return member<Var, Var>(field, 0, setter);
       }
 
       /**

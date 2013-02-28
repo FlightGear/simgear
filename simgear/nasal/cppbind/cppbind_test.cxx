@@ -23,6 +23,10 @@ struct Base
 
   std::string getString() const { return ""; }
   void setString(const std::string&) {}
+
+  std::string var;
+  const std::string& getVar() const { return var; }
+  void setVar(const std::string v) { var = v; }
 };
 struct Derived:
   public Base
@@ -135,7 +139,10 @@ int main(int argc, char* argv[])
 
   Ghost<BasePtr>::init("BasePtr")
     .method<&Base::member>("member")
-    .member("str", &Base::getString, &Base::setString);
+    .member("str", &Base::getString, &Base::setString)
+    .member("var_r", &Base::getVar)
+    .member("var_w", &Base::setVar)
+    .member("var", &Base::getVar, &Base::setVar);
   Ghost<DerivedPtr>::init("DerivedPtr")
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)

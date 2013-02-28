@@ -50,7 +50,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  std::string from_nasal_helper(naContext c, naRef ref, std::string*)
+  std::string from_nasal_helper(naContext c, naRef ref, const std::string*)
   {
     naRef na_str = naStringValue(c, ref);
     return std::string(naStr_data(na_str), naStr_len(na_str));
@@ -63,7 +63,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  Hash from_nasal_helper(naContext c, naRef ref, Hash*)
+  Hash from_nasal_helper(naContext c, naRef ref, const Hash*)
   {
     if( !naIsHash(ref) )
       throw bad_nasal_cast("Not a hash");
@@ -72,7 +72,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  String from_nasal_helper(naContext c, naRef ref, String*)
+  String from_nasal_helper(naContext c, naRef ref, const String*)
   {
     if( !naIsString(ref) )
       throw bad_nasal_cast("Not a string");

@@ -338,7 +338,7 @@ public:
         }
         
         char flags = zlibInflateBuffer[3];
-        int gzipHeaderSize =  GZIP_HEADER_SIZE;
+        unsigned int gzipHeaderSize =  GZIP_HEADER_SIZE;
         if (flags & GZIP_HEADER_FEXTRA) {
           gzipHeaderSize += 2;
           if (zlib.avail_in < gzipHeaderSize) {

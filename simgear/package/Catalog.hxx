@@ -64,7 +64,7 @@ public:
     
     Package* getPackageById(const std::string& aId) const;
     
-    int ageInSeconds() const;
+    unsigned int ageInSeconds() const;
 private:
     Catalog(Root* aRoot);
     

@@ -119,8 +119,8 @@ private:
         unz_file_info fileInfo;
         unzGetCurrentFileInfo(zip, &fileInfo, 
             buffer, bufferSize, 
-            NULL, NULL,  /* extra field */
-            NULL, NULL /* comment field */);
+            NULL, 0,  /* extra field */
+            NULL, 0 /* comment field */);
             
         std::string name(buffer);
     // no absolute paths, no 'up' traversals

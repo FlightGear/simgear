@@ -238,11 +238,12 @@ void Catalog::writeTimestamp()
     f << m_retrievedTime << std::endl;
 }
 
-int Catalog::ageInSeconds() const
+unsigned int Catalog::ageInSeconds() const
 {
     time_t now;
     time(&now);
-    return ::difftime(now, m_retrievedTime);
+    int diff = ::difftime(now, m_retrievedTime);
+    return (diff < 0) ? 0 : diff;
 }
 
 std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const

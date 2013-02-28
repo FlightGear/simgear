@@ -5,10 +5,7 @@
 #include <boost/foreach.hpp>
 #include <fstream>
 
-// libarchive support
-#include <archive.h>
-#include <archive_entry.h>
-
+#include <simgear/package/unzip.h>
 #include <simgear/package/md5.h>
 
 #include <simgear/structure/exception.hxx>
@@ -18,6 +15,10 @@
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_dir.hxx>
+
+extern "C" {
+    void fill_memory_filefunc (zlib_filefunc_def*);
+}
 
 namespace simgear {
     
@@ -63,7 +64,6 @@ protected:
     {
         m_buffer += std::string(s, n);
         MD5Update(&m_md5, (unsigned char*) s, n);
-        std::cout << "got " << m_buffer.size() << " bytes" << std::endl;
     }
     
     virtual void responseComplete()
@@ -73,8 +73,7 @@ protected:
             doFailure();
             return;
         }
-        std::cout << "content lenth:" << responseLength() << std::endl;
-        std::cout << m_buffer.size() << " total received" << std::endl;
+
         MD5Final(&m_md5);
     // convert final sum to hex
         const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -94,43 +93,125 @@ protected:
         } else {
             std::cout << "MD5 checksum is ok" << std::endl;
         }
-                
-        struct archive* a = archive_read_new();
-        archive_read_support_filter_all(a);
-        archive_read_support_format_all(a);
-        int result = archive_read_open_memory(a, (void*) m_buffer.data(), m_buffer.size());
         
-        if (result != ARCHIVE_OK) {
+        if (!extractUnzip()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "zip extraction failed");
             doFailure();
             return;
         }
-        
-        struct archive_entry* entry;
-        while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-            SGPath finalPath(m_extractPath);
-            finalPath.append(archive_entry_pathname(entry));
-         //   std::cout << "writing:" << finalPath << std::endl;
-            archive_entry_set_pathname(entry, finalPath.c_str());            
-            archive_read_extract(a, entry, 0);
-        }
-        
-        archive_read_free(a);
                   
         if (m_owner->path().exists()) {
-            std::cout << "removing existing path" << std::endl;
+            //std::cout << "removing existing path" << std::endl;
             Dir destDir(m_owner->path());
             destDir.remove(true /* recursive */);
         }
         
-        std::cout << "renaming to " << m_owner->path() << std::endl;
         m_extractPath.append(m_owner->package()->id());
-        m_extractPath.rename(m_owner->path());
-        
+        m_extractPath.rename(m_owner->path());        
         m_owner->m_revision = m_owner->package()->revision();
         m_owner->writeRevisionFile();
     }
     
 private:
+
+    void extractCurrentFile(unzFile zip, char* buffer, size_t bufferSize)
+    {
+        unz_file_info fileInfo;
+        unzGetCurrentFileInfo(zip, &fileInfo, 
+            buffer, bufferSize, 
+            NULL, NULL,  /* extra field */
+            NULL, NULL /* comment field */);
+            
+        std::string name(buffer);
+    // no absolute paths, no 'up' traversals
+    // we could also look for suspicious file extensions here (forbid .dll, .exe, .so)
+        if ((name[0] == '/') || (name.find("../") != std::string::npos) || (name.find("..\\") != std::string::npos)) {
+            throw sg_format_exception("Bad zip path", name);
+        }
+        
+        if (fileInfo.uncompressed_size == 0) {
+            // assume it's a directory for now
+            // since we create parent directories when extracting
+            // a path, we're done here
+            return;
+        }
+        
+        int result = unzOpenCurrentFile(zip);
+        if (result != UNZ_OK) {
+            throw sg_io_exception("opening current zip file failed", sg_location(name));
+        }
+            
+        std::ofstream outFile;
+        bool eof = false;
+        SGPath path(m_extractPath);
+        path.append(name);
+                        
+    // create enclosing directory heirarchy as required
+        Dir parentDir(path.dir());
+        if (!parentDir.exists()) {
+            bool ok = parentDir.create(0755);
+            if (!ok) {
+                throw sg_io_exception("failed to create directory heirarchy for extraction", path.c_str());
+            }
+        }
+            
+        outFile.open(path.c_str(), std::ios::binary | std::ios::trunc | std::ios::out);
+        if (outFile.fail()) {
+            throw sg_io_exception("failed to open output file for writing", path.c_str());
+        }
+            
+        while (!eof) {
+            int bytes = unzReadCurrentFile(zip, buffer, bufferSize);
+            if (bytes < 0) {
+                throw sg_io_exception("unzip failure reading curent archive", sg_location(name));
+            } else if (bytes == 0) {
+                eof = true;
+            } else {
+                outFile.write(buffer, bytes);
+            }
+        }
+            
+        outFile.close();
+        unzCloseCurrentFile(zip);
+    }
+    
+    bool extractUnzip()
+    {
+        bool result = true;
+        zlib_filefunc_def memoryAccessFuncs;
+        fill_memory_filefunc(&memoryAccessFuncs);
+           
+        char bufferName[128];
+        snprintf(bufferName, 128, "%p+%lx", m_buffer.data(), m_buffer.size());
+        unzFile zip = unzOpen2(bufferName, &memoryAccessFuncs);
+        
+        const size_t BUFFER_SIZE = 32 * 1024;
+        void* buf = malloc(BUFFER_SIZE);
+        
+        try {
+            int result = unzGoToFirstFile(zip);
+            if (result != UNZ_OK) {
+                throw sg_exception("failed to go to first file in archive");
+            }
+            
+            while (true) {
+                extractCurrentFile(zip, (char*) buf, BUFFER_SIZE);
+                result = unzGoToNextFile(zip);
+                if (result == UNZ_END_OF_LIST_OF_FILE) {
+                    break;
+                } else if (result != UNZ_OK) {
+                    throw sg_io_exception("failed to go to next file in the archive");
+                }
+            }
+        } catch (sg_exception& e) {
+            result = false;
+        }
+        
+        free(buf);
+        unzClose(zip);
+        return result;
+    }
+        
     void doFailure()
     {
         Dir dir(m_extractPath);

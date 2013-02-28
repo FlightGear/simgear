@@ -46,7 +46,7 @@ int main(int argc, char** argv)
         cout << "Will install:" << pkg->id() << " from " << catalog->id() <<
                 "(" << catalog->description() << ")" << endl;
         pkg->install();
-    } else if (!strcmp(argv[1], "uninstall")) {
+    } else if (!strcmp(argv[1], "uninstall") || !strcmp(argv[1], "remove")) {
         pkg::Package* pkg = root->getPackageById(argv[2]);
         if (!pkg) {
             cerr << "unknown package:" << argv[2] << endl;
@@ -76,6 +76,9 @@ int main(int argc, char** argv)
         BOOST_FOREACH(pkg::Package* p, updates) {
             cout << "\t" << p->id() << " " << p->getLocalisedProp("name") << endl;
         }
+    } else {
+        cerr << "unknown command:" << argv[1] << endl;
+        return EXIT_FAILURE;
     }
     
     while (http->hasActiveRequests()) {

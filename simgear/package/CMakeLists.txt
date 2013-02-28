@@ -14,7 +14,10 @@ set(SOURCES
     Package.cxx
     Install.cxx
     Root.cxx
-    md5.c
+# internal helpers
+    md5.c md5.h
+    ioapi.c ioapi_mem.c ioapi.h
+    unzip.h unzip.c
     )
 
 simgear_component(package package "${SOURCES}" "${HEADERS}")
@@ -24,7 +27,6 @@ if (SIMGEAR_SHARED)
 else()
     set(APP_LIBS
         SimGearCore
-        ${LibArchive_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
         ${WINSOCK_LIBRARY}
         ${ZLIB_LIBRARY}

@@ -374,7 +374,9 @@ namespace nasal
 
         if( setter )
         {
-          typename boost::remove_reference<Param>::type
+          typename boost::remove_const
+            < typename boost::remove_reference<Param>::type
+            >::type
           (*from_nasal_)(naContext, naRef) = &nasal::from_nasal;
 
           // Setter signature: void(naContext, raw_type&, naRef)

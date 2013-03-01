@@ -197,12 +197,14 @@ namespace nasal
       BOOST_STATIC_ASSERT( internal::has_element_type<T>::value );
 
     public:
-      typedef typename T::element_type                            raw_type;
-      typedef T                                                   pointer;
+      typedef typename T::element_type                              raw_type;
+      typedef T                                                     pointer;
       typedef naRef (raw_type::*member_func_t)(const CallContext&);
       typedef naRef (*free_func_t)(raw_type&, const CallContext&);
-      typedef boost::function<naRef(naContext, raw_type&)>        getter_t;
-      typedef boost::function<void(naContext, raw_type&, naRef)>  setter_t;
+      typedef boost::function<naRef(naContext, raw_type&)>          getter_t;
+      typedef boost::function<void(naContext, raw_type&, naRef)>    setter_t;
+      typedef boost::function<naRef(raw_type&, const CallContext&)> method_t;
+      typedef boost::shared_ptr<method_t>                           method_ptr;
 
       /**
        * A ghost member. Can consist either of getter and/or setter functions
@@ -464,6 +466,83 @@ namespace nasal
       {
         _members[name].func = &MemberFunctionWrapper<func>::call;
         return *this;
+      }
+
+      /**
+       * Invoke a method which returns a value and convert it to Nasal.
+       */
+      template<class Ret>
+      static
+      typename boost::disable_if<boost::is_void<Ret>, naRef>::type
+      method_invoker
+      (
+        const boost::function<Ret (raw_type&, const CallContext&)>& func,
+        raw_type& obj,
+        const CallContext& ctx
+      )
+      {
+        typedef typename boost::call_traits<Ret>::param_type param_type;
+        naRef (*to_nasal_)(naContext, param_type) = &nasal::to_nasal;
+
+        return to_nasal_(ctx.c, func(obj, ctx));
+      };
+
+      /**
+       * Invoke a method which returns void and "convert" it to nil.
+       */
+      template<class Ret>
+      static
+      typename boost::enable_if<boost::is_void<Ret>, naRef>::type
+      method_invoker
+      (
+        const boost::function<void (raw_type&, const CallContext&)>& func,
+        raw_type& obj,
+        const CallContext& ctx
+      )
+      {
+        func(obj, ctx);
+        return naNil();
+      };
+
+      /**
+       * Bind any callable entity as method callable from Nasal
+       *
+       * Does not really register method yet!!!
+       */
+      template<class Ret>
+      Ghost& method
+      (
+        const std::string& name,
+        const boost::function<Ret (raw_type&, const CallContext&)>& func
+      )
+      {
+//        _members[name].func.reset
+//        (
+          new method_t( boost::bind(method_invoker<Ret>, func, _1, _2) );
+//        );
+        return *this;
+      }
+
+      template<class Ret>
+      struct method_raw
+      {
+        typedef boost::function<Ret (raw_type&, const CallContext&)> type;
+      };
+
+      /**
+       * Bind member function as method callable from Nasal
+       *
+       * Does not really register method yet!!!
+       */
+      template<class Ret>
+      Ghost& method( const std::string& name,
+                     Ret (raw_type::*fn)() const )
+      {
+        return method<Ret>
+        (
+          name,
+          typename method_raw<Ret>::type(boost::bind(fn, _1))
+        );
       }
 
       /**

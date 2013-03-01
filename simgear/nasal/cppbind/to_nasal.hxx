@@ -25,8 +25,10 @@
 #include <simgear/nasal/nasal.h>
 
 #include <boost/utility/enable_if.hpp>
+#include <boost/call_traits.hpp>
 #include <boost/type_traits.hpp>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -75,17 +77,23 @@ namespace nasal
   }
 
   /**
+   * Convert a 2d vector to Nasal vector with 2 elements
+   */
+  template<class Vec2>
+  typename boost::enable_if<is_vec2<Vec2>, naRef>::type
+  to_nasal(naContext c, const Vec2& vec);
+
+  /**
+   * Convert a std::map to a Nasal Hash
+   */
+  template<class Value>
+  naRef to_nasal(naContext c, const std::map<std::string, Value>& map);
+
+  /**
    * Convert a fixed size array to a Nasal vector
    */
   template<class T, size_t N>
-  naRef to_nasal(naContext c, const T(&array)[N])
-  {
-    naRef ret = naNewVector(c);
-    naVec_setsize(c, ret, N);
-    for(size_t i = 0; i < N; ++i)
-      naVec_set(ret, i, to_nasal(c, array[i]));
-    return ret;
-  }
+  naRef to_nasal(naContext c, const T(&array)[N]);
 
   /**
    * Convert std::vector to Nasal vector
@@ -108,9 +116,7 @@ namespace nasal
     return ret;
   }
 
-  /**
-   * Convert a 2d vector to Nasal vector with 2 elements
-   */
+  //----------------------------------------------------------------------------
   template<class Vec2>
   typename boost::enable_if<is_vec2<Vec2>, naRef>::type
   to_nasal(naContext c, const Vec2& vec)
@@ -119,6 +125,37 @@ namespace nasal
     // double
     double nasal_vec[2] = {vec[0], vec[1]};
     return to_nasal(c, nasal_vec);
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Value>
+  naRef to_nasal(naContext c, const std::map<std::string, Value>& map)
+  {
+    naRef hash = naNewHash(c);
+
+    typedef typename boost::call_traits<Value>::param_type param_type;
+    typedef typename std::map<std::string, Value>::const_iterator map_iterator;
+
+    for( map_iterator it = map.begin(); it != map.end(); ++it )
+      naHash_set
+      (
+        hash,
+        to_nasal(c, it->first),
+        to_nasal(c, static_cast<param_type>(it->second))
+      );
+
+    return hash;
+  }
+
+  //----------------------------------------------------------------------------
+  template<class T, size_t N>
+  naRef to_nasal(naContext c, const T(&array)[N])
+  {
+    naRef ret = naNewVector(c);
+    naVec_setsize(c, ret, N);
+    for(size_t i = 0; i < N; ++i)
+      naVec_set(ret, i, to_nasal(c, array[i]));
+    return ret;
   }
 
 } // namespace nasal

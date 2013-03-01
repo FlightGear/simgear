@@ -23,11 +23,16 @@ struct Base
 
   std::string getString() const { return ""; }
   void setString(const std::string&) {}
+  void constVoidFunc() const {}
 
   std::string var;
   const std::string& getVar() const { return var; }
   void setVar(const std::string v) { var = v; }
 };
+
+void baseVoidFunc(Base& b) {}
+void baseConstVoidFunc(const Base& b) {}
+
 struct Derived:
   public Base
 {
@@ -50,6 +55,11 @@ typedef boost::shared_ptr<Base> BasePtr;
 typedef boost::shared_ptr<Derived> DerivedPtr;
 typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
+
+naRef to_nasal(naContext c, const BasePtr& base)
+{
+  return nasal::Ghost<BasePtr>::create(c, base);
+}
 
 naRef member(Derived&, const nasal::CallContext&) { return naNil(); }
 naRef f_derivedGetX(naContext c, const Derived& d)
@@ -140,9 +150,12 @@ int main(int argc, char* argv[])
   Ghost<BasePtr>::init("BasePtr")
     .method<&Base::member>("member")
     .member("str", &Base::getString, &Base::setString)
+    .method("str_m", &Base::getString)
+    .method("void", &Base::constVoidFunc)
     .member("var_r", &Base::getVar)
     .member("var_w", &Base::setVar)
-    .member("var", &Base::getVar, &Base::setVar);
+    .member("var", &Base::getVar, &Base::setVar)
+    /*.method("void", &baseVoidFunc)*/;
   Ghost<DerivedPtr>::init("DerivedPtr")
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)
@@ -179,6 +192,18 @@ int main(int argc, char* argv[])
   VERIFY(    Ghost<DoubleDerived2Ptr>::fromNasal(c, derived)
           == boost::dynamic_pointer_cast<DoubleDerived2>(d3) );
   VERIFY( !Ghost<DoubleDerivedPtr>::fromNasal(c, derived) );
+
+  std::map<std::string, BasePtr> instances;
+  VERIFY( naIsHash(to_nasal(c, instances)) );
+
+  std::map<std::string, DerivedPtr> instances_d;
+  VERIFY( naIsHash(to_nasal(c, instances_d)) );
+
+  std::map<std::string, int> int_map;
+  VERIFY( naIsHash(to_nasal(c, int_map)) );
+
+  std::map<std::string, std::vector<int> > int_vector_map;
+  VERIFY( naIsHash(to_nasal(c, int_vector_map)) );
 
   // Check converting to Ghost if using Nasal hashes with actual ghost inside
   // the hashes parents vector

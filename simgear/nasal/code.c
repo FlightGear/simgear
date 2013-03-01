@@ -313,7 +313,10 @@ static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named
     ctx->opFrame = opf;
 
     if(IS_CCODE(code)) {
-        naRef result = (*PTR(code).ccode->fptr)(ctx, obj, nargs, args);
+        struct naCCode *ccode = PTR(code).ccode;
+        naRef result = ccode->fptru
+                     ? (*ccode->fptru)(ctx, obj, nargs, args, ccode->user_data)
+                     : (*ccode->fptr)(ctx, obj, nargs, args);
         if(named) ERR(ctx, "native functions have no named arguments");
         ctx->opTop = ctx->opFrame;
         PUSH(result);

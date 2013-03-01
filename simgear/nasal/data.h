@@ -160,7 +160,15 @@ struct naFunc {
 
 struct naCCode {
     GC_HEADER;
-    naCFunction fptr;
+    union {
+        naCFunction fptr; //<! pointer to simple callback function. Invalid if
+                          //   fptru is not NULL.
+        struct {
+            void* user_data;
+            void(*destroy)(void*);
+            naCFunctionU fptru;
+        };
+    };
 };
 
 struct naGhost {

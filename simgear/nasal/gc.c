@@ -128,6 +128,12 @@ static void naCode_gcclean(struct naCode* o)
     naFree(o->constants);  o->constants = 0;
 }
 
+static void naCCode_gcclean(struct naCCode* c)
+{
+    if(c->fptru && c->user_data && c->destroy) c->destroy(c->user_data);
+    c->user_data = 0;
+}
+
 static void naGhost_gcclean(struct naGhost* g)
 {
     if(g->ptr && g->gtype->destroy) g->gtype->destroy(g->ptr);
@@ -142,6 +148,7 @@ static void freeelem(struct naPool* p, struct naObj* o)
     case T_VEC:   naVec_gcclean  ((struct naVec*)  o); break;
     case T_HASH:  naiGCHashClean ((struct naHash*) o); break;
     case T_CODE:  naCode_gcclean ((struct naCode*) o); break;
+    case T_CCODE: naCCode_gcclean((struct naCCode*)o); break;
     case T_GHOST: naGhost_gcclean((struct naGhost*)o); break;
     }
     p->free[p->nfree++] = o;  // ...and add it to the free list

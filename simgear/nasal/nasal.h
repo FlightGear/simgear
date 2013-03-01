@@ -16,9 +16,13 @@ extern "C" {
 #endif
 
 typedef struct Context* naContext;
-    
+
 // The function signature for an extension function:
 typedef naRef (*naCFunction)(naContext ctx, naRef me, int argc, naRef* args);
+
+// The function signature for an extension function with userdata passed back:
+typedef naRef (*naCFunctionU)
+              (naContext ctx, naRef me, int argc, naRef* args, void* user_data);
 
 // All Nasal code runs under the watch of a naContext:
 naContext naNewContext();
@@ -146,7 +150,19 @@ naRef naNewString(naContext c);
 naRef naNewVector(naContext c);
 naRef naNewHash(naContext c);
 naRef naNewFunc(naContext c, naRef code);
+
+/**
+ * Register extension function
+ *
+ * @param fptr      Pointer to C-function
+ * @param user_data Optional user data passed back on calling the function
+ * @param destroy   Optional callback called if function gets freed by garbage
+ *                  collector to free user data if required.
+ */
 naRef naNewCCode(naContext c, naCFunction fptr);
+naRef naNewCCodeU(naContext c, naCFunctionU fptr, void* user_data);
+naRef naNewCCodeUD(naContext c, naCFunctionU fptr, void* user_data,
+                                                   void (*destroy)(void*));
 
 // Some useful conversion/comparison routines
 int naEqual(naRef a, naRef b) GCC_PURE;

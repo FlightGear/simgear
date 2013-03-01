@@ -107,6 +107,24 @@ naRef naNewCCode(struct Context* c, naCFunction fptr)
 {
     naRef r = naNew(c, T_CCODE);
     PTR(r).ccode->fptr = fptr;
+    PTR(r).ccode->fptru = 0;
+    return r;
+}
+
+naRef naNewCCodeU(struct Context* c, naCFunctionU fptr, void* user_data)
+{
+    return naNewCCodeUD(c, fptr, user_data, 0);
+}
+
+naRef naNewCCodeUD( struct Context* c,
+                    naCFunctionU fptr,
+                    void* user_data,
+                    void (*destroy)(void*) )
+{
+    naRef r = naNew(c, T_CCODE);
+    PTR(r).ccode->fptru = fptr;
+    PTR(r).ccode->user_data = user_data;
+    PTR(r).ccode->destroy = destroy;
     return r;
 }
 

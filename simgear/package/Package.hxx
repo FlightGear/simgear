@@ -52,6 +52,12 @@ public:
     std::string id() const;
     
     /**
+     * human-readable name - note this is probably not localised,
+     * although this is not ruled out for the future.
+     */
+    std::string name() const;
+    
+    /**
      * syntactic sugar to get the localised description
      */
     std::string description() const;

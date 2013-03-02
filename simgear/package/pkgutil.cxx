@@ -46,7 +46,7 @@ public:
     virtual void startInstall(pkg::Install* aInstall)
     {
         _lastPercent = 999;
-        cout << "starting install of " << aInstall->package()->description() << endl;
+        cout << "starting install of " << aInstall->package()->name() << endl;
     }
     
     virtual void installProgress(pkg::Install* aInstall, unsigned int bytes, unsigned int total)
@@ -62,17 +62,55 @@ public:
     
     virtual void finishInstall(pkg::Install* aInstall)
     {
-        cout << "done install of " << aInstall->package()->description() << endl;
+        cout << "done install of " << aInstall->package()->name() << endl;
     }
 
     virtual void failedInstall(pkg::Install* aInstall, FailureCode aReason)
     {
-        cerr << "failed install of " << aInstall->package()->description() << endl;
+        cerr << "failed install of " << aInstall->package()->name() << endl;
     }
 private:
     unsigned int _lastPercent;
     
 };
+
+void printRating(pkg::Package* pkg, const std::string& aRating, const std::string& aLabel)
+{
+    SGPropertyNode* ratings = pkg->properties()->getChild("rating");
+    cout << "\t" << aLabel << ":" << ratings->getIntValue(aRating) << endl;
+}
+
+void printPackageInfo(pkg::Package* pkg)
+{
+    cout << "Package:" << pkg->catalog()->id() << "." << pkg->id() << endl;
+    cout << "Revision:" << pkg->revision() << endl;
+    cout << "Name:" << pkg->name() << endl;
+    cout << "Description:" << pkg->description() << endl;
+    cout << "Long description:\n" << pkg->getLocalisedProp("long-description") << endl << endl;
+    
+    if (pkg->properties()->hasChild("author")) {
+        cout << "Authors:" << endl;
+        BOOST_FOREACH(SGPropertyNode* author, pkg->properties()->getChildren("author")) {
+            if (author->hasChild("name")) {
+                cout << "\t" << author->getStringValue("name") << endl;
+                
+            } else {
+                // simple author structure
+                cout << "\t" << author->getStringValue() << endl;
+            }
+        
+            
+        }
+        
+        cout << endl;
+    }
+    
+    cout << "Ratings:" << endl;
+    printRating(pkg, "fdm",     "Flight-model    ");
+    printRating(pkg, "cockpit", "Cockpit         ");
+    printRating(pkg, "model",   "3D model        ");
+    printRating(pkg, "systems", "Aircraft systems");
+}
 
 int main(int argc, char** argv)
 {
@@ -92,7 +130,7 @@ int main(int argc, char** argv)
         std::string url(argv[2]);
         pkg::Catalog::createFromUrl(root, url);
     } else if (!strcmp(argv[1], "refresh")) {
-        root->refresh();
+        root->refresh(true);
     } else if (!strcmp(argv[1], "install")) {
         pkg::Package* pkg = root->getPackageById(argv[2]);
         if (!pkg) {
@@ -139,6 +177,14 @@ int main(int argc, char** argv)
         BOOST_FOREACH(pkg::Package* p, updates) {
             cout << "\t" << p->id() << " " << p->getLocalisedProp("name") << endl;
         }
+    } else if (!strcmp(argv[1], "info")) {
+        pkg::Package* pkg = root->getPackageById(argv[2]);
+        if (!pkg) {
+            cerr << "unknown package:" << argv[2] << endl;
+            return EXIT_FAILURE;
+        }
+    
+        printPackageInfo(pkg);
     } else {
         cerr << "unknown command:" << argv[1] << endl;
         return EXIT_FAILURE;

@@ -112,6 +112,11 @@ unsigned int Package::revision() const
     return m_props->getIntValue("revision");
 }
     
+std::string Package::name() const
+{
+    return m_props->getStringValue("name");
+}
+
 std::string Package::description() const
 {
     return getLocalisedProp("decription");

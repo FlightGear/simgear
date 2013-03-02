@@ -162,7 +162,18 @@ std::string Root::getLocale() const
 
 void Root::scheduleToUpdate(Install* aInstall)
 {
-    bool wasEmpty = m_updateDeque.empty();
+    if (!aInstall) {
+        sg_exception("missing argument to scheduleToUpdate");
+    }
+    
+    PackageList deps = aInstall->package()->dependencies();
+    BOOST_FOREACH(Package* dep, deps) {
+        // will internally schedule for update if required
+        // hence be careful, this method is re-entered in here!
+        dep->install();
+    }
+
+    bool wasEmpty = m_updateDeque.empty();    
     m_updateDeque.push_back(aInstall);
     if (wasEmpty) {
         aInstall->startUpdate();

@@ -221,6 +221,11 @@ std::string Catalog::description() const
 {
     return getLocalisedString(m_props, "description");
 }
+    
+SGPropertyNode* Catalog::properties() const
+{
+    return m_props.ptr();
+}
 
 void Catalog::parseTimestamp()
 {

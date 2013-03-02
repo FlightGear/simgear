@@ -65,6 +65,11 @@ public:
     Package* getPackageById(const std::string& aId) const;
     
     unsigned int ageInSeconds() const;
+    
+    /**
+     * access the raw property data in the catalog
+     */
+    SGPropertyNode* properties() const;
 private:
     Catalog(Root* aRoot);
     

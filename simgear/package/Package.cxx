@@ -2,9 +2,12 @@
 
 #include <simgear/package/Package.hxx>
 
+#include <cassert>
 #include <boost/foreach.hpp>
 
 #include <simgear/debug/logstream.hxx> 
+#include <simgear/structure/exception.hxx>
+
 #include <simgear/package/Catalog.hxx>
 #include <simgear/package/Install.hxx>
 #include <simgear/package/Root.hxx>
@@ -93,6 +96,20 @@ unsigned int Package::revision() const
 {
     return m_props->getIntValue("revision");
 }
+    
+SGPropertyNode* Package::properties() const
+{
+    return m_props.ptr();
+}
+
+string_list Package::thumbnailUrls() const
+{
+    string_list r;
+    BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("thumbnail")) {
+        r.push_back(dl->getStringValue());
+    }
+    return r;
+}
 
 string_list Package::downloadUrls() const
 {
@@ -119,6 +136,40 @@ std::string Package::getLocalisedString(const SGPropertyNode* aRoot, const char*
     }
     
     return aRoot->getStringValue(aName);
+}
+
+PackageList Package::dependencies() const
+{
+    PackageList result;
+    
+    BOOST_FOREACH(SGPropertyNode* dep, m_props->getChildren("depends")) {
+        std::string depName = dep->getStringValue("package");
+        unsigned int rev = dep->getIntValue("revision", 0);
+        
+    // prefer local hangar package if possible, in case someone does something
+    // silly with naming. Of course flightgear's aircraft search doesn't know
+    // about hanagrs, so names still need to be unique.
+        Package* depPkg = m_catalog->getPackageById(depName);
+        if (!depPkg) {   
+            Root* rt = m_catalog->root();
+            depPkg = rt->getPackageById(depName);
+            if (!depPkg) {
+                throw sg_exception("Couldn't satisfy dependency of " + id() + " : " + depName);
+            }
+        }
+        
+        if (depPkg->revision() < rev) {
+            throw sg_range_exception("Couldn't find suitable revision of " + depName);
+        }
+    
+    // forbid recursive dependency graphs, we don't need that level
+    // of complexity for aircraft resources
+        assert(depPkg->dependencies() == PackageList());
+        
+        result.push_back(depPkg);
+    }
+    
+    return result;
 }
 
 } // of namespace pkg

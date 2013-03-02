@@ -24,6 +24,8 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
+#include <simgear/package/Delegate.hxx>
+
 namespace simgear
 {
     
@@ -95,7 +97,7 @@ private:
     
     void parseProps(const SGPropertyNode* aProps);
     
-    void refreshComplete(bool aSuccess);
+    void refreshComplete(Delegate::FailureCode aReason);
     
     void parseTimestamp();
     void writeTimestamp();

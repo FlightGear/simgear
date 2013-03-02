@@ -49,7 +49,7 @@ typedef std::map<std::string, Catalog*> CatalogDict;
 class Root
 {
 public:
-    Root(const SGPath& aPath);
+    Root(const SGPath& aPath, const std::string& aVersion);
     virtual ~Root();
     
     SGPath path() const
@@ -69,6 +69,12 @@ public:
 
     HTTP::Client* getHTTPClient() const;
 
+    /**
+     * the version string of the root. Catalogs must match this version,
+     * or they will be ignored / rejected.
+     */
+    std::string catalogVersion() const;
+    
     /**
      * refresh catalogs which are more than the maximum age (24 hours by default)
      * set force to true, to download all catalogs regardless of age.
@@ -98,7 +104,7 @@ private:
     
 
     void catalogRefreshBegin(Catalog* aCat);
-    void catalogRefreshComplete(Catalog* aCat, bool aSuccess);
+    void catalogRefreshComplete(Catalog* aCat, Delegate::FailureCode aReason);
         
     void startNext(Install* aCurrent);
     
@@ -113,6 +119,7 @@ private:
     CatalogDict m_catalogs;
     unsigned int m_maxAgeSeconds;
     Delegate* m_delegate;
+    std::string m_version;
     
     std::set<Catalog*> m_refreshing;
     std::deque<Install*> m_updateDeque;

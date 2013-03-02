@@ -31,11 +31,57 @@ using namespace std;
 
 bool keepRunning = true;
 
+class MyDelegate : public pkg::Delegate
+{
+public:
+    virtual void refreshComplete()
+    {
+    }
+    
+    virtual void failedRefresh(pkg::Catalog* aCatalog, FailureCode aReason)
+    {
+        cerr << "failed refresh of " << aCatalog->description() << ":" << aReason << endl;
+    }
+    
+    virtual void startInstall(pkg::Install* aInstall)
+    {
+        _lastPercent = 999;
+        cout << "starting install of " << aInstall->package()->description() << endl;
+    }
+    
+    virtual void installProgress(pkg::Install* aInstall, unsigned int bytes, unsigned int total)
+    {
+        unsigned int percent = (bytes * 100) / total;
+        if (percent == _lastPercent) {
+            return;
+        }
+        
+        _lastPercent = percent;
+        cout << percent << "%" << endl;
+    }
+    
+    virtual void finishInstall(pkg::Install* aInstall)
+    {
+        cout << "done install of " << aInstall->package()->description() << endl;
+    }
+
+    virtual void failedInstall(pkg::Install* aInstall, FailureCode aReason)
+    {
+        cerr << "failed install of " << aInstall->package()->description() << endl;
+    }
+private:
+    unsigned int _lastPercent;
+    
+};
+
 int main(int argc, char** argv)
 {
 
     HTTP::Client* http = new HTTP::Client();
-    pkg::Root* root = new pkg::Root(Dir::current().path());
+    pkg::Root* root = new pkg::Root(Dir::current().path(), "");
+    
+    MyDelegate dlg;
+    root->setDelegate(&dlg);
     
     cout << "Package root is:" << Dir::current().path() << endl;
     cout << "have " << pkg::Catalog::allCatalogs().size() << " catalog(s)" << endl;

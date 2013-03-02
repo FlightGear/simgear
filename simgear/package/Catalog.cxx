@@ -64,7 +64,7 @@ protected:
     {        
         if (responseCode() != 200) {
             SG_LOG(SG_GENERAL, SG_ALERT, "catalog download failure:" << m_owner->url());
-            m_owner->refreshComplete(false);
+            m_owner->refreshComplete(Delegate::FAIL_DOWNLOAD);
             return;
         }
         
@@ -75,7 +75,15 @@ protected:
             m_owner->parseProps(props);
         } catch (sg_exception& e) {
             SG_LOG(SG_GENERAL, SG_ALERT, "catalog parse failure:" << m_owner->url());
-            m_owner->refreshComplete(false);
+            m_owner->refreshComplete(Delegate::FAIL_EXTRACT);
+            return;
+        }
+        
+        std::string ver(m_owner->root()->catalogVersion());
+        if (props->getStringValue("version") != ver) {
+            SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version mismatch:\n\t"
+                   << props->getStringValue("version") << " vs required " << ver);
+            m_owner->refreshComplete(Delegate::FAIL_VERSION);
             return;
         }
         
@@ -89,7 +97,7 @@ protected:
         
         time(&m_owner->m_retrievedTime);
         m_owner->writeTimestamp();
-        m_owner->refreshComplete(true);
+        m_owner->refreshComplete(Delegate::FAIL_SUCCESS);
     }
     
 private:
@@ -140,6 +148,12 @@ Catalog* Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
         readProperties(xml.str(), props);
     } catch (sg_exception& e) {
         return NULL;    
+    }
+    
+    if (props->getStringValue("version") != aRoot->catalogVersion()) {
+        SG_LOG(SG_GENERAL, SG_WARN, "skipping catalog at " << aPath << ", version mismatch:\n\t"
+               << props->getStringValue("version") << " vs required " << aRoot->catalogVersion());
+        return NULL;
     }
     
     Catalog* c = new Catalog(aRoot);
@@ -278,9 +292,9 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
     return aRoot->getStringValue(aName);
 }
 
-void Catalog::refreshComplete(bool aSuccess)
+void Catalog::refreshComplete(Delegate::FailureCode aReason)
 {
-    m_root->catalogRefreshComplete(this, aSuccess);
+    m_root->catalogRefreshComplete(this, aReason);
 }
 
 

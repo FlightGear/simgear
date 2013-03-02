@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/package/Delegate.hxx>
 
 namespace simgear
 {
@@ -73,6 +74,9 @@ private:
     
     void parseRevision();
     void writeRevisionFile();
+    
+    void installResult(Delegate::FailureCode aReason);
+    void installProgress(unsigned int aBytes, unsigned int aTotal);
     
     Package* m_package;
     unsigned int m_revision; ///< revision on disk

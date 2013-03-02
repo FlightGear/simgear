@@ -49,11 +49,12 @@ HTTP::Client* Root::getHTTPClient() const
     return m_http;
 }
 
-Root::Root(const SGPath& aPath) :
+Root::Root(const SGPath& aPath, const std::string& aVersion) :
     m_path(aPath),
     m_http(NULL),
     m_maxAgeSeconds(60 * 60 * 24),
-    m_delegate(NULL)
+    m_delegate(NULL),
+    m_version(aVersion)
 {
     if (getenv("LOCALE")) {
         m_locale = getenv("LOCALE");
@@ -77,7 +78,12 @@ Root::~Root()
 {
     
 }
-
+    
+std::string Root::catalogVersion() const
+{
+    return m_version;
+}
+    
 Catalog* Root::getCatalogById(const std::string& aId) const
 {
     CatalogDict::const_iterator it = m_catalogs.find(aId);
@@ -165,6 +171,11 @@ void Root::refresh(bool aForce)
     }
 }
 
+void Root::setDelegate(simgear::pkg::Delegate *aDelegate)
+{
+    m_delegate = aDelegate;
+}
+    
 void Root::setLocale(const std::string& aLocale)
 {
     m_locale = aLocale;
@@ -190,6 +201,7 @@ void Root::scheduleToUpdate(Install* aInstall)
 
     bool wasEmpty = m_updateDeque.empty();    
     m_updateDeque.push_back(aInstall);
+    
     if (wasEmpty) {
         aInstall->startUpdate();
     }
@@ -247,8 +259,26 @@ void Root::catalogRefreshBegin(Catalog* aCat)
     m_refreshing.insert(aCat);
 }
 
-void Root::catalogRefreshComplete(Catalog* aCat, bool aSuccess)
+void Root::catalogRefreshComplete(Catalog* aCat, Delegate::FailureCode aReason)
 {
+    CatalogDict::iterator catIt = m_catalogs.find(aCat->id());
+    if (aReason != Delegate::FAIL_SUCCESS) {
+        if (m_delegate) {
+            m_delegate->failedRefresh(aCat, aReason);
+        }
+        
+        // if the failure is permanent, delete the catalog from our
+        // list (don't touch it on disk)
+        bool isPermanentFailure = (aReason == Delegate::FAIL_VERSION);
+        if (isPermanentFailure) {
+            SG_LOG(SG_GENERAL, SG_WARN, "permanent failure for catalog:" << aCat->id());
+            m_catalogs.erase(catIt);
+        }
+    } else if (catIt == m_catalogs.end()) {
+        // first fresh, add to our storage now
+        m_catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));
+    }
+    
     m_refreshing.erase(aCat);
     if (m_refreshing.empty()) {
         if (m_delegate) {

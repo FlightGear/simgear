@@ -52,6 +52,11 @@ public:
     std::string id() const;
     
     /**
+     * syntactic sugar to get the localised description
+     */
+    std::string description() const;
+    
+    /**
      * access the raw property data in the package
      */
     SGPropertyNode* properties() const;

@@ -66,8 +66,6 @@ protected:
     
     virtual void responseHeadersComplete()
     {
-        std::cout << "starting download of " << m_owner->package()->id() << " from "
-            << url() << std::endl;
         Dir d(m_extractPath);
         d.create(0755);        
         
@@ -79,13 +77,15 @@ protected:
     {
         m_buffer += std::string(s, n);
         MD5Update(&m_md5, (unsigned char*) s, n);
+        
+        m_owner->installProgress(m_buffer.size(), responseLength());
     }
     
     virtual void responseComplete()
     {
         if (responseCode() != 200) {
             SG_LOG(SG_GENERAL, SG_ALERT, "download failure");
-            doFailure();
+            doFailure(Delegate::FAIL_DOWNLOAD);
             return;
         }
 
@@ -103,15 +103,13 @@ protected:
                 << "\t" << hexMd5.str() << "\n\t"
                 << m_owner->package()->md5() << "\n\t"
                 << "downloading from:" << url());
-            doFailure();
+            doFailure(Delegate::FAIL_CHECKSUM);
             return;
-        } else {
-            std::cout << "MD5 checksum is ok" << std::endl;
         }
         
         if (!extractUnzip()) {
             SG_LOG(SG_GENERAL, SG_WARN, "zip extraction failed");
-            doFailure();
+            doFailure(Delegate::FAIL_EXTRACT);
             return;
         }
                   
@@ -122,9 +120,15 @@ protected:
         }
         
         m_extractPath.append(m_owner->package()->id());
-        m_extractPath.rename(m_owner->path());        
+        bool ok = m_extractPath.rename(m_owner->path());
+        if (!ok) {
+            doFailure(Delegate::FAIL_FILESYSTEM);
+            return;
+        }
+        
         m_owner->m_revision = m_owner->package()->revision();
         m_owner->writeRevisionFile();
+        m_owner->installResult(Delegate::FAIL_SUCCESS);
     }
     
 private:
@@ -227,15 +231,18 @@ private:
         return result;
     }
         
-    void doFailure()
+    void doFailure(Delegate::FailureCode aReason)
     {
         Dir dir(m_extractPath);
         dir.remove(true /* recursive */);
+
         if (m_urls.size() == 1) {
-            
+            std::cout << "failure:" << aReason << std::endl;
+            m_owner->installResult(aReason);
             return;
         }
         
+        std::cout << "retrying download" << std::endl;
         m_urls.erase(m_urls.begin()); // pop first URL
     }
     
@@ -300,6 +307,7 @@ void Install::startUpdate()
     
     m_download = new PackageArchiveDownloader(this);
     m_package->catalog()->root()->getHTTPClient()->makeRequest(m_download);
+    m_package->catalog()->root()->startInstall(this);
 }
 
 void Install::uninstall()
@@ -309,6 +317,21 @@ void Install::uninstall()
     delete this;
 }
 
+void Install::installResult(Delegate::FailureCode aReason)
+{
+    if (aReason == Delegate::FAIL_SUCCESS) {
+        m_package->catalog()->root()->finishInstall(this);
+    } else {
+        m_package->catalog()->root()->failedInstall(this, aReason);
+    }
+}
+    
+void Install::installProgress(unsigned int aBytes, unsigned int aTotal)
+{
+    m_package->catalog()->root()->installProgress(this, aBytes, aTotal);
+}
+
+    
 } // of namespace pkg
 
 } // of namespace simgear

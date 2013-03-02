@@ -112,7 +112,7 @@ option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" O
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
-option(ENABLE_PACKAGE   "Set to ON to build package-management support" OFF)
+option(ENABLE_PACKAGE   "Set to ON to build package-management support" ON)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)

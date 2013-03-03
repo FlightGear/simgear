@@ -68,9 +68,14 @@ SGPath Root::path() const
     return d->path;
 }
     
-void Root::setMaxAgeSeconds(int seconds)
+void Root::setMaxAgeSeconds(unsigned int seconds)
 {
     d->maxAgeSeconds = seconds;
+}
+    
+unsigned int Root::maxAgeSeconds() const
+{
+    return d->maxAgeSeconds;
 }
 
 void Root::setHTTPClient(HTTP::Client* aHTTP)
@@ -207,7 +212,7 @@ void Root::refresh(bool aForce)
 {
     CatalogDict::iterator it = d->catalogs.begin();
     for (; it != d->catalogs.end(); ++it) {
-        if (aForce || (it->second->ageInSeconds() > d->maxAgeSeconds)) {
+        if (aForce || it->second->needsRefresh()) {
             it->second->refresh();
         }
     }

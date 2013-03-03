@@ -61,8 +61,9 @@ public:
     
     CatalogList catalogs() const;
         
-    void setMaxAgeSeconds(int seconds);
-
+    void setMaxAgeSeconds(unsigned int seconds);
+    unsigned int maxAgeSeconds() const;
+    
     void setHTTPClient(HTTP::Client* aHTTP);
 
     /**

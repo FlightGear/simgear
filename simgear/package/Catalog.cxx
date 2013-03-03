@@ -290,6 +290,12 @@ unsigned int Catalog::ageInSeconds() const
     return (diff < 0) ? 0 : diff;
 }
 
+bool Catalog::needsRefresh() const
+{
+    unsigned int maxAge = m_props->getIntValue("max-age-sec", m_root->maxAgeSeconds());
+    return (ageInSeconds() > maxAge);
+}
+    
 std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const
 {
     if (aRoot->hasChild(m_root->getLocale())) {

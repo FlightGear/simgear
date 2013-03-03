@@ -83,6 +83,12 @@ public:
     
     Package* getPackageById(const std::string& aId) const;
     
+    /**
+     * test if the catalog data was retrieved longer ago than the
+     * maximum permitted age for this catalog.
+     */
+    bool needsRefresh() const;
+    
     unsigned int ageInSeconds() const;
     
     /**

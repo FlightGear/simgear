@@ -50,7 +50,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  naRef to_nasal(naContext c, naRef ref)
+  naRef to_nasal(naContext c, const naRef& ref)
   {
     return ref;
   }

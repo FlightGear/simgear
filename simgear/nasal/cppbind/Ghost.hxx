@@ -30,6 +30,8 @@
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/mpl/has_xxx.hpp>
+#include <boost/preprocessor/iteration/iterate.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
 
 #include <map>
@@ -108,6 +110,16 @@ namespace nasal
         }
     };
 
+    /**
+     * Hold callable method and convert to Nasal function if required.
+     */
+    class MethodHolder
+    {
+      public:
+        virtual ~MethodHolder() {}
+        virtual naRef get_naRef(naContext c) = 0;
+    };
+
     BOOST_MPL_HAS_XXX_TRAIT_DEF(element_type)
   }
 
@@ -131,12 +143,13 @@ namespace nasal
      * @param def   Default value returned if too few arguments available
      */
     template<class T>
-    T getArg(size_t index, const T& def = T()) const
+    typename from_nasal_ptr<T>::return_type
+    getArg(size_t index, const T& def = T()) const
     {
       if( index >= argc )
         return def;
 
-      return from_nasal<T>(c, args[index]);
+      return (*from_nasal_ptr<T>::get())(c, args[index]);
     }
 
     /**
@@ -144,12 +157,13 @@ namespace nasal
      * are to few arguments available.
      */
     template<class T>
-    T requireArg(size_t index) const
+    typename from_nasal_ptr<T>::return_type
+    requireArg(size_t index) const
     {
       if( index >= argc )
         naRuntimeError(c, "Missing required arg #%d", index);
 
-      return from_nasal<T>(c, args[index]);
+      return (*from_nasal_ptr<T>::get())(c, args[index]);
     }
 
     naContext   c;
@@ -168,9 +182,12 @@ namespace nasal
    *     void setX(int x);
    *     int getX() const;
    *
-   *     naRef myMember(naContext c, int argc, naRef* args);
+   *     int myMember();
+   *     void doSomethingElse(const nasal::CallContext& ctx);
    * }
    * typedef boost::shared_ptr<MyClass> MyClassPtr;
+   *
+   * std::string myOtherFreeMember(int num);
    *
    * void exposeClasses()
    * {
@@ -184,9 +201,12 @@ namespace nasal
    *     .member("x_readonly", &MyClass::getX)
    *     // It is also possible to expose writeonly members
    *     .member("x_writeonly", &MyClass::setX)
-   *     // Methods use a slightly different syntax - The pointer to the member
-   *     // function has to be passed as template argument
-   *     .method<&MyClass::myMember>("myMember");
+   *     // Methods can be nearly anything callable and accepting a reference
+   *     // to an instance of the class type. (member functions, free functions
+   *     // and anything else bindable using boost::function and boost::bind)
+   *     .method("myMember", &MyClass::myMember)
+   *     .method("doSomething", &MyClass::doSomethingElse)
+   *     .method("other", &myOtherFreeMember);
    * }
    * @endcode
    */
@@ -204,7 +224,52 @@ namespace nasal
       typedef boost::function<naRef(naContext, raw_type&)>          getter_t;
       typedef boost::function<void(naContext, raw_type&, naRef)>    setter_t;
       typedef boost::function<naRef(raw_type&, const CallContext&)> method_t;
-      typedef boost::shared_ptr<method_t>                           method_ptr;
+      typedef boost::shared_ptr<internal::MethodHolder> MethodHolderPtr;
+
+      class MethodHolder:
+        public internal::MethodHolder
+      {
+        public:
+          MethodHolder():
+            _naRef(naNil())
+          {}
+
+          explicit MethodHolder(const method_t& method):
+            _method(method),
+            _naRef(naNil())
+          {}
+
+          virtual naRef get_naRef(naContext c)
+          {
+            if( naIsNil(_naRef) )
+            {
+              _naRef = naNewFunc(c, naNewCCodeU(c, &MethodHolder::call, this));
+              naSave(c, _naRef);
+            }
+            return _naRef;
+          }
+
+        protected:
+          method_t  _method;
+          naRef     _naRef;
+
+          static naRef call( naContext c,
+                             naRef me,
+                             int argc,
+                             naRef* args,
+                             void* user_data )
+          {
+            MethodHolder* holder = static_cast<MethodHolder*>(user_data);
+            if( !holder )
+              naRuntimeError(c, "invalid method holder!");
+
+            return holder->_method
+            (
+              requireObject(c, me),
+              CallContext(c, argc, args)
+            );
+          }
+      };
 
       /**
        * A ghost member. Can consist either of getter and/or setter functions
@@ -212,25 +277,24 @@ namespace nasal
        */
       struct member_t
       {
-        member_t():
-          func(0)
+        member_t()
         {}
 
         member_t( const getter_t& getter,
                   const setter_t& setter,
-                  naCFunction func = 0 ):
+                  const MethodHolderPtr& func = MethodHolderPtr() ):
           getter( getter ),
           setter( setter ),
           func( func )
         {}
 
-        member_t(naCFunction func):
+        explicit member_t(const MethodHolderPtr& func):
           func( func )
         {}
 
-        getter_t    getter;
-        setter_t    setter;
-        naCFunction func;
+        getter_t        getter;
+        setter_t        setter;
+        MethodHolderPtr func;
       };
 
       typedef std::map<std::string, member_t> MemberMap;
@@ -367,22 +431,24 @@ namespace nasal
         member_t m;
         if( getter )
         {
-          typedef typename boost::call_traits<Ret>::param_type param_type;
-          naRef (*to_nasal_)(naContext, param_type) = &nasal::to_nasal;
-
           // Getter signature: naRef(naContext, raw_type&)
-          m.getter = boost::bind(to_nasal_, _1, boost::bind(getter, _2));
+          m.getter = boost::bind
+          (
+            to_nasal_ptr<Ret>::get(),
+            _1,
+            boost::bind(getter, _2)
+          );
         }
 
         if( setter )
         {
-          typename boost::remove_const
-            < typename boost::remove_reference<Param>::type
-            >::type
-          (*from_nasal_)(naContext, naRef) = &nasal::from_nasal;
-
           // Setter signature: void(naContext, raw_type&, naRef)
-          m.setter = boost::bind(setter, _2, boost::bind(from_nasal_, _1, _3));
+          m.setter = boost::bind
+          (
+            setter,
+            _2,
+            boost::bind(from_nasal_ptr<Param>::get(), _1, _3)
+          );
         }
 
         return member(field, m.getter, m.setter);
@@ -439,75 +505,38 @@ namespace nasal
       }
 
       /**
-       * Register a member function.
-       *
-       * @note Because only function pointers can be registered as Nasal
-       *       functions it is needed to pass the function pointer as template
-       *       argument. This allows us to create a separate instance of the
-       *       MemberFunctionWrapper for each registered function and therefore
-       *       provides us with the needed static functions to be passed on to
-       *       Nasal.
-       *
-       * @tparam func   Pointer to member function being registered.
+       * Register anything that accepts an object instance and a
+       * nasal::CallContext and returns naRef as method.
        *
        * @code{cpp}
        * class MyClass
        * {
        *   public:
-       *     naRef myMethod(naContext c, int argc, naRef* args);
+       *     naRef myMethod(const nasal::CallContext& ctx);
        * }
        *
        * Ghost<MyClassPtr>::init("Test")
-       *   .method<&MyClass::myMethod>("myMethod");
+       *   .method("myMethod", &MyClass::myMethod);
        * @endcode
        */
-      template<member_func_t func>
-      Ghost& method(const std::string& name)
+      Ghost& method(const std::string& name, const method_t& func)
       {
-        _members[name].func = &MemberFunctionWrapper<func>::call;
+        _members[name].func.reset( new MethodHolder(func) );
         return *this;
       }
 
       /**
-       * Invoke a method which returns a value and convert it to Nasal.
-       */
-      template<class Ret>
-      static
-      typename boost::disable_if<boost::is_void<Ret>, naRef>::type
-      method_invoker
-      (
-        const boost::function<Ret (raw_type&, const CallContext&)>& func,
-        raw_type& obj,
-        const CallContext& ctx
-      )
-      {
-        typedef typename boost::call_traits<Ret>::param_type param_type;
-        naRef (*to_nasal_)(naContext, param_type) = &nasal::to_nasal;
-
-        return to_nasal_(ctx.c, func(obj, ctx));
-      };
-
-      /**
-       * Invoke a method which returns void and "convert" it to nil.
-       */
-      template<class Ret>
-      static
-      typename boost::enable_if<boost::is_void<Ret>, naRef>::type
-      method_invoker
-      (
-        const boost::function<void (raw_type&, const CallContext&)>& func,
-        raw_type& obj,
-        const CallContext& ctx
-      )
-      {
-        func(obj, ctx);
-        return naNil();
-      };
-
-      /**
-       * Bind any callable entity as method callable from Nasal
+       * Register anything that accepts an object instance and a
+       * nasal::CallContext whith automatic conversion of the return type to
+       * Nasal.
        *
-       * Does not really register method yet!!!
+       * @code{cpp}
+       * class MyClass;
+       * void doIt(const MyClass& c, const nasal::CallContext& ctx);
+       *
+       * Ghost<MyClassPtr>::init("Test")
+       *   .method("doIt", &doIt);
+       * @endcode
        */
       template<class Ret>
       Ghost& method
@@ -516,67 +545,14 @@ namespace nasal
         const boost::function<Ret (raw_type&, const CallContext&)>& func
       )
       {
-//        _members[name].func.reset
-//        (
-          new method_t( boost::bind(method_invoker<Ret>, func, _1, _2) );
-//        );
-        return *this;
+        return method(name, boost::bind(method_invoker<Ret>, func, _1, _2));
       }
 
-      template<class Ret>
-      struct method_raw
-      {
-        typedef boost::function<Ret (raw_type&, const CallContext&)> type;
-      };
-
-      /**
-       * Bind member function as method callable from Nasal
-       *
-       * Does not really register method yet!!!
-       */
-      template<class Ret>
-      Ghost& method( const std::string& name,
-                     Ret (raw_type::*fn)() const )
-      {
-        return method<Ret>
-        (
-          name,
-          typename method_raw<Ret>::type(boost::bind(fn, _1))
-        );
-      }
-
-      /**
-       * Register a free function as member function. The object instance is
-       * passed as additional first argument.
-       *
-       * @tparam func   Pointer to free function being registered.
-       *
-       * @note Due to a severe bug in Visual Studio it is not possible to create
-       *       a specialization of #method for free function pointers and
-       *       member function pointers at the same time. Do overcome this
-       *       limitation we had to use a different name for this function.
-       *
-       * @code{cpp}
-       * class MyClass;
-       * naRef myMethod(MyClass& obj, naContext c, int argc, naRef* args);
-       *
-       * Ghost<MyClassPtr>::init("Test")
-       *   .method_func<&myMethod>("myMethod");
-       * @endcode
-       */
-      template<free_func_t func>
-      Ghost& method_func(const std::string& name)
-      {
-        _members[name].func = &FreeFunctionWrapper<func>::call;
-        return *this;
-      }
+#define BOOST_PP_ITERATION_LIMITS (0, 9)
+#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/functor_templates.hxx>
+#include BOOST_PP_ITERATE()
 
       // TODO use variadic template when supporting C++11
-      /**
-       * Create a Nasal instance of this ghost.
-       *
-       * @param c   Active Nasal context
-       */
       // TODO check if default constructor exists
 //      static naRef create( naContext c )
 //      {
@@ -768,44 +744,65 @@ namespace nasal
       }
 
       /**
-       * Wrapper class to enable registering pointers to member functions as
-       * Nasal function callbacks. We need to use the function pointer as
-       * template parameter to ensure every registered function gets a static
-       * function which can be passed to Nasal.
+       * Invoke a method which returns a value and convert it to Nasal.
        */
-      template<member_func_t func>
-      struct MemberFunctionWrapper
+      template<class Ret>
+      static
+      typename boost::disable_if<boost::is_void<Ret>, naRef>::type
+      method_invoker
+      (
+        const boost::function<Ret (raw_type&, const CallContext&)>& func,
+        raw_type& obj,
+        const CallContext& ctx
+      )
       {
-        /**
-         * Called from Nasal upon invocation of the according registered
-         * function. Forwards the call to the passed object instance.
-         */
-        static naRef call(naContext c, naRef me, int argc, naRef* args)
-        {
-          return (requireObject(c, me).*func)(CallContext(c, argc, args));
-        }
+        return (*to_nasal_ptr<Ret>::get())(ctx.c, func(obj, ctx));
       };
 
       /**
-       * Wrapper class to enable registering pointers to free functions (only
-       * external linkage). We need to use the function pointer as template
-       * parameter to ensure every registered function gets a static function
-       * which can be passed to Nasal. Even though we just wrap another simple
-       * function pointer this intermediate step is need to be able to retrieve
-       * the object the function call belongs to and pass it along as argument.
+       * Invoke a method which returns void and "convert" it to nil.
        */
-      template<free_func_t func>
-      struct FreeFunctionWrapper
+      template<class Ret>
+      static
+      typename boost::enable_if<boost::is_void<Ret>, naRef>::type
+      method_invoker
+      (
+        const boost::function<Ret (raw_type&, const CallContext&)>& func,
+        raw_type& obj,
+        const CallContext& ctx
+      )
       {
-        /**
-         * Called from Nasal upon invocation of the according registered
-         * function. Forwards the call to the passed function pointer and passes
-         * the required parameters.
-         */
-        static naRef call(naContext c, naRef me, int argc, naRef* args)
-        {
-          return func(requireObject(c, me), CallContext(c, argc, args));
-        }
+        func(obj, ctx);
+        return naNil();
+      };
+
+      /**
+       * Extract argument by index from nasal::CallContext and convert to given
+       * type.
+       */
+      template<class Arg>
+      static
+      typename boost::disable_if<
+        boost::is_same<Arg, const CallContext&>,
+        typename from_nasal_ptr<Arg>::return_type
+      >::type
+      arg_from_nasal(const CallContext& ctx, size_t index)
+      {
+        return ctx.requireArg<Arg>(index);
+      };
+
+      /**
+       * Specialization to pass through nasal::CallContext.
+       */
+      template<class Arg>
+      static
+      typename boost::enable_if<
+        boost::is_same<Arg, const CallContext&>,
+        typename from_nasal_ptr<Arg>::return_type
+      >::type
+      arg_from_nasal(const CallContext& ctx, size_t)
+      {
+        return ctx;
       };
 
       typedef std::auto_ptr<Ghost> GhostPtr;
@@ -871,7 +868,7 @@ namespace nasal
           return 0;
 
         if( member->second.func )
-          *out = nasal::to_nasal(c, member->second.func);
+          *out = member->second.func->get_naRef(c);
         else if( !member->second.getter.empty() )
           *out = member->second.getter(c, *getRawPtr(g));
         else
@@ -891,8 +888,10 @@ namespace nasal
 
         if( member == getSingletonPtr()->_members.end() )
           naRuntimeError(c, "ghost: No such member: %s", key.c_str());
-        if( member->second.setter.empty() )
+        else if( member->second.setter.empty() )
           naRuntimeError(c, "ghost: Write protected member: %s", key.c_str());
+        else if( member->second.func )
+          naRuntimeError(c, "ghost: Write to function: %s", key.c_str());
 
         member->second.setter(c, *getRawPtr(g), val);
       }

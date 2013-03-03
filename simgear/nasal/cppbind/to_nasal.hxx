@@ -62,7 +62,7 @@ namespace nasal
   /**
    * Simple pass-through of naRef types to allow generic usage of to_nasal
    */
-  naRef to_nasal(naContext c, naRef ref);
+  naRef to_nasal(naContext c, const naRef& ref);
 
   naRef to_nasal(naContext c, const SGPath& path);
     
@@ -115,6 +115,22 @@ namespace nasal
       naVec_set(ret, i, to_nasal(c, vec[i]));
     return ret;
   }
+
+  /**
+   * Wrapper to get pointer to specific version of to_nasal applicable to given
+   * type.
+   */
+  template<class Var>
+  struct to_nasal_ptr
+  {
+    typedef typename boost::call_traits<Var>::param_type param_type;
+    typedef naRef(*type)(naContext, param_type);
+
+    static type get()
+    {
+      return static_cast<type>(&to_nasal);
+    }
+  };
 
   //----------------------------------------------------------------------------
   template<class Vec2>

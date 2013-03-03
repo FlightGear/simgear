@@ -10,6 +10,10 @@ set(HEADERS
   to_nasal.hxx
 )
 
+set(DETAIL_HEADERS
+  detail/functor_templates.hxx
+)
+
 set(SOURCES
   NasalHash.cxx
   NasalString.cxx
@@ -18,6 +22,7 @@ set(SOURCES
 )
 
 simgear_component(nasal/cppbind nasal/cppbind "${SOURCES}" "${HEADERS}")
+simgear_component(nasal/cppbind/detail nasal/cppbind/detail "" "${DETAIL_HEADERS}")
 
 if(ENABLE_TESTS)
 

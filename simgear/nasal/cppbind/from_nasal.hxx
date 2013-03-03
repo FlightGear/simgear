@@ -45,6 +45,24 @@ namespace nasal
     return from_nasal_helper(c, ref, static_cast<T*>(0));
   }
 
+  /**
+   * Get pointer to specific version of from_nasal, converting to a type
+   * compatible to Var.
+   */
+  template<class Var>
+  struct from_nasal_ptr
+  {
+    typedef typename boost::remove_const
+      < typename boost::remove_reference<Var>::type
+      >::type return_type;
+    typedef return_type(*type)(naContext, naRef);
+
+    static type get()
+    {
+      return &from_nasal<return_type>;
+    }
+  };
+
 } // namespace nasal
 
 #endif /* SG_FROM_NASAL_HXX_ */

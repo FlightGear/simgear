@@ -24,6 +24,8 @@ struct Base
   std::string getString() const { return ""; }
   void setString(const std::string&) {}
   void constVoidFunc() const {}
+  int test1Arg(const std::string& str) const { return str.length(); }
+  bool test2Args(const std::string& s, bool c) { return c && s.empty(); }
 
   std::string var;
   const std::string& getVar() const { return var; }
@@ -32,6 +34,9 @@ struct Base
 
 void baseVoidFunc(Base& b) {}
 void baseConstVoidFunc(const Base& b) {}
+int baseFunc2Args(Base& b, int x, const std::string& s) { return x + s.size(); }
+std::string testPtr(Base& b) { return b.getString(); }
+void baseFuncCallContext(const Base&, const nasal::CallContext&) {}
 
 struct Derived:
   public Base
@@ -61,7 +66,7 @@ naRef to_nasal(naContext c, const BasePtr& base)
   return nasal::Ghost<BasePtr>::create(c, base);
 }
 
-naRef member(Derived&, const nasal::CallContext&) { return naNil(); }
+naRef derivedFreeMember(Derived&, const nasal::CallContext&) { return naNil(); }
 naRef f_derivedGetX(naContext c, const Derived& d)
 {
   return nasal::to_nasal(c, d.getX());
@@ -126,41 +131,31 @@ int main(int argc, char* argv[])
   Hash mod = hash.createHash("mod");
   mod.set("parent", hash);
 
-  String string( to_nasal(c, "Test") );
-  VERIFY( from_nasal<std::string>(c, string.get_naRef()) == "Test" );
-  VERIFY( string.c_str() == std::string("Test") );
-  VERIFY( string.starts_with(string) );
-  VERIFY( string.starts_with(String(c, "T")) );
-  VERIFY( string.starts_with(String(c, "Te")) );
-  VERIFY( string.starts_with(String(c, "Tes")) );
-  VERIFY( string.starts_with(String(c, "Test")) );
-  VERIFY( !string.starts_with(String(c, "Test1")) );
-  VERIFY( !string.starts_with(String(c, "bb")) );
-  VERIFY( !string.starts_with(String(c, "bbasdasdafasd")) );
-  VERIFY( string.find('e') == 1 );
-  VERIFY( string.find('9') == String::npos );
-  VERIFY( string.find_first_of(String(c, "st")) == 2 );
-  VERIFY( string.find_first_of(String(c, "st"), 3) == 3 );
-  VERIFY( string.find_first_of(String(c, "xyz")) == String::npos );
-  VERIFY( string.find_first_not_of(String(c, "Tst")) == 1 );
-  VERIFY( string.find_first_not_of(String(c, "Tse"), 2) == 3 );
-  VERIFY( string.find_first_not_of(String(c, "abc")) == 0 );
-  VERIFY( string.find_first_not_of(String(c, "abc"), 20) == String::npos );
+  //----------------------------------------------------------------------------
+  // Test exposing classes to Nasal
+  //----------------------------------------------------------------------------
 
   Ghost<BasePtr>::init("BasePtr")
-    .method<&Base::member>("member")
+    .method("member", &Base::member)
+    .method("strlen", &Base::test1Arg)
     .member("str", &Base::getString, &Base::setString)
     .method("str_m", &Base::getString)
     .method("void", &Base::constVoidFunc)
     .member("var_r", &Base::getVar)
     .member("var_w", &Base::setVar)
     .member("var", &Base::getVar, &Base::setVar)
-    /*.method("void", &baseVoidFunc)*/;
+    .method("void", &baseVoidFunc)
+    .method("void_c", &baseConstVoidFunc)
+    .method("int2args", &baseFunc2Args)
+    .method("bool2args", &Base::test2Args)
+    .method("str_ptr", &testPtr);
   Ghost<DerivedPtr>::init("DerivedPtr")
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)
     .member("x_alternate", &f_derivedGetX)
-    .method_func<&member>("free_member");
+    .method("free_fn", &derivedFreeMember)
+    .method("free_member", &derivedFreeMember)
+    .method("baseDoIt", &baseFuncCallContext);
   Ghost<DoubleDerivedPtr>::init("DoubleDerivedPtr")
     .bases<DerivedPtr>();
   Ghost<DoubleDerived2Ptr>::init("DoubleDerived2Ptr")
@@ -222,6 +217,12 @@ int main(int argc, char* argv[])
   derived_obj.set("parents", parents2);
   VERIFY( Ghost<BasePtr>::fromNasal(c, derived_obj.get_naRef()) == d3 );
 
+  // TODO actually do something with the ghosts...
+
+  //----------------------------------------------------------------------------
+  // Test nasal::CallContext
+  //----------------------------------------------------------------------------
+
   naRef args[] = {
     to_nasal(c, std::string("test-arg"))
   };
@@ -233,7 +234,30 @@ int main(int argc, char* argv[])
   naRef args_vec = nasal::to_nasal(c, args);
   VERIFY( naIsVector(args_vec) );
 
-  // TODO actually do something with the ghosts...
+  //----------------------------------------------------------------------------
+  // Test nasal::String
+  //----------------------------------------------------------------------------
+
+  String string( to_nasal(c, "Test") );
+  VERIFY( from_nasal<std::string>(c, string.get_naRef()) == "Test" );
+  VERIFY( string.c_str() == std::string("Test") );
+  VERIFY( string.starts_with(string) );
+  VERIFY( string.starts_with(String(c, "T")) );
+  VERIFY( string.starts_with(String(c, "Te")) );
+  VERIFY( string.starts_with(String(c, "Tes")) );
+  VERIFY( string.starts_with(String(c, "Test")) );
+  VERIFY( !string.starts_with(String(c, "Test1")) );
+  VERIFY( !string.starts_with(String(c, "bb")) );
+  VERIFY( !string.starts_with(String(c, "bbasdasdafasd")) );
+  VERIFY( string.find('e') == 1 );
+  VERIFY( string.find('9') == String::npos );
+  VERIFY( string.find_first_of(String(c, "st")) == 2 );
+  VERIFY( string.find_first_of(String(c, "st"), 3) == 3 );
+  VERIFY( string.find_first_of(String(c, "xyz")) == String::npos );
+  VERIFY( string.find_first_not_of(String(c, "Tst")) == 1 );
+  VERIFY( string.find_first_not_of(String(c, "Tse"), 2) == 3 );
+  VERIFY( string.find_first_not_of(String(c, "abc")) == 0 );
+  VERIFY( string.find_first_not_of(String(c, "abc"), 20) == String::npos );
 
   naFreeContext(c);
 

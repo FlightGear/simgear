@@ -25,21 +25,20 @@
 
 #include <simgear/io/sg_netChat.hxx>
 
-#include <cstring> // for strdup
+#include <cstring>
 #include <cstdlib>
 
 namespace  simgear {
 
 void
-NetChat::setTerminator (const char* t)
+NetChat::setTerminator(const std::string& t)
 {
-  if (terminator) free(terminator);
-  terminator = strdup(t);
+  terminator = t;
   bytesToCollect = -1;
 }
 
-const char*
-NetChat::getTerminator (void)
+const std::string&
+NetChat::getTerminator() const
 {
   return terminator;
 }
@@ -48,8 +47,7 @@ NetChat::getTerminator (void)
 void
 NetChat::setByteCount(int count)
 {
-    if (terminator) free(terminator);
-    terminator = NULL;
+    terminator.clear();
     bytesToCollect = count;
 }
 
@@ -59,15 +57,15 @@ NetChat::setByteCount(int count)
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 static int
-find_prefix_at_end (const NetBuffer& haystack, const char* needle)
+find_prefix_at_end(const NetBuffer& haystack, const std::string& needle)
 {
   const char* hd = haystack.getData();
   int hl = haystack.getLength();
-  int nl = strlen(needle);
+  int nl = needle.length();
   
   for (int i = MAX (nl-hl, 0); i < nl; i++) {
     //if (haystack.compare (needle, hl-(nl-i), nl-i) == 0) {
-    if (memcmp(needle, &hd[hl-(nl-i)], nl-i) == 0) {
+    if (memcmp(needle.c_str(), &hd[hl-(nl-i)], nl-i) == 0) {
       return (nl-i);
     }
   }
@@ -75,12 +73,12 @@ find_prefix_at_end (const NetBuffer& haystack, const char* needle)
 }
 
 static int
-find_terminator (const NetBuffer& haystack, const char* needle)
+find_terminator(const NetBuffer& haystack, const std::string& needle)
 {
-  if (needle && *needle)
+  if( !needle.empty() )
   {
     const char* data = haystack.getData();
-    const char* ptr = strstr(data,needle);
+    const char* ptr = strstr(data,needle.c_str());
     if (ptr != NULL)
       return(ptr-data);
   }
@@ -102,7 +100,7 @@ NetChat::handleBufferRead (NetBuffer& in_buffer)
   
   while (in_buffer.getLength()) {      
     // special case where we're not using a terminator
-    if (terminator == 0 || *terminator == 0) {        
+    if ( terminator.empty() ) {
         if ( bytesToCollect > 0) {
             const int toRead = std::min(in_buffer.getLength(), bytesToCollect);
             collectIncomingData(in_buffer.getData(), toRead);
@@ -119,8 +117,6 @@ NetChat::handleBufferRead (NetBuffer& in_buffer)
         continue;
     }
     
-    int terminator_len = strlen(terminator);
-    
     int index = find_terminator ( in_buffer, terminator ) ;
     
     // 3 cases:
@@ -134,7 +130,7 @@ NetChat::handleBufferRead (NetBuffer& in_buffer)
     if (index != -1) {
       // we found the terminator
       collectIncomingData ( in_buffer.getData(), index ) ;
-      in_buffer.remove (0, index + terminator_len);
+      in_buffer.remove (0, index + terminator.length());
       foundTerminator();
     } else {
       // check for a prefix of the terminator

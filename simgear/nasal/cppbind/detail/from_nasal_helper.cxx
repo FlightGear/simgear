@@ -81,4 +81,10 @@ namespace nasal
     return String(ref);
   }
 
+  //----------------------------------------------------------------------------
+  bool from_nasal_helper(naContext c, naRef ref, const bool*)
+  {
+    return naTrue(ref) == 1;
+  }
+
 } // namespace nasal

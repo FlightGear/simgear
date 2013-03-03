@@ -37,7 +37,7 @@
         func,
         _1
         BOOST_PP_COMMA_IF(n)
-        BOOST_PP_ENUM(n, SG_GHOST_REQUIRE_ARG,)
+        BOOST_PP_ENUM(n, SG_GHOST_REQUIRE_ARG, 0)
       ))
     );
 

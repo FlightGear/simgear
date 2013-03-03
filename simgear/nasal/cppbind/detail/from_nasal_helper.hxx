@@ -95,6 +95,14 @@ namespace nasal
   String from_nasal_helper(naContext c, naRef ref, const String*);
 
   /**
+   * Convert a Nasal object to bool.
+   *
+   * @return true, if ref is string or ref is number != 0
+   *         false, else
+   */
+  bool from_nasal_helper(naContext c, naRef ref, const bool*);
+
+  /**
    * Convert a Nasal number to a C++ numeric type
    */
   template<class T>

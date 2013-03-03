@@ -79,7 +79,7 @@ public:
   {}
 
   void setTerminator(const std::string& t);
-  const std::string& getTerminator() const;
+  const char* getTerminator() const;
 
   /**
    * set byte count to collect - 'foundTerminator' will be called once

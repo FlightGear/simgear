@@ -37,10 +37,10 @@ NetChat::setTerminator(const std::string& t)
   bytesToCollect = -1;
 }
 
-const std::string&
+const char*
 NetChat::getTerminator() const
 {
-  return terminator;
+  return terminator.c_str();
 }
 
 

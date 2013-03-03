@@ -18,15 +18,12 @@ foreach( mylibfolder
         threads
         timing
         xml
+        package
     )
 
     add_subdirectory(${mylibfolder})
 
 endforeach( mylibfolder )
-
-if (ENABLE_PACKAGE)
-    add_subdirectory(package)
-endif(ENABLE_PACKAGE)
 
 if(NOT SIMGEAR_HEADLESS)
     add_subdirectory(canvas)

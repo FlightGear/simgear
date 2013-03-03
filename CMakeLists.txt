@@ -112,7 +112,6 @@ option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" O
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
-option(ENABLE_PACKAGE   "Set to ON to build package-management support" ON)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)
@@ -223,12 +222,6 @@ else()
     message(STATUS "Using built-in expat code")
     add_definitions(-DHAVE_EXPAT_CONFIG_H)
 endif(SYSTEM_EXPAT)
-
-if (ENABLE_PACKAGE)
-    message(STATUS "package management: ENABLED")
-else()
-    message(STATUS "package management: DISABLED")
-endif(ENABLE_PACKAGE)
 
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)

@@ -42,6 +42,7 @@
 #include <cstdio> // sprintf()
 #include <ostream>
 #include <string>
+#include <vector>
 
 /**
  * standard size of a bucket in degrees (1/8 of a degree)
@@ -321,6 +322,15 @@ SGBucket sgBucketOffset( double dlon, double dlat, int x, int y );
  */
 void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy );
 
+
+/**
+ * \relates SGBucket
+ * retrieve a list of buckets in the given bounding box
+ * @param min min lon,lat of bounding box in degrees
+ * @param max max lon,lat of bounding box in degrees
+ * @param list standard vector of buckets within the bounding box
+ */
+void sgGetBuckets( const SGGeod& min, const SGGeod& max, std::vector<SGBucket>& list );
 
 /**
  * Write the bucket lon, lat, x, and y to the output stream.

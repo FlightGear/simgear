@@ -345,4 +345,13 @@ void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy ) {
 #endif
 }
 
+void sgGetBuckets( const SGGeod& min, const SGGeod& max, std::vector<SGBucket>& list ) {
+    double lon, lat, span;
 
+    for (lat = min.getLatitudeDeg(); lat <= max.getLatitudeDeg(); lat += SG_BUCKET_SPAN) {
+        span = sg_bucket_span( lat );
+        for (lon = min.getLongitudeDeg(); lon <= max.getLongitudeDeg(); lon += span) {
+            list.push_back( SGBucket(lon , lat) );
+        }
+    }
+}

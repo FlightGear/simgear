@@ -17,8 +17,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef SG_FROM_NASAL_DETAIL_HXX_
-#define SG_FROM_NASAL_DETAIL_HXX_
+#ifndef SG_FROM_NASAL_HELPER_HXX_
+#define SG_FROM_NASAL_HELPER_HXX_
 
 #include "nasal_traits.hxx"
 
@@ -145,4 +145,4 @@ namespace nasal
 
 } // namespace nasal
 
-#endif /* SG_FROM_NASAL_DETAIL_HXX_ */
+#endif /* SG_FROM_NASAL_HELPER_HXX_ */

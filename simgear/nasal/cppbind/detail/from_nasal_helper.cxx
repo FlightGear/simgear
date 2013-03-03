@@ -1,4 +1,4 @@
-// Conversion functions to convert C++ types to Nasal types
+// Conversion functions to convert Nasal types to C++ types
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,48 +16,69 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#include "to_nasal.hxx"
-#include "NasalHash.hxx"
+#include "from_nasal_helper.hxx"
+#include <simgear/nasal/cppbind/NasalHash.hxx>
+#include <simgear/nasal/cppbind/NasalString.hxx>
 
 #include <simgear/misc/sg_path.hxx>
 
 namespace nasal
 {
   //----------------------------------------------------------------------------
-  naRef to_nasal(naContext c, const std::string& str)
+  bad_nasal_cast::bad_nasal_cast()
   {
-    naRef ret = naNewString(c);
-    naStr_fromdata(ret, str.c_str(), str.size());
-    return ret;
+
   }
 
   //----------------------------------------------------------------------------
-  naRef to_nasal(naContext c, const char* str)
+  bad_nasal_cast::bad_nasal_cast(const std::string& msg):
+   _msg( msg )
   {
-    return to_nasal(c, std::string(str));
+
   }
 
   //----------------------------------------------------------------------------
-  naRef to_nasal(naContext c, naCFunction func)
+  bad_nasal_cast::~bad_nasal_cast() throw()
   {
-    return naNewFunc(c, naNewCCode(c, func));
+
   }
 
   //----------------------------------------------------------------------------
-  naRef to_nasal(naContext c, const Hash& hash)
+  const char* bad_nasal_cast::what() const throw()
   {
-    return hash.get_naRef();
+    return _msg.empty() ? bad_cast::what() : _msg.c_str();
   }
 
   //----------------------------------------------------------------------------
-  naRef to_nasal(naContext c, const naRef& ref)
+  std::string from_nasal_helper(naContext c, naRef ref, const std::string*)
   {
-    return ref;
+    naRef na_str = naStringValue(c, ref);
+    return std::string(naStr_data(na_str), naStr_len(na_str));
   }
 
   //----------------------------------------------------------------------------
-  naRef to_nasal(naContext c, const SGPath& path)
+  SGPath from_nasal_helper(naContext c, naRef ref, const SGPath*)
   {
-    return to_nasal(c, path.str());
+      naRef na_str = naStringValue(c, ref);
+      return SGPath(std::string(naStr_data(na_str), naStr_len(na_str)));
   }
+
+  //----------------------------------------------------------------------------
+  Hash from_nasal_helper(naContext c, naRef ref, const Hash*)
+  {
+    if( !naIsHash(ref) )
+      throw bad_nasal_cast("Not a hash");
+
+    return Hash(ref, c);
+  }
+
+  //----------------------------------------------------------------------------
+  String from_nasal_helper(naContext c, naRef ref, const String*)
+  {
+    if( !naIsString(ref) )
+      throw bad_nasal_cast("Not a string");
+
+    return String(ref);
+  }
+
 } // namespace nasal

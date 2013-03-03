@@ -20,7 +20,7 @@
 #ifndef SG_FROM_NASAL_HXX_
 #define SG_FROM_NASAL_HXX_
 
-#include "from_nasal_detail.hxx"
+#include <simgear/nasal/cppbind/detail/from_nasal_helper.hxx>
 
 namespace nasal
 {

@@ -4,21 +4,22 @@ set(HEADERS
   Ghost.hxx
   NasalHash.hxx
   NasalString.hxx
-  from_nasal_detail.hxx
   from_nasal.hxx
-  nasal_traits.hxx
   to_nasal.hxx
 )
 
 set(DETAIL_HEADERS
+  detail/from_nasal_helper.hxx
   detail/functor_templates.hxx
+  detail/nasal_traits.hxx
+  detail/to_nasal_helper.hxx
 )
 
 set(SOURCES
   NasalHash.cxx
   NasalString.cxx
-  from_nasal.cxx
-  to_nasal.cxx
+  detail/from_nasal_helper.cxx
+  detail/to_nasal_helper.cxx
 )
 
 simgear_component(nasal/cppbind nasal/cppbind "${SOURCES}" "${HEADERS}")

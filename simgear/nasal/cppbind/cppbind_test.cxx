@@ -50,18 +50,21 @@ struct DoubleDerived:
 {
 
 };
+
+typedef boost::shared_ptr<Base> BasePtr;
+
 struct DoubleDerived2:
   public Derived
 {
-
+  const BasePtr& getBase() const{return _base;}
+  BasePtr _base;
 };
 
-typedef boost::shared_ptr<Base> BasePtr;
 typedef boost::shared_ptr<Derived> DerivedPtr;
 typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
 
-naRef to_nasal(naContext c, const BasePtr& base)
+naRef to_nasal_helper(naContext c, const BasePtr& base)
 {
   return nasal::Ghost<BasePtr>::create(c, base);
 }
@@ -159,7 +162,8 @@ int main(int argc, char* argv[])
   Ghost<DoubleDerivedPtr>::init("DoubleDerivedPtr")
     .bases<DerivedPtr>();
   Ghost<DoubleDerived2Ptr>::init("DoubleDerived2Ptr")
-    .bases< Ghost<DerivedPtr> >();
+    .bases< Ghost<DerivedPtr> >()
+    .member("base", &DoubleDerived2::getBase);
 
   BasePtr d( new Derived );
   naRef derived = Ghost<BasePtr>::create(c, d);

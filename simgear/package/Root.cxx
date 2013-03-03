@@ -19,6 +19,9 @@
 
 #include <boost/foreach.hpp>
 #include <cstring>
+#include <map>
+#include <deque>
+#include <set>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props_io.hxx>
@@ -34,42 +37,81 @@ namespace simgear {
     
 namespace pkg {
 
+typedef std::map<std::string, Catalog*> CatalogDict;
+    
+class Root::RootPrivate
+{
+public:
+    RootPrivate() :
+        http(NULL),
+        maxAgeSeconds(60 * 60 * 24),
+        delegate(NULL)
+    {
+        
+    }
+    
+    SGPath path;
+    std::string locale;
+    HTTP::Client* http;
+    CatalogDict catalogs;
+    unsigned int maxAgeSeconds;
+    Delegate* delegate;
+    std::string version;
+    
+    std::set<Catalog*> refreshing;
+    std::deque<Install*> updateDeque;
+    std::deque<HTTP::Request_ptr> httpPendingRequests;
+};
+    
+SGPath Root::path() const
+{
+    return d->path;
+}
+    
 void Root::setMaxAgeSeconds(int seconds)
 {
-    m_maxAgeSeconds = seconds;
+    d->maxAgeSeconds = seconds;
 }
 
 void Root::setHTTPClient(HTTP::Client* aHTTP)
 {
-    m_http = aHTTP;
-}
-
-HTTP::Client* Root::getHTTPClient() const
-{
-    return m_http;
-}
-
-Root::Root(const SGPath& aPath, const std::string& aVersion) :
-    m_path(aPath),
-    m_http(NULL),
-    m_maxAgeSeconds(60 * 60 * 24),
-    m_delegate(NULL),
-    m_version(aVersion)
-{
-    if (getenv("LOCALE")) {
-        m_locale = getenv("LOCALE");
+    d->http = aHTTP;
+    BOOST_FOREACH(HTTP::Request_ptr req, d->httpPendingRequests) {
+        d->http->makeRequest(req);
     }
-    
-    Dir d(aPath);
-    if (!d.exists()) {
-        d.create(0755);
+
+    d->httpPendingRequests.clear();
+}
+
+void Root::makeHTTPRequest(HTTP::Request *req)
+{
+    if (d->http) {
+        d->http->makeRequest(req);
         return;
     }
     
-    BOOST_FOREACH(SGPath c, d.children(Dir::TYPE_DIR)) {
+    d->httpPendingRequests.push_back(req);
+}
+    
+Root::Root(const SGPath& aPath, const std::string& aVersion) :
+    d(new RootPrivate)
+{
+    d->path = aPath;
+    d->version = aVersion;
+    if (getenv("LOCALE")) {
+        d->locale = getenv("LOCALE");
+    }
+    
+    Dir dir(aPath);
+    if (!dir.exists()) {
+        dir.create(0755);
+        return;
+    }
+    
+    BOOST_FOREACH(SGPath c, dir.children(Dir::TYPE_DIR)) {
         Catalog* cat = Catalog::createFromPath(this, c);
         if (cat) {
-           m_catalogs[cat->id()] = cat;     
+           d->catalogs[cat->id()] = cat;
         }
     } // of child directories iteration
 }
@@ -81,13 +123,13 @@ Root::~Root()
     
 std::string Root::catalogVersion() const
 {
-    return m_version;
+    return d->version;
 }
     
 Catalog* Root::getCatalogById(const std::string& aId) const
 {
-    CatalogDict::const_iterator it = m_catalogs.find(aId);
-    if (it == m_catalogs.end()) {
+    CatalogDict::const_iterator it = d->catalogs.find(aId);
+    if (it == d->catalogs.end()) {
         return NULL;
     }
     
@@ -101,8 +143,8 @@ Package* Root::getPackageById(const std::string& aName) const
     Package* pkg = NULL;
     if (lastDot == std::string::npos) {
         // naked package ID
-        CatalogDict::const_iterator it = m_catalogs.begin();
-        for (; it != m_catalogs.end(); ++it) {
+        CatalogDict::const_iterator it = d->catalogs.begin();
+        for (; it != d->catalogs.end(); ++it) {
             pkg = it->second->getPackageById(aName);
             if (pkg) {
                 return pkg;
@@ -125,8 +167,8 @@ Package* Root::getPackageById(const std::string& aName) const
 CatalogList Root::catalogs() const
 {
     CatalogList r;
-    CatalogDict::const_iterator it = m_catalogs.begin();
-    for (; it != m_catalogs.end(); ++it) {
+    CatalogDict::const_iterator it = d->catalogs.begin();
+    for (; it != d->catalogs.end(); ++it) {
         r.push_back(it->second);
     }
     
@@ -138,8 +180,8 @@ Root::packagesMatching(const SGPropertyNode* aFilter) const
 {
     PackageList r;
     
-    CatalogDict::const_iterator it = m_catalogs.begin();
-    for (; it != m_catalogs.end(); ++it) {
+    CatalogDict::const_iterator it = d->catalogs.begin();
+    for (; it != d->catalogs.end(); ++it) {
         PackageList r2(it->second->packagesMatching(aFilter));
         r.insert(r.end(), r2.begin(), r2.end());
     }
@@ -152,8 +194,8 @@ Root::packagesNeedingUpdate() const
 {
     PackageList r;
     
-    CatalogDict::const_iterator it = m_catalogs.begin();
-    for (; it != m_catalogs.end(); ++it) {
+    CatalogDict::const_iterator it = d->catalogs.begin();
+    for (; it != d->catalogs.end(); ++it) {
         PackageList r2(it->second->packagesNeedingUpdate());
         r.insert(r.end(), r2.begin(), r2.end());
     }
@@ -163,9 +205,9 @@ Root::packagesNeedingUpdate() const
 
 void Root::refresh(bool aForce)
 {
-    CatalogDict::iterator it = m_catalogs.begin();
-    for (; it != m_catalogs.end(); ++it) {
-        if (aForce || (it->second->ageInSeconds() > m_maxAgeSeconds)) {
+    CatalogDict::iterator it = d->catalogs.begin();
+    for (; it != d->catalogs.end(); ++it) {
+        if (aForce || (it->second->ageInSeconds() > d->maxAgeSeconds)) {
             it->second->refresh();
         }
     }
@@ -173,17 +215,17 @@ void Root::refresh(bool aForce)
 
 void Root::setDelegate(simgear::pkg::Delegate *aDelegate)
 {
-    m_delegate = aDelegate;
+    d->delegate = aDelegate;
 }
     
 void Root::setLocale(const std::string& aLocale)
 {
-    m_locale = aLocale;
+    d->locale = aLocale;
 }
 
 std::string Root::getLocale() const
 {
-    return m_locale;
+    return d->locale;
 }
 
 void Root::scheduleToUpdate(Install* aInstall)
@@ -199,8 +241,8 @@ void Root::scheduleToUpdate(Install* aInstall)
         dep->install();
     }
 
-    bool wasEmpty = m_updateDeque.empty();    
-    m_updateDeque.push_back(aInstall);
+    bool wasEmpty = d->updateDeque.empty();
+    d->updateDeque.push_back(aInstall);
     
     if (wasEmpty) {
         aInstall->startUpdate();
@@ -209,35 +251,35 @@ void Root::scheduleToUpdate(Install* aInstall)
 
 void Root::startInstall(Install* aInstall)
 {
-    if (m_delegate) {
-        m_delegate->startInstall(aInstall);
+    if (d->delegate) {
+        d->delegate->startInstall(aInstall);
     }
 }
 
 void Root::installProgress(Install* aInstall, unsigned int aBytes, unsigned int aTotal)
 {
-    if (m_delegate) {
-        m_delegate->installProgress(aInstall, aBytes, aTotal);
+    if (d->delegate) {
+        d->delegate->installProgress(aInstall, aBytes, aTotal);
     }
 }
 
 void Root::startNext(Install* aCurrent)
 {
-    if (m_updateDeque.front() != aCurrent) {
+    if (d->updateDeque.front() != aCurrent) {
         SG_LOG(SG_GENERAL, SG_ALERT, "current install of package not head of the deque");
     } else {
-        m_updateDeque.pop_front();
+        d->updateDeque.pop_front();
     }
     
-    if (!m_updateDeque.empty()) {
-        m_updateDeque.front()->startUpdate();
+    if (!d->updateDeque.empty()) {
+        d->updateDeque.front()->startUpdate();
     }
 }
 
 void Root::finishInstall(Install* aInstall)
 {
-    if (m_delegate) {
-        m_delegate->finishInstall(aInstall);
+    if (d->delegate) {
+        d->delegate->finishInstall(aInstall);
     }
     
     startNext(aInstall);
@@ -247,8 +289,8 @@ void Root::failedInstall(Install* aInstall, Delegate::FailureCode aReason)
 {
     SG_LOG(SG_GENERAL, SG_ALERT, "failed to install package:" 
         << aInstall->package()->id() << ":" << aReason);
-    if (m_delegate) {
-        m_delegate->failedInstall(aInstall, aReason);
+    if (d->delegate) {
+        d->delegate->failedInstall(aInstall, aReason);
     }
     
     startNext(aInstall);
@@ -256,15 +298,15 @@ void Root::failedInstall(Install* aInstall, Delegate::FailureCode aReason)
 
 void Root::catalogRefreshBegin(Catalog* aCat)
 {
-    m_refreshing.insert(aCat);
+    d->refreshing.insert(aCat);
 }
 
 void Root::catalogRefreshComplete(Catalog* aCat, Delegate::FailureCode aReason)
 {
-    CatalogDict::iterator catIt = m_catalogs.find(aCat->id());
+    CatalogDict::iterator catIt = d->catalogs.find(aCat->id());
     if (aReason != Delegate::FAIL_SUCCESS) {
-        if (m_delegate) {
-            m_delegate->failedRefresh(aCat, aReason);
+        if (d->delegate) {
+            d->delegate->failedRefresh(aCat, aReason);
         }
         
         // if the failure is permanent, delete the catalog from our
@@ -272,17 +314,17 @@ void Root::catalogRefreshComplete(Catalog* aCat, Delegate::FailureCode aReason)
         bool isPermanentFailure = (aReason == Delegate::FAIL_VERSION);
         if (isPermanentFailure) {
             SG_LOG(SG_GENERAL, SG_WARN, "permanent failure for catalog:" << aCat->id());
-            m_catalogs.erase(catIt);
+            d->catalogs.erase(catIt);
         }
-    } else if (catIt == m_catalogs.end()) {
+    } else if (catIt == d->catalogs.end()) {
         // first fresh, add to our storage now
-        m_catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));
+        d->catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));
     }
     
-    m_refreshing.erase(aCat);
-    if (m_refreshing.empty()) {
-        if (m_delegate) {
-            m_delegate->refreshComplete();
+    d->refreshing.erase(aCat);
+    if (d->refreshing.empty()) {
+        if (d->delegate) {
+            d->delegate->refreshComplete();
         }
     }
 }

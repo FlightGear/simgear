@@ -80,7 +80,7 @@ protected:
         }
         
         std::string ver(m_owner->root()->catalogVersion());
-        if (props->getStringValue("version") != ver) {
+        if (!checkVersion(ver, props)) {
             SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version mismatch:\n\t"
                    << props->getStringValue("version") << " vs required " << ver);
             m_owner->refreshComplete(Delegate::FAIL_VERSION);
@@ -101,6 +101,16 @@ protected:
     }
     
 private:
+    bool checkVersion(const std::string& aVersion, SGPropertyNode* aProps)
+    {
+        BOOST_FOREACH(SGPropertyNode* v, aProps->getChildren("version")) {
+            if (v->getStringValue() == aVersion) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     Catalog* m_owner;  
     std::string m_buffer;
 };
@@ -129,7 +139,7 @@ Catalog* Catalog::createFromUrl(Root* aRoot, const std::string& aUrl)
 {
     Catalog* c = new Catalog(aRoot);
     Downloader* dl = new Downloader(c, aUrl);
-    aRoot->getHTTPClient()->makeRequest(dl);
+    aRoot->makeHTTPRequest(dl);
     
     return c;
 }
@@ -195,7 +205,7 @@ Catalog::packagesNeedingUpdate() const
 void Catalog::refresh()
 {
     Downloader* dl = new Downloader(this, url());
-    m_root->getHTTPClient()->makeRequest(dl);
+    m_root->makeHTTPRequest(dl);
     m_root->catalogRefreshBegin(this);
 }
 

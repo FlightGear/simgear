@@ -306,7 +306,7 @@ void Install::startUpdate()
     }
     
     m_download = new PackageArchiveDownloader(this);
-    m_package->catalog()->root()->getHTTPClient()->makeRequest(m_download);
+    m_package->catalog()->root()->makeHTTPRequest(m_download);
     m_package->catalog()->root()->startInstall(this);
 }
 

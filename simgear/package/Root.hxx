@@ -19,9 +19,7 @@
 #define SG_PACKAGE_ROOT_HXX
 
 #include <vector>
-#include <map>
-#include <deque>
-#include <set>
+#include <memory> // for auto_ptr
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/package/Delegate.hxx>
@@ -31,7 +29,10 @@ class SGPropertyNode;
 namespace simgear
 {
     
-namespace HTTP { class Client; }
+namespace HTTP {
+    class Client;
+    class Request;
+}
     
 namespace pkg
 {
@@ -44,16 +45,13 @@ class Install;
 typedef std::vector<Package*> PackageList;
 typedef std::vector<Catalog*> CatalogList;
 
-typedef std::map<std::string, Catalog*> CatalogDict;
-
 class Root
 {
 public:
     Root(const SGPath& aPath, const std::string& aVersion);
     virtual ~Root();
     
-    SGPath path() const
-        { return m_path; }
+    SGPath path() const;
     
     void setLocale(const std::string& aLocale);
         
@@ -67,8 +65,13 @@ public:
 
     void setHTTPClient(HTTP::Client* aHTTP);
 
-    HTTP::Client* getHTTPClient() const;
-
+    /**
+     * Submit an HTTP request. The Root may delay or queue requests if it needs
+     * too, for example during startup when the HTTP engine may not have been
+     * set yet.
+     */
+    void makeHTTPRequest(HTTP::Request* req);
+    
     /**
      * the version string of the root. Catalogs must match this version,
      * or they will be ignored / rejected.
@@ -112,18 +115,10 @@ private:
     void installProgress(Install* aInstall, unsigned int aBytes, unsigned int aTotal);
     void finishInstall(Install* aInstall);    
     void failedInstall(Install* aInstall, Delegate::FailureCode aReason);
-    
-    SGPath m_path;
-    std::string m_locale;
-    HTTP::Client* m_http;
-    CatalogDict m_catalogs;
-    unsigned int m_maxAgeSeconds;
-    Delegate* m_delegate;
-    std::string m_version;
-    
-    std::set<Catalog*> m_refreshing;
-    std::deque<Install*> m_updateDeque;
-};  
+
+    class RootPrivate;
+    std::auto_ptr<RootPrivate> d;
+};
     
 } // of namespace pkg
 

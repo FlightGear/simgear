@@ -428,30 +428,7 @@ namespace nasal
                      Ret (raw_type::*getter)() const,
                      void (raw_type::*setter)(Param) )
       {
-        member_t m;
-        if( getter )
-        {
-          // Getter signature: naRef(naContext, raw_type&)
-          m.getter = boost::bind
-          (
-            to_nasal_ptr<Ret>::get(),
-            _1,
-            boost::bind(getter, _2)
-          );
-        }
-
-        if( setter )
-        {
-          // Setter signature: void(naContext, raw_type&, naRef)
-          m.setter = boost::bind
-          (
-            setter,
-            _2,
-            boost::bind(from_nasal_ptr<Param>::get(), _1, _3)
-          );
-        }
-
-        return member(field, m.getter, m.setter);
+        return member(field, to_getter(getter), to_setter(setter));
       }
 
       /**
@@ -464,7 +441,7 @@ namespace nasal
       Ghost& member( const std::string& field,
                      Ret (raw_type::*getter)() const )
       {
-        return member<Ret, Ret>(field, getter, 0);
+        return member(field, to_getter(getter), setter_t());
       }
 
       /**
@@ -477,7 +454,7 @@ namespace nasal
       Ghost& member( const std::string& field,
                      void (raw_type::*setter)(Var) )
       {
-        return member<Var, Var>(field, 0, setter);
+        return member(field, getter_t(), to_setter(setter));
       }
 
       /**
@@ -742,6 +719,34 @@ namespace nasal
 
         return *obj;
       }
+
+      template<class Ret>
+      getter_t to_getter(Ret (raw_type::*getter)() const)
+      {
+        typedef typename boost::call_traits<Ret>::param_type param_type;
+        naRef(*to_nasal_)(naContext, param_type) = &to_nasal;
+
+        // Getter signature: naRef(naContext, raw_type&)
+        return boost::bind
+        (
+          to_nasal_,
+          _1,
+          boost::bind(getter, _2)
+        );
+      }
+
+      template<class Param>
+      setter_t to_setter(void (raw_type::*setter)(Param))
+      {
+        // Setter signature: void(naContext, raw_type&, naRef)
+        return boost::bind
+        (
+          setter,
+          _2,
+          boost::bind(from_nasal_ptr<Param>::get(), _1, _3)
+        );
+      }
+
 
       /**
        * Invoke a method which returns a value and convert it to Nasal.

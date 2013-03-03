@@ -18,8 +18,16 @@
   >
   Ghost& method(const std::string& name, const SG_GHOST_FUNC_TYPE& func)
   {
-#define SG_GHOST_REQUIRE_ARG(z, n, dummy)\
+#if defined(GCC_VERSION) && GCC_VERSION < 40407
+    // The old version of g++ used on Jenkins (16.11.2012) only compiles this
+    // version.
+# define SG_GHOST_REQUIRE_ARG(z, n, dummy)\
+    boost::bind(&arg_from_nasal<A##n>, _2, n)
+#else
+    // VS (2008, 2010, ... ?) only allow this version.
+# define SG_GHOST_REQUIRE_ARG(z, n, dummy)\
     boost::bind(&Ghost::arg_from_nasal<A##n>, _2, n)
+#endif
 
     return method<Ret>
     (

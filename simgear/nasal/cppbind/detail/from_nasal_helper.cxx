@@ -25,14 +25,15 @@
 namespace nasal
 {
   //----------------------------------------------------------------------------
-  bad_nasal_cast::bad_nasal_cast()
+  bad_nasal_cast::bad_nasal_cast():
+    sg_exception("conversion failed", "bad_nasal_cast")
   {
 
   }
 
   //----------------------------------------------------------------------------
   bad_nasal_cast::bad_nasal_cast(const std::string& msg):
-   _msg( msg )
+    sg_exception(msg, "bad_nasal_cast")
   {
 
   }
@@ -44,16 +45,13 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  const char* bad_nasal_cast::what() const throw()
-  {
-    return _msg.empty() ? bad_cast::what() : _msg.c_str();
-  }
-
-  //----------------------------------------------------------------------------
   std::string from_nasal_helper(naContext c, naRef ref, const std::string*)
   {
     naRef na_str = naStringValue(c, ref);
-    if( !naIsString(na_str) )
+
+    if( naIsNil(na_str) )
+      return std::string();
+    else if( !naIsString(na_str) )
       throw bad_nasal_cast("Not convertible to string");
 
     return std::string(naStr_data(na_str), naStr_len(na_str));

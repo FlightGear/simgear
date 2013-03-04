@@ -23,6 +23,7 @@
 #include "nasal_traits.hxx"
 
 #include <simgear/nasal/nasal.h>
+#include <simgear/structure/exception.hxx>
 
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits.hpp>
@@ -42,7 +43,8 @@ namespace nasal
    * Thrown when converting a type from/to Nasal has failed
    */
   class bad_nasal_cast:
-    public std::bad_cast
+    public std::bad_cast,
+    public sg_exception
   {
     public:
       /**
@@ -58,11 +60,6 @@ namespace nasal
       explicit bad_nasal_cast(const std::string& msg);
 
       virtual ~bad_nasal_cast() throw();
-
-      /**
-       * Get a description of the cause of the failed cast.
-       */
-      virtual const char* what() const throw();
 
     protected:
       std::string _msg;

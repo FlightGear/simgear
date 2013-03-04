@@ -58,6 +58,9 @@ public:
   virtual void buttonReleased(void)
   { }
 
+  virtual void mouseMoved(const osgGA::GUIEventAdapter* event)
+  { }
+
   virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
   {  return false; }
 

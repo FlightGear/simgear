@@ -53,6 +53,9 @@ namespace nasal
   std::string from_nasal_helper(naContext c, naRef ref, const std::string*)
   {
     naRef na_str = naStringValue(c, ref);
+    if( !naIsString(na_str) )
+      throw bad_nasal_cast("Not convertible to string");
+
     return std::string(naStr_data(na_str), naStr_len(na_str));
   }
 

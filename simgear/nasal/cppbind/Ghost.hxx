@@ -166,6 +166,12 @@ namespace nasal
       return (*from_nasal_ptr<T>::get())(c, args[index]);
     }
 
+    template<class T>
+    naRef to_nasal(T arg) const
+    {
+      return nasal::to_nasal(c, arg);
+    }
+
     naContext   c;
     size_t      argc;
     naRef      *args;

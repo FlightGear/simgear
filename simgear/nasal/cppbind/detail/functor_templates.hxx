@@ -66,8 +66,16 @@
     >(name, SG_GHOST_FUNC_TYPE(fn));\
   }
 
-
+#ifdef _MSC_VER
+# pragma warning(push)
+  // C4003: not enough actual parameters for macro
+  // We really do not want to pass a parameter, even if MSVC can not believe it.
+# pragma warning(disable: 4003)
+#endif
   SG_GHOST_MEM_FN()
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
   SG_GHOST_MEM_FN(const)
 
 #undef SG_GHOST_MEM_FN

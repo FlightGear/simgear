@@ -21,6 +21,13 @@
 #include "SGReferenced.hxx"
 #include "SGSharedPtr.hxx"
 
+#ifdef _MSC_VER
+# pragma warning(push)
+  // C4355: 'this' : used in base member initializer list
+  // Tell MSVC we know what we do and really want to do it this way.
+# pragma warning(disable: 4355)
+#endif
+
 template<typename T>
 class SGWeakPtr;
 
@@ -99,5 +106,9 @@ private:
   template<typename T>
   friend class SGWeakPtr;
 };
+
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
 
 #endif

@@ -24,7 +24,7 @@ struct Base
   std::string getString() const { return ""; }
   void setString(const std::string&) {}
   void constVoidFunc() const {}
-  int test1Arg(const std::string& str) const { return str.length(); }
+  size_t test1Arg(const std::string& str) const { return str.length(); }
   bool test2Args(const std::string& s, bool c) { return c && s.empty(); }
 
   std::string var;
@@ -34,7 +34,7 @@ struct Base
 
 void baseVoidFunc(Base& b) {}
 void baseConstVoidFunc(const Base& b) {}
-int baseFunc2Args(Base& b, int x, const std::string& s) { return x + s.size(); }
+size_t baseFunc2Args(Base& b, int x, const std::string& s) { return x + s.size(); }
 std::string testPtr(Base& b) { return b.getString(); }
 void baseFuncCallContext(const Base&, const nasal::CallContext&) {}
 

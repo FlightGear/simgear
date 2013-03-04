@@ -110,8 +110,8 @@ namespace nasal
   to_nasal_helper(naContext c, const Vector<T, Alloc>& vec)
   {
     naRef ret = naNewVector(c);
-    naVec_setsize(c, ret, vec.size());
-    for(size_t i = 0; i < vec.size(); ++i)
+    naVec_setsize(c, ret, static_cast<int>(vec.size()));
+    for(int i = 0; i < static_cast<int>(vec.size()); ++i)
       naVec_set(ret, i, to_nasal_helper(c, vec[i]));
     return ret;
   }
@@ -152,8 +152,8 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const T(&array)[N])
   {
     naRef ret = naNewVector(c);
-    naVec_setsize(c, ret, N);
-    for(size_t i = 0; i < N; ++i)
+    naVec_setsize(c, ret, static_cast<int>(N));
+    for(int i = 0; i < static_cast<int>(N); ++i)
       naVec_set(ret, i, to_nasal_helper(c, array[i]));
     return ret;
   }

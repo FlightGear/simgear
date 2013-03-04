@@ -37,7 +37,8 @@ public:
   enum Priority {
     PriorityGUI = 0,
     PriorityPanel = 1,
-    PriorityOther = 2
+    PriorityOther = 2,
+    PriorityScenery = 3
   };
 
   struct Info {

@@ -66,19 +66,15 @@
     >(name, SG_GHOST_FUNC_TYPE(fn));\
   }
 
-#ifdef _MSC_VER
-# pragma warning(push)
-  // C4003: not enough actual parameters for macro
-  // We really do not want to pass a parameter, even if MSVC can not believe it.
-# pragma warning(disable: 4003)
-#endif
-  SG_GHOST_MEM_FN()
-#ifdef _MSC_VER
-# pragma warning(pop)
-#endif
+// Work around MSVC warning C4003: not enough actual parameters for macro
+// We really do not want to pass a parameter, even if MSVC can not believe it.
+#define SG_GHOST_NO_CV
+
   SG_GHOST_MEM_FN(const)
+  SG_GHOST_MEM_FN(SG_GHOST_NO_CV)
 
 #undef SG_GHOST_MEM_FN
+#undef SG_GHOST_NO_CV
 
   /**
    * Bind free function accepting an instance of raw_type and an arbitrary

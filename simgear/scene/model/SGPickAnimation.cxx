@@ -53,6 +53,7 @@ static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode*
  public:
    PickCallback(const SGPropertyNode* configNode,
                 SGPropertyNode* modelRoot) :
+     SGPickCallback(PriorityPanel),
      _repeatable(configNode->getBoolValue("repeatable", false)),
      _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
    {
@@ -367,6 +368,7 @@ class SGKnobAnimation::KnobPickCallback : public SGPickCallback {
 public:
     KnobPickCallback(const SGPropertyNode* configNode,
                  SGPropertyNode* modelRoot) :
+        SGPickCallback(PriorityPanel),
         _direction(DIRECTION_NONE),
         _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
         _stickyShifted(false)

@@ -227,13 +227,27 @@ int main(int argc, char* argv[])
   // Test nasal::CallContext
   //----------------------------------------------------------------------------
 
+
+  int int_vec[] = {1,2,3};
+  std::map<std::string, std::string> map;
   naRef args[] = {
-    to_nasal(c, std::string("test-arg"))
+    to_nasal(c, std::string("test-arg")),
+    to_nasal(c, 4),
+    to_nasal(c, int_vec),
+    to_nasal(c, map)
   };
   CallContext cc(c, sizeof(args)/sizeof(args[0]), args);
   VERIFY( cc.requireArg<std::string>(0) == "test-arg" );
   VERIFY( cc.getArg<std::string>(0) == "test-arg" );
-  VERIFY( cc.getArg<std::string>(1) == "" );
+  VERIFY( cc.getArg<std::string>(10) == "" );
+  VERIFY( cc.isString(0) );
+  VERIFY( !cc.isNumeric(0) );
+  VERIFY( !cc.isVector(0) );
+  VERIFY( !cc.isHash(0) );
+  VERIFY( !cc.isGhost(0) );
+  VERIFY( cc.isNumeric(1) );
+  VERIFY( cc.isVector(2) );
+  VERIFY( cc.isHash(3) );
 
   naRef args_vec = nasal::to_nasal(c, args);
   VERIFY( naIsVector(args_vec) );

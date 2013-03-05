@@ -121,6 +121,16 @@ namespace nasal
     };
 
     BOOST_MPL_HAS_XXX_TRAIT_DEF(element_type)
+
+    template<class T1, class T2>
+    struct reduced_is_same:
+      public boost::is_same<
+               typename boost::remove_cv<
+                 typename boost::remove_reference<T1>::type
+               >::type,
+               T2
+             >
+    {};
   }
 
   /**
@@ -133,6 +143,48 @@ namespace nasal
       argc(argc),
       args(args)
     {}
+
+    bool isNumeric(size_t index) const
+    {
+      return (index < argc && naIsNum(args[index]));
+    }
+
+    bool isString(size_t index) const
+    {
+      return (index < argc && naIsString(args[index]));
+    }
+
+    bool isHash(size_t index) const
+    {
+      return (index < argc && naIsHash(args[index]));
+    }
+
+    bool isVector(size_t index) const
+    {
+      return (index < argc && naIsVector(args[index]));
+    }
+
+    bool isGhost(size_t index) const
+    {
+      return (index < argc && naIsGhost(args[index]));
+    }
+
+    void popFront(size_t num = 1)
+    {
+      if( argc < num )
+        return;
+
+      args += num;
+      argc -= num;
+    }
+
+    void popBack(size_t num = 1)
+    {
+      if( argc < num )
+        return;
+
+      argc -= num;
+    }
 
     /**
      * Get the argument with given index if it exists. Otherwise returns the
@@ -149,7 +201,7 @@ namespace nasal
       if( index >= argc )
         return def;
 
-      return (*from_nasal_ptr<T>::get())(c, args[index]);
+      return from_nasal<T>(args[index]);
     }
 
     /**
@@ -163,13 +215,20 @@ namespace nasal
       if( index >= argc )
         naRuntimeError(c, "Missing required arg #%d", index);
 
-      return (*from_nasal_ptr<T>::get())(c, args[index]);
+      return from_nasal<T>(args[index]);
     }
 
     template<class T>
     naRef to_nasal(T arg) const
     {
       return nasal::to_nasal(c, arg);
+    }
+
+    template<class T>
+    typename from_nasal_ptr<T>::return_type
+    from_nasal(naRef ref) const
+    {
+      return (*from_nasal_ptr<T>::get())(c, ref);
     }
 
     naContext   c;
@@ -794,7 +853,7 @@ namespace nasal
       template<class Arg>
       static
       typename boost::disable_if<
-        boost::is_same<Arg, const CallContext&>,
+        internal::reduced_is_same<Arg, CallContext>,
         typename from_nasal_ptr<Arg>::return_type
       >::type
       arg_from_nasal(const CallContext& ctx, size_t index)
@@ -808,11 +867,14 @@ namespace nasal
       template<class Arg>
       static
       typename boost::enable_if<
-        boost::is_same<Arg, const CallContext&>,
+        internal::reduced_is_same<Arg, CallContext>,
         typename from_nasal_ptr<Arg>::return_type
       >::type
       arg_from_nasal(const CallContext& ctx, size_t)
       {
+        // Either const CallContext& or CallContext, non-const reference
+        // does not make sense.
+        BOOST_STATIC_ASSERT( (!boost::is_same<Arg, CallContext&>::value) );
         return ctx;
       };
 

@@ -18,8 +18,11 @@
 
 #include "to_nasal_helper.hxx"
 #include <simgear/nasal/cppbind/NasalHash.hxx>
+#include <simgear/nasal/cppbind/Ghost.hxx>
 
 #include <simgear/misc/sg_path.hxx>
+
+#include <boost/function.hpp>
 
 namespace nasal
 {
@@ -35,12 +38,6 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const char* str)
   {
     return to_nasal_helper(c, std::string(str));
-  }
-
-  //----------------------------------------------------------------------------
-  naRef to_nasal_helper(naContext c, naCFunction func)
-  {
-    return naNewFunc(c, naNewCCode(c, func));
   }
 
   //----------------------------------------------------------------------------
@@ -60,4 +57,45 @@ namespace nasal
   {
     return to_nasal_helper(c, path.str());
   }
+
+  //----------------------------------------------------------------------------
+  naRef to_nasal_helper(naContext c, naCFunction func)
+  {
+    return naNewFunc(c, naNewCCode(c, func));
+  }
+
+  //----------------------------------------------------------------------------
+  static naRef free_function_invoker( naContext c,
+                                      naRef me,
+                                      int argc,
+                                      naRef* args,
+                                      void* user_data )
+  {
+    free_function_t* func = static_cast<free_function_t*>(user_data);
+    assert(func);
+    return (*func)(nasal::CallContext(c, argc, args));
+  }
+
+  //----------------------------------------------------------------------------
+  static void free_function_destroy(void* func)
+  {
+    delete static_cast<free_function_t*>(func);
+  }
+
+  //----------------------------------------------------------------------------
+  naRef to_nasal_helper(naContext c, const free_function_t& func)
+  {
+    return naNewFunc
+    (
+      c,
+      naNewCCodeUD
+      (
+        c,
+        &free_function_invoker,
+        new free_function_t(func),
+        &free_function_destroy
+      )
+    );
+  }
+
 } // namespace nasal

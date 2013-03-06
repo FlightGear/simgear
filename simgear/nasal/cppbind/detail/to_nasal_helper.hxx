@@ -24,6 +24,7 @@
 
 #include <simgear/nasal/nasal.h>
 
+#include <boost/function/function_fwd.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/type_traits.hpp>
@@ -36,7 +37,10 @@ class SGPath;
 
 namespace nasal
 {
+  class CallContext;
   class Hash;
+
+  typedef boost::function<naRef (CallContext)> free_function_t;
 
   /**
    * Convert std::string to Nasal string
@@ -50,11 +54,6 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const char* str);
 
   /**
-   * Convert function pointer to Nasal function
-   */
-  naRef to_nasal_helper(naContext c, naCFunction func);
-
-  /**
    * Convert a nasal::Hash to a Nasal hash
    */
   naRef to_nasal_helper(naContext c, const Hash& hash);
@@ -65,6 +64,13 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const naRef& ref);
 
   naRef to_nasal_helper(naContext c, const SGPath& path);
+
+  /**
+   * Convert function pointer to Nasal function
+   */
+  naRef to_nasal_helper(naContext c, naCFunction func);
+
+  naRef to_nasal_helper(naContext c, const free_function_t& func);
 
   /**
    * Convert a numeric type to Nasal number

@@ -20,8 +20,7 @@
 #ifndef SG_NASAL_GHOST_HXX_
 #define SG_NASAL_GHOST_HXX_
 
-#include "from_nasal.hxx"
-#include "to_nasal.hxx"
+#include "NasalCallContext.hxx"
 
 #include <simgear/debug/logstream.hxx>
 
@@ -122,119 +121,19 @@ namespace nasal
 
     BOOST_MPL_HAS_XXX_TRAIT_DEF(element_type)
 
+    template<class T>
+    struct reduced_type
+    {
+      typedef typename boost::remove_cv<
+        typename boost::remove_reference<T>::type
+      >::type type;
+    };
+
     template<class T1, class T2>
     struct reduced_is_same:
-      public boost::is_same<
-               typename boost::remove_cv<
-                 typename boost::remove_reference<T1>::type
-               >::type,
-               T2
-             >
+      public boost::is_same<typename reduced_type<T1>::type, T2>
     {};
   }
-
-  /**
-   * Context passed to a function/method being called from Nasal
-   */
-  struct CallContext
-  {
-    CallContext(naContext c, size_t argc, naRef* args):
-      c(c),
-      argc(argc),
-      args(args)
-    {}
-
-    bool isNumeric(size_t index) const
-    {
-      return (index < argc && naIsNum(args[index]));
-    }
-
-    bool isString(size_t index) const
-    {
-      return (index < argc && naIsString(args[index]));
-    }
-
-    bool isHash(size_t index) const
-    {
-      return (index < argc && naIsHash(args[index]));
-    }
-
-    bool isVector(size_t index) const
-    {
-      return (index < argc && naIsVector(args[index]));
-    }
-
-    bool isGhost(size_t index) const
-    {
-      return (index < argc && naIsGhost(args[index]));
-    }
-
-    void popFront(size_t num = 1)
-    {
-      if( argc < num )
-        return;
-
-      args += num;
-      argc -= num;
-    }
-
-    void popBack(size_t num = 1)
-    {
-      if( argc < num )
-        return;
-
-      argc -= num;
-    }
-
-    /**
-     * Get the argument with given index if it exists. Otherwise returns the
-     * passed default value.
-     *
-     * @tparam T    Type of argument (converted using ::from_nasal)
-     * @param index Index of requested argument
-     * @param def   Default value returned if too few arguments available
-     */
-    template<class T>
-    typename from_nasal_ptr<T>::return_type
-    getArg(size_t index, const T& def = T()) const
-    {
-      if( index >= argc )
-        return def;
-
-      return from_nasal<T>(args[index]);
-    }
-
-    /**
-     * Get the argument with given index. Raises a Nasal runtime error if there
-     * are to few arguments available.
-     */
-    template<class T>
-    typename from_nasal_ptr<T>::return_type
-    requireArg(size_t index) const
-    {
-      if( index >= argc )
-        naRuntimeError(c, "Missing required arg #%d", index);
-
-      return from_nasal<T>(args[index]);
-    }
-
-    template<class T>
-    naRef to_nasal(T arg) const
-    {
-      return nasal::to_nasal(c, arg);
-    }
-
-    template<class T>
-    typename from_nasal_ptr<T>::return_type
-    from_nasal(naRef ref) const
-    {
-      return (*from_nasal_ptr<T>::get())(c, ref);
-    }
-
-    naContext   c;
-    size_t      argc;
-    naRef      *args;
-  };
 
   /**
    * Class for exposing C++ objects to Nasal
@@ -971,5 +870,21 @@ namespace nasal
   };
 
 } // namespace nasal
+
+/**
+ * Convert every shared pointer to a ghost.
+ */
+// Needs to be outside any namespace to mark ADL work
+template<class T>
+typename boost::enable_if<
+  nasal::internal::has_element_type<
+    typename nasal::internal::reduced_type<T>::type
+  >,
+  naRef
+>::type
+to_nasal_helper(naContext c, T ptr)
+{
+  return nasal::Ghost<T>::create(c, ptr);
+}
 
 #endif /* SG_NASAL_GHOST_HXX_ */

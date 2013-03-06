@@ -2,6 +2,7 @@ include (SimGearComponent)
 
 set(HEADERS
   Ghost.hxx
+  NasalCallContext.hxx
   NasalHash.hxx
   NasalString.hxx
   from_nasal.hxx

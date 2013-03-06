@@ -64,16 +64,12 @@ typedef boost::shared_ptr<Derived> DerivedPtr;
 typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
 
-naRef to_nasal_helper(naContext c, const BasePtr& base)
-{
-  return nasal::Ghost<BasePtr>::create(c, base);
-}
-
 naRef derivedFreeMember(Derived&, const nasal::CallContext&) { return naNil(); }
 naRef f_derivedGetX(naContext c, const Derived& d)
 {
   return nasal::to_nasal(c, d.getX());
 }
+naRef f_freeFunction(nasal::CallContext) { return naNil(); }
 
 int main(int argc, char* argv[])
 {
@@ -124,6 +120,7 @@ int main(int argc, char* argv[])
   hash.set("vec2", vec);
   hash.set("name", "my-name");
   hash.set("string", std::string("blub"));
+  hash.set("func", &f_freeFunction);
 
   r = to_nasal(c, hash);
   VERIFY( naIsHash(r) );
@@ -164,6 +161,8 @@ int main(int argc, char* argv[])
   Ghost<DoubleDerived2Ptr>::init("DoubleDerived2Ptr")
     .bases< Ghost<DerivedPtr> >()
     .member("base", &DoubleDerived2::getBase);
+
+  nasal::to_nasal(c, DoubleDerived2Ptr());
 
   BasePtr d( new Derived );
   naRef derived = Ghost<BasePtr>::create(c, d);

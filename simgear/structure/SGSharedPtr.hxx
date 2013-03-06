@@ -123,4 +123,13 @@ T* get_pointer(SGSharedPtr<T> const & p)
 {
   return p.ptr();
 }
+
+/**
+ * static_cast for SGSharedPtr
+ */
+template<class T, class U>
+SGSharedPtr<T> static_pointer_cast(SGSharedPtr<U> const & r)
+{
+  return SGSharedPtr<T>( static_cast<T*>(r.get()) );
+}
 #endif

@@ -983,7 +983,7 @@ namespace simgear
   class BindingLayout
   {
   public:
-      int addBinding(const std::string& name, expression::Type type);
+      size_t addBinding(const std::string& name, expression::Type type);
       bool findBinding(const string& name, VariableBinding& result) const;
       std::vector<VariableBinding> bindings;
   };

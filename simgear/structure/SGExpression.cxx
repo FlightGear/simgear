@@ -865,7 +865,7 @@ Expression* logicopParser(const SGPropertyNode* exp, Parser* parser)
 ExpParserRegistrar andRegistrar("and", logicopParser<AndExpression>);
 ExpParserRegistrar orRegistrar("or", logicopParser<OrExpression>);
 
-int BindingLayout::addBinding(const string& name, Type type)
+size_t BindingLayout::addBinding(const string& name, Type type)
 {
     //XXX error checkint
     vector<VariableBinding>::iterator itr
@@ -873,7 +873,7 @@ int BindingLayout::addBinding(const string& name, Type type)
                   boost::bind(&VariableBinding::name, _1) == name);
     if (itr != bindings.end())
         return itr->location;
-    int result = bindings.size();
+    size_t result = bindings.size();
     bindings.push_back(VariableBinding(name, type, bindings.size()));
     return result;
 }

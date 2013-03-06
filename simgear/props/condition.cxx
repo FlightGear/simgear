@@ -22,7 +22,6 @@
 
 using std::istream;
 using std::ostream;
-
 /**
  * Condition for a single property.
  *
@@ -162,7 +161,6 @@ SGCondition::~SGCondition ()
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGPropertyCondition.
 ////////////////////////////////////////////////////////////////////////
@@ -178,7 +176,6 @@ SGPropertyCondition::~SGPropertyCondition ()
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGNotCondition.
 ////////////////////////////////////////////////////////////////////////
@@ -199,7 +196,6 @@ SGNotCondition::test () const
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGAndCondition.
 ////////////////////////////////////////////////////////////////////////
@@ -215,8 +211,8 @@ SGAndCondition::~SGAndCondition ()
 bool
 SGAndCondition::test () const
 {
-  int nConditions = _conditions.size();
-  for (int i = 0; i < nConditions; i++) {
+  for( size_t i = 0; i < _conditions.size(); i++ )
+  {
     if (!_conditions[i]->test())
       return false;
   }
@@ -230,7 +226,6 @@ SGAndCondition::addCondition (SGCondition * condition)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGOrCondition.
 ////////////////////////////////////////////////////////////////////////
@@ -246,8 +241,8 @@ SGOrCondition::~SGOrCondition ()
 bool
 SGOrCondition::test () const
 {
-  int nConditions = _conditions.size();
-  for (int i = 0; i < nConditions; i++) {
+  for( size_t i = 0; i < _conditions.size(); i++ )
+  {
     if (_conditions[i]->test())
       return true;
   }
@@ -261,7 +256,6 @@ SGOrCondition::addCondition (SGCondition * condition)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGComparisonCondition.
 ////////////////////////////////////////////////////////////////////////
@@ -427,8 +421,7 @@ SGComparisonCondition::setPrecisionDExpression(SGExpressiond* dexp)
 {
   _precision_property = new SGPropertyNode();
   _precision_dexp = dexp;
-}
-////////////////////////////////////////////////////////////////////////
+}////////////////////////////////////////////////////////////////////////
 // Read a condition and use it if necessary.
 ////////////////////////////////////////////////////////////////////////
 
@@ -583,7 +576,6 @@ readCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGConditional.
 ////////////////////////////////////////////////////////////////////////
@@ -610,7 +602,6 @@ SGConditional::test () const
 }
 
 
-
 // The top-level is always an implicit 'and' group
 SGCondition *
 sgReadCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )

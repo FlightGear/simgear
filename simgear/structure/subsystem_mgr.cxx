@@ -117,7 +117,6 @@ void SGSubsystem::stamp(const string& name)
     timingInfo.push_back(TimingInfo(name, SGTimeStamp::now()));
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGSubsystemGroup.
 ////////////////////////////////////////////////////////////////////////
@@ -157,7 +156,7 @@ SGSubsystemGroup::SGSubsystemGroup () :
 SGSubsystemGroup::~SGSubsystemGroup ()
 {
     // reverse order to prevent order dependency problems
-    for (unsigned int i = _members.size(); i > 0; i--)
+    for( size_t i = _members.size(); i > 0; i-- )
     {
         delete _members[i-1];
     }
@@ -166,7 +165,7 @@ SGSubsystemGroup::~SGSubsystemGroup ()
 void
 SGSubsystemGroup::init ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
+    for( size_t i = 0; i < _members.size(); i++ )
         _members[i]->subsystem->init();
 }
 
@@ -190,14 +189,14 @@ SGSubsystemGroup::incrementalInit()
 void
 SGSubsystemGroup::postinit ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
+    for( size_t i = 0; i < _members.size(); i++ )
         _members[i]->subsystem->postinit();
 }
 
 void
 SGSubsystemGroup::reinit ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
+    for( size_t i = 0; i < _members.size(); i++ )
         _members[i]->subsystem->reinit();
 }
 
@@ -205,7 +204,7 @@ void
 SGSubsystemGroup::shutdown ()
 {
     // reverse order to prevent order dependency problems
-    for (unsigned int i = _members.size(); i > 0; i--)
+    for( size_t i = _members.size(); i > 0; i-- )
         _members[i-1]->subsystem->shutdown();
   _initPosition = 0;
 }
@@ -213,7 +212,7 @@ SGSubsystemGroup::shutdown ()
 void
 SGSubsystemGroup::bind ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
+    for( size_t i = 0; i < _members.size(); i++ )
         _members[i]->subsystem->bind();
 }
 
@@ -221,7 +220,7 @@ void
 SGSubsystemGroup::unbind ()
 {
     // reverse order to prevent order dependency problems
-    for (unsigned int i = _members.size(); i > 0; i--)
+    for( size_t i = _members.size(); i > 0; i-- )
        _members[i-1]->subsystem->unbind();
 }
 
@@ -242,7 +241,7 @@ SGSubsystemGroup::update (double delta_time_sec)
     bool recordTime = (reportTimingCb != NULL);
     SGTimeStamp timeStamp;
     while (loopCount-- > 0) {
-      for (unsigned int i = 0; i < _members.size(); i++)
+      for( size_t i = 0; i < _members.size(); i++ )
       {
           if (recordTime)
               timeStamp = SGTimeStamp::now();
@@ -261,7 +260,7 @@ SGSubsystemGroup::update (double delta_time_sec)
 void
 SGSubsystemGroup::reportTiming(void)
 {
-    for (unsigned int i = _members.size(); i > 0; i--)
+    for( size_t i = _members.size(); i > 0; i-- )
     {
         _members[i-1]->reportTiming();
     }
@@ -270,14 +269,14 @@ SGSubsystemGroup::reportTiming(void)
 void
 SGSubsystemGroup::suspend ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
+    for( size_t i = 0; i < _members.size(); i++ )
         _members[i]->subsystem->suspend();
 }
 
 void
 SGSubsystemGroup::resume ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
+    for( size_t i = 0; i < _members.size(); i++ )
         _members[i]->subsystem->resume();
 }
 
@@ -285,7 +284,7 @@ string_list
 SGSubsystemGroup::member_names() const
 {
 	string_list result;
-	for (unsigned int i = 0; i < _members.size(); i++)
+	for( size_t i = 0; i < _members.size(); i++ )
 		result.push_back( _members[i]->name );
 	
 	return result;
@@ -322,7 +321,7 @@ SGSubsystemGroup::get_subsystem (const string &name)
 void
 SGSubsystemGroup::remove_subsystem (const string &name)
 {
-    for (unsigned int i = 0; i < _members.size(); i++) {
+    for( size_t i = 0; i < _members.size(); i++ ) {
         if (name == _members[i]->name) {
             _members.erase(_members.begin() + i);
             return;
@@ -345,7 +344,7 @@ SGSubsystemGroup::has_subsystem (const string &name) const
 SGSubsystemGroup::Member *
 SGSubsystemGroup::get_member (const string &name, bool create)
 {
-    for (unsigned int i = 0; i < _members.size(); i++) {
+    for( size_t i = 0; i < _members.size(); i++ ) {
         if (_members[i]->name == name)
             return _members[i];
     }
@@ -359,7 +358,6 @@ SGSubsystemGroup::get_member (const string &name, bool create)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGSubsystemGroup::Member
 ////////////////////////////////////////////////////////////////////////

@@ -60,12 +60,32 @@ public:
      * Since no one can agree on that, make it a global toggle.
      */
     static void setAlternateMouseWheelDirection(bool aToggle);
+    
+    /**
+     * by default mouse is dragged left-right to change knobs.
+     * set this to true to default to up-down. Individual knobs
+     * can overrider this,
+     */
+    static void setAlternateDragAxis(bool aToggle);
 private:
-    class KnobPickCallback;
     class UpdateCallback;
     
     SGVec3d _axis;
     SGVec3d _center;
+    SGSharedPtr<SGExpressiond const> _animationValue;
+};
+
+class SGSliderAnimation : public SGPickAnimation
+{
+public:
+    SGSliderAnimation(const SGPropertyNode* configNode,
+                    SGPropertyNode* modelRoot);
+    virtual osg::Group* createAnimationGroup(osg::Group& parent);
+    
+private:
+    class UpdateCallback;
+    
+    SGVec3d _axis;
     SGSharedPtr<SGExpressiond const> _animationValue;
 };
 

@@ -36,6 +36,7 @@ read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
            const char* unit, double defMin, double defMax);
 
 void readRotationCenterAndAxis(const SGPropertyNode* configNode, SGVec3d& center, SGVec3d& axis);
+SGVec3d readTranslateAxis(const SGPropertyNode* configNode);
 
 //////////////////////////////////////////////////////////////////////
 // Base class for animation installers

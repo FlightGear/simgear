@@ -54,9 +54,10 @@ public:
   virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* event, const Info& info)
   { return false; }
   
-  virtual void update(double dt)
+  virtual void update(double dt, int keyModState)
   { }
-  virtual void buttonReleased(void)
+    
+  virtual void buttonReleased(int keyModState)
   { }
 
   virtual void mouseMoved(const osgGA::GUIEventAdapter* event)

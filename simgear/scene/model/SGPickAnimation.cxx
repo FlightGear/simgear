@@ -388,18 +388,35 @@ static void repeatBindings(const SGBindingList& a, SGBindingList& out, int count
 
 static bool static_knobMouseWheelAlternateDirection = false;
 static bool static_knobDragAlternateAxis = false;
+static double static_dragSensitivity = 1.0;
 
 class KnobSliderPickCallback : public SGPickCallback {
 public:
+    enum Direction
+    {
+        DIRECTION_NONE,
+        DIRECTION_INCREASE,
+        DIRECTION_DECREASE
+    };
+    
+    enum DragDirection
+    {
+        DRAG_DEFAULT = 0,
+        DRAG_VERTICAL,
+        DRAG_HORIZONTAL
+    };
+
+    
     KnobSliderPickCallback(const SGPropertyNode* configNode,
                  SGPropertyNode* modelRoot) :
         SGPickCallback(PriorityPanel),
         _direction(DIRECTION_NONE),
-        _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
+        _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
+        _dragDirection(DRAG_DEFAULT)
     {
         readOptionalBindingList(configNode, modelRoot, "action", _action);
-        readOptionalBindingList(configNode, modelRoot, "increase", _bindingsCW);
-        readOptionalBindingList(configNode, modelRoot, "decrease", _bindingsCCW);
+        readOptionalBindingList(configNode, modelRoot, "increase", _bindingsIncrease);
+        readOptionalBindingList(configNode, modelRoot, "decrease", _bindingsDecrease);
         
         readOptionalBindingList(configNode, modelRoot, "release", _releaseAction);
         readOptionalBindingList(configNode, modelRoot, "hovered", _hover);
@@ -409,17 +426,23 @@ public:
         {
         // explicit shifted behaviour - just do exactly what was provided
             readOptionalBindingList(configNode, modelRoot, "shift-action", _shiftedAction);
-            readOptionalBindingList(configNode, modelRoot, "shift-increase", _shiftedCW);
-            readOptionalBindingList(configNode, modelRoot, "shift-decrease", _shiftedCCW);
+            readOptionalBindingList(configNode, modelRoot, "shift-increase", _shiftedIncrease);
+            readOptionalBindingList(configNode, modelRoot, "shift-decrease", _shiftedDecrease);
         } else {
             // default shifted behaviour - repeat normal bindings N times.
             int shiftRepeat = configNode->getIntValue("shift-repeat", 10);
             repeatBindings(_action, _shiftedAction, shiftRepeat);
-            repeatBindings(_bindingsCW, _shiftedCW, shiftRepeat);
-            repeatBindings(_bindingsCCW, _shiftedCCW, shiftRepeat);
+            repeatBindings(_bindingsIncrease, _shiftedIncrease, shiftRepeat);
+            repeatBindings(_bindingsDecrease, _shiftedDecrease, shiftRepeat);
         } // of default shifted behaviour
         
         _dragScale = configNode->getDoubleValue("drag-scale-px", 10.0);
+        std::string dragDir = configNode->getStringValue("drag-direction");
+        if (dragDir == "vertical") {
+            _dragDirection = DRAG_VERTICAL;
+        } else if (dragDir == "horizontal") {
+            _dragDirection = DRAG_HORIZONTAL;
+        }
     }
     
     virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
@@ -435,9 +458,9 @@ public:
             
         _direction = DIRECTION_NONE;
         if ((button == 0) || (button == increaseMouseWheel)) {
-            _direction = DIRECTION_CLOCKWISE;
+            _direction = DIRECTION_INCREASE;
         } else if ((button == 1) || (button == decreaseMouseWheel)) {
-            _direction = DIRECTION_ANTICLOCKWISE;
+            _direction = DIRECTION_DECREASE;
         } else {
             return false;
         }
@@ -453,8 +476,7 @@ public:
     {
         // for *clicks*, we only fire on button release
         if (!_hasDragged) {
-           // std::cout << "no drag, firing" << std::endl;
-            fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT);
+            fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT, _direction);
         }
         
         fireBindingList(_releaseAction);
@@ -462,7 +484,7 @@ public:
     
     virtual void mouseMoved(const osgGA::GUIEventAdapter* ea)
     {
-        _mousePos = eventToWindowCoords(ea);;
+        _mousePos = eventToWindowCoords(ea);
         osg::Vec2d deltaMouse = _mousePos - _lastFirePos;
         
         if (!_hasDragged) {
@@ -476,13 +498,24 @@ public:
         // user is dragging, disable repeat behaviour
             _hasDragged = true;
         }
- 
-        double delta = static_knobDragAlternateAxis ? deltaMouse.y() : deltaMouse.x();
-        delta /= _dragScale;
+        
+        DragDirection dragDir = _dragDirection;
+        if (dragDir == DRAG_DEFAULT) {
+            // respect the current default settings - this allows runtime
+            // setting of the default drag direction.
+            dragDir = static_knobDragAlternateAxis ? DRAG_VERTICAL : DRAG_HORIZONTAL;
+        }
+        
+        double delta = (dragDir == DRAG_VERTICAL) ? deltaMouse.y() : deltaMouse.x();
+    // per-animation scale factor lets the aircraft author tune for expectations,
+    // eg heading setting vs 5-state switch.
+    // then we scale by a global sensitivity, which the user can set.
+        delta *= static_dragSensitivity / _dragScale;
+        
         if (fabs(delta) >= 1.0) {
             // determine direction from sign of delta
-            _direction = (delta > 0.0) ? DIRECTION_CLOCKWISE : DIRECTION_ANTICLOCKWISE;
-            fire(ea->getModKeyMask());
+            Direction dir = (delta > 0.0) ? DIRECTION_INCREASE : DIRECTION_DECREASE;
+            fire(ea->getModKeyMask(), dir);
             _lastFirePos = _mousePos;
         }
     }
@@ -496,7 +529,7 @@ public:
         _repeatTime += dt;
         while (_repeatInterval < _repeatTime) {
             _repeatTime -= _repeatInterval;
-            fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT);
+            fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT, _direction);
         } // of repeat iteration
     }
 
@@ -513,20 +546,20 @@ public:
         return true;
     }
 private:
-    void fire(bool isShifted)
+    void fire(bool isShifted, Direction dir)
     {
         const SGBindingList& act(isShifted ? _shiftedAction : _action);
-        const SGBindingList& cw(isShifted ? _shiftedCW : _bindingsCW);
-        const SGBindingList& ccw(isShifted ? _shiftedCCW : _bindingsCCW);
+        const SGBindingList& incr(isShifted ? _shiftedIncrease : _bindingsIncrease);
+        const SGBindingList& decr(isShifted ? _shiftedDecrease : _bindingsDecrease);
         
-        switch (_direction) {
-            case DIRECTION_CLOCKWISE:
+        switch (dir) {
+            case DIRECTION_INCREASE:
                 fireBindingListWithOffset(act,  1, 1);
-                fireBindingList(cw);
+                fireBindingList(incr);
                 break;
-            case DIRECTION_ANTICLOCKWISE:
+            case DIRECTION_DECREASE:
                 fireBindingListWithOffset(act, -1, 1);
-                fireBindingList(ccw);
+                fireBindingList(decr);
                 break;
             default: break;
         }
@@ -534,21 +567,16 @@ private:
     
     SGBindingList _action, _shiftedAction;
     SGBindingList _releaseAction;
-    SGBindingList _bindingsCW, _shiftedCW,
-        _bindingsCCW, _shiftedCCW;
+    SGBindingList _bindingsIncrease, _shiftedIncrease,
+        _bindingsDecrease, _shiftedDecrease;
     SGBindingList _hover;
     
-    enum Direction
-    {
-        DIRECTION_NONE,
-        DIRECTION_CLOCKWISE,
-        DIRECTION_ANTICLOCKWISE
-    };
-    
+        
     Direction _direction;
     double _repeatInterval;
     double _repeatTime;
     
+    DragDirection _dragDirection;
     bool _hasDragged; ///< has the mouse been dragged since the press?
     osg::Vec2d _mousePos, ///< current window coords location of the mouse
         _lastFirePos; ///< mouse location where we last fired the bindings
@@ -614,6 +642,11 @@ void SGKnobAnimation::setAlternateMouseWheelDirection(bool aToggle)
 void SGKnobAnimation::setAlternateDragAxis(bool aToggle)
 {
     static_knobDragAlternateAxis = aToggle;
+}
+
+void SGKnobAnimation::setDragSensitivity(double aFactor)
+{
+    static_dragSensitivity = aFactor;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

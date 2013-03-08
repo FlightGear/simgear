@@ -67,6 +67,14 @@ public:
      * can overrider this,
      */
     static void setAlternateDragAxis(bool aToggle);
+    
+    
+    /**
+     * Scale the drag sensitivity. This provides a global hook for
+     * the user to scale the senstivity of dragging according to
+     * personal preference.
+     */
+    static void setDragSensitivity(double aFactor);
 private:
     class UpdateCallback;
     

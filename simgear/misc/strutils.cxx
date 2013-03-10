@@ -300,6 +300,40 @@ namespace simgear {
       return rslt;
     }
 
+
+#ifdef SG_WINDOWS
+    #include <windows.h>
+#endif
+        
+std::string convertWindowsLocal8BitToUtf8(const std::string& a)
+{
+#ifdef SG_WINDOWS
+    DWORD flags = 0;
+    std::vector<wchar_t> wideString;
+
+    // call to query transform size
+    int requiredWideChars = MultiByteToWideChar(CP_ACP, flags, a.c_str(), a.size(),
+                        NULL, 0);
+    // allocate storage and call for real
+    wideString.resize(requiredWideChars);
+    MultiByteToWideChar(CP_ACP, flags, a.c_str(), a.size(),
+                        wideString.data(), wideString.size());
+    
+    // now convert back down to UTF-8
+    std::vector<char> result;
+    int requiredUTF8Chars = WideCharToMultiByte(CP_UTF8, flags,
+                                                wideString.data(), wideString.size(),
+                                                NULL, 0, NULL, NULL);
+    result.resize(requiredUTF8Chars);
+    WideCharToMultiByte(CP_UTF8, flags,
+                        wideString.data(), wideString.size(),
+                        result.data(), result.size(), NULL, NULL);
+    return std::string(result.data(), result.size());
+#else
+    return a;
+#endif
+}
+
     } // end namespace strutils
     
 } // end namespace simgear

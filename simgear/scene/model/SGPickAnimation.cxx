@@ -538,7 +538,7 @@ public:
         if (fabs(delta) >= 1.0) {
             // determine direction from sign of delta
             Direction dir = (delta > 0.0) ? DIRECTION_INCREASE : DIRECTION_DECREASE;
-            fire(ea->getModKeyMask(), dir);
+            fire(ea->getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_SHIFT, dir);
             _lastFirePos = _mousePos;
         }
     }

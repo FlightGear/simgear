@@ -86,6 +86,10 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
      _bindingsDown = readBindingList(configNode->getChildren("binding"), modelRoot);
      readOptionalBindingList(configNode, modelRoot, "mod-up", _bindingsUp);
      readOptionalBindingList(configNode, modelRoot, "hovered", _hover);
+     
+     if (configNode->hasChild("cursor")) {
+       _cursorName = configNode->getStringValue("cursor");
+     }
    }
    
    virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
@@ -129,6 +133,9 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
        fireBindingList(_hover, params.ptr());
        return true;
    }
+   
+   std::string getCursor() const
+   { return _cursorName; }
  private:
    SGBindingList _bindingsDown;
    SGBindingList _bindingsUp;
@@ -137,6 +144,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
    bool _repeatable;
    double _repeatInterval;
    double _repeatTime;
+   std::string _cursorName;
  };
 
  class VncVisitor : public osg::NodeVisitor {
@@ -443,6 +451,17 @@ public:
         } else if (dragDir == "horizontal") {
             _dragDirection = DRAG_HORIZONTAL;
         }
+      
+        if (configNode->hasChild("cursor")) {
+            _cursorName = configNode->getStringValue("cursor");
+        } else {
+          DragDirection dir = effectiveDragDirection();
+          if (dir == DRAG_VERTICAL) {
+            _cursorName = "drag-vertical";
+          } else if (dir == DRAG_HORIZONTAL) {
+            _cursorName = "drag-horizontal";
+          }
+        }
     }
     
     virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
@@ -481,7 +500,18 @@ public:
         
         fireBindingList(_releaseAction);
     }
-    
+  
+    DragDirection effectiveDragDirection() const
+    {
+      if (_dragDirection == DRAG_DEFAULT) {
+        // respect the current default settings - this allows runtime
+        // setting of the default drag direction.
+        return static_knobDragAlternateAxis ? DRAG_VERTICAL : DRAG_HORIZONTAL;
+      }
+      
+      return _dragDirection;
+  }
+  
     virtual void mouseMoved(const osgGA::GUIEventAdapter* ea)
     {
         _mousePos = eventToWindowCoords(ea);
@@ -498,15 +528,8 @@ public:
         // user is dragging, disable repeat behaviour
             _hasDragged = true;
         }
-        
-        DragDirection dragDir = _dragDirection;
-        if (dragDir == DRAG_DEFAULT) {
-            // respect the current default settings - this allows runtime
-            // setting of the default drag direction.
-            dragDir = static_knobDragAlternateAxis ? DRAG_VERTICAL : DRAG_HORIZONTAL;
-        }
-        
-        double delta = (dragDir == DRAG_VERTICAL) ? deltaMouse.y() : deltaMouse.x();
+      
+        double delta = (effectiveDragDirection() == DRAG_VERTICAL) ? deltaMouse.y() : deltaMouse.x();
     // per-animation scale factor lets the aircraft author tune for expectations,
     // eg heading setting vs 5-state switch.
     // then we scale by a global sensitivity, which the user can set.
@@ -545,6 +568,15 @@ public:
         fireBindingList(_hover, params.ptr());
         return true;
     }
+  
+    void setCursor(const std::string& aName)
+    {
+      _cursorName = aName;
+    }
+  
+    virtual std::string getCursor() const
+    { return _cursorName; }
+  
 private:
     void fire(bool isShifted, Direction dir)
     {
@@ -581,6 +613,8 @@ private:
     osg::Vec2d _mousePos, ///< current window coords location of the mouse
         _lastFirePos; ///< mouse location where we last fired the bindings
     double _dragScale;
+  
+    std::string _cursorName;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

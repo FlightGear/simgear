@@ -66,8 +66,15 @@ public:
   virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
   {  return false; }
 
-  Priority getPriority() const
+  virtual Priority getPriority() const
   { return _priority; }
+  
+  /**
+   * retrieve the name of the cursor to user when hovering this pickable
+   * object. Mapping is undefined, since SimGear doesn't know about cursors.
+   */
+  virtual std::string getCursor() const
+  { return std::string(); }
 
 private:
   Priority _priority;

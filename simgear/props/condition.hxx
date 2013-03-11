@@ -10,6 +10,7 @@
 #ifndef __SG_CONDITION_HXX
 #define __SG_CONDITION_HXX
 
+#include <set>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
@@ -34,6 +35,7 @@ public:
   SGCondition ();
   virtual ~SGCondition ();
   virtual bool test () const = 0;
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const { }
 };
 
 

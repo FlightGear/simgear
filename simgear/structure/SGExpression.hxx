@@ -25,7 +25,8 @@
 #include <string>
 #include <vector>
 #include <functional>
-
+#include <set>
+   
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/math/interpolater.hxx>
@@ -136,6 +137,8 @@ public:
   {
     return simgear::expression::TypeTraits<T>::typeTag;
   }
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+  { }
 };
 
 /// Constant value expression
@@ -184,7 +187,9 @@ public:
     _expression = _expression->simplify();
     return SGExpression<T>::simplify();
   }
-
+  
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+    { _expression->collectDependentProperties(props); }  
 protected:
   SGUnaryExpression(SGExpression<T>* expression = 0)
   { setOperand(expression); }
@@ -218,6 +223,12 @@ public:
     return SGExpression<T>::simplify();
   }
 
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+  {
+    _expressions[0]->collectDependentProperties(props);
+    _expressions[1]->collectDependentProperties(props); 
+  } 
+  
 protected:
   SGBinaryExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
   { setOperand(0, expr0); setOperand(1, expr1); }
@@ -266,6 +277,11 @@ public:
     return SGExpression<T>::simplify();
   }
 
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+  {
+    for (size_t i = 0; i < _expressions.size(); ++i)
+      _expressions[i]->collectDependentProperties(props);
+  } 
 protected:
   SGNaryExpression()
   { }
@@ -288,6 +304,9 @@ public:
   { _prop = prop; }
   virtual void eval(T& value, const simgear::expression::Binding*) const
   { doEval(value); }
+  
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+    { props.insert(_prop.get()); }
 private:
   void doEval(float& value) const
   { if (_prop) value = _prop->getFloatValue(); }
@@ -712,6 +731,12 @@ public:
     if (!_enable)
       return getOperand()->simplify();
     return SGUnaryExpression<T>::simplify();
+  }
+  
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+  {
+    SGUnaryExpression<T>::collectDependentProperties(props);
+    _enable->collectDependentProperties(props);
   }
 
   using SGUnaryExpression<T>::getOperand;

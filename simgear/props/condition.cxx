@@ -35,6 +35,8 @@ public:
                         const char * propname  );
   virtual ~SGPropertyCondition ();
   virtual bool test () const { return _node->getBoolValue(); }
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+    { props.insert(_node.get()); }
 private:
   SGConstPropertyNode_ptr _node;
 };
@@ -63,6 +65,7 @@ public:
   SGNotCondition (SGCondition * condition);
   virtual ~SGNotCondition ();
   virtual bool test () const;
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const;
 private:
   SGSharedPtr<SGCondition> _condition;
 };
@@ -82,6 +85,7 @@ public:
   virtual bool test () const;
 				// transfer pointer ownership
   virtual void addCondition (SGCondition * condition);
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const;
 private:
   std::vector<SGSharedPtr<SGCondition> > _conditions;
 };
@@ -101,6 +105,7 @@ public:
   virtual bool test () const;
 				// transfer pointer ownership
   virtual void addCondition (SGCondition * condition);
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const;
 private:
   std::vector<SGSharedPtr<SGCondition> > _conditions;
 };
@@ -135,6 +140,7 @@ public:
   void setRightDExpression(SGExpressiond* dexp);
   void setPrecisionDExpression(SGExpressiond* dexp);
   
+  virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const;
 private:
   Type _type;
   bool _reverse;
@@ -195,6 +201,11 @@ SGNotCondition::test () const
   return !(_condition->test());
 }
 
+void
+SGNotCondition::collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+{
+    _condition->collectDependentProperties(props);
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGAndCondition.
@@ -225,6 +236,13 @@ SGAndCondition::addCondition (SGCondition * condition)
   _conditions.push_back(condition);
 }
 
+void
+SGAndCondition::collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+{
+  for( size_t i = 0; i < _conditions.size(); i++ )
+    _conditions[i]->collectDependentProperties(props);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGOrCondition.
@@ -253,6 +271,13 @@ void
 SGOrCondition::addCondition (SGCondition * condition)
 {
   _conditions.push_back(condition);
+}
+
+void
+SGOrCondition::collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+{
+  for( size_t i = 0; i < _conditions.size(); i++ )
+    _conditions[i]->collectDependentProperties(props);
 }
 
 
@@ -421,7 +446,29 @@ SGComparisonCondition::setPrecisionDExpression(SGExpressiond* dexp)
 {
   _precision_property = new SGPropertyNode();
   _precision_dexp = dexp;
-}////////////////////////////////////////////////////////////////////////
+}
+
+void
+SGComparisonCondition::collectDependentProperties(std::set<const SGPropertyNode*>& props) const
+{
+  if (_left_dexp)
+    _left_dexp->collectDependentProperties(props);
+  else
+    props.insert(_left_property);
+  
+  if (_right_dexp)
+    _right_dexp->collectDependentProperties(props);
+  else
+    props.insert(_right_property);
+  
+  if (_precision_dexp)
+    _precision_dexp->collectDependentProperties(props);
+  else if (_precision_property)
+    props.insert(_precision_property);
+  
+}
+
+////////////////////////////////////////////////////////////////////////
 // Read a condition and use it if necessary.
 ////////////////////////////////////////////////////////////////////////
 

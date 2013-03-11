@@ -23,6 +23,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/structure/commands.hxx>
+#include <simgear/misc/test_macros.hxx>
 
 using std::string;
 using std::cout;
@@ -57,19 +58,6 @@ public:
     int dummy_cmd_state;
 };
 
-#define COMPARE(a, b) \
-    if ((a) != (b))  { \
-        cerr << "failed:" << #a << " != " << #b << endl; \
-        cerr << "\tgot:'" << a << "'" << endl; \
-        exit(1); \
-    }
-
-#define VERIFY(a) \
-    if (!(a))  { \
-        cerr << "failed:" << #a << endl; \
-        exit(1); \
-    }
-    
 using namespace simgear;
 
 #define BUILD_MACHINE_1() \

@@ -48,6 +48,7 @@ namespace canvas
       virtual ~Image();
 
       virtual void update(double dt);
+      virtual void valueChanged(SGPropertyNode* child);
 
       void setSrcCanvas(CanvasPtr canvas);
       CanvasWeakPtr getSrcCanvas() const;

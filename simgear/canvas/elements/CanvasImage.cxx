@@ -47,9 +47,11 @@ namespace canvas
   {
     public:
       CullCallback(const CanvasWeakPtr& canvas);
+      void cullNextFrame();
 
     private:
       CanvasWeakPtr _canvas;
+      mutable bool  _cull_next_frame;
 
       virtual bool cull( osg::NodeVisitor* nv,
                          osg::Drawable* drawable,
@@ -58,9 +60,16 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   CullCallback::CullCallback(const CanvasWeakPtr& canvas):
-    _canvas( canvas )
+    _canvas( canvas ),
+    _cull_next_frame( false )
   {
 
+  }
+
+  //----------------------------------------------------------------------------
+  void CullCallback::cullNextFrame()
+  {
+    _cull_next_frame = true;
   }
 
   //----------------------------------------------------------------------------
@@ -71,8 +80,12 @@ namespace canvas
     if( !_canvas.expired() )
       _canvas.lock()->enableRendering();
 
-    // TODO check if window/image should be culled
-    return false;
+    if( !_cull_next_frame )
+      // TODO check if window/image should be culled
+      return false;
+
+    _cull_next_frame = false;
+    return true;
   }
 
   //----------------------------------------------------------------------------
@@ -286,6 +299,29 @@ namespace canvas
       _texCoords->dirty();
       _attributes_dirty &= ~SRC_RECT;
     }
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::valueChanged(SGPropertyNode* child)
+  {
+    // If the image is switched from invisible to visible, and it shows a
+    // canvas, we need to delay showing it by one frame to ensure the canvas is
+    // updated before the image is displayed.
+    //
+    // As canvas::Element handles and filters changes to the "visible" property
+    // we can not check this in Image::childChanged but instead have to override
+    // Element::valueChanged.
+    if(    !isVisible()
+        && child->getParent() == _node
+        && child->getNameString() == "visible"
+        && child->getBoolValue() )
+    {
+      CullCallback* cb = static_cast<CullCallback*>(_geom->getCullCallback());
+      if( cb )
+        cb->cullNextFrame();
+    }
+
+    Element::valueChanged(child);
   }
 
   //----------------------------------------------------------------------------

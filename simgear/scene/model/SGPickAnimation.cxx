@@ -85,13 +85,19 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
 
      _bindingsDown = readBindingList(configNode->getChildren("binding"), modelRoot);
      readOptionalBindingList(configNode, modelRoot, "mod-up", _bindingsUp);
-     readOptionalBindingList(configNode, modelRoot, "hovered", _hover);
+     
      
      if (configNode->hasChild("cursor")) {
        _cursorName = configNode->getStringValue("cursor");
      }
    }
-   
+     
+     void addHoverBindings(const SGPropertyNode* hoverNode,
+                             SGPropertyNode* modelRoot)
+     {
+         _hover = readBindingList(hoverNode->getChildren("binding"), modelRoot);
+     }
+     
    virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
    {
        if (_buttons.find(button) == _buttons.end()) {
@@ -367,11 +373,26 @@ SGPickAnimation::innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent
      innerSetupPickGroup(commonGroup, parent);
      SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(commonGroup);
 
+     PickCallback* pickCb = NULL;
+     
    // add actions that become macro and command invocations
    std::vector<SGPropertyNode_ptr> actions;
    actions = getConfig()->getChildren("action");
-   for (unsigned int i = 0; i < actions.size(); ++i)
-     ud->addPickCallback(new PickCallback(actions[i], getModelRoot()));
+   for (unsigned int i = 0; i < actions.size(); ++i) {
+     pickCb = new PickCallback(actions[i], getModelRoot());
+     ud->addPickCallback(pickCb);
+   }
+     
+   if (getConfig()->hasChild("hovered")) {
+     if (!pickCb) {
+       // make a trivial PickCallback to hang the hovered off of
+       SGPropertyNode_ptr dummyNode(new SGPropertyNode);
+       pickCb = new PickCallback(dummyNode.ptr(), getModelRoot());
+     }
+       
+     pickCb->addHoverBindings(getConfig()->getNode("hovered"), getModelRoot());
+   }
+     
    // Look for the VNC sessions that want raw mouse input
    actions = getConfig()->getChildren("vncaction");
    for (unsigned int i = 0; i < actions.size(); ++i)

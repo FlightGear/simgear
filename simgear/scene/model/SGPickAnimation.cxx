@@ -388,6 +388,7 @@ SGPickAnimation::innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent
        // make a trivial PickCallback to hang the hovered off of
        SGPropertyNode_ptr dummyNode(new SGPropertyNode);
        pickCb = new PickCallback(dummyNode.ptr(), getModelRoot());
+       ud->addPickCallback(pickCb);
      }
        
      pickCb->addHoverBindings(getConfig()->getNode("hovered"), getModelRoot());

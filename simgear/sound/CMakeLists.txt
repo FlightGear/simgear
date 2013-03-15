@@ -24,14 +24,12 @@ simgear_scene_component(sound sound "${SOURCES}" "${HEADERS}")
 if(ENABLE_TESTS AND ENABLE_SOUND)
 
 if (SIMGEAR_SHARED)
-    set(SOUND_TEST_LIBS SimGearScene)
+    set( SOUND_TEST_LIBS
+        ${TEST_LIBS})
 else()
     set(SOUND_TEST_LIBS
-        SimGearScene SimGearCore
-        ${CMAKE_THREAD_LIBS_INIT}
-        ${RT_LIBRARY}
-        ${OPENAL_LIBRARY}
-        ${ZLIB_LIBRARY})
+        ${TEST_LIBS}
+        ${OPENAL_LIBRARY})
 endif()
 
 function(create_test TEST_NAME)

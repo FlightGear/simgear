@@ -33,14 +33,6 @@ simgear_component(misc misc "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
-if (SIMGEAR_SHARED)
-    set(TEST_LIBS SimGearCore)
-else()
-    set(TEST_LIBS SimGearCore
-            ${CMAKE_THREAD_LIBS_INIT}
-            ${ZLIB_LIBRARY})
-endif()
-
 add_executable(test_tabbed_values tabbed_values_test.cxx)
 add_test(tabbed_values ${EXECUTABLE_OUTPUT_PATH}/test_tabbed_values)
 target_link_libraries(test_tabbed_values ${TEST_LIBS})
@@ -56,4 +48,5 @@ target_link_libraries(test_streams ${TEST_LIBS})
 add_executable(test_path path_test.cxx )
 add_test(test_path ${EXECUTABLE_OUTPUT_PATH}/test_path)
 target_link_libraries(test_path ${TEST_LIBS})
+
 endif(ENABLE_TESTS)

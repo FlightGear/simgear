@@ -360,7 +360,25 @@ if(ENABLE_TESTS)
     message(STATUS "Tests: ENABLED")
 
     include (Dart)
-        enable_testing()
+    enable_testing()
+
+    if(SIMGEAR_SHARED)
+        set( TEST_LIBS
+            SimGearCore)
+    else()
+        set( TEST_LIBS
+            SimGearCore
+            ${CMAKE_THREAD_LIBS_INIT}
+            ${ZLIB_LIBRARY}
+            ${WINSOCK_LIBRARY}
+            ${RT_LIBRARY})
+    endif()
+
+    if(NOT SIMGEAR_HEADLESS)
+        set( TEST_LIBS
+            SimGearScene
+            ${TEST_LIBS})
+    endif()
 else()
     message(STATUS "Tests: DISABLED")
 endif(ENABLE_TESTS)

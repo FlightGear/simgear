@@ -38,16 +38,6 @@ simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
-if (SIMGEAR_SHARED)
-    set(TEST_LIBS SimGearCore)
-else()
-    set(TEST_LIBS SimGearCore
-            ${CMAKE_THREAD_LIBS_INIT}
-            ${WINSOCK_LIBRARY}
-            ${ZLIB_LIBRARY}
-            ${RT_LIBRARY})
-endif()
-
 add_executable(test_sock socktest.cxx)
 target_link_libraries(test_sock ${TEST_LIBS})
 
@@ -66,4 +56,5 @@ add_executable(test_binobj test_binobj.cxx)
 target_link_libraries(test_binobj ${TEST_LIBS}) 
     
 add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
+
 endif(ENABLE_TESTS)

@@ -41,11 +41,6 @@ set(SOURCES
 simgear_scene_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
-    if (SIMGEAR_SHARED)
-        set(TEST_LIBS SimGearCore)
-    else()
-        set(TEST_LIBS SimGearCore ${CMAKE_THREAD_LIBS_INIT})
-    endif()
 
   add_executable(BucketBoxTest BucketBoxTest.cxx)
   target_link_libraries(BucketBoxTest ${TEST_LIBS})

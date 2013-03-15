@@ -45,12 +45,6 @@ simgear_component(math math "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
-if (SIMGEAR_SHARED)
-    set(TEST_LIBS SimGearCore)
-else()
-    set(TEST_LIBS SimGearCore ${CMAKE_THREAD_LIBS_INIT})
-endif()
-
 add_executable(math_test SGMathTest.cxx)
 target_link_libraries(math_test ${TEST_LIBS})
 add_test(math ${EXECUTABLE_OUTPUT_PATH}/math_test)
@@ -58,4 +52,5 @@ add_test(math ${EXECUTABLE_OUTPUT_PATH}/math_test)
 add_executable(geometry_test SGGeometryTest.cxx)
 target_link_libraries(geometry_test ${TEST_LIBS})
 add_test(geometry ${EXECUTABLE_OUTPUT_PATH}/geometry_test)
+
 endif(ENABLE_TESTS)

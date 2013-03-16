@@ -19,12 +19,13 @@
 #include "PropertyInterpolationMgr.hxx"
 #include "PropertyInterpolator.hxx"
 
+#include <simgear_config.h>
+
 #ifndef SIMGEAR_HEADLESS
 # include <simgear/scene/util/ColorInterpolator.hxx>
 #endif
 
 #include <simgear/props/props.hxx>
-#include <simgear_config.h>
 
 #include <algorithm>
 

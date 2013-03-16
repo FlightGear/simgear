@@ -32,7 +32,7 @@ namespace simgear
   }
 
   //----------------------------------------------------------------------------
-  void PropertyInterpolator::reset(const SGPropertyNode* target)
+  void PropertyInterpolator::reset(const SGPropertyNode& target)
   {
     _cur_t = 0;
     setTarget(target);
@@ -45,7 +45,7 @@ namespace simgear
   }
 
   //----------------------------------------------------------------------------
-  double PropertyInterpolator::update(SGPropertyNode* prop, double dt)
+  double PropertyInterpolator::update(SGPropertyNode& prop, double dt)
   {
     if( _cur_t == 0 )
       init(prop);
@@ -74,31 +74,31 @@ namespace simgear
   }
 
   //----------------------------------------------------------------------------
-  void NumericInterpolator::setTarget(const SGPropertyNode* target)
+  void NumericInterpolator::setTarget(const SGPropertyNode& target)
   {
-    _end = target->getDoubleValue();
+    _end = target.getDoubleValue();
   }
 
   //----------------------------------------------------------------------------
-  void NumericInterpolator::init(const SGPropertyNode* prop)
+  void NumericInterpolator::init(const SGPropertyNode& prop)
   {
     // If unable to get start value, immediately change to target value
-    double value_start = prop->getType() == props::NONE
+    double value_start = prop.getType() == props::NONE
                        ? _end
-                       : prop->getDoubleValue();
+                       : prop.getDoubleValue();
 
     _diff = _end - value_start;
   }
 
   //----------------------------------------------------------------------------
-  void NumericInterpolator::write(SGPropertyNode* prop, double t)
+  void NumericInterpolator::write(SGPropertyNode& prop, double t)
   {
     double cur = _end - (1 - t) * _diff;
 
-    if( prop->getType() == props::INT || prop->getType() == props::LONG )
-      prop->setLongValue( static_cast<long>(std::floor(cur + 0.5)) );
+    if( prop.getType() == props::INT || prop.getType() == props::LONG )
+      prop.setLongValue( static_cast<long>(std::floor(cur + 0.5)) );
     else
-      prop->setDoubleValue(cur);
+      prop.setDoubleValue(cur);
   }
 
 } // namespace simgear

@@ -47,7 +47,7 @@ namespace simgear
        * Resets animation timer to zero and prepares for interpolation to new
        * target value.
        */
-      void reset(const SGPropertyNode* target);
+      void reset(const SGPropertyNode& target);
 
       /**
        * Set easing function to be used for interpolation.
@@ -63,7 +63,7 @@ namespace simgear
        *         else time is negative indicating the remaining time until
        *         finished)
        */
-      double update(SGPropertyNode* prop, double dt);
+      double update(SGPropertyNode& prop, double dt);
 
       const std::string& getType() const    { return _type; }
 
@@ -78,9 +78,9 @@ namespace simgear
 
       PropertyInterpolator();
 
-      virtual void setTarget(const SGPropertyNode* target) = 0;
-      virtual void init(const SGPropertyNode* prop) = 0;
-      virtual void write(SGPropertyNode* prop, double t) = 0;
+      virtual void setTarget(const SGPropertyNode& target) = 0;
+      virtual void init(const SGPropertyNode& prop) = 0;
+      virtual void write(SGPropertyNode& prop, double t) = 0;
   };
 
   class NumericInterpolator:
@@ -90,9 +90,9 @@ namespace simgear
       double _end,
              _diff;
 
-      virtual void setTarget(const SGPropertyNode* target);
-      virtual void init(const SGPropertyNode* prop);
-      virtual void write(SGPropertyNode* prop, double t);
+      virtual void setTarget(const SGPropertyNode& target);
+      virtual void init(const SGPropertyNode& prop);
+      virtual void write(SGPropertyNode& prop, double t);
   };
 
 } // namespace simgear

@@ -37,9 +37,9 @@ namespace simgear
       osg::Vec4 _color_end,
                 _color_diff;
 
-      virtual void setTarget(const SGPropertyNode* target);
-      virtual void init(const SGPropertyNode* prop);
-      virtual void write(SGPropertyNode* prop, double t);
+      virtual void setTarget(const SGPropertyNode& target);
+      virtual void init(const SGPropertyNode& prop);
+      virtual void write(SGPropertyNode& prop, double t);
 
 
   };

@@ -25,9 +25,9 @@ namespace simgear
 {
 
   //----------------------------------------------------------------------------
-  void ColorInterpolator::setTarget(const SGPropertyNode* target)
+  void ColorInterpolator::setTarget(const SGPropertyNode& target)
   {
-    if( !parseColor(target->getStringValue(), _color_end) )
+    if( !parseColor(target.getStringValue(), _color_end) )
       SG_LOG
       (
         SG_GENERAL, SG_WARN, "ColorInterpolator: failed to parse end color."
@@ -35,10 +35,10 @@ namespace simgear
   }
 
   //----------------------------------------------------------------------------
-  void ColorInterpolator::init(const SGPropertyNode* prop)
+  void ColorInterpolator::init(const SGPropertyNode& prop)
   {
     osg::Vec4 color_start;
-    if( !parseColor(prop->getStringValue(), color_start) )
+    if( !parseColor(prop.getStringValue(), color_start) )
       // If unable to get current color, immediately change to target color
       color_start = _color_end;
 
@@ -46,7 +46,7 @@ namespace simgear
   }
 
   //----------------------------------------------------------------------------
-  void ColorInterpolator::write(SGPropertyNode* prop, double t)
+  void ColorInterpolator::write(SGPropertyNode& prop, double t)
   {
     osg::Vec4 color_cur = _color_end - _color_diff * (1 - t);
     bool has_alpha = color_cur.a() < 0.999;
@@ -68,7 +68,7 @@ namespace simgear
 
     strm << ')';
 
-    prop->setStringValue(strm.str());
+    prop.setStringValue(strm.str());
   }
 
 } // namespace simgear

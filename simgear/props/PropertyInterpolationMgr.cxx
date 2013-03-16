@@ -48,7 +48,7 @@ namespace simgear
       for(double unused_time = dt;;)
       {
         PropertyInterpolatorRef interp = it->second;
-        unused_time = interp->update(it->first, unused_time);
+        unused_time = interp->update(*it->first, unused_time);
 
         if( unused_time <= 0.0 )
           // No time left for next animation
@@ -86,9 +86,9 @@ namespace simgear
   };
 
   //----------------------------------------------------------------------------
-  PropertyInterpolatorRef
+  PropertyInterpolator*
   PropertyInterpolationMgr::createInterpolator( const std::string& type,
-                                                const SGPropertyNode* target,
+                                                const SGPropertyNode& target,
                                                 double duration,
                                                 const std::string& easing )
   {
@@ -117,7 +117,7 @@ namespace simgear
       return 0;
     }
 
-    PropertyInterpolatorRef interp;
+    PropertyInterpolator* interp;
     interp = (*interpolator_factory->second)();
     interp->reset(target);
     interp->_type = type;
@@ -150,6 +150,42 @@ namespace simgear
     }
     else
       _interpolators.push_front( std::make_pair(prop, interp) );
+  }
+
+  //----------------------------------------------------------------------------
+  void PropertyInterpolationMgr::interpolate( SGPropertyNode* prop,
+                                              const std::string& type,
+                                              const PropertyList& values,
+                                              const double_list& deltas,
+                                              const std::string& easing )
+  {
+    if( values.size() != deltas.size() )
+      SG_LOG(SG_GENERAL, SG_WARN, "interpolate: sizes do not match");
+
+    size_t num_values = std::min(values.size(), deltas.size());
+    if( !num_values )
+    {
+      SG_LOG(SG_GENERAL, SG_WARN, "interpolate: no values");
+      return;
+    }
+
+    PropertyInterpolatorRef first_interp, cur_interp;
+    for(size_t i = 0; i < num_values; ++i)
+    {
+      assert(values[i]);
+
+      PropertyInterpolator* interp =
+        createInterpolator(type, *values[i], deltas[i], easing);
+
+      if( !first_interp )
+        first_interp = interp;
+      else
+        cur_interp->_next = interp;
+
+      cur_interp = interp;
+    }
+
+    interpolate(prop, first_interp);
   }
 
   //----------------------------------------------------------------------------

@@ -21,7 +21,9 @@
 
 #include "PropertyInterpolator.hxx"
 
+#include <simgear/math/sg_types.hxx>
 #include <simgear/misc/make_new.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
 
 #include <list>
@@ -67,9 +69,9 @@ namespace simgear
        * @param duration    Duration if the animation (in seconds)
        * @param easing      Type of easing ("linear", "swing", etc.)
        */
-      PropertyInterpolatorRef
+      PropertyInterpolator*
       createInterpolator( const std::string& type,
-                          const SGPropertyNode* target,
+                          const SGPropertyNode& target,
                           double duration = 1.0,
                           const std::string& easing = "swing" );
 
@@ -82,6 +84,12 @@ namespace simgear
        */
       void interpolate( SGPropertyNode* prop,
                         PropertyInterpolatorRef interp );
+
+      void interpolate( SGPropertyNode* prop,
+                        const std::string& type,
+                        const PropertyList& values,
+                        const double_list& deltas,
+                        const std::string& easing = "linear" );
 
       /**
        * Register factory for interpolation type.

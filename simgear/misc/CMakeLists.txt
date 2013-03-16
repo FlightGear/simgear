@@ -4,6 +4,7 @@ include (SimGearComponent)
 set(HEADERS 
     ResourceManager.hxx
     interpolator.hxx
+    make_new.hxx
     sg_dir.hxx
     sg_path.hxx
     sgstream.hxx

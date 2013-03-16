@@ -41,9 +41,8 @@ int main (int ac, char ** av)
   SGPropertyNode color_node, color_arg;
   color_arg.setStringValue("#000000");
 
-  simgear::PropertyInterpolator* interp =
-    simgear::PropertyInterpolator
-           ::create<simgear::ColorInterpolator>(&color_arg);
+  simgear::PropertyInterpolator* interp = new simgear::ColorInterpolator;
+  interp->reset(&color_arg);
 
   interp->update(&color_node, 0.5); // with no color it should immediately set to the target
   VERIFY_NODE_STR(color_node, "rgb(0,0,0)");

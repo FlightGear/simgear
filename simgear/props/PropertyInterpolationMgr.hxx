@@ -19,8 +19,10 @@
 #ifndef SG_PROPERTY_INTERPOLATION_MGR_HXX_
 #define SG_PROPERTY_INTERPOLATION_MGR_HXX_
 
+#include "PropertyInterpolator.hxx"
+
+#include <simgear/misc/make_new.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
-#include <simgear/props/PropertyInterpolator.hxx>
 
 #include <list>
 
@@ -45,8 +47,7 @@ namespace simgear
     public SGSubsystem
   {
     public:
-      typedef PropertyInterpolator*
-              (*InterpolatorFactory)(const SGPropertyNode* target);
+      typedef PropertyInterpolator* (*InterpolatorFactory)();
 
       PropertyInterpolationMgr();
 
@@ -90,7 +91,11 @@ namespace simgear
       template<class T>
       void addInterpolatorFactory(const std::string& type)
       {
-        addInterpolatorFactory(type, &PropertyInterpolator::create<T>);
+        addInterpolatorFactory
+        (
+          type,
+          &simgear::make_new_derived<PropertyInterpolator, T>
+        );
       }
 
       /**

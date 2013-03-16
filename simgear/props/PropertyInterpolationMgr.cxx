@@ -18,14 +18,7 @@
 
 #include "PropertyInterpolationMgr.hxx"
 #include "PropertyInterpolator.hxx"
-
-#include <simgear_config.h>
-
-#ifndef SIMGEAR_HEADLESS
-# include <simgear/scene/util/ColorInterpolator.hxx>
-#endif
-
-#include <simgear/props/props.hxx>
+#include "props.hxx"
 
 #include <algorithm>
 
@@ -36,9 +29,6 @@ namespace simgear
   PropertyInterpolationMgr::PropertyInterpolationMgr()
   {
     addInterpolatorFactory<NumericInterpolator>("numeric");
-#ifndef SIMGEAR_HEADLESS
-    addInterpolatorFactory<ColorInterpolator>("color");
-#endif
 
     for( size_t i = 0; easing_functions[i].name; ++i )
       addEasingFunction
@@ -128,7 +118,8 @@ namespace simgear
     }
 
     PropertyInterpolatorRef interp;
-    interp = (*interpolator_factory->second)(target);
+    interp = (*interpolator_factory->second)();
+    interp->reset(target);
     interp->_type = type;
     interp->_duration = duration;
     interp->_easing = easing_func->second;

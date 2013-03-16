@@ -68,7 +68,7 @@ namespace simgear
   //----------------------------------------------------------------------------
   PropertyInterpolator::PropertyInterpolator():
     _duration(1),
-    _cur_t(-1)
+    _cur_t(0)
   {
     setEasingFunction(0);
   }

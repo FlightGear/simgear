@@ -67,23 +67,6 @@ namespace simgear
 
       const std::string& getType() const    { return _type; }
 
-      /**
-       * Create new animation for given property.
-       *
-       * @param prop    Property to be animated
-       * @param target  Property containing target value
-       */
-      template<class Derived>
-      static PropertyInterpolator* create(const SGPropertyNode* target)
-      {
-        assert(target);
-
-        PropertyInterpolator* interp = new Derived;
-        interp->reset(target);
-
-        return interp;
-      }
-
     protected:
       friend class PropertyInterpolationMgr;
 

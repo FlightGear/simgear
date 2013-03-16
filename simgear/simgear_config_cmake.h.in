@@ -21,4 +21,3 @@
 
 #cmakedefine SYSTEM_EXPAT
 #cmakedefine ENABLE_SOUND
-#cmakedefine SIMGEAR_HEADLESS

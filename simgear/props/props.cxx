@@ -11,6 +11,7 @@
 #endif
 
 #include "props.hxx"
+#include "PropertyInterpolationMgr.hxx"
 #include "vectorPropTemplates.hxx"
 
 #include <algorithm>
@@ -1654,6 +1655,52 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
   return result;
 }
 
+//------------------------------------------------------------------------------
+bool SGPropertyNode::interpolate( const std::string& type,
+                                  const SGPropertyNode& target,
+                                  double duration,
+                                  const std::string& easing )
+{
+  if( !_interpolation_mgr )
+  {
+    SG_LOG(SG_GENERAL, SG_WARN, "No property interpolator available");
+
+    // no interpolation possible -> set to target immediately
+    setUnspecifiedValue( target.getStringValue() );
+    return false;
+  }
+
+  return _interpolation_mgr->interpolate(this, type, target, duration, easing);
+}
+
+//------------------------------------------------------------------------------
+bool SGPropertyNode::interpolate( const std::string& type,
+                                  const PropertyList& values,
+                                  const double_list& deltas,
+                                  const std::string& easing )
+{
+  if( !_interpolation_mgr )
+  {
+    SG_LOG(SG_GENERAL, SG_WARN, "No property interpolator available");
+
+    // no interpolation possible -> set to last value immediately
+    if( !values.empty() )
+      setUnspecifiedValue(values.back()->getStringValue());
+    return false;
+  }
+
+  return _interpolation_mgr->interpolate(this, type, values, deltas, easing);
+}
+
+//------------------------------------------------------------------------------
+void SGPropertyNode::setInterpolationMgr(simgear::PropertyInterpolationMgr* mgr)
+{
+  _interpolation_mgr = mgr;
+}
+
+simgear::PropertyInterpolationMgr* SGPropertyNode::_interpolation_mgr = 0;
+
+//------------------------------------------------------------------------------
 std::ostream& SGPropertyNode::printOn(std::ostream& stream) const
 {
     if (!getAttribute(READ))

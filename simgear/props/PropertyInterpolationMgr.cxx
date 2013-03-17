@@ -41,6 +41,9 @@ namespace simgear
   //----------------------------------------------------------------------------
   void PropertyInterpolationMgr::update(double dt)
   {
+    if( _rt_prop )
+      dt = _rt_prop->getDoubleValue();
+
     for( InterpolatorList::iterator it = _interpolators.begin();
                                     it != _interpolators.end();
                                   ++it )
@@ -128,9 +131,12 @@ namespace simgear
   }
 
   //----------------------------------------------------------------------------
-  void PropertyInterpolationMgr::interpolate( SGPropertyNode* prop,
+  bool PropertyInterpolationMgr::interpolate( SGPropertyNode* prop,
                                               PropertyInterpolatorRef interp )
   {
+    if( !prop )
+      return false;
+
     // Search for active interpolator on given property
     InterpolatorList::iterator it = std::find_if
     (
@@ -138,6 +144,14 @@ namespace simgear
       _interpolators.end(),
       PredicateIsSameProp(prop)
     );
+
+    if( !interp )
+    {
+      // Without new interpolator just remove old one
+      if( it != _interpolators.end() )
+        _interpolators.erase(it);
+      return true;
+    }
 
     if( it != _interpolators.end() )
     {
@@ -150,10 +164,26 @@ namespace simgear
     }
     else
       _interpolators.push_front( std::make_pair(prop, interp) );
+
+    return true;
   }
 
   //----------------------------------------------------------------------------
-  void PropertyInterpolationMgr::interpolate( SGPropertyNode* prop,
+  bool PropertyInterpolationMgr::interpolate( SGPropertyNode* prop,
+                                              const std::string& type,
+                                              const SGPropertyNode& target,
+                                              double duration,
+                                              const std::string& easing )
+  {
+    return interpolate
+    (
+      prop,
+      createInterpolator(type, target, duration, easing)
+    );
+  }
+
+  //----------------------------------------------------------------------------
+  bool PropertyInterpolationMgr::interpolate( SGPropertyNode* prop,
                                               const std::string& type,
                                               const PropertyList& values,
                                               const double_list& deltas,
@@ -166,7 +196,7 @@ namespace simgear
     if( !num_values )
     {
       SG_LOG(SG_GENERAL, SG_WARN, "interpolate: no values");
-      return;
+      return false;
     }
 
     PropertyInterpolatorRef first_interp, cur_interp;
@@ -185,7 +215,7 @@ namespace simgear
       cur_interp = interp;
     }
 
-    interpolate(prop, first_interp);
+    return interpolate(prop, first_interp);
   }
 
   //----------------------------------------------------------------------------
@@ -220,6 +250,12 @@ namespace simgear
       );
 
     _easing_functions[type] = func;
+  }
+
+  //----------------------------------------------------------------------------
+  void PropertyInterpolationMgr::setRealtimeProperty(SGPropertyNode* node)
+  {
+    _rt_prop = node;
   }
 
 } // namespace simgear

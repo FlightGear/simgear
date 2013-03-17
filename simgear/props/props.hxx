@@ -31,6 +31,7 @@
 
 
 #include <simgear/math/SGMathFwd.hxx>
+#include <simgear/math/sg_types.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
@@ -39,6 +40,9 @@
 
 namespace simgear
 {
+
+  class PropertyInterpolationMgr;
+
 template<typename T>
 std::istream& readFrom(std::istream& stream, T& result)
 {
@@ -1238,6 +1242,37 @@ public:
   }
   
   /**
+   * Interpolate current value to target value within given time.
+   *
+   * @param type        Type of interpolation ("numeric", "color", etc.)
+   * @param target      Node containing target value
+   * @param duration    Duration of interpolation (in seconds)
+   * @param easing      Easing function (http://easings.net/)
+   */
+  bool interpolate( const std::string& type,
+                    const SGPropertyNode& target,
+                    double duration = 0.6,
+                    const std::string& easing = "swing" );
+
+  /**
+   * Interpolate current value to a series of values within given durations.
+   *
+   * @param type        Type of interpolation ("numeric", "color", etc.)
+   * @param values      Nodes containing intermediate and target values
+   * @param duration    Durations for each interpolation step (in seconds)
+   * @param easing      Easing function (http://easings.net/)
+   */
+  bool interpolate( const std::string& type,
+                    const simgear::PropertyList& values,
+                    const double_list& deltas,
+                    const std::string& easing = "swing" );
+
+  /**
+   * Set the interpolation manager used by the interpolate methods.
+   */
+  static void setInterpolationMgr(simgear::PropertyInterpolationMgr* mgr);
+
+  /**
    * Print the value of the property to a stream.
    */
   std::ostream& printOn(std::ostream& stream) const;
@@ -1649,6 +1684,8 @@ protected:
   SGPropertyNode (const std::string& name, int index, SGPropertyNode * parent);
   template<typename Itr>
   SGPropertyNode (Itr begin, Itr end, int index, SGPropertyNode * parent);
+
+  static simgear::PropertyInterpolationMgr* _interpolation_mgr;
 
 private:
 

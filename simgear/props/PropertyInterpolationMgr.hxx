@@ -72,8 +72,8 @@ namespace simgear
       PropertyInterpolator*
       createInterpolator( const std::string& type,
                           const SGPropertyNode& target,
-                          double duration = 1.0,
-                          const std::string& easing = "swing" );
+                          double duration,
+                          const std::string& easing );
 
       /**
        * Add animation of the given property from current its current value to
@@ -82,14 +82,20 @@ namespace simgear
        * @param prop    Property to be interpolated
        * @param interp  Interpolator used for interpolation
        */
-      void interpolate( SGPropertyNode* prop,
+      bool interpolate( SGPropertyNode* prop,
                         PropertyInterpolatorRef interp );
 
-      void interpolate( SGPropertyNode* prop,
+      bool interpolate( SGPropertyNode* prop,
+                        const std::string& type,
+                        const SGPropertyNode& target,
+                        double duration,
+                        const std::string& easing );
+
+      bool interpolate( SGPropertyNode* prop,
                         const std::string& type,
                         const PropertyList& values,
                         const double_list& deltas,
-                        const std::string& easing = "linear" );
+                        const std::string& easing );
 
       /**
        * Register factory for interpolation type.
@@ -111,6 +117,13 @@ namespace simgear
        */
       void addEasingFunction(const std::string& type, easing_func_t func);
 
+      /**
+       * Set property containing real time delta (not sim time)
+       *
+       * TODO better pass both deltas to all update methods...
+       */
+      void setRealtimeProperty(SGPropertyNode* node);
+
     protected:
 
       typedef std::map<std::string, InterpolatorFactory> InterpolatorFactoryMap;
@@ -124,6 +137,8 @@ namespace simgear
       InterpolatorFactoryMap    _interpolator_factories;
       EasingFunctionMap         _easing_functions;
       InterpolatorList          _interpolators;
+
+      SGPropertyNode_ptr        _rt_prop;
   };
 
 } // namespace simgear

@@ -52,12 +52,14 @@ struct DoubleDerived:
 };
 
 typedef boost::shared_ptr<Base> BasePtr;
+typedef std::vector<BasePtr> BaseVec;
 
 struct DoubleDerived2:
   public Derived
 {
   const BasePtr& getBase() const{return _base;}
   BasePtr _base;
+  BaseVec doSomeBaseWork(const BaseVec& v) { return v; }
 };
 
 typedef boost::shared_ptr<Derived> DerivedPtr;
@@ -160,7 +162,8 @@ int main(int argc, char* argv[])
     .bases<DerivedPtr>();
   Ghost<DoubleDerived2Ptr>::init("DoubleDerived2Ptr")
     .bases< Ghost<DerivedPtr> >()
-    .member("base", &DoubleDerived2::getBase);
+    .member("base", &DoubleDerived2::getBase)
+    .method("doIt", &DoubleDerived2::doSomeBaseWork);
 
   nasal::to_nasal(c, DoubleDerived2Ptr());
 
@@ -219,6 +222,17 @@ int main(int argc, char* argv[])
   Hash derived_obj(c);
   derived_obj.set("parents", parents2);
   VERIFY( Ghost<BasePtr>::fromNasal(c, derived_obj.get_naRef()) == d3 );
+
+  std::vector<naRef> nasal_objects;
+  nasal_objects.push_back( Ghost<BasePtr>::create(c, d) );
+  nasal_objects.push_back( Ghost<BasePtr>::create(c, d2) );
+  nasal_objects.push_back( Ghost<BasePtr>::create(c, d3) );
+  naRef obj_vec = to_nasal(c, nasal_objects);
+
+  std::vector<BasePtr> objects = from_nasal<std::vector<BasePtr> >(c, obj_vec);
+  VERIFY( objects[0] == d );
+  VERIFY( objects[1] == d2 );
+  VERIFY( objects[2] == d3 );
 
   // TODO actually do something with the ghosts...
 

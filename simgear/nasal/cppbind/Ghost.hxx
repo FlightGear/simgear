@@ -887,4 +887,19 @@ to_nasal_helper(naContext c, T ptr)
   return nasal::Ghost<T>::create(c, ptr);
 }
 
+/**
+ * Convert nasal ghosts/hashes to shared pointer (of a ghost)
+ */
+template<class T>
+typename boost::enable_if<
+  nasal::internal::has_element_type<
+    typename nasal::internal::reduced_type<T>::type
+  >,
+  T
+>::type
+from_nasal_helper(naContext c, naRef ref, const T*)
+{
+  return nasal::Ghost<T>::fromNasal(c, ref);
+}
+
 #endif /* SG_NASAL_GHOST_HXX_ */

@@ -434,6 +434,7 @@ namespace canvas
     PropertyBasedElement(node),
     _canvas( canvas ),
     _parent( parent ),
+    _attributes_dirty( 0 ),
     _transform_dirty( false ),
     _transform( new osg::MatrixTransform ),
     _style( parent_style ),

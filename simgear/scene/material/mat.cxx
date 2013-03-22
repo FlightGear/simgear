@@ -202,7 +202,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         }
     }
 
-    if (textures.size() == 0 && texturesets.size() == 0) {
+    if (textures.empty() && texturesets.empty()) {
         SGPath tpath("Textures");
         tpath.append("Terrain");
         tpath.append("unknown.rgb");
@@ -455,7 +455,7 @@ Effect* SGMaterial::get_effect(int i)
 
 Effect* SGMaterial::get_effect(const SGTexturedTriangleBin& triangleBin)
 {
-    if (_status.size() == 0) {
+    if (_status.empty()) {
         SG_LOG( SG_GENERAL, SG_WARN, "No effect available.");
         return 0;
     }
@@ -472,7 +472,7 @@ Effect* SGMaterial::get_effect()
 
 osg::Texture2D* SGMaterial::get_object_mask(const SGTexturedTriangleBin& triangleBin)
 {
-    if (_status.size() == 0) {
+    if (_status.empty()) {
         SG_LOG( SG_GENERAL, SG_WARN, "No mask available.");
         return 0;
     }

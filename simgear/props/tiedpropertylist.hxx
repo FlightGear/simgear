@@ -37,11 +37,11 @@ public:
     virtual ~TiedPropertyList()
     { 
         _root = 0;
-        if (size()>0)
+        if (! empty())
         {
             SG_LOG(SG_GENERAL, SG_ALERT, "Detected properties with dangling ties. Use 'Untie' before removing a TiedPropertyList.");
             // running debug mode: go, fix it!
-            assert(size() == 0);
+            assert(empty());
         }
     }
 
@@ -124,7 +124,7 @@ public:
     }
 
     void Untie() {
-        while( size() > 0 ) {
+        while( ! empty() ) {
             SG_LOG( SG_GENERAL, SG_DEBUG, "untie of " << back()->getPath() );
             back()->untie();
             pop_back();

@@ -48,7 +48,7 @@ namespace simgear
 {
 void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
 {
-    if (!_cloudsprites.size()) return;
+    if (_cloudsprites.empty()) return;
     
     osg::State& state = *renderInfo.getState();
     

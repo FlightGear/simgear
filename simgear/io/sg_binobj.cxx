@@ -934,7 +934,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     fprintf(fp, "\n");
 
     // dump individual triangles if they exist
-    if ( tris_v.size() > 0 ) {
+    if ( ! tris_v.empty() ) {
         fprintf(fp, "# triangle groups\n");
 
         int start = 0;
@@ -982,7 +982,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     }
 
     // dump triangle groups
-    if ( strips_v.size() > 0 ) {
+    if ( ! strips_v.empty() ) {
         fprintf(fp, "# triangle strips\n");
 
         int start = 0;

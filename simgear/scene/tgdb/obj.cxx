@@ -1015,7 +1015,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     randomObjects->setName("Random objects");
   }
 
-  if (tileGeometryBin.randomBuildings.size() > 0) {
+  if (! tileGeometryBin.randomBuildings.empty()) {
     buildingNode = createRandomBuildings(tileGeometryBin.randomBuildings, osg::Matrix::identity(),
                                 options);                                
     buildingNode->setName("Random buildings");
@@ -1025,7 +1025,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     // Now add some random forest.
     tileGeometryBin.computeRandomForest(matlib, vegetation_density);
     
-    if (tileGeometryBin.randomForest.size() > 0) {
+    if (! tileGeometryBin.randomForest.empty()) {
       forestNode = createForest(tileGeometryBin.randomForest, osg::Matrix::identity(),
                                 options);
       forestNode->setName("Random trees");

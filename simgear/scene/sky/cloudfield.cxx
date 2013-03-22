@@ -395,7 +395,7 @@ bool SGCloudField::repositionCloud(int identifier, float lon, float lat, float a
     }
 
 bool SGCloudField::isDefined3D(void) {
-    return (cloud_hash.size() > 0);
+    return (! cloud_hash.empty());
 }
 
 SGCloudField::CloudFog::CloudFog() {

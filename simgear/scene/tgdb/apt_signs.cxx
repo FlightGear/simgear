@@ -429,7 +429,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
             }
         }
 
-        if (newmat.size()) {
+        if (! newmat.empty()) {
             material = d->materials->find(newmat);
             newmat.clear();
         }

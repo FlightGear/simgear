@@ -167,12 +167,12 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
     BOOST_FOREACH(ref_ptr<Pass>& pass, passes)
     {
         osg::ref_ptr<osg::StateSet> ss = pass;
-        if (ecv && ( pass->getBufferUnitList().size() != 0 || pass->getPositionedUniformMap().size() != 0 ) ) {
+        if (ecv && ( ! pass->getBufferUnitList().empty() || ! pass->getPositionedUniformMap().empty() ) ) {
             ss = static_cast<osg::StateSet*>(
-                pass->clone( osg::CopyOp( ( pass->getBufferUnitList().size() != 0 ?
+                pass->clone( osg::CopyOp( ( ! pass->getBufferUnitList().empty() ?
                                                         osg::CopyOp::DEEP_COPY_TEXTURES :
                                                         osg::CopyOp::SHALLOW_COPY ) |
-                                           ( pass->getPositionedUniformMap().size() != 0 ?
+                                           ( ! pass->getPositionedUniformMap().empty() ?
                                                         osg::CopyOp::DEEP_COPY_UNIFORMS :
                                                         osg::CopyOp::SHALLOW_COPY ) )
                 )

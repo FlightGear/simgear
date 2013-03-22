@@ -45,7 +45,7 @@ public:
     numeric( aNumeric ),
     format( aFormat )
   {
-    if( format.size() == 0 ) {
+    if( format.empty() ) {
       if( numeric ) format = "%f";
       else format = "%s";
     }

@@ -316,7 +316,7 @@ getVectorProperties(const SGPropertyNode* prop,
     PropertyList useProps = prop->getChildren("use");
     if (useProps.size() == 1) {
         string parentName = useProps[0]->getStringValue();
-        if (parentName.size() == 0 || parentName[0] != '/')
+        if (parentName.empty() || parentName[0] != '/')
             parentName = options->getPropertyNode()->getPath() + "/" + parentName;
         if (parentName[parentName.size() - 1] != '/')
             parentName.append("/");
@@ -331,7 +331,7 @@ getVectorProperties(const SGPropertyNode* prop,
              itr != end;
              ++itr) {
             string childName = (*itr)->getStringValue();
-            if (childName.size() == 0 || childName[0] != '/')
+            if (childName.empty() || childName[0] != '/')
                 result.push_back(parentName + childName);
             else
                 result.push_back(childName);

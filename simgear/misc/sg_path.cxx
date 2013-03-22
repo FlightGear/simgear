@@ -144,7 +144,7 @@ void SGPath::set_cached(bool cached)
 
 // append another piece to the existing path
 void SGPath::append( const string& p ) {
-    if ( path.size() == 0 ) {
+    if ( path.empty() ) {
         path = p;
     } else {
     if ( p[0] != sgDirPathSep ) {
@@ -173,7 +173,7 @@ void SGPath::add( const string& p ) {
 // concatenate a string to the end of the path without inserting a
 // path separator
 void SGPath::concat( const string& p ) {
-    if ( path.size() == 0 ) {
+    if ( path.empty() ) {
         path = p;
     } else {
         path += p;
@@ -378,7 +378,7 @@ int SGPath::create_dir( mode_t mode ) {
 string_list sgPathBranchSplit( const string &dirpath ) {
     string_list path_elements;
     string element, path = dirpath;
-    while ( path.size() ) {
+    while ( ! path.empty() ) {
         size_t p = path.find( sgDirPathSep );
         if ( p != string::npos ) {
             element = path.substr( 0, p );
@@ -387,7 +387,7 @@ string_list sgPathBranchSplit( const string &dirpath ) {
             element = path;
             path = "";
         }
-        if ( element.size() )
+        if ( ! element.empty() )
             path_elements.push_back( element );
     }
     return path_elements;

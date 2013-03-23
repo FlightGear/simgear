@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 
+class SGGeod;
 class SGPath;
 
 namespace nasal
@@ -62,6 +63,8 @@ namespace nasal
    * Simple pass-through of naRef types to allow generic usage of to_nasal
    */
   naRef to_nasal_helper(naContext c, const naRef& ref);
+
+  naRef to_nasal_helper(naContext c, const SGGeod& pos);
 
   naRef to_nasal_helper(naContext c, const SGPath& path);
 

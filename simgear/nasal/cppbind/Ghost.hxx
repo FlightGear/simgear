@@ -279,6 +279,14 @@ namespace nasal
       }
 
       /**
+       * Check whether ghost type has already been initialized.
+       */
+      static bool isInit()
+      {
+        return getSingletonPtr();
+      }
+
+      /**
        * Register a base class for this ghost. The base class needs to be
        * registers on its own before it can be used as base class.
        *

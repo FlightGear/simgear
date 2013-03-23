@@ -20,6 +20,7 @@
 #include <simgear/nasal/cppbind/NasalHash.hxx>
 #include <simgear/nasal/cppbind/Ghost.hxx>
 
+#include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #include <boost/function.hpp>
@@ -50,6 +51,16 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const naRef& ref)
   {
     return ref;
+  }
+
+  //------------------------------------------------------------------------------
+  naRef to_nasal_helper(naContext c, const SGGeod& pos)
+  {
+    nasal::Hash hash(c);
+    hash.set("lat", pos.getLatitudeDeg());
+    hash.set("lon", pos.getLongitudeDeg());
+    hash.set("elevation", pos.getElevationM());
+    return hash.get_naRef();
   }
 
   //----------------------------------------------------------------------------

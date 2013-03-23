@@ -165,6 +165,7 @@ int main(int argc, char* argv[])
     .member("base", &DoubleDerived2::getBase)
     .method("doIt", &DoubleDerived2::doSomeBaseWork);
 
+  VERIFY( Ghost<BasePtr>::isInit() );
   nasal::to_nasal(c, DoubleDerived2Ptr());
 
   BasePtr d( new Derived );

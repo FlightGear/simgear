@@ -5,204 +5,252 @@
 #include "event_mgr.hxx"
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/structure/exception.hxx>
+
+namespace // anonymous namespace for internal stuff
+{
+    
+class SGTimer
+{
+public:
+    SGTimer(const std::string& aName, double aInterval, SGCallback* aCb, bool aRepeat, bool aIsSimTime) :
+        name(aName),
+        interval(aInterval),
+        callback(aCb),
+        repeat(aRepeat),
+        simTime(aIsSimTime)
+    {
+    }
+    
+    ~SGTimer()
+    {
+    }
+
+    void run()
+    {
+        (*callback)();
+    }
+  
+    std::string name;
+    double interval;
+    std::auto_ptr<SGCallback> callback;
+    bool repeat;
+    bool simTime;
+    
+    SGTimeStamp due;
+};
+
+bool operator==(SGTimer* t, const std::string& aName)
+{
+    return (t->name == aName);
+}
+
+bool orderTimers(SGTimer* a, SGTimer* b)
+{
+    return b->due < a->due;
+}
+
+typedef std::vector<SGTimer*> TimerQueue;
+
+} // of anonymouse namespace
+
+class SGEventMgr::EventMgrPrivate
+{
+public:
+    void runQueue(const SGTimeStamp& aNow, TimerQueue& q)
+    {        
+        if (!q.empty()) {
+       //     std::cout << "now:" << aNow << ", task " << q.front()->name << " is due:" << q.front()->due << std::endl;
+        }
+        
+        while (!q.empty() && (q.front()->due <= aNow)) {
+            execTask(aNow, q);
+        }
+    }
+    
+    void execTask(const SGTimeStamp& aNow, TimerQueue& q)
+    {
+        SGTimer* task = q.front();
+        std::pop_heap(q.begin(), q.end(), &orderTimers);
+        q.pop_back();
+        
+    //    std::cout << "running task " << task->name << std::endl;
+     //   std::cout << "now:" << aNow << ", task due:" << task->due << std::endl;
+        
+        runningTask = task;
+        task->run();
+        runningTask = NULL;
+        
+        if (task->repeat) {
+            scheduleTask(aNow, task, q);
+        } else {
+            toBeDeleted.push_back(task);
+        }
+    }
+    
+    void execFrameTasks(bool execSimTasks)
+    {
+        // avoid issues with modification of 'execNextFrame' while running;
+        // take a copy, then clear to empty.
+        TimerQueue execThisFrame;
+        execThisFrame.swap(execNextFrame);
+        execNextFrame.clear();
+        
+        for (TimerQueue::iterator it=execThisFrame.begin(); it != execThisFrame.end(); ++it) {
+            // skip sim-tasks if required (we're paused, probably)
+            if (!execSimTasks && (*it)->simTime) {
+                execNextFrame.push_back(*it);
+                continue;
+            }
+            
+            runningTask = *it;
+            (*it)->run();
+            runningTask = NULL;
+            toBeDeleted.push_back(*it);
+        }
+    }
+    
+    void scheduleTask(const SGTimeStamp& aNow, SGTimer* task, TimerQueue& q)
+    {
+        task->due.setTime(task->interval);
+        task->due += aNow;
+        q.push_back(task);
+        std::push_heap(q.begin(), q.end(), &orderTimers);
+    }
+  
+    void scheduleTaskWithDelay(const SGTimeStamp& aNow, SGTimer* task, TimerQueue& q, double delay)
+    {
+      task->due.setTime(delay);
+      task->due += aNow;
+      q.push_back(task);
+      std::push_heap(q.begin(), q.end(), &orderTimers);
+    }
+  
+    // linear search, O(N) in size of the queue
+    SGTimer* removeByName(const std::string& aName, TimerQueue& q)
+    {
+        SGTimer* result = NULL;
+        TimerQueue::iterator it = std::find(q.begin(), q.end(), aName);
+        if (it != q.end()) {
+            result = *it;
+            q.erase(it);
+        // since we're modifying the vector outside the heap operations,
+        // we must remake the heap now. 
+            std::make_heap(q.begin(), q.end(), &orderTimers);
+        }
+        
+        return result;
+    }
+    
+    void clearDeleteList()
+    {
+        for (TimerQueue::iterator it=toBeDeleted.begin(); it != toBeDeleted.end(); ++it) {
+            delete *it;
+        }
+        
+        toBeDeleted.clear();
+    }
+    
+    TimerQueue simQ, realtimeQ;
+    SGTimeStamp simNow; ///< track simulation now time
+    TimerQueue toBeDeleted;
+    TimerQueue execNextFrame;
+    
+    SGTimer* runningTask;
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
+SGEventMgr::SGEventMgr() :
+  d(new EventMgrPrivate)
+{
+    d->runningTask = NULL;
+}
+
+SGEventMgr::~SGEventMgr()
+{
+    for (TimerQueue::iterator it=d->simQ.begin(); it != d->simQ.end(); ++it) {
+      delete *it;
+    }
+    
+    for (TimerQueue::iterator it=d->realtimeQ.begin(); it != d->realtimeQ.end(); ++it) {
+      delete *it;
+    }
+    
+    d->clearDeleteList();
+}
 
 void SGEventMgr::add(const std::string& name, SGCallback* cb,
-                     double interval, double delay,
+                     double interval,
                      bool repeat, bool simtime)
 {
-    // Clamp the delay value to 1 usec, so that user code can use
-    // "zero" as a synonym for "next frame".
-    if(delay <= 0) delay = 0.000001;
-
-    SGTimer* t = new SGTimer;
-    t->interval = interval;
-    t->callback = cb;
-    t->repeat = repeat;
-    t->name = name;
-    t->running = false;
+    if (repeat && (interval <= 0.0)) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "requested a repeating event with 0 interval, forbidden");
+        throw sg_range_exception("zero-interval repeating event requested");
+    }
     
-    SGTimerQueue* q = simtime ? &_simQueue : &_rtQueue;
-
-    q->insert(t, delay);
-}
-
-SGTimer::~SGTimer()
-{
-    delete callback;
-    callback = NULL;
-}
-
-void SGTimer::run()
-{
-    (*callback)();
+    SGTimer* t = new SGTimer(name, interval, cb, repeat, simtime);
+    if (interval <= 0.0) {
+        // special-case, next-frame timer
+        d->execNextFrame.push_back(t);
+        return;
+    }
+        
+    TimerQueue& q(simtime ? d->simQ : d->realtimeQ);
+    SGTimeStamp now = simtime ? d->simNow : SGTimeStamp::now();
+    d->scheduleTaskWithDelay(now, t, q, interval);
 }
 
 void SGEventMgr::update(double delta_time_sec)
-{
-    _simQueue.update(delta_time_sec);
+{ 
+    d->execFrameTasks(delta_time_sec > 0.0);
     
-    double rt = _rtProp ? _rtProp->getDoubleValue() : 0;
-    _rtQueue.update(rt);
+    d->runQueue(SGTimeStamp::now(), d->realtimeQ);
+  
+// update our model of simulation time - better if this was absolute?
+    d->simNow += SGTimeStamp::fromSec(delta_time_sec);
+   
+// run the simulation time queue
+    d->runQueue(d->simNow, d->simQ);
+    
+    d->clearDeleteList();
 }
 
 void SGEventMgr::removeTask(const std::string& name)
 {
-  SGTimer* t = _simQueue.findByName(name);
-  if (t) {
-    _simQueue.remove(t);
-  } else if ((t = _rtQueue.findByName(name))) {
-    _rtQueue.remove(t);
-  } else {
-    SG_LOG(SG_GENERAL, SG_WARN, "removeTask: no task found with name:" << name);
-    return;
-  }
-  if (t->running) {
-    // mark as not repeating so that the SGTimerQueue::update()
-    // will clean it up
-    t->repeat = false;
-  } else {
-    delete t;
-  }
-}
-
-////////////////////////////////////////////////////////////////////////
-// SGTimerQueue
-// This is the priority queue implementation:
-////////////////////////////////////////////////////////////////////////
-
-SGTimerQueue::SGTimerQueue(int size)
-{
-    _now = 0;
-    _numEntries = 0;
-    _tableSize = 1;
-    while(size > _tableSize)
-        _tableSize = ((_tableSize + 1)<<1) - 1;
-
-    _table = new HeapEntry[_tableSize];
-    for(int i=0; i<_tableSize; i++) {
-	_table[i].pri = 0;
-        _table[i].timer = 0;
+    std::cout << "removing task:" << name << std::endl;
+    
+    if (d->runningTask && d->runningTask->name == name) {
+        d->runningTask->repeat = false;
+        return; // everything else will be done by execTask;
     }
-}
-
-
-SGTimerQueue::~SGTimerQueue()
-{
-    for(int i=0; i<_numEntries; i++) {
-        delete _table[i].timer;
-        _table[i].timer = 0;
+    
+    SGTimer* t = d->removeByName(name, d->simQ);
+    if (!t) {
+        t = d->removeByName(name, d->realtimeQ);
     }
-    _numEntries = 0;
-    delete[] _table;
-    _table = 0;
-    _tableSize = 0;
-}
-
-void SGTimerQueue::update(double deltaSecs)
-{
-    _now += deltaSecs;
-    while(_numEntries && nextTime() <= _now) {
-        SGTimer* t = remove();
-        if(t->repeat)
-            insert(t, t->interval);
-        // warning: this is not thread safe
-        // but the entire timer queue isn't either
-        t->running = true;
-        t->run();
-        t->running = false;
-        if (!t->repeat)
-            delete t;
-    }
-}
-
-void SGTimerQueue::insert(SGTimer* timer, double time)
-{
-    if(_numEntries >= _tableSize)
-	growArray();
-
-    _numEntries++;
-    _table[_numEntries-1].pri = -(_now + time);
-    _table[_numEntries-1].timer = timer;
-
-    siftUp(_numEntries-1);
-}
-
-SGTimer* SGTimerQueue::remove(SGTimer* t)
-{
-    int entry;
-    for(entry=0; entry<_numEntries; entry++)
-        if(_table[entry].timer == t)
-            break;
-    if(entry == _numEntries)
-        return 0;
-
-    // Swap in the last item in the table, and sift down
-    swap(entry, _numEntries-1);
-    _numEntries--;
-    siftDown(entry);
-
-    return t;
-}
-
-SGTimer* SGTimerQueue::remove()
-{
-    if(_numEntries == 0) {
-	return 0;
-    } else if(_numEntries == 1) {
-	_numEntries = 0;
-	return _table[0].timer;
-    }
-
-    SGTimer *result = _table[0].timer;
-    _table[0] = _table[_numEntries - 1];
-    _numEntries--;
-    siftDown(0);
-    return result;
-}
-
-void SGTimerQueue::siftDown(int n)
-{
-    // While we have children bigger than us, swap us with the biggest
-    // child.
-    while(lchild(n) < _numEntries) {
-        int bigc = lchild(n);
-        if(rchild(n) < _numEntries && pri(rchild(n)) > pri(bigc))
-            bigc = rchild(n);
-        if(pri(bigc) <= pri(n))
-            break;
-        swap(n, bigc);
-        n = bigc;
-    }
-}
-
-void SGTimerQueue::siftUp(int n)
-{
-    while((n != 0) && (_table[n].pri > _table[parent(n)].pri)) {
-	swap(n, parent(n));
-	n = parent(n);
-    }
-    siftDown(n);
-}
-
-void SGTimerQueue::growArray()
-{
-    _tableSize = ((_tableSize+1)<<1) - 1;
-    HeapEntry *newTable = new HeapEntry[_tableSize];
-    for(int i=0; i<_numEntries; i++) {
-	newTable[i].pri  = _table[i].pri;
-	newTable[i].timer = _table[i].timer;
-    }
-    delete[] _table;
-    _table = newTable;
-}
-
-SGTimer* SGTimerQueue::findByName(const std::string& name) const
-{
-  for (int i=0; i < _numEntries; ++i) {
-    if (_table[i].timer->name == name) {
-      return _table[i].timer;
-    }
-  }
   
-  return NULL;
+    if (!t) {
+        SG_LOG(SG_GENERAL, SG_WARN, "removeTask: no task found with name:" << name);
+        return;
+    }
+
+    d->toBeDeleted.push_back(t);
+}
+
+void SGEventMgr::rescheduleTask(const std::string& name, double aInterval)
+{
+    SGTimer* t = d->removeByName(name, d->simQ);
+    if (t) {
+        d->scheduleTask(d->simNow, t, d->simQ);
+        return;
+    }
+    
+    t = d->removeByName(name, d->realtimeQ);
+    if (t) {
+        d->scheduleTask(SGTimeStamp::now(), t, d->realtimeQ);
+        return;
+    }
+    
+    SG_LOG(SG_GENERAL, SG_WARN, "rescheduleTask: no task found with name:" << name);
 }

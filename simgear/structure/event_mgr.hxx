@@ -1,25 +1,14 @@
 #ifndef _SG_EVENT_MGR_HXX
 #define _SG_EVENT_MGR_HXX
 
+#include <memory> 
+
 #include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
 
 #include "callback.hxx"
 
-class SGEventMgr;
-
-class SGTimer {
-public:
-    ~SGTimer();
-    void run();
-    
-    std::string name;
-    double interval;
-    SGCallback* callback;
-    bool repeat;
-    bool running;
-};
-
+#if 0
 class SGTimerQueue {
 public:
     SGTimerQueue(int preSize=1);
@@ -64,17 +53,21 @@ private:
     int _numEntries;
     int _tableSize;
 };
+#endif
 
 class SGEventMgr : public SGSubsystem
 {
 public:
-    SGEventMgr() { _rtProp = 0; }
-    ~SGEventMgr() { _rtProp = 0; }
+    SGEventMgr();
+    ~SGEventMgr();
 
     virtual void init() {}
     virtual void update(double delta_time_sec);
 
-    void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
+    // FIXME - remove once FG is in sync.
+    void setRealtimeProperty(SGPropertyNode*) { }
+
+    void setSimTime(SGPropertyNode* node);
 
     /**
      * Add a single function callback event as a repeating task.
@@ -82,8 +75,8 @@ public:
      */
     template<typename FUNC>
     inline void addTask(const std::string& name, const FUNC& f,
-                        double interval, double delay=0, bool sim=false)
-    { add(name, make_callback(f), interval, delay, true, sim); }
+                        double interval, bool sim=false)
+    { add(name, make_callback(f), interval, true, sim); }
 
     /**
      * Add a single function callback event as a one-shot event.
@@ -92,7 +85,7 @@ public:
     template<typename FUNC>
     inline void addEvent(const std::string& name, const FUNC& f,
                          double delay, bool sim=false)
-    { add(name, make_callback(f), 0, delay, false, sim); }
+    { add(name, make_callback(f), delay, false, sim); }
 
     /**
      * Add a object/method pair as a repeating task.
@@ -101,8 +94,8 @@ public:
     template<class OBJ, typename METHOD>
     inline void addTask(const std::string& name,
                         const OBJ& o, METHOD m,
-                        double interval, double delay=0, bool sim=false)
-    { add(name, make_callback(o,m), interval, delay, true, sim); }
+                        double interval, bool sim=false)
+    { add(name, make_callback(o,m), interval, true, sim); }
 
     /**
      * Add a object/method pair as a repeating task.
@@ -112,21 +105,20 @@ public:
     inline void addEvent(const std::string& name,
                          const OBJ& o, METHOD m,
                          double delay, bool sim=false)
-    { add(name, make_callback(o,m), 0, delay, false, sim); }
+    { add(name, make_callback(o,m), delay, false, sim); }
 
 
     void removeTask(const std::string& name);
+  
+    void rescheduleTask(const std::string& name, double aInterval);
 private:
-    friend class SGTimer;
-
+    class EventMgrPrivate;
+    
     void add(const std::string& name, SGCallback* cb,
-             double interval, double delay,
+             double interval,
              bool repeat, bool simtime);
 
-    SGPropertyNode_ptr _freezeProp;
-    SGPropertyNode_ptr _rtProp;
-    SGTimerQueue _rtQueue; 
-    SGTimerQueue _simQueue;
+    std::auto_ptr<EventMgrPrivate> d;
 };
 
 #endif // _SG_EVENT_MGR_HXX

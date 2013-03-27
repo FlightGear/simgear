@@ -53,4 +53,8 @@ add_executable(test_expressions expression_test.cxx)
 target_link_libraries(test_expressions ${TEST_LIBS})
 add_test(test_expressions ${EXECUTABLE_OUTPUT_PATH}/test_expressions)
 
+add_executable(test_events event_mgr_test.cxx)
+target_link_libraries(test_events ${TEST_LIBS})
+add_test(test_events ${EXECUTABLE_OUTPUT_PATH}/test_events)
+
 endif(ENABLE_TESTS)

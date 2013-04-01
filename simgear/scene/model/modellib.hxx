@@ -93,6 +93,7 @@ public:
     virtual ~SGModelData() {}
     virtual void modelLoaded(const std::string& path, SGPropertyNode *prop,
                              osg::Node* branch) = 0;
+    virtual SGModelData* clone() const = 0;
 };
 
 }

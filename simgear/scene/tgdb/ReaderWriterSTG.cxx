@@ -185,6 +185,14 @@ struct ReaderWriterSTG::_ModelBin {
         std::string fg_root = options->getPluginStringData("SimGear::FG_ROOT");
         sharedOptions->getDatabasePathList().push_back(fg_root);
 
+        // TODO how should we handle this for OBJECT_SHARED?
+        sharedOptions->setModelData
+        (
+            sharedOptions->getModelData()
+          ? sharedOptions->getModelData()->clone()
+          : 0
+        );
+
         return sharedOptions.release();
     }
     SGReaderWriterOptions* staticOptions(const std::string& filePath, const osgDB::Options* options)
@@ -195,6 +203,15 @@ struct ReaderWriterSTG::_ModelBin {
 
         staticOptions->getDatabasePathList().push_back(filePath);
         staticOptions->setObjectCacheHint(osgDB::Options::CACHE_NONE);
+
+        // Every model needs its own SGModelData to ensure load/unload is
+        // working properly
+        staticOptions->setModelData
+        (
+            staticOptions->getModelData()
+          ? staticOptions->getModelData()->clone()
+          : 0
+        );
 
         return staticOptions.release();
     }

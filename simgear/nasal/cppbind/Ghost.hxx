@@ -569,7 +569,7 @@ namespace nasal
                                     ++parent )
           {
             pointer ptr = fromNasal(c, *parent);
-            if( ptr )
+            if( ptr.get() )
               return ptr;
           }
         }
@@ -592,7 +592,7 @@ namespace nasal
        */
       static pointer* createInstance(const pointer& ptr)
       {
-        return ptr ? new pointer(ptr) : 0;
+        return ptr.get() ? new pointer(ptr) : 0;
       }
 
       static pointer getPtr(void* ptr)

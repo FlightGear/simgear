@@ -519,7 +519,6 @@ sgLoad3DModel_internal(const SGPath& path,
         if (previewMode && animation_nodes[i]->hasChild("nopreview")) {
             PropertyList names(animation_nodes[i]->getChildren("object-name"));
             for (unsigned int n=0; n<names.size(); ++n) {
-                std::cout << "remove object name:" << names[n]->getStringValue() << std::endl;
                 removeNamedNode(group, names[n]->getStringValue());
             } // of object-names in the animation
             continue;

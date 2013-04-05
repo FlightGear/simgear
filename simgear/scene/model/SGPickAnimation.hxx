@@ -23,9 +23,11 @@
 #define SG_SCENE_PICK_ANIMATION_HXX
 
 #include <simgear/scene/model/animation.hxx>
+#include <simgear/misc/strutils.hxx>
 
 // forward decls
 class SGPickCallback;
+class SGSceneUserData;
 
 //////////////////////////////////////////////////////////////////////
 // Pick animation
@@ -35,15 +37,22 @@ class SGPickAnimation : public SGAnimation {
 public:
   SGPickAnimation(const SGPropertyNode* configNode,
                   SGPropertyNode* modelRoot);
-  virtual osg::Group* createAnimationGroup(osg::Group& parent);
     
+  // override so we can treat object-name specially
+  virtual void apply(osg::Group& group);
     
+  void apply(osg::Node* node);
 protected:
-    void innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent);
-    
+
+      
+  virtual osg::Group* createMainGroup(osg::Group* pr);
+  
+  virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
 private:
   class PickCallback;
   class VncCallback;
+  
+  string_list _proxyNames;
 };
 
 
@@ -52,7 +61,6 @@ class SGKnobAnimation : public SGPickAnimation
 public:
     SGKnobAnimation(const SGPropertyNode* configNode,
                     SGPropertyNode* modelRoot);
-    virtual osg::Group* createAnimationGroup(osg::Group& parent);
 
     /**
      * by default mouse wheel up corresponds to increment (CW)
@@ -75,6 +83,13 @@ public:
      * personal preference.
      */
     static void setDragSensitivity(double aFactor);
+    
+    
+protected:
+    virtual osg::Group* createMainGroup(osg::Group* pr);
+      
+    virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
+    
 private:
     class UpdateCallback;
     
@@ -88,7 +103,12 @@ class SGSliderAnimation : public SGPickAnimation
 public:
     SGSliderAnimation(const SGPropertyNode* configNode,
                     SGPropertyNode* modelRoot);
-    virtual osg::Group* createAnimationGroup(osg::Group& parent);
+    
+    
+protected:
+    virtual osg::Group* createMainGroup(osg::Group* pr);
+    
+    virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
     
 private:
     class UpdateCallback;

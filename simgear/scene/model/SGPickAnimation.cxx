@@ -22,6 +22,8 @@
      
 #include <simgear/scene/model/SGPickAnimation.hxx>
 
+#include <algorithm>
+
 #include <osg/Geode>
 #include <osg/PolygonOffset>
 #include <osg/PolygonMode>
@@ -231,108 +233,106 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
 
 ///////////////////////////////////////////////////////////////////////////////
 
- class SGPickAnimation::VncCallback : public SGPickCallback {
- public:
-   VncCallback(const SGPropertyNode* configNode,
-                SGPropertyNode* modelRoot,
-                osg::Group *node)
-       : _node(node)
-   {
-     SG_LOG(SG_INPUT, SG_DEBUG, "Configuring VNC callback");
-     const char *cornernames[3] = {"top-left", "top-right", "bottom-left"};
-     SGVec3d *cornercoords[3] = {&_topLeft, &_toRight, &_toDown};
-     for (int c =0; c < 3; c++) {
-       const SGPropertyNode* cornerNode = configNode->getChild(cornernames[c]);
-       *cornercoords[c] = SGVec3d(
-         cornerNode->getDoubleValue("x"),
-         cornerNode->getDoubleValue("y"),
-         cornerNode->getDoubleValue("z"));
-     }
-     _toRight -= _topLeft;
-     _toDown -= _topLeft;
-     _squaredRight = dot(_toRight, _toRight);
-     _squaredDown = dot(_toDown, _toDown);
+class SGPickAnimation::VncCallback : public SGPickCallback {
+public:
+ VncCallback(const SGPropertyNode* configNode,
+              SGPropertyNode* modelRoot,
+              osg::Group *node)
+     : _node(node)
+ {
+   SG_LOG(SG_INPUT, SG_DEBUG, "Configuring VNC callback");
+   const char *cornernames[3] = {"top-left", "top-right", "bottom-left"};
+   SGVec3d *cornercoords[3] = {&_topLeft, &_toRight, &_toDown};
+   for (int c =0; c < 3; c++) {
+     const SGPropertyNode* cornerNode = configNode->getChild(cornernames[c]);
+     *cornercoords[c] = SGVec3d(
+       cornerNode->getDoubleValue("x"),
+       cornerNode->getDoubleValue("y"),
+       cornerNode->getDoubleValue("z"));
    }
+   _toRight -= _topLeft;
+   _toDown -= _topLeft;
+   _squaredRight = dot(_toRight, _toRight);
+   _squaredDown = dot(_toDown, _toDown);
+ }
 
-   virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info& info)
-   {
-     SGVec3d loc(info.local);
-     SG_LOG(SG_INPUT, SG_DEBUG, "VNC pressed " << button << ": " << loc);
-     loc -= _topLeft;
-     _x = dot(loc, _toRight) / _squaredRight;
-     _y = dot(loc, _toDown) / _squaredDown;
-     if (_x<0) _x = 0; else if (_x > 1) _x = 1;
-     if (_y<0) _y = 0; else if (_y > 1) _y = 1;
-     VncVisitor vv(_x, _y, 1 << button);
-     _node->accept(vv);
-     return vv.wasSuccessful();
+ virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info& info)
+ {
+   SGVec3d loc(info.local);
+   SG_LOG(SG_INPUT, SG_DEBUG, "VNC pressed " << button << ": " << loc);
+   loc -= _topLeft;
+   _x = dot(loc, _toRight) / _squaredRight;
+   _y = dot(loc, _toDown) / _squaredDown;
+   if (_x<0) _x = 0; else if (_x > 1) _x = 1;
+   if (_y<0) _y = 0; else if (_y > 1) _y = 1;
+   VncVisitor vv(_x, _y, 1 << button);
+   _node->accept(vv);
+   return vv.wasSuccessful();
 
-   }
-   virtual void buttonReleased(int keyModState)
-   {
-     SG_UNUSED(keyModState);
-     SG_LOG(SG_INPUT, SG_DEBUG, "VNC release");
-     VncVisitor vv(_x, _y, 0);
-     _node->accept(vv);
-   }
+ }
+ virtual void buttonReleased(int keyModState)
+ {
+   SG_UNUSED(keyModState);
+   SG_LOG(SG_INPUT, SG_DEBUG, "VNC release");
+   VncVisitor vv(_x, _y, 0);
+   _node->accept(vv);
+ }
 
- private:
-   double _x, _y;
-   osg::ref_ptr<osg::Group> _node;
-   SGVec3d _topLeft, _toRight, _toDown;
-   double _squaredRight, _squaredDown;
- };
+private:
+ double _x, _y;
+ osg::ref_ptr<osg::Group> _node;
+ SGVec3d _topLeft, _toRight, _toDown;
+ double _squaredRight, _squaredDown;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
- SGPickAnimation::SGPickAnimation(const SGPropertyNode* configNode,
-                                  SGPropertyNode* modelRoot) :
-   SGAnimation(configNode, modelRoot)
- {
- }
-
- namespace
- {
- OpenThreads::Mutex colorModeUniformMutex;
- osg::ref_ptr<osg::Uniform> colorModeUniform;
- }
-
-
-void 
-SGPickAnimation::innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent)
+SGPickAnimation::SGPickAnimation(const SGPropertyNode* configNode,
+                                SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
 {
-    // Contains the normal geometry that is interactive
-    osg::ref_ptr<osg::Group> normalGroup = new osg::Group;
-    normalGroup->setName("pick normal group");
-    normalGroup->addChild(commonGroup);
+  std::vector<SGPropertyNode_ptr> names =
+    configNode->getChildren("proxy-name");
+  for (unsigned i = 0; i < names.size(); ++i) {
+    _proxyNames.push_back(names[i]->getStringValue());
+  }
+}
+
+void SGPickAnimation::apply(osg::Node* node)
+{
+    SGAnimation::apply(node);
+}
+
+namespace
+{
+OpenThreads::Mutex highlightStateSetMutex;
+osg::ref_ptr<osg::StateSet> static_highlightStateSet;
+}
+
+
+
+
+osg::StateSet* sharedHighlightStateSet()
+{
+  ScopedLock<Mutex> lock(highlightStateSetMutex);
+  if (!static_highlightStateSet.valid()) {
+    static_highlightStateSet = new osg::StateSet;
     
-    // Used to render the geometry with just yellow edges
-    osg::Group* highlightGroup = new osg::Group;
-    highlightGroup->setName("pick highlight group");
-    highlightGroup->setNodeMask(simgear::PICK_BIT);
-    highlightGroup->addChild(commonGroup);
-    
-    // prepare a state set that paints the edges of this object yellow
-    // The material and texture attributes are set with
-    // OVERRIDE|PROTECTED in case there is a material animation on a
-    // higher node in the scene graph, which would have its material
-    // attribute set with OVERRIDE.
-    osg::StateSet* stateSet = highlightGroup->getOrCreateStateSet();
     osg::Texture2D* white = StateAttributeFactory::instance()->getWhiteTexture();
-    stateSet->setTextureAttributeAndModes(0, white,
+    static_highlightStateSet->setTextureAttributeAndModes(0, white,
                                           (osg::StateAttribute::ON
                                            | osg::StateAttribute::OVERRIDE
                                            | osg::StateAttribute::PROTECTED));
     osg::PolygonOffset* polygonOffset = new osg::PolygonOffset;
     polygonOffset->setFactor(-1);
     polygonOffset->setUnits(-1);
-    stateSet->setAttribute(polygonOffset, osg::StateAttribute::OVERRIDE);
-    stateSet->setMode(GL_POLYGON_OFFSET_LINE,
+    static_highlightStateSet->setAttribute(polygonOffset, osg::StateAttribute::OVERRIDE);
+    static_highlightStateSet->setMode(GL_POLYGON_OFFSET_LINE,
                       osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
     osg::PolygonMode* polygonMode = new osg::PolygonMode;
     polygonMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
                          osg::PolygonMode::LINE);
-    stateSet->setAttribute(polygonMode, osg::StateAttribute::OVERRIDE);
+    static_highlightStateSet->setAttribute(polygonMode, osg::StateAttribute::OVERRIDE);
     osg::Material* material = new osg::Material;
     material->setColorMode(osg::Material::OFF);
     material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 1));
@@ -343,64 +343,143 @@ SGPickAnimation::innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent
     material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, .95));
     material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
     material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 0));
-    stateSet->setAttribute(
+    static_highlightStateSet->setAttribute(
                            material, osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
     // The default shader has a colorMode uniform that mimics the
     // behavior of Material color mode.
-    osg::Uniform* cmUniform = 0;
-    {
-        ScopedLock<Mutex> lock(colorModeUniformMutex);
-        if (!colorModeUniform.valid()) {
-            colorModeUniform = new osg::Uniform(osg::Uniform::INT, "colorMode");
-            colorModeUniform->set(0); // MODE_OFF
-            colorModeUniform->setDataVariance(osg::Object::STATIC);
-        }
-        cmUniform = colorModeUniform.get();
-    }
-    stateSet->addUniform(cmUniform,
+ 
+    osg::Uniform* colorModeUniform = new osg::Uniform(osg::Uniform::INT, "colorMode");
+    colorModeUniform->set(0); // MODE_OFF
+    colorModeUniform->setDataVariance(osg::Object::STATIC);
+    static_highlightStateSet->addUniform(colorModeUniform,
                          osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-    
-    // Only add normal geometry if configured
-    if (getConfig()->getBoolValue("visible", true))
-        parent.addChild(normalGroup.get());
-    parent.addChild(highlightGroup);
+  }
+  
+  return static_highlightStateSet.get();
 }
 
- osg::Group*
- SGPickAnimation::createAnimationGroup(osg::Group& parent)
- {
-     osg::Group* commonGroup = new osg::Group;
-     innerSetupPickGroup(commonGroup, parent);
-     SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(commonGroup);
+void
+SGPickAnimation::apply(osg::Group& group)
+{
+  if (_objectNames.empty()) {
+    return;
+  }
+  
+  osg::ref_ptr<osg::Group> renderGroup, proxyGroup, pickGroup;
+  group.traverse(*this);
+  SGSceneUserData* ud = NULL;
+  
+  // iterate over all group children
+  int i = group.getNumChildren() - 1;
+  for (; 0 <= i; --i) {
+    osg::Node* child = group.getChild(i);
+    if (child->getName().empty()) {
+        continue;
+    }
+      
+    std::list<std::string>::iterator it = std::find(_objectNames.begin(), _objectNames.end(), child->getName());
+    if (it != _objectNames.end()) {
+      _objectNames.erase(it);
+      install(*child);
+      
+//////
+      if (!pickGroup) {
+        osg::Group* mainGroup = createMainGroup(&group);
+        mainGroup->setName(child->getName());
+        
+        if (getConfig()->getBoolValue("visible", true)) {
+            renderGroup = new osg::Group;
+            renderGroup->setName("pick render group");
+            mainGroup->addChild(renderGroup);
+        }
+        
+        pickGroup = new osg::Group;
+        pickGroup->setName("pick highlight group");
+        pickGroup->setNodeMask(simgear::PICK_BIT);
+        pickGroup->setStateSet(sharedHighlightStateSet());
+        mainGroup->addChild(pickGroup);
+          
+        if (!ud) {
+          ud = SGSceneUserData::getOrCreateSceneUserData(pickGroup);
+          setupCallbacks(ud, &group);
+        } else {
+          pickGroup->setUserData(ud);
+        }
+      } // of pick group setup
+      
+////////
+      child->setName("");
+      if (renderGroup.valid()) {
+        renderGroup->addChild(child);
+      }
+      
+      pickGroup->addChild(child);
+      group.removeChild(child);
+      continue;
+    }
+    
+    string_list::iterator j = std::find(_proxyNames.begin(), _proxyNames.end(), child->getName());
+    if (j == _proxyNames.end()) {
+      continue;
+    }
+    
+    _proxyNames.erase(j);
+    if (!proxyGroup) {
+      proxyGroup = new osg::Group;
+      group.addChild(proxyGroup);
+      proxyGroup->setStateSet(sharedHighlightStateSet());
+      proxyGroup->setNodeMask(simgear::PICK_BIT);
+      
+      if (!ud) {
+        ud = SGSceneUserData::getOrCreateSceneUserData(proxyGroup);
+        setupCallbacks(ud, &group);
+      } else {
+        proxyGroup->setUserData(ud);
+      }
+    } // of proxy group setup
 
-     PickCallback* pickCb = NULL;
-     
-   // add actions that become macro and command invocations
-   std::vector<SGPropertyNode_ptr> actions;
-   actions = getConfig()->getChildren("action");
-   for (unsigned int i = 0; i < actions.size(); ++i) {
-     pickCb = new PickCallback(actions[i], getModelRoot());
-     ud->addPickCallback(pickCb);
-   }
-     
-   if (getConfig()->hasChild("hovered")) {
-     if (!pickCb) {
-       // make a trivial PickCallback to hang the hovered off of
-       SGPropertyNode_ptr dummyNode(new SGPropertyNode);
-       pickCb = new PickCallback(dummyNode.ptr(), getModelRoot());
-       ud->addPickCallback(pickCb);
-     }
-       
-     pickCb->addHoverBindings(getConfig()->getNode("hovered"), getModelRoot());
-   }
-     
-   // Look for the VNC sessions that want raw mouse input
-   actions = getConfig()->getChildren("vncaction");
-   for (unsigned int i = 0; i < actions.size(); ++i)
-     ud->addPickCallback(new VncCallback(actions[i], getModelRoot(),
-       &parent));
+    proxyGroup->addChild(child);
+    group.removeChild(child);
+  } // of group children iteration
+}
 
-   return commonGroup;
+osg::Group*
+SGPickAnimation::createMainGroup(osg::Group* pr)
+{
+  osg::Group* g = new osg::Group;
+  pr->addChild(g);
+  return g;
+}
+
+void
+SGPickAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group* parent)
+{
+  PickCallback* pickCb = NULL;
+  
+  // add actions that become macro and command invocations
+  std::vector<SGPropertyNode_ptr> actions;
+  actions = getConfig()->getChildren("action");
+  for (unsigned int i = 0; i < actions.size(); ++i) {
+    pickCb = new PickCallback(actions[i], getModelRoot());
+    ud->addPickCallback(pickCb);
+  }
+  
+  if (getConfig()->hasChild("hovered")) {
+    if (!pickCb) {
+      // make a trivial PickCallback to hang the hovered off of
+      SGPropertyNode_ptr dummyNode(new SGPropertyNode);
+      pickCb = new PickCallback(dummyNode.ptr(), getModelRoot());
+      ud->addPickCallback(pickCb);
+    }
+    
+    pickCb->addHoverBindings(getConfig()->getNode("hovered"), getModelRoot());
+  }
+  
+  // Look for the VNC sessions that want raw mouse input
+  actions = getConfig()->getChildren("vncaction");
+  for (unsigned int i = 0; i < actions.size(); ++i) {
+    ud->addPickCallback(new VncCallback(actions[i], getModelRoot(), parent));
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -672,22 +751,24 @@ SGKnobAnimation::SGKnobAnimation(const SGPropertyNode* configNode,
     readRotationCenterAndAxis(configNode, _center, _axis);
 }
 
-
 osg::Group*
-SGKnobAnimation::createAnimationGroup(osg::Group& parent)
+SGKnobAnimation::createMainGroup(osg::Group* pr)
+{  
+  SGRotateTransform* transform = new SGRotateTransform();
+  
+  UpdateCallback* uc = new UpdateCallback(_animationValue);
+  transform->setUpdateCallback(uc);
+  transform->setCenter(_center);
+  transform->setAxis(_axis);
+  
+  pr->addChild(transform);
+  return transform;
+}
+
+void
+SGKnobAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
 {
-    SGRotateTransform* transform = new SGRotateTransform();
-    innerSetupPickGroup(transform, parent);
-    
-    UpdateCallback* uc = new UpdateCallback(_animationValue);
-    transform->setUpdateCallback(uc);
-    transform->setCenter(_center);
-    transform->setAxis(_axis);
-        
-    SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(transform);
-    ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot()));
-    
-    return transform;
+  ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot()));
 }
 
 void SGKnobAnimation::setAlternateMouseWheelDirection(bool aToggle)
@@ -739,17 +820,20 @@ SGSliderAnimation::SGSliderAnimation(const SGPropertyNode* configNode,
 }
 
 osg::Group*
-SGSliderAnimation::createAnimationGroup(osg::Group& parent)
+SGSliderAnimation::createMainGroup(osg::Group* pr)
+{  
+  SGTranslateTransform* transform = new SGTranslateTransform();
+  
+  UpdateCallback* uc = new UpdateCallback(_animationValue);
+  transform->setUpdateCallback(uc);
+  transform->setAxis(_axis);
+  
+  pr->addChild(transform);
+  return transform;
+}
+
+void
+SGSliderAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
 {
-    SGTranslateTransform* transform = new SGTranslateTransform();
-    innerSetupPickGroup(transform, parent);
-    
-    UpdateCallback* uc = new UpdateCallback(_animationValue);
-    transform->setUpdateCallback(uc);
-    transform->setAxis(_axis);
-    
-    SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(transform);
-    ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot()));
-    
-    return transform;
+  ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot()));
 }

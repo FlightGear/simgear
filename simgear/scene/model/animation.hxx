@@ -79,6 +79,7 @@ protected:
 
   const SGCondition* getCondition() const;
 
+  std::list<std::string> _objectNames;
 private:
   void installInGroup(const std::string& name, osg::Group& group,
                       osg::ref_ptr<osg::Group>& animationGroup);
@@ -94,7 +95,7 @@ private:
   std::string _name;
   SGSharedPtr<SGPropertyNode const> _configNode;
   SGPropertyNode* _modelRoot;
-  std::list<std::string> _objectNames;
+  
   std::list<osg::ref_ptr<osg::Node> > _installedAnimations;
   bool _enableHOT;
 };

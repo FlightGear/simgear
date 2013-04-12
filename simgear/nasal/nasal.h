@@ -185,8 +185,26 @@ int naVec_size(naRef v);
 naRef naVec_get(naRef v, int i);
 void naVec_set(naRef vec, int i, naRef o);
 int naVec_append(naRef vec, naRef o);
-naRef naVec_removelast(naRef vec);
 void naVec_setsize(naContext c, naRef vec, int sz);
+
+/**
+ * Remove and retrieve the first element of the vector.
+ *
+ * This operation reduces the size of the vector by one and moves all elements
+ * by one towards the begin of the vector.
+ *
+ * @return The element removed from the begin
+ */
+naRef naVec_removefirst(naRef vec);
+
+/**
+ * Remove and retrieve the last element of the vector.
+ *
+ * This operation reduces the size of the vector by one.
+ *
+ * @return The element removed from the end
+ */
+naRef naVec_removelast(naRef vec);
 
 // Hash utilities:
 int naHash_size(naRef h);

@@ -69,6 +69,7 @@ int naVec_append(naRef vec, naRef o)
     return 0;
 }
 
+//------------------------------------------------------------------------------
 void naVec_setsize(naContext c, naRef vec, int sz)
 {
     if (sz < 0)
@@ -86,6 +87,26 @@ void naVec_setsize(naContext c, naRef vec, int sz)
     }
 }
 
+//------------------------------------------------------------------------------
+naRef naVec_removefirst(naRef vec)
+{
+    naRef o;
+    int i;
+    if(IS_VEC(vec)) {
+        struct VecRec* v = PTR(vec).vec->rec;
+        if(!v || v->size == 0) return naNil();
+        o = v->array[0];
+        for (i=1; i<v->size; i++)
+            v->array[i-1] = v->array[i];
+        v->size--;
+        if(v->size < (v->alloced >> 1))
+            resize(PTR(vec).vec);
+        return o;
+    }
+    return naNil();
+}
+
+//------------------------------------------------------------------------------
 naRef naVec_removelast(naRef vec)
 {
     naRef o;

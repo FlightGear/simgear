@@ -132,4 +132,42 @@ SGSharedPtr<T> static_pointer_cast(SGSharedPtr<U> const & r)
 {
   return SGSharedPtr<T>( static_cast<T*>(r.get()) );
 }
+
+/**
+ * Compare two SGSharedPtr<T> objects for equality.
+ *
+ * @note Only pointer values are compared, not the actual objects they are
+ *       pointing at.
+ */
+template<class T, class U>
+bool operator==(const SGSharedPtr<T>& lhs, const SGSharedPtr<U>& rhs)
+{
+  return lhs.get() == rhs.get();
+}
+
+/**
+ * Compare two SGSharedPtr<T> objects for equality.
+ *
+ * @note Only pointer values are compared, not the actual objects they are
+ *       pointing at.
+ */
+template<class T, class U>
+bool operator!=(const SGSharedPtr<T>& lhs, const SGSharedPtr<U>& rhs)
+{
+  return lhs.get() != rhs.get();
+}
+
+/**
+ * Compare two SGSharedPtr<T> objects for weak ordering.
+ *
+ * @note Only pointer values are compared, not the actual objects they are
+ *       pointing at.
+ * @note This allows using SGSharedPtr as key in associative containers like for
+ *       example std::map and std::set.
+ */
+template<class T, class U>
+bool operator<(const SGSharedPtr<T>& lhs, const SGSharedPtr<U>& rhs)
+{
+  return lhs.get() < rhs.get();
+}
 #endif

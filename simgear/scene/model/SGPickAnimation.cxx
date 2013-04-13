@@ -361,13 +361,11 @@ osg::StateSet* sharedHighlightStateSet()
 void
 SGPickAnimation::apply(osg::Group& group)
 {
-  if (_objectNames.empty()) {
+  if (_objectNames.empty() && _proxyNames.empty()) {
     return;
   }
   
-  osg::ref_ptr<osg::Group> renderGroup, proxyGroup, pickGroup;
   group.traverse(*this);
-  SGSceneUserData* ud = NULL;
   
   // iterate over all group children
   int i = group.getNumChildren() - 1;
@@ -382,37 +380,26 @@ SGPickAnimation::apply(osg::Group& group)
       _objectNames.erase(it);
       install(*child);
       
-//////
-      if (!pickGroup) {
-        osg::Group* mainGroup = createMainGroup(&group);
-        mainGroup->setName(child->getName());
-        
-        if (getConfig()->getBoolValue("visible", true)) {
-            renderGroup = new osg::Group;
-            renderGroup->setName("pick render group");
-            mainGroup->addChild(renderGroup);
-        }
-        
-        pickGroup = new osg::Group;
-        pickGroup->setName("pick highlight group");
-        pickGroup->setNodeMask(simgear::PICK_BIT);
-        pickGroup->setStateSet(sharedHighlightStateSet());
-        mainGroup->addChild(pickGroup);
-          
-        if (!ud) {
-          ud = SGSceneUserData::getOrCreateSceneUserData(pickGroup);
-          setupCallbacks(ud, &group);
-        } else {
-          pickGroup->setUserData(ud);
-        }
-      } // of pick group setup
+      osg::ref_ptr<osg::Group> renderGroup, pickGroup;      
+      osg::Group* mainGroup = createMainGroup(&group);
+      mainGroup->setName(child->getName());
+      child->setName(""); // don't apply other animations twice
       
-////////
-      child->setName("");
-      if (renderGroup.valid()) {
-        renderGroup->addChild(child);
+      if (getConfig()->getBoolValue("visible", true)) {
+          renderGroup = new osg::Group;
+          renderGroup->setName("pick render group");
+          renderGroup->addChild(child);
+          mainGroup->addChild(renderGroup);
       }
       
+      pickGroup = new osg::Group;
+      pickGroup->setName("pick highlight group");
+      pickGroup->setNodeMask(simgear::PICK_BIT);
+      pickGroup->setStateSet(sharedHighlightStateSet());
+      mainGroup->addChild(pickGroup);
+      
+      setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(pickGroup), mainGroup);
+
       pickGroup->addChild(child);
       group.removeChild(child);
       continue;
@@ -424,20 +411,12 @@ SGPickAnimation::apply(osg::Group& group)
     }
     
     _proxyNames.erase(j);
-    if (!proxyGroup) {
-      proxyGroup = new osg::Group;
-      group.addChild(proxyGroup);
-      proxyGroup->setStateSet(sharedHighlightStateSet());
-      proxyGroup->setNodeMask(simgear::PICK_BIT);
+    osg::ref_ptr<osg::Group> proxyGroup = new osg::Group;
+    group.addChild(proxyGroup);
+    proxyGroup->setStateSet(sharedHighlightStateSet());
+    proxyGroup->setNodeMask(simgear::PICK_BIT);
       
-      if (!ud) {
-        ud = SGSceneUserData::getOrCreateSceneUserData(proxyGroup);
-        setupCallbacks(ud, &group);
-      } else {
-        proxyGroup->setUserData(ud);
-      }
-    } // of proxy group setup
-
+    setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(proxyGroup), proxyGroup);
     proxyGroup->addChild(child);
     group.removeChild(child);
   } // of group children iteration

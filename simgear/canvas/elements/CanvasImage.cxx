@@ -355,6 +355,8 @@ namespace canvas
     setSrcCanvas( CanvasPtr() );
 
     _texture->setImage(img);
+    _texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
+    _texture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
     _geom->getOrCreateStateSet()
          ->setTextureAttributeAndModes(0, _texture);
 

@@ -127,10 +127,13 @@ namespace canvas
 
     setDrawable(_geom);
 
-    addStyle("fill", &Image::setFill, this);
-    addStyle("slice", &Image::setSlice, this);
-    addStyle("slice-width", &Image::setSliceWidth, this);
-    addStyle("outset", &Image::setOutset, this);
+    if( !isInit<Image>() )
+    {
+      addStyle("fill", "color", &Image::setFill);
+      addStyle("slice", "", &Image::setSlice);
+      addStyle("slice-width", "numeric", &Image::setSliceWidth);
+      addStyle("outset", "", &Image::setOutset);
+    }
 
     setFill("#ffffff"); // TODO how should we handle default values?
 

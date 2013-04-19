@@ -254,22 +254,32 @@ namespace canvas
     _text->setAxisAlignment(osgText::Text::USER_DEFINED_ROTATION);
     _text->setRotation(osg::Quat(osg::PI, osg::X_AXIS));
 
-    addStyle("fill", &TextOSG::setFill, _text);
-    addStyle("background", &TextOSG::setBackgroundColor, _text);
-    addStyle("character-size",
-             static_cast<void (TextOSG::*)(float)>(&TextOSG::setCharacterSize),
-             _text);
-    addStyle("character-aspect-ratio", &TextOSG::setCharacterAspect, _text);
-    addStyle("padding", &TextOSG::setBoundingBoxMargin, _text);
-    //  TEXT              = 1 default
-    //  BOUNDINGBOX       = 2
-    //  FILLEDBOUNDINGBOX = 4
-    //  ALIGNMENT         = 8
-    addStyle<int>("draw-mode", &TextOSG::setDrawMode, _text);
-    addStyle("max-width", &TextOSG::setMaximumWidth, _text);
-    addStyle("font", &Text::setFont, this);
-    addStyle("alignment", &Text::setAlignment, this);
-    addStyle("text", &Text::setText, this);
+    if( !isInit<Text>() )
+    {
+      osg::ref_ptr<TextOSG> Text::*text = &Text::_text;
+
+      addStyle("fill", "color", &TextOSG::setFill, text);
+      addStyle("background", "color", &TextOSG::setBackgroundColor, text);
+      addStyle("character-size",
+               "numeric",
+               static_cast<
+                 void (TextOSG::*)(float)
+               > (&TextOSG::setCharacterSize),
+               text);
+      addStyle("character-aspect-ratio",
+               "numeric",
+               &TextOSG::setCharacterAspect, text);
+      addStyle("padding", "numeric", &TextOSG::setBoundingBoxMargin, text);
+      //  TEXT              = 1 default
+      //  BOUNDINGBOX       = 2
+      //  FILLEDBOUNDINGBOX = 4
+      //  ALIGNMENT         = 8
+      addStyle<int>("draw-mode", "", &TextOSG::setDrawMode, text);
+      addStyle("max-width", "numeric", &TextOSG::setMaximumWidth, text);
+      addStyle("font", "", &Text::setFont);
+      addStyle("alignment", "", &Text::setAlignment);
+      addStyle("text", "", &Text::setText);
+    }
 
     setupStyle();
   }

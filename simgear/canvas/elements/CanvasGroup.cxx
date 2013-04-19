@@ -47,17 +47,23 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  ElementFactories Group::_child_factories;
+
+  //----------------------------------------------------------------------------
   Group::Group( const CanvasWeakPtr& canvas,
                 const SGPropertyNode_ptr& node,
                 const Style& parent_style,
                 Element* parent ):
     Element(canvas, node, parent_style, parent)
   {
-    _child_factories["group"] = &createElement<Group>;
-    _child_factories["image"] = &createElement<Image>;
-    _child_factories["map"  ] = &createElement<Map  >;
-    _child_factories["path" ] = &createElement<Path >;
-    _child_factories["text" ] = &createElement<Text >;
+    if( !isInit<Group>() )
+    {
+      _child_factories["group"] = &createElement<Group>;
+      _child_factories["image"] = &createElement<Image>;
+      _child_factories["map"  ] = &createElement<Map  >;
+      _child_factories["path" ] = &createElement<Path >;
+      _child_factories["text" ] = &createElement<Text >;
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -183,7 +189,7 @@ namespace canvas
     if( child->getParent() != _node )
       return;
 
-    ChildFactories::iterator child_factory =
+    ElementFactories::iterator child_factory =
       _child_factories.find( child->getNameString() );
     if( child_factory != _child_factories.end() )
     {

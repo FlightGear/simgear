@@ -28,6 +28,8 @@ namespace simgear
 namespace canvas
 {
 
+  typedef std::map<std::string, ElementFactory> ElementFactories;
+
   class Group:
     public Element
   {
@@ -64,10 +66,8 @@ namespace canvas
 
     protected:
 
-      typedef std::map<std::string, ElementFactory> ChildFactories;
-
-      ChildFactories    _child_factories;
-      ChildList         _children;
+      static ElementFactories   _child_factories;
+      ChildList                 _children;
 
       virtual void childAdded(SGPropertyNode * child);
       virtual void childRemoved(SGPropertyNode * child);

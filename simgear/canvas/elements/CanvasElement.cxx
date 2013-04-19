@@ -324,8 +324,14 @@ namespace canvas
     if( setter == _style_setters.end() )
       return false;
 
-    setter->second(child);
-    return true;
+    const StyleSetter* style_setter = &setter->second.setter;
+    while( style_setter )
+    {
+      if( style_setter->func(*this, child) )
+        return true;
+      style_setter = style_setter->next;
+    }
+    return false;
   }
 
   //----------------------------------------------------------------------------
@@ -427,6 +433,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  Element::StyleSetters Element::_style_setters;
+
+  //----------------------------------------------------------------------------
   Element::Element( const CanvasWeakPtr& canvas,
                     const SGPropertyNode_ptr& node,
                     const Style& parent_style,
@@ -447,7 +456,10 @@ namespace canvas
       "New canvas element " << node->getPath()
     );
 
-    addStyle("clip", &Element::setClip, this);
+    if( !isInit<Element>() )
+    {
+      addStyle("clip", "", &Element::setClip);
+    }
   }
 
   //----------------------------------------------------------------------------

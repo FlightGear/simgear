@@ -476,14 +476,18 @@ namespace canvas
     _path( new PathDrawable(this) )
   {
     setDrawable(_path);
-    PathDrawable *path = _path.get();
 
-    addStyle("fill", &PathDrawable::setFill, path);
-    addStyle("fill-rule", &PathDrawable::setFillRule, path);
-    addStyle("stroke", &PathDrawable::setStroke, path);
-    addStyle("stroke-width", &PathDrawable::setStrokeWidth, path);
-    addStyle("stroke-dasharray", &PathDrawable::setStrokeDashArray, path);
-    addStyle("stroke-linecap", &PathDrawable::setStrokeLinecap, path);
+    if( !isInit<Path>() )
+    {
+      PathDrawableRef Path::*path = &Path::_path;
+
+      addStyle("fill", "color", &PathDrawable::setFill, path);
+      addStyle("fill-rule", "", &PathDrawable::setFillRule, path);
+      addStyle("stroke", "color", &PathDrawable::setStroke, path);
+      addStyle("stroke-width", "numeric", &PathDrawable::setStrokeWidth, path);
+      addStyle("stroke-dasharray", "", &PathDrawable::setStrokeDashArray, path);
+      addStyle("stroke-linecap", "", &PathDrawable::setStrokeLinecap, path);
+    }
 
     setupStyle();
   }

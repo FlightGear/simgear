@@ -48,7 +48,8 @@ namespace canvas
       };
 
       class PathDrawable;
-      osg::ref_ptr<PathDrawable> _path;
+      typedef osg::ref_ptr<PathDrawable> PathDrawableRef;
+      PathDrawableRef _path;
 
       virtual void childRemoved(SGPropertyNode * child);
       virtual void childChanged(SGPropertyNode * child);

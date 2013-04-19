@@ -45,8 +45,21 @@ namespace canvas
     public PropertyBasedElement
   {
     public:
-      typedef boost::function<void(const SGPropertyNode*)> StyleSetter;
-      typedef std::map<std::string, StyleSetter> StyleSetters;
+      typedef boost::function<bool(Element&, const SGPropertyNode*)>
+              StyleSetterFunc;
+      typedef boost::function<void(Element&, const SGPropertyNode*)>
+              StyleSetterFuncUnchecked;
+      struct StyleSetter:
+        public SGReferenced
+      {
+        StyleSetterFunc func;
+        SGSharedPtr<StyleSetter> next;
+      };
+      struct StyleInfo
+      {
+        StyleSetter setter; ///!< Function(s) for setting this style
+        std::string type;   ///!< Interpolation type
+      };
 
       /**
        * Remove the property listener of the element.
@@ -142,7 +155,6 @@ namespace canvas
       std::vector<TransformType>            _transform_types;
 
       Style                             _style;
-      StyleSetters                      _style_setters;
       std::vector<SGPropertyNode_ptr>   _bounding_box;
 
       typedef std::vector<EventListenerPtr> Listener;
@@ -150,44 +162,254 @@ namespace canvas
 
       ListenerMap _listener;
 
+      typedef std::map<std::string, StyleInfo> StyleSetters;
+      static StyleSetters       _style_setters;
+
       Element( const CanvasWeakPtr& canvas,
                const SGPropertyNode_ptr& node,
                const Style& parent_style,
                Element* parent );
 
-      template<typename T, class C1, class C2>
-      Element::StyleSetter
-      addStyle(const std::string& name, void (C1::*setter)(T), C2 instance)
+      /**
+       * Returns false on first call and true on any successive call. Use to
+       * perform initialization tasks which are only required once per element
+       * type.
+       *
+       * @tparam Derived    (Derived) class type
+       */
+      template<class Derived>
+      bool isInit() const
       {
-        return _style_setters[ name ] =
-                 bindStyleSetter<T>(name, setter, instance);
+        static bool is_init = false;
+        if( is_init )
+          return true;
+
+        is_init = true;
+        return false;
       }
 
-      template<typename T1, typename T2, class C1, class C2>
-      Element::StyleSetter
-      addStyle(const std::string& name, void (C1::*setter)(T2), C2 instance)
-      {
-        return _style_setters[ name ] =
-                 bindStyleSetter<T1>(name, setter, instance);
-      }
-
-      template<class C1, class C2>
-      Element::StyleSetter
+      /**
+       * Register a function for setting a style specified by the given property
+       *
+       * @param name    Property name
+       * @param type    Interpolation type
+       * @param setter  Setter function
+       *
+       * @tparam T1         Type of value used to retrieve value from property
+       *                    node
+       * @tparam T2         Type of value the setter function expects
+       * @tparam Derived    Type of class the setter can be applied to
+       *
+       * @note T1 needs to be convertible to T2
+       */
+      template<
+        typename T1,
+        typename T2,
+        class Derived
+      >
+      StyleSetter
       addStyle( const std::string& name,
-                void (C1::*setter)(const std::string&),
-                C2 instance )
+                const std::string& type,
+                const boost::function<void (Derived&, T2)>& setter )
       {
-        return _style_setters[ name ] =
-                 bindStyleSetter<const char*>(name, setter, instance);
+        StyleInfo& style_info = _style_setters[ name ];
+        if( !type.empty() )
+        {
+          if( !style_info.type.empty() && type != style_info.type )
+            SG_LOG
+            (
+              SG_GENERAL,
+              SG_WARN,
+              "changing animation type for '" << name << "': "
+                << style_info.type << " -> " << type
+            );
+
+          style_info.type = type;
+        }
+
+        StyleSetter* style = &style_info.setter;
+        while( style->next )
+          style = style->next;
+        if( style->func )
+          style = style->next = new StyleSetter;
+
+        style->func = boost::bind
+        (
+          &type_match<Derived>::call,
+          _1,
+          _2,
+          bindStyleSetter<T1>(name, setter)
+        );
+        return *style;
       }
 
-      template<typename T1, typename T2, class C1, class C2>
-      Element::StyleSetter
-      bindStyleSetter( const std::string& name,
-                       void (C1::*setter)(T2),
-                       C2 instance )
+      template<
+        typename T,
+        class Derived
+      >
+      StyleSetter
+      addStyle( const std::string& name,
+                const std::string& type,
+                const boost::function<void (Derived&, T)>& setter )
       {
-        return boost::bind(setter, instance, boost::bind(&getValue<T1>, _1));
+        return addStyle<T, T>(name, type, setter);
+      }
+
+      template<
+        typename T,
+        class Derived
+      >
+      StyleSetter
+      addStyle( const std::string& name,
+                const std::string& type,
+                void (Derived::*setter)(T) )
+      {
+        return addStyle<T, T>
+        (
+          name,
+          type,
+          boost::function<void (Derived&, T)>(setter)
+        );
+      }
+
+      template<
+        typename T1,
+        typename T2,
+        class Derived
+      >
+      StyleSetterFunc
+      addStyle( const std::string& name,
+                const std::string& type,
+                void (Derived::*setter)(T2) )
+      {
+        return addStyle<T1>
+        (
+          name,
+          type,
+          boost::function<void (Derived&, T2)>(setter)
+        );
+      }
+
+      template<
+        class Derived
+      >
+      StyleSetter
+      addStyle( const std::string& name,
+                const std::string& type,
+                void (Derived::*setter)(const std::string&) )
+      {
+        return addStyle<const char*, const std::string&>
+        (
+          name,
+          type,
+          boost::function<void (Derived&, const std::string&)>(setter)
+        );
+      }
+
+      template<
+        typename T,
+        class Derived,
+        class Other,
+        class OtherRef
+      >
+      StyleSetter
+      addStyle( const std::string& name,
+                const std::string& type,
+                void (Other::*setter)(T),
+                OtherRef Derived::*instance_ref )
+      {
+        return addStyle<T, T>(name, type, bindOther(setter, instance_ref));
+      }
+
+      template<
+        typename T1,
+        typename T2,
+        class Derived,
+        class Other,
+        class OtherRef
+      >
+      StyleSetter
+      addStyle( const std::string& name,
+                const std::string& type,
+                void (Other::*setter)(T2),
+                OtherRef Derived::*instance_ref )
+      {
+        return addStyle<T1>(name, type, bindOther(setter, instance_ref));
+      }
+
+      template<
+        typename T1,
+        typename T2,
+        class Derived,
+        class Other,
+        class OtherRef
+      >
+      StyleSetter
+      addStyle( const std::string& name,
+                const std::string& type,
+                const boost::function<void (Other&, T2)>& setter,
+                OtherRef Derived::*instance_ref )
+      {
+        return addStyle<T1>(name, type, bindOther(setter, instance_ref));
+      }
+
+      template<
+        class Derived,
+        class Other,
+        class OtherRef
+      >
+      StyleSetter
+      addStyle( const std::string& name,
+                const std::string& type,
+                void (Other::*setter)(const std::string&),
+                OtherRef Derived::*instance_ref )
+      {
+        return addStyle<const char*, const std::string&>
+        (
+          name,
+          type,
+          boost::function<void (Other&, const std::string&)>(setter),
+          instance_ref
+        );
+      }
+
+      template<typename T, class Derived, class Other, class OtherRef>
+      boost::function<void (Derived&, T)>
+      bindOther( void (Other::*setter)(T), OtherRef Derived::*instance_ref )
+      {
+        return boost::bind(setter, boost::bind(instance_ref, _1), _2);
+      }
+
+      template<typename T, class Derived, class Other, class OtherRef>
+      boost::function<void (Derived&, T)>
+      bindOther( const boost::function<void (Other&, T)>& setter,
+                 OtherRef Derived::*instance_ref )
+      {
+        return boost::bind
+        (
+          setter,
+          boost::bind
+          (
+            &reference_from_pointer<Other, OtherRef>,
+            boost::bind(instance_ref, _1)
+          ),
+          _2
+        );
+      }
+
+      template<typename T1, typename T2, class Derived>
+      StyleSetterFuncUnchecked
+      bindStyleSetter( const std::string& name,
+                       const boost::function<void (Derived&, T2)>& setter )
+      {
+        return boost::bind
+        (
+          setter,
+          // We will only call setters with Derived instances, so we can safely
+          // cast here.
+          boost::bind(&derived_cast<Derived>, _1),
+          boost::bind(&getValue<T1>, _2)
+        );
       }
 
       virtual void childAdded(SGPropertyNode * child)  {}
@@ -208,6 +430,39 @@ namespace canvas
       osg::ref_ptr<osg::Drawable> _drawable;
 
       Element(const Element&);// = delete
+
+      template<class Derived>
+      static Derived& derived_cast(Element& el)
+      {
+        return static_cast<Derived&>(el);
+      }
+
+      template<class T, class SharedPtr>
+      static T& reference_from_pointer(const SharedPtr& p)
+      {
+        return *get_pointer(p);
+      }
+
+      /**
+       * Helper to call a function only of the element type can be converted to
+       * the required type.
+       *
+       * @return Whether the function has been called
+       */
+      template<class Derived>
+      struct type_match
+      {
+        static bool call( Element& el,
+                          const SGPropertyNode* prop,
+                          const StyleSetterFuncUnchecked& func )
+        {
+          Derived* d = dynamic_cast<Derived*>(&el);
+          if( !d )
+            return false;
+          func(*d, prop);
+          return true;
+        }
+      };
   };
 
 } // namespace canvas

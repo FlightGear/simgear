@@ -3,8 +3,8 @@
 #include <cstring>
 #include <iostream>
 
-#define COMPARE(a, b) \
-  if( (a) != (b) ) \
+#define VERIFY_CLOSE(a, b) \
+  if( norm((a) - (b)) > 1e-5 ) \
   { \
     std::cerr << "line " << __LINE__ << ": failed: "\
               << #a << " != " << #b\
@@ -50,8 +50,8 @@ int main(int argc, char* argv[])
   config->setDoubleValue("axis/z2-m", v2.z());
   anim.readConfig();
 
-  COMPARE(anim.center, (v1 + v2) * 0.5)
-  COMPARE(anim.axis, normalize(v2 - v1))
+  VERIFY_CLOSE(anim.center, (v1 + v2) * 0.5)
+  VERIFY_CLOSE(anim.axis, normalize(v2 - v1))
 
   config->removeChild("axis", 0, false);
   config->setDoubleValue("center/x-m", v1.x());
@@ -62,8 +62,8 @@ int main(int argc, char* argv[])
   config->setDoubleValue("axis/z", v2.z());
   anim.readConfig();
 
-  COMPARE(anim.center, v1)
-  COMPARE(anim.axis, normalize(v2))
+  VERIFY_CLOSE(anim.center, v1)
+  VERIFY_CLOSE(anim.axis, normalize(v2))
 
   return 0;
 }

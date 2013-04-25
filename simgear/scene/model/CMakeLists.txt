@@ -17,6 +17,7 @@ set(HEADERS
     SGRotateTransform.hxx
     SGScaleTransform.hxx
     SGText.hxx
+    SGTrackToAnimation.hxx
     SGTranslateTransform.hxx
     animation.hxx
     model.hxx
@@ -42,6 +43,7 @@ set(SOURCES
     SGRotateTransform.cxx
     SGScaleTransform.cxx
     SGText.cxx
+    SGTrackToAnimation.cxx
     SGTranslateTransform.cxx
     animation.cxx
     model.cxx
@@ -53,3 +55,11 @@ set(SOURCES
     )
 
 simgear_scene_component(model scene/model "${SOURCES}" "${HEADERS}")
+
+if(ENABLE_TESTS)
+
+  add_executable(test_animations animation_test.cxx)
+  target_link_libraries(test_animations ${TEST_LIBS} ${OPENSCENEGRAPH_LIBRARIES})
+  add_test(test_animations ${EXECUTABLE_OUTPUT_PATH}/test_animations)
+
+endif(ENABLE_TESTS)

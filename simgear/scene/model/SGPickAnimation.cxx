@@ -727,7 +727,7 @@ SGKnobAnimation::SGKnobAnimation(const SGPropertyNode* configNode,
     _animationValue = value->simplify();
     
     
-    readRotationCenterAndAxis(configNode, _center, _axis);
+    readRotationCenterAndAxis(_center, _axis);
 }
 
 osg::Group*

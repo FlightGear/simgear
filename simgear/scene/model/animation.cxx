@@ -57,6 +57,7 @@
 #include "SGScaleTransform.hxx"
 #include "SGInteractionAnimation.hxx"
 #include "SGPickAnimation.hxx"
+#include "SGTrackToAnimation.hxx"
 
 #include "ConditionNode.hxx"
 
@@ -65,7 +66,6 @@ using OpenThreads::ReentrantMutex;
 using OpenThreads::ScopedLock;
 
 using namespace simgear;
-
 ////////////////////////////////////////////////////////////////////////
 // Static utility functions.
 ////////////////////////////////////////////////////////////////////////
@@ -206,7 +206,6 @@ read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
   return 0;
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Animation installer
 ////////////////////////////////////////////////////////////////////////
@@ -424,6 +423,9 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
   } else if (type == "timed") {
     SGTimedAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
+  } else if (type == "track-to" || type == "locked-track") {
+    SGTrackToAnimation animInst(node, configNode, modelRoot);
+    animInst.apply(node);
   } else if (type == "translate") {
     SGTranslateAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
@@ -530,6 +532,41 @@ SGAnimation::installInGroup(const std::string& name, osg::Group& group,
   }
 }
 
+//------------------------------------------------------------------------------
+SGVec3d SGAnimation::readVec3( const std::string& name,
+                               const std::string& suffix,
+                               const SGVec3d& def ) const
+{
+  SGVec3d vec;
+  vec[0] = _configNode->getDoubleValue(name + "/x" + suffix, def.x());
+  vec[1] = _configNode->getDoubleValue(name + "/y" + suffix, def.y());
+  vec[2] = _configNode->getDoubleValue(name + "/z" + suffix, def.z());
+  return vec;
+}
+
+//------------------------------------------------------------------------------
+// factored out to share with SGKnobAnimation
+void SGAnimation::readRotationCenterAndAxis( SGVec3d& center,
+                                             SGVec3d& axis ) const
+{
+  center = SGVec3d::zeros();
+  if( _configNode->hasValue("axis/x1-m") )
+  {
+    SGVec3d v1 = readVec3("axis", "1-m"), // axis/[xyz]1-m
+            v2 = readVec3("axis", "2-m"); // axis/[xyz]2-m
+    center = 0.5*(v1+v2);
+    axis = v2 - v1;
+  }
+  else
+  {
+    axis = readVec3("axis");
+  }
+  if( 8 * SGLimitsd::min() < norm(axis) )
+    axis = normalize(axis);
+
+  center = readVec3("center", "-m", center);
+}
+
 void
 SGAnimation::removeMode(osg::Node& node, osg::StateAttribute::GLMode mode)
 {
@@ -584,7 +621,7 @@ SGAnimation::getCondition() const
 }
 
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of null animation
 ////////////////////////////////////////////////////////////////////////
@@ -606,7 +643,7 @@ SGGroupAnimation::createAnimationGroup(osg::Group& parent)
   return group;
 }
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of translate animation
 ////////////////////////////////////////////////////////////////////////
@@ -666,7 +703,7 @@ SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
   return transform;
 }
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of rotate/spin animation
 ////////////////////////////////////////////////////////////////////////
@@ -837,33 +874,6 @@ void SpinAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     }
 }
 
-// factored out to share with SGKnobAnimation
-void readRotationCenterAndAxis(const SGPropertyNode* configNode, SGVec3d& center, SGVec3d& axis)
-{
-    center = SGVec3d::zeros();
-    if (configNode->hasValue("axis/x1-m")) {
-        SGVec3d v1, v2;
-        v1[0] = configNode->getDoubleValue("axis/x1-m", 0);
-        v1[1] = configNode->getDoubleValue("axis/y1-m", 0);
-        v1[2] = configNode->getDoubleValue("axis/z1-m", 0);
-        v2[0] = configNode->getDoubleValue("axis/x2-m", 0);
-        v2[1] = configNode->getDoubleValue("axis/y2-m", 0);
-        v2[2] = configNode->getDoubleValue("axis/z2-m", 0);
-        center = 0.5*(v1+v2);
-        axis = v2 - v1;
-    } else {
-        axis[0] = configNode->getDoubleValue("axis/x", 0);
-        axis[1] = configNode->getDoubleValue("axis/y", 0);
-        axis[2] = configNode->getDoubleValue("axis/z", 0);
-    }
-    if (8*SGLimitsd::min() < norm(axis))
-        axis = normalize(axis);
-    
-    center[0] = configNode->getDoubleValue("center/x-m", center[0]);
-    center[1] = configNode->getDoubleValue("center/y-m", center[1]);
-    center[2] = configNode->getDoubleValue("center/z-m", center[2]);
-}
-
 SGVec3d readTranslateAxis(const SGPropertyNode* configNode)
 {
     SGVec3d axis;
@@ -905,7 +915,7 @@ SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
   else
     _initialValue = 0;
   
-  readRotationCenterAndAxis(configNode, _center, _axis);
+  readRotationCenterAndAxis(_center, _axis);
 }
 
 osg::Group*
@@ -935,7 +945,7 @@ SGRotateAnimation::createAnimationGroup(osg::Group& parent)
     }
 }
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of scale animation
 ////////////////////////////////////////////////////////////////////////
@@ -1069,7 +1079,7 @@ SGScaleAnimation::createAnimationGroup(osg::Group& parent)
   return transform;
 }
 
-
+
 // Don't create a new state state everytime we need GL_NORMALIZE!
 
 namespace
@@ -1215,7 +1225,7 @@ namespace
    &SGDistScaleAnimation::Transform::writeLocalData
    );
 }
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of flash animation
 ////////////////////////////////////////////////////////////////////////
@@ -1371,7 +1381,7 @@ namespace
    &SGFlashAnimation::Transform::writeLocalData
    );
 }
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of billboard animation
 ////////////////////////////////////////////////////////////////////////
@@ -1456,7 +1466,7 @@ namespace
    &SGBillboardAnimation::Transform::writeLocalData
    );
 }
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of a range animation
 ////////////////////////////////////////////////////////////////////////
@@ -1561,7 +1571,7 @@ SGRangeAnimation::createAnimationGroup(osg::Group& parent)
   return group;
 }
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of a select animation
 ////////////////////////////////////////////////////////////////////////
@@ -1591,7 +1601,7 @@ SGSelectAnimation::createAnimationGroup(osg::Group& parent)
 }
 
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of alpha test animation
 ////////////////////////////////////////////////////////////////////////
@@ -1661,7 +1671,7 @@ SGAlphaTestAnimation::install(osg::Node& node)
   }
 }
 
-
+
 //////////////////////////////////////////////////////////////////////
 // Blend animation installer
 //////////////////////////////////////////////////////////////////////
@@ -1780,7 +1790,7 @@ SGBlendAnimation::install(osg::Node& node)
   node.accept(visitor);
 }
 
-
+
 //////////////////////////////////////////////////////////////////////
 // Timed animation installer
 //////////////////////////////////////////////////////////////////////
@@ -1891,7 +1901,7 @@ SGTimedAnimation::createAnimationGroup(osg::Group& parent)
   return sw;
 }
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // dynamically switch on/off shadows
 ////////////////////////////////////////////////////////////////////////
@@ -1937,7 +1947,7 @@ SGShadowAnimation::createAnimationGroup(osg::Group& parent)
   return group;
 }
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGTexTransformAnimation
 ////////////////////////////////////////////////////////////////////////

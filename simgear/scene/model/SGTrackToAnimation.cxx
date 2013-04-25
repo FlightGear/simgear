@@ -209,9 +209,6 @@ SGTrackToAnimation::SGTrackToAnimation( osg::Node* node,
   _target_group(0)
 {
   std::string target = configNode->getStringValue("target-name");
-  std::cout << "track " << target << std::endl;
-  configNode->printOn(std::cout);
-
   FindGroupVisitor target_finder(target);
   node->accept(target_finder);
 

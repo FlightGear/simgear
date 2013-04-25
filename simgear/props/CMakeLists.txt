@@ -37,14 +37,14 @@ if(ENABLE_TESTS)
 
 add_executable(test_props props_test.cxx)
 target_link_libraries(test_props ${TEST_LIBS})
-add_test(test_props ${EXECUTABLE_OUTPUT_PATH}/test_props)
+add_test(props ${EXECUTABLE_OUTPUT_PATH}/test_props)
 
 add_executable(test_propertyObject propertyObject_test.cxx)
 target_link_libraries(test_propertyObject ${TEST_LIBS})
-add_test(test_propertyObject ${EXECUTABLE_OUTPUT_PATH}/test_propertyObject)
+add_test(propertyObject ${EXECUTABLE_OUTPUT_PATH}/test_propertyObject)
 
 add_executable(test_easing_functions easing_functions_test.cxx)
 target_link_libraries(test_easing_functions ${TEST_LIBS})
-add_test(test_easing_functions ${EXECUTABLE_OUTPUT_PATH}/test_easing_functions)
+add_test(easing_functions ${EXECUTABLE_OUTPUT_PATH}/test_easing_functions)
 
 endif(ENABLE_TESTS)

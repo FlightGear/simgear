@@ -377,7 +377,7 @@ SGPickAnimation::apply(osg::Group& group)
       
     std::list<std::string>::iterator it = std::find(_objectNames.begin(), _objectNames.end(), child->getName());
     if (it != _objectNames.end()) {
-      _objectNames.erase(it);
+      //_objectNames.erase(it);
       install(*child);
       
       osg::ref_ptr<osg::Group> renderGroup, pickGroup;      

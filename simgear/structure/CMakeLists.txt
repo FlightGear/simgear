@@ -47,10 +47,10 @@ if(ENABLE_TESTS)
 
 add_executable(test_state_machine state_machine_test.cxx)
 target_link_libraries(test_state_machine ${TEST_LIBS})
-add_test(test_state_machine ${EXECUTABLE_OUTPUT_PATH}/test_state_machine)
+add_test(state_machine ${EXECUTABLE_OUTPUT_PATH}/test_state_machine)
 
 add_executable(test_expressions expression_test.cxx)
 target_link_libraries(test_expressions ${TEST_LIBS})
-add_test(test_expressions ${EXECUTABLE_OUTPUT_PATH}/test_expressions)
+add_test(expressions ${EXECUTABLE_OUTPUT_PATH}/test_expressions)
 
 endif(ENABLE_TESTS)

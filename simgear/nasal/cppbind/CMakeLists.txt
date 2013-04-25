@@ -28,6 +28,6 @@ simgear_component(nasal/cppbind/detail nasal/cppbind/detail "" "${DETAIL_HEADERS
 
 if(ENABLE_TESTS)
   add_executable(test_cppbind cppbind_test.cxx)
-  add_test(test_cppbind ${EXECUTABLE_OUTPUT_PATH}/test_cppbind)
+  add_test(cppbind ${EXECUTABLE_OUTPUT_PATH}/test_cppbind)
   target_link_libraries(test_cppbind ${TEST_LIBS})
 endif(ENABLE_TESTS)

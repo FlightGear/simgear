@@ -60,6 +60,6 @@ if(ENABLE_TESTS)
 
   add_executable(test_animations animation_test.cxx)
   target_link_libraries(test_animations ${TEST_LIBS} ${OPENSCENEGRAPH_LIBRARIES})
-  add_test(test_animations ${EXECUTABLE_OUTPUT_PATH}/test_animations)
+  add_test(animations ${EXECUTABLE_OUTPUT_PATH}/test_animations)
 
 endif(ENABLE_TESTS)

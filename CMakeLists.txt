@@ -377,7 +377,8 @@ if(ENABLE_TESTS)
     if(NOT SIMGEAR_HEADLESS)
         set( TEST_LIBS
             SimGearScene
-            ${TEST_LIBS})
+            ${TEST_LIBS}
+            ${OPENGL_LIBRARIES})
     endif()
 else()
     message(STATUS "Tests: DISABLED")

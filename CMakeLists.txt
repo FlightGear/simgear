@@ -317,6 +317,9 @@ if(WIN32)
         # endforeach(warning)
         
         set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /wd4996 /wd4250 -Dstrdup=_strdup")
+        if (${MSVC_VERSION} GREATER 1599)
+            set( MSVC_LD_FLAGS "/FORCE:MULTIPLE" )
+        endif (${MSVC_VERSION} GREATER 1599)
     endif(MSVC)
     
     # assumed on Windows
@@ -328,6 +331,7 @@ endif(WIN32)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)

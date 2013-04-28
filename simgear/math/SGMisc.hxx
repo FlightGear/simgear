@@ -58,6 +58,22 @@ public:
       return var = max(var - rate * dt, target);
   }
 
+  /**
+   * Get @c base raised to the power of @c N
+   *
+   * @tparam N      Exponent
+   * @param base    Base
+   */
+  template<int N>
+  static T pow(T base)
+  {
+    return (N < 0)
+      ? (1. / pow<-N>(base))
+      : (  ((N & 1) ? base : 1)
+        * ((N > 1) ? pow<N / 2>(base * base) : 1)
+        );
+  }
+
   static int sign(const T& a)
   {
     if (a < -SGLimits<T>::min())

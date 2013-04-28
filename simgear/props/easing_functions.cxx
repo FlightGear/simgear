@@ -21,23 +21,11 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "easing_functions.hxx"
-#include <cmath>
-#include <cstddef>
+#include <simgear/math/SGMath.hxx>
+
 
 namespace simgear
 {
-  // TODO move somewhere to math
-  template<size_t N>
-  double pow(double base)
-  {
-    return base * pow<N - 1>(base);
-  }
-
-  template<>
-  double pow<0>(double)
-  {
-    return 1.0;
-  }
 
   /// Simple linear easing.
   double easingLinear(double t)
@@ -82,7 +70,7 @@ namespace simgear
   {
     static double calc(double t)
     {
-      return pow<N>(t - 1) + 1;
+      return SGMiscd::pow<N>(t - 1) + 1;
     }
   };
 
@@ -93,7 +81,7 @@ namespace simgear
   {
     static double calc(double t)
     {
-      return -pow<N>(t - 1) + 1;
+      return -SGMiscd::pow<N>(t - 1) + 1;
     }
   };
 
@@ -114,7 +102,7 @@ namespace simgear
   template<size_t N>
   double easeInOutPow(double t)
   {
-    return easeInOut<&pow<N>, &easeOutPow<N> >(t);
+    return easeInOut<&SGMiscd::pow<N>, &easeOutPow<N> >(t);
   }
 
   /// http://easings.net/#easeInExpo
@@ -132,13 +120,13 @@ namespace simgear
   /// http://easings.net/#easeInCirc
   double easeInCirc(double t)
   {
-    return 1 - std::sqrt(1 - pow<2>(t));
+    return 1 - std::sqrt(1 - SGMiscd::pow<2>(t));
   }
 
   /// http://easings.net/#easeOutCirc
   double easeOutCirc(double t)
   {
-    return std::sqrt(1 - pow<2>(t - 1));
+    return std::sqrt(1 - SGMiscd::pow<2>(t - 1));
   }
 
   static const double ease_s = 1.70158;
@@ -147,14 +135,14 @@ namespace simgear
   double easeInBack(double t)
   {
 
-    return pow<2>(t) * ((ease_s + 1) * t - ease_s);
+    return SGMiscd::pow<2>(t) * ((ease_s + 1) * t - ease_s);
   }
 
   /// http://easings.net/#easeOutBack
   double easeOutBack(double t)
   {
     t -= 1;
-    return pow<2>(t) * ((ease_s + 1) * t + ease_s) + 1;
+    return SGMiscd::pow<2>(t) * ((ease_s + 1) * t + ease_s) + 1;
   }
 
   /// http://easings.net/#easeOutBack
@@ -190,13 +178,13 @@ namespace simgear
   double easeOutBounce(double t)
   {
     if( t < 1/2.75 )
-      return 7.5625 * pow<2>(t);
+      return 7.5625 * SGMiscd::pow<2>(t);
     else if( t < 2/2.75 )
-      return 7.5625 * pow<2>(t - 1.5/2.75) + .75;
+      return 7.5625 * SGMiscd::pow<2>(t - 1.5/2.75) + .75;
     else if( t < 2.5/2.75 )
-      return 7.5625 * pow<2>(t - 2.25/2.75) + .9375;
+      return 7.5625 * SGMiscd::pow<2>(t - 2.25/2.75) + .9375;
     else
-      return 7.5625 * pow<2>(t - 2.625/2.75) + .984375;
+      return 7.5625 * SGMiscd::pow<2>(t - 2.625/2.75) + .984375;
   }
 
   /// http://easings.net/#easeInBounce
@@ -216,10 +204,10 @@ namespace simgear
     {"linear", &easingLinear},
     {"swing", &easeInOutSine},
     SG_ADD_EASING_IN_OUT(Sine)
-    {"easeInQuad",    &pow<2>},
-    {"easeInCubic",   &pow<3>},
-    {"easeInQuart",   &pow<4>},
-    {"easeInQuint",   &pow<5>},
+    {"easeInQuad",    &SGMiscd::pow<2>},
+    {"easeInCubic",   &SGMiscd::pow<3>},
+    {"easeInQuart",   &SGMiscd::pow<4>},
+    {"easeInQuint",   &SGMiscd::pow<5>},
     {"easeOutQuad",   &easeOutPow<2>},
     {"easeOutCubic",  &easeOutPow<3>},
     {"easeOutQuart",  &easeOutPow<4>},

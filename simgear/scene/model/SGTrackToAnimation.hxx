@@ -24,6 +24,12 @@
 
 #include <simgear/scene/model/animation.hxx>
 
+/**
+ * Animation to let an object always track another object. An optional second
+ * slave object can be specified which is rotate to always fit the space between
+ * the root object and the target object. This can be used to eg. create a gear
+ * scissor animation.
+ */
 class SGTrackToAnimation:
   public SGAnimation
 {
@@ -37,7 +43,8 @@ class SGTrackToAnimation:
   protected:
     class UpdateCallback;
 
-    osg::Group     *_target_group;
+    osg::Group     *_target_group,
+                   *_slave_group;
 
     void log(sgDebugPriority p, const std::string& msg) const;
 };

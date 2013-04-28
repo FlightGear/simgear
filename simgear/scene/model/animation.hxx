@@ -70,7 +70,7 @@ protected:
    */
   SGVec3d readVec3( const std::string& name,
                     const std::string& suffix = "",
-                    const SGVec3d& def = SGVec3d() ) const;
+                    const SGVec3d& def = SGVec3d::zeros() ) const;
   void readRotationCenterAndAxis(SGVec3d& center, SGVec3d& axis) const;
 
   void removeMode(osg::Node& node, osg::StateAttribute::GLMode mode);

@@ -423,7 +423,7 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
   } else if (type == "timed") {
     SGTimedAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
-  } else if (type == "track-to" || type == "locked-track") {
+  } else if (type == "locked-track") {
     SGTrackToAnimation animInst(node, configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "translate") {

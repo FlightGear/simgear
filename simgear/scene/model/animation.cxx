@@ -567,6 +567,30 @@ void SGAnimation::readRotationCenterAndAxis( SGVec3d& center,
   center = readVec3("center", "-m", center);
 }
 
+//------------------------------------------------------------------------------
+SGExpressiond* SGAnimation::readOffsetValue(const char* tag_name) const
+{
+  const SGPropertyNode* node = _configNode->getChild(tag_name);
+  if( !node )
+    return 0;
+
+  SGExpressiond_ref expression;
+  if( !node->nChildren() )
+    expression = new SGConstExpression<double>(node->getDoubleValue());
+  else
+    expression = SGReadDoubleExpression(_modelRoot, node->getChild(0));
+
+  if( !expression )
+    return 0;
+
+  expression = expression->simplify();
+
+  if( expression->isConst() && expression->getValue() == 0 )
+    return 0;
+
+  return expression.release();
+}
+
 void
 SGAnimation::removeMode(osg::Node& node, osg::StateAttribute::GLMode mode)
 {

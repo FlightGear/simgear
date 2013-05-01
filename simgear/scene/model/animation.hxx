@@ -73,6 +73,8 @@ protected:
                     const SGVec3d& def = SGVec3d::zeros() ) const;
   void readRotationCenterAndAxis(SGVec3d& center, SGVec3d& axis) const;
 
+  SGExpressiond* readOffsetValue(const char* tag_name) const;
+
   void removeMode(osg::Node& node, osg::StateAttribute::GLMode mode);
   void removeAttribute(osg::Node& node, osg::StateAttribute::Type type);
   void removeTextureMode(osg::Node& node, unsigned unit,

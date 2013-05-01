@@ -85,7 +85,12 @@ class FindGroupVisitor:
       if( !_group )
         _group = &group;
       else
-        SG_LOG(SG_IO, SG_WARN, "FindGroupVisitor: name not unique");
+        SG_LOG
+        (
+          SG_IO,
+          SG_WARN,
+          "FindGroupVisitor: name not unique '" << _name << "'"
+        );
     }
 
   protected:
@@ -122,7 +127,14 @@ class SGTrackToAnimation::UpdateCallback:
       _slave_tf(slave_tf),
       _root_length(0),
       _slave_length(0),
-      _root_initial_angle(0)
+      _root_initial_angle(0),
+      _condition(anim->getCondition()),
+      _root_disabled_value(
+        anim->readOffsetValue("disabled-rotation-deg")
+      ),
+      _slave_disabled_value(
+        anim->readOffsetValue("slave-disabled-rotation-deg")
+      )
     {
       setName("SGTrackToAnimation::UpdateCallback");
 
@@ -228,32 +240,49 @@ class SGTrackToAnimation::UpdateCallback:
                              ).preMult(_target_center),
                        dir = target_pos - _node_center;
 
-      double offset = -_root_initial_angle;
-      if( _root_length > 0 )
-      {
-        double dist = dir.length(),
-               slave_angle = -_slave_initial_angle;
-        if( dist < _root_length + _slave_length )
-        {
-          offset += angleFromSSS(_root_length, dist, _slave_length);
+      double root_angle,
+             slave_angle;
 
-          if( _slave_tf )
-            slave_angle += angleFromSSS(_root_length, _slave_length, dist)
-                         - SGMiscd::pi();
+      if( !_condition || _condition->test() )
+      {
+        root_angle = -_root_initial_angle;
+        slave_angle = -_slave_initial_angle;
+
+        if( _root_length > 0 )
+        {
+          double dist = dir.length();
+          if( dist < _root_length + _slave_length )
+          {
+            root_angle += angleFromSSS(_root_length, dist, _slave_length);
+
+            if( _slave_tf )
+              slave_angle += angleFromSSS(_root_length, _slave_length, dist)
+                           - SGMiscd::pi();
+          }
         }
 
-        if( _slave_tf )
-          _slave_tf->setAngleRad(slave_angle);
+        // Ensure direction is perpendicular to lock axis
+        float proj = _lock_axis * dir;
+        if( proj != 0.0 )
+          dir -= _lock_axis * proj;
+
+        float x = dir * _track_axis,
+              y = dir * _up_axis;
+        root_angle += std::atan2(y, x);
+      }
+      else
+      {
+        root_angle = _root_disabled_value
+                   ? SGMiscd::deg2rad(_root_disabled_value->getValue())
+                   : 0;
+        slave_angle = _slave_disabled_value
+                    ? SGMiscd::deg2rad(_slave_disabled_value->getValue())
+                    : 0;
       }
 
-      // Ensure direction is perpendicular to lock axis
-      float proj = _lock_axis * dir;
-      if( proj != 0.0 )
-        dir -= _lock_axis * proj;
-
-      float x = dir * _track_axis,
-            y = dir * _up_axis;
-      tf->setAngleRad( std::atan2(y, x) + offset );
+      tf->setAngleRad( root_angle );
+      if( _slave_tf )
+        _slave_tf->setAngleRad(slave_angle);
 
       traverse(node, nv);
     }
@@ -273,6 +302,10 @@ class SGTrackToAnimation::UpdateCallback:
                         _slave_length,
                         _root_initial_angle,
                         _slave_initial_angle;
+
+    SGSharedPtr<SGCondition const>      _condition;
+    SGExpressiond_ref   _root_disabled_value,
+                        _slave_disabled_value;
 };
 
 //------------------------------------------------------------------------------

@@ -900,6 +900,11 @@ typedef SGExpression<float> SGExpressionf;
 typedef SGExpression<double> SGExpressiond;
 typedef SGExpression<bool> SGExpressionb;
 
+typedef SGSharedPtr<SGExpressioni> SGExpressioni_ref;
+typedef SGSharedPtr<SGExpressionf> SGExpressionf_ref;
+typedef SGSharedPtr<SGExpressiond> SGExpressiond_ref;
+typedef SGSharedPtr<SGExpressionb> SGExpressionb_ref;
+
 /**
  * Global function to make an expression out of properties.
 

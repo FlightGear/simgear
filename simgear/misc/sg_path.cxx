@@ -425,7 +425,7 @@ bool SGPath::isAbsolute() const
 
 bool SGPath::isNull() const
 {
-  return path.empty() || (path == "");
+  return path.empty();
 }
 
 std::string SGPath::str_native() const

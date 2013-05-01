@@ -31,7 +31,7 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const std::string& str)
   {
     naRef ret = naNewString(c);
-    naStr_fromdata(ret, str.c_str(), str.size());
+    naStr_fromdata(ret, str.c_str(), static_cast<int>(str.size()));
     return ret;
   }
 

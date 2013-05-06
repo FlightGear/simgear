@@ -12,7 +12,8 @@ void SGEventMgr::add(const std::string& name, SGCallback* cb,
 {
     // Clamp the delay value to 1 usec, so that user code can use
     // "zero" as a synonym for "next frame".
-    if(delay <= 0) delay = 0.000001;
+    if(delay <= 0) delay = 1e-6;
+    if(interval <= 0) interval = 1e-6; // No timer endless loops please...
 
     SGTimer* t = new SGTimer;
     t->interval = interval;

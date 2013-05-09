@@ -9,6 +9,7 @@ set(HEADERS
   CanvasEventTypes.hxx
   CanvasEventVisitor.hxx
   CanvasMgr.hxx
+  CanvasObjectPlacement.hxx
   CanvasPlacement.hxx
   CanvasSystemAdapter.hxx
   MouseEvent.hxx
@@ -23,6 +24,7 @@ set(SOURCES
   CanvasEventManager.cxx
   CanvasEventVisitor.cxx
   CanvasMgr.cxx
+  CanvasObjectPlacement.cxx
   CanvasPlacement.cxx
   ODGauge.cxx
   VGInitOperation.cxx

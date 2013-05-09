@@ -54,17 +54,17 @@ static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode*
 }
 
 
-osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
+osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
 {
     using namespace osg;
-    const GraphicsContext* gc = ea->getGraphicsContext();
+    const GraphicsContext* gc = ea.getGraphicsContext();
     const GraphicsContext::Traits* traits = gc->getTraits() ;
     // Scale x, y to the dimensions of the window
-    double x = (((ea->getX() - ea->getXmin()) / (ea->getXmax() - ea->getXmin()))
+    double x = (((ea.getX() - ea.getXmin()) / (ea.getXmax() - ea.getXmin()))
          * (double)traits->width);
-    double y = (((ea->getY() - ea->getYmin()) / (ea->getYmax() - ea->getYmin()))
+    double y = (((ea.getY() - ea.getYmin()) / (ea.getYmax() - ea.getYmin()))
          * (double)traits->height);
-    if (ea->getMouseYOrientation() == osgGA::GUIEventAdapter::Y_INCREASING_DOWNWARDS)
+    if (ea.getMouseYOrientation() == osgGA::GUIEventAdapter::Y_INCREASING_DOWNWARDS)
         y = (double)traits->height - y;
     
     return osg::Vec2d(x, y);
@@ -100,7 +100,9 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
          _hover = readBindingList(hoverNode->getChildren("binding"), modelRoot);
      }
      
-   virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
+   virtual bool buttonPressed( int button,
+                               const osgGA::GUIEventAdapter&,
+                               const Info& )
    {
        if (_buttons.find(button) == _buttons.end()) {
            return false;
@@ -110,7 +112,9 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
      _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
      return true;
    }
-   virtual void buttonReleased(int keyModState)
+   virtual void buttonReleased( int keyModState,
+                                const osgGA::GUIEventAdapter&,
+                                const Info* )
    {
        SG_UNUSED(keyModState);
        fireBindingList(_bindingsUp);
@@ -129,7 +133,8 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter* ea)
      }
    }
    
-   virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
+   virtual bool hover( const osg::Vec2d& windowPos,
+                       const Info& )
    {
        if (_hover.empty()) {
            return false;
@@ -256,7 +261,9 @@ public:
    _squaredDown = dot(_toDown, _toDown);
  }
 
- virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info& info)
+ virtual bool buttonPressed( int button,
+                             const osgGA::GUIEventAdapter&,
+                             const Info& info )
  {
    SGVec3d loc(info.local);
    SG_LOG(SG_INPUT, SG_DEBUG, "VNC pressed " << button << ": " << loc);
@@ -270,7 +277,9 @@ public:
    return vv.wasSuccessful();
 
  }
- virtual void buttonReleased(int keyModState)
+ virtual void buttonReleased( int keyModState,
+                              const osgGA::GUIEventAdapter&,
+                              const Info* )
  {
    SG_UNUSED(keyModState);
    SG_LOG(SG_INPUT, SG_DEBUG, "VNC release");
@@ -544,11 +553,13 @@ public:
         }
     }
     
-    virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
+    virtual bool buttonPressed( int button,
+                                const osgGA::GUIEventAdapter& ea,
+                                const Info& )
     {        
         // the 'be nice to Mac / laptop' users option; alt-clicking spins the
         // opposite direction. Should make this configurable
-        if ((button == 0) && (ea->getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_ALT)) {
+        if ((button == 0) && (ea.getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_ALT)) {
             button = 1;
         }
         
@@ -571,7 +582,9 @@ public:
         return true;
     }
     
-    virtual void buttonReleased(int keyModState)
+    virtual void buttonReleased( int keyModState,
+                                 const osgGA::GUIEventAdapter&,
+                                 const Info* )
     {
         // for *clicks*, we only fire on button release
         if (!_hasDragged) {
@@ -592,7 +605,8 @@ public:
       return _dragDirection;
   }
   
-    virtual void mouseMoved(const osgGA::GUIEventAdapter* ea)
+    virtual void mouseMoved( const osgGA::GUIEventAdapter& ea,
+                             const Info* )
     {
         _mousePos = eventToWindowCoords(ea);
         osg::Vec2d deltaMouse = _mousePos - _lastFirePos;
@@ -618,7 +632,7 @@ public:
         if (fabs(delta) >= 1.0) {
             // determine direction from sign of delta
             Direction dir = (delta > 0.0) ? DIRECTION_INCREASE : DIRECTION_DECREASE;
-            fire(ea->getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_SHIFT, dir);
+            fire(ea.getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_SHIFT, dir);
             _lastFirePos = _mousePos;
         }
     }
@@ -636,7 +650,8 @@ public:
         } // of repeat iteration
     }
 
-    virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
+    virtual bool hover( const osg::Vec2d& windowPos,
+                        const Info& )
     {
         if (_hover.empty()) {
             return false;

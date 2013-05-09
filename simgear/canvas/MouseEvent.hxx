@@ -38,6 +38,15 @@ namespace canvas
         click_count(0)
       {}
 
+      MouseEvent(const osgGA::GUIEventAdapter& ea):
+        button(ea.getButton()),
+        state(ea.getButtonMask()),
+        mod(ea.getModKeyMask()),
+        click_count(0)
+      {
+        time = ea.getTime();
+      }
+
       osg::Vec2f getScreenPos() const { return screen_pos; }
       osg::Vec2f getClientPos() const { return client_pos; }
       osg::Vec2f getDelta() const { return delta; }

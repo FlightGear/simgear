@@ -52,19 +52,41 @@ public:
   { }
 
   virtual ~SGPickCallback() {}
-  virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* event, const Info& info)
+
+  // TODO maybe better provide a single callback to handle all events
+  virtual bool buttonPressed( int button,
+                              const osgGA::GUIEventAdapter& ea,
+                              const Info& info )
   { return false; }
   
   virtual void update(double dt, int keyModState)
   { }
-    
-  virtual void buttonReleased(int keyModState)
+
+  /**
+   * @param info    Can be null if no info is available (eg. mouse not over 3d
+   *                object anymore)
+   */
+  virtual void buttonReleased( int keyModState,
+                               const osgGA::GUIEventAdapter& ea,
+                               const Info* info )
   { }
 
-  virtual void mouseMoved(const osgGA::GUIEventAdapter* event)
+  /**
+   * @param info    Can be null if no info is available (eg. mouse not over 3d
+   *                object anymore)
+   */
+  virtual void mouseMoved( const osgGA::GUIEventAdapter& ea,
+                           const Info* info )
   { }
 
-  virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
+  /**
+   * The mouse is not hovering anymore over the element.
+   */
+  virtual void mouseLeave(const osg::Vec2d& windowPos)
+  { }
+
+  virtual bool hover( const osg::Vec2d& windowPos,
+                      const Info& info )
   {  return false; }
 
   virtual Priority getPriority() const

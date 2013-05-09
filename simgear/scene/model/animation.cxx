@@ -850,7 +850,7 @@ void SpinAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     if (!cv)
         return;
     if (!_condition || _condition->test()) {
-        double t = nv->getFrameStamp()->getReferenceTime();
+        double t = nv->getFrameStamp()->getSimulationTime();
         double rps = _animationValue->getValue() / 60.0;
         ref_ptr<ReferenceValues>
             refval(static_cast<ReferenceValues*>(_referenceValues.get()));
@@ -1862,7 +1862,7 @@ public:
     _current_index = _current_index % nChildren;
 
     // update the time and compute the current systems time value
-    double t = nv->getFrameStamp()->getReferenceTime();
+    double t = nv->getFrameStamp()->getSimulationTime();
     if (_last_time_sec == SGLimitsd::max()) {
       _last_time_sec = t;
     } else {

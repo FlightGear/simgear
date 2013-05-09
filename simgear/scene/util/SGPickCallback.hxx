@@ -44,6 +44,7 @@ public:
   struct Info {
     SGVec3d wgs84;
     SGVec3d local;
+    SGVec2d uv;
   };
 
   SGPickCallback(Priority priority = PriorityOther) :
@@ -75,6 +76,13 @@ public:
    */
   virtual std::string getCursor() const
   { return std::string(); }
+
+  /**
+   * Whether the uv coordinates of the picking action should be calculated upon
+   * an intersection.
+   */
+  virtual bool needsUV() const
+  { return false; }
 
 private:
   Priority _priority;

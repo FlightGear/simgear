@@ -135,13 +135,11 @@ Geometry* makeSharedTreeGeometry(int numQuads)
         // space, as the texture has a number of different trees on
         // it. Here we assign random coordinates and let the shader
         // choose the variety.
-        // Height isn't quite 0.25 to allow for UV map bleeding when
-        // mipmaps are generated.
         float variety = mt_rand(&seed);
         t->push_back(Vec2(variety, 0.0f));
         t->push_back(Vec2(variety + 1.0f, 0.0f));
-        t->push_back(Vec2(variety + 1.0f, 0.246f));
-        t->push_back(Vec2(variety, 0.246f));
+        t->push_back(Vec2(variety + 1.0f, 1.0f));
+        t->push_back(Vec2(variety, 1.0f));
     }
     Geometry* result = new Geometry;
     result->setVertexArray(v);

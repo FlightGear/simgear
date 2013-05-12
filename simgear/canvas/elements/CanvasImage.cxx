@@ -331,7 +331,9 @@ namespace canvas
   void Image::setSrcCanvas(CanvasPtr canvas)
   {
     if( !_src_canvas.expired() )
-      _src_canvas.lock()->removeDependentCanvas(_canvas);
+      _src_canvas.lock()->removeParentCanvas(_canvas);
+    if( !_canvas.expired() )
+      _canvas.lock()->removeChildCanvas(_src_canvas);
 
     _src_canvas = canvas;
     _geom->getOrCreateStateSet()
@@ -341,7 +343,10 @@ namespace canvas
     if( !_src_canvas.expired() )
     {
       setupDefaultDimensions();
-      _src_canvas.lock()->addDependentCanvas(_canvas);
+      _src_canvas.lock()->addParentCanvas(_canvas);
+
+      if( !_canvas.expired() )
+        _canvas.lock()->addChildCanvas(_src_canvas);
     }
   }
 

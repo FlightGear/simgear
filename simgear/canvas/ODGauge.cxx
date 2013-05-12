@@ -99,6 +99,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  osg::Vec2s ODGauge::getViewSize() const
+  {
+    return osg::Vec2s(_view_width, _view_height);
+  }
+
+  //----------------------------------------------------------------------------
   void ODGauge::useImageCoords(bool use)
   {
     if( updateFlag(USE_IMAGE_COORDS, use) && texture )

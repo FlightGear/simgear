@@ -107,7 +107,7 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Canvas::addDependentCanvas(const CanvasWeakPtr& canvas)
+  void Canvas::addParentCanvas(const CanvasWeakPtr& canvas)
   {
     if( canvas.expired() )
     {
@@ -115,19 +115,41 @@ namespace canvas
       (
         SG_GENERAL,
         SG_WARN,
-        "Canvas::addDependentCanvas: got an expired Canvas dependent on "
-        << _node->getPath()
+        "Canvas::addParentCanvas: got an expired parent: " << _node->getPath()
       );
       return;
     }
 
-    _dependent_canvases.insert(canvas);
+    _parent_canvases.insert(canvas);
   }
 
   //----------------------------------------------------------------------------
-  void Canvas::removeDependentCanvas(const CanvasWeakPtr& canvas)
+  void Canvas::addChildCanvas(const CanvasWeakPtr& canvas)
   {
-    _dependent_canvases.erase(canvas);
+    if( canvas.expired() )
+    {
+      SG_LOG
+      (
+        SG_GENERAL,
+        SG_WARN,
+        "Canvas::addChildCanvas: got an expired child: " << _node->getPath()
+      );
+      return;
+    }
+
+    _child_canvases.insert(canvas);
+  }
+
+  //----------------------------------------------------------------------------
+  void Canvas::removeParentCanvas(const CanvasWeakPtr& canvas)
+  {
+    _parent_canvases.erase(canvas);
+  }
+
+  //----------------------------------------------------------------------------
+  void Canvas::removeChildCanvas(const CanvasWeakPtr& canvas)
+  {
+    _child_canvases.erase(canvas);
   }
 
   //----------------------------------------------------------------------------
@@ -197,10 +219,18 @@ namespace canvas
 
     if( _visible || _render_always )
     {
+      BOOST_FOREACH(CanvasWeakPtr canvas, _child_canvases)
+      {
+        // TODO should we check if the image the child canvas is displayed
+        //      within is really visible?
+        if( !canvas.expired() )
+          canvas.lock()->_visible = true;
+      }
+
       if( _render_dirty )
       {
-        // Also mark all dependent (eg. recursively used) canvases as dirty
-        BOOST_FOREACH(CanvasWeakPtr canvas, _dependent_canvases)
+        // Also mark all canvases this canvas is displayed within as dirty
+        BOOST_FOREACH(CanvasWeakPtr canvas, _parent_canvases)
         {
           if( !canvas.expired() )
             canvas.lock()->_render_dirty = true;
@@ -340,13 +370,13 @@ namespace canvas
   //----------------------------------------------------------------------------
   int Canvas::getViewWidth() const
   {
-    return _view_width;
+    return _texture.getViewSize().x();
   }
 
   //----------------------------------------------------------------------------
   int Canvas::getViewHeight() const
   {
-    return _view_height;
+    return _texture.getViewSize().y();
   }
 
   //----------------------------------------------------------------------------

@@ -79,18 +79,24 @@ namespace canvas
       CanvasMgr* getCanvasMgr() const;
 
       /**
-       * Add a canvas which should be mared as dirty upon any change to this
+       * Add a canvas which should be marked as dirty upon any change to this
        * canvas.
        *
        * This mechanism is used to eg. redraw a canvas if it's displaying
        * another canvas (recursive canvases)
        */
-      void addDependentCanvas(const CanvasWeakPtr& canvas);
+      void addParentCanvas(const CanvasWeakPtr& canvas);
+
+      /**
+       * Add a canvas which should be marked visible if this canvas is visible.
+       */
+      void addChildCanvas(const CanvasWeakPtr& canvas);
 
       /**
        * Stop notifying the given canvas upon changes
        */
-      void removeDependentCanvas(const CanvasWeakPtr& canvas);
+      void removeParentCanvas(const CanvasWeakPtr& canvas);
+      void removeChildCanvas(const CanvasWeakPtr& canvas);
 
       GroupPtr createGroup(const std::string& name = "");
 
@@ -161,9 +167,9 @@ namespace canvas
 
       std::vector<SGPropertyNode*> _dirty_placements;
       std::vector<Placements> _placements;
-      std::set<CanvasWeakPtr> _dependent_canvases; //<! Canvases which use this
-                                                   //   canvas and should be
-                                                   //   notified about changes
+      std::set<CanvasWeakPtr> _parent_canvases, //<! Canvases showing this canvas
+                              _child_canvases;  //<! Canvases displayed within
+                                                //   this canvas
 
       typedef std::map<std::string, PlacementFactory> PlacementFactoryMap;
       static PlacementFactoryMap _placement_factories;

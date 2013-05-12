@@ -71,6 +71,8 @@ namespace canvas
        */
       void setViewSize(int width, int height = -1);
 
+      osg::Vec2s getViewSize() const;
+
       /**
        * DEPRECATED
        *

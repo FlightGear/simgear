@@ -210,23 +210,22 @@ namespace canvas
         // (eg. removed by another event handler)
         continue;
 
-      // TODO provide functions to convert position and delta to local
-      //      coordinates on demand. Events shouldn't contain informations in
-      //      local coordinates as they might differe between different elements
-      //      receiving the same event.
-//      if( mouse_event && event->type != Event::DRAG )
-//      {
-//        // TODO transform pos and delta for drag events. Maybe we should just
-//        //      store the global coordinates and convert to local coordinates
-//        //      on demand.
-//
-//        // Position and delta are specified in local coordinate system of
-//        // current element
-//        mouse_event->pos = it->local_pos;
-//        mouse_event->delta = it->local_delta;
-//      }
+      // TODO provide functions to convert delta to local coordinates on demand.
+      //      Maybe also provide a clone method for events as local coordinates
+      //      might differ between different elements receiving the same event.
+      if( mouse_event ) //&& event->type != Event::DRAG )
+      {
+        // TODO transform pos and delta for drag events. Maybe we should just
+        //      store the global coordinates and convert to local coordinates
+        //      on demand.
 
-      el->callListeners(event);
+        // Position and delta are specified in local coordinate system of
+        // current element
+        mouse_event->local_pos = it->local_pos;
+        //mouse_event->delta = it->local_delta;
+      }
+
+      el->handleEvent(event);
 
       if( event->propagation_stopped )
         return true;

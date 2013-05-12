@@ -185,14 +185,16 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Element::callListeners(const canvas::EventPtr& event)
+  bool Element::handleEvent(canvas::EventPtr event)
   {
     ListenerMap::iterator listeners = _listener.find(event->getType());
     if( listeners == _listener.end() )
-      return;
+      return false;
 
     BOOST_FOREACH(EventListenerPtr listener, listeners->second)
       listener->call(event);
+
+    return true;
   }
 
   //----------------------------------------------------------------------------

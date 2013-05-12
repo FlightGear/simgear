@@ -90,7 +90,7 @@ namespace canvas
       virtual bool ascend(EventVisitor& visitor);
       virtual bool traverse(EventVisitor& visitor);
 
-      void callListeners(const canvas::EventPtr& event);
+      virtual bool handleEvent(canvas::EventPtr event);
 
       virtual bool hitBound( const osg::Vec2f& pos,
                              const osg::Vec2f& local_pos ) const;

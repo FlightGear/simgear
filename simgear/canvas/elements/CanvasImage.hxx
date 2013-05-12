@@ -81,7 +81,7 @@ namespace canvas
 
       const SGRect<float>& getRegion() const;
 
-      bool handleMouseEvent(MouseEventPtr event);
+      bool handleEvent(EventPtr event);
 
     protected:
 

@@ -22,6 +22,7 @@
 #include <simgear/canvas/CanvasMgr.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/misc/sg_path.hxx>
 
@@ -411,26 +412,40 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Image::handleMouseEvent(MouseEventPtr event)
+  bool Image::handleEvent(EventPtr event)
   {
+    bool handled = Element::handleEvent(event);
+
     CanvasPtr src_canvas = _src_canvas.lock();
-
     if( !src_canvas )
-      return false;
+      return handled;
 
-    if( _outset.valid )
+    MouseEventPtr mouse_event = boost::dynamic_pointer_cast<MouseEvent>(event);
+    if( mouse_event )
     {
-      CSSOffsets outset = _outset.getAbsOffsets(getTextureDimensions());
+      mouse_event.reset( new MouseEvent(*mouse_event) );
+      event = mouse_event;
 
-      event.reset( new MouseEvent(*event) );
-      event->client_pos += osg::Vec2f(outset.l, outset.t);
-      event->client_pos.x() *= src_canvas->getViewWidth()
-                             / (_region.width() + outset.l + outset.r);
-      event->client_pos.y() *= src_canvas->getViewHeight()
-                             / (_region.height() + outset.t + outset.b);
+      mouse_event->client_pos = mouse_event->local_pos
+                              - toOsg(_region.getMin());
+
+      osg::Vec2f size(_region.width(), _region.height());
+      if( _outset.valid )
+      {
+        CSSOffsets outset = _outset.getAbsOffsets(getTextureDimensions());
+
+        mouse_event->client_pos += osg::Vec2f(outset.l, outset.t);
+        size.x() += outset.l + outset.r;
+        size.y() += outset.t + outset.b;
+      }
+
+      // Scale event pos according to canvas view size vs. displayed/screen size
+      mouse_event->client_pos.x() *= src_canvas->getViewWidth() / size.x();
+      mouse_event->client_pos.y() *= src_canvas->getViewHeight()/ size.y();
+      mouse_event->local_pos = mouse_event->client_pos;
     }
 
-    return src_canvas->handleMouseEvent(event);
+    return handled || src_canvas->handleMouseEvent(mouse_event);
   }
 
   //----------------------------------------------------------------------------

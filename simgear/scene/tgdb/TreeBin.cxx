@@ -138,8 +138,8 @@ Geometry* makeSharedTreeGeometry(int numQuads)
         float variety = mt_rand(&seed);
         t->push_back(Vec2(variety, 0.0f));
         t->push_back(Vec2(variety + 1.0f, 0.0f));
-        t->push_back(Vec2(variety + 1.0f, 1.0f));
-        t->push_back(Vec2(variety, 1.0f));
+        t->push_back(Vec2(variety + 1.0f, 0.234f));
+        t->push_back(Vec2(variety, 0.234f));
     }
     Geometry* result = new Geometry;
     result->setVertexArray(v);

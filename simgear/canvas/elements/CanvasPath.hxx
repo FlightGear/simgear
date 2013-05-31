@@ -20,6 +20,7 @@
 #define CANVAS_PATH_HXX_
 
 #include "CanvasElement.hxx"
+#include <boost/preprocessor/iteration/iterate.hpp>
 
 namespace simgear
 {
@@ -38,6 +39,30 @@ namespace canvas
       virtual void update(double dt);
 
       virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
+
+#define BOOST_PP_ITERATION_LIMITS (0, 6)
+#define BOOST_PP_FILENAME_1 \
+        <simgear/canvas/elements/detail/add_segment_variadic.hxx>
+#include BOOST_PP_ITERATE()
+
+      /** Move path cursor */
+      Path& moveTo(float x_abs, float y_abs);
+      Path& move(float x_rel, float y_rel);
+
+      /** Add a line */
+      Path& lineTo(float x_abs, float y_abs);
+      Path& line(float x_rel, float y_rel);
+
+      /** Add a horizontal line */
+      Path& horizTo(float x_abs);
+      Path& horiz(float x_rel);
+
+      /** Add a vertical line */
+      Path& vertTo(float y_abs);
+      Path& vert(float y_rel);
+
+      /** Close the path (implicit lineTo to first point of path) */
+      Path& close();
 
     protected:
 

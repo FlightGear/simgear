@@ -525,6 +525,60 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  Path& Path::moveTo(float x_abs, float y_abs)
+  {
+    return addSegment(VG_MOVE_TO_ABS, x_abs, y_abs);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::move(float x_rel, float y_rel)
+  {
+    return addSegment(VG_MOVE_TO_REL, x_rel, y_rel);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::lineTo(float x_abs, float y_abs)
+  {
+    return addSegment(VG_LINE_TO_ABS, x_abs, y_abs);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::line(float x_rel, float y_rel)
+  {
+    return addSegment(VG_LINE_TO_REL, x_rel, y_rel);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::horizTo(float x_abs)
+  {
+    return addSegment(VG_HLINE_TO_ABS, x_abs);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::horiz(float x_rel)
+  {
+    return addSegment(VG_HLINE_TO_REL, x_rel);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::vertTo(float y_abs)
+  {
+    return addSegment(VG_VLINE_TO_ABS, y_abs);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::vert(float y_rel)
+  {
+    return addSegment(VG_VLINE_TO_REL, y_rel);
+  }
+
+  //----------------------------------------------------------------------------
+  Path& Path::close()
+  {
+    return addSegment(VG_CLOSE_PATH);
+  }
+
+  //----------------------------------------------------------------------------
   void Path::childRemoved(SGPropertyNode* child)
   {
     childChanged(child);

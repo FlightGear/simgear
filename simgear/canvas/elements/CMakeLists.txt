@@ -6,7 +6,11 @@ set(HEADERS
   CanvasImage.hxx
   CanvasMap.hxx
   CanvasPath.hxx
-  CanvasText.hxx  
+  CanvasText.hxx
+)
+
+set(DETAIL_HEADERS
+  detail/add_segment_variadic.hxx
 )
 
 set(SOURCES
@@ -19,3 +23,4 @@ set(SOURCES
 )
 
 simgear_scene_component(canvas-elements canvas/elements "${SOURCES}" "${HEADERS}")
+simgear_component(canvas-elements/detail canvas/elements/detail "" "${DETAIL_HEADERS}")

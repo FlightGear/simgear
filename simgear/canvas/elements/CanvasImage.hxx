@@ -22,7 +22,7 @@
 #include "CanvasElement.hxx"
 
 #include <simgear/canvas/canvas_fwd.hxx>
-#include <simgear/math/SGRect.hxx>
+#include <simgear/misc/CSSBorder.hxx>
 #include <osg/Texture2D>
 
 namespace simgear
@@ -91,33 +91,6 @@ namespace canvas
         DEST_SIZE      = SRC_RECT << 1        // Element size
       };
 
-      union CSSOffsets
-      {
-        float          val[4];
-        struct { float t, r, b, l; };
-      };
-
-      union CSSOffsetsTypes
-      {
-        bool          rel[4];
-        struct { bool t_rel, r_rel, b_rel, l_rel; };
-      };
-
-      struct CSSBorder
-      {
-        CSSBorder():
-          valid(false)
-        {}
-
-        CSSOffsets getRelOffsets(const SGRect<int>& dim) const;
-        CSSOffsets getAbsOffsets(const SGRect<int>& dim) const;
-
-        CSSOffsets      offsets;
-        CSSOffsetsTypes types;
-        std::string     keyword;
-        bool            valid;
-      };
-
       virtual void childChanged(SGPropertyNode * child);
 
       void setupDefaultDimensions();
@@ -125,8 +98,6 @@ namespace canvas
 
       void setQuad(size_t index, const SGVec2f& tl, const SGVec2f& br);
       void setQuadUV(size_t index, const SGVec2f& tl, const SGVec2f& br);
-
-      CSSBorder parseSideOffsets(const std::string& str) const;
 
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas

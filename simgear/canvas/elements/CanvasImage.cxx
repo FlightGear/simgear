@@ -31,9 +31,6 @@
 #include <osg/PrimitiveSet>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/range.hpp>
-#include <boost/tokenizer.hpp>
 
 namespace simgear
 {
@@ -161,11 +158,11 @@ namespace canvas
 
     // The ‘fill’ keyword, if present, causes the middle part of the image to be
     // preserved. (By default it is discarded, i.e., treated as empty.)
-    bool fill = (_slice.keyword == "fill");
+    bool fill = (_slice.getKeyword() == "fill");
 
     if( _attributes_dirty & DEST_SIZE )
     {
-      size_t num_vertices = (_slice.valid ? (fill ? 9 : 8) : 1) * 4;
+      size_t num_vertices = (_slice.isValid() ? (fill ? 9 : 8) : 1) * 4;
 
       if( num_vertices != _prim->getNumPrimitives() )
       {
@@ -179,16 +176,16 @@ namespace canvas
 
       // http://www.w3.org/TR/css3-background/#border-image-outset
       SGRect<float> region = _region;
-      if( _outset.valid )
+      if( _outset.isValid() )
       {
-        const CSSOffsets& outset = _outset.getAbsOffsets(tex_dim);
+        const CSSBorder::Offsets& outset = _outset.getAbsOffsets(tex_dim);
         region.t() -= outset.t;
         region.r() += outset.r;
         region.b() += outset.b;
         region.l() -= outset.l;
       }
 
-      if( !_slice.valid )
+      if( !_slice.isValid() )
       {
         setQuad(0, region.getMin(), region.getMax());
       }
@@ -215,8 +212,9 @@ namespace canvas
           -------------------- - y[3]
          */
 
-        const CSSOffsets& slice =
-          (_slice_width.valid ? _slice_width : _slice).getAbsOffsets(tex_dim);
+        const CSSBorder::Offsets& slice =
+          (_slice_width.isValid() ? _slice_width : _slice)
+          .getAbsOffsets(tex_dim);
         float x[4] = {
           region.l(),
           region.l() + slice.l,
@@ -265,13 +263,13 @@ namespace canvas
       // Image coordinate systems y-axis is flipped
       std::swap(src_rect.t(), src_rect.b());
 
-      if( !_slice.valid )
+      if( !_slice.isValid() )
       {
         setQuadUV(0, src_rect.getMin(), src_rect.getMax());
       }
       else
       {
-        const CSSOffsets& slice = _slice.getRelOffsets(tex_dim);
+        const CSSBorder::Offsets& slice = _slice.getRelOffsets(tex_dim);
         float x[4] = {
           src_rect.l(),
           src_rect.l() + slice.l,
@@ -387,21 +385,21 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Image::setSlice(const std::string& slice)
   {
-    _slice = parseSideOffsets(slice);
+    _slice = CSSBorder::parse(slice);
     _attributes_dirty |= SRC_RECT | DEST_SIZE;
   }
 
   //----------------------------------------------------------------------------
   void Image::setSliceWidth(const std::string& width)
   {
-    _slice_width = parseSideOffsets(width);
+    _slice_width = CSSBorder::parse(width);
     _attributes_dirty |= DEST_SIZE;
   }
 
   //----------------------------------------------------------------------------
   void Image::setOutset(const std::string& outset)
   {
-    _outset = parseSideOffsets(outset);
+    _outset = CSSBorder::parse(outset);
     _attributes_dirty |= DEST_SIZE;
   }
 
@@ -430,9 +428,10 @@ namespace canvas
                               - toOsg(_region.getMin());
 
       osg::Vec2f size(_region.width(), _region.height());
-      if( _outset.valid )
+      if( _outset.isValid() )
       {
-        CSSOffsets outset = _outset.getAbsOffsets(getTextureDimensions());
+        CSSBorder::Offsets outset =
+          _outset.getAbsOffsets(getTextureDimensions());
 
         mouse_event->client_pos += osg::Vec2f(outset.l, outset.t);
         size.x() += outset.l + outset.r;
@@ -446,34 +445,6 @@ namespace canvas
     }
 
     return handled || src_canvas->handleMouseEvent(mouse_event);
-  }
-
-  //----------------------------------------------------------------------------
-  Image::CSSOffsets
-  Image::CSSBorder::getRelOffsets(const SGRect<int>& dim) const
-  {
-    CSSOffsets ret;
-    for(int i = 0; i < 4; ++i)
-    {
-      ret.val[i] = offsets.val[i];
-      if( !types.rel[i] )
-        ret.val[i] /= (i & 1) ? dim.height() : dim.width();
-    }
-    return ret;
-  }
-
-  //----------------------------------------------------------------------------
-  Image::CSSOffsets
-  Image::CSSBorder::getAbsOffsets(const SGRect<int>& dim) const
-  {
-    CSSOffsets ret;
-    for(int i = 0; i < 4; ++i)
-    {
-      ret.val[i] = offsets.val[i];
-      if( types.rel[i] )
-        ret.val[i] *= (i & 1) ? dim.height() : dim.width();
-    }
-    return ret;
   }
 
   //----------------------------------------------------------------------------
@@ -633,82 +604,6 @@ namespace canvas
     (*_texCoords)[i + 1].set(br.x(), tl.y());
     (*_texCoords)[i + 2].set(br.x(), br.y());
     (*_texCoords)[i + 3].set(tl.x(), br.y());
-  }
-
-  //----------------------------------------------------------------------------
-  Image::CSSBorder Image::parseSideOffsets(const std::string& str) const
-  {
-    if( str.empty() )
-      return CSSBorder();
-
-    // [<number>'%'?]{1,4} (top[,right[,bottom[,left]]])
-    //
-    // Percentages are relative to the size of the image: the width of the
-    // image for the horizontal offsets, the height for vertical offsets.
-    // Numbers represent pixels in the image.
-    int c = 0;
-    CSSBorder ret;
-
-    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-    const boost::char_separator<char> del(" \t\n");
-
-    tokenizer tokens(str.begin(), str.end(), del);
-    for( tokenizer::const_iterator tok = tokens.begin();
-         tok != tokens.end() && c < 4;
-         ++tok )
-    {
-      if( isalpha(*tok->begin()) )
-        ret.keyword = *tok;
-      else
-      {
-        bool rel = ret.types.rel[c] = (*tok->rbegin() == '%');
-        ret.offsets.val[c] =
-          // Negative values are not allowed and values bigger than the size of
-          // the image are interpreted as ‘100%’. TODO check max
-          std::max
-          (
-            0.f,
-            boost::lexical_cast<float>
-            (
-              rel ? boost::make_iterator_range(tok->begin(), tok->end() - 1)
-                  : *tok
-            )
-            /
-            (rel ? 100 : 1)
-          );
-        ++c;
-      }
-    }
-
-    // When four values are specified, they set the offsets on the top, right,
-    // bottom and left sides in that order.
-
-#define CSS_COPY_VAL(dest, src)\
-  {\
-    ret.offsets.val[dest] = ret.offsets.val[src];\
-    ret.types.rel[dest] = ret.types.rel[src];\
-  }
-
-    if( c < 4 )
-    {
-      if( c < 3 )
-      {
-        if( c < 2 )
-          // if the right is missing, it is the same as the top.
-          CSS_COPY_VAL(1, 0);
-
-        // if the bottom is missing, it is the same as the top
-        CSS_COPY_VAL(2, 0);
-      }
-
-      // If the left is missing, it is the same as the right
-      CSS_COPY_VAL(3, 1);
-    }
-
-#undef CSS_COPY_VAL
-
-    ret.valid = true;
-    return ret;
   }
 
 } // namespace canvas

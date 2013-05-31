@@ -2,6 +2,7 @@
 include (SimGearComponent)
 
 set(HEADERS 
+    CSSBorder.hxx
     ResourceManager.hxx
     interpolator.hxx
     make_new.hxx
@@ -17,7 +18,8 @@ set(HEADERS
     gzcontainerfile.hxx
     )
 
-set(SOURCES 
+set(SOURCES
+    CSSBorder.cxx
     ResourceManager.cxx
     interpolator.cxx
     sg_dir.cxx
@@ -33,6 +35,10 @@ set(SOURCES
 simgear_component(misc misc "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
+
+add_executable(test_CSSBorder CSSBorder_test.cxx)
+add_test(CSSBorder ${EXECUTABLE_OUTPUT_PATH}/test_CSSBorder)
+target_link_libraries(test_CSSBorder ${TEST_LIBS})
 
 add_executable(test_tabbed_values tabbed_values_test.cxx)
 add_test(tabbed_values ${EXECUTABLE_OUTPUT_PATH}/test_tabbed_values)

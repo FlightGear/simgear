@@ -23,6 +23,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
+#include <map>
+
 namespace simgear
 {
 
@@ -81,7 +83,38 @@ namespace simgear
       }
     }
     else
-      return false;
+    {
+      // Basic color keywords
+      // http://www.w3.org/TR/css3-color/#html4
+      typedef std::map<std::string, osg::Vec4> ColorMap;
+      static ColorMap colors;
+      if( colors.empty() )
+      {
+        colors["red"    ] = osg::Vec4(1,    0,      0,      1);
+        colors["black"  ] = osg::Vec4(0,    0,      0,      1);
+        colors["silver" ] = osg::Vec4(0.75, 0.75,   0.75,   1);
+        colors["gray"   ] = osg::Vec4(0.5,  0.5,    0.5,    1);
+        colors["white"  ] = osg::Vec4(1,    1,      1,      1);
+        colors["maroon" ] = osg::Vec4(0.5,  0,      0,      1);
+        colors["red"    ] = osg::Vec4(1,    0,      0,      1);
+        colors["purple" ] = osg::Vec4(0.5,  0,      0.5,    1);
+        colors["fuchsia"] = osg::Vec4(1,    0,      1,      1);
+        colors["green"  ] = osg::Vec4(0,    0.5,    0,      1);
+        colors["lime"   ] = osg::Vec4(0,    1,      0,      1);
+        colors["olive"  ] = osg::Vec4(0.5,  0.5,    0,      1);
+        colors["yellow" ] = osg::Vec4(1,    1,      0,      1);
+        colors["navy"   ] = osg::Vec4(0,    0,      0.5,    1);
+        colors["blue"   ] = osg::Vec4(0,    0,      1,      1);
+        colors["teal"   ] = osg::Vec4(0,    0.5,    0.5,    1);
+        colors["aqua"   ] = osg::Vec4(0,    1,      1,      1);
+      }
+      ColorMap::const_iterator it = colors.find(str);
+      if( it == colors.end() )
+        return false;
+
+      result = it->second;
+      return true;
+    }
 
     result = color;
     return true;

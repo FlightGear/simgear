@@ -149,6 +149,24 @@ namespace canvas
   {
     Element::update(dt);
 
+    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>
+    (
+      _geom->getOrCreateStateSet()
+           ->getTextureAttribute(0, osg::StateAttribute::TEXTURE)
+    );
+    simgear::canvas::CanvasPtr canvas = _src_canvas.lock();
+
+    if(    (_attributes_dirty & SRC_CANVAS)
+           // check if texture has changed (eg. due to resizing)
+        || (canvas && texture != canvas->getTexture()) )
+    {
+      _geom->getOrCreateStateSet()
+           ->setTextureAttribute(0, canvas ? canvas->getTexture() : 0);
+
+      if( !canvas || canvas->isInit() )
+        _attributes_dirty &= ~SRC_CANVAS;
+    }
+
     if( !_attributes_dirty )
       return;
 
@@ -335,8 +353,7 @@ namespace canvas
       _canvas.lock()->removeChildCanvas(_src_canvas);
 
     _src_canvas = canvas;
-    _geom->getOrCreateStateSet()
-         ->setTextureAttribute(0, canvas ? canvas->getTexture() : 0);
+    _attributes_dirty |= SRC_CANVAS;
     _geom->setCullCallback(canvas ? new CullCallback(canvas) : 0);
 
     if( !_src_canvas.expired() )

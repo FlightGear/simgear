@@ -88,7 +88,8 @@ namespace canvas
       enum ImageAttributes
       {
         SRC_RECT       = LAST_ATTRIBUTE << 1, // Source image rectangle
-        DEST_SIZE      = SRC_RECT << 1        // Element size
+        DEST_SIZE      = SRC_RECT << 1,       // Element size
+        SRC_CANVAS     = DEST_SIZE << 1
       };
 
       virtual void childChanged(SGPropertyNode * child);

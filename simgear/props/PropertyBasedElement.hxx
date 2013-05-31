@@ -21,6 +21,7 @@
 
 #include <simgear/props/props.hxx>
 
+#include <boost/call_traits.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -46,6 +47,13 @@ namespace simgear
 
       SGConstPropertyNode_ptr getProps() const;
       SGPropertyNode_ptr getProps();
+
+      template<class T>
+      void set( const std::string& name,
+                typename boost::call_traits<T>::param_type val )
+      {
+        setValue(_node->getNode(name, true), val);
+      }
 
       virtual void setSelf(const PropertyBasedElementPtr& self);
 

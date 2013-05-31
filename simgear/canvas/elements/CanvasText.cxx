@@ -20,6 +20,7 @@
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
 #include <simgear/scene/util/parse_color.hxx>
+#include <simgear/structure/OSGVersion.hxx>
 #include <osgText/Text>
 
 namespace simgear
@@ -167,10 +168,12 @@ namespace canvas
     if( !bb.valid() )
       return bb;
 
+#if SG_OSG_VERSION_LESS_THAN(3,1,0)
     // TODO bounding box still doesn't seem always right (eg. with center
     //      horizontal alignment not completely accurate)
     bb._min.y() += _offset.y();
     bb._max.y() += _offset.y();
+#endif
 
     _text_element->setBoundingBox(bb);
 

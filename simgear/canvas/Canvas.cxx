@@ -107,6 +107,22 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool Canvas::isInit() const
+  {
+    return _texture.serviceable();
+  }
+
+  //----------------------------------------------------------------------------
+  void Canvas::destroy()
+  {
+    // TODO check if really not in use anymore
+    getProps()->getParent()
+              ->removeChild( getProps()->getName(),
+                             getProps()->getIndex(),
+                             false );
+  }
+
+  //----------------------------------------------------------------------------
   void Canvas::addParentCanvas(const CanvasWeakPtr& canvas)
   {
     if( canvas.expired() )
@@ -159,6 +175,12 @@ namespace canvas
     (
       _root_group->createChild("group", name)
     );
+  }
+
+  //----------------------------------------------------------------------------
+  GroupPtr Canvas::getRootGroup()
+  {
+    return _root_group;
   }
 
   //----------------------------------------------------------------------------
@@ -377,6 +399,12 @@ namespace canvas
   int Canvas::getViewHeight() const
   {
     return _texture.getViewSize().y();
+  }
+
+  //----------------------------------------------------------------------------
+  SGRect<int> Canvas::getViewport() const
+  {
+    return SGRect<int>(0, 0, getViewWidth(), getViewHeight());
   }
 
   //----------------------------------------------------------------------------

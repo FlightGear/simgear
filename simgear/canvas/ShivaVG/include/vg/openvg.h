@@ -627,6 +627,7 @@ VG_API_CALL const VGubyte * vgGetString(VGStringID name);
 #define OVG_SH_blend_dst_atop         1
 
 VG_API_CALL VGboolean vgCreateContextSH(VGint width, VGint height);
+VG_API_CALL VGboolean vgHasContextSH();
 VG_API_CALL void vgResizeSurfaceSH(VGint width, VGint height);
 VG_API_CALL void vgDestroyContextSH(void);
 

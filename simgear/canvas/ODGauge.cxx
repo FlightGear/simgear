@@ -160,7 +160,7 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool ODGauge::serviceable(void)
+  bool ODGauge::serviceable() const
   {
     return _flags & AVAILABLE;
   }

@@ -120,7 +120,7 @@ namespace canvas
        * Say if we can render to a texture.
        * @return true if rtt is available
        */
-      bool serviceable(void);
+      bool serviceable() const;
 
       /**
        * Get the OSG camera for drawing this gauge.

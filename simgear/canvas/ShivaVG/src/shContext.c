@@ -61,6 +61,11 @@ VG_API_CALL VGboolean vgCreateContextSH(VGint width, VGint height)
   return VG_TRUE;
 }
 
+VG_API_CALL VGboolean vgHasContextSH()
+{
+  return g_context != NULL;
+}
+
 VG_API_CALL void vgResizeSurfaceSH(VGint width, VGint height)
 {
   VG_GETCONTEXT(VG_NO_RETVAL);

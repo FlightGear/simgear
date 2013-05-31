@@ -429,6 +429,9 @@ namespace canvas
        */
       void update()
       {
+        if( !vgHasContextSH() )
+          return;
+
         if( _attributes_dirty & PATH )
         {
           const VGbitfield caps = VG_PATH_CAPABILITY_APPEND_TO

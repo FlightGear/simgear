@@ -23,6 +23,7 @@
 #include "ODGauge.hxx"
 
 #include <simgear/canvas/elements/CanvasGroup.hxx>
+#include <simgear/math/SGRect.hxx>
 #include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/props/propertyObject.hxx>
 #include <osg/NodeCallback>
@@ -78,6 +79,9 @@ namespace canvas
       void setCanvasMgr(CanvasMgr* canvas_mgr);
       CanvasMgr* getCanvasMgr() const;
 
+      bool isInit() const;
+      void destroy();
+
       /**
        * Add a canvas which should be marked as dirty upon any change to this
        * canvas.
@@ -99,6 +103,7 @@ namespace canvas
       void removeChildCanvas(const CanvasWeakPtr& canvas);
 
       GroupPtr createGroup(const std::string& name = "");
+      GroupPtr getRootGroup();
 
       /**
        * Enable rendering for the next frame
@@ -123,6 +128,7 @@ namespace canvas
 
       int getViewWidth() const;
       int getViewHeight() const;
+      SGRect<int> getViewport() const;
 
       bool handleMouseEvent(const MouseEventPtr& event);
 

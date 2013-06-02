@@ -5,6 +5,7 @@
 #include "NasalString.hxx"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
 #include <cstring>
 #include <iostream>
@@ -65,6 +66,8 @@ struct DoubleDerived2:
 typedef boost::shared_ptr<Derived> DerivedPtr;
 typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
+
+typedef boost::weak_ptr<Derived> DerivedWeakPtr;
 
 naRef derivedFreeMember(Derived&, const nasal::CallContext&) { return naNil(); }
 naRef f_derivedGetX(naContext c, const Derived& d)
@@ -164,6 +167,8 @@ int main(int argc, char* argv[])
     .bases< Ghost<DerivedPtr> >()
     .member("base", &DoubleDerived2::getBase)
     .method("doIt", &DoubleDerived2::doSomeBaseWork);
+
+  Ghost<DerivedWeakPtr>::init("DerivedWeakPtr");
 
   VERIFY( Ghost<BasePtr>::isInit() );
   nasal::to_nasal(c, DoubleDerived2Ptr());

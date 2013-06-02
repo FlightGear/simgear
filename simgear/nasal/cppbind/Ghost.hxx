@@ -35,6 +35,12 @@
 
 #include <map>
 
+template<class T>
+inline T* get_pointer(boost::weak_ptr<T> const& p)
+{
+  return p.lock().get();
+}
+
 /**
  * Bindings between C++ and the Nasal scripting language
  */
@@ -569,7 +575,7 @@ namespace nasal
                                     ++parent )
           {
             pointer ptr = fromNasal(c, *parent);
-            if( ptr.get() )
+            if( get_pointer(ptr) )
               return ptr;
           }
         }
@@ -592,7 +598,7 @@ namespace nasal
        */
       static pointer* createInstance(const pointer& ptr)
       {
-        return ptr.get() ? new pointer(ptr) : 0;
+        return get_pointer(ptr) ? new pointer(ptr) : 0;
       }
 
       static pointer getPtr(void* ptr)
@@ -606,14 +612,14 @@ namespace nasal
       static raw_type* getRawPtr(void* ptr)
       {
         if( ptr )
-          return static_cast<pointer*>(ptr)->get();
+          return get_pointer(*static_cast<pointer*>(ptr));
         else
           return 0;
       }
 
       static raw_type* getRawPtr(const pointer& ptr)
       {
-        return ptr.get();
+        return get_pointer(ptr);
       }
 
       void addDerived( const internal::GhostMetadata* derived_meta,

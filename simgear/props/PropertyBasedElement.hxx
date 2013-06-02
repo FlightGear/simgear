@@ -55,6 +55,17 @@ namespace simgear
         setValue(_node->getNode(name, true), val);
       }
 
+      template<class T>
+      T get( const std::string& name,
+             typename boost::call_traits<T>::param_type def = T() )
+      {
+        SGPropertyNode const* child = _node->getNode(name);
+        if( !child )
+          return def;
+
+        return getValue<T>(child);
+      }
+
       virtual void setSelf(const PropertyBasedElementPtr& self);
 
     protected:

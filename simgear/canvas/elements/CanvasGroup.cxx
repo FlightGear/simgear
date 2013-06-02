@@ -94,6 +94,20 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  ElementPtr Group::getChild(const std::string& id)
+  {
+    for( ChildList::iterator child = _children.begin();
+                             child != _children.end();
+                           ++child )
+    {
+      if( child->second->get<std::string>("id") == id )
+        return child->second;
+    }
+
+    return ElementPtr();
+  }
+
+  //----------------------------------------------------------------------------
   ElementPtr Group::getElementById(const std::string& id)
   {
     std::vector<GroupPtr> groups;

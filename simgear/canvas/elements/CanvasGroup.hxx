@@ -48,6 +48,7 @@ namespace canvas
       ElementPtr createChild( const std::string& type,
                               const std::string& id = "" );
       ElementPtr getChild(const SGPropertyNode* node);
+      ElementPtr getChild(const std::string& id);
 
       /**
        * Get first child with given id (breadth-first search)

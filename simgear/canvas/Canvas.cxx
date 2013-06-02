@@ -178,6 +178,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  GroupPtr Canvas::getGroup(const std::string& name)
+  {
+    return boost::dynamic_pointer_cast<Group>
+    (
+      _root_group->getChild(name)
+    );
+  }
+
+  //----------------------------------------------------------------------------
   GroupPtr Canvas::getRootGroup()
   {
     return _root_group;

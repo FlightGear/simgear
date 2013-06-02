@@ -1796,6 +1796,12 @@ inline const char * getValue<const char*>(const SGPropertyNode* node)
     return node->getStringValue ();
 }
 
+template<>
+inline std::string getValue<std::string>(const SGPropertyNode* node)
+{
+    return node->getStringValue();
+}
+
 inline bool setValue(SGPropertyNode* node, bool value)
 {
     return node->setBoolValue(value);

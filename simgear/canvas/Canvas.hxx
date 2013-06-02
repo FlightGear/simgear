@@ -103,6 +103,7 @@ namespace canvas
       void removeChildCanvas(const CanvasWeakPtr& canvas);
 
       GroupPtr createGroup(const std::string& name = "");
+      GroupPtr getGroup(const std::string& name);
       GroupPtr getRootGroup();
 
       /**

@@ -11,6 +11,7 @@ set(HEADERS
     matlib.hxx
     matmodel.hxx
     mipmap.hxx
+    parseBlendFunc.hxx
     )
 
 set(SOURCES 
@@ -27,7 +28,16 @@ set(SOURCES
     matlib.cxx
     matmodel.cxx
     mipmap.cxx
+    parseBlendFunc.cxx
     )
 
 simgear_scene_component(material scene/material "${SOURCES}" "${HEADERS}")
 
+
+if(ENABLE_TESTS)
+
+add_executable(test_parseBlendFunc parseBlendFunc_test.cxx )
+add_test(parseBlendFunc ${EXECUTABLE_OUTPUT_PATH}/test_parseBlendFunc)
+target_link_libraries(test_parseBlendFunc ${TEST_LIBS} ${OPENSCENEGRAPH_LIBRARIES})
+
+endif(ENABLE_TESTS)

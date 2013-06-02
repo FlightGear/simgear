@@ -24,6 +24,7 @@
 #include "Technique.hxx"
 #include "Pass.hxx"
 #include "TextureBuilder.hxx"
+#include "parseBlendFunc.hxx"
 
 #include <algorithm>
 #include <functional>
@@ -453,58 +454,16 @@ struct BlendBuilder : public PassAttributeBuilder
             pass->setMode(GL_BLEND, StateAttribute::OFF);
             return;
         }
-        const SGPropertyNode* psource
-            = getEffectPropertyChild(effect, prop, "source");
-        const SGPropertyNode* pdestination
-            = getEffectPropertyChild(effect, prop, "destination");
-        const SGPropertyNode* psourceRGB
-            = getEffectPropertyChild(effect, prop, "source-rgb");
-        const SGPropertyNode* psourceAlpha
-            = getEffectPropertyChild(effect, prop, "source-alpha");
-        const SGPropertyNode* pdestRGB
-            = getEffectPropertyChild(effect, prop, "destination-rgb");
-        const SGPropertyNode* pdestAlpha
-            = getEffectPropertyChild(effect, prop, "destination-alpha");
-        BlendFunc::BlendFuncMode sourceMode = BlendFunc::ONE;
-        BlendFunc::BlendFuncMode destMode = BlendFunc::ZERO;
-        if (psource)
-            findAttr(blendFuncModes, psource, sourceMode);
-        if (pdestination)
-            findAttr(blendFuncModes, pdestination, destMode);
-        if (psource && pdestination
-            && !(psourceRGB || psourceAlpha || pdestRGB || pdestAlpha)
-            && sourceMode == BlendFunc::SRC_ALPHA
-            && destMode == BlendFunc::ONE_MINUS_SRC_ALPHA) {
-            pass->setAttributeAndModes(StateAttributeFactory::instance()
-                                       ->getStandardBlendFunc());
-            return;
-        }
-        BlendFunc* blendFunc = new BlendFunc;
-        if (psource)
-            blendFunc->setSource(sourceMode);
-        if (pdestination)
-            blendFunc->setDestination(destMode);
-        if (psourceRGB) {
-            BlendFunc::BlendFuncMode sourceRGBMode;
-            findAttr(blendFuncModes, psourceRGB, sourceRGBMode);
-            blendFunc->setSourceRGB(sourceRGBMode);
-        }
-        if (pdestRGB) {
-            BlendFunc::BlendFuncMode destRGBMode;
-            findAttr(blendFuncModes, pdestRGB, destRGBMode);
-            blendFunc->setDestinationRGB(destRGBMode);
-        }
-        if (psourceAlpha) {
-            BlendFunc::BlendFuncMode sourceAlphaMode;
-            findAttr(blendFuncModes, psourceAlpha, sourceAlphaMode);
-            blendFunc->setSourceAlpha(sourceAlphaMode);
-        }
-        if (pdestAlpha) {
-            BlendFunc::BlendFuncMode destAlphaMode;
-            findAttr(blendFuncModes, pdestAlpha, destAlphaMode);
-            blendFunc->setDestinationAlpha(destAlphaMode);
-        }
-        pass->setAttributeAndModes(blendFunc);
+
+        parseBlendFunc(
+          pass,
+          getEffectPropertyChild(effect, prop, "source"),
+          getEffectPropertyChild(effect, prop, "destination"),
+          getEffectPropertyChild(effect, prop, "source-rgb"),
+          getEffectPropertyChild(effect, prop, "destination-rgb"),
+          getEffectPropertyChild(effect, prop, "source-alpha"),
+          getEffectPropertyChild(effect, prop, "destination-alpha")
+        );
     }
 };
 

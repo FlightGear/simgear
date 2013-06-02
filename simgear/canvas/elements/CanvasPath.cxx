@@ -20,7 +20,6 @@
 #include <simgear/scene/util/parse_color.hxx>
 
 #include <osg/Drawable>
-#include <osg/BlendFunc>
 
 #include <vg/openvg.h>
 #include <cassert>

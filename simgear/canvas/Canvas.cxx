@@ -31,7 +31,6 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/foreach.hpp>
-#include <iostream>
 
 namespace simgear
 {

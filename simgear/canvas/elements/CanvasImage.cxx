@@ -378,6 +378,7 @@ namespace canvas
     // remove canvas...
     setSrcCanvas( CanvasPtr() );
 
+    _texture->setResizeNonPowerOfTwoHint(false);
     _texture->setImage(img);
     _texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
     _texture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);

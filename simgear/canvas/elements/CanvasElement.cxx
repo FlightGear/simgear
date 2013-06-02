@@ -21,6 +21,7 @@
 #include <simgear/canvas/CanvasEventListener.hxx>
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/scene/material/parseBlendFunc.hxx>
 
 #include <osg/Drawable>
 #include <osg/Geode>
@@ -134,6 +135,20 @@ namespace canvas
     // Update bounding box on manual update (manual updates pass zero dt)
     if( dt == 0 && _drawable )
       _drawable->getBound();
+
+    if( _attributes_dirty & BLEND_FUNC )
+    {
+      parseBlendFunc(
+        _transform->getOrCreateStateSet(),
+        _node->getChild("blend-source"),
+        _node->getChild("blend-destination"),
+        _node->getChild("blend-source-rgb"),
+        _node->getChild("blend-destination-rgb"),
+        _node->getChild("blend-source-alpha"),
+        _node->getChild("blend-destination-alpha")
+      );
+      _attributes_dirty &= ~BLEND_FUNC;
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -300,13 +315,16 @@ namespace canvas
     SGPropertyNode *parent = child->getParent();
     if( parent == _node )
     {
+      const std::string& name = child->getNameString();
       if( setStyle(child) )
         return;
-      else if( child->getNameString() == "update" )
+      else if( name == "update" )
         return update(0);
-      else if( child->getNameString() == "visible" )
+      else if( name == "visible" )
         // TODO check if we need another nodemask
         return _transform->setNodeMask( child->getBoolValue() ? 0xffffffff : 0 );
+      else if( boost::starts_with(name, "blend-") )
+        return (void)(_attributes_dirty |= BLEND_FUNC);
     }
     else if(   parent->getParent() == _node
             && parent->getNameString() == NAME_TRANSFORM )

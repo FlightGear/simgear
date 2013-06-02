@@ -133,7 +133,8 @@ namespace canvas
 
       enum Attributes
       {
-        LAST_ATTRIBUTE  = 0x0001
+        BLEND_FUNC = 0x0001,
+        LAST_ATTRIBUTE  = BLEND_FUNC << 1
       };
 
       enum TransformType

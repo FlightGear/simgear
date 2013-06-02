@@ -201,6 +201,7 @@ namespace canvas
     if( !texture )
     {
       texture = new osg::Texture2D;
+      texture->setResizeNonPowerOfTwoHint(false);
       texture->setTextureSize(_size_x, _size_y);
       texture->setInternalFormat(GL_RGBA);
     }

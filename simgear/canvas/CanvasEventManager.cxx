@@ -188,13 +188,12 @@ namespace canvas
     // http://www.w3.org/TR/DOM-Level-3-Events/#event-flow
 
     // Capturing phase
-//    for( EventTargets::iterator it = _target_path.begin();
-//                                it != _target_path.end();
-//                              ++it )
+//    for( EventPropagationPath::const_iterator it = path.begin();
+//                                              it != path.end();
+//                                            ++it )
 //    {
-//      if( it->element )
-//        std::cout << it->element->getProps()->getPath() << " "
-//                  << "(" << it->local_pos.x() << "|" << it->local_pos.y() << ")\n";
+//      if( !it->element.expired() )
+//        std::cout << it->element.lock()->getProps()->getPath() << std::endl;
 //    }
 
     // Bubbling phase

@@ -102,8 +102,25 @@ namespace canvas
       void removeParentCanvas(const CanvasWeakPtr& canvas);
       void removeChildCanvas(const CanvasWeakPtr& canvas);
 
+      /**
+       * Create a new group
+       */
       GroupPtr createGroup(const std::string& name = "");
+
+      /**
+       * Get an existing group with the given name
+       */
       GroupPtr getGroup(const std::string& name);
+
+      /**
+       * Get an existing group with the given name or otherwise create a new
+       * group
+       */
+      GroupPtr getOrCreateGroup(const std::string& name);
+
+      /**
+       * Get the root group of the canvas
+       */
       GroupPtr getRootGroup();
 
       /**

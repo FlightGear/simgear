@@ -134,6 +134,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Group::clearEventListener()
+  {
+    BOOST_FOREACH( ChildList::value_type child, _children )
+      child.second->clearEventListener();
+
+    Element::clearEventListener();
+  }
+
+  //----------------------------------------------------------------------------
   void Group::update(double dt)
   {
     BOOST_FOREACH( ChildList::value_type child, _children )

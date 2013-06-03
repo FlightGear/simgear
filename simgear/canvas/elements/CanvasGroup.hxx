@@ -57,6 +57,8 @@ namespace canvas
        */
       ElementPtr getElementById(const std::string& id);
 
+      virtual void clearEventListener();
+
       virtual void update(double dt);
 
       virtual bool traverse(EventVisitor& visitor);

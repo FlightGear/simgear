@@ -85,6 +85,7 @@ namespace canvas
       virtual void update(double dt);
 
       naRef addEventListener(const nasal::CallContext& ctx);
+      virtual void clearEventListener();
 
       virtual bool accept(EventVisitor& visitor);
       virtual bool ascend(EventVisitor& visitor);

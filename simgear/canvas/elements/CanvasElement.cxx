@@ -180,6 +180,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Element::clearEventListener()
+  {
+    _listener.clear();
+  }
+
+  //----------------------------------------------------------------------------
   bool Element::accept(EventVisitor& visitor)
   {
     return visitor.apply(*this);
@@ -220,15 +226,10 @@ namespace canvas
 
     // Drawables have a bounding box...
     if( _drawable )
-    {
-      if( !_drawable->getBound().contains(osg::Vec3f(local_pos, 0)) )
-        return false;
-    }
+      return _drawable->getBound().contains(osg::Vec3f(local_pos, 0));
     // ... for other elements, i.e. groups only a bounding sphere is available
-    else if( !_transform->getBound().contains(osg::Vec3f(pos, 0)) )
-        return false;
-
-    return true;
+    else
+      return _transform->getBound().contains(osg::Vec3f(pos, 0));
   }
 
   //----------------------------------------------------------------------------

@@ -73,7 +73,7 @@ namespace canvas
       // Don't check collision with root element (2nd element in _target_path)
       // do event listeners attached to the canvas itself (its root group)
       // always get called even if no element has been hit.
-      if( _target_path.size() > 2 && !el.hitBound(pos, local_pos) )
+      if( _target_path.size() > 1 && !el.hitBound(pos, local_pos) )
         return false;
 
       const osg::Vec2f& delta = _target_path.back().local_delta;

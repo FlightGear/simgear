@@ -114,6 +114,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Canvas::destroy()
   {
+    if( _root_group )
+      _root_group->clearEventListener();
+
     // TODO check if really not in use anymore
     getProps()->getParent()
               ->removeChild( getProps()->getName(),
@@ -183,6 +186,16 @@ namespace canvas
     (
       _root_group->getChild(name)
     );
+  }
+
+  //----------------------------------------------------------------------------
+  GroupPtr Canvas::getOrCreateGroup(const std::string& name)
+  {
+    GroupPtr group = getGroup(name);
+    if( group )
+      return group;
+
+    return createGroup(name);
   }
 
   //----------------------------------------------------------------------------

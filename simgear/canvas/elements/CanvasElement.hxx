@@ -103,6 +103,7 @@ namespace canvas
       bool isVisible() const;
 
       osg::ref_ptr<osg::MatrixTransform> getMatrixTransform();
+      osg::ref_ptr<osg::MatrixTransform const> getMatrixTransform() const;
 
       virtual void childAdded( SGPropertyNode * parent,
                                SGPropertyNode * child );

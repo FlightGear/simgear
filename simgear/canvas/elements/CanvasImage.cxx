@@ -129,7 +129,7 @@ namespace canvas
     {
       addStyle("fill", "color", &Image::setFill);
       addStyle("slice", "", &Image::setSlice);
-      addStyle("slice-width", "numeric", &Image::setSliceWidth);
+      addStyle("slice-width", "", &Image::setSliceWidth);
       addStyle("outset", "", &Image::setOutset);
     }
 

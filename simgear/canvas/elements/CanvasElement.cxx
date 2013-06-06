@@ -244,6 +244,11 @@ namespace canvas
     return _transform;
   }
 
+  osg::ref_ptr<osg::MatrixTransform const> Element::getMatrixTransform() const
+  {
+    return _transform;
+  }
+
   //----------------------------------------------------------------------------
   void Element::childAdded(SGPropertyNode* parent, SGPropertyNode* child)
   {

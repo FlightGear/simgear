@@ -109,6 +109,26 @@ class SGRect
     void setTop(T t) { _min.y() = t; }
     void setBottom(T b) { _max.y() = b; }
 
+    /**
+     * Move rect by vector
+     */
+    SGRect& operator+=(const SGVec2<T>& offset)
+    {
+      _min += offset;
+      _max += offset;
+      return *this;
+    }
+
+    /**
+     * Move rect by vector in inverse direction
+     */
+    SGRect& operator-=(const SGVec2<T>& offset)
+    {
+      _min -= offset;
+      _max -= offset;
+      return *this;
+    }
+
     bool contains(T x, T y) const
     {
       return _min.x() <= x && x <= _max.x()
@@ -125,6 +145,30 @@ class SGRect
     SGVec2<T> _min,
               _max;
 };
+
+template<typename T>
+inline SGRect<T> operator+(SGRect<T> rect, const SGVec2<T>& offset)
+{
+  return rect += offset;
+}
+
+template<typename T>
+inline SGRect<T> operator+(const SGVec2<T>& offset, SGRect<T> rect)
+{
+  return rect += offset;
+}
+
+template<typename T>
+inline SGRect<T> operator-(SGRect<T> rect, const SGVec2<T>& offset)
+{
+  return rect -= offset;
+}
+
+template<typename T>
+inline SGRect<T> operator-(const SGVec2<T>& offset, SGRect<T> rect)
+{
+  return rect -= offset;
+}
 
 template<typename char_type, typename traits_type, typename T>
 inline

@@ -87,6 +87,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  const std::string Image::TYPE_NAME = "image";
+
+  //----------------------------------------------------------------------------
   Image::Image( const CanvasWeakPtr& canvas,
                 const SGPropertyNode_ptr& node,
                 const Style& parent_style,

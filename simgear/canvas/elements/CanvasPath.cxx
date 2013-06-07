@@ -470,6 +470,9 @@ namespace canvas
   };
 
   //----------------------------------------------------------------------------
+  const std::string Path::TYPE_NAME = "path";
+
+  //----------------------------------------------------------------------------
   Path::Path( const CanvasWeakPtr& canvas,
               const SGPropertyNode_ptr& node,
               const Style& parent_style,

@@ -173,29 +173,19 @@ namespace canvas
   //----------------------------------------------------------------------------
   GroupPtr Canvas::createGroup(const std::string& name)
   {
-    return boost::dynamic_pointer_cast<Group>
-    (
-      _root_group->createChild("group", name)
-    );
+    return _root_group->createChild<Group>(name);
   }
 
   //----------------------------------------------------------------------------
   GroupPtr Canvas::getGroup(const std::string& name)
   {
-    return boost::dynamic_pointer_cast<Group>
-    (
-      _root_group->getChild(name)
-    );
+    return _root_group->getChild<Group>(name);
   }
 
   //----------------------------------------------------------------------------
   GroupPtr Canvas::getOrCreateGroup(const std::string& name)
   {
-    GroupPtr group = getGroup(name);
-    if( group )
-      return group;
-
-    return createGroup(name);
+    return _root_group->getOrCreateChild<Group>(name);
   }
 
   //----------------------------------------------------------------------------

@@ -35,6 +35,8 @@ namespace canvas
     public Group
   {
     public:
+      static const std::string TYPE_NAME;
+
       Map( const CanvasWeakPtr& canvas,
            const SGPropertyNode_ptr& node,
            const Style& parent_style,

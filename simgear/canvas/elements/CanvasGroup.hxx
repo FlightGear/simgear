@@ -34,6 +34,8 @@ namespace canvas
     public Element
   {
     public:
+      static const std::string TYPE_NAME;
+
       typedef std::list< std::pair< const SGPropertyNode*,
                                     ElementPtr
                                   >
@@ -49,6 +51,33 @@ namespace canvas
                               const std::string& id = "" );
       ElementPtr getChild(const SGPropertyNode* node);
       ElementPtr getChild(const std::string& id);
+      ElementPtr getOrCreateChild( const std::string& type,
+                                   const std::string& id );
+
+      template<class T>
+      boost::shared_ptr<T> createChild(const std::string& id = "")
+      {
+        return boost::dynamic_pointer_cast<T>( createChild(T::TYPE_NAME, id) );
+      }
+
+      template<class T>
+      boost::shared_ptr<T> getChild(const SGPropertyNode* node)
+      {
+        return boost::dynamic_pointer_cast<T>( getChild(node) );
+      }
+
+      template<class T>
+      boost::shared_ptr<T> getChild(const std::string& id)
+      {
+        return boost::dynamic_pointer_cast<T>( getChild(id) );
+      }
+
+      template<class T>
+      boost::shared_ptr<T> getOrCreateChild(const std::string& id)
+      {
+        return
+          boost::dynamic_pointer_cast<T>( getOrCreateChild(T::TYPE_NAME, id) );
+      }
 
       /**
        * Get first child with given id (breadth-first search)

@@ -42,7 +42,9 @@ namespace simgear
 namespace canvas
 {
 
+  //----------------------------------------------------------------------------
   const std::string GEO = "-geo";
+  const std::string Map::TYPE_NAME = "map";
 
   //----------------------------------------------------------------------------
   Map::Map( const CanvasWeakPtr& canvas,

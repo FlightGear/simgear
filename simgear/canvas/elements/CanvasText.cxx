@@ -245,6 +245,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  const std::string Text::TYPE_NAME = "text";
+
+  //----------------------------------------------------------------------------
   Text::Text( const CanvasWeakPtr& canvas,
               const SGPropertyNode_ptr& node,
               const Style& parent_style,

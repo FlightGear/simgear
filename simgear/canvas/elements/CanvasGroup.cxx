@@ -46,8 +46,18 @@ namespace canvas
     return el;
   }
 
+  /**
+   * Add canvas Element type to factory map
+   */
+  template<typename T>
+  void add(ElementFactories& factories)
+  {
+    factories[T::TYPE_NAME] = &createElement<T>;
+  }
+
   //----------------------------------------------------------------------------
   ElementFactories Group::_child_factories;
+  const std::string Group::TYPE_NAME = "group";
 
   //----------------------------------------------------------------------------
   Group::Group( const CanvasWeakPtr& canvas,
@@ -58,11 +68,11 @@ namespace canvas
   {
     if( !isInit<Group>() )
     {
-      _child_factories["group"] = &createElement<Group>;
-      _child_factories["image"] = &createElement<Image>;
-      _child_factories["map"  ] = &createElement<Map  >;
-      _child_factories["path" ] = &createElement<Path >;
-      _child_factories["text" ] = &createElement<Text >;
+      add<Group>(_child_factories);
+      add<Image>(_child_factories);
+      add<Map  >(_child_factories);
+      add<Path >(_child_factories);
+      add<Text >(_child_factories);
     }
   }
 
@@ -105,6 +115,31 @@ namespace canvas
     }
 
     return ElementPtr();
+  }
+
+  //----------------------------------------------------------------------------
+  ElementPtr Group::getOrCreateChild( const std::string& type,
+                                      const std::string& id )
+  {
+    ElementPtr child = getChild(id);
+    if( child )
+    {
+      if( child->getProps()->getNameString() == type )
+        return child;
+
+      SG_LOG
+      (
+        SG_GENERAL,
+        SG_WARN,
+        "Group::getOrCreateChild: type missmatch! "
+        "('" << type << "' != '" << child->getProps()->getName() << "', "
+        "id = '" << id << "')"
+      );
+
+      return ElementPtr();
+    }
+
+    return createChild(type, id);
   }
 
   //----------------------------------------------------------------------------

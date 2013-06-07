@@ -33,6 +33,8 @@ namespace canvas
     public Element
   {
     public:
+      static const std::string TYPE_NAME;
+
       Text( const CanvasWeakPtr& canvas,
             const SGPropertyNode_ptr& node,
             const Style& parent_style,

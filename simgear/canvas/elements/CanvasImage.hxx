@@ -34,6 +34,8 @@ namespace canvas
     public Element
   {
     public:
+      static const std::string TYPE_NAME;
+
       /**
        * @param node    Property node containing settings for this image:
        *                  rect/[left/right/top/bottom]  Dimensions of source

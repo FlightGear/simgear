@@ -86,6 +86,19 @@ int main (int ac, char ** av)
   VERIFY(b.getKeyword().empty());
   VERIFY(b.isNone());
 
+  CSSBorder b2;
+  VERIFY(!b2.isValid());
+  o = b.getAbsOffsets(SGRect<int>(0,0,200,200));
+  COMPARE(o.t, 0);
+  COMPARE(o.r, 0);
+  COMPARE(o.b, 0);
+  COMPARE(o.l, 0);
+  o = b.getRelOffsets(SGRect<int>(0,0,200,200));
+  COMPARE(o.t, 0);
+  COMPARE(o.r, 0);
+  COMPARE(o.b, 0);
+  COMPARE(o.l, 0);
+
   std::cout << "all tests passed successfully!" << std::endl;
   return 0;
 }

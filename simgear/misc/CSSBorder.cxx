@@ -50,26 +50,34 @@ namespace simgear
   //----------------------------------------------------------------------------
   CSSBorder::Offsets CSSBorder::getRelOffsets(const SGRect<int>& dim) const
   {
-    Offsets ret;
+    Offsets ret = {{0}};
+    if( !valid )
+      return ret;
+
     for(int i = 0; i < 4; ++i)
     {
       ret.val[i] = offsets.val[i];
       if( !types.rel[i] )
         ret.val[i] /= (i & 1) ? dim.height() : dim.width();
     }
+
     return ret;
   }
 
   //----------------------------------------------------------------------------
   CSSBorder::Offsets CSSBorder::getAbsOffsets(const SGRect<int>& dim) const
   {
-    Offsets ret;
+    Offsets ret = {{0}};
+    if( !valid )
+      return ret;
+
     for(int i = 0; i < 4; ++i)
     {
       ret.val[i] = offsets.val[i];
       if( types.rel[i] )
         ret.val[i] *= (i & 1) ? dim.height() : dim.width();
     }
+
     return ret;
   }
 

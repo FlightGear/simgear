@@ -301,11 +301,13 @@ namespace canvas
     }
     else
     {
-      ChildList::iterator prev = child;
-      while(    prev != _children.begin()
-             && (--prev)->first->getIntValue("z-index", 0) > z_index)
+      ChildList::iterator prev = child,
+                          check = child;
+      while(    check != _children.begin()
+             && (--check)->first->getIntValue("z-index", 0) > z_index )
       {
         --index_new;
+        --prev;
       }
 
       if( index == index_new )

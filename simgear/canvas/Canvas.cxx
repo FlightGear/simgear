@@ -75,9 +75,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  Canvas::~Canvas()
+  void Canvas::onDestroy()
   {
-
+    if( _root_group )
+    {
+      _root_group->clearEventListener();
+      _root_group->onDestroy();
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -112,19 +116,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Canvas::destroy()
-  {
-    if( _root_group )
-      _root_group->clearEventListener();
-
-    // TODO check if really not in use anymore
-    getProps()->getParent()
-              ->removeChild( getProps()->getName(),
-                             getProps()->getIndex(),
-                             false );
-  }
-
-  //----------------------------------------------------------------------------
   void Canvas::addParentCanvas(const CanvasWeakPtr& canvas)
   {
     if( canvas.expired() )
@@ -133,7 +124,8 @@ namespace canvas
       (
         SG_GENERAL,
         SG_WARN,
-        "Canvas::addParentCanvas: got an expired parent: " << _node->getPath()
+        "Canvas::addParentCanvas(" << _node->getPath(true) << "): "
+        "got an expired parent!"
       );
       return;
     }
@@ -150,7 +142,8 @@ namespace canvas
       (
         SG_GENERAL,
         SG_WARN,
-        "Canvas::addChildCanvas: got an expired child: " << _node->getPath()
+        "Canvas::addChildCanvas(" << _node->getPath(true) << "): "
+        " got an expired child!"
       );
       return;
     }

@@ -99,15 +99,16 @@ namespace canvas
     protected:
 
       static ElementFactories   _child_factories;
-      ChildList                 _children;
 
       virtual void childAdded(SGPropertyNode * child);
       virtual void childRemoved(SGPropertyNode * child);
       virtual void childChanged(SGPropertyNode * child);
 
-      void handleZIndexChanged(ChildList::iterator child, int z_index = 0);
+      void handleZIndexChanged(ElementPtr child, int z_index = 0);
 
-      ChildList::iterator findChild(const SGPropertyNode* node);
+      ElementPtr getChildByIndex(size_t index) const;
+      ElementPtr findChild( const SGPropertyNode* node,
+                            const std::string& id ) const;
   };
 
 } // namespace canvas

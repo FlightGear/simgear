@@ -45,6 +45,18 @@ namespace canvas
     public PropertyBasedElement
   {
     public:
+
+      /**
+       * Store pointer to window as user data
+       */
+      class OSGUserData:
+        public osg::Referenced
+      {
+        public:
+          ElementPtr element;
+          OSGUserData(ElementPtr element);
+      };
+
       typedef boost::function<bool(Element&, const SGPropertyNode*)>
               StyleSetterFunc;
       typedef boost::function<void(Element&, const SGPropertyNode*)>
@@ -62,18 +74,12 @@ namespace canvas
       };
 
       /**
-       * Remove the property listener of the element.
-       *
-       * You will need to call the appropriate methods (#childAdded,
-       * #childRemoved, #valueChanged) yourself to ensure the element still
-       * receives the needed events.
-       */
-      void removeListener();
-
-      /**
        *
        */
       virtual ~Element() = 0;
+
+      virtual void setSelf(const PropertyBasedElementPtr& self);
+      virtual void onDestroy();
 
       ElementWeakPtr getWeakPtr() const;
 
@@ -102,8 +108,8 @@ namespace canvas
        */
       bool isVisible() const;
 
-      osg::ref_ptr<osg::MatrixTransform> getMatrixTransform();
-      osg::ref_ptr<osg::MatrixTransform const> getMatrixTransform() const;
+      osg::MatrixTransform* getMatrixTransform();
+      osg::MatrixTransform const* getMatrixTransform() const;
 
       virtual void childAdded( SGPropertyNode * parent,
                                SGPropertyNode * child );
@@ -154,8 +160,8 @@ namespace canvas
       uint32_t _attributes_dirty;
 
       bool _transform_dirty;
-      osg::ref_ptr<osg::MatrixTransform>    _transform;
-      std::vector<TransformType>            _transform_types;
+      osg::observer_ptr<osg::MatrixTransform> _transform;
+      std::vector<TransformType>              _transform_types;
 
       Style                             _style;
       std::vector<SGPropertyNode_ptr>   _bounding_box;

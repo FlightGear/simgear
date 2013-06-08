@@ -43,19 +43,40 @@ namespace canvas
   const std::string NAME_TRANSFORM = "tf";
 
   //----------------------------------------------------------------------------
-  void Element::removeListener()
+  Element::OSGUserData::OSGUserData(ElementPtr element):
+    element(element)
   {
-    _node->removeChangeListener(this);
+
   }
 
   //----------------------------------------------------------------------------
   Element::~Element()
   {
-    removeListener();
 
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::setSelf(const PropertyBasedElementPtr& self)
+  {
+    PropertyBasedElement::setSelf(self);
+
+    _transform->setUserData
+    (
+      new OSGUserData(boost::static_pointer_cast<Element>(self))
+    );
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::onDestroy()
+  {
+    if( !_transform.valid() )
+      return;
+
+    // The transform node keeps a reference on this element, so ensure it is
+    // deleted.
     BOOST_FOREACH(osg::Group* parent, _transform->getParents())
     {
-      parent->removeChild(_transform);
+      parent->removeChild(_transform.get());
     }
   }
 
@@ -239,14 +260,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  osg::ref_ptr<osg::MatrixTransform> Element::getMatrixTransform()
+  osg::MatrixTransform* Element::getMatrixTransform()
   {
-    return _transform;
+    return _transform.get();
   }
 
-  osg::ref_ptr<osg::MatrixTransform const> Element::getMatrixTransform() const
+  //----------------------------------------------------------------------------
+  osg::MatrixTransform const* Element::getMatrixTransform() const
   {
-    return _transform;
+    return _transform.get();
   }
 
   //----------------------------------------------------------------------------

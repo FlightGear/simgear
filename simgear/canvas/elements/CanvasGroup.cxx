@@ -96,25 +96,13 @@ namespace canvas
   //----------------------------------------------------------------------------
   ElementPtr Group::getChild(const SGPropertyNode* node)
   {
-    ChildList::iterator child = findChild(node);
-    if( child == _children.end() )
-      return ElementPtr();
-
-    return child->second;
+    return findChild(node, "");
   }
 
   //----------------------------------------------------------------------------
   ElementPtr Group::getChild(const std::string& id)
   {
-    for( ChildList::iterator child = _children.begin();
-                             child != _children.end();
-                           ++child )
-    {
-      if( child->second->get<std::string>("id") == id )
-        return child->second;
-    }
-
-    return ElementPtr();
+    return findChild(0, id);
   }
 
   //----------------------------------------------------------------------------
@@ -147,10 +135,10 @@ namespace canvas
   {
     std::vector<GroupPtr> groups;
 
-    BOOST_FOREACH( ChildList::value_type child, _children )
+    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
     {
-      const ElementPtr& el = child.second;
-      if( el->getProps()->getStringValue("id") == id )
+      const ElementPtr& el = getChildByIndex(i);
+      if( el->get<std::string>("id") == id )
         return el;
 
       GroupPtr group = boost::dynamic_pointer_cast<Group>(el);
@@ -171,8 +159,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::clearEventListener()
   {
-    BOOST_FOREACH( ChildList::value_type child, _children )
-      child.second->clearEventListener();
+
+    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+      getChildByIndex(i)->clearEventListener();
 
     Element::clearEventListener();
   }
@@ -180,8 +169,8 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::update(double dt)
   {
-    BOOST_FOREACH( ChildList::value_type child, _children )
-      child.second->update(dt);
+    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+      getChildByIndex(i)->update(dt);
 
     Element::update(dt);
   }
@@ -190,9 +179,9 @@ namespace canvas
   bool Group::traverse(EventVisitor& visitor)
   {
     // Iterate in reverse order as last child is displayed on top
-    BOOST_REVERSE_FOREACH( ChildList::value_type child, _children )
+    for(size_t i = _transform->getNumChildren(); i --> 0;)
     {
-      if( child.second->accept(visitor) )
+      if( getChildByIndex(i)->accept(visitor) )
         return true;
     }
     return false;
@@ -210,9 +199,9 @@ namespace canvas
       return false;
 
     bool handled = false;
-    BOOST_FOREACH( ChildList::value_type child, _children )
+    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
     {
-      if( child.second->setStyle(style) )
+      if( getChildByIndex(i)->setStyle(style) )
         handled = true;
     }
 
@@ -224,16 +213,17 @@ namespace canvas
   {
     osg::BoundingBox bb;
 
-    BOOST_FOREACH( ChildList::value_type child, _children )
+    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
     {
-      if( !child.second->getMatrixTransform()->getNodeMask() )
+      const ElementPtr& child = getChildByIndex(i);
+      if( !child->getMatrixTransform()->getNodeMask() )
         continue;
 
       bb.expandBy
       (
-        child.second->getTransformedBounds
+        child->getTransformedBounds
         (
-          child.second->getMatrixTransform()->getMatrix() * m
+          child->getMatrixTransform()->getMatrix() * m
         )
       );
     }
@@ -255,10 +245,9 @@ namespace canvas
 
       // Add to osg scene graph...
       _transform->addChild( element->getMatrixTransform() );
-      _children.push_back( ChildList::value_type(child, element) );
 
       // ...and ensure correct ordering
-      handleZIndexChanged( --_children.end() );
+      handleZIndexChanged(element);
 
       return;
     }
@@ -279,8 +268,8 @@ namespace canvas
 
     if( _child_factories.find(node->getNameString()) != _child_factories.end() )
     {
-      ChildList::iterator child = findChild(node);
-      if( child == _children.end() )
+      ElementPtr child = getChild(node);
+      if( !child )
         SG_LOG
         (
           SG_GL,
@@ -289,8 +278,9 @@ namespace canvas
         );
       else
       {
-        _transform->removeChild( child->second->getMatrixTransform() );
-        _children.erase(child);
+        // Remove child from the scenegraph (this automatically invalidates the
+        // reference on the element hold by the MatrixTransform)
+        child->onDestroy();
       }
     }
     else
@@ -306,55 +296,51 @@ namespace canvas
   {
     if(    node->getParent()->getParent() == _node
         && node->getNameString() == "z-index" )
-      return handleZIndexChanged( findChild(node->getParent()),
+      return handleZIndexChanged( getChild(node->getParent()),
                                   node->getIntValue() );
   }
 
   //----------------------------------------------------------------------------
-  void Group::handleZIndexChanged(ChildList::iterator child, int z_index)
+  void Group::handleZIndexChanged(ElementPtr child, int z_index)
   {
-    if( child == _children.end() )
+    if( !child )
       return;
 
-    osg::Node* tf = child->second->getMatrixTransform();
-    int index = _transform->getChildIndex(tf),
-        index_new = index;
+    osg::ref_ptr<osg::MatrixTransform> tf = child->getMatrixTransform();
+    size_t index = _transform->getChildIndex(tf),
+           index_new = index;
 
-    ChildList::iterator next = child;
-    ++next;
-
-    while(    next != _children.end()
-           && next->first->getIntValue("z-index", 0) <= z_index )
+    for(;; ++index_new)
     {
-      ++index_new;
-      ++next;
+      if( index_new + 1 == _transform->getNumChildren() )
+        break;
+
+      // Move to end of block with same index (= move upwards until the next
+      // element has a higher index)
+      if( getChildByIndex(index_new + 1)->get<int>("z-index", 0) > z_index )
+        break;
     }
 
-    if( index_new != index )
+    if( index_new == index )
     {
-      _children.insert(next, *child);
-    }
-    else
-    {
-      ChildList::iterator prev = child,
-                          check = child;
-      while(    check != _children.begin()
-             && (--check)->first->getIntValue("z-index", 0) > z_index )
+      // We were not able to move upwards so now try downwards
+      for(;; --index_new)
       {
-        --index_new;
-        --prev;
+        if( index_new == 0 )
+          break;
+
+        // Move to end of block with same index (= move downwards until the
+        // previous element has the same or a lower index)
+        if( getChildByIndex(index_new - 1)->get<int>("z-index", 0) <= z_index )
+          break;
       }
 
       if( index == index_new )
         return;
-
-      _children.insert(prev, *child);
     }
 
     _transform->removeChild(index);
     _transform->insertChild(index_new, tf);
-
-    _children.erase(child);
 
     SG_LOG
     (
@@ -365,14 +351,34 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  Group::ChildList::iterator Group::findChild(const SGPropertyNode* node)
+  ElementPtr Group::getChildByIndex(size_t index) const
   {
-    return std::find_if
-    (
-      _children.begin(),
-      _children.end(),
-      boost::bind(&ChildList::value_type::first, _1) == node
-    );
+    OSGUserData* ud =
+      static_cast<OSGUserData*>(_transform->getChild(index)->getUserData());
+    return ud->element;
+  }
+
+  //----------------------------------------------------------------------------
+  ElementPtr Group::findChild( const SGPropertyNode* node,
+                               const std::string& id ) const
+  {
+    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+    {
+      ElementPtr el = getChildByIndex(i);
+
+      if( node )
+      {
+        if( el->getProps() == node )
+          return el;
+      }
+      else
+      {
+        if( el->get<std::string>("id") == id )
+          return el;
+      }
+    }
+
+    return ElementPtr();
   }
 
 } // namespace canvas

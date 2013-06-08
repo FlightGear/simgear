@@ -350,22 +350,27 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Image::setSrcCanvas(CanvasPtr canvas)
   {
-    if( !_src_canvas.expired() )
-      _src_canvas.lock()->removeParentCanvas(_canvas);
-    if( !_canvas.expired() )
-      _canvas.lock()->removeChildCanvas(_src_canvas);
+    CanvasPtr src_canvas = _src_canvas.lock(),
+              self_canvas = _canvas.lock();
 
-    _src_canvas = canvas;
+    if( src_canvas )
+      src_canvas->removeParentCanvas(self_canvas);
+    if( self_canvas )
+      self_canvas->removeChildCanvas(src_canvas);
+
+    _src_canvas = src_canvas = canvas;
     _attributes_dirty |= SRC_CANVAS;
     _geom->setCullCallback(canvas ? new CullCallback(canvas) : 0);
 
-    if( !_src_canvas.expired() )
+    if( src_canvas )
     {
       setupDefaultDimensions();
-      _src_canvas.lock()->addParentCanvas(_canvas);
 
-      if( !_canvas.expired() )
-        _canvas.lock()->addChildCanvas(_src_canvas);
+      if( self_canvas )
+      {
+        self_canvas->addChildCanvas(src_canvas);
+        src_canvas->addParentCanvas(self_canvas);
+      }
     }
   }
 

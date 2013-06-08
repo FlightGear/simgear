@@ -71,7 +71,7 @@ namespace canvas
       typedef osg::ref_ptr<CullCallback> CullCallbackPtr;
 
       Canvas(SGPropertyNode* node);
-      virtual ~Canvas();
+      virtual void onDestroy();
 
       void setSystemAdapter(const SystemAdapterPtr& system_adapter);
       SystemAdapterPtr getSystemAdapter() const;
@@ -80,7 +80,6 @@ namespace canvas
       CanvasMgr* getCanvasMgr() const;
 
       bool isInit() const;
-      void destroy();
 
       /**
        * Add a canvas which should be marked as dirty upon any change to this

@@ -43,6 +43,20 @@ namespace simgear
       PropertyBasedElement(SGPropertyNode* node);
       virtual ~PropertyBasedElement();
 
+      /**
+       * Remove the property listener of the element.
+       *
+       * You will need to call the appropriate methods (#childAdded,
+       * #childRemoved, #valueChanged) yourself to ensure the element still
+       * receives the needed events.
+       */
+      void removeListener();
+
+      /**
+       * Destroys this element (removes node from property tree)
+       */
+      void destroy();
+
       virtual void update(double delta_time_sec) = 0;
 
       SGConstPropertyNode_ptr getProps() const;
@@ -67,6 +81,7 @@ namespace simgear
       }
 
       virtual void setSelf(const PropertyBasedElementPtr& self);
+      virtual void onDestroy() {};
 
     protected:
 

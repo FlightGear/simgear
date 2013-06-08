@@ -31,7 +31,26 @@ namespace simgear
   //------------------------------------------------------------------------------
   PropertyBasedElement::~PropertyBasedElement()
   {
+    onDestroy();
+    removeListener();
+  }
+
+  //----------------------------------------------------------------------------
+  void PropertyBasedElement::removeListener()
+  {
     _node->removeChangeListener(this);
+  }
+
+  //----------------------------------------------------------------------------
+  void PropertyBasedElement::destroy()
+  {
+    if( !_node )
+      return;
+
+    // TODO check if really not in use anymore
+    if( _node->getParent() )
+      _node->getParent()
+           ->removeChild(_node->getName(), _node->getIndex(), false);
   }
 
   //------------------------------------------------------------------------------

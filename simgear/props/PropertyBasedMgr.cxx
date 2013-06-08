@@ -126,12 +126,17 @@ namespace simgear
       _elements.resize(index + 1);
     }
     else if( _elements[index] )
+    {
       SG_LOG
       (
         SG_GENERAL,
         SG_WARN,
         _name_elements << "[" << index << "] already exists!"
       );
+
+      // Give anything holding a reference to this element to release it
+      _elements[index]->onDestroy();
+    }
 
     PropertyBasedElementPtr el = _element_factory(child);
     el->setSelf( el );
@@ -158,8 +163,11 @@ namespace simgear
         "can't removed unknown " << _name_elements << "[" << index << "]!"
       );
     else
+    {
       // remove the element...
+      _elements[index]->onDestroy();
       _elements[index].reset();
+    }
   }
 
 } // namespace simgear

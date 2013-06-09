@@ -442,7 +442,7 @@ public:
   
   string tagN(const unsigned int n) const
   {
-    int sz = tagStack.size();
+    size_t sz = tagStack.size();
     if (n >= sz) {
       return string();
     }

@@ -28,7 +28,7 @@ typedef std::map<std::string, DAVResource*> DAVResourceMap;
 
 const char* DAV_CACHE_NAME = ".terrasync_cache";
 const char* CACHE_VERSION_4_TOKEN = "terrasync-cache-4";
-const int MAX_UPDATE_REPORT_DEPTH = 3;
+const unsigned int MAX_UPDATE_REPORT_DEPTH = 3;
 
 enum LineState
 {
@@ -105,7 +105,7 @@ void SVNDirectory::parseCache()
   while (!file.eof()) {
     if (lineState == LINESTATE_HREF) {
       file.getline(href, 1024);
-      ++lineState;
+      lineState = LINESTATE_VERSIONNAME;
     } else {
       assert(lineState == LINESTATE_VERSIONNAME);
       file.getline(versionName, 1024);

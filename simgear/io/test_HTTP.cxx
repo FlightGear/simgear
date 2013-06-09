@@ -405,12 +405,15 @@ public:
 
 class TestServer : public NetChannel
 {
+    simgear::NetChannelPoller _poller;
 public:   
     TestServer()
     {
         open();
         bind(NULL, 2000); // localhost, any port
         listen(5);
+        
+        _poller.addChannel(this);
     }
     
     virtual ~TestServer()
@@ -426,14 +429,25 @@ public:
         //cout << "did accept from " << addr.getHost() << ":" << addr.getPort() << endl;
         TestServerChannel* chan = new TestServerChannel();
         chan->setHandle(handle);
+        
+        _poller.addChannel(chan);
+    }
+    
+    void poll()
+    {
+        _poller.poll();
     }
 };
+
+TestServer testServer;
 
 void waitForComplete(HTTP::Client* cl, TestRequest* tr)
 {
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  1000) {
         cl->update();
+        testServer.poll();
+        
         if (tr->complete) {
             return;
         }
@@ -448,6 +462,8 @@ void waitForFailed(HTTP::Client* cl, TestRequest* tr)
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  1000) {
         cl->update();
+        testServer.poll();
+        
         if (tr->failed) {
             return;
         }
@@ -459,7 +475,6 @@ void waitForFailed(HTTP::Client* cl, TestRequest* tr)
 
 int main(int argc, char* argv[])
 {
-    TestServer s;
     
     HTTP::Client cl;
 

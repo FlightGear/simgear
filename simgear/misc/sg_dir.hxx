@@ -72,6 +72,11 @@ namespace simgear
     
     PathList children(int types = 0, const std::string& nameGlob = "") const;
     
+    /**
+     * test if the directory contains no children (except '.' and '..')
+     */
+    bool isEmpty() const;
+    
     SGPath file(const std::string& name) const;
     
     SGPath path() const
@@ -89,6 +94,12 @@ namespace simgear
      * recursively removed
      */
     bool remove(bool recursive = false);
+    
+    /**
+     * remove our children but not us
+     */
+    bool removeChildren() const;
+    
     
     /**
      * Check that the directory at the path exists (and is a directory!)

@@ -256,6 +256,55 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   return result;
 }
 
+bool Dir::isEmpty() const
+{
+  bool empty= true;
+#ifdef _WIN32 
+  WIN32_FIND_DATA fData;
+  HANDLE find = FindFirstFile("\\*", &fData);
+  if (find == INVALID_HANDLE_VALUE) {
+    return true;
+  }
+  
+// since an empty dir will still have . and .. children, we need
+// watch for those - anything else means the dir is really non-empty
+  bool done = false;
+  for (; !done; done = (FindNextFile(find, &fData) == 0)) {
+    if (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+		  if (!strcmp(fData.cFileName,".") || !strcmp(fData.cFileName,"..")) {
+		    continue;
+		  }
+	  }
+    
+    empty = false;
+    break;
+  }
+    
+  FindClose(find);
+#else
+  DIR* dp = opendir(_path.c_str());
+  if (!dp) {
+    return true;
+  }
+    
+  while (true) {
+    struct dirent* entry = readdir(dp);
+    if (!entry) {
+      break; // done iteration
+    }
+    
+    if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
+      continue;
+    }
+      
+    empty = false;
+    break;
+  }
+  closedir(dp);
+#endif
+  return empty;
+}
+
 bool Dir::exists() const
 {
   return _path.isDir();
@@ -299,28 +348,38 @@ bool Dir::create(mode_t mode)
     return (err == 0);
 }
 
+bool Dir::removeChildren() const
+{
+    bool ok;
+    PathList cs = children(NO_DOT_OR_DOTDOT | INCLUDE_HIDDEN | TYPE_FILE | TYPE_DIR);
+    BOOST_FOREACH(SGPath path, cs) {
+        if (path.isDir()) {
+            Dir childDir(path);
+            ok = childDir.remove(true);
+        } else {
+            ok = path.remove();
+        }
+        
+        if (!ok) {
+            SG_LOG(SG_IO, SG_WARN, "failed to remove:" << path);
+            return false;
+        }
+    } // of child iteration
+    
+    return true;
+}
+
 bool Dir::remove(bool recursive)
 {
     if (!exists()) {
-        SG_LOG(SG_IO, SG_WARN, "attempt to remove non-existant dir:" << _path.str());
+        SG_LOG(SG_IO, SG_WARN, "attempt to remove non-existant dir:" << _path);
         return false;
     }
     
     if (recursive) {
-        bool ok;
-        PathList cs = children(NO_DOT_OR_DOTDOT | INCLUDE_HIDDEN | TYPE_FILE | TYPE_DIR);
-        BOOST_FOREACH(SGPath path, cs) {
-            if (path.isDir()) {
-                Dir childDir(path);
-                ok = childDir.remove(true);
-            } else {
-                ok = path.remove();
-            }
-            
-            if (!ok) {
-                return false;
-            }
-        } // of child iteration
+        if (!removeChildren()) {
+            return false;
+        }
     } // of recursive deletion
     
 #ifdef _WIN32

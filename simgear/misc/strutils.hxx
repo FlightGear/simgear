@@ -155,6 +155,19 @@ namespace simgear {
      */
     std::string convertWindowsLocal8BitToUtf8(const std::string& a);
 
+    /**
+     * convert base-64 encoded data to raw bytes (possibly with embedded
+     * NULs). Throws an exception if input data is not base64, or is
+     * malformed
+     */
+    std::string decodeBase64(const std::string& a);
+    
+    /**
+     * convert bytes to hexadecimal equivalent
+     */
+    std::string encodeHex(const std::string& bytes);
+    
+    std::string encodeHex(const unsigned char* rawBytes, unsigned int length);
   } // end namespace strutils
 } // end namespace simgear
 

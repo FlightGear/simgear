@@ -53,6 +53,8 @@ const int GZIP_HEADER_FNAME = 1 << 3;
 const int GZIP_HEADER_COMMENT = 1 << 4;
 const int GZIP_HEADER_CRC = 1 << 1;
   
+typedef std::list<Request_ptr> RequestList;
+  
 class Connection : public NetChat
 {
 public:
@@ -117,13 +119,27 @@ public:
     virtual void handleClose()
     {      
         NetChat::handleClose();
-        
-        if ((state == STATE_GETTING_BODY) && activeRequest) {
+
+    // closing of the connection from the server side when getting the body,
+        bool canCloseState = (state == STATE_GETTING_BODY);
+        if (canCloseState && activeRequest) {
         // force state here, so responseComplete can avoid closing the 
         // socket again
             state =  STATE_CLOSED;
             responseComplete();
         } else {
+            if (activeRequest) {
+                activeRequest->setFailure(500, "server closed connection");
+                // remove the failed request from sentRequests, so it does 
+                // not get restored
+                RequestList::iterator it = std::find(sentRequests.begin(), 
+                    sentRequests.end(), activeRequest);
+                if (it != sentRequests.end()) {
+                    sentRequests.erase(it);
+                }
+                activeRequest = NULL;
+            }
+            
             state = STATE_CLOSED;
         }
       
@@ -186,6 +202,7 @@ public:
       }
      
       Request_ptr r = queuedRequests.front();
+      r->requestStart();
       requestBodyBytesToSend = r->requestBodyLength();
           
       stringstream headerData;
@@ -229,6 +246,7 @@ public:
       
       bool ok = push(headerData.str().c_str());
       if (!ok) {
+          SG_LOG(SG_IO, SG_WARN, "HTTPClient: over-stuffed the socket");
           // we've over-stuffed the socket, give up for now, let things
           // drain down before trying to start any more requests.
           return;
@@ -236,8 +254,7 @@ public:
       
       while (requestBodyBytesToSend > 0) {
         char buf[4096];
-        int len = 4096;
-        r->getBodyData(buf, len);
+        int len = r->getBodyData(buf, 4096);
         if (len > 0) {
           requestBodyBytesToSend -= len;
           if (!bufferSend(buf, len)) {
@@ -245,13 +262,16 @@ public:
             state = STATE_SOCKET_ERROR;
             return;
           }
+      //    SG_LOG(SG_IO, SG_INFO, "sent body:\n" << string(buf, len) << "\n%%%%%%%%%");
         } else {
-          SG_LOG(SG_IO, SG_WARN, "asynchronous request body generation is unsupported");
+          SG_LOG(SG_IO, SG_WARN, "HTTP asynchronous request body generation is unsupported");
           break;
         }
       }
       
-      //std::cout << "did send request:" << r->url() << std::endl;
+      SG_LOG(SG_IO, SG_DEBUG, "did start request:" << r->url() <<
+          "\n\t @ " << reinterpret_cast<void*>(r.ptr()) <<
+          "\n\t on connection " << this);
     // successfully sent, remove from queue, and maybe send the next
       queuedRequests.pop_front();
       sentRequests.push_back(r);
@@ -308,7 +328,7 @@ public:
         if (result == Z_OK || result == Z_STREAM_END) {
             // nothing to do
         } else {
-          SG_LOG(SG_IO, SG_WARN, "got Zlib error:" << result);
+          SG_LOG(SG_IO, SG_WARN, "HTTP: got Zlib error:" << result);
           return;
         }
             
@@ -607,7 +627,7 @@ private:
     
     void responseComplete()
     {
-      //std::cout << "responseComplete:" << activeRequest->url() << std::endl;
+     //   SG_LOG(SG_IO, SG_INFO, "*** responseComplete:" << activeRequest->url());
         activeRequest->responseComplete();
         client->requestFinished(this);
       
@@ -666,8 +686,8 @@ private:
     unsigned char* zlibOutputBuffer;
     bool contentGZip, contentDeflate;
   
-    std::list<Request_ptr> queuedRequests;
-    std::list<Request_ptr> sentRequests;
+    RequestList queuedRequests;
+    RequestList sentRequests;
 };
 
 Client::Client()
@@ -677,7 +697,7 @@ Client::Client()
 
 void Client::update(int waitTimeout)
 {
-    NetChannel::poll(waitTimeout);
+    _poller.poll(waitTimeout);
         
     ConnectionDict::iterator it = _connections.begin();
     for (; it != _connections.end(); ) {
@@ -715,6 +735,7 @@ void Client::makeRequest(const Request_ptr& r)
     if (_connections.find(connectionId) == _connections.end()) {
         Connection* con = new Connection(this);
         con->setServer(host, port);
+        _poller.addChannel(con);
         _connections[connectionId] = con;
     }
     

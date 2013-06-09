@@ -4,6 +4,7 @@
 #include <map>
 
 #include <simgear/io/HTTPRequest.hxx>
+#include <simgear/io/sg_netChannel.hxx>
 
 namespace simgear
 {
@@ -49,6 +50,7 @@ private:
     std::string _proxy;
     int _proxyPort;
     std::string _proxyAuth;
+    NetChannelPoller _poller;
     
 // connections by host
     typedef std::map<std::string, Connection*> ConnectionDict;

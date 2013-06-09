@@ -41,8 +41,6 @@
 
 namespace simgear  {
 
-static NetChannel* channels = 0 ;
-
 NetChannel::NetChannel ()
 {
   closed = true ;
@@ -51,31 +49,14 @@ NetChannel::NetChannel ()
   accepting = false ;
   write_blocked = false ;
   should_delete = false ;
-
-  next_channel = channels ;
-  channels = this ;
+  poller = NULL;
 }
   
 NetChannel::~NetChannel ()
 {
   close();
-
-  NetChannel* prev = NULL ;
-
-  for ( NetChannel* ch = channels; ch != NULL;
-                    ch = ch -> next_channel )
-  {
-    if (ch == this)
-    {
-      ch = ch -> next_channel ;
-      if ( prev != NULL )
-        prev -> next_channel = ch ;
-      else
-        channels = ch ;
-      next_channel = 0 ;
-      break;
-    }
-    prev = ch ;
+  if (poller) {
+      poller->removeChannel(this);
   }
 }
   
@@ -232,89 +213,6 @@ NetChannel::handleResolve()
     }
 }
 
-bool
-NetChannel::poll (unsigned int timeout)
-{
-  if (!channels)
-    return false ;
-  
-  enum { MAX_SOCKETS = 256 } ;
-  Socket* reads [ MAX_SOCKETS+1 ] ;
-  Socket* writes [ MAX_SOCKETS+1 ] ;
-  Socket* deletes [ MAX_SOCKETS+1 ] ;
-  int nreads = 0 ;
-  int nwrites = 0 ;
-  int ndeletes = 0 ;
-  int nopen = 0 ;
-  NetChannel* ch;
-  for (  ch = channels; ch != NULL; ch = ch -> next_channel )
-  {
-    if ( ch -> should_delete )
-    {
-      assert(ndeletes<MAX_SOCKETS);
-      deletes[ndeletes++] = ch ;
-    }
-    else if ( ! ch -> closed )
-    {
-      if (ch -> resolving_host )
-      {
-          ch -> handleResolve();
-          continue;
-      }
-      
-      nopen++ ;
-      if (ch -> readable()) {
-        assert(nreads<MAX_SOCKETS);
-        reads[nreads++] = ch ;
-      }
-      if (ch -> writable()) {
-        assert(nwrites<MAX_SOCKETS);
-        writes[nwrites++] = ch ;
-      }
-    }
-  }
-  reads[nreads] = NULL ;
-  writes[nwrites] = NULL ;
-  deletes[ndeletes] = NULL ;
-
-  int i ;
-  for ( i=0; deletes[i]; i++ )
-  {
-    ch = (NetChannel*)deletes[i];
-    delete ch ;
-  }
-
-  if (!nopen)
-    return false ;
-  if (!nreads && !nwrites)
-    return true ; //hmmm- should we shutdown?
-
-  Socket::select (reads, writes, timeout) ;
-
-  for ( i=0; reads[i]; i++ )
-  {
-    ch = (NetChannel*)reads[i];
-    if ( ! ch -> closed )
-      ch -> handleReadEvent();
-  }
-
-  for ( i=0; writes[i]; i++ )
-  {
-    ch = (NetChannel*)writes[i];
-    if ( ! ch -> closed )
-      ch -> handleWriteEvent();
-  }
-
-  return true ;
-}
-
-void
-NetChannel::loop (unsigned int timeout)
-{
-  while ( poll (timeout) ) ;
-}
-
-
 void NetChannel::handleRead (void) {
   SG_LOG(SG_IO, SG_WARN, "Network:" << getHandle() << ": unhandled read");
 }
@@ -335,5 +233,113 @@ void NetChannel::handleError (int error)
         SG_LOG(SG_IO, SG_WARN,"Network:" << getHandle() << ": errno: " << strerror(errno) <<"(" << errno << ")");
     }
 }
+
+void
+NetChannelPoller::addChannel(NetChannel* channel)
+{
+    assert(channel);
+    assert(channel->poller == NULL);
+        
+    channel->poller = this;
+    channels.push_back(channel);
+}
+
+void
+NetChannelPoller::removeChannel(NetChannel* channel)
+{
+    assert(channel);
+    assert(channel->poller == this);
+    channel->poller = NULL;
+    
+    ChannelList::iterator it = channels.begin();
+    for (; it != channels.end(); ++it) {
+        if (*it == channel) {
+            channels.erase(it);
+            return;
+        }
+    }
+}
+
+bool
+NetChannelPoller::poll(unsigned int timeout)
+{
+    if (channels.empty()) {
+        return false;
+    }
+    
+    enum { MAX_SOCKETS = 256 } ;
+    Socket* reads [ MAX_SOCKETS+1 ] ;
+    Socket* writes [ MAX_SOCKETS+1 ] ;
+    int nreads = 0 ;
+    int nwrites = 0 ;
+    int nopen = 0 ;
+    NetChannel* ch;
+    
+    ChannelList::iterator it = channels.begin();
+    while( it != channels.end() )
+    {
+        NetChannel* ch = *it;
+        if ( ch -> should_delete )
+        {
+            delete ch;
+            it = channels.erase(it);
+            continue;
+        }
+
+        ++it; // we've copied the pointer into ch
+        if ( ch->closed ) { 
+            continue;
+        }
+
+        if (ch -> resolving_host )
+        {
+            ch -> handleResolve();
+            continue;
+        }
+      
+        nopen++ ;
+        if (ch -> readable()) {
+          assert(nreads<MAX_SOCKETS);
+          reads[nreads++] = ch ;
+        }
+        if (ch -> writable()) {
+          assert(nwrites<MAX_SOCKETS);
+          writes[nwrites++] = ch ;
+        }
+    } // of array-filling pass
+    
+    reads[nreads] = NULL ;
+    writes[nwrites] = NULL ;
+
+    if (!nopen)
+      return false ;
+    if (!nreads && !nwrites)
+      return true ; //hmmm- should we shutdown?
+
+    Socket::select (reads, writes, timeout) ;
+
+    for ( int i=0; reads[i]; i++ )
+    {
+      ch = (NetChannel*)reads[i];
+      if ( ! ch -> closed )
+        ch -> handleReadEvent();
+    }
+
+    for ( int i=0; writes[i]; i++ )
+    {
+      ch = (NetChannel*)writes[i];
+      if ( ! ch -> closed )
+        ch -> handleWriteEvent();
+    }
+
+    return true ;
+}
+
+void
+NetChannelPoller::loop (unsigned int timeout)
+{
+  while ( poll (timeout) ) ;
+}
+
 
 } // of namespace simgear

@@ -48,6 +48,11 @@ string Request::header(const std::string& name) const
     return string();
 }
 
+void Request::requestStart()
+{
+    
+}
+
 void Request::responseStart(const string& r)
 {
     const int maxSplit = 2; // HTTP/1.1 nnn reason-string
@@ -232,10 +237,9 @@ std::string Request::requestBodyType() const
     return "text/plain";
 }
   
-void Request::getBodyData(char*, int& count) const
+int Request::getBodyData(char*, int maxCount) const
 {
-  count = 0;
-  return;
+  return 0;
 }
 
 } // of namespace HTTP

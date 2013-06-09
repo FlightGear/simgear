@@ -54,20 +54,23 @@
 #define SG_NET_CHANNEL_H
 
 #include <simgear/io/raw_socket.hxx>
+
 #include <string>
+#include <vector>
 
 namespace simgear
 {
 
+class NetChannelPoller;
+    
 class NetChannel : public Socket
 {
   bool closed, connected, accepting, write_blocked, should_delete, resolving_host ;
-  NetChannel* next_channel ;
   std::string host;
   int port;
   
-  friend bool netPoll (unsigned int timeout);
-
+    friend class NetChannelPoller;
+    NetChannelPoller* poller;
 public:
 
   NetChannel () ;
@@ -109,9 +112,19 @@ public:
   virtual void handleWrite (void);
   virtual void handleAccept (void);
   virtual void handleError (int error);
-  
-  static bool poll (unsigned int timeout = 0 ) ;
-  static void loop (unsigned int timeout = 0 ) ;
+
+};
+
+class NetChannelPoller
+{
+    typedef std::vector<NetChannel*> ChannelList;
+    ChannelList channels;
+public:
+    void addChannel(NetChannel* channel);
+    void removeChannel(NetChannel* channel);
+    
+    bool poll(unsigned int timeout = 0);
+    void loop(unsigned int timeout = 0);
 };
 
 } // of namespace simgear

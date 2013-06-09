@@ -52,10 +52,10 @@ public:
     
     /**
      * Retrieve the body data bytes. Will be passed the maximum body bytes
-     * to return in the buffer, and should update count with the actual number
+     * to return in the buffer, and must return the actual number
      * of bytes written. 
      */
-    virtual void getBodyData(char* s, int& count) const;
+    virtual int getBodyData(char* s, int count) const;
   
     /**
      * retrieve the request body content type. Default is text/plain
@@ -86,6 +86,7 @@ public:
 protected:
     Request(const std::string& url, const std::string method = "GET");
 
+    virtual void requestStart();
     virtual void responseStart(const std::string& r);
     virtual void responseHeader(const std::string& key, const std::string& value);
     virtual void responseHeadersComplete();

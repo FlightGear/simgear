@@ -223,6 +223,24 @@ private:
   vector<string> _atts;
 };
 
+////////////////////////////////////////////////////////////////////////
+// Attribute list wrapper for Expat.
+////////////////////////////////////////////////////////////////////////
+
+class ExpatAtts : public XMLAttributes
+{
+public:
+  ExpatAtts (const char ** atts) : _atts(atts) {}
+  
+  virtual int size () const;
+  virtual const char * getName (int i) const;
+  virtual const char * getValue (int i) const;
+  
+  virtual const char * getValue (const char * name) const;
+private:
+  const char ** _atts;
+};
+
 
 /**
  * Visitor class for an XML document.

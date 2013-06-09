@@ -141,19 +141,6 @@ XMLAttributesDefault::setValue (const char * name, const char * value)
 // Attribute list wrapper for Expat.
 ////////////////////////////////////////////////////////////////////////
 
-class ExpatAtts : public XMLAttributes
-{
-public:
-  ExpatAtts (const char ** atts) : _atts(atts) {}
-  
-  virtual int size () const;
-  virtual const char * getName (int i) const;
-  virtual const char * getValue (int i) const;
-  
-private:
-  const char ** _atts;
-};
-
 int
 ExpatAtts::size () const
 {
@@ -175,6 +162,11 @@ ExpatAtts::getValue (int i) const
   return _atts[i*2+1];
 }
 
+const char * 
+ExpatAtts::getValue (const char * name) const
+{
+  return XMLAttributes::getValue(name);
+}
 
 
 ////////////////////////////////////////////////////////////////////////

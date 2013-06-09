@@ -62,6 +62,11 @@
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/debug/BufferedLogCallback.hxx>
 
+#ifdef SG_SVN_CLIENT
+#  include <simgear/io/HTTPClient.hxx>
+#  include <simgear/io/SVNRepository.hxx>
+#endif
+
 #ifdef HAVE_SVN_CLIENT_H
 #  ifdef HAVE_LIBSVN_CLIENT_1
 #    include <svn_version.h>
@@ -80,6 +85,9 @@
         { "svn_client", svn_client_version },
         { NULL, NULL }
     };
+#endif
+    
+#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
     static const bool svn_built_in_available = true;
 #else
     static const bool svn_built_in_available = false;
@@ -163,7 +171,7 @@ public:
    void   setUseSvn(bool use_svn)           { _use_svn = use_svn;}
    void   setAllowedErrorCount(int errors)  {_allowed_errors = errors;}
 
-#ifdef HAVE_SVN_CLIENT_H
+#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
    void setUseBuiltin(bool built_in) { _use_built_in = built_in;}
 #endif
 
@@ -182,7 +190,13 @@ private:
    bool syncTree(const char* dir, bool& isNewDirectory);
    bool syncTreeExternal(const char* dir);
 
-#ifdef HAVE_SVN_CLIENT_H
+
+#if defined(SG_SVN_CLIENT)
+   bool syncTreeInternal(const char* dir);
+   bool _use_built_in;
+   HTTP::Client _http;
+   std::auto_ptr<SVNRepository> _repository;
+#elif defined(HAVE_SVN_CLIENT_H)
    static int svnClientSetup(void);
    bool syncTreeInternal(const char* dir);
 
@@ -224,7 +238,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _success_count(0),
     _consecutive_errors(0),
     _allowed_errors(6),
-#ifdef HAVE_SVN_CLIENT_H
+#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
     _use_built_in(true),
 #endif
     _is_dirty(false),
@@ -293,7 +307,7 @@ bool SGTerraSync::SvnThread::start()
         return false;
     }
 
-#ifdef HAVE_SVN_CLIENT_H
+#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
     _use_svn |= _use_built_in;
 #endif
 
@@ -323,7 +337,7 @@ bool SGTerraSync::SvnThread::start()
     _running = true;
 
     string status;
-#ifdef HAVE_SVN_CLIENT_H
+#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
     if (_use_svn && _use_built_in)
         status = "Using built-in SVN support. ";
     else
@@ -369,7 +383,7 @@ bool SGTerraSync::SvnThread::syncTree(const char* dir, bool& isNewDirectory)
         }
     }
 
-#ifdef HAVE_SVN_CLIENT_H
+#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
     if (_use_built_in)
         return syncTreeInternal(dir);
     else
@@ -379,8 +393,44 @@ bool SGTerraSync::SvnThread::syncTree(const char* dir, bool& isNewDirectory)
     }
 }
 
+#if defined(SG_SVN_CLIENT)
+    
+bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
+{
+    ostringstream command;
+    command << _svn_server << "/" << dir;
 
-#ifdef HAVE_SVN_CLIENT_H
+    SGPath path(_local_dir);
+    path.append(dir);
+    _repository.reset(new SVNRepository(path, &_http));
+    _repository->setBaseUrl(command.str());
+    
+    SGTimeStamp st;
+    st.stamp();
+    SG_LOG(SG_IO, SG_DEBUG, "terrasync: will sync " << command.str());
+    _repository->update();
+    
+    bool result = true;
+    while (!_stop && _repository->isDoingSync()) {
+        _http.update(100);
+    }
+    
+    if (_repository->failure() == SVNRepository::ERROR_NOT_FOUND) {
+        // this is fine, but maybe we should use a different return code
+        // in the future to higher layers can distuinguish this case
+    } else if (_repository->failure() != SVNRepository::NO_ERROR) {
+        result = false;
+    } else {
+        SG_LOG(SG_IO, SG_DEBUG, "sync of " << command.str() << " finished ("
+            << st.elapsedMSec() << " msec");
+    }
+    
+    _repository.reset();
+    return result;
+}
+    
+#elif defined(HAVE_SVN_CLIENT_H)
+
 bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
 {
     SG_LOG(SG_TERRAIN,SG_DEBUG, "Synchronizing scenery directory " << dir);
@@ -455,7 +505,7 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
     svn_pool_destroy(subpool);
     return ReturnValue;
 }
-#endif
+#endif // of HAVE_SVN_CLIENT_H
 
 bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
 {
@@ -571,7 +621,7 @@ void SGTerraSync::SvnThread::run()
     _is_dirty = true;
 }
 
-#ifdef HAVE_SVN_CLIENT_H
+#if defined(HAVE_SVN_CLIENT_H)
 // Configure our subversion session
 int SGTerraSync::SvnThread::svnClientSetup(void)
 {
@@ -670,7 +720,7 @@ int SGTerraSync::SvnThread::svnClientSetup(void)
     _svn_pool = pool;
     return EXIT_SUCCESS;
 }
-#endif
+#endif // of defined(HAVE_SVN_CLIENT_H)
 
 ///////////////////////////////////////////////////////////////////////////////
 // SGTerraSync ////////////////////////////////////////////////////////////////
@@ -722,7 +772,7 @@ void SGTerraSync::reinit()
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
         _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
 
-    #ifdef HAVE_SVN_CLIENT_H
+    #if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
     #else
         _terraRoot->setBoolValue("use-built-in-svn",false);

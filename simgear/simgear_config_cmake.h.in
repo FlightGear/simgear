@@ -21,3 +21,5 @@
 
 #cmakedefine SYSTEM_EXPAT
 #cmakedefine ENABLE_SOUND
+
+#cmakedefine SG_SVN_CLIENT

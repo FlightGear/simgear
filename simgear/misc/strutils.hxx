@@ -168,6 +168,19 @@ namespace simgear {
     std::string encodeHex(const std::string& bytes);
     
     std::string encodeHex(const unsigned char* rawBytes, unsigned int length);
+
+    /**
+     * Unescape string.
+     *
+     * @param str String possibly containing escaped characters.
+     * @return string with escaped characters replaced by single character
+     *         values.
+     */
+    std::string unescape(const char* str);
+
+    inline std::string unescape(const std::string& str)
+    { return unescape(str.c_str()); }
+
   } // end namespace strutils
 } // end namespace simgear
 

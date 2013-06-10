@@ -76,7 +76,9 @@ int main (int ac, char ** av)
     
     std::string j = join(la, "&");
     COMPARE(j, "zero&one&two&three&four&five");
-    
+
+    COMPARE(unescape("\\ \\n\\t\\x41\\117a"), " \n\tAOa");
+
     cout << "all tests passed successfully!" << endl;
     return 0;
 }

@@ -204,15 +204,18 @@ namespace simgear {
 
 	bool
 	starts_with( const string & s, const string & substr )
-	{	
-		return s.find( substr ) == 0;
+	{
+	  return s.compare(0, substr.length(), substr) == 0;
 	}
 
 	bool
 	ends_with( const string & s, const string & substr )
-	{	
-		size_t n = s.rfind( substr );
-		return (n != string::npos) && (n == s.length() - substr.length());
+	{
+	  if( substr.length() > s.length() )
+	    return false;
+	  return s.compare( s.length() - substr.length(),
+	                    substr.length(),
+	                    substr ) == 0;
 	}
 
     string simplify(const string& s)
@@ -424,6 +427,61 @@ std::string encodeHex(const unsigned char* rawBytes, unsigned int length)
   }
   
   return hex;
+}
+
+//------------------------------------------------------------------------------
+std::string unescape(const char* s)
+{
+  std::string r;
+  while( *s )
+  {
+    if( *s != '\\' )
+    {
+      r += *s++;
+      continue;
+    }
+
+    if( !*++s )
+      break;
+
+    if (*s == '\\') {
+        r += '\\';
+    } else if (*s == 'n') {
+        r += '\n';
+    } else if (*s == 'r') {
+        r += '\r';
+    } else if (*s == 't') {
+        r += '\t';
+    } else if (*s == 'v') {
+        r += '\v';
+    } else if (*s == 'f') {
+        r += '\f';
+    } else if (*s == 'a') {
+        r += '\a';
+    } else if (*s == 'b') {
+        r += '\b';
+    } else if (*s == 'x') {
+        if (!*++s)
+            break;
+        int v = 0;
+        for (int i = 0; i < 2 && isxdigit(*s); i++, s++)
+            v = v * 16 + (isdigit(*s) ? *s - '0' : 10 + tolower(*s) - 'a');
+        r += v;
+        continue;
+
+    } else if (*s >= '0' && *s <= '7') {
+        int v = *s++ - '0';
+        for (int i = 0; i < 3 && *s >= '0' && *s <= '7'; i++, s++)
+            v = v * 8 + *s - '0';
+        r += v;
+        continue;
+
+    } else {
+        r += *s;
+    }
+    s++;
+  }
+  return r;
 }
 
 } // end namespace strutils

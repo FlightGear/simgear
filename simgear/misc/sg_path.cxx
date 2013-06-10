@@ -26,9 +26,11 @@
 
 #include <simgear_config.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <fstream>
 
 #ifdef _WIN32
 #  include <direct.h>
@@ -38,6 +40,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 using std::string;
+using simgear::strutils::starts_with;
 
 /**
  * define directory path separators
@@ -151,6 +154,14 @@ void SGPath::append( const string& p ) {
     }
     fix();
     _cached = false;
+}
+
+//------------------------------------------------------------------------------
+SGPath SGPath::operator/( const std::string& p ) const
+{
+  SGPath ret = *this;
+  ret.append(p);
+  return ret;
 }
 
 //add a new path component to the existing path string
@@ -482,6 +493,94 @@ bool SGPath::rename(const SGPath& newName)
     _cached = false;
     return true;
 }
+
+//------------------------------------------------------------------------------
+SGPath SGPath::fromEnv(const char* name, const SGPath& def)
+{
+  const char* val = getenv(name);
+  if( val && val[0] )
+    return SGPath(val);
+  return def;
+}
+
+#ifdef _WIN32
+//------------------------------------------------------------------------------
+SGPath SGPath::home()
+{
+  // TODO
+  return SGPath();
+}
+#else
+//------------------------------------------------------------------------------
+SGPath SGPath::home()
+{
+  return fromEnv("HOME");
+}
+#endif
+
+#ifdef _WIN32
+//------------------------------------------------------------------------------
+SGPath SGPath::desktop()
+{
+  // TODO
+  return SGPath();
+}
+#elif __APPLE__
+#include <CoreServices/CoreServices.h>
+
+//------------------------------------------------------------------------------
+SGPath SGPath::desktop()
+{
+  FSRef ref;
+  OSErr err = FSFindFolder(kUserDomain, kDesktopFolderType, false, &ref);
+  if (err) {
+    return SGPath();
+  }
+
+  unsigned char path[1024];
+  if (FSRefMakePath(&ref, path, 1024) != noErr) {
+    return SGPath();
+  }
+
+  return SGPath((const char*) path);
+}
+#else
+//------------------------------------------------------------------------------
+SGPath SGPath::desktop()
+{
+  // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+
+  // $XDG_CONFIG_HOME defines the base directory relative to which user specific
+  // configuration files should be stored. If $XDG_CONFIG_HOME is either not set
+  // or empty, a default equal to $HOME/.config should be used.
+  const SGPath user_dirs = fromEnv("XDG_CONFIG_HOME", home() / ".config")
+                         / "user-dirs.dirs";
+
+  // Format is XDG_xxx_DIR="$HOME/yyy", where yyy is a shell-escaped
+  // homedir-relative path, or XDG_xxx_DIR="/yyy", where /yyy is an absolute
+  // path. No other format is supported.
+  const std::string DESKTOP = "XDG_DESKTOP_DIR=\"";
+
+  std::ifstream user_dirs_file( user_dirs.c_str() );
+  std::string line;
+  while( std::getline(user_dirs_file, line).good() )
+  {
+    if( !starts_with(line, DESKTOP) || *line.rbegin() != '"' )
+      continue;
+
+    // Extract dir from XDG_DESKTOP_DIR="<dir>"
+    line = line.substr(DESKTOP.length(), line.length() - DESKTOP.length() - 1 );
+
+    const std::string HOME = "$HOME";
+    if( starts_with(line, HOME) )
+      return home() / simgear::strutils::unescape(line.substr(HOME.length()));
+
+    return SGPath(line);
+  }
+
+  return home() / "Desktop";
+}
+#endif
 
 std::string SGPath::realpath() const
 {

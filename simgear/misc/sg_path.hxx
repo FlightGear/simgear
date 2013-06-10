@@ -99,6 +99,13 @@ public:
     void append( const std::string& p );
 
     /**
+     * Get a copy of this path with another piece appended.
+     *
+     * @param p additional path component
+     */
+    SGPath operator/( const std::string& p ) const;
+
+    /**
      * Append a new piece to the existing path.  Inserts a search path
      * separator to the existing path and the new patch component.
      * @param p additional path component */
@@ -226,6 +233,26 @@ public:
      * or if the destination already exists, or is not writeable
      */
     bool rename(const SGPath& newName);
+
+    /**
+     * Get a path stored in the environment variable with the given \a name.
+     *
+     * @param name  Name of the environment variable
+     * @param def   Default path to return if the environment variable does not
+     *              exist or is empty.
+     */
+    static SGPath fromEnv(const char* name, const SGPath& def = SGPath());
+
+    /**
+     * Get path to user's home directory
+     */
+    static SGPath home();
+
+    /**
+     * Get path to the user's desktop directory
+     */
+    static SGPath desktop();
+
 private:
 
     void fix();

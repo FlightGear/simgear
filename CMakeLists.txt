@@ -379,6 +379,10 @@ if(ENABLE_TESTS)
             ${ZLIB_LIBRARY}
             ${WINSOCK_LIBRARY}
             ${RT_LIBRARY})
+        if(APPLE)
+          find_library(COCOA_LIBRARY Cocoa)
+          list(APPEND TEST_LIBS ${COCOA_LIBRARY})
+        endif()
     endif()
 
     if(NOT SIMGEAR_HEADLESS)

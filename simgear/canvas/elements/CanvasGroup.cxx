@@ -33,26 +33,12 @@ namespace simgear
 namespace canvas
 {
   /**
-   * Create an canvas Element of type T
-   */
-  template<typename T>
-  ElementPtr createElement( const CanvasWeakPtr& canvas,
-                            const SGPropertyNode_ptr& node,
-                            const Style& style,
-                            Element* parent )
-  {
-    ElementPtr el( new T(canvas, node, style, parent) );
-    el->setSelf(el);
-    return el;
-  }
-
-  /**
    * Add canvas Element type to factory map
    */
-  template<typename T>
+  template<typename ElementType>
   void add(ElementFactories& factories)
   {
-    factories[T::TYPE_NAME] = &createElement<T>;
+    factories[ElementType::TYPE_NAME] = &Element::create<ElementType>;
   }
 
   //----------------------------------------------------------------------------
@@ -232,16 +218,25 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  ElementFactory Group::getChildFactory(const std::string& type) const
+  {
+    ElementFactories::iterator child_factory = _child_factories.find(type);
+    if( child_factory != _child_factories.end() )
+      return child_factory->second;
+
+    return ElementFactory();
+  }
+
+  //----------------------------------------------------------------------------
   void Group::childAdded(SGPropertyNode* child)
   {
     if( child->getParent() != _node )
       return;
 
-    ElementFactories::iterator child_factory =
-      _child_factories.find( child->getNameString() );
-    if( child_factory != _child_factories.end() )
+    ElementFactory child_factory = getChildFactory( child->getNameString() );
+    if( child_factory )
     {
-      ElementPtr element = child_factory->second(_canvas, child, _style, this);
+      ElementPtr element = child_factory(_canvas, child, _style, this);
 
       // Add to osg scene graph...
       _transform->addChild( element->getMatrixTransform() );
@@ -266,7 +261,7 @@ namespace canvas
     if( node->getParent() != _node )
       return;
 
-    if( _child_factories.find(node->getNameString()) != _child_factories.end() )
+    if( getChildFactory(node->getNameString()) )
     {
       ElementPtr child = getChild(node);
       if( !child )

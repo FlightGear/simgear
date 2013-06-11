@@ -137,6 +137,26 @@ namespace canvas
        */
       virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
 
+      /**
+       * Create an canvas Element
+       *
+       * @tparam Derived    Type of element (needs to derive from Element)
+       */
+      template<typename Derived>
+      static
+      typename boost::enable_if<
+        boost::is_base_of<Element, Derived>,
+        ElementPtr
+      >::type create( const CanvasWeakPtr& canvas,
+                      const SGPropertyNode_ptr& node,
+                      const Style& style,
+                      Element* parent )
+      {
+        ElementPtr el( new Derived(canvas, node, style, parent) );
+        el->setSelf(el);
+        return el;
+      }
+
     protected:
 
       enum Attributes

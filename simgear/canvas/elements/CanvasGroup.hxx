@@ -100,6 +100,12 @@ namespace canvas
 
       static ElementFactories   _child_factories;
 
+      /**
+       * Overload in derived classes to allow for more/other types of elements
+       * to be managed.
+       */
+      virtual ElementFactory getChildFactory(const std::string& type) const;
+
       virtual void childAdded(SGPropertyNode * child);
       virtual void childRemoved(SGPropertyNode * child);
       virtual void childChanged(SGPropertyNode * child);

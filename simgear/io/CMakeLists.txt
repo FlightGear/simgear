@@ -45,16 +45,6 @@ set(SOURCES
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
-    
-if (SIMGEAR_SHARED)
-    set(TEST_LIBS SimGearCore)
-else()
-    set(TEST_LIBS SimGearCore
-            ${CMAKE_THREAD_LIBS_INIT}
-            ${WINSOCK_LIBRARY}
-            ${ZLIB_LIBRARY}
-            ${RT_LIBRARY})
-endif()
 
 add_executable(http_svn http_svn.cxx)
 target_link_libraries(http_svn ${TEST_LIBS})

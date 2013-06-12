@@ -113,6 +113,7 @@ option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" O
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
+option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_BINARY_DIR} PATH)
@@ -372,29 +373,31 @@ if(ENABLE_TESTS)
 
     include (Dart)
     enable_testing()
-
-    if(SIMGEAR_SHARED)
-        set( TEST_LIBS
-            SimGearCore)
-    else()
-        set( TEST_LIBS
-            SimGearCore
-            ${CMAKE_THREAD_LIBS_INIT}
-            ${ZLIB_LIBRARY}
-            ${WINSOCK_LIBRARY}
-            ${RT_LIBRARY}
-            ${CORE_SERVICES_LIBRARY})
-    endif()
-
-    if(NOT SIMGEAR_HEADLESS)
-        set( TEST_LIBS
-            SimGearScene
-            ${TEST_LIBS}
-            ${OPENGL_LIBRARIES})
-    endif()
 else()
     message(STATUS "Tests: DISABLED")
 endif(ENABLE_TESTS)
+
+# always set TEST_LIBS as it is also used by other tools/applications
+# TODO maybe better rename?
+if(SIMGEAR_SHARED)
+    set( TEST_LIBS
+        SimGearCore)
+else()
+    set( TEST_LIBS
+        SimGearCore
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${ZLIB_LIBRARY}
+        ${WINSOCK_LIBRARY}
+        ${RT_LIBRARY}
+        ${CORE_SERVICES_LIBRARY})
+endif()
+
+if(NOT SIMGEAR_HEADLESS)
+    set( TEST_LIBS
+        SimGearScene
+        ${TEST_LIBS}
+        ${OPENGL_LIBRARIES})
+endif()
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 add_subdirectory(simgear)

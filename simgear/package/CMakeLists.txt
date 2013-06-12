@@ -22,10 +22,7 @@ set(SOURCES
 
 simgear_component(package package "${SOURCES}" "${HEADERS}")
 
-add_executable(sg_pkgutil pkgutil.cxx)
-target_link_libraries(sg_pkgutil ${TEST_LIBS})
-
-if(ENABLE_TESTS)
-
-
-endif(ENABLE_TESTS)
+if(ENABLE_PKGUTIL)
+  add_executable(sg_pkgutil pkgutil.cxx)
+  target_link_libraries(sg_pkgutil ${TEST_LIBS})
+endif()

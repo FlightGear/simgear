@@ -168,6 +168,10 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
   set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib)
 endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
+if(APPLE)
+  find_library(CORE_SERVICES_LIBRARY CoreServices)
+endif()
+
 find_package(Boost REQUIRED)
 set (BOOST_CXX_FLAGS "-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION -DBOOST_BIMAP_DISABLE_SERIALIZATION")
 
@@ -378,11 +382,8 @@ if(ENABLE_TESTS)
             ${CMAKE_THREAD_LIBS_INIT}
             ${ZLIB_LIBRARY}
             ${WINSOCK_LIBRARY}
-            ${RT_LIBRARY})
-        if(APPLE)
-          find_library(COCOA_LIBRARY Cocoa)
-          list(APPEND TEST_LIBS ${COCOA_LIBRARY})
-        endif()
+            ${RT_LIBRARY}
+            ${CORE_SERVICES_LIBRARY})
     endif()
 
     if(NOT SIMGEAR_HEADLESS)

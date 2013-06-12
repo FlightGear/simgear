@@ -66,7 +66,8 @@ if(SIMGEAR_SHARED)
     target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} 
         ${LibArchive_LIBRARIES}
         ${EXPAT_LIBRARIES}
-        ${CMAKE_THREAD_LIBS_INIT})
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${CORE_SERVICES_LIBRARY})
 
     if(LIBSVN_FOUND)
         target_link_libraries(SimGearCore ${LIBSVN_LIBRARIES})

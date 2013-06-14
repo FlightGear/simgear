@@ -263,6 +263,11 @@ namespace canvas
 
     if( getChildFactory(node->getNameString()) )
     {
+      if( !_transform.valid() )
+        // If transform is destroyed also all children are destroyed, so we can
+        // not do anything here.
+        return;
+
       ElementPtr child = getChild(node);
       if( !child )
         SG_LOG
@@ -348,8 +353,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   ElementPtr Group::getChildByIndex(size_t index) const
   {
+    assert(_transform.valid());
     OSGUserData* ud =
       static_cast<OSGUserData*>(_transform->getChild(index)->getUserData());
+    assert(ud);
     return ud->element;
   }
 

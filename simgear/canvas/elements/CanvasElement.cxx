@@ -209,6 +209,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Element::accept(EventVisitor& visitor)
   {
+    if( !_transform.valid() )
+      return false;
+
     return visitor.apply(*this);
   }
 
@@ -314,6 +317,9 @@ namespace canvas
   {
     if( parent == _node && child->getNameString() == NAME_TRANSFORM )
     {
+      if( !_transform.valid() )
+        return;
+
       if( child->getIndex() >= static_cast<int>(_transform_types.size()) )
       {
         SG_LOG

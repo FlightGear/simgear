@@ -34,7 +34,7 @@ namespace canvas
 
       TextOSG(canvas::Text* text);
 
-      void setCharacterSize(float height);
+      void setFontResolution(int res);
       void setCharacterAspect(float aspect);
       void setFill(const std::string& fill);
       void setBackgroundColor(const std::string& fill);
@@ -58,27 +58,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Text::TextOSG::setCharacterSize(float height)
+  void Text::TextOSG::setFontResolution(int res)
   {
-    TextBase::setCharacterSize(height);
-
-    unsigned int res = 32;
-    CanvasPtr canvas = _text_element->_canvas.lock();
-    if( canvas )
-    {
-      float factor = canvas->getSizeY() / canvas->getViewHeight();
-      res = height * factor;
-    }
-
-    // TODO different vertical/horizontal resolution?
-    // TODO configurable?
-    setFontResolution(res, res);
+    TextBase::setFontResolution(res, res);
   }
 
   //----------------------------------------------------------------------------
   void Text::TextOSG::setCharacterAspect(float aspect)
   {
-    TextBase::setCharacterSize(getCharacterHeight(), aspect);
+    setCharacterSize(getCharacterHeight(), aspect);
   }
 
   //----------------------------------------------------------------------------
@@ -294,6 +282,7 @@ namespace canvas
       addStyle("character-aspect-ratio",
                "numeric",
                &TextOSG::setCharacterAspect, text);
+      addStyle("font-resolution", "numeric", &TextOSG::setFontResolution, text);
       addStyle("padding", "numeric", &TextOSG::setBoundingBoxMargin, text);
       //  TEXT              = 1 default
       //  BOUNDINGBOX       = 2

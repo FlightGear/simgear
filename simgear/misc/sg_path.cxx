@@ -519,11 +519,32 @@ SGPath SGPath::home()
 #endif
 
 #ifdef _WIN32
+
+#include <ShlObj.h> // for CSIDL
+
 //------------------------------------------------------------------------------
 SGPath SGPath::desktop()
 {
-  // TODO
-  return SGPath();
+	typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPSTR, int, BOOL);
+	static GetSpecialFolderPath SHGetSpecialFolderPath = NULL;
+
+	// lazy open+resolve of shell32
+	if (!SHGetSpecialFolderPath) {
+		HINSTANCE shellDll = ::LoadLibrary("shell32");
+		SHGetSpecialFolderPath = (GetSpecialFolderPath) GetProcAddress(shellDll, "SHGetSpecialFolderPathA");
+	}
+
+	if (!SHGetSpecialFolderPath){
+		return SGPath();
+	}
+
+	char path[MAX_PATH];
+	if (SHGetSpecialFolderPath(0, path, CSIDL_DESKTOPDIRECTORY, false)) {
+		return SGPath(path);
+	}
+
+	SG_LOG(SG_GENERAL, SG_ALERT, "SGPath::desktop() failed, bad" );
+	return SGPath();
 }
 #elif __APPLE__
 #include <CoreServices/CoreServices.h>

@@ -54,7 +54,7 @@ public:
     SVNRepoPrivate(SVNRepository* parent) : 
         p(parent), 
         isUpdating(false),
-        status(SVNRepository::NO_ERROR)
+        status(SVNRepository::SVN_NO_ERROR)
     { ; }
     
     SVNRepository* p; // link back to outer
@@ -161,11 +161,11 @@ namespace { // anonmouse
         if (responseCode() == 207) {
             // fine
         } else if (responseCode() == 404) {
-            _repo->propFindFailed(this, SVNRepository::ERROR_NOT_FOUND);
+            _repo->propFindFailed(this, SVNRepository::SVN_ERROR_NOT_FOUND);
         } else {
             SG_LOG(SG_IO, SG_WARN, "request for:" << url() << 
                 " return code " << responseCode());
-            _repo->propFindFailed(this, SVNRepository::ERROR_SOCKET);
+            _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
         }
       }
   
@@ -261,12 +261,12 @@ protected:
               _repo->svnUpdateDone();
           }
     } else if (responseCode() == 404) {
-        _repo->updateFailed(this, SVNRepository::ERROR_NOT_FOUND);
+        _repo->updateFailed(this, SVNRepository::SVN_ERROR_NOT_FOUND);
         _failed = true;
     } else {
         SG_LOG(SG_IO, SG_WARN, "SVN: request for:" << url() <<
         " return code " << responseCode());
-        _repo->updateFailed(this, SVNRepository::ERROR_SOCKET);
+        _repo->updateFailed(this, SVNRepository::SVN_ERROR_SOCKET);
         _failed = true;
     }
   }
@@ -351,7 +351,7 @@ bool SVNRepository::isBare() const
 
 void SVNRepository::update()
 {  
-    _d->status = NO_ERROR;
+    _d->status = SVN_NO_ERROR;
     if (_d->targetRevision.empty() || _d->vccUrl.empty()) {        
         _d->isUpdating = true;        
         PropFindRequest* pfr = new PropFindRequest(_d.get());
@@ -373,7 +373,7 @@ void SVNRepository::update()
   
 bool SVNRepository::isDoingSync() const
 {
-    if (_d->status != NO_ERROR) {
+    if (_d->status != SVN_NO_ERROR) {
         return false;
     }
     
@@ -403,7 +403,7 @@ void SVNRepoPrivate::propFindComplete(HTTP::Request* req, DAVCollection* c)
   
 void SVNRepoPrivate::propFindFailed(HTTP::Request *req, SVNRepository::ResultCode err)
 {
-    if (err != SVNRepository::ERROR_NOT_FOUND) {
+    if (err != SVNRepository::SVN_ERROR_NOT_FOUND) {
         SG_LOG(SG_IO, SG_WARN, "PropFind failed for:" << req->url());
     }
     

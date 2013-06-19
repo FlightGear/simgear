@@ -415,10 +415,10 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
         _http.update(100);
     }
     
-    if (_repository->failure() == SVNRepository::ERROR_NOT_FOUND) {
+    if (_repository->failure() == SVNRepository::SVN_ERROR_NOT_FOUND) {
         // this is fine, but maybe we should use a different return code
         // in the future to higher layers can distuinguish this case
-    } else if (_repository->failure() != SVNRepository::NO_ERROR) {
+    } else if (_repository->failure() != SVNRepository::SVN_NO_ERROR) {
         result = false;
     } else {
         SG_LOG(SG_IO, SG_DEBUG, "sync of " << command.str() << " finished ("

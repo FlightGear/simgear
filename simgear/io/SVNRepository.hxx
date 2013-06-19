@@ -55,13 +55,13 @@ public:
     bool isDoingSync() const;
     
     enum ResultCode {
-        NO_ERROR = 0,
-        ERROR_NOT_FOUND,
-        ERROR_SOCKET,
-        ERROR_XML,
-        ERROR_TXDELTA,
-        ERROR_IO,
-        ERROR_CHECKSUM
+        SVN_NO_ERROR = 0,
+        SVN_ERROR_NOT_FOUND,
+        SVN_ERROR_SOCKET,
+        SVN_ERROR_XML,
+        SVN_ERROR_TXDELTA,
+        SVN_ERROR_IO,
+        SVN_ERROR_CHECKSUM
     };
     
     ResultCode failure() const;

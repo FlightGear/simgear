@@ -154,10 +154,6 @@ namespace {
          
          headerLength = p - _ptr;
          _ptr = p;
-         
-         if (sourceViewOffset != 0) {
-             cout << "sourceViewOffset:" << sourceViewOffset << endl;
-         }
      }
   
     bool apply(std::vector<char>& output, std::istream& source)
@@ -168,7 +164,7 @@ namespace {
         while (_ptr < pEnd) {
           int op = ((*_ptr >> 6) & 0x3);  
           if (op >= 3) {
-              std::cerr << "weird opcode" << endl;
+			  SG_LOG(SG_IO, SG_INFO, "SVNDeltaWindow: bad opcode:" << op);
               return false;
           }
       
@@ -180,7 +176,7 @@ namespace {
           }
         
           if (length == 0) {
-            std::cerr << "malformed stream, 0 length" << std::endl;
+			SG_LOG(SG_IO, SG_INFO, "SVNDeltaWindow: malformed stream, 0 length" << op);
             return false;
           }
       
@@ -233,7 +229,7 @@ class SVNReportParser::SVNReportParserPrivate
 public:
   SVNReportParserPrivate(SVNRepository* repo) :
     tree(repo),
-    status(SVNRepository::NO_ERROR),
+    status(SVNRepository::SVN_NO_ERROR),
     parserInited(false),
     currentPath(repo->fsBase())
   {
@@ -247,7 +243,7 @@ public:
   
   void startElement (const char * name, const char** attributes)
   {    
-      if (status != SVNRepository::NO_ERROR) {
+      if (status != SVNRepository::SVN_NO_ERROR) {
           return;
       }
       
@@ -365,7 +361,7 @@ public:
   
   void endElement (const char * name)
   {
-      if (status != SVNRepository::NO_ERROR) {
+      if (status != SVNRepository::SVN_NO_ERROR) {
           return;
       }
       
@@ -373,7 +369,7 @@ public:
     tagStack.pop_back();
     if (!strcmp(name, SVN_TXDELTA_TAG)) {
       if (!decodeTextDelta(currentPath)) {
-          fail(SVNRepository::ERROR_TXDELTA);
+          fail(SVNRepository::SVN_ERROR_TXDELTA);
       }
     } else if (!strcmp(name, SVN_ADD_FILE_TAG)) {
       finishFile(currentDir->addChildFile(currentPath.file()));
@@ -400,7 +396,7 @@ public:
     } else if (!strcmp(name, SVN_DAV_MD5_CHECKSUM)) {
       // validate against (presumably) just written file
       if (decodedFileMd5 != md5Sum) {
-        fail(SVNRepository::ERROR_CHECKSUM);
+        fail(SVNRepository::SVN_ERROR_CHECKSUM);
       }
     } else if (!strcmp(name, SVN_OPEN_DIRECTORY_TAG)) {
         if (currentDir->parent()) {   
@@ -425,7 +421,7 @@ public:
   
   void data (const char * s, int length)
   {
-      if (status != SVNRepository::NO_ERROR) {
+      if (status != SVNRepository::SVN_NO_ERROR) {
           return;
       }
       
@@ -525,7 +521,7 @@ SVNReportParser::~SVNReportParser()
 SVNRepository::ResultCode
 SVNReportParser::innerParseXML(const char* data, int size)
 {
-    if (_d->status != SVNRepository::NO_ERROR) {
+    if (_d->status != SVNRepository::SVN_NO_ERROR) {
         return _d->status;
     }
     
@@ -537,7 +533,7 @@ SVNReportParser::innerParseXML(const char* data, int size)
     
       XML_ParserFree(_d->xmlParser);
       _d->parserInited = false;
-      return SVNRepository::ERROR_XML;
+      return SVNRepository::SVN_ERROR_XML;
     } else if (isEnd) {
         XML_ParserFree(_d->xmlParser);
         _d->parserInited = false;
@@ -549,7 +545,7 @@ SVNReportParser::innerParseXML(const char* data, int size)
 SVNRepository::ResultCode
 SVNReportParser::parseXML(const char* data, int size)
 {
-    if (_d->status != SVNRepository::NO_ERROR) {
+    if (_d->status != SVNRepository::SVN_NO_ERROR) {
         return _d->status;
     }
     
@@ -567,7 +563,7 @@ SVNReportParser::parseXML(const char* data, int size)
 
 SVNRepository::ResultCode SVNReportParser::finishParse()
 {
-    if (_d->status != SVNRepository::NO_ERROR) {
+    if (_d->status != SVNRepository::SVN_NO_ERROR) {
         return _d->status;
     }
     

@@ -87,7 +87,7 @@
     };
 #endif
     
-#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
+#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     static const bool svn_built_in_available = true;
 #else
     static const bool svn_built_in_available = false;
@@ -171,7 +171,7 @@ public:
    void   setUseSvn(bool use_svn)           { _use_svn = use_svn;}
    void   setAllowedErrorCount(int errors)  {_allowed_errors = errors;}
 
-#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
+#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
    void setUseBuiltin(bool built_in) { _use_built_in = built_in;}
 #endif
 
@@ -238,7 +238,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _success_count(0),
     _consecutive_errors(0),
     _allowed_errors(6),
-#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
+#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     _use_built_in(true),
 #endif
     _is_dirty(false),
@@ -307,7 +307,7 @@ bool SGTerraSync::SvnThread::start()
         return false;
     }
 
-#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
+#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     _use_svn |= _use_built_in;
 #endif
 
@@ -337,7 +337,7 @@ bool SGTerraSync::SvnThread::start()
     _running = true;
 
     string status;
-#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
+#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     if (_use_svn && _use_built_in)
         status = "Using built-in SVN support. ";
     else
@@ -383,7 +383,7 @@ bool SGTerraSync::SvnThread::syncTree(const char* dir, bool& isNewDirectory)
         }
     }
 
-#if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
+#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     if (_use_built_in)
         return syncTreeInternal(dir);
     else
@@ -772,7 +772,7 @@ void SGTerraSync::reinit()
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
         _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
 
-    #if defined(HAVE_SVN_CLIENT_H) or defined(SG_SVN_CLIENT)
+    #if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
     #else
         _terraRoot->setBoolValue("use-built-in-svn",false);

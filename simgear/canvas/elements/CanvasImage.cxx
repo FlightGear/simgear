@@ -470,7 +470,7 @@ namespace canvas
       mouse_event->local_pos = mouse_event->client_pos;
     }
 
-    return handled || src_canvas->handleMouseEvent(mouse_event);
+    return handled | src_canvas->handleMouseEvent(mouse_event);
   }
 
   //----------------------------------------------------------------------------

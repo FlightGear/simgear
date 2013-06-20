@@ -157,21 +157,55 @@ namespace canvas
   void EventManager::handleMove( const MouseEventPtr& event,
                                  const EventPropagationPath& path )
   {
-    if( _last_mouse_over.path == path )
+    EventPropagationPath& last_path = _last_mouse_over.path;
+    if( last_path == path )
       return;
 
-    if( !_last_mouse_over.path.empty() )
+    // Leave old element
+    if( !last_path.empty() )
     {
       MouseEventPtr mouseout(new MouseEvent(*event));
       mouseout->type = Event::MOUSE_OUT;
-      propagateEvent(mouseout, _last_mouse_over.path);
+      propagateEvent(mouseout, last_path);
+
+      // Send a mouseleave event to all ancestors of the currently left element
+      // which are not ancestor of the new element currently entered
+      EventPropagationPath path_leave = last_path;
+      for(size_t i = path_leave.size() - 1; i > 0; --i)
+      {
+        if( i < path.size() && path[i] == path_leave[i] )
+          break;
+
+        MouseEventPtr mouseleave(new MouseEvent(*event));
+        mouseleave->type = Event::MOUSE_LEAVE;
+        propagateEvent(mouseleave, path_leave);
+
+        path_leave.pop_back();
+      }
     }
 
+    // Enter new element
     if( !path.empty() )
     {
       MouseEventPtr mouseover(new MouseEvent(*event));
       mouseover->type = Event::MOUSE_OVER;
       propagateEvent(mouseover, path);
+
+      // Send a mouseenter event to all ancestors of the currently entered
+      // element which are not ancestor of the old element currently being
+      // left
+      EventPropagationPath path_enter;
+      for(size_t i = 0; i < path.size(); ++i)
+      {
+        path_enter.push_back(path[i]);
+
+        if( i < last_path.size() && path[i] == last_path[i] )
+          continue;
+
+        MouseEventPtr mouseenter(new MouseEvent(*event));
+        mouseenter->type = Event::MOUSE_ENTER;
+        propagateEvent(mouseenter, path_enter);
+      }
     }
 
     _last_mouse_over.path = path;
@@ -248,6 +282,9 @@ namespace canvas
   EventManager::getCommonAncestor( const EventPropagationPath& path1,
                                    const EventPropagationPath& path2 ) const
   {
+    if( path1.empty() || path2.empty() )
+      return EventPropagationPath();
+
     if( path1.back().element.lock() == path2.back().element.lock() )
       return path2;
 

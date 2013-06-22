@@ -31,9 +31,6 @@
 #include "simgear/misc/strutils.hxx"
 #include "simgear/structure/exception.hxx"
 
-using std::cout;
-using std::cerr;
-using std::endl;
 using std::string;
 
 using namespace simgear;
@@ -113,13 +110,6 @@ void DAVCollection::addChild(DAVResource *res)
   
   assert(res->container() == NULL);
   assert(std::find(_contents.begin(), _contents.end(), res) == _contents.end());
-  
-  if (!strutils::starts_with(res->url(), _url)) {
-      std::cerr << "us: " << _url << std::endl;
-      std::cerr << "child:" << res->url() << std::endl;
-      
-  }
-  
   assert(strutils::starts_with(res->url(), _url));
   assert(childWithUrl(res->url()) == NULL);
   
@@ -276,7 +266,7 @@ public:
   
   string tagN(const unsigned int n) const
   {
-    int sz = tagStack.size();
+    size_t sz = tagStack.size();
     if (n >= sz) {
       return string();
     }

@@ -61,7 +61,7 @@ SGSky::SGSky( void ) {
     pre_root->setStateSet(preStateSet);
     cloud_root = new osg::Group;
     cloud_root->setNodeMask(simgear::MODEL_BIT);
-
+    cloud_root->setName("SGSky-cloud-root");
     pre_selector = new osg::Switch;
 
     pre_transform = new osg::Group;

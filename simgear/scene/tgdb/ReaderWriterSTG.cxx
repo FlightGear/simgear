@@ -118,12 +118,14 @@ struct ReaderWriterSTG::_ModelBin {
         readNode(const std::string&, const osgDB::Options*)
         {
             osg::ref_ptr<osg::Group> group = new osg::Group;
+            group->setName("STG-group-A");
             group->setDataVariance(osg::Object::STATIC);
             
             for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
                 osg::ref_ptr<osg::Node> node;
                 if (i->_proxy)  {
                     osg::ref_ptr<osg::ProxyNode> proxy = new osg::ProxyNode;
+                    proxy->setName("proxyNode");
                     proxy->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
                     proxy->setFileName(0, i->_name);
                     proxy->setDatabaseOptions(i->_options.get());
@@ -147,6 +149,7 @@ struct ReaderWriterSTG::_ModelBin {
                 
                 osg::MatrixTransform* matrixTransform;
                 matrixTransform = new osg::MatrixTransform(matrix);
+                matrixTransform->setName("positionStaticObject");
                 matrixTransform->setDataVariance(osg::Object::STATIC);
                 matrixTransform->addChild(node.get());
                 group->addChild(matrixTransform);
@@ -368,7 +371,8 @@ struct ReaderWriterSTG::_ModelBin {
 
         osg::ref_ptr<osg::Group> terrainGroup = new osg::Group;
         terrainGroup->setDataVariance(osg::Object::STATIC);
-
+        terrainGroup->setName("terrain");
+        
         if (_foundBase) {
             for (std::list<_Object>::iterator i = _objectList.begin(); i != _objectList.end(); ++i) {
                 osg::ref_ptr<osg::Node> node;
@@ -385,6 +389,7 @@ struct ReaderWriterSTG::_ModelBin {
             
             osg::Node* node = SGOceanTile(bucket, options->getMaterialLib());
             if (node) {
+                node->setName("SGOceanTile");
                 terrainGroup->addChild(node);
             } else {
                 SG_LOG( SG_TERRAIN, SG_ALERT,
@@ -410,6 +415,7 @@ struct ReaderWriterSTG::_ModelBin {
         } else {
             osg::PagedLOD* pagedLOD = new osg::PagedLOD;
             pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
+            pagedLOD->setName("pagedObjectLOD");
             
             // This should be visible in any case.
             // If this is replaced by some lower level of detail, the parent LOD node handles this.

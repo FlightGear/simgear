@@ -399,12 +399,15 @@ struct SGTileGeometryBin {
       if (matlib)
         mat = matlib->find(i->first);
       eg = new EffectGeode;
+      eg->setName("EffectGeode");
       if (mat)
         eg->setEffect(mat->get_effect(i->second));
       eg->addDrawable(geometry);
       eg->runGenerators(geometry);  // Generate extra data needed by effect
-      if (group)
+      if (group) {
+        group->setName("surfaceGeometryGroup");
         group->addChild(eg);
+      }
     }
     if (group)
         return group;
@@ -953,7 +956,8 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
   osg::ref_ptr<osg::Group> forestNode;
   osg::ref_ptr<osg::Group> buildingNode;  
   osg::Group* terrainGroup = new osg::Group;
-
+  terrainGroup->setName("BTGTerrainGroup");
+      
   osg::Node* node = tileGeometryBin.getSurfaceGeometry(matlib);
   if (node)
     terrainGroup->addChild(node);
@@ -1001,6 +1005,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       
       osg::MatrixTransform* position =
         new osg::MatrixTransform(transformMat);
+      position->setName("positionRandomeModel");
       position->addChild(node);
       models.push_back(ModelLOD(position, obj.lod));
     }

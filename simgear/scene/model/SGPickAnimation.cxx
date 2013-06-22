@@ -407,7 +407,7 @@ SGPickAnimation::apply(osg::Group& group)
       pickGroup->setStateSet(sharedHighlightStateSet());
       mainGroup->addChild(pickGroup);
       
-      setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(pickGroup), mainGroup);
+      setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(mainGroup), mainGroup);
 
       pickGroup->addChild(child);
       group.removeChild(child);

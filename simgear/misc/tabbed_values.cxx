@@ -26,8 +26,7 @@
 #include "tabbed_values.hxx"
 
 
-SGTabbedValues::SGTabbedValues(const char *line) :
-	_line(line)
+SGTabbedValues::SGTabbedValues(const char *line)
 {
 	assert(line);
 	_fields.push_back(const_cast<char*>(line));

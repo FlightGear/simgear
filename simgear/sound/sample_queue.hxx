@@ -91,7 +91,6 @@ public:
 private:
     std::string _refname;	// sample name
     std::vector<unsigned int> _buffers;
-    unsigned int _buffer;
 
     bool _playing;
 

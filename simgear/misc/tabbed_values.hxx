@@ -45,8 +45,6 @@ public:
 	long getLongAt(const unsigned int) const;
 private:
 	const char* fieldAt(const unsigned int offset) const;
-
-	const char* _line;
 	
 	/** this is first character of each field, if the field is empty
 	it will be the tab character. It is lazily built as needed, so

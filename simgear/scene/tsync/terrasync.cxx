@@ -55,12 +55,14 @@
 #include <simgear/compiler.h>
 
 #include "terrasync.hxx"
+
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/debug/BufferedLogCallback.hxx>
+#include <simgear/props/props_io.hxx>
 
 #ifdef SG_SVN_CLIENT
 #  include <simgear/io/HTTPClient.hxx>
@@ -172,7 +174,10 @@ public:
    void   setAllowedErrorCount(int errors)  {_allowed_errors = errors;}
 
 #if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
-   void setUseBuiltin(bool built_in) { _use_built_in = built_in;}
+
+   void   setCachePath(const SGPath& p)     {_persistentCachePath = p;}
+   void   setCacheHits(unsigned int hits)   {_cache_hits = hits;}
+   void   setUseBuiltin(bool built_in) { _use_built_in = built_in;}
 #endif
 
    volatile bool _active;
@@ -184,13 +189,18 @@ public:
    volatile int  _success_count;
    volatile int  _consecutive_errors;
    volatile int  _allowed_errors;
-
+   volatile int  _cache_hits;
 private:
    virtual void run();
    bool syncTree(const char* dir, bool& isNewDirectory);
    bool syncTreeExternal(const char* dir);
-
-
+    
+    bool isPathCached(const WaitingTile& next) const;
+    void syncPath(const WaitingTile& next);
+    
+   void initCompletedTilesPersistentCache();
+   void writeCompletedTilesPersistentCache() const;
+   
 #if defined(SG_SVN_CLIENT)
    bool syncTreeInternal(const char* dir);
    bool _use_built_in;
@@ -219,6 +229,7 @@ private:
    string _svn_command;
    string _rsync_server;
    string _local_dir;
+   SGPath _persistentCachePath;
 };
 
 #ifdef HAVE_SVN_CLIENT_H
@@ -238,6 +249,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _success_count(0),
     _consecutive_errors(0),
     _allowed_errors(6),
+    _cache_hits(0),
 #if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     _use_built_in(true),
 #endif
@@ -564,49 +576,23 @@ bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
 void SGTerraSync::SvnThread::run()
 {
     _active = true;
+    
+    initCompletedTilesPersistentCache();
+    
     while (!_stop)
     {
         WaitingTile next = waitingTiles.pop_front();
         if (_stop)
            break;
 
-        CompletedTiles::iterator ii =
-            _completedTiles.find( next._dir );
-        time_t now = time(0);
-        if ((ii == _completedTiles.end())||
-            (ii->second < now ))
-        {
-            bool isNewDirectory = false;
-
-            _busy = true;
-            if (!syncTree(next._dir.c_str(),isNewDirectory))
-            {
-                _consecutive_errors++;
-                _fail_count++;
-                _completedTiles[ next._dir ] = now + UpdateInterval::FailedAttempt;
-            }
-            else
-            {
-                _consecutive_errors = 0;
-                _success_count++;
-                SG_LOG(SG_TERRAIN,SG_INFO,
-                       "Successfully synchronized directory '" << next._dir << "'");
-                if (next._refreshScenery)
-                {
-                    // updated a tile
-                    _updated_tile_count++;
-                    if (isNewDirectory)
-                    {
-                        // for now only report new directories to refresh display
-                        // (i.e. only when ocean needs to be replaced with actual data)
-                        _freshTiles.push_back(next);
-                        _is_dirty = true;
-                    }
-                }
-                _completedTiles[ next._dir ] = now + UpdateInterval::SuccessfulAttempt;
-            }
-            _busy = false;
+        if (isPathCached(next)) {
+            _cache_hits++;
+            SG_LOG(SG_TERRAIN, SG_DEBUG,
+                   "Cache hit for: '" << next._dir << "'");
+            continue;
         }
+        
+        syncPath(next);
 
         if ((_allowed_errors >= 0)&&
             (_consecutive_errors >= _allowed_errors))
@@ -619,6 +605,61 @@ void SGTerraSync::SvnThread::run()
     _active = false;
     _running = false;
     _is_dirty = true;
+}
+
+bool SGTerraSync::SvnThread::isPathCached(const WaitingTile& next) const
+{
+    CompletedTiles::const_iterator ii = _completedTiles.find( next._dir );
+    if (ii == _completedTiles.end()) {
+        return false;
+    }
+    
+    // check if the path still physically exists
+    SGPath p(_local_dir);
+    p.append(next._dir);
+    if (!p.exists()) {
+        return false;
+    }
+    
+    time_t now = time(0);
+    return (ii->second > now);
+}
+
+void SGTerraSync::SvnThread::syncPath(const WaitingTile& next)
+{
+    bool isNewDirectory = false;
+    time_t now = time(0);
+    
+    _busy = true;
+    if (!syncTree(next._dir.c_str(),isNewDirectory))
+    {
+        _consecutive_errors++;
+        _fail_count++;
+        _completedTiles[ next._dir ] = now + UpdateInterval::FailedAttempt;
+    }
+    else
+    {
+        _consecutive_errors = 0;
+        _success_count++;
+        SG_LOG(SG_TERRAIN,SG_INFO,
+               "Successfully synchronized directory '" << next._dir << "'");
+        if (next._refreshScenery)
+        {
+            // updated a tile
+            _updated_tile_count++;
+            if (isNewDirectory)
+            {
+                // for now only report new directories to refresh display
+                // (i.e. only when ocean needs to be replaced with actual data)
+                _freshTiles.push_back(next);
+                _is_dirty = true;
+            }
+        }
+        
+        _completedTiles[ next._dir ] = now + UpdateInterval::SuccessfulAttempt;
+        writeCompletedTilesPersistentCache();
+    }
+    _busy = false;
 }
 
 #if defined(HAVE_SVN_CLIENT_H)
@@ -722,6 +763,52 @@ int SGTerraSync::SvnThread::svnClientSetup(void)
 }
 #endif // of defined(HAVE_SVN_CLIENT_H)
 
+void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
+{
+    if (!_persistentCachePath.exists()) {
+        return;
+    }
+    
+    SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
+    time_t now = time(0);
+    
+    readProperties(_persistentCachePath.str(), cacheRoot);
+    for (unsigned int i=0; i<cacheRoot->nChildren(); ++i) {
+        SGPropertyNode* entry = cacheRoot->getChild(i);
+        string tileName = entry->getStringValue("path");
+        time_t stamp = entry->getIntValue("stamp");
+        if (stamp < now) {
+            continue;
+        }
+        
+        _completedTiles[tileName] = stamp;
+    }
+}
+
+void SGTerraSync::SvnThread::writeCompletedTilesPersistentCache() const
+{
+    // cache is disabled
+    if (_persistentCachePath.isNull()) {
+        return;
+    }
+    
+    std::ofstream f(_persistentCachePath.c_str(), std::ios::trunc);
+    if (!f.is_open()) {
+        return;
+    }
+    
+    SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
+    CompletedTiles::const_iterator it = _completedTiles.begin();
+    for (; it != _completedTiles.end(); ++it) {
+        SGPropertyNode* entry = cacheRoot->addChild("entry");
+        entry->setStringValue("path", it->first);
+        entry->setIntValue("stamp", it->second);
+    }
+    
+    writeProperties(f, cacheRoot, true /* write_all */);
+    f.close();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // SGTerraSync ////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -771,7 +858,9 @@ void SGTerraSync::reinit()
         _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
         _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
-
+        _svnThread->setCachePath(SGPath(_terraRoot->getStringValue("cache-path","")));
+        _svnThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
+        
     #if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
     #else
@@ -805,6 +894,8 @@ void SGTerraSync::bind()
     _tiedProperties.Tie( _terraRoot->getNode("update-count", true), (int*) &_svnThread->_success_count );
     _tiedProperties.Tie( _terraRoot->getNode("error-count", true), (int*) &_svnThread->_fail_count );
     _tiedProperties.Tie( _terraRoot->getNode("tile-count", true), (int*) &_svnThread->_updated_tile_count );
+    _tiedProperties.Tie( _terraRoot->getNode("cache-hits", true), (int*) &_svnThread->_cache_hits );
+    
     _terraRoot->getNode("busy", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("active", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("update-count", true)->setAttribute(SGPropertyNode::WRITE,false);
@@ -1033,3 +1124,4 @@ bool SGTerraSync::schedulePosition(int lat, int lon)
 
     return Ok;
 }
+

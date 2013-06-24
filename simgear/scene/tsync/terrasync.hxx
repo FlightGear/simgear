@@ -26,6 +26,7 @@
 #include <simgear/props/tiedpropertylist.hxx>
 
 class SGPath;
+class SGBucket;
 
 namespace simgear
 {
@@ -49,6 +50,9 @@ public:
 
     bool isIdle();
     bool schedulePosition(int lat, int lon);
+    
+    bool scheduleTile(const SGBucket& bucket);
+    
     void setTileRefreshCb(SGTerraSyncCallback refreshCb, void* userData = NULL);
 
     /// retrive the associated log object, for displaying log
@@ -70,6 +74,8 @@ private:
     SGPropertyNode_ptr _terraRoot;
     SGPropertyNode_ptr _refreshDisplay;
     SGPropertyNode_ptr _stalledNode;
+    SGPropertyNode_ptr _cacheHits;
+    
     SGTerraSyncCallback _refreshCb;
     void* _userCbData;
     simgear::TiedPropertyList _tiedProperties;

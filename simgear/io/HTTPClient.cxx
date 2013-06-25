@@ -1,3 +1,26 @@
+/**
+ * \file HTTPClient.cxx - simple HTTP client engine for SimHear
+ */
+
+// Written by James Turner
+//
+// Copyright (C) 2013  James Turner  <zakalawe@mac.com>
+//
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
+
 #include "HTTPClient.hxx"
 
 #include <sstream>
@@ -5,6 +28,7 @@
 #include <list>
 #include <iostream>
 #include <errno.h>
+#include <map>
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -17,6 +41,7 @@
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/timing/timestamp.hxx>
+#include <simgear/structure/exception.hxx>
 
 #if defined( HAVE_VERSION_H ) && HAVE_VERSION_H
 #include "version.h"
@@ -52,8 +77,26 @@ const int GZIP_HEADER_FEXTRA = 1 << 2;
 const int GZIP_HEADER_FNAME = 1 << 3;
 const int GZIP_HEADER_COMMENT = 1 << 4;
 const int GZIP_HEADER_CRC = 1 << 1;
-  
+
+class Connection;
+typedef std::multimap<std::string, Connection*> ConnectionDict;
 typedef std::list<Request_ptr> RequestList;
+
+class Client::ClientPrivate
+{
+public:
+    std::string userAgent;
+    std::string proxy;
+    int proxyPort;
+    std::string proxyAuth;
+    NetChannelPoller poller;
+    unsigned int maxConnections;
+    
+    RequestList pendingRequests;
+    
+// connections by host (potentially more than one)
+    ConnectionDict connections;
+};
   
 class Connection : public NetChat
 {
@@ -690,56 +733,128 @@ private:
     RequestList sentRequests;
 };
 
-Client::Client()
+Client::Client() :
+    d(new ClientPrivate)
 {
+    d->proxyPort = 0;
+    d->maxConnections = 4;
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
+}
+
+Client::~Client()
+{
+}
+
+void Client::setMaxConnections(unsigned int maxCon)
+{
+    if (maxCon < 1) {
+        throw sg_range_exception("illegal HTTP::Client::setMaxConnections value");
+    }
+    
+    d->maxConnections = maxCon;
 }
 
 void Client::update(int waitTimeout)
 {
-    _poller.poll(waitTimeout);
-        
-    ConnectionDict::iterator it = _connections.begin();
-    for (; it != _connections.end(); ) {
-        if (it->second->hasIdleTimeout() || it->second->hasError() ||
-            it->second->hasErrorTimeout())
+    d->poller.poll(waitTimeout);
+    bool waitingRequests = !d->pendingRequests.empty();
+    
+    ConnectionDict::iterator it = d->connections.begin();
+    for (; it != d->connections.end(); ) {
+        Connection* con = it->second;
+        if (con->hasIdleTimeout() || 
+            con->hasError() ||
+            con->hasErrorTimeout() ||
+            (!con->isActive() && waitingRequests))
         {
         // connection has been idle for a while, clean it up
-        // (or has an error condition, again clean it up)
+        // (or if we have requests waiting for a different host,
+        // or an error condition
             ConnectionDict::iterator del = it++;
             delete del->second;
-            _connections.erase(del);
+            d->connections.erase(del);
         } else {
             if (it->second->shouldStartNext()) {
                 it->second->tryStartNextRequest();
             }
-            
             ++it;
         }
-    } // of connecion iteration
+    } // of connection iteration
+    
+    if (waitingRequests && (d->connections.size() < d->maxConnections)) {
+        RequestList waiting(d->pendingRequests);
+        d->pendingRequests.clear();
+        
+        // re-submit all waiting requests in order; this takes care of
+        // finding multiple pending items targetted to the same (new)
+        // connection
+        BOOST_FOREACH(Request_ptr req, waiting) {
+            makeRequest(req);
+        }
+    }
 }
 
 void Client::makeRequest(const Request_ptr& r)
 {
     string host = r->host();
     int port = r->port();
-    if (!_proxy.empty()) {
-        host = _proxy;
-        port = _proxyPort;
+    if (!d->proxy.empty()) {
+        host = d->proxy;
+        port = d->proxyPort;
     }
     
+    Connection* con = NULL;
     stringstream ss;
     ss << host << "-" << port;
     string connectionId = ss.str();
+    bool havePending = !d->pendingRequests.empty();
     
-    if (_connections.find(connectionId) == _connections.end()) {
-        Connection* con = new Connection(this);
+    // assign request to an existing Connection.
+    // various options exist here, examined in order
+    if (d->connections.size() >= d->maxConnections) {
+        ConnectionDict::iterator it = d->connections.find(connectionId);
+        if (it == d->connections.end()) {
+            // maximum number of connections active, queue this request
+            // when a connection goes inactive, we'll start this one
+            d->pendingRequests.push_back(r);
+            return;
+        }
+        
+        // scan for an idle Connection to the same host (likely if we're
+        // retrieving multiple resources from the same host in quick succession)
+        // if we have pending requests (waiting for a free Connection), then
+        // force new requests on this id to always use the first Connection
+        // (instead of the random selection below). This ensures that when
+        // there's pressure on the number of connections to keep alive, one
+        // host can't DoS every other.
+        int count = 0;
+        for (;it->first == connectionId; ++it, ++count) {
+            if (havePending || !it->second->isActive()) {
+                con = it->second;
+                break;
+            }
+        }
+        
+        if (!con) {
+            // we have at least one connection to the host, but they are
+            // all active - we need to pick one to queue the request on.
+            // we use random but round-robin would also work.
+            int index = random() % count;
+            for (it = d->connections.find(connectionId); index > 0; --index) { ; }
+            con = it->second;
+        }
+    } // of at max connections limit
+    
+    // allocate a new connection object
+    if (!con) {
+        con = new Connection(this);
         con->setServer(host, port);
-        _poller.addChannel(con);
-        _connections[connectionId] = con;
+        d->poller.addChannel(con);
+        d->connections.insert(d->connections.end(), 
+            ConnectionDict::value_type(connectionId, con));
     }
     
-    _connections[connectionId]->queueRequest(r);
+    con->queueRequest(r);
 }
 
 void Client::requestFinished(Connection* con)
@@ -749,20 +864,35 @@ void Client::requestFinished(Connection* con)
 
 void Client::setUserAgent(const string& ua)
 {
-    _userAgent = ua;
+    d->userAgent = ua;
+}
+
+const std::string& Client::userAgent() const
+{
+    return d->userAgent;
+}
+    
+const std::string& Client::proxyHost() const
+{
+    return d->proxy;
+}
+    
+const std::string& Client::proxyAuth() const
+{
+    return d->proxyAuth;
 }
 
 void Client::setProxy(const string& proxy, int port, const string& auth)
 {
-    _proxy = proxy;
-    _proxyPort = port;
-    _proxyAuth = auth;
+    d->proxy = proxy;
+    d->proxyPort = port;
+    d->proxyAuth = auth;
 }
 
 bool Client::hasActiveRequests() const
 {
-    ConnectionDict::const_iterator it = _connections.begin();
-    for (; it != _connections.end(); ++it) {
+    ConnectionDict::const_iterator it = d->connections.begin();
+    for (; it != d->connections.end(); ++it) {
         if (it->second->isActive()) return true;
     }
     

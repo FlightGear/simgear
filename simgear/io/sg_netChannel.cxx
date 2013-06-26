@@ -273,7 +273,6 @@ NetChannelPoller::poll(unsigned int timeout)
     int nreads = 0 ;
     int nwrites = 0 ;
     int nopen = 0 ;
-    NetChannel* ch;
     
     ChannelList::iterator it = channels.begin();
     while( it != channels.end() )
@@ -281,6 +280,9 @@ NetChannelPoller::poll(unsigned int timeout)
         NetChannel* ch = *it;
         if ( ch -> should_delete )
         {
+            // avoid the channel trying to remove itself from us, or we get
+            // bug http://code.google.com/p/flightgear-bugs/issues/detail?id=1144
+            ch->poller = NULL;
             delete ch;
             it = channels.erase(it);
             continue;
@@ -320,14 +322,14 @@ NetChannelPoller::poll(unsigned int timeout)
 
     for ( int i=0; reads[i]; i++ )
     {
-      ch = (NetChannel*)reads[i];
+      NetChannel* ch = (NetChannel*)reads[i];
       if ( ! ch -> closed )
         ch -> handleReadEvent();
     }
 
     for ( int i=0; writes[i]; i++ )
     {
-      ch = (NetChannel*)writes[i];
+      NetChannel* ch = (NetChannel*)writes[i];
       if ( ! ch -> closed )
         ch -> handleWriteEvent();
     }

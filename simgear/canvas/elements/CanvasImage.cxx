@@ -118,8 +118,8 @@ namespace canvas
 
     _colors = new osg::Vec4Array(1);
     _colors->setDataVariance(osg::Object::DYNAMIC);
-    _geom->setColorBinding(osg::Geometry::BIND_OVERALL);
     _geom->setColorArray(_colors);
+    _geom->setColorBinding(osg::Geometry::BIND_OVERALL);
 
     _prim = new osg::DrawArrays(osg::PrimitiveSet::QUADS);
     _prim->set(osg::PrimitiveSet::QUADS, 0, 4);

@@ -80,15 +80,15 @@ void EffectGeode::runGenerators(osg::Geometry *geometry)
         int n = _effect->getGenerator(Effect::TANGENT);
         tsg->generate(geometry, 0);  // 0 is normal_unit, but I have no idea what that is!
         if (n != -1 && !geometry->getVertexAttribArray(n))
-            geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getTangentArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+          geometry->setVertexAttribArray(n, tsg->getTangentArray());
 
         n = _effect->getGenerator(Effect::BINORMAL);
         if (n != -1 && !geometry->getVertexAttribArray(n))
-            geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getBinormalArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+          geometry->setVertexAttribArray(n, tsg->getBinormalArray());
 
         n = _effect->getGenerator(Effect::NORMAL);
         if (n != -1 && !geometry->getVertexAttribArray(n))
-            geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getNormalArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+          geometry->setVertexAttribArray(n, tsg->getNormalArray());
     }
 }
 

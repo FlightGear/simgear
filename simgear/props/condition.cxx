@@ -22,6 +22,8 @@
 
 using std::istream;
 using std::ostream;
+using std::string;
+
 /**
  * Condition for a single property.
  *

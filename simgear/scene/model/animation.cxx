@@ -344,7 +344,7 @@ SGAnimation::~SGAnimation()
   if (!_found)
   {
       std::list<std::string>::const_iterator i;
-      string info;
+      std::string info;
       for (i = _objectNames.begin(); i != _objectNames.end(); ++i)
       {
           if (!info.empty())
@@ -365,7 +365,7 @@ bool
 SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
                      SGPropertyNode* modelRoot,
                      const osgDB::Options* options,
-                     const string &path, int i)
+                     const std::string &path, int i)
 {
   std::string type = configNode->getStringValue("type", "none");
   if (type == "alpha-test") {

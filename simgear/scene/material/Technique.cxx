@@ -271,19 +271,19 @@ class ExtensionSupportedExpression
 {
 public:
     ExtensionSupportedExpression() {}
-    ExtensionSupportedExpression(const string& extString)
+    ExtensionSupportedExpression(const std::string& extString)
         : _extString(extString)
     {
     }
-    const string& getExtensionString() { return _extString; }
-    void setExtensionString(const string& extString) { _extString = extString; }
+    const std::string& getExtensionString() { return _extString; }
+    void setExtensionString(const std::string& extString) { _extString = extString; }
     void eval(bool&value, const expression::Binding* b) const
     {
         int contextId = getOperand(0)->getValue(b);
         value = isGLExtensionSupported((unsigned)contextId, _extString.c_str());
     }
 protected:
-    string _extString;
+    std::string _extString;
 };
 
 Expression* extensionSupportedParser(const SGPropertyNode* exp,

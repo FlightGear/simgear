@@ -36,7 +36,7 @@
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>
 
-typedef std::map<string, osg::observer_ptr<simgear::Effect> > EffectMap;
+typedef std::map<std::string, osg::observer_ptr<simgear::Effect> > EffectMap;
 static EffectMap lightEffectMap;
 
 #define GET_COLOR_VALUE(n) \
@@ -96,7 +96,7 @@ public:
 SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
                                    SGPropertyNode* modelRoot,
                                    const osgDB::Options* options,
-                                   const string &path, int i) :
+                                   const std::string &path, int i) :
     SGAnimation(configNode, modelRoot),
     _options(options)
 {
@@ -113,7 +113,7 @@ SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
     _cutoff = getConfig()->getDoubleValue("cutoff");
     _near = getConfig()->getDoubleValue("near-m");
     _far = getConfig()->getDoubleValue("far-m");
-    _key = path + ";" + boost::lexical_cast<string>( i );
+    _key = path + ";" + boost::lexical_cast<std::string>( i );
 
     SGConstPropertyNode_ptr dim_factor = configNode->getChild("dim-factor");
     if (dim_factor.valid()) {

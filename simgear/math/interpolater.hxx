@@ -38,9 +38,7 @@
 #include <simgear/structure/SGReferenced.hxx>
 
 #include <map>
-
 #include <string>
-using std::string;
 
 class SGPropertyNode;
 
@@ -69,7 +67,7 @@ public:
      * Constructor. Loads the interpolation table from the specified file.
      * @param file name of interpolation file
      */
-    SGInterpTable( const string& file );
+    SGInterpTable( const std::string& file );
 
 
     /**

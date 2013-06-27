@@ -40,15 +40,13 @@
 
 #include "iochannel.hxx"
 
-using std::string;
-
 /**
  * A serial I/O class based on SGIOChannel.
  */
 class SGSerial : public SGIOChannel {
 
-    string device;
-    string baud;
+    std::string device;
+    std::string baud;
     SGSerialPort port;
 
     char save_buf[ 2 * SG_IO_MAX_MSG_SIZE ];
@@ -68,7 +66,7 @@ public:
      * @param device_name name of serial device
      * @param baud_rate speed of communication
      */
-    SGSerial( const string& device_name, const string& baud_rate );
+    SGSerial( const std::string& device_name, const std::string& baud_rate );
 
     /** Destructor */
     ~SGSerial();

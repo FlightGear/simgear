@@ -48,7 +48,7 @@ public:
   static bool animate(osg::Node* node, const SGPropertyNode* configNode,
                       SGPropertyNode* modelRoot,
                       const osgDB::Options* options,
-                      const string &path, int i);
+                      const std::string &path, int i);
 
 protected:
   void apply(osg::Node* node);
@@ -354,11 +354,11 @@ public:
   SGLightAnimation(const SGPropertyNode* configNode,
                    SGPropertyNode* modelRoot,
                    const osgDB::Options* options,
-                   const string &path, int i);
+                   const std::string &path, int i);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
-  string _light_type;
+  std::string _light_type;
   SGVec3d _position;
   SGVec3d _direction;
   SGVec4d _ambient;
@@ -369,7 +369,7 @@ private:
   double _cutoff;
   double _near;
   double _far;
-  string _key;
+  std::string _key;
   class UpdateCallback;
   friend class UpdateCallback;
   SGSharedPtr<SGExpressiond> _animationValue;

@@ -26,7 +26,8 @@
 #include <vector>
 #include <functional>
 #include <set>
-   
+#include <string>
+
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/math/interpolater.hxx>
@@ -949,7 +950,7 @@ namespace simgear
   {
   struct ParseError : public sg_exception
   {
-      ParseError(const string& message = std::string())
+      ParseError(const std::string& message = std::string())
           : sg_exception(message) {}
   };
     
@@ -1014,7 +1015,7 @@ namespace simgear
   {
   public:
       size_t addBinding(const std::string& name, expression::Type type);
-      bool findBinding(const string& name, VariableBinding& result) const;
+      bool findBinding(const std::string& name, VariableBinding& result) const;
       std::vector<VariableBinding> bindings;
   };
 
@@ -1031,7 +1032,7 @@ namespace simgear
           ParserMap& map = getParserMap();
           ParserMap::iterator itr = map.find(exp->getName());
           if (itr == map.end())
-              throw ParseError(string("unknown expression ") + exp->getName());
+              throw ParseError(std::string("unknown expression ") + exp->getName());
           exp_parser parser = itr->second;
           return (*parser)(exp, this);
       }

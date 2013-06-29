@@ -78,12 +78,18 @@ namespace canvas
         break;
       case Event::MOUSE_UP:
       {
-        if( _last_mouse_down.path.empty() )
-          // Ignore mouse up without any previous mouse down
-          return false;
+        // If the mouse has moved while a button was down (aka. dragging) we
+        // need to notify the original element that the mouse has left it, and
+        // the new element that it has been entered
+        if( _last_mouse_down.path != path )
+          handleMove(event, path);
 
         // normal mouseup
         propagateEvent(event, path);
+
+        if( _last_mouse_down.path.empty() )
+          // Ignore mouse up without any previous mouse down
+          return false;
 
         // now handle click/dblclick
         if( checkClickDistance(path, _last_mouse_down.path) )

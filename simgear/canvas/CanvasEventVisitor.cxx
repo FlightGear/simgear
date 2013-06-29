@@ -30,8 +30,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   EventVisitor::EventVisitor( TraverseMode mode,
                               const osg::Vec2f& pos,
-                              const osg::Vec2f& delta ):
-    _traverse_mode( mode )
+                              const osg::Vec2f& delta,
+                              const ElementPtr& root ):
+    _traverse_mode( mode ),
+    _root(root)
   {
     if( mode == TRAVERSE_DOWN )
     {
@@ -70,10 +72,11 @@ namespace canvas
         m(0, 1) * pos[0] + m(1, 1) * pos[1] + m(3, 1)
       );
 
-      // Don't check collision with root element (2nd element in _target_path)
-      // do event listeners attached to the canvas itself (its root group)
-      // always get called even if no element has been hit.
-      if( _target_path.size() > 1 && !el.hitBound(pos, local_pos) )
+      // Don't check specified root element for collision, as its purpose is to
+      // catch all events which have no target. This allows for example calling
+      // event listeners attached to the canvas itself (its root group) even if
+      // no element has been hit.
+      if( _root.get() != &el && !el.hitBound(pos, local_pos) )
         return false;
 
       const osg::Vec2f& delta = _target_path.back().local_delta;
@@ -86,7 +89,7 @@ namespace canvas
       EventTarget target = {el.getWeakPtr(), local_pos, local_delta};
       _target_path.push_back(target);
 
-      if( el.traverse(*this) || _target_path.size() <= 2 )
+      if( el.traverse(*this) || &el == _root.get() )
         return true;
 
       _target_path.pop_back();

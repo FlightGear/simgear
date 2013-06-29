@@ -209,7 +209,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Element::accept(EventVisitor& visitor)
   {
-    if( !_transform.valid() )
+    if( !isVisible() )
       return false;
 
     return visitor.apply(*this);
@@ -259,7 +259,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Element::isVisible() const
   {
-    return _transform->getNodeMask() != 0;
+    return _transform.valid() && _transform->getNodeMask() != 0;
   }
 
   //----------------------------------------------------------------------------

@@ -70,13 +70,13 @@ namespace canvas
       /**
        * Propagate click event and handle multi-click (eg. create dblclick)
        */
-      void handleClick( const MouseEventPtr& event,
+      bool handleClick( const MouseEventPtr& event,
                         const EventPropagationPath& path );
 
       /**
        * Handle mouseover/enter/out/leave
        */
-      void handleMove( const MouseEventPtr& event,
+      bool handleMove( const MouseEventPtr& event,
                        const EventPropagationPath& path );
 
       bool propagateEvent( const EventPtr& event,

@@ -71,6 +71,7 @@ namespace canvas
   bool EventManager::handleEvent( const MouseEventPtr& event,
                                   const EventPropagationPath& path )
   {
+    bool handled = false;
     switch( event->type )
     {
       case Event::MOUSE_DOWN:
@@ -82,22 +83,23 @@ namespace canvas
         // need to notify the original element that the mouse has left it, and
         // the new element that it has been entered
         if( _last_mouse_down.path != path )
-          handleMove(event, path);
+          handled |= handleMove(event, path);
 
         // normal mouseup
-        propagateEvent(event, path);
+        handled |= propagateEvent(event, path);
 
         if( _last_mouse_down.path.empty() )
           // Ignore mouse up without any previous mouse down
-          return false;
+          return handled;
 
         // now handle click/dblclick
         if( checkClickDistance(path, _last_mouse_down.path) )
-          handleClick(event, getCommonAncestor(_last_mouse_down.path, path));
+          handled |=
+            handleClick(event, getCommonAncestor(_last_mouse_down.path, path));
 
         _last_mouse_down.clear();
 
-        return true;
+        return handled;
       }
       case Event::DRAG:
         if( !_last_mouse_down.valid() )
@@ -105,7 +107,7 @@ namespace canvas
         else
           return propagateEvent(event, _last_mouse_down.path);
       case Event::MOUSE_MOVE:
-        handleMove(event, path);
+        handled |= handleMove(event, path);
         break;
       case Event::MOUSE_LEAVE:
         // Mouse leaves window and therefore also current mouseover element
@@ -117,11 +119,11 @@ namespace canvas
         return false;
     }
 
-    return propagateEvent(event, path);
+    return handled | propagateEvent(event, path);
   }
 
   //----------------------------------------------------------------------------
-  void EventManager::handleClick( const MouseEventPtr& event,
+  bool EventManager::handleClick( const MouseEventPtr& event,
                                   const EventPropagationPath& path )
   {
     MouseEventPtr click(new MouseEvent(*event));
@@ -151,28 +153,33 @@ namespace canvas
       dbl_click->type = Event::DBL_CLICK;
     }
 
-    propagateEvent(click, path);
+    bool handled = propagateEvent(click, path);
 
     if( dbl_click )
-      propagateEvent(dbl_click, getCommonAncestor(_last_click.path, path));
+      handled |= propagateEvent( dbl_click,
+                                 getCommonAncestor(_last_click.path, path) );
 
     _last_click = StampedPropagationPath(path, event->getTime());
+
+    return handled;
   }
 
   //----------------------------------------------------------------------------
-  void EventManager::handleMove( const MouseEventPtr& event,
+  bool EventManager::handleMove( const MouseEventPtr& event,
                                  const EventPropagationPath& path )
   {
     EventPropagationPath& last_path = _last_mouse_over.path;
     if( last_path == path )
-      return;
+      return false;
+
+    bool handled = false;
 
     // Leave old element
     if( !last_path.empty() )
     {
       MouseEventPtr mouseout(new MouseEvent(*event));
       mouseout->type = Event::MOUSE_OUT;
-      propagateEvent(mouseout, last_path);
+      handled |= propagateEvent(mouseout, last_path);
 
       // Send a mouseleave event to all ancestors of the currently left element
       // which are not ancestor of the new element currently entered
@@ -184,7 +191,7 @@ namespace canvas
 
         MouseEventPtr mouseleave(new MouseEvent(*event));
         mouseleave->type = Event::MOUSE_LEAVE;
-        propagateEvent(mouseleave, path_leave);
+        handled |= propagateEvent(mouseleave, path_leave);
 
         path_leave.pop_back();
       }
@@ -195,7 +202,7 @@ namespace canvas
     {
       MouseEventPtr mouseover(new MouseEvent(*event));
       mouseover->type = Event::MOUSE_OVER;
-      propagateEvent(mouseover, path);
+      handled |= propagateEvent(mouseover, path);
 
       // Send a mouseenter event to all ancestors of the currently entered
       // element which are not ancestor of the old element currently being
@@ -210,11 +217,12 @@ namespace canvas
 
         MouseEventPtr mouseenter(new MouseEvent(*event));
         mouseenter->type = Event::MOUSE_ENTER;
-        propagateEvent(mouseenter, path_enter);
+        handled |= propagateEvent(mouseenter, path_enter);
       }
     }
 
     _last_mouse_over.path = path;
+    return handled;
   }
 
   //----------------------------------------------------------------------------

@@ -279,8 +279,8 @@ namespace canvas
                                     const EventPropagationPath& path2 ) const
   {
     osg::Vec2 delta = path1.front().local_pos - path2.front().local_pos;
-    return delta.x() < drag_threshold
-        && delta.y() < drag_threshold;
+    return std::fabs(delta.x()) < drag_threshold
+        && std::fabs(delta.y()) < drag_threshold;
   }
 
   //----------------------------------------------------------------------------

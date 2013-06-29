@@ -112,6 +112,13 @@ namespace canvas
       case Event::MOUSE_LEAVE:
         // Mouse leaves window and therefore also current mouseover element
         handleMove(event, EventPropagationPath());
+
+        // Event is only send if mouse is moved outside the window or dragging
+        // has ended somewhere outside the window. In both cases a mouse button
+        // has been released, so no more mouse down or click...
+        _last_mouse_down.clear();
+        _last_click.clear();
+
         return true;
       case Event::WHEEL:
         break;

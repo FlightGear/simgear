@@ -251,6 +251,21 @@ namespace canvas
 //        std::cout << it->element.lock()->getProps()->getPath() << std::endl;
 //    }
 
+    // Check if event supports bubbling
+    const Event::Type types_no_bubbling[] = {
+      Event::MOUSE_ENTER,
+      Event::MOUSE_LEAVE,
+    };
+    const size_t num_types_no_bubbling = sizeof(types_no_bubbling)
+                                       / sizeof(types_no_bubbling[0]);
+    bool do_bubble = true;
+    for( size_t i = 0; i < num_types_no_bubbling; ++i )
+      if( event->type == types_no_bubbling[i] )
+      {
+        do_bubble = false;
+        break;
+      }
+
     // Bubbling phase
     for( EventPropagationPath::const_reverse_iterator
            it = path.rbegin();
@@ -260,9 +275,14 @@ namespace canvas
       ElementPtr el = it->element.lock();
 
       if( !el )
+      {
         // Ignore element if it has been destroyed while traversing the event
         // (eg. removed by another event handler)
-        continue;
+        if( do_bubble )
+          continue;
+        else
+          break;
+      }
 
       // TODO provide functions to convert delta to local coordinates on demand.
       //      Maybe also provide a clone method for events as local coordinates
@@ -281,7 +301,7 @@ namespace canvas
 
       el->handleEvent(event);
 
-      if( event->propagation_stopped )
+      if( event->propagation_stopped || !do_bubble )
         return true;
     }
 

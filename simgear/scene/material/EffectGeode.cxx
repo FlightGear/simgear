@@ -22,6 +22,8 @@
 #include "Effect.hxx"
 #include "Technique.hxx"
 
+#include <osg/Version>
+
 #include <osgUtil/CullVisitor>
 #include <osgUtil/TangentSpaceGenerator>
 
@@ -80,15 +82,27 @@ void EffectGeode::runGenerators(osg::Geometry *geometry)
         int n = _effect->getGenerator(Effect::TANGENT);
         tsg->generate(geometry, 0);  // 0 is normal_unit, but I have no idea what that is!
         if (n != -1 && !geometry->getVertexAttribArray(n))
-          geometry->setVertexAttribArray(n, tsg->getTangentArray());
+#if OSG_MIN_VERSION_REQUIRED(3,1,8)
+          geometry->setVertexAttribArray(n, tsg->getTangentArray(), osg::Array::BIND_PER_VERTEX);
+#else
+          geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getTangentArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+#endif
 
         n = _effect->getGenerator(Effect::BINORMAL);
         if (n != -1 && !geometry->getVertexAttribArray(n))
-          geometry->setVertexAttribArray(n, tsg->getBinormalArray());
+#if OSG_MIN_VERSION_REQUIRED(3,1,8)
+          geometry->setVertexAttribArray(n, tsg->getBinormalArray(), osg::Array::BIND_PER_VERTEX);
+#else
+          geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getBinormalArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+#endif
 
         n = _effect->getGenerator(Effect::NORMAL);
         if (n != -1 && !geometry->getVertexAttribArray(n))
-          geometry->setVertexAttribArray(n, tsg->getNormalArray());
+#if OSG_MIN_VERSION_REQUIRED(3,1,8)
+          geometry->setVertexAttribArray(n, tsg->getNormalArray(), osg::Array::BIND_PER_VERTEX);
+#else
+          geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getNormalArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+#endif
     }
 }
 

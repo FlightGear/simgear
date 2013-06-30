@@ -20,7 +20,7 @@
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
 #include <simgear/scene/util/parse_color.hxx>
-#include <simgear/structure/OSGVersion.hxx>
+#include <osg/Version>
 #include <osgText/Text>
 
 namespace simgear
@@ -175,7 +175,7 @@ namespace canvas
     if( !bb.valid() )
       return bb;
 
-#if SG_OSG_VERSION_LESS_THAN(3,1,0)
+#if OSG_VERSION_LESS_THAN(3,1,0)
     // TODO bounding box still doesn't seem always right (eg. with center
     //      horizontal alignment not completely accurate)
     bb._min.y() += _offset.y();

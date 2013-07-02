@@ -174,20 +174,20 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Group::setStyle(const SGPropertyNode* style)
+  bool Group::setStyle( const SGPropertyNode* style,
+                        const StyleSetter* setter )
   {
-    // Don't propagate styles directly applicable to this group
-    if( Element::setStyle(style) )
-      return true;
-
-    if(    style->getParent() != _node
-        && _style.find(style->getNameString()) != _style.end() )
+    if( !canApplyStyle(style) )
       return false;
+
+    // Don't propagate styles directly applicable to this group
+    if( setStyleImpl(style, setter) )
+      return true;
 
     bool handled = false;
     for(size_t i = 0; i < _transform->getNumChildren(); ++i)
     {
-      if( getChildByIndex(i)->setStyle(style) )
+      if( getChildByIndex(i)->setStyle(style, setter) )
         handled = true;
     }
 

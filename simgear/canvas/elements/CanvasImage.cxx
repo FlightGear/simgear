@@ -400,8 +400,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Image::setFill(const std::string& fill)
   {
-    osg::Vec4 color;
-    if( !parseColor(fill, color) )
+    osg::Vec4 color(1,1,1,1);
+    if(    !fill.empty() // If no color is given default to white
+        && !parseColor(fill, color) )
       return;
 
     _colors->front() = color;

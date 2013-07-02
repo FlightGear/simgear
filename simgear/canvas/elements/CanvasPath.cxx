@@ -110,7 +110,7 @@ namespace canvas
        */
       void setFill(const std::string& fill)
       {
-        if( fill == "none" )
+        if( fill.empty() || fill == "none" )
         {
           _mode &= ~VG_FILL_PATH;
         }
@@ -150,7 +150,7 @@ namespace canvas
        */
       void setStroke(const std::string& stroke)
       {
-        if( stroke == "none" )
+        if( stroke.empty() || stroke == "none" )
         {
           _mode &= ~VG_STROKE_PATH;
         }

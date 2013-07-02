@@ -117,7 +117,8 @@ namespace canvas
                                  SGPropertyNode * child );
       virtual void valueChanged(SGPropertyNode * child);
 
-      virtual bool setStyle(const SGPropertyNode* child);
+      virtual bool setStyle( const SGPropertyNode* child,
+                             const StyleSetter* setter = 0 );
 
       /**
        * Set clipping shape
@@ -440,6 +441,14 @@ namespace canvas
           boost::bind(&getValue<T1>, _2)
         );
       }
+
+      bool isStyleEmpty(const SGPropertyNode* child) const;
+      bool canApplyStyle(const SGPropertyNode* child) const;
+      bool setStyleImpl( const SGPropertyNode* child,
+                         const StyleSetter* setter = 0 );
+
+      const StyleSetter* getStyleSetter(const std::string& name) const;
+      const SGPropertyNode* getParentStyle(const SGPropertyNode* child) const;
 
       virtual void childAdded(SGPropertyNode * child)  {}
       virtual void childRemoved(SGPropertyNode * child){}

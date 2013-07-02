@@ -21,6 +21,7 @@
 #include <simgear/canvas/CanvasEventListener.hxx>
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/scene/material/parseBlendFunc.hxx>
 
 #include <osg/Drawable>
@@ -315,29 +316,38 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::childRemoved(SGPropertyNode* parent, SGPropertyNode* child)
   {
-    if( parent == _node && child->getNameString() == NAME_TRANSFORM )
+    if( parent == _node )
     {
-      if( !_transform.valid() )
-        return;
-
-      if( child->getIndex() >= static_cast<int>(_transform_types.size()) )
+      if( child->getNameString() == NAME_TRANSFORM )
       {
-        SG_LOG
-        (
-          SG_GENERAL,
-          SG_WARN,
-          "Element::childRemoved: unknown transform: " << child->getPath()
-        );
+        if( !_transform.valid() )
+          return;
+
+        if( child->getIndex() >= static_cast<int>(_transform_types.size()) )
+        {
+          SG_LOG
+          (
+            SG_GENERAL,
+            SG_WARN,
+            "Element::childRemoved: unknown transform: " << child->getPath()
+          );
+          return;
+        }
+
+        _transform_types[ child->getIndex() ] = TT_NONE;
+
+        while( !_transform_types.empty() && _transform_types.back() == TT_NONE )
+          _transform_types.pop_back();
+
+        _transform_dirty = true;
         return;
       }
-
-      _transform_types[ child->getIndex() ] = TT_NONE;
-
-      while( !_transform_types.empty() && _transform_types.back() == TT_NONE )
-        _transform_types.pop_back();
-
-      _transform_dirty = true;
-      return;
+      else if( StyleSetter const* setter =
+                 getStyleSetter(child->getNameString()) )
+      {
+        setStyle(getParentStyle(child), setter);
+        return;
+      }
     }
 
     childRemoved(child);
@@ -350,8 +360,17 @@ namespace canvas
     if( parent == _node )
     {
       const std::string& name = child->getNameString();
-      if( setStyle(child) )
+      if( StyleSetter const* setter = getStyleSetter(name) )
+      {
+        SGPropertyNode const* style = child;
+        if( isStyleEmpty(child) )
+        {
+          child->clearValue();
+          style = getParentStyle(child);
+        }
+        setStyle(style, setter);
         return;
+      }
       else if( name == "update" )
         return update(0);
       else if( name == "visible" )
@@ -371,21 +390,10 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Element::setStyle(const SGPropertyNode* child)
+  bool Element::setStyle( const SGPropertyNode* child,
+                          const StyleSetter* setter )
   {
-    StyleSetters::const_iterator setter =
-      _style_setters.find(child->getNameString());
-    if( setter == _style_setters.end() )
-      return false;
-
-    const StyleSetter* style_setter = &setter->second.setter;
-    while( style_setter )
-    {
-      if( style_setter->func(*this, child) )
-        return true;
-      style_setter = style_setter->next;
-    }
-    return false;
+    return canApplyStyle(child) && setStyleImpl(child, setter);
   }
 
   //----------------------------------------------------------------------------
@@ -514,6 +522,67 @@ namespace canvas
     {
       addStyle("clip", "", &Element::setClip);
     }
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::isStyleEmpty(const SGPropertyNode* child) const
+  {
+    return !child
+        || simgear::strutils::strip(child->getStringValue()).empty();
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::canApplyStyle(const SGPropertyNode* child) const
+  {
+    if( _node == child->getParent() )
+      return true;
+
+    // Parent values do not override if element has own value
+    return isStyleEmpty( _node->getChild(child->getName()) );
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::setStyleImpl( const SGPropertyNode* child,
+                              const StyleSetter* setter )
+  {
+    const StyleSetter* style_setter = setter
+                                    ? setter
+                                    : getStyleSetter(child->getNameString());
+    while( style_setter )
+    {
+      if( style_setter->func(*this, child) )
+        return true;
+      style_setter = style_setter->next;
+    }
+    return false;
+  }
+
+  //----------------------------------------------------------------------------
+  const Element::StyleSetter*
+  Element::getStyleSetter(const std::string& name) const
+  {
+    StyleSetters::const_iterator setter = _style_setters.find(name);
+    if( setter == _style_setters.end() )
+      return 0;
+
+    return &setter->second.setter;
+  }
+
+  //----------------------------------------------------------------------------
+  const SGPropertyNode*
+  Element::getParentStyle(const SGPropertyNode* child) const
+  {
+    // Try to get value from parent...
+    if( _parent )
+    {
+      Style::const_iterator style =
+        _parent->_style.find(child->getNameString());
+      if( style != _parent->_style.end() )
+        return style->second;
+    }
+
+    // ...or reset to default if none is available
+    return child; // TODO somehow get default value for each style?
   }
 
   //----------------------------------------------------------------------------

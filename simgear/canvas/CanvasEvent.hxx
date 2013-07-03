@@ -41,7 +41,8 @@ namespace canvas
       };
 
       Type              type;
-      ElementWeakPtr    target;
+      ElementWeakPtr    target,
+                        current_target;
       double            time;
       bool              propagation_stopped;
 
@@ -55,6 +56,7 @@ namespace canvas
       std::string getTypeString() const;
 
       ElementWeakPtr getTarget() const;
+      ElementWeakPtr getCurrentTarget() const;
 
       double getTime() const;
 

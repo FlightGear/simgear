@@ -63,6 +63,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  ElementWeakPtr Event::getCurrentTarget() const
+  {
+    return current_target;
+  }
+
+  //----------------------------------------------------------------------------
   double Event::getTime() const
   {
     return time;

@@ -299,6 +299,7 @@ namespace canvas
         //mouse_event->delta = it->local_delta;
       }
 
+      event->current_target = el;
       el->handleEvent(event);
 
       if( event->propagation_stopped || !do_bubble )

@@ -292,7 +292,7 @@ namespace canvas
       addStyle("max-width", "numeric", &TextOSG::setMaximumWidth, text);
       addStyle("font", "", &Text::setFont);
       addStyle("alignment", "", &Text::setAlignment);
-      addStyle("text", "", &Text::setText);
+      addStyle("text", "", &Text::setText, false);
     }
 
     setupStyle();

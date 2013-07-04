@@ -71,6 +71,8 @@ namespace canvas
       {
         StyleSetter setter; ///!< Function(s) for setting this style
         std::string type;   ///!< Interpolation type
+        bool inheritable;   ///!< Whether children can inherit this style from
+                            ///   their parents
       };
 
       /**
@@ -118,7 +120,7 @@ namespace canvas
       virtual void valueChanged(SGPropertyNode * child);
 
       virtual bool setStyle( const SGPropertyNode* child,
-                             const StyleSetter* setter = 0 );
+                             const StyleInfo* style_info = 0 );
 
       /**
        * Set clipping shape
@@ -240,7 +242,8 @@ namespace canvas
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
-                const boost::function<void (Derived&, T2)>& setter )
+                const boost::function<void (Derived&, T2)>& setter,
+                bool inheritable = true )
       {
         StyleInfo& style_info = _style_setters[ name ];
         if( !type.empty() )
@@ -256,6 +259,8 @@ namespace canvas
 
           style_info.type = type;
         }
+        // TODO check if changed?
+        style_info.inheritable = inheritable;
 
         StyleSetter* style = &style_info.setter;
         while( style->next )
@@ -280,9 +285,10 @@ namespace canvas
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
-                const boost::function<void (Derived&, T)>& setter )
+                const boost::function<void (Derived&, T)>& setter,
+                bool inheritable = true )
       {
-        return addStyle<T, T>(name, type, setter);
+        return addStyle<T, T>(name, type, setter, inheritable);
       }
 
       template<
@@ -292,13 +298,15 @@ namespace canvas
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
-                void (Derived::*setter)(T) )
+                void (Derived::*setter)(T),
+                bool inheritable = true )
       {
         return addStyle<T, T>
         (
           name,
           type,
-          boost::function<void (Derived&, T)>(setter)
+          boost::function<void (Derived&, T)>(setter),
+          inheritable
         );
       }
 
@@ -310,13 +318,15 @@ namespace canvas
       StyleSetterFunc
       addStyle( const std::string& name,
                 const std::string& type,
-                void (Derived::*setter)(T2) )
+                void (Derived::*setter)(T2),
+                bool inheritable = true )
       {
         return addStyle<T1>
         (
           name,
           type,
-          boost::function<void (Derived&, T2)>(setter)
+          boost::function<void (Derived&, T2)>(setter),
+          inheritable
         );
       }
 
@@ -326,13 +336,15 @@ namespace canvas
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
-                void (Derived::*setter)(const std::string&) )
+                void (Derived::*setter)(const std::string&),
+                bool inheritable = true )
       {
         return addStyle<const char*, const std::string&>
         (
           name,
           type,
-          boost::function<void (Derived&, const std::string&)>(setter)
+          boost::function<void (Derived&, const std::string&)>(setter),
+          inheritable
         );
       }
 
@@ -346,9 +358,16 @@ namespace canvas
       addStyle( const std::string& name,
                 const std::string& type,
                 void (Other::*setter)(T),
-                OtherRef Derived::*instance_ref )
+                OtherRef Derived::*instance_ref,
+                bool inheritable = true )
       {
-        return addStyle<T, T>(name, type, bindOther(setter, instance_ref));
+        return addStyle<T, T>
+        (
+          name,
+          type,
+          bindOther(setter, instance_ref),
+          inheritable
+        );
       }
 
       template<
@@ -362,9 +381,16 @@ namespace canvas
       addStyle( const std::string& name,
                 const std::string& type,
                 void (Other::*setter)(T2),
-                OtherRef Derived::*instance_ref )
+                OtherRef Derived::*instance_ref,
+                bool inheritable = true )
       {
-        return addStyle<T1>(name, type, bindOther(setter, instance_ref));
+        return addStyle<T1>
+        (
+          name,
+          type,
+          bindOther(setter, instance_ref),
+          inheritable
+        );
       }
 
       template<
@@ -378,9 +404,16 @@ namespace canvas
       addStyle( const std::string& name,
                 const std::string& type,
                 const boost::function<void (Other&, T2)>& setter,
-                OtherRef Derived::*instance_ref )
+                OtherRef Derived::*instance_ref,
+                bool inheritable = true )
       {
-        return addStyle<T1>(name, type, bindOther(setter, instance_ref));
+        return addStyle<T1>
+        (
+          name,
+          type,
+          bindOther(setter, instance_ref),
+          inheritable
+        );
       }
 
       template<
@@ -392,14 +425,16 @@ namespace canvas
       addStyle( const std::string& name,
                 const std::string& type,
                 void (Other::*setter)(const std::string&),
-                OtherRef Derived::*instance_ref )
+                OtherRef Derived::*instance_ref,
+                bool inheritable = true )
       {
         return addStyle<const char*, const std::string&>
         (
           name,
           type,
           boost::function<void (Other&, const std::string&)>(setter),
-          instance_ref
+          instance_ref,
+          inheritable
         );
       }
 
@@ -445,8 +480,9 @@ namespace canvas
       bool isStyleEmpty(const SGPropertyNode* child) const;
       bool canApplyStyle(const SGPropertyNode* child) const;
       bool setStyleImpl( const SGPropertyNode* child,
-                         const StyleSetter* setter = 0 );
+                         const StyleInfo* style_info = 0 );
 
+      const StyleInfo* getStyleInfo(const std::string& name) const;
       const StyleSetter* getStyleSetter(const std::string& name) const;
       const SGPropertyNode* getParentStyle(const SGPropertyNode* child) const;
 

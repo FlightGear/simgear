@@ -175,20 +175,16 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   bool Group::setStyle( const SGPropertyNode* style,
-                        const StyleSetter* setter )
+                        const StyleInfo* style_info )
   {
     if( !canApplyStyle(style) )
       return false;
 
-    // Don't propagate styles directly applicable to this group
-    if( setStyleImpl(style, setter) )
-      return true;
-
-    bool handled = false;
-    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+    bool handled = setStyleImpl(style, style_info);
+    if( style_info->inheritable )
     {
-      if( getChildByIndex(i)->setStyle(style, setter) )
-        handled = true;
+      for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+        handled |= getChildByIndex(i)->setStyle(style, style_info);
     }
 
     return handled;
@@ -247,12 +243,9 @@ namespace canvas
       return;
     }
 
-    if( !Element::setStyle(child) )
-    {
-      // Only add style if not applicable to group itself
+    StyleInfo const* style = getStyleInfo(child->getNameString());
+    if( style && style->inheritable )
       _style[ child->getNameString() ] = child;
-      setStyle(child);
-    }
   }
 
   //----------------------------------------------------------------------------
@@ -285,9 +278,7 @@ namespace canvas
     }
     else
     {
-      Style::iterator style = _style.find(node->getNameString());
-      if( style != _style.end() )
-        _style.erase(style);
+      _style.erase( node->getNameString() );
     }
   }
 

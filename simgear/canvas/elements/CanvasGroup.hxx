@@ -93,7 +93,7 @@ namespace canvas
       virtual bool traverse(EventVisitor& visitor);
 
       virtual bool setStyle( const SGPropertyNode* child,
-                             const StyleSetter* setter = 0 );
+                             const StyleInfo* style_info = 0 );
 
       virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
 

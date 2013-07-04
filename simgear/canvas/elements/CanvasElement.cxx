@@ -342,11 +342,10 @@ namespace canvas
         _transform_dirty = true;
         return;
       }
-      else if( StyleSetter const* setter =
-                 getStyleSetter(child->getNameString()) )
+      else if( StyleInfo const* style = getStyleInfo(child->getNameString()) )
       {
-        setStyle(getParentStyle(child), setter);
-        return;
+        if( setStyle(getParentStyle(child), style) )
+          return;
       }
     }
 
@@ -360,7 +359,7 @@ namespace canvas
     if( parent == _node )
     {
       const std::string& name = child->getNameString();
-      if( StyleSetter const* setter = getStyleSetter(name) )
+      if( StyleInfo const* style_info = getStyleInfo(name) )
       {
         SGPropertyNode const* style = child;
         if( isStyleEmpty(child) )
@@ -368,7 +367,7 @@ namespace canvas
           child->clearValue();
           style = getParentStyle(child);
         }
-        setStyle(style, setter);
+        setStyle(style, style_info);
         return;
       }
       else if( name == "update" )
@@ -391,9 +390,9 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   bool Element::setStyle( const SGPropertyNode* child,
-                          const StyleSetter* setter )
+                          const StyleInfo* style_info )
   {
-    return canApplyStyle(child) && setStyleImpl(child, setter);
+    return canApplyStyle(child) && setStyleImpl(child, style_info);
   }
 
   //----------------------------------------------------------------------------
@@ -520,7 +519,7 @@ namespace canvas
 
     if( !isInit<Element>() )
     {
-      addStyle("clip", "", &Element::setClip);
+      addStyle("clip", "", &Element::setClip, false);
     }
   }
 
@@ -543,10 +542,10 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   bool Element::setStyleImpl( const SGPropertyNode* child,
-                              const StyleSetter* setter )
+                              const StyleInfo* style_info )
   {
-    const StyleSetter* style_setter = setter
-                                    ? setter
+    const StyleSetter* style_setter = style_info
+                                    ? &style_info->setter
                                     : getStyleSetter(child->getNameString());
     while( style_setter )
     {
@@ -558,14 +557,22 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  const Element::StyleSetter*
-  Element::getStyleSetter(const std::string& name) const
+  const Element::StyleInfo*
+  Element::getStyleInfo(const std::string& name) const
   {
     StyleSetters::const_iterator setter = _style_setters.find(name);
     if( setter == _style_setters.end() )
       return 0;
 
-    return &setter->second.setter;
+    return &setter->second;
+  }
+
+  //----------------------------------------------------------------------------
+  const Element::StyleSetter*
+  Element::getStyleSetter(const std::string& name) const
+  {
+    const StyleInfo* info = getStyleInfo(name);
+    return info ? &info->setter : 0;
   }
 
   //----------------------------------------------------------------------------

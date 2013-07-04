@@ -18,6 +18,7 @@
 
 #include "CanvasMgr.hxx"
 #include "Canvas.hxx"
+#include "CanvasEventManager.hxx"
 
 #include <boost/bind.hpp>
 

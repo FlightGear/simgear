@@ -29,7 +29,7 @@
 #include <osg/NodeCallback>
 #include <osg/observer_ptr>
 
-#include <memory>
+#include <boost/scoped_ptr.hpp>
 #include <string>
 
 namespace simgear
@@ -168,7 +168,7 @@ namespace canvas
       SystemAdapterPtr  _system_adapter;
       CanvasMgr        *_canvas_mgr;
 
-      std::auto_ptr<EventManager>   _event_manager;
+      boost::scoped_ptr<EventManager> _event_manager;
 
       int _size_x,
           _size_y,

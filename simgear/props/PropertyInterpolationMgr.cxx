@@ -193,12 +193,6 @@ namespace simgear
       SG_LOG(SG_GENERAL, SG_WARN, "interpolate: sizes do not match");
 
     size_t num_values = std::min(values.size(), deltas.size());
-    if( !num_values )
-    {
-      SG_LOG(SG_GENERAL, SG_WARN, "interpolate: no values");
-      return false;
-    }
-
     PropertyInterpolatorRef first_interp, cur_interp;
     for(size_t i = 0; i < num_values; ++i)
     {

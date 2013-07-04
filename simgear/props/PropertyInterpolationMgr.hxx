@@ -76,14 +76,15 @@ namespace simgear
                           const std::string& easing );
 
       /**
-       * Add animation of the given property from current its current value to
-       * the target value of the interpolator.
+       * Add animation of the given property from its current value to the
+       * target value of the interpolator. If no interpolator is given any
+       * existing animation of the given property is aborted.
        *
        * @param prop    Property to be interpolated
        * @param interp  Interpolator used for interpolation
        */
       bool interpolate( SGPropertyNode* prop,
-                        PropertyInterpolatorRef interp );
+                        PropertyInterpolatorRef interp  = 0 );
 
       bool interpolate( SGPropertyNode* prop,
                         const std::string& type,

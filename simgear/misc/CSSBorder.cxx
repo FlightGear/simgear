@@ -58,7 +58,7 @@ namespace simgear
     {
       ret.val[i] = offsets.val[i];
       if( !types.rel[i] )
-        ret.val[i] /= (i & 1) ? dim.height() : dim.width();
+        ret.val[i] /= (i & 1) ? dim.width() : dim.height();
     }
 
     return ret;
@@ -75,7 +75,7 @@ namespace simgear
     {
       ret.val[i] = offsets.val[i];
       if( types.rel[i] )
-        ret.val[i] *= (i & 1) ? dim.height() : dim.width();
+        ret.val[i] *= (i & 1) ? dim.width() : dim.height();
     }
 
     return ret;

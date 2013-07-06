@@ -55,14 +55,21 @@ int main (int ac, char ** av)
   COMPARE(o.b, 15);
   COMPARE(o.l, 20);
 
-  b = CSSBorder::parse("5% 10% 15% 20%");
-  o = b.getAbsOffsets(SGRect<int>(0,0,200,200));
-  COMPARE(o.t, 10);
-  COMPARE(o.r, 20);
-  COMPARE(o.b, 30);
-  COMPARE(o.l, 40);
+  b = CSSBorder::parse("5 10 15 20");
+  o = b.getRelOffsets(SGRect<int>(0,0,100,200));
+  COMPARE(o.t, 0.025);
+  COMPARE(o.r, 0.1);
+  COMPARE(o.b, 0.075);
+  COMPARE(o.l, 0.2);
 
-  o = b.getRelOffsets(SGRect<int>(0,0,200,200));
+  b = CSSBorder::parse("5% 10% 15% 20%");
+  o = b.getAbsOffsets(SGRect<int>(0,0,100,200));
+  COMPARE(o.t, 10);
+  COMPARE(o.r, 10);
+  COMPARE(o.b, 30);
+  COMPARE(o.l, 20);
+
+  o = b.getRelOffsets(SGRect<int>(0,0,100,200));
   COMPARE(o.t, 0.05);
   COMPARE(o.r, 0.1);
   COMPARE(o.b, 0.15);

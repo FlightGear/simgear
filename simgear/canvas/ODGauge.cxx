@@ -43,6 +43,7 @@
 #include <osg/ShadeModel>
 #include <osg/StateSet>
 #include <osg/FrameBufferObject> // for GL_DEPTH_STENCIL_EXT on Windows
+#include <osgUtil/RenderBin>
 
 #include <cassert>
 
@@ -50,6 +51,46 @@ namespace simgear
 {
 namespace canvas
 {
+
+  class PreOrderBin:
+    public osgUtil::RenderBin
+  {
+    public:
+
+      PreOrderBin()
+      {}
+      PreOrderBin( const RenderBin& rhs,
+                   const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY ):
+        RenderBin(rhs, copyop)
+      {}
+
+      virtual osg::Object* cloneType() const
+      {
+        return new PreOrderBin();
+      }
+      virtual osg::Object* clone(const osg::CopyOp& copyop) const
+      {
+        return new PreOrderBin(*this,copyop);
+      }
+      virtual bool isSameKindAs(const osg::Object* obj) const
+      {
+        return dynamic_cast<const PreOrderBin*>(obj) != 0L;
+      }
+      virtual const char* className() const
+      {
+        return "PreOrderBin";
+      }
+
+      virtual void sort()
+      {
+        // Do not sort to keep traversal order...
+      }
+  };
+
+  OSG_INIT_SINGLETON_PROXY(
+    PreOrderBinProxy,
+    (osgUtil::RenderBin::addRenderBinPrototype("PreOrderBin", new PreOrderBin))
+  );
 
   //----------------------------------------------------------------------------
   ODGauge::ODGauge():

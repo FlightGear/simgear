@@ -521,6 +521,15 @@ namespace canvas
     {
       addStyle("clip", "", &Element::setClip, false);
     }
+
+    // Ensure elements are drawn in order they appear in the element tree
+    _transform->getOrCreateStateSet()
+              ->setRenderBinDetails
+              (
+                0,
+                "PreOrderBin",
+                osg::StateSet::OVERRIDE_RENDERBIN_DETAILS
+              );
   }
 
   //----------------------------------------------------------------------------

@@ -227,9 +227,6 @@ namespace canvas
 
       camera->addChild(_root_group->getMatrixTransform());
 
-      // Ensure objects are drawn in order of traversal
-      camera->getOrCreateStateSet()->setBinName("TraversalOrderBin");
-
       if( _texture.serviceable() )
       {
         setStatusFlags(STATUS_OK);

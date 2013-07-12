@@ -54,7 +54,7 @@ namespace canvas
   Text::TextOSG::TextOSG(canvas::Text* text):
     _text_element(text)
   {
-
+    setBackdropImplementation(NO_DEPTH_BUFFER);
   }
 
   //----------------------------------------------------------------------------

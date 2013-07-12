@@ -45,6 +45,13 @@ namespace canvas
   ElementFactories Group::_child_factories;
   const std::string Group::TYPE_NAME = "group";
 
+  void warnTransformExpired(const char* member_name)
+  {
+    SG_LOG( SG_GENERAL,
+            SG_WARN,
+            "canvas::Group::" << member_name << ": Group has expired." );
+  }
+
   //----------------------------------------------------------------------------
   Group::Group( const CanvasWeakPtr& canvas,
                 const SGPropertyNode_ptr& node,
@@ -119,8 +126,13 @@ namespace canvas
   //----------------------------------------------------------------------------
   ElementPtr Group::getElementById(const std::string& id)
   {
-    std::vector<GroupPtr> groups;
+    if( !_transform.valid() )
+    {
+      warnTransformExpired("getElementById");
+      return ElementPtr();
+    }
 
+    std::vector<GroupPtr> groups;
     for(size_t i = 0; i < _transform->getNumChildren(); ++i)
     {
       const ElementPtr& el = getChildByIndex(i);
@@ -145,6 +157,8 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::clearEventListener()
   {
+    if( _transform.valid() )
+      return warnTransformExpired("clearEventListener");
 
     for(size_t i = 0; i < _transform->getNumChildren(); ++i)
       getChildByIndex(i)->clearEventListener();
@@ -183,6 +197,12 @@ namespace canvas
     bool handled = setStyleImpl(style, style_info);
     if( style_info->inheritable )
     {
+      if( !_transform.valid() )
+      {
+        warnTransformExpired("setStyle");
+        return false;
+      }
+
       for(size_t i = 0; i < _transform->getNumChildren(); ++i)
         handled |= getChildByIndex(i)->setStyle(style, style_info);
     }
@@ -194,6 +214,11 @@ namespace canvas
   osg::BoundingBox Group::getTransformedBounds(const osg::Matrix& m) const
   {
     osg::BoundingBox bb;
+    if( !_transform.valid() )
+    {
+      warnTransformExpired("getTransformedBounds");
+      return bb;
+    }
 
     for(size_t i = 0; i < _transform->getNumChildren(); ++i)
     {
@@ -232,6 +257,9 @@ namespace canvas
     ElementFactory child_factory = getChildFactory( child->getNameString() );
     if( child_factory )
     {
+      if( !_transform.valid() )
+        return warnTransformExpired("childAdded");
+
       ElementPtr element = child_factory(_canvas, child, _style, this);
 
       // Add to osg scene graph...
@@ -294,7 +322,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::handleZIndexChanged(ElementPtr child, int z_index)
   {
-    if( !child )
+    if( !child || _transform.valid() )
       return;
 
     osg::ref_ptr<osg::MatrixTransform> tf = child->getMatrixTransform();
@@ -355,6 +383,12 @@ namespace canvas
   ElementPtr Group::findChild( const SGPropertyNode* node,
                                const std::string& id ) const
   {
+    if( !_transform.valid() )
+    {
+      warnTransformExpired("findChild");
+      return ElementPtr();
+    }
+
     for(size_t i = 0; i < _transform->getNumChildren(); ++i)
     {
       ElementPtr el = getChildByIndex(i);

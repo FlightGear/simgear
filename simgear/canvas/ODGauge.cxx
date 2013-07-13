@@ -87,6 +87,18 @@ namespace canvas
       }
   };
 
+#ifndef OSG_INIT_SINGLETON_PROXY
+  /**
+   * http://svn.openscenegraph.org/osg/OpenSceneGraph/trunk/include/osg/Object
+   *
+   * Helper macro that creates a static proxy object to call singleton function
+   * on it's construction, ensuring that the singleton gets initialized at
+   * startup.
+   */
+#  define OSG_INIT_SINGLETON_PROXY(ProxyName, Func)\
+          static struct ProxyName{ ProxyName() { Func; } } s_##ProxyName;
+#endif
+
   OSG_INIT_SINGLETON_PROXY(
     PreOrderBinProxy,
     (osgUtil::RenderBin::addRenderBinPrototype("PreOrderBin", new PreOrderBin))

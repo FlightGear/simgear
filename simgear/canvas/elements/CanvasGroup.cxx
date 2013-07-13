@@ -157,7 +157,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::clearEventListener()
   {
-    if( _transform.valid() )
+    if( !_transform.valid() )
       return warnTransformExpired("clearEventListener");
 
     for(size_t i = 0; i < _transform->getNumChildren(); ++i)
@@ -322,7 +322,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::handleZIndexChanged(ElementPtr child, int z_index)
   {
-    if( !child || _transform.valid() )
+    if( !child || !_transform.valid() )
       return;
 
     osg::ref_ptr<osg::MatrixTransform> tf = child->getMatrixTransform();

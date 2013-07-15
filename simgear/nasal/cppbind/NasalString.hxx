@@ -59,6 +59,7 @@ namespace nasal
 
       int compare(size_t pos, size_t len, const String& rhs) const;
       bool starts_with(const String& rhs) const;
+      bool ends_with(const String& rhs) const;
 
       size_t find(const char c, size_t pos = 0) const;
       size_t find_first_of(const String& chr, size_t pos = 0) const;

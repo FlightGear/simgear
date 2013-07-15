@@ -286,6 +286,13 @@ int main(int argc, char* argv[])
   VERIFY( !string.starts_with(String(c, "Test1")) );
   VERIFY( !string.starts_with(String(c, "bb")) );
   VERIFY( !string.starts_with(String(c, "bbasdasdafasd")) );
+  VERIFY( string.ends_with(String(c, "t")) );
+  VERIFY( string.ends_with(String(c, "st")) );
+  VERIFY( string.ends_with(String(c, "est")) );
+  VERIFY( string.ends_with(String(c, "Test")) );
+  VERIFY( !string.ends_with(String(c, "1Test")) );
+  VERIFY( !string.ends_with(String(c, "abc")) );
+  VERIFY( !string.ends_with(String(c, "estasdasd")) );
   VERIFY( string.find('e') == 1 );
   VERIFY( string.find('9') == String::npos );
   VERIFY( string.find_first_of(String(c, "st")) == 2 );

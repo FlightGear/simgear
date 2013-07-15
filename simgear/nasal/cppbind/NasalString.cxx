@@ -137,6 +137,12 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
+  bool String::ends_with(const String& rhs) const
+  {
+    return rhs.size() <= size() && compare(size() - rhs.size(), npos, rhs) == 0;
+  }
+
+  //----------------------------------------------------------------------------
   size_t String::find(const char c, size_t pos) const
   {
     if( pos >= size() )

@@ -488,7 +488,7 @@ namespace canvas
     osg::BoundingBox transformed;
     const osg::BoundingBox& bb = _drawable->getBound();
     for(int i = 0; i < 4; ++i)
-      transformed.expandBy( m * bb.corner(i) );
+      transformed.expandBy( bb.corner(i) * m );
 
     return transformed;
   }

@@ -30,9 +30,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/tokenizer.hpp>
 
 #include <cassert>
 #include <cstring>
@@ -413,17 +411,22 @@ namespace canvas
       return;
     }
 
-    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-    const boost::char_separator<char> del(", \t\npx");
-
-    tokenizer tokens(clip.begin() + RECT.size(), clip.end() - 1, del);
+    const std::string sep(", \t\npx");
     int comp = 0;
     int values[4];
-    for( tokenizer::const_iterator tok = tokens.begin();
-         tok != tokens.end() && comp < 4;
-         ++tok, ++comp )
+
+    for(size_t pos = RECT.size(); comp < 4; ++comp)
     {
-      values[comp] = boost::lexical_cast<int>(*tok);
+      pos = clip.find_first_not_of(sep, pos);
+      if( pos == std::string::npos || pos == clip.size() - 1 )
+        break;
+
+      char *end = 0;
+      values[comp] = strtod(&clip[pos], &end);
+      if( end == &clip[pos] || !end )
+        break;
+
+      pos = end - &clip[0];
     }
 
     if( comp < 4 )

@@ -21,6 +21,7 @@
 #include <simgear/canvas/CanvasEventListener.hxx>
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/math/SGMisc.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/scene/material/parseBlendFunc.hxx>
 
@@ -413,7 +414,7 @@ namespace canvas
 
     const std::string sep(", \t\npx");
     int comp = 0;
-    int values[4];
+    float values[4];
 
     for(size_t pos = RECT.size(); comp < 4; ++comp)
     {
@@ -435,6 +436,15 @@ namespace canvas
       return;
     }
 
+    float width = values[1] - values[3],
+          height = values[2] - values[0];
+
+    if( width < 0 || height < 0 )
+    {
+      SG_LOG(SG_GENERAL, SG_WARN, "Canvas: negative clip size: " << clip);
+      return;
+    }
+
     float scale_x = 1,
           scale_y = 1;
 
@@ -451,10 +461,10 @@ namespace canvas
 
     osg::Scissor* scissor = new osg::Scissor();
     // <top>, <right>, <bottom>, <left>
-    scissor->x() = scale_x * values[3];
-    scissor->y() = scale_y * values[0];
-    scissor->width() = scale_x * (values[1] - values[3]);
-    scissor->height() = scale_y * (values[2] - values[0]);
+    scissor->x() = SGMiscf::roundToInt(scale_x * values[3]);
+    scissor->y() = SGMiscf::roundToInt(scale_y * values[0]);
+    scissor->width() = SGMiscf::roundToInt(scale_x * width);
+    scissor->height() = SGMiscf::roundToInt(scale_y * height);
 
     if( canvas )
       // Canvas has y axis upside down

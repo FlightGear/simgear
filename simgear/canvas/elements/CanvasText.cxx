@@ -36,6 +36,7 @@ namespace canvas
 
       void setFontResolution(int res);
       void setCharacterAspect(float aspect);
+      void setLineHeight(float factor);
       void setFill(const std::string& fill);
       void setBackgroundColor(const std::string& fill);
 
@@ -67,6 +68,12 @@ namespace canvas
   void Text::TextOSG::setCharacterAspect(float aspect)
   {
     setCharacterSize(getCharacterHeight(), aspect);
+  }
+
+  //----------------------------------------------------------------------------
+  void Text::TextOSG::setLineHeight(float factor)
+  {
+    setLineSpacing(factor - 1);
   }
 
   //----------------------------------------------------------------------------
@@ -282,6 +289,7 @@ namespace canvas
       addStyle("character-aspect-ratio",
                "numeric",
                &TextOSG::setCharacterAspect, text);
+      addStyle("line-height", "numeric", &TextOSG::setLineHeight, text);
       addStyle("font-resolution", "numeric", &TextOSG::setFontResolution, text);
       addStyle("padding", "numeric", &TextOSG::setBoundingBoxMargin, text);
       //  TEXT              = 1 default

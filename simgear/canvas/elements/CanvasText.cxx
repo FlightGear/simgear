@@ -262,6 +262,39 @@ namespace canvas
   const std::string Text::TYPE_NAME = "text";
 
   //----------------------------------------------------------------------------
+  void Text::staticInit()
+  {
+    if( isInit<Text>() )
+      return;
+
+    osg::ref_ptr<TextOSG> Text::*text = &Text::_text;
+
+    addStyle("fill", "color", &TextOSG::setFill, text);
+    addStyle("background", "color", &TextOSG::setBackgroundColor, text);
+    addStyle("character-size",
+             "numeric",
+             static_cast<
+               void (TextOSG::*)(float)
+             > (&TextOSG::setCharacterSize),
+             text);
+    addStyle("character-aspect-ratio",
+             "numeric",
+             &TextOSG::setCharacterAspect, text);
+    addStyle("line-height", "numeric", &TextOSG::setLineHeight, text);
+    addStyle("font-resolution", "numeric", &TextOSG::setFontResolution, text);
+    addStyle("padding", "numeric", &TextOSG::setBoundingBoxMargin, text);
+    //  TEXT              = 1 default
+    //  BOUNDINGBOX       = 2
+    //  FILLEDBOUNDINGBOX = 4
+    //  ALIGNMENT         = 8
+    addStyle<int>("draw-mode", "", &TextOSG::setDrawMode, text);
+    addStyle("max-width", "numeric", &TextOSG::setMaximumWidth, text);
+    addStyle("font", "", &Text::setFont);
+    addStyle("alignment", "", &Text::setAlignment);
+    addStyle("text", "", &Text::setText, false);
+  }
+
+  //----------------------------------------------------------------------------
   Text::Text( const CanvasWeakPtr& canvas,
               const SGPropertyNode_ptr& node,
               const Style& parent_style,
@@ -269,39 +302,12 @@ namespace canvas
     Element(canvas, node, parent_style, parent),
     _text( new Text::TextOSG(this) )
   {
+    staticInit();
+
     setDrawable(_text);
     _text->setCharacterSizeMode(osgText::Text::OBJECT_COORDS);
     _text->setAxisAlignment(osgText::Text::USER_DEFINED_ROTATION);
     _text->setRotation(osg::Quat(osg::PI, osg::X_AXIS));
-
-    if( !isInit<Text>() )
-    {
-      osg::ref_ptr<TextOSG> Text::*text = &Text::_text;
-
-      addStyle("fill", "color", &TextOSG::setFill, text);
-      addStyle("background", "color", &TextOSG::setBackgroundColor, text);
-      addStyle("character-size",
-               "numeric",
-               static_cast<
-                 void (TextOSG::*)(float)
-               > (&TextOSG::setCharacterSize),
-               text);
-      addStyle("character-aspect-ratio",
-               "numeric",
-               &TextOSG::setCharacterAspect, text);
-      addStyle("line-height", "numeric", &TextOSG::setLineHeight, text);
-      addStyle("font-resolution", "numeric", &TextOSG::setFontResolution, text);
-      addStyle("padding", "numeric", &TextOSG::setBoundingBoxMargin, text);
-      //  TEXT              = 1 default
-      //  BOUNDINGBOX       = 2
-      //  FILLEDBOUNDINGBOX = 4
-      //  ALIGNMENT         = 8
-      addStyle<int>("draw-mode", "", &TextOSG::setDrawMode, text);
-      addStyle("max-width", "numeric", &TextOSG::setMaximumWidth, text);
-      addStyle("font", "", &Text::setFont);
-      addStyle("alignment", "", &Text::setAlignment);
-      addStyle("text", "", &Text::setText, false);
-    }
 
     setupStyle();
   }

@@ -197,6 +197,8 @@ namespace canvas
       typedef std::map<std::string, StyleInfo> StyleSetters;
       static StyleSetters       _style_setters;
 
+      static void staticInit();
+
       Element( const CanvasWeakPtr& canvas,
                const SGPropertyNode_ptr& node,
                const Style& parent_style,
@@ -210,7 +212,7 @@ namespace canvas
        * @tparam Derived    (Derived) class type
        */
       template<class Derived>
-      bool isInit() const
+      static bool isInit()
       {
         static bool is_init = false;
         if( is_init )
@@ -239,6 +241,7 @@ namespace canvas
         typename T2,
         class Derived
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -282,6 +285,7 @@ namespace canvas
         typename T,
         class Derived
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -295,6 +299,7 @@ namespace canvas
         typename T,
         class Derived
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -315,6 +320,7 @@ namespace canvas
         typename T2,
         class Derived
       >
+      static
       StyleSetterFunc
       addStyle( const std::string& name,
                 const std::string& type,
@@ -333,6 +339,7 @@ namespace canvas
       template<
         class Derived
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -354,6 +361,7 @@ namespace canvas
         class Other,
         class OtherRef
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -377,6 +385,7 @@ namespace canvas
         class Other,
         class OtherRef
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -400,6 +409,7 @@ namespace canvas
         class Other,
         class OtherRef
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -421,6 +431,7 @@ namespace canvas
         class Other,
         class OtherRef
       >
+      static
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
@@ -439,6 +450,7 @@ namespace canvas
       }
 
       template<typename T, class Derived, class Other, class OtherRef>
+      static
       boost::function<void (Derived&, T)>
       bindOther( void (Other::*setter)(T), OtherRef Derived::*instance_ref )
       {
@@ -446,6 +458,7 @@ namespace canvas
       }
 
       template<typename T, class Derived, class Other, class OtherRef>
+      static
       boost::function<void (Derived&, T)>
       bindOther( const boost::function<void (Other&, T)>& setter,
                  OtherRef Derived::*instance_ref )
@@ -463,6 +476,7 @@ namespace canvas
       }
 
       template<typename T1, typename T2, class Derived>
+      static
       StyleSetterFuncUnchecked
       bindStyleSetter( const std::string& name,
                        const boost::function<void (Derived&, T2)>& setter )

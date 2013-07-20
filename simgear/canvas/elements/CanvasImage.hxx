@@ -35,6 +35,7 @@ namespace canvas
   {
     public:
       static const std::string TYPE_NAME;
+      static void staticInit();
 
       /**
        * @param node    Property node containing settings for this image:

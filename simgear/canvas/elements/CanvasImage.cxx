@@ -90,6 +90,18 @@ namespace canvas
   const std::string Image::TYPE_NAME = "image";
 
   //----------------------------------------------------------------------------
+  void Image::staticInit()
+  {
+    if( isInit<Image>() )
+      return;
+
+    addStyle("fill", "color", &Image::setFill);
+    addStyle("slice", "", &Image::setSlice);
+    addStyle("slice-width", "", &Image::setSliceWidth);
+    addStyle("outset", "", &Image::setOutset);
+  }
+
+  //----------------------------------------------------------------------------
   Image::Image( const CanvasWeakPtr& canvas,
                 const SGPropertyNode_ptr& node,
                 const Style& parent_style,
@@ -100,6 +112,8 @@ namespace canvas
     _src_rect(0,0),
     _region(0,0)
   {
+    staticInit();
+
     _geom = new osg::Geometry;
     _geom->setUseDisplayList(false);
 
@@ -128,16 +142,7 @@ namespace canvas
 
     setDrawable(_geom);
 
-    if( !isInit<Image>() )
-    {
-      addStyle("fill", "color", &Image::setFill);
-      addStyle("slice", "", &Image::setSlice);
-      addStyle("slice-width", "", &Image::setSliceWidth);
-      addStyle("outset", "", &Image::setOutset);
-    }
-
     setFill("#ffffff"); // TODO how should we handle default values?
-
     setupStyle();
   }
 

@@ -47,6 +47,17 @@ namespace canvas
   const std::string Map::TYPE_NAME = "map";
 
   //----------------------------------------------------------------------------
+  void Map::staticInit()
+  {
+    Group::staticInit();
+
+    if( isInit<Map>() )
+      return;
+
+    // Do some initialization if needed...
+  }
+
+  //----------------------------------------------------------------------------
   Map::Map( const CanvasWeakPtr& canvas,
             const SGPropertyNode_ptr& node,
             const Style& parent_style,
@@ -56,7 +67,7 @@ namespace canvas
     _projection(new SansonFlamsteedProjection),
     _projection_dirty(true)
   {
-
+    staticInit();
   }
 
   //----------------------------------------------------------------------------

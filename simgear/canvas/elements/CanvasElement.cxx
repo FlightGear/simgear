@@ -523,17 +523,14 @@ namespace canvas
     _style( parent_style ),
     _drawable( 0 )
   {
+    staticInit();
+
     SG_LOG
     (
       SG_GL,
       SG_DEBUG,
       "New canvas element " << node->getPath()
     );
-
-    if( !isInit<Element>() )
-    {
-      addStyle("clip", "", &Element::setClip, false);
-    }
 
     // Ensure elements are drawn in order they appear in the element tree
     _transform->getOrCreateStateSet()
@@ -543,6 +540,15 @@ namespace canvas
                 "PreOrderBin",
                 osg::StateSet::OVERRIDE_RENDERBIN_DETAILS
               );
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::staticInit()
+  {
+    if( isInit<Element>() )
+      return;
+
+    addStyle("clip", "", &Element::setClip, false);
   }
 
   //----------------------------------------------------------------------------

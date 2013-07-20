@@ -38,6 +38,7 @@ namespace canvas
   template<typename ElementType>
   void add(ElementFactories& factories)
   {
+    ElementType::staticInit();
     factories[ElementType::TYPE_NAME] = &Element::create<ElementType>;
   }
 
@@ -53,20 +54,26 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Group::staticInit()
+  {
+    if( isInit<Group>() )
+      return;
+
+    add<Group>(_child_factories);
+    add<Image>(_child_factories);
+    add<Map  >(_child_factories);
+    add<Path >(_child_factories);
+    add<Text >(_child_factories);
+  }
+
+  //----------------------------------------------------------------------------
   Group::Group( const CanvasWeakPtr& canvas,
                 const SGPropertyNode_ptr& node,
                 const Style& parent_style,
                 Element* parent ):
     Element(canvas, node, parent_style, parent)
   {
-    if( !isInit<Group>() )
-    {
-      add<Group>(_child_factories);
-      add<Image>(_child_factories);
-      add<Map  >(_child_factories);
-      add<Path >(_child_factories);
-      add<Text >(_child_factories);
-    }
+    staticInit();
   }
 
   //----------------------------------------------------------------------------

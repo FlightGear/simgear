@@ -473,6 +473,22 @@ namespace canvas
   const std::string Path::TYPE_NAME = "path";
 
   //----------------------------------------------------------------------------
+  void Path::staticInit()
+  {
+    if( isInit<Path>() )
+      return;
+
+    PathDrawableRef Path::*path = &Path::_path;
+
+    addStyle("fill", "color", &PathDrawable::setFill, path);
+    addStyle("fill-rule", "", &PathDrawable::setFillRule, path);
+    addStyle("stroke", "color", &PathDrawable::setStroke, path);
+    addStyle("stroke-width", "numeric", &PathDrawable::setStrokeWidth, path);
+    addStyle("stroke-dasharray", "", &PathDrawable::setStrokeDashArray, path);
+    addStyle("stroke-linecap", "", &PathDrawable::setStrokeLinecap, path);
+  }
+
+  //----------------------------------------------------------------------------
   Path::Path( const CanvasWeakPtr& canvas,
               const SGPropertyNode_ptr& node,
               const Style& parent_style,
@@ -480,20 +496,9 @@ namespace canvas
     Element(canvas, node, parent_style, parent),
     _path( new PathDrawable(this) )
   {
+    staticInit();
+
     setDrawable(_path);
-
-    if( !isInit<Path>() )
-    {
-      PathDrawableRef Path::*path = &Path::_path;
-
-      addStyle("fill", "color", &PathDrawable::setFill, path);
-      addStyle("fill-rule", "", &PathDrawable::setFillRule, path);
-      addStyle("stroke", "color", &PathDrawable::setStroke, path);
-      addStyle("stroke-width", "numeric", &PathDrawable::setStrokeWidth, path);
-      addStyle("stroke-dasharray", "", &PathDrawable::setStrokeDashArray, path);
-      addStyle("stroke-linecap", "", &PathDrawable::setStrokeLinecap, path);
-    }
-
     setupStyle();
   }
 

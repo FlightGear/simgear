@@ -35,6 +35,7 @@ namespace canvas
   {
     public:
       static const std::string TYPE_NAME;
+      static void staticInit();
 
       typedef std::list< std::pair< const SGPropertyNode*,
                                     ElementPtr

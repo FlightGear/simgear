@@ -36,6 +36,7 @@ namespace canvas
   {
     public:
       static const std::string TYPE_NAME;
+      static void staticInit();
 
       Map( const CanvasWeakPtr& canvas,
            const SGPropertyNode_ptr& node,

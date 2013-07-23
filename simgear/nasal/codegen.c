@@ -550,7 +550,10 @@ static void genAssign(struct Parser* p, struct Token* t)
     if(parListLen(lv) || (lv->type == TOK_VAR && parListLen(RIGHT(lv)))) {
         if(lv->type == TOK_VAR) { lv = RIGHT(lv); var = 1; }
         len = parListLen(lv);
-        if(rv->type == TOK_LPAR) {
+        // http://code.google.com/p/flightgear-bugs/issues/detail?id=585
+        // TOK_LPAR can mean multi-value assignment or function call,
+        // disambigaute by checking the rule of the token
+        if(rv->type == TOK_LPAR && rv->rule != PREC_SUFFIX) {
             if(len != parListLen(rv))
                 naParseError(p, "bad assignment count", rv->line);
             genCommaList(p, LEFT(rv));

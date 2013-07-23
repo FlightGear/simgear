@@ -134,7 +134,8 @@ static void newToken(struct Parser* p, int pos, int type,
     tok->prev = last;
     tok->children = 0;
     tok->lastChild = 0;
-
+    tok->rule = 0;
+    
     // Context sensitivity hack: a "-" following a binary operator of
     // equal or higher precedence must be a unary negation.  Needed to
     // get precedence right in the parser for expressiong like "a * -2"

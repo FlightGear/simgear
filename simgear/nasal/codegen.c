@@ -147,7 +147,15 @@ static void genEqOp(int op, struct Parser* p, struct Token* t)
 
 static int defArg(struct Parser* p, struct Token* t)
 {
-    if(t->type == TOK_LPAR) return defArg(p, RIGHT(t));
+    if(t->type == TOK_LPAR) {
+        // http://code.google.com/p/flightgear-bugs/issues/detail?id=737
+        // TOK_LPAR can mean multi-value assignment or function call,
+        // disambigaute by checking the rule of the token
+        if (t->rule == PREC_SUFFIX)
+            naParseError(p, "default arguments cannot be function calls", t->line);
+        return defArg(p, RIGHT(t));
+    }
+    
     if(t->type == TOK_MINUS && RIGHT(t) && 
        RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str)
     {

@@ -477,6 +477,11 @@ static int tokMatch(struct Token* a, struct Token* b)
 static void genBreakContinue(struct Parser* p, struct Token* t)
 {
     int levels = 1, loop = -1, bp, cp, i;
+    // http://code.google.com/p/flightgear-bugs/issues/detail?id=587
+    // Make sure we are inside of a loop
+    if(p->cg->loopTop <= 0)
+        naParseError(p, "break/continue outside of a valid loop", t->line);
+    
     if(RIGHT(t)) {
         if(RIGHT(t)->type != TOK_SYMBOL)
             naParseError(p, "bad break/continue label", t->line);

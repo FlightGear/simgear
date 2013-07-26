@@ -221,6 +221,10 @@ namespace canvas
 
       osg::Camera* camera = _texture.getCamera();
 
+      // TODO Allow custom render order? For now just keep in order with
+      //      property tree.
+      camera->setRenderOrder(osg::Camera::PRE_RENDER, _node->getIndex());
+
       osg::Vec4 clear_color(0.0f, 0.0f, 0.0f , 1.0f);
       parseColor(_node->getStringValue("background"), clear_color);
       camera->setClearColor(clear_color);

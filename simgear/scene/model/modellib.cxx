@@ -57,6 +57,11 @@ void SGModelLib::init(const string &root_dir, SGPropertyNode* root)
     static_propRoot = root;
 }
 
+void SGModelLib::resetPropertyRoot()
+{
+    static_propRoot.clear();
+}
+
 void SGModelLib::setPanelFunc(panel_func pf)
 {
   static_panelFunc = pf;

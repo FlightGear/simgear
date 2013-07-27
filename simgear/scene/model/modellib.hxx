@@ -46,6 +46,8 @@ public:
 
     static void init(const std::string &root_dir, SGPropertyNode* root);
 
+    static void resetPropertyRoot();
+    
     static void setPanelFunc(panel_func pf);
     
     // Load a 3D model (any format)

@@ -184,6 +184,13 @@ namespace { // anonmouse
         }
         _davStatus.parseXML(s, n);
       }
+        
+        virtual void failed()
+        {
+            HTTP::Request::failed();
+            _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+        }
+        
     private:
       SVNRepoPrivate* _repo;
       DAVMultiStatus _davStatus;
@@ -291,7 +298,11 @@ protected:
     }
   }
 
-
+    virtual void failed()
+    {
+        HTTP::Request::failed();
+        _repo->updateFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+    }
 private:
   string _request;
   mutable int _requestSent;

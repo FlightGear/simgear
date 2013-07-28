@@ -28,7 +28,12 @@ typedef std::map<std::string, DAVResource*> DAVResourceMap;
 
 const char* DAV_CACHE_NAME = ".terrasync_cache";
 const char* CACHE_VERSION_4_TOKEN = "terrasync-cache-4";
-const unsigned int MAX_UPDATE_REPORT_DEPTH = 3;
+
+// important: with the Google servers, setting this higher than '1' causes
+// server internal errors (500, the connection is closed). In other words we
+// can only specify update report items one level deep at most and no more.
+// (the root and its direct children, not NOT grand-children)
+const unsigned int MAX_UPDATE_REPORT_DEPTH = 1;
 
 enum LineState
 {
@@ -90,11 +95,15 @@ void SVNDirectory::parseCache()
   char versionName[128];
   LineState lineState = LINESTATE_HREF;
   std::ifstream file(p.c_str());
+    if (!file.is_open()) {
+        SG_LOG(SG_IO, SG_WARN, "unable to open cache file for reading:" << p);
+        return;
+    }
   bool doneSelf = false;
     
   file.getline(href, 1024);
   if (strcmp(CACHE_VERSION_4_TOKEN, href)) {
-    SG_LOG(SG_IO, SG_WARN, "invalid cache file:" << p.str());
+    SG_LOG(SG_IO, SG_WARN, "invalid cache file [missing header token]:" << p << " '" << href << "'");
     return;
   }
     
@@ -128,8 +137,11 @@ void SVNDirectory::parseCache()
         doneSelf = true;
       } else {
         DAVResource* child = addChildDirectory(hrefPtr)->collection();
-        child->setVersionName(versionName);
-      }
+          string s = strutils::strip(versionName);
+          if (!s.empty()) {
+              child->setVersionName(versionName);
+          }
+      } // of done self test
     } // of line-state switching 
   } // of file get-line loop
 }
@@ -142,7 +154,7 @@ void SVNDirectory::writeCache()
       d.create(0755);
   }
   
-  p.append(DAV_CACHE_NAME);
+  p.append(string(DAV_CACHE_NAME) + ".new");
     
   std::ofstream file(p.c_str(), std::ios::trunc);
 // first, cache file version header
@@ -159,6 +171,16 @@ void SVNDirectory::writeCache()
         file << child->name() << '\n' << child->versionName() << "\n";
     }
   } // of child iteration
+    
+    file.close();
+    
+// approximately atomic delete + rename operation
+    SGPath cacheName(localPath);
+    cacheName.append(DAV_CACHE_NAME);
+    if (cacheName.exists()) {
+        cacheName.remove();
+    }
+    p.rename(cacheName);
 }
 
 void SVNDirectory::setBaseUrl(const string& url)
@@ -210,6 +232,7 @@ SVNDirectory::addChildDirectory(const std::string& dirName)
     
     DAVCollection* childCol = dav->createChildCollection(dirName);
     SVNDirectory* child = new SVNDirectory(this, childCol);
+    childCol->setVersionName(child->cachedRevision());
     _children.push_back(child);
     writeCache();
     return child;
@@ -243,11 +266,6 @@ void SVNDirectory::deleteChildByName(const std::string& nm)
     }
     
     writeCache();
-}
-  
-void SVNDirectory::requestFailed(HTTP::Request *req)
-{
-    SG_LOG(SG_IO, SG_WARN, "Request failed for:" << req->url());
 }
   
 bool SVNDirectory::isDoingSync() const
@@ -303,7 +321,7 @@ void SVNDirectory::mergeUpdateReportDetails(unsigned int depth,
     
     Dir d(localPath);
     if (depth >= MAX_UPDATE_REPORT_DEPTH) {
-        std::cerr << localPath << "exceeded MAX_UPDATE_REPORT_DEPTH, cleaning" << std::endl;
+        SG_LOG(SG_IO, SG_INFO, localPath << "exceeded MAX_UPDATE_REPORT_DEPTH, cleaning");
         d.removeChildren();
         return;
     }

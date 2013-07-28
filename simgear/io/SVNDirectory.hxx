@@ -51,11 +51,7 @@ public:
   
   // init from a collection
   SVNDirectory(SVNDirectory* pr, DAVCollection* col);
-  
-//  void update();
- // void gotResource(HTTP::Request* get, const std::string& etag);
-  void requestFailed(HTTP::Request* req);
-  
+
   void beginUpdateReport();
   void updateReportComplete();
   

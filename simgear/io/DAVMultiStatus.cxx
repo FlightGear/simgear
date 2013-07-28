@@ -58,7 +58,10 @@ DAVResource::DAVResource(const string& href) :
   _url(href),
   _container(NULL)
 {
-    assert(!href.empty()); 
+    assert(!href.empty());
+    if (strutils::ends_with(href, "/")) {
+        _url = href.substr(0, _url.size() - 1);
+    }
 }
 
 void DAVResource::setVersionName(const std::string& aVersion)

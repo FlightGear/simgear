@@ -210,7 +210,8 @@ void Request::setFailure(int code, const std::string& reason)
 void Request::failed()
 {
     // no-op in base class
-    SG_LOG(SG_IO, SG_INFO, "request failed:" << url());
+    SG_LOG(SG_IO, SG_INFO, "request failed:" << url() << " : "
+           << responseCode() << "/" << responseReason());
 }
 
 Request::HTTPVersion Request::decodeVersion(const string& v)

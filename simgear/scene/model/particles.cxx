@@ -44,10 +44,6 @@
 
 #include "particles.hxx"
 
-#if SG_OSG_VERSION >= 27004
-#define OSG_PARTICLE_FIX 1
-#endif
-
 namespace simgear
 {
 void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
@@ -192,19 +188,12 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         osg::Geode* g = new osg::Geode;
         align->addChild(g);
         g->addDrawable(particleSys);
-#ifndef OSG_PARTICLE_FIX
-        emitter->setReferenceFrame(osgParticle::Emitter::ABSOLUTE_RF);
-#endif
     } else {
-#ifdef OSG_PARTICLE_FIX
         callback()->particleFrame = new osg::MatrixTransform();
         osg::Geode* g = new osg::Geode;
         g->addDrawable(particleSys);
         callback()->particleFrame->addChild(g);
         getCommonRoot()->addChild(callback()->particleFrame.get());
-#else
-        getCommonGeode()->addDrawable(particleSys);
-#endif
     }
     std::string textureFile;
     if (configNode->hasValue("texture")) {
@@ -477,14 +466,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
             program->setFluidToWater();
 
         if (programnode->getBoolValue("gravity", true)) {
-#ifdef OSG_PARTICLE_FIX
             program->setToGravity();
-#else
-            if (attach == "world")
-                callback()->setupProgramGravity(true);
-            else
-                program->setToGravity();
-#endif
         } else
             program->setAcceleration(osg::Vec3(0,0,0));
 
@@ -545,7 +527,7 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
         particleSys->getDefaultParticleTemplate().setSizeRange(osgParticle::rangef(startSize, endSize));
     if (lifeValue)
         particleSys->getDefaultParticleTemplate().setLifeTime(lifeValue->getValue());
-#ifdef OSG_PARTICLE_FIX
+
     if (particleFrame.valid()) {
         MatrixList mlist = node->getWorldMatrices();
         if (!mlist.empty()) {
@@ -568,13 +550,5 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
     }
     if (program.valid() && useWind)
         program->setWind(_wind);
-#else
-    if (program.valid()) {
-        if (useGravity)
-            program->setAcceleration(GlobalParticleCallback::getGravityVector());
-        if (useWind)
-            program->setWind(GlobalParticleCallback::getWindVector());
-    }
-#endif
 }
 } // namespace simgear

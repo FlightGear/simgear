@@ -247,8 +247,6 @@ void SVNDirectory::deleteChildByName(const std::string& nm)
     }
 
     SGPath path = fsDir().file(nm);
-    dav->removeChild(child);
-    delete child;
     
     if (child->isCollection()) {
         Dir d(path);
@@ -264,7 +262,10 @@ void SVNDirectory::deleteChildByName(const std::string& nm)
     } else {
         path.remove();
     }
-    
+
+    dav->removeChild(child);
+    delete child;
+
     writeCache();
 }
   

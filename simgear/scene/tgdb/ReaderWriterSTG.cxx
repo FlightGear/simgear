@@ -185,6 +185,14 @@ struct ReaderWriterSTG::_ModelBin {
         SGPath path = filePath;
         path.append(".."); path.append(".."); path.append("..");
         sharedOptions->getDatabasePathList().push_back(path.str());
+        
+        // ensure Models directory synced via TerraSync is searched before the copy in
+        // FG_ROOT, so that updated models can be used.
+        std::string terrasync_root = options->getPluginStringData("SimGear::TERRASYNC_ROOT");
+        if (!terrasync_root.empty()) {
+            sharedOptions->getDatabasePathList().push_back(terrasync_root);
+        }
+        
         std::string fg_root = options->getPluginStringData("SimGear::FG_ROOT");
         sharedOptions->getDatabasePathList().push_back(fg_root);
 

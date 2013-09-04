@@ -348,6 +348,13 @@ sglog()
 {
     // Force initialization of cerr.
     static std::ios_base::Init initializer;
+    
+    // http://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf
+    // in the absence of portable memory barrier ops in Simgear,
+    // let's keep this correct & safe
+    static SGMutex m;
+    SGGuard<SGMutex> g(m);
+    
     if( !global_logstream )
         global_logstream = new logstream();
     return *global_logstream;

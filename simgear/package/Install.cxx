@@ -69,14 +69,14 @@ protected:
         Dir d(m_extractPath);
         d.create(0755);        
         
-        memset(&m_md5, 0, sizeof(MD5_CTX));
-        MD5Init(&m_md5);
+        memset(&m_md5, 0, sizeof(SG_MD5_CTX));
+        SG_MD5Init(&m_md5);
     }
     
     virtual void gotBodyData(const char* s, int n)
     {
         m_buffer += std::string(s, n);
-        MD5Update(&m_md5, (unsigned char*) s, n);
+        SG_MD5Update(&m_md5, (unsigned char*) s, n);
         
         m_owner->installProgress(m_buffer.size(), responseLength());
     }
@@ -89,7 +89,7 @@ protected:
             return;
         }
 
-        MD5Final(&m_md5);
+        SG_MD5Final(&m_md5);
     // convert final sum to hex
         const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         std::stringstream hexMd5;
@@ -248,7 +248,7 @@ private:
     
     Install* m_owner;
     string_list m_urls;
-    MD5_CTX m_md5;
+    SG_MD5_CTX m_md5;
     std::string m_buffer;
     SGPath m_extractPath;
 };

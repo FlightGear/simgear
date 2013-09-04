@@ -164,7 +164,7 @@ namespace {
         while (_ptr < pEnd) {
           int op = ((*_ptr >> 6) & 0x3);  
           if (op >= 3) {
-			  SG_LOG(SG_IO, SG_INFO, "SVNDeltaWindow: bad opcode:" << op);
+	    SG_LOG(SG_IO, SG_INFO, "SVNDeltaWindow: bad opcode:" << op);
               return false;
           }
       
@@ -321,12 +321,12 @@ public:
   }
   
   bool decodeTextDelta(const SGPath& outputPath)
-  {
+  {    
     string decoded = strutils::decodeBase64(txDeltaData);
     size_t bytesToDecode = decoded.size();
     std::vector<char> output;      
     unsigned char* p = (unsigned char*) decoded.data();
-    if (memcmp(decoded.data(), "SVN\0", DELTA_HEADER_SIZE) != 0) {
+    if (memcmp(p, "SVN\0", DELTA_HEADER_SIZE) != 0) {
         return false; // bad header
     }
     
@@ -336,6 +336,11 @@ public:
     source.open(outputPath.c_str(), std::ios::in | std::ios::binary);
     
     while (bytesToDecode > 0) {  
+        if (!SVNDeltaWindow::isWindowComplete(p, bytesToDecode)) {
+	  SG_LOG(SG_IO, SG_WARN, "SVN txdelta broken window");
+	  return false;
+	}
+	
         SVNDeltaWindow window(p);      
         assert(bytesToDecode >= window.size());
         window.apply(output, source);
@@ -344,18 +349,19 @@ public:
     }
 
     source.close();
+
     std::ofstream f;
     f.open(outputPath.c_str(), 
       std::ios::out | std::ios::trunc | std::ios::binary);
     f.write(output.data(), output.size());
-    
+
     // compute MD5 while we have the file in memory
-    MD5_CTX md5;
-    memset(&md5, 0, sizeof(MD5_CTX));
-    MD5Init(&md5);
-    MD5Update(&md5, (unsigned char*) output.data(), output.size());
-    MD5Final(&md5);
-    decodedFileMd5 = strutils::encodeHex(md5.digest, 16);
+    memset(&md5Context, 0, sizeof(SG_MD5_CTX));
+    SG_MD5Init(&md5Context);
+    SG_MD5Update(&md5Context, (unsigned char*) output.data(), output.size());
+    SG_MD5Final(&md5Context);
+    decodedFileMd5 = strutils::encodeHex(md5Context.digest, 16);
+
     return true;
   }
   
@@ -367,9 +373,10 @@ public:
       
     assert(tagStack.back() == name);
     tagStack.pop_back();
+        
     if (!strcmp(name, SVN_TXDELTA_TAG)) {
       if (!decodeTextDelta(currentPath)) {
-          fail(SVNRepository::SVN_ERROR_TXDELTA);
+        fail(SVNRepository::SVN_ERROR_TXDELTA);
       }
     } else if (!strcmp(name, SVN_ADD_FILE_TAG)) {
       finishFile(currentDir->addChildFile(currentPath.file()));
@@ -467,6 +474,7 @@ public:
   bool inFile;
     
   unsigned int revision;
+  SG_MD5_CTX md5Context;
   string md5Sum, decodedFileMd5;
   std::string setPropName, setPropValue;
 };
@@ -538,7 +546,7 @@ SVNReportParser::innerParseXML(const char* data, int size)
         XML_ParserFree(_d->xmlParser);
         _d->parserInited = false;
     }
-    
+
     return _d->status;
 }
 

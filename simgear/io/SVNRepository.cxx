@@ -288,12 +288,10 @@ protected:
         return;
     }
     
-    //cout << "body data:" << string(s, n) << endl;
     SVNRepository::ResultCode err = _parser.parseXML(s, n);
     if (err) {
         _failed = true;
-        SG_LOG(SG_IO, SG_WARN, "SVN: request for:" << url() <<
-            " XML parse failed");
+        SG_LOG(SG_IO, SG_WARN, "SVN: request for:" << url() << " failed:" << err);
         _repo->updateFailed(this, err);
     }
   }

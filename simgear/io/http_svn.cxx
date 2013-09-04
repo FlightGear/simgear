@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
   httpClient = &cl;
 
   
-  SGPath p("/Users/jmt/Desktop/scenemodels");
+  SGPath p("/home/jmt/Desktop/scenemodels");
   SVNRepository airports(p, &cl);
  //  airports.setBaseUrl("http://svn.goneabitbursar.com/testproject1");
   airports.setBaseUrl("http://terrascenery.googlecode.com/svn/trunk/data/Scenery/Models");

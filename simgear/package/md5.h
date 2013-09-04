@@ -53,11 +53,11 @@ typedef struct {
   UINT4 buf[4];                                    /* scratch buffer */
   unsigned char in[64];                              /* input buffer */
   unsigned char digest[16];     /* actual digest after MD5Final call */
-} MD5_CTX;
+} SG_MD5_CTX;
 
-void MD5Init (MD5_CTX *mdContext);
-void MD5Update (MD5_CTX *mdContext, unsigned char *inBuf, unsigned int inLen);
-void MD5Final (MD5_CTX *mdContext);
+void SG_MD5Init (SG_MD5_CTX *mdContext);
+void SG_MD5Update (SG_MD5_CTX *mdContext, unsigned char *inBuf, unsigned int inLen);
+void SG_MD5Final (SG_MD5_CTX *mdContext);
 
 #ifdef __cplusplus
 } // of extern C

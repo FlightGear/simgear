@@ -48,6 +48,15 @@ public:
     if( format.size() == 0 ) {
       if( numeric ) format = "%f";
       else format = "%s";
+    } else {
+      // It is never safe for format to be %n.
+      string unsafe ("%n");
+      size_t found;
+      found=format.find(unsafe);
+      if (found!=string::npos) {
+        SG_LOG(SG_COCKPIT, SG_WARN, "format type contained %n, but this is unsafe, reverting to %s");
+        format = "%s";
+      }
     }
   }
 

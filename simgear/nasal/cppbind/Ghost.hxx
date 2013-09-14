@@ -325,7 +325,7 @@ namespace nasal
           // Both ways of retrieving the address of a static member function
           // should be legal but not all compilers know this.
           // g++-4.4.7+ has been tested to work with both versions
-#if defined(GCC_VERSION) && GCC_VERSION < 40407
+#if defined(SG_GCC_VERSION) && SG_GCC_VERSION < 40407
           // The old version of g++ used on Jenkins (16.11.2012) only compiles
           // this version.
           &getTypeFor<BaseGhost>

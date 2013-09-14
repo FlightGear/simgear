@@ -18,7 +18,7 @@
   >
   Ghost& method(const std::string& name, const SG_GHOST_FUNC_TYPE& func)
   {
-#if defined(GCC_VERSION) && GCC_VERSION < 40407
+#if defined(SG_GCC_VERSION) && SG_GCC_VERSION < 40407
     // The old version of g++ used on Jenkins (16.11.2012) only compiles this
     // version.
 # define SG_GHOST_REQUIRE_ARG(z, n, dummy)\

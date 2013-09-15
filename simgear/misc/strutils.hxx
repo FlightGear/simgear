@@ -137,7 +137,7 @@ namespace simgear {
     
     /**
      * Like strcmp(), but for dotted versions strings NN.NN.NN
-     * any number of terms are support.
+     * any number of terms are supported.
      * @return 0 if versions match, -ve number if v1 is lower, +ve if v1
      * is greater
      */
@@ -180,6 +180,13 @@ namespace simgear {
 
     inline std::string unescape(const std::string& str)
     { return unescape(str.c_str()); }
+      
+      /**
+       * Check a printf-style format string for dangerous (buffer-overflowing,
+       * memory re-writing) format tokens. If a problematic token is
+       * found, logs an error (SG_WARN) and returns an empty format string.
+       */
+      std::string sanitizePrintfFormat(const std::string& input);
 
   } // end namespace strutils
 } // end namespace simgear

@@ -26,6 +26,8 @@
 
 #include "strutils.hxx"
 
+#include <simgear/debug/logstream.hxx>
+
 using std::string;
 using std::vector;
 using std::stringstream;
@@ -482,6 +484,17 @@ std::string unescape(const char* s)
     s++;
   }
   return r;
+}
+
+string sanitizePrintfFormat(const string& input)
+{
+    string::size_type i = input.find("%n");
+    if (i != string::npos) {
+        SG_LOG(SG_IO, SG_WARN, "sanitizePrintfFormat: bad format string:" << input);
+        return string();
+    }
+    
+    return input;
 }
 
 } // end namespace strutils

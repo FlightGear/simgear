@@ -26,6 +26,7 @@
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/strutils.hxx>
 
 #include <osg/Geode>
 #include <osg/MatrixTransform>
@@ -43,7 +44,7 @@ public:
     offset( aOffset ),
     truncate( aTruncate ),
     numeric( aNumeric ),
-    format( aFormat )
+    format( simgear::strutils::sanitizePrintfFormat( aFormat ) )
   {
     if( format.empty() ) {
       if( numeric ) format = "%f";

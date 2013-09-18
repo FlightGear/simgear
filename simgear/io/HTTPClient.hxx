@@ -24,6 +24,8 @@
 #ifndef SG_HTTP_CLIENT_HXX
 #define SG_HTTP_CLIENT_HXX
 
+#include <memory> // for std::auto_ptr
+
 #include <simgear/io/HTTPRequest.hxx>
 
 namespace simgear

@@ -773,7 +773,7 @@ void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
     time_t now = time(0);
     
     readProperties(_persistentCachePath.str(), cacheRoot);
-    for (unsigned int i=0; i<cacheRoot->nChildren(); ++i) {
+    for (int i=0; i<cacheRoot->nChildren(); ++i) {
         SGPropertyNode* entry = cacheRoot->getChild(i);
         string tileName = entry->getStringValue("path");
         time_t stamp = entry->getIntValue("stamp");

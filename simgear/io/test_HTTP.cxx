@@ -477,7 +477,9 @@ int main(int argc, char* argv[])
 {
     
     HTTP::Client cl;
-
+    // force all requests to use the same connection for this test
+    cl.setMaxConnections(1); 
+    
 // test URL parsing
     TestRequest* tr1 = new TestRequest("http://localhost.woo.zar:2000/test1?foo=bar");
     COMPARE(tr1->scheme(), "http");
@@ -657,6 +659,7 @@ int main(int argc, char* argv[])
     cout << "testing HTTP 1.1 pipelineing" << endl;
   
     {
+                                
         cl.setProxy("", 80);
         TestRequest* tr = new TestRequest("http://localhost:2000/test1");
         HTTP::Request_ptr own(tr);

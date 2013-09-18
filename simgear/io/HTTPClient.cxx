@@ -808,12 +808,13 @@ void Client::makeRequest(const Request_ptr& r)
     ss << host << "-" << port;
     string connectionId = ss.str();
     bool havePending = !d->pendingRequests.empty();
-    
+    ConnectionDict::iterator consEnd = d->connections.end();
+     
     // assign request to an existing Connection.
     // various options exist here, examined in order
     if (d->connections.size() >= d->maxConnections) {
         ConnectionDict::iterator it = d->connections.find(connectionId);
-        if (it == d->connections.end()) {
+        if (it == consEnd) {
             // maximum number of connections active, queue this request
             // when a connection goes inactive, we'll start this one
             d->pendingRequests.push_back(r);
@@ -828,7 +829,7 @@ void Client::makeRequest(const Request_ptr& r)
         // there's pressure on the number of connections to keep alive, one
         // host can't DoS every other.
         int count = 0;
-        for (;it->first == connectionId; ++it, ++count) {
+        for (; (it != consEnd) && (it->first == connectionId); ++it, ++count) {
             if (havePending || !it->second->isActive()) {
                 con = it->second;
                 break;

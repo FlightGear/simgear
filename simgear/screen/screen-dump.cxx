@@ -23,62 +23,12 @@
 #  include <simgear_config.h>
 #endif
 
-#ifdef WIN32
-# include <windows.h>
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <limits.h>
-
 #include <simgear/compiler.h>
 
 #include <osg/Image>
 #include <osgDB/WriteFile>
 
 #include "screen-dump.hxx"
-
-
-#define RGB3 3			// 3 bytes of color info per pixel
-#define RGBA 4			// 4 bytes of color+alpha info
-
-bool sg_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int win_height, int mode)
-{
-    int i, j, k, q;
-    unsigned char *ibuffer;
-    FILE *fp;
-    int pixelSize = mode==GL_RGBA?4:3;
-
-    ibuffer = (unsigned char *) malloc(win_width*win_height*RGB3);
-
-    if ( (fp = fopen(filename, "wb")) == NULL ) {
-	free(ibuffer);
-	printf("Warning: cannot open %s\n", filename);
-	return false;
-    }
-
-    fprintf(fp, "P6\n# CREATOR: glReadPixel()\n%d %d\n%d\n",
-	    win_width, win_height, UCHAR_MAX);
-    q = 0;
-    for (i = 0; i < win_height; i++)
-	for (j = 0; j < win_width; j++)
-	    for (k = 0; k < RGB3; k++)
-		ibuffer[q++] = (unsigned char)
-		    *(buffer + (pixelSize*((win_height-1-i)*win_width+j)+k));
-    int written = fwrite(ibuffer, sizeof(unsigned char), RGB3*win_width*win_height, fp);
-    fclose(fp);
-    free(ibuffer);
-
-    if ( written != RGB3*win_width*win_height )
-    {
-        printf("Warning: failed to write %s. File truncated.\n", filename);
-        return false;
-    }
-
-    printf("wrote file '%s' (%d x %d pixels, %d bytes)\n",
-	   filename, win_width, win_height, RGB3*win_width*win_height);
-    return true;
-}
 
 
 // dump the screen buffer to a png file, returns true on success

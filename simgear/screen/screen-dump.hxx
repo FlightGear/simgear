@@ -24,10 +24,6 @@
 #ifndef SG_SCREEN_DUMP_HXX
 #define SG_SCREEN_DUMP_HXX
 
-#include <simgear/compiler.h>
-
-#include <osg/GL>
-
 /**
  * Dump the screen buffer to a PNG file.
  * @param filename name of file
@@ -36,16 +32,5 @@
  */
 bool sg_glDumpWindow( const char *filename, int win_width, int win_height );
 
-
-/**
- * Given a GLubyte *buffer, write it out to a ppm file.
- * @param filename name of file
- * @param buffer pointer to opengl buffer
- * @param win_width width of buffer
- * @param win_height height of buffer
- * @param mode one of GL_RGBA, GL_RGB, etc.
- */
-bool sg_glWritePPMFile( const char *filename, GLubyte *buffer, int win_width, 
-		        int win_height, int mode);
 
 #endif // of SG_SCREEN_DUMP_HXX

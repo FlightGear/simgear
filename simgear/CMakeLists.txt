@@ -45,6 +45,7 @@ install (FILES ${HEADERS}  DESTINATION include/simgear/)
 get_property(coreSources GLOBAL PROPERTY CORE_SOURCES)
 get_property(sceneSources GLOBAL PROPERTY SCENE_SOURCES)
 get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
+get_property(localExpatSources GLOBAL PROPERTY LOCAL_EXPAT_SOURCES)
 
 if(LIBSVN_FOUND)
 	add_definitions(${APR_CFLAGS})
@@ -53,7 +54,7 @@ endif()
 
 if(SIMGEAR_SHARED)
     message(STATUS "Library building mode: SHARED LIBRARIES")
-    add_library(SimGearCore SHARED ${coreSources})
+    add_library(SimGearCore SHARED ${coreSources} ${localExpatSources})
 
   # set_property(TARGET SimGearCore PROPERTY FRAMEWORK 1)
   #  message(STATUS "public header: ${publicHeaders}")
@@ -114,7 +115,7 @@ else()
 		source_group("${name}\\Headers" FILES ${g2})
 	endforeach()
 
-    add_library(SimGearCore STATIC ${coreSources})
+    add_library(SimGearCore STATIC ${coreSources} ${localExpatSources})
     install(TARGETS SimGearCore ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     
     if(NOT SIMGEAR_HEADLESS)

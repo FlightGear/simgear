@@ -1,10 +1,8 @@
 
-
 configure_file (
     "${PROJECT_SOURCE_DIR}/3rdparty/expat/expat_config_cmake.in"
     "${PROJECT_BINARY_DIR}/3rdparty/expat/expat_config.h"
 )
-
 
 set(expat_sources 
 	asciitab.h
@@ -28,15 +26,8 @@ set(expat_sources
         sg_expat_external.h 
 	)
 
-
-# this code will be linked into SimGearCore shared object, so it 
-# must be compiled with -fPIC too
-
-
-if(SIMGEAR_SHARED AND UNIX)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-endif()
-
-add_library(local_expat STATIC ${expat_sources})
-
+foreach(s ${expat_sources})
+	set_property(GLOBAL
+		APPEND PROPERTY LOCAL_EXPAT_SOURCES 
+        "${CMAKE_CURRENT_SOURCE_DIR}/${s}")
+endforeach()

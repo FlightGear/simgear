@@ -232,9 +232,8 @@ else()
     message(STATUS "Using built-in expat code")
     add_definitions(-DHAVE_EXPAT_CONFIG_H)
     set(EXPAT_INCLUDE_DIRS 
-	${PROJECT_SOURCE_DIR}/3rdparty/expat 
-	${PROJECT_BINARY_DIR}/3rdparty/expat)
-    set(EXPAT_LIBRARIES local_expat)
+	    ${PROJECT_SOURCE_DIR}/3rdparty/expat 
+	    ${PROJECT_BINARY_DIR}/3rdparty/expat)
 endif(SYSTEM_EXPAT)
 
 include_directories(${EXPAT_INCLUDE_DIRS})

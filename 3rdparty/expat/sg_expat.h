@@ -15,7 +15,7 @@
 #endif
 
 #include <stdlib.h>
-#include "expat_external.h"
+#include "sg_expat_external.h"
 
 #ifdef __cplusplus
 extern "C" {

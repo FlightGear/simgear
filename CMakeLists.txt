@@ -230,7 +230,9 @@ if (SYSTEM_EXPAT)
 
 else()
     message(STATUS "Using built-in expat code")
-    add_definitions(-DHAVE_EXPAT_CONFIG_H)
+    # XML_STATIC is important to avoid sg_expat_external.h
+    # declaring symbols as declspec(import)
+    add_definitions(-DHAVE_EXPAT_CONFIG_H -DXML_STATIC)
     set(EXPAT_INCLUDE_DIRS 
 	    ${PROJECT_SOURCE_DIR}/3rdparty/expat 
 	    ${PROJECT_BINARY_DIR}/3rdparty/expat)

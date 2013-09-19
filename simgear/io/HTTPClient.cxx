@@ -25,6 +25,7 @@
 
 #include <sstream>
 #include <cassert>
+#include <cstdlib> // rand()
 #include <list>
 #include <iostream>
 #include <errno.h>
@@ -840,7 +841,7 @@ void Client::makeRequest(const Request_ptr& r)
             // we have at least one connection to the host, but they are
             // all active - we need to pick one to queue the request on.
             // we use random but round-robin would also work.
-            int index = random() % count;
+            int index = rand() % count;
             for (it = d->connections.find(connectionId); index > 0; --index) { ; }
             con = it->second;
         }

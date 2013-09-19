@@ -18,7 +18,7 @@
 #endif
 #endif /* ndef COMPILED_FROM_DSP */
 
-#include "expat_external.h"
+#include "sg_expat_external.h"
 #include "internal.h"
 #include "xmlrole.h"
 #include "ascii.h"

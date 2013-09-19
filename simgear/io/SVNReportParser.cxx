@@ -16,6 +16,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+     
 #include "SVNReportParser.hxx"
 
 #include <iostream>
@@ -30,10 +34,15 @@
 #include "simgear/misc/sg_path.hxx"
 #include "simgear/misc/sg_dir.hxx"
 #include "simgear/debug/logstream.hxx"
-#include "simgear/xml/xmlparse.h"
 #include "simgear/xml/easyxml.hxx"
 #include "simgear/misc/strutils.hxx"
 #include "simgear/package/md5.h"
+
+#ifdef SYSTEM_EXPAT
+#  include <expat.h>
+#else
+#  include "sg_expat.h"     
+#endif
 
 #include "SVNDirectory.hxx"
 #include "SVNRepository.hxx"

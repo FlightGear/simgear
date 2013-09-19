@@ -17,7 +17,7 @@
 #ifdef SYSTEM_EXPAT
 #  include <expat.h>
 #else
-#  include "xmlparse.h"     
+#  include "sg_expat.h"     
 #endif
      
 #include <fstream>
@@ -136,7 +136,6 @@ XMLAttributesDefault::setValue (const char * name, const char * value)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Attribute list wrapper for Expat.
 ////////////////////////////////////////////////////////////////////////

@@ -227,11 +227,17 @@ if (SYSTEM_EXPAT)
     message(STATUS "Requested to use system Expat library, forcing SIMGEAR_SHARED to true")
     set(SIMGEAR_SHARED ON)
     find_package(EXPAT REQUIRED)
-    include_directories(${EXPAT_INCLUDE_DIRS})
+
 else()
     message(STATUS "Using built-in expat code")
     add_definitions(-DHAVE_EXPAT_CONFIG_H)
+    set(EXPAT_INCLUDE_DIRS 
+	${PROJECT_SOURCE_DIR}/3rdparty/expat 
+	${PROJECT_BINARY_DIR}/3rdparty/expat)
+    set(EXPAT_LIBRARIES local_expat)
 endif(SYSTEM_EXPAT)
+
+include_directories(${EXPAT_INCLUDE_DIRS})
 
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
@@ -346,7 +352,6 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
 include_directories(${PROJECT_BINARY_DIR}/simgear)
-include_directories(${PROJECT_BINARY_DIR}/simgear/xml)
 
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} 
     ${Boost_INCLUDE_DIRS} 
@@ -363,11 +368,6 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/simgear/simgear_config_cmake.h.in"
   "${PROJECT_BINARY_DIR}/simgear/simgear_config.h"
   )
-
-configure_file (
-    "${PROJECT_SOURCE_DIR}/simgear/xml/expat_config_cmake.in"
-    "${PROJECT_BINARY_DIR}/simgear/xml/expat_config.h"
-)
 
 if(ENABLE_TESTS)
     # enable CTest / make test target
@@ -402,6 +402,8 @@ if(NOT SIMGEAR_HEADLESS)
 endif()
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
+
+add_subdirectory(3rdparty)
 add_subdirectory(simgear)
 
 if (NOT EMBEDDED_SIMGEAR)

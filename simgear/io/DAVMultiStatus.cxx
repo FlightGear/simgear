@@ -16,6 +16,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+     
 #include "DAVMultiStatus.hxx"
 
 #include <iostream>
@@ -27,9 +31,14 @@
 #include <boost/foreach.hpp>
 
 #include "simgear/debug/logstream.hxx"
-#include "simgear/xml/xmlparse.h"
 #include "simgear/misc/strutils.hxx"
 #include "simgear/structure/exception.hxx"
+
+#ifdef SYSTEM_EXPAT
+#  include <expat.h>
+#else
+#  include "sg_expat.h"     
+#endif
 
 using std::string;
 

@@ -858,11 +858,11 @@ void SGTerraSync::reinit()
         _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
         _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
-        _svnThread->setCachePath(SGPath(_terraRoot->getStringValue("cache-path","")));
-        _svnThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
         
     #if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
+        _svnThread->setCachePath(SGPath(_terraRoot->getStringValue("cache-path","")));
+        _svnThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
     #else
         _terraRoot->setBoolValue("use-built-in-svn",false);
     #endif

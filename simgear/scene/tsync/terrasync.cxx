@@ -110,12 +110,29 @@ bool hasWhitespace(string path)
 ///////////////////////////////////////////////////////////////////////////////
 // WaitingTile ////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class  WaitingTile
+class  WaitingSyncItem
 {
 public:
-    WaitingTile(string dir,bool refresh) :
-        _dir(dir), _refreshScenery(refresh) {}
-    string _dir;
+    enum Type
+    {
+        Stop = 0,   ///< special item indicating to stop the SVNThread
+        Tile,
+        AirportData,
+        SharedModels
+    };
+    
+    WaitingSyncItem(string dir, Type ty) :
+        _dir(dir),
+        _type(ty),
+        _refreshScenery(false)
+    {}
+        
+    bool setRefresh() 
+    { _refreshScenery = true; }
+        
+    const string _dir;
+    const Type _type;
+    
     bool _refreshScenery;
 };
 
@@ -132,10 +149,10 @@ public:
    bool start();
 
    bool isIdle() {return waitingTiles.empty();}
-   void request(const WaitingTile& dir) {waitingTiles.push_front(dir);}
+   void request(const WaitingSyncItem& dir) {waitingTiles.push_front(dir);}
    bool isDirty() { bool r = _is_dirty;_is_dirty = false;return r;}
    bool hasNewTiles() { return !_freshTiles.empty();}
-   WaitingTile getNewTile() { return _freshTiles.pop_front();}
+   WaitingSyncItem getNewTile() { return _freshTiles.pop_front();}
 
    void   setSvnServer(string server)       { _svn_server   = stripPath(server);}
    void   setExtSvnUtility(string svn_util) { _svn_command  = simgear::strutils::strip(svn_util);}
@@ -164,8 +181,8 @@ private:
    bool syncTree(const char* dir, bool& isNewDirectory);
    bool syncTreeExternal(const char* dir);
     
-    bool isPathCached(const WaitingTile& next) const;
-    void syncPath(const WaitingTile& next);
+    bool isPathCached(const WaitingSyncItem& next) const;
+    void syncPath(const WaitingSyncItem& next);
     
    void initCompletedTilesPersistentCache();
    void writeCompletedTilesPersistentCache() const;
@@ -179,9 +196,9 @@ private:
 
    volatile bool _is_dirty;
    volatile bool _stop;
-   SGBlockingDeque <WaitingTile> waitingTiles;
+   SGBlockingDeque <WaitingSyncItem> waitingTiles;
    CompletedTiles _completedTiles;
-   SGBlockingDeque <WaitingTile> _freshTiles;
+   SGBlockingDeque <WaitingSyncItem> _freshTiles;
    bool _use_svn;
    string _svn_server;
    string _svn_command;
@@ -218,7 +235,7 @@ void SGTerraSync::SvnThread::stop()
 
     // set stop flag and wake up the thread with an empty request
     _stop = true;
-    WaitingTile w("",false);
+    WaitingSyncItem w(string(), WaitingSyncItem::Stop);
     request(w);
     join();
     _running = false;
@@ -434,7 +451,7 @@ void SGTerraSync::SvnThread::run()
     
     while (!_stop)
     {
-        WaitingTile next = waitingTiles.pop_front();
+        WaitingSyncItem next = waitingTiles.pop_front();
         if (_stop)
            break;
 
@@ -460,7 +477,7 @@ void SGTerraSync::SvnThread::run()
     _is_dirty = true;
 }
 
-bool SGTerraSync::SvnThread::isPathCached(const WaitingTile& next) const
+bool SGTerraSync::SvnThread::isPathCached(const WaitingSyncItem& next) const
 {
     CompletedTiles::const_iterator ii = _completedTiles.find( next._dir );
     if (ii == _completedTiles.end()) {
@@ -478,7 +495,7 @@ bool SGTerraSync::SvnThread::isPathCached(const WaitingTile& next) const
     return (ii->second > now);
 }
 
-void SGTerraSync::SvnThread::syncPath(const WaitingTile& next)
+void SGTerraSync::SvnThread::syncPath(const WaitingSyncItem& next)
 {
     bool isNewDirectory = false;
     time_t now = time(0);
@@ -688,7 +705,7 @@ void SGTerraSync::update(double)
 
         while (_svnThread->hasNewTiles())
         {
-            WaitingTile next = _svnThread->getNewTile();
+            WaitingSyncItem next = _svnThread->getNewTile();
             if (next._refreshScenery)
             {
                 refreshScenery(_svnThread->getLocalDir(),next._dir);
@@ -738,11 +755,12 @@ void SGTerraSync::syncAirportsModels()
         {
             ostringstream dir;
             dir << "Airports/" << synced_other;
-            WaitingTile w(dir.str(),false);
+            WaitingSyncItem w(dir.str(), WaitingSyncItem::AirportData);
             _svnThread->request( w );
         }
     }
-    WaitingTile w("Models",false);
+    
+    WaitingSyncItem w("Models", WaitingSyncItem::SharedModels);
     _svnThread->request( w );
 }
 
@@ -787,7 +805,12 @@ void SGTerraSync::syncArea( int lat, int lon )
         dir << *tree << "/" << setfill('0')
             << EW << setw(3) << abs(baselon) << NS << setw(2) << abs(baselat) << "/"
             << EW << setw(3) << abs(lon)     << NS << setw(2) << abs(lat);
-        WaitingTile w(dir.str(),refresh);
+        
+        WaitingSyncItem w(dir.str(), WaitingSyncItem::Tile);
+        if (refresh) {
+            w.setRefresh();
+        }
+        
         _svnThread->request( w );
         refresh=false;
     }

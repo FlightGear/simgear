@@ -14,12 +14,7 @@
 #cmakedefine HAVE_WINDOWS_H
 #cmakedefine HAVE_MKDTEMP
 
-#cmakedefine HAVE_SVN_CLIENT_H
-#cmakedefine HAVE_LIBSVN_CLIENT_1
-
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
 
 #cmakedefine SYSTEM_EXPAT
 #cmakedefine ENABLE_SOUND
-
-#cmakedefine SG_SVN_CLIENT

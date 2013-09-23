@@ -33,14 +33,12 @@
 #endif
 
 #ifdef __MINGW32__
-#include <time.h>
-#include <unistd.h>
+#  include <time.h>
+#  include <unistd.h>
 #elif defined(_MSC_VER)
 #   include <io.h>
-#   ifndef HAVE_SVN_CLIENT_H
-#       include <time.h>
-#       include <process.h>
-#   endif
+#   include <time.h>
+#   include <process.h>
 #endif
 
 #include <stdlib.h>             // atoi() atof() abs() system()
@@ -63,37 +61,11 @@
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/debug/BufferedLogCallback.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/io/HTTPClient.hxx>
+#include <simgear/io/SVNRepository.hxx>
 
-#ifdef SG_SVN_CLIENT
-#  include <simgear/io/HTTPClient.hxx>
-#  include <simgear/io/SVNRepository.hxx>
-#endif
 
-#ifdef HAVE_SVN_CLIENT_H
-#  ifdef HAVE_LIBSVN_CLIENT_1
-#    include <svn_version.h>
-#    include <svn_auth.h>
-#    include <svn_client.h>
-#    include <svn_cmdline.h>
-#    include <svn_pools.h>
-#  else
-#    undef HAVE_SVN_CLIENT_H
-#  endif
-#endif
-
-#ifdef HAVE_SVN_CLIENT_H
-    static const svn_version_checklist_t mysvn_checklist[] = {
-        { "svn_subr",   svn_subr_version },
-        { "svn_client", svn_client_version },
-        { NULL, NULL }
-    };
-#endif
-    
-#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
-    static const bool svn_built_in_available = true;
-#else
-    static const bool svn_built_in_available = false;
-#endif
+static const bool svn_built_in_available = true;
 
 using namespace simgear;
 using namespace std;
@@ -173,12 +145,9 @@ public:
    void   setUseSvn(bool use_svn)           { _use_svn = use_svn;}
    void   setAllowedErrorCount(int errors)  {_allowed_errors = errors;}
 
-#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
-
    void   setCachePath(const SGPath& p)     {_persistentCachePath = p;}
    void   setCacheHits(unsigned int hits)   {_cache_hits = hits;}
    void   setUseBuiltin(bool built_in) { _use_built_in = built_in;}
-#endif
 
    volatile bool _active;
    volatile bool _running;
@@ -201,23 +170,12 @@ private:
    void initCompletedTilesPersistentCache();
    void writeCompletedTilesPersistentCache() const;
    
-#if defined(SG_SVN_CLIENT)
    bool syncTreeInternal(const char* dir);
+   
    bool _use_built_in;
    HTTP::Client _http;
    std::auto_ptr<SVNRepository> _repository;
-#elif defined(HAVE_SVN_CLIENT_H)
-   static int svnClientSetup(void);
-   bool syncTreeInternal(const char* dir);
 
-   bool _use_built_in;
-
-   // Things we need for doing subversion checkout - often
-   static apr_pool_t *_svn_pool;
-   static svn_client_ctx_t *_svn_ctx;
-   static svn_opt_revision_t *_svn_rev;
-   static svn_opt_revision_t *_svn_rev_peg;
-#endif
 
    volatile bool _is_dirty;
    volatile bool _stop;
@@ -232,13 +190,6 @@ private:
    SGPath _persistentCachePath;
 };
 
-#ifdef HAVE_SVN_CLIENT_H
-    apr_pool_t* SGTerraSync::SvnThread::_svn_pool = NULL;
-    svn_client_ctx_t* SGTerraSync::SvnThread::_svn_ctx = NULL;
-    svn_opt_revision_t* SGTerraSync::SvnThread::_svn_rev = NULL;
-    svn_opt_revision_t* SGTerraSync::SvnThread::_svn_rev_peg = NULL;
-#endif
-
 SGTerraSync::SvnThread::SvnThread() :
     _active(false),
     _running(false),
@@ -250,21 +201,11 @@ SGTerraSync::SvnThread::SvnThread() :
     _consecutive_errors(0),
     _allowed_errors(6),
     _cache_hits(0),
-#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     _use_built_in(true),
-#endif
     _is_dirty(false),
     _stop(false),
     _use_svn(true)
 {
-#ifdef HAVE_SVN_CLIENT_H
-    int errCode = SGTerraSync::SvnThread::svnClientSetup();
-    if (errCode != EXIT_SUCCESS)
-    {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
-               "Failed to initialize built-in SVN client, error = " << errCode);
-    }
-#endif
 }
 
 void SGTerraSync::SvnThread::stop()
@@ -319,9 +260,7 @@ bool SGTerraSync::SvnThread::start()
         return false;
     }
 
-#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     _use_svn |= _use_built_in;
-#endif
 
     if ((_use_svn)&&(_svn_server==""))
     {
@@ -349,12 +288,10 @@ bool SGTerraSync::SvnThread::start()
     _running = true;
 
     string status;
-#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
+
     if (_use_svn && _use_built_in)
         status = "Using built-in SVN support. ";
-    else
-#endif
-    if (_use_svn)
+    else if (_use_svn)
     {
         status = "Using external SVN utility '";
         status += _svn_command;
@@ -395,17 +332,11 @@ bool SGTerraSync::SvnThread::syncTree(const char* dir, bool& isNewDirectory)
         }
     }
 
-#if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
     if (_use_built_in)
         return syncTreeInternal(dir);
     else
-#endif
-    {
         return syncTreeExternal(dir);
-    }
 }
-
-#if defined(SG_SVN_CLIENT)
     
 bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
 {
@@ -440,84 +371,6 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
     _repository.reset();
     return result;
 }
-    
-#elif defined(HAVE_SVN_CLIENT_H)
-
-bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
-{
-    SG_LOG(SG_TERRAIN,SG_DEBUG, "Synchronizing scenery directory " << dir);
-    if (!_svn_pool)
-    {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
-               "Built-in SVN client failed to initialize.");
-        return false;
-    }
-
-    ostringstream command;
-    command << _svn_server << "/" << dir;
-
-    ostringstream dest_base_dir;
-    dest_base_dir << _local_dir << "/" << dir;
-
-    apr_pool_t *subpool = svn_pool_create(_svn_pool);
-
-    svn_error_t *err = NULL;
-#if (SVN_VER_MINOR >= 5)
-    err = svn_client_checkout3(NULL,
-            command.str().c_str(),
-            dest_base_dir.str().c_str(),
-            _svn_rev_peg,
-            _svn_rev,
-            svn_depth_infinity,
-            0, // ignore-externals = false
-            0, // allow unver obstructions = false
-            _svn_ctx,
-            subpool);
-#else
-    // version 1.4 API
-    err = svn_client_checkout2(NULL,
-            command.str().c_str(),
-            dest_base_dir.str().c_str(),
-            _svn_rev_peg,
-            _svn_rev,
-            1, // recurse=true - same as svn_depth_infinity for checkout3 above
-            0, // ignore externals = false
-            _svn_ctx,
-            subpool);
-#endif
-
-    bool ReturnValue = true;
-    if (err)
-    {
-        // Report errors from the checkout attempt
-        if (err->apr_err == SVN_ERR_RA_ILLEGAL_URL)
-        {
-            // ignore errors when remote path doesn't exist (no scenery data for ocean areas)
-        }
-        else
-        {
-            SG_LOG(SG_TERRAIN,SG_ALERT,
-                    "Failed to synchronize directory '" << dir << "', " <<
-                    err->message << " (code " << err->apr_err << ").");
-            svn_error_clear(err);
-            // try to clean up
-            err = svn_client_cleanup(dest_base_dir.str().c_str(),
-                    _svn_ctx,subpool);
-            if (!err)
-            {
-                SG_LOG(SG_TERRAIN,SG_ALERT,
-                       "SVN repository cleanup successful for '" << dir << "'.");
-            }
-            ReturnValue = false;
-        }
-    } else
-    {
-        SG_LOG(SG_TERRAIN,SG_DEBUG, "Done with scenery directory " << dir);
-    }
-    svn_pool_destroy(subpool);
-    return ReturnValue;
-}
-#endif // of HAVE_SVN_CLIENT_H
 
 bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
 {
@@ -662,107 +515,6 @@ void SGTerraSync::SvnThread::syncPath(const WaitingTile& next)
     _busy = false;
 }
 
-#if defined(HAVE_SVN_CLIENT_H)
-// Configure our subversion session
-int SGTerraSync::SvnThread::svnClientSetup(void)
-{
-    // Are we already prepared?
-    if (_svn_pool) return EXIT_SUCCESS;
-    // No, so initialize svn internals generally
-
-#ifdef _MSC_VER
-    // there is a segfault when providing an error stream.
-    //  Apparently, calling setvbuf with a nul buffer is
-    //  not supported under msvc 7.1 ( code inside svn_cmdline_init )
-    if (svn_cmdline_init("terrasync", 0) != EXIT_SUCCESS)
-        return EXIT_FAILURE;
-
-    // revert locale setting
-    setlocale(LC_ALL,"C");
-#else
-    /* svn_cmdline_init configures the locale. Setup environment to ensure the
-     * default "C" locale remains active, since fgfs isn't locale aware - especially
-     * requires "." as decimal point in strings containing floating point varibales. */
-    setenv("LC_ALL", "C", 1);
-
-    if (svn_cmdline_init("terrasync", stderr) != EXIT_SUCCESS)
-        return EXIT_FAILURE;
-#endif
-
-    apr_pool_t *pool = NULL;
-    
-    apr_allocator_t* allocator = NULL;
-    int aprErr = apr_allocator_create(&allocator);
-    if (aprErr != APR_SUCCESS)
-        return EXIT_FAILURE;
-    
-    apr_pool_create_ex(&pool, NULL /* parent pool */, NULL /* abort func */, allocator);
-    
-    svn_error_t *err = NULL;
-    SVN_VERSION_DEFINE(_svn_version);
-    err = svn_ver_check_list(&_svn_version, mysvn_checklist);
-    if (err)
-        return svn_cmdline_handle_exit_error(err, pool, "fgfs: ");
-    err = svn_ra_initialize(pool);
-    if (err)
-        return svn_cmdline_handle_exit_error(err, pool, "fgfs: ");
-    char *config_dir = NULL;
-    err = svn_config_ensure(config_dir, pool);
-    if (err)
-        return svn_cmdline_handle_exit_error(err, pool, "fgfs: ");
-    err = svn_client_create_context(&_svn_ctx, pool);
-    if (err)
-        return svn_cmdline_handle_exit_error(err, pool, "fgfs: ");
-    err = svn_config_get_config(&(_svn_ctx->config),
-        config_dir, pool);
-    if (err)
-        return svn_cmdline_handle_exit_error(err, pool, "fgfs: ");
-    svn_config_t *cfg;
-    cfg = ( svn_config_t*) apr_hash_get(
-        _svn_ctx->config,
-        SVN_CONFIG_CATEGORY_CONFIG,
-        APR_HASH_KEY_STRING);
-    if (err)
-        return svn_cmdline_handle_exit_error(err, pool, "fgfs: ");
-
-    svn_auth_baton_t *ab=NULL;
-
-#if (SVN_VER_MINOR >= 6)
-    err = svn_cmdline_create_auth_baton  (&ab,
-            TRUE, NULL, NULL, config_dir, TRUE, FALSE, cfg,
-            _svn_ctx->cancel_func, _svn_ctx->cancel_baton, pool);
-#else
-    err = svn_cmdline_setup_auth_baton(&ab,
-        TRUE, NULL, NULL, config_dir, TRUE, cfg,
-        _svn_ctx->cancel_func, _svn_ctx->cancel_baton, pool);
-#endif
-
-    if (err)
-        return svn_cmdline_handle_exit_error(err, pool, "fgfs: ");
-    
-    _svn_ctx->auth_baton = ab;
-#if (SVN_VER_MINOR >= 5)
-    _svn_ctx->conflict_func = NULL;
-    _svn_ctx->conflict_baton = NULL;
-#endif
-
-    // Now our magic revisions
-    _svn_rev = (svn_opt_revision_t*) apr_palloc(pool, 
-        sizeof(svn_opt_revision_t));
-    if (!_svn_rev)
-        return EXIT_FAILURE;
-    _svn_rev_peg = (svn_opt_revision_t*) apr_palloc(pool, 
-        sizeof(svn_opt_revision_t));
-    if (!_svn_rev_peg)
-        return EXIT_FAILURE;
-    _svn_rev->kind = svn_opt_revision_head;
-    _svn_rev_peg->kind = svn_opt_revision_unspecified;
-    // Success if we got this far
-    _svn_pool = pool;
-    return EXIT_SUCCESS;
-}
-#endif // of defined(HAVE_SVN_CLIENT_H)
-
 void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
 {
     if (!_persistentCachePath.exists()) {
@@ -858,14 +610,9 @@ void SGTerraSync::reinit()
         _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
         _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
-        
-    #if defined(HAVE_SVN_CLIENT_H) || defined(SG_SVN_CLIENT)
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
         _svnThread->setCachePath(SGPath(_terraRoot->getStringValue("cache-path","")));
         _svnThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
-    #else
-        _terraRoot->setBoolValue("use-built-in-svn",false);
-    #endif
         _svnThread->setUseSvn(_terraRoot->getBoolValue("use-svn",true));
         _svnThread->setExtSvnUtility(_terraRoot->getStringValue("ext-svn-utility","svn"));
 

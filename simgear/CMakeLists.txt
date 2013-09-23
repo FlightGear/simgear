@@ -47,11 +47,6 @@ get_property(sceneSources GLOBAL PROPERTY SCENE_SOURCES)
 get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
 get_property(localExpatSources GLOBAL PROPERTY LOCAL_EXPAT_SOURCES)
 
-if(LIBSVN_FOUND)
-	add_definitions(${APR_CFLAGS})
-	include_directories(${LIBSVN_INCLUDE_DIR})
-endif()
-
 if(SIMGEAR_SHARED)
     message(STATUS "Library building mode: SHARED LIBRARIES")
     add_library(SimGearCore SHARED ${coreSources} ${localExpatSources})
@@ -69,10 +64,6 @@ if(SIMGEAR_SHARED)
         ${EXPAT_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
         ${CORE_SERVICES_LIBRARY})
-
-    if(LIBSVN_FOUND)
-        target_link_libraries(SimGearCore ${LIBSVN_LIBRARIES})
-    endif(LIBSVN_FOUND)
 
     if(NOT SIMGEAR_HEADLESS)
         add_library(SimGearScene SHARED ${sceneSources})

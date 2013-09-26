@@ -152,11 +152,17 @@ public:
 class SyncSlot
 {
 public:
+    SyncSlot() :
+        isNewDirectory(false),
+        busy(false)
+    {}
+    
     WaitingSyncItem currentItem;
     bool isNewDirectory;
     std::queue<WaitingSyncItem> queue;
     std::auto_ptr<SVNRepository> repository;
     SGTimeStamp stamp;
+    bool busy; ///< is the slot working or idle
 };
 
 static const int SYNC_SLOT_TILES = 0; ///< Terrain and Objects sync
@@ -499,10 +505,12 @@ void SGTerraSync::SvnThread::syncPathExternal(const WaitingSyncItem& next)
         }
     } catch (sg_exception& e) {
         fail(next);
+        _busy = false;
         return;
     }
     
     updated(next, isNewDirectory);
+    _busy = false;
 }
 
 void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
@@ -526,6 +534,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         }
 
         // whatever happened, we're done with this repository instance
+        slot.busy = false;
         slot.repository.reset();
     }
     
@@ -552,6 +561,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         slot.repository->update();
         
         slot.stamp.stamp();
+        slot.busy = true;
         SG_LOG(SG_IO, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " started");
     }
 }
@@ -577,10 +587,14 @@ void SGTerraSync::SvnThread::runInternal()
             _syncSlots[slot].queue.push(next);
         }
        
+        bool anySlotBusy = false;
         // update each sync slot in turn
         for (unsigned int slot=0; slot < NUM_SYNC_SLOTS; ++slot) {
             updateSyncSlot(_syncSlots[slot]);
+            anySlotBusy |= _syncSlots[slot].busy;
         }
+        
+        _busy = anySlotBusy;
     } // of thread running loop
 }
 
@@ -608,7 +622,6 @@ void SGTerraSync::SvnThread::fail(const WaitingSyncItem& failedItem)
     _consecutive_errors++;
     _fail_count++;
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
-    _busy = false;
 }
 
 void SGTerraSync::SvnThread::updated(const WaitingSyncItem& item, bool isNewDirectory)
@@ -632,7 +645,6 @@ void SGTerraSync::SvnThread::updated(const WaitingSyncItem& item, bool isNewDire
     
     _completedTiles[ item._dir ] = now + UpdateInterval::SuccessfulAttempt;
     writeCompletedTilesPersistentCache();
-    _busy = false;
 }
 
 void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
@@ -689,6 +701,8 @@ SGTerraSync::SGTerraSync(SGPropertyNode_ptr root) :
     last_lat(NOWHERE),
     last_lon(NOWHERE),
     _terraRoot(root->getNode("/sim/terrasync",true)),
+    _bound(false),
+    _inited(false),
     _refreshCb(NULL),
     _userCbData(NULL)
 {
@@ -710,6 +724,11 @@ SGTerraSync::~SGTerraSync()
 
 void SGTerraSync::init()
 {
+    if (_inited) {
+        return;
+    }
+    
+    _inited = true;
     _refreshDisplay = _terraRoot->getNode("refresh-display",true);
     _terraRoot->setBoolValue("built-in-svn-available",svn_built_in_available);
     reinit();
@@ -720,8 +739,10 @@ void SGTerraSync::reinit()
     // do not reinit when enabled and we're already up and running
     if ((_terraRoot->getBoolValue("enabled",false))&&
          (_svnThread->_active && _svnThread->_running))
+    {
         return;
-
+    }
+    
     _svnThread->stop();
 
     if (_terraRoot->getBoolValue("enabled",false))
@@ -756,6 +777,11 @@ void SGTerraSync::reinit()
 
 void SGTerraSync::bind()
 {
+    if (_bound) {
+        return;
+    }
+    
+    _bound = true;
     _tiedProperties.Tie( _terraRoot->getNode("busy", true), (bool*) &_svnThread->_busy );
     _tiedProperties.Tie( _terraRoot->getNode("active", true), (bool*) &_svnThread->_active );
     _tiedProperties.Tie( _terraRoot->getNode("update-count", true), (int*) &_svnThread->_success_count );
@@ -780,6 +806,8 @@ void SGTerraSync::unbind()
 {
     _svnThread->stop();
     _tiedProperties.Untie();
+    _bound = false;
+    _inited = false;
 }
 
 void SGTerraSync::update(double)

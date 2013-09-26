@@ -42,7 +42,8 @@ public:
 
     SGTerraSync(SGPropertyNode_ptr root);
     virtual ~SGTerraSync();
-    virtual void init();
+    
+    virtual void init();    
     virtual void reinit();
     virtual void bind();
     virtual void unbind();
@@ -75,6 +76,12 @@ private:
     SGPropertyNode_ptr _refreshDisplay;
     SGPropertyNode_ptr _stalledNode;
     SGPropertyNode_ptr _cacheHits;
+    
+    // we manually bind+init TerraSync during early startup
+    // to get better overlap of slow operations (Shared Models sync
+    // and nav-cache rebuild). As a result we need to track the bind/init
+    // state explicitly to avoid duplicate calls.
+    bool _bound, _inited;
     
     SGTerraSyncCallback _refreshCb;
     void* _userCbData;

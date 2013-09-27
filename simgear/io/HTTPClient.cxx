@@ -97,6 +97,10 @@ public:
     
 // connections by host (potentially more than one)
     ConnectionDict connections;
+    
+    SGTimeStamp timeTransferSample;
+    unsigned int bytesTransferred;
+    unsigned int lastTransferRate;
 };
   
 class Connection : public NetChat
@@ -198,17 +202,31 @@ public:
       sentRequests.clear();
     }
     
+    void handleTimeout()
+    {
+        NetChat::handleError(ETIMEDOUT);
+        if (activeRequest) {
+            SG_LOG(SG_IO, SG_DEBUG, "HTTP socket timeout");
+            activeRequest->setFailure(ETIMEDOUT, "socket timeout");
+            activeRequest = NULL;
+        }
+        
+        state = STATE_SOCKET_ERROR;
+    }
+    
     void queueRequest(const Request_ptr& r)
     {
-      queuedRequests.push_back(r);
-      tryStartNextRequest();
+        queuedRequests.push_back(r);
+        tryStartNextRequest();
     }
     
     void beginResponse()
     {
-      assert(!sentRequests.empty());
-      
-      activeRequest = sentRequests.front();      
+        assert(!sentRequests.empty());
+        assert(state == STATE_WAITING_FOR_RESPONSE);
+        
+        activeRequest = sentRequests.front();
+        
       activeRequest->responseStart(buffer);
       state = STATE_GETTING_HEADERS;
       buffer.clear();
@@ -313,13 +331,14 @@ public:
         }
       }
       
-      SG_LOG(SG_IO, SG_DEBUG, "did start request:" << r->url() <<
-          "\n\t @ " << reinterpret_cast<void*>(r.ptr()) <<
-          "\n\t on connection " << this);
+   //   SG_LOG(SG_IO, SG_INFO, "did start request:" << r->url() <<
+   //       "\n\t @ " << reinterpret_cast<void*>(r.ptr()) <<
+    //      "\n\t on connection " << this);
     // successfully sent, remove from queue, and maybe send the next
       queuedRequests.pop_front();
       sentRequests.push_back(r);
-      
+        state = STATE_WAITING_FOR_RESPONSE;
+        
     // pipelining, let's maybe send the next request right away
       tryStartNextRequest();
     }
@@ -327,6 +346,8 @@ public:
     virtual void collectIncomingData(const char* s, int n)
     {
         idleTime.stamp();
+        client->receivedBytes(static_cast<unsigned int>(n));
+        
         if ((state == STATE_GETTING_BODY) || (state == STATE_GETTING_CHUNKED_BYTES)) {
           if (contentGZip || contentDeflate) {
             expandCompressedData(s, n);
@@ -458,7 +479,7 @@ public:
     {
         idleTime.stamp();
         switch (state) {
-        case STATE_IDLE:
+        case STATE_WAITING_FOR_RESPONSE:
             beginResponse();
             break;
             
@@ -487,6 +508,9 @@ public:
             buffer.clear();
             break;
         
+        case STATE_IDLE:
+            SG_LOG(SG_IO, SG_WARN, "HTTP got data in IDLE state, bad server?");
+                
         default:
             break;
         }
@@ -498,6 +522,7 @@ public:
             return false;
         }
         
+        assert(sentRequests.empty());
         return idleTime.elapsedMSec() > 1000 * 10; // ten seconds
     }
   
@@ -688,21 +713,22 @@ private:
             if (doClose) {
           // this will bring us into handleClose() above, which updates
           // state to STATE_CLOSED
-            close();
+              close();
               
           // if we have additional requests waiting, try to start them now
-            tryStartNextRequest();
-          }
+              tryStartNextRequest();
+            }
         }
         
-      if (state != STATE_CLOSED)  {
-        state = STATE_IDLE;
-      }
-      setTerminator("\r\n");
+        if (state != STATE_CLOSED)  {
+            state = sentRequests.empty() ? STATE_IDLE : STATE_WAITING_FOR_RESPONSE;
+        }
+        setTerminator("\r\n");
     }
     
     enum ConnectionState {
         STATE_IDLE = 0,
+        STATE_WAITING_FOR_RESPONSE,
         STATE_GETTING_HEADERS,
         STATE_GETTING_BODY,
         STATE_GETTING_CHUNKED,
@@ -739,6 +765,10 @@ Client::Client() :
 {
     d->proxyPort = 0;
     d->maxConnections = 4;
+    d->bytesTransferred = 0;
+    d->lastTransferRate = 0;
+    d->timeTransferSample.stamp();
+    
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
 }
 
@@ -768,6 +798,11 @@ void Client::update(int waitTimeout)
             con->hasErrorTimeout() ||
             (!con->isActive() && waitingRequests))
         {
+            if (con->hasErrorTimeout()) {
+                // tell the connection we're timing it out
+                con->handleTimeout();
+            }
+            
         // connection has been idle for a while, clean it up
         // (or if we have requests waiting for a different host,
         // or an error condition
@@ -817,7 +852,7 @@ void Client::makeRequest(const Request_ptr& r)
         ConnectionDict::iterator it = d->connections.find(connectionId);
         if (it == consEnd) {
             // maximum number of connections active, queue this request
-            // when a connection goes inactive, we'll start this one
+            // when a connection goes inactive, we'll start this one            
             d->pendingRequests.push_back(r);
             return;
         }
@@ -899,6 +934,27 @@ bool Client::hasActiveRequests() const
     }
     
     return false;
+}
+
+void Client::receivedBytes(unsigned int count)
+{
+    d->bytesTransferred += count;
+}
+    
+unsigned int Client::transferRateBytesPerSec() const
+{
+    unsigned int e = d->timeTransferSample.elapsedMSec();
+    if (e < 400) {
+        // if called too frequently, return cahced value, to smooth out
+        // < 1 sec changes in flow
+        return d->lastTransferRate;
+    }
+    
+    unsigned int ratio = (d->bytesTransferred * 1000) / e;
+    d->timeTransferSample.stamp();
+    d->bytesTransferred = 0;
+    d->lastTransferRate = ratio;
+    return ratio;
 }
 
 } // of namespace HTTP

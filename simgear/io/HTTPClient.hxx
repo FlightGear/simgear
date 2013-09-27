@@ -66,9 +66,17 @@ public:
      * predicate, check if at least one connection is active, with at
      * least one request active or queued.
      */
-    bool hasActiveRequests() const; 
+    bool hasActiveRequests() const;
+    
+    /**
+     * crude tracking of bytes-per-second transferred over the socket.
+     * suitable for user feedback and rough profiling, nothing more.
+     */
+    unsigned int transferRateBytesPerSec() const;
 private:
     void requestFinished(Connection* con);
+    
+    void receivedBytes(unsigned int count);
     
     friend class Connection;
     friend class Request;

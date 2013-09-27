@@ -163,6 +163,8 @@ public:
     std::auto_ptr<SVNRepository> repository;
     SGTimeStamp stamp;
     bool busy; ///< is the slot working or idle
+    
+    unsigned int nextWarnTimeout;
 };
 
 static const int SYNC_SLOT_TILES = 0; ///< Terrain and Objects sync
@@ -226,6 +228,7 @@ public:
    volatile int  _consecutive_errors;
    volatile int  _allowed_errors;
    volatile int  _cache_hits;
+   volatile int _transfer_rate;
 private:
    virtual void run();
     
@@ -274,6 +277,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _consecutive_errors(0),
     _allowed_errors(6),
     _cache_hits(0),
+    _transfer_rate(0),
     _use_built_in(true),
     _is_dirty(false),
     _stop(false),
@@ -517,6 +521,13 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
 {
     if (slot.repository.get()) {
         if (slot.repository->isDoingSync()) {
+#if 0
+            if (slot.stamp.elapsedMSec() > slot.nextWarnTimeout) {
+                SG_LOG(SG_IO, SG_INFO, "sync taking a long time:" << slot.currentItem._dir << " taken " << slot.stamp.elapsedMSec());
+                SG_LOG(SG_IO, SG_INFO, "HTTP status:" << _http.hasActiveRequests());
+                slot.nextWarnTimeout += 10000;
+            }
+#endif
             return; // easy, still working
         }
         
@@ -560,9 +571,10 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         slot.repository->setBaseUrl(_svn_server + "/" + slot.currentItem._dir);
         slot.repository->update();
         
+        slot.nextWarnTimeout = 20000;
         slot.stamp.stamp();
         slot.busy = true;
-        SG_LOG(SG_IO, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " started");
+        SG_LOG(SG_IO, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
     }
 }
 
@@ -570,6 +582,7 @@ void SGTerraSync::SvnThread::runInternal()
 {
     while (!_stop) {
         _http.update(100);
+        _transfer_rate = _http.transferRateBytesPerSec();
         if (_stop)
             break;
  
@@ -593,7 +606,7 @@ void SGTerraSync::SvnThread::runInternal()
             updateSyncSlot(_syncSlots[slot]);
             anySlotBusy |= _syncSlots[slot].busy;
         }
-        
+
         _busy = anySlotBusy;
     } // of thread running loop
 }
@@ -731,6 +744,7 @@ void SGTerraSync::init()
     _inited = true;
     _refreshDisplay = _terraRoot->getNode("refresh-display",true);
     _terraRoot->setBoolValue("built-in-svn-available",svn_built_in_available);
+        
     reinit();
 }
 
@@ -788,6 +802,7 @@ void SGTerraSync::bind()
     _tiedProperties.Tie( _terraRoot->getNode("error-count", true), (int*) &_svnThread->_fail_count );
     _tiedProperties.Tie( _terraRoot->getNode("tile-count", true), (int*) &_svnThread->_updated_tile_count );
     _tiedProperties.Tie( _terraRoot->getNode("cache-hits", true), (int*) &_svnThread->_cache_hits );
+    _tiedProperties.Tie( _terraRoot->getNode("transfer-rate-bytes-sec", true), (int*) &_svnThread->_transfer_rate );
     
     _terraRoot->getNode("busy", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("active", true)->setAttribute(SGPropertyNode::WRITE,false);

@@ -1041,3 +1041,7 @@ bool SGTerraSync::schedulePosition(int lat, int lon)
     return Ok;
 }
 
+void SGTerraSync::reposition()
+{
+    last_lat = last_lon = NOWHERE;
+}

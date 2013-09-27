@@ -49,6 +49,11 @@ public:
     virtual void unbind();
     virtual void update(double);
 
+    /// notify terrasync that the sim was repositioned, as opposed to
+    /// us travelling in a direction. Avoid last_lat / last_lon blocking
+    /// certain tiles when we reposition.
+    void reposition();
+    
     bool isIdle();
     bool schedulePosition(int lat, int lon);
     

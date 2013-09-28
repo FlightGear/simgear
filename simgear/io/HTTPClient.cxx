@@ -696,10 +696,7 @@ private:
     
     void responseComplete()
     {
-     //   SG_LOG(SG_IO, SG_INFO, "*** responseComplete:" << activeRequest->url());
-        activeRequest->responseComplete();
-        client->requestFinished(this);
-      
+        Request_ptr completedRequest = activeRequest;        
         if (contentDeflate) {
           inflateEnd(&zlib);
         }
@@ -723,6 +720,13 @@ private:
         if (state != STATE_CLOSED)  {
             state = sentRequests.empty() ? STATE_IDLE : STATE_WAITING_FOR_RESPONSE;
         }
+        
+    // notify request after we change state, so this connection is idle
+    // if completion triggers other requests (which is likely)
+        //   SG_LOG(SG_IO, SG_INFO, "*** responseComplete:" << activeRequest->url());
+        completedRequest->responseComplete();
+        client->requestFinished(this);
+        
         setTerminator("\r\n");
     }
     
@@ -844,43 +848,43 @@ void Client::makeRequest(const Request_ptr& r)
     ss << host << "-" << port;
     string connectionId = ss.str();
     bool havePending = !d->pendingRequests.empty();
+    bool atConnectionsLimit = d->connections.size() >= d->maxConnections;
     ConnectionDict::iterator consEnd = d->connections.end();
      
     // assign request to an existing Connection.
     // various options exist here, examined in order
-    if (d->connections.size() >= d->maxConnections) {
-        ConnectionDict::iterator it = d->connections.find(connectionId);
-        if (it == consEnd) {
-            // maximum number of connections active, queue this request
-            // when a connection goes inactive, we'll start this one            
-            d->pendingRequests.push_back(r);
-            return;
-        }
-        
-        // scan for an idle Connection to the same host (likely if we're
-        // retrieving multiple resources from the same host in quick succession)
-        // if we have pending requests (waiting for a free Connection), then
-        // force new requests on this id to always use the first Connection
-        // (instead of the random selection below). This ensures that when
-        // there's pressure on the number of connections to keep alive, one
-        // host can't DoS every other.
-        int count = 0;
-        for (; (it != consEnd) && (it->first == connectionId); ++it, ++count) {
-            if (havePending || !it->second->isActive()) {
-                con = it->second;
-                break;
-            }
-        }
-        
-        if (!con) {
-            // we have at least one connection to the host, but they are
-            // all active - we need to pick one to queue the request on.
-            // we use random but round-robin would also work.
-            int index = rand() % count;
-            for (it = d->connections.find(connectionId); index > 0; --index) { ; }
+    ConnectionDict::iterator it = d->connections.find(connectionId);
+    if (atConnectionsLimit && (it == consEnd)) {
+        // maximum number of connections active, queue this request
+        // when a connection goes inactive, we'll start this one            
+        d->pendingRequests.push_back(r);
+        return;
+    }
+    
+    // scan for an idle Connection to the same host (likely if we're
+    // retrieving multiple resources from the same host in quick succession)
+    // if we have pending requests (waiting for a free Connection), then
+    // force new requests on this id to always use the first Connection
+    // (instead of the random selection below). This ensures that when
+    // there's pressure on the number of connections to keep alive, one
+    // host can't DoS every other.
+    int count = 0;
+    for (; (it != consEnd) && (it->first == connectionId); ++it, ++count) {
+        if (havePending || !it->second->isActive()) {
             con = it->second;
+            break;
         }
-    } // of at max connections limit
+    }
+    
+    if (!con && atConnectionsLimit) {
+        // all current connections are busy (active), and we don't
+        // have free connections to allocate, so let's assign to
+        // an existing one randomly. Ideally we'd used whichever one will
+        // complete first but we don't have that info.
+        int index = rand() % count;
+        for (it = d->connections.find(connectionId); index > 0; --index) { ; }
+        con = it->second;
+    }
     
     // allocate a new connection object
     if (!con) {

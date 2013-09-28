@@ -156,14 +156,7 @@ static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng
     now = cur_time;
     start_gmt = sgTimeGetGMT(gmt->tm_year, 2, 21, 12, 0, 0);
   
-    SG_LOG( SG_EVENT, SG_DEBUG, "  COURSE: GMT = "
-	    << sgTimeFormatTime(gmt, tbuf) );
-    SG_LOG( SG_EVENT, SG_DEBUG, "  March 21 noon (GMT) = " << start_gmt );
-  
     diff = (now - start_gmt) / (3600.0 * 24.0);
-  
-    SG_LOG( SG_EVENT, SG_DEBUG, 
-	    "  Time since 3/21/" << gmt->tm_year << " GMT = " << diff );
   
     part = fmod(diff, 1.0);
     days = diff - part;
@@ -174,11 +167,7 @@ static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng
     while ( lstTmp < 0.0 ) {
 	lstTmp += 24.0;
     }
-  
-    SG_LOG( SG_EVENT, SG_DEBUG,
-	    "  days = " << days << "  hours = " << hours << "  lon = " 
-	    << lng << "  lst = " << lstTmp );
-  
+    
     return lstTmp;
 }
 
@@ -205,19 +194,10 @@ void SGTime::update( const SGGeod& location, time_t ct, long int warp )
     } else {
 	cur_time = time(NULL) + warp;
     }
-    SG_LOG( SG_EVENT, SG_DEBUG, 
-	    "  Current Unix calendar time = " << cur_time 
-	    << "  warp = " << warp );
 
     // get GMT break down for current time
 
     memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
-    SG_LOG( SG_EVENT, SG_DEBUG, 
-	    "  Current GMT = " << gmt->tm_mon+1 << "/" 
-	    << gmt->tm_mday << "/" << (1900 + gmt->tm_year) << " "
-	    << gmt->tm_hour << ":" << gmt->tm_min << ":" 
-	    << gmt->tm_sec );
-
     // calculate modified Julian date starting with current
     mjd = sgTimeCurrentMJD( ct, warp );
 
@@ -227,7 +207,6 @@ void SGTime::update( const SGGeod& location, time_t ct, long int warp )
 
     // convert "back" to Julian date + partial day (as a fraction of one)
     jd = mjd + MJD0;
-    SG_LOG( SG_EVENT, SG_DEBUG, "  Current Julian Date = " << jd );
 
     // printf("  Current Longitude = %.3f\n", FG_Longitude * SGD_RADIANS_TO_DEGREES);
 
@@ -249,13 +228,6 @@ void SGTime::update( const SGGeod& location, time_t ct, long int warp )
 	lst = sidereal_course( cur_time, gmt,
                                -location.getLongitudeDeg()  ) + gst_diff;
     }
-
-    SG_LOG( SG_EVENT, SG_DEBUG,
-	    "  Current lon=0.00 Sidereal Time = " << gst );
-    SG_LOG( SG_EVENT, SG_DEBUG,
-	    "  Current LOCAL Sidereal Time = " << lst << " (" 
-	    << sidereal_precise( mjd, -location.getLongitudeDeg()  ) 
-	    << ") (diff = " << gst_diff << ")" );
 }
 
 
@@ -354,17 +326,9 @@ double sgTimeCurrentMJD( time_t ct, long int warp ) {
     } else {
         cur_time = time(NULL) + warp;
     }
-    SG_LOG( SG_EVENT, SG_DEBUG, 
-	    "  Current Unix calendar time = " << cur_time 
-	    << "  warp = " << warp );
 
     // get GMT break down for current time
     memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
-    SG_LOG( SG_EVENT, SG_DEBUG, 
-	    "  Current GMT = " << gmt->tm_mon+1 << "/" 
-	    << gmt->tm_mday << "/" << (1900 + gmt->tm_year) << " "
-	    << gmt->tm_hour << ":" << gmt->tm_min << ":" 
-	    << gmt->tm_sec );
 
     // calculate modified Julian date
     // t->mjd = cal_mjd ((int)(t->gmt->tm_mon+1), (double)t->gmt->tm_mday, 
@@ -388,8 +352,6 @@ double sgTimeCalcGST( double mjd ) {
     x = 24110.54841 + (8640184.812866 + (0.093104 - 6.2e-6 * T) * T) * T;
     x /= 3600.0;
     gst = (1.0/SIDRATE)*hr + x;
-
-    SG_LOG( SG_EVENT, SG_DEBUG, "  gst => " << gst );
 
     return gst;
 }

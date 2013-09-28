@@ -91,8 +91,6 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
 {
   SGConstPropertyNode_ptr p;
 
-  SG_LOG(SG_GENERAL, SG_DEBUG, "Creating a text object");
-
   osgText::Text * text = new osgText::Text();
   osg::Geode * g = new osg::Geode;
   g->addDrawable( text );

@@ -176,7 +176,7 @@ public:
 
 static const int SYNC_SLOT_TILES = 0; ///< Terrain and Objects sync
 static const int SYNC_SLOT_SHARED_DATA = 1; /// shared Models and Airport data
-static const int NUM_SYNC_SLOTS = 2;
+static const unsigned int NUM_SYNC_SLOTS = 2;
 
 /**
  * @brief translate a sync item type into one of the available slots.

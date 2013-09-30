@@ -212,7 +212,7 @@ std::string SGBucket::gen_base_path() const {
 	main_lat *= -1;
     }
 
-    sprintf(raw_path, "%c%03d%c%02d/%c%03d%c%02d", 
+    snprintf(raw_path, 256, "%c%03d%c%02d/%c%03d%c%02d", 
 	    hem, top_lon, pole, top_lat, 
 	    hem, main_lon, pole, main_lat);
 

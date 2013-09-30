@@ -393,7 +393,7 @@ struct ReaderWriterSTG::_ModelBin {
                 terrainGroup->addChild(node.get());
             }
         } else {
-            SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
+            SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile: " << bucket.gen_base_path() << "/" << bucket.gen_index_str());
             
             osg::Node* node = SGOceanTile(bucket, options->getMaterialLib());
             if (node) {

@@ -108,9 +108,9 @@ bool hasWhitespace(string path)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// WaitingSyncItem ////////////////////////////////////////////////////////////
+// SyncItem ////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class WaitingSyncItem
+class SyncItem
 {
 public:
     enum Type
@@ -131,14 +131,14 @@ public:
         Failed
     };
     
-    WaitingSyncItem() :
+    SyncItem() :
         _dir(),
         _type(Stop),
         _status(Invalid)
     {
     }
     
-    WaitingSyncItem(string dir, Type ty) :
+    SyncItem(string dir, Type ty) :
         _dir(dir),
         _type(ty),
         _status(Waiting)
@@ -164,9 +164,9 @@ public:
         busy(false)
     {}
     
-    WaitingSyncItem currentItem;
+    SyncItem currentItem;
     bool isNewDirectory;
-    std::queue<WaitingSyncItem> queue;
+    std::queue<SyncItem> queue;
     std::auto_ptr<SVNRepository> repository;
     SGTimeStamp stamp;
     bool busy; ///< is the slot working or idle
@@ -182,12 +182,12 @@ static const unsigned int NUM_SYNC_SLOTS = 2;
  * @brief translate a sync item type into one of the available slots.
  * This provides the scheduling / balancing / prioritising between slots.
  */
-static unsigned int syncSlotForType(WaitingSyncItem::Type ty)
+static unsigned int syncSlotForType(SyncItem::Type ty)
 {
     switch (ty) {
-    case WaitingSyncItem::Tile: return SYNC_SLOT_TILES;
-    case WaitingSyncItem::SharedModels:
-    case WaitingSyncItem::AirportData:
+    case SyncItem::Tile: return SYNC_SLOT_TILES;
+    case SyncItem::SharedModels:
+    case SyncItem::AirportData:
         return SYNC_SLOT_SHARED_DATA;
     default:
         return SYNC_SLOT_SHARED_DATA;
@@ -208,10 +208,10 @@ public:
    bool start();
 
     bool isIdle() {return !_busy; }
-   void request(const WaitingSyncItem& dir) {waitingTiles.push_front(dir);}
+   void request(const SyncItem& dir) {waitingTiles.push_front(dir);}
    bool isDirty() { bool r = _is_dirty;_is_dirty = false;return r;}
    bool hasNewTiles() { return !_freshTiles.empty();}
-   WaitingSyncItem getNewTile() { return _freshTiles.pop_front();}
+   SyncItem getNewTile() { return _freshTiles.pop_front();}
 
    void   setSvnServer(string server)       { _svn_server   = stripPath(server);}
    void   setExtSvnUtility(string svn_util) { _svn_command  = simgear::strutils::strip(svn_util);}
@@ -241,7 +241,7 @@ private:
     
     // external model run and helpers
     void runExternal();
-    void syncPathExternal(const WaitingSyncItem& next);
+    void syncPathExternal(const SyncItem& next);
     bool runExternalSyncCommand(const char* dir);
 
     // internal mode run and helpers
@@ -250,11 +250,11 @@ private:
 
     // commond helpers between both internal and external models
     
-    bool isPathCached(const WaitingSyncItem& next) const;
+    bool isPathCached(const SyncItem& next) const;
     void initCompletedTilesPersistentCache();
     void writeCompletedTilesPersistentCache() const;
-    void updated(WaitingSyncItem item, bool isNewDirectory);
-    void fail(WaitingSyncItem failedItem);
+    void updated(SyncItem item, bool isNewDirectory);
+    void fail(SyncItem failedItem);
     
     bool _use_built_in;
     HTTP::Client _http;
@@ -262,9 +262,9 @@ private:
 
    volatile bool _is_dirty;
    volatile bool _stop;
-   SGBlockingDeque <WaitingSyncItem> waitingTiles;
+   SGBlockingDeque <SyncItem> waitingTiles;
    CompletedTiles _completedTiles;
-   SGBlockingDeque <WaitingSyncItem> _freshTiles;
+   SGBlockingDeque <SyncItem> _freshTiles;
    bool _use_svn;
    string _svn_server;
    string _svn_command;
@@ -302,7 +302,7 @@ void SGTerraSync::SvnThread::stop()
 
     // set stop flag and wake up the thread with an empty request
     _stop = true;
-    WaitingSyncItem w(string(), WaitingSyncItem::Stop);
+    SyncItem w(string(), SyncItem::Stop);
     request(w);
     join();
     _running = false;
@@ -472,7 +472,7 @@ void SGTerraSync::SvnThread::runExternal()
 {
     while (!_stop)
     {
-        WaitingSyncItem next = waitingTiles.pop_front();
+        SyncItem next = waitingTiles.pop_front();
         if (_stop)
            break;
 
@@ -480,7 +480,7 @@ void SGTerraSync::SvnThread::runExternal()
             _cache_hits++;
             SG_LOG(SG_TERRAIN, SG_DEBUG,
                    "Cache hit for: '" << next._dir << "'");
-            next._status = WaitingSyncItem::Cached;
+            next._status = SyncItem::Cached;
             _freshTiles.push_back(next);
             _is_dirty = true;
             continue;
@@ -497,7 +497,7 @@ void SGTerraSync::SvnThread::runExternal()
     } // of thread running loop
 }
 
-void SGTerraSync::SvnThread::syncPathExternal(const WaitingSyncItem& next)
+void SGTerraSync::SvnThread::syncPathExternal(const SyncItem& next)
 {
     _busy = true;
     SGPath path( _local_dir );
@@ -546,7 +546,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         if (res == SVNRepository::SVN_ERROR_NOT_FOUND) {
             // this is fine, but maybe we should use a different return code
             // in the future to higher layers can distinguish this case
-            slot.currentItem._status = WaitingSyncItem::NotFound;
+            slot.currentItem._status = SyncItem::NotFound;
             _freshTiles.push_back(slot.currentItem);
             _is_dirty = true;
         } else if (res != SVNRepository::SVN_NO_ERROR) {
@@ -601,11 +601,11 @@ void SGTerraSync::SvnThread::runInternal()
  
         // drain the waiting tiles queue into the sync slot queues.
         while (!waitingTiles.empty()) {
-            WaitingSyncItem next = waitingTiles.pop_front();
+            SyncItem next = waitingTiles.pop_front();
             if (isPathCached(next)) {
                 _cache_hits++;
                 SG_LOG(SG_TERRAIN, SG_DEBUG, "TerraSync Cache hit for: '" << next._dir << "'");
-                next._status = WaitingSyncItem::Cached;
+                next._status = SyncItem::Cached;
                 _freshTiles.push_back(next);
                 _is_dirty = true;
                 continue;
@@ -626,7 +626,7 @@ void SGTerraSync::SvnThread::runInternal()
     } // of thread running loop
 }
 
-bool SGTerraSync::SvnThread::isPathCached(const WaitingSyncItem& next) const
+bool SGTerraSync::SvnThread::isPathCached(const SyncItem& next) const
 {
     CompletedTiles::const_iterator ii = _completedTiles.find( next._dir );
     if (ii == _completedTiles.end()) {
@@ -644,18 +644,18 @@ bool SGTerraSync::SvnThread::isPathCached(const WaitingSyncItem& next) const
     return (ii->second > now);
 }
 
-void SGTerraSync::SvnThread::fail(WaitingSyncItem failedItem)
+void SGTerraSync::SvnThread::fail(SyncItem failedItem)
 {
     time_t now = time(0);
     _consecutive_errors++;
     _fail_count++;
-    failedItem._status = WaitingSyncItem::Failed;
+    failedItem._status = SyncItem::Failed;
     _freshTiles.push_back(failedItem);
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
     _is_dirty = true;
 }
 
-void SGTerraSync::SvnThread::updated(WaitingSyncItem item, bool isNewDirectory)
+void SGTerraSync::SvnThread::updated(SyncItem item, bool isNewDirectory)
 {
     time_t now = time(0);
     _consecutive_errors = 0;
@@ -663,8 +663,8 @@ void SGTerraSync::SvnThread::updated(WaitingSyncItem item, bool isNewDirectory)
     SG_LOG(SG_TERRAIN,SG_INFO,
            "Successfully synchronized directory '" << item._dir << "'");
     
-    item._status = WaitingSyncItem::Updated;
-    if (item._type == WaitingSyncItem::Tile) {
+    item._status = SyncItem::Updated;
+    if (item._type == SyncItem::Tile) {
         _updated_tile_count++;
     }
 
@@ -865,9 +865,9 @@ void SGTerraSync::update(double)
 
         while (_svnThread->hasNewTiles())
         {
-            WaitingSyncItem next = _svnThread->getNewTile();
+            SyncItem next = _svnThread->getNewTile();
             
-            if (next._type == WaitingSyncItem::Tile) {
+            if (next._type == SyncItem::Tile) {
                 if (_activeTileDirs.find(next._dir) == _activeTileDirs.end()) {
                     SG_LOG(SG_TERRAIN, SG_INFO, "TTTTTTTT: finished tile not found in active set!: " << next._dir);
                 }
@@ -890,12 +890,12 @@ void SGTerraSync::syncAirportsModels()
         {
             ostringstream dir;
             dir << "Airports/" << synced_other;
-            WaitingSyncItem w(dir.str(), WaitingSyncItem::AirportData);
+            SyncItem w(dir.str(), SyncItem::AirportData);
             _svnThread->request( w );
         }
     }
     
-    WaitingSyncItem w("Models", WaitingSyncItem::SharedModels);
+    SyncItem w("Models", SyncItem::SharedModels);
     _svnThread->request( w );
 }
 
@@ -951,7 +951,7 @@ void SGTerraSync::syncAreaByPath(const std::string& aPath)
         }
                 
         _activeTileDirs.insert(dir);
-        WaitingSyncItem w(dir, WaitingSyncItem::Tile);
+        SyncItem w(dir, SyncItem::Tile);
         _svnThread->request( w );
     }
 }

@@ -121,25 +121,32 @@ public:
         SharedModels
     };
     
+    enum Status
+    {
+        Invalid = 0,
+        Waiting,
+        Cached, ///< using already cached result
+        Updated,
+        NotFound, 
+        Failed
+    };
+    
     WaitingSyncItem() :
         _dir(),
         _type(Stop),
-        _refreshScenery(false)
+        _status(Invalid)
     {
     }
     
     WaitingSyncItem(string dir, Type ty) :
         _dir(dir),
         _type(ty),
-        _refreshScenery(false)
+        _status(Waiting)
     {}
-        
-    void setRefresh()
-    { _refreshScenery = true; }
         
     string _dir;
     Type _type;
-    bool _refreshScenery;
+    Status _status;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -200,7 +207,7 @@ public:
    void stop();
    bool start();
 
-   bool isIdle() {return waitingTiles.empty();}
+    bool isIdle() {return !_busy; }
    void request(const WaitingSyncItem& dir) {waitingTiles.push_front(dir);}
    bool isDirty() { bool r = _is_dirty;_is_dirty = false;return r;}
    bool hasNewTiles() { return !_freshTiles.empty();}
@@ -246,8 +253,8 @@ private:
     bool isPathCached(const WaitingSyncItem& next) const;
     void initCompletedTilesPersistentCache();
     void writeCompletedTilesPersistentCache() const;
-    void updated(const WaitingSyncItem& item, bool isNewDirectory);
-    void fail(const WaitingSyncItem& failedItem);
+    void updated(WaitingSyncItem item, bool isNewDirectory);
+    void fail(WaitingSyncItem failedItem);
     
     bool _use_built_in;
     HTTP::Client _http;
@@ -473,6 +480,9 @@ void SGTerraSync::SvnThread::runExternal()
             _cache_hits++;
             SG_LOG(SG_TERRAIN, SG_DEBUG,
                    "Cache hit for: '" << next._dir << "'");
+            next._status = WaitingSyncItem::Cached;
+            _freshTiles.push_back(next);
+            _is_dirty = true;
             continue;
         }
         
@@ -523,8 +533,8 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         if (slot.repository->isDoingSync()) {
 #if 0
             if (slot.stamp.elapsedMSec() > slot.nextWarnTimeout) {
-                SG_LOG(SG_IO, SG_INFO, "sync taking a long time:" << slot.currentItem._dir << " taken " << slot.stamp.elapsedMSec());
-                SG_LOG(SG_IO, SG_INFO, "HTTP status:" << _http.hasActiveRequests());
+                SG_LOG(SG_TERRAIN, SG_INFO, "sync taking a long time:" << slot.currentItem._dir << " taken " << slot.stamp.elapsedMSec());
+                SG_LOG(SG_TERRAIN, SG_INFO, "HTTP status:" << _http.hasActiveRequests());
                 slot.nextWarnTimeout += 10000;
             }
 #endif
@@ -536,11 +546,14 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         if (res == SVNRepository::SVN_ERROR_NOT_FOUND) {
             // this is fine, but maybe we should use a different return code
             // in the future to higher layers can distinguish this case
+            slot.currentItem._status = WaitingSyncItem::NotFound;
+            _freshTiles.push_back(slot.currentItem);
+            _is_dirty = true;
         } else if (res != SVNRepository::SVN_NO_ERROR) {
             fail(slot.currentItem);
         } else {
             updated(slot.currentItem, slot.isNewDirectory);
-            SG_LOG(SG_IO, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " finished ("
+            SG_LOG(SG_TERRAIN, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " finished ("
                    << slot.stamp.elapsedMSec() << " msec");
         }
 
@@ -574,7 +587,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         slot.nextWarnTimeout = 20000;
         slot.stamp.stamp();
         slot.busy = true;
-        SG_LOG(SG_IO, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
     }
 }
 
@@ -591,8 +604,10 @@ void SGTerraSync::SvnThread::runInternal()
             WaitingSyncItem next = waitingTiles.pop_front();
             if (isPathCached(next)) {
                 _cache_hits++;
-                SG_LOG(SG_TERRAIN, SG_DEBUG,
-                       "Cache hit for: '" << next._dir << "'");
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "TerraSync Cache hit for: '" << next._dir << "'");
+                next._status = WaitingSyncItem::Cached;
+                _freshTiles.push_back(next);
+                _is_dirty = true;
                 continue;
             }
 
@@ -629,34 +644,33 @@ bool SGTerraSync::SvnThread::isPathCached(const WaitingSyncItem& next) const
     return (ii->second > now);
 }
 
-void SGTerraSync::SvnThread::fail(const WaitingSyncItem& failedItem)
+void SGTerraSync::SvnThread::fail(WaitingSyncItem failedItem)
 {
     time_t now = time(0);
     _consecutive_errors++;
     _fail_count++;
+    failedItem._status = WaitingSyncItem::Failed;
+    _freshTiles.push_back(failedItem);
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
+    _is_dirty = true;
 }
 
-void SGTerraSync::SvnThread::updated(const WaitingSyncItem& item, bool isNewDirectory)
+void SGTerraSync::SvnThread::updated(WaitingSyncItem item, bool isNewDirectory)
 {
     time_t now = time(0);
     _consecutive_errors = 0;
     _success_count++;
     SG_LOG(SG_TERRAIN,SG_INFO,
            "Successfully synchronized directory '" << item._dir << "'");
-    if (item._refreshScenery) {
-        // updated a tile
-        _updated_tile_count++;
-        if (isNewDirectory)
-        {
-            // for now only report new directories to refresh display
-            // (i.e. only when ocean needs to be replaced with actual data)
-            _freshTiles.push_back(item);
-            _is_dirty = true;
-        }
-    }
     
+    item._status = WaitingSyncItem::Updated;
+    if (item._type == WaitingSyncItem::Tile) {
+        _updated_tile_count++;
+    }
+
+    _freshTiles.push_back(item);
     _completedTiles[ item._dir ] = now + UpdateInterval::SuccessfulAttempt;
+    _is_dirty = true;
     writeCompletedTilesPersistentCache();
 }
 
@@ -669,7 +683,13 @@ void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
     SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
     time_t now = time(0);
     
-    readProperties(_persistentCachePath.str(), cacheRoot);
+    try {
+        readProperties(_persistentCachePath.str(), cacheRoot);
+    } catch (sg_exception& e) {
+        SG_LOG(SG_TERRAIN, SG_INFO, "corrupted persistent cache, discarding");
+        return;
+    }
+    
     for (int i=0; i<cacheRoot->nChildren(); ++i) {
         SGPropertyNode* entry = cacheRoot->getChild(i);
         string tileName = entry->getStringValue("path");
@@ -715,9 +735,7 @@ SGTerraSync::SGTerraSync(SGPropertyNode_ptr root) :
     last_lon(NOWHERE),
     _terraRoot(root->getNode("/sim/terrasync",true)),
     _bound(false),
-    _inited(false),
-    _refreshCb(NULL),
-    _userCbData(NULL)
+    _inited(false)
 {
     _svnThread = new SvnThread();
     _log = new BufferedLogCallback(SG_TERRAIN, SG_INFO);
@@ -742,7 +760,6 @@ void SGTerraSync::init()
     }
     
     _inited = true;
-    _refreshDisplay = _terraRoot->getNode("refresh-display",true);
     _terraRoot->setBoolValue("built-in-svn-available",svn_built_in_available);
         
     reinit();
@@ -846,50 +863,22 @@ void SGTerraSync::update(double)
             _stalledNode->setBoolValue(_svnThread->_stalled);
         }
 
-        if (!_refreshDisplay->getBoolValue())
-            return;
-
         while (_svnThread->hasNewTiles())
         {
             WaitingSyncItem next = _svnThread->getNewTile();
-            if (next._refreshScenery)
-            {
-                refreshScenery(_svnThread->getLocalDir(),next._dir);
+            
+            if (next._type == WaitingSyncItem::Tile) {
+                if (_activeTileDirs.find(next._dir) == _activeTileDirs.end()) {
+                    SG_LOG(SG_TERRAIN, SG_INFO, "TTTTTTTT: finished tile not found in active set!: " << next._dir);
+                }
+                
+                _activeTileDirs.erase(next._dir);
             }
-        }
-    }
-}
-
-void SGTerraSync::refreshScenery(SGPath path,const string& relativeDir)
-{
-    // find tiles to be refreshed
-    if (_refreshCb)
-    {
-        path.append(relativeDir);
-        if (path.exists())
-        {
-            simgear::Dir dir(path);
-            //TODO need to be smarter here. only update tiles which actually
-            // changed recently. May also be possible to use information from the
-            // built-in SVN client directly (instead of checking directory contents).
-            PathList tileList = dir.children(simgear::Dir::TYPE_FILE, ".stg");
-            for (unsigned int i=0; i<tileList.size(); ++i)
-            {
-                // reload scenery tile
-                long index = atoi(tileList[i].file().c_str());
-                _refreshCb(_userCbData, index);
-            }
-        }
+        } // of freshly synced items
     }
 }
 
 bool SGTerraSync::isIdle() {return _svnThread->isIdle();}
-
-void SGTerraSync::setTileRefreshCb(SGTerraSyncCallback refreshCb, void* userCbData)
-{
-    _refreshCb = refreshCb;
-    _userCbData = userCbData;
-}
 
 void SGTerraSync::syncAirportsModels()
 {
@@ -943,22 +932,27 @@ void SGTerraSync::syncArea( int lat, int lon )
         EW = 'e';
     }
 
-    const char* terrainobjects[3] = { "Terrain", "Objects",  0 };
-    bool refresh=true;
+    ostringstream dir;
+    dir << setfill('0')
+    << EW << setw(3) << abs(baselon) << NS << setw(2) << abs(baselat) << "/"
+    << EW << setw(3) << abs(lon)     << NS << setw(2) << abs(lat);
+    
+    syncAreaByPath(dir.str());
+}
+
+void SGTerraSync::syncAreaByPath(const std::string& aPath)
+{
+    const char* terrainobjects[3] = { "Terrain/", "Objects/",  0 };
     for (const char** tree = &terrainobjects[0]; *tree; tree++)
     {
-        ostringstream dir;
-        dir << *tree << "/" << setfill('0')
-            << EW << setw(3) << abs(baselon) << NS << setw(2) << abs(baselat) << "/"
-            << EW << setw(3) << abs(lon)     << NS << setw(2) << abs(lat);
-        
-        WaitingSyncItem w(dir.str(), WaitingSyncItem::Tile);
-        if (refresh) {
-            w.setRefresh();
+        std::string dir = string(*tree) + aPath;
+        if (_activeTileDirs.find(dir) != _activeTileDirs.end()) {
+            continue;
         }
-        
+                
+        _activeTileDirs.insert(dir);
+        WaitingSyncItem w(dir, WaitingSyncItem::Tile);
         _svnThread->request( w );
-        refresh=false;
     }
 }
 
@@ -966,6 +960,7 @@ void SGTerraSync::syncArea( int lat, int lon )
 void SGTerraSync::syncAreas( int lat, int lon, int lat_dir, int lon_dir )
 {
     if ( lat_dir == 0 && lon_dir == 0 ) {
+        
         // do surrounding 8 1x1 degree areas.
         for ( int i = lat - 1; i <= lat + 1; ++i ) {
             for ( int j = lon - 1; j <= lon + 1; ++j ) {
@@ -991,6 +986,12 @@ void SGTerraSync::syncAreas( int lat, int lon, int lat_dir, int lon_dir )
     syncArea( lat, lon );
 }
 
+bool SGTerraSync::scheduleTile(const SGBucket& bucket)
+{
+    std::string basePath = bucket.gen_base_path();
+    syncAreaByPath(basePath);
+    return true;
+}
 
 bool SGTerraSync::schedulePosition(int lat, int lon)
 {
@@ -1001,8 +1002,6 @@ bool SGTerraSync::schedulePosition(int lat, int lon)
     {
         if (_svnThread->_running)
         {
-            SG_LOG(SG_TERRAIN,SG_DEBUG, "Requesting scenery update for position " <<
-                                        lat << "," << lon);
             int lat_dir=0;
             int lon_dir=0;
             if ( last_lat != NOWHERE && last_lon != NOWHERE )
@@ -1045,3 +1044,21 @@ void SGTerraSync::reposition()
 {
     last_lat = last_lon = NOWHERE;
 }
+
+bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
+{
+    if (!_svnThread->_running) {
+        return false;
+    }
+    
+    const char* terrainobjects[3] = { "Terrain/", "Objects/",  0 };
+    for (const char** tree = &terrainobjects[0]; *tree; tree++) {
+        string s = *tree + sceneryDir;
+        if (_activeTileDirs.find(s) != _activeTileDirs.end()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+

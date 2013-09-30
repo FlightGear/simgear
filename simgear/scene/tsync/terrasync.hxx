@@ -21,6 +21,8 @@
 #ifndef TERRASYNC_HXX_
 #define TERRASYNC_HXX_
 
+#include <set>
+
 #include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/props/tiedpropertylist.hxx>
@@ -33,8 +35,6 @@ namespace simgear
 const int NOWHERE = -9999;
 
 class BufferedLogCallback;
-
-typedef void (*SGTerraSyncCallback)(void* userData, long tileIndex);
 
 class SGTerraSync : public SGSubsystem
 {
@@ -59,18 +59,25 @@ public:
     
     bool scheduleTile(const SGBucket& bucket);
     
-    void setTileRefreshCb(SGTerraSyncCallback refreshCb, void* userData = NULL);
-
     /// retrive the associated log object, for displaying log
     /// output somewhere (a UI, presumably)
     BufferedLogCallback* log() const
         { return _log; }
+    
+    /**
+     * Test if a scenery directory is queued or actively syncing.
+     * File path is the tile name, eg 'e001n52' or 'w003n56'. Will return true
+     * if either the Terrain or Objects variant is being synced.
+     * 
+     */
+    bool isTileDirPending(const std::string& sceneryDir) const;
 protected:
     void syncAirportsModels();
     void syncArea(int lat, int lon);
     void syncAreas(int lat, int lon, int lat_dir, int lon_dir);
-    void refreshScenery(SGPath path,const std::string& relativeDir);
 
+    void syncAreaByPath(const std::string& aPath);
+    
     class SvnThread;
 
 private:
@@ -78,7 +85,6 @@ private:
     int last_lat;
     int last_lon;
     SGPropertyNode_ptr _terraRoot;
-    SGPropertyNode_ptr _refreshDisplay;
     SGPropertyNode_ptr _stalledNode;
     SGPropertyNode_ptr _cacheHits;
     
@@ -88,10 +94,11 @@ private:
     // state explicitly to avoid duplicate calls.
     bool _bound, _inited;
     
-    SGTerraSyncCallback _refreshCb;
-    void* _userCbData;
     simgear::TiedPropertyList _tiedProperties;
     BufferedLogCallback* _log;
+    
+    typedef std::set<std::string> string_set;
+    string_set _activeTileDirs;
 };
 
 }

@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6.4)
 include (CheckFunctionExists)
 include (CheckIncludeFile)
 include (CheckCXXSourceCompiles)
-
+include (CheckCXXCompilerFlag)
 
 project(SimGear)
 
@@ -312,6 +312,14 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
    set(WARNING_FLAGS_CXX "-Wall -Wno-overloaded-virtual")
    set(WARNING_FLAGS_C   "-Wall")
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+# boost goes haywire wrt static asserts
+    check_cxx_compiler_flag(-Wno-unused-local-typedefs HAS_NOWARN_UNUSED_TYPEDEFS)
+    if(HAS_NOWARN_UNUSED_TYPEDEFS)
+        set(WARNING_FLAGS_CXX " ${WARNING_FLAGS_CXX} -Wno-unused-local-typedefs")
+    endif()
 endif()
 
 if(WIN32)

@@ -59,12 +59,6 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
-    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} 
-        ${LibArchive_LIBRARIES}
-        ${EXPAT_LIBRARIES}
-        ${CMAKE_THREAD_LIBS_INIT}
-        ${CORE_SERVICES_LIBRARY})
-
     if(NOT SIMGEAR_HEADLESS)
         add_library(SimGearScene SHARED ${sceneSources})
       # set_property(TARGET SimGearScene PROPERTY FRAMEWORK 1)
@@ -73,14 +67,6 @@ if(SIMGEAR_SHARED)
         set_property(TARGET SimGearScene PROPERTY VERSION   ${SIMGEAR_VERSION})
         set_property(TARGET SimGearScene PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
-        target_link_libraries(SimGearScene
-            SimGearCore
-            ${ZLIB_LIBRARY}
-            ${OPENSCENEGRAPH_LIBRARIES}
-            ${OPENAL_LIBRARY}
-            ${OPENGL_LIBRARY}
-            ${JPEG_LIBRARY})
-    
         install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
     
@@ -132,6 +118,25 @@ else()
         install(TARGETS SimGearScene ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
+
+target_link_libraries(SimGearCore
+    ${ZLIB_LIBRARY}
+    ${RT_LIBRARY}
+    ${DL_LIBRARY}
+    ${LibArchive_LIBRARIES}
+    ${EXPAT_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${CORE_SERVICES_LIBRARY})
+
+if(NOT SIMGEAR_HEADLESS)
+    target_link_libraries(SimGearScene
+        SimGearCore
+        ${ZLIB_LIBRARY}
+        ${OPENSCENEGRAPH_LIBRARIES}
+        ${OPENAL_LIBRARY}
+        ${OPENGL_LIBRARY}
+        ${JPEG_LIBRARY})
+endif()
 
 if(ENABLE_RTI)
     # Ugly first aid to make hla compile agian

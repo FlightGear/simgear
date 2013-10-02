@@ -267,6 +267,20 @@ if(HAVE_CLOCK_GETTIME)
     endif(HAVE_RT)
 endif(HAVE_CLOCK_GETTIME)
 
+set(DL_LIBRARY "")
+check_cxx_source_compiles(
+    "#include <dlfcn.h>
+    int main(void) {
+        return 0;
+    }
+    "
+    HAVE_DLFCN_H)
+
+if(HAVE_DLFCN_H)
+    check_library_exists(dl dlerror "" HAVE_DL)
+    set(DL_LIBRARY "dl")
+endif()
+
 SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually 'd' on windows")
 SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 SET(CMAKE_RELWITHDEBINFO_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
@@ -360,25 +374,17 @@ else()
 endif(ENABLE_TESTS)
 
 # always set TEST_LIBS as it is also used by other tools/applications
-# TODO maybe better rename?
-if(SIMGEAR_SHARED)
-    set( TEST_LIBS
-        SimGearCore)
-else()
-    set( TEST_LIBS
-        SimGearCore
-        ${CMAKE_THREAD_LIBS_INIT}
-        ${ZLIB_LIBRARY}
-        ${WINSOCK_LIBRARY}
-        ${RT_LIBRARY}
-        ${CORE_SERVICES_LIBRARY})
-endif()
+set(TEST_LIBS_INTERNAL_CORE
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${ZLIB_LIBRARY}
+    ${WINSOCK_LIBRARY}
+    ${RT_LIBRARY}
+    ${DL_LIBRARY}
+    ${CORE_SERVICES_LIBRARY})
+set(TEST_LIBS SimGearCore ${TEST_LIBS_INTERNAL_CORE})
 
 if(NOT SIMGEAR_HEADLESS)
-    set( TEST_LIBS
-        SimGearScene
-        ${TEST_LIBS}
-        ${OPENGL_LIBRARIES})
+    set(TEST_LIBS SimGearScene ${OPENGL_LIBRARIES} ${TEST_LIBS})
 endif()
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)

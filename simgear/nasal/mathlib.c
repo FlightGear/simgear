@@ -65,6 +65,16 @@ static naRef f_sqrt(naContext c, naRef me, int argc, naRef* args)
     return VALIDATE(a);
 }
 
+static naRef f_pow(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    naRef b = naNumValue(argc > 1 ? args[1] : naNil());
+    if(naIsNil(a) || naIsNil(b))
+        naRuntimeError(c, "non numeric argument to pow()");
+    a.num = pow(a.num, b.num);
+    return VALIDATE(a);
+}
+
 static naRef f_atan2(naContext c, naRef me, int argc, naRef* args)
 {
     naRef a = naNumValue(argc > 0 ? args[0] : naNil());
@@ -93,12 +103,12 @@ static naRef f_ceil(naContext c, naRef me, int argc, naRef* args)
     return VALIDATE(a);
 }
 
-static naRef f_mod(naContext c, naRef me, int argc, naRef* args)
+static naRef f_fmod(naContext c, naRef me, int argc, naRef* args)
 {
     naRef a = naNumValue(argc > 0 ? args[0] : naNil());
     naRef b = naNumValue(argc > 1 ? args[1] : naNil());
     if(naIsNil(a) || naIsNil(b))
-        naRuntimeError(c, "non numeric arguments to mod()");
+        naRuntimeError(c, "non numeric arguments to fmod()");
     
     a.num = fmod(a.num, b.num);
     return VALIDATE(a);
@@ -141,18 +151,67 @@ static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)
     return VALIDATE(x);
 }
 
+static naRef f_round(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    naRef b = naNumValue(argc > 1 ? args[1] : naNil());
+    if(naIsNil(a))
+        naRuntimeError(c, "non numeric arguments to round()");
+    if (naIsNil(b))
+        b.num = 1.0;
+    
+    double x = round(a.num / b.num);
+    a.num = x * b.num;
+    
+    return VALIDATE(a);
+}
+
+
+static naRef f_tan(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());    
+    if(naIsNil(a))
+        naRuntimeError(c, "non numeric arguments to tan()");
+    
+   a.num = tan(a.num);
+   return VALIDATE(a);
+}
+
+static naRef f_asin(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    if(naIsNil(a))
+        naRuntimeError(c, "non numeric argument to asin()");
+    a.num = asin(a.num);
+    return VALIDATE(a);
+}
+
+static naRef f_acos(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    if(naIsNil(a))
+        naRuntimeError(c, "non numeric argument to acos()");
+    a.num = acos(a.num);
+    return VALIDATE(a);
+}
+
 static naCFuncItem funcs[] = {
     { "sin", f_sin },
     { "cos", f_cos },
     { "exp", f_exp },
     { "ln", f_ln },
+    { "pow", f_pow },
     { "sqrt", f_sqrt },
     { "atan2", f_atan2 },
     { "floor", f_floor },
     { "ceil", f_ceil },
-    { "mod", f_mod },
+    { "fmod", f_fmod },
     { "clamp", f_clamp },
-    { "periodic", f_periodic },        
+    { "periodic", f_periodic },    
+    { "round", f_round }, 
+    { "tan", f_tan },   
+    { "acos", f_acos },
+    { "asin", f_asin },   
     { 0 }
 };
 

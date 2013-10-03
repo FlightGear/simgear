@@ -71,6 +71,11 @@ public:
      * 
      */
     bool isTileDirPending(const std::string& sceneryDir) const;
+    
+    
+    void scheduleDataDir(const std::string& dataDir);
+    
+    bool isDataDirPending(const std::string& dataDir) const;
 protected:
     void syncAirportsModels();
     void syncArea(int lat, int lon);

@@ -118,7 +118,8 @@ public:
         Stop = 0,   ///< special item indicating to stop the SVNThread
         Tile,
         AirportData,
-        SharedModels
+        SharedModels,
+        AIData
     };
     
     enum Status
@@ -176,7 +177,8 @@ public:
 
 static const int SYNC_SLOT_TILES = 0; ///< Terrain and Objects sync
 static const int SYNC_SLOT_SHARED_DATA = 1; /// shared Models and Airport data
-static const unsigned int NUM_SYNC_SLOTS = 2;
+static const int SYNC_SLOT_AI_DATA = 2; /// AI traffic and models
+static const unsigned int NUM_SYNC_SLOTS = 3;
 
 /**
  * @brief translate a sync item type into one of the available slots.
@@ -189,6 +191,9 @@ static unsigned int syncSlotForType(SyncItem::Type ty)
     case SyncItem::SharedModels:
     case SyncItem::AirportData:
         return SYNC_SLOT_SHARED_DATA;
+    case SyncItem::AIData:
+        return SYNC_SLOT_AI_DATA;
+        
     default:
         return SYNC_SLOT_SHARED_DATA;
     }
@@ -214,6 +219,8 @@ public:
    SyncItem getNewTile() { return _freshTiles.pop_front();}
 
    void   setSvnServer(string server)       { _svn_server   = stripPath(server);}
+   void   setSvnDataServer(string server)   { _svn_data_server   = stripPath(server);}
+    
    void   setExtSvnUtility(string svn_util) { _svn_command  = simgear::strutils::strip(svn_util);}
    void   setRsyncServer(string server)     { _rsync_server = simgear::strutils::strip(server);}
    void   setLocalDir(string dir)           { _local_dir    = stripPath(dir);}
@@ -267,6 +274,7 @@ private:
    SGBlockingDeque <SyncItem> _freshTiles;
    bool _use_svn;
    string _svn_server;
+   string _svn_data_server;
    string _svn_command;
    string _rsync_server;
    string _local_dir;
@@ -580,8 +588,13 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
             }
         } // of creating directory step
         
+        string serverUrl(_svn_server);
+        if (slot.currentItem._type == SyncItem::AIData) {
+            serverUrl = _svn_data_server;
+        }
+        
         slot.repository.reset(new SVNRepository(path, &_http));
-        slot.repository->setBaseUrl(_svn_server + "/" + slot.currentItem._dir);
+        slot.repository->setBaseUrl(serverUrl + "/" + slot.currentItem._dir);
         slot.repository->update();
         
         slot.nextWarnTimeout = 20000;
@@ -779,6 +792,7 @@ void SGTerraSync::reinit()
     if (_terraRoot->getBoolValue("enabled",false))
     {
         _svnThread->setSvnServer(_terraRoot->getStringValue("svn-server",""));
+        _svnThread->setSvnDataServer(_terraRoot->getStringValue("svn-data-server",""));
         _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
         _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
@@ -867,11 +881,7 @@ void SGTerraSync::update(double)
         {
             SyncItem next = _svnThread->getNewTile();
             
-            if (next._type == SyncItem::Tile) {
-                if (_activeTileDirs.find(next._dir) == _activeTileDirs.end()) {
-                    SG_LOG(SG_TERRAIN, SG_INFO, "TTTTTTTT: finished tile not found in active set!: " << next._dir);
-                }
-                
+            if ((next._type == SyncItem::Tile) || (next._type == SyncItem::AIData)) {
                 _activeTileDirs.erase(next._dir);
             }
         } // of freshly synced items
@@ -1062,3 +1072,19 @@ bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
     return false;
 }
 
+void SGTerraSync::scheduleDataDir(const std::string& dataDir)
+{
+    if (_activeTileDirs.find(dataDir) != _activeTileDirs.end()) {
+        return;
+    }
+    
+    _activeTileDirs.insert(dataDir);
+    SyncItem w(dataDir, SyncItem::AIData);
+    _svnThread->request( w );
+
+}
+
+bool SGTerraSync::isDataDirPending(const std::string& dataDir) const
+{
+    return (_activeTileDirs.find(dataDir) != _activeTileDirs.end());
+}

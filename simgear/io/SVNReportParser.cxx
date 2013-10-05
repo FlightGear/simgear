@@ -442,11 +442,11 @@ public:
       }
       
     if (tagStack.back() == SVN_SET_PROP_TAG) {
-      setPropValue += string(s, length);
+      setPropValue.append(s, length);
     } else if (tagStack.back() == SVN_TXDELTA_TAG) {
-      txDeltaData += string(s, length);
+      txDeltaData.append(s, length);
     } else if (tagStack.back() == SVN_DAV_MD5_CHECKSUM) {
-      md5Sum += string(s, length);
+      md5Sum.append(s, length);
     }
   }
   

@@ -173,7 +173,11 @@ namespace { // anonmouse
       {
         if (responseCode() == 207) {
           _davStatus.finishParse();
-          _repo->propFindComplete(this, (DAVCollection*) _davStatus.resource());
+          if (_davStatus.isValid()) {
+              _repo->propFindComplete(this, (DAVCollection*) _davStatus.resource());
+          } else {
+              _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+          }
         }
       }
   

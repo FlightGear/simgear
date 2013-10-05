@@ -129,6 +129,8 @@ public:
     
     void finishParse();
     
+    bool isValid() const;
+    
     DAVResource* resource();
   
   class DAVMultiStatusPrivate;

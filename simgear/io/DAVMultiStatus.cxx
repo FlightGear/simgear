@@ -183,7 +183,8 @@ class DAVMultiStatus::DAVMultiStatusPrivate
 {
 public:
   DAVMultiStatusPrivate() :
-  parserInited(false)
+      parserInited(false),
+      valid(false)
   {
     rootResource = NULL;
   }
@@ -287,6 +288,7 @@ public:
   }
   
   bool parserInited;
+  bool valid;
   XML_Parser xmlParser;
   DAVResource* rootResource;
   
@@ -366,13 +368,21 @@ void DAVMultiStatus::parseXML(const char* data, int size)
     
     XML_ParserFree(_d->xmlParser);
     _d->parserInited = false;
+    _d->valid = false;
   }
 }
 
 void DAVMultiStatus::finishParse()
 {
   if (_d->parserInited) {
-    XML_Parse(_d->xmlParser, NULL, 0, true);
+    if (!XML_Parse(_d->xmlParser, NULL, 0, true)) {
+        SG_LOG(SG_IO, SG_WARN, "DAV parse error:" << XML_ErrorString(XML_GetErrorCode(_d->xmlParser))
+               << " at line:" << XML_GetCurrentLineNumber(_d->xmlParser)
+               << " column " << XML_GetCurrentColumnNumber(_d->xmlParser));
+        _d->valid = false;
+    } else {
+        _d->valid = true;
+    }
     XML_ParserFree(_d->xmlParser);
   }
   
@@ -382,6 +392,11 @@ void DAVMultiStatus::finishParse()
 DAVResource* DAVMultiStatus::resource()
 {
   return _d->rootResource;
+}
+
+bool DAVMultiStatus::isValid() const
+{
+    return _d->valid;
 }
 
 

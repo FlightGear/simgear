@@ -34,10 +34,8 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
-#include <zlib.h>
-
 #include <simgear/io/sg_netChat.hxx>
-#include <simgear/io/lowlevel.hxx>
+#include <simgear/io/HTTPContentDecode.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
@@ -65,19 +63,6 @@ namespace HTTP
 extern const int DEFAULT_HTTP_PORT = 80;
 const char* CONTENT_TYPE_URL_ENCODED = "application/x-www-form-urlencoded";
 const unsigned int MAX_INFLIGHT_REQUESTS = 32;
-const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
-const int ZLIB_INFLATE_WINDOW_BITS = -MAX_WBITS;
-  
-// see http://www.ietf.org/rfc/rfc1952.txt for these values and
-// detailed description of the logic 
-const int GZIP_HEADER_ID1 = 31;
-const int GZIP_HEADER_ID2 = 139;
-const int GZIP_HEADER_METHOD_DEFLATE = 8;
-const unsigned int GZIP_HEADER_SIZE = 10;
-const int GZIP_HEADER_FEXTRA = 1 << 2;
-const int GZIP_HEADER_FNAME = 1 << 3;
-const int GZIP_HEADER_COMMENT = 1 << 4;
-const int GZIP_HEADER_CRC = 1 << 1;
 
 class Connection;
 typedef std::multimap<std::string, Connection*> ConnectionDict;
@@ -109,23 +94,12 @@ public:
     Connection(Client* pr) :
         client(pr),
         state(STATE_CLOSED),
-        port(DEFAULT_HTTP_PORT),
-        zlibInflateBuffer(NULL),
-        zlibInflateBufferSize(0),
-        zlibOutputBuffer(NULL)
+        port(DEFAULT_HTTP_PORT)
     {
-        
     }
     
     virtual ~Connection()
     {
-      if (zlibInflateBuffer) {
-        free(zlibInflateBuffer);
-      }
-      
-      if (zlibOutputBuffer) {
-        free(zlibOutputBuffer);
-      }
     }
   
     void setServer(const string& h, short p)
@@ -159,6 +133,7 @@ public:
             SG_LOG(SG_IO, SG_INFO, "HTTP socket error");
             activeRequest->setFailure(error, "socket error");
             activeRequest = NULL;
+            _contentDecoder.reset();
         }
     
         state = STATE_SOCKET_ERROR;
@@ -186,6 +161,7 @@ public:
                     sentRequests.erase(it);
                 }
                 activeRequest = NULL;
+                _contentDecoder.reset();
             }
             
             state = STATE_CLOSED;
@@ -209,6 +185,7 @@ public:
             SG_LOG(SG_IO, SG_DEBUG, "HTTP socket timeout");
             activeRequest->setFailure(ETIMEDOUT, "socket timeout");
             activeRequest = NULL;
+            _contentDecoder.reset();
         }
         
         state = STATE_SOCKET_ERROR;
@@ -240,7 +217,7 @@ public:
 
       bodyTransferSize = -1;
       chunkedTransfer = false;
-      contentGZip = contentDeflate = false;
+      _contentDecoder.reset();
     }
   
     void tryStartNextRequest()
@@ -349,132 +326,12 @@ public:
         client->receivedBytes(static_cast<unsigned int>(n));
         
         if ((state == STATE_GETTING_BODY) || (state == STATE_GETTING_CHUNKED_BYTES)) {
-          if (contentGZip || contentDeflate) {
-            expandCompressedData(s, n);
-          } else {
-            activeRequest->processBodyBytes(s, n);
-          }
+            _contentDecoder.receivedBytes(s, n);
         } else {
             buffer += string(s, n);
         }
     }
 
-    
-    void expandCompressedData(const char* s, int n)
-    {
-      int reqSize = n + zlib.avail_in;
-      if (reqSize > zlibInflateBufferSize) {
-      // reallocate
-        unsigned char* newBuf = (unsigned char*) malloc(reqSize);
-        memcpy(newBuf, zlib.next_in, zlib.avail_in);
-        memcpy(newBuf + zlib.avail_in, s, n);
-        free(zlibInflateBuffer);
-        zlibInflateBuffer = newBuf;
-        zlibInflateBufferSize = reqSize;
-      } else {
-      // important to use memmove here, since it's very likely
-      // the source and destination ranges overlap
-        memmove(zlibInflateBuffer, zlib.next_in, zlib.avail_in);
-        memcpy(zlibInflateBuffer + zlib.avail_in, s, n);
-      }
-            
-      zlib.next_in = (unsigned char*) zlibInflateBuffer;
-      zlib.avail_in = reqSize;
-      zlib.next_out = zlibOutputBuffer;
-      zlib.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
-      
-      if (contentGZip && !handleGZipHeader()) {
-          return;
-      }
-      
-      int writtenSize = 0;
-      do {
-        int result = inflate(&zlib, Z_NO_FLUSH);
-        if (result == Z_OK || result == Z_STREAM_END) {
-            // nothing to do
-        } else {
-          SG_LOG(SG_IO, SG_WARN, "HTTP: got Zlib error:" << result);
-          return;
-        }
-            
-        writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - zlib.avail_out;
-        if (result == Z_STREAM_END) {
-            break;
-        }
-      } while ((writtenSize == 0) && (zlib.avail_in > 0));
-    
-      if (writtenSize > 0) {
-        activeRequest->processBodyBytes((const char*) zlibOutputBuffer, writtenSize);
-      }
-    }
-    
-    bool handleGZipHeader()
-    {
-        // we clear this down to contentDeflate once the GZip header has been seen
-        if (zlib.avail_in < GZIP_HEADER_SIZE) {
-          return false; // need more header bytes
-        }
-        
-        if ((zlibInflateBuffer[0] != GZIP_HEADER_ID1) ||
-            (zlibInflateBuffer[1] != GZIP_HEADER_ID2) ||
-            (zlibInflateBuffer[2] != GZIP_HEADER_METHOD_DEFLATE))
-        {
-          return false; // invalid GZip header
-        }
-        
-        char flags = zlibInflateBuffer[3];
-        unsigned int gzipHeaderSize =  GZIP_HEADER_SIZE;
-        if (flags & GZIP_HEADER_FEXTRA) {
-          gzipHeaderSize += 2;
-          if (zlib.avail_in < gzipHeaderSize) {
-            return false; // need more header bytes
-          }
-          
-          unsigned short extraHeaderBytes = *(reinterpret_cast<unsigned short*>(zlibInflateBuffer + GZIP_HEADER_FEXTRA));
-          if ( sgIsBigEndian() ) {
-              sgEndianSwap( &extraHeaderBytes );
-          }
-          
-          gzipHeaderSize += extraHeaderBytes;
-          if (zlib.avail_in < gzipHeaderSize) {
-            return false; // need more header bytes
-          }
-        }
-        
-        if (flags & GZIP_HEADER_FNAME) {
-          gzipHeaderSize++;
-          while (gzipHeaderSize <= zlib.avail_in) {
-            if (zlibInflateBuffer[gzipHeaderSize-1] == 0) {
-              break; // found terminating NULL character
-            }
-          }
-        }
-        
-        if (flags & GZIP_HEADER_COMMENT) {
-          gzipHeaderSize++;
-          while (gzipHeaderSize <= zlib.avail_in) {
-            if (zlibInflateBuffer[gzipHeaderSize-1] == 0) {
-              break; // found terminating NULL character
-            }
-          }
-        }
-        
-        if (flags & GZIP_HEADER_CRC) {
-          gzipHeaderSize += 2;
-        }
-        
-        if (zlib.avail_in < gzipHeaderSize) {
-          return false; // need more header bytes
-        }
-        
-        zlib.next_in += gzipHeaderSize;
-        zlib.avail_in -= gzipHeaderSize;
-      // now we've processed the GZip header, can decode as deflate
-        contentGZip = false;
-        contentDeflate = true;
-        return true;
-    }
-    
     virtual void foundTerminator(void)
     {
         idleTime.stamp();
@@ -572,34 +429,6 @@ private:
         string h = strutils::simplify(buffer);
         if (h.empty()) { // blank line terminates headers
             headersComplete();
-            
-            if (contentGZip || contentDeflate) {
-                memset(&zlib, 0, sizeof(z_stream));
-                if (!zlibOutputBuffer) {
-                    zlibOutputBuffer = (unsigned char*) malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
-                }
-            
-                // NULLs means we'll get default alloc+free methods
-                // which is absolutely fine
-                zlib.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
-                zlib.next_out = zlibOutputBuffer;
-                if (inflateInit2(&zlib, ZLIB_INFLATE_WINDOW_BITS) != Z_OK) {
-                  SG_LOG(SG_IO, SG_WARN, "inflateInit2 failed");
-                }
-            }
-          
-            if (chunkedTransfer) {
-                state = STATE_GETTING_CHUNKED;
-            } else if (noMessageBody || (bodyTransferSize == 0)) {
-                // force the state to GETTING_BODY, to simplify logic in
-                // responseComplete and handleClose
-                state = STATE_GETTING_BODY;
-                responseComplete();
-            } else {
-                setByteCount(bodyTransferSize); // may be -1, that's fine              
-                state = STATE_GETTING_BODY;
-            }
-            
             return;
         }
               
@@ -628,13 +457,7 @@ private:
             } else if (lkey == "transfer-encoding") {
                 processTransferEncoding(value);
             } else if (lkey == "content-encoding") {
-              if (value == "gzip") {
-                contentGZip = true;
-              } else if (value == "deflate") {
-                contentDeflate = true;
-              } else if (value != "identity") {
-                SG_LOG(SG_IO, SG_WARN, "unsupported content encoding:" << value);
-              }
+                _contentDecoder.setEncoding(value);
             }
         }
     
@@ -692,14 +515,25 @@ private:
     void headersComplete()
     {
         activeRequest->responseHeadersComplete();
+        _contentDecoder.initWithRequest(activeRequest);
+      
+        if (chunkedTransfer) {
+            state = STATE_GETTING_CHUNKED;
+        } else if (noMessageBody || (bodyTransferSize == 0)) {
+            // force the state to GETTING_BODY, to simplify logic in
+            // responseComplete and handleClose
+            state = STATE_GETTING_BODY;
+            responseComplete();
+        } else {
+            setByteCount(bodyTransferSize); // may be -1, that's fine
+            state = STATE_GETTING_BODY;
+        }
     }
     
     void responseComplete()
     {
         Request_ptr completedRequest = activeRequest;        
-        if (contentDeflate) {
-          inflateEnd(&zlib);
-        }
+        _contentDecoder.finish();
       
         assert(sentRequests.front() == activeRequest);
         sentRequests.pop_front();
@@ -753,15 +587,11 @@ private:
     bool chunkedTransfer;
     bool noMessageBody;
     int requestBodyBytesToSend;
-  
-    z_stream zlib;
-    unsigned char* zlibInflateBuffer;
-    int zlibInflateBufferSize;
-    unsigned char* zlibOutputBuffer;
-    bool contentGZip, contentDeflate;
-  
+    
     RequestList queuedRequests;
     RequestList sentRequests;
+    
+    ContentDecoder _contentDecoder;
 };
 
 Client::Client() :

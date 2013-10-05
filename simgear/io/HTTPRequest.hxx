@@ -96,6 +96,7 @@ protected:
 private:
     friend class Client;
     friend class Connection;
+    friend class ContentDecoder;
     
     void processBodyBytes(const char* s, int n);
     void setFailure(int code, const std::string& reason);

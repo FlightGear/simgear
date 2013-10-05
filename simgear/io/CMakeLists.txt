@@ -16,6 +16,7 @@ set(HEADERS
     sg_socket_udp.hxx
     HTTPClient.hxx
     HTTPRequest.hxx
+    HTTPContentDecode.hxx
     DAVMultiStatus.hxx
     SVNRepository.hxx
     SVNDirectory.hxx
@@ -36,6 +37,7 @@ set(SOURCES
     sg_socket_udp.cxx
     HTTPClient.cxx
     HTTPRequest.cxx
+    HTTPContentDecode.cxx
     DAVMultiStatus.cxx
     SVNRepository.cxx
     SVNDirectory.cxx

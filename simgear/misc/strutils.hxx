@@ -160,7 +160,7 @@ namespace simgear {
      * NULs). Throws an exception if input data is not base64, or is
      * malformed
      */
-    std::string decodeBase64(const std::string& a);
+      void decodeBase64(const std::string& a, std::vector<unsigned char>& output);
     
     /**
      * convert bytes to hexadecimal equivalent

@@ -165,7 +165,7 @@ namespace {
          _ptr = p;
      }
   
-    bool apply(std::vector<char>& output, std::istream& source)
+    bool apply(std::vector<unsigned char>& output, std::istream& source)
     {
         unsigned char* pEnd = _ptr + instructionLength;
         unsigned char* newData = pEnd;
@@ -330,11 +330,12 @@ public:
   }
   
   bool decodeTextDelta(const SGPath& outputPath)
-  {    
-    string decoded = strutils::decodeBase64(txDeltaData);
+  {
+      std::vector<unsigned char> output, decoded;
+    strutils::decodeBase64(txDeltaData, decoded);
     size_t bytesToDecode = decoded.size();
-    std::vector<char> output;      
-    unsigned char* p = (unsigned char*) decoded.data();
+         
+    unsigned char* p = decoded.data();
     if (memcmp(p, "SVN\0", DELTA_HEADER_SIZE) != 0) {
         return false; // bad header
     }
@@ -346,9 +347,9 @@ public:
     
     while (bytesToDecode > 0) {  
         if (!SVNDeltaWindow::isWindowComplete(p, bytesToDecode)) {
-	  SG_LOG(SG_IO, SG_WARN, "SVN txdelta broken window");
-	  return false;
-	}
+            SG_LOG(SG_IO, SG_WARN, "SVN txdelta broken window");
+            return false;
+        }
 	
         SVNDeltaWindow window(p);      
         assert(bytesToDecode >= window.size());
@@ -362,7 +363,7 @@ public:
     std::ofstream f;
     f.open(outputPath.c_str(), 
       std::ios::out | std::ios::trunc | std::ios::binary);
-    f.write(output.data(), output.size());
+    f.write((char*) output.data(), output.size());
 
     // compute MD5 while we have the file in memory
     memset(&md5Context, 0, sizeof(SG_MD5_CTX));

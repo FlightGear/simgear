@@ -765,6 +765,14 @@ void naSave(naContext ctx, naRef obj)
     naVec_append(globals->save, obj);
 }
 
+void naClearSaved()
+{
+    naContext c;
+    c = naNewContext();
+    globals->save = naNewVector(c);
+    naFreeContext(c);   
+}
+
 int naStackDepth(naContext ctx)
 {
     return ctx ? ctx->fTop + naStackDepth(ctx->callChild): 0;

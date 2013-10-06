@@ -42,9 +42,15 @@ naContext naSubContext(naContext super);
 void naSetUserData(naContext c, void* p);
 void* naGetUserData(naContext c) GCC_PURE;
 
+// run GC now (may block)
+void naGC();
+
 // "Save" this object in the context, preventing it (and objects
 // referenced by it) from being garbage collected.
 void naSave(naContext ctx, naRef obj);
+
+// Drop all saved references
+void naClearSaved();
 
 // Similar, but the object is automatically released when the
 // context next runs native bytecode.  Useful for saving off C-space

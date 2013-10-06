@@ -118,6 +118,15 @@ static void bottleneck()
     }
 }
 
+void naGC()
+{
+    LOCK();
+    globals->needGC = 1;
+    bottleneck();
+    UNLOCK();
+    naCheckBottleneck();
+}
+
 void naCheckBottleneck()
 {
     if(globals->bottleneck) { LOCK(); bottleneck(); UNLOCK(); }

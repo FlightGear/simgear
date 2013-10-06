@@ -42,7 +42,8 @@ public:
   virtual ~SGModelPlacement ();
 
   virtual void init( osg::Node* model );
-
+  void clear();
+  
   virtual void update();
 
   virtual osg::Node* getSceneGraph () { return _selector.get(); }

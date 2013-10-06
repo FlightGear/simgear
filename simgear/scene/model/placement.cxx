@@ -44,6 +44,12 @@ SGModelPlacement::init( osg::Node * model )
   _selector->setValue(0, 1);
 }
 
+void SGModelPlacement::clear()
+{
+    _selector = NULL;
+    _transform = NULL;
+}
+
 void
 SGModelPlacement::update()
 {

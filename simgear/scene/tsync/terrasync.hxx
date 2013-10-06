@@ -40,10 +40,11 @@ class SGTerraSync : public SGSubsystem
 {
 public:
 
-    SGTerraSync(SGPropertyNode_ptr root);
+    SGTerraSync();
     virtual ~SGTerraSync();
     
     virtual void init();    
+    virtual void shutdown();
     virtual void reinit();
     virtual void bind();
     virtual void unbind();
@@ -59,6 +60,8 @@ public:
     
     bool scheduleTile(const SGBucket& bucket);
     
+    void setRoot(SGPropertyNode_ptr root);
+
     /// retrive the associated log object, for displaying log
     /// output somewhere (a UI, presumably)
     BufferedLogCallback* log() const

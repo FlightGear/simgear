@@ -755,11 +755,10 @@ void SGTerraSync::SvnThread::writeCompletedTilesPersistentCache() const
 ///////////////////////////////////////////////////////////////////////////////
 // SGTerraSync ////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-SGTerraSync::SGTerraSync(SGPropertyNode_ptr root) :
+SGTerraSync::SGTerraSync() :
     _svnThread(NULL),
     last_lat(NOWHERE),
     last_lon(NOWHERE),
-    _terraRoot(root->getNode("/sim/terrasync",true)),
     _bound(false),
     _inited(false)
 {
@@ -772,11 +771,16 @@ SGTerraSync::SGTerraSync(SGPropertyNode_ptr root) :
 
 SGTerraSync::~SGTerraSync()
 {
-    _tiedProperties.Untie();
     delete _svnThread;
     _svnThread = NULL;
     sglog().removeCallback(_log);
     delete _log;
+     _tiedProperties.Untie();
+}
+
+void SGTerraSync::setRoot(SGPropertyNode_ptr root)
+{
+    _terraRoot = root->getNode("/sim/terrasync",true);
 }
 
 void SGTerraSync::init()
@@ -786,9 +790,16 @@ void SGTerraSync::init()
     }
     
     _inited = true;
+    
+    assert(_terraRoot);
     _terraRoot->setBoolValue("built-in-svn-available",svn_built_in_available);
         
     reinit();
+}
+
+void SGTerraSync::shutdown()
+{
+     _svnThread->stop();
 }
 
 void SGTerraSync::reinit()

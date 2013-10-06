@@ -73,7 +73,8 @@ public:
 
     virtual void init() {}
     virtual void update(double delta_time_sec);
-
+    virtual void unbind();
+    
     void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
 
     /**

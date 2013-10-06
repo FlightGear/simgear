@@ -38,6 +38,12 @@ void SGTimer::run()
     (*callback)();
 }
 
+void SGEventMgr::unbind()
+{
+    _freezeProp.clear();
+    _rtProp.clear();
+}
+
 void SGEventMgr::update(double delta_time_sec)
 {
     _simQueue.update(delta_time_sec);

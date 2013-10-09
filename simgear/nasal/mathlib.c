@@ -155,14 +155,17 @@ static naRef f_round(naContext c, naRef me, int argc, naRef* args)
 {
     naRef a = naNumValue(argc > 0 ? args[0] : naNil());
     naRef b = naNumValue(argc > 1 ? args[1] : naNil());
+#ifdef _MSC_VER
+    double x,y;
+#endif    
     if(naIsNil(a))
         naRuntimeError(c, "non numeric arguments to round()");
     if (naIsNil(b))
         b.num = 1.0;
 
 #ifdef _MSC_VER // MSVC is not C99-compatible, no round() in math.h
-    double y = a.num / b.num;
-    double x = floor(y + 0.5);
+    y = a.num / b.num;
+    x = floor(y + 0.5);
 #else
     double x = round(a.num / b.num);
 #endif

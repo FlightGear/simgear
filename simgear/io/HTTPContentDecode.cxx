@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstdlib> // rand()
 #include <iostream>
+#include <cstring> // for memset, memcpy
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>

@@ -51,7 +51,6 @@ namespace canvas
   SG_FWD_DECL(Text)
 
   SG_FWD_DECL(Event)
-  SG_FWD_DECL(EventListener)
   SG_FWD_DECL(MouseEvent)
   SG_FWD_DECL(Placement)
   SG_FWD_DECL(SystemAdapter)
@@ -72,6 +71,8 @@ namespace canvas
   typedef std::vector<PlacementPtr> Placements;
   typedef boost::function<Placements( SGPropertyNode*,
                                       CanvasPtr )> PlacementFactory;
+
+  typedef boost::function<void(const EventPtr&)> EventListener;
 
 } // namespace canvas
 } // namespace simgear

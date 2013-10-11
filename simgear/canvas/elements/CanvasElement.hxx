@@ -92,7 +92,9 @@ namespace canvas
        */
       virtual void update(double dt);
 
-      naRef addEventListener(const nasal::CallContext& ctx);
+      bool addEventListener(const std::string& type, const EventListener& cb);
+      bool addNasalEventListener(const std::string& type, naRef code);
+
       virtual void clearEventListener();
 
       virtual bool accept(EventVisitor& visitor);
@@ -189,7 +191,7 @@ namespace canvas
       Style                             _style;
       std::vector<SGPropertyNode_ptr>   _bounding_box;
 
-      typedef std::vector<EventListenerPtr> Listener;
+      typedef std::vector<EventListener> Listener;
       typedef std::map<Event::Type, Listener> ListenerMap;
 
       ListenerMap _listener;

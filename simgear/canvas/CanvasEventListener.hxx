@@ -27,14 +27,15 @@ namespace simgear
 namespace canvas
 {
 
-  class EventListener
+  class NasalEventListener:
+    public SGReferenced
   {
     public:
-      EventListener( naRef code,
-                     const SystemAdapterPtr& sys_adapter );
-      ~EventListener();
+      NasalEventListener( naRef code,
+                          const SystemAdapterPtr& sys_adapter );
+      ~NasalEventListener();
 
-      void call(const canvas::EventPtr& event);
+      void operator()(const canvas::EventPtr& event) const;
 
     protected:
       naRef _code;

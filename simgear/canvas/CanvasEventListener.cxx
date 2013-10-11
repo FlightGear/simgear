@@ -28,7 +28,8 @@ namespace canvas
 {
 
   //----------------------------------------------------------------------------
-  EventListener::EventListener(naRef code, const SystemAdapterPtr& sys_adapter):
+  NasalEventListener::NasalEventListener( naRef code,
+                                          const SystemAdapterPtr& sys_adapter ):
     _code(code),
     _gc_key(-1),
     _sys(sys_adapter)
@@ -39,23 +40,25 @@ namespace canvas
         && !naIsFunc(code) )
       throw std::runtime_error
       (
-        "canvas::EventListener: invalid function argument"
+        "canvas::NasalEventListener: invalid function argument"
       );
 
     _gc_key = sys_adapter->gcSave(_code);
   }
 
   //----------------------------------------------------------------------------
-  EventListener::~EventListener()
+  NasalEventListener::~NasalEventListener()
   {
-    assert( !_sys.expired() );
-    _sys.lock()->gcRelease(_gc_key);
+    if( !_sys.expired() )
+      _sys.lock()->gcRelease(_gc_key);
   }
 
   //----------------------------------------------------------------------------
-  void EventListener::call(const canvas::EventPtr& event)
+  void NasalEventListener::operator()(const canvas::EventPtr& event) const
   {
     SystemAdapterPtr sys = _sys.lock();
+    if( !sys )
+      return;
 
     naRef args[] = {
       nasal::Ghost<EventPtr>::create(sys->getNasalContext(), event)
@@ -64,7 +67,6 @@ namespace canvas
 
     sys->callMethod(_code, naNil(), num_args, args, naNil());
   }
-
 
 } // namespace canvas
 } // namespace simgear

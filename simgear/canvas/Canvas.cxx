@@ -320,12 +320,22 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  naRef Canvas::addEventListener(const nasal::CallContext& ctx)
+  bool Canvas::addEventListener( const std::string& type,
+                                 const EventListener& cb )
   {
     if( !_root_group.get() )
-      naRuntimeError(ctx.c, "Canvas: No root group!");
+      throw std::runtime_error("Canvas::AddEventListener: no root group!");
 
-    return _root_group->addEventListener(ctx);
+    return _root_group->addEventListener(type, cb);
+  }
+
+  //----------------------------------------------------------------------------
+  bool Canvas::addNasalEventListener(const std::string& type, naRef code)
+  {
+    if( !_root_group.get() )
+      throw std::runtime_error("Canvas::AddNasalEventListener: no root group!");
+
+    return _root_group->addNasalEventListener(type, code);
   }
 
   //----------------------------------------------------------------------------

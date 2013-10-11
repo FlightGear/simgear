@@ -132,7 +132,8 @@ namespace canvas
 
       void update(double delta_time_sec);
 
-      naRef addEventListener(const nasal::CallContext& ctx);
+      bool addEventListener(const std::string& type, const EventListener& cb);
+      bool addNasalEventListener(const std::string& type, naRef code);
 
       void setSizeX(int sx);
       void setSizeY(int sy);

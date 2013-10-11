@@ -173,11 +173,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  naRef Element::addEventListener(const nasal::CallContext& ctx)
+  bool Element::addEventListener( const std::string& type_str,
+                                  const EventListener& cb )
   {
-    const std::string type_str = ctx.requireArg<std::string>(0);
-    naRef code = ctx.requireArg<naRef>(1);
-
     SG_LOG
     (
       SG_NASAL,
@@ -187,17 +185,29 @@ namespace canvas
 
     Event::Type type = Event::strToType(type_str);
     if( type == Event::UNKNOWN )
-      naRuntimeError( ctx.c,
-                      "addEventListener: Unknown event type %s",
-                      type_str.c_str() );
+    {
+      SG_LOG( SG_NASAL,
+              SG_WARN,
+              "addEventListener: Unknown event type " << type_str );
+      return false;
+    }
 
-    _listener[ type ].push_back
+    _listener[ type ].push_back(cb);
+
+    return true;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::addNasalEventListener(const std::string& type, naRef code)
+  {
+    SGSharedPtr<NasalEventListener> listener =
+      new NasalEventListener(code, _canvas.lock()->getSystemAdapter());
+
+    return addEventListener
     (
-      boost::make_shared<EventListener>( code,
-                                         _canvas.lock()->getSystemAdapter() )
+      type,
+      boost::bind(&NasalEventListener::operator(), listener, _1)
     );
-
-    return naNil();
   }
 
   //----------------------------------------------------------------------------
@@ -236,8 +246,8 @@ namespace canvas
     if( listeners == _listener.end() )
       return false;
 
-    BOOST_FOREACH(EventListenerPtr listener, listeners->second)
-      listener->call(event);
+    BOOST_FOREACH(EventListener const& listener, listeners->second)
+      listener(event);
 
     return true;
   }

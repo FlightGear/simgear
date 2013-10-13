@@ -84,7 +84,21 @@ namespace nasal
   {
     free_function_t* func = static_cast<free_function_t*>(user_data);
     assert(func);
-    return (*func)(nasal::CallContext(c, argc, args));
+
+    try
+    {
+      return (*func)(nasal::CallContext(c, argc, args));
+    }
+    catch(const std::exception& ex)
+    {
+      naRuntimeError(c, "Fatal error in Nasal call: %s", ex.what());
+    }
+    catch(...)
+    {
+      naRuntimeError(c, "Unknown exception in Nasal call.");
+    }
+
+    return naNil();
   }
 
   //----------------------------------------------------------------------------

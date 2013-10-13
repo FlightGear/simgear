@@ -233,11 +233,24 @@ namespace nasal
             if( !holder )
               naRuntimeError(c, "invalid method holder!");
 
-            return holder->_method
-            (
-              requireObject(c, me),
-              CallContext(c, argc, args)
-            );
+            try
+            {
+              return holder->_method
+              (
+                requireObject(c, me),
+                CallContext(c, argc, args)
+              );
+            }
+            catch(const std::exception& ex)
+            {
+              naRuntimeError(c, "Fatal error in method call: %s", ex.what());
+            }
+            catch(...)
+            {
+              naRuntimeError(c, "Unknown exception in method call.");
+            }
+
+            return naNil();
           }
       };
 

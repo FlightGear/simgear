@@ -30,6 +30,7 @@
 #include <iostream>
 #include <errno.h>
 #include <map>
+#include <stdexcept>
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -666,6 +667,9 @@ void Client::update(int waitTimeout)
 
 void Client::makeRequest(const Request_ptr& r)
 {
+    if( r->url().find("://") == std::string::npos )
+      throw std::runtime_error("Unable to parse URL (missing scheme)");
+
     string host = r->host();
     int port = r->port();
     if (!d->proxy.empty()) {

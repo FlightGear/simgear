@@ -85,16 +85,45 @@ SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg) cons
 {
   Command* command = getCommand(name);
   if (command == 0)
-    return false;
-
-
-  try {
-    return (*command)(arg);
-  } catch (sg_exception& e) {
-    SG_LOG(SG_GENERAL, SG_ALERT, "command '" << name << "' failed with exception\n"
-      << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
+  {
+    SG_LOG(SG_GENERAL, SG_WARN, "command not found: '" << name << "'");
     return false;
   }
+
+  try
+  {
+    return (*command)(arg);
+  }
+  catch(sg_exception& e)
+  {
+    SG_LOG
+    (
+      SG_GENERAL,
+      SG_ALERT,
+      "command '" << name << "' failed with exception\n"
+      "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")"
+    );
+  }
+  catch(std::exception& ex)
+  {
+    SG_LOG
+    (
+      SG_GENERAL,
+      SG_ALERT,
+      "command '" << name << "' failed with exception: " << ex.what()
+    );
+  }
+  catch(...)
+  {
+    SG_LOG
+    (
+      SG_GENERAL,
+      SG_ALERT,
+      "command '" << name << "' failed with unknown exception."
+    );
+  }
+
+  return false;
 }
 
 // end of commands.cxx

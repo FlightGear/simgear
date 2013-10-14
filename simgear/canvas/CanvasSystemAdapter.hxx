@@ -40,18 +40,6 @@ namespace canvas
       virtual naContext getNasalContext() const = 0;
 
       /**
-       * Save passed reference to Nasal object from being deleted by the
-       * garbage collector.
-       */
-      virtual int gcSave(naRef r) = 0;
-
-      /**
-       * Release an object previously passed to ::gcSave to allow it being
-       * cleaned up by the garbage collector.
-       */
-      virtual void gcRelease(int key) = 0;
-
-      /**
        * Call a Nasal function with the given environment and arguments.
        */
       virtual naRef callMethod( naRef code,

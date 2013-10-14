@@ -43,14 +43,13 @@ namespace canvas
         "canvas::NasalEventListener: invalid function argument"
       );
 
-    _gc_key = sys_adapter->gcSave(_code);
+    _gc_key = naGCSave(_code);
   }
 
   //----------------------------------------------------------------------------
   NasalEventListener::~NasalEventListener()
   {
-    if( !_sys.expired() )
-      _sys.lock()->gcRelease(_gc_key);
+    naGCRelease(_gc_key);
   }
 
   //----------------------------------------------------------------------------

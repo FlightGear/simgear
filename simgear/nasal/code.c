@@ -180,6 +180,8 @@ static void initGlobals()
 
     globals->symbols = naNewHash(c);
     globals->save = naNewVector(c);
+    globals->save_hash = naNewHash(c);
+    globals->next_gc_key = 0;
 
     // Cache pre-calculated "me", "arg" and "parents" scalars
     globals->meRef = naInternSymbol(naStr_fromdata(naNewString(c), "me", 2));
@@ -765,12 +767,25 @@ void naSave(naContext ctx, naRef obj)
     naVec_append(globals->save, obj);
 }
 
+int naGCSave(naRef obj)
+{
+  int key = globals->next_gc_key++;
+  naHash_set(globals->save_hash, naNum(key), obj);
+  return key;
+}
+
+void naGCRelease(int key)
+{
+  naHash_delete(globals->save_hash, naNum(key));
+}
+
 void naClearSaved()
 {
     naContext c;
     c = naNewContext();
     globals->save = naNewVector(c);
-    naFreeContext(c);   
+    globals->save_hash = naNewHash(c);
+    naFreeContext(c);
 }
 
 int naStackDepth(naContext ctx)

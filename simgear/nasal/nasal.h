@@ -47,7 +47,16 @@ void naGC();
 
 // "Save" this object in the context, preventing it (and objects
 // referenced by it) from being garbage collected.
+// TODO do we need a context? It is not used anyhow...
 void naSave(naContext ctx, naRef obj);
+
+// "Save" this object and get a key which allows do mark the object as free
+// later on (with naGCFree).
+int naGCSave(naRef obj);
+
+// Release an object previously passed to naGCSave to allow it being cleaned up
+// by the garbage collector.
+void naGCRelease(int key);
 
 // Drop all saved references
 void naClearSaved();

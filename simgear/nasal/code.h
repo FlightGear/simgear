@@ -62,7 +62,11 @@ struct Globals {
     // A hash of symbol names
     naRef symbols;
 
+    // Vector/hash containing objects which should not be freed by the gc
+    // TODO do we need a separate vector and hash?
     naRef save;
+    naRef save_hash;
+    int next_gc_key;
 
     struct Context* freeContexts;
     struct Context* allContexts;

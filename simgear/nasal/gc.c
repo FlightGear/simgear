@@ -54,6 +54,7 @@ static void garbageCollect()
     }
 
     mark(globals->save);
+    mark(globals->save_hash);
     mark(globals->symbols);
     mark(globals->meRef);
     mark(globals->argRef);

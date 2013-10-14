@@ -17,6 +17,12 @@
     return 1; \
   }
 
+enum MyEnum
+{
+  ENUM_FIRST,
+  ENUM_ANOTHER,
+  ENUM_LAST
+};
 struct Base
 {
   naRef member(const nasal::CallContext&) { return naNil(); }
@@ -82,6 +88,9 @@ int main(int argc, char* argv[])
   naRef r;
 
   using namespace nasal;
+
+  r = to_nasal(c, ENUM_ANOTHER);
+  VERIFY( from_nasal<int>(c, r) == ENUM_ANOTHER );
 
   r = to_nasal(c, "Test");
   VERIFY( strncmp("Test", naStr_data(r), naStr_len(r)) == 0 );

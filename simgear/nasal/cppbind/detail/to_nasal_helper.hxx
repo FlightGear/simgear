@@ -76,6 +76,16 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const free_function_t& func);
 
   /**
+   * Convert an enum value to the according numeric value
+   */
+  template<class T>
+  typename boost::enable_if< boost::is_enum<T>, naRef >::type
+  to_nasal_helper(naContext c, T val)
+  {
+    return naNum(val);
+  }
+
+  /**
    * Convert a numeric type to Nasal number
    */
   template<class T>

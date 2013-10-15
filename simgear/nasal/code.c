@@ -936,3 +936,51 @@ naRef naContinue(naContext ctx)
     if(!ctx->callParent) naModUnlock();
     return result;
 }
+
+static void logError(naContext ctx)
+{
+    int i;
+    printf("logError\n");
+    printf("Nasal runtime error: %s\n", naGetError(ctx));
+    printf("  at %s\n", naStr_data(naGetSourceFile(ctx, 0)));
+    printf(", line %d\n", naGetLine(ctx, 0));
+    for(i = 1; i < naStackDepth(ctx); ++i )
+        printf( "  called from: %s, line %d",
+                naStr_data(naGetSourceFile(ctx, i)),
+                naGetLine(ctx, i));
+}
+
+static naErrorHandler error_handler = &logError;
+naErrorHandler naSetErrorHandler(naErrorHandler cb)
+{
+  naErrorHandler old_handler = error_handler;
+  error_handler = cb;
+  return old_handler;
+}
+
+static int call_count = 0;
+naRef naCallMethodCtx( naContext ctx,
+                       naRef code,
+                       naRef self,
+                       int argc,
+                       naRef* args,
+                       naRef locals )
+{
+    naRef result;
+    if(call_count) naModUnlock();
+    call_count++;
+    result = naCall(ctx, code, argc, args, self, locals);
+    if(naGetError(ctx) && error_handler)
+        error_handler(ctx);
+    call_count--;
+    if(call_count) naModLock();
+    return result;
+}
+
+naRef naCallMethod(naRef code, naRef self, int argc, naRef* args, naRef locals)
+{
+    naContext ctx = naNewContext();
+    naRef result = naCallMethodCtx(ctx, code, self, argc, args, locals);
+    naFreeContext(ctx);
+    return result;
+}

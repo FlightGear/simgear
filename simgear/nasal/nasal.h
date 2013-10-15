@@ -103,6 +103,28 @@ naRef naCall(naContext ctx, naRef func, int argc, naRef* args,
 // naModUnlock() first if the lock is already held.
 naRef naContinue(naContext ctx);
 
+// Does a naCall() in a given context.  Wrapped here to make lock
+// tracking easier.  Extension functions are called with the lock, but
+// we have to release it before making a new naCall().  So rather than
+// drop the lock in every extension function that might call back into
+// Nasal, we keep a stack depth counter here and only unlock/lock
+// around the naCall if it isn't the first one.
+naRef naCallMethodCtx( naContext ctx,
+                       naRef code,
+                       naRef self,
+                       int argc,
+                       naRef* args,
+                       naRef locals );
+
+// Same as naCallMethodCtx but creates (and afterwards destroyes) a new context
+naRef naCallMethod(naRef code, naRef self, int argc, naRef* args, naRef locals);
+
+typedef void (*naErrorHandler)(naContext);
+
+// Register a handler to be called if an error is raised during the execution of
+// naCallMethodCtx or naCallMethod.
+naErrorHandler naSetErrorHandler(naErrorHandler cb);
+
 // Throw an error from the current call stack.  This function makes a
 // longjmp call to a handler in naCall() and DOES NOT RETURN.  It is
 // intended for use in library code that cannot otherwise report an

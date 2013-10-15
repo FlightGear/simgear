@@ -43,7 +43,6 @@ namespace nasal
    * Thrown when converting a type from/to Nasal has failed
    */
   class bad_nasal_cast:
-    public std::bad_cast,
     public sg_exception
   {
     public:

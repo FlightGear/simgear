@@ -19,6 +19,7 @@
 #include "CanvasEventManager.hxx"
 #include "MouseEvent.hxx"
 #include <simgear/canvas/elements/CanvasElement.hxx>
+#include <cmath>
 
 namespace simgear
 {

@@ -4,7 +4,6 @@ set(HEADERS
   canvas_fwd.hxx
   Canvas.hxx
   CanvasEvent.hxx
-  CanvasEventListener.hxx
   CanvasEventManager.hxx
   CanvasEventTypes.hxx
   CanvasEventVisitor.hxx
@@ -20,7 +19,6 @@ set(HEADERS
 set(SOURCES
   Canvas.cxx
   CanvasEvent.cxx
-  CanvasEventListener.cxx
   CanvasEventManager.cxx
   CanvasEventVisitor.cxx
   CanvasMgr.cxx

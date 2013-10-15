@@ -23,13 +23,13 @@
 #include <simgear/canvas/CanvasEvent.hxx>
 #include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/misc/stdint.hxx> // for uint32_t
-#include <simgear/nasal/cppbind/Ghost.hxx>
 
 #include <osg/BoundingBox>
 #include <osg/MatrixTransform>
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
 namespace osg
 {
@@ -93,8 +93,6 @@ namespace canvas
       virtual void update(double dt);
 
       bool addEventListener(const std::string& type, const EventListener& cb);
-      bool addNasalEventListener(const std::string& type, naRef code);
-
       virtual void clearEventListener();
 
       virtual bool accept(EventVisitor& visitor);

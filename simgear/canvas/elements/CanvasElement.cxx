@@ -18,7 +18,6 @@
 
 #include "CanvasElement.hxx"
 #include <simgear/canvas/Canvas.hxx>
-#include <simgear/canvas/CanvasEventListener.hxx>
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
 #include <simgear/math/SGMisc.hxx>
@@ -178,7 +177,7 @@ namespace canvas
   {
     SG_LOG
     (
-      SG_NASAL,
+      SG_GENERAL,
       SG_INFO,
       "addEventListener(" << _node->getPath() << ", " << type_str << ")"
     );
@@ -186,7 +185,7 @@ namespace canvas
     Event::Type type = Event::strToType(type_str);
     if( type == Event::UNKNOWN )
     {
-      SG_LOG( SG_NASAL,
+      SG_LOG( SG_GENERAL,
               SG_WARN,
               "addEventListener: Unknown event type " << type_str );
       return false;
@@ -195,19 +194,6 @@ namespace canvas
     _listener[ type ].push_back(cb);
 
     return true;
-  }
-
-  //----------------------------------------------------------------------------
-  bool Element::addNasalEventListener(const std::string& type, naRef code)
-  {
-    SGSharedPtr<NasalEventListener> listener =
-      new NasalEventListener(code, _canvas.lock()->getSystemAdapter());
-
-    return addEventListener
-    (
-      type,
-      boost::bind(&NasalEventListener::operator(), listener, _1)
-    );
   }
 
   //----------------------------------------------------------------------------

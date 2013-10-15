@@ -330,15 +330,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Canvas::addNasalEventListener(const std::string& type, naRef code)
-  {
-    if( !_root_group.get() )
-      throw std::runtime_error("Canvas::AddNasalEventListener: no root group!");
-
-    return _root_group->addNasalEventListener(type, code);
-  }
-
-  //----------------------------------------------------------------------------
   void Canvas::setSizeX(int sx)
   {
     if( _size_x == sx )

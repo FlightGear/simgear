@@ -20,7 +20,6 @@
 #define SG_CANVAS_SYSTEM_ADAPTER_HXX_
 
 #include "canvas_fwd.hxx"
-#include <simgear/nasal/nasal.h>
 
 namespace simgear
 {
@@ -36,17 +35,6 @@ namespace canvas
       virtual void addCamera(osg::Camera* camera) const = 0;
       virtual void removeCamera(osg::Camera* camera) const = 0;
       virtual osg::Image* getImage(const std::string& path) const = 0;
-
-      virtual naContext getNasalContext() const = 0;
-
-      /**
-       * Call a Nasal function with the given environment and arguments.
-       */
-      virtual naRef callMethod( naRef code,
-                                naRef self,
-                                int argc,
-                                naRef* args,
-                                naRef locals ) = 0;
   };
 
 } // namespace canvas

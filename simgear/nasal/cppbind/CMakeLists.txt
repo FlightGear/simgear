@@ -4,12 +4,14 @@ set(HEADERS
   Ghost.hxx
   NasalCallContext.hxx
   NasalHash.hxx
+  NasalObjectHolder.hxx
   NasalString.hxx
   from_nasal.hxx
   to_nasal.hxx
 )
 
 set(DETAIL_HEADERS
+  detail/from_nasal_function_templates.hxx
   detail/from_nasal_helper.hxx
   detail/functor_templates.hxx
   detail/nasal_traits.hxx
@@ -18,6 +20,7 @@ set(DETAIL_HEADERS
 
 set(SOURCES
   NasalHash.cxx
+  NasalObjectHolder.cxx
   NasalString.cxx
   detail/from_nasal_helper.cxx
   detail/to_nasal_helper.cxx

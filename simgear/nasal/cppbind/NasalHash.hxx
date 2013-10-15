@@ -87,6 +87,21 @@ namespace nasal
       }
 
       /**
+       * Get member converted to callable object
+       *
+       * @tparam Sig    Function signature
+       * @param name    Member name
+       */
+      template<class Sig>
+      typename boost::enable_if< boost::is_function<Sig>,
+                                 boost::function<Sig>
+                               >::type
+      get(const std::string& name)
+      {
+        return from_nasal_helper(_context, get(name), static_cast<Sig*>(0));
+      }
+
+      /**
        * Create a new child hash (module)
        *
        * @param name  Name of the new hash inside this hash

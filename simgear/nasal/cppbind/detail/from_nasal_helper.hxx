@@ -23,13 +23,20 @@
 #include "nasal_traits.hxx"
 
 #include <simgear/nasal/nasal.h>
+#include <simgear/nasal/cppbind/NasalObjectHolder.hxx>
+#include <simgear/nasal/cppbind/to_nasal.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
 
-#include <boost/utility/enable_if.hpp>
+#include <boost/bind.hpp>
+#include <boost/call_traits.hpp>
+#include <boost/function.hpp>
+#include <boost/preprocessor/iteration/iterate.hpp>
+#include <boost/preprocessor/repetition/enum_shifted_params.hpp>
 #include <boost/type_traits.hpp>
+#include <boost/utility/enable_if.hpp>
 
 #include <string>
-#include <typeinfo> // std::bad_cast
 #include <vector>
 
 class SGPath;
@@ -98,6 +105,42 @@ namespace nasal
    */
   bool from_nasal_helper(naContext c, naRef ref, const bool*);
 
+  namespace detail
+  {
+#define SG_BOOST_FUNCTION_FROM_NASAL_FWD
+#define BOOST_PP_ITERATION_LIMITS (0, 9)
+#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/from_nasal_function_templates.hxx>
+#include BOOST_PP_ITERATE()
+#undef SG_BOOST_FUNCTION_FROM_NASAL_FWD
+  }
+
+  /**
+   * Convert a Nasal function to a boost::function with the given signature.
+   *
+   * @tparam Sig    Signature of returned function (arguments and return value
+   *                are automatically converted using from_nasal/to_nasal)
+   */
+  template<class Sig>
+  boost::function<Sig>
+  from_nasal_helper(naContext c, naRef ref, boost::function<Sig>*)
+  {
+    if(    !naIsCode(ref)
+        && !naIsCCode(ref)
+        && !naIsFunc(ref) )
+      throw bad_nasal_cast("not a function");
+
+    return detail::boostFunctionFromNasal(ref, static_cast<Sig*>(0));
+  }
+
+  template<class Sig>
+  typename boost::enable_if< boost::is_function<Sig>,
+                             boost::function<Sig>
+                           >::type
+  from_nasal_helper(naContext c, naRef ref, Sig*)
+  {
+    return from_nasal_helper(c, ref, static_cast<boost::function<Sig>*>(0));
+  }
+
   /**
    * Convert a Nasal number to a C++ numeric type
    */
@@ -145,6 +188,14 @@ namespace nasal
     if( vec.size() != 2 )
       throw bad_nasal_cast("Expected vector with two elements");
     return Vec2(vec[0], vec[1]);
+  }
+
+  // Helpers for wrapping calls to Nasal functions into boost::function
+  namespace detail
+  {
+#define BOOST_PP_ITERATION_LIMITS (0, 9)
+#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/from_nasal_function_templates.hxx>
+#include BOOST_PP_ITERATE()
   }
 
 } // namespace nasal

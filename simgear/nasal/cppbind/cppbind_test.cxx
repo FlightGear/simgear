@@ -80,7 +80,7 @@ naRef f_derivedGetX(naContext c, const Derived& d)
 {
   return nasal::to_nasal(c, d.getX());
 }
-naRef f_freeFunction(nasal::CallContext) { return naNil(); }
+naRef f_freeFunction(nasal::CallContext c) { return c.requireArg<naRef>(0); }
 
 int main(int argc, char* argv[])
 {
@@ -144,6 +144,26 @@ int main(int argc, char* argv[])
 
   Hash mod = hash.createHash("mod");
   mod.set("parent", hash);
+
+
+  // 'func' is a C++ function registered to Nasal and now converted back to C++
+  boost::function<int (int)> f = hash.get<int (int)>("func");
+  VERIFY( f );
+  VERIFY( f(3) == 3 );
+
+  boost::function<std::string (int)> fs = hash.get<std::string (int)>("func");
+  VERIFY( fs );
+  VERIFY( fs(14) == "14" );
+
+  typedef boost::function<void (int)> FuncVoidInt;
+  FuncVoidInt fvi = hash.get<FuncVoidInt>("func");
+  VERIFY( fvi );
+  fvi(123);
+
+  typedef boost::function<std::string (const std::string&, int, float)> FuncMultiArg;
+  FuncMultiArg fma = hash.get<FuncMultiArg>("func");
+  VERIFY( fma );
+  VERIFY( fma("test", 3, .5) == "test" );
 
   //----------------------------------------------------------------------------
   // Test exposing classes to Nasal

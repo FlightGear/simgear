@@ -851,8 +851,10 @@ naRef naCall(naContext ctx, naRef func, int argc, naRef* args,
     }
 
     if(IS_CCODE(PTR(func).func->code)) {
-        naCFunction fp = PTR(PTR(func).func->code).ccode->fptr;
-        result = (*fp)(ctx, obj, argc, args);
+        struct naCCode *ccode = PTR(PTR(func).func->code).ccode;
+        result = ccode->fptru
+               ? (*ccode->fptru)(ctx, obj, argc, args, ccode->user_data)
+               : (*ccode->fptr) (ctx, obj, argc, args);
         if(!ctx->callParent) naModUnlock();
         return result;
     }

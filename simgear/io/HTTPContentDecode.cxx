@@ -21,7 +21,6 @@
 
 #include <cassert>
 #include <cstdlib> // rand()
-#include <iostream>
 #include <cstring> // for memset, memcpy
 
 #include <simgear/debug/logstream.hxx>
@@ -66,7 +65,6 @@ ContentDecoder::~ContentDecoder()
 
 void ContentDecoder::setEncoding(const std::string& encoding)
 {
-    std::cout << "setEncoding:" << encoding << std::endl;
     if (encoding == "gzip") {
       _contentDeflate = true;
       _needGZipHeader = true;
@@ -140,7 +138,6 @@ void ContentDecoder::receivedBytes(const char* n, size_t s)
     _inputSize += s;
     
     if (_needGZipHeader && !consumeGZipHeader()) {
-        std::cout << "waiting on GZIP header" << std::endl;
         // still waiting on the full GZIP header, so done
         return;
     }
@@ -160,10 +157,7 @@ void ContentDecoder::consumeBytes(size_t consumed)
 }
 
 void ContentDecoder::reallocateInputBuffer(size_t newSize)
-{
-    std::cout << "reallocate:" << newSize << std::endl;
-    
-    
+{    
     _input = (unsigned char*) realloc(_input, newSize);
     _inputAllocated = newSize;
 }

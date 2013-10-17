@@ -43,6 +43,7 @@
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/math/SGGeometry.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include "lowlevel.hxx"
 #include "sg_binobj.hxx"
@@ -319,15 +320,18 @@ void SGBinObject::read_object( gzFile fp,
     }
 
     if ( sgReadError() ) {
-        cout << "We detected an error reading object properties"  << endl;
-        return;
+        throw sg_exception("Error reading object properties");
+    }
+    
+    size_t indexCount = std::bitset<32>(idx_mask).count();
+    if (indexCount == 0) {
+        throw sg_exception("object index mask has no bits set");
     }
     
     for ( j = 0; j < nelements; ++j ) {
         sgReadUInt( fp, &nbytes );
         if ( sgReadError() ) {
-            cout << "We detected an error reading element size for :" << j << endl;
-            return;
+            throw sg_exception("Error reading element size");
         }
         
         buf.resize( nbytes );
@@ -335,8 +339,7 @@ void SGBinObject::read_object( gzFile fp,
         sgReadBytes( fp, nbytes, ptr );
         
         if ( sgReadError() ) {
-            cout << "We detected an error reading object element:" << j << "bytes="<< nbytes  << endl;
-            return;
+            throw sg_exception("Error reading element bytes");
         }
                 
         int_list vs;
@@ -405,7 +408,7 @@ bool SGBinObject::read_bin( const string& file ) {
             SG_LOG( SG_EVENT, SG_ALERT,
                "ERROR: opening " << file << " or " << filegz << " for reading!");
 
-            return false;
+            throw sg_io_exception("Error opening for reading (and .gz)", sg_location(file));
         }
     }
 
@@ -423,9 +426,7 @@ bool SGBinObject::read_bin( const string& file ) {
     } else {
         // close the file before we return
         gzclose(fp);
-        SG_LOG( SG_EVENT, SG_ALERT,
-           "ERROR: " << file << "has bad header");
-        return false;
+        throw sg_io_exception("Bad BTG magic/version", sg_location(file));
     }
     
     // read creation time
@@ -462,8 +463,7 @@ bool SGBinObject::read_bin( const string& file ) {
      //cout << "Total objects to read = " << nobjects << endl;
 
     if ( sgReadError() ) {
-        cout << "Error while reading header of file " << file << "(.gz)" << endl;
-        return false;
+        throw sg_io_exception("Error reading BTG file header", sg_location(file));
     }
     
     // read in objects
@@ -613,18 +613,12 @@ bool SGBinObject::read_bin( const string& file ) {
         }
         
         if ( sgReadError() ) {
-            cout << "Error while reading object:" << i << " in file " << file << "(.gz)" << endl;
-            return false;
+            throw sg_io_exception("Error while reading object", sg_location(file, i));
         }
     }
 
     // close the file
     gzclose(fp);
-
-    if ( sgReadError() ) {
-        cout << "Error while reading file " << file << "(.gz)" << endl;
-        return false;
-    }
 
     return true;
 }
@@ -665,7 +659,7 @@ void SGBinObject::write_objects(gzFile fp, int type, const group_list& verts,
     if (verts.empty()) {
         return;
     }
-    
+        
     unsigned int start = 0, end = 1;
     string m;
     int_list emptyList;
@@ -688,6 +682,13 @@ void SGBinObject::write_objects(gzFile fp, int type, const group_list& verts,
         if ( !normals.empty() && !normals.front().empty()) idx_mask |= SG_IDX_NORMALS;
         if ( !colors.empty() && !colors.front().empty()) idx_mask |= SG_IDX_COLORS;
         if ( !texCoords.empty() && !texCoords.front().empty()) idx_mask |= SG_IDX_TEXCOORDS;
+        
+        if (idx_mask == 0) {
+            SG_LOG(SG_IO, SG_ALERT, "SGBinObject::write_objects: object with material:"
+                << m << "has no indices set");
+        }
+    
+    
         sgWriteChar( fp, (char)SG_INDEX_TYPES );     // property
         sgWriteUInt( fp, 1 );                        // nbytes
         sgWriteChar( fp, idx_mask );

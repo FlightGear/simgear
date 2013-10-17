@@ -8,6 +8,7 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/timing/timestamp.hxx>
 
 #include "soundmgr_openal.hxx"
 #include "sample_group.hxx"
@@ -90,7 +91,7 @@ int main( int argc, char *argv[] ) {
     sgr->stop("sound1");
     sgr->stop("sound2");
     sgr->stop("sound3");
-    sleep(0.5);
+    SGTimeStamp::sleepForMSec(500);
     smgr->update(0.5);
     sgr->stop("sound4");
     sgr->stop("sound5");

@@ -7,6 +7,7 @@ set(HEADERS
     NodeAndDrawableVisitor.hxx
     Noise.hxx
     OptionsReadFileCallback.hxx
+    OsgDebug.hxx
     OsgMath.hxx
     OsgSingleton.hxx
     parse_color.hxx
@@ -37,6 +38,7 @@ set(SOURCES
     NodeAndDrawableVisitor.cxx
     Noise.cxx
     OptionsReadFileCallback.cxx
+    OsgDebug.cxx
     parse_color.cxx
     PrimitiveUtils.cxx
     QuadTreeBuilder.cxx

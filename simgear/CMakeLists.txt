@@ -54,7 +54,9 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY LINKER_LANGUAGE CXX)
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
-
+    install(TARGETS SimGearCore EXPORT SimGearCoreConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(EXPORT SimGearCoreConfig DESTINATION share/SimGearCore)
+    
     if(NOT SIMGEAR_HEADLESS)
         add_library(SimGearScene SHARED ${sceneSources})
         set_property(TARGET SimGearScene PROPERTY LINKER_LANGUAGE CXX)
@@ -65,8 +67,6 @@ if(SIMGEAR_SHARED)
         install(EXPORT SimGearSceneConfig DESTINATION share/SimGearScene)
     endif()
     
-    install(TARGETS SimGearCore EXPORT SimGearCoreConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(EXPORT SimGearCoreConfig DESTINATION share/SimGearCore)
 else()
     message(STATUS "Library building mode: STATIC LIBRARIES")
 

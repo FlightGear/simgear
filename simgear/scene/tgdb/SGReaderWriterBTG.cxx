@@ -24,6 +24,7 @@
 
 #include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include "SGReaderWriterBTG.hxx"
 #include "obj.hxx"
@@ -60,10 +61,17 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
 {
     const SGReaderWriterOptions* sgOptions;
     sgOptions = dynamic_cast<const SGReaderWriterOptions*>(options);
-    osg::Node* result = SGLoadBTG(fileName, sgOptions);
-    if (!result)
-        return ReadResult::FILE_NOT_HANDLED;
-
+    osg::Node* result = NULL;
+    try {
+        result = SGLoadBTG(fileName, sgOptions);
+        if (!result)
+            return ReadResult::FILE_NOT_HANDLED;
+    } catch (sg_exception& e) {
+        SG_LOG(SG_IO, SG_WARN, "error reading:" << fileName << ":" <<
+            e.getFormattedMessage());
+        return ReadResult::ERROR_IN_READING_FILE;
+    }
+    
     return result;
 }
 

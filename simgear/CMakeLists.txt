@@ -51,26 +51,22 @@ if(SIMGEAR_SHARED)
     message(STATUS "Library building mode: SHARED LIBRARIES")
     add_library(SimGearCore SHARED ${coreSources} ${localExpatSources})
 
-  # set_property(TARGET SimGearCore PROPERTY FRAMEWORK 1)
-  #  message(STATUS "public header: ${publicHeaders}")
-  #  set_property(TARGET SimGearCore PROPERTY PUBLIC_HEADER "${publicHeaders}")
     set_property(TARGET SimGearCore PROPERTY LINKER_LANGUAGE CXX)
-
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
     if(NOT SIMGEAR_HEADLESS)
         add_library(SimGearScene SHARED ${sceneSources})
-      # set_property(TARGET SimGearScene PROPERTY FRAMEWORK 1)
-      # set_property(TARGET SimGearScene PROPERTY PUBLIC_HEADER "${publicHeaders}")
         set_property(TARGET SimGearScene PROPERTY LINKER_LANGUAGE CXX)
         set_property(TARGET SimGearScene PROPERTY VERSION   ${SIMGEAR_VERSION})
         set_property(TARGET SimGearScene PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
-        install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(TARGETS SimGearScene EXPORT SimGearSceneConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+        install(EXPORT SimGearSceneConfig DESTINATION share/SimGearScene)
     endif()
     
-    install(TARGETS SimGearCore LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(TARGETS SimGearCore EXPORT SimGearCoreConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(EXPORT SimGearCoreConfig DESTINATION share/SimGearCore)
 else()
     message(STATUS "Library building mode: STATIC LIBRARIES")
 
@@ -123,7 +119,6 @@ target_link_libraries(SimGearCore
     ${ZLIB_LIBRARY}
     ${RT_LIBRARY}
     ${DL_LIBRARY}
-    ${LibArchive_LIBRARIES}
     ${EXPAT_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${CORE_SERVICES_LIBRARY})

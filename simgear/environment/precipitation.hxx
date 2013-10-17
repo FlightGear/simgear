@@ -42,7 +42,6 @@ private:
     float _rain_intensity;
     float _clip_distance;
 	
-    int _wind_dir;
     osg::Vec3 _wind_vec;
 	
     osg::ref_ptr<osgParticle::PrecipitationEffect> _precipitationEffect;

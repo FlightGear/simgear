@@ -237,7 +237,6 @@ private:
     float minimum_sky_visibility;
 
     int in_cloud;
-    int cur_layer_pos;
 
     // near cloud visibility state variables
     bool in_puff;

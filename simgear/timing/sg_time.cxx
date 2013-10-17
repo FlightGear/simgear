@@ -151,7 +151,6 @@ static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng
 {
     time_t start_gmt, now;
     double diff, part, days, hours, lstTmp;
-    char tbuf[64];
   
     now = cur_time;
     start_gmt = sgTimeGetGMT(gmt->tm_year, 2, 21, 12, 0, 0);

@@ -1086,5 +1086,9 @@ void SGTerraSync::scheduleDataDir(const std::string& dataDir)
 
 bool SGTerraSync::isDataDirPending(const std::string& dataDir) const
 {
+    if (!_svnThread->_running) {
+        return false;
+    }
+    
     return (_activeTileDirs.find(dataDir) != _activeTileDirs.end());
 }

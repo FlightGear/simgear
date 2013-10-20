@@ -36,12 +36,20 @@ SGModelPlacement::~SGModelPlacement ()
 void
 SGModelPlacement::init( osg::Node * model )
 {
-  // remove previous model (in case of reinit)
-  _transform->removeChild(0,1);
+  // remove previous models (in case of reinit)
+  _transform->removeChild(0, _transform->getNumChildren());
   if (model != 0) {
       _transform->addChild(model);
   }
   _selector->setValue(0, 1);
+}
+
+void
+SGModelPlacement::add( osg::Node* model )
+{
+    if (model != 0) {
+        _transform->addChild(model);
+    }
 }
 
 void SGModelPlacement::clear()
@@ -78,30 +86,6 @@ void
 SGModelPlacement::setVisible (bool visible)
 {
   _selector->setValue(0, visible);
-}
-
-void
-SGModelPlacement::setLongitudeDeg (double lon_deg)
-{
-  _position.setLongitudeDeg(lon_deg);
-}
-
-void
-SGModelPlacement::setLatitudeDeg (double lat_deg)
-{
-  _position.setLatitudeDeg(lat_deg);
-}
-
-void
-SGModelPlacement::setElevationFt (double elev_ft)
-{
-  _position.setElevationFt(elev_ft);
-}
-
-void
-SGModelPlacement::setPosition (double lon_deg, double lat_deg, double elev_ft)
-{
-  _position = SGGeod::fromDegFt(lon_deg, lat_deg, elev_ft);
 }
 
 void

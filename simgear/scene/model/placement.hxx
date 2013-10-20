@@ -43,6 +43,7 @@ public:
 
   virtual void init( osg::Node* model );
   void clear();
+  void add( osg::Node* model );
   
   virtual void update();
 
@@ -51,14 +52,6 @@ public:
   virtual bool getVisible () const;
   virtual void setVisible (bool visible);
 
-  virtual double getLongitudeDeg () const { return _position.getLongitudeDeg(); }
-  virtual double getLatitudeDeg () const { return _position.getLatitudeDeg(); }
-  virtual double getElevationFt () const { return _position.getElevationFt(); }
-
-  virtual void setLongitudeDeg (double lon_deg);
-  virtual void setLatitudeDeg (double lat_deg);
-  virtual void setElevationFt (double elev_ft);
-  virtual void setPosition (double lon_deg, double lat_deg, double elev_ft);
   void setPosition(const SGGeod& position);
   const SGGeod& getPosition() const { return _position; }
 

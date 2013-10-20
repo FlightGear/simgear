@@ -667,9 +667,16 @@ void Client::update(int waitTimeout)
 
 void Client::makeRequest(const Request_ptr& r)
 {
-    if( r->url().find("://") == std::string::npos )
-      throw std::runtime_error("Unable to parse URL (missing scheme)");
+    if( r->url().find("://") == std::string::npos ) {
+        r->setFailure(EINVAL, "malformed URL");
+        return;
+    }
 
+    if( r->url().find("http://") != 0 ) {
+        r->setFailure(EINVAL, "only HTTP protocol is supported");
+        return;
+    }
+    
     string host = r->host();
     int port = r->port();
     if (!d->proxy.empty()) {

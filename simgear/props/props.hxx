@@ -1242,6 +1242,23 @@ public:
   }
   
   /**
+   * Set relative node to given value and afterwards make read only.
+   *
+   * @param relative_path   Path to node
+   * @param value           Value to set
+   *
+   * @return whether value could be set
+   */
+  template<typename T>
+  bool setValueReadOnly(const std::string& relative_path, const T& value)
+  {
+    SGPropertyNode* node = getNode(relative_path, true);
+    bool ret = node->setValue(value);
+    node->setAttributes(READ);
+    return ret;
+  }
+
+  /**
    * Interpolate current value to target value within given time.
    *
    * @param type        Type of interpolation ("numeric", "color", etc.)

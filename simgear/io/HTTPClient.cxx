@@ -789,17 +789,27 @@ void Client::receivedBytes(unsigned int count)
 unsigned int Client::transferRateBytesPerSec() const
 {
     unsigned int e = d->timeTransferSample.elapsedMSec();
-    if (e < 400) {
-        // if called too frequently, return cahced value, to smooth out
-        // < 1 sec changes in flow
+    if (e > 400) {
+        // too long a window, ignore
+        d->timeTransferSample.stamp();
+        d->bytesTransferred = 0;
+        d->lastTransferRate = 0;
+        return 0;
+    }
+    
+    if (e < 100) { // avoid really narrow windows
         return d->lastTransferRate;
     }
     
     unsigned int ratio = (d->bytesTransferred * 1000) / e;
+    // run a low-pass filter
+    unsigned int smoothed = ((400 - e) * d->lastTransferRate) + (e * ratio);
+    smoothed /= 400;
+        
     d->timeTransferSample.stamp();
     d->bytesTransferred = 0;
-    d->lastTransferRate = ratio;
-    return ratio;
+    d->lastTransferRate = smoothed;
+    return smoothed;
 }
 
 } // of namespace HTTP

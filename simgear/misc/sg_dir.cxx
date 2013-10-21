@@ -149,7 +149,11 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   WIN32_FIND_DATA fData;
   HANDLE find = FindFirstFile(search.c_str(), &fData);
   if (find == INVALID_HANDLE_VALUE) {
-    SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: FindFirstFile failed:" << _path.str());
+	  int err = GetLastError();
+	  if (err != ERROR_FILE_NOT_FOUND) {
+		SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: FindFirstFile failed:" << 
+			_path.str() << " with error:" << err);
+	  }
     return result;
   }
   

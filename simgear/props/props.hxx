@@ -2056,6 +2056,13 @@ public:
     {
         _property->addChangeListener(this,initial);
     }
+
+	SGPropertyChangeCallback(const SGPropertyChangeCallback<T>& other) :
+		_obj(other._obj), _callback(other._callback), _property(other._property)
+	{
+		 _property->addChangeListener(this,false);
+	}
+
     virtual ~SGPropertyChangeCallback()
     {
         _property->removeChangeListener(this);

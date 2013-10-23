@@ -86,6 +86,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  ElementPtr Element::getParent()
+  {
+    return _parent ? _parent->getWeakPtr().lock() : ElementPtr();
+  }
+
+  //----------------------------------------------------------------------------
   void Element::update(double dt)
   {
     if( !_transform->getNodeMask() )

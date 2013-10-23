@@ -84,6 +84,7 @@ namespace canvas
       virtual void onDestroy();
 
       ElementWeakPtr getWeakPtr() const;
+      ElementPtr getParent();
 
       /**
        * Called every frame to update internal state

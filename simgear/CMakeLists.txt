@@ -63,7 +63,8 @@ if(SIMGEAR_SHARED)
         set_property(TARGET SimGearScene PROPERTY VERSION   ${SIMGEAR_VERSION})
         set_property(TARGET SimGearScene PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
-    #    install(TARGETS SimGearScene EXPORT SimGearSceneConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+        # EXPORT SimGearSceneConfig
+        install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
     #    install(EXPORT SimGearSceneConfig DESTINATION share/SimGearScene)
     endif()
     

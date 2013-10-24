@@ -243,6 +243,9 @@ public:
    volatile int  _allowed_errors;
    volatile int  _cache_hits;
    volatile int _transfer_rate;
+   // kbytes, not bytes, because bytes might overflow 2^31
+   volatile int _total_kb_downloaded;
+   
 private:
    virtual void run();
     
@@ -293,6 +296,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _allowed_errors(6),
     _cache_hits(0),
     _transfer_rate(0),
+    _total_kb_downloaded(0),
     _use_built_in(true),
     _is_dirty(false),
     _stop(false),
@@ -609,6 +613,9 @@ void SGTerraSync::SvnThread::runInternal()
     while (!_stop) {
         _http.update(100);
         _transfer_rate = _http.transferRateBytesPerSec();
+        // convert from bytes to kbytes
+        _total_kb_downloaded = static_cast<int>(_http.totalBytesDownloaded() / 1024);
+        
         if (_stop)
             break;
  
@@ -834,6 +841,10 @@ void SGTerraSync::bind()
     _tiedProperties.Tie( _terraRoot->getNode("tile-count", true), (int*) &_svnThread->_updated_tile_count );
     _tiedProperties.Tie( _terraRoot->getNode("cache-hits", true), (int*) &_svnThread->_cache_hits );
     _tiedProperties.Tie( _terraRoot->getNode("transfer-rate-bytes-sec", true), (int*) &_svnThread->_transfer_rate );
+    
+    // use kbytes here because propety doesn't support 64-bit and we might conceivably
+    // download more than 2G in a single session
+    _tiedProperties.Tie( _terraRoot->getNode("downloaded-kbytes", true), (int*) &_svnThread->_total_kb_downloaded );
     
     _terraRoot->getNode("busy", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("active", true)->setAttribute(SGPropertyNode::WRITE,false);

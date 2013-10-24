@@ -87,6 +87,7 @@ public:
     SGTimeStamp timeTransferSample;
     unsigned int bytesTransferred;
     unsigned int lastTransferRate;
+    uint64_t totalBytesDownloaded;
 };
   
 class Connection : public NetChat
@@ -603,6 +604,7 @@ Client::Client() :
     d->bytesTransferred = 0;
     d->lastTransferRate = 0;
     d->timeTransferSample.stamp();
+    d->totalBytesDownloaded = 0;
     
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
 }
@@ -784,6 +786,7 @@ bool Client::hasActiveRequests() const
 void Client::receivedBytes(unsigned int count)
 {
     d->bytesTransferred += count;
+    d->totalBytesDownloaded += count;
 }
     
 unsigned int Client::transferRateBytesPerSec() const
@@ -810,6 +813,11 @@ unsigned int Client::transferRateBytesPerSec() const
     d->bytesTransferred = 0;
     d->lastTransferRate = smoothed;
     return smoothed;
+}
+
+uint64_t Client::totalBytesDownloaded() const
+{
+    return d->totalBytesDownloaded;
 }
 
 } // of namespace HTTP

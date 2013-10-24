@@ -25,6 +25,7 @@
 #define SG_HTTP_CLIENT_HXX
 
 #include <memory> // for std::auto_ptr
+#include <stdint.h> // for uint_64t
 
 #include <simgear/io/HTTPRequest.hxx>
 
@@ -73,6 +74,12 @@ public:
      * suitable for user feedback and rough profiling, nothing more.
      */
     unsigned int transferRateBytesPerSec() const;
+    
+    /**
+     * total bytes downloaded by this HTTP client, for bandwidth usage
+     * monitoring
+     */
+    uint64_t totalBytesDownloaded() const;
 private:
     void requestFinished(Connection* con);
     

@@ -8,7 +8,7 @@
 # define SG_CALL_TRAITS_PARAM(z, n, dummy)\
     typename boost::call_traits<A##n>::param_type a##n
 # define SG_CALL_ARG(z, n, dummy)\
-      to_nasal(ctx, a##n)
+      to_nasal<typename boost::call_traits<A##n>::param_type>(ctx, a##n)
 
   template<
     class Ret

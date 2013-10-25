@@ -69,9 +69,16 @@ struct DoubleDerived2:
   BaseVec doSomeBaseWork(const BaseVec& v) { return v; }
 };
 
+class SGReferenceBasedClass:
+  public SGReferenced
+{
+
+};
+
 typedef boost::shared_ptr<Derived> DerivedPtr;
 typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
+typedef SGSharedPtr<SGReferenceBasedClass> SGRefBasedPtr;
 
 typedef boost::weak_ptr<Derived> DerivedWeakPtr;
 
@@ -198,36 +205,44 @@ int main(int argc, char* argv[])
     .method("doIt", &DoubleDerived2::doSomeBaseWork);
 
   Ghost<DerivedWeakPtr>::init("DerivedWeakPtr");
+  Ghost<SGRefBasedPtr>::init("SGRefBasedPtr");
 
   VERIFY( Ghost<BasePtr>::isInit() );
   nasal::to_nasal(c, DoubleDerived2Ptr());
 
   BasePtr d( new Derived );
-  naRef derived = Ghost<BasePtr>::create(c, d);
+  naRef derived = to_nasal(c, d);
   VERIFY( naIsGhost(derived) );
   VERIFY( std::string("DerivedPtr") == naGhost_type(derived)->name );
 
   BasePtr d2( new DoubleDerived );
-  derived = Ghost<BasePtr>::create(c, d2);
+  derived = to_nasal(c, d2);
   VERIFY( naIsGhost(derived) );
   VERIFY( std::string("DoubleDerivedPtr") ==  naGhost_type(derived)->name );
 
   BasePtr d3( new DoubleDerived2 );
-  derived = Ghost<BasePtr>::create(c, d3);
+  derived = to_nasal(c, d3);
   VERIFY( naIsGhost(derived) );
   VERIFY( std::string("DoubleDerived2Ptr") ==  naGhost_type(derived)->name );
+
+  SGRefBasedPtr ref_based( new SGReferenceBasedClass );
+  naRef na_ref_based = to_nasal(c, ref_based.get());
+  VERIFY( naIsGhost(na_ref_based) );
+  VERIFY(    from_nasal<SGReferenceBasedClass*>(c, na_ref_based)
+          == ref_based.get() );
+  VERIFY( from_nasal<SGRefBasedPtr>(c, na_ref_based) == ref_based );
 
   VERIFY( Ghost<BasePtr>::isBaseOf(derived) );
   VERIFY( Ghost<DerivedPtr>::isBaseOf(derived) );
   VERIFY( Ghost<DoubleDerived2Ptr>::isBaseOf(derived) );
 
-  VERIFY( Ghost<BasePtr>::fromNasal(c, derived) == d3 );
-  VERIFY( Ghost<BasePtr>::fromNasal(c, derived) != d2 );
-  VERIFY(    Ghost<DerivedPtr>::fromNasal(c, derived)
+  VERIFY( from_nasal<BasePtr>(c, derived) == d3 );
+  VERIFY( from_nasal<BasePtr>(c, derived) != d2 );
+  VERIFY(    from_nasal<DerivedPtr>(c, derived)
           == boost::dynamic_pointer_cast<Derived>(d3) );
-  VERIFY(    Ghost<DoubleDerived2Ptr>::fromNasal(c, derived)
+  VERIFY(    from_nasal<DoubleDerived2Ptr>(c, derived)
           == boost::dynamic_pointer_cast<DoubleDerived2>(d3) );
-  VERIFY( !Ghost<DoubleDerivedPtr>::fromNasal(c, derived) );
+  VERIFY( !from_nasal<DoubleDerivedPtr>(c, derived) );
 
   std::map<std::string, BasePtr> instances;
   VERIFY( naIsHash(to_nasal(c, instances)) );
@@ -249,14 +264,14 @@ int main(int argc, char* argv[])
 
   Hash obj(c);
   obj.set("parents", parents);
-  VERIFY( Ghost<BasePtr>::fromNasal(c, obj.get_naRef()) == d3 );
+  VERIFY( from_nasal<BasePtr>(c, obj.get_naRef()) == d3 );
 
   // Check recursive parents (aka parent-of-parent)
   std::vector<naRef> parents2;
   parents2.push_back(obj.get_naRef());
   Hash derived_obj(c);
   derived_obj.set("parents", parents2);
-  VERIFY( Ghost<BasePtr>::fromNasal(c, derived_obj.get_naRef()) == d3 );
+  VERIFY( from_nasal<BasePtr>(c, derived_obj.get_naRef()) == d3 );
 
   std::vector<naRef> nasal_objects;
   nasal_objects.push_back( Ghost<BasePtr>::create(c, d) );

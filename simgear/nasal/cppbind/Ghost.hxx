@@ -898,10 +898,10 @@ namespace nasal
 
 } // namespace nasal
 
+// Needs to be outside any namespace to make ADL work
 /**
  * Convert every shared pointer to a ghost.
  */
-// Needs to be outside any namespace to mark ADL work
 template<class T>
 typename boost::enable_if<
   nasal::internal::has_element_type<
@@ -915,7 +915,7 @@ to_nasal_helper(naContext c, T ptr)
 }
 
 /**
- * Convert nasal ghosts/hashes to shared pointer (of a ghost)
+ * Convert nasal ghosts/hashes to shared pointer (of a ghost).
  */
 template<class T>
 typename boost::enable_if<
@@ -927,6 +927,30 @@ typename boost::enable_if<
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
   return nasal::Ghost<T>::fromNasal(c, ref);
+}
+
+/**
+ * Convert any pointer to a SGReference based object to a ghost.
+ */
+template<class T>
+typename boost::enable_if<boost::is_base_of<SGReferenced, T>, naRef>::type
+to_nasal_helper(naContext c, T* ptr)
+{
+  return nasal::Ghost<SGSharedPtr<T> >::create(c, SGSharedPtr<T>(ptr));
+}
+
+/**
+ * Convert nasal ghosts/hashes to pointer (of a SGReference based ghost).
+ */
+template<class T>
+typename boost::enable_if<
+  boost::is_base_of<SGReferenced, typename boost::remove_pointer<T>::type>,
+  T
+>::type
+from_nasal_helper(naContext c, naRef ref, const T*)
+{
+  typedef SGSharedPtr<typename boost::remove_pointer<T>::type> TypeRef;
+  return nasal::Ghost<TypeRef>::fromNasal(c, ref).release();
 }
 
 #endif /* SG_NASAL_GHOST_HXX_ */

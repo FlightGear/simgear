@@ -461,7 +461,8 @@ bool SGPath::remove()
     int err = ::unlink(c_str());
     if (err) {
         SG_LOG(SG_IO, SG_WARN,  "file remove failed: (" << str() << ") " << strerror(errno));
-    }
+	}
+	_cached = false; // stat again if required
     return (err == 0);
 }
 
@@ -483,6 +484,14 @@ bool SGPath::operator!=(const SGPath& other) const
 
 bool SGPath::rename(const SGPath& newName)
 {
+#ifdef SG_WINDOWS
+	if (newName.exists()) {
+		SGPath r(newName);
+		if (!r.remove()) {
+			return false;
+		}
+	}
+#endif
     if (::rename(c_str(), newName.c_str()) != 0) {
         SG_LOG(SG_IO, SG_WARN, "renamed failed: from " << str() << " to " << newName.str()
             << " reason: " << strerror(errno));

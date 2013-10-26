@@ -177,9 +177,6 @@ void SVNDirectory::writeCache()
 // approximately atomic delete + rename operation
     SGPath cacheName(localPath);
     cacheName.append(DAV_CACHE_NAME);
-    if (cacheName.exists()) {
-        cacheName.remove();
-    }
     p.rename(cacheName);
 }
 

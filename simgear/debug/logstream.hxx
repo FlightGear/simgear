@@ -42,7 +42,23 @@ public:
     virtual ~LogCallback() {}
     virtual void operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& aMessage) = 0;
+
+	void setLogLevels(sgDebugClass c, sgDebugPriority p);
+protected:
+	LogCallback(sgDebugClass c, sgDebugPriority p);
+
+	bool shouldLog(sgDebugClass c, sgDebugPriority p) const;
+private:
+	sgDebugClass m_class;
+	sgDebugPriority m_priority;
 };
+
+/**
+ * Helper force a console on platforms where it might optional, when
+ * we need to show a console. This basically means Windows at the
+ * moment - on other plaforms it's a no-op
+ */
+void requestConsole();
      
 } // of namespace simgear
 
@@ -102,6 +118,8 @@ private:
 };
 
 logstream& sglog();
+
+
 
 /** \def SG_LOG(C,P,M)
  * Log a message.

@@ -34,18 +34,15 @@ class BufferedLogCallback::BufferedLogCallbackPrivate
 {
 public:
     SGMutex m_mutex;
-    sgDebugClass m_class;
-    sgDebugPriority m_priority;
     vector_cstring m_buffer;
     unsigned int m_stamp;
     unsigned int m_maxLength;
 };
    
 BufferedLogCallback::BufferedLogCallback(sgDebugClass c, sgDebugPriority p) :
+	simgear::LogCallback(c,p),
     d(new BufferedLogCallbackPrivate)
 {
-    d->m_class = c;
-    d->m_priority = p;
     d->m_stamp = 0;
     d->m_maxLength = 0xffff;
 }
@@ -63,7 +60,7 @@ void BufferedLogCallback::operator()(sgDebugClass c, sgDebugPriority p,
     SG_UNUSED(file);
     SG_UNUSED(line);
     
-    if ((c & d->m_class) == 0 || p < d->m_priority) return;
+    if (!shouldLog(c, p)) return;
     
     vector_cstring::value_type msg;
     if (aMessage.size() >= d->m_maxLength) {

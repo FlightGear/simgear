@@ -20,10 +20,13 @@
 //
 // $Id$
 
+#include <simgear_config.h>
+
 #include "logstream.hxx"
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 
 #include <boost/foreach.hpp>
@@ -35,8 +38,8 @@
 
 #include <simgear/misc/sg_path.hxx>
 
-#ifdef _WIN32
-// for AllocConsole
+#ifdef SG_WINDOWS
+// for AllocConsole, OutputDebugString
     #include "windows.h"
 #endif
 
@@ -73,37 +76,57 @@ const char* debugClassToString(sgDebugClass c)
 
 //////////////////////////////////////////////////////////////////////////////
 
+namespace simgear
+{
+
+LogCallback::LogCallback(sgDebugClass c, sgDebugPriority p) :
+	m_class(c),
+	m_priority(p)
+{
+}
+
+bool LogCallback::shouldLog(sgDebugClass c, sgDebugPriority p) const
+{
+	 return ((c & m_class) != 0 && p >= m_priority);
+}
+
+void LogCallback::setLogLevels( sgDebugClass c, sgDebugPriority p )
+{
+	m_priority = p;
+	m_class = c;
+}
+
+} // of namespace simgear
+
+//////////////////////////////////////////////////////////////////////////////
+
 class FileLogCallback : public simgear::LogCallback
 {
 public:
     FileLogCallback(const std::string& aPath, sgDebugClass c, sgDebugPriority p) :
-        m_file(aPath.c_str(), std::ios_base::out | std::ios_base::trunc),
-        m_class(c),
-        m_priority(p)
+	    simgear::LogCallback(c, p),
+        m_file(aPath.c_str(), std::ios_base::out | std::ios_base::trunc)
     {
     }
     
     virtual void operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& message)
     {
-        if ((c & m_class) == 0 || p < m_priority) return;
+        if (!shouldLog(c, p)) return;
         m_file << debugClassToString(c) << ":" << (int) p
             << ":" << file << ":" << line << ":" << message << std::endl;
     }
 private:
     std::ofstream m_file;   
-    sgDebugClass m_class;
-    sgDebugPriority m_priority;
 };
    
 class StderrLogCallback : public simgear::LogCallback
 {
 public:
     StderrLogCallback(sgDebugClass c, sgDebugPriority p) :
-        m_class(c),
-            m_priority(p)
+		simgear::LogCallback(c, p)
     {
-#ifdef _WIN32
+#ifdef SG_WINDOWS
         AllocConsole(); // but only if we want a console
         freopen("conin$", "r", stdin);
         freopen("conout$", "w", stdout);
@@ -111,28 +134,41 @@ public:
 #endif
     }
     
-    void setLogLevels( sgDebugClass c, sgDebugPriority p )
-    {
-        m_priority = p;
-        m_class = c;
-    }
-    
     virtual void operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& aMessage)
     {
-        if ((c & m_class) == 0 || p < m_priority) return;
-        
-        // if running under MSVC, we could use OutputDebugString here
+        if (!shouldLog(c, p)) return;
         
         fprintf(stderr, "%s\n", aMessage.c_str());
         //fprintf(stderr, "%s:%d:%s:%d:%s\n", debugClassToString(c), p,
         //    file, line, aMessage.c_str());
         fflush(stderr);
     }
-private:
-    sgDebugClass m_class;
-    sgDebugPriority m_priority;
 };
+
+
+#ifdef SG_WINDOWS
+
+class WinDebugLogCallback : public simgear::LogCallback
+{
+public:
+    WinDebugLogCallback(sgDebugClass c, sgDebugPriority p) :
+		simgear::LogCallback(c, p)
+    {
+    }
+    
+    virtual void operator()(sgDebugClass c, sgDebugPriority p, 
+        const char* file, int line, const std::string& aMessage)
+    {
+        if (!shouldLog(c, p)) return;
+        
+        std::ostringstream os;
+		os << debugClassToString(c) << ":" << aMessage << std::endl;
+		OutputDebugStringA(os.str().c_str());
+    }
+};
+
+#endif
 
 class LogStreamPrivate : public SGThread
 {
@@ -181,10 +217,20 @@ public:
     LogStreamPrivate() :
         m_logClass(SG_ALL), 
         m_logPriority(SG_ALERT),
-        m_isRunning(false)
+        m_isRunning(false),
+		m_consoleRequested(false)
     { 
-        m_stderrCallback = new StderrLogCallback(m_logClass, m_logPriority);
-        addCallback(m_stderrCallback);
+
+#if !defined(SG_WINDOWS)
+        m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
+		m_consoleCallbacks.push_back(m_callbacks.back());
+		m_consoleRequested = true;
+#endif
+
+#if defined (SG_WINDOWS) && !defined(NDEBUG)
+		m_callbacks.push_back(new WinDebugLogCallback(m_logClass, m_logPriority));
+		m_consoleCallbacks.push_back(m_callbacks.back());
+#endif
     }
                     
     SGMutex m_lock;
@@ -192,11 +238,14 @@ public:
     
     typedef std::vector<simgear::LogCallback*> CallbackVec;
     CallbackVec m_callbacks;    
-    
+    /// subset of callbacks which correspond to stdout / console,
+	/// and hence should dynamically reflect console logging settings
+	CallbackVec m_consoleCallbacks;
+
     sgDebugClass m_logClass;
     sgDebugPriority m_logPriority;
     bool m_isRunning;
-    StderrLogCallback* m_stderrCallback;
+	bool m_consoleRequested;
     
     void startLog()
     {
@@ -260,7 +309,9 @@ public:
         PauseThread pause(this);
         m_logPriority = p;
         m_logClass = c;
-        m_stderrCallback->setLogLevels(c, p);
+		BOOST_FOREACH(simgear::LogCallback* cb, m_consoleCallbacks) {
+	        cb->setLogLevels(c, p);
+		}
     }
     
     bool would_log( sgDebugClass c, sgDebugPriority p ) const
@@ -275,6 +326,18 @@ public:
         LogEntry entry(c, p, fileName, line, msg);
         m_entries.push(entry);
     }
+
+	void requestConsole()
+	{
+		PauseThread pause(this);
+		if (m_consoleRequested) {
+			return;
+		}
+
+		m_consoleRequested = true;
+		m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
+		m_consoleCallbacks.push_back(m_callbacks.back());
+	}
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -366,3 +429,13 @@ logstream::logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p )
     global_privateLogstream->addCallback(new FileLogCallback(aPath.str(), c, p));
 }
 
+namespace simgear
+{
+
+void requestConsole()
+{
+	sglog(); // force creation
+	global_privateLogstream->requestConsole();
+}
+
+} // of namespace simgear 

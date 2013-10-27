@@ -3,6 +3,7 @@
 #include "Ghost.hxx"
 #include "NasalHash.hxx"
 #include "NasalString.hxx"
+#include <simgear/structure/map.hxx>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -255,6 +256,13 @@ int main(int argc, char* argv[])
 
   std::map<std::string, std::vector<int> > int_vector_map;
   VERIFY( naIsHash(to_nasal(c, int_vector_map)) );
+
+  simgear::StringMap dict =
+    simgear::StringMap("hello", "value")
+                      ("key2", "value2");
+  naRef na_dict = to_nasal(c, dict);
+  VERIFY( naIsHash(na_dict) );
+  VERIFY( Hash(na_dict, c).get<std::string>("key2") == "value2" );
 
   // Check converting to Ghost if using Nasal hashes with actual ghost inside
   // the hashes parents vector

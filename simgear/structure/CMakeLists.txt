@@ -22,6 +22,7 @@ set(HEADERS
     event_mgr.hxx
     exception.hxx
     intern.hxx
+    map.hxx
     subsystem_mgr.hxx
     StateMachine.hxx
     )

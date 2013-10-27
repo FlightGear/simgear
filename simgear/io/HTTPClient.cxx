@@ -22,12 +22,12 @@
 //
 
 #include "HTTPClient.hxx"
+#include "HTTPFileRequest.hxx"
 
 #include <sstream>
 #include <cassert>
 #include <cstdlib> // rand()
 #include <list>
-#include <iostream>
 #include <errno.h>
 #include <map>
 #include <stdexcept>
@@ -50,10 +50,6 @@
 #    define SIMGEAR_VERSION "simgear-development"
 #  endif
 #endif
-
-using std::string;
-using std::stringstream;
-using std::vector;
 
 namespace simgear
 {
@@ -103,8 +99,21 @@ public:
     virtual ~Connection()
     {
     }
+
+    virtual void handleBufferRead (NetBuffer& buffer)
+    {
+      if( !activeRequest || !activeRequest->isComplete() )
+        return NetChat::handleBufferRead(buffer);
+
+      // Request should be aborted (signaled by setting its state to complete).
+
+      // force the state to GETTING_BODY, to simplify logic in
+      // responseComplete and handleClose
+      state = STATE_GETTING_BODY;
+      responseComplete();
+    }
   
-    void setServer(const string& h, short p)
+    void setServer(const std::string& h, short p)
     {
         host = h;
         port = p;
@@ -224,6 +233,10 @@ public:
   
     void tryStartNextRequest()
     {
+      while( !queuedRequests.empty()
+          && queuedRequests.front()->isComplete() )
+        queuedRequests.pop_front();
+
       if (queuedRequests.empty()) {
         idleTime.stamp();
         return;
@@ -244,28 +257,28 @@ public:
      
       Request_ptr r = queuedRequests.front();
       r->requestStart();
-      requestBodyBytesToSend = r->requestBodyLength();
-          
-      stringstream headerData;
-      string path = r->path();
+
+      std::stringstream headerData;
+      std::string path = r->path();
       assert(!path.empty());
-      string query = r->query();
-      string bodyData;
+      std::string query = r->query();
+      std::string bodyData;
       
       if (!client->proxyHost().empty()) {
           path = r->scheme() + "://" + r->host() + r->path();
       }
 
-      if (r->requestBodyType() == CONTENT_TYPE_URL_ENCODED) {
+      if (r->bodyType() == CONTENT_TYPE_URL_ENCODED) {
           headerData << r->method() << " " << path << " HTTP/1.1\r\n";
           bodyData = query.substr(1); // URL-encode, drop the leading '?'
           headerData << "Content-Type:" << CONTENT_TYPE_URL_ENCODED << "\r\n";
           headerData << "Content-Length:" << bodyData.size() << "\r\n";
       } else {
           headerData << r->method() << " " << path << query << " HTTP/1.1\r\n";
-          if (requestBodyBytesToSend >= 0) {
-            headerData << "Content-Length:" << requestBodyBytesToSend << "\r\n";
-            headerData << "Content-Type:" << r->requestBodyType() << "\r\n";
+          if( r->hasBodyData() )
+          {
+            headerData << "Content-Length:" << r->bodyLength() << "\r\n";
+            headerData << "Content-Type:" << r->bodyType() << "\r\n";
           }
       }
       
@@ -276,8 +289,8 @@ public:
           headerData << "Proxy-Authorization: " << client->proxyAuth() << "\r\n";
       }
 
-      BOOST_FOREACH(string h, r->requestHeaders()) {
-          headerData << h << ": " << r->header(h) << "\r\n";
+      BOOST_FOREACH(const StringMap::value_type& h, r->requestHeaders()) {
+          headerData << h.first << ": " << h.second << "\r\n";
       }
 
       headerData << "\r\n"; // final CRLF to terminate the headers
@@ -292,33 +305,42 @@ public:
           // drain down before trying to start any more requests.
           return;
       }
-      
-      while (requestBodyBytesToSend > 0) {
-        char buf[4096];
-        int len = r->getBodyData(buf, 4096);
-        if (len > 0) {
-          requestBodyBytesToSend -= len;
-          if (!bufferSend(buf, len)) {
-            SG_LOG(SG_IO, SG_WARN, "overflow the HTTP::Connection output buffer");
-            state = STATE_SOCKET_ERROR;
-            return;
+
+      if( r->hasBodyData() )
+        for(size_t body_bytes_sent = 0; body_bytes_sent < r->bodyLength();)
+        {
+          char buf[4096];
+          size_t len = r->getBodyData(buf, body_bytes_sent, 4096);
+          if( len )
+          {
+            if( !bufferSend(buf, len) )
+            {
+              SG_LOG(SG_IO,
+                     SG_WARN,
+                     "overflow the HTTP::Connection output buffer");
+              state = STATE_SOCKET_ERROR;
+              return;
+            }
+            body_bytes_sent += len;
           }
-      //    SG_LOG(SG_IO, SG_INFO, "sent body:\n" << string(buf, len) << "\n%%%%%%%%%");
-        } else {
-          SG_LOG(SG_IO, SG_WARN, "HTTP asynchronous request body generation is unsupported");
-          break;
+          else
+          {
+            SG_LOG(SG_IO,
+                   SG_WARN,
+                   "HTTP asynchronous request body generation is unsupported");
+            break;
+          }
         }
-      }
       
-   //   SG_LOG(SG_IO, SG_INFO, "did start request:" << r->url() <<
-   //       "\n\t @ " << reinterpret_cast<void*>(r.ptr()) <<
-    //      "\n\t on connection " << this);
-    // successfully sent, remove from queue, and maybe send the next
+      //   SG_LOG(SG_IO, SG_INFO, "did start request:" << r->url() <<
+      //       "\n\t @ " << reinterpret_cast<void*>(r.ptr()) <<
+      //      "\n\t on connection " << this);
+      // successfully sent, remove from queue, and maybe send the next
       queuedRequests.pop_front();
       sentRequests.push_back(r);
-        state = STATE_WAITING_FOR_RESPONSE;
+      state = STATE_WAITING_FOR_RESPONSE;
         
-    // pipelining, let's maybe send the next request right away
+      // pipelining, let's maybe send the next request right away
       tryStartNextRequest();
     }
     
@@ -326,12 +348,12 @@ public:
     {
         idleTime.stamp();
         client->receivedBytes(static_cast<unsigned int>(n));
-        
-        if ((state == STATE_GETTING_BODY) || (state == STATE_GETTING_CHUNKED_BYTES)) {
-            _contentDecoder.receivedBytes(s, n);
-        } else {
-            buffer += string(s, n);
-        }
+
+        if(   (state == STATE_GETTING_BODY)
+           || (state == STATE_GETTING_CHUNKED_BYTES) )
+          _contentDecoder.receivedBytes(s, n);
+        else
+          buffer.append(s, n);
     }
 
     virtual void foundTerminator(void)
@@ -428,7 +450,7 @@ private:
     
     void processHeader()
     {
-        string h = strutils::simplify(buffer);
+        std::string h = strutils::simplify(buffer);
         if (h.empty()) { // blank line terminates headers
             headersComplete();
             return;
@@ -440,9 +462,9 @@ private:
             return;
         }
         
-        string key = strutils::simplify(buffer.substr(0, colonPos));
-        string lkey = boost::to_lower_copy(key);
-        string value = strutils::strip(buffer.substr(colonPos + 1));
+        std::string key = strutils::simplify(buffer.substr(0, colonPos));
+        std::string lkey = boost::to_lower_copy(key);
+        std::string value = strutils::strip(buffer.substr(colonPos + 1));
         
         // only consider these if getting headers (as opposed to trailers 
         // of a chunked transfer)
@@ -466,7 +488,7 @@ private:
         activeRequest->responseHeader(lkey, value);
     }
     
-    void processTransferEncoding(const string& te)
+    void processTransferEncoding(const std::string& te)
     {
         if (te == "chunked") {
             chunkedTransfer = true;
@@ -534,7 +556,7 @@ private:
     
     void responseComplete()
     {
-        Request_ptr completedRequest = activeRequest;        
+        Request_ptr completedRequest = activeRequest;
         _contentDecoder.finish();
       
         assert(sentRequests.front() == activeRequest);
@@ -581,14 +603,13 @@ private:
     Client* client;
     Request_ptr activeRequest;
     ConnectionState state;
-    string host;
+    std::string host;
     short port;
     std::string buffer;
     int bodyTransferSize;
     SGTimeStamp idleTime;
     bool chunkedTransfer;
     bool noMessageBody;
-    int requestBodyBytesToSend;
     
     RequestList queuedRequests;
     RequestList sentRequests;
@@ -669,6 +690,9 @@ void Client::update(int waitTimeout)
 
 void Client::makeRequest(const Request_ptr& r)
 {
+    if( r->isComplete() )
+      return;
+
     if( r->url().find("://") == std::string::npos ) {
         r->setFailure(EINVAL, "malformed URL");
         return;
@@ -679,7 +703,7 @@ void Client::makeRequest(const Request_ptr& r)
         return;
     }
     
-    string host = r->host();
+    std::string host = r->host();
     int port = r->port();
     if (!d->proxy.empty()) {
         host = d->proxy;
@@ -687,9 +711,9 @@ void Client::makeRequest(const Request_ptr& r)
     }
     
     Connection* con = NULL;
-    stringstream ss;
+    std::stringstream ss;
     ss << host << "-" << port;
-    string connectionId = ss.str();
+    std::string connectionId = ss.str();
     bool havePending = !d->pendingRequests.empty();
     bool atConnectionsLimit = d->connections.size() >= d->maxConnections;
     ConnectionDict::iterator consEnd = d->connections.end();
@@ -741,12 +765,29 @@ void Client::makeRequest(const Request_ptr& r)
     con->queueRequest(r);
 }
 
+//------------------------------------------------------------------------------
+FileRequestRef Client::urlretrieve( const std::string& url,
+                                 const std::string& filename )
+{
+  FileRequestRef req = new FileRequest(url, filename);
+  makeRequest(req);
+  return req;
+}
+
+//------------------------------------------------------------------------------
+MemoryRequestRef Client::urlload(const std::string& url)
+{
+  MemoryRequestRef req = new MemoryRequest(url);
+  makeRequest(req);
+  return req;
+}
+
 void Client::requestFinished(Connection* con)
 {
     
 }
 
-void Client::setUserAgent(const string& ua)
+void Client::setUserAgent(const std::string& ua)
 {
     d->userAgent = ua;
 }
@@ -766,7 +807,9 @@ const std::string& Client::proxyAuth() const
     return d->proxyAuth;
 }
 
-void Client::setProxy(const string& proxy, int port, const string& auth)
+void Client::setProxy( const std::string& proxy,
+                       int port,
+                       const std::string& auth )
 {
     d->proxy = proxy;
     d->proxyPort = port;

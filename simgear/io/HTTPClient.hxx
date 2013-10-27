@@ -27,7 +27,8 @@
 #include <memory> // for std::auto_ptr
 #include <stdint.h> // for uint_64t
 
-#include <simgear/io/HTTPRequest.hxx>
+#include <simgear/io/HTTPFileRequest.hxx>
+#include <simgear/io/HTTPMemoryRequest.hxx>
 
 namespace simgear
 {
@@ -47,7 +48,24 @@ public:
     void update(int waitTimeout = 0);
     
     void makeRequest(const Request_ptr& r);
-    
+
+    /**
+     * Download a resource and save it to a file.
+     *
+     * @param url       The resource to download
+     * @param filename  Path to the target file
+     * @param data      Data for POST request
+     */
+    FileRequestRef urlretrieve( const std::string& url,
+                                const std::string& filename );
+
+    /**
+     * Request a resource and keep it in memory.
+     *
+     * @param url   The resource to download
+     */
+    MemoryRequestRef urlload(const std::string& url);
+
     void setUserAgent(const std::string& ua);
     void setProxy(const std::string& proxy, int port, const std::string& auth = "");
     

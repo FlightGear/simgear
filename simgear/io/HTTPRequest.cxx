@@ -1,59 +1,116 @@
 #include "HTTPRequest.hxx"
 
-#include <simgear/misc/strutils.hxx>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
-
-using std::string;
-using std::map;
+#include <simgear/misc/strutils.hxx>
+#include <simgear/props/props_io.hxx>
 
 namespace simgear
 {
-
 namespace HTTP
 {
 
 extern const int DEFAULT_HTTP_PORT;
 
-Request::Request(const string& url, const string method) :
-    _method(method),
-    _url(url),
-    _responseVersion(HTTP_VERSION_UNKNOWN),
-    _responseStatus(0),
-    _responseLength(0),
-    _receivedBodyBytes(0),
-    _willClose(false)
+//------------------------------------------------------------------------------
+Request::Request(const std::string& url, const std::string method):
+  _method(method),
+  _url(url),
+  _responseVersion(HTTP_VERSION_UNKNOWN),
+  _responseStatus(0),
+  _responseLength(0),
+  _receivedBodyBytes(0),
+  _ready_state(UNSENT),
+  _willClose(false)
 {
-    
+
 }
 
+//------------------------------------------------------------------------------
 Request::~Request()
 {
-    
+
 }
 
-void Request::setUrl(const string& url)
+//------------------------------------------------------------------------------
+Request* Request::done(const Callback& cb)
 {
-    _url = url;
+  if( _ready_state == DONE )
+    cb(this);
+  else
+    _cb_done = cb;
+
+  return this;
 }
 
-string_list Request::requestHeaders() const
+//------------------------------------------------------------------------------
+Request* Request::fail(const Callback& cb)
 {
-    string_list r;
-    return r;
+  if( _ready_state == FAILED )
+    cb(this);
+  else
+    _cb_fail = cb;
+
+  return this;
 }
 
-string Request::header(const std::string& name) const
+//------------------------------------------------------------------------------
+Request* Request::always(const Callback& cb)
 {
-    return string();
+  if( isComplete() )
+    cb(this);
+  else
+    _cb_always = cb;
+
+  return this;
 }
 
+//------------------------------------------------------------------------------
+void Request::setBodyData( const std::string& data,
+                           const std::string& type )
+{
+  _request_data = data;
+  _request_media_type = type;
+
+  if( !data.empty() && _method == "GET" )
+    _method = "POST";
+}
+
+//----------------------------------------------------------------------------
+void Request::setBodyData(const SGPropertyNode* data)
+{
+  if( !data )
+    setBodyData("");
+
+  std::stringstream buf;
+  writeProperties(buf, data, true);
+
+  setBodyData(buf.str(), "application/xml");
+}
+
+//------------------------------------------------------------------------------
+void Request::setUrl(const std::string& url)
+{
+  _url = url;
+}
+
+//------------------------------------------------------------------------------
 void Request::requestStart()
 {
-    
+  setReadyState(OPENED);
 }
 
-void Request::responseStart(const string& r)
+//------------------------------------------------------------------------------
+Request::HTTPVersion decodeHTTPVersion(const std::string& v)
+{
+  if( v == "HTTP/1.1" ) return Request::HTTP_1_1;
+  if( v == "HTTP/1.0" ) return Request::HTTP_1_0;
+  if( strutils::starts_with(v, "HTTP/0.") ) return Request::HTTP_0_x;
+  return Request::HTTP_VERSION_UNKNOWN;
+}
+
+//------------------------------------------------------------------------------
+void Request::responseStart(const std::string& r)
 {
     const int maxSplit = 2; // HTTP/1.1 nnn reason-string
     string_list parts = strutils::split(r, NULL, maxSplit);
@@ -63,42 +120,72 @@ void Request::responseStart(const string& r)
         return;
     }
     
-    _responseVersion = decodeVersion(parts[0]);    
+    _responseVersion = decodeHTTPVersion(parts[0]);
     _responseStatus = strutils::to_int(parts[1]);
     _responseReason = parts[2];
 }
 
-void Request::responseHeader(const string& key, const string& value)
+//------------------------------------------------------------------------------
+void Request::responseHeader(const std::string& key, const std::string& value)
 {
-    if (key == "connection") {
-        _willClose = (value.find("close") != string::npos);
-    }
-    
-    _responseHeaders[key] = value;
+  if( key == "connection" )
+    _willClose = (value.find("close") != std::string::npos);
+
+  _responseHeaders[key] = value;
 }
 
+//------------------------------------------------------------------------------
 void Request::responseHeadersComplete()
 {
-    // no op
+  setReadyState(HEADERS_RECEIVED);
 }
 
-void Request::processBodyBytes(const char* s, int n)
-{
-    _receivedBodyBytes += n;
-    gotBodyData(s, n);
-}
-
-void Request::gotBodyData(const char* s, int n)
-{
-
-}
-
+//------------------------------------------------------------------------------
 void Request::responseComplete()
 {
-    
+  if( !isComplete() )
+    setReadyState(DONE);
 }
-    
-string Request::scheme() const
+
+//------------------------------------------------------------------------------
+void Request::gotBodyData(const char* s, int n)
+{
+  setReadyState(LOADING);
+}
+
+//------------------------------------------------------------------------------
+void Request::onDone()
+{
+
+}
+
+//------------------------------------------------------------------------------
+void Request::onFail()
+{
+  SG_LOG
+  (
+    SG_IO,
+    SG_INFO,
+    "request failed:" << url() << " : "
+                      << responseCode() << "/" << responseReason()
+  );
+}
+
+//------------------------------------------------------------------------------
+void Request::onAlways()
+{
+
+}
+
+//------------------------------------------------------------------------------
+void Request::processBodyBytes(const char* s, int n)
+{
+  _receivedBodyBytes += n;
+  gotBodyData(s, n);
+}
+
+//------------------------------------------------------------------------------
+std::string Request::scheme() const
 {
     int firstColon = url().find(":");
     if (firstColon > 0) {
@@ -107,10 +194,11 @@ string Request::scheme() const
     
     return ""; // couldn't parse scheme
 }
-    
-string Request::path() const
+
+//------------------------------------------------------------------------------
+std::string Request::path() const
 {
-    string u(url());
+    std::string u(url());
     int schemeEnd = u.find("://");
     if (schemeEnd < 0) {
         return ""; // couldn't parse scheme
@@ -132,10 +220,10 @@ string Request::path() const
     return u.substr(hostEnd, query - hostEnd);
 }
 
-
-string Request::query() const
+//------------------------------------------------------------------------------
+std::string Request::query() const
 {
-  string u(url());
+  std::string u(url());
   int query = u.find('?');
   if (query < 0) {
     return "";  //no query string found
@@ -144,104 +232,153 @@ string Request::query() const
   return u.substr(query);   //includes question mark
 }
 
-
-
-string Request::host() const
+//------------------------------------------------------------------------------
+std::string Request::host() const
 {
-    string hp(hostAndPort());
-    int colonPos = hp.find(':');
-    if (colonPos >= 0) {
-        return hp.substr(0, colonPos); // trim off the colon and port
-    } else {
-        return hp; // no port specifier
-    }
+  std::string hp(hostAndPort());
+  int colonPos = hp.find(':');
+  if (colonPos >= 0) {
+      return hp.substr(0, colonPos); // trim off the colon and port
+  } else {
+      return hp; // no port specifier
+  }
 }
 
+//------------------------------------------------------------------------------
 unsigned short Request::port() const
 {
-    string hp(hostAndPort());
-    int colonPos = hp.find(':');
-    if (colonPos >= 0) {
-        return (unsigned short) strutils::to_int(hp.substr(colonPos + 1));
-    } else {
-        return DEFAULT_HTTP_PORT;
-    }
+  std::string hp(hostAndPort());
+  int colonPos = hp.find(':');
+  if (colonPos >= 0) {
+      return (unsigned short) strutils::to_int(hp.substr(colonPos + 1));
+  } else {
+      return DEFAULT_HTTP_PORT;
+  }
 }
 
-string Request::hostAndPort() const
+//------------------------------------------------------------------------------
+std::string Request::hostAndPort() const
 {
-    string u(url());
-    int schemeEnd = u.find("://");
-    if (schemeEnd < 0) {
-        return ""; // couldn't parse scheme
-    }
-    
-    int hostEnd = u.find('/', schemeEnd + 3);
-    if (hostEnd < 0) { // all remainder of URL is host
-        return u.substr(schemeEnd + 3);
-    }
-    
-    return u.substr(schemeEnd + 3, hostEnd - (schemeEnd + 3));
+  std::string u(url());
+  int schemeEnd = u.find("://");
+  if (schemeEnd < 0) {
+      return ""; // couldn't parse scheme
+  }
+
+  int hostEnd = u.find('/', schemeEnd + 3);
+  if (hostEnd < 0) { // all remainder of URL is host
+      return u.substr(schemeEnd + 3);
+  }
+
+  return u.substr(schemeEnd + 3, hostEnd - (schemeEnd + 3));
 }
 
+//------------------------------------------------------------------------------
 void Request::setResponseLength(unsigned int l)
 {
-    _responseLength = l;
+  _responseLength = l;
 }
 
+//------------------------------------------------------------------------------
 unsigned int Request::responseLength() const
 {
-// if the server didn't supply a content length, use the number
-// of bytes we actually received (so far)
-    if ((_responseLength == 0) && (_receivedBodyBytes > 0)) {
-        return _receivedBodyBytes;
-    }
-    
-    return _responseLength;
+  // if the server didn't supply a content length, use the number
+  // of bytes we actually received (so far)
+  if( (_responseLength == 0) && (_receivedBodyBytes > 0) )
+    return _receivedBodyBytes;
+
+  return _responseLength;
 }
 
+//------------------------------------------------------------------------------
 void Request::setFailure(int code, const std::string& reason)
 {
-    _responseStatus = code;
-    _responseReason = reason;
-    failed();
+  _responseStatus = code;
+  _responseReason = reason;
+  setReadyState(FAILED);
 }
 
-void Request::failed()
+//------------------------------------------------------------------------------
+void Request::setReadyState(ReadyState state)
 {
-    SG_LOG(SG_IO, SG_INFO, "request failed:" << url() << " : "
-           << responseCode() << "/" << responseReason());
+  _ready_state = state;
+  if( state == DONE )
+  {
+    if( _cb_done )
+      _cb_done(this);
+    onDone();
+  }
+  else if( state == FAILED )
+  {
+    if( _cb_fail )
+      _cb_fail(this);
+    onFail();
+  }
+  else
+    return;
+
+  if( _cb_always )
+    _cb_always(this);
+  onAlways();
 }
 
-Request::HTTPVersion Request::decodeVersion(const string& v)
+//------------------------------------------------------------------------------
+void Request::abort()
 {
-    if (v == "HTTP/1.1") return HTTP_1_1;
-    if (v == "HTTP/1.0") return HTTP_1_0;
-    if (strutils::starts_with(v, "HTTP/0.")) return HTTP_0_x;
-    return HTTP_VERSION_UNKNOWN;
+  abort("Request aborted.");
 }
 
+//----------------------------------------------------------------------------
+void Request::abort(const std::string& reason)
+{
+  if( isComplete() )
+    return;
+
+  setFailure(-1, reason);
+  _willClose = true;
+}
+
+//------------------------------------------------------------------------------
 bool Request::closeAfterComplete() const
 {
-// for non HTTP/1.1 connections, assume server closes
-    return _willClose || (_responseVersion != HTTP_1_1);
-}
-  
-int Request::requestBodyLength() const
-{
-  return -1;
+  // for non HTTP/1.1 connections, assume server closes
+  return _willClose || (_responseVersion != HTTP_1_1);
 }
 
-std::string Request::requestBodyType() const
+//------------------------------------------------------------------------------
+bool Request::isComplete() const
 {
-    return "text/plain";
+  return _ready_state == DONE || _ready_state == FAILED;
 }
-  
-int Request::getBodyData(char*, int maxCount) const
+
+//------------------------------------------------------------------------------
+bool Request::hasBodyData() const
 {
-  return 0;
+  return !_request_media_type.empty();
+}
+
+//------------------------------------------------------------------------------
+std::string Request::bodyType() const
+{
+  return _request_media_type;
+}
+
+//------------------------------------------------------------------------------
+size_t Request::bodyLength() const
+{
+  return _request_data.length();
+}
+
+//------------------------------------------------------------------------------
+size_t Request::getBodyData(char* s, size_t offset, size_t max_count) const
+{
+  size_t bytes_available = _request_data.size() - offset;
+  size_t bytes_to_read = std::min(bytes_available, max_count);
+
+  memcpy(s, _request_data.data() + offset, bytes_to_read);
+
+  return bytes_to_read;
 }
 
 } // of namespace HTTP
-
 } // of namespace simgear

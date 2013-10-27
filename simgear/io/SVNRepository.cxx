@@ -119,40 +119,9 @@ namespace { // anonmouse
         Request(repo->baseUrl, "PROPFIND"),
         _repo(repo)
       {
-      }
-  
-      virtual string_list requestHeaders() const
-      {
-        string_list r;
-        r.push_back("Depth");
-        return r;
-      }
-  
-      virtual string header(const string& name) const
-      {
-          if (name == "Depth") {
-              return "0";
-          }
-          
-          return string();
-      }
-  
-      virtual string requestBodyType() const
-      {
-          return "application/xml; charset=\"utf-8\"";
-      }
-  
-      virtual int requestBodyLength() const
-      {
-        return strlen(PROPFIND_REQUEST_BODY);
-      }
-  
-      virtual int getBodyData(char* buf, int count) const
-      {
-        int bodyLen = strlen(PROPFIND_REQUEST_BODY);
-        assert(count >= bodyLen);
-        memcpy(buf, PROPFIND_REQUEST_BODY, bodyLen);
-        return bodyLen;
+        requestHeader("Depth") = "0";
+        setBodyData( PROPFIND_REQUEST_BODY,
+                     "application/xml; charset=\"utf-8\"" );
       }
 
     protected:
@@ -169,7 +138,7 @@ namespace { // anonmouse
         }
       }
   
-      virtual void responseComplete()
+      virtual void onDone()
       {
         if (responseCode() == 207) {
           _davStatus.finishParse();
@@ -189,9 +158,9 @@ namespace { // anonmouse
         _davStatus.parseXML(s, n);
       }
         
-        virtual void failed()
+        virtual void onFail()
         {
-            HTTP::Request::failed();
+            HTTP::Request::onFail();
             _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
         }
         
@@ -200,64 +169,43 @@ namespace { // anonmouse
       DAVMultiStatus _davStatus;
     };
 
-class UpdateReportRequest : public HTTP::Request
+class UpdateReportRequest:
+  public HTTP::Request
 {
 public:
   UpdateReportRequest(SVNRepoPrivate* repo, 
       const std::string& aVersionName,
       bool startEmpty) :
     HTTP::Request("", "REPORT"),
-    _requestSent(0),
     _parser(repo->p),
     _repo(repo),
     _failed(false)
   {       
     setUrl(repo->vccUrl);
-
-    _request =
+    std::string request =
     "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
     "<S:update-report send-all=\"true\" xmlns:S=\"svn:\">\n"
     "<S:src-path>" + repo->baseUrl + "</S:src-path>\n"
-    "<S:depth>unknown</S:depth>\n";
+    "<S:depth>unknown</S:depth>\n"
+    "<S:entry rev=\"" + aVersionName + "\" depth=\"infinity\" start-empty=\"true\"/>\n";
 
-    _request += "<S:entry rev=\"" + aVersionName + "\" depth=\"infinity\" start-empty=\"true\"/>\n";
-     
-    if (!startEmpty) {
-        string_list entries;
-        _repo->rootCollection->mergeUpdateReportDetails(0, entries);
-        BOOST_FOREACH(string e, entries) {
-            _request += e + "\n";
-        }
+    if( !startEmpty )
+    {
+      string_list entries;
+      _repo->rootCollection->mergeUpdateReportDetails(0, entries);
+      BOOST_FOREACH(string e, entries)
+      {
+        request += e + "\n";
+      }
     }
 
-    _request += "</S:update-report>";   
-  }
+    request += "</S:update-report>";
 
-  virtual string requestBodyType() const
-  {
-    return "application/xml; charset=\"utf-8\"";
-  }
-
-  virtual int requestBodyLength() const
-  {
-    return _request.size();
-  }
-
-  virtual int getBodyData(char* buf, int count) const
-  {
-    int len = std::min(count, requestBodyLength() - _requestSent);
-    memcpy(buf, _request.c_str() + _requestSent, len);
-    _requestSent += len;
-    return len;
+    setBodyData(request, "application/xml; charset=\"utf-8\"");
   }
 
 protected:
-  virtual void responseHeadersComplete()
-  {
-
-  }
-
-  virtual void responseComplete()
+  virtual void onDone()
   {
       if (_failed) {
           return;
@@ -300,14 +248,12 @@ protected:
     }
   }
 
-    virtual void failed()
+    virtual void onFail()
     {
-        HTTP::Request::failed();
+        HTTP::Request::onFail();
         _repo->updateFailed(this, SVNRepository::SVN_ERROR_SOCKET);
     }
 private:
-  string _request;
-  mutable int _requestSent;
   SVNReportParser _parser;
   SVNRepoPrivate* _repo;
   bool _failed;

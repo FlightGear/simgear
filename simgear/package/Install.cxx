@@ -81,7 +81,7 @@ protected:
         m_owner->installProgress(m_buffer.size(), responseLength());
     }
     
-    virtual void responseComplete()
+    virtual void onDone()
     {
         if (responseCode() != 200) {
             SG_LOG(SG_GENERAL, SG_ALERT, "download failure");

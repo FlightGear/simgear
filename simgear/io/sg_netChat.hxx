@@ -70,6 +70,8 @@ class NetChat : public NetBufferChannel
 {
   std::string terminator;
   int bytesToCollect;
+
+protected:
   virtual void handleBufferRead (NetBuffer& buffer) ;
 
 public:

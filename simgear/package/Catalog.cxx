@@ -50,17 +50,12 @@ public:
     }
     
 protected:
-    virtual void responseHeadersComplete()
-    {
-        
-    }
-    
     virtual void gotBodyData(const char* s, int n)
     {
         m_buffer += std::string(s, n);
     }
     
-    virtual void responseComplete()
+    virtual void onDone()
     {        
         if (responseCode() != 200) {
             SG_LOG(SG_GENERAL, SG_ALERT, "catalog download failure:" << m_owner->url());

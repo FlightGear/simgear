@@ -53,48 +53,23 @@ public:
     bool complete;
     bool failed;
     string bodyData;
-    string bodyContentType;
-    
+
     TestRequest(const std::string& url, const std::string method = "GET") : 
         HTTP::Request(url, method),
         complete(false)
     {
-      bodyContentType = "text/plain";
+
     }
     
-    std::map<string, string> sendHeaders;
     std::map<string, string> headers;
 protected:
-    string_list requestHeaders() const
-    {
-        string_list r;
-        std::map<string, string>::const_iterator it;
-        for (it = sendHeaders.begin(); it != sendHeaders.end(); ++it) {
-            r.push_back(it->first);
-        }
-        return r;
-    }
     
-    string header(const string& name) const
-    {
-        std::map<string, string>::const_iterator it = sendHeaders.find(name);
-        if (it == sendHeaders.end()) {
-            return string();
-        }
-        
-        return it->second;
-    }
-    
-    virtual void responseHeadersComplete()
-    {
-    }
-    
-    virtual void responseComplete()
+    virtual void onDone()
     {
         complete = true;
     }  
     
-    virtual void failure()
+    virtual void onFail()
     {
         failed = true;
     }
@@ -103,11 +78,6 @@ protected:
     {
       //std::cout << "got body data:'" << string(s, n) << "'" <<std::endl;
         bodyData += string(s, n);
-    }
-    
-    virtual std::string requestBodyType() const
-    {
-        return bodyContentType;
     }
     
     virtual void responseHeader(const string& header, const string& value)
@@ -535,8 +505,8 @@ int main(int argc, char* argv[])
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/test_headers");
         HTTP::Request_ptr own(tr);
-        tr->sendHeaders["X-Foo"] = "Bar";
-        tr->sendHeaders["X-AnotherHeader"] = "A longer value";
+        tr->requestHeader("X-Foo") = "Bar";
+        tr->requestHeader("X-AnotherHeader") = "A longer value";
         cl.makeRequest(tr);
 
         waitForComplete(&cl, tr);
@@ -721,7 +691,7 @@ int main(int argc, char* argv[])
     {
         cout << "POST" << endl;
         TestRequest* tr = new TestRequest("http://localhost:2000/test_post?foo=abc&bar=1234&username=johndoe", "POST");
-        tr->bodyContentType = "application/x-www-form-urlencoded";
+        tr->setBodyData("", "application/x-www-form-urlencoded");
         
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);

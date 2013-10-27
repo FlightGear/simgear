@@ -15,6 +15,8 @@ set(HEADERS
     sg_socket.hxx
     sg_socket_udp.hxx
     HTTPClient.hxx
+    HTTPFileRequest.hxx
+    HTTPMemoryRequest.hxx
     HTTPRequest.hxx
     HTTPContentDecode.hxx
     DAVMultiStatus.hxx
@@ -36,6 +38,8 @@ set(SOURCES
     sg_socket.cxx
     sg_socket_udp.cxx
     HTTPClient.cxx
+    HTTPFileRequest.cxx
+    HTTPMemoryRequest.cxx
     HTTPRequest.cxx
     HTTPContentDecode.cxx
     DAVMultiStatus.cxx

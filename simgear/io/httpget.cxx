@@ -48,35 +48,11 @@ public:
         }
         
         string key = h.substr(0, colonPos);
-        _headers[key] = h.substr(colonPos + 1);
+        requestHeader(key) = h.substr(colonPos + 1);
     }
     
-    virtual string_list requestHeaders() const
-    {
-        string_list r;
-        std::map<string, string>::const_iterator it;
-        for (it = _headers.begin(); it != _headers.end(); ++it) {
-            r.push_back(it->first);
-        }
-        
-        return r;
-    }
-    
-    virtual string header(const string& name) const
-    {
-        std::map<string, string>::const_iterator it = _headers.find(name);
-        if (it == _headers.end()) {
-            return string();
-        }
-        
-        return it->second;
-    }
 protected:
-    virtual void responseHeadersComplete()
-    {
-    }
-
-    virtual void responseComplete()
+    virtual void onDone()
     {
         _complete = true;
     }  
@@ -88,7 +64,6 @@ protected:
 private:    
     bool _complete;
     SGFile* _file;
-    std::map<string, string> _headers;
 };
 
 int main(int argc, char* argv[])

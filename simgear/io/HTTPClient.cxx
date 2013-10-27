@@ -766,8 +766,8 @@ void Client::makeRequest(const Request_ptr& r)
 }
 
 //------------------------------------------------------------------------------
-FileRequestRef Client::urlretrieve( const std::string& url,
-                                 const std::string& filename )
+FileRequestRef Client::save( const std::string& url,
+                             const std::string& filename )
 {
   FileRequestRef req = new FileRequest(url, filename);
   makeRequest(req);
@@ -775,7 +775,7 @@ FileRequestRef Client::urlretrieve( const std::string& url,
 }
 
 //------------------------------------------------------------------------------
-MemoryRequestRef Client::urlload(const std::string& url)
+MemoryRequestRef Client::load(const std::string& url)
 {
   MemoryRequestRef req = new MemoryRequest(url);
   makeRequest(req);

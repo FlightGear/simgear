@@ -56,15 +56,15 @@ public:
      * @param filename  Path to the target file
      * @param data      Data for POST request
      */
-    FileRequestRef urlretrieve( const std::string& url,
-                                const std::string& filename );
+    FileRequestRef save( const std::string& url,
+                         const std::string& filename );
 
     /**
      * Request a resource and keep it in memory.
      *
      * @param url   The resource to download
      */
-    MemoryRequestRef urlload(const std::string& url);
+    MemoryRequestRef load(const std::string& url);
 
     void setUserAgent(const std::string& ua);
     void setProxy(const std::string& proxy, int port, const std::string& auth = "");

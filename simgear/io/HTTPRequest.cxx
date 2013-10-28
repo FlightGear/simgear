@@ -304,22 +304,28 @@ void Request::setReadyState(ReadyState state)
   _ready_state = state;
   if( state == DONE )
   {
+    // Finish C++ part of request to ensure everything is finished (for example
+    // files and streams are closed) before calling any callback (possibly using
+    // such files)
+    onDone();
+    onAlways();
+
     if( _cb_done )
       _cb_done(this);
-    onDone();
   }
   else if( state == FAILED )
   {
+    onFail();
+    onAlways();
+
     if( _cb_fail )
       _cb_fail(this);
-    onFail();
   }
   else
     return;
 
   if( _cb_always )
     _cb_always(this);
-  onAlways();
 }
 
 //------------------------------------------------------------------------------

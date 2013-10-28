@@ -18,6 +18,7 @@
 
 #include "HTTPFileRequest.hxx"
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 namespace simgear
 {
@@ -38,9 +39,14 @@ namespace HTTP
     Request::responseHeadersComplete();
 
     if( !_filename.empty() )
+    {
       // TODO validate path? (would require to expose fgValidatePath somehow to
       //      simgear)
+      SGPath path(_filename);
+      path.create_dir(0777);
+
       _file.open(_filename.c_str(), std::ios::binary | std::ios::trunc);
+    }
 
     if( !_file )
     {

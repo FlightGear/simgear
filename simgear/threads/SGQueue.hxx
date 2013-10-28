@@ -386,6 +386,11 @@ public:
         return this->queue.size();
     }
 
+    void waitOnNotEmpty() {
+    	SGGuard<SGMutex> g(mutex);
+    	while (this->queue.empty())
+    	    not_empty.wait(mutex);
+    }
 private:
 
     /**

@@ -643,6 +643,12 @@ void SGTerraSync::SvnThread::runInternal()
         }
 
         _busy = anySlotBusy;
+        if (!anySlotBusy) {
+            // wait on the blocking deque here, otherwise we spin
+            // the loop very fast, since _http::update with no connections
+            // active returns immediately.
+            waitingTiles.waitOnNotEmpty();
+        }
     } // of thread running loop
 }
 

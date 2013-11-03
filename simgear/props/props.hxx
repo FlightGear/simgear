@@ -20,8 +20,10 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <typeinfo>
 
 #include <boost/utility.hpp>
+#include <boost/type_traits/is_enum.hpp>
 
 #if PROPS_STANDALONE
 #else
@@ -1784,7 +1786,8 @@ private:
 
 // Convenience functions for use in templates
 template<typename T>
-T getValue(const SGPropertyNode*);
+typename boost::disable_if<boost::is_enum<T>, T>::type
+getValue(const SGPropertyNode*);
 
 template<>
 inline bool getValue<bool>(const SGPropertyNode* node) { return node->getBoolValue(); }
@@ -1817,6 +1820,52 @@ template<>
 inline std::string getValue<std::string>(const SGPropertyNode* node)
 {
     return node->getStringValue();
+}
+
+namespace simgear
+{
+  /**
+   * Default trait for extracting enum values from SGPropertyNode. Create your
+   * own specialization for specific enum types to enable validation of values.
+   */
+  template<class T>
+  struct enum_traits
+  {
+    /**
+     * Typename of the enum
+     */
+    static const char* name() { return typeid(T).name(); }
+
+    /**
+     * @return Default value (will be used if validation fails)
+     */
+    static T defVal() { return T(); }
+
+    /**
+     * @return Whether the given integer value has an enum value defined
+     */
+    static bool validate(int) { return true; }
+  };
+} // namespace simgear
+
+/** Extract enum from SGPropertyNode */
+template<typename T>
+inline typename boost::enable_if<boost::is_enum<T>, T>::type
+getValue(const SGPropertyNode* node)
+{
+  typedef simgear::enum_traits<T> Traits;
+  int val = node->getIntValue();
+  if( !Traits::validate(val) )
+  {
+    SG_LOG
+    (
+      SG_GENERAL,
+      SG_WARN,
+      "Invalid value for enum (" << Traits::name() << ", val = " << val << ")"
+    );
+    return Traits::defVal();
+  }
+  return static_cast<T>(node->getIntValue());
 }
 
 inline bool setValue(SGPropertyNode* node, bool value)

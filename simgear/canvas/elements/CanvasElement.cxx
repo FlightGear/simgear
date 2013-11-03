@@ -17,7 +17,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "CanvasElement.hxx"
-#include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
 #include <simgear/math/SGMisc.hxx>
@@ -40,6 +39,63 @@ namespace simgear
 namespace canvas
 {
   const std::string NAME_TRANSFORM = "tf";
+
+  /**
+   * glScissor with coordinates relative to different reference frames.
+   */
+  class Element::RelativeScissor:
+    public osg::Scissor
+  {
+    public:
+
+      ReferenceFrame    _coord_reference;
+      osg::Matrix       _parent_inverse;
+
+      RelativeScissor():
+        _coord_reference(GLOBAL)
+      {}
+
+      virtual void apply(osg::State& state) const
+      {
+        const osg::Viewport* vp = state.getCurrentViewport();
+        float w2 = 0.5 * vp->width(),
+              h2 = 0.5 * vp->height();
+
+        osg::Matrix model_view
+        (
+          w2, 0,  0, 0,
+          0,  h2, 0, 0,
+          0,  0,  1, 0,
+          w2, h2, 0, 1
+        );
+        model_view.preMult(state.getProjectionMatrix());
+
+        if( _coord_reference != GLOBAL )
+        {
+          model_view.preMult(state.getModelViewMatrix());
+
+          if( _coord_reference == PARENT )
+            model_view.preMult(_parent_inverse);
+        }
+
+        const osg::Vec2 scale( model_view(0,0), model_view(1,1)),
+                        offset(model_view(3,0), model_view(3,1));
+
+        // TODO check/warn for rotation?
+
+        GLint x = SGMiscf::roundToInt(scale.x() * _x + offset.x()),
+              y = SGMiscf::roundToInt(scale.y() * _y + offset.y()),
+              w = SGMiscf::roundToInt(std::fabs(scale.x()) * _width),
+              h = SGMiscf::roundToInt(std::fabs(scale.y()) * _height);
+
+        if( scale.x() < 0 )
+          x -= w;
+        if( scale.y() < 0 )
+          y -= h;
+
+        glScissor(x, y, w, h);
+      }
+  };
 
   //----------------------------------------------------------------------------
   Element::OSGUserData::OSGUserData(ElementPtr element):
@@ -156,6 +212,15 @@ namespace canvas
       }
       _transform->setMatrix(m);
       _transform_dirty = false;
+      _attributes_dirty |= SCISSOR_COORDS;
+    }
+
+    if( _attributes_dirty & SCISSOR_COORDS )
+    {
+      if( _scissor && _scissor->_coord_reference != GLOBAL )
+        _scissor->_parent_inverse = _transform->getInverseMatrix();
+
+      _attributes_dirty &= ~SCISSOR_COORDS;
     }
 
     // Update bounding box on manual update (manual updates pass zero dt)
@@ -402,6 +467,7 @@ namespace canvas
     if( clip.empty() || clip == "auto" )
     {
       getOrCreateStateSet()->removeAttribute(osg::StateAttribute::SCISSOR);
+      _scissor = 0;
       return;
     }
 
@@ -447,32 +513,28 @@ namespace canvas
       return;
     }
 
-    float scale_x = 1,
-          scale_y = 1;
-
-    CanvasPtr canvas = _canvas.lock();
-    if( canvas )
-    {
-      // The scissor rectangle isn't affected by any transformation, so we need
-      // to convert to image/canvas coordinates on our selves.
-      scale_x = canvas->getSizeX()
-              / static_cast<float>(canvas->getViewWidth());
-      scale_y = canvas->getSizeY()
-              / static_cast<float>(canvas->getViewHeight());
-    }
-
-    osg::Scissor* scissor = new osg::Scissor();
+    _scissor = new RelativeScissor();
     // <top>, <right>, <bottom>, <left>
-    scissor->x() = SGMiscf::roundToInt(scale_x * values[3]);
-    scissor->y() = SGMiscf::roundToInt(scale_y * values[0]);
-    scissor->width() = SGMiscf::roundToInt(scale_x * width);
-    scissor->height() = SGMiscf::roundToInt(scale_y * height);
+    _scissor->x() = SGMiscf::roundToInt(values[3]);
+    _scissor->y() = SGMiscf::roundToInt(values[0]);
+    _scissor->width() = SGMiscf::roundToInt(width);
+    _scissor->height() = SGMiscf::roundToInt(height);
 
-    if( canvas )
-      // Canvas has y axis upside down
-      scissor->y() = canvas->getSizeY() - scissor->y() - scissor->height();
+    getOrCreateStateSet()->setAttributeAndModes(_scissor);
 
-    getOrCreateStateSet()->setAttributeAndModes(scissor);
+    SGPropertyNode* clip_frame = _node->getChild("clip-frame", 0);
+    if( clip_frame )
+      valueChanged(clip_frame);
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::setClipFrame(ReferenceFrame rf)
+  {
+    if( _scissor )
+    {
+      _scissor->_coord_reference = rf;
+      _attributes_dirty |= SCISSOR_COORDS;
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -523,6 +585,7 @@ namespace canvas
     _transform_dirty( false ),
     _transform( new osg::MatrixTransform ),
     _style( parent_style ),
+    _scissor( 0 ),
     _drawable( 0 )
   {
     staticInit();
@@ -551,6 +614,7 @@ namespace canvas
       return;
 
     addStyle("clip", "", &Element::setClip, false);
+    addStyle("clip-frame", "", &Element::setClipFrame, false);
   }
 
   //----------------------------------------------------------------------------

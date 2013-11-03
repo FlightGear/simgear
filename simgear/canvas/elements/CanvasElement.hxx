@@ -76,6 +76,17 @@ namespace canvas
       };
 
       /**
+       * Coordinate reference frame (eg. "clip" property)
+       */
+      enum ReferenceFrame
+      {
+        GLOBAL, ///!< Global coordinates
+        PARENT, ///!< Coordinates relative to parent coordinate frame
+        LOCAL   ///!< Coordinates relative to local coordinates (parent
+                ///   coordinates with local transformations applied)
+      };
+
+      /**
        *
        */
       virtual ~Element() = 0;
@@ -132,6 +143,11 @@ namespace canvas
       void setClip(const std::string& clip);
 
       /**
+       * Clipping coordinates reference frame
+       */
+      void setClipFrame(ReferenceFrame rf);
+
+      /**
        * Write the given bounding box to the property tree
        */
       void setBoundingBox(const osg::BoundingBox& bb);
@@ -165,8 +181,9 @@ namespace canvas
 
       enum Attributes
       {
-        BLEND_FUNC = 0x0001,
-        LAST_ATTRIBUTE  = BLEND_FUNC << 1
+        BLEND_FUNC      = 1,
+        SCISSOR_COORDS  = BLEND_FUNC << 1,
+        LAST_ATTRIBUTE  = SCISSOR_COORDS << 1
       };
 
       enum TransformType
@@ -177,6 +194,8 @@ namespace canvas
         TT_ROTATE,
         TT_SCALE
       };
+
+      class RelativeScissor;
 
       CanvasWeakPtr _canvas;
       Element      *_parent;
@@ -189,6 +208,7 @@ namespace canvas
 
       Style                             _style;
       std::vector<SGPropertyNode_ptr>   _bounding_box;
+      RelativeScissor                  *_scissor;
 
       typedef std::vector<EventListener> Listener;
       typedef std::map<Event::Type, Listener> ListenerMap;
@@ -555,6 +575,27 @@ namespace canvas
   };
 
 } // namespace canvas
+
+  template<>
+  struct enum_traits<canvas::Element::ReferenceFrame>
+  {
+    static const char* name()
+    {
+      return "canvas::Element::ReferenceFrame";
+    }
+
+    static canvas::Element::ReferenceFrame defVal()
+    {
+      return canvas::Element::GLOBAL;
+    }
+
+    static bool validate(int frame)
+    {
+      return frame >= canvas::Element::GLOBAL
+          && frame <= canvas::Element::LOCAL;
+    }
+  };
+
 } // namespace simgear
 
 #endif /* CANVAS_ELEMENT_HXX_ */

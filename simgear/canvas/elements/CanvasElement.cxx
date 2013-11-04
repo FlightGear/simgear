@@ -32,6 +32,7 @@
 #include <boost/make_shared.hpp>
 
 #include <cassert>
+#include <cmath>
 #include <cstring>
 
 namespace simgear

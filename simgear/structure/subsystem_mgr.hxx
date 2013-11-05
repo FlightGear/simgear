@@ -284,7 +284,8 @@ protected:
   static void* reportTimingUserData;
 };
 
-
+typedef SGSharedPtr<SGSubsystem> SGSubsystemRef;
+    
 
 /**
  * A group of FlightGear subsystems.
@@ -332,7 +333,8 @@ private:
     class Member;
     Member* get_member (const std::string &name, bool create = false);
 
-    std::vector<Member *> _members;
+    typedef std::vector<Member *> MemberVec;
+    MemberVec _members;
     
     double _fixedUpdateTime;
     double _updateTimeRemainder;
@@ -401,11 +403,11 @@ public:
      * remove a subsystem, and return a pointer to it.
      * returns NULL if the subsystem was not found.
      */
-    virtual SGSubsystem* remove(const char* name);
+    virtual void remove(const char* name);
 
     virtual SGSubsystemGroup * get_group (GroupType group);
 
-    virtual SGSubsystem * get_subsystem(const std::string &name) const;
+    virtual SGSubsystem* get_subsystem(const std::string &name) const;
 
     void reportTiming();
     void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
@@ -414,6 +416,7 @@ private:
     SGSubsystemGroup* _groups[MAX_GROUPS];
     unsigned int _initPosition;
   
+    // non-owning reference
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;
     SubsystemDict _subsystem_map;
 };

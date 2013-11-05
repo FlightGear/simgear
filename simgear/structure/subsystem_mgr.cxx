@@ -136,7 +136,7 @@ public:
 
     SampleStatistic timeStat;
     std::string name;
-    SGSubsystem * subsystem;
+    SGSharedPtr<SGSubsystem> subsystem;
     double min_step_sec;
     double elapsed_sec;
     bool collectTimeStats;
@@ -321,12 +321,16 @@ SGSubsystemGroup::get_subsystem (const string &name)
 void
 SGSubsystemGroup::remove_subsystem (const string &name)
 {
-    for( size_t i = 0; i < _members.size(); i++ ) {
-        if (name == _members[i]->name) {
-            _members.erase(_members.begin() + i);
+    MemberVec::iterator it = _members.begin();
+    for (; it != _members.end(); ++it) {
+        if (name == (*it)->name) {
+            delete *it;
+            _members.erase(it);
             return;
         }
     }
+    
+    SG_LOG(SG_GENERAL, SG_WARN, "remove_subsystem: missing:" << name);
 }
 
 void
@@ -380,7 +384,6 @@ SGSubsystemGroup::Member::Member (const Member &)
 
 SGSubsystemGroup::Member::~Member ()
 {
-    delete subsystem;
 }
 
 void
@@ -532,31 +535,28 @@ SGSubsystemMgr::add (const char * name, SGSubsystem * subsystem,
 
     if (_subsystem_map.find(name) != _subsystem_map.end()) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Adding duplicate subsystem " << name);
-        throw sg_exception("duplicate subsystem");
+        throw sg_exception("duplicate subsystem:" + std::string(name));
     }
     _subsystem_map[name] = subsystem;
 }
 
-SGSubsystem* 
+void
 SGSubsystemMgr::remove(const char* name)
 {
   SubsystemDict::iterator s =_subsystem_map.find(name);
   if (s == _subsystem_map.end()) {
-    return NULL;
+    return;
   }
   
-  SGSubsystem* sub = s->second;
   _subsystem_map.erase(s);
   
 // tedious part - we don't know which group the subsystem belongs too
   for (int i = 0; i < MAX_GROUPS; i++) {
-    if (_groups[i]->get_subsystem(name) == sub) {
+    if (_groups[i]->get_subsystem(name) != NULL) {
       _groups[i]->remove_subsystem(name);
       break;
     }
   } // of groups iteration
-  
-  return sub;
 }
 
 

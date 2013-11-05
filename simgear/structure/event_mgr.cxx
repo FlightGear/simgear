@@ -38,6 +38,16 @@ void SGTimer::run()
     (*callback)();
 }
 
+SGEventMgr::SGEventMgr()
+{
+    
+}
+
+SGEventMgr::~SGEventMgr()
+{
+    
+}
+
 void SGEventMgr::unbind()
 {
     _freezeProp.clear();

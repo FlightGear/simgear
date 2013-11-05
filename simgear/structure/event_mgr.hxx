@@ -68,8 +68,8 @@ private:
 class SGEventMgr : public SGSubsystem
 {
 public:
-    SGEventMgr() { _rtProp = 0; }
-    ~SGEventMgr() { _rtProp = 0; }
+    SGEventMgr();
+    ~SGEventMgr();
 
     virtual void init() {}
     virtual void update(double delta_time_sec);

@@ -392,7 +392,11 @@ public:
       finishFile(currentDir->addChildFile(currentPath.file()));
     } else if (!strcmp(name, SVN_OPEN_FILE_TAG)) {
       DAVResource* res = currentDir->collection()->childWithName(currentPath.file());   
-      assert(res);
+        if (!res) {
+            SG_LOG(SG_IO, SG_WARN, "SVN open-file: unknown: " << currentPath);
+            fail(SVNRepository::SVN_ERROR_IO);
+            return;
+        }
       finishFile(res);
     } else if (!strcmp(name, SVN_ADD_DIRECTORY_TAG)) {
       // pop directory

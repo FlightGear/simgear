@@ -126,4 +126,15 @@ SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg) cons
   return false;
 }
 
+bool SGCommandMgr::removeCommand(const std::string& name)
+{
+    command_map::iterator it = _commands.find(name);
+    if (it == _commands.end())
+        return false;
+    
+    delete it->second;
+    _commands.erase(it);
+    return true;
+}
+
 // end of commands.cxx

@@ -150,6 +150,10 @@ public:
    */
   virtual bool execute (const std::string &name, const SGPropertyNode * arg) const;
 
+  /**
+   * Remove a command registration
+   */
+  bool removeCommand(const std::string& name);
 protected:
   /**
    * Default constructor.

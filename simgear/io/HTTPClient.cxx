@@ -645,9 +645,13 @@ void Client::setMaxConnections(unsigned int maxCon)
 
 void Client::update(int waitTimeout)
 {
-    d->poller.poll(waitTimeout);
-    bool waitingRequests = !d->pendingRequests.empty();
+    if (!d->poller.hasChannels() && (waitTimeout > 0)) {
+        SGTimeStamp::sleepForMSec(waitTimeout);
+    } else {
+        d->poller.poll(waitTimeout);
+    }
     
+    bool waitingRequests = !d->pendingRequests.empty();
     ConnectionDict::iterator it = d->connections.begin();
     for (; it != d->connections.end(); ) {
         Connection* con = it->second;

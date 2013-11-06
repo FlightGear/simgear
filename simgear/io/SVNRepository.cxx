@@ -73,7 +73,8 @@ public:
     
     void updateFailed(HTTP::Request* req, SVNRepository::ResultCode err)
     {
-        SG_LOG(SG_IO, SG_WARN, "SVN: failed to update from:" << req->url());
+        SG_LOG(SG_IO, SG_WARN, "SVN: failed to update from:" << req->url()
+            << "\n(repository:" << p->baseUrl() << ")");
         isUpdating = false;
         status = err;
     }

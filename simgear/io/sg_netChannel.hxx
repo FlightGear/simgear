@@ -123,6 +123,8 @@ public:
     void addChannel(NetChannel* channel);
     void removeChannel(NetChannel* channel);
     
+    bool hasChannels() const { return !channels.empty(); }
+    
     bool poll(unsigned int timeout = 0);
     void loop(unsigned int timeout = 0);
 };

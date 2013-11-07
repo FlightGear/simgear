@@ -149,11 +149,27 @@ namespace simgear {
      */
     std::string uppercase(const std::string &s);
 
+   /**
+    * Convert a string to lower case.
+    * @return lower case string
+    */
+   std::string lowercase(const std::string &s);
+   
+  /**
+   * Convert a string to lower case in place
+   */
+  void lowercase(std::string &s);
+  
 	/**
      * convert a string in the local Windows 8-bit encoding to UTF-8
      * (no-op on other platforms)
      */
     std::string convertWindowsLocal8BitToUtf8(const std::string& a);
+
+#if defined(SG_WINDOWS)
+    typedef std::vector<wchar_t> WCharVec;
+    WCharVec convertUtf8ToWString(const std::string& a);
+#endif
 
     /**
      * convert base-64 encoded data to raw bytes (possibly with embedded

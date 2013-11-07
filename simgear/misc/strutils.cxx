@@ -305,26 +305,51 @@ namespace simgear {
       return rslt;
     }
 
+    string lowercase(const string &s) {
+      string rslt(s);
+      for(string::iterator p = rslt.begin(); p != rslt.end(); p++){
+        *p = tolower(*p);
+      }
+      return rslt;
+    }
 
-#ifdef SG_WINDOWS
-    #include <windows.h>
+    void lowercase(string &s) {
+      for(string::iterator p = s.begin(); p != s.end(); p++){
+        *p = tolower(*p);
+      }
+    }
+    
+#if defined(SG_WINDOWS)
+
+#include <windows.h>
+    
+static WCharVec convertMultiByteToWString(DWORD encoding, const std::string& a)
+{
+    WCharVec result;
+    DWORD flags = 0;
+    int requiredWideChars = MultiByteToWideChar(encoding, flags, 
+                        a.c_str(), a.size(),
+                        NULL, 0);
+    result.resize(requiredWideChars);
+    MultiByteToWideChar(encoding, flags, a.c_str(), a.size(),
+                        result.data(), result.size());
+    return result;
+}
+
+WCharVec convertUtf8ToWString(const std::string& a)
+{
+    return convertMultiByteToWString(CP_UTF8, a);
+}
+
 #endif
-        
+
 std::string convertWindowsLocal8BitToUtf8(const std::string& a)
 {
 #ifdef SG_WINDOWS
     DWORD flags = 0;
-    std::vector<wchar_t> wideString;
-
-    // call to query transform size
-    int requiredWideChars = MultiByteToWideChar(CP_ACP, flags, a.c_str(), a.size(),
-                        NULL, 0);
-    // allocate storage and call for real
-    wideString.resize(requiredWideChars);
-    MultiByteToWideChar(CP_ACP, flags, a.c_str(), a.size(),
-                        wideString.data(), wideString.size());
-    
-    // now convert back down to UTF-8
+    WCharVec wideString = convertMultiByteToWString(CP_ACP, a);
+   
+    // convert down to UTF-8
     std::vector<char> result;
     int requiredUTF8Chars = WideCharToMultiByte(CP_UTF8, flags,
                                                 wideString.data(), wideString.size(),
@@ -338,6 +363,8 @@ std::string convertWindowsLocal8BitToUtf8(const std::string& a)
     return a;
 #endif
 }
+
+
 
 static const std::string base64_chars =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

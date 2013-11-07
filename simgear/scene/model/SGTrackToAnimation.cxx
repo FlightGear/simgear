@@ -20,7 +20,7 @@
 #include "SGTrackToAnimation.hxx"
 
 #include <simgear/scene/util/OsgMath.hxx>
-#include <osg/Transform>
+#include <osg/MatrixTransform>
 #include <cassert>
 
 /**
@@ -122,12 +122,13 @@ class SGTrackToAnimation::UpdateCallback:
   public:
     UpdateCallback( osg::Group* target,
                     const SGTrackToAnimation* anim,
-                    SGRotateTransform* slave_tf ):
+                    osg::MatrixTransform* slave_tf ):
       _target(target),
       _slave_tf(slave_tf),
       _root_length(0),
       _slave_length(0),
       _root_initial_angle(0),
+      _slave_dof(slave_tf ? anim->getConfig()->getIntValue("slave-dof", 1) : 0),
       _condition(anim->getCondition()),
       _root_disabled_value(
         anim->readOffsetValue("disabled-rotation-deg")
@@ -192,10 +193,19 @@ class SGTrackToAnimation::UpdateCallback:
       }
 
       _up_axis = _lock_axis ^ _track_axis;
+      _slave_axis2 = (_target_center - _slave_center) ^ _lock_axis;
+      _slave_axis2.normalize();
+
+      double target_offset = _lock_axis * (_target_center - _node_center);
+      _slave_initial_angle2 = std::asin(target_offset / _slave_length);
     }
 
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
     {
+      if( _root_length <= 0 )
+        // TODO prevent invalid animation from being added?
+        return;
+
       SGRotateTransform* tf = static_cast<SGRotateTransform*>(node);
 
       // We need to wait with this initialization steps until the first update
@@ -227,48 +237,60 @@ class SGTrackToAnimation::UpdateCallback:
 
         tf->setCenter( toSG(_node_center) );
         tf->setAxis( toSG(_lock_axis) );
-
-        if( _slave_tf )
-        {
-          _slave_tf->setCenter( toSG(_slave_center) );
-          _slave_tf->setAxis( toSG(_lock_axis) );
-        }
       }
 
-      osg::Vec3 target_pos = ( osg::computeLocalToWorld(_target_path)
-                             * osg::computeWorldToLocal(_node_path)
-                             ).preMult(_target_center),
-                       dir = target_pos - _node_center;
-
-      double root_angle,
-             slave_angle;
+      double root_angle = 0,
+             slave_angle = 0,
+             slave_angle2 = 0;
 
       if( !_condition || _condition->test() )
       {
         root_angle = -_root_initial_angle;
         slave_angle = -_slave_initial_angle;
 
-        if( _root_length > 0 )
-        {
-          double dist = dir.length();
-          if( dist < _root_length + _slave_length )
-          {
-            root_angle += angleFromSSS(_root_length, dist, _slave_length);
-
-            if( _slave_tf )
-              slave_angle += angleFromSSS(_root_length, _slave_length, dist)
-                           - SGMiscd::pi();
-          }
-        }
+        osg::Vec3 target_pos = ( osg::computeLocalToWorld(_target_path)
+                             * osg::computeWorldToLocal(_node_path)
+                             ).preMult(_target_center),
+                  dir = target_pos - _node_center;
 
         // Ensure direction is perpendicular to lock axis
-        float proj = _lock_axis * dir;
-        if( proj != 0.0 )
-          dir -= _lock_axis * proj;
+        osg::Vec3 lock_proj = _lock_axis * (_lock_axis * dir);
+        dir -= lock_proj;
 
+        // Track to target
         float x = dir * _track_axis,
               y = dir * _up_axis;
         root_angle += std::atan2(y, x);
+
+        // Handle scissor/ik rotation
+        double dist = dir.length(),
+               slave_target_dist = 0;
+        if( dist < _root_length + _slave_length )
+        {
+          root_angle += angleFromSSS(_root_length, dist, _slave_length);
+
+          if( _slave_tf )
+            slave_angle += angleFromSSS(_root_length, _slave_length, dist)
+                         - SGMiscd::pi();
+          if( _slave_dof >= 2 )
+            slave_target_dist = _slave_length;
+        }
+        else if( _slave_dof >= 2 )
+        {
+          // If the distance is too large we need to manually calculate the
+          // distance of the slave to the target, as it is not possible anymore
+          // to rotate the objects to reach the target.
+          osg::Vec3 root_dir = target_pos - _node_center;
+          root_dir.normalize();
+          osg::Vec3 slave_pos = root_dir * _root_length;
+          slave_target_dist = (target_pos - slave_pos).length();
+        }
+
+        if( slave_target_dist > 0 )
+          // Calculate angle to rotate "out of the plane" to point towards the
+          // target object.
+          slave_angle2 = std::asin((_lock_axis * lock_proj) / slave_target_dist)
+                       - _slave_initial_angle2;
       }
       else
       {
@@ -282,7 +304,32 @@ class SGTrackToAnimation::UpdateCallback:
 
       tf->setAngleRad( root_angle );
       if( _slave_tf )
-        _slave_tf->setAngleRad(slave_angle);
+      {
+        osg::Matrix mat_tf;
+        SGRotateTransform::set_rotation
+        (
+          mat_tf,
+          slave_angle,
+          SGVec3d(toSG(_slave_center)),
+          SGVec3d(toSG(_lock_axis))
+        );
+
+        // Slave rotation around second axis
+        if( slave_angle2 != 0 )
+        {
+          osg::Matrix mat_tf2;
+          SGRotateTransform::set_rotation
+          (
+            mat_tf2,
+            slave_angle2,
+            SGVec3d(toSG(_slave_center)),
+            SGVec3d(toSG(_slave_axis2))
+          );
+          mat_tf.preMult(mat_tf2);
+        }
+
+        _slave_tf->setMatrix(mat_tf);
+      }
 
       traverse(node, nv);
     }
@@ -293,15 +340,18 @@ class SGTrackToAnimation::UpdateCallback:
                         _target_center,
                         _lock_axis,
                         _track_axis,
-                        _up_axis;
+                        _up_axis,
+                        _slave_axis2; ///!< 2nd axis for 2dof slave
     osg::Group         *_target;
-    SGRotateTransform  *_slave_tf;
+    osg::MatrixTransform *_slave_tf;
     osg::NodePath       _node_path,
                         _target_path;
     double              _root_length,
                         _slave_length,
                         _root_initial_angle,
-                        _slave_initial_angle;
+                        _slave_initial_angle,
+                        _slave_initial_angle2;
+    int                 _slave_dof;
 
     SGSharedPtr<SGCondition const>      _condition;
     SGExpressiond_ref   _root_disabled_value,
@@ -338,10 +388,10 @@ osg::Group* SGTrackToAnimation::createAnimationGroup(osg::Group& parent)
   if( !_target_group )
     return 0;
 
-  SGRotateTransform* slave_tf = 0;
+  osg::MatrixTransform* slave_tf = 0;
   if( _slave_group )
   {
-    slave_tf = new SGRotateTransform;
+    slave_tf = new osg::MatrixTransform;
     slave_tf->setName("locked-track slave animation");
 
     osg::Group* parent = _slave_group->getParent(0);

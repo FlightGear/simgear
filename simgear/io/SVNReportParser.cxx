@@ -417,15 +417,16 @@ public:
     } else if (!strcmp(name, SVN_DAV_MD5_CHECKSUM)) {
       // validate against (presumably) just written file
       if (decodedFileMd5 != md5Sum) {
+          SG_LOG(SG_GENERAL, SG_INFO, "checksum fail on:" << currentPath);
         fail(SVNRepository::SVN_ERROR_CHECKSUM);
       }
     } else if (!strcmp(name, SVN_OPEN_DIRECTORY_TAG)) {
+        currentDir->updateReportComplete();
         if (currentDir->parent()) {   
           // pop the collection stack
           currentDir = currentDir->parent();
         }
         
-        currentDir->updateReportComplete();
         currentPath = currentDir->fsPath();
     } else {
     //  std::cout << "element:" << name;

@@ -136,6 +136,7 @@ namespace { // anonmouse
             SG_LOG(SG_IO, SG_WARN, "request for:" << url() << 
                 " return code " << responseCode());
             _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+            _repo = NULL;
         }
       }
   
@@ -163,6 +164,7 @@ namespace { // anonmouse
         {
             HTTP::Request::onFail();
             _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+            _repo = NULL;
         }
         
     private:
@@ -244,15 +246,19 @@ protected:
     SVNRepository::ResultCode err = _parser.parseXML(s, n);
     if (err) {
         _failed = true;
-        SG_LOG(SG_IO, SG_WARN, "SVN: request for:" << url() << " failed:" << err);
+        SG_LOG(SG_IO, SG_WARN, _repo->p << ": SVN: request for:" << url() << " failed:" << err);
         _repo->updateFailed(this, err);
+        _repo = NULL;
     }
   }
 
     virtual void onFail()
     {
         HTTP::Request::onFail();
-        _repo->updateFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+        if (_repo) {
+            _repo->updateFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+            _repo = NULL;
+        }
     }
 private:
   SVNReportParser _parser;

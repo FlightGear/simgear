@@ -19,6 +19,7 @@ using std::istream;
 using std::string;
 using std::vector;
 
+typedef struct XML_ParserStruct* XML_Parser;
 
 /**
  * Interface for XML attributes.
@@ -256,6 +257,8 @@ private:
 class XMLVisitor
 {
 public:
+  /// Constructor
+  XMLVisitor() : parser(0), line(-1), column(-1) {}
 
   /**
    * Virtual destructor.
@@ -372,6 +375,81 @@ public:
    * the warning.
    */
   virtual void warning (const char * message, int line, int column) {}
+
+  /** Set the path to the file that is parsed.
+   *
+   * This method will be called to store the path to the parsed file. Note that
+   * the XML parser makes no use of this copy of the path. The intent is
+   * to be capable of refering to the path to the parsed file if needed.
+   *
+   * @param _path The path to the parsed file.
+   * @see #getPath
+   */
+  void setPath(const string& _path) { path = _path; }
+
+  /** Get the path to the parsed file.
+   *
+   * This method will be called if the application needs to access the path to
+   * the parsed file. This information is typically needed if an error is found
+   * so the file where it occurred can be retrieved to help the user locate the
+   * error.
+   *
+   * @return the path to the parsed file.
+   * @see #setPath
+   */
+  const string& getPath(void) const { return path; }
+
+  /** Save the current position in the parsed file.
+   *
+   * This method will be called to save the position at which the file is
+   * currently parsed. Note that the XML parser makes no use of that
+   * information. The intent is to be capable of refering to the position in
+   * the parsed file if needed.
+   *
+   * @see #getColumn
+   * @see #getLine
+   */
+  void savePosition(void);
+
+  /** Get the saved column number in the parsed file.
+   *
+   * This method will be called if the application needs to get the column
+   * number that has been saved during the last call to savePosition(). This
+   * information is typically needed if an error is found so the position at
+   * which it occurred can be retrieved to help the user locate the error.
+   *
+   * @return the save column number.
+   * @see #savePosition
+   */
+  int getColumn(void) const { return column; }
+
+  /** Get the saved line number in the parsed file.
+   *
+   * This method will be called if the application needs to get the line
+   * number that has been saved during the last call to savePosition(). This
+   * information is typically needed if an error is found so the position at
+   * which it occurred can be retrieved to help the user locate the error.
+   *
+   * @return the save line number.
+   * @see #savePosition
+   */
+  int getLine(void) const { return line; }
+
+  /** Set the XML parser.
+   *
+   * This method will be called so the #XMLVisitor instance can internally use
+   * the XML parser for its housekeeping. The intent is that #XMLVisitor will
+   * only call the reporting functions of the XML parser and will not interfer
+   * with the XML parser current state. Doing otherwise will result in an
+   * unpredictable behavior of the XML parser.
+   *
+   * @param _parser the XML parser
+   */
+  void setParser(XML_Parser _parser) { parser = _parser; }
+private:
+  XML_Parser parser;
+  string path;
+  int line, column;
 };
 
 

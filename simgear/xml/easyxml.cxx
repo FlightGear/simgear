@@ -136,6 +136,14 @@ XMLAttributesDefault::setValue (const char * name, const char * value)
 }
 
 
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+void XMLVisitor::savePosition(void)
+{
+  column = XML_GetCurrentColumnNumber(parser);
+  line = XML_GetCurrentLineNumber(parser);
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Attribute list wrapper for Expat.
 ////////////////////////////////////////////////////////////////////////
@@ -177,18 +185,21 @@ ExpatAtts::getValue (const char * name) const
 static void
 start_element (void * userData, const char * name, const char ** atts)
 {
+  VISITOR.savePosition();
   VISITOR.startElement(name, ExpatAtts(atts));
 }
 
 static void
 end_element (void * userData, const char * name)
 {
+  VISITOR.savePosition();
   VISITOR.endElement(name);
 }
 
 static void
 character_data (void * userData, const char * s, int len)
 {
+  VISITOR.savePosition();
   VISITOR.data(s, len);
 }
 
@@ -197,6 +208,7 @@ processing_instruction (void * userData,
 			const char * target,
 			const char * data)
 {
+  VISITOR.savePosition();
   VISITOR.pi(target, data);
 }
 
@@ -217,6 +229,8 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
   XML_SetCharacterDataHandler(parser, character_data);
   XML_SetProcessingInstructionHandler(parser, processing_instruction);
 
+  visitor.setParser(parser);
+  visitor.setPath(path);
   visitor.startXML();
 
   char buf[16384];
@@ -229,6 +243,7 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
 					XML_GetCurrentLineNumber(parser),
 					XML_GetCurrentColumnNumber(parser)),
 			    "SimGear XML Parser");
+      visitor.setParser(0);
       XML_ParserFree(parser);
       throw ex;
     }
@@ -240,6 +255,7 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
 					XML_GetCurrentLineNumber(parser),
 					XML_GetCurrentColumnNumber(parser)),
 			    "SimGear XML Parser");
+      visitor.setParser(0);
       XML_ParserFree(parser);
       throw ex;
     }
@@ -253,10 +269,12 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
 				      XML_GetCurrentLineNumber(parser),
 				      XML_GetCurrentColumnNumber(parser)),
 			  "SimGear XML Parser");
+    visitor.setParser(0);
     XML_ParserFree(parser);
     throw ex;
   }
 
+  visitor.setParser(0);
   XML_ParserFree(parser);
   visitor.endXML();
 }

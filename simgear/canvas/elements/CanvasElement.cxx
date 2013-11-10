@@ -108,7 +108,19 @@ namespace canvas
   //----------------------------------------------------------------------------
   Element::~Element()
   {
+    if( !_transform.valid() )
+      return;
 
+    for(unsigned int i = 0; i < _transform->getNumChildren(); ++i)
+    {
+      OSGUserData* ud =
+        static_cast<OSGUserData*>(_transform->getChild(i)->getUserData());
+
+      if( ud )
+        // Ensure parent is cleared to prevent accessing released memory if an
+        // element somehow survives longer than his parent.
+        ud->element->_parent = 0;
+    }
   }
 
   //----------------------------------------------------------------------------

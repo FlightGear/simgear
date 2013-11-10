@@ -106,13 +106,17 @@ class FindGroupVisitor:
  */
 double angleFromSSS(double side1, double side2, double opposite)
 {
-  return std::acos
-  (
-    ( SGMiscd::pow<2>(side1)
-    + SGMiscd::pow<2>(side2)
-    - SGMiscd::pow<2>(opposite)
-    ) / (2 * side1 * side2)
-  );
+  double c = ( SGMiscd::pow<2>(side1)
+             + SGMiscd::pow<2>(side2)
+             - SGMiscd::pow<2>(opposite)
+             ) / (2 * side1 * side2);
+
+  if( c <= -1 )
+    return M_PI;
+  else if( c >= 1 )
+    return 0;
+  else
+    return std::acos(c);
 }
 
 //------------------------------------------------------------------------------
@@ -270,8 +274,10 @@ class SGTrackToAnimation::UpdateCallback:
           root_angle += angleFromSSS(_root_length, dist, _slave_length);
 
           if( _slave_tf )
+          {
             slave_angle += angleFromSSS(_root_length, _slave_length, dist)
                          - SGMiscd::pi();
+          }
           if( _slave_dof >= 2 )
             slave_target_dist = _slave_length;
         }
@@ -282,7 +288,7 @@ class SGTrackToAnimation::UpdateCallback:
           // to rotate the objects to reach the target.
           osg::Vec3 root_dir = target_pos - _node_center;
           root_dir.normalize();
-          osg::Vec3 slave_pos = root_dir * _root_length;
+          osg::Vec3 slave_pos = _node_center + root_dir * _root_length;
           slave_target_dist = (target_pos - slave_pos).length();
         }
 

@@ -233,44 +233,47 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
                     texType, mipmapFunctions);
 }
 
-void setAttrs(const TexTuple& attrs, Texture* tex,
+bool setAttrs(const TexTuple& attrs, Texture* tex,
               const SGReaderWriterOptions* options)
 {
     const string& imageName = attrs.get<0>();
-    if (imageName.empty()) {
-        throw BuilderException("no image file");
-    } else {
-        osgDB::ReaderWriter::ReadResult result;
-        result = osgDB::readImageFile(imageName, options);
-        osg::ref_ptr<osg::Image> image;
-        if (result.success())
-            image = result.getImage();
-        if (image.valid())
-        {
-            image = computeMipmap( image.get(), attrs.get<7>() );
-            tex->setImage(GL_FRONT_AND_BACK, image.get());
-            int s = image->s();
-            int t = image->t();
-            if (s <= t && 32 <= s) {
-                SGSceneFeatures::instance()->setTextureCompression(tex);
-            } else if (t < s && 32 <= t) {
-                SGSceneFeatures::instance()->setTextureCompression(tex);
-            }
-            tex->setMaxAnisotropy(SGSceneFeatures::instance()
-                                  ->getTextureFilter());
-        } else {
-            SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file "
-                   << imageName);
+    if (imageName.empty()) 
+        return false;
+        
+    osgDB::ReaderWriter::ReadResult result;
+    result = osgDB::readImageFile(imageName, options);
+    osg::ref_ptr<osg::Image> image;
+    if (result.success())
+        image = result.getImage();
+    if (image.valid())
+    {
+        image = computeMipmap( image.get(), attrs.get<7>() );
+        tex->setImage(GL_FRONT_AND_BACK, image.get());
+        int s = image->s();
+        int t = image->t();
+        if (s <= t && 32 <= s) {
+            SGSceneFeatures::instance()->setTextureCompression(tex);
+        } else if (t < s && 32 <= t) {
+            SGSceneFeatures::instance()->setTextureCompression(tex);
         }
+        tex->setMaxAnisotropy(SGSceneFeatures::instance()
+                              ->getTextureFilter());
+    } else {
+        SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file "
+               << imageName);
+        return false;
     }
+
     // texture->setDataVariance(osg::Object::STATIC);
     tex->setFilter(Texture::MIN_FILTER, attrs.get<1>());
     tex->setFilter(Texture::MAG_FILTER, attrs.get<2>());
     tex->setWrap(Texture::WRAP_S, attrs.get<3>());
     tex->setWrap(Texture::WRAP_T, attrs.get<4>());
     tex->setWrap(Texture::WRAP_R, attrs.get<5>());
+    return true;
 }
-}
+
+} // of anonymous namespace
 
 template<typename T>
 class TexBuilder : public TextureBuilder
@@ -300,7 +303,9 @@ Texture* TexBuilder<T>::build(Effect* effect, Pass* pass, const SGPropertyNode* 
     }
 
     tex = new T;
-    setAttrs(attrs, tex, options);
+    if (!setAttrs(attrs, tex, options))
+        return NULL;
+    
     if (itr == texMap.end())
         texMap.insert(make_pair(attrs, tex));
     else

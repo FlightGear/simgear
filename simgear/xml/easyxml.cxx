@@ -24,7 +24,8 @@
 #include <iostream>
 
 using std::ifstream;
-
+using std::istream;
+using std::string;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -140,8 +141,10 @@ XMLAttributesDefault::setValue (const char * name, const char * value)
 
 void XMLVisitor::savePosition(void)
 {
-  column = XML_GetCurrentColumnNumber(parser);
-  line = XML_GetCurrentLineNumber(parser);
+  if (parser) {
+    column = XML_GetCurrentColumnNumber(parser);
+    line = XML_GetCurrentLineNumber(parser);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -15,10 +15,6 @@
 #include <string>
 #include <vector>
 
-using std::istream;
-using std::string;
-using std::vector;
-
 typedef struct XML_ParserStruct* XML_Parser;
 
 /**
@@ -221,7 +217,7 @@ public:
   virtual void setValue (const char * name, const char * value);
 
 private:
-  vector<string> _atts;
+  std::vector<std::string> _atts;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -385,7 +381,7 @@ public:
    * @param _path The path to the parsed file.
    * @see #getPath
    */
-  void setPath(const string& _path) { path = _path; }
+  void setPath(const std::string& _path) { path = _path; }
 
   /** Get the path to the parsed file.
    *
@@ -397,7 +393,7 @@ public:
    * @return the path to the parsed file.
    * @see #setPath
    */
-  const string& getPath(void) const { return path; }
+  const std::string& getPath(void) const { return path; }
 
   /** Save the current position in the parsed file.
    *
@@ -448,7 +444,7 @@ public:
   void setParser(XML_Parser _parser) { parser = _parser; }
 private:
   XML_Parser parser;
-  string path;
+  std::string path;
   int line, column;
 };
 
@@ -472,8 +468,8 @@ private:
  * is a problem reading the file.
  * @see XMLVisitor
  */
-extern void readXML (istream &input, XMLVisitor &visitor,
-		     const string &path="");
+extern void readXML (std::istream &input, XMLVisitor &visitor,
+		     const std::string &path="");
 
 
 /**
@@ -494,7 +490,7 @@ extern void readXML (istream &input, XMLVisitor &visitor,
  * is a problem reading the file.
  * @see XMLVisitor
  */
-extern void readXML (const string &path, XMLVisitor &visitor);
+extern void readXML (const std::string &path, XMLVisitor &visitor);
 
 
 /**

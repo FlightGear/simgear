@@ -38,6 +38,7 @@ public:
                         osg::Object* object, osg::NodeVisitor* nv);
     void addStaleObject(osg::Referenced* obj);
     static void install(osg::Node* node);
+    static void uninstall(osg::Node* node);
     static DeletionManager* instance();
 protected:
     OpenThreads::Mutex _mutex;

@@ -45,6 +45,11 @@ void DeletionManager::addStaleObject(Referenced* obj)
     _staleObjects.push_back(obj);
 }
 
+void DeletionManager::uninstall(Node* node)
+{
+    node->removeEventCallback(instance());
+}
+
 void DeletionManager::install(Node* node)
 {
     node->addEventCallback(instance());

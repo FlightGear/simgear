@@ -25,6 +25,7 @@ public:
     SGTimerQueue(int preSize=1);
     ~SGTimerQueue();
 
+    void clear();
     void update(double deltaSecs);
 
     double now() { return _now; }
@@ -74,6 +75,7 @@ public:
     virtual void init() {}
     virtual void update(double delta_time_sec);
     virtual void unbind();
+    virtual void shutdown();
     
     void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
 

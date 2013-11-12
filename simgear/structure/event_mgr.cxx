@@ -54,6 +54,12 @@ void SGEventMgr::unbind()
     _rtProp.clear();
 }
 
+void SGEventMgr::shutdown()
+{
+    _simQueue.clear();
+    _rtQueue.clear();
+}
+
 void SGEventMgr::update(double delta_time_sec)
 {
     _simQueue.update(delta_time_sec);
@@ -97,7 +103,7 @@ SGTimerQueue::SGTimerQueue(int size)
 
     _table = new HeapEntry[_tableSize];
     for(int i=0; i<_tableSize; i++) {
-	_table[i].pri = 0;
+	    _table[i].pri = 0;
         _table[i].timer = 0;
     }
 }
@@ -105,14 +111,24 @@ SGTimerQueue::SGTimerQueue(int size)
 
 SGTimerQueue::~SGTimerQueue()
 {
+    clear();
+    delete[] _table;
+}
+
+void SGTimerQueue::clear()
+{
+    // delete entries
     for(int i=0; i<_numEntries; i++) {
         delete _table[i].timer;
+    }
+    
+    _numEntries = 0;
+    
+    // clear entire table to empty
+    for(int i=0; i<_tableSize; i++) {
+	    _table[i].pri = 0;
         _table[i].timer = 0;
     }
-    _numEntries = 0;
-    delete[] _table;
-    _table = 0;
-    _tableSize = 0;
 }
 
 void SGTimerQueue::update(double deltaSecs)

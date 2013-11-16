@@ -302,6 +302,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _stop(false),
     _use_svn(true)
 {
+    _http.setUserAgent("terrasync-" SG_STRINGIZE(SG_VERSION));
 }
 
 void SGTerraSync::SvnThread::stop()

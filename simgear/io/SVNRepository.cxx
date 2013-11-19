@@ -163,8 +163,10 @@ namespace { // anonmouse
         virtual void onFail()
         {
             HTTP::Request::onFail();
-            _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
-            _repo = NULL;
+			if (_repo) {
+				_repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+				_repo = NULL;
+			}
         }
         
     private:

@@ -291,8 +291,6 @@ namespace nasal
        */
       static Ghost& init(const std::string& name)
       {
-        assert( !getSingletonPtr() );
-
         getSingletonHolder().reset( new Ghost(name) );
         return *getSingletonPtr();
       }

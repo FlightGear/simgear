@@ -16,7 +16,6 @@
 #include <string>
 #include <map>
 
-#include <simgear/threads/SGThread.hxx>
 #include <simgear/math/sg_types.hxx>
 
 // forward decls
@@ -87,16 +86,16 @@ private:
    }
    
 public:
-
+   /**
+    * Default constructor (sets instance to created item)
+    */
+   SGCommandMgr ();
 
   /**
-   * Destructor.
+   * Destructor. (sets instance to NULL)
    */
   virtual ~SGCommandMgr ();
 
-  /**
-   * Implement the classical singleton.
-   */
   static SGCommandMgr* instance();
 
   /**
@@ -155,18 +154,13 @@ public:
    */
   bool removeCommand(const std::string& name);
 protected:
-  /**
-   * Default constructor.
-   */
-  SGCommandMgr ();
+
 
 
 private:
 
   typedef std::map<std::string,Command*> command_map;
   command_map _commands;
-
-  static SGMutex _instanceMutex;
 
 };
 

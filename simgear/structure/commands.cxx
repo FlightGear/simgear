@@ -9,6 +9,8 @@
 #endif
 
 #include <memory>
+#include <cassert>
+
 #include <simgear/props/props_io.hxx>
 
 #include "commands.hxx"
@@ -23,32 +25,24 @@
 // Implementation of SGCommandMgr class.
 ////////////////////////////////////////////////////////////////////////
 
+static SGCommandMgr* static_instance = NULL;
 
 SGCommandMgr::SGCommandMgr ()
 {
-  // no-op
+    assert(static_instance == NULL);
+    static_instance = this;
 }
 
 SGCommandMgr::~SGCommandMgr ()
 {
-  // no-op
+    assert(static_instance == this);
+    static_instance = NULL;
 }
-
-SGMutex SGCommandMgr::_instanceMutex;
 
 SGCommandMgr*
 SGCommandMgr::instance()
 {
-  static std::auto_ptr<SGCommandMgr> mgr;
-  if (mgr.get())
-    return mgr.get();
-
-  SGGuard<SGMutex> lock(_instanceMutex);
-  if (mgr.get())
-    return mgr.get();
-
-  mgr = std::auto_ptr<SGCommandMgr>(new SGCommandMgr);
-  return mgr.get();
+    return static_instance;
 }
 
 void

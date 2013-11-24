@@ -138,7 +138,8 @@ PropsVisitor::endXML ()
  * Check a yes/no flag, with default.
  */
 static bool
-checkFlag (const char * flag, bool defaultState = true)
+checkFlag (const char * flag, const sg_location& location,
+           bool defaultState = true)
 {
   if (flag == 0)
     return defaultState;
@@ -151,7 +152,7 @@ checkFlag (const char * flag, bool defaultState = true)
     message += flag;
     message += '\'';
 				// FIXME: add location info
-    throw sg_io_exception(message, "SimGear Property Reader");
+    throw sg_io_exception(message, location, "SimGear Property Reader");
   }
 }
 
@@ -159,13 +160,14 @@ void
 PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 {
   const char * attval;
+  const sg_location location(getPath(), getLine(), getColumn());
 
   if (_level == 0) {
     if (strcmp(name, "PropertyList")) {
       string message = "Root element name is ";
       message += name;
       message += "; expected PropertyList";
-      throw sg_io_exception(message, "SimGear Property Reader");
+      throw sg_io_exception(message, location, "SimGear Property Reader");
     }
 
 				// Check for an include.
@@ -175,7 +177,10 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
           SGPath path = simgear::ResourceManager::instance()->findPath(attval, SGPath(_base).dir());
           if (path.isNull())
           {
-              throw sg_io_exception("Cannot open file", sg_location(attval));
+              string message ="Cannot open file ";
+              message += attval;
+              throw sg_io_exception(message, location,
+                                    "SimGear Property Reader");
           }
           readProperties(path.str(), _root, 0, _extended);
       } catch (sg_io_exception &e) {
@@ -204,7 +209,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     SGPropertyNode * node = st.node->getChild(strName, index, true);
     if (!node->getAttribute(SGPropertyNode::WRITE)) {
       SG_LOG(SG_INPUT, SG_ALERT, "Not overwriting write-protected property "
-          << node->getPath(true));
+             << node->getPath(true) << "\n at " << location.asString());
       node = &null;
     }
 
@@ -214,32 +219,33 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     int mode = _default_mode;
 
     attval = atts.getValue("read");
-    if (checkFlag(attval, true))
+    if (checkFlag(attval, location, true))
       mode |= SGPropertyNode::READ;
     attval = atts.getValue("write");
-    if (checkFlag(attval, true))
+    if (checkFlag(attval, location, true))
       mode |= SGPropertyNode::WRITE;
     attval = atts.getValue("archive");
-    if (checkFlag(attval, false))
+    if (checkFlag(attval, location, false))
       mode |= SGPropertyNode::ARCHIVE;
     attval = atts.getValue("trace-read");
-    if (checkFlag(attval, false))
+    if (checkFlag(attval, location, false))
       mode |= SGPropertyNode::TRACE_READ;
     attval = atts.getValue("trace-write");
-    if (checkFlag(attval, false))
+    if (checkFlag(attval, location, false))
       mode |= SGPropertyNode::TRACE_WRITE;
     attval = atts.getValue("userarchive");
-    if (checkFlag(attval, false))
+    if (checkFlag(attval, location, false))
       mode |= SGPropertyNode::USERARCHIVE;
     attval = atts.getValue("preserve");
-    if (checkFlag(attval, false))
+    if (checkFlag(attval, location, false))
       mode |= SGPropertyNode::PRESERVE;
 
 				// Check for an alias.
     attval = atts.getValue("alias");
     if (attval != 0) {
       if (!node->alias(attval))
-	SG_LOG(SG_INPUT, SG_ALERT, "Failed to set alias to " << attval);
+	SG_LOG(SG_INPUT, SG_ALERT, "Failed to set alias to " << attval
+               << "\n at " << location.asString());
     }
 
 				// Check for an include.
@@ -250,7 +256,10 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
           SGPath path = simgear::ResourceManager::instance()->findPath(attval, SGPath(_base).dir());
           if (path.isNull())
           {
-              throw sg_io_exception("Cannot open file", sg_location(attval));
+              string message ="Cannot open file ";
+              message += attval;
+              throw sg_io_exception(message, location,
+                                    "SimGear Property Reader");
           }
           readProperties(path.str(), node, 0, _extended);
       } catch (sg_io_exception &e) {
@@ -258,7 +267,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       }
 
       attval = atts.getValue("omit-node");
-      omit = checkFlag(attval, false);
+      omit = checkFlag(attval, location, false);
     }
 
     const char *type = atts.getValue("type");
@@ -276,6 +285,7 @@ PropsVisitor::endElement (const char * name)
 {
   State &st = state();
   bool ret;
+  const sg_location location(getPath(), getLine(), getColumn());
 
 				// If there are no children and it's
 				// not an alias, then it's a leaf value.
@@ -310,12 +320,13 @@ PropsVisitor::endElement (const char * name)
       message += st.type;
       message += '\'';
 				// FIXME: add location information
-      throw sg_io_exception(message, "SimGear Property Reader");
+      throw sg_io_exception(message, location, "SimGear Property Reader");
     }
     if (!ret)
       SG_LOG(SG_INPUT, SG_ALERT, "readProperties: Failed to set "
 	     << st.node->getPath() << " to value \""
-	     << _data << "\" with type " << st.type);
+	     << _data << "\" with type " << st.type << "\n at "
+             << location.asString());
   }
 
 				// Set the access-mode attributes now,

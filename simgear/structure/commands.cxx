@@ -42,7 +42,7 @@ SGCommandMgr::~SGCommandMgr ()
 SGCommandMgr*
 SGCommandMgr::instance()
 {
-    return static_instance;
+    return static_instance ? static_instance : new SGCommandMgr;
 }
 
 void

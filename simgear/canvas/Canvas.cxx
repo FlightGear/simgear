@@ -588,10 +588,25 @@ namespace canvas
       (
         SG_GENERAL,
         SG_WARN,
-        "Canvas::addPlacementFactory: replace existing factor for type " << type
+        "Canvas::addPlacementFactory: replace existing factory '" << type << "'"
       );
 
     _placement_factories[type] = factory;
+  }
+
+  //----------------------------------------------------------------------------
+  void Canvas::removePlacementFactory(const std::string& type)
+  {
+    PlacementFactoryMap::iterator it = _placement_factories.find(type);
+    if( it == _placement_factories.end() )
+      SG_LOG
+      (
+        SG_GENERAL,
+        SG_WARN,
+        "Canvas::removePlacementFactory: no such factory '" << type << "'"
+      );
+    else
+      _placement_factories.erase(it);
   }
 
   //----------------------------------------------------------------------------

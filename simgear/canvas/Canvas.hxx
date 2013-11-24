@@ -162,6 +162,7 @@ namespace canvas
       void reloadPlacements( const std::string& type = std::string() );
       static void addPlacementFactory( const std::string& type,
                                        PlacementFactory factory );
+      static void removePlacementFactory(const std::string& type);
 
     protected:
 

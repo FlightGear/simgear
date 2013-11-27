@@ -96,7 +96,7 @@ struct naObj {
 #define MAX_STR_EMBLEN 15
 struct naStr {
     GC_HEADER;
-    char emblen; /* [0-15], or -1 to indicate "not embedded" */
+    signed char emblen; /* [0-15], or -1 to indicate "not embedded" */
     unsigned int hashcode;
     union {
         unsigned char buf[16];

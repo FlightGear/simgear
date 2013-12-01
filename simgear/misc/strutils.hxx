@@ -38,6 +38,11 @@ typedef std::vector < std::string > string_list;
 namespace simgear {
   namespace strutils {
 
+	/**
+	 * utf8ToLatin1() convert utf8 to latin, useful for accent character (i.e éâàîè...)
+	 */
+	std::string utf8ToLatin1( std::string & s_utf8 );
+
 // 	/** 
 // 	 * atof() wrapper for "string" type
 // 	 */

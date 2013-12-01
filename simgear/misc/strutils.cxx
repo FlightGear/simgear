@@ -35,6 +35,39 @@ using std::stringstream;
 namespace simgear {
     namespace strutils {
 
+	/*
+	 * utf8ToLatin1() convert utf8 to latin, useful for accent character (i.e éâàîè...)
+	 */
+	template <typename Iterator> size_t get_length (Iterator p) {
+		unsigned char c = static_cast<unsigned char> (*p);
+		if (c < 0x80) return 1;
+		else if (!(c & 0x20)) return 2;
+		else if (!(c & 0x10)) return 3;
+		else if (!(c & 0x08)) return 4;
+		else if (!(c & 0x04)) return 5;
+		else return 6;
+	}
+
+	typedef unsigned int value_type;
+	template <typename Iterator> value_type get_value (Iterator p) {
+		size_t len = get_length (p);
+		if (len == 1) return *p;
+		value_type res = static_cast<unsigned char> ( *p & (0xff >> (len + 1))) << ((len - 1) * 6 );
+		for (--len; len; --len)
+			res |= (static_cast<unsigned char> (*(++p)) - 0x80) << ((len - 1) * 6);
+		return res;
+	}
+
+	string utf8ToLatin1( string& s_utf8 ) {
+		string s_latin1;
+		for (string::iterator p = s_utf8.begin(); p != s_utf8.end(); ++p) {
+			value_type value = get_value<string::iterator&>(p);
+			if (value > 0xff) SG_LOG(SG_IO, SG_WARN, "utf8ToLatin1: wrong char value: " << value);
+			s_latin1 += static_cast<char>(value);
+		}
+		return s_latin1;
+	}
+
 	/**
 	 * 
 	 */

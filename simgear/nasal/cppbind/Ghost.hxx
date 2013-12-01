@@ -67,9 +67,6 @@ namespace nasal
 
         bool isBaseOf(naGhostType* ghost_type) const
         {
-          if( ghost_type == &_ghost_type )
-            return true;
-
           for( DerivedList::const_iterator derived = _derived_classes.begin();
                                            derived != _derived_classes.end();
                                          ++derived )
@@ -86,7 +83,6 @@ namespace nasal
         typedef std::vector<const GhostMetadata*> DerivedList;
 
         const std::string   _name;
-        naGhostType         _ghost_type;
         DerivedList         _derived_classes;
         std::vector<naRef>  _parents;
 
@@ -105,7 +101,7 @@ namespace nasal
           (
             SG_NASAL,
             SG_INFO,
-            "Ghost::addDerived: " <<_ghost_type.name << " -> " << derived->_name
+            "Ghost::addDerived: " << _name << " -> " << derived->_name
           );
         }
 
@@ -549,6 +545,8 @@ namespace nasal
       {
         if( !ghost_type )
           return false;
+        if( ghost_type == &_ghost_type )
+          return true;
 
         return getSingletonPtr()->GhostMetadata::isBaseOf(ghost_type);
       }
@@ -598,6 +596,8 @@ namespace nasal
 
       template<class>
       friend class Ghost;
+
+      static naGhostType _ghost_type;
 
       typedef naGhostType* (*type_checker_t)(const raw_type*);
       typedef std::vector<type_checker_t> DerivedList;
@@ -671,7 +671,7 @@ namespace nasal
 
         // If base is not an instance of any derived class, this class has to
         // be the dynamic type.
-        return &getSingletonPtr()->_ghost_type;
+        return &_ghost_type;
       }
 
       template<class BaseGhost>
@@ -684,7 +684,7 @@ namespace nasal
       {
         // For non polymorphic classes there is no possibility to get the actual
         // dynamic type, therefore we can only use its static type.
-        return &BaseGhost::getSingletonPtr()->_ghost_type;
+        return &BaseGhost::_ghost_type;
       }
 
       static Ghost* getSingletonPtr()
@@ -703,7 +703,7 @@ namespace nasal
             c,
             "method called on object of wrong type: is '%s' expected '%s'",
             ghost_type ? ghost_type->name : "unknown",
-            getSingletonPtr()->_ghost_type.name
+            _ghost_type.name
           );
 
         return *obj;
@@ -893,6 +893,9 @@ namespace nasal
         member->second.setter(c, *getRawPtr(g), val);
       }
   };
+
+  template<class T>
+  naGhostType Ghost<T>::_ghost_type;
 
 } // namespace nasal
 

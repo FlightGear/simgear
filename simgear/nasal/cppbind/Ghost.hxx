@@ -67,6 +67,9 @@ namespace nasal
 
         bool isBaseOf(naGhostType* ghost_type) const
         {
+          if( ghost_type == _ghost_type_ptr )
+            return true;
+
           for( DerivedList::const_iterator derived = _derived_classes.begin();
                                            derived != _derived_classes.end();
                                          ++derived )
@@ -83,11 +86,14 @@ namespace nasal
         typedef std::vector<const GhostMetadata*> DerivedList;
 
         const std::string   _name;
+        const naGhostType  *_ghost_type_ptr;
         DerivedList         _derived_classes;
         std::vector<naRef>  _parents;
 
-        explicit GhostMetadata(const std::string& name):
-          _name(name)
+        GhostMetadata( const std::string& name,
+                       const naGhostType* ghost_type ):
+          _name(name),
+          _ghost_type_ptr(ghost_type)
         {
 
         }
@@ -545,8 +551,6 @@ namespace nasal
       {
         if( !ghost_type )
           return false;
-        if( ghost_type == &_ghost_type )
-          return true;
 
         return getSingletonPtr()->GhostMetadata::isBaseOf(ghost_type);
       }
@@ -806,7 +810,7 @@ namespace nasal
       MemberMap _members;
 
       explicit Ghost(const std::string& name):
-        GhostMetadata( name )
+        GhostMetadata(name, &_ghost_type)
       {
         _ghost_type.destroy = &destroyGhost;
         _ghost_type.name = _name.c_str();

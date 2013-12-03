@@ -1358,14 +1358,25 @@ template<typename T>
 class PropertyExpression : public SGExpression<T>
 {
 public:
-    PropertyExpression(SGPropertyNode* pnode) : _pnode(pnode) {}
+    PropertyExpression(SGPropertyNode* pnode) : _pnode(pnode), _listener(NULL) {}
+    
+    ~PropertyExpression()
+    {
+        delete _listener;
+    }
     
     void eval(T& value, const expression::Binding*) const
     {
         value = _pnode->getValue<T>();
     }
+    
+    void setListener(SGPropertyChangeListener* l)
+    {
+        _listener = l;
+    }
 protected:
     SGPropertyNode_ptr _pnode;
+    SGPropertyChangeListener* _listener;
 };
 
 class EffectPropertyListener : public SGPropertyChangeListener
@@ -1378,6 +1389,9 @@ public:
         if (_tniq.valid())
             _tniq->refreshValidity();
     }
+    
+    virtual ~EffectPropertyListener() { }
+    
 protected:
     osg::observer_ptr<Technique> _tniq;
 };
@@ -1391,9 +1405,12 @@ Expression* propertyExpressionParser(const SGPropertyNode* exp,
     PropertyExpression<T>* pexp = new PropertyExpression<T>(pnode);
     TechniquePredParser* predParser
         = dynamic_cast<TechniquePredParser*>(parser);
-    if (predParser)
-        pnode->addChangeListener(new EffectPropertyListener(predParser
-                                                            ->getTechnique()));
+    if (predParser) {
+        EffectPropertyListener* l = new EffectPropertyListener(predParser
+                                                               ->getTechnique());
+        pexp->setListener(l);
+        pnode->addChangeListener(l);
+    }
     return pexp;
 }
 

@@ -25,6 +25,9 @@
 namespace nasal
 {
 
+  class ObjectHolder;
+  typedef SGSharedPtr<ObjectHolder> ObjectHolderRef;
+
   /**
    * Prevent a Nasal object from being destroyed by the garbage collector during
    * the lifetime of this object.
@@ -49,7 +52,7 @@ namespace nasal
        *
        * @param obj Object to save
        */
-      static SGSharedPtr<ObjectHolder> makeShared(naRef obj);
+      static ObjectHolderRef makeShared(naRef obj);
 
     protected:
       naRef _ref;

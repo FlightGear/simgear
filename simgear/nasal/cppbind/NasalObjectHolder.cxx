@@ -35,7 +35,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  SGSharedPtr<ObjectHolder> ObjectHolder::makeShared(naRef obj)
+  ObjectHolderRef ObjectHolder::makeShared(naRef obj)
   {
     return new ObjectHolder(obj);
   }

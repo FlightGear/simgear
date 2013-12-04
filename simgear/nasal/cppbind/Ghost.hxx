@@ -21,6 +21,7 @@
 #define SG_NASAL_GHOST_HXX_
 
 #include "NasalCallContext.hxx"
+#include "NasalObjectHolder.hxx"
 
 #include <simgear/debug/logstream.hxx>
 
@@ -124,7 +125,18 @@ namespace nasal
     {
       public:
         virtual ~MethodHolder() {}
-        virtual naRef get_naRef(naContext c) = 0;
+
+        naRef get_naRef(naContext c)
+        {
+          if( !_obj )
+            _obj = ObjectHolder::makeShared(createNasalObject(c));
+          return _obj->get_naRef();
+        }
+
+      protected:
+        ObjectHolderRef _obj;
+
+        virtual naRef createNasalObject(naContext c) = 0;
     };
 
     BOOST_MPL_HAS_XXX_TRAIT_DEF(element_type)
@@ -202,28 +214,17 @@ namespace nasal
         public internal::MethodHolder
       {
         public:
-          MethodHolder():
-            _naRef(naNil())
-          {}
-
           explicit MethodHolder(const method_t& method):
-            _method(method),
-            _naRef(naNil())
+            _method(method)
           {}
-
-          virtual naRef get_naRef(naContext c)
-          {
-            if( naIsNil(_naRef) )
-            {
-              _naRef = naNewFunc(c, naNewCCodeU(c, &MethodHolder::call, this));
-              naSave(c, _naRef);
-            }
-            return _naRef;
-          }
 
         protected:
           method_t  _method;
-          naRef     _naRef;
+
+          virtual naRef createNasalObject(naContext c)
+          {
+            return naNewFunc(c, naNewCCodeU(c, &MethodHolder::call, this));
+          }
 
           static naRef call( naContext c,
                              naRef me,

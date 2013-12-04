@@ -270,4 +270,10 @@ Effect* makeEffect(SGPropertyNode* prop,
     return effect.release();
 }
 
+void clearEffectCache()
+{
+    OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
+    effectMap.clear();
+}
+
 }

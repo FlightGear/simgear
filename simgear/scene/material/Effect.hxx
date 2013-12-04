@@ -176,6 +176,8 @@ Effect* makeEffect(SGPropertyNode* prop,
 bool makeParametersFromStateSet(SGPropertyNode* paramRoot,
                                 const osg::StateSet* ss);
 
+void clearEffectCache();
+
 namespace effect
 {
 /**

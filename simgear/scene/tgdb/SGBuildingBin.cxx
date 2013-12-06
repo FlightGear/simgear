@@ -158,7 +158,6 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
       t->reserve(BUILDING_SET_SIZE * VERTICES_PER_BUILDING);
       n->reserve(BUILDING_SET_SIZE * VERTICES_PER_BUILDING);
 
-      sharedGeometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
       sharedGeometry->setFogCoordBinding(osg::Geometry::BIND_PER_VERTEX);
       sharedGeometry->setComputeBoundingBoxCallback(new BuildingBoundingBoxCallback);
       sharedGeometry->setUseDisplayList(false);
@@ -638,6 +637,10 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
       sharedGeometry->setVertexArray(v);
       sharedGeometry->setTexCoordArray(0, t);
       sharedGeometry->setNormalArray(n);
+
+      // Work around a bug in OSG 3.2.0 where BIND_PER_VERTEX appears
+      // not to take effect if the normal array is set subsequently.
+      sharedGeometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
     }
   }
 

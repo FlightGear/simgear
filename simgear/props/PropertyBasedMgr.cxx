@@ -37,6 +37,7 @@ namespace simgear
   void PropertyBasedMgr::shutdown()
   {
     _props->removeChangeListener(this);
+    _elements.clear();
   }
 
   //----------------------------------------------------------------------------

@@ -3,7 +3,6 @@ set(HEADERS
     EffectBuilder.hxx
     EffectCullVisitor.hxx
     EffectGeode.hxx
-    GLPredicate.hxx
     Pass.hxx
     Technique.hxx
     TextureBuilder.hxx
@@ -19,7 +18,6 @@ set(SOURCES
     EffectBuilder.cxx
     EffectCullVisitor.cxx
     EffectGeode.cxx
-    GLPredicate.cxx
     Pass.cxx
     Technique.cxx
     TextureBuilder.cxx

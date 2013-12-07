@@ -910,6 +910,7 @@ public:
   simgear::PropertyList getChildren (const std::string& name) const
   { return getChildren(name.c_str()); }
 
+  // TODO do we need the removeXXX methods to return the deleted nodes?
   /**
    * Remove child by position.
    */
@@ -940,6 +941,11 @@ public:
   simgear::PropertyList removeChildren (const std::string& name,
                                         bool keep = true)
   { return removeChildren(name.c_str(), keep); }
+
+  /**
+   * Remove all children (does not change the value of the node)
+   */
+  void removeAllChildren();
 
   //
   // Alias support.

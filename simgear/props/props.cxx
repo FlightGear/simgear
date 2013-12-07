@@ -1075,6 +1075,21 @@ SGPropertyNode::removeChildren (const char * name, bool keep)
   return children;
 }
 
+void
+SGPropertyNode::removeAllChildren()
+{
+  for(unsigned i = 0; i < _children.size(); ++i)
+  {
+    SGPropertyNode_ptr& node = _children[i];
+    node->_parent = 0;
+    node->setAttribute(REMOVED, true);
+    node->clearValue();
+    fireChildRemoved(node);
+  }
+
+  _children.clear();
+}
+
 string
 SGPropertyNode::getDisplayName (bool simplify) const
 {

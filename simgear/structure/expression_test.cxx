@@ -53,7 +53,7 @@ void testBasic()
 void testParse()
 {
     initPropTree();
-  
+#if 0
     const char* xml = "<?xml version=\"1.0\"?>"
         "<PropertyList>"
             "<expression>"
@@ -69,7 +69,7 @@ void testParse()
               "</and>"
             "</expression>"
         "</PropertyList>";
-    
+#endif
     const char* xml2 = "<?xml version=\"1.0\"?>"
         "<PropertyList>"
               "<sqr>"

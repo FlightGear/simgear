@@ -489,10 +489,6 @@ public:
         continue;
 
       osg::Texture2D* object_mask  = mat->get_object_mask(triangleBin);
-      osg::Image* img;
-      if (object_mask != NULL) {
-          img = object_mask->getImage();
-      }
 
       int   group_count            = mat->get_object_group_count();
       float building_coverage      = mat->get_building_coverage();
@@ -502,7 +498,7 @@ public:
       if (building_coverage == 0)
          continue;
 
-      SGBuildingBin* bin;
+      SGBuildingBin* bin = NULL;
 
       if (building_coverage > 0) {
         bin = new SGBuildingBin(mat);
@@ -909,7 +905,7 @@ public:
     // Generate all the lighting objects for the tile.
     osg::LOD* generateLightingTileObjects()
     {
-      SGMaterialLib* matlib;
+      SGMaterialLib* matlib = NULL;
 
       if (_options)
         matlib = _options->getMaterialLib();
@@ -1050,7 +1046,7 @@ public:
     // Generate all the random forest, objects and buildings for the tile
     osg::LOD* generateRandomTileObjects()
     {
-      SGMaterialLib* matlib;
+      SGMaterialLib* matlib = NULL;
       bool use_random_objects = false;
       bool use_random_vegetation = false;
       bool use_random_buildings = false;

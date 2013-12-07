@@ -71,6 +71,7 @@ namespace canvas
       typedef osg::ref_ptr<CullCallback> CullCallbackPtr;
 
       Canvas(SGPropertyNode* node);
+      virtual ~Canvas();
       virtual void onDestroy();
 
       void setSystemAdapter(const SystemAdapterPtr& system_adapter);

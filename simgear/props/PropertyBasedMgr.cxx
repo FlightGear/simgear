@@ -36,8 +36,8 @@ namespace simgear
   //----------------------------------------------------------------------------
   void PropertyBasedMgr::shutdown()
   {
+    _props->removeAllChildren();
     _props->removeChangeListener(this);
-    _elements.clear();
   }
 
   //----------------------------------------------------------------------------
@@ -96,7 +96,7 @@ namespace simgear
     _name_elements( name_elements ),
     _element_factory( element_factory )
   {
-
+    _props->setAttribute(SGPropertyNode::PRESERVE, true);
   }
 
   //----------------------------------------------------------------------------

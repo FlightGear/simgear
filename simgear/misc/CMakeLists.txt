@@ -3,6 +3,7 @@ include (SimGearComponent)
 
 set(HEADERS 
     CSSBorder.hxx
+    ListDiff.hxx
     ResourceManager.hxx
     interpolator.hxx
     make_new.hxx

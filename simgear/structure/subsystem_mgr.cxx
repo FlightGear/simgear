@@ -530,7 +530,7 @@ void
 SGSubsystemMgr::add (const char * name, SGSubsystem * subsystem,
                      GroupType group, double min_time_sec)
 {
-    SG_LOG(SG_GENERAL, SG_INFO, "Adding subsystem " << name);
+    SG_LOG(SG_GENERAL, SG_DEBUG, "Adding subsystem " << name);
     get_group(group)->set_subsystem(name, subsystem, min_time_sec);
 
     if (_subsystem_map.find(name) != _subsystem_map.end()) {

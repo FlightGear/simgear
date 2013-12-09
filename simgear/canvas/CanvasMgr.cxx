@@ -36,10 +36,8 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  CanvasMgr::CanvasMgr( SGPropertyNode_ptr node,
-                        SystemAdapterPtr system_adapter ):
-    PropertyBasedMgr(node, "texture", &canvasFactory),
-    _system_adapter(system_adapter)
+  CanvasMgr::CanvasMgr(SGPropertyNode_ptr node):
+    PropertyBasedMgr(node, "texture", &canvasFactory)
   {
 
   }
@@ -66,7 +64,6 @@ namespace canvas
   void CanvasMgr::elementCreated(PropertyBasedElementPtr element)
   {
     CanvasPtr canvas = boost::static_pointer_cast<Canvas>(element);
-    canvas->setSystemAdapter(_system_adapter);
     canvas->setCanvasMgr(this);
   }
 

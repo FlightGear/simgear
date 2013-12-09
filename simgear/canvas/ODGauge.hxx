@@ -53,8 +53,6 @@ namespace canvas
       ODGauge();
       virtual ~ODGauge();
 
-      void setSystemAdapter(const SystemAdapterPtr& system_adapter);
-
       /**
        * Set the size of the render target.
        *
@@ -135,8 +133,6 @@ namespace canvas
       void clear();
 
     protected:
-
-      SystemAdapterPtr _system_adapter;
 
       int _size_x,
           _size_y,

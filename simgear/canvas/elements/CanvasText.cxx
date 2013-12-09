@@ -327,7 +327,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Text::setFont(const char* name)
   {
-    _text->setFont( _canvas.lock()->getSystemAdapter()->getFont(name) );
+    _text->setFont( Canvas::getSystemAdapter()->getFont(name) );
   }
 
   //----------------------------------------------------------------------------

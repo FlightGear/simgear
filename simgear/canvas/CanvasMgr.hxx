@@ -34,12 +34,8 @@ namespace canvas
 
       /**
        * @param node            Root node of branch used to control canvasses
-       * @param system_adapter  Adapter for connecting between canvas and
-       *                        application framework
-       *
        */
-      CanvasMgr( SGPropertyNode_ptr node,
-                 SystemAdapterPtr system_adapter );
+      CanvasMgr(SGPropertyNode_ptr node);
 
       /**
        * Create a new canvas
@@ -64,8 +60,6 @@ namespace canvas
       CanvasPtr getCanvas(const std::string& name) const;
 
     protected:
-
-      SystemAdapterPtr _system_adapter;
 
       virtual void elementCreated(PropertyBasedElementPtr element);
   };

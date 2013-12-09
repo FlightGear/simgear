@@ -91,19 +91,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Canvas::setSystemAdapter(const SystemAdapterPtr& system_adapter)
-  {
-    _system_adapter = system_adapter;
-    _texture.setSystemAdapter(system_adapter);
-  }
-
-  //----------------------------------------------------------------------------
-  SystemAdapterPtr Canvas::getSystemAdapter() const
-  {
-    return _system_adapter;
-  }
-
-  //----------------------------------------------------------------------------
   void Canvas::setCanvasMgr(CanvasMgr* canvas_mgr)
   {
     _canvas_mgr = canvas_mgr;
@@ -615,6 +602,19 @@ namespace canvas
       _placement_factories.erase(it);
   }
 
+
+  //----------------------------------------------------------------------------
+  void Canvas::setSystemAdapter(const SystemAdapterPtr& system_adapter)
+  {
+    _system_adapter = system_adapter;
+  }
+
+  //----------------------------------------------------------------------------
+  SystemAdapterPtr Canvas::getSystemAdapter()
+  {
+    return _system_adapter;
+  }
+
   //----------------------------------------------------------------------------
   void Canvas::setSelf(const PropertyBasedElementPtr& self)
   {
@@ -656,6 +656,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   Canvas::PlacementFactoryMap Canvas::_placement_factories;
+  SystemAdapterPtr Canvas::_system_adapter;
 
 } // namespace canvas
 } // namespace simgear

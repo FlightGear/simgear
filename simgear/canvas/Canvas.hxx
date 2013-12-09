@@ -74,9 +74,6 @@ namespace canvas
       virtual ~Canvas();
       virtual void onDestroy();
 
-      void setSystemAdapter(const SystemAdapterPtr& system_adapter);
-      SystemAdapterPtr getSystemAdapter() const;
-
       void setCanvasMgr(CanvasMgr* canvas_mgr);
       CanvasMgr* getCanvasMgr() const;
 
@@ -165,9 +162,18 @@ namespace canvas
                                        PlacementFactory factory );
       static void removePlacementFactory(const std::string& type);
 
+      /**
+       * Set global SystemAdapter for all Canvas/ODGauge instances.
+       *
+       * The SystemAdapter is responsible for application specific operations
+       * like loading images/fonts and adding/removing cameras to the scene
+       * graph.
+       */
+      static void setSystemAdapter(const SystemAdapterPtr& system_adapter);
+      static SystemAdapterPtr getSystemAdapter();
+
     protected:
 
-      SystemAdapterPtr  _system_adapter;
       CanvasMgr        *_canvas_mgr;
 
       boost::scoped_ptr<EventManager> _event_manager;
@@ -203,6 +209,8 @@ namespace canvas
       void setStatusFlags(unsigned int flags, bool set = true);
 
     private:
+
+      static SystemAdapterPtr _system_adapter;
 
       Canvas(const Canvas&); // = delete;
       Canvas& operator=(const Canvas&); // = delete;

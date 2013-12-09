@@ -565,7 +565,7 @@ namespace canvas
       }
       else
       {
-        setImage( canvas->getSystemAdapter()->getImage(path) );
+        setImage( Canvas::getSystemAdapter()->getImage(path) );
       }
     }
   }

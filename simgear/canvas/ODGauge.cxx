@@ -29,6 +29,7 @@
 #endif
 
 #include "ODGauge.hxx"
+#include "Canvas.hxx"
 #include "CanvasSystemAdapter.hxx"
 
 #include <simgear/debug/logstream.hxx>
@@ -121,12 +122,6 @@ namespace canvas
   ODGauge::~ODGauge()
   {
     clear();
-  }
-
-  //----------------------------------------------------------------------------
-  void ODGauge::setSystemAdapter(const SystemAdapterPtr& system_adapter)
-  {
-    _system_adapter = system_adapter;
   }
 
   //----------------------------------------------------------------------------
@@ -262,8 +257,8 @@ namespace canvas
     updateSampling();
     updateBlendMode();
 
-    if( _system_adapter )
-      _system_adapter->addCamera(camera.get());
+    if( Canvas::getSystemAdapter() )
+      Canvas::getSystemAdapter()->addCamera(camera.get());
 
     _flags |= AVAILABLE;
   }
@@ -279,8 +274,8 @@ namespace canvas
   //----------------------------------------------------------------------------
   void ODGauge::clear()
   {
-    if( camera.valid() && _system_adapter )
-      _system_adapter->removeCamera(camera.get());
+    if( camera.valid() && Canvas::getSystemAdapter() )
+      Canvas::getSystemAdapter()->removeCamera(camera.get());
     camera.release();
     texture.release();
 

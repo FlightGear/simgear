@@ -65,6 +65,9 @@ bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
                      int attr_value=0, int attr_mask=0);
 
 
+bool copyPropertiesWithAttribute(const SGPropertyNode *in, SGPropertyNode *out,
+                                 SGPropertyNode::Attribute attr);
+
 #endif // __PROPS_IO_HXX
 
 // end of props_io.hxx

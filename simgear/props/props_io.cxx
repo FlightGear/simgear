@@ -640,6 +640,64 @@ writeProperties (const char* file, const SGPropertyNode * start_node)
 ////////////////////////////////////////////////////////////////////////
 
 
+bool
+copyPropertyValue(const SGPropertyNode *in, SGPropertyNode *out)
+{
+    using namespace simgear;
+    bool retval = true;
+    
+    if (!in->hasValue()) {
+        return true;
+    }
+    
+    switch (in->getType()) {
+        case props::BOOL:
+            if (!out->setBoolValue(in->getBoolValue()))
+                retval = false;
+            break;
+        case props::INT:
+            if (!out->setIntValue(in->getIntValue()))
+                retval = false;
+            break;
+        case props::LONG:
+            if (!out->setLongValue(in->getLongValue()))
+                retval = false;
+            break;
+        case props::FLOAT:
+            if (!out->setFloatValue(in->getFloatValue()))
+                retval = false;
+            break;
+        case props::DOUBLE:
+            if (!out->setDoubleValue(in->getDoubleValue()))
+                retval = false;
+            break;
+        case props::STRING:
+            if (!out->setStringValue(in->getStringValue()))
+                retval = false;
+            break;
+        case props::UNSPECIFIED:
+            if (!out->setUnspecifiedValue(in->getStringValue()))
+                retval = false;
+            break;
+        case props::VEC3D:
+            if (!out->setValue(in->getValue<SGVec3d>()))
+                retval = false;
+            break;
+        case props::VEC4D:
+            if (!out->setValue(in->getValue<SGVec4d>()))
+                retval = false;
+            break;
+        default:
+            if (in->isAlias())
+                break;
+            string message = "Unknown internal SGPropertyNode type";
+            message += in->getType();
+            throw sg_error(message, "SimGear Property Reader");
+    }
+    
+    return retval;
+}
+
 /**
  * Copy one property tree to another.
  * 
@@ -657,57 +715,11 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
                 int attr_value, int attr_mask)
 {
   using namespace simgear;
-  bool retval = true;
-
-				// First, copy the actual value,
-				// if any.
-  if (in->hasValue()) {
-    switch (in->getType()) {
-    case props::BOOL:
-      if (!out->setBoolValue(in->getBoolValue()))
-	retval = false;
-      break;
-    case props::INT:
-      if (!out->setIntValue(in->getIntValue()))
-	retval = false;
-      break;
-    case props::LONG:
-      if (!out->setLongValue(in->getLongValue()))
-	retval = false;
-      break;
-    case props::FLOAT:
-      if (!out->setFloatValue(in->getFloatValue()))
-	retval = false;
-      break;
-    case props::DOUBLE:
-      if (!out->setDoubleValue(in->getDoubleValue()))
-	retval = false;
-      break;
-    case props::STRING:
-      if (!out->setStringValue(in->getStringValue()))
-	retval = false;
-      break;
-    case props::UNSPECIFIED:
-      if (!out->setUnspecifiedValue(in->getStringValue()))
-	retval = false;
-      break;
-    case props::VEC3D:
-      if (!out->setValue(in->getValue<SGVec3d>()))
-        retval = false;
-      break;
-    case props::VEC4D:
-      if (!out->setValue(in->getValue<SGVec4d>()))
-        retval = false;
-      break;
-    default:
-      if (in->isAlias())
-	break;
-      string message = "Unknown internal SGPropertyNode type";
-      message += in->getType();
-      throw sg_error(message, "SimGear Property Reader");
-    }
+  bool retval = copyPropertyValue(in, out);
+  if (!retval) {
+    return false;
   }
-
+    
   // copy the attributes.
   out->setAttributes( in->getAttributes() );
 
@@ -746,6 +758,43 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
   }
 
   return retval;
+}
+
+
+bool
+copyPropertiesWithAttribute(const SGPropertyNode *in, SGPropertyNode *out,
+                             SGPropertyNode::Attribute attr)
+{
+    bool retval = copyPropertyValue(in, out);
+    if (!retval) {
+        return false;
+    }
+    out->setAttributes( in->getAttributes() );
+    
+    // if attribute is set directly on this node, we don't require it on
+    // descendent nodes. (Allows setting an attribute on an entire sub-tree
+    // of nodes)
+    if ((attr != SGPropertyNode::NO_ATTR) && out->getAttribute(attr)) {
+        attr = SGPropertyNode::NO_ATTR;
+    }
+    
+    int nChildren = in->nChildren();
+    for (int i = 0; i < nChildren; i++) {
+        const SGPropertyNode* in_child = in->getChild(i);
+        if ((attr != SGPropertyNode::NO_ATTR) && !isArchivable(in_child, attr))
+            continue;
+        
+         SGPropertyNode* out_child = out->getChild(in_child->getNameString(),
+                                      in_child->getIndex(),
+                                      true);
+        
+        bool ok = copyPropertiesWithAttribute(in_child, out_child, attr);
+        if (!ok) {
+            return false;
+        }
+    }// of children iteration
+    
+    return true;
 }
 
 // end of props_io.cxx

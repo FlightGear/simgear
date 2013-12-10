@@ -731,6 +731,7 @@ public:
    * whether the property should normally be saved and restored.</p>
    */
   enum Attribute {
+    NO_ATTR = 0,
     READ = 1,
     WRITE = 2,
     ARCHIVE = 4,

@@ -75,27 +75,35 @@ SGPath::fix()
 
 
 // default constructor
-SGPath::SGPath()
+SGPath::SGPath(PermissonChecker validator)
     : path(""),
+    _permisson_checker(validator),
     _cached(false),
+    _rwCached(false),
     _cacheEnabled(true)
 {
 }
 
 
 // create a path based on "path"
-SGPath::SGPath( const std::string& p )
+SGPath::SGPath( const std::string& p, PermissonChecker validator )
     : path(p),
+    _permisson_checker(validator),
     _cached(false),
+    _rwCached(false),
     _cacheEnabled(true)
 {
     fix();
 }
 
 // create a path based on "path" and a "subpath"
-SGPath::SGPath( const SGPath& p, const std::string& r )
+SGPath::SGPath( const SGPath& p,
+                const std::string& r,
+                PermissonChecker validator )
     : path(p.path),
+    _permisson_checker(validator),
     _cached(false),
+    _rwCached(false),
     _cacheEnabled(p._cacheEnabled)
 {
     append(r);
@@ -104,8 +112,12 @@ SGPath::SGPath( const SGPath& p, const std::string& r )
 
 SGPath::SGPath(const SGPath& p) :
   path(p.path),
+  _permisson_checker(p._permisson_checker),
   _cached(p._cached),
+  _rwCached(p._rwCached),
   _cacheEnabled(p._cacheEnabled),
+  _canRead(p._canRead),
+  _canWrite(p._canWrite),
   _exists(p._exists),
   _isDir(p._isDir),
   _isFile(p._isFile),
@@ -116,8 +128,12 @@ SGPath::SGPath(const SGPath& p) :
 SGPath& SGPath::operator=(const SGPath& p)
 {
   path = p.path;
+  _permisson_checker = p._permisson_checker,
   _cached = p._cached;
+  _rwCached = p._rwCached;
   _cacheEnabled = p._cacheEnabled;
+  _canRead = p._canRead;
+  _canWrite = p._canWrite;
   _exists = p._exists;
   _isDir = p._isDir;
   _isFile = p._isFile;
@@ -135,11 +151,26 @@ void SGPath::set( const string& p ) {
     path = p;
     fix();
     _cached = false;
+    _rwCached = false;
 }
 
+//------------------------------------------------------------------------------
+void SGPath::setPermissonChecker(PermissonChecker validator)
+{
+  _permisson_checker = validator;
+  _rwCached = false;
+}
+
+//------------------------------------------------------------------------------
+SGPath::PermissonChecker SGPath::getPermissonChecker() const
+{
+  return _permisson_checker;
+}
+
+//------------------------------------------------------------------------------
 void SGPath::set_cached(bool cached)
 {
-    _cacheEnabled = cached;
+  _cacheEnabled = cached;
 }
 
 // append another piece to the existing path
@@ -154,6 +185,7 @@ void SGPath::append( const string& p ) {
     }
     fix();
     _cached = false;
+    _rwCached = false;
 }
 
 //------------------------------------------------------------------------------
@@ -180,6 +212,7 @@ void SGPath::concat( const string& p ) {
     }
     fix();
     _cached = false;
+    _rwCached = false;
 }
 
 
@@ -278,7 +311,7 @@ void SGPath::validate() const
   if (_cached && _cacheEnabled) {
     return;
   }
-  
+
 #ifdef _WIN32
   struct _stat buf ;
 
@@ -310,10 +343,44 @@ void SGPath::validate() const
   _cached = true;
 }
 
+void SGPath::checkAccess() const
+{
+  if( _rwCached && _cacheEnabled )
+    return;
+
+  if( _permisson_checker )
+  {
+    Permissions p = _permisson_checker(*this);
+    _canRead = p.read;
+    _canWrite = p.write;
+  }
+  else
+  {
+    _canRead = true;
+    _canWrite = true;
+  }
+
+  _rwCached = true;
+}
+
 bool SGPath::exists() const
 {
   validate();
   return _exists;
+}
+
+//------------------------------------------------------------------------------
+bool SGPath::canRead() const
+{
+  checkAccess();
+  return _canRead;
+}
+
+//------------------------------------------------------------------------------
+bool SGPath::canWrite() const
+{
+  checkAccess();
+  return _canWrite;
 }
 
 bool SGPath::isDir() const
@@ -344,7 +411,7 @@ int SGPath::create_dir( mode_t mode ) {
     bool absolute = !path.empty() && path[0] == sgDirPathSep;
 
     unsigned int i = 1;
-    SGPath dir = absolute ? string( 1, sgDirPathSep ) : "";
+    SGPath dir(absolute ? string( 1, sgDirPathSep ) : "", _permisson_checker);
     dir.concat( path_elements[0] );
 #ifdef _WIN32
     if ( dir.str().find(':') != string::npos && path_elements.size() >= 2 ) {
@@ -360,16 +427,26 @@ int SGPath::create_dir( mode_t mode ) {
     if ( r == 0 ) {
         return 0; // Directory already exists
     }
-    if ( sgMkDir( dir.c_str(), mode) ) {
-        SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
+    for(;;)
+    {
+      if( !dir.canWrite() )
+      {
+        SG_LOG( SG_IO,
+                SG_ALERT, "Error creating directory: (" << dir.str() << ")" <<
+                                                   " reason: access denied" );
+        return -3;
+      }
+      else if( sgMkDir(dir.c_str(), mode) )
+      {
+        SG_LOG( SG_IO,
+                SG_ALERT, "Error creating directory: (" << dir.str() << ")" );
         return -2;
-    }
-    for(; i < path_elements.size(); i++) {
-        dir.append(path_elements[i]);
-        if ( sgMkDir( dir.c_str(), mode) ) {
-            SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
-            return -2;
-        }
+      }
+
+      if( i >= path_elements.size() )
+        return  0;
+
+      dir.append(path_elements[i++]);
     }
 
     return 0;
@@ -456,14 +533,27 @@ std::string SGPath::str_native() const
 #endif
 }
 
+//------------------------------------------------------------------------------
 bool SGPath::remove()
 {
-    int err = ::unlink(c_str());
-    if (err) {
-        SG_LOG(SG_IO, SG_WARN,  "file remove failed: (" << str() << ") " << strerror(errno));
-	}
-	_cached = false; // stat again if required
-    return (err == 0);
+  if( !canWrite() )
+  {
+    SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << str() << ")"
+                                               " reason: access denied" );
+    return false;
+  }
+
+  int err = ::unlink(c_str());
+  if( err )
+  {
+    SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << str() << ") "
+                                               " reason: " << strerror(errno) );
+    // TODO check if failed unlink can really change any of the cached values
+  }
+
+  _cached = false; // stat again if required
+  _rwCached = false;
+  return (err == 0);
 }
 
 time_t SGPath::modTime() const
@@ -482,8 +572,17 @@ bool SGPath::operator!=(const SGPath& other) const
     return (path != other.path);
 }
 
+//------------------------------------------------------------------------------
 bool SGPath::rename(const SGPath& newName)
 {
+  if( !newName.canWrite() )
+  {
+    SG_LOG( SG_IO, SG_WARN, "rename failed: from " << str() <<
+                                            " to " << newName.str() <<
+                                            " reason: access denied" );
+    return false;
+  }
+
 #ifdef SG_WINDOWS
 	if (newName.exists()) {
 		SGPath r(newName);
@@ -492,15 +591,19 @@ bool SGPath::rename(const SGPath& newName)
 		}
 	}
 #endif
-    if (::rename(c_str(), newName.c_str()) != 0) {
-        SG_LOG(SG_IO, SG_WARN, "renamed failed: from " << str() << " to " << newName.str()
-            << " reason: " << strerror(errno));
-        return false;
-    }
-    
-    path = newName.path;
-    _cached = false;
-    return true;
+  if( ::rename(c_str(), newName.c_str()) != 0 )
+  {
+    SG_LOG( SG_IO, SG_WARN, "rename failed: from " << str() <<
+                                            " to " << newName.str() <<
+                                            " reason: " << strerror(errno) );
+    return false;
+  }
+
+  path = newName.path;
+  _cached = false;
+  _rwCached = false;
+
+  return true;
 }
 
 //------------------------------------------------------------------------------
@@ -508,7 +611,7 @@ SGPath SGPath::fromEnv(const char* name, const SGPath& def)
 {
   const char* val = getenv(name);
   if( val && val[0] )
-    return SGPath(val);
+    return SGPath(val, def._permisson_checker);
   return def;
 }
 

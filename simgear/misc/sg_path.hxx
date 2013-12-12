@@ -52,8 +52,15 @@ class SGPath {
 
 public:
 
+    struct Permissions
+    {
+      bool read : 1;
+      bool write : 1;
+    };
+    typedef Permissions (*PermissonChecker)(const SGPath&);
+
     /** Default constructor */
-    SGPath();
+    explicit SGPath(PermissonChecker validator = NULL);
 
     /** Copy contructor */
     SGPath(const SGPath& p);
@@ -64,14 +71,16 @@ public:
      * Construct a path based on the starting path provided.
      * @param p initial path
      */
-    SGPath( const std::string& p );
+    SGPath( const std::string& p, PermissonChecker validator = NULL );
 
     /**
      * Construct a path based on the starting path provided and a relative subpath
      * @param p initial path
      * @param r relative subpath
      */
-    SGPath( const SGPath& p, const std::string& r );
+    SGPath( const SGPath& p,
+            const std::string& r,
+            PermissonChecker validator = NULL );
 
     /** Destructor */
     ~SGPath();
@@ -85,7 +94,10 @@ public:
 
     bool operator==(const SGPath& other) const;
     bool operator!=(const SGPath& other) const;
-    
+
+    void setPermissonChecker(PermissonChecker validator);
+    PermissonChecker getPermissonChecker() const;
+
     /**
      * Set if file information (exists, type, mod-time) is cached or
      * retrieved each time it is queried. Caching is enabled by default
@@ -198,6 +210,17 @@ public:
      */
     int create_dir(mode_t mode);
 
+    /**
+     * Check if reading file is allowed. Readabilty does not imply the existance
+     * of the file.
+     *
+     * @note By default all files will be marked as readable. No check is made
+     *       if the operating system allows the given file to be read. Derived
+     *       classes may actually implement custom read/write rights.
+     */
+    bool canRead() const;
+    bool canWrite() const;
+
     bool isFile() const;
     bool isDir() const;
     
@@ -258,11 +281,16 @@ private:
     void fix();
 
     void validate() const;
+    void checkAccess() const;
 
     std::string path;
-    
+    PermissonChecker _permisson_checker;
+
     mutable bool _cached : 1;
+    mutable bool _rwCached : 1;
     bool _cacheEnabled : 1; ///< cacheing can be disbled if required
+    mutable bool _canRead : 1;
+    mutable bool _canWrite : 1;
     mutable bool _exists : 1;
     mutable bool _isDir : 1;
     mutable bool _isFile : 1;

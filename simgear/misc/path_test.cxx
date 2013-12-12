@@ -43,6 +43,30 @@ void test_dir()
     cout << temp.path().modTime() << endl;
 }
 
+SGPath::Permissions validateNone(const SGPath&)
+{
+  SGPath::Permissions p;
+  p.read = false;
+  p.write = false;
+  return p;
+}
+
+SGPath::Permissions validateRead(const SGPath&)
+{
+  SGPath::Permissions p;
+  p.read = true;
+  p.write = false;
+  return p;
+}
+
+SGPath::Permissions validateWrite(const SGPath&)
+{
+  SGPath::Permissions p;
+  p.read = false;
+  p.write = true;
+  return p;
+}
+
 int main(int argc, char* argv[])
 {
     SGPath pa;
@@ -143,7 +167,26 @@ int main(int argc, char* argv[])
     COMPARE(pf.dir(), "");
     COMPARE(pf.lower_extension(), "gz");
     COMPARE(pf.complete_lower_extension(), "txt.gz");
-    
+
+    COMPARE(pf.canRead(), true);
+    COMPARE(pf.canWrite(), true);
+
+    SGPath pp(&validateNone);
+    COMPARE(pp.canRead(), false);
+    COMPARE(pp.canWrite(), false);
+
+    pp.append("./test-dir/file.txt");
+    COMPARE(pp.create_dir(0700), -3);
+
+    pp.setPermissonChecker(&validateRead);
+    COMPARE(pp.canRead(), true);
+    COMPARE(pp.canWrite(), false);
+    COMPARE(pp.create_dir(0700), -3);
+
+    pp.setPermissonChecker(&validateWrite);
+    COMPARE(pp.canRead(), false);
+    COMPARE(pp.canWrite(), true);
+
     test_dir();
     
     cout << "all tests passed OK" << endl;

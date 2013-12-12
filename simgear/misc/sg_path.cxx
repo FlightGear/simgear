@@ -77,7 +77,7 @@ SGPath::fix()
 // default constructor
 SGPath::SGPath(PermissonChecker validator)
     : path(""),
-    _permisson_checker(validator),
+    _permission_checker(validator),
     _cached(false),
     _rwCached(false),
     _cacheEnabled(true)
@@ -88,7 +88,7 @@ SGPath::SGPath(PermissonChecker validator)
 // create a path based on "path"
 SGPath::SGPath( const std::string& p, PermissonChecker validator )
     : path(p),
-    _permisson_checker(validator),
+    _permission_checker(validator),
     _cached(false),
     _rwCached(false),
     _cacheEnabled(true)
@@ -101,7 +101,7 @@ SGPath::SGPath( const SGPath& p,
                 const std::string& r,
                 PermissonChecker validator )
     : path(p.path),
-    _permisson_checker(validator),
+    _permission_checker(validator),
     _cached(false),
     _rwCached(false),
     _cacheEnabled(p._cacheEnabled)
@@ -112,7 +112,7 @@ SGPath::SGPath( const SGPath& p,
 
 SGPath::SGPath(const SGPath& p) :
   path(p.path),
-  _permisson_checker(p._permisson_checker),
+  _permission_checker(p._permission_checker),
   _cached(p._cached),
   _rwCached(p._rwCached),
   _cacheEnabled(p._cacheEnabled),
@@ -128,7 +128,7 @@ SGPath::SGPath(const SGPath& p) :
 SGPath& SGPath::operator=(const SGPath& p)
 {
   path = p.path;
-  _permisson_checker = p._permisson_checker,
+  _permission_checker = p._permission_checker,
   _cached = p._cached;
   _rwCached = p._rwCached;
   _cacheEnabled = p._cacheEnabled;
@@ -157,14 +157,14 @@ void SGPath::set( const string& p ) {
 //------------------------------------------------------------------------------
 void SGPath::setPermissonChecker(PermissonChecker validator)
 {
-  _permisson_checker = validator;
+  _permission_checker = validator;
   _rwCached = false;
 }
 
 //------------------------------------------------------------------------------
 SGPath::PermissonChecker SGPath::getPermissonChecker() const
 {
-  return _permisson_checker;
+  return _permission_checker;
 }
 
 //------------------------------------------------------------------------------
@@ -348,9 +348,9 @@ void SGPath::checkAccess() const
   if( _rwCached && _cacheEnabled )
     return;
 
-  if( _permisson_checker )
+  if( _permission_checker )
   {
-    Permissions p = _permisson_checker(*this);
+    Permissions p = _permission_checker(*this);
     _canRead = p.read;
     _canWrite = p.write;
   }
@@ -411,7 +411,7 @@ int SGPath::create_dir( mode_t mode ) {
     bool absolute = !path.empty() && path[0] == sgDirPathSep;
 
     unsigned int i = 1;
-    SGPath dir(absolute ? string( 1, sgDirPathSep ) : "", _permisson_checker);
+    SGPath dir(absolute ? string( 1, sgDirPathSep ) : "", _permission_checker);
     dir.concat( path_elements[0] );
 #ifdef _WIN32
     if ( dir.str().find(':') != string::npos && path_elements.size() >= 2 ) {
@@ -432,8 +432,8 @@ int SGPath::create_dir( mode_t mode ) {
       if( !dir.canWrite() )
       {
         SG_LOG( SG_IO,
-                SG_ALERT, "Error creating directory: (" << dir.str() << ")" <<
-                                                   " reason: access denied" );
+                SG_WARN, "Error creating directory: (" << dir.str() << ")" <<
+                                                  " reason: access denied" );
         return -3;
       }
       else if( sgMkDir(dir.c_str(), mode) )
@@ -575,7 +575,7 @@ bool SGPath::operator!=(const SGPath& other) const
 //------------------------------------------------------------------------------
 bool SGPath::rename(const SGPath& newName)
 {
-  if( !newName.canWrite() )
+  if( !canRead() || !canWrite() || !newName.canWrite() )
   {
     SG_LOG( SG_IO, SG_WARN, "rename failed: from " << str() <<
                                             " to " << newName.str() <<
@@ -600,6 +600,12 @@ bool SGPath::rename(const SGPath& newName)
   }
 
   path = newName.path;
+
+  // Do not remove permission checker (could happen for example if just using
+  // a std::string as new name)
+  if( newName._permission_checker )
+    _permission_checker = newName._permission_checker;
+
   _cached = false;
   _rwCached = false;
 
@@ -611,22 +617,22 @@ SGPath SGPath::fromEnv(const char* name, const SGPath& def)
 {
   const char* val = getenv(name);
   if( val && val[0] )
-    return SGPath(val, def._permisson_checker);
+    return SGPath(val, def._permission_checker);
   return def;
 }
 
 #ifdef _WIN32
 //------------------------------------------------------------------------------
-SGPath SGPath::home()
+SGPath SGPath::home(const SGPath& def)
 {
   // TODO
-  return SGPath();
+  return def;
 }
 #else
 //------------------------------------------------------------------------------
-SGPath SGPath::home()
+SGPath SGPath::home(const SGPath& def)
 {
-  return fromEnv("HOME");
+  return fromEnv("HOME", def);
 }
 #endif
 
@@ -635,7 +641,7 @@ SGPath SGPath::home()
 #include <ShlObj.h> // for CSIDL
 
 //------------------------------------------------------------------------------
-SGPath SGPath::desktop()
+SGPath SGPath::desktop(const SGPath& def)
 {
 	typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPSTR, int, BOOL);
 	static GetSpecialFolderPath SHGetSpecialFolderPath = NULL;
@@ -647,39 +653,37 @@ SGPath SGPath::desktop()
 	}
 
 	if (!SHGetSpecialFolderPath){
-		return SGPath();
+		return def;
 	}
 
 	char path[MAX_PATH];
 	if (SHGetSpecialFolderPath(0, path, CSIDL_DESKTOPDIRECTORY, false)) {
-		return SGPath(path);
+		return SGPath(path, def._permission_checker);
 	}
 
 	SG_LOG(SG_GENERAL, SG_ALERT, "SGPath::desktop() failed, bad" );
-	return SGPath();
+	return def;
 }
 #elif __APPLE__
 #include <CoreServices/CoreServices.h>
 
 //------------------------------------------------------------------------------
-SGPath SGPath::desktop()
+SGPath SGPath::desktop(const SGPath& def)
 {
   FSRef ref;
   OSErr err = FSFindFolder(kUserDomain, kDesktopFolderType, false, &ref);
-  if (err) {
-    return SGPath();
-  }
+  if (err)
+    return def;
 
   unsigned char path[1024];
-  if (FSRefMakePath(&ref, path, 1024) != noErr) {
-    return SGPath();
-  }
+  if (FSRefMakePath(&ref, path, 1024) != noErr)
+    return def
 
-  return SGPath((const char*) path);
+  return SGPath((const char*) path, def._permission_checker);
 }
 #else
 //------------------------------------------------------------------------------
-SGPath SGPath::desktop()
+SGPath SGPath::desktop(const SGPath& def)
 {
   // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
@@ -706,12 +710,12 @@ SGPath SGPath::desktop()
 
     const std::string HOME = "$HOME";
     if( starts_with(line, HOME) )
-      return home() / simgear::strutils::unescape(line.substr(HOME.length()));
+      return home(def) / simgear::strutils::unescape(line.substr(HOME.length()));
 
-    return SGPath(line);
+    return SGPath(line, def._permission_checker);
   }
 
-  return home() / "Desktop";
+  return home(def) / "Desktop";
 }
 #endif
 

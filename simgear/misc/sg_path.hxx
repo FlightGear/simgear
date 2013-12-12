@@ -269,12 +269,12 @@ public:
     /**
      * Get path to user's home directory
      */
-    static SGPath home();
+    static SGPath home(const SGPath& def = SGPath());
 
     /**
      * Get path to the user's desktop directory
      */
-    static SGPath desktop();
+    static SGPath desktop(const SGPath& def = SGPath());
 
 private:
 
@@ -284,7 +284,7 @@ private:
     void checkAccess() const;
 
     std::string path;
-    PermissonChecker _permisson_checker;
+    PermissonChecker _permission_checker;
 
     mutable bool _cached : 1;
     mutable bool _rwCached : 1;

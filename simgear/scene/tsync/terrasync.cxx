@@ -883,6 +883,10 @@ void SGTerraSync::unbind()
     _tiedProperties.Untie();
     _bound = false;
     _inited = false;
+    
+    _terraRoot.clear();
+    _stalledNode.clear();
+    _cacheHits.clear();
 }
 
 void SGTerraSync::update(double)

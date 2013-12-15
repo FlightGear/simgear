@@ -677,7 +677,7 @@ SGPath SGPath::desktop(const SGPath& def)
 
   unsigned char path[1024];
   if (FSRefMakePath(&ref, path, 1024) != noErr)
-    return def
+      return def;
 
   return SGPath((const char*) path, def._permission_checker);
 }

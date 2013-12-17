@@ -103,9 +103,14 @@ int SGSocketUDP::read( char *buf, int length ) {
 	return 0;
     }
 
+    if (length <= 0) {
+        return 0;
+    }
     int result;
+    // prevent buffer overflow
+    int maxsize = std::min(length - 1, SG_IO_MAX_MSG_SIZE);
 
-    if ( (result = sock.recv(buf, SG_IO_MAX_MSG_SIZE, 0)) >= 0 ) {
+    if ( (result = sock.recv(buf, maxsize, 0)) >= 0 ) {
 	buf[result] = '\0';
 	// printf("msg received = %s\n", buf);
     }
@@ -120,10 +125,16 @@ int SGSocketUDP::readline( char *buf, int length ) {
 	return 0;
     }
 
+    if (length <= 0) {
+        return 0;
+    }
     // cout << "sock = " << sock << endl;
 
     char *buf_ptr = save_buf + save_len;
-    int result = sock.recv(buf_ptr, SG_IO_MAX_MSG_SIZE, 0);
+    // prevent buffer overflow (size of save_buf is 2 * SG_IO_MAX_MSG_SIZE)
+    int maxsize = save_len < SG_IO_MAX_MSG_SIZE ?
+    SG_IO_MAX_MSG_SIZE : 2 * SG_IO_MAX_MSG_SIZE - save_len;
+    int result = sock.recv(buf_ptr, maxsize, 0);
     // printf("msg received = %s\n", buf);
     save_len += result;
 
@@ -142,6 +153,8 @@ int SGSocketUDP::readline( char *buf, int length ) {
     // we found an end of line
 
     // copy to external buffer
+    // prevent buffer overflow
+    result = std::min(result,length - 1);
     strncpy( buf, save_buf, result );
     buf[result] = '\0';
     // cout << "sg_socket line = " << buf << endl;

@@ -39,7 +39,6 @@
 // Constructor
 SGSky::SGSky( void ) {
     effective_visibility = visibility = 10000.0;
-    minimum_sky_visibility = 1000;
 
     // near cloud visibility state variables
     in_puff = false;
@@ -62,10 +61,8 @@ SGSky::SGSky( void ) {
     cloud_root = new osg::Group;
     cloud_root->setNodeMask(simgear::MODEL_BIT);
     cloud_root->setName("SGSky-cloud-root");
-    pre_selector = new osg::Switch;
 
     pre_transform = new osg::Group;
-
     _ephTransform = new osg::MatrixTransform;
     
     // Set up a RNG that is repeatable within 10 minutes to ensure that clouds
@@ -103,9 +100,7 @@ void SGSky::build( double h_radius_m, double v_radius_m,
     oursun = new SGSun;
     _ephTransform->addChild( oursun->build(tex_path, sun_size, property_tree_node ) );
 
-    pre_selector->addChild( pre_transform.get() );
-
-    pre_root->addChild( pre_selector.get() );    
+    pre_root->addChild( pre_transform.get() );
 }
 
 
@@ -118,8 +113,6 @@ void SGSky::build( double h_radius_m, double v_radius_m,
 // 180 degrees = darkest midnight
 bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 {
-    if ( effective_visibility > minimum_sky_visibility ) {
-	enable();
 	dome->repaint( sc.adj_sky_color, sc.sky_color, sc.fog_color,
                        sc.sun_angle, effective_visibility );
 
@@ -133,10 +126,7 @@ bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
                 cloud_layers[i]->repaint( sc.cloud_color );
             }
 	}
-    } else {
-	// turn off sky
-	disable();
-    }
+
     SGCloudField::updateFog((double)effective_visibility,
                             osg::Vec4f(toOsg(sc.fog_color), 1.0f));
     return true;
@@ -193,6 +183,12 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
     }
 
     return true;
+}
+
+void
+SGSky::set_visibility( float v )
+{
+    visibility = std::max(v, 25.0f);
 }
 
 void
@@ -295,16 +291,6 @@ bool SGSky::get_3dCloudUseImpostors() const {
 void SGSky::set_3dCloudUseImpostors(bool imp)
 {
     SGCloudField::setUseImpostors(imp);
-}
-
-float SGSky::get_minimum_sky_visibility() const 
-{
-    return minimum_sky_visibility;
-}
-
-void SGSky::set_minimum_sky_visibility( float value )
-{
-    minimum_sky_visibility = value;
 }
 
 void SGSky::texture_path( const string& path ) {

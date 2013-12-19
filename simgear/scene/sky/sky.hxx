@@ -43,7 +43,6 @@
 #include <osg/ref_ptr>
 #include <osg/MatrixTransform>
 #include <osg/Node>
-#include <osg/Switch>
 
 #include <simgear/ephemeris/ephemeris.hxx>
 #include <simgear/math/SGMath.hxx>
@@ -224,7 +223,6 @@ private:
     layer_list_type cloud_layers;
 
     osg::ref_ptr<osg::Group> pre_root, cloud_root;
-    osg::ref_ptr<osg::Switch> pre_selector;
     osg::ref_ptr<osg::Group> pre_transform;
 
     osg::ref_ptr<osg::MatrixTransform> _ephTransform;
@@ -234,7 +232,6 @@ private:
     // visibility
     float visibility;
     float effective_visibility;
-    float minimum_sky_visibility;
 
     int in_cloud;
 
@@ -357,19 +354,6 @@ public:
      */
     void texture_path( const string& path );
 
-    /** Enable drawing of the sky. */
-    inline void enable() {
-        pre_selector->setValue(0, 1);
-    }
-
-    /**
-     * Disable drawing of the sky in the scene graph.  The leaf node is still
-     * there, how ever it won't be traversed on by ssgCullandRender()
-     */
-    inline void disable() {
-        pre_selector->setValue(0, 0);
-    }
-
     /**
      * Get the current sun color
      */
@@ -421,14 +405,12 @@ public:
 
 
     /** @return current effective visibility */
-    inline float get_visibility() const { return effective_visibility; }
+    float get_visibility() const { return effective_visibility; }
 
     /** Set desired clear air visibility.
      * @param v visibility in meters
      */
-    inline void set_visibility( float v ) {
-	effective_visibility = visibility = (v <= 25.0) ? 25.0 : v;
-    }
+    void set_visibility( float v );
 
     /** Get 3D cloud density */
     double get_3dCloudDensity() const;
@@ -487,10 +469,5 @@ public:
     void set_3dCloudWrap(bool wrap);
 
 
-    /** Get minimum sky visibility */
-    float get_minimum_sky_visibility() const;
-
-    /** Set minimum sky visibility */
-    void set_minimum_sky_visibility( float value );
 };
 #endif // _SG_SKY_HXX

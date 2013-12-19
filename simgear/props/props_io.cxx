@@ -616,7 +616,7 @@ writeProperties (const string &file, const SGPropertyNode * start_node,
                  bool write_all, SGPropertyNode::Attribute archive_flag)
 {
   SGPath path(file.c_str());
-  path.create_dir(0777);
+  path.create_dir(0755);
 
   ofstream output(file.c_str());
   if (output.good()) {

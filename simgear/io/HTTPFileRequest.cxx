@@ -43,7 +43,7 @@ namespace HTTP
       // TODO validate path? (would require to expose fgValidatePath somehow to
       //      simgear)
       SGPath path(_filename);
-      path.create_dir(0777);
+      path.create_dir(0755);
 
       _file.open(_filename.c_str(), std::ios::binary | std::ios::trunc);
     }

@@ -177,6 +177,8 @@ protected:
     virtual void onFail();
     virtual void onAlways();
 
+    void setFailure(int code, const std::string& reason);
+
 private:
     friend class Client;
     friend class Connection;
@@ -186,7 +188,6 @@ private:
     Request& operator=(const Request&); // = delete;
 
     void processBodyBytes(const char* s, int n);
-    void setFailure(int code, const std::string& reason);
     void setReadyState(ReadyState state);
 
     std::string   _method;

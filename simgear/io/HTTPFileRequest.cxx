@@ -38,6 +38,9 @@ namespace HTTP
   {
     Request::responseHeadersComplete();
 
+    if( responseCode() != 200 )
+      return setFailure(responseCode(), responseReason());
+
     if( !_filename.empty() )
     {
       // TODO validate path? (would require to expose fgValidatePath somehow to
@@ -69,8 +72,8 @@ namespace HTTP
       SG_LOG
       (
         SG_IO,
-        SG_WARN,
-        "HTTP::FileRequest: error writing to '" << _filename << "'"
+        SG_DEBUG,
+        "HTTP::FileRequest: received data for closed file '" << _filename << "'"
       );
       return;
     }

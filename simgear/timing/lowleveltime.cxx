@@ -1134,3 +1134,15 @@ char *tzstring (const char* string)
 
   return strncpy (p, string, needed);
 }
+
+time_t sgGMTime()
+{
+	struct tm now;
+	time_t now_sec = time(0);
+#if defined(SG_WINDOWS)
+	now = *gmtime(&now_sec);
+#else
+	gmtime_r(&now_sec, &now);
+#endif
+    return mktime(&now);
+}

@@ -41,6 +41,11 @@ void show (const char *zone, time_t t, int v);
 /* adapted from <time.h> */
 struct tm * fgLocaltime (const time_t *t, const char *tzName);
 
+/* version of time() which returns a value in GMT/UTC, without 
+ any timezone adjustment. Necessary on Windows where calling time()
+ returns a value in the local time-zone. */
+time_t sgGMTime();
+
 /* Prototype for the internal function to get information based on TZ.  */
 extern struct tm *fgtz_convert (const time_t *t, int use_localtime,
 				     struct tm *tp, const char *tzName);

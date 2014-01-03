@@ -1137,12 +1137,21 @@ char *tzstring (const char* string)
 
 time_t sgGMTime()
 {
-	struct tm now;
+    // this was created to fix:
+    // https://code.google.com/p/flightgear-bugs/issues/detail?id=1207
+    // however applying the code on Unix causes bug:
+    // https://code.google.com/p/flightgear-bugs/issues/detail?id=1301
+    // One solution would be to deinfe our own 'timegm' as suggested here:
+    // http://linux.die.net/man/3/timegm
+    // but for the moment we'll assume time(0) on Unix is UTC, and hence we
+    // return it directly.
+    
 	time_t now_sec = time(0);
 #if defined(SG_WINDOWS)
+    struct tm now;
 	now = *gmtime(&now_sec);
-#else
-	gmtime_r(&now_sec, &now);
-#endif
     return mktime(&now);
+#else
+	return now_sec;
+#endif
 }

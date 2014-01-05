@@ -206,9 +206,7 @@ class SGTrackToAnimation::UpdateCallback:
 
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
     {
-      if( _root_length <= 0 )
-        // TODO prevent invalid animation from being added?
-        return;
+      // TODO prevent invalid animation from being added?
 
       SGRotateTransform* tf = static_cast<SGRotateTransform*>(node);
 
@@ -266,37 +264,41 @@ class SGTrackToAnimation::UpdateCallback:
               y = dir * _up_axis;
         root_angle += std::atan2(y, x);
 
-        // Handle scissor/ik rotation
-        double dist = dir.length(),
-               slave_target_dist = 0;
-        if( dist < _root_length + _slave_length )
+        if( _root_length > 0 )
         {
-          root_angle += angleFromSSS(_root_length, dist, _slave_length);
-
-          if( _slave_tf )
+          // Handle scissor/ik rotation
+          double dist = dir.length(),
+                 slave_target_dist = 0;
+          if( dist < _root_length + _slave_length )
           {
-            slave_angle += angleFromSSS(_root_length, _slave_length, dist)
-                         - SGMiscd::pi();
-          }
-          if( _slave_dof >= 2 )
-            slave_target_dist = _slave_length;
-        }
-        else if( _slave_dof >= 2 )
-        {
-          // If the distance is too large we need to manually calculate the
-          // distance of the slave to the target, as it is not possible anymore
-          // to rotate the objects to reach the target.
-          osg::Vec3 root_dir = target_pos - _node_center;
-          root_dir.normalize();
-          osg::Vec3 slave_pos = _node_center + root_dir * _root_length;
-          slave_target_dist = (target_pos - slave_pos).length();
-        }
+            root_angle += angleFromSSS(_root_length, dist, _slave_length);
 
-        if( slave_target_dist > 0 )
-          // Calculate angle to rotate "out of the plane" to point towards the
-          // target object.
-          slave_angle2 = std::asin((_lock_axis * lock_proj) / slave_target_dist)
-                       - _slave_initial_angle2;
+            if( _slave_tf )
+            {
+              slave_angle += angleFromSSS(_root_length, _slave_length, dist)
+                           - SGMiscd::pi();
+            }
+            if( _slave_dof >= 2 )
+              slave_target_dist = _slave_length;
+          }
+          else if( _slave_dof >= 2 )
+          {
+            // If the distance is too large we need to manually calculate the
+            // distance of the slave to the target, as it is not possible
+            // anymore to rotate the objects to reach the target.
+            osg::Vec3 root_dir = target_pos - _node_center;
+            root_dir.normalize();
+            osg::Vec3 slave_pos = _node_center + root_dir * _root_length;
+            slave_target_dist = (target_pos - slave_pos).length();
+          }
+
+          if( slave_target_dist > 0 )
+            // Calculate angle to rotate "out of the plane" to point towards the
+            // target object.
+            slave_angle2 = std::asin( (_lock_axis * lock_proj)
+                                    / slave_target_dist )
+                         - _slave_initial_angle2;
+        }
       }
       else
       {

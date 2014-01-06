@@ -454,6 +454,23 @@ bool Socket::open ( bool stream )
 #endif
   }
 
+#ifdef SO_NOSIGPIPE
+  // Do not generate SIGPIPE signal (which immediately terminates the program),
+  // instead ::send() will return -1 and errno will be set to EPIPE.
+  // SO_NOSIGPIPE should be available on Mac/BSD systems, but is not available
+  // within Posix/Linux.
+  // This only works for calls to ::send() but not for ::write():
+  // http://freebsd.1045724.n5.nabble.com/is-setsockopt-SO-NOSIGPIPE-work-tp4011054p4011055.html
+  int set = 1;
+  setsockopt(handle, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(set));
+#endif
+
+#ifndef MSG_NOSIGNAL
+# define MSG_NOSIGNAL 0
+#endif
+  // TODO supress SIGPIPE if neither SO_NOSIGPIPE nor MSG_NOSIGNAL is available
+  // http://krokisplace.blogspot.co.at/2010/02/suppressing-sigpipe-in-library.html
+
   return (handle != -1);
 }
 
@@ -592,7 +609,7 @@ int Socket::connect ( IPAddress* addr )
 int Socket::send (const void * buffer, int size, int flags)
 {
   assert ( handle != -1 ) ;
-  return ::send (handle, (const char*)buffer, size, flags);
+  return ::send (handle, (const char*)buffer, size, flags | MSG_NOSIGNAL);
 }
 
 
@@ -600,8 +617,12 @@ int Socket::sendto ( const void * buffer, int size,
                         int flags, const IPAddress* to )
 {
   assert ( handle != -1 ) ;
-  return ::sendto(handle,(const char*)buffer,size,flags,
-                         (const sockaddr*) to->getAddr(), to->getAddrLen());
+  return ::sendto( handle,
+                   (const char*)buffer,
+                   size,
+                   flags | MSG_NOSIGNAL,
+                   (const sockaddr*)to->getAddr(),
+                   to->getAddrLen() );
 }
 
 

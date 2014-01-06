@@ -282,7 +282,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints, 
     double tex_width = 1000.0;
   
     // find Ocean material in the properties list
-    SGMaterial *mat = matlib->find( "Ocean" );
+    SGMaterial *mat = matlib->findCached( "Ocean" );
     if ( mat != NULL ) {
         // set the texture width and height values for this
         // material

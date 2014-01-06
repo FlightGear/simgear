@@ -40,6 +40,8 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
+#include <simgear/threads/SGThread.hxx>
+#include <simgear/threads/SGGuard.hxx>
 
 #include "mat.hxx"
 
@@ -49,8 +51,17 @@
 
 using std::string;
 
+
+class SGMaterialLib::MatLibPrivate
+{
+public:
+    SGMutex mutex;
+};
+
 // Constructor
-SGMaterialLib::SGMaterialLib ( void ) {
+SGMaterialLib::SGMaterialLib ( void ) :
+    d(new MatLibPrivate)
+{
 }
 
 // Load a library of material properties
@@ -96,15 +107,16 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
 }
 
 // find a material record by material name
-SGMaterial *SGMaterialLib::find( const string& material ) {
+SGMaterial *SGMaterialLib::find( const string& material ) const
+{
     SGMaterial *result = NULL;
-    material_map_iterator it = matlib.find( material );
+    const_material_map_iterator it = matlib.find( material );
     if ( it != end() ) {            
         // We now have a list of materials that match this
         // name. Find the first one that either doesn't have
         // a condition, or has a condition that evaluates
         // to true.
-        material_list_iterator iter = it->second.begin();        
+        material_list::const_iterator iter = it->second.begin();
         while (iter != it->second.end()) {            
             result = *iter;
             if (result->valid()) {
@@ -115,6 +127,31 @@ SGMaterial *SGMaterialLib::find( const string& material ) {
     }
 
     return NULL;
+}
+
+void SGMaterialLib::refreshActiveMaterials()
+{
+    active_material_cache newCache;
+    material_map_iterator it = matlib.begin();
+    for (; it != matlib.end(); ++it) {
+        newCache[it->first] = find(it->first);
+    }
+    
+    // use this approach to minimise the time we're holding the lock
+    // lock on the mutex (and hence, would block findCached calls)
+    SGGuard<SGMutex> g(d->mutex);
+    active_cache = newCache;
+}
+
+SGMaterial *SGMaterialLib::findCached( const string& material ) const
+{
+    SGGuard<SGMutex> g(d->mutex);
+    
+    active_material_cache::const_iterator it = active_cache.find(material);
+    if (it == active_cache.end())
+        return NULL;
+    
+    return it->second;
 }
 
 // Destructor

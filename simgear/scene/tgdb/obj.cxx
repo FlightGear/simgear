@@ -146,7 +146,7 @@ public:
       std::string materialName = obj.get_pt_materials()[grp];
       SGMaterial* material = 0;
       if (matlib)
-          material = matlib->find(materialName);
+          material = matlib->findCached(materialName);
       SGVec4f color = getMaterialLightColor(material);
 
       if (3 <= materialName.size() && materialName.substr(0, 3) != "RWY") {
@@ -326,7 +326,7 @@ public:
   {
     if (!matlib)
       return SGVec2f(1, 1);
-    SGMaterial* material = matlib->find(name);
+    SGMaterial* material = matlib->findCached(name);
     if (!material)
       return SGVec2f(1, 1);
 
@@ -400,7 +400,7 @@ public:
       osg::Geometry* geometry = i->second.buildGeometry();
       SGMaterial *mat = 0;
       if (matlib)
-        mat = matlib->find(i->first);
+        mat = matlib->findCached(i->first);
       eg = new EffectGeode;
       eg->setName("EffectGeode");
       if (mat)
@@ -427,7 +427,7 @@ public:
     mt_init(&seed, unsigned(123));
 
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      SGMaterial *mat = matlib->find(i->first);
+      SGMaterial *mat = matlib->findCached(i->first);
       if (!mat)
         continue;
 
@@ -482,7 +482,7 @@ public:
     mt_init(&seed, unsigned(123));
 
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      SGMaterial *mat = matlib->find(i->first);
+      SGMaterial *mat = matlib->findCached(i->first);
       SGTexturedTriangleBin triangleBin = i->second;
 
       if (!mat)
@@ -799,7 +799,7 @@ public:
     mt_init(&seed, unsigned(586));
 
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      SGMaterial *mat = matlib->find(i->first);
+      SGMaterial *mat = matlib->findCached(i->first);
       if (!mat)
         continue;
 
@@ -955,13 +955,13 @@ public:
         SGVec4f red(1, 0, 0, 1);
         SGMaterial* mat = 0;
         if (matlib)
-          mat = matlib->find("RWY_RED_LIGHTS");
+          mat = matlib->findCached("RWY_RED_LIGHTS");
         if (mat)
           red = mat->get_light_color();
         SGVec4f white(1, 1, 1, 1);
         mat = 0;
         if (matlib)
-          mat = matlib->find("RWY_WHITE_LIGHTS");
+          mat = matlib->findCached("RWY_WHITE_LIGHTS");
         if (mat)
           white = mat->get_light_color();
         SGDirectionalLightListBin::const_iterator i;

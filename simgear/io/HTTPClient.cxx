@@ -65,12 +65,6 @@ class Connection;
 typedef std::multimap<std::string, Connection*> ConnectionDict;
 typedef std::list<Request_ptr> RequestList;
 
-static bool isFailureStatus(int httpStatus)
-{
-  int majorCode = httpStatus / 100;
-  return (majorCode != 2);
-}
-
 class Client::ClientPrivate
 {
 public:
@@ -220,12 +214,12 @@ public:
         assert(state == STATE_WAITING_FOR_RESPONSE);
         
         activeRequest = sentRequests.front();
-	activeRequest->responseStart(buffer);
-	if (isFailureStatus(activeRequest->responseCode())) {
-	  handleError(EIO);
-	  return;
-	}
-      
+        try {
+            activeRequest->responseStart(buffer);
+        } catch (sg_exception& e) {
+            handleError(EIO);
+        }
+        
       state = STATE_GETTING_HEADERS;
       buffer.clear();
       if (activeRequest->responseCode() == 204) {

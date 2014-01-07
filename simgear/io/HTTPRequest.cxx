@@ -4,6 +4,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/structure/exception.hxx>
 
 namespace simgear
 {
@@ -115,8 +116,7 @@ void Request::responseStart(const std::string& r)
     const int maxSplit = 2; // HTTP/1.1 nnn reason-string
     string_list parts = strutils::split(r, NULL, maxSplit);
     if (parts.size() != 3) {
-        setFailure(400, "malformed HTTP response header");
-        return;
+        throw sg_io_exception("bad HTTP response");
     }
     
     _responseVersion = decodeHTTPVersion(parts[0]);

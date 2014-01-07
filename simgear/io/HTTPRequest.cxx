@@ -115,7 +115,6 @@ void Request::responseStart(const std::string& r)
     const int maxSplit = 2; // HTTP/1.1 nnn reason-string
     string_list parts = strutils::split(r, NULL, maxSplit);
     if (parts.size() != 3) {
-        SG_LOG(SG_IO, SG_WARN, "HTTP::Request: malformed response start:" << r);
         setFailure(400, "malformed HTTP response header");
         return;
     }

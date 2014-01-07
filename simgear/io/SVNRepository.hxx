@@ -61,7 +61,9 @@ public:
         SVN_ERROR_XML,
         SVN_ERROR_TXDELTA,
         SVN_ERROR_IO,
-        SVN_ERROR_CHECKSUM
+        SVN_ERROR_CHECKSUM,
+        SVN_ERROR_FILE_NOT_FOUND,
+        SVN_ERROR_HTTP
     };
     
     ResultCode failure() const;

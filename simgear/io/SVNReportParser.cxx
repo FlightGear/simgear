@@ -106,12 +106,13 @@ namespace {
   const char* SVN_ADD_FILE_TAG = SVN_NS "add-file";
   const char* SVN_TXDELTA_TAG = SVN_NS "txdelta";
   const char* SVN_SET_PROP_TAG = SVN_NS "set-prop";
+  const char* SVN_PROP_TAG = SVN_NS "prop";
   const char* SVN_DELETE_ENTRY_TAG = SVN_NS "delete-entry";
   
   const char* SVN_DAV_MD5_CHECKSUM = SUBVERSION_DAV_NS ":md5-checksum";
   
   const char* DAV_HREF_TAG = DAV_NS "href";
-  const char* DAV_CHECKED_IN_TAG = SVN_NS "checked-in";
+  const char* DAV_CHECKED_IN_TAG = DAV_NS "checked-in";
   
 
   const int svn_txdelta_source = 0;
@@ -173,7 +174,7 @@ namespace {
         while (_ptr < pEnd) {
           int op = ((*_ptr >> 6) & 0x3);  
           if (op >= 3) {
-	    SG_LOG(SG_IO, SG_INFO, "SVNDeltaWindow: bad opcode:" << op);
+              SG_LOG(SG_IO, SG_INFO, "SVNDeltaWindow: bad opcode:" << op);
               return false;
           }
       
@@ -195,12 +196,14 @@ namespace {
           }
 
           if (op == svn_txdelta_target) {
-            while (length > 0) {
-              output.push_back(output[offset++]);
-              --length;
-            }
+              // this is inefficent, but ranges can overlap.
+              while (length > 0) {
+                  output.push_back(output[offset++]);
+                  --length;
+              }
           } else if (op == svn_txdelta_new) {
               output.insert(output.end(), newData, newData + length);
+              newData += length;
           } else if (op == svn_txdelta_source) {
             source.seekg(offset);
             char* sourceBuf = (char*) malloc(length);
@@ -208,6 +211,9 @@ namespace {
             source.read(sourceBuf, length);
             output.insert(output.end(), sourceBuf, sourceBuf + length);
             free(sourceBuf);
+          } else {
+              SG_LOG(SG_IO, SG_WARN, "bad opcode logic");
+              return false;
           }
         } // of instruction loop
         
@@ -269,12 +275,12 @@ public:
       string fileName(attrs.getValue("name"));
       SGPath filePath(Dir(currentPath).file(fileName));
       currentPath = filePath;
-      
-      DAVResource* res = currentDir->collection()->childWithName(fileName);   
-      if (!res || !filePath.exists()) {
-        // set error condition
+       
+      if (!filePath.exists()) {
+          fail(SVNRepository::SVN_ERROR_FILE_NOT_FOUND);
+          return;
       }
-      
+
       inFile = true;
     } else if (!strcmp(name, SVN_ADD_DIRECTORY_TAG)) {
       string dirName(attrs.getValue("name"));
@@ -302,10 +308,12 @@ public:
     } else if (!strcmp(name, SVN_DELETE_ENTRY_TAG)) {
         string entryName(attrs.getValue("name"));
         deleteEntry(entryName);
-    } else if (!strcmp(name, DAV_CHECKED_IN_TAG) || !strcmp(name, DAV_HREF_TAG)) {
+    } else if (!strcmp(name, DAV_CHECKED_IN_TAG) ||
+               !strcmp(name, DAV_HREF_TAG) ||
+               !strcmp(name, SVN_PROP_TAG)) {
         // don't warn on these ones
     } else {
-        //std::cerr << "unhandled element:" << name << std::endl;
+        //SG_LOG(SG_IO, SG_WARN, "SVNReportParser: unhandled tag:" << name);
     }
   } // of startElement
   
@@ -389,15 +397,9 @@ public:
         fail(SVNRepository::SVN_ERROR_TXDELTA);
       }
     } else if (!strcmp(name, SVN_ADD_FILE_TAG)) {
-      finishFile(currentDir->addChildFile(currentPath.file()));
+      finishFile(currentPath);
     } else if (!strcmp(name, SVN_OPEN_FILE_TAG)) {
-      DAVResource* res = currentDir->collection()->childWithName(currentPath.file());   
-        if (!res) {
-            SG_LOG(SG_IO, SG_WARN, "SVN open-file: unknown: " << currentPath);
-            fail(SVNRepository::SVN_ERROR_IO);
-            return;
-        }
-      finishFile(res);
+      finishFile(currentPath);
     } else if (!strcmp(name, SVN_ADD_DIRECTORY_TAG)) {
       // pop directory
       currentPath = currentPath.dir();
@@ -417,7 +419,6 @@ public:
     } else if (!strcmp(name, SVN_DAV_MD5_CHECKSUM)) {
       // validate against (presumably) just written file
       if (decodedFileMd5 != md5Sum) {
-          SG_LOG(SG_GENERAL, SG_INFO, "checksum fail on:" << currentPath);
         fail(SVNRepository::SVN_ERROR_CHECKSUM);
       }
     } else if (!strcmp(name, SVN_OPEN_DIRECTORY_TAG)) {
@@ -433,11 +434,9 @@ public:
     }
   }
   
-  void finishFile(DAVResource* res)
+  void finishFile(const SGPath& path)
   {
-      res->setVersionName(currentVersionName);
-      res->setMD5(md5Sum);
-      currentPath = currentPath.dir();
+      currentPath = path.dir();
       inFile = false;
   }
   

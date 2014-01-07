@@ -229,8 +229,8 @@ protected:
         _failed = true;
     } else {
         SG_LOG(SG_IO, SG_WARN, "SVN: request for:" << url() <<
-        " return code " << responseCode());
-        _repo->updateFailed(this, SVNRepository::SVN_ERROR_SOCKET);
+        " got HTTP status " << responseCode());
+        _repo->updateFailed(this, SVNRepository::SVN_ERROR_HTTP);
         _failed = true;
     }
   }
@@ -248,7 +248,7 @@ protected:
     SVNRepository::ResultCode err = _parser.parseXML(s, n);
     if (err) {
         _failed = true;
-        SG_LOG(SG_IO, SG_WARN, _repo->p << ": SVN: request for:" << url() << " failed:" << err);
+        SG_LOG(SG_IO, SG_WARN, this << ": SVN: request for:" << url() << " failed:" << err);
         _repo->updateFailed(this, err);
         _repo = NULL;
     }

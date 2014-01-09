@@ -205,6 +205,8 @@ namespace canvas
       _projection->setOrientation(child->getFloatValue());
     else if( child->getNameString() == "range" )
       _projection->setRange(child->getDoubleValue());
+    else if( child->getNameString() == "screen-range" )
+      _projection->setScreenRange(child->getDoubleValue());
     else
       return Group::childChanged(child);
 

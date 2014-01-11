@@ -36,15 +36,78 @@
 
 #include <vector>
 #include <string>
+#include <boost/array.hpp>
 
-/** STL Structure used to store object information */
+#define MAX_TC_SETS     (4)
+#define MAX_VAS         (8)
+
+// I really want to pass around fixed length arrays, as the size 
+// has to be hardcoded
+// but it's a C++0x feature use boost in its absence
+typedef boost::array<int_list, MAX_TC_SETS> tci_list;
+typedef boost::array<int_list, MAX_VAS>     vai_list;
+
+/** STL Structure used to store (integer index) object information */
 typedef std::vector < int_list > group_list;
 typedef group_list::iterator group_list_iterator;
 typedef group_list::const_iterator const_group_list_iterator;
 
+/** STL Structure used to store (tc index) object information */
+typedef std::vector < tci_list > group_tci_list;
+typedef group_tci_list::iterator group_tci_list_iterator;
+typedef group_tci_list::const_iterator const_group_tci_list_iterator;
+
+/** STL Structure used to store (va index) object information */
+typedef std::vector < vai_list > group_vai_list;
+typedef group_vai_list::iterator group_vai_list_iterator;
+typedef group_vai_list::const_iterator const_group_vai_list_iterator;
+
+
 // forward decls
 class SGBucket;
 class SGPath;
+
+class SGBinObjectPoint {
+public:
+    std::string material;
+    int_list    v_list;
+    int_list    n_list;
+    int_list    c_list;
+    
+    void clear( void ) {
+        material = "";
+        v_list.clear();
+        n_list.clear();
+        c_list.clear();
+    };    
+};
+
+class SGBinObjectTriangle {
+public:
+    std::string material;
+    int_list    v_list;
+    int_list    n_list;
+    int_list    c_list;
+    
+    tci_list    tc_list;
+    vai_list    va_list;
+
+    void clear( void ) {
+        material = "";
+        v_list.clear();
+        n_list.clear();
+        c_list.clear();
+        for ( unsigned int i=0; i<MAX_TC_SETS; i++ ) {
+            tc_list[i].clear();
+        }
+        for ( unsigned int i=0; i<MAX_VAS; i++ ) {
+            va_list[i].clear();
+        }
+    };
+    
+};
+
+
 
 /**
  * A class to manipulate the simgear 3d object format.
@@ -86,34 +149,40 @@ private:
     SGVec3d gbs_center;
     float gbs_radius;
 
-    std::vector<SGVec3d> wgs84_nodes;	// vertex list
-    std::vector<SGVec4f> colors;	// color list
-    std::vector<SGVec3f> normals;	// normal list
-    std::vector<SGVec2f> texcoords;	// texture coordinate list
+    std::vector<SGVec3d> wgs84_nodes;   // vertex list
+    std::vector<SGVec4f> colors;        // color list
+    std::vector<SGVec3f> normals;       // normal list
+    std::vector<SGVec2f> texcoords;     // texture coordinate list
+    std::vector<float>   va_flt;        // vertex attribute list (floats)
+    std::vector<int>     va_int;        // vertex attribute list (ints) 
+    
+    group_list pts_v;               	// points vertex index
+    group_list pts_n;               	// points normal index
+    group_list pts_c;               	// points color index
+    group_tci_list pts_tcs;             // points texture coordinates ( up to 4 sets )
+    group_vai_list pts_vas;             // points vertex attributes ( up to 8 sets )
+    string_list pt_materials;           // points materials
 
-    group_list pts_v;		// points vertex index
-    group_list pts_n;		// points normal index
-    group_list pts_c;		// points color index
-    group_list pts_tc;		// points texture coordinate index
-    string_list pt_materials;	// points materials
+    group_list tris_v;              	// triangles vertex index
+    group_list tris_n;              	// triangles normal index
+    group_list tris_c;              	// triangles color index
+    group_tci_list tris_tcs;            // triangles texture coordinates ( up to 4 sets )
+    group_vai_list tris_vas;            // triangles vertex attributes ( up to 8 sets )
+    string_list tri_materials;          // triangles materials
 
-    group_list tris_v;		// triangles vertex index
-    group_list tris_n;		// triangles normal index
-    group_list tris_c;		// triangles color index
-    group_list tris_tc;		// triangles texture coordinate index
-    string_list tri_materials;	// triangles materials
+    group_list strips_v;            	// tristrips vertex index
+    group_list strips_n;            	// tristrips normal index
+    group_list strips_c;            	// tristrips color index
+    group_tci_list strips_tcs;          // tristrips texture coordinates ( up to 4 sets )
+    group_vai_list strips_vas;          // tristrips vertex attributes ( up to 8 sets )
+    string_list strip_materials;        // tristrips materials
 
-    group_list strips_v;	// tristrips vertex index
-    group_list strips_n;	// tristrips normal index
-    group_list strips_c;	// tristrips color index
-    group_list strips_tc;	// tristrips texture coordinate index
-    string_list strip_materials;// tristrips materials
-
-    group_list fans_v;		// fans vertex index
-    group_list fans_n;		// fans normal index
-    group_list fans_c;		// fans color index
-    group_list fans_tc;		// fans texture coordinate index
-    string_list fan_materials;	// fans materials
+    group_list fans_v;              	// fans vertex index
+    group_list fans_n;              	// fans normal index
+    group_list fans_c;              	// fans color index
+    group_tci_list fans_tcs;            // fanss texture coordinates ( up to 4 sets )
+    group_vai_list fans_vas;            // fans vertex attributes ( up to 8 sets )
+    string_list fan_materials;	        // fans materials
 
     void read_properties(gzFile fp, int nproperties);
     
@@ -124,17 +193,23 @@ private:
                              group_list& vertices, 
                              group_list& normals,
                              group_list& colors,
-                             group_list& texCoords,
+                             group_tci_list& texCoords,
+                             group_vai_list& vertexAttribs,
                              string_list& materials);
                              
     void write_header(gzFile fp, int type, int nProps, int nElements);
-    void write_objects(gzFile fp, int type, const group_list& verts,
-        const group_list& normals, const group_list& colors, 
-        const group_list& texCoords, const string_list& materials);
+    void write_objects(gzFile fp, 
+                       int type, 
+                       const group_list& verts,
+                       const group_list& normals, 
+                       const group_list& colors, 
+                       const group_tci_list& texCoords, 
+                       const group_vai_list& vertexAttribs,
+                       const string_list& materials);
         
     unsigned int count_objects(const string_list& materials);
-public:
-
+    
+public:    
     inline unsigned short get_version() const { return version; }
 
     inline const SGVec3d& get_gbs_center() const { return gbs_center; }
@@ -143,10 +218,8 @@ public:
     inline float get_gbs_radius() const { return gbs_radius; }
     inline void set_gbs_radius( float r ) { gbs_radius = r; }
 
-    inline const std::vector<SGVec3d>& get_wgs84_nodes() const
-    { return wgs84_nodes; }
-    inline void set_wgs84_nodes( const std::vector<SGVec3d>& n )
-    { wgs84_nodes = n; }
+    inline const std::vector<SGVec3d>& get_wgs84_nodes() const { return wgs84_nodes; }
+    inline void set_wgs84_nodes( const std::vector<SGVec3d>& n ) { wgs84_nodes = n; }
 
     inline const std::vector<SGVec4f>& get_colors() const { return colors; }
     inline void set_colors( const std::vector<SGVec4f>& c ) { colors = c; }
@@ -157,51 +230,38 @@ public:
     inline const std::vector<SGVec2f>& get_texcoords() const { return texcoords; }
     inline void set_texcoords( const std::vector<SGVec2f>& t ) { texcoords = t; }
     
+    // Points API
+    bool add_point( const SGBinObjectPoint& pt );
     inline const group_list& get_pts_v() const { return pts_v; }
-    inline void set_pts_v( const group_list& g ) { pts_v = g; }
-    inline const group_list& get_pts_n() const { return pts_n; }
-    inline void set_pts_n( const group_list& g ) { pts_n = g; }
-    inline const group_list& get_pts_c() const { return pts_c; }
-    inline void set_pts_c( const group_list& g ) { pts_c = g; }
-    inline const group_list& get_pts_tc() const { return pts_tc; }
-    inline void set_pts_tc( const group_list& g ) { pts_tc = g; }
+    inline const group_list& get_pts_n() const { return pts_n; }    
+    inline const group_tci_list& get_pts_tcs() const { return pts_tcs; }
+    inline const group_vai_list& get_pts_vas() const { return pts_vas; }
     inline const string_list& get_pt_materials() const { return pt_materials; }
-    inline void set_pt_materials( const string_list& s ) { pt_materials = s; }
 
+    // Triangles API
+    bool add_triangle( const SGBinObjectTriangle& tri );
     inline const group_list& get_tris_v() const { return tris_v; }
-    inline void set_tris_v( const group_list& g ) { tris_v = g; }
     inline const group_list& get_tris_n() const { return tris_n; }
-    inline void set_tris_n( const group_list& g ) { tris_n = g; }
     inline const group_list& get_tris_c() const { return tris_c; }
-    inline void set_tris_c( const group_list& g ) { tris_c = g; }
-    inline const group_list& get_tris_tc() const { return tris_tc; }
-    inline void set_tris_tc( const group_list& g ) { tris_tc = g; }
+    inline const group_tci_list& get_tris_tcs() const { return tris_tcs; }
+    inline const group_vai_list& get_tris_vas() const { return tris_vas; }
     inline const string_list& get_tri_materials() const { return tri_materials; }
-    inline void set_tri_materials( const string_list& s ) { tri_materials = s; }
     
+    // Strips API (deprecated - read only)
     inline const group_list& get_strips_v() const { return strips_v; }
-    inline void set_strips_v( const group_list& g ) { strips_v = g; }
     inline const group_list& get_strips_n() const { return strips_n; }
-    inline void set_strips_n( const group_list& g ) { strips_n = g; }
     inline const group_list& get_strips_c() const { return strips_c; }
-    inline void set_strips_c( const group_list& g ) { strips_c = g; }
-
-    inline const group_list& get_strips_tc() const { return strips_tc; }
-    inline void set_strips_tc( const group_list& g ) { strips_tc = g; }
+    inline const group_tci_list& get_strips_tcs() const { return strips_tcs; }
+    inline const group_vai_list& get_strips_vas() const { return strips_vas; }
     inline const string_list& get_strip_materials() const { return strip_materials; }
-    inline void set_strip_materials( const string_list& s ) { strip_materials = s; }
-    
-    inline const group_list& get_fans_v() const { return fans_v; }
-    inline void set_fans_v( const group_list& g ) { fans_v = g; }
-    inline const group_list& get_fans_n() const { return fans_n; }
-    inline void set_fans_n( const group_list& g ) { fans_n = g; }
-    inline const group_list& get_fans_c() const { return fans_c; }
-    inline void set_fans_c( const group_list& g ) { fans_c = g; }
 
-    inline const group_list& get_fans_tc() const { return fans_tc; }
-    inline void set_fans_tc( const group_list& g ) { fans_tc = g; }
+    // Fans API (deprecated - read only )
+    inline const group_list& get_fans_v() const { return fans_v; }
+    inline const group_list& get_fans_n() const { return fans_n; }
+    inline const group_list& get_fans_c() const { return fans_c; }
+    inline const group_tci_list& get_fans_tcs() const { return fans_tcs; }
+    inline const group_vai_list& get_fans_vas() const { return fans_vas; }
     inline const string_list& get_fan_materials() const { return fan_materials; }
-    inline void set_fan_materials( const string_list& s ) { fan_materials = s; }
 
     /**
      * Read a binary file object and populate the provided structures.

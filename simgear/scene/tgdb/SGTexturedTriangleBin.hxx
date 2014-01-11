@@ -35,13 +35,27 @@
 
 
 struct SGVertNormTex {
-  SGVertNormTex()
-  { }
-  SGVertNormTex(const SGVec3f& v, const SGVec3f& n, const SGVec2f& t) :
-    vertex(v), normal(n), texCoord(t)
-  { }
+  SGVertNormTex() { 
+      tc_mask = 0;
+  }
+
   struct less
   {
+    inline bool tc_is_less ( const SGVertNormTex& l,
+                             const SGVertNormTex& r,
+                             int   idx ) const
+    {
+        if ( r.tc_mask & 1<<idx ) {
+            if ( l.tc_mask & 1<<idx ) {
+                if (l.texCoord[idx] < r.texCoord[idx]) {
+                    return true;
+                }
+            }
+        } 
+        
+        return false;
+    };
+    
     inline bool operator() (const SGVertNormTex& l,
                             const SGVertNormTex& r) const
     {
@@ -49,13 +63,35 @@ struct SGVertNormTex {
       else if (r.vertex < l.vertex) return false;
       else if (l.normal < r.normal) return true;
       else if (r.normal < l.normal) return false;
-      else return l.texCoord < r.texCoord;
+      else if ( tc_is_less( l, r, 0 ) ) return true;
+      else if ( tc_is_less( r, l, 0 ) ) return false;
+      else if ( tc_is_less( l, r, 1 ) ) return true;
+      else if ( tc_is_less( r, l, 1 ) ) return false;
+      else if ( tc_is_less( l, r, 2 ) ) return true;
+      else if ( tc_is_less( r, l, 2 ) ) return false;
+      else if ( tc_is_less( l, r, 3 ) ) return true;
+      else return false;
     }
   };
 
+  void SetVertex( const SGVec3f& v )          { vertex = v; }
+  const SGVec3f& GetVertex( void ) const      { return vertex; }
+  
+  void SetNormal( const SGVec3f& n )          { normal = n; }
+  const SGVec3f& GetNormal( void ) const      { return normal; }
+  
+  void SetTexCoord( unsigned idx, const SGVec2f& tc ) { 
+      texCoord[idx] = tc; 
+      tc_mask |= 1 << idx; 
+  }
+  const SGVec2f& GetTexCoord( unsigned idx ) const { return texCoord[idx]; }
+
+private:  
   SGVec3f vertex;
   SGVec3f normal;
-  SGVec2f texCoord;
+  SGVec2f texCoord[4];
+  
+  unsigned tc_mask;
 };
 
 // Use a DrawElementsUShort if there are few enough vertices,
@@ -101,6 +137,7 @@ public:
   SGTexturedTriangleBin()
   {
     mt_init(&seed, 123);
+    has_sec_tcs = false;
   }
 
   // Computes and adds random surface points to the points list.
@@ -114,12 +151,12 @@ public:
     unsigned num = getNumTriangles();
     for (unsigned i = 0; i < num; ++i) {
       triangle_ref triangleRef = getTriangleRef(i);
-      SGVec3f v0 = getVertex(triangleRef[0]).vertex;
-      SGVec3f v1 = getVertex(triangleRef[1]).vertex;
-      SGVec3f v2 = getVertex(triangleRef[2]).vertex;
-      SGVec2f t0 = getVertex(triangleRef[0]).texCoord;
-      SGVec2f t1 = getVertex(triangleRef[1]).texCoord;
-      SGVec2f t2 = getVertex(triangleRef[2]).texCoord;
+      SGVec3f v0 = getVertex(triangleRef[0]).GetVertex();
+      SGVec3f v1 = getVertex(triangleRef[1]).GetVertex();
+      SGVec3f v2 = getVertex(triangleRef[2]).GetVertex();
+      SGVec2f t0 = getVertex(triangleRef[0]).GetTexCoord(0);
+      SGVec2f t1 = getVertex(triangleRef[1]).GetTexCoord(0);
+      SGVec2f t2 = getVertex(triangleRef[2]).GetTexCoord(0);
       SGVec3f normal = cross(v1 - v0, v2 - v0);
       
       // Compute the area
@@ -180,12 +217,12 @@ public:
     unsigned num = getNumTriangles();
     for (unsigned i = 0; i < num; ++i) {
       triangle_ref triangleRef = getTriangleRef(i);
-      SGVec3f v0 = getVertex(triangleRef[0]).vertex;
-      SGVec3f v1 = getVertex(triangleRef[1]).vertex;
-      SGVec3f v2 = getVertex(triangleRef[2]).vertex;
-      SGVec2f t0 = getVertex(triangleRef[0]).texCoord;
-      SGVec2f t1 = getVertex(triangleRef[1]).texCoord;
-      SGVec2f t2 = getVertex(triangleRef[2]).texCoord;
+      SGVec3f v0 = getVertex(triangleRef[0]).GetVertex();
+      SGVec3f v1 = getVertex(triangleRef[1]).GetVertex();
+      SGVec3f v2 = getVertex(triangleRef[2]).GetVertex();
+      SGVec2f t0 = getVertex(triangleRef[0]).GetTexCoord(0);
+      SGVec2f t1 = getVertex(triangleRef[1]).GetTexCoord(0);
+      SGVec2f t2 = getVertex(triangleRef[2]).GetTexCoord(0);
       SGVec3f normal = cross(v1 - v0, v2 - v0);
       
       // Ensure the slope isn't too steep by checking the
@@ -257,12 +294,12 @@ public:
     unsigned num = getNumTriangles();
     for (unsigned i = 0; i < num; ++i) {
       triangle_ref triangleRef = getTriangleRef(i);
-      SGVec3f v0 = getVertex(triangleRef[0]).vertex;
-      SGVec3f v1 = getVertex(triangleRef[1]).vertex;
-      SGVec3f v2 = getVertex(triangleRef[2]).vertex;
-      SGVec2f t0 = getVertex(triangleRef[0]).texCoord;
-      SGVec2f t1 = getVertex(triangleRef[1]).texCoord;
-      SGVec2f t2 = getVertex(triangleRef[2]).texCoord;
+      SGVec3f v0 = getVertex(triangleRef[0]).GetVertex();
+      SGVec3f v1 = getVertex(triangleRef[1]).GetVertex();
+      SGVec3f v2 = getVertex(triangleRef[2]).GetVertex();
+      SGVec2f t0 = getVertex(triangleRef[0]).GetTexCoord(0);
+      SGVec2f t1 = getVertex(triangleRef[1]).GetTexCoord(0);
+      SGVec2f t2 = getVertex(triangleRef[2]).GetTexCoord(0);
       SGVec3f normal = cross(v1 - v0, v2 - v0);
       
       // Compute the area
@@ -324,7 +361,8 @@ public:
     // FIXME: do not include all values here ...
     osg::Vec3Array* vertices = new osg::Vec3Array;
     osg::Vec3Array* normals = new osg::Vec3Array;
-    osg::Vec2Array* texCoords = new osg::Vec2Array;
+    osg::Vec2Array* priTexCoords = new osg::Vec2Array;
+    osg::Vec2Array* secTexCoords = new osg::Vec2Array;
 
     osg::Vec4Array* colors = new osg::Vec4Array;
     colors->push_back(osg::Vec4(1, 1, 1, 1));
@@ -341,7 +379,12 @@ public:
     geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
     geometry->setColorArray(colors);
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
-    geometry->setTexCoordArray(0, texCoords);
+    if ( has_sec_tcs ) {
+        geometry->setTexCoordArray(0, priTexCoords);
+        geometry->setTexCoordArray(1, secTexCoords);
+    } else {
+        geometry->setTexCoordArray(0, priTexCoords);
+    }        
 
     const unsigned invalid = ~unsigned(0);
     std::vector<unsigned> indexMap(getNumVertices(), invalid);
@@ -351,25 +394,34 @@ public:
       triangle_ref triangle = triangles[i];
       if (indexMap[triangle[0]] == invalid) {
         indexMap[triangle[0]] = vertices->size();
-        vertices->push_back(toOsg(getVertex(triangle[0]).vertex));
-        normals->push_back(toOsg(getVertex(triangle[0]).normal));
-        texCoords->push_back(toOsg(getVertex(triangle[0]).texCoord));
+        vertices->push_back(toOsg(getVertex(triangle[0]).GetVertex()));
+        normals->push_back(toOsg(getVertex(triangle[0]).GetNormal()));
+        priTexCoords->push_back(toOsg(getVertex(triangle[0]).GetTexCoord(0)));
+        if ( has_sec_tcs ) {
+            secTexCoords->push_back(toOsg(getVertex(triangle[0]).GetTexCoord(1)));
+        }
       }
       deFacade.push_back(indexMap[triangle[0]]);
 
       if (indexMap[triangle[1]] == invalid) {
         indexMap[triangle[1]] = vertices->size();
-        vertices->push_back(toOsg(getVertex(triangle[1]).vertex));
-        normals->push_back(toOsg(getVertex(triangle[1]).normal));
-        texCoords->push_back(toOsg(getVertex(triangle[1]).texCoord));
+        vertices->push_back(toOsg(getVertex(triangle[1]).GetVertex()));
+        normals->push_back(toOsg(getVertex(triangle[1]).GetNormal()));
+        priTexCoords->push_back(toOsg(getVertex(triangle[1]).GetTexCoord(0)));
+        if ( has_sec_tcs ) {
+            secTexCoords->push_back(toOsg(getVertex(triangle[1]).GetTexCoord(1)));
+        }
       }
       deFacade.push_back(indexMap[triangle[1]]);
 
       if (indexMap[triangle[2]] == invalid) {
         indexMap[triangle[2]] = vertices->size();
-        vertices->push_back(toOsg(getVertex(triangle[2]).vertex));
-        normals->push_back(toOsg(getVertex(triangle[2]).normal));
-        texCoords->push_back(toOsg(getVertex(triangle[2]).texCoord));
+        vertices->push_back(toOsg(getVertex(triangle[2]).GetVertex()));
+        normals->push_back(toOsg(getVertex(triangle[2]).GetNormal()));
+        priTexCoords->push_back(toOsg(getVertex(triangle[2]).GetTexCoord(0)));
+        if ( has_sec_tcs ) {
+            secTexCoords->push_back(toOsg(getVertex(triangle[2]).GetTexCoord(1)));
+        }
       }
       deFacade.push_back(indexMap[triangle[2]]);
     }
@@ -387,14 +439,19 @@ public:
       return 0;
 
     triangle_ref triangleRef = getTriangleRef(0);
-    SGVec3f v0 = getVertex(triangleRef[0]).vertex;
+    SGVec3f v0 = getVertex(triangleRef[0]).GetVertex();
       
     return floor(v0.x());
   }
+  
+  void hasSecondaryTexCoord( bool sec_tc ) { has_sec_tcs = sec_tc; }
 
 private:
   // Random seed for the triangle.
   mt seed;
+  
+  // does the triangle array have secondary texture coordinates
+  bool has_sec_tcs;
 };
 
 #endif

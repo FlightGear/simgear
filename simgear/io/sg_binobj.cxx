@@ -58,9 +58,11 @@ enum sgObjectTypes {
     SG_BOUNDING_SPHERE = 0,
 
     SG_VERTEX_LIST = 1,
-    SG_COLOR_LIST = 4,
     SG_NORMAL_LIST = 2,
     SG_TEXCOORD_LIST = 3,
+    SG_COLOR_LIST = 4,
+    SG_VA_FLOAT_LIST = 5,
+    SG_VA_INTEGER_LIST = 6,
 
     SG_POINTS = 9,
 
@@ -70,15 +72,32 @@ enum sgObjectTypes {
 };
 
 enum sgIndexTypes {
-    SG_IDX_VERTICES =  0x01,
-    SG_IDX_NORMALS =   0x02,
-    SG_IDX_COLORS =    0x04,
-    SG_IDX_TEXCOORDS = 0x08
+    SG_IDX_VERTICES =    0x01,
+    SG_IDX_NORMALS =     0x02,
+    SG_IDX_COLORS =      0x04,
+    SG_IDX_TEXCOORDS_0 = 0x08,
+    SG_IDX_TEXCOORDS_1 = 0x10,
+    SG_IDX_TEXCOORDS_2 = 0x20,
+    SG_IDX_TEXCOORDS_3 = 0x40,
+};
+
+enum sgVertexAttributeTypes {
+    // vertex attributes
+    SG_VA_INTEGER_0 = 0x00000001,
+    SG_VA_INTEGER_1 = 0x00000002,
+    SG_VA_INTEGER_2 = 0x00000004,
+    SG_VA_INTEGER_3 = 0x00000008,
+
+    SG_VA_FLOAT_0 =   0x00000100,
+    SG_VA_FLOAT_1 =   0x00000200,
+    SG_VA_FLOAT_2 =   0x00000400,
+    SG_VA_FLOAT_3 =   0x00000800,
 };
 
 enum sgPropertyTypes {
     SG_MATERIAL = 0,
-    SG_INDEX_TYPES = 1
+    SG_INDEX_TYPES = 1,
+    SG_VERT_ATTRIBS = 2
 };
 
 
@@ -128,6 +147,17 @@ public:
             }
             ptr = new char[size];
         }
+    }
+    
+    float readInt()
+    {
+        unsigned int* p = reinterpret_cast<unsigned int*>(ptr + offset);
+        if ( sgIsBigEndian() ) {            
+            sgEndianSwap((uint32_t *) p);
+        }
+        
+        offset += sizeof(unsigned int);
+        return *p;
     }
     
     SGVec3d readVec3d()
@@ -202,15 +232,19 @@ template <class T>
 static void read_indices(char* buffer, 
                          size_t bytes,
                          int indexMask,
+                         int vaMask,
                          int_list& vertices, 
                          int_list& normals,
                          int_list& colors,
-                         int_list& texCoords)
+                         tci_list& texCoords,
+                         vai_list& vas
+                        )
 {
     const int indexSize = sizeof(T) * std::bitset<32>(indexMask).count();
-    const int count = bytes / indexSize;
+    const int vaSize = sizeof(T) * std::bitset<32>(vaMask).count();
+    const int count = bytes / (indexSize + vaSize);
     
-// fix endian-ness of the whole lot, if required
+    // fix endian-ness of the whole lot, if required
     if (sgIsBigEndian()) {
         int indices = bytes / sizeof(T);
         T* src = reinterpret_cast<T*>(buffer);
@@ -224,7 +258,21 @@ static void read_indices(char* buffer,
         if (indexMask & SG_IDX_VERTICES) vertices.push_back(*src++);
         if (indexMask & SG_IDX_NORMALS) normals.push_back(*src++);
         if (indexMask & SG_IDX_COLORS) colors.push_back(*src++);
-        if (indexMask & SG_IDX_TEXCOORDS) texCoords.push_back(*src++);
+        if (indexMask & SG_IDX_TEXCOORDS_0) texCoords[0].push_back(*src++);
+        if (indexMask & SG_IDX_TEXCOORDS_1) texCoords[1].push_back(*src++);
+        if (indexMask & SG_IDX_TEXCOORDS_2) texCoords[2].push_back(*src++);
+        if (indexMask & SG_IDX_TEXCOORDS_3) texCoords[3].push_back(*src++);
+        
+        if ( vaMask ) {
+            if (vaMask & SG_VA_INTEGER_0) vas[0].push_back(*src++);
+            if (vaMask & SG_VA_INTEGER_1) vas[1].push_back(*src++);
+            if (vaMask & SG_VA_INTEGER_2) vas[2].push_back(*src++);
+            if (vaMask & SG_VA_INTEGER_3) vas[3].push_back(*src++);
+            if (vaMask & SG_VA_FLOAT_0) vas[4].push_back(*src++);
+            if (vaMask & SG_VA_FLOAT_1) vas[5].push_back(*src++);
+            if (vaMask & SG_VA_FLOAT_2) vas[6].push_back(*src++);
+            if (vaMask & SG_VA_FLOAT_3) vas[7].push_back(*src++);
+        }
     } // of elements in the index
 }
 
@@ -249,15 +297,19 @@ void write_indice(gzFile fp, uint32_t value)
 
 
 template <class T>
-void write_indices(gzFile fp, unsigned char indexMask, 
+void write_indices(gzFile fp, 
+    unsigned char indexMask, 
+    unsigned int vaMask,
     const int_list& vertices, 
     const int_list& normals, 
     const int_list& colors,
-    const int_list& texCoords)
+    const tci_list& texCoords,
+    const vai_list& vas )
 {
     unsigned int count = vertices.size();
     const int indexSize = sizeof(T) * std::bitset<32>(indexMask).count();
-    sgWriteUInt(fp, indexSize * count);
+    const int vaSize = sizeof(T) * std::bitset<32>(vaMask).count();
+    sgWriteUInt(fp, (indexSize + vaSize) * count);
             
     for (unsigned int i=0; i < count; ++i) {
         write_indice(fp, static_cast<T>(vertices[i]));
@@ -268,8 +320,45 @@ void write_indices(gzFile fp, unsigned char indexMask,
         if (indexMask & SG_IDX_COLORS) {
             write_indice(fp, static_cast<T>(colors[i]));
         }
-        if (indexMask & SG_IDX_TEXCOORDS) {
-            write_indice(fp, static_cast<T>(texCoords[i]));
+        if (indexMask & SG_IDX_TEXCOORDS_0) {
+            write_indice(fp, static_cast<T>(texCoords[0][i]));
+        }
+        if (indexMask & SG_IDX_TEXCOORDS_1) {
+            write_indice(fp, static_cast<T>(texCoords[1][i]));
+        }
+        if (indexMask & SG_IDX_TEXCOORDS_2) {
+            write_indice(fp, static_cast<T>(texCoords[2][i]));
+        }
+        if (indexMask & SG_IDX_TEXCOORDS_3) {
+            write_indice(fp, static_cast<T>(texCoords[3][i]));
+        }
+        
+        if (vaMask) {
+            if (vaMask & SG_VA_INTEGER_0) {
+                write_indice(fp, static_cast<T>(vas[0][i]));
+            }
+            if (vaMask & SG_VA_INTEGER_1) {
+                write_indice(fp, static_cast<T>(vas[1][i]));
+            }
+            if (vaMask & SG_VA_INTEGER_2) {
+                write_indice(fp, static_cast<T>(vas[2][i]));
+            }
+            if (vaMask & SG_VA_INTEGER_3) {
+                write_indice(fp, static_cast<T>(vas[3][i]));
+            }
+
+            if (vaMask & SG_VA_FLOAT_0) {
+                write_indice(fp, static_cast<T>(vas[4][i]));
+            }
+            if (vaMask & SG_VA_FLOAT_1) {
+                write_indice(fp, static_cast<T>(vas[5][i]));
+            }
+            if (vaMask & SG_VA_FLOAT_2) {
+                write_indice(fp, static_cast<T>(vas[6][i]));
+            }
+            if (vaMask & SG_VA_FLOAT_3) {
+                write_indice(fp, static_cast<T>(vas[7][i]));
+            }
         }
     }
 }
@@ -281,13 +370,15 @@ void SGBinObject::read_object( gzFile fp,
                          int nproperties,
                          int nelements,
                          group_list& vertices, 
-                          group_list& normals,
-                          group_list& colors,
-                          group_list& texCoords,
-                          string_list& materials)
+                         group_list& normals,
+                         group_list& colors,
+                         group_tci_list& texCoords,
+                         group_vai_list& vertexAttribs,
+                         string_list& materials)
 {
-    unsigned int nbytes;
+    unsigned int  nbytes;
     unsigned char idx_mask;
+    unsigned int  vertex_attrib_mask;
     int j;
     sgSimpleBuffer buf( 32768 );  // 32 Kb
     char material[256];
@@ -296,26 +387,49 @@ void SGBinObject::read_object( gzFile fp,
     if ( obj_type == SG_POINTS ) {
         idx_mask = SG_IDX_VERTICES;
     } else {
-        idx_mask = (char)(SG_IDX_VERTICES | SG_IDX_TEXCOORDS);
+        idx_mask = (char)(SG_IDX_VERTICES | SG_IDX_TEXCOORDS_0);
     }
-
+    vertex_attrib_mask = 0;
+    
     for ( j = 0; j < nproperties; ++j ) {
         char prop_type;
         sgReadChar( fp, &prop_type );
         sgReadUInt( fp, &nbytes );
+        
         buf.resize(nbytes);
         char *ptr = buf.get_ptr();
-        sgReadBytes( fp, nbytes, ptr );
-        if ( prop_type == SG_MATERIAL ) {
-            if (nbytes > 255) {
-                nbytes = 255;
-            }
-            strncpy( material, ptr, nbytes );
-            material[nbytes] = '\0';
-            // cout << "material type = " << material << endl;
-        } else if ( prop_type == SG_INDEX_TYPES ) {
-            idx_mask = ptr[0];
-            //cout << std::hex << "index mask:" << idx_mask << std::dec << endl;
+        
+        switch( prop_type )
+        {
+            case SG_MATERIAL:
+                sgReadBytes( fp, nbytes, ptr );
+                if (nbytes > 255) {
+                    nbytes = 255;
+                }
+                strncpy( material, ptr, nbytes );
+                material[nbytes] = '\0';
+                break;
+                
+            case SG_INDEX_TYPES:
+                if (nbytes == 1) {
+                    sgReadChar( fp, (char *)&idx_mask );                    
+                } else {
+                    sgReadBytes( fp, nbytes, ptr );                    
+                }
+                break;
+
+            case SG_VERT_ATTRIBS:
+                if (nbytes == 4) {
+                    sgReadUInt( fp, &vertex_attrib_mask );
+                } else {
+                    sgReadBytes( fp, nbytes, ptr );
+                }
+                break;
+                
+            default:
+                sgReadBytes( fp, nbytes, ptr );
+                SG_LOG(SG_IO, SG_ALERT, "Found UNKNOWN property type with nbytes == " << nbytes << " mask is " << (int)idx_mask );
+                break;
         }
     }
 
@@ -345,17 +459,20 @@ void SGBinObject::read_object( gzFile fp,
         int_list vs;
         int_list ns;
         int_list cs;
-        int_list tcs;
+        tci_list tcs;
+        vai_list vas;
+
         if (version >= 10) {
-            read_indices<uint32_t>(ptr, nbytes, idx_mask, vs, ns, cs, tcs);
+            read_indices<uint32_t>(ptr, nbytes, idx_mask, vertex_attrib_mask, vs, ns, cs, tcs, vas );
         } else {
-            read_indices<uint16_t>(ptr, nbytes, idx_mask, vs, ns, cs, tcs);
+            read_indices<uint16_t>(ptr, nbytes, idx_mask, vertex_attrib_mask, vs, ns, cs, tcs, vas );
         }
 
         vertices.push_back( vs );
         normals.push_back( ns );
         colors.push_back( cs );
         texCoords.push_back( tcs );
+        vertexAttribs.push_back( vas );
         materials.push_back( material );
     } // of element iteration
 }
@@ -380,25 +497,29 @@ bool SGBinObject::read_bin( const string& file ) {
     pts_v.clear();
     pts_n.clear();
     pts_c.clear();
-    pts_tc.clear();
+    pts_tcs.clear();
+    pts_vas.clear();
     pt_materials.clear();
 
     tris_v.clear();
     tris_n.clear();
     tris_c.clear();
-    tris_tc.clear();
+    tris_tcs.clear();
+    tris_vas.clear();
     tri_materials.clear();
 
     strips_v.clear();
     strips_n.clear();
     strips_c.clear();
-    strips_tc.clear();
+    strips_tcs.clear();
+    strips_vas.clear();
     strip_materials.clear();
 
     fans_v.clear();
     fans_n.clear();
     fans_c.clear();
-    fans_tc.clear();
+    fans_tcs.clear();
+    fans_vas.clear();
     fan_materials.clear();
 
     gzFile fp;
@@ -419,10 +540,9 @@ bool SGBinObject::read_bin( const string& file ) {
     sgReadUInt( fp, &header );
     if ( ((header & 0xFF000000) >> 24) == 'S' &&
          ((header & 0x00FF0000) >> 16) == 'G' ) {
-        // cout << "Good header" << endl;
+    
         // read file version
         version = (header & 0x0000FFFF);
-        // cout << "File version = " << version << endl;
     } else {
         // close the file before we return
         gzclose(fp);
@@ -460,7 +580,7 @@ bool SGBinObject::read_bin( const string& file ) {
         nobjects = v;
     }
      
-     //cout << "Total objects to read = " << nobjects << endl;
+    SG_LOG(SG_IO, SG_DEBUG, "SGBinObject::read_bin Total objects to read = " << nobjects);
 
     if ( sgReadError() ) {
         throw sg_io_exception("Error reading BTG file header", sg_location(file));
@@ -489,9 +609,10 @@ bool SGBinObject::read_bin( const string& file ) {
             nelements = v;
         }
 
-         //cout << "object " << i << " = " << (int)obj_type << " props = "
-         //     << nproperties << " elements = " << nelements << endl;
-            
+        SG_LOG(SG_IO, SG_DEBUG, "SGBinObject::read_bin object " << i << 
+                " = " << (int)obj_type << " props = " << nproperties << 
+                " elements = " << nelements);
+         
         if ( obj_type == SG_BOUNDING_SPHERE ) {
             // read bounding sphere properties
             read_properties( fp, nproperties );
@@ -521,7 +642,7 @@ bool SGBinObject::read_bin( const string& file ) {
                 wgs84_nodes.reserve( count );
                 for ( k = 0; k < count; ++k ) {
                     SGVec3f v = buf.readVec3f();
-                // extend from float to double, hmmm
+                    // extend from float to double, hmmm
                     wgs84_nodes.push_back( SGVec3d(v[0], v[1], v[2]) );
                 }
             }
@@ -581,23 +702,60 @@ bool SGBinObject::read_bin( const string& file ) {
                     texcoords.push_back( buf.readVec2f() );
                 }
             }
+        } else if ( obj_type == SG_VA_FLOAT_LIST ) {
+            // read vertex attribute (float) properties
+            read_properties( fp, nproperties );
+            
+            // read vertex attribute list elements
+            for ( j = 0; j < nelements; ++j ) {
+                sgReadUInt( fp, &nbytes );
+                buf.resize( nbytes );
+                buf.reset();
+                char *ptr = buf.get_ptr();
+                sgReadBytes( fp, nbytes, ptr );
+                int count = nbytes / (sizeof(float));
+                va_flt.reserve(count);
+                for ( k = 0; k < count; ++k ) {
+                    va_flt.push_back( buf.readFloat() );
+                }
+            }
+        } else if ( obj_type == SG_VA_INTEGER_LIST ) {
+            // read vertex attribute (integer) properties
+            read_properties( fp, nproperties );
+            
+            // read vertex attribute list elements
+            for ( j = 0; j < nelements; ++j ) {
+                sgReadUInt( fp, &nbytes );
+                buf.resize( nbytes );
+                buf.reset();
+                char *ptr = buf.get_ptr();
+                sgReadBytes( fp, nbytes, ptr );
+                int count = nbytes / (sizeof(unsigned int));
+                va_int.reserve(count);
+                for ( k = 0; k < count; ++k ) {
+                    va_int.push_back( buf.readInt() );
+                }
+            }
         } else if ( obj_type == SG_POINTS ) {
             // read point elements
             read_object( fp, SG_POINTS, nproperties, nelements,
-                         pts_v, pts_n, pts_c, pts_tc, pt_materials );
+                         pts_v, pts_n, pts_c, pts_tcs,
+                         pts_vas, pt_materials );
         } else if ( obj_type == SG_TRIANGLE_FACES ) {
             // read triangle face properties
             read_object( fp, SG_TRIANGLE_FACES, nproperties, nelements,
-                         tris_v, tris_n, tris_c, tris_tc, tri_materials );
+                         tris_v, tris_n, tris_c, tris_tcs,
+                         tris_vas, tri_materials );
         } else if ( obj_type == SG_TRIANGLE_STRIPS ) {
             // read triangle strip properties
             read_object( fp, SG_TRIANGLE_STRIPS, nproperties, nelements,
-                         strips_v, strips_n, strips_c, strips_tc,
-                         strip_materials );
+                         strips_v, strips_n, strips_c, strips_tcs,
+                         strips_vas, strip_materials );
         } else if ( obj_type == SG_TRIANGLE_FANS ) {
             // read triangle fan properties
             read_object( fp, SG_TRIANGLE_FANS, nproperties, nelements,
-                         fans_v, fans_n, fans_c, fans_tc, fan_materials );
+                         fans_v, fans_n, fans_c, fans_tcs,
+                         fans_vas, fan_materials );
         } else {
             // unknown object type, just skip
             read_properties( fp, nproperties );
@@ -652,9 +810,13 @@ unsigned int SGBinObject::count_objects(const string_list& materials)
     return result;
 }
 
-void SGBinObject::write_objects(gzFile fp, int type, const group_list& verts,
-    const group_list& normals, const group_list& colors, 
-    const group_list& texCoords, const string_list& materials)
+void SGBinObject::write_objects(gzFile fp, int type, 
+                                const group_list& verts,
+                                const group_list& normals, 
+                                const group_list& colors, 
+                                const group_tci_list& texCoords,
+                                const group_vai_list& vertexAttribs, 
+                                const string_list& materials)
 {
     if (verts.empty()) {
         return;
@@ -666,45 +828,77 @@ void SGBinObject::write_objects(gzFile fp, int type, const group_list& verts,
     
     while (start < materials.size()) {
         m = materials[start];
-    // find range of objects with identical material, write out as a single object
+        // find range of objects with identical material, write out as a single object
         for (end = start+1; (end < materials.size()) && (m == materials[end]); ++end) {}
     
+        // calc the number of elements
         const int count = end - start;
-        write_header(fp, type, 2, count);
+
+        // calc the number of properties
+        unsigned int va_mask = 0;
+        unsigned int va_count = vertexAttribs.size();
+        for ( unsigned int va=0; va<va_count; va++ ) {
+            if ( !vertexAttribs[va].empty() && !vertexAttribs[va].front().empty() ) {
+                va_mask |= ( 1 << va );
+            }
+        }
+
+        if ( va_mask ) {
+            write_header(fp, type, 3, count);
+        } else {
+            write_header(fp, type, 2, count);
+        }
         
     // properties
+        // material property
         sgWriteChar( fp, (char)SG_MATERIAL );        // property
         sgWriteUInt( fp, m.length() );        // nbytes
         sgWriteBytes( fp, m.length(), m.c_str() );
     
+        // index mask property
         unsigned char idx_mask = 0;
-        if ( !verts.empty() && !verts.front().empty()) idx_mask |= SG_IDX_VERTICES;
-        if ( !normals.empty() && !normals.front().empty()) idx_mask |= SG_IDX_NORMALS;
-        if ( !colors.empty() && !colors.front().empty()) idx_mask |= SG_IDX_COLORS;
-        if ( !texCoords.empty() && !texCoords.front().empty()) idx_mask |= SG_IDX_TEXCOORDS;
+        if ( !verts.empty() && !verts[start].empty()) idx_mask |= SG_IDX_VERTICES;
+        if ( !normals.empty() && !normals[start].empty()) idx_mask |= SG_IDX_NORMALS;
+        if ( !colors.empty() && !colors[start].empty()) idx_mask |= SG_IDX_COLORS;
+        if ( !texCoords.empty() && !texCoords[start][0].empty()) idx_mask |= SG_IDX_TEXCOORDS_0;
+        if ( !texCoords.empty() && !texCoords[start][1].empty()) idx_mask |= SG_IDX_TEXCOORDS_1;
+        if ( !texCoords.empty() && !texCoords[start][2].empty()) idx_mask |= SG_IDX_TEXCOORDS_2;
+        if ( !texCoords.empty() && !texCoords[start][3].empty()) idx_mask |= SG_IDX_TEXCOORDS_3;
         
         if (idx_mask == 0) {
             SG_LOG(SG_IO, SG_ALERT, "SGBinObject::write_objects: object with material:"
                 << m << "has no indices set");
         }
-    
-    
+
         sgWriteChar( fp, (char)SG_INDEX_TYPES );     // property
         sgWriteUInt( fp, 1 );                        // nbytes
         sgWriteChar( fp, idx_mask );
-    
-//        cout << "material:" << m << ", count =" << count << endl;
+
+        // vertex attribute property
+        if (va_mask != 0) {
+            sgWriteChar( fp, (char)SG_VERT_ATTRIBS );    // property
+            sgWriteUInt( fp, 4 );                        // nbytes
+            sgWriteChar( fp, va_mask );
+        }
+        
     // elements
         for (unsigned int i=start; i < end; ++i) {
             const int_list& va(verts[i]);
             const int_list& na((idx_mask & SG_IDX_NORMALS) ? normals[i] : emptyList);
             const int_list& ca((idx_mask & SG_IDX_COLORS) ? colors[i] : emptyList);
-            const int_list& tca((idx_mask & SG_IDX_TEXCOORDS) ? texCoords[i] : emptyList);
+
+            // pass the whole texcoord array - we'll figure out which indicies to write 
+            // in write_indices
+            const tci_list& tca( texCoords[i] );
+
+            // pass the whole vertex array - we'll figure out which indicies to write 
+            // in write_indices
+            const vai_list& vaa( vertexAttribs[i] );
             
             if (version == 7) {
-                write_indices<uint16_t>(fp, idx_mask, va, na, ca, tca);
+                write_indices<uint16_t>(fp, idx_mask, va_mask, va, na, ca, tca, vaa);
             } else {
-                write_indices<uint32_t>(fp, idx_mask, va, na, ca, tca);
+                write_indices<uint32_t>(fp, idx_mask, va_mask, va, na, ca, tca, vaa);
             }
         }
     
@@ -749,7 +943,6 @@ bool SGBinObject::write_bin_file(const SGPath& file)
     
     SGPath file2(file);
     file2.create_dir( 0755 );
-    cout << "Output file = " << file.str() << endl;
 
     gzFile fp;
     if ( (fp = gzopen( file.c_str(), "wb9" )) == NULL ) {
@@ -759,19 +952,19 @@ bool SGBinObject::write_bin_file(const SGPath& file)
 
     sgClearWriteError();
 
-    cout << "points size = " << pts_v.size() << "  pt_materials = " 
-         << pt_materials.size() << endl;
-    cout << "triangles size = " << tris_v.size() << "  tri_materials = " 
-         << tri_materials.size() << endl;
-    cout << "strips size = " << strips_v.size() << "  strip_materials = " 
-         << strip_materials.size() << endl;
-    cout << "fans size = " << fans_v.size() << "  fan_materials = " 
-         << fan_materials.size() << endl;
+    SG_LOG(SG_IO, SG_DEBUG, "points size = " << pts_v.size() 
+         << "  pt_materials = " << pt_materials.size() );
+    SG_LOG(SG_IO, SG_DEBUG, "triangles size = " << tris_v.size() 
+         << "  tri_materials = " << tri_materials.size() );
+    SG_LOG(SG_IO, SG_DEBUG, "strips size = " << strips_v.size() 
+         << "  strip_materials = " << strip_materials.size() );
+    SG_LOG(SG_IO, SG_DEBUG, "fans size = " << fans_v.size() 
+         << "  fan_materials = " << fan_materials.size() );
 
-    cout << "nodes = " << wgs84_nodes.size() << endl;
-    cout << "colors = " << colors.size() << endl;
-    cout << "normals = " << normals.size() << endl;
-    cout << "tex coords = " << texcoords.size() << endl;
+    SG_LOG(SG_IO, SG_DEBUG, "nodes = " << wgs84_nodes.size() );
+    SG_LOG(SG_IO, SG_DEBUG, "colors = " << colors.size() );
+    SG_LOG(SG_IO, SG_DEBUG, "normals = " << normals.size() );
+    SG_LOG(SG_IO, SG_DEBUG, "tex coords = " << texcoords.size() );
 
     version = 10;
     bool shortMaterialsRanges = 
@@ -803,7 +996,8 @@ bool SGBinObject::write_bin_file(const SGPath& file)
     nobjects += count_objects(strip_materials);
     nobjects += count_objects(fan_materials);
 
-    cout << "total top level objects = " << nobjects << endl;
+    SG_LOG(SG_IO, SG_DEBUG, "total top level objects = " << nobjects);
+
     if (version == 7) {
         sgWriteUShort( fp, (uint16_t) nobjects );
     } else {
@@ -849,10 +1043,10 @@ bool SGBinObject::write_bin_file(const SGPath& file)
       sgWriteVec2( fp, texcoords[i]);
     }
 
-    write_objects(fp, SG_POINTS, pts_v, pts_n, pts_c, pts_tc, pt_materials);
-    write_objects(fp, SG_TRIANGLE_FACES, tris_v, tris_n, tris_c, tris_tc, tri_materials);
-    write_objects(fp, SG_TRIANGLE_STRIPS, strips_v, strips_n, strips_c, strips_tc, strip_materials);
-    write_objects(fp, SG_TRIANGLE_FANS, fans_v, fans_n, fans_c, fans_tc, fan_materials);
+    write_objects(fp, SG_POINTS, pts_v, pts_n, pts_c, pts_tcs, pts_vas, pt_materials);
+    write_objects(fp, SG_TRIANGLE_FACES, tris_v, tris_n, tris_c, tris_tcs, tris_vas, tri_materials);
+    write_objects(fp, SG_TRIANGLE_STRIPS, strips_v, strips_n, strips_c, strips_tcs, strips_vas, strip_materials);
+    write_objects(fp, SG_TRIANGLE_FANS, fans_v, fans_n, fans_c, fans_tcs, fans_vas, fan_materials);
     
     // close the file
     gzclose(fp);
@@ -952,7 +1146,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
             }
             // cout << "group = " << start << " to " << end - 1 << endl;
 
-      SGSphered d;
+      SGSphered d( SGVec3d(0.0, 0.0, 0.0), -1.0 );
       for ( i = start; i < end; ++i ) {
         for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
           d.expandBy(wgs84_nodes[ tris_v[i][j] ]);
@@ -972,7 +1166,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
             for ( i = start; i < end; ++i ) {
                 fprintf(fp, "f");
                 for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
-                    fprintf(fp, " %d/%d", tris_v[i][j], tris_tc[i][j] );
+                    fprintf(fp, " %d/%d", tris_v[i][j], tris_tcs[i][0][j] );
                 }
                 fprintf(fp, "\n");
             }
@@ -1001,7 +1195,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
             // cout << "group = " << start << " to " << end - 1 << endl;
 
 
-      SGSphered d;
+      SGSphered d( SGVec3d(0.0, 0.0, 0.0), -1.0 );
       for ( i = start; i < end; ++i ) {
         for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
           d.expandBy(wgs84_nodes[ tris_v[i][j] ]);
@@ -1021,7 +1215,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
             for ( i = start; i < end; ++i ) {
                 fprintf(fp, "ts");
                 for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
-                    fprintf(fp, " %d/%d", strips_v[i][j], strips_tc[i][j] );
+                    fprintf(fp, " %d/%d", strips_v[i][j], strips_tcs[i][0][j] );
                 }
                 fprintf(fp, "\n");
             }
@@ -1061,3 +1255,27 @@ void SGBinObject::read_properties(gzFile fp, int nproperties)
     }
 }
 
+bool SGBinObject::add_point( const SGBinObjectPoint& pt )
+{
+    // add the point info
+    pt_materials.push_back( pt.material );
+    
+    pts_v.push_back( pt.v_list );
+    pts_n.push_back( pt.n_list );    
+    pts_c.push_back( pt.c_list );
+    
+    return true;
+}
+
+bool SGBinObject::add_triangle( const SGBinObjectTriangle& tri )
+{
+    // add the triangle info and keep lists aligned
+    tri_materials.push_back( tri.material );
+    tris_v.push_back( tri.v_list );
+    tris_n.push_back( tri.n_list );
+    tris_c.push_back( tri.c_list );
+    tris_tcs.push_back( tri.tc_list );
+    tris_vas.push_back( tri.va_list );
+    
+    return true;
+}

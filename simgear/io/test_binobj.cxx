@@ -103,6 +103,15 @@ int_list make_tri(int maxIndex)
     return r;
 }
 
+tci_list make_tri_tcs(int maxIndex)
+{
+    tci_list tci;
+    tci[0].push_back(random() % maxIndex);
+    tci[0].push_back(random() % maxIndex);
+    tci[0].push_back(random() % maxIndex);
+    return tci;
+}
+
 void compareTris(const SGBinObject& a, const SGBinObject& b)
 {
     unsigned int count = a.get_tri_materials().size();
@@ -113,32 +122,31 @@ void compareTris(const SGBinObject& a, const SGBinObject& b)
 
         COMPARE(a.get_tri_materials()[i], b.get_tri_materials()[i]);
         
-        const int_list& tA(a.get_tris_tc()[i]);
-        const int_list& tB(b.get_tris_tc()[i]);
+        const int_list& tA(a.get_tris_tcs()[i][0]);
+        const int_list& tB(b.get_tris_tcs()[i][0]);
         VERIFY(tA == tB);
     }
 }
 
 void generate_tris(SGBinObject& b, int count)
 {
-    group_list v, n, tc;
+    group_list v, n;
+    group_tci_list tc;
     string_list materials;
 
     int maxVertices = b.get_wgs84_nodes().size();
     int maxNormals = b.get_normals().size();
     int maxTCs = b.get_texcoords().size();
     
+    SGBinObjectTriangle sgboTri;
     for (int t=0; t<count; ++t) {
-        v.push_back(make_tri(maxVertices));
-        n.push_back(make_tri(maxNormals));
-        tc.push_back(make_tri(maxTCs));
-        materials.push_back("material1");
+        sgboTri.material = "material1";    
+        sgboTri.v_list = make_tri(maxVertices);
+        sgboTri.n_list = make_tri(maxNormals);
+        sgboTri.tc_list[0] = make_tri(maxTCs);
+
+        b.add_triangle( sgboTri );
     }
-    
-    b.set_tris_v(v);
-    b.set_tris_n(n);
-    b.set_tris_tc(tc);
-    b.set_tri_materials(materials);
 }
  
 void test_basic()

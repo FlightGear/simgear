@@ -219,72 +219,107 @@ public:
 
   static void
   addTriangleGeometry(SGTexturedTriangleBin& triangles,
-                      const std::vector<SGVec3d>& vertices,
-                      const std::vector<SGVec3f>& normals,
-                      const std::vector<SGVec2f>& texCoords,
-                      const int_list& tris_v,
-                      const int_list& tris_n,
-                      const int_list& tris_tc,
-                      const SGVec2f& tcScale)
+                      const SGBinObject& obj, unsigned grp,
+                      const SGVec2f& tc0Scale, 
+                      const SGVec2f& tc1Scale)
   {
+    const std::vector<SGVec3d>& vertices(obj.get_wgs84_nodes());
+    const std::vector<SGVec3f>& normals(obj.get_normals());
+    const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
+    const int_list& tris_v(obj.get_tris_v()[grp]);
+    const int_list& tris_n(obj.get_tris_n()[grp]);
+    const tci_list& tris_tc(obj.get_tris_tcs()[grp]);
+    bool  num_norms_is_num_verts = true;  
+    
     if (tris_v.size() != tris_n.size()) {
-      // If the normal indices do not match, they should be inmplicitly
-      // the same than the vertex indices. So just call ourselves again
-      // with the matching index vector.
-      addTriangleGeometry(triangles, vertices, normals, texCoords,
-                          tris_v, tris_v, tris_tc, tcScale);
-      return;
+        // If the normal indices do not match, they should be inmplicitly
+        // the same than the vertex indices. 
+        num_norms_is_num_verts = false;
     }
 
+    if ( !tris_tc[1].empty() ) {
+        triangles.hasSecondaryTexCoord(true);
+    }
+    
     for (unsigned i = 2; i < tris_v.size(); i += 3) {
-      SGVertNormTex v0;
-      v0.vertex = toVec3f(vertices[tris_v[i-2]]);
-      v0.normal = normals[tris_n[i-2]];
-      v0.texCoord = getTexCoord(texCoords, tris_tc, tcScale, i-2);
-      SGVertNormTex v1;
-      v1.vertex = toVec3f(vertices[tris_v[i-1]]);
-      v1.normal = normals[tris_n[i-1]];
-      v1.texCoord = getTexCoord(texCoords, tris_tc, tcScale, i-1);
-      SGVertNormTex v2;
-      v2.vertex = toVec3f(vertices[tris_v[i]]);
-      v2.normal = normals[tris_n[i]];
-      v2.texCoord = getTexCoord(texCoords, tris_tc, tcScale, i);
-      triangles.insert(v0, v1, v2);
+        SGVertNormTex v0;
+        v0.SetVertex( toVec3f(vertices[tris_v[i-2]]) );
+        v0.SetNormal( num_norms_is_num_verts ? normals[tris_n[i-2]] : 
+                                               normals[tris_v[i-2]] );
+        v0.SetTexCoord( 0, getTexCoord(texCoords, tris_tc[0], tc0Scale, i-2) );
+        if (!tris_tc[1].empty()) {
+            v0.SetTexCoord( 1, getTexCoord(texCoords, tris_tc[1], tc1Scale, i-2) );
+        }
+        SGVertNormTex v1;
+        v1.SetVertex( toVec3f(vertices[tris_v[i-1]]) );
+        v1.SetNormal( num_norms_is_num_verts ? normals[tris_n[i-1]] : 
+                                               normals[tris_v[i-1]] );
+        v1.SetTexCoord( 0, getTexCoord(texCoords, tris_tc[0], tc0Scale, i-1) );
+        if (!tris_tc[1].empty()) {
+            v1.SetTexCoord( 1, getTexCoord(texCoords, tris_tc[1], tc1Scale, i-1) );
+        }
+        SGVertNormTex v2;
+        v2.SetVertex( toVec3f(vertices[tris_v[i]]) );
+        v2.SetNormal( num_norms_is_num_verts ? normals[tris_n[i]] : 
+                                               normals[tris_v[i]] );
+        v2.SetTexCoord( 0, getTexCoord(texCoords, tris_tc[0], tc0Scale, i) );
+        if (!tris_tc[1].empty()) {
+            v2.SetTexCoord( 1, getTexCoord(texCoords, tris_tc[1], tc1Scale, i) );
+        }
+        
+        triangles.insert(v0, v1, v2);
     }
   }
 
   static void
   addStripGeometry(SGTexturedTriangleBin& triangles,
-                   const std::vector<SGVec3d>& vertices,
-                   const std::vector<SGVec3f>& normals,
-                   const std::vector<SGVec2f>& texCoords,
-                   const int_list& strips_v,
-                   const int_list& strips_n,
-                   const int_list& strips_tc,
-                   const SGVec2f& tcScale)
+                   const SGBinObject& obj, unsigned grp,
+                   const SGVec2f& tc0Scale, 
+                   const SGVec2f& tc1Scale)
   {
-    if (strips_v.size() != strips_n.size()) {
-      // If the normal indices do not match, they should be inmplicitly
-      // the same than the vertex indices. So just call ourselves again
-      // with the matching index vector.
-      addStripGeometry(triangles, vertices, normals, texCoords,
-                       strips_v, strips_v, strips_tc, tcScale);
-      return;
-    }
-
+      const std::vector<SGVec3d>& vertices(obj.get_wgs84_nodes());
+      const std::vector<SGVec3f>& normals(obj.get_normals());
+      const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
+      const int_list& strips_v(obj.get_strips_v()[grp]);
+      const int_list& strips_n(obj.get_strips_n()[grp]);
+      const tci_list& strips_tc(obj.get_strips_tcs()[grp]);
+      bool  num_norms_is_num_verts = true;  
+      
+      if (strips_v.size() != strips_n.size()) {
+          // If the normal indices do not match, they should be inmplicitly
+          // the same than the vertex indices. 
+          num_norms_is_num_verts = false;
+      }
+      
+      if ( !strips_tc[1].empty() ) {
+          triangles.hasSecondaryTexCoord(true);
+      }
+      
     for (unsigned i = 2; i < strips_v.size(); ++i) {
       SGVertNormTex v0;
-      v0.vertex = toVec3f(vertices[strips_v[i-2]]);
-      v0.normal = normals[strips_n[i-2]];
-      v0.texCoord = getTexCoord(texCoords, strips_tc, tcScale, i-2);
+      v0.SetVertex( toVec3f(vertices[strips_v[i-2]]) );
+      v0.SetNormal( num_norms_is_num_verts ? normals[strips_n[i-2]] : 
+                                             normals[strips_v[i-2]] );
+      v0.SetTexCoord( 0, getTexCoord(texCoords, strips_tc[0], tc0Scale, i-2) );
+      if (!strips_tc[1].empty()) {
+          v0.SetTexCoord( 1, getTexCoord(texCoords, strips_tc[1], tc1Scale, i-2) );
+      }
       SGVertNormTex v1;
-      v1.vertex = toVec3f(vertices[strips_v[i-1]]);
-      v1.normal = normals[strips_n[i-1]];
-      v1.texCoord = getTexCoord(texCoords, strips_tc, tcScale, i-1);
+      v1.SetVertex( toVec3f(vertices[strips_v[i-1]]) );
+      v1.SetNormal( num_norms_is_num_verts ? normals[strips_n[i-1]] : 
+                                             normals[strips_v[i-1]] );
+      v1.SetTexCoord( 0, getTexCoord(texCoords, strips_tc[1], tc0Scale, i-1) );
+      if (!strips_tc[1].empty()) {
+          v1.SetTexCoord( 1, getTexCoord(texCoords, strips_tc[1], tc1Scale, i-1) );
+      }
       SGVertNormTex v2;
-      v2.vertex = toVec3f(vertices[strips_v[i]]);
-      v2.normal = normals[strips_n[i]];
-      v2.texCoord = getTexCoord(texCoords, strips_tc, tcScale, i);
+      v2.SetVertex( toVec3f(vertices[strips_v[i]]) );
+      v2.SetNormal( num_norms_is_num_verts ? normals[strips_n[i]] : 
+                                             normals[strips_v[i]] );
+      v2.SetTexCoord( 0, getTexCoord(texCoords, strips_tc[0], tc0Scale, i) );
+      if (!strips_tc[1].empty()) {
+          v2.SetTexCoord( 1, getTexCoord(texCoords, strips_tc[1], tc1Scale, i) );
+      }
       if (i%2)
         triangles.insert(v1, v0, v2);
       else
@@ -294,36 +329,53 @@ public:
 
   static void
   addFanGeometry(SGTexturedTriangleBin& triangles,
-                 const std::vector<SGVec3d>& vertices,
-                 const std::vector<SGVec3f>& normals,
-                 const std::vector<SGVec2f>& texCoords,
-                 const int_list& fans_v,
-                 const int_list& fans_n,
-                 const int_list& fans_tc,
-                 const SGVec2f& tcScale)
+                 const SGBinObject& obj, unsigned grp,
+                 const SGVec2f& tc0Scale, 
+                 const SGVec2f& tc1Scale)
   {
-    if (fans_v.size() != fans_n.size()) {
-      // If the normal indices do not match, they should be implicitly
-      // the same than the vertex indices. So just call ourselves again
-      // with the matching index vector.
-      addFanGeometry(triangles, vertices, normals, texCoords,
-                     fans_v, fans_v, fans_tc, tcScale);
-      return;
-    }
-
+      const std::vector<SGVec3d>& vertices(obj.get_wgs84_nodes());
+      const std::vector<SGVec3f>& normals(obj.get_normals());
+      const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
+      const int_list& fans_v(obj.get_fans_v()[grp]);
+      const int_list& fans_n(obj.get_fans_n()[grp]);
+      const tci_list& fans_tc(obj.get_fans_tcs()[grp]);
+      bool  num_norms_is_num_verts = true;  
+      
+      if (fans_v.size() != fans_n.size()) {
+          // If the normal indices do not match, they should be inmplicitly
+          // the same than the vertex indices. 
+          num_norms_is_num_verts = false;
+      }
+      
+      if ( !fans_tc[1].empty() ) {
+          triangles.hasSecondaryTexCoord(true);
+      }
+      
     SGVertNormTex v0;
-    v0.vertex = toVec3f(vertices[fans_v[0]]);
-    v0.normal = normals[fans_n[0]];
-    v0.texCoord = getTexCoord(texCoords, fans_tc, tcScale, 0);
+    v0.SetVertex( toVec3f(vertices[fans_v[0]]) );
+    v0.SetNormal( num_norms_is_num_verts ? normals[fans_n[0]] : 
+                                           normals[fans_v[0]] );
+    v0.SetTexCoord( 0, getTexCoord(texCoords, fans_tc[0], tc0Scale, 0) );
+    if (!fans_tc[1].empty()) {
+        v0.SetTexCoord( 1, getTexCoord(texCoords, fans_tc[1], tc1Scale, 0) );
+    }
     SGVertNormTex v1;
-    v1.vertex = toVec3f(vertices[fans_v[1]]);
-    v1.normal = normals[fans_n[1]];
-    v1.texCoord = getTexCoord(texCoords, fans_tc, tcScale, 1);
+    v1.SetVertex( toVec3f(vertices[fans_v[1]]) );
+    v1.SetNormal( num_norms_is_num_verts ? normals[fans_n[1]] : 
+                                           normals[fans_v[1]] );
+    v1.SetTexCoord( 0, getTexCoord(texCoords, fans_tc[0], tc0Scale, 1) );
+    if (!fans_tc[1].empty()) {
+        v1.SetTexCoord( 1, getTexCoord(texCoords, fans_tc[1], tc1Scale, 1) );
+    }
     for (unsigned i = 2; i < fans_v.size(); ++i) {
       SGVertNormTex v2;
-      v2.vertex = toVec3f(vertices[fans_v[i]]);
-      v2.normal = normals[fans_n[i]];
-      v2.texCoord = getTexCoord(texCoords, fans_tc, tcScale, i);
+      v2.SetVertex( toVec3f(vertices[fans_v[i]]) );
+      v2.SetNormal( num_norms_is_num_verts ? normals[fans_n[i]] : 
+                                             normals[fans_v[i]] );
+      v2.SetTexCoord( 0, getTexCoord(texCoords, fans_tc[0], tc0Scale, i) );
+      if (!fans_tc[1].empty()) {
+          v2.SetTexCoord( 1, getTexCoord(texCoords, fans_tc[1], tc1Scale, i) );
+      }
       triangles.insert(v0, v1, v2);
       v1 = v2;
     }
@@ -344,7 +396,7 @@ public:
   insertSurfaceGeometry(const SGBinObject& obj, SGMaterialLib* matlib)
   {
     if (obj.get_tris_n().size() < obj.get_tris_v().size() ||
-        obj.get_tris_tc().size() < obj.get_tris_v().size()) {
+        obj.get_tris_tcs().size() < obj.get_tris_v().size()) {
       SG_LOG(SG_TERRAIN, SG_ALERT,
              "Group list sizes for triangles do not match!");
       return false;
@@ -352,44 +404,38 @@ public:
 
     for (unsigned grp = 0; grp < obj.get_tris_v().size(); ++grp) {
       std::string materialName = obj.get_tri_materials()[grp];
-      SGVec2f tcScale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc0Scale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc1Scale(1.0, 1.0);
       addTriangleGeometry(materialTriangleMap[materialName],
-                          obj.get_wgs84_nodes(), obj.get_normals(),
-                          obj.get_texcoords(), obj.get_tris_v()[grp],
-                          obj.get_tris_n()[grp], obj.get_tris_tc()[grp],
-                          tcScale);
+                          obj, grp, tc0Scale, tc1Scale );
     }
 
     if (obj.get_strips_n().size() < obj.get_strips_v().size() ||
-        obj.get_strips_tc().size() < obj.get_strips_v().size()) {
+        obj.get_strips_tcs().size() < obj.get_strips_v().size()) {
       SG_LOG(SG_TERRAIN, SG_ALERT,
              "Group list sizes for strips do not match!");
       return false;
     }
     for (unsigned grp = 0; grp < obj.get_strips_v().size(); ++grp) {
       std::string materialName = obj.get_strip_materials()[grp];
-      SGVec2f tcScale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc0Scale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc1Scale(1.0, 1.0);
       addStripGeometry(materialTriangleMap[materialName],
-                       obj.get_wgs84_nodes(), obj.get_normals(),
-                       obj.get_texcoords(), obj.get_strips_v()[grp],
-                       obj.get_strips_n()[grp], obj.get_strips_tc()[grp],
-                       tcScale);
+                          obj, grp, tc0Scale, tc1Scale);
     }
 
     if (obj.get_fans_n().size() < obj.get_fans_v().size() ||
-        obj.get_fans_tc().size() < obj.get_fans_v().size()) {
+        obj.get_fans_tcs().size() < obj.get_fans_v().size()) {
       SG_LOG(SG_TERRAIN, SG_ALERT,
              "Group list sizes for fans do not match!");
       return false;
     }
     for (unsigned grp = 0; grp < obj.get_fans_v().size(); ++grp) {
       std::string materialName = obj.get_fan_materials()[grp];
-      SGVec2f tcScale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc0Scale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc1Scale(1.0, 1.0);
       addFanGeometry(materialTriangleMap[materialName],
-                     obj.get_wgs84_nodes(), obj.get_normals(),
-                     obj.get_texcoords(), obj.get_fans_v()[grp],
-                     obj.get_fans_n()[grp], obj.get_fans_tc()[grp],
-                     tcScale);
+                       obj, grp, tc0Scale, tc1Scale );
     }
     return true;
   }
@@ -399,30 +445,37 @@ public:
     if (materialTriangleMap.empty())
       return 0;
 
-    EffectGeode* eg = 0;
-    osg::Group* group = (materialTriangleMap.size() > 1 ? new osg::Group : 0);
+    EffectGeode* eg = NULL;
+    osg::Group* group = (materialTriangleMap.size() > 1 ? new osg::Group : NULL);
+    if (group) {
+        group->setName("surfaceGeometryGroup");
+    }
+    
     //osg::Geode* geode = new osg::Geode;
     SGMaterialTriangleMap::const_iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       osg::Geometry* geometry = i->second.buildGeometry(useVBOs);
-      SGMaterial *mat = 0;
-      if (matlib)
+      SGMaterial *mat = NULL;
+      if (matlib) {
         mat = matlib->findCached(i->first);
+      }
       eg = new EffectGeode;
       eg->setName("EffectGeode");
-      if (mat)
+      if (mat) {
         eg->setEffect(mat->get_effect(i->second));
+      }
       eg->addDrawable(geometry);
       eg->runGenerators(geometry);  // Generate extra data needed by effect
       if (group) {
-        group->setName("surfaceGeometryGroup");
         group->addChild(eg);
       }
     }
-    if (group)
+    
+    if (group) {
         return group;
-    else
+    } else {
         return eg;
+    }
   }
 
   void computeRandomSurfaceLights(SGMaterialLib* matlib)
@@ -522,12 +575,12 @@ public:
       for (unsigned i = 0; i < num; ++i) {
         SGTexturedTriangleBin::triangle_ref triangleRef = triangleBin.getTriangleRef(i);
 
-        SGVec3f vorigin = triangleBin.getVertex(triangleRef[0]).vertex;
-        SGVec3f v0 = triangleBin.getVertex(triangleRef[1]).vertex - vorigin;
-        SGVec3f v1 = triangleBin.getVertex(triangleRef[2]).vertex - vorigin;
-        SGVec2f torigin = triangleBin.getVertex(triangleRef[0]).texCoord;
-        SGVec2f t0 = triangleBin.getVertex(triangleRef[1]).texCoord - torigin;
-        SGVec2f t1 = triangleBin.getVertex(triangleRef[2]).texCoord - torigin;
+        SGVec3f vorigin = triangleBin.getVertex(triangleRef[0]).GetVertex();
+        SGVec3f v0 = triangleBin.getVertex(triangleRef[1]).GetVertex() - vorigin;
+        SGVec3f v1 = triangleBin.getVertex(triangleRef[2]).GetVertex() - vorigin;
+        SGVec2f torigin = triangleBin.getVertex(triangleRef[0]).GetTexCoord(0);
+        SGVec2f t0 = triangleBin.getVertex(triangleRef[1]).GetTexCoord(0) - torigin;
+        SGVec2f t1 = triangleBin.getVertex(triangleRef[2]).GetTexCoord(0) - torigin;
         SGVec3f normal = cross(v0, v1);
 
         // Ensure the slope isn't too steep by checking the
@@ -941,6 +994,9 @@ public:
         maxError = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-error", maxError);
       }
 
+      // PSADRO TODO : we can do this in terragear 
+      // - why not add a bitmask of flags to the btg so we can precompute this?
+      // and only do it if it hasn't been done already
       SGVec3d center = tile.get_gbs_center();
       SGGeod geodPos = SGGeod::fromCart(center);
       SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);

@@ -58,6 +58,14 @@ public:
    */
   virtual ~SGBinding ();
 
+  
+  /**
+   * clear internal state of the binding back to empty. This is useful
+   * if you don't want the 'remove on delete' behaviour of the 
+   * destructor.
+   */
+  void clear();
+
 
   /**
    * Get the command name.
@@ -153,5 +161,10 @@ void fireBindingListWithOffset(const SGBindingList& aBindings, double offset, do
  * read multiple bindings from property-list format
  */
 SGBindingList readBindingList(const simgear::PropertyList& aNodes, SGPropertyNode* aRoot);
+
+/**
+ * call clear() on every binding in a list
+ */
+void clearBindingList(const SGBindingList& aBindings);
 
 #endif

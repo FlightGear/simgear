@@ -48,6 +48,14 @@ SGBinding::~SGBinding()
 }
 
 void
+SGBinding::clear()
+{
+    _command = NULL;
+    _arg.clear();
+    _setting.clear();
+}
+
+void
 SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
 {
   const SGPropertyNode * conditionNode = node->getChild("condition");
@@ -149,3 +157,11 @@ SGBindingList readBindingList(const simgear::PropertyList& aNodes, SGPropertyNod
     
     return result;
 }
+
+void clearBindingList(const SGBindingList& aBindings)
+{
+    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+        b->clear();
+    }
+}
+

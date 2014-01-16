@@ -250,11 +250,7 @@ class GLVersionExpression : public SGExpression<float>
 public:
     void eval(float& value, const expression::Binding*) const
     {
-#ifdef TECHNIQUE_TEST_EXTENSIONS
-        value = 1.1;
-#else
         value = getGLVersionNumber();
-#endif
     }
 };
 
@@ -335,9 +331,37 @@ Expression* shaderLanguageParser(const SGPropertyNode* exp,
 }
 
 expression::ExpParserRegistrar shaderLanguageRegistrar("shader-language",
-                                                       glVersionParser);
+                                                       shaderLanguageParser);
 
-    
+class GLSLSupportedExpression : public GeneralNaryExpression<bool, int>
+{
+public:
+   void eval(bool& value, const expression::Binding* b) const
+   {
+       value = false;
+       int contextId = getOperand(0)->getValue(b);
+       GL2Extensions* extensions
+           = GL2Extensions::Get(static_cast<unsigned>(contextId), true);
+       if (!extensions)
+           return;
+       value = extensions->isGlslSupported();
+   }
+};
+
+Expression* glslSupportedParser(const SGPropertyNode* exp,
+                                expression::Parser* parser)
+{
+   GLSLSupportedExpression* sexp = new GLSLSupportedExpression;
+   int location = parser->getBindingLayout().addBinding("__contextId",
+                                                        expression::INT);
+   VariableExpression<int>* contextExp = new VariableExpression<int>(location);
+   sexp->addOperand(contextExp);
+   return sexp;
+}
+
+expression::ExpParserRegistrar glslSupportedRegistrar("glsl-supported",
+                                                      glslSupportedParser);
+                                                                                                              
 void Technique::setGLExtensionsPred(float glVersion,
                                     const std::vector<std::string>& extensions)
 {

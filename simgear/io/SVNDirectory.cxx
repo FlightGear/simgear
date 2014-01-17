@@ -319,7 +319,6 @@ void SVNDirectory::mergeUpdateReportDetails(unsigned int depth,
     
     Dir d(localPath);
     if (depth >= MAX_UPDATE_REPORT_DEPTH) {
-        SG_LOG(SG_IO, SG_INFO, localPath << "exceeded MAX_UPDATE_REPORT_DEPTH, cleaning");
         d.removeChildren();
         return;
     }

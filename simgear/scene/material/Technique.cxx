@@ -118,7 +118,7 @@ void Technique::validateInContext(GraphicsContext* gc)
     Status oldVal = contextInfo.valid();
     Status newVal = INVALID;
     expression::FixedLengthBinding<1> binding;
-    binding.getBindings()[_contextIdLocation].val.intVal = contextId;
+    binding.getBindings()[_contextIdLocation] = expression::Value((int) contextId);
     if (_validExpression->getValue(&binding))
         newVal = VALID;
     contextInfo.valid.compareAndSwap(oldVal, newVal);

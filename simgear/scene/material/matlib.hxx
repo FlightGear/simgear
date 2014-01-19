@@ -27,6 +27,7 @@
 
 #include <simgear/compiler.h>
 
+#include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 #include <memory>
@@ -41,7 +42,8 @@ namespace simgear { class Effect; }
 namespace osg { class Geode; }
 
 // Material management class
-class SGMaterialLib {
+class SGMaterialLib : public SGReferenced
+{
 
 private:
     class MatLibPrivate;
@@ -99,5 +101,6 @@ public:
     ~SGMaterialLib ( void );
 };
 
+typedef SGSharedPtr<SGMaterialLib> SGMaterialLibPtr;
 
 #endif // _MATLIB_HXX 

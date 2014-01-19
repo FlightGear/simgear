@@ -22,10 +22,12 @@
 
 #include <osgDB/Options>
 #include <simgear/scene/model/modellib.hxx>
+#include <simgear/scene/material/matlib.hxx>
+
 #include <simgear/props/props.hxx>
 
 class SGPropertyNode;
-class SGMaterialLib;
+
 
 namespace simgear
 {
@@ -70,7 +72,7 @@ public:
     void setPropertyNode(const SGSharedPtr<SGPropertyNode>& propertyNode)
     { _propertyNode = propertyNode; }
 
-    SGMaterialLib* getMaterialLib() const
+    SGMaterialLibPtr getMaterialLib() const
     { return _materialLib; }
     void setMaterialLib(SGMaterialLib* materialLib)
     { _materialLib = materialLib; }
@@ -100,7 +102,7 @@ protected:
 
 private:
     SGSharedPtr<SGPropertyNode> _propertyNode;
-    SGMaterialLib* _materialLib;
+    SGSharedPtr<SGMaterialLib> _materialLib;
     osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
     bool _instantiateEffects;

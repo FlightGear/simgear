@@ -905,7 +905,7 @@ public:
     // Generate all the lighting objects for the tile.
     osg::LOD* generateLightingTileObjects()
     {
-      SGMaterialLib* matlib = NULL;
+      SGMaterialLibPtr matlib;
 
       if (_options)
         matlib = _options->getMaterialLib();
@@ -1046,7 +1046,7 @@ public:
     // Generate all the random forest, objects and buildings for the tile
     osg::LOD* generateRandomTileObjects()
     {
-      SGMaterialLib* matlib = NULL;
+      SGMaterialLibPtr matlib;
       bool use_random_objects = false;
       bool use_random_vegetation = false;
       bool use_random_buildings = false;
@@ -1181,7 +1181,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     if (!tile.read_bin(path))
       return NULL;
 
-    SGMaterialLib* matlib = 0;
+    SGMaterialLibPtr matlib;
 
     if (options) {
       matlib = options->getMaterialLib();

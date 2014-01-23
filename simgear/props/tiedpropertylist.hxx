@@ -51,7 +51,6 @@ public:
     template<typename T> SGPropertyNode_ptr Tie( SGPropertyNode_ptr node, const SGRawValue<T> &rawValue, bool useDefault = true  ) {
         bool success = node->tie( rawValue, useDefault );
         if( success ) {
-            SG_LOG( SG_GENERAL, SG_DEBUG, "Tied " << node->getPath() );
             push_back( node );
         } else {
 #if PROPS_STANDALONE
@@ -125,7 +124,6 @@ public:
 
     void Untie() {
         while( ! empty() ) {
-            SG_LOG( SG_GENERAL, SG_DEBUG, "untie of " << back()->getPath() );
             back()->untie();
             pop_back();
         }

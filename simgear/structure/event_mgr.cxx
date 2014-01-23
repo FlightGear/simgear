@@ -38,7 +38,8 @@ void SGTimer::run()
     (*callback)();
 }
 
-SGEventMgr::SGEventMgr()
+SGEventMgr::SGEventMgr() :
+    _inited(false)
 {
     
 }
@@ -54,8 +55,18 @@ void SGEventMgr::unbind()
     _rtProp.clear();
 }
 
+void SGEventMgr::init()
+{
+    if (_inited) {
+        SG_LOG(SG_GENERAL, SG_WARN, "duplicate init of SGEventMgr");
+    }
+    _inited = true;
+}
+
 void SGEventMgr::shutdown()
 {
+    _inited = false;
+    
     _simQueue.clear();
     _rtQueue.clear();
 }
@@ -70,6 +81,13 @@ void SGEventMgr::update(double delta_time_sec)
 
 void SGEventMgr::removeTask(const std::string& name)
 {
+    // due to the ordering of the event-mgr in FG, tasks can be removed
+    // after we are shutdown (and hence, have all been cleared). Guard
+    // against this so we don't generate warnings below.
+    if (!_inited) {
+        return;
+    }
+    
   SGTimer* t = _simQueue.findByName(name);
   if (t) {
     _simQueue.remove(t);

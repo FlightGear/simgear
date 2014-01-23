@@ -72,7 +72,7 @@ public:
     SGEventMgr();
     ~SGEventMgr();
 
-    virtual void init() {}
+    virtual void init();
     virtual void update(double delta_time_sec);
     virtual void unbind();
     virtual void shutdown();
@@ -130,6 +130,7 @@ private:
     SGPropertyNode_ptr _rtProp;
     SGTimerQueue _rtQueue; 
     SGTimerQueue _simQueue;
+    bool _inited;
 };
 
 #endif // _SG_EVENT_MGR_HXX

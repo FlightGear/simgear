@@ -16,7 +16,7 @@
 //
 
 #ifndef SGTriangle_H
-#define SGTrianlge_H
+#define SGTriangle_H
 
 template<typename T>
 class SGTriangle {

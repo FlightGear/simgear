@@ -55,6 +55,34 @@ static const char sgSearchPathSep = ';';
 static const char sgSearchPathSep = ':';
 #endif
 
+#ifdef _WIN32
+
+#include <ShlObj.h> // for CSIDL
+
+static SGPath pathForCSIDL(int csidl, const SGPath::PermissonChecker& checker)
+{
+	typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPSTR, int, BOOL);
+	static GetSpecialFolderPath SHGetSpecialFolderPath = NULL;
+
+	// lazy open+resolve of shell32
+	if (!SHGetSpecialFolderPath) {
+		HINSTANCE shellDll = ::LoadLibrary("shell32");
+		SHGetSpecialFolderPath = (GetSpecialFolderPath) GetProcAddress(shellDll, "SHGetSpecialFolderPathA");
+	}
+
+	if (!SHGetSpecialFolderPath){
+		return SGPath();
+	}
+
+	char path[MAX_PATH];
+	if (SHGetSpecialFolderPath(0, path, csidl, false)) {
+		return SGPath(path, checker);
+	}
+
+	return SGPath();
+}
+
+#endif
 
 // For windows, replace "\" by "/".
 void
@@ -644,31 +672,26 @@ SGPath SGPath::home(const SGPath& def)
 #endif
 
 #ifdef _WIN32
-
-#include <ShlObj.h> // for CSIDL
-
 //------------------------------------------------------------------------------
 SGPath SGPath::desktop(const SGPath& def)
 {
-	typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPSTR, int, BOOL);
-	static GetSpecialFolderPath SHGetSpecialFolderPath = NULL;
-
-	// lazy open+resolve of shell32
-	if (!SHGetSpecialFolderPath) {
-		HINSTANCE shellDll = ::LoadLibrary("shell32");
-		SHGetSpecialFolderPath = (GetSpecialFolderPath) GetProcAddress(shellDll, "SHGetSpecialFolderPathA");
-	}
-
-	if (!SHGetSpecialFolderPath){
-		return def;
-	}
-
-	char path[MAX_PATH];
-	if (SHGetSpecialFolderPath(0, path, CSIDL_DESKTOPDIRECTORY, false)) {
-		return SGPath(path, def._permission_checker);
+	SGPath r = pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def._permission_checker);
+	if (!r.isNull()) {
+		return r;
 	}
 
 	SG_LOG(SG_GENERAL, SG_ALERT, "SGPath::desktop() failed, bad" );
+	return def;
+}
+
+SGPath SGPath::documents(const SGPath& def)
+{
+	SGPath r = pathForCSIDL(CSIDL_MYDOCUMENTS, def._permission_checker);
+	if (!r.isNull()) {
+		return r;
+	}
+
+	SG_LOG(SG_GENERAL, SG_ALERT, "SGPath::documents() failed, bad" );
 	return def;
 }
 #elif __APPLE__

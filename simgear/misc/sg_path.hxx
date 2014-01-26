@@ -276,6 +276,10 @@ public:
      */
     static SGPath desktop(const SGPath& def = SGPath());
 
+	/**
+     * Get path to the user's documents directory
+     */
+    static SGPath documents(const SGPath& def = SGPath());
 private:
 
     void fix();

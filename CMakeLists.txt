@@ -100,7 +100,6 @@ set(SYSTEM_EXPAT OFF)
 endif()
 
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
-option(JPEG_FACTORY     "Enable JPEG-factory support" OFF)
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
@@ -181,14 +180,6 @@ else()
     
     find_package(OpenSceneGraph 3.0.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgUtil)
 endif(SIMGEAR_HEADLESS)
-
-if(JPEG_FACTORY)
-    message(STATUS "JPEG-factory: ENABLED")
-    find_package(JPEG REQUIRED)
-    include_directories(${JPEG_INCLUDE_DIR})
-else()
-    message(STATUS "JPEG-factory: DISABLED")
-endif(JPEG_FACTORY)
 
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)

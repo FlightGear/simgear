@@ -14,10 +14,4 @@ set(SOURCES
 	tr.cxx
     )
 
-if(JPEG_FACTORY)
-    list(APPEND HEADERS jpgfactory.hxx)
-    list(APPEND SOURCES jpgfactory.cxx)
-endif()
-
-
 simgear_scene_component(screen screen "${SOURCES}" "${HEADERS}")

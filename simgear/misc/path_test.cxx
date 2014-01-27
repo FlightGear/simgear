@@ -192,12 +192,12 @@ int main(int argc, char* argv[])
     pp.append("./test-dir/file.txt");
     COMPARE(pp.create_dir(0700), -3);
 
-    pp.setPermissonChecker(&validateRead);
+    pp.setPermissionChecker(&validateRead);
     COMPARE(pp.canRead(), true);
     COMPARE(pp.canWrite(), false);
     COMPARE(pp.create_dir(0700), -3);
 
-    pp.setPermissonChecker(&validateWrite);
+    pp.setPermissionChecker(&validateWrite);
     COMPARE(pp.canRead(), false);
     COMPARE(pp.canWrite(), true);
 

@@ -75,7 +75,7 @@ static SGPath pathForCSIDL(int csidl, const SGPath& def)
 
 	char path[MAX_PATH];
 	if (SHGetSpecialFolderPath(0, path, csidl, false)) {
-		return SGPath(path, def.getPermissonChecker());
+		return SGPath(path, def.getPermissionChecker());
 	}
 
 	return def;
@@ -95,7 +95,7 @@ static SGPath appleSpecialFolder(OSType type, const SGPath& def)
   if( FSRefMakePath(&ref, path, 1024) != noErr )
     return def;
 
-  return SGPath((const char*) path, def.getPermissonChecker());
+  return SGPath((const char*) path, def.getPermissionChecker());
 }
 #else
 static SGPath getXDGDir( const std::string& name,
@@ -131,7 +131,7 @@ static SGPath getXDGDir( const std::string& name,
       return SGPath::home(def)
            / simgear::strutils::unescape(line.substr(HOME.length()));
 
-    return SGPath(line, def.getPermissonChecker());
+    return SGPath(line, def.getPermissionChecker());
   }
 
   if( def.isNull() )
@@ -160,7 +160,7 @@ SGPath::fix()
 
 
 // default constructor
-SGPath::SGPath(PermissonChecker validator)
+SGPath::SGPath(PermissionChecker validator)
     : path(""),
     _permission_checker(validator),
     _cached(false),
@@ -171,7 +171,7 @@ SGPath::SGPath(PermissonChecker validator)
 
 
 // create a path based on "path"
-SGPath::SGPath( const std::string& p, PermissonChecker validator )
+SGPath::SGPath( const std::string& p, PermissionChecker validator )
     : path(p),
     _permission_checker(validator),
     _cached(false),
@@ -184,7 +184,7 @@ SGPath::SGPath( const std::string& p, PermissonChecker validator )
 // create a path based on "path" and a "subpath"
 SGPath::SGPath( const SGPath& p,
                 const std::string& r,
-                PermissonChecker validator )
+                PermissionChecker validator )
     : path(p.path),
     _permission_checker(validator),
     _cached(false),
@@ -240,14 +240,14 @@ void SGPath::set( const string& p ) {
 }
 
 //------------------------------------------------------------------------------
-void SGPath::setPermissonChecker(PermissonChecker validator)
+void SGPath::setPermissionChecker(PermissionChecker validator)
 {
   _permission_checker = validator;
   _rwCached = false;
 }
 
 //------------------------------------------------------------------------------
-SGPath::PermissonChecker SGPath::getPermissonChecker() const
+SGPath::PermissionChecker SGPath::getPermissionChecker() const
 {
   return _permission_checker;
 }

@@ -57,10 +57,10 @@ public:
       bool read : 1;
       bool write : 1;
     };
-    typedef Permissions (*PermissonChecker)(const SGPath&);
+    typedef Permissions (*PermissionChecker)(const SGPath&);
 
     /** Default constructor */
-    explicit SGPath(PermissonChecker validator = NULL);
+    explicit SGPath(PermissionChecker validator = NULL);
 
     /** Copy contructor */
     SGPath(const SGPath& p);
@@ -71,7 +71,7 @@ public:
      * Construct a path based on the starting path provided.
      * @param p initial path
      */
-    SGPath( const std::string& p, PermissonChecker validator = NULL );
+    SGPath( const std::string& p, PermissionChecker validator = NULL );
 
     /**
      * Construct a path based on the starting path provided and a relative subpath
@@ -80,7 +80,7 @@ public:
      */
     SGPath( const SGPath& p,
             const std::string& r,
-            PermissonChecker validator = NULL );
+            PermissionChecker validator = NULL );
 
     /** Destructor */
     ~SGPath();
@@ -95,8 +95,8 @@ public:
     bool operator==(const SGPath& other) const;
     bool operator!=(const SGPath& other) const;
 
-    void setPermissonChecker(PermissonChecker validator);
-    PermissonChecker getPermissonChecker() const;
+    void setPermissionChecker(PermissionChecker validator);
+    PermissionChecker getPermissionChecker() const;
 
     /**
      * Set if file information (exists, type, mod-time) is cached or
@@ -301,7 +301,7 @@ private:
     void checkAccess() const;
 
     std::string path;
-    PermissonChecker _permission_checker;
+    PermissionChecker _permission_checker;
 
     mutable bool _cached : 1;
     mutable bool _rwCached : 1;

@@ -257,6 +257,18 @@ public:
      */
     bool rename(const SGPath& newName);
 
+    enum StandardLocation
+    {
+      HOME,
+      DESKTOP,
+      DOWNLOADS,
+      DOCUMENTS,
+      PICTURES
+    };
+
+    static SGPath standardLocation( StandardLocation type,
+                                    const SGPath& def = SGPath() );
+
     /**
      * Get a path stored in the environment variable with the given \a name.
      *
@@ -280,6 +292,7 @@ public:
      * Get path to the user's documents directory
      */
     static SGPath documents(const SGPath& def = SGPath());
+
 private:
 
     void fix();

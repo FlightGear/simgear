@@ -41,6 +41,20 @@ void test_dir()
     }
     
     cout << temp.path().modTime() << endl;
+
+    std::cout << "Standard Locations:"
+              << "\n - Home:      " << SGPath::standardLocation(SGPath::HOME)
+              << "\n - Desktop:   " << SGPath::standardLocation(SGPath::DESKTOP)
+              << "\n - Downloads: " << SGPath::standardLocation(SGPath::DOWNLOADS)
+              << "\n - Documents: " << SGPath::standardLocation(SGPath::DOCUMENTS)
+              << "\n - Pictures:  " << SGPath::standardLocation(SGPath::PICTURES)
+              << std::endl;
+
+    VERIFY( !SGPath::standardLocation(SGPath::HOME     ).isNull() );
+    VERIFY( !SGPath::standardLocation(SGPath::DESKTOP  ).isNull() );
+    VERIFY( !SGPath::standardLocation(SGPath::DOWNLOADS).isNull() );
+    VERIFY( !SGPath::standardLocation(SGPath::DOCUMENTS).isNull() );
+    VERIFY( !SGPath::standardLocation(SGPath::PICTURES ).isNull() );
 }
 
 SGPath::Permissions validateNone(const SGPath&)

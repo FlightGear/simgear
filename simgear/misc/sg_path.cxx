@@ -56,10 +56,9 @@ static const char sgSearchPathSep = ':';
 #endif
 
 #ifdef _WIN32
-
 #include <ShlObj.h> // for CSIDL
 
-static SGPath pathForCSIDL(int csidl, const SGPath::PermissonChecker& checker)
+static SGPath pathForCSIDL(int csidl, const SGPath& def)
 {
 	typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPSTR, int, BOOL);
 	static GetSpecialFolderPath SHGetSpecialFolderPath = NULL;
@@ -71,17 +70,75 @@ static SGPath pathForCSIDL(int csidl, const SGPath::PermissonChecker& checker)
 	}
 
 	if (!SHGetSpecialFolderPath){
-		return SGPath();
+		return def;
 	}
 
 	char path[MAX_PATH];
 	if (SHGetSpecialFolderPath(0, path, csidl, false)) {
-		return SGPath(path, checker);
+		return SGPath(path, def.getPermissonChecker());
 	}
 
-	return SGPath();
+	return def;
 }
+#elif __APPLE__
+#include <CoreServices/CoreServices.h>
 
+//------------------------------------------------------------------------------
+static SGPath appleSpecialFolder(OSType type, const SGPath& def)
+{
+  FSRef ref;
+  OSErr err = FSFindFolder(kUserDomain, kDesktopFolderType, false, &ref);
+  if( err )
+    return def;
+
+  unsigned char path[1024];
+  if( FSRefMakePath(&ref, path, 1024) != noErr )
+    return def;
+
+  return SGPath((const char*) path, def.getPermissonChecker());
+}
+#else
+static SGPath getXDGDir( const std::string& name,
+                         const SGPath& def,
+                         const std::string& fallback )
+{
+  // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+
+  // $XDG_CONFIG_HOME defines the base directory relative to which user specific
+  // configuration files should be stored. If $XDG_CONFIG_HOME is either not set
+  // or empty, a default equal to $HOME/.config should be used.
+  const SGPath user_dirs = SGPath::fromEnv( "XDG_CONFIG_HOME",
+                                            SGPath::home() / ".config")
+                         / "user-dirs.dirs";
+
+  // Format is XDG_xxx_DIR="$HOME/yyy", where yyy is a shell-escaped
+  // homedir-relative path, or XDG_xxx_DIR="/yyy", where /yyy is an absolute
+  // path. No other format is supported.
+  const std::string XDG_ID = "XDG_" + name + "_DIR=\"";
+
+  std::ifstream user_dirs_file( user_dirs.c_str() );
+  std::string line;
+  while( std::getline(user_dirs_file, line).good() )
+  {
+    if( !starts_with(line, XDG_ID) || *line.rbegin() != '"' )
+      continue;
+
+    // Extract dir from XDG_<name>_DIR="<dir>"
+    line = line.substr(XDG_ID.length(), line.length() - XDG_ID.length() - 1 );
+
+    const std::string HOME = "$HOME";
+    if( starts_with(line, HOME) )
+      return SGPath::home(def)
+           / simgear::strutils::unescape(line.substr(HOME.length()));
+
+    return SGPath(line, def.getPermissonChecker());
+  }
+
+  if( def.isNull() )
+    return SGPath::home(def) / fallback;
+
+  return def;
+}
 #endif
 
 // For windows, replace "\" by "/".
@@ -334,6 +391,7 @@ string SGPath::complete_lower_extension() const
     }
 }
 
+//------------------------------------------------------------------------------
 void SGPath::validate() const
 {
   if (_cached && _cacheEnabled) {
@@ -378,6 +436,7 @@ void SGPath::validate() const
   _cached = true;
 }
 
+//------------------------------------------------------------------------------
 void SGPath::checkAccess() const
 {
   if( _rwCached && _cacheEnabled )
@@ -648,6 +707,56 @@ bool SGPath::rename(const SGPath& newName)
 }
 
 //------------------------------------------------------------------------------
+SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
+{
+  switch(type)
+  {
+    case HOME:
+      return home(def);
+#ifdef _WIN32
+    case DESKTOP:
+      return pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def);
+    case DOWNLOADS:
+      // TODO use KnownFolders
+      // http://msdn.microsoft.com/en-us/library/bb776911%28v=vs.85%29.aspx
+      if( !def.isNull() )
+        return def;
+
+      return pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def);
+    case DOCUMENTS:
+      return pathForCSIDL(CSIDL_MYDOCUMENTS, def);
+    case PICTURES:
+      return pathForCSIDL(CSIDL_MYPICTURES, def);
+#elif __APPLE__
+    case DOWNLOADS:
+      if( !def.isNull() )
+        return def;
+      // There is no special downloads folder -> just use the desktop
+    case DESKTOP:
+      return appleSpecialFolder(kDesktopFolderType, def);
+    case DOCUMENTS:
+      return appleSpecialFolder(kDocumentsFolderType, def);
+    case PICTURES:
+      return appleSpecialFolder(kPictureDocumentsFolderType, def);
+#else
+    case DESKTOP:
+      return getXDGDir("DESKTOP", def, "Desktop");
+    case DOWNLOADS:
+      return getXDGDir("DOWNLOADS", def, "Downloads");
+    case DOCUMENTS:
+      return getXDGDir("DOCUMENTS", def, "Documents");
+    case PICTURES:
+      return getXDGDir("PICTURES", def, "Pictures");
+#endif
+    default:
+      SG_LOG( SG_GENERAL,
+              SG_WARN,
+              "SGPath::standardLocation() unhandled type: " << type );
+      return def;
+  }
+}
+
+//------------------------------------------------------------------------------
 SGPath SGPath::fromEnv(const char* name, const SGPath& def)
 {
   const char* val = getenv(name);
@@ -671,84 +780,19 @@ SGPath SGPath::home(const SGPath& def)
 }
 #endif
 
-#ifdef _WIN32
 //------------------------------------------------------------------------------
 SGPath SGPath::desktop(const SGPath& def)
 {
-	SGPath r = pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def._permission_checker);
-	if (!r.isNull()) {
-		return r;
-	}
-
-	SG_LOG(SG_GENERAL, SG_ALERT, "SGPath::desktop() failed, bad" );
-	return def;
+  return standardLocation(DESKTOP, def);
 }
 
+//------------------------------------------------------------------------------
 SGPath SGPath::documents(const SGPath& def)
 {
-	SGPath r = pathForCSIDL(CSIDL_MYDOCUMENTS, def._permission_checker);
-	if (!r.isNull()) {
-		return r;
-	}
-
-	SG_LOG(SG_GENERAL, SG_ALERT, "SGPath::documents() failed, bad" );
-	return def;
+  return standardLocation(DOCUMENTS, def);
 }
-#elif __APPLE__
-#include <CoreServices/CoreServices.h>
 
 //------------------------------------------------------------------------------
-SGPath SGPath::desktop(const SGPath& def)
-{
-  FSRef ref;
-  OSErr err = FSFindFolder(kUserDomain, kDesktopFolderType, false, &ref);
-  if (err)
-    return def;
-
-  unsigned char path[1024];
-  if (FSRefMakePath(&ref, path, 1024) != noErr)
-      return def;
-
-  return SGPath((const char*) path, def._permission_checker);
-}
-#else
-//------------------------------------------------------------------------------
-SGPath SGPath::desktop(const SGPath& def)
-{
-  // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-
-  // $XDG_CONFIG_HOME defines the base directory relative to which user specific
-  // configuration files should be stored. If $XDG_CONFIG_HOME is either not set
-  // or empty, a default equal to $HOME/.config should be used.
-  const SGPath user_dirs = fromEnv("XDG_CONFIG_HOME", home() / ".config")
-                         / "user-dirs.dirs";
-
-  // Format is XDG_xxx_DIR="$HOME/yyy", where yyy is a shell-escaped
-  // homedir-relative path, or XDG_xxx_DIR="/yyy", where /yyy is an absolute
-  // path. No other format is supported.
-  const std::string DESKTOP = "XDG_DESKTOP_DIR=\"";
-
-  std::ifstream user_dirs_file( user_dirs.c_str() );
-  std::string line;
-  while( std::getline(user_dirs_file, line).good() )
-  {
-    if( !starts_with(line, DESKTOP) || *line.rbegin() != '"' )
-      continue;
-
-    // Extract dir from XDG_DESKTOP_DIR="<dir>"
-    line = line.substr(DESKTOP.length(), line.length() - DESKTOP.length() - 1 );
-
-    const std::string HOME = "$HOME";
-    if( starts_with(line, HOME) )
-      return home(def) / simgear::strutils::unescape(line.substr(HOME.length()));
-
-    return SGPath(line, def._permission_checker);
-  }
-
-  return home(def) / "Desktop";
-}
-#endif
-
 std::string SGPath::realpath() const
 {
 #if (defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1050)

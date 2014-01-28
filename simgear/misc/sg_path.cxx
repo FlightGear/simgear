@@ -81,22 +81,10 @@ static SGPath pathForCSIDL(int csidl, const SGPath& def)
 	return def;
 }
 #elif __APPLE__
-#include <CoreServices/CoreServices.h>
 
-//------------------------------------------------------------------------------
-static SGPath appleSpecialFolder(OSType type, const SGPath& def)
-{
-  FSRef ref;
-  OSErr err = FSFindFolder(kUserDomain, kDesktopFolderType, false, &ref);
-  if( err )
-    return def;
+// defined in CocoaHelpers.mm
+SGPath appleSpecialFolder(int dirType, int domainMask, const SGPath& def);
 
-  unsigned char path[1024];
-  if( FSRefMakePath(&ref, path, 1024) != noErr )
-    return def;
-
-  return SGPath((const char*) path, def.getPermissionChecker());
-}
 #else
 static SGPath getXDGDir( const std::string& name,
                          const SGPath& def,
@@ -728,16 +716,16 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
     case PICTURES:
       return pathForCSIDL(CSIDL_MYPICTURES, def);
 #elif __APPLE__
+      // since this is C++, we can't include NSPathUtilities.h to access the enum
+      // values, so hard-coding them here (they are stable, don't worry)
     case DOWNLOADS:
-      if( !def.isNull() )
-        return def;
-      // There is no special downloads folder -> just use the desktop
+      return appleSpecialFolder(15, 1, def);
     case DESKTOP:
-      return appleSpecialFolder(kDesktopFolderType, def);
+      return appleSpecialFolder(12, 1, def);
     case DOCUMENTS:
-      return appleSpecialFolder(kDocumentsFolderType, def);
+      return appleSpecialFolder(9, 1, def);
     case PICTURES:
-      return appleSpecialFolder(kPictureDocumentsFolderType, def);
+      return appleSpecialFolder(19, 1, def);
 #else
     case DESKTOP:
       return getXDGDir("DESKTOP", def, "Desktop");

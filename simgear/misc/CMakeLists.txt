@@ -33,6 +33,10 @@ set(SOURCES
     gzcontainerfile.cxx
     )
 
+if (APPLE)
+    list(APPEND SOURCES CocoaHelpers.mm)
+endif()
+
 simgear_component(misc misc "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)

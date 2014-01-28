@@ -122,7 +122,7 @@ target_link_libraries(SimGearCore
     ${DL_LIBRARY}
     ${EXPAT_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${CORE_SERVICES_LIBRARY})
+    ${COCOA_LIBRARY})
 
 if(NOT SIMGEAR_HEADLESS)
     target_link_libraries(SimGearScene

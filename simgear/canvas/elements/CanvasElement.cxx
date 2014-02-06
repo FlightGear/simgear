@@ -167,66 +167,8 @@ namespace canvas
       // Don't do anything if element is hidden
       return;
 
-    if( _transform_dirty )
-    {
-      osg::Matrix m;
-      for( size_t i = 0; i < _transform_types.size(); ++i )
-      {
-        // Skip unused indizes...
-        if( _transform_types[i] == TT_NONE )
-          continue;
-
-        SGPropertyNode* tf_node = _node->getChild("tf", i, true);
-
-        // Build up the matrix representation of the current transform node
-        osg::Matrix tf;
-        switch( _transform_types[i] )
-        {
-          case TT_MATRIX:
-            tf = osg::Matrix( tf_node->getDoubleValue("m[0]", 1),
-                              tf_node->getDoubleValue("m[1]", 0),
-                              0,
-                              tf_node->getDoubleValue("m[6]", 0),
-
-                              tf_node->getDoubleValue("m[2]", 0),
-                              tf_node->getDoubleValue("m[3]", 1),
-                              0,
-                              tf_node->getDoubleValue("m[7]", 0),
-
-                              0,
-                              0,
-                              1,
-                              0,
-
-                              tf_node->getDoubleValue("m[4]", 0),
-                              tf_node->getDoubleValue("m[5]", 0),
-                              0,
-                              tf_node->getDoubleValue("m[8]", 1) );
-            break;
-          case TT_TRANSLATE:
-            tf.makeTranslate( osg::Vec3f( tf_node->getDoubleValue("t[0]", 0),
-                                          tf_node->getDoubleValue("t[1]", 0),
-                                          0 ) );
-            break;
-          case TT_ROTATE:
-            tf.makeRotate( tf_node->getDoubleValue("rot", 0), 0, 0, 1 );
-            break;
-          case TT_SCALE:
-          {
-            float sx = tf_node->getDoubleValue("s[0]", 1);
-            // sy defaults to sx...
-            tf.makeScale( sx, tf_node->getDoubleValue("s[1]", sx), 1 );
-            break;
-          }
-          default:
-            break;
-        }
-        m.postMult( tf );
-      }
-      _transform->setMatrix(m);
-      _transform_dirty = false;
-      _attributes_dirty |= SCISSOR_COORDS;
-    }
+    // Trigger matrix update
+    getMatrix();
 
     if( _attributes_dirty & SCISSOR_COORDS )
     {
@@ -364,7 +306,7 @@ namespace canvas
         _transform_types.resize( child->getIndex() + 1 );
 
       _transform_types[ child->getIndex() ] = TT_NONE;
-      _transform_dirty = true;
+      _attributes_dirty |= TRANSFORM;
       return;
     }
     else if(    parent->getParent() == _node
@@ -385,7 +327,7 @@ namespace canvas
       else if( name == "s" )
         type = TT_SCALE;
 
-      _transform_dirty = true;
+      _attributes_dirty |= TRANSFORM;
       return;
     }
 
@@ -418,7 +360,7 @@ namespace canvas
         while( !_transform_types.empty() && _transform_types.back() == TT_NONE )
           _transform_types.pop_back();
 
-        _transform_dirty = true;
+        _attributes_dirty |= TRANSFORM;
         return;
       }
       else if( StyleInfo const* style = getStyleInfo(child->getNameString()) )
@@ -460,7 +402,7 @@ namespace canvas
     else if(   parent->getParent() == _node
             && parent->getNameString() == NAME_TRANSFORM )
     {
-      _transform_dirty = true;
+      _attributes_dirty |= TRANSFORM;
       return;
     }
 
@@ -584,6 +526,73 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  osg::Matrix Element::getMatrix() const
+  {
+    if( !(_attributes_dirty & TRANSFORM) )
+      return _transform->getMatrix();
+
+    osg::Matrix m;
+    for( size_t i = 0; i < _transform_types.size(); ++i )
+    {
+      // Skip unused indizes...
+      if( _transform_types[i] == TT_NONE )
+        continue;
+
+      SGPropertyNode* tf_node = _node->getChild("tf", i, true);
+
+      // Build up the matrix representation of the current transform node
+      osg::Matrix tf;
+      switch( _transform_types[i] )
+      {
+        case TT_MATRIX:
+          tf = osg::Matrix( tf_node->getDoubleValue("m[0]", 1),
+                            tf_node->getDoubleValue("m[1]", 0),
+                            0,
+                            tf_node->getDoubleValue("m[6]", 0),
+
+                            tf_node->getDoubleValue("m[2]", 0),
+                            tf_node->getDoubleValue("m[3]", 1),
+                            0,
+                            tf_node->getDoubleValue("m[7]", 0),
+
+                            0,
+                            0,
+                            1,
+                            0,
+
+                            tf_node->getDoubleValue("m[4]", 0),
+                            tf_node->getDoubleValue("m[5]", 0),
+                            0,
+                            tf_node->getDoubleValue("m[8]", 1) );
+          break;
+        case TT_TRANSLATE:
+          tf.makeTranslate( osg::Vec3f( tf_node->getDoubleValue("t[0]", 0),
+                                        tf_node->getDoubleValue("t[1]", 0),
+                                        0 ) );
+          break;
+        case TT_ROTATE:
+          tf.makeRotate( tf_node->getDoubleValue("rot", 0), 0, 0, 1 );
+          break;
+        case TT_SCALE:
+        {
+          float sx = tf_node->getDoubleValue("s[0]", 1);
+          // sy defaults to sx...
+          tf.makeScale( sx, tf_node->getDoubleValue("s[1]", sx), 1 );
+          break;
+        }
+        default:
+          break;
+      }
+      m.postMult( tf );
+    }
+    _transform->setMatrix(m);
+    _attributes_dirty &= ~TRANSFORM;
+    _attributes_dirty |= SCISSOR_COORDS;
+
+    return m;
+  }
+
+  //----------------------------------------------------------------------------
   Element::StyleSetters Element::_style_setters;
 
   //----------------------------------------------------------------------------
@@ -595,7 +604,6 @@ namespace canvas
     _canvas( canvas ),
     _parent( parent ),
     _attributes_dirty( 0 ),
-    _transform_dirty( false ),
     _transform( new osg::MatrixTransform ),
     _style( parent_style ),
     _scissor( 0 ),

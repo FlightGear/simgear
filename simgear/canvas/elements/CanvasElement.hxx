@@ -158,6 +158,11 @@ namespace canvas
       virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
 
       /**
+       * Get the transformation matrix (product of all transforms)
+       */
+      osg::Matrix getMatrix() const;
+
+      /**
        * Create an canvas Element
        *
        * @tparam Derived    Type of element (needs to derive from Element)
@@ -181,7 +186,8 @@ namespace canvas
 
       enum Attributes
       {
-        BLEND_FUNC      = 1,
+        TRANSFORM       = 1,
+        BLEND_FUNC      = TRANSFORM << 1,
         SCISSOR_COORDS  = BLEND_FUNC << 1,
         LAST_ATTRIBUTE  = SCISSOR_COORDS << 1
       };
@@ -200,9 +206,8 @@ namespace canvas
       CanvasWeakPtr _canvas;
       Element      *_parent;
 
-      uint32_t _attributes_dirty;
+      mutable uint32_t _attributes_dirty;
 
-      bool _transform_dirty;
       osg::observer_ptr<osg::MatrixTransform> _transform;
       std::vector<TransformType>              _transform_types;
 

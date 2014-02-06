@@ -19,6 +19,12 @@
  extern "C" {
 #endif
      
+#if defined(_MSC_VER)
+typedef unsigned char    u_int8_t;
+typedef unsigned int     u_int32_t;
+typedef unsigned __int64 u_int64_t;
+#endif
+     
 #define	MD5_BLOCK_LENGTH		64
 #define	MD5_DIGEST_LENGTH		16
 #define	MD5_DIGEST_STRING_LENGTH	(MD5_DIGEST_LENGTH * 2 + 1)

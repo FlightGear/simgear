@@ -377,8 +377,9 @@ public:
     memset(&md5Context, 0, sizeof(SG_MD5_CTX));
     SG_MD5Init(&md5Context);
     SG_MD5Update(&md5Context, (unsigned char*) output.data(), output.size());
-    SG_MD5Final(&md5Context);
-    decodedFileMd5 = strutils::encodeHex(md5Context.digest, 16);
+    unsigned char digest[MD5_DIGEST_LENGTH];
+    SG_MD5Final(digest, &md5Context);
+    decodedFileMd5 = strutils::encodeHex(digest, MD5_DIGEST_LENGTH);
 
     return true;
   }

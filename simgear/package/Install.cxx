@@ -89,13 +89,14 @@ protected:
             return;
         }
 
-        SG_MD5Final(&m_md5);
+        unsigned char digest[MD5_DIGEST_LENGTH];
+        SG_MD5Final(digest, &m_md5);
     // convert final sum to hex
         const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         std::stringstream hexMd5;
-        for (int i=0; i<16;++i) {
-            hexMd5 << hexChar[m_md5.digest[i] >> 4];
-            hexMd5 << hexChar[m_md5.digest[i] & 0x0f];
+        for (int i=0; i<MD5_DIGEST_LENGTH;++i) {
+            hexMd5 << hexChar[digest[i] >> 4];
+            hexMd5 << hexChar[digest[i] & 0x0f];
         }
         
         if (hexMd5.str() != m_owner->package()->md5()) {

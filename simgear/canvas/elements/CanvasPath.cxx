@@ -277,7 +277,8 @@ namespace canvas
       {
         osg::BoundingBox bb;
 
-        osg::Vec2f cur; // VG "Current point" (in local coordinates)
+        osg::Vec2f cur(0, 0), // VG "Current point" (in local coordinates)
+                   sub(0, 0); // beginning of current sub path
         VGubyte cmd_index = 0;
         for( size_t i = 0,              ci = 0;
                     i < _cmds.size() && ci < _coords.size();
@@ -297,6 +298,7 @@ namespace canvas
           switch( cmd )
           {
             case VG_CLOSE_PATH:
+              cur = sub;
               break;
             case VG_MOVE_TO:
             case VG_LINE_TO:
@@ -352,7 +354,12 @@ namespace canvas
           }
 
           if( num_coords > 0 )
+          {
             cur = points[ num_coords - 1 ];
+
+            if( cmd == VG_MOVE_TO )
+              sub = cur;
+          }
         }
 
         return bb;

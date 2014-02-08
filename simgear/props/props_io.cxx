@@ -46,7 +46,6 @@ using std::endl;
 #define DEFAULT_MODE (SGPropertyNode::READ|SGPropertyNode::WRITE)
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Property list visitor, for XML parsing.
 ////////////////////////////////////////////////////////////////////////
@@ -84,6 +83,12 @@ private:
     State () : node(0), type(""), mode(DEFAULT_MODE), omit(false) {}
     State (SGPropertyNode * _node, const char * _type, int _mode, bool _omit)
       : node(_node), type(_type), mode(_mode), omit(_omit) {}
+    bool hasChildren() const
+    {
+      int n_children = node->nChildren();
+      return n_children > 1
+         || (n_children == 1 && node->getChild(0)->getNameString() != "_attr_");
+    }
     SGPropertyNode * node;
     string type;
     int mode;
@@ -135,19 +140,20 @@ PropsVisitor::endXML ()
 
 
 /**
- * Check a yes/no flag, with default.
+ * Set/unset a yes/no flag.
  */
-static bool
-checkFlag (const char * flag, const sg_location& location,
-           bool defaultState = true)
+static void
+setFlag( int& mode,
+         int mask,
+         const std::string& flag,
+         const sg_location& location )
 {
-  if (flag == 0)
-    return defaultState;
-  else if (!strcmp(flag, "y"))
-    return true;
-  else if (!strcmp(flag, "n"))
-    return false;
-  else {
+  if( flag == "y" )
+    mode |= mask;
+  else if( flag == "n" )
+    mode &= ~mask;
+  else
+  {
     string message = "Unrecognized flag value '";
     message += flag;
     message += '\'';
@@ -170,7 +176,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       throw sg_io_exception(message, location, "SimGear Property Reader");
     }
 
-				// Check for an include.
+    // Check for an include.
     attval = atts.getValue("include");
     if (attval != 0) {
       try {
@@ -193,7 +199,8 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 
   else {
     State &st = state();
-				// Get the index.
+
+    // Get the index.
     attval = atts.getValue("n");
     int index = 0;
     string strName(name);
@@ -205,7 +212,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       st.counters[strName]++;
     }
 
-				// Got the index, so grab the node.
+    // Got the index, so grab the node.
     SGPropertyNode * node = st.node->getChild(strName, index, true);
     if (!node->getAttribute(SGPropertyNode::WRITE)) {
       SG_LOG(SG_INPUT, SG_ALERT, "Not overwriting write-protected property "
@@ -213,69 +220,90 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       node = &null;
     }
 
-				// Get the access-mode attributes,
-				// but don't set yet (in case they
-				// prevent us from recording the value).
-    int mode = _default_mode;
+    // TODO use correct default mode (keep for now to match past behavior)
+    int mode = _default_mode | SGPropertyNode::READ | SGPropertyNode::WRITE;
+    int omit = false;
+    const char* type = 0;
 
-    attval = atts.getValue("read");
-    if (checkFlag(attval, location, true))
-      mode |= SGPropertyNode::READ;
-    attval = atts.getValue("write");
-    if (checkFlag(attval, location, true))
-      mode |= SGPropertyNode::WRITE;
-    attval = atts.getValue("archive");
-    if (checkFlag(attval, location, false))
-      mode |= SGPropertyNode::ARCHIVE;
-    attval = atts.getValue("trace-read");
-    if (checkFlag(attval, location, false))
-      mode |= SGPropertyNode::TRACE_READ;
-    attval = atts.getValue("trace-write");
-    if (checkFlag(attval, location, false))
-      mode |= SGPropertyNode::TRACE_WRITE;
-    attval = atts.getValue("userarchive");
-    if (checkFlag(attval, location, false))
-      mode |= SGPropertyNode::USERARCHIVE;
-    attval = atts.getValue("preserve");
-    if (checkFlag(attval, location, false))
-      mode |= SGPropertyNode::PRESERVE;
+    SGPropertyNode* attr_node = NULL;
 
-				// Check for an alias.
-    attval = atts.getValue("alias");
-    if (attval != 0) {
-      if (!node->alias(attval))
-	SG_LOG(SG_INPUT, SG_ALERT, "Failed to set alias to " << attval
-               << "\n at " << location.asString());
-    }
+    for(int i = 0; i < atts.size(); ++i)
+    {
+      const std::string att_name = atts.getName(i);
+      const std::string val = atts.getValue(i);
 
-				// Check for an include.
-    bool omit = false;
-    attval = atts.getValue("include");
-    if (attval != 0) {
-      try {
-          SGPath path = simgear::ResourceManager::instance()->findPath(attval, SGPath(_base).dir());
-          if (path.isNull())
-          {
-              string message ="Cannot open file ";
-              message += attval;
-              throw sg_io_exception(message, location,
-                                    "SimGear Property Reader");
-          }
-          readProperties(path.str(), node, 0, _extended);
-      } catch (sg_io_exception &e) {
-          setException(e);
+      // Get the access-mode attributes,
+      // but don't set yet (in case they
+      // prevent us from recording the value).
+      if( att_name == "read" )
+        setFlag(mode, SGPropertyNode::READ, val, location);
+      else if( att_name == "write" )
+        setFlag(mode, SGPropertyNode::WRITE, val, location);
+      else if( att_name == "archive" )
+        setFlag(mode, SGPropertyNode::ARCHIVE, val, location);
+      else if( att_name == "trace-read" )
+        setFlag(mode, SGPropertyNode::TRACE_READ, val, location);
+      else if( att_name == "trace-write" )
+        setFlag(mode, SGPropertyNode::TRACE_WRITE, val, location);
+      else if( att_name == "userarchive" )
+        setFlag(mode, SGPropertyNode::USERARCHIVE, val, location);
+      else if( att_name == "preserve" )
+        setFlag(mode, SGPropertyNode::PRESERVE, val, location);
+
+      // Check for an alias.
+      else if( att_name == "alias" )
+      {
+        if( !node->alias(val) )
+          SG_LOG
+          (
+            SG_INPUT,
+            SG_ALERT,
+            "Failed to set alias to " << val << "\n at " << location.asString()
+          );
       }
 
-      attval = atts.getValue("omit-node");
-      omit = checkFlag(attval, location, false);
-    }
+      // Check for an include.
+      else if( att_name == "include" )
+      {
+        try
+        {
+          SGPath path = simgear::ResourceManager::instance()
+                      ->findPath(val, SGPath(_base).dir());
+          if (path.isNull())
+          {
+            string message ="Cannot open file ";
+            message += val;
+            throw sg_io_exception(message, location, "SimGear Property Reader");
+          }
+          readProperties(path.str(), node, 0, _extended);
+        }
+        catch (sg_io_exception &e)
+        {
+          setException(e);
+        }
+      }
 
-    const char *type = atts.getValue("type");
-    // if a type is given and the node is tied,
-    // don't clear the value because
-    // clearValue() unties the property
-    if (type && false == node->isTied() )
-      node->clearValue();
+      else if( att_name == "omit-node" )
+        setFlag(omit, 1, val, location);
+      else if( att_name == "type" )
+      {
+        type = atts.getValue(i);
+
+        // if a type is given and the node is tied,
+        // don't clear the value because
+        // clearValue() unties the property
+        if( !node->isTied() )
+          node->clearValue();
+      }
+      else if( att_name != "n" )
+      {
+        // Store all additional attributes in a special node named _attr_
+        if( !attr_node )
+          attr_node = node->getChild("_attr_", 0, true);
+
+        attr_node->setUnspecifiedValue(att_name.c_str(), val.c_str());
+      }
+    }
     push_state(node, type, mode, omit);
   }
 }
@@ -287,14 +315,15 @@ PropsVisitor::endElement (const char * name)
   bool ret;
   const sg_location location(getPath(), getLine(), getColumn());
 
-				// If there are no children and it's
-				// not an alias, then it's a leaf value.
-  if (st.node->nChildren() == 0 && !st.node->isAlias()) {
+  // If there are no children and it's
+  // not an alias, then it's a leaf value.
+  if( !st.hasChildren() && !st.node->isAlias() )
+  {
     if (st.type == "bool") {
       if (_data == "true" || atoi(_data.c_str()) != 0)
-	ret = st.node->setBoolValue(true);
+        ret = st.node->setBoolValue(true);
       else
-	ret = st.node->setBoolValue(false);
+        ret = st.node->setBoolValue(false);
     } else if (st.type == "int") {
       ret = st.node->setIntValue(atoi(_data.c_str()));
     } else if (st.type == "long") {
@@ -319,19 +348,24 @@ PropsVisitor::endElement (const char * name)
       string message = "Unrecognized data type '";
       message += st.type;
       message += '\'';
-				// FIXME: add location information
+      // FIXME: add location information
       throw sg_io_exception(message, location, "SimGear Property Reader");
     }
-    if (!ret)
-      SG_LOG(SG_INPUT, SG_ALERT, "readProperties: Failed to set "
-	     << st.node->getPath() << " to value \""
-	     << _data << "\" with type " << st.type << "\n at "
-             << location.asString());
+    if( !ret )
+      SG_LOG
+      (
+        SG_INPUT,
+        SG_ALERT,
+        "readProperties: Failed to set " << st.node->getPath()
+                         << " to value \"" << _data
+                         << "\" with type " << st.type
+                         << "\n at " << location.asString()
+      );
   }
 
-				// Set the access-mode attributes now,
-				// once the value has already been 
-				// assigned.
+  // Set the access-mode attributes now,
+  // once the value has already been
+  // assigned.
   st.node->setAttributes(st.mode);
 
   if (st.omit) {
@@ -353,7 +387,7 @@ PropsVisitor::endElement (const char * name)
 void
 PropsVisitor::data (const char * s, int length)
 {
-  if (state().node->nChildren() == 0)
+  if( !state().hasChildren() )
     _data.append(string(s, length));
 }
 
@@ -365,7 +399,6 @@ PropsVisitor::warning (const char * message, int line, int column)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Property list reader.
 ////////////////////////////////////////////////////////////////////////
@@ -426,7 +459,7 @@ void readProperties (const char *buf, const int size,
     throw visitor.getException();
 }
 
-
+
 ////////////////////////////////////////////////////////////////////////
 // Property list writer.
 ////////////////////////////////////////////////////////////////////////
@@ -634,7 +667,6 @@ writeProperties (const char* file, const SGPropertyNode * start_node)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Copy properties from one tree to another.
 ////////////////////////////////////////////////////////////////////////

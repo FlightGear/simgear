@@ -1,4 +1,3 @@
-
 // Written by David Megginson, started 2000-12
 //
 // Copyright (C) 2000  David Megginson, david@megginson.com
@@ -55,7 +54,6 @@ typedef std::vector<TimingInfo>::iterator eventTimeVecIterator;
 
 typedef void (*SGSubsystemTimingCb)(void* userData, const std::string& name, SampleStatistic* pStatistic);
 
-
 /**
  * Basic interface for all FlightGear subsystems.
  *
@@ -285,8 +283,7 @@ protected:
 };
 
 typedef SGSharedPtr<SGSubsystem> SGSubsystemRef;
-    
-
+
 /**
  * A group of FlightGear subsystems.
  */
@@ -316,6 +313,11 @@ public:
     virtual void remove_subsystem (const std::string &name);
     virtual bool has_subsystem (const std::string &name) const;
 
+    /**
+     * Remove all subsystems.
+     */
+    virtual void clearSubsystems();
+
     void reportTiming(void);
 
     /**
@@ -343,8 +345,6 @@ private:
     unsigned int _initPosition;
 };
 
-
-
 /**
  * Manage subsystems for FlightGear.
  *
@@ -421,7 +421,4 @@ private:
     SubsystemDict _subsystem_map;
 };
 
-
-
 #endif // __SUBSYSTEM_MGR_HXX
-

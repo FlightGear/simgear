@@ -333,6 +333,16 @@ SGSubsystemGroup::remove_subsystem (const string &name)
     SG_LOG(SG_GENERAL, SG_WARN, "remove_subsystem: missing:" << name);
 }
 
+//------------------------------------------------------------------------------
+void SGSubsystemGroup::clearSubsystems()
+{
+  for( MemberVec::iterator it = _members.begin();
+                           it != _members.end();
+                         ++it )
+    delete *it;
+  _members.clear();
+}
+
 void
 SGSubsystemGroup::set_fixed_update_time(double dt)
 {

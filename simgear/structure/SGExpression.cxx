@@ -369,7 +369,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression: no input found");
             return 0;
         }
-        
+
         SGSharedPtr<SGExpression<T> > inputExpression;
         inputExpression = SGReadExpression<T>(inputRoot, inputNode);
         if (!inputExpression) {

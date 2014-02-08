@@ -21,14 +21,14 @@
 namespace simgear
 {
 
-  //------------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   PropertyBasedElement::PropertyBasedElement(SGPropertyNode* node):
     _node(node)
   {
     _node->addChangeListener(this);
   }
 
-  //------------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   PropertyBasedElement::~PropertyBasedElement()
   {
     onDestroy();
@@ -53,13 +53,13 @@ namespace simgear
            ->removeChild(_node->getName(), _node->getIndex(), false);
   }
 
-  //------------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   SGConstPropertyNode_ptr PropertyBasedElement::getProps() const
   {
     return _node;
   }
 
-  //------------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   SGPropertyNode_ptr PropertyBasedElement::getProps()
   {
     return _node;

@@ -68,9 +68,15 @@ protected:
    * @param suffix  Suffix appended to each child node (x,y,z)
    * @param def     Vector containing default values
    */
+  SGVec3d readVec3( const SGPropertyNode& cfg,
+                    const std::string& name,
+                    const std::string& suffix = "",
+                    const SGVec3d& def = SGVec3d::zeros() ) const;
+
   SGVec3d readVec3( const std::string& name,
                     const std::string& suffix = "",
                     const SGVec3d& def = SGVec3d::zeros() ) const;
+
   void readRotationCenterAndAxis(SGVec3d& center, SGVec3d& axis) const;
 
   SGExpressiond* readOffsetValue(const char* tag_name) const;
@@ -322,11 +328,18 @@ private:
   class Transform;
   class Translation;
   class Rotation;
+  class Trapezoid;
   class UpdateCallback;
-  void appendTexTranslate(const SGPropertyNode* config,
-                          UpdateCallback* updateCallback);
-  void appendTexRotate(const SGPropertyNode* config,
-                       UpdateCallback* updateCallback);
+
+  SGExpressiond* readValue( const SGPropertyNode& cfg,
+                            const std::string& suffix = "" );
+
+  void appendTexTranslate( const SGPropertyNode& cfg,
+                           UpdateCallback* updateCallback);
+  void appendTexRotate(    const SGPropertyNode& cfg,
+                           UpdateCallback* updateCallback);
+  void appendTexTrapezoid( const SGPropertyNode& cfg,
+                           UpdateCallback* updateCallback);
 };
 
 

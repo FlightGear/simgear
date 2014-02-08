@@ -35,7 +35,6 @@
 #include <osgDB/Input>
 #include <osgDB/ParameterOutput>
 
-
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
@@ -47,6 +46,8 @@
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
+
+#include "vg/vgu.h"
 
 #include "animation.hxx"
 #include "model.hxx"
@@ -533,15 +534,24 @@ SGAnimation::installInGroup(const std::string& name, osg::Group& group,
 }
 
 //------------------------------------------------------------------------------
-SGVec3d SGAnimation::readVec3( const std::string& name,
+SGVec3d SGAnimation::readVec3( const SGPropertyNode& cfg,
+                               const std::string& name,
                                const std::string& suffix,
                                const SGVec3d& def ) const
 {
   SGVec3d vec;
-  vec[0] = _configNode->getDoubleValue(name + "/x" + suffix, def.x());
-  vec[1] = _configNode->getDoubleValue(name + "/y" + suffix, def.y());
-  vec[2] = _configNode->getDoubleValue(name + "/z" + suffix, def.z());
+  vec[0] = cfg.getDoubleValue(name + "/x" + suffix, def.x());
+  vec[1] = cfg.getDoubleValue(name + "/y" + suffix, def.y());
+  vec[2] = cfg.getDoubleValue(name + "/z" + suffix, def.z());
   return vec;
+}
+
+//------------------------------------------------------------------------------
+SGVec3d SGAnimation::readVec3( const std::string& name,
+                               const std::string& suffix,
+                               const SGVec3d& def ) const
+{
+  return readVec3(*_configNode, name, suffix, def);
 }
 
 //------------------------------------------------------------------------------
@@ -2025,6 +2035,61 @@ private:
   SGVec3d _center;
 };
 
+class SGTexTransformAnimation::Trapezoid :
+  public SGTexTransformAnimation::Transform {
+public:
+
+  enum Side { TOP, RIGHT, BOTTOM, LEFT };
+
+  Trapezoid(Side side):
+    _side(side)
+  { }
+  virtual void transform(osg::Matrix& matrix)
+  {
+    VGfloat sx0 = 0, sy0 = 0,
+            sx1 = 1, sy1 = 0,
+            sx2 = 0, sy2 = 1,
+            sx3 = 1, sy3 = 1;
+    switch( _side )
+    {
+      case TOP:
+        sx0 -= _value;
+        sx1 += _value;
+        break;
+      case RIGHT:
+        sy1 -= _value;
+        sy3 += _value;
+        break;
+      case BOTTOM:
+        sx2 -= _value;
+        sx3 += _value;
+        break;
+      case LEFT:
+        sy0 -= _value;
+        sy2 += _value;
+        break;
+    }
+    VGfloat mat[3][3];
+    VGUErrorCode err = vguComputeWarpQuadToSquare( sx0, sy0,
+                                                   sx1, sy1,
+                                                   sx2, sy2,
+                                                   sx3, sy3,
+                                                   (VGfloat*)mat );
+    if( err != VGU_NO_ERROR )
+      return;
+
+    matrix.preMult( osg::Matrix(
+      mat[0][0], mat[0][1], 0, mat[0][2],
+      mat[1][0], mat[1][1], 0, mat[1][2],
+              0,         0, 1,         0,
+      mat[2][0], mat[2][1], 0, mat[2][2]
+    ));
+  }
+
+protected:
+  Side _side;
+};
+
 class SGTexTransformAnimation::UpdateCallback :
   public osg::StateAttribute::Callback {
 public:
@@ -2084,18 +2149,22 @@ SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
   std::string type = getType();
 
   if (type == "textranslate") {
-    appendTexTranslate(getConfig(), updateCallback);
+    appendTexTranslate(*getConfig(), updateCallback);
   } else if (type == "texrotate") {
-    appendTexRotate(getConfig(), updateCallback);
+    appendTexRotate(*getConfig(), updateCallback);
+  } else if (type == "textrapezoid") {
+    appendTexTrapezoid(*getConfig(), updateCallback);
   } else if (type == "texmultiple") {
     std::vector<SGSharedPtr<SGPropertyNode> > transformConfigs;
     transformConfigs = getConfig()->getChildren("transform");
     for (unsigned i = 0; i < transformConfigs.size(); ++i) {
       std::string subtype = transformConfigs[i]->getStringValue("subtype", "");
       if (subtype == "textranslate")
-        appendTexTranslate(transformConfigs[i], updateCallback);
+        appendTexTranslate(*transformConfigs[i], updateCallback);
       else if (subtype == "texrotate")
-        appendTexRotate(transformConfigs[i], updateCallback);
+        appendTexRotate(*transformConfigs[i], updateCallback);
+      else if (subtype == "textrapezoid")
+        appendTexTrapezoid(*transformConfigs[i], updateCallback);
       else
         SG_LOG(SG_INPUT, SG_ALERT,
                "Ignoring unknown texture transform subtype");
@@ -2110,102 +2179,86 @@ SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
   return group;
 }
 
-void
-SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
-                                            UpdateCallback* updateCallback)
+SGExpressiond*
+SGTexTransformAnimation::readValue( const SGPropertyNode& cfg,
+                                    const std::string& suffix )
 {
-  std::string propertyName = config->getStringValue("property", "");
+  std::string prop_name = cfg.getStringValue("property");
   SGSharedPtr<SGExpressiond> value;
-  if (propertyName.empty())
+  if( prop_name.empty() )
     value = new SGConstExpression<double>(0);
-  else {
-    SGPropertyNode* inputProperty = getModelRoot()->getNode(propertyName, true);
-    value = new SGPropertyExpression<double>(inputProperty);
-  }
+  else
+    value = new SGPropertyExpression<double>
+    (
+      getModelRoot()->getNode(prop_name, true)
+    );
 
-  SGInterpTable* table = read_interpolation_table(config);
-  if (table) {
+  SGInterpTable* table = read_interpolation_table(&cfg);
+  if( table )
+  {
     value = new SGInterpTableExpression<double>(value, table);
-    double biasValue = config->getDoubleValue("bias", 0);
-    if (biasValue != 0)
+    double biasValue = cfg.getDoubleValue("bias", 0);
+    if( biasValue )
+      value = new SGBiasExpression<double>(value, biasValue);
+    value = new SGStepExpression<double>( value,
+                                          cfg.getDoubleValue("step", 0),
+                                          cfg.getDoubleValue("scroll", 0) );
+  }
+  else
+  {
+    double biasValue = cfg.getDoubleValue("bias", 0);
+    if( biasValue )
       value = new SGBiasExpression<double>(value, biasValue);
     value = new SGStepExpression<double>(value,
-                                         config->getDoubleValue("step", 0),
-                                         config->getDoubleValue("scroll", 0));
-    value = value->simplify();
-  } else {
-    double biasValue = config->getDoubleValue("bias", 0);
-    if (biasValue != 0)
-      value = new SGBiasExpression<double>(value, biasValue);
-    value = new SGStepExpression<double>(value,
-                                         config->getDoubleValue("step", 0),
-                                         config->getDoubleValue("scroll", 0));
-    value = read_offset_factor(config, value, "factor", "offset");
+                                         cfg.getDoubleValue("step", 0),
+                                         cfg.getDoubleValue("scroll", 0));
+    value = read_offset_factor(&cfg, value, "factor", "offset" + suffix);
 
-    if (config->hasChild("min") || config->hasChild("max")) {
-      double minClip = config->getDoubleValue("min", -SGLimitsd::max());
-      double maxClip = config->getDoubleValue("max", SGLimitsd::max());
+    if(    cfg.hasChild("min" + suffix)
+        || cfg.hasChild("max" + suffix) )
+    {
+      double minClip = cfg.getDoubleValue("min" + suffix, -SGLimitsd::max());
+      double maxClip = cfg.getDoubleValue("max" + suffix, SGLimitsd::max());
       value = new SGClipExpression<double>(value, minClip, maxClip);
     }
-    value = value->simplify();
   }
-  SGVec3d axis(config->getDoubleValue("axis/x", 0),
-               config->getDoubleValue("axis/y", 0),
-               config->getDoubleValue("axis/z", 0));
-  Translation* translation;
-  translation = new Translation(normalize(axis));
-  translation->setValue(config->getDoubleValue("starting-position", 0));
-  updateCallback->appendTransform(translation, value);
+
+  return value.release()->simplify();
 }
 
 void
-SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
-                                         UpdateCallback* updateCallback)
+SGTexTransformAnimation::appendTexTranslate( const SGPropertyNode& cfg,
+                                             UpdateCallback* updateCallback )
 {
-  std::string propertyName = config->getStringValue("property", "");
-  SGSharedPtr<SGExpressiond> value;
-  if (propertyName.empty())
-    value = new SGConstExpression<double>(0);
-  else {
-    SGPropertyNode* inputProperty = getModelRoot()->getNode(propertyName, true);
-    value = new SGPropertyExpression<double>(inputProperty);
-  }
-
-  SGInterpTable* table = read_interpolation_table(config);
-  if (table) {
-    value = new SGInterpTableExpression<double>(value, table);
-    double biasValue = config->getDoubleValue("bias", 0);
-    if (biasValue != 0)
-      value = new SGBiasExpression<double>(value, biasValue);
-    value = new SGStepExpression<double>(value,
-                                         config->getDoubleValue("step", 0),
-                                         config->getDoubleValue("scroll", 0));
-    value = value->simplify();
-  } else {
-    double biasValue = config->getDoubleValue("bias", 0);
-    if (biasValue != 0)
-      value = new SGBiasExpression<double>(value, biasValue);
-    value = new SGStepExpression<double>(value,
-                                         config->getDoubleValue("step", 0),
-                                         config->getDoubleValue("scroll", 0));
-    value = read_offset_factor(config, value, "factor", "offset-deg");
-
-    if (config->hasChild("min-deg") || config->hasChild("max-deg")) {
-      double minClip = config->getDoubleValue("min-deg", -SGLimitsd::max());
-      double maxClip = config->getDoubleValue("max-deg", SGLimitsd::max());
-      value = new SGClipExpression<double>(value, minClip, maxClip);
-    }
-    value = value->simplify();
-  }
-  SGVec3d axis(config->getDoubleValue("axis/x", 0),
-               config->getDoubleValue("axis/y", 0),
-               config->getDoubleValue("axis/z", 0));
-  SGVec3d center(config->getDoubleValue("center/x", 0),
-                 config->getDoubleValue("center/y", 0),
-                 config->getDoubleValue("center/z", 0));
-  Rotation* rotation;
-  rotation = new Rotation(normalize(axis), center);
-  rotation->setValue(config->getDoubleValue("starting-position-deg", 0));
-  updateCallback->appendTransform(rotation, value);
+  Translation* translation = new Translation(normalize(readVec3(cfg, "axis")));
+  translation->setValue(cfg.getDoubleValue("starting-position", 0));
+  updateCallback->appendTransform(translation, readValue(cfg));
 }
 
+void
+SGTexTransformAnimation::appendTexRotate( const SGPropertyNode& cfg,
+                                          UpdateCallback* updateCallback )
+{
+  Rotation* rotation = new Rotation( normalize(readVec3(cfg, "axis")),
+                                     readVec3(cfg, "center") );
+  rotation->setValue(cfg.getDoubleValue("starting-position-deg", 0));
+  updateCallback->appendTransform(rotation, readValue(cfg, "-deg"));
+}
+
+void
+SGTexTransformAnimation::appendTexTrapezoid( const SGPropertyNode& cfg,
+                                             UpdateCallback* updateCallback )
+{
+  Trapezoid::Side side = Trapezoid::TOP;
+  const std::string side_str = cfg.getStringValue("side");
+  if( side_str == "right" )
+    side = Trapezoid::RIGHT;
+  else if( side_str == "bottom" )
+    side = Trapezoid::BOTTOM;
+  else if( side_str == "left" )
+    side = Trapezoid::LEFT;
+
+  Trapezoid* trapezoid = new Trapezoid(side);
+  trapezoid->setValue(cfg.getDoubleValue("starting-position", 0));
+  updateCallback->appendTransform(trapezoid, readValue(cfg));
+}

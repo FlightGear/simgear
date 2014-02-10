@@ -43,6 +43,7 @@ class StateSet;
 }
 
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/threads/SGThread.hxx> // for SGMutex
 #include <simgear/math/SGMath.hxx>
 #include <simgear/bvh/BVHMaterial.hxx>
 
@@ -472,6 +473,9 @@ private:
   
   // Parameters from the materials file
   const SGPropertyNode* parameters;
+
+  // per-material lock for entrypoints called from multiple threads
+  SGMutex _lock;
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.

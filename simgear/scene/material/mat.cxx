@@ -50,6 +50,8 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
+#include <simgear/threads/SGGuard.hxx>
+
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
@@ -455,6 +457,7 @@ Effect* SGMaterial::get_effect(int i)
 
 Effect* SGMaterial::get_effect(const SGTexturedTriangleBin& triangleBin)
 {
+    SGGuard<SGMutex> g(_lock);
     if (_status.empty()) {
         SG_LOG( SG_GENERAL, SG_WARN, "No effect available.");
         return 0;
@@ -466,6 +469,7 @@ Effect* SGMaterial::get_effect(const SGTexturedTriangleBin& triangleBin)
 
 Effect* SGMaterial::get_effect()
 {
+    SGGuard<SGMutex> g(_lock);
     return get_effect(0);
 }
 

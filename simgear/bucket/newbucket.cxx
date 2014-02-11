@@ -77,12 +77,6 @@ SGBucket::SGBucket(const long int bindex) {
 
 
 // Set the bucket params for the specified lat and lon
-void SGBucket::set_bucket( double *lonlat ) {
-    set_bucket( lonlat[0], lonlat[1] );
-}	
-
-
-// Set the bucket params for the specified lat and lon
 void SGBucket::set_bucket( double dlon, double dlat ) {
     //
     // latitude first

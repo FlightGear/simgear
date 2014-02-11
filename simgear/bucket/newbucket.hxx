@@ -141,22 +141,15 @@ public:
      * @param dlon longitude specified in degrees
      * @param dlat latitude specified in degrees
      */
-    void set_bucket( double dlon, double dlat );
-
-    /**
-     * Reset a bucket to represent a new lat and lon
-     * @param lonlat an array of double[2] holding lon and lat
-     * (specified) in degrees
-     */
-    void set_bucket( double *lonlat );
+    void set_bucket(const SGGeod& geod);
 
     /**
      * Reset a bucket to represent a new lat and lon
      * @param dlon longitude specified in degrees
      * @param dlat latitude specified in degrees
      */
-    void set_bucket(const SGGeod& geod);
-
+    void set_bucket( double dlon, double dlat );
+    
     /**
      * Create an impossible bucket.
      * This is useful if you are comparing cur_bucket to last_bucket

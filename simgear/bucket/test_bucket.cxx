@@ -43,6 +43,32 @@ void testBucketSpans()
     COMPARE(sg_bucket_span(-89.9), 12.0);
 }
 
+void testBasic()
+{
+    SGBucket b1(5.1, 55.05);
+    COMPARE(b1.get_chunk_lon(), 5);
+    COMPARE(b1.get_chunk_lat(), 55);
+    COMPARE(b1.get_x(), 0);
+    COMPARE(b1.get_y(), 0);
+    COMPARE(b1.gen_index(), 3040320);
+    COMPARE(b1.gen_base_path(), "e000n50/e005n55");
+    
+    SGBucket b2(-10.1, -43.8);
+    COMPARE(b2.get_chunk_lon(), -11);
+    COMPARE(b2.get_chunk_lat(), -44);
+    COMPARE(b2.get_x(), 3);
+    COMPARE(b2.get_y(), 1); // latitude chunks numbered bottom to top, it seems
+    COMPARE(b2.gen_base_path(), "w020s50/w011s44");
+    
+    SGBucket b3(123.48, 9.01);
+    COMPARE(b3.get_chunk_lon(), 123);
+    COMPARE(b3.get_chunk_lat(), 9);
+    COMPARE(b3.get_x(), 3);
+    COMPARE(b3.get_y(), 0);
+    COMPARE(b3.gen_base_path(), "e120n00/e123n09");
+
+}
+
 void testPolar()
 {
     SGBucket b1(0.0, 89.92);
@@ -54,6 +80,13 @@ void testPolar()
     
     COMPARE(b1.gen_index(), b2.gen_index());
     
+    SGGeod actualNorthPole1 = b1.get_corner(2);
+    SGGeod actualNorthPole2 = b1.get_corner(3);
+    COMPARE_EP(actualNorthPole1.getLatitudeDeg(), 90.0);
+    COMPARE_EP(actualNorthPole1.getLongitudeDeg(), 12.0);
+    COMPARE_EP(actualNorthPole2.getLatitudeDeg(), 90.0);
+    COMPARE_EP(actualNorthPole2.getLongitudeDeg(), 0.0);
+
     SGBucket b3(-2, 89.88);
     SGBucket b4(-7, 89.88);
     COMPARE(b3.gen_index(), b4.gen_index());
@@ -67,6 +100,13 @@ void testPolar()
     COMPARE(b5.get_x(), 0);
     COMPARE(b5.get_y(), 0);
     COMPARE(b5.gen_index(), b6.gen_index());
+    
+    SGGeod actualSouthPole1 = b5.get_corner(0);
+    SGGeod actualSouthPole2 = b5.get_corner(1);
+    COMPARE_EP(actualSouthPole1.getLatitudeDeg(), -90.0);
+    COMPARE_EP(actualSouthPole1.getLongitudeDeg(), -180);
+    COMPARE_EP(actualSouthPole2.getLatitudeDeg(), -90.0);
+    COMPARE_EP(actualSouthPole2.getLongitudeDeg(), -168);
     
     // no automatic wrapping of these values occurs
     SGBucket b7(200, 89.88);
@@ -82,13 +122,11 @@ void testNearPolar()
     COMPARE(b1.get_chunk_lon(), 0);
     COMPARE(b1.get_chunk_lat(), 88);
     VERIFY(b1.gen_index() != b2.gen_index());
-    
+
     SGBucket b3(176.1, 88.5);
     COMPARE(b3.get_chunk_lon(), 176);
     
     SGBucket b4(-178, 88.5);
-    // the fix for the polar cap issue, causes this to report -180,
-    // not -184
     COMPARE(b4.get_chunk_lon(), -180);
 }
 
@@ -140,6 +178,26 @@ void testPolarOffset()
     
     COMPARE(b2.gen_index(), sgBucketOffset(-11.7, -89.6, -2, 0));
     
+// offset and wrap
+    SGBucket b3(-170, 89.1);
+    SGBucket b4(b3.sibling(-1, 0));
+    COMPARE(b4.get_chunk_lat(), 89);
+    COMPARE(b4.get_chunk_lon(), 168);
+    COMPARE(b4.get_x(), 0);
+    COMPARE(b4.get_y(), 0);
+    
+    COMPARE(b4.gen_index(), sgBucketOffset(-170, 89.1, -1, 0));
+
+    
+    SGBucket b5(177, 87.3);
+    SGBucket b6(b5.sibling(1, 1));
+    COMPARE(b6.get_chunk_lat(), 87);
+    COMPARE(b6.get_chunk_lon(), -180);
+    COMPARE(b6.get_x(), 0);
+    COMPARE(b6.get_y(), 3);
+    
+    COMPARE(b6.gen_index(), sgBucketOffset(177, 87.3, 1, 1));
+
 #if 0
     // offset vertically towards the pole
     SGBucket b3(b1.sibling(0, -5));
@@ -176,28 +234,7 @@ int main(int argc, char* argv[])
 {
     testBucketSpans();
     
-    SGBucket b1(5.1, 55.05);
-    COMPARE(b1.get_chunk_lon(), 5);
-    COMPARE(b1.get_chunk_lat(), 55);
-    COMPARE(b1.get_x(), 0);
-    COMPARE(b1.get_y(), 0);
-    COMPARE(b1.gen_index(), 3040320);
-    COMPARE(b1.gen_base_path(), "e000n50/e005n55");
-    
-    SGBucket b2(-10.1, -43.8);
-    COMPARE(b2.get_chunk_lon(), -11);
-    COMPARE(b2.get_chunk_lat(), -44);
-    COMPARE(b2.get_x(), 3);
-    COMPARE(b2.get_y(), 1); // latitude chunks numbered bottom to top, it seems
-    COMPARE(b2.gen_base_path(), "w020s50/w011s44");
-    
-    SGBucket b3(123.48, 9.01);
-    COMPARE(b3.get_chunk_lon(), 123);
-    COMPARE(b3.get_chunk_lat(), 9);
-    COMPARE(b3.get_x(), 3);
-    COMPARE(b3.get_y(), 0);
-    COMPARE(b3.gen_base_path(), "e120n00/e123n09");
-    
+    testBasic();
     testPolar();
     testNearPolar();
     testOffset();

@@ -74,6 +74,7 @@ void testPolar()
 
 }
 
+// test the tiles just below the pole (between 86 & 89 degrees N/S)
 void testNearPolar()
 {
     SGBucket b1(1, 88.5);
@@ -93,6 +94,81 @@ void testNearPolar()
 
 void testOffset()
 {
+    // bucket just below the 22 degree cutoff, so the next tile north
+    // is twice the width
+    SGBucket b1(-59.8, 21.9);
+    COMPARE(b1.get_chunk_lat(), 21);
+    COMPARE(b1.get_chunk_lon(), -60);
+    COMPARE(b1.get_x(), 1);
+    COMPARE(b1.get_y(), 7);
+    
+    // offset vertically
+    SGBucket b2(b1.sibling(0, 1));
+    COMPARE(b2.get_chunk_lat(), 22);
+    COMPARE(b2.get_chunk_lon(), -60);
+    COMPARE(b2.get_x(), 0);
+    COMPARE(b2.get_y(), 0);
+
+    COMPARE(b2.gen_index(), sgBucketOffset(-59.8, 21.9, 0, 1));
+    
+    // offset vertically and horizontally. We compute horizontal (x)
+    // movement at the target latitude, so this should move 0.25 * -3 degrees,
+    // NOT 0.125 * -3 degrees.
+    SGBucket b3(b1.sibling(-3, 1));
+    COMPARE(b3.get_chunk_lat(), 22);
+    COMPARE(b3.get_chunk_lon(), -61);
+    COMPARE(b3.get_x(), 1);
+    COMPARE(b3.get_y(), 0);
+    
+    COMPARE(b3.gen_index(), sgBucketOffset(-59.8, 21.9, -3, 1));
+}
+
+void testPolarOffset()
+{
+    SGBucket b1(-11.7, -89.6);
+    COMPARE(b1.get_chunk_lat(), -90);
+    COMPARE(b1.get_chunk_lon(), -12);
+    COMPARE(b1.get_x(), 0);
+    COMPARE(b1.get_y(), 3);
+    
+    // offset horizontally
+    SGBucket b2(b1.sibling(-2, 0));
+    COMPARE(b2.get_chunk_lat(), -90);
+    COMPARE(b2.get_chunk_lon(), -36);
+    COMPARE(b2.get_x(), 0);
+    COMPARE(b2.get_y(), 3);
+    
+    COMPARE(b2.gen_index(), sgBucketOffset(-11.7, -89.6, -2, 0));
+    
+#if 0
+    // offset vertically towards the pole
+    SGBucket b3(b1.sibling(0, -5));
+    COMPARE(b3.get_chunk_lat(), -90);
+    COMPARE(b3.get_chunk_lon(), -12);
+    COMPARE(b3.get_x(), 0);
+    COMPARE(b3.get_y(), 0);
+    
+    COMPARE(b3.gen_index(), sgBucketOffset(-11.7, -89.6, 0, 0));
+#endif
+}
+
+// test behaviour of bucket-offset near the anti-meridian (180-meridian)
+void testOffsetWrap()
+{
+    // near the equator
+    SGBucket b1(-179.8, 16.8);
+    COMPARE(b1.get_chunk_lat(), 16);
+    COMPARE(b1.get_chunk_lon(), -180);
+    COMPARE(b1.get_x(), 1);
+    COMPARE(b1.get_y(), 6);
+    
+    SGBucket b2(b1.sibling(-2, 0));
+    COMPARE(b2.get_chunk_lat(), 16);
+    COMPARE(b2.get_chunk_lon(), 179);
+    COMPARE(b2.get_x(), 7);
+    COMPARE(b2.get_y(), 6);
+    COMPARE(b2.gen_index(), sgBucketOffset(-179.8, 16.8, -2, 0));
+    
     
 }
 
@@ -125,6 +201,8 @@ int main(int argc, char* argv[])
     testPolar();
     testNearPolar();
     testOffset();
+    testOffsetWrap();
+    testPolarOffset();
     
     cout << "all tests passed OK" << endl;
     return 0; // passed

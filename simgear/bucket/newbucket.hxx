@@ -280,6 +280,11 @@ public:
      */
     inline int get_y() const { return y; }
 
+    /**
+     * @return bucket offset from this by dx,dy
+     */
+    SGBucket sibling(int dx, int dy) const;
+    
     // friends
 
     friend std::ostream& operator<< ( std::ostream&, const SGBucket& );

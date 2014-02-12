@@ -254,6 +254,16 @@ double SGBucket::get_height_m() const {
     return SG_BUCKET_SPAN * degree_height;
 }
 
+SGBucket SGBucket::sibling(int dx, int dy) const
+{
+    double clat = get_center_lat() + dy * SG_BUCKET_SPAN;
+    // find the lon span for the new latitude
+    double span = sg_bucket_span( clat );
+    
+    double tmp = get_center_lon() + dx * span;
+    tmp = SGMiscd::normalizePeriodic(-180.0, 180.0, tmp);
+    return SGBucket(tmp, clat);
+}
 
 // find the bucket which is offset by the specified tile units in the
 // X & Y direction.  We need the current lon and lat to resolve

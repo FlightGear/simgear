@@ -110,6 +110,9 @@ void testPolar()
     COMPARE(b1.get_x(), 0);
     COMPARE(b1.get_y(), 7);
     
+    COMPARE_EP(b1.get_highest_lat(), 90.0);
+    COMPARE_EP(b1.get_width_m(), 10.0);
+    
     COMPARE(b2.get_chunk_lat(), 89);
     COMPARE(b2.get_chunk_lon(), 0);
     COMPARE(b2.get_x(), 0);
@@ -137,6 +140,8 @@ void testPolar()
     COMPARE(b5.get_x(), 0);
     COMPARE(b5.get_y(), 0);
     COMPARE(b5.gen_index(), b6.gen_index());
+    COMPARE_EP(b5.get_highest_lat(), -90.0);
+    COMPARE_EP(b5.get_width_m(), 10.0);
     
     SGGeod actualSouthPole1 = b5.get_corner(0);
     SGGeod actualSouthPole2 = b5.get_corner(1);

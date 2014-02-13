@@ -236,17 +236,32 @@ double SGBucket::get_height() const {
     return SG_BUCKET_SPAN;
 }
 
-
-// return width of the tile in meters
-double SGBucket::get_width_m() const {
-    double clat = (int)get_center_lat();
-    if ( clat > 0 ) {
-	clat = (int)clat + 0.5;
-    } else {
-	clat = (int)clat - 0.5;
+double SGBucket::get_highest_lat() const
+{
+    unsigned char adjustedY = y;
+    if (lat >= 0) {
+        // tile is north of the equator, so we want the top edge. Add one
+        // to y to achieve this.
+        ++adjustedY;
     }
-    double clat_rad = clat * SGD_DEGREES_TO_RADIANS;
+    
+	return lat + (adjustedY / 8.0);
+}
+
+
+// return width of the tile in meters. This function is used by the
+// tile-manager to estimate how many tiles are in the view distance, so
+// we care about the smallest width, which occurs at the highest latitude.
+double SGBucket::get_width_m() const
+{
+    double clat_rad = get_highest_lat() * SGD_DEGREES_TO_RADIANS;
     double cos_lat = cos( clat_rad );
+    if (fabs(cos_lat) < SG_EPSILON) {
+        // happens for polar tiles, since we pass in a latitude of 90
+        // return an arbitrary small value so all tiles are loaded
+        return 10.0;
+    }
+    
     double local_radius = cos_lat * SG_EQUATORIAL_RADIUS_M;
     double local_perimeter = local_radius * SGD_2PI;
     double degree_width = local_perimeter / 360.0;

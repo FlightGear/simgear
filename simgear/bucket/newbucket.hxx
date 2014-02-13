@@ -207,6 +207,13 @@ public:
     }
 
     /**
+     * @return the highest (furthest from the equator) latitude of this
+     * tile. This is the top edge for tiles north of the equator, and
+     * the bottom edge for tiles south
+     */
+    double get_highest_lat() const;
+    
+    /**
      * @return the width of the tile in degrees.
      */
     double get_width() const;

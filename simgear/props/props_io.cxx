@@ -45,6 +45,9 @@ using std::endl;
 
 #define DEFAULT_MODE (SGPropertyNode::READ|SGPropertyNode::WRITE)
 
+// Name of special node containing unused attributes
+const std::string ATTR = "_attr_";
+
 
 ////////////////////////////////////////////////////////////////////////
 // Property list visitor, for XML parsing.
@@ -87,7 +90,7 @@ private:
     {
       int n_children = node->nChildren();
       return n_children > 1
-         || (n_children == 1 && node->getChild(0)->getNameString() != "_attr_");
+         || (n_children == 1 && node->getChild(0)->getNameString() != ATTR);
     }
     SGPropertyNode * node;
     string type;
@@ -299,7 +302,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       {
         // Store all additional attributes in a special node named _attr_
         if( !attr_node )
-          attr_node = node->getChild("_attr_", 0, true);
+          attr_node = node->getChild(ATTR, 0, true);
 
         attr_node->setUnspecifiedValue(att_name.c_str(), val.c_str());
       }
@@ -538,12 +541,40 @@ doIndent (ostream &output, int indent)
 
 
 static void
-writeAtts (ostream &output, const SGPropertyNode * node, bool forceindex)
+writeAtts( std::ostream &output,
+           const SGPropertyNode* node,
+           bool forceindex,
+           const SGPropertyNode* attr = NULL )
 {
   int index = node->getIndex();
 
   if (index != 0 || forceindex)
     output << " n=\"" << index << '"';
+
+  if( attr )
+    for(int i = 0; i < attr->nChildren(); ++i)
+    {
+      output << ' ' << attr->getChild(i)->getName() << "=\"";
+
+      const std::string data = attr->getChild(i)->getStringValue();
+      for(int j = 0; j < (int)data.size(); ++j)
+      {
+        switch(data[j])
+        {
+          case '"':
+            output << "\\\"";
+            break;
+          case '\\':
+            output << "\\\\";
+            break;
+          default:
+            output << data[i];
+            break;
+        }
+      }
+
+      output << '"';
+    }
 
 #if 0
   if (!node->getAttribute(SGPropertyNode::READ))
@@ -579,31 +610,37 @@ isArchivable (const SGPropertyNode * node, SGPropertyNode::Attribute archive_fla
 
 
 static bool
-writeNode (ostream &output, const SGPropertyNode * node,
-           bool write_all, int indent, SGPropertyNode::Attribute archive_flag)
+writeNode( std::ostream &output,
+           const SGPropertyNode * node,
+           bool write_all,
+           int indent,
+           SGPropertyNode::Attribute archive_flag )
 {
-				// Don't write the node or any of
-				// its descendants unless it is
-				// allowed to be archived.
+  // Don't write the node or any of
+  // its descendants unless it is
+  // allowed to be archived.
   if (!write_all && !isArchivable(node, archive_flag))
-    return true;		// Everything's OK, but we won't write.
+    return true; // Everything's OK, but we won't write.
 
   const string name = node->getName();
   int nChildren = node->nChildren();
-  bool node_has_value = false;
+  const SGPropertyNode* attr_node = node->getChild(ATTR, 0);
+  bool attr_written = false,
+       node_has_value = false;
 
-				// If there is a literal value,
-				// write it first.
+  // If there is a literal value,
+  // write it first.
   if (node->hasValue() && (write_all || node->getAttribute(archive_flag))) {
     doIndent(output, indent);
     output << '<' << name;
-    writeAtts(output, node, nChildren != 0);
+    writeAtts(output, node, nChildren != 0, attr_node);
+    attr_written = true;
     if (node->isAlias() && node->getAliasTarget() != 0) {
       output << " alias=\"" << node->getAliasTarget()->getPath()
-	     << "\"/>" << endl;
+       << "\"/>" << endl;
     } else {
       if (node->getType() != simgear::props::UNSPECIFIED)
-	output << " type=\"" << getTypeName(node->getType()) << '"';
+        output << " type=\"" << getTypeName(node->getType()) << '"';
       output << '>';
       writeData(output, node->getStringValue());
       output << "</" << name << '>' << endl;
@@ -611,14 +648,22 @@ writeNode (ostream &output, const SGPropertyNode * node,
     node_has_value = true;
   }
 
-				// If there are children, write them next.
-  if (nChildren > 0) {
+  // If there are children, write them next.
+  if( nChildren > (attr_node ? 1 : 0) )
+  {
     doIndent(output, indent);
     output << '<' << name;
-    writeAtts(output, node, node_has_value);
+    writeAtts(output, node, node_has_value, attr_written ? attr_node : NULL);
     output << '>' << endl;
-    for (int i = 0; i < nChildren; i++)
-      writeNode(output, node->getChild(i), write_all, indent + INDENT_STEP, archive_flag);
+    for(int i = 0; i < nChildren; i++)
+    {
+      if( node->getChild(i)->getNameString() != ATTR )
+        writeNode( output,
+                   node->getChild(i),
+                   write_all,
+                   indent + INDENT_STEP,
+                   archive_flag );
+    }
     doIndent(output, indent);
     output << "</" << name << '>' << endl;
   }

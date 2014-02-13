@@ -287,7 +287,7 @@ SGBucket SGBucket::sibling(int dx, int dy) const
 std::string SGBucket::gen_index_str() const
 {
 	char tmp[20];
-	std::snprintf(tmp, 20, "%ld",
+	::snprintf(tmp, 20, "%ld",
                  (((long)lon + 180) << 14) + ((lat + 90) << 6)
                  + (y << 3) + x);
 	return (std::string)tmp;

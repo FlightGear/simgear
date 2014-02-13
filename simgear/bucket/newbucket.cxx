@@ -28,6 +28,7 @@
 #endif
 
 #include <cmath>
+#include <cstdio> // some platforms need this for ::snprintf
 #include <iostream>
 
 #include <simgear/misc/sg_path.hxx>
@@ -214,7 +215,7 @@ std::string SGBucket::gen_base_path() const {
 	main_lat *= -1;
     }
 
-    snprintf(raw_path, 256, "%c%03d%c%02d/%c%03d%c%02d", 
+    ::snprintf(raw_path, 256, "%c%03d%c%02d/%c%03d%c%02d",
 	    hem, top_lon, pole, top_lat, 
 	    hem, main_lon, pole, main_lat);
 

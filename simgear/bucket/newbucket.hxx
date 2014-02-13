@@ -39,9 +39,8 @@
 #include <simgear/math/SGMath.hxx>
 
 #include <cmath>
-#include <cstdio> // sprintf()
-#include <ostream>
 #include <string>
+#include <iosfwd>
 #include <vector>
 
 /**
@@ -99,16 +98,21 @@ class SGBucket {
 private:
     short lon;        // longitude index (-180 to 179)
     short lat;        // latitude index (-90 to 89)
-    char x;          // x subdivision (0 to 7)
-    char y;          // y subdivision (0 to 7)
+    unsigned char x;          // x subdivision (0 to 7)
+    unsigned char y;          // y subdivision (0 to 7)
 
 public:
 
     /**
-     * Default constructor.
+     * Default constructor, creates an invalid SGBucket
      */
     SGBucket();
 
+    /**
+     * Check if this bucket refers to a valid tile, or not.
+     */
+    bool isValid() const;
+    
     /**
      * Construct a bucket given a specific location.
      * @param dlon longitude specified in degrees
@@ -122,14 +126,6 @@ public:
      * @param dlat latitude specified in degrees
      */
     SGBucket(const SGGeod& geod);
-
-    /** Construct a bucket.
-     *  @param is_good if false, create an invalid bucket.  This is
-     *  useful * if you are comparing cur_bucket to last_bucket and
-     *  you want to * make sure last_bucket starts out as something
-     *  impossible.
-     */
-    SGBucket(const bool is_good);
 
     /** Construct a bucket given a unique bucket index number.
      * @param bindex unique bucket index
@@ -156,11 +152,8 @@ public:
      * and you want to make sure last_bucket starts out as something
      * impossible.
      */
-    inline void make_bad() {
-	set_bucket(0.0, 0.0);
-	lon = -1000;
-    }
-
+    void make_bad();
+    
     /**
      * Generate the unique scenery tile index for this bucket
      *
@@ -185,14 +178,8 @@ public:
      * string form.
      * @return tile index in string form
      */
-    inline std::string gen_index_str() const {
-	char tmp[20];
-	std::sprintf(tmp, "%ld", 
-                     (((long)lon + 180) << 14) + ((lat + 90) << 6)
-                     + (y << 3) + x);
-	return (std::string)tmp;
-    }
-
+    std::string gen_index_str() const;
+    
     /**
      * Build the base path name for this bucket.
      * @return base path in string form
@@ -335,12 +322,7 @@ void sgGetBuckets( const SGGeod& min, const SGGeod& max, std::vector<SGBucket>& 
  * @param out output stream
  * @param b bucket
  */
-inline std::ostream&
-operator<< ( std::ostream& out, const SGBucket& b )
-{
-    return out << b.lon << ":" << (int)b.x << ", " << b.lat << ":" << (int)b.y;
-}
-
+std::ostream& operator<< ( std::ostream& out, const SGBucket& b );
 
 /**
  * Compare two bucket structures for equality.

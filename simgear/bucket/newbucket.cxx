@@ -27,17 +27,41 @@
 #  include <simgear_config.h>
 #endif
 
-#include <math.h>
+#include <cmath>
+#include <iostream>
 
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/debug/logstream.hxx>
 
 #include "newbucket.hxx"
 
 
 // default constructor
-SGBucket::SGBucket() {
+SGBucket::SGBucket() :
+    lon(-1000),
+    lat(-1000),
+    x(0),
+    y(0)
+{
 }
 
+bool SGBucket::isValid() const
+{
+    // The most northerly valid latitude is 89, not 90. There is no tile
+    // whose *bottom* latitude is 90. Similar there is no tile whose left egde
+    // is 180 longitude.
+    return (lon >= -180) &&
+            (lon < 180) &&
+            (lat >= -90) &&
+            (lat < 90) &&
+            (x < 8) && (y < 8);
+}
+
+void SGBucket::make_bad()
+{
+    lon = -1000;
+    lat = -1000;
+}
 
 // constructor for specified location
 SGBucket::SGBucket(const double dlon, const double dlat) {
@@ -45,17 +69,9 @@ SGBucket::SGBucket(const double dlon, const double dlat) {
 }
 
 SGBucket::SGBucket(const SGGeod& geod) {
-    set_bucket(geod);
+    set_bucket(geod.getLongitudeDeg(),
+                   geod.getLatitudeDeg());
 }
-
-// create an impossible bucket if false
-SGBucket::SGBucket(const bool is_good) {
-    set_bucket(0.0, 0.0);
-    if ( !is_good ) {
-	lon = -1000;
-    }
-}
-
 
 // Parse a unique scenery tile index and find the lon, lat, x, and y
 SGBucket::SGBucket(const long int bindex) {
@@ -75,42 +91,49 @@ SGBucket::SGBucket(const long int bindex) {
     x = index;
 }
 
+/* Calculate the greatest integral value less than
+ * or equal to the given value (floor(x)),
+ * but attribute coordinates close to the boundary to the next
+ * (increasing) integral
+ */
+static int floorWithEpsilon(double x)
+{
+    double diff = x - static_cast<int>(x);
+    if ( (x >= 0.0) || (fabs(diff) < SG_EPSILON) ) {
+        return static_cast<int>(x);
+    } else {
+        return static_cast<int>(x) - 1;
+    }
+}
 
 // Set the bucket params for the specified lat and lon
-void SGBucket::set_bucket( double dlon, double dlat ) {
+void SGBucket::set_bucket( double dlon, double dlat )
+{
+    if ((dlon < -180.0) || (dlon >= 180.0)) {
+        SG_LOG(SG_TERRAIN, SG_WARN, "SGBucket::set_bucket: passed longitude:" << dlon);
+        dlon = SGMiscd::normalizePeriodic(-180.0, 180.0, dlon);
+    }
+    
+    if ((dlat < -90.0) || (dlat > 90.0)) {
+        SG_LOG(SG_TERRAIN, SG_WARN, "SGBucket::set_bucket: passed latitude" << dlat);
+        dlat = SGMiscd::clip(dlat, -90.0, 90.0);
+    }
+    
     //
-    // latitude first
+    // longitude first
     //
     double span = sg_bucket_span( dlat );
-    double diff = dlon - (double)(int)dlon;
-
-    // cout << "diff = " << diff << "  span = " << span << endl;
-
-    /* Calculate the greatest integral longitude less than
-     * or equal to the given longitude (floor(dlon)),
-     * but attribute coordinates near the east border
-     * to the next tile.
-     */
-    if ( (dlon >= 0) || (fabs(diff) < SG_EPSILON) ) {
-	lon = (int)dlon;
-    } else {
-	lon = (int)dlon - 1;
-    }
-
+    // we do NOT need to special case lon=180 here, since
+    // normalizePeriodic will never return 180; it will
+    // return -180, which is what we want.
+    lon = floorWithEpsilon(dlon);
+    
     // find subdivision or super lon if needed
-    if ( span < SG_EPSILON ) {
-        /* sg_bucket_span() never returns 0.0
-         * or anything near it, so this really
-         * should not occur at any time.
-         */
-	// polar cap
-	lon = 0;
-	x = 0;
-    } else if ( span <= 1.0 ) {
+    if ( span <= 1.0 ) {
         /* We have more than one tile per degree of
          * longitude, so we need an x offset.
          */
-	x = (int)((dlon - lon) / span);
+        x = (int)((dlon - lon) / span);
     } else {
         /* We have one or more degrees per tile,
          * so we need to find the base longitude
@@ -123,44 +146,29 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
          *
          * That way, the Greenwich Meridian is always
          * a tile border.
-         *
-         * This gets us into trouble with the polar caps,
-         * which have width 360 and thus either span
-         * the range from 0 to 360 or from -360 to 0
-         * degrees, depending on whether lon is positive
-         * or negative!
-         *
-         * We also get into trouble with the 8 degree tiles
-         * north of 88N and south of 88S, because the west-
-         * and east-most tiles in that range will cover 184W
-         * to 176W and 176E to 184E respectively, with their
-         * center at 180E/W!
          */
-        lon=(int)floor(floor((lon+SG_EPSILON)/span)*span);
-        /* Correct the polar cap issue */
-        if ( lon < -180 ) {
-            lon = -180;
-        }
-	x = 0;
+        lon=static_cast<int>(floor(lon / span) * span);
+        x = 0;
     }
 
     //
     // then latitude
     //
-    diff = dlat - (double)(int)dlat;
-
-    /* Again, a modified floor() function (see longitude) */
-    if ( (dlat >= 0) || (fabs(diff) < SG_EPSILON) ) {
-	lat = (int)dlat;
+    lat = floorWithEpsilon(dlat);
+    
+    // special case when passing in the north pole point (possibly due to
+    // clipping latitude above). Ensures we generate a valid bucket in this
+    // scenario
+    if (lat == 90) {
+        lat = 89;
+        y = 7;
     } else {
-	lat = (int)dlat - 1;
+        /* Latitude base and offset are easier, as
+         * tiles always are 1/8 degree of latitude wide.
+         */
+        y = (int)((dlat - lat) * 8);
     }
-    /* Latitude base and offset are easier, as
-     * tiles always are 1/8 degree of latitude wide.
-     */
-    y = (int)((dlat - lat) * 8);
 }
-
 
 void SGBucket::set_bucket(const SGGeod& geod)
 {
@@ -256,13 +264,33 @@ double SGBucket::get_height_m() const {
 
 SGBucket SGBucket::sibling(int dx, int dy) const
 {
+    if (!isValid()) {
+        SG_LOG(SG_TERRAIN, SG_WARN, "SGBucket::sibling: requesting sibling of invalid bucket");
+        return SGBucket();
+    }
+    
     double clat = get_center_lat() + dy * SG_BUCKET_SPAN;
+    // return invalid here instead of clipping, so callers can discard
+    // invalid buckets without having to check if it's an existing one
+    if ((clat < -90.0) || (clat > 90.0)) {
+        return SGBucket();
+    }
+    
     // find the lon span for the new latitude
     double span = sg_bucket_span( clat );
     
     double tmp = get_center_lon() + dx * span;
     tmp = SGMiscd::normalizePeriodic(-180.0, 180.0, tmp);
     return SGBucket(tmp, clat);
+}
+
+std::string SGBucket::gen_index_str() const
+{
+	char tmp[20];
+	std::snprintf(tmp, 20, "%ld",
+                 (((long)lon + 180) << 14) + ((lat + 90) << 6)
+                 + (y << 3) + x);
+	return (std::string)tmp;
 }
 
 // find the bucket which is offset by the specified tile units in the
@@ -354,8 +382,20 @@ void sgGetBuckets( const SGGeod& min, const SGGeod& max, std::vector<SGBucket>& 
 
     for (lat = min.getLatitudeDeg(); lat <= max.getLatitudeDeg(); lat += SG_BUCKET_SPAN) {
         span = sg_bucket_span( lat );
-        for (lon = min.getLongitudeDeg(); lon <= max.getLongitudeDeg(); lon += span) {
-            list.push_back( SGBucket(lon , lat) );
+        for (lon = min.getLongitudeDeg(); lon <= max.getLongitudeDeg(); lon += span)
+        {
+            SGBucket b(lon, lat);
+            if (!b.isValid()) {
+                continue;
+            }
+            
+            list.push_back(b);
         }
     }
 }
+
+std::ostream& operator<< ( std::ostream& out, const SGBucket& b )
+{
+    return out << b.lon << ":" << (int)b.x << ", " << b.lat << ":" << (int)b.y;
+}
+

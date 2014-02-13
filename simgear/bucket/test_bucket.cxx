@@ -52,6 +52,7 @@ void testBasic()
     COMPARE(b1.get_y(), 0);
     COMPARE(b1.gen_index(), 3040320);
     COMPARE(b1.gen_base_path(), "e000n50/e005n55");
+    VERIFY(b1.isValid());
     
     SGBucket b2(-10.1, -43.8);
     COMPARE(b2.get_chunk_lon(), -11);
@@ -59,6 +60,7 @@ void testBasic()
     COMPARE(b2.get_x(), 3);
     COMPARE(b2.get_y(), 1); // latitude chunks numbered bottom to top, it seems
     COMPARE(b2.gen_base_path(), "w020s50/w011s44");
+    VERIFY(b2.isValid());
     
     SGBucket b3(123.48, 9.01);
     COMPARE(b3.get_chunk_lon(), 123);
@@ -66,7 +68,37 @@ void testBasic()
     COMPARE(b3.get_x(), 3);
     COMPARE(b3.get_y(), 0);
     COMPARE(b3.gen_base_path(), "e120n00/e123n09");
+    VERIFY(b3.isValid());
+    
+    SGBucket defBuck;
+    VERIFY(!defBuck.isValid());
+    
+    b3.make_bad();
+    VERIFY(!b3.isValid());
 
+    SGBucket atAntiMeridian(180.0, 12.3);
+    VERIFY(atAntiMeridian.isValid());
+    COMPARE(atAntiMeridian.get_chunk_lon(), -180);
+    COMPARE(atAntiMeridian.get_x(), 0);
+    
+    SGBucket atAntiMeridian2(-180.0, -78.1);
+    VERIFY(atAntiMeridian2.isValid());
+    COMPARE(atAntiMeridian2.get_chunk_lon(), -180);
+    COMPARE(atAntiMeridian2.get_x(), 0);
+    
+// check comparisom operator overload
+    SGBucket b4(5.11, 55.1);
+    VERIFY(b1 == b4); // should be equal
+    VERIFY(b1 == b1);
+    VERIFY(b1 != defBuck);
+    VERIFY(b1 != b2);
+    
+// check wrapping/clipping of inputs
+    SGBucket wrapMeridian(-200.0, 45.0);
+    COMPARE(wrapMeridian.get_chunk_lon(), 160);
+    
+    SGBucket clipPole(48.9, 91);
+    COMPARE(clipPole.get_chunk_lat(), 89);
 }
 
 void testPolar()
@@ -77,6 +109,11 @@ void testPolar()
     COMPARE(b1.get_chunk_lon(), 0);
     COMPARE(b1.get_x(), 0);
     COMPARE(b1.get_y(), 7);
+    
+    COMPARE(b2.get_chunk_lat(), 89);
+    COMPARE(b2.get_chunk_lon(), 0);
+    COMPARE(b2.get_x(), 0);
+    COMPARE(b2.get_y(), 7);
     
     COMPARE(b1.gen_index(), b2.gen_index());
     
@@ -108,9 +145,8 @@ void testPolar()
     COMPARE_EP(actualSouthPole2.getLatitudeDeg(), -90.0);
     COMPARE_EP(actualSouthPole2.getLongitudeDeg(), -168);
     
-    // no automatic wrapping of these values occurs
     SGBucket b7(200, 89.88);
-    COMPARE(b7.get_chunk_lon(), 192);
+    COMPARE(b7.get_chunk_lon(), -168);
 
 }
 
@@ -198,16 +234,11 @@ void testPolarOffset()
     
     COMPARE(b6.gen_index(), sgBucketOffset(177, 87.3, 1, 1));
 
-#if 0
     // offset vertically towards the pole
-    SGBucket b3(b1.sibling(0, -5));
-    COMPARE(b3.get_chunk_lat(), -90);
-    COMPARE(b3.get_chunk_lon(), -12);
-    COMPARE(b3.get_x(), 0);
-    COMPARE(b3.get_y(), 0);
+    SGBucket b7(b1.sibling(0, -5));
+    VERIFY(!b7.isValid());
     
-    COMPARE(b3.gen_index(), sgBucketOffset(-11.7, -89.6, 0, 0));
-#endif
+    VERIFY(!SGBucket(0, 90).sibling(0, 1).isValid());
 }
 
 // test behaviour of bucket-offset near the anti-meridian (180-meridian)

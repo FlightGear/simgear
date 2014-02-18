@@ -950,7 +950,7 @@ public:
       if (!_tileGeometryBin->vasiLights.empty()) {
         EffectGeode* vasiGeode = new EffectGeode;
         Effect* vasiEffect
-            = getLightEffect(24, osg::Vec3(1, 0.0001, 0.000001), 1, 24, true);
+            = getLightEffect(24, osg::Vec3(1, 0.0001, 0.000001), 1, 24, true, _options);
         vasiGeode->setEffect(vasiEffect);
         SGVec4f red(1, 0, 0, 1);
         SGMaterial* mat = 0;
@@ -979,7 +979,7 @@ public:
           || !_tileGeometryBin->reilLights.empty()
           || !_tileGeometryBin->odalLights.empty()
           || _tileGeometryBin->taxiLights.getNumLights() > 0)
-          runwayEffect = getLightEffect(16, osg::Vec3(1, 0.001, 0.0002), 1, 16, true);
+          runwayEffect = getLightEffect(16, osg::Vec3(1, 0.001, 0.0002), 1, 16, true, _options);
       if (_tileGeometryBin->runwayLights.getNumLights() > 0
           || !_tileGeometryBin->rabitLights.empty()
           || !_tileGeometryBin->reilLights.empty()
@@ -998,24 +998,24 @@ public:
         SGDirectionalLightListBin::const_iterator i;
         for (i = _tileGeometryBin->rabitLights.begin();
              i != _tileGeometryBin->rabitLights.end(); ++i) {
-          rwyLights->addChild(SGLightFactory::getSequenced(*i));
+          rwyLights->addChild(SGLightFactory::getSequenced(*i, _options));
         }
         for (i = _tileGeometryBin->reilLights.begin();
              i != _tileGeometryBin->reilLights.end(); ++i) {
-          rwyLights->addChild(SGLightFactory::getSequenced(*i));
+          rwyLights->addChild(SGLightFactory::getSequenced(*i, _options));
         }
         for (i = _tileGeometryBin->holdshortLights.begin();
              i != _tileGeometryBin->holdshortLights.end(); ++i) {
-          rwyLights->addChild(SGLightFactory::getHoldShort(*i));
+          rwyLights->addChild(SGLightFactory::getHoldShort(*i, _options));
         }
         for (i = _tileGeometryBin->guardLights.begin();
              i != _tileGeometryBin->guardLights.end(); ++i) {
-          rwyLights->addChild(SGLightFactory::getGuard(*i));
+          rwyLights->addChild(SGLightFactory::getGuard(*i, _options));
         }
         SGLightListBin::const_iterator j;
         for (j = _tileGeometryBin->odalLights.begin();
              j != _tileGeometryBin->odalLights.end(); ++j) {
-          rwyLights->addChild(SGLightFactory::getOdal(*j));
+          rwyLights->addChild(SGLightFactory::getOdal(*j, _options));
         }
         lightGroup->addChild(rwyLights);
       }

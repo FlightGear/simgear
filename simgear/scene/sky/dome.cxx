@@ -216,8 +216,7 @@ SGSkyDome::build( double hscale, double vscale, simgear::SGReaderWriterOptions *
     geom->setName("Dome Elements");
     geom->setUseDisplayList(false);
     geom->setVertexArray(dome_vl.get());
-    geom->setColorArray(dome_cl.get());
-    geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    geom->setColorArray(dome_cl.get(), osg::Array::BIND_PER_VERTEX);
     geom->setNormalBinding(osg::Geometry::BIND_OFF);
     geom->addPrimitiveSet(domeElements);
     geode->addDrawable(geom);
@@ -272,7 +271,7 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
 	outer_diff = SGVec3f(0, 0, 0);
 	middle_diff = SGVec3f(0, 0, 0);
     }
-    // printf("  outer_red_param = %.2f  outer_red_diff = %.2f\n", 
+    // printf("  outer_red_param = %.2f  outer_red_diff = %.2f\n",
     //        outer_red_param, outer_red_diff);
 
     // calculate transition colors between sky and fog
@@ -381,7 +380,7 @@ SGSkyDome::reposition( const SGVec3f& p, double _asl,
     // xglTranslatef( zero_elev.x(), zero_elev.y(), zero_elev.z() );
     T.makeTranslate( toOsg(p) );
 
-    // printf("  Translated to %.2f %.2f %.2f\n", 
+    // printf("  Translated to %.2f %.2f %.2f\n",
     //        zero_elev.x, zero_elev.y, zero_elev.z );
 
     // Rotate to proper orientation

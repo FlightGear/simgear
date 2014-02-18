@@ -635,12 +635,8 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
       // Set the vertex, texture and normals.  Colors will be set per-instance
       // later.
       sharedGeometry->setVertexArray(v);
-      sharedGeometry->setTexCoordArray(0, t);
-      sharedGeometry->setNormalArray(n);
-
-      // Work around a bug in OSG 3.2.0 where BIND_PER_VERTEX appears
-      // not to take effect if the normal array is set subsequently.
-      sharedGeometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+      sharedGeometry->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
+      sharedGeometry->setNormalArray(n, Array::BIND_PER_VERTEX);
     }
   }
 

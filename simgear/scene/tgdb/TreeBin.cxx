@@ -143,7 +143,7 @@ Geometry* makeSharedTreeGeometry(int numQuads)
     }
     Geometry* result = new Geometry;
     result->setVertexArray(v);
-    result->setTexCoordArray(0, t);
+    result->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
     result->setComputeBoundingBoxCallback(new TreesBoundingBoxCallback);
     result->setUseDisplayList(false);
     return result;
@@ -232,11 +232,11 @@ struct MakeTreesLeaf
     LOD* operator() () const
     {
         LOD* result = new LOD;
-        
+
         // Create a series of LOD nodes so trees cover decreases slightly
         // gradually with distance from _range to 2*_range
         for (float i = 0.0; i < SG_TREE_FADE_OUT_LEVELS; i++)
-        {        
+        {
             EffectGeode* geode = createTreeGeode(_width, _height, _varieties);
             geode->setEffect(_effect.get());
             result->addChild(geode, 0, _range * (1.0 + i / (SG_TREE_FADE_OUT_LEVELS - 1.0)));
@@ -335,7 +335,7 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
 
     for (i = forestList.begin(); i != forestList.end(); ++i) {
         TreeBin* forest = *i;
-      
+
         ref_ptr<Effect> effect;
         EffectMap::iterator iter = treeEffectMap.find(forest->texture);
 
@@ -374,10 +374,10 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
 
         for (size_t i = 0; i < group->getNumChildren(); ++i)
             mt->addChild(group->getChild(i));
-            
+
         delete forest;
     }
-    
+
     forestList.clear();
     QuadTreeCleaner cleaner;
     mt->accept(cleaner);

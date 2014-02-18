@@ -23,6 +23,7 @@
 
 #include "Pass.hxx"
 
+#include <osg/PointSprite>
 #include <osg/TexEnv>
 #include <osg/TexEnvCombine>
 #include <osg/TexGen>
@@ -33,6 +34,9 @@
 #include <osg/TextureCubeMap>
 #include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
+
+#include <OpenThreads/Mutex>
+#include <OpenThreads/ScopedLock>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -47,6 +51,10 @@
 
 namespace simgear
 {
+
+using OpenThreads::Mutex;
+using OpenThreads::ScopedLock;
+
 using namespace std;
 using namespace osg;
 
@@ -138,7 +146,15 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
             << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath() );
         texture = StateAttributeFactory::instance()->getWhiteTexture();
     }
+
+    const SGPropertyNode* pPoint = getEffectPropertyChild(effect, prop, "point-sprite");
+    if (pPoint && pPoint->getBoolValue()) {
+        ref_ptr<PointSprite> pointSprite = new PointSprite;
+        pass->setTextureAttributeAndModes(unit, pointSprite.get(), osg::StateAttribute::ON);
+    }
+
     pass->setTextureAttributeAndModes(unit, texture);
+
     const SGPropertyNode* envProp = prop->getChild("environment");
     if (envProp) {
         TexEnv* env = buildTexEnv(effect, envProp);
@@ -225,7 +241,7 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
 
     const SGPropertyNode* pMipmapControl
         = getEffectPropertyChild(effect, props, "mipmap-control");
-    MipMapTuple mipmapFunctions( AUTOMATIC, AUTOMATIC, AUTOMATIC, AUTOMATIC ); 
+    MipMapTuple mipmapFunctions( AUTOMATIC, AUTOMATIC, AUTOMATIC, AUTOMATIC );
     if ( pMipmapControl )
         mipmapFunctions = makeMipMapTuple(effect, pMipmapControl, options);
 
@@ -237,9 +253,9 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
               const SGReaderWriterOptions* options)
 {
     const string& imageName = attrs.get<0>();
-    if (imageName.empty()) 
+    if (imageName.empty())
         return false;
-        
+
     osgDB::ReaderWriter::ReadResult result;
     result = osgDB::readImageFile(imageName, options);
     osg::ref_ptr<osg::Image> image;
@@ -305,7 +321,7 @@ Texture* TexBuilder<T>::build(Effect* effect, Pass* pass, const SGPropertyNode* 
     tex = new T;
     if (!setAttrs(attrs, tex, options))
         return NULL;
-    
+
     if (itr == texMap.end())
         texMap.insert(make_pair(attrs, tex));
     else
@@ -385,7 +401,103 @@ namespace
 TextureBuilder::Registrar installNoise("noise", new NoiseBuilder);
 }
 
+class LightSpriteBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+protected:
+    Mutex lightMutex;
+    void setPointSpriteImage(unsigned char* data, unsigned log2resolution,
+                    unsigned charsPerPixel);
+    osg::Image* getPointSpriteImage(int logResolution);
+};
 
+Texture* LightSpriteBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+                             const SGReaderWriterOptions* options)
+{
+    ScopedLock<Mutex> lock(lightMutex);
+
+    // Always called from when the lightMutex is already taken
+    static osg::ref_ptr<osg::Texture2D> texture;
+
+    if (texture.valid())
+      return texture.get();
+
+    texture = new osg::Texture2D;
+    texture->setImage(getPointSpriteImage(6));
+    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP);
+    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP);
+
+    return texture.get();
+}
+
+void
+LightSpriteBuilder::setPointSpriteImage(unsigned char* data, unsigned log2resolution,
+                    unsigned charsPerPixel)
+{
+  int env_tex_res = (1 << log2resolution);
+  for (int i = 0; i < env_tex_res; ++i) {
+    for (int j = 0; j < env_tex_res; ++j) {
+      int xi = 2*i + 1 - env_tex_res;
+      int yi = 2*j + 1 - env_tex_res;
+      if (xi < 0)
+        xi = -xi;
+      if (yi < 0)
+        yi = -yi;
+
+      xi -= 1;
+      yi -= 1;
+
+      if (xi < 0)
+        xi = 0;
+      if (yi < 0)
+        yi = 0;
+
+      float x = 1.5*xi/(float)(env_tex_res);
+      float y = 1.5*yi/(float)(env_tex_res);
+      //       float x = 2*xi/(float)(env_tex_res);
+      //       float y = 2*yi/(float)(env_tex_res);
+      float dist = sqrt(x*x + y*y);
+      float bright = SGMiscf::clip(255*(1-dist), 0, 255);
+      for (unsigned l = 0; l < charsPerPixel; ++l)
+        data[charsPerPixel*(i*env_tex_res + j) + l] = (unsigned char)bright;
+    }
+  }
+}
+
+osg::Image*
+LightSpriteBuilder::getPointSpriteImage(int logResolution)
+{
+  osg::Image* image = new osg::Image;
+
+  osg::Image::MipmapDataType mipmapOffsets;
+  unsigned off = 0;
+  for (int i = logResolution; 0 <= i; --i) {
+    unsigned res = 1 << i;
+    off += res*res;
+    mipmapOffsets.push_back(off);
+  }
+
+  int env_tex_res = (1 << logResolution);
+
+  unsigned char* imageData = new unsigned char[off];
+  image->setImage(env_tex_res, env_tex_res, 1,
+                  GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, imageData,
+                  osg::Image::USE_NEW_DELETE);
+  image->setMipmapLevels(mipmapOffsets);
+
+  for (int k = logResolution; 0 <= k; --k) {
+    setPointSpriteImage(image->getMipmapData(logResolution - k), k, 1);
+  }
+
+  return image;
+}
+
+namespace
+{
+TextureBuilder::Registrar installLightSprite("light-sprite", new LightSpriteBuilder);
+}
 
 // Image names for all sides
 typedef boost::tuple<string, string, string, string, string, string> CubeMapTuple;
@@ -430,7 +542,7 @@ protected:
 
 // I use this until osg::CopyImage is fixed
 // This one assumes images are the same format and sizes are correct
-void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, int height, 
+void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, int height,
                  osg::Image* destImage, int dest_s, int dest_t)
 {
     for(int row = 0; row<height; ++row)

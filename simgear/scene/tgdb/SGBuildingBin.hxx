@@ -233,8 +233,7 @@ public:
       Geometry* createNewBuildingGeometryInstance(const BuildingInstance& building) const
       {
         Geometry* geom = simgear::clone(building.sharedGeometry.get(), CopyOp::SHALLOW_COPY);
-        geom->setColorArray(new Vec4Array);
-        geom->setColorBinding(Geometry::BIND_PER_VERTEX);
+        geom->setColorArray(new Vec4Array, Array::BIND_PER_VERTEX);
         geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS));
         return geom;
       }

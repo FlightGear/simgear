@@ -40,6 +40,7 @@
 
 #include <simgear/math/sg_types.hxx>
 #include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 
 #include "SGLightBin.hxx"
@@ -85,18 +86,19 @@ public:
           const SGVec4f& red, const SGVec4f& white);
 
   static osg::Node*
-  getSequenced(const SGDirectionalLightBin& lights);
+  getSequenced(const SGDirectionalLightBin& lights, const simgear::SGReaderWriterOptions* options);
 
   static osg::Node*
-  getOdal(const SGLightBin& lights);
+  getOdal(const SGLightBin& lights, const simgear::SGReaderWriterOptions* options);
 
   static osg::Node*
-  getHoldShort(const SGDirectionalLightBin& lights);
+  getHoldShort(const SGDirectionalLightBin& lights, const simgear::SGReaderWriterOptions* options);
 
   static osg::Node*
-  getGuard(const SGDirectionalLightBin& lights);
+  getGuard(const SGDirectionalLightBin& lights, const simgear::SGReaderWriterOptions* options);
 };
 
 simgear::Effect* getLightEffect(float size, const osg::Vec3& attenuation,
-                                float minSize, float maxSize, bool directional);
+                                float minSize, float maxSize, bool directional,
+                                const simgear::SGReaderWriterOptions* options);
 #endif // _SG_PT_LIGHTS_HXX

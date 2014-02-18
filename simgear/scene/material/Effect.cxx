@@ -48,6 +48,7 @@
 #include <osg/Math>
 #include <osg/PolygonMode>
 #include <osg/PolygonOffset>
+#include <osg/Point>
 #include <osg/Program>
 #include <osg/Referenced>
 #include <osg/RenderInfo>
@@ -265,8 +266,8 @@ struct CullFaceBuilder : PassAttributeBuilder
             pass->setMode(GL_CULL_FACE, StateAttribute::OFF);
         else
             SG_LOG(SG_INPUT, SG_ALERT,
-                   "invalid cull face property " << propVal);            
-    }    
+                   "invalid cull face property " << propVal);
+    }
 };
 
 InstallAttributeBuilder<CullFaceBuilder> installCullFace("cull-face");
@@ -284,7 +285,7 @@ struct ColorMaskBuilder : PassAttributeBuilder
         Vec4 m = getColor(realProp);
         mask->setMask(m.r() > 0.0, m.g() > 0.0, m.b() > 0.0, m.a() > 0.0);
         pass->setAttributeAndModes(mask);
-    }    
+    }
 };
 
 InstallAttributeBuilder<ColorMaskBuilder> installColorMask("color-mask");
@@ -309,7 +310,7 @@ struct HintBuilder : public PassAttributeBuilder
         StateSet::RenderingHint renderingHint = StateSet::DEFAULT_BIN;
         findAttr(renderingHints, realProp, renderingHint);
         pass->setRenderingHint(renderingHint);
-    }    
+    }
 };
 
 InstallAttributeBuilder<HintBuilder> installHint("rendering-hint");
@@ -387,9 +388,9 @@ void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
     if ((color = getEffectPropertyChild(effect, prop, "emissive")))
         mat->setEmission(Material::FRONT_AND_BACK, getColor(color));
     if ((color = getEffectPropertyChild(effect, prop, "emissive-front")))
-        mat->setEmission(Material::FRONT, getColor(color));        
+        mat->setEmission(Material::FRONT, getColor(color));
     if ((color = getEffectPropertyChild(effect, prop, "emissive-back")))
-        mat->setEmission(Material::BACK, getColor(color));        
+        mat->setEmission(Material::BACK, getColor(color));
     const SGPropertyNode* shininess = 0;
     mat->setShininess(Material::FRONT_AND_BACK, 0.0f);
     if ((shininess = getEffectPropertyChild(effect, prop, "shininess")))
@@ -538,7 +539,7 @@ struct StencilBuilder : public PassAttributeBuilder
             findAttr(stencilFunction, pfunction, func);
         if (pvalue)
             ref = pvalue->getIntValue();
-        if (pmask) 
+        if (pmask)
             mask = pmask->getIntValue();
 
         if (psfail)
@@ -578,7 +579,7 @@ void AlphaToCoverageBuilder::buildAttribute(Effect* effect, Pass* pass,
     const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
     if (!realProp)
         return;
-    pass->setMode(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB, (realProp->getValue<bool>() ? 
+    pass->setMode(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB, (realProp->getValue<bool>() ?
                                     StateAttribute::ON : StateAttribute::OFF));
 }
 
@@ -1062,19 +1063,19 @@ struct PolygonOffsetBuilder : public PassAttributeBuilder
     {
         if (!isAttributeActive(effect, prop))
             return;
-        
+
         const SGPropertyNode* factor
            = getEffectPropertyChild(effect, prop, "factor");
         const SGPropertyNode* units
            = getEffectPropertyChild(effect, prop, "units");
-        
+
         ref_ptr<PolygonOffset> polyoffset = new PolygonOffset;
-        
+
         polyoffset->setFactor(factor->getFloatValue());
         polyoffset->setUnits(units->getFloatValue());
 
         SG_LOG(SG_INPUT, SG_BULK,
-                   "Set PolygonOffset to " << polyoffset->getFactor() << polyoffset->getUnits() );            
+                   "Set PolygonOffset to " << polyoffset->getFactor() << polyoffset->getUnits() );
 
         pass->setAttributeAndModes(polyoffset.get(),
                                    StateAttribute::OVERRIDE|StateAttribute::ON);
@@ -1116,6 +1117,52 @@ struct VertexProgramPointSizeBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<VertexProgramPointSizeBuilder>
 installPointSize("vertex-program-point-size");
+
+struct PointBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const SGReaderWriterOptions* options)
+    {
+        float minsize = 1.0;
+        float maxsize = 1.0;
+        float size    = 1.0;
+        osg::Vec3f attenuation = osg::Vec3f(1.0, 1.0, 1.0);
+
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+
+        const SGPropertyNode* pminsize
+            = getEffectPropertyChild(effect, prop, "min-size");
+        const SGPropertyNode* pmaxsize
+            = getEffectPropertyChild(effect, prop, "max-size");
+        const SGPropertyNode* psize
+            = getEffectPropertyChild(effect, prop, "size");
+        const SGPropertyNode* pattenuation
+            = getEffectPropertyChild(effect, prop, "attenuation");
+
+        if (pminsize)
+            minsize = pminsize->getFloatValue();
+        if (pmaxsize)
+            maxsize = pmaxsize->getFloatValue();
+        if (psize)
+            size = psize->getFloatValue();
+        if (pattenuation)
+            attenuation = osg::Vec3f(pattenuation->getChild("x")->getFloatValue(),
+                                     pattenuation->getChild("y")->getFloatValue(),
+                                     pattenuation->getChild("z")->getFloatValue());
+
+        osg::Point* point = new osg::Point;
+        point->setMinSize(minsize);
+        point->setMaxSize(maxsize);
+        point->setSize(size);
+        point->setDistanceAttenuation(attenuation);
+        pass->setAttributeAndModes(point);
+    }
+};
+
+InstallAttributeBuilder<PointBuilder>
+installPoint("point");
 
 EffectNameValue<Depth::Function> depthFunctionInit[] =
 {
@@ -1359,17 +1406,17 @@ class PropertyExpression : public SGExpression<T>
 {
 public:
     PropertyExpression(SGPropertyNode* pnode) : _pnode(pnode), _listener(NULL) {}
-    
+
     ~PropertyExpression()
     {
         delete _listener;
     }
-    
+
     void eval(T& value, const expression::Binding*) const
     {
         value = _pnode->getValue<T>();
     }
-    
+
     void setListener(SGPropertyChangeListener* l)
     {
         _listener = l;
@@ -1383,15 +1430,15 @@ class EffectPropertyListener : public SGPropertyChangeListener
 {
 public:
     EffectPropertyListener(Technique* tniq) : _tniq(tniq) {}
-    
+
     void valueChanged(SGPropertyNode* node)
     {
         if (_tniq.valid())
             _tniq->refreshValidity();
     }
-    
+
     virtual ~EffectPropertyListener() { }
-    
+
 protected:
     osg::observer_ptr<Technique> _tniq;
 };

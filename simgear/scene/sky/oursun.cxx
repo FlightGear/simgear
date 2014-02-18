@@ -1,9 +1,9 @@
 // oursun.hxx -- model earth's sun
 //
-// Written by Durk Talsma. Originally started October 1997, for distribution  
-// with the FlightGear project. Version 2 was written in August and 
-// September 1998. This code is based upon algorithms and data kindly 
-// provided by Mr. Paul Schlyter. (pausch@saaf.se). 
+// Written by Durk Talsma. Originally started October 1997, for distribution
+// with the FlightGear project. Version 2 was written in August and
+// September 1998. This code is based upon algorithms and data kindly
+// provided by Mr. Paul Schlyter. (pausch@saaf.se).
 //
 // Separated out rendering pieces and converted to ssg by Curt Olson,
 // March 2000
@@ -79,7 +79,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     osg::TexEnv* texEnv = new osg::TexEnv;
     texEnv->setMode(osg::TexEnv::MODULATE);
     stateSet->setTextureAttribute(0, texEnv, osg::StateAttribute::ON);
- 
+
     osg::Material* material = new osg::Material;
     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
     material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(0,0,0,1));
@@ -135,10 +135,9 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     osg::Geometry* geometry = new osg::Geometry;
     geometry->setUseDisplayList(false);
     geometry->setVertexArray(sun_vl);
-    geometry->setColorArray(sun_cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setColorArray(sun_cl.get(), osg::Array::BIND_OVERALL);
     geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->setTexCoordArray(0, sun_tl);
+    geometry->setTexCoordArray(0, sun_tl, osg::Array::BIND_PER_VERTEX);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
     geode->addDrawable(geometry);
 
@@ -148,7 +147,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     geode = new osg::Geode;
     stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-7, "RenderBin");
-    
+
     texture = SGLoadTexture2D("inner_halo.png", options.get());
     stateSet->setTextureAttributeAndModes(0, texture);
 
@@ -172,17 +171,16 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     geometry = new osg::Geometry;
     geometry->setUseDisplayList(false);
     geometry->setVertexArray(ihalo_vl);
-    geometry->setColorArray(ihalo_cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setColorArray(ihalo_cl.get(), osg::Array::BIND_OVERALL);
     geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->setTexCoordArray(0, ihalo_tl);
+    geometry->setTexCoordArray(0, ihalo_tl, osg::Array::BIND_PER_VERTEX);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
     geode->addDrawable(geometry);
 
     sun_transform->addChild( geode );
-    
+
     // set up the outer halo state
-    
+
     geode = new osg::Geode;
     stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-8, "RenderBin");
@@ -210,10 +208,9 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     geometry = new osg::Geometry;
     geometry->setUseDisplayList(false);
     geometry->setVertexArray(ohalo_vl);
-    geometry->setColorArray(ohalo_cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setColorArray(ohalo_cl.get(), osg::Array::BIND_OVERALL);
     geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->setTexCoordArray(0, ohalo_tl);
+    geometry->setTexCoordArray(0, ohalo_tl, osg::Array::BIND_PER_VERTEX);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
     geode->addDrawable(geometry);
 
@@ -260,14 +257,14 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
             density_avg = 0.7;
         }
         else {
-            rel_humidity = env_node->getFloatValue( "relative-humidity" ); 
+            rel_humidity = env_node->getFloatValue( "relative-humidity" );
             density_avg =  env_node->getFloatValue( "atmosphere/density-tropo-avg" );
         }
 
         // ok, now let's go and generate the sun and scene color
         osg::Vec4 i_halo_color, o_halo_color, scene_color, sun_color;
 
-        // Some comments: 
+        // Some comments:
         // * When the sunangle changes, light has to travel a longer
         //   distance through the atmosphere. So it's scattered more due
         //   to raleigh scattering, which affects blue more than green
@@ -277,12 +274,12 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         // * Visability also affects suncolor inasmuch as more particles
         //   are in the air that cause more scattering.
         // * We base our calculation on the halo's color, which is most
-        //   scattered. 
+        //   scattered.
         double red_scat_f, red_scat_corr_f, green_scat_f, blue_scat_f;
- 
-        // Red - is almost not scattered     
+
+        // Red - is almost not scattered
         // Lambda is 700 nm
-        
+
         red_scat_f = (aerosol_factor * path_distance * density_avg)/5E+07;
         red_scat_corr_f = sun_exp2_punch_through / (1 - red_scat_f);
         sun_color[0] = 1;
@@ -292,7 +289,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         green_scat_f = (aerosol_factor * path_distance * density_avg)/8.8938E+06;
         sun_color[1] = 1 - green_scat_f * red_scat_corr_f;
         scene_color[1] = 1 - green_scat_f;
- 
+
         // Blue - 435.8 nm
         blue_scat_f = (aerosol_factor * path_distance * density_avg)/3.607E+06;
         sun_color[2] = 1 - blue_scat_f * red_scat_corr_f;
@@ -302,7 +299,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         sun_color[3] = 1;
         scene_color[3] = 1;
 
-        // Now that we have the color calculated 
+        // Now that we have the color calculated
         // let's consider the saturation which is produced by mie scattering
         double saturation = 1 - ( rel_humidity / 200 );
         scene_color[1] += (( 1 - saturation ) * ( 1 - scene_color[1] ));
@@ -341,7 +338,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 
         gamma_correct_rgb( i_halo_color._v );
         gamma_correct_rgb( o_halo_color._v );
-        gamma_correct_rgb( scene_color._v );    
+        gamma_correct_rgb( scene_color._v );
         gamma_correct_rgb( sun_color._v );
 
         (*sun_cl)[0] = sun_color;
@@ -363,10 +360,10 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 // fixed at a great distance from the viewer.  Also add in an optional
 // rotation (i.e. for the current time of day.)
 // Then calculate stuff needed for the sun-coloring
-bool SGSun::reposition( double rightAscension, double declination, 
+bool SGSun::reposition( double rightAscension, double declination,
                         double sun_dist, double lat, double alt_asl, double sun_angle)
 {
-    // GST - GMT sidereal time 
+    // GST - GMT sidereal time
     osg::Matrix T2, RA, DEC;
 
     // xglRotatef( ((SGD_RADIANS_TO_DEGREES * rightAscension)- 90.0),
@@ -391,7 +388,7 @@ bool SGSun::reposition( double rightAscension, double declination,
 
          double r_tropo = r_tropo_pole / sqrt ( 1 - ( epsilon_tropo2 * pow ( cos( lat ), 2 )));
          double r_earth = r_earth_pole / sqrt ( 1 - ( epsilon_earth2 * pow ( cos( lat ), 2 )));
- 
+
          double position_radius = r_earth + alt_asl;
 
          double gamma =  SG_PI - sun_angle;

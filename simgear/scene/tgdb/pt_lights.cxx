@@ -41,12 +41,10 @@
 #include <osg/BlendFunc>
 #include <osg/TexEnv>
 #include <osg/Sequence>
-#include <osg/PolygonMode>
 #include <osg/Fog>
 #include <osg/FragmentProgram>
 #include <osg/VertexProgram>
 #include <osg/Point>
-#include <osg/PointSprite>
 #include <osg/Material>
 #include <osg/Group>
 #include <osg/StateSet>
@@ -76,85 +74,7 @@ using OpenThreads::ScopedLock;
 using namespace osg;
 using namespace simgear;
 
-static void
-setPointSpriteImage(unsigned char* data, unsigned log2resolution,
-                    unsigned charsPerPixel)
-{
-  int env_tex_res = (1 << log2resolution);
-  for (int i = 0; i < env_tex_res; ++i) {
-    for (int j = 0; j < env_tex_res; ++j) {
-      int xi = 2*i + 1 - env_tex_res;
-      int yi = 2*j + 1 - env_tex_res;
-      if (xi < 0)
-        xi = -xi;
-      if (yi < 0)
-        yi = -yi;
-      
-      xi -= 1;
-      yi -= 1;
-      
-      if (xi < 0)
-        xi = 0;
-      if (yi < 0)
-        yi = 0;
-      
-      float x = 1.5*xi/(float)(env_tex_res);
-      float y = 1.5*yi/(float)(env_tex_res);
-      //       float x = 2*xi/(float)(env_tex_res);
-      //       float y = 2*yi/(float)(env_tex_res);
-      float dist = sqrt(x*x + y*y);
-      float bright = SGMiscf::clip(255*(1-dist), 0, 255);
-      for (unsigned l = 0; l < charsPerPixel; ++l)
-        data[charsPerPixel*(i*env_tex_res + j) + l] = (unsigned char)bright;
-    }
-  }
-}
-
-static osg::Image*
-getPointSpriteImage(int logResolution)
-{
-  osg::Image* image = new osg::Image;
-  
-  osg::Image::MipmapDataType mipmapOffsets;
-  unsigned off = 0;
-  for (int i = logResolution; 0 <= i; --i) {
-    unsigned res = 1 << i;
-    off += res*res;
-    mipmapOffsets.push_back(off);
-  }
-  
-  int env_tex_res = (1 << logResolution);
-  
-  unsigned char* imageData = new unsigned char[off];
-  image->setImage(env_tex_res, env_tex_res, 1,
-                  GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, imageData,
-                  osg::Image::USE_NEW_DELETE);
-  image->setMipmapLevels(mipmapOffsets);
-  
-  for (int k = logResolution; 0 <= k; --k) {
-    setPointSpriteImage(image->getMipmapData(logResolution - k), k, 1);
-  }
-  
-  return image;
-}
-
 static Mutex lightMutex;
-
-static osg::Texture2D*
-gen_standard_light_sprite(void)
-{
-  // Always called from when the lightMutex is already taken
-  static osg::ref_ptr<osg::Texture2D> texture;
-  if (texture.valid())
-    return texture.get();
-  
-  texture = new osg::Texture2D;
-  texture->setImage(getPointSpriteImage(6));
-  texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP);
-  texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP);
-  
-  return texture.get();
-}
 
 namespace
 {
@@ -162,80 +82,36 @@ typedef boost::tuple<float, osg::Vec3, float, float, bool> PointParams;
 typedef std::map<PointParams, observer_ptr<Effect> > EffectMap;
 
 EffectMap effectMap;
-
-ref_ptr<PolygonMode> polyMode = new PolygonMode(PolygonMode::FRONT,
-                                                PolygonMode::POINT);
-ref_ptr<PointSprite> pointSprite = new PointSprite;
 }
 
 Effect* getLightEffect(float size, const Vec3& attenuation,
-                       float minSize, float maxSize, bool directional)
+                       float minSize, float maxSize, bool directional,
+                       const SGReaderWriterOptions* options)
 {
     PointParams pointParams(size, attenuation, minSize, maxSize, directional);
     ScopedLock<Mutex> lock(lightMutex);
+    ref_ptr<Effect> effect;
     EffectMap::iterator eitr = effectMap.find(pointParams);
     if (eitr != effectMap.end())
     {
-        ref_ptr<Effect> effect;
         if (eitr->second.lock(effect))
             return effect.release();
     }
-    // Basic stuff; no sprite or attenuation support
-    Pass *basicPass = new Pass;
-    basicPass->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-    basicPass->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    StateAttributeFactory *attrFact = StateAttributeFactory::instance();
-    basicPass->setAttributeAndModes(attrFact->getStandardBlendFunc());
-    basicPass->setAttributeAndModes(attrFact->getStandardAlphaFunc());
-    if (directional) {
-        basicPass->setAttributeAndModes(attrFact->getCullFaceBack());
-        basicPass->setAttribute(polyMode.get());
-    }
-    Pass *attenuationPass = clone(basicPass, CopyOp::SHALLOW_COPY);
-    osg::Point* point = new osg::Point;
-    point->setMinSize(minSize);
-    point->setMaxSize(maxSize);
-    point->setSize(size);
-    point->setDistanceAttenuation(attenuation);
-    attenuationPass->setAttributeAndModes(point);
-    Pass *spritePass = clone(basicPass, CopyOp::SHALLOW_COPY);
-    spritePass->setTextureAttributeAndModes(0, pointSprite.get(),
-                                            osg::StateAttribute::ON);
-    Texture2D* texture = gen_standard_light_sprite();
-    spritePass->setTextureAttribute(0, texture);
-    spritePass->setTextureMode(0, GL_TEXTURE_2D,
-                               osg::StateAttribute::ON);
-    spritePass->setTextureAttribute(0, attrFact->getStandardTexEnv());
-    Pass *combinedPass = clone(spritePass, CopyOp::SHALLOW_COPY);
-    combinedPass->setAttributeAndModes(point);
-    ref_ptr<Effect> effect = new Effect;
-    std::vector<std::string> parameterExtensions;
 
-    if (SGSceneFeatures::instance()->getEnablePointSpriteLights())
-    {
-        std::vector<std::string> combinedExtensions;
-        combinedExtensions.push_back("GL_ARB_point_sprite");
-        combinedExtensions.push_back("GL_ARB_point_parameters");
-        Technique* combinedTniq = new Technique;
-        combinedTniq->passes.push_back(combinedPass);
-        combinedTniq->setGLExtensionsPred(2.0, combinedExtensions);
-        effect->techniques.push_back(combinedTniq);
-        std::vector<std::string> spriteExtensions;
-        spriteExtensions.push_back(combinedExtensions.front());
-        Technique* spriteTniq = new Technique;
-        spriteTniq->passes.push_back(spritePass);
-        spriteTniq->setGLExtensionsPred(2.0, spriteExtensions);
-        effect->techniques.push_back(spriteTniq);
-        parameterExtensions.push_back(combinedExtensions.back());
-    }
+    SGPropertyNode_ptr effectProp = new SGPropertyNode;
+    makeChild(effectProp, "inherits-from")->setStringValue("Effects/surface-lights");
 
-    Technique* parameterTniq = new Technique;
-    parameterTniq->passes.push_back(attenuationPass);
-    parameterTniq->setGLExtensionsPred(1.4, parameterExtensions);
-    effect->techniques.push_back(parameterTniq);
-    Technique* basicTniq = new Technique(true);
-    basicTniq->passes.push_back(basicPass);
-    effect->techniques.push_back(basicTniq);
+    SGPropertyNode* params = makeChild(effectProp, "parameters");
+    params->getNode("size",true)->setValue(size);
+    params->getNode("attenuation",true)->getNode("x", true)->setValue(attenuation.x());
+    params->getNode("attenuation",true)->getNode("y", true)->setValue(attenuation.y());
+    params->getNode("attenuation",true)->getNode("z", true)->setValue(attenuation.z());
+    params->getNode("min-size",true)->setValue(minSize);
+    params->getNode("max-size",true)->setValue(maxSize);
+    params->getNode("cull-face",true)->setValue(directional ? "back" : "off");
+
+    effect = makeEffect(effectProp, true, options);
+
     if (eitr == effectMap.end())
         effectMap.insert(std::make_pair(pointParams, effect));
     else
@@ -252,7 +128,7 @@ SGLightFactory::getLightDrawable(const SGLightBin::Light& light)
 
   vertices->push_back(toOsg(light.position));
   colors->push_back(toOsg(light.color));
-  
+
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
@@ -263,7 +139,7 @@ SGLightFactory::getLightDrawable(const SGLightBin::Light& light)
   // Enlarge the bounding box to avoid such light nodes being victim to
   // small feature culling.
   geometry->setComputeBoundingBoxCallback(new SGEnlargeBoundingBox(1));
-  
+
   osg::DrawArrays* drawArrays;
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
                                    0, vertices->size());
@@ -290,7 +166,7 @@ SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light)
   colors->push_back(toOsg(visibleColor));
   colors->push_back(toOsg(invisibleColor));
   colors->push_back(toOsg(invisibleColor));
-  
+
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
@@ -300,7 +176,7 @@ SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light)
   // Enlarge the bounding box to avoid such light nodes being victim to
   // small feature culling.
   geometry->setComputeBoundingBoxCallback(new SGEnlargeBoundingBox(1));
-  
+
   osg::DrawArrays* drawArrays;
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
                                    0, vertices->size());
@@ -317,7 +193,7 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
 {
   if (lights.getNumLights() <= 0)
     return 0;
-  
+
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
 
@@ -327,14 +203,14 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
     color[3] = SGMiscf::max(0, SGMiscf::min(1, color[3] + alphaOff));
     colors->push_back(toOsg(color));
   }
-  
+
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
   geometry->setNormalBinding(osg::Geometry::BIND_OFF);
   geometry->setColorArray(colors);
   geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-  
+
   osg::DrawArrays* drawArrays;
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
                                    0, vertices->size());
@@ -361,7 +237,7 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
 {
   if (lights.getNumLights() <= 0)
     return 0;
-  
+
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
 
@@ -380,14 +256,14 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
     colors->push_back(toOsg(invisibleColor));
     colors->push_back(toOsg(invisibleColor));
   }
-  
+
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
   geometry->setNormalBinding(osg::Geometry::BIND_OFF);
   geometry->setColorArray(colors);
   geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-  
+
   osg::DrawArrays* drawArrays;
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
                                    0, vertices->size());
@@ -433,7 +309,7 @@ buildVasi(const SGDirectionalLightBin& lights, const SGVec3f& up,
 
   } else if (count == 12) {
     SGVasiDrawable* drawable = new SGVasiDrawable(red, white);
-    
+
     // probably vasi, first 6 are downwind bar (2.5 deg)
     for (unsigned i = 0; i < 6; ++i)
       drawable->addLight(lights.getLight(i).position,
@@ -467,7 +343,7 @@ SGLightFactory::getVasi(const SGVec3f& up, const SGDirectionalLightBin& lights,
   osg::BlendFunc* blendFunc = new osg::BlendFunc;
   stateSet->setAttribute(blendFunc);
   stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  
+
   osg::AlphaFunc* alphaFunc;
   alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
   stateSet->setAttribute(alphaFunc);
@@ -477,7 +353,7 @@ SGLightFactory::getVasi(const SGVec3f& up, const SGDirectionalLightBin& lights,
 }
 
 osg::Node*
-SGLightFactory::getSequenced(const SGDirectionalLightBin& lights)
+SGLightFactory::getSequenced(const SGDirectionalLightBin& lights, const SGReaderWriterOptions* options)
 {
   if (lights.getNumLights() <= 0)
     return 0;
@@ -488,7 +364,7 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights)
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
   Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
-                                  6.0f, 10.0f, true);
+                                  6.0f, 10.0f, true, options);
   for (int i = lights.getNumLights() - 1; 0 <= i; --i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
@@ -504,7 +380,7 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights)
 }
 
 osg::Node*
-SGLightFactory::getOdal(const SGLightBin& lights)
+SGLightFactory::getOdal(const SGLightBin& lights, const SGReaderWriterOptions* options)
 {
   if (lights.getNumLights() < 2)
     return 0;
@@ -515,7 +391,7 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
   Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
-                                  6.0, 10.0, false);
+                                  6.0, 10.0, false, options);
   // centerline lights
   for (int i = lights.getNumLights(); i > 1; --i) {
     EffectGeode* egeode = new EffectGeode;
@@ -545,7 +421,7 @@ SGLightFactory::getOdal(const SGLightBin& lights)
 
 // Blinking hold short line lights
 osg::Node*
-SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
+SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights, const SGReaderWriterOptions* options)
 {
   if (lights.getNumLights() < 2)
     return 0;
@@ -559,7 +435,7 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
   // ...and increase the lights in steps
   for (int i = 2; i < 7; i+=2) {
       Effect* effect = getLightEffect(i, osg::Vec3(1, 0.001, 0.000002),
-                                      0.0f, i, true);
+                                      0.0f, i, true, options);
       EffectGeode* egeode = new EffectGeode;
       for (unsigned int j = 0; j < lights.getNumLights(); ++j) {
           egeode->addDrawable(getLightDrawable(lights.getLight(j)));
@@ -577,7 +453,7 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
 
 // Alternating runway guard lights ("wig-wag")
 osg::Node*
-SGLightFactory::getGuard(const SGDirectionalLightBin& lights)
+SGLightFactory::getGuard(const SGDirectionalLightBin& lights, const SGReaderWriterOptions* options)
 {
   if (lights.getNumLights() < 2)
     return 0;
@@ -588,7 +464,7 @@ SGLightFactory::getGuard(const SGDirectionalLightBin& lights)
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
   Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.001, 0.000002),
-                                  0.0f, 8.0f, true);
+                                  0.0f, 8.0f, true, options);
   for (unsigned int i = 0; i < lights.getNumLights(); ++i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);

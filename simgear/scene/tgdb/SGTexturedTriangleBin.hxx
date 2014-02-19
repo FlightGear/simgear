@@ -330,9 +330,10 @@ public:
     colors->push_back(osg::Vec4(1, 1, 1, 1));
 
     osg::Geometry* geometry = new osg::Geometry;
-    geometry->setUseDisplayList(false);
-    if (useVBOs) 
+    if (useVBOs) {
+        geometry->setUseDisplayList(false);
         geometry->setUseVertexBufferObjects(true);
+    }
     
     geometry->setDataVariance(osg::Object::STATIC);
     geometry->setVertexArray(vertices);

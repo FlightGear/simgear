@@ -40,7 +40,6 @@ EffectCullVisitor::EffectCullVisitor(bool collectLights) :
 }
 
 EffectCullVisitor::EffectCullVisitor(const EffectCullVisitor& rhs) :
-    osg::Referenced(rhs),
     CullVisitor(rhs)
 {
 }

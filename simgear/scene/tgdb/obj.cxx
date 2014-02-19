@@ -95,7 +95,7 @@ public:
   SGDirectionalLightListBin reilLights;
   SGMatModelBin randomModels;
   SGBuildingBinList randomBuildings;
-
+  
   static SGVec4f
   getMaterialLightColor(const SGMaterial* material)
   {
@@ -387,7 +387,7 @@ public:
     return true;
   }
 
-  osg::Node* getSurfaceGeometry(SGMaterialLib* matlib) const
+  osg::Node* getSurfaceGeometry(SGMaterialLib* matlib, bool useVBOs) const
   {
     if (materialTriangleMap.empty())
       return 0;
@@ -397,7 +397,7 @@ public:
     //osg::Geode* geode = new osg::Geode;
     SGMaterialTriangleMap::const_iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      osg::Geometry* geometry = i->second.buildGeometry();
+      osg::Geometry* geometry = i->second.buildGeometry(useVBOs);
       SGMaterial *mat = 0;
       if (matlib)
         mat = matlib->findCached(i->first);
@@ -1187,6 +1187,8 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       matlib = options->getMaterialLib();
     }
 
+    bool useVBOs = (options->getPluginStringData("SimGear::USE_VBOS") == "ON");
+
     SGVec3d center = tile.get_gbs_center();
     SGGeod geodPos = SGGeod::fromCart(center);
     SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
@@ -1212,7 +1214,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     osg::Group* terrainGroup = new osg::Group;
     terrainGroup->setName("BTGTerrainGroup");
 
-    osg::Node* node = tileGeometryBin->getSurfaceGeometry(matlib);
+    osg::Node* node = tileGeometryBin->getSurfaceGeometry(matlib, useVBOs);
     if (node)
       terrainGroup->addChild(node);
 

@@ -315,7 +315,7 @@ public:
     }
   }
 
-  osg::Geometry* buildGeometry(const TriangleVector& triangles) const
+  osg::Geometry* buildGeometry(const TriangleVector& triangles, bool useVBOs) const
   {
     // Do not build anything if there is nothing in here ...
     if (empty() || triangles.empty())
@@ -330,6 +330,10 @@ public:
     colors->push_back(osg::Vec4(1, 1, 1, 1));
 
     osg::Geometry* geometry = new osg::Geometry;
+    geometry->setUseDisplayList(false);
+    if (useVBOs) 
+        geometry->setUseVertexBufferObjects(true);
+    
     geometry->setDataVariance(osg::Object::STATIC);
     geometry->setVertexArray(vertices);
     geometry->setNormalArray(normals);
@@ -373,8 +377,8 @@ public:
     return geometry;
   }
 
-  osg::Geometry* buildGeometry() const
-  { return buildGeometry(getTriangles()); }
+  osg::Geometry* buildGeometry(bool useVBOs) const
+  { return buildGeometry(getTriangles(), useVBOs); }
   
   int getTextureIndex() const
   {

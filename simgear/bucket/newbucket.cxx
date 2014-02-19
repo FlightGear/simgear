@@ -64,10 +64,13 @@ void SGBucket::make_bad()
     lat = -1000;
 }
 
+#ifndef NO_DEPRECATED_API
+
 // constructor for specified location
 SGBucket::SGBucket(const double dlon, const double dlat) {
     set_bucket(dlon, dlat);
 }
+#endif
 
 SGBucket::SGBucket(const SGGeod& geod) {
     set_bucket(geod.getLongitudeDeg(),
@@ -107,8 +110,23 @@ static int floorWithEpsilon(double x)
     }
 }
 
+#ifndef NO_DEPRECATED_API
+
+void SGBucket::set_bucket(double dlon, double dlat)
+{
+    innerSet(dlon, dlat);
+}
+
+
+void SGBucket::set_bucket(const SGGeod& geod)
+{
+    innerSet(geod.getLongitudeDeg(), geod.getLatitudeDeg());
+}
+
+#endif
+
 // Set the bucket params for the specified lat and lon
-void SGBucket::set_bucket( double dlon, double dlat )
+void SGBucket::innerSet( double dlon, double dlat )
 {
     if ((dlon < -180.0) || (dlon >= 180.0)) {
         SG_LOG(SG_TERRAIN, SG_WARN, "SGBucket::set_bucket: passed longitude:" << dlon);
@@ -169,11 +187,6 @@ void SGBucket::set_bucket( double dlon, double dlat )
          */
         y = (int)((dlat - lat) * 8);
     }
-}
-
-void SGBucket::set_bucket(const SGGeod& geod)
-{
-    set_bucket(geod.getLongitudeDeg(), geod.getLatitudeDeg());
 }
 
 // Build the path name for this bucket
@@ -297,7 +310,10 @@ SGBucket SGBucket::sibling(int dx, int dy) const
     
     double tmp = get_center_lon() + dx * span;
     tmp = SGMiscd::normalizePeriodic(-180.0, 180.0, tmp);
-    return SGBucket(tmp, clat);
+    
+    SGBucket b;
+    b.innerSet(tmp, clat);
+    return b;
 }
 
 std::string SGBucket::gen_index_str() const
@@ -309,6 +325,7 @@ std::string SGBucket::gen_index_str() const
 	return (std::string)tmp;
 }
 
+#ifndef NO_DEPRECATED_API
 // find the bucket which is offset by the specified tile units in the
 // X & Y direction.  We need the current lon and lat to resolve
 // ambiguities when going from a wider tile to a narrower one above or
@@ -335,7 +352,7 @@ SGBucket sgBucketOffset( double dlon, double dlat, int dx, int dy ) {
 
     return result;
 }
-
+#endif
 
 // calculate the offset between two buckets
 void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy ) {
@@ -400,7 +417,7 @@ void sgGetBuckets( const SGGeod& min, const SGGeod& max, std::vector<SGBucket>& 
         span = sg_bucket_span( lat );
         for (lon = min.getLongitudeDeg(); lon <= max.getLongitudeDeg(); lon += span)
         {
-            SGBucket b(lon, lat);
+            SGBucket b(SGGeod::fromDeg(lon, lat));
             if (!b.isValid()) {
                 continue;
             }

@@ -43,6 +43,8 @@
 #include <iosfwd>
 #include <vector>
 
+// #define NO_DEPRECATED_API
+
 /**
  * standard size of a bucket in degrees (1/8 of a degree)
  */
@@ -101,6 +103,7 @@ private:
     unsigned char x;          // x subdivision (0 to 7)
     unsigned char y;          // y subdivision (0 to 7)
 
+    void innerSet( double dlon, double dlat );
 public:
 
     /**
@@ -113,13 +116,15 @@ public:
      */
     bool isValid() const;
     
+#ifndef NO_DEPRECATED_API
     /**
      * Construct a bucket given a specific location.
      * @param dlon longitude specified in degrees
      * @param dlat latitude specified in degrees
      */
     SGBucket(const double dlon, const double dlat);
-
+#endif
+    
     /**
      * Construct a bucket given a specific location.
      * @param dlon longitude specified in degrees
@@ -132,6 +137,7 @@ public:
      */
     SGBucket(const long int bindex);
 
+#ifndef NO_DEPRECATED_API
     /**
      * Reset a bucket to represent a new lat and lon
      * @param dlon longitude specified in degrees
@@ -139,12 +145,14 @@ public:
      */
     void set_bucket(const SGGeod& geod);
 
+
     /**
      * Reset a bucket to represent a new lat and lon
      * @param dlon longitude specified in degrees
      * @param dlat latitude specified in degrees
      */
     void set_bucket( double dlon, double dlat );
+#endif
     
     /**
      * Create an impossible bucket.
@@ -290,7 +298,7 @@ inline bool operator!= (const SGBucket& lhs, const SGBucket& rhs)
         return !(lhs == rhs);
     }
 
-
+#ifndef NO_DEPRECATED_API
 /**
  * \relates SGBucket
  * Return the bucket which is offset from the specified dlon, dlat by
@@ -302,6 +310,7 @@ inline bool operator!= (const SGBucket& lhs, const SGBucket& rhs)
  * @return offset bucket
  */
 SGBucket sgBucketOffset( double dlon, double dlat, int x, int y );
+#endif
 
 
 /**

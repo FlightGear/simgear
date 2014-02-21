@@ -138,7 +138,7 @@ public:
     {
         // left align longitude offsets
         unsigned offset = _offset[0] - _offset[0] % _bucketSpanAtOffset(_offset[1]);
-        return SGBucket(_offsetToLongitudeDeg(offset), _offsetToLatitudeDeg(_offset[1]));
+        return SGBucket( SGGeod::fromDeg(_offsetToLongitudeDeg(offset), _offsetToLatitudeDeg(_offset[1])) );
     }
 
     BucketBox getParentBox(unsigned level) const

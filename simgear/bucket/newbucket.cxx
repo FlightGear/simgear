@@ -73,8 +73,8 @@ SGBucket::SGBucket(const double dlon, const double dlat) {
 #endif
 
 SGBucket::SGBucket(const SGGeod& geod) {
-    set_bucket(geod.getLongitudeDeg(),
-                   geod.getLatitudeDeg());
+    innerSet(geod.getLongitudeDeg(),
+             geod.getLatitudeDeg());
 }
 
 // Parse a unique scenery tile index and find the lon, lat, x, and y

@@ -163,8 +163,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::update(double dt)
   {
-    if( !_transform->getNodeMask() )
-      // Don't do anything if element is hidden
+    if( !isVisible() )
       return;
 
     // Trigger matrix update
@@ -276,6 +275,14 @@ namespace canvas
     // ... for other elements, i.e. groups only a bounding sphere is available
     else
       return _transform->getBound().contains(osg::Vec3f(pos, 0));
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::setVisible(bool visible)
+  {
+    if( _transform.valid() )
+      // TODO check if we need another nodemask
+      _transform->setNodeMask(visible ? 0xffffffff : 0);
   }
 
   //----------------------------------------------------------------------------
@@ -393,9 +400,6 @@ namespace canvas
       }
       else if( name == "update" )
         return update(0);
-      else if( name == "visible" )
-        // TODO check if we need another nodemask
-        return _transform->setNodeMask( child->getBoolValue() ? 0xffffffff : 0 );
       else if( boost::starts_with(name, "blend-") )
         return (void)(_attributes_dirty |= BLEND_FUNC);
     }
@@ -636,6 +640,7 @@ namespace canvas
 
     addStyle("clip", "", &Element::setClip, false);
     addStyle("clip-frame", "", &Element::setClipFrame, false);
+    addStyle("visible", "", &Element::setVisible, false);
   }
 
   //----------------------------------------------------------------------------

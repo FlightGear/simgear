@@ -117,8 +117,12 @@ namespace canvas
                              const osg::Vec2f& local_pos ) const;
 
       /**
-       * Get whether the element is visible or hidden (Can be changed with
-       * setting property "visible" accordingly).
+       * Set visibility of the element.
+       */
+      void setVisible(bool visible);
+
+      /**
+       * Get whether the element is visible or hidden.
        */
       bool isVisible() const;
 

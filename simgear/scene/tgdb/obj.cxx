@@ -41,6 +41,8 @@
 #include <osg/StateSet>
 #include <osg/Switch>
 
+#include <osgUtil/Simplifier>
+
 #include <boost/foreach.hpp>
 
 #include <algorithm>
@@ -70,8 +72,13 @@
 #include "SGDirectionalLightBin.hxx"
 #include "GroundLightManager.hxx"
 
-
 #include "pt_lights.hxx"
+
+#define SG_SIMPLIFIER_RATIO 0.001
+#define SG_SIMPLIFIER_MAX_LENGTH 1000.0
+#define SG_SIMPLIFIER_MAX_ERROR 2000.0
+#define SG_OBJECT_RANGE 9000.0
+#define SG_TILE_RADIUS 14000.0
 
 using namespace simgear;
 
@@ -95,7 +102,7 @@ public:
   SGDirectionalLightListBin reilLights;
   SGMatModelBin randomModels;
   SGBuildingBinList randomBuildings;
-  
+
   static SGVec4f
   getMaterialLightColor(const SGMaterial* material)
   {
@@ -891,6 +898,10 @@ public:
         group->setName("Random Object and Lighting Group");
         group->setDataVariance(osg::Object::STATIC);
 
+        osg::Node* node = loadTerrain();
+        if (node)
+          group->addChild(node);
+
         osg::LOD* lightLOD = generateLightingTileObjects();
         if (lightLOD)
           group->addChild(lightLOD);
@@ -900,6 +911,64 @@ public:
           group->addChild(objectLOD);
 
         return group.release();
+    }
+
+    // Load terrain if required
+    osg::Node* loadTerrain()
+    {
+      if (! _loadterrain)
+        return NULL;
+
+      SGBinObject tile;
+      if (!tile.read_bin(_path))
+        return NULL;
+
+      SGMaterialLibPtr matlib;
+      bool useVBOs = false;
+      bool simplifyNear    = false;
+      double ratio       = SG_SIMPLIFIER_RATIO;
+      double maxLength   = SG_SIMPLIFIER_MAX_LENGTH;
+      double maxError    = SG_SIMPLIFIER_MAX_ERROR;
+
+      if (_options) {
+        matlib = _options->getMaterialLib();
+        useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
+        SGPropertyNode* propertyNode = _options->getPropertyNode().get();
+        simplifyNear = propertyNode->getBoolValue("/sim/rendering/terrain/simplifier/enabled-near", simplifyNear);
+        ratio = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/ratio", ratio);
+        maxLength = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-length", maxLength);
+        maxError = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-error", maxError);
+      }
+
+      SGVec3d center = tile.get_gbs_center();
+      SGGeod geodPos = SGGeod::fromCart(center);
+      SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
+
+      // rotate the tiles so that the bounding boxes get nearly axis aligned.
+      // this will help the collision tree's bounding boxes a bit ...
+      std::vector<SGVec3d> nodes = tile.get_wgs84_nodes();
+      for (unsigned i = 0; i < nodes.size(); ++i)
+        nodes[i] = hlOr.transform(nodes[i]);
+      tile.set_wgs84_nodes(nodes);
+
+      SGQuatf hlOrf(hlOr[0], hlOr[1], hlOr[2], hlOr[3]);
+      std::vector<SGVec3f> normals = tile.get_normals();
+      for (unsigned i = 0; i < normals.size(); ++i)
+        normals[i] = hlOrf.transform(normals[i]);
+      tile.set_normals(normals);
+
+      osg::ref_ptr<SGTileGeometryBin> tileGeometryBin = new SGTileGeometryBin;
+
+      if (!tileGeometryBin->insertBinObj(tile, matlib))
+        return NULL;
+
+      osg::Node* node = tileGeometryBin->getSurfaceGeometry(matlib, useVBOs);
+      if (node && simplifyNear) {
+        osgUtil::Simplifier simplifier(ratio, maxError, maxLength);
+        node->accept(simplifier);
+      }
+
+      return node;
     }
 
     // Generate all the lighting objects for the tile.
@@ -1172,6 +1241,8 @@ public:
     /// The original options to use for this bunch of models
     osg::ref_ptr<SGReaderWriterOptions> _options;
     osg::ref_ptr<SGTileGeometryBin> _tileGeometryBin;
+    string _path;
+    bool _loadterrain;
 };
 
 osg::Node*
@@ -1182,12 +1253,28 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       return NULL;
 
     SGMaterialLibPtr matlib;
+    bool useVBOs = false;
+    bool simplifyDistant = false;
+    bool simplifyNear    = false;
+    double ratio       = SG_SIMPLIFIER_RATIO;
+    double maxLength   = SG_SIMPLIFIER_MAX_LENGTH;
+    double maxError    = SG_SIMPLIFIER_MAX_ERROR;
+    double object_range = SG_OBJECT_RANGE;
 
     if (options) {
       matlib = options->getMaterialLib();
-    }
+      useVBOs = (options->getPluginStringData("SimGear::USE_VBOS") == "ON");
+      SGPropertyNode* propertyNode = options->getPropertyNode().get();
 
-    bool useVBOs = (options->getPluginStringData("SimGear::USE_VBOS") == "ON");
+      // We control whether we simplify the nearby terrain and distant terrain separatey.
+      // However, we don't allow only simplifying the near terrain!
+      simplifyNear = propertyNode->getBoolValue("/sim/rendering/terrain/simplifier/enabled-near", simplifyNear);
+      simplifyDistant = simplifyNear || propertyNode->getBoolValue("/sim/rendering/terrain/simplifier/enabled-far", simplifyDistant);
+      ratio = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/ratio", ratio);
+      maxLength = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-length", maxLength);
+      maxError = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-error", maxError);
+			object_range = propertyNode->getDoubleValue("/sim/rendering/static-lod/rough", object_range);
+    }
 
     SGVec3d center = tile.get_gbs_center();
     SGGeod geodPos = SGGeod::fromCart(center);
@@ -1211,19 +1298,18 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     if (!tileGeometryBin->insertBinObj(tile, matlib))
       return NULL;
 
-    osg::Group* terrainGroup = new osg::Group;
-    terrainGroup->setName("BTGTerrainGroup");
 
     osg::Node* node = tileGeometryBin->getSurfaceGeometry(matlib, useVBOs);
-    if (node)
-      terrainGroup->addChild(node);
+    if (node && simplifyDistant) {
+      osgUtil::Simplifier simplifier(ratio, maxError, maxLength);
+      node->accept(simplifier);
+    }
 
     // The toplevel transform for that tile.
     osg::MatrixTransform* transform = new osg::MatrixTransform;
     transform->setName(path);
     transform->setMatrix(osg::Matrix::rotate(toOsg(hlOr))*
                          osg::Matrix::translate(toOsg(center)));
-    transform->addChild(terrainGroup);
 
     // PagedLOD for the random objects so we don't need to generate
     // them all on tile loading.
@@ -1231,17 +1317,34 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
     pagedLOD->setName("pagedObjectLOD");
 
+    if (node) {
+      if (simplifyNear == simplifyDistant) {
+        // Same terrain type is used for both near and far distances,
+        // so add it to the main group.
+        osg::Group* terrainGroup = new osg::Group;
+        terrainGroup->setName("BTGTerrainGroup");
+        terrainGroup->addChild(node);
+        transform->addChild(terrainGroup);
+      } else if (simplifyDistant) {
+        // Simplified terrain is only used in the distance, the
+        // call-back below will re-generate the closer version
+        pagedLOD->addChild(node, object_range + SG_TILE_RADIUS, FLT_MAX);
+      }
+    }
+
     // we just need to know about the read file callback that itself holds the data
     osg::ref_ptr<RandomObjectCallback> randomObjectCallback = new RandomObjectCallback;
     randomObjectCallback->_options = SGReaderWriterOptions::copyOrCreate(options);
     randomObjectCallback->_tileGeometryBin = tileGeometryBin;
+    randomObjectCallback->_path = std::string(path);
+    randomObjectCallback->_loadterrain = ! (simplifyNear == simplifyDistant);
 
     osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
     callbackOptions->setReadFileCallback(randomObjectCallback.get());
     pagedLOD->setDatabaseOptions(callbackOptions.get());
 
     pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
-    pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 35000);
+    pagedLOD->setRange(pagedLOD->getNumChildren(), 0, object_range + SG_TILE_RADIUS);
     transform->addChild(pagedLOD);
     transform->setNodeMask( ~simgear::MODELLIGHT_BIT );
 

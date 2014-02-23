@@ -152,7 +152,7 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     return proxyNode;
 }
 
-osg::Node*
+osg::PagedLOD*
 SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
                            SGModelData *data)
 {

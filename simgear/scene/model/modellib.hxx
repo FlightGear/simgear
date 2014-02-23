@@ -32,6 +32,10 @@
 #include <simgear/props/props.hxx>
 #include <simgear/misc/sg_path.hxx>
 
+namespace osg {
+    class PagedLOD;
+}
+
 namespace simgear {
 
 class SGModelData; // defined below
@@ -68,7 +72,7 @@ public:
     // the model file. Once the viewer steps onto that node the
     // model will be loaded. When the viewer does no longer reference this
     // node for a long time the node is unloaded again.
-    static osg::Node* loadPagedModel(const std::string &path,
+    static osg::PagedLOD* loadPagedModel(const std::string &path,
                                      SGPropertyNode *prop_root = NULL,
                                      SGModelData *data=0);
 

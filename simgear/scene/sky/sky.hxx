@@ -345,8 +345,8 @@ public:
      */
     void modify_vis( float alt, float time_factor );
 
-    osg::Node* getPreRoot() { return pre_root.get(); }
-    osg::Node* getCloudRoot() { return cloud_root.get(); }
+    osg::Group* getPreRoot() { return pre_root.get(); }
+    osg::Group* getCloudRoot() { return cloud_root.get(); }
 
     /** 
      * Specify the texture path (optional, defaults to current directory)

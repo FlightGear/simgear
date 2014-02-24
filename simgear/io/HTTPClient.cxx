@@ -122,27 +122,28 @@ public:
     // socket-level errors
     virtual void handleError(int error)
     {
-        if (error == ENOENT) {
-        // name lookup failure
-            // we won't have an active request yet, so the logic below won't
-            // fire to actually call setFailure. Let's fail all of the requests
+        const char* errStr = strerror(error);
+        if (!activeRequest)
+        {
+        // connection level failure, eg name lookup or routing
+        // we won't have an active request yet, so let's fail all of the
+        // requests since we presume it's a systematic failure for
+        // the host in question
             BOOST_FOREACH(Request_ptr req, sentRequests) {
-                req->setFailure(error, "hostname lookup failure");
+                req->setFailure(error, errStr);
             }
             
             BOOST_FOREACH(Request_ptr req, queuedRequests) {
-                req->setFailure(error, "hostname lookup failure");
+                req->setFailure(error, errStr);
             }
             
-        // name lookup failure, abandon all requests on this connection
             sentRequests.clear();
             queuedRequests.clear();
         }
         
         NetChat::handleError(error);
         if (activeRequest) {            
-            SG_LOG(SG_IO, SG_INFO, "HTTP socket error");
-            activeRequest->setFailure(error, "socket error");
+            activeRequest->setFailure(error, errStr);
             activeRequest = NULL;
             _contentDecoder.reset();
         }
@@ -252,6 +253,7 @@ public:
       
       if (state == STATE_CLOSED) {
           if (!connectToHost()) {
+            
               return;
           }
           

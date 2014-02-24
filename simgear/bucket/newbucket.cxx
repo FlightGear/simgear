@@ -102,12 +102,7 @@ SGBucket::SGBucket(const long int bindex) {
  */
 static int floorWithEpsilon(double x)
 {
-    double diff = x - static_cast<int>(x);
-    if ( (x >= 0.0) || (fabs(diff) < SG_EPSILON) ) {
-        return static_cast<int>(x);
-    } else {
-        return static_cast<int>(x) - 1;
-    }
+    return static_cast<int>(floor(x + SG_EPSILON));
 }
 
 #ifndef NO_DEPRECATED_API
@@ -152,7 +147,7 @@ void SGBucket::innerSet( double dlon, double dlat )
         /* We have more than one tile per degree of
          * longitude, so we need an x offset.
          */
-        x = (int)((dlon - lon) / span);
+        x = floorWithEpsilon((dlon - lon) / span);
     } else {
         /* We have one or more degrees per tile,
          * so we need to find the base longitude
@@ -185,7 +180,7 @@ void SGBucket::innerSet( double dlon, double dlat )
         /* Latitude base and offset are easier, as
          * tiles always are 1/8 degree of latitude wide.
          */
-        y = (int)((dlat - lat) * 8);
+        y = floorWithEpsilon((dlat - lat) * 8);
     }
 }
 

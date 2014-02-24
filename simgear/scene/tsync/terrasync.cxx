@@ -468,7 +468,6 @@ void SGTerraSync::SvnThread::run()
 {
     _active = true;
     initCompletedTilesPersistentCache();
-
     
     if (_use_built_in) {
         runInternal();
@@ -758,8 +757,6 @@ void SGTerraSync::SvnThread::writeCompletedTilesPersistentCache() const
 ///////////////////////////////////////////////////////////////////////////////
 SGTerraSync::SGTerraSync() :
     _svnThread(NULL),
-    last_lat(NOWHERE),
-    last_lon(NOWHERE),
     _bound(false),
     _inited(false)
 {
@@ -830,15 +827,6 @@ void SGTerraSync::reinit()
         if (_svnThread->start())
         {
             syncAirportsModels();
-            if (last_lat != NOWHERE && last_lon != NOWHERE)
-            {
-                // reschedule most recent position
-                int lat = last_lat;
-                int lon = last_lon;
-                last_lat = NOWHERE;
-                last_lon = NOWHERE;
-                schedulePosition(lat, lon);
-            }
         }
     }
 
@@ -942,47 +930,6 @@ void SGTerraSync::syncAirportsModels()
     _svnThread->request( w );
 }
 
-
-void SGTerraSync::syncArea( int lat, int lon )
-{
-    if ( lat < -90 || lat > 90 || lon < -180 || lon > 180 )
-        return;
-    char NS, EW;
-    int baselat, baselon;
-
-    if ( lat < 0 ) {
-        int base = (int)(lat / 10);
-        if ( lat == base * 10 ) {
-            baselat = base * 10;
-        } else {
-            baselat = (base - 1) * 10;
-        }
-        NS = 's';
-    } else {
-        baselat = (int)(lat / 10) * 10;
-        NS = 'n';
-    }
-    if ( lon < 0 ) {
-        int base = (int)(lon / 10);
-        if ( lon == base * 10 ) {
-            baselon = base * 10;
-        } else {
-            baselon = (base - 1) * 10;
-        }
-        EW = 'w';
-    } else {
-        baselon = (int)(lon / 10) * 10;
-        EW = 'e';
-    }
-
-    ostringstream dir;
-    dir << setfill('0')
-    << EW << setw(3) << abs(baselon) << NS << setw(2) << abs(baselat) << "/"
-    << EW << setw(3) << abs(lon)     << NS << setw(2) << abs(lat);
-    
-    syncAreaByPath(dir.str());
-}
-
 void SGTerraSync::syncAreaByPath(const std::string& aPath)
 {
     const char* terrainobjects[3] = { "Terrain/", "Objects/",  0 };
@@ -999,93 +946,11 @@ void SGTerraSync::syncAreaByPath(const std::string& aPath)
     }
 }
 
-
-void SGTerraSync::syncAreas( int lat, int lon, int lat_dir, int lon_dir )
-{
-    if ( lat_dir == 0 && lon_dir == 0 ) {
-        
-        // do surrounding 8 1x1 degree areas.
-        for ( int i = lat - 1; i <= lat + 1; ++i ) {
-            for ( int j = lon - 1; j <= lon + 1; ++j ) {
-                if ( i != lat || j != lon ) {
-                    syncArea( i, j );
-                }
-            }
-        }
-    } else {
-        if ( lat_dir != 0 ) {
-            syncArea( lat + lat_dir, lon - 1 );
-            syncArea( lat + lat_dir, lon + 1 );
-            syncArea( lat + lat_dir, lon );
-        }
-        if ( lon_dir != 0 ) {
-            syncArea( lat - 1, lon + lon_dir );
-            syncArea( lat + 1, lon + lon_dir );
-            syncArea( lat, lon + lon_dir );
-        }
-    }
-
-    // do current 1x1 degree area first
-    syncArea( lat, lon );
-}
-
 bool SGTerraSync::scheduleTile(const SGBucket& bucket)
 {
     std::string basePath = bucket.gen_base_path();
     syncAreaByPath(basePath);
     return true;
-}
-
-bool SGTerraSync::schedulePosition(int lat, int lon)
-{
-    bool Ok = false;
-
-    // Ignore messages where the location does not change
-    if ( lat != last_lat || lon != last_lon )
-    {
-        if (_svnThread->_running)
-        {
-            int lat_dir=0;
-            int lon_dir=0;
-            if ( last_lat != NOWHERE && last_lon != NOWHERE )
-            {
-                int dist = lat - last_lat;
-                if ( dist != 0 )
-                {
-                    lat_dir = dist / abs(dist);
-                }
-                else
-                {
-                    lat_dir = 0;
-                }
-                dist = lon - last_lon;
-                if ( dist != 0 )
-                {
-                    lon_dir = dist / abs(dist);
-                } else
-                {
-                    lon_dir = 0;
-                }
-            }
-
-            SG_LOG(SG_TERRAIN,SG_DEBUG, "Scenery update for " <<
-                   "lat = " << lat << ", lon = " << lon <<
-                   ", lat_dir = " << lat_dir << ",  " <<
-                   "lon_dir = " << lon_dir);
-
-            syncAreas( lat, lon, lat_dir, lon_dir );
-            Ok = true;
-        }
-        last_lat = lat;
-        last_lon = lon;
-    }
-
-    return Ok;
-}
-
-void SGTerraSync::reposition()
-{
-    last_lat = last_lon = NOWHERE;
 }
 
 bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
@@ -1124,4 +989,9 @@ bool SGTerraSync::isDataDirPending(const std::string& dataDir) const
     }
     
     return (_activeTileDirs.find(dataDir) != _activeTileDirs.end());
+}
+
+void SGTerraSync::reposition()
+{
+    // stub, remove
 }

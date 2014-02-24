@@ -56,7 +56,6 @@ public:
     void reposition();
     
     bool isIdle();
-    bool schedulePosition(int lat, int lon);
     
     bool scheduleTile(const SGBucket& bucket);
     
@@ -81,17 +80,13 @@ public:
     bool isDataDirPending(const std::string& dataDir) const;
 protected:
     void syncAirportsModels();
-    void syncArea(int lat, int lon);
-    void syncAreas(int lat, int lon, int lat_dir, int lon_dir);
-
+ 
     void syncAreaByPath(const std::string& aPath);
     
     class SvnThread;
 
 private:
     SvnThread* _svnThread;
-    int last_lat;
-    int last_lon;
     SGPropertyNode_ptr _terraRoot;
     SGPropertyNode_ptr _stalledNode;
     SGPropertyNode_ptr _cacheHits;

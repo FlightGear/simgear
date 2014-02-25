@@ -59,6 +59,8 @@ public:
     
     bool scheduleTile(const SGBucket& bucket);
     
+    void syncAreaByPath(const std::string& aPath);
+    
     void setRoot(SGPropertyNode_ptr root);
 
     /// retrive the associated log object, for displaying log
@@ -81,7 +83,6 @@ public:
 protected:
     void syncAirportsModels();
  
-    void syncAreaByPath(const std::string& aPath);
     
     class SvnThread;
 

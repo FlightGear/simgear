@@ -418,7 +418,7 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
     SGShaderAnimation animInst(configNode, modelRoot, options);
     animInst.apply(node);
   } else if (type == "textranslate" || type == "texrotate" ||
-             type == "texmultiple") {
+             type == "textrapezoid" || type == "texmultiple") {
     SGTexTransformAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "timed") {

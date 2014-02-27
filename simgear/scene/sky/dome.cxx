@@ -139,7 +139,7 @@ void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
         = std::back_inserter(elements);
     GridIndex grid(*dome_vl, numBands, 1);
     for (int i = 0; i < bands; i++) {
-        *pusher = 0;  *pusher = grid(0, i+1);  *pusher = grid(0, i);
+        *pusher = 0;  *pusher = grid(0, (i+1)%bands);  *pusher = grid(0, i);
         // down a band
         for (int j = 0; j < rings - 1; ++j) {
             *pusher = grid(j, i);  *pusher = grid(j, (i + 1)%bands);

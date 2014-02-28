@@ -222,8 +222,8 @@ private:
     SGSharedPtr<SGStars> stars;
     layer_list_type cloud_layers;
 
-    osg::ref_ptr<osg::Group> pre_root, cloud_root;
-    osg::ref_ptr<osg::Group> pre_transform;
+    osg::ref_ptr<osg::Group> pre_root, pre_transform;
+    osg::ref_ptr<osg::Switch> cloud_root;
 
     osg::ref_ptr<osg::MatrixTransform> _ephTransform;
 
@@ -468,6 +468,7 @@ public:
      */
     void set_3dCloudWrap(bool wrap);
 
+    void set_clouds_enabled(bool enabled);
 
 };
 #endif // _SG_SKY_HXX

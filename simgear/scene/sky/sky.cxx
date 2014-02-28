@@ -58,7 +58,7 @@ SGSky::SGSky( void ) {
     preStateSet->setAttribute(new osg::Depth(osg::Depth::LESS, 0.0, 1.0,
                                              false));
     pre_root->setStateSet(preStateSet);
-    cloud_root = new osg::Group;
+    cloud_root = new osg::Switch;
     cloud_root->setNodeMask(simgear::MODEL_BIT);
     cloud_root->setName("SGSky-cloud-root");
 
@@ -195,7 +195,7 @@ void
 SGSky::add_cloud_layer( SGCloudLayer * layer )
 {
     cloud_layers.push_back(layer);
-    cloud_root->addChild(layer->getNode());
+    cloud_root->addChild(layer->getNode(), true);
 
     layer->set_enable3dClouds(clouds_3d_enabled);
 }
@@ -426,4 +426,11 @@ void SGSky::modify_vis( float alt, float time_factor ) {
     effective_visibility = effvis;
 }
 
-
+void SGSky::set_clouds_enabled(bool enabled)
+{
+    if (enabled) {
+        cloud_root->setAllChildrenOn();
+    } else {
+        cloud_root->setAllChildrenOff();
+    }
+}

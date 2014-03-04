@@ -32,19 +32,24 @@ namespace canvas
   {
     public:
       MouseEvent():
-        button(-1),
-        state(-1),
-        mod(-1),
+        button(0),
+        buttons(0),
+        modifiers(0),
         click_count(0)
       {}
 
       MouseEvent(const osgGA::GUIEventAdapter& ea):
-        button(ea.getButton()),
-        state(ea.getButtonMask()),
-        mod(ea.getModKeyMask()),
+        button(0),
+        buttons(ea.getButtonMask()),
+        modifiers(ea.getModKeyMask()),
         click_count(0)
       {
         time = ea.getTime();
+
+        // Convert button mask to index
+        int button_mask = ea.getButton();
+        while( (button_mask >>= 1) > 0 )
+          button += 1;
       }
 
       osg::Vec2f getScreenPos() const { return screen_pos; }
@@ -64,6 +69,10 @@ namespace canvas
       float getDeltaX() const { return delta.x(); }
       float getDeltaY() const { return delta.y(); }
 
+      int getButton() const { return button; }
+      int getButtonMask() const { return buttons; }
+      int getModifiers() const { return modifiers; }
+
       int getCurrentClickCount() const { return click_count; }
 
       osg::Vec2f  screen_pos,   //<! Position in screen coordinates
@@ -71,8 +80,8 @@ namespace canvas
                   local_pos,    //<! Position in local/element coordinates
                   delta;
       int         button,       //<! Button for this event
-                  state,        //<! Current button state
-                  mod,          //<! Keyboard modifier state
+                  buttons,      //<! Current button state
+                  modifiers,    //<! Keyboard modifier state
                   click_count;  //<! Current click count
   };
 

@@ -60,18 +60,6 @@
 using namespace simgear;
 using namespace osg;
 
-#if defined(__MINGW32__)
-#define isnan(x) _isnan(x)
-#endif
-
-// #if defined (__FreeBSD__)
-// #  if __FreeBSD_version < 500000
-//      extern "C" {
-//        inline int isnan(double r) { return !(r <= 0 || r >= 0); }
-//      }
-// #  endif
-// #endif
-
 static osg::ref_ptr<osg::StateSet> layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static osg::ref_ptr<osg::StateSet> layer_states2[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static osg::ref_ptr<osg::TextureCubeMap> cubeMap;
@@ -735,7 +723,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
             // this happens, lets just use the last known good course.
             // This is a hack, and it would probably be better to make
             // calc_gc_course_dist() more robust.
-            if ( isnan(course) ) {
+            if ( isNaN(course) ) {
                 course = last_course;
             } else {
                 last_course = course;

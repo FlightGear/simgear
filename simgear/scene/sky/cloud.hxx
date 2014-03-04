@@ -33,7 +33,6 @@
 #include <simgear/structure/SGReferenced.hxx>
 
 #include <string>
-using std::string;
 
 #include <osg/ref_ptr>
 #include <osg/Array>
@@ -74,7 +73,7 @@ public:
      * Constructor
      * @param tex_path the path to the set of cloud textures
      */
-    SGCloudLayer( const string &tex_path );
+    SGCloudLayer( const std::string &tex_path );
 
     /**
      * Destructor
@@ -141,16 +140,16 @@ public:
     void setCoverage (Coverage coverage);
 
     /** get coverage as string */
-    const string & getCoverageString() const;
+    const std::string & getCoverageString() const;
 
     /** get coverage as string */
-    static const string & getCoverageString( Coverage coverage );
+    static const std::string & getCoverageString( Coverage coverage );
 
     /** get coverage type from string */
     static Coverage getCoverageType( const std::string & coverage );
 
     /** set coverage as string */
-    void setCoverageString( const string & coverage );
+    void setCoverageString( const std::string & coverage );
 
     /**
      * set the cloud movement direction

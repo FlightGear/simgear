@@ -293,7 +293,7 @@ void SGSky::set_3dCloudUseImpostors(bool imp)
     SGCloudField::setUseImpostors(imp);
 }
 
-void SGSky::texture_path( const string& path ) {
+void SGSky::texture_path( const std::string& path ) {
 	tex_path = SGPath( path );
 }
 

@@ -51,18 +51,6 @@ using std::vector;
 #include "newcloud.hxx"
 #include "cloudfield.hxx"
 
-#if defined(__MINGW32__)
-#define isnan(x) _isnan(x)
-#endif
-
-#if defined (__FreeBSD__)
-#  if __FreeBSD_version < 500000
-     extern "C" {
-       inline int isnan(double r) { return !(r <= 0 || r >= 0); }
-     }
-#  endif
-#endif
-
 using namespace simgear;
 
 float SGCloudField::fieldSize = 50000.0f;

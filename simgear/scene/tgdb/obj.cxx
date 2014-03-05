@@ -480,7 +480,8 @@ public:
     SGMaterialLib* matlib,
     float building_density,
     bool use_random_objects,
-    bool use_random_buildings)
+    bool use_random_buildings,
+    bool useVBOs)
   {
     SGMaterialTriangleMap::iterator i;
 
@@ -508,7 +509,7 @@ public:
       SGBuildingBin* bin = NULL;
 
       if (building_coverage > 0) {
-        bin = new SGBuildingBin(mat);
+        bin = new SGBuildingBin(mat, useVBOs);
         randomBuildings.push_back(bin);
       }
 
@@ -1121,7 +1122,8 @@ public:
       bool use_random_buildings = false;
       float vegetation_density = 1.0f;
       float building_density = 1.0f;
-
+      bool useVBOs = false;
+      
       osg::ref_ptr<osg::Group> randomObjects;
       osg::ref_ptr<osg::Group> forestNode;
       osg::ref_ptr<osg::Group> buildingNode;
@@ -1146,6 +1148,8 @@ public:
                 = propertyNode->getFloatValue("/sim/rendering/building-density",
                                               building_density);
         }
+        
+        useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
       }
 
 
@@ -1154,7 +1158,8 @@ public:
         _tileGeometryBin->computeRandomObjectsAndBuildings(matlib,
                                                          building_density,
                                                          use_random_objects,
-                                                         use_random_buildings);
+                                                         use_random_buildings,
+                                                         useVBOs);
       }
 
 

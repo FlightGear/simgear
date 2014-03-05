@@ -108,7 +108,7 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
 }
 
   // Set up the building set based on the material definitions
-  SGBuildingBin::SGBuildingBin(const SGMaterial *mat) {
+  SGBuildingBin::SGBuildingBin(const SGMaterial *mat, bool useVBOs) {
 
     material_name = new std::string(mat->get_names()[0]);
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Building material " << material_name);
@@ -161,7 +161,11 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
       sharedGeometry->setFogCoordBinding(osg::Geometry::BIND_PER_VERTEX);
       sharedGeometry->setComputeBoundingBoxCallback(new BuildingBoundingBoxCallback);
       sharedGeometry->setUseDisplayList(false);
-
+      sharedGeometry->setDataVariance(osg::Object::STATIC);
+      if (useVBOs) {
+          sharedGeometry->setUseVertexBufferObjects(true);
+      }
+      
       for (unsigned int j = 0; j < BUILDING_SET_SIZE; j++) {
         float width;
         float depth;

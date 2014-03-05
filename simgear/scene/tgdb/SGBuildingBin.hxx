@@ -168,7 +168,7 @@ private:
 
 public:
 
-  SGBuildingBin(const SGMaterial *mat);
+  SGBuildingBin(const SGMaterial *mat, bool useVBOs);
 
   ~SGBuildingBin() {
     smallBuildings.clear();

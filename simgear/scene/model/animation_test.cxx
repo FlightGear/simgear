@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
   VERIFY_CLOSE(anim.center, (v1 + v2) * 0.5)
   VERIFY_CLOSE(anim.axis, normalize(v2 - v1))
 
-  config->removeChild("axis", 0, false);
+  config->removeChild("axis", 0);
   config->setDoubleValue("center/x-m", v1.x());
   config->setDoubleValue("center/y-m", v1.y());
   config->setDoubleValue("center/z-m", v1.z());

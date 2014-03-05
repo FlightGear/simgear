@@ -237,33 +237,19 @@ first_unused_index( const char * name,
 
 template<typename Itr>
 inline SGPropertyNode*
-SGPropertyNode::getExistingChild (Itr begin, Itr end, int index, bool create)
+SGPropertyNode::getExistingChild (Itr begin, Itr end, int index)
 {
   int pos = find_child(begin, end, index, _children);
-  if (pos >= 0) {
+  if (pos >= 0)
     return _children[pos];
-  } else if (create) {
-    SGPropertyNode_ptr node;
-    pos = find_child(begin, end, index, _removedChildren);
-    if (pos >= 0) {
-      PropertyList::iterator it = _removedChildren.begin();
-      it += pos;
-      node = _removedChildren[pos];
-      _removedChildren.erase(it);
-      node->setAttribute(REMOVED, false);
-      _children.push_back(node);
-      fireChildAdded(node);
-      return node;      
-    }
-  }
   return 0;
 }
-    
+
 template<typename Itr>
 SGPropertyNode *
 SGPropertyNode::getChildImpl (Itr begin, Itr end, int index, bool create)
 {
-    SGPropertyNode* node = getExistingChild(begin, end, index, create);
+    SGPropertyNode* node = getExistingChild(begin, end, index);
 
     if (node) {
       return node;
@@ -775,8 +761,6 @@ SGPropertyNode::~SGPropertyNode ()
   // zero out all parent pointers, else they might be dangling
   for (unsigned i = 0; i < _children.size(); ++i)
     _children[i]->_parent = 0;
-  for (unsigned i = 0; i < _removedChildren.size(); ++i)
-    _removedChildren[i]->_parent = 0;
   clearValue();
 
   if (_listeners) {
@@ -974,8 +958,7 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
 SGPropertyNode *
 SGPropertyNode::getChild (const string& name, int index, bool create)
 {
-  SGPropertyNode* node = getExistingChild(name.begin(), name.end(), index,
-                                          create);
+  SGPropertyNode* node = getExistingChild(name.begin(), name.end(), index);
   if (node) {
       return node;
     } else if (create) {
@@ -1024,7 +1007,7 @@ SGPropertyNode::getChildren (const char * name) const
  * Remove child by position.
  */
 SGPropertyNode_ptr
-SGPropertyNode::removeChild (int pos, bool keep)
+SGPropertyNode::removeChild(int pos)
 {
   SGPropertyNode_ptr node;
   if (pos < 0 || pos >= (int)_children.size())
@@ -1034,9 +1017,6 @@ SGPropertyNode::removeChild (int pos, bool keep)
   it += pos;
   node = _children[pos];
   _children.erase(it);
-  if (keep) {
-    _removedChildren.push_back(node);
-  }
 
   node->setAttribute(REMOVED, true);
   node->clearValue();
@@ -1049,12 +1029,12 @@ SGPropertyNode::removeChild (int pos, bool keep)
  * Remove a child node
  */
 SGPropertyNode_ptr
-SGPropertyNode::removeChild (const char * name, int index, bool keep)
+SGPropertyNode::removeChild(const char * name, int index)
 {
   SGPropertyNode_ptr ret;
   int pos = find_child(name, name + strlen(name), index, _children);
   if (pos >= 0)
-    ret = removeChild(pos, keep);
+    ret = removeChild(pos);
   return ret;
 }
 
@@ -1063,13 +1043,13 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
   * Remove all children with the specified name.
   */
 PropertyList
-SGPropertyNode::removeChildren (const char * name, bool keep)
+SGPropertyNode::removeChildren(const char * name)
 {
   PropertyList children;
 
   for (int pos = static_cast<int>(_children.size() - 1); pos >= 0; pos--)
     if (compare_strings(_children[pos]->getName(), name))
-      children.push_back(removeChild(pos, keep));
+      children.push_back(removeChild(pos));
 
   sort(children.begin(), children.end(), CompareIndices());
   return children;

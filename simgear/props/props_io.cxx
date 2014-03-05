@@ -382,7 +382,7 @@ PropsVisitor::endElement (const char * name)
       SGPropertyNode *dst = parent.node->getChild(name, index, true);
       copyProperties(src, dst);
     }
-    parent.node->removeChild(st.node->getName(), st.node->getIndex(), false);
+    parent.node->removeChild(st.node->getName(), st.node->getIndex());
   }
   pop_state();
 }

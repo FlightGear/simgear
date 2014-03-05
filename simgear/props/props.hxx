@@ -915,33 +915,30 @@ public:
   /**
    * Remove child by position.
    */
-  SGPropertyNode_ptr removeChild (int pos, bool keep = true);
+  SGPropertyNode_ptr removeChild(int pos);
 
 
   /**
    * Remove a child node
    */
-  SGPropertyNode_ptr removeChild (const char * name, int index = 0,
-                                  bool keep = true);
+  SGPropertyNode_ptr removeChild(const char * name, int index = 0);
 
   /**
    * Remove a child node
    */
-  SGPropertyNode_ptr removeChild (const std::string& name, int index = 0,
-                                  bool keep = true)
-  { return removeChild(name.c_str(), index, keep); }
+  SGPropertyNode_ptr removeChild(const std::string& name, int index = 0)
+  { return removeChild(name.c_str(), index); }
 
   /**
    * Remove all children with the specified name.
    */
-  simgear::PropertyList removeChildren (const char * name, bool keep = true);
+  simgear::PropertyList removeChildren(const char * name);
 
   /**
    * Remove all children with the specified name.
    */
-  simgear::PropertyList removeChildren (const std::string& name,
-                                        bool keep = true)
-  { return removeChildren(name.c_str(), keep); }
+  simgear::PropertyList removeChildren(const std::string& name)
+  { return removeChildren(name.c_str()); }
 
   /**
    * Remove all children (does not change the value of the node)
@@ -1754,7 +1751,6 @@ private:
   /// counted pointer
   SGPropertyNode * _parent;
   simgear::PropertyList _children;
-  simgear::PropertyList _removedChildren;
   mutable std::string _buffer;
   simgear::props::Type _type;
   bool _tied;
@@ -1782,7 +1778,7 @@ private:
   SGPropertyNode * getChildImpl (Itr begin, Itr end, int index = 0, bool create = false);
   // very internal method
   template<typename Itr>
-  SGPropertyNode* getExistingChild (Itr begin, Itr end, int index, bool create);
+  SGPropertyNode* getExistingChild (Itr begin, Itr end, int index);
   // very internal path parsing function
   template<typename SplitItr>
   friend SGPropertyNode* find_node_aux(SGPropertyNode * current, SplitItr& itr,

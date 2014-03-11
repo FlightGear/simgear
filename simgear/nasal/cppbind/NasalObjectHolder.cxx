@@ -25,13 +25,40 @@ namespace nasal
   //----------------------------------------------------------------------------
   ObjectHolder::~ObjectHolder()
   {
-    naGCRelease(_gc_key);
+    if( !naIsNil(_ref) )
+      naGCRelease(_gc_key);
   }
 
   //----------------------------------------------------------------------------
   naRef ObjectHolder::get_naRef() const
   {
     return _ref;
+  }
+
+  //----------------------------------------------------------------------------
+  void ObjectHolder::reset()
+  {
+    if( !naIsNil(_ref) )
+      naGCRelease(_gc_key);
+
+    _ref = naNil();
+    _gc_key = 0;
+  }
+
+  //----------------------------------------------------------------------------
+  void ObjectHolder::reset(naRef obj)
+  {
+    if( !naIsNil(_ref) )
+      naGCRelease(_gc_key);
+
+    _ref = obj;
+    _gc_key = naGCSave(obj);
+  }
+
+  //----------------------------------------------------------------------------
+  bool ObjectHolder::valid() const
+  {
+    return !naIsNil(_ref);
   }
 
   //----------------------------------------------------------------------------
@@ -43,7 +70,16 @@ namespace nasal
   //----------------------------------------------------------------------------
   ObjectHolder::ObjectHolder(naRef obj):
     _ref(obj),
-    _gc_key(naGCSave(obj))
+    _gc_key(0)
+  {
+    if( !naIsNil(obj) )
+      naGCSave(obj);
+  }
+
+  //----------------------------------------------------------------------------
+  ObjectHolder::ObjectHolder():
+    _ref(naNil()),
+    _gc_key(0)
   {
 
   }

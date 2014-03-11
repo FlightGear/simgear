@@ -24,6 +24,8 @@
 #include "NasalObjectHolder.hxx"
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/structure/SGWeakReferenced.hxx>
+#include <simgear/structure/SGWeakPtr.hxx>
 
 #include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
@@ -121,20 +123,21 @@ namespace nasal
     /**
      * Hold callable method and convert to Nasal function if required.
      */
-    class MethodHolder
+    class MethodHolder:
+      public SGWeakReferenced
     {
       public:
         virtual ~MethodHolder() {}
 
         naRef get_naRef(naContext c)
         {
-          if( !_obj )
-            _obj = ObjectHolder::makeShared(createNasalObject(c));
-          return _obj->get_naRef();
+          if( !_obj.valid() )
+            _obj.reset(createNasalObject(c));
+          return _obj.get_naRef();
         }
 
       protected:
-        ObjectHolderRef _obj;
+        ObjectHolder _obj;
 
         virtual naRef createNasalObject(naContext c) = 0;
     };
@@ -154,6 +157,9 @@ namespace nasal
       public boost::is_same<typename reduced_type<T1>::type, T2>
     {};
   }
+
+  typedef SGSharedPtr<internal::MethodHolder> MethodHolderPtr;
+  typedef SGWeakPtr<internal::MethodHolder> MethodHolderWeakPtr;
 
   /**
    * Class for exposing C++ objects to Nasal
@@ -208,7 +214,6 @@ namespace nasal
       typedef boost::function<naRef(naContext, raw_type&)>          getter_t;
       typedef boost::function<void(naContext, raw_type&, naRef)>    setter_t;
       typedef boost::function<naRef(raw_type&, const CallContext&)> method_t;
-      typedef boost::shared_ptr<internal::MethodHolder> MethodHolderPtr;
 
       class MethodHolder:
         public internal::MethodHolder
@@ -219,11 +224,27 @@ namespace nasal
           {}
 
         protected:
+
+          typedef SGSharedPtr<MethodHolder> SharedPtr;
+          typedef SGWeakPtr<MethodHolder> WeakPtr;
+
           method_t  _method;
 
           virtual naRef createNasalObject(naContext c)
           {
-            return naNewFunc(c, naNewCCodeU(c, &MethodHolder::call, this));
+            return naNewFunc
+            (
+              c,
+              naNewCCodeUD( c,
+                            &MethodHolder::call,
+                            new WeakPtr(this),
+                            &destroyHolder )
+            );
+          }
+
+          static void destroyHolder(void* user_data)
+          {
+            delete static_cast<WeakPtr*>(user_data);
           }
 
           static naRef call( naContext c,
@@ -232,12 +253,16 @@ namespace nasal
                              naRef* args,
                              void* user_data )
           {
-            MethodHolder* holder = static_cast<MethodHolder*>(user_data);
-            if( !holder )
+            WeakPtr* holder_weak = static_cast<WeakPtr*>(user_data);
+            if( !holder_weak )
               naRuntimeError(c, "invalid method holder!");
 
             try
             {
+              SharedPtr holder = holder_weak->lock();
+              if( !holder )
+                throw std::runtime_error("holder has expired");
+
               return holder->_method
               (
                 requireObject(c, me),
@@ -490,7 +515,7 @@ namespace nasal
        */
       Ghost& method(const std::string& name, const method_t& func)
       {
-        _members[name].func.reset( new MethodHolder(func) );
+        _members[name].func = new MethodHolder(func);
         return *this;
       }
 

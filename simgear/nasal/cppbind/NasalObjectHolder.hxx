@@ -38,6 +38,16 @@ namespace nasal
     public:
 
       /**
+       * @param obj Object to save
+       */
+      explicit ObjectHolder(naRef obj);
+
+      /**
+       *
+       */
+      ObjectHolder();
+
+      /**
        *
        */
       ~ObjectHolder();
@@ -46,6 +56,23 @@ namespace nasal
        * Get captured Nasal object
        */
       naRef get_naRef() const;
+
+      /**
+       * Release the managed object
+       */
+      void reset();
+
+      /**
+       * Replaces the managed object (the old object is released)
+       *
+       * @param obj New object to save
+       */
+      void reset(naRef obj);
+
+      /**
+       * Check if there is a managed object
+       */
+      bool valid() const;
 
       /**
        * Save the given object as long as the returned holder exists.
@@ -57,11 +84,6 @@ namespace nasal
     protected:
       naRef _ref;
       int _gc_key;
-
-      /**
-       * @param obj Object to save
-       */
-      ObjectHolder(naRef obj);
   };
 
 } // namespace nasal

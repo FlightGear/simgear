@@ -61,8 +61,7 @@ void writeProperties (const std::string &file,
 /**
  * Copy properties from one node to another.
  */
-bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
-                     int attr_value=0, int attr_mask=0);
+bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out);
 
 
 bool copyPropertiesWithAttribute(const SGPropertyNode *in, SGPropertyNode *out,

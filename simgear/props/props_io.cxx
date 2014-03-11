@@ -780,16 +780,11 @@ copyPropertyValue(const SGPropertyNode *in, SGPropertyNode *out)
  * 
  * @param in The source property tree.
  * @param out The destination property tree.
- * @param attr_value Only copy properties with given attribute values.
- * @param attr_mask  Mask for attributes to be considered by attr_value
- *                   (default is 0 = attributes not considered, all
- *                   properties copied).
  * @return true if all properties were copied, false if some failed
  *  (for example, if the property's value is tied read-only).
  */
 bool
-copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
-                int attr_value, int attr_mask)
+copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
 {
   using namespace simgear;
   bool retval = copyPropertyValue(in, out);
@@ -804,14 +799,7 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
   int nChildren = in->nChildren();
   for (int i = 0; i < nChildren; i++) {
     const SGPropertyNode * in_child = in->getChild(i);
-    int mask = attr_mask;
-    /* attributes have no meaning for nodes without values - except
-     * the PRESERVE flag. So ignore them. */
-    if (!in_child->hasValue())
-        mask &= SGPropertyNode::PRESERVE;
-    if ((in_child->getAttributes() & mask) == (attr_value & mask))
-    {
-      SGPropertyNode * out_child = out->getChild(in_child->getNameString(),
+    SGPropertyNode * out_child = out->getChild(in_child->getNameString(),
                              in_child->getIndex(),
                              false);
       if (!out_child)
@@ -820,18 +808,9 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
                                     in_child->getIndex(),
                                     true);
       }
-      else
-      {
-          mask = attr_mask;
-          if (!out_child->hasValue())
-              mask &= SGPropertyNode::PRESERVE;
-          if ((out_child->getAttributes() & mask) != (attr_value & mask))
-              out_child = NULL;
-      }
-      if (out_child &&
-          (!copyProperties(in_child, out_child, attr_value, attr_mask)))
+
+      if (out_child && !copyProperties(in_child, out_child))
           retval = false;
-    }
   }
 
   return retval;

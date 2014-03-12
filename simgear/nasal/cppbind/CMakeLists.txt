@@ -20,7 +20,6 @@ set(DETAIL_HEADERS
 
 set(SOURCES
   NasalHash.cxx
-  NasalObjectHolder.cxx
   NasalString.cxx
   detail/from_nasal_helper.cxx
   detail/to_nasal_helper.cxx

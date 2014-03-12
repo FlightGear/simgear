@@ -16,7 +16,7 @@
     BOOST_PP_ENUM_PARAMS(n, class A)
   >
   typename boost::disable_if<boost::is_void<Ret>, Ret>::type
-  callNasalFunction( const ObjectHolder* holder
+  callNasalFunction( const ObjectHolder<SGReferenced>* holder
                      BOOST_PP_COMMA_IF(n)
                      BOOST_PP_ENUM(n, SG_CALL_TRAITS_PARAM, 0)
                    )
@@ -42,7 +42,7 @@
     BOOST_PP_ENUM_PARAMS(n, class A)
   >
   typename boost::enable_if<boost::is_void<Ret>, Ret>::type
-  callNasalFunction( const ObjectHolder* holder
+  callNasalFunction( const ObjectHolder<SGReferenced>* holder
                      BOOST_PP_COMMA_IF(n)
                      BOOST_PP_ENUM(n, SG_CALL_TRAITS_PARAM, 0)
                    )
@@ -75,7 +75,7 @@
     return boost::bind
     (
       &callNasalFunction<Ret BOOST_PP_COMMA_IF(n) BOOST_PP_ENUM_PARAMS(n, A)>,
-      ObjectHolder::makeShared(code)
+      ObjectHolder<SGReferenced>::makeShared(code)
       BOOST_PP_COMMA_IF(n)
       BOOST_PP_ENUM_SHIFTED_PARAMS(BOOST_PP_INC(n), _)
     );

@@ -19,21 +19,25 @@
 #ifndef SG_NASAL_OBJECT_HOLDER_HXX_
 #define SG_NASAL_OBJECT_HOLDER_HXX_
 
-#include <simgear/nasal/naref.h>
+#include <simgear/nasal/nasal.h>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 namespace nasal
 {
 
-  class ObjectHolder;
-  typedef SGSharedPtr<ObjectHolder> ObjectHolderRef;
+  /**
+   * Usable for example as empty base class if a base class is required.(Eg. as
+   * parameter for a mixin class).
+   */
+  struct empty_class {};
 
   /**
    * Prevent a Nasal object from being destroyed by the garbage collector during
    * the lifetime of this object.
    */
+  template<class Base = empty_class>
   class ObjectHolder:
-    public SGReferenced
+    public Base
   {
     public:
 
@@ -79,12 +83,83 @@ namespace nasal
        *
        * @param obj Object to save
        */
-      static ObjectHolderRef makeShared(naRef obj);
+      static SGSharedPtr<ObjectHolder<Base> > makeShared(naRef obj);
 
     protected:
       naRef _ref;
       int _gc_key;
   };
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  ObjectHolder<Base>::~ObjectHolder()
+  {
+    if( !naIsNil(_ref) )
+      naGCRelease(_gc_key);
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  naRef ObjectHolder<Base>::get_naRef() const
+  {
+    return _ref;
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  void ObjectHolder<Base>::reset()
+  {
+    if( !naIsNil(_ref) )
+      naGCRelease(_gc_key);
+
+    _ref = naNil();
+    _gc_key = 0;
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  void ObjectHolder<Base>::reset(naRef obj)
+  {
+    if( !naIsNil(_ref) )
+      naGCRelease(_gc_key);
+
+    _ref = obj;
+    _gc_key = naGCSave(obj);
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  bool ObjectHolder<Base>::valid() const
+  {
+    return !naIsNil(_ref);
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  ObjectHolder<Base>::ObjectHolder(naRef obj):
+    _ref(obj),
+    _gc_key(0)
+  {
+    if( !naIsNil(obj) )
+      naGCSave(obj);
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  ObjectHolder<Base>::ObjectHolder():
+    _ref(naNil()),
+    _gc_key(0)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  template<class Base>
+  SGSharedPtr<ObjectHolder<Base> >
+  ObjectHolder<Base>::makeShared(naRef obj)
+  {
+    return SGSharedPtr<ObjectHolder<Base> >( new ObjectHolder<SGReferenced>(obj) );
+  }
 
 } // namespace nasal
 

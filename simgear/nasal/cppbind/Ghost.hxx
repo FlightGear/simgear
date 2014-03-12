@@ -137,7 +137,7 @@ namespace nasal
         }
 
       protected:
-        ObjectHolder _obj;
+        ObjectHolder<> _obj;
 
         virtual naRef createNasalObject(naContext c) = 0;
     };

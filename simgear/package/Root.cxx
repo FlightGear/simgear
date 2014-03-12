@@ -236,7 +236,7 @@ std::string Root::getLocale() const
 void Root::scheduleToUpdate(Install* aInstall)
 {
     if (!aInstall) {
-        sg_exception("missing argument to scheduleToUpdate");
+        throw sg_exception("missing argument to scheduleToUpdate");
     }
     
     PackageList deps = aInstall->package()->dependencies();

@@ -42,6 +42,9 @@ namespace osg
 class StateSet;
 }
 
+
+typedef osg::ref_ptr<osg::Texture2D> Texture2DRef;
+    
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/threads/SGThread.hxx> // for SGMutex
 #include <simgear/math/SGMath.hxx>
@@ -466,7 +469,7 @@ private:
   
   // Object mask, a simple RGB texture used as a mask when placing
   // random vegetation, objects and buildings
-  std::vector<osg::Texture2D*> _masks;
+  std::vector<Texture2DRef> _masks;
   
   // Condition, indicating when this material is active
   SGSharedPtr<const SGCondition> condition;

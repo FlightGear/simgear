@@ -237,7 +237,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                 osg::Image* image = osgDB::readImageFile(fullMaskPath, options);
                 if (image && image->valid())
                 {
-                    osg::Texture2D* object_mask = new osg::Texture2D;
+                    Texture2DRef object_mask = new osg::Texture2D;
 
                     bool dds_mask = (ompath.lower_extension() == "dds");
 
@@ -485,7 +485,7 @@ osg::Texture2D* SGMaterial::get_object_mask(const SGTexturedTriangleBin& triangl
     // so we index based on the texture index, 
     unsigned int i = triangleBin.getTextureIndex() % _status.size();
     if (i < _masks.size()) {
-        return _masks[i];
+        return _masks[i].get();
     } else {
         return 0;
     }

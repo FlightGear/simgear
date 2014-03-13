@@ -534,8 +534,8 @@ public:
     Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
-    typedef map<CubeMapTuple, ref_ptr<TextureCubeMap> > CubeMap;
-    typedef map<string, ref_ptr<TextureCubeMap> > CrossCubeMap;
+    typedef map<CubeMapTuple, observer_ptr<TextureCubeMap> > CubeMap;
+    typedef map<string, observer_ptr<TextureCubeMap> > CrossCubeMap;
     CubeMap _cubemaps;
     CrossCubeMap _crossmaps;
 };
@@ -570,10 +570,12 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
         CubeMapTuple _tuple = makeCubeMapTuple(effect, texturesProp);
 
         CubeMap::iterator itr = _cubemaps.find(_tuple);
-        if (itr != _cubemaps.end())
-            return itr->second.get();
+        ref_ptr<TextureCubeMap> cubeTexture;
+        
+        if (itr != _cubemaps.end() && itr->second.lock(cubeTexture))
+            return cubeTexture.release();
 
-        TextureCubeMap* cubeTexture = new osg::TextureCubeMap;
+        cubeTexture = new osg::TextureCubeMap;
 
         // TODO: Read these from effect file? Maybe these are sane for all cuebmaps?
         cubeTexture->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
@@ -614,20 +616,22 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
         }
 
-        _cubemaps[_tuple] = cubeTexture;
-
-        return cubeTexture;
+        if (itr == _cubemaps.end())
+            _cubemaps[_tuple] = cubeTexture;
+        else
+            itr->second = cubeTexture; // update existing
+        return cubeTexture.release();
     }
-
 
     // Using 1 cross image
     else if(crossProp) {
         std::string texname = crossProp->getStringValue();
 
         // Try to find existing cube map
+        ref_ptr<TextureCubeMap> cubeTexture;
         CrossCubeMap::iterator itr = _crossmaps.find(texname);
-        if (itr != _crossmaps.end())
-            return itr->second.get();
+        if ((itr != _crossmaps.end()) && itr->second.lock(cubeTexture))
+            return cubeTexture.release();
 
         osgDB::ReaderWriter::ReadResult result;
         result = osgDB::readImageFile(texname, options);
@@ -642,7 +646,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             int height = image->t() / 4;
             int depth = image->r();
 
-            TextureCubeMap* cubeTexture = new osg::TextureCubeMap;
+            cubeTexture = new osg::TextureCubeMap;
 
             // Copy the 6 sub-images and push them
             for(int n=0; n<6; n++) {
@@ -700,9 +704,11 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
 
             }
 
-            _crossmaps[texname] = cubeTexture;
-
-            return cubeTexture;
+            if (itr == _crossmaps.end())
+                _crossmaps[texname] = cubeTexture;
+            else
+                itr->second = cubeTexture; // update existing
+            return cubeTexture.release();
 
         } else {
             throw BuilderException("Could not load cube cross");

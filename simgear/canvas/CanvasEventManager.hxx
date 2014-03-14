@@ -65,6 +65,7 @@ namespace canvas
       StampedPropagationPath _last_mouse_down,
                              _last_click,
                              _last_mouse_over;
+      int    _last_button_down;
       size_t _current_click_count;
 
       /**

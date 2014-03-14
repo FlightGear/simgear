@@ -63,6 +63,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   EventManager::EventManager():
+    _last_button_down(0),
     _current_click_count(0)
   {
 
@@ -77,6 +78,7 @@ namespace canvas
     {
       case Event::MOUSE_DOWN:
         _last_mouse_down = StampedPropagationPath(path, event->getTime());
+        _last_button_down = event->button;
         break;
       case Event::MOUSE_UP:
       {
@@ -106,7 +108,11 @@ namespace canvas
         if( !_last_mouse_down.valid() )
           return false;
         else
+        {
+          // OSG does not set button for drag events.
+          event->button = _last_button_down;
           return propagateEvent(event, _last_mouse_down.path);
+        }
       case Event::MOUSE_MOVE:
         handled |= handleMove(event, path);
         break;

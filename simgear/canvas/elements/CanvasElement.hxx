@@ -129,6 +129,11 @@ namespace canvas
       osg::MatrixTransform* getMatrixTransform();
       osg::MatrixTransform const* getMatrixTransform() const;
 
+      /**
+       * Transform position to local coordinages.
+       */
+      osg::Vec2f posToLocal(const osg::Vec2f& pos) const;
+
       virtual void childAdded( SGPropertyNode * parent,
                                SGPropertyNode * child );
       virtual void childRemoved( SGPropertyNode * parent,

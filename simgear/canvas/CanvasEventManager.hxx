@@ -29,9 +29,10 @@ namespace canvas
 
   struct EventTarget
   {
-    ElementWeakPtr  element;
-    osg::Vec2f      local_pos,
-                    local_delta;
+    ElementWeakPtr      element;
+
+    // Used as storage by EventManager during event propagation
+    mutable osg::Vec2f  local_pos;
   };
   typedef std::deque<EventTarget> EventPropagationPath;
   inline bool operator==(const EventTarget& t1, const EventTarget& t2)
@@ -62,11 +63,19 @@ namespace canvas
 
       // TODO if we really need the paths modify to not copy around the paths
       //      that much.
-      StampedPropagationPath _last_mouse_down,
-                             _last_click,
-                             _last_mouse_over;
-      int    _last_button_down;
+      StampedPropagationPath _last_mouse_over;
       size_t _current_click_count;
+
+      struct MouseEventInfo:
+        public StampedPropagationPath
+      {
+        int button;
+        osg::Vec2f pos;
+
+        void set( const MouseEventPtr& event,
+                  const EventPropagationPath& path );
+      } _last_mouse_down,
+        _last_click;
 
       /**
        * Propagate click event and handle multi-click (eg. create dblclick)
@@ -88,8 +97,8 @@ namespace canvas
        * clicks) are inside a maximum distance to still create a click or
        * dblclick event respectively.
        */
-      bool checkClickDistance( const EventPropagationPath& path1,
-                               const EventPropagationPath& path2 ) const;
+      bool checkClickDistance( const osg::Vec2f& pos1,
+                               const osg::Vec2f& pos2 ) const;
       EventPropagationPath
       getCommonAncestor( const EventPropagationPath& path1,
                          const EventPropagationPath& path2 ) const;

@@ -414,7 +414,6 @@ namespace canvas
 
     EventVisitor visitor( EventVisitor::TRAVERSE_DOWN,
                           event->getClientPos(),
-                          event->getDelta(),
                           _root_group );
     if( !_root_group->accept(visitor) )
       return false;

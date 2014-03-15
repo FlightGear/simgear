@@ -42,12 +42,10 @@ namespace canvas
        *
        * @param mode
        * @param pos     Mouse position
-       * @param delta   Mouse movement since last mouse move event
        * @param root    Element to dispatch events to if no element is hit
        */
       EventVisitor( TraverseMode mode,
                     const osg::Vec2f& pos,
-                    const osg::Vec2f& delta,
                     const ElementPtr& root = ElementPtr() );
       virtual ~EventVisitor();
       virtual bool traverse(Element& el);

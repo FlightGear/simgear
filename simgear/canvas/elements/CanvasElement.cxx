@@ -304,6 +304,18 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  osg::Vec2f Element::posToLocal(const osg::Vec2f& pos) const
+  {
+    getMatrix();
+    const osg::Matrix& m = _transform->getInverseMatrix();
+    return osg::Vec2f
+    (
+      m(0, 0) * pos[0] + m(1, 0) * pos[1] + m(3, 0),
+      m(0, 1) * pos[0] + m(1, 1) * pos[1] + m(3, 1)
+    );
+  }
+
+  //----------------------------------------------------------------------------
   void Element::childAdded(SGPropertyNode* parent, SGPropertyNode* child)
   {
     if(    parent == _node

@@ -30,14 +30,13 @@ namespace canvas
   //----------------------------------------------------------------------------
   EventVisitor::EventVisitor( TraverseMode mode,
                               const osg::Vec2f& pos,
-                              const osg::Vec2f& delta,
                               const ElementPtr& root ):
     _traverse_mode( mode ),
     _root(root)
   {
     if( mode == TRAVERSE_DOWN )
     {
-      EventTarget target = {ElementWeakPtr(), pos, delta};
+      EventTarget target = {ElementWeakPtr(), pos};
       _target_path.push_back(target);
     }
   }
@@ -63,14 +62,8 @@ namespace canvas
     // We only need to check for hits while traversing down
     if( _traverse_mode == TRAVERSE_DOWN )
     {
-      // Transform event to local coordinates
-      const osg::Matrix& m = el.getMatrixTransform()->getInverseMatrix();
       const osg::Vec2f& pos = _target_path.back().local_pos;
-      const osg::Vec2f local_pos
-      (
-        m(0, 0) * pos[0] + m(1, 0) * pos[1] + m(3, 0),
-        m(0, 1) * pos[0] + m(1, 1) * pos[1] + m(3, 1)
-      );
+      const osg::Vec2f local_pos = el.posToLocal(pos);
 
       // Don't check specified root element for collision, as its purpose is to
       // catch all events which have no target. This allows for example calling
@@ -79,14 +72,7 @@ namespace canvas
       if( _root.get() != &el && !el.hitBound(pos, local_pos) )
         return false;
 
-      const osg::Vec2f& delta = _target_path.back().local_delta;
-      const osg::Vec2f local_delta
-      (
-        m(0, 0) * delta[0] + m(1, 0) * delta[1],
-        m(0, 1) * delta[0] + m(1, 1) * delta[1]
-      );
-
-      EventTarget target = {el.getWeakPtr(), local_pos, local_delta};
+      EventTarget target = {el.getWeakPtr(), local_pos};
       _target_path.push_back(target);
 
       if( el.traverse(*this) || &el == _root.get() )

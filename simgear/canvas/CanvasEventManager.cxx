@@ -62,8 +62,17 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void EventManager::MouseEventInfo::set( const MouseEventPtr& event,
+                                          const EventPropagationPath& p )
+  {
+    path = p;
+    time = event->time;
+    button = event->button;
+    pos = event->screen_pos;
+  }
+
+  //----------------------------------------------------------------------------
   EventManager::EventManager():
-    _last_button_down(0),
     _current_click_count(0)
   {
 
@@ -77,8 +86,7 @@ namespace canvas
     switch( event->type )
     {
       case Event::MOUSE_DOWN:
-        _last_mouse_down = StampedPropagationPath(path, event->getTime());
-        _last_button_down = event->button;
+        _last_mouse_down.set(event, path);
         break;
       case Event::MOUSE_UP:
       {
@@ -91,12 +99,12 @@ namespace canvas
         // normal mouseup
         handled |= propagateEvent(event, path);
 
-        if( _last_mouse_down.path.empty() )
+        if( !_last_mouse_down.valid() )
           // Ignore mouse up without any previous mouse down
           return handled;
 
         // now handle click/dblclick
-        if( checkClickDistance(path, _last_mouse_down.path) )
+        if( checkClickDistance(event->screen_pos, _last_mouse_down.pos) )
           handled |=
             handleClick(event, getCommonAncestor(_last_mouse_down.path, path));
 
@@ -110,7 +118,7 @@ namespace canvas
         else
         {
           // OSG does not set button for drag events.
-          event->button = _last_button_down;
+          event->button = _last_mouse_down.button;
           return propagateEvent(event, _last_mouse_down.path);
         }
       case Event::MOUSE_MOVE:
@@ -152,8 +160,10 @@ namespace canvas
 
       if( _current_click_count > 1 )
       {
-        // Reset current click count if moved too far
-        if( !checkClickDistance(path, _last_click.path) )
+        // Reset current click count if moved too far or different button has
+        // been clicked
+        if(   !checkClickDistance(event->screen_pos, _last_click.pos)
+            || _last_click.button != event->button )
           _current_click_count = 1;
       }
     }
@@ -173,7 +183,7 @@ namespace canvas
       handled |= propagateEvent( dbl_click,
                                  getCommonAncestor(_last_click.path, path) );
 
-    _last_click = StampedPropagationPath(path, event->getTime());
+    _last_click.set(event, path);
 
     return handled;
   }
@@ -249,14 +259,24 @@ namespace canvas
     // Event propagation similar to DOM Level 3 event flow:
     // http://www.w3.org/TR/DOM-Level-3-Events/#event-flow
 
-    // Capturing phase
-//    for( EventPropagationPath::const_iterator it = path.begin();
-//                                              it != path.end();
-//                                            ++it )
-//    {
-//      if( !it->element.expired() )
-//        std::cout << it->element.lock()->getProps()->getPath() << std::endl;
-//    }
+    // Position update only needed for drag event (as event needs to be
+    // delivered to element of initial mousedown, but with update positions)
+    if( mouse_event && mouse_event->type == MouseEvent::DRAG )
+    {
+      osg::Vec2f local_pos = mouse_event->client_pos;
+
+      // Capturing phase (currently just update position)
+      for( EventPropagationPath::const_iterator it = path.begin();
+                                                it != path.end();
+                                              ++it )
+      {
+        ElementPtr el = it->element.lock();
+        if( !el )
+          continue;
+
+        it->local_pos = local_pos = el->posToLocal(local_pos);
+      }
+    }
 
     // Check if event supports bubbling
     const Event::Type types_no_bubbling[] = {
@@ -294,17 +314,8 @@ namespace canvas
       // TODO provide functions to convert delta to local coordinates on demand.
       //      Maybe also provide a clone method for events as local coordinates
       //      might differ between different elements receiving the same event.
-      if( mouse_event ) //&& event->type != Event::DRAG )
-      {
-        // TODO transform pos and delta for drag events. Maybe we should just
-        //      store the global coordinates and convert to local coordinates
-        //      on demand.
-
-        // Position and delta are specified in local coordinate system of
-        // current element
+      if( mouse_event )
         mouse_event->local_pos = it->local_pos;
-        //mouse_event->delta = it->local_delta;
-      }
 
       event->current_target = el;
       el->handleEvent(event);
@@ -318,10 +329,10 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   bool
-  EventManager::checkClickDistance( const EventPropagationPath& path1,
-                                    const EventPropagationPath& path2 ) const
+  EventManager::checkClickDistance( const osg::Vec2f& pos1,
+                                    const osg::Vec2f& pos2 ) const
   {
-    osg::Vec2 delta = path1.front().local_pos - path2.front().local_pos;
+    osg::Vec2 delta = pos1 - pos2;
     return std::fabs(delta.x()) < drag_threshold
         && std::fabs(delta.y()) < drag_threshold;
   }

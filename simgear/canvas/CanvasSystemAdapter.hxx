@@ -23,6 +23,7 @@
 
 namespace simgear
 {
+namespace HTTP { class Client; }
 namespace canvas
 {
 
@@ -35,6 +36,7 @@ namespace canvas
       virtual void addCamera(osg::Camera* camera) const = 0;
       virtual void removeCamera(osg::Camera* camera) const = 0;
       virtual osg::Image* getImage(const std::string& path) const = 0;
+      virtual HTTP::Client* getHTTPClient() const = 0;
   };
 
 } // namespace canvas

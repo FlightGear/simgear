@@ -27,6 +27,7 @@
 
 namespace simgear
 {
+namespace HTTP { class Request; }
 namespace canvas
 {
 
@@ -102,6 +103,8 @@ namespace canvas
 
       void setQuad(size_t index, const SGVec2f& tl, const SGVec2f& br);
       void setQuadUV(size_t index, const SGVec2f& tl, const SGVec2f& br);
+
+      void handleImageLoadDone(HTTP::Request*);
 
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas

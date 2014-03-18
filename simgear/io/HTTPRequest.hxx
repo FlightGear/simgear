@@ -8,6 +8,7 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/sg_types.hxx>
 
+#include <boost/bind.hpp>
 #include <boost/function.hpp>
 
 class SGPropertyNode;
@@ -53,6 +54,12 @@ public:
      */
     Request* done(const Callback& cb);
 
+    template<class C>
+    Request* done(C* instance, void (C::*mem_func)(Request*))
+    {
+      return done(boost::bind(mem_func, instance, _1));
+    }
+
     /**
      * Set the handler to be called when the request completes or aborts with an
      * error.
@@ -62,6 +69,12 @@ public:
      */
     Request* fail(const Callback& cb);
 
+    template<class C>
+    Request* fail(C* instance, void (C::*mem_func)(Request*))
+    {
+      return fail(boost::bind(mem_func, instance, _1));
+    }
+
     /**
      * Set the handler to be called when the request either successfully
      * completes or fails.
@@ -70,6 +83,12 @@ public:
      *       handler is called immediately.
      */
     Request* always(const Callback& cb);
+
+    template<class C>
+    Request* always(C* instance, void (C::*mem_func)(Request*))
+    {
+      return always(boost::bind(mem_func, instance, _1));
+    }
 
     /**
      * Set the data for the body of the request. The request is automatically

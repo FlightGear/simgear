@@ -25,12 +25,12 @@
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/io/HTTPClient.hxx>
 
 #include <osg/Array>
 #include <osg/Geometry>
 #include <osg/PrimitiveSet>
-
-#include <boost/algorithm/string/predicate.hpp>
+#include <osgDB/Registry>
 
 namespace simgear
 {
@@ -522,18 +522,29 @@ namespace canvas
     }
     else if( name == "file" )
     {
-      static const std::string CANVAS_PROTOCOL = "canvas://";
-      const std::string& path = child->getStringValue();
+      static const std::string PROTOCOL_SEP = "://";
 
-      CanvasPtr canvas = _canvas.lock();
-      if( !canvas )
+      std::string url = child->getStringValue(),
+                  protocol, path;
+
+      size_t sep_pos = url.find(PROTOCOL_SEP);
+      if( sep_pos != std::string::npos )
       {
-        SG_LOG(SG_GL, SG_ALERT, "canvas::Image: No canvas available");
-        return;
+        protocol = url.substr(0, sep_pos);
+        path = url.substr(sep_pos + PROTOCOL_SEP.length());
       }
+      else
+        path = url;
 
-      if( boost::starts_with(path, CANVAS_PROTOCOL) )
+      if( protocol == "canvas" )
       {
+        CanvasPtr canvas = _canvas.lock();
+        if( !canvas )
+        {
+          SG_LOG(SG_GL, SG_ALERT, "canvas::Image: No canvas available");
+          return;
+        }
+
         CanvasMgr* canvas_mgr = canvas->getCanvasMgr();
         if( !canvas_mgr )
         {
@@ -544,7 +555,7 @@ namespace canvas
         const SGPropertyNode* canvas_node =
           canvas_mgr->getPropertyRoot()
                     ->getParent()
-                    ->getNode( path.substr(CANVAS_PROTOCOL.size()) );
+                    ->getNode( path );
         if( !canvas_node )
         {
           SG_LOG(SG_GL, SG_ALERT, "canvas::Image: No such canvas: " << path);
@@ -561,6 +572,14 @@ namespace canvas
         }
 
         setSrcCanvas(src_canvas);
+      }
+      else if( protocol == "http" || protocol == "https" )
+      // TODO check https
+      {
+        Canvas::getSystemAdapter()
+          ->getHTTPClient()
+          ->load(url)
+          ->done(this, &Image::handleImageLoadDone);
       }
       else
       {
@@ -635,6 +654,38 @@ namespace canvas
     (*_texCoords)[i + 1].set(br.x(), tl.y());
     (*_texCoords)[i + 2].set(br.x(), br.y());
     (*_texCoords)[i + 3].set(tl.x(), br.y());
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::handleImageLoadDone(HTTP::Request* req)
+  {
+    if( req->responseCode() != 200 )
+    {
+      SG_LOG( SG_GL,
+              SG_WARN,
+              "canvas::Image: failed to download '" << req->url() << "': "
+                                                    << req->responseReason() );
+      return;
+    }
+
+    std::string ext = SGPath(req->path()).extension();
+    SG_LOG(SG_GL, SG_INFO, "canvas::Image: received " << req->url());
+
+    osgDB::ReaderWriter* rw =
+      osgDB::Registry::instance()->getReaderWriterForExtension(ext);
+
+    std::istringstream img_data(
+      static_cast<HTTP::MemoryRequest*>(req)->responseBody()
+    );
+
+    osgDB::ReaderWriter::ReadResult result = rw->readImage(img_data);
+    if( result.success() )
+      setImage( result.takeImage() );
+    else
+      SG_LOG( SG_GL,
+              SG_WARN,
+              "canvas::Image: failed to read image '" << req->url() << "': "
+                                                      << result.message() );
   }
 
 } // namespace canvas

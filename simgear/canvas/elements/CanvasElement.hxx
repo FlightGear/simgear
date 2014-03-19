@@ -113,7 +113,14 @@ namespace canvas
 
       virtual bool handleEvent(canvas::EventPtr event);
 
-      virtual bool hitBound( const osg::Vec2f& pos,
+      /**
+       *
+       * @param global_pos Position in global (canvas) coordinate frame
+       * @param parent_pos Position in parent coordinate frame
+       * @param local_pos  Position in local (element) coordinate frame
+       */
+      virtual bool hitBound( const osg::Vec2f& global_pos,
+                             const osg::Vec2f& parent_pos,
                              const osg::Vec2f& local_pos ) const;
 
       /**

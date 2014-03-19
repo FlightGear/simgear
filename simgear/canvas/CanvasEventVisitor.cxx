@@ -69,7 +69,8 @@ namespace canvas
       // catch all events which have no target. This allows for example calling
       // event listeners attached to the canvas itself (its root group) even if
       // no element has been hit.
-      if( _root.get() != &el && !el.hitBound(pos, local_pos) )
+      if(    _root.get() != &el
+          && !el.hitBound(_target_path.front().local_pos, pos, local_pos) )
         return false;
 
       EventTarget target = {el.getWeakPtr(), local_pos};

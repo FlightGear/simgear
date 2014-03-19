@@ -56,6 +56,26 @@ namespace canvas
         _coord_reference(GLOBAL)
       {}
 
+      bool contains(const osg::Vec2f& pos) const
+      {
+        return _x <= pos.x() && pos.x() <= _x + _width
+            && _y <= pos.y() && pos.y() <= _y + _height;
+      }
+
+      bool contains( const osg::Vec2f& global_pos,
+                     const osg::Vec2f& parent_pos,
+                     const osg::Vec2f& local_pos ) const
+      {
+        switch( _coord_reference )
+        {
+          case GLOBAL: return contains(global_pos);
+          case PARENT: return contains(parent_pos);
+          case LOCAL:  return contains(local_pos);
+        }
+
+        return false;
+      }
+
       virtual void apply(osg::State& state) const
       {
         const osg::Viewport* vp = state.getCurrentViewport();
@@ -264,18 +284,23 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Element::hitBound( const osg::Vec2f& pos,
+  bool Element::hitBound( const osg::Vec2f& global_pos,
+                          const osg::Vec2f& parent_pos,
                           const osg::Vec2f& local_pos ) const
   {
-    const osg::Vec3f pos3(pos, 0);
+    if( _scissor && !_scissor->contains(global_pos, parent_pos, local_pos) )
+      return false;
+
+    const osg::Vec3f pos3(parent_pos, 0);
 
     // Drawables have a bounding box...
     if( _drawable )
       return _drawable->getBound().contains(osg::Vec3f(local_pos, 0));
-    // ... for other elements, i.e. groups only a bounding sphere is available
     else
-      return _transform->getBound().contains(osg::Vec3f(pos, 0));
+      // ... for other elements, i.e. groups only a bounding sphere is available
+      return _transform->getBound().contains(osg::Vec3f(parent_pos, 0));
   }
+
 
   //----------------------------------------------------------------------------
   void Element::setVisible(bool visible)

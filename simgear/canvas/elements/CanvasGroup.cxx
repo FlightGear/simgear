@@ -220,7 +220,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::BoundingBox Group::getTransformedBounds(const osg::Matrix& m) const
   {
-    osg::BoundingBox bb;
+    // Default to a bounding box with size 0x0 and the origin defined by the
+    // matrix.
+    osg::BoundingBox bb(m.getTrans(), m.getTrans());
+
     if( !_transform.valid() )
     {
       warnTransformExpired("getTransformedBounds");

@@ -273,6 +273,16 @@ std::string Request::hostAndPort() const
 }
 
 //------------------------------------------------------------------------------
+std::string Request::responseMime() const
+{
+  std::string content_type = _responseHeaders.get("content-type");
+  if( content_type.empty() )
+    return "application/octet-stream";
+
+  return content_type.substr(0, content_type.find(';'));
+}
+
+//------------------------------------------------------------------------------
 void Request::setResponseLength(unsigned int l)
 {
   _responseLength = l;

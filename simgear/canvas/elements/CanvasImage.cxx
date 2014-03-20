@@ -661,31 +661,54 @@ namespace canvas
   {
     if( req->responseCode() != 200 )
     {
-      SG_LOG( SG_GL,
-              SG_WARN,
-              "canvas::Image: failed to download '" << req->url() << "': "
-                                                    << req->responseReason() );
+      SG_LOG(SG_IO, SG_WARN, "failed to download '" << req->url() << "': "
+                                                    << req->responseReason());
       return;
     }
 
-    std::string ext = SGPath(req->path()).extension();
-    SG_LOG(SG_GL, SG_INFO, "canvas::Image: received " << req->url());
+    const std::string ext = SGPath(req->path()).extension(),
+                      mime = req->responseMime();
 
-    osgDB::ReaderWriter* rw =
-      osgDB::Registry::instance()->getReaderWriterForExtension(ext);
+    SG_LOG(SG_IO, SG_INFO, "received " << req->url() <<
+                           " (ext=" << ext << ", MIME=" << mime << ")");
 
-    std::istringstream img_data(
-      static_cast<HTTP::MemoryRequest*>(req)->responseBody()
-    );
+    const std::string& img_data =
+      static_cast<HTTP::MemoryRequest*>(req)->responseBody();
+    osgDB::Registry* reg = osgDB::Registry::instance();
 
-    osgDB::ReaderWriter::ReadResult result = rw->readImage(img_data);
+    // First try to detect image type by extension
+    osgDB::ReaderWriter* rw = reg->getReaderWriterForExtension(ext);
+    if( rw && loadImage(*rw, img_data, *req, "extension") )
+      return;
+
+    // Now try with MIME type
+    rw = reg->getReaderWriterForMimeType(req->responseMime());
+    if( rw && loadImage(*rw, img_data, *req, "MIME type") )
+      return;
+
+    SG_LOG(SG_IO, SG_WARN, "unable to read image '" << req->url() << "'");
+  }
+
+  //----------------------------------------------------------------------------
+  bool Image::loadImage( osgDB::ReaderWriter& reader,
+                         const std::string& data,
+                         HTTP::Request& request,
+                         const std::string& type )
+  {
+    SG_LOG(SG_IO, SG_DEBUG, "use image reader detected by " << type);
+
+    std::istringstream data_strm(data);
+    osgDB::ReaderWriter::ReadResult result = reader.readImage(data_strm);
     if( result.success() )
+    {
       setImage( result.takeImage() );
-    else
-      SG_LOG( SG_GL,
-              SG_WARN,
-              "canvas::Image: failed to read image '" << req->url() << "': "
-                                                      << result.message() );
+      return true;
+    }
+
+    SG_LOG(SG_IO, SG_WARN, "failed to read image '" << request.url() << "': "
+                                                    << result.message());
+
+    return false;
   }
 
 } // namespace canvas

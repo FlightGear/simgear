@@ -118,6 +118,8 @@ public:
     StringMap const& responseHeaders() const
         { return _responseHeaders; }
 
+    std::string responseMime() const;
+
     virtual int responseCode() const
         { return _responseStatus; }
         

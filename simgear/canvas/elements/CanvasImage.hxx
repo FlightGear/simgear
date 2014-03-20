@@ -105,6 +105,10 @@ namespace canvas
       void setQuadUV(size_t index, const SGVec2f& tl, const SGVec2f& br);
 
       void handleImageLoadDone(HTTP::Request*);
+      bool loadImage( osgDB::ReaderWriter& reader,
+                      const std::string& data,
+                      HTTP::Request& request,
+                      const std::string& type );
 
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas

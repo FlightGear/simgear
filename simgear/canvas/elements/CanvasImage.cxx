@@ -520,8 +520,11 @@ namespace canvas
 
       _attributes_dirty |= DEST_SIZE;
     }
-    else if( name == "file" )
+    else if( name == "src" || name == "file" )
     {
+      if( name == "file" )
+        SG_LOG(SG_GL, SG_WARN, "'file' is deprecated. Use 'src' instead");
+
       static const std::string PROTOCOL_SEP = "://";
 
       std::string url = child->getStringValue(),
@@ -682,7 +685,7 @@ namespace canvas
       return;
 
     // Now try with MIME type
-    rw = reg->getReaderWriterForMimeType(req->responseMime());
+    rw = reg->getReaderWriterForMimeType(mime);
     if( rw && loadImage(*rw, img_data, *req, "MIME type") )
       return;
 

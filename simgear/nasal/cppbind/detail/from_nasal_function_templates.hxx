@@ -21,13 +21,16 @@
                    BOOST_PP_ENUM_TRAILING(n, SG_CALL_TRAITS_PARAM, 0) )
   {
     naContext ctx = naNewContext();
-    naRef args[] = {
+#if n
+    naRef args[n] = {
       BOOST_PP_ENUM(n, SG_CALL_ARG, 0)
     };
-    const int num_args = sizeof(args)/sizeof(args[0]);
+#else
+    naRef* args = NULL;
+#endif
 
     naRef result =
-      naCallMethodCtx(ctx, holder->get_naRef(), self, num_args, args, naNil());
+      naCallMethodCtx(ctx, holder->get_naRef(), self, n, args, naNil());
 
     const char* error = naGetError(ctx);
     std::string error_str(error ? error : "");

@@ -118,7 +118,7 @@ namespace nasal
       /**
        * Get Nasal representation of Hash
        */
-      const naRef get_naRef() const;
+      naRef get_naRef() const;
 
     protected:
 

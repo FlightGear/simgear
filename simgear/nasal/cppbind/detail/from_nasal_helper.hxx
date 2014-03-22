@@ -31,7 +31,10 @@
 #include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/function.hpp>
+#include <boost/preprocessor/control/if.hpp>
 #include <boost/preprocessor/iteration/iterate.hpp>
+#include <boost/preprocessor/repetition/enum_trailing.hpp>
+#include <boost/preprocessor/repetition/enum_trailing_params.hpp>
 #include <boost/preprocessor/repetition/enum_shifted_params.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -69,6 +72,21 @@ namespace nasal
 
     protected:
       std::string _msg;
+  };
+
+  /**
+   * Wrap a naRef to indicate it references the self/me object in Nasal method
+   * calls.
+   */
+  struct Me
+  {
+    naRef _ref;
+
+    Me(naRef ref):
+      _ref(ref)
+    {}
+
+    operator naRef() { return _ref; }
   };
 
   /**
@@ -193,7 +211,14 @@ namespace nasal
   // Helpers for wrapping calls to Nasal functions into boost::function
   namespace detail
   {
-#define BOOST_PP_ITERATION_LIMITS (0, 9)
+    // Dummy include to add a build dependency on this file for gcc/CMake/etc.
+#define SG_DONT_DO_ANYTHING
+# include <simgear/nasal/cppbind/detail/from_nasal_function_templates.hxx>
+#undef SG_DONT_DO_ANYTHING
+
+    // Now the actual include (we are limited to 8 arguments (+me) here because
+    // boost::bind has an upper limit of 9)
+#define BOOST_PP_ITERATION_LIMITS (0, 8)
 #define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/from_nasal_function_templates.hxx>
 #include BOOST_PP_ITERATE()
   }

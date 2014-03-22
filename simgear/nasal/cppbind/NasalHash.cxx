@@ -69,7 +69,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  const naRef Hash::get_naRef() const
+  naRef Hash::get_naRef() const
   {
     return _hash;
   }

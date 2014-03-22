@@ -542,6 +542,11 @@ namespace nasal
         return method(name, boost::bind(method_invoker<Ret>, func, _1, _2));
       }
 
+      // Build dependency for CMake, gcc, etc.
+#define SG_DONT_DO_ANYTHING
+# include <simgear/nasal/cppbind/detail/functor_templates.hxx>
+#undef SG_DONT_DO_ANYTHING
+
 #define BOOST_PP_ITERATION_LIMITS (0, 9)
 #define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/functor_templates.hxx>
 #include BOOST_PP_ITERATE()
@@ -732,7 +737,7 @@ namespace nasal
           (
             c,
             "method called on object of wrong type: is '%s' expected '%s'",
-            ghost_type ? ghost_type->name : "unknown",
+            naIsNil(me) ? "nil" : (ghost_type ? ghost_type->name : "unknown"),
             _ghost_type.name
           );
 

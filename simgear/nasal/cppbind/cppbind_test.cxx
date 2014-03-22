@@ -38,6 +38,8 @@ struct Base
   std::string var;
   const std::string& getVar() const { return var; }
   void setVar(const std::string v) { var = v; }
+
+  unsigned long getThis() const { return (unsigned long)this; }
 };
 
 void baseVoidFunc(Base& b) {}
@@ -173,6 +175,19 @@ int main(int argc, char* argv[])
   VERIFY( fma );
   VERIFY( fma("test", 3, .5) == "test" );
 
+  typedef boost::function<naRef (naRef)> naRefMemFunc;
+  naRefMemFunc fmem = hash.get<naRefMemFunc>("func");
+  VERIFY( fmem );
+  naRef ret = fmem(hash.get_naRef()),
+        hash_ref = hash.get_naRef();
+  VERIFY( memcmp(&ret, &hash_ref, sizeof(naRef)) == 0 );
+
+  // Check if nasal::Me gets passed as self/me and remaining arguments are
+  // passed on to function
+  typedef boost::function<int (Me, int)> MeIntFunc;
+  MeIntFunc fmeint = hash.get<MeIntFunc>("func");
+  VERIFY( fmeint(naNil(), 5) == 5 );
+
   //----------------------------------------------------------------------------
   // Test exposing classes to Nasal
   //----------------------------------------------------------------------------
@@ -190,7 +205,8 @@ int main(int argc, char* argv[])
     .method("void_c", &baseConstVoidFunc)
     .method("int2args", &baseFunc2Args)
     .method("bool2args", &Base::test2Args)
-    .method("str_ptr", &testPtr);
+    .method("str_ptr", &testPtr)
+    .method("this", &Base::getThis);
   Ghost<DerivedPtr>::init("DerivedPtr")
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)
@@ -215,6 +231,17 @@ int main(int argc, char* argv[])
   naRef derived = to_nasal(c, d);
   VERIFY( naIsGhost(derived) );
   VERIFY( std::string("DerivedPtr") == naGhost_type(derived)->name );
+
+  // Get member function from ghost...
+  naRef thisGetter = naNil();
+  VERIFY( naMember_get(c, derived, to_nasal(c, "this"), &thisGetter) );
+  VERIFY( naIsFunc(thisGetter) );
+
+  // ...and check if it really gets passed the correct instance
+  typedef boost::function<unsigned long (Me)> MemFunc;
+  MemFunc fGetThis = from_nasal<MemFunc>(c, thisGetter);
+  VERIFY( fGetThis );
+  VERIFY( fGetThis(derived) == (unsigned long)d.get() );
 
   BasePtr d2( new DoubleDerived );
   derived = to_nasal(c, d2);
@@ -291,8 +318,6 @@ int main(int argc, char* argv[])
   VERIFY( objects[0] == d );
   VERIFY( objects[1] == d2 );
   VERIFY( objects[2] == d3 );
-
-  // TODO actually do something with the ghosts...
 
   //----------------------------------------------------------------------------
   // Test nasal::CallContext

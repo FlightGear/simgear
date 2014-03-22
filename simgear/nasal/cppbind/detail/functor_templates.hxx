@@ -2,10 +2,11 @@
 # error Nasal cppbind - do not include this file!
 #endif
 
+#ifndef SG_DONT_DO_ANYTHING
 #define n BOOST_PP_ITERATION()
 
 #define SG_GHOST_FUNC_TYPE\
-  boost::function<Ret (raw_type& BOOST_PP_COMMA_IF(n)BOOST_PP_ENUM_PARAMS(n,A))>
+  boost::function<Ret (raw_type& BOOST_PP_ENUM_TRAILING_PARAMS(n,A))>
 
   /**
    * Bind any callable entity accepting an instance of raw_type and an arbitrary
@@ -13,8 +14,7 @@
    */
   template<
     class Ret
-    BOOST_PP_COMMA_IF(n)
-    BOOST_PP_ENUM_PARAMS(n, class A)
+    BOOST_PP_ENUM_TRAILING_PARAMS(n, class A)
   >
   Ghost& method(const std::string& name, const SG_GHOST_FUNC_TYPE& func)
   {
@@ -36,8 +36,7 @@
       ( boost::bind(
         func,
         _1
-        BOOST_PP_COMMA_IF(n)
-        BOOST_PP_ENUM(n, SG_GHOST_REQUIRE_ARG, 0)
+        BOOST_PP_ENUM_TRAILING(n, SG_GHOST_REQUIRE_ARG, 0)
       ))
     );
 
@@ -50,8 +49,7 @@
    */\
   template<\
     class Ret\
-    BOOST_PP_COMMA_IF(n)\
-    BOOST_PP_ENUM_PARAMS(n, class A)\
+    BOOST_PP_ENUM_TRAILING_PARAMS(n, class A)\
   >\
   Ghost& method\
   (\
@@ -61,8 +59,7 @@
   {\
     return method<\
       Ret\
-      BOOST_PP_COMMA_IF(n)\
-      BOOST_PP_ENUM_PARAMS(n,A)\
+      BOOST_PP_ENUM_TRAILING_PARAMS(n,A)\
     >(name, SG_GHOST_FUNC_TYPE(fn));\
   }
 
@@ -83,13 +80,12 @@
   template<
     class Ret,
     class Type
-    BOOST_PP_COMMA_IF(n)
-    BOOST_PP_ENUM_PARAMS(n, class A)
+    BOOST_PP_ENUM_TRAILING_PARAMS(n, class A)
   >
   Ghost& method
   (
     const std::string& name,
-    Ret (*fn)(Type BOOST_PP_COMMA_IF(n) BOOST_PP_ENUM_PARAMS(n,A))
+    Ret (*fn)(Type BOOST_PP_ENUM_TRAILING_PARAMS(n,A))
   )
   {
     BOOST_STATIC_ASSERT
@@ -102,3 +98,4 @@
 
 #undef n
 #undef SG_GHOST_TYPEDEF_FUNC_TYPE
+#endif // SG_DONT_DO_ANYTHING

@@ -607,10 +607,7 @@ namespace nasal
         {
           naRef na_parents = naHash_cget(me, const_cast<char*>("parents"));
           if( !naIsVector(na_parents) )
-          {
-            SG_LOG(SG_NASAL, SG_DEBUG, "Missing 'parents' vector for ghost");
             return pointer();
-          }
 
           typedef std::vector<naRef> naRefs;
           naRefs parents = from_nasal<naRefs>(c, na_parents);

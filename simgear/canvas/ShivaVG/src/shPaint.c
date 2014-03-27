@@ -36,6 +36,9 @@
 #define _ARRAY_DEFINE
 #include "shArrayBase.h"
 
+// We currently do not use gradients which need textures, so disable them to
+// prevent freeing resources outside the correct OpenGL thread/context.
+#define SH_NO_PAINT_TEXTURE
 
 void SHPaint_ctor(SHPaint *p)
 {
@@ -51,20 +54,26 @@ void SHPaint_ctor(SHPaint *p)
   for (i=0; i<4; ++i) p->linearGradient[i] = 0.0f;
   for (i=0; i<5; ++i) p->radialGradient[i] = 0.0f;
   p->pattern = VG_INVALID_HANDLE;
-  
+
+#ifndef SH_NO_PAINT_TEXTURE
   glGenTextures(1, &p->texture);
   glBindTexture(GL_TEXTURE_1D, p->texture);
   glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, SH_GRADIENT_TEX_SIZE, 0,
                GL_RGBA, GL_FLOAT, NULL);
+#else
+  p->texture = 0;
+#endif
 }
 
 void SHPaint_dtor(SHPaint *p)
 {
   SH_DEINITOBJ(SHStopArray, p->instops);
   SH_DEINITOBJ(SHStopArray, p->stops);
-  
+
+#ifndef SH_NO_PAINT_TEXTURE
   if (glIsTexture(p->texture))
     glDeleteTextures(1, &p->texture);
+#endif
 }
 
 VG_API_CALL VGPaint vgCreatePaint(void)
@@ -143,6 +152,7 @@ VG_API_CALL void vgPaintPattern(VGPaint paint, VGImage pattern)
 
 void shUpdateColorRampTexture(SHPaint *p)
 {
+#ifndef SH_NO_PAINT_TEXTURE
   SHint s=0;
   SHStop *stop1, *stop2;
   SHfloat rgba[SH_GRADIENT_TEX_COORDSIZE];
@@ -177,12 +187,15 @@ void shUpdateColorRampTexture(SHPaint *p)
       CSTORE_RGBA1D_F(c, rgba, x);
     }
   }
-  
+
   /* Update texture image */
   glBindTexture(GL_TEXTURE_1D, p->texture);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexSubImage1D(GL_TEXTURE_1D, 0, 0, SH_GRADIENT_TEX_SIZE,
                   GL_RGBA, GL_FLOAT, rgba);
+#else
+  printf("ShivaVG: gradients not supported!");
+#endif
 }
 
 void shValidateInputStops(SHPaint *p)
@@ -344,6 +357,7 @@ void shGenerateStops(SHPaint *p, SHfloat minOffset, SHfloat maxOffset,
 
 void shSetGradientTexGLState(SHPaint *p)
 {
+#ifndef SH_NO_PAINT_TEXTURE
   glBindTexture(GL_TEXTURE_1D, p->texture);
   glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -359,6 +373,9 @@ void shSetGradientTexGLState(SHPaint *p)
   
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glColor4f(1,1,1,1);
+#else
+  printf("ShivaVG: gradients not supported!");
+#endif
 }
 
 void shSetPatternTexGLState(SHPaint *p, VGContext *c)

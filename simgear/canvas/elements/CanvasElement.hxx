@@ -164,9 +164,16 @@ namespace canvas
       void setClipFrame(ReferenceFrame rf);
 
       /**
-       * Write the given bounding box to the property tree
+       * Get bounding box (may not be as tight as bounding box returned by
+       * #getTightBounds)
        */
-      void setBoundingBox(const osg::BoundingBox& bb);
+      osg::BoundingBox getBoundingBox() const;
+
+      /**
+       * Get tight bounding box (child points are transformed to elements
+       * coordinate space before calculating the bounding box).
+       */
+      osg::BoundingBox getTightBoundingBox() const;
 
       /**
        * Get bounding box with children/drawables transformed by passed matrix
@@ -227,9 +234,8 @@ namespace canvas
       osg::observer_ptr<osg::MatrixTransform> _transform;
       std::vector<TransformType>              _transform_types;
 
-      Style                             _style;
-      std::vector<SGPropertyNode_ptr>   _bounding_box;
-      RelativeScissor                  *_scissor;
+      Style             _style;
+      RelativeScissor  *_scissor;
 
       typedef std::vector<EventListener> Listener;
       typedef std::map<Event::Type, Listener> ListenerMap;
@@ -237,7 +243,7 @@ namespace canvas
       ListenerMap _listener;
 
       typedef std::map<std::string, StyleInfo> StyleSetters;
-      static StyleSetters       _style_setters;
+      static StyleSetters _style_setters;
 
       static void staticInit();
 

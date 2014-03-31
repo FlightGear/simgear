@@ -271,7 +271,6 @@ namespace canvas
       _vertices->dirty();
       _attributes_dirty &= ~DEST_SIZE;
       _geom->dirtyBound();
-      setBoundingBox(_geom->getBound());
     }
 
     if( _attributes_dirty & SRC_RECT )

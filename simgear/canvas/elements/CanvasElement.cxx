@@ -189,6 +189,7 @@ namespace canvas
     // Trigger matrix update
     getMatrix();
 
+    // TODO limit bounding box to scissor
     if( _attributes_dirty & SCISSOR_COORDS )
     {
       if( _scissor && _scissor->_coord_reference != GLOBAL )
@@ -296,9 +297,11 @@ namespace canvas
     // Drawables have a bounding box...
     if( _drawable )
       return _drawable->getBound().contains(osg::Vec3f(local_pos, 0));
-    else
+    else if( _transform.valid() )
       // ... for other elements, i.e. groups only a bounding sphere is available
       return _transform->getBound().contains(osg::Vec3f(parent_pos, 0));
+    else
+      return false;
   }
 
 
@@ -534,22 +537,23 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Element::setBoundingBox(const osg::BoundingBox& bb)
+  osg::BoundingBox Element::getBoundingBox() const
   {
-    if( _bounding_box.empty() )
-    {
-      SGPropertyNode* bb_node = _node->getChild("bounding-box", 0, true);
-      _bounding_box.resize(4);
-      _bounding_box[0] = bb_node->getChild("min-x", 0, true);
-      _bounding_box[1] = bb_node->getChild("min-y", 0, true);
-      _bounding_box[2] = bb_node->getChild("max-x", 0, true);
-      _bounding_box[3] = bb_node->getChild("max-y", 0, true);
-    }
+    if( _drawable )
+      return _drawable->getBound();
 
-    _bounding_box[0]->setFloatValue(bb._min.x());
-    _bounding_box[1]->setFloatValue(bb._min.y());
-    _bounding_box[2]->setFloatValue(bb._max.x());
-    _bounding_box[3]->setFloatValue(bb._max.y());
+    osg::BoundingBox bb;
+
+    if( _transform.valid() )
+      bb.expandBy(_transform->getBound());
+
+    return bb;
+  }
+
+  //----------------------------------------------------------------------------
+  osg::BoundingBox Element::getTightBoundingBox() const
+  {
+    return getTransformedBounds(getMatrix());
   }
 
   //----------------------------------------------------------------------------
@@ -569,6 +573,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::Matrix Element::getMatrix() const
   {
+    if( !_transform )
+      return osg::Matrix::identity();
+
     if( !(_attributes_dirty & TRANSFORM) )
       return _transform->getMatrix();
 

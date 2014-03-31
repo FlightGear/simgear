@@ -381,14 +381,11 @@ namespace canvas
         // vgPathBounds doesn't take stroke width into account
         float ext = 0.5 * _stroke_width;
 
-        osg::BoundingBox bb
+        return osg::BoundingBox
         (
           min[0] - ext,           min[1] - ext,           -0.1,
           min[0] + size[0] + ext, min[1] + size[1] + ext,  0.1
         );
-        _path_element->setBoundingBox(bb);
-
-        return bb;
       }
 
     private:
@@ -463,7 +460,12 @@ namespace canvas
         }
 
         if( _attributes_dirty & BOUNDING_BOX )
+        {
           dirtyBound();
+
+          // Recalculate bounding box now (prevent race condition)
+          getBound();
+        }
       }
 
       struct PathUpdateCallback:

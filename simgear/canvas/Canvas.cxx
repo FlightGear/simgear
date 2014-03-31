@@ -452,8 +452,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Canvas::valueChanged(SGPropertyNode* node)
   {
-    if(    boost::starts_with(node->getNameString(), "status")
-        || node->getParent()->getNameString() == "bounding-box" )
+    if( boost::starts_with(node->getNameString(), "status") )
       return;
     _render_dirty = true;
 

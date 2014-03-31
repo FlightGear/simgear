@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
   VERIFY( fmem );
   naRef ret = fmem(hash.get_naRef()),
         hash_ref = hash.get_naRef();
-  VERIFY( memcmp(&ret, &hash_ref, sizeof(naRef)) == 0 );
+  VERIFY( naIsIdentical(ret, hash_ref) );
 
   // Check if nasal::Me gets passed as self/me and remaining arguments are
   // passed on to function

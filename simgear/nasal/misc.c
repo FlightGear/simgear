@@ -244,6 +244,7 @@ int naIsFunc(naRef r)   { return IS_FUNC(r); }
 int naIsCode(naRef r)   { return IS_CODE(r); }
 int naIsCCode(naRef r)  { return IS_CCODE(r); }
 int naIsGhost(naRef r)  { return IS_GHOST(r); }
+int naIsIdentical(naRef l, naRef r) { return IDENTICAL(l, r); }
 
 void naSetUserData(naContext c, void* p) { c->userData = p; }
 void* naGetUserData(naContext c)

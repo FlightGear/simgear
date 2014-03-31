@@ -180,6 +180,9 @@ int naIsCode(naRef r) GCC_PURE;
 int naIsFunc(naRef r) GCC_PURE;
 int naIsCCode(naRef r) GCC_PURE;
 
+// Object equality (check for same instance, aka. pointer equality)
+int naIsIdentical(naRef l, naRef r) GCC_PURE;
+
 // Allocators/generators:
 naRef naNil() GCC_PURE;
 naRef naNum(double num) GCC_PURE;

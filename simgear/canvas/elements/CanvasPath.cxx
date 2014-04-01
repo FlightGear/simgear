@@ -219,6 +219,8 @@ namespace canvas
 
         bool was_blend_enabled = state->getLastAppliedMode(GL_BLEND);
         bool was_stencil_enabled = state->getLastAppliedMode(GL_STENCIL_TEST);
+        osg::StateAttribute const* blend_func =
+          state->getLastAppliedAttribute(osg::StateAttribute::BLENDFUNC);
 
         // Initialize/Update the paint
         if( _attributes_dirty & STROKE_COLOR )
@@ -268,8 +270,11 @@ namespace canvas
         if( err != VG_NO_ERROR )
           SG_LOG(SG_GL, SG_ALERT, "vgError: " << err);
 
+        // Restore OpenGL state (TODO check if more is needed or integrate
+        //                            better with OpenSceneGraph)
         if( was_blend_enabled )   glEnable(GL_BLEND);
         if( was_stencil_enabled ) glEnable(GL_STENCIL_TEST);
+        if( blend_func )          blend_func->apply(*state);
       }
 
       osg::BoundingBox getTransformedBounds(const osg::Matrix& mat) const

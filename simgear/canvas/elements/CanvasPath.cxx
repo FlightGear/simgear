@@ -217,9 +217,8 @@ namespace canvas
         state->setClientActiveTextureUnit(0);
         state->disableAllVertexArrays();
 
-        glPushAttrib(~0u); // Don't use GL_ALL_ATTRIB_BITS as on my machine it
-                           // eg. doesn't include GL_MULTISAMPLE_BIT
-        glPushClientAttrib(~0u);
+        bool was_blend_enabled = state->getLastAppliedMode(GL_BLEND);
+        bool was_stencil_enabled = state->getLastAppliedMode(GL_STENCIL_TEST);
 
         // Initialize/Update the paint
         if( _attributes_dirty & STROKE_COLOR )
@@ -269,8 +268,8 @@ namespace canvas
         if( err != VG_NO_ERROR )
           SG_LOG(SG_GL, SG_ALERT, "vgError: " << err);
 
-        glPopAttrib();
-        glPopClientAttrib();
+        if( was_blend_enabled )   glEnable(GL_BLEND);
+        if( was_stencil_enabled ) glEnable(GL_STENCIL_TEST);
       }
 
       osg::BoundingBox getTransformedBounds(const osg::Matrix& mat) const

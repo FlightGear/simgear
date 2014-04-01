@@ -314,9 +314,9 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
   }
   
   /* TODO: Turn antialiasing on/off */
-  glDisable(GL_LINE_SMOOTH);
-  glDisable(GL_POLYGON_SMOOTH);
-  glEnable(GL_MULTISAMPLE);
+//  glDisable(GL_LINE_SMOOTH);
+//  glDisable(GL_POLYGON_SMOOTH);
+//  glEnable(GL_MULTISAMPLE);
   
   /* Pick paint if available or default*/
   fill = (context->fillPaint ? context->fillPaint : &context->defaultPaint);
@@ -364,26 +364,27 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
     /* TODO: Is there any way to do this safely along
        with the paint generation pass?? */
     glDisable(GL_BLEND);
-    glDisable(GL_MULTISAMPLE);
+//    glDisable(GL_MULTISAMPLE);
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
     shDrawBoundBox(context, p, VG_FILL_PATH);
     
     /* Reset state */
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glDisable(GL_STENCIL_TEST);
-    glDisable(GL_BLEND);
+//    glDisable(GL_BLEND);
   }
   
   /* TODO: Turn antialiasing on/off */
-  glDisable(GL_LINE_SMOOTH);
-  glDisable(GL_POLYGON_SMOOTH);
-  glEnable(GL_MULTISAMPLE);
+//  glDisable(GL_LINE_SMOOTH);
+//  glDisable(GL_POLYGON_SMOOTH);
+//  glEnable(GL_MULTISAMPLE);
   
   if ((paintModes & VG_STROKE_PATH) &&
       context->strokeLineWidth > 0.0f) {
-    
-    if (1) {/*context->strokeLineWidth > 1.0f) {*/
 
+#if 0
+    if (1) {/*context->strokeLineWidth > 1.0f) {*/
+#endif
       if (shIsStrokeCacheValid( context, p ) == VG_FALSE)
       {
         /* Generate stroke triangles in user space */
@@ -411,15 +412,15 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
       
       /* Clear stencil for sure */
       glDisable(GL_BLEND);
-      glDisable(GL_MULTISAMPLE);
+//      glDisable(GL_MULTISAMPLE);
       glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
       shDrawBoundBox(context, p, VG_STROKE_PATH);
       
       /* Reset state */
       glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
       glDisable(GL_STENCIL_TEST);
-      glDisable(GL_BLEND);
-      
+//      glDisable(GL_BLEND);
+#if 0
     }else{
       
       /* Simulate thin stroke by alpha */
@@ -438,6 +439,7 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
       glDisable(GL_BLEND);
       glDisable(GL_LINE_SMOOTH);
     }
+#endif
   }
   
   

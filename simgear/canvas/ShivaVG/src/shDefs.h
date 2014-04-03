@@ -34,7 +34,7 @@
 #include <math.h>
 #include <float.h>
 
-#ifndef VG_API_MACOSX
+#if !defined(VG_API_MACOSX) && !defined(__FreeBSD__)
 #  include <malloc.h>
 #endif
 

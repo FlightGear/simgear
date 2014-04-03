@@ -260,7 +260,9 @@ check_cxx_source_compiles(
 
 if(HAVE_DLFCN_H)
     check_library_exists(dl dlerror "" HAVE_DL)
-    set(DL_LIBRARY "dl")
+    if(HAVE_DL)
+        set(DL_LIBRARY "dl")
+    endif()
 endif()
 
 SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually 'd' on windows")
@@ -333,9 +335,11 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 
-include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
-include_directories(${PROJECT_BINARY_DIR}/simgear)
+# use BEFORE to ensure local directories are used first, 
+# ahead of system-installed libs
+include_directories(BEFORE ${PROJECT_SOURCE_DIR})
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
+include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} 
     ${Boost_INCLUDE_DIRS} 

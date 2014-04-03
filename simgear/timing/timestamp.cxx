@@ -139,7 +139,9 @@ void SGTimeStamp::stamp() {
 // the timer tick) accuracy which is too bad to catch 60Hz...
 bool SGTimeStamp::sleepUntil(const SGTimeStamp& abstime)
 {
-#if defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
+    // FreeBSD is missing clock_nanosleep, see
+    // https://wiki.freebsd.org/FreeBSD_and_Standards
+#if defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS) && !defined(__FreeBSD__)
     SGTimeStamp abstimeForSleep = abstime;
 
     // Always undersleep by resolution of the clock
@@ -234,7 +236,8 @@ bool SGTimeStamp::sleepUntil(const SGTimeStamp& abstime)
 
 bool SGTimeStamp::sleepFor(const SGTimeStamp& reltime)
 {
-#if defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
+    // see comment above regarding FreeBSD
+#if defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS) && !defined(__FreeBSD__)
     struct timespec ts;
     ts.tv_sec = reltime._sec;
     ts.tv_nsec = reltime._nsec;

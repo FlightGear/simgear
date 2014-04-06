@@ -240,8 +240,8 @@ static void read_indices(char* buffer,
                          vai_list& vas
                         )
 {
-    const int indexSize = sizeof(T) * std::bitset<32>(indexMask).count();
-    const int vaSize = sizeof(T) * std::bitset<32>(vaMask).count();
+    const int indexSize = sizeof(T) * std::bitset<32>((int)indexMask).count();
+    const int vaSize = sizeof(T) * std::bitset<32>((int)vaMask).count();
     const int count = bytes / (indexSize + vaSize);
     
     // fix endian-ness of the whole lot, if required
@@ -307,8 +307,8 @@ void write_indices(gzFile fp,
     const vai_list& vas )
 {
     unsigned int count = vertices.size();
-    const int indexSize = sizeof(T) * std::bitset<32>(indexMask).count();
-    const int vaSize = sizeof(T) * std::bitset<32>(vaMask).count();
+    const int indexSize = sizeof(T) * std::bitset<32>((int)indexMask).count();
+    const int vaSize = sizeof(T) * std::bitset<32>((int)vaMask).count();
     sgWriteUInt(fp, (indexSize + vaSize) * count);
             
     for (unsigned int i=0; i < count; ++i) {
@@ -437,7 +437,7 @@ void SGBinObject::read_object( gzFile fp,
         throw sg_exception("Error reading object properties");
     }
     
-    size_t indexCount = std::bitset<32>(idx_mask).count();
+    size_t indexCount = std::bitset<32>((int)idx_mask).count();
     if (indexCount == 0) {
         throw sg_exception("object index mask has no bits set");
     }

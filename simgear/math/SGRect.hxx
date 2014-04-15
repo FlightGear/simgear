@@ -88,11 +88,15 @@ class SGRect
     T y() const { return _min.y(); }
     T width() const { return _max.x() - _min.x(); }
     T height() const { return _max.y() - _min.y(); }
+    SGVec2<T> const& pos() const { return _min; }
+    SGVec2<T> size() const { return SGVec2<T>(width(), height()); }
 
     void setX(T x) { T w = width(); _min.x() = x; _max.x() = x + w; }
     void setY(T y) { T h = height(); _min.y() = y; _max.y() = y + h; }
     void setWidth(T w) { _max.x() = _min.x() + w; }
     void setHeight(T h) { _max.y() = _min.y() + h; }
+    void setPos(const SGVec2<T>& p) { setX(p.x()); setY(p.y()); }
+    void setSize(const SGVec2<T>& s) { setWidth(s.x()); setHeight(s.y()); }
 
     T l() const { return _min.x(); }
     T r() const { return _max.x(); }
@@ -127,6 +131,17 @@ class SGRect
       _min -= offset;
       _max -= offset;
       return *this;
+    }
+
+    bool operator==(const SGRect<T>& rhs) const
+    {
+      return _min == rhs._min
+          && _max == rhs._max;
+    }
+
+    bool operator!=(const SGRect<T>& rhs) const
+    {
+      return !(*this == rhs);
     }
 
     bool contains(T x, T y) const
@@ -175,5 +190,9 @@ inline
 std::basic_ostream<char_type, traits_type>&
 operator<<(std::basic_ostream<char_type, traits_type>& s, const SGRect<T>& rect)
 { return s << "min = " << rect.getMin() << ", max = " << rect.getMax(); }
+
+typedef SGRect<int> SGRecti;
+typedef SGRect<float> SGRectf;
+typedef SGRect<double> SGRectd;
 
 #endif /* SG_RECT_HXX_ */

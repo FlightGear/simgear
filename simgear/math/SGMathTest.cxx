@@ -19,10 +19,13 @@
 #  include <simgear_config.h>
 #endif
 
+#include <simgear/misc/test_macros.hxx>
+
 #include <cstdlib>
 #include <iostream>
 
 #include "SGMath.hxx"
+#include "SGRect.hxx"
 #include "sg_random.h"
 
 template<typename T>
@@ -268,6 +271,33 @@ MatrixTest(void)
   return true;
 }
 
+template<typename T>
+void doRectTest()
+{
+  SGRect<T> rect(10, 15, 20, 25);
+
+  COMPARE(rect.x(), 10)
+  COMPARE(rect.y(), 15)
+  COMPARE(rect.width(), 20)
+  COMPARE(rect.height(), 25)
+
+  COMPARE(rect.pos(), SGVec2<T>(10, 15))
+  COMPARE(rect.size(), SGVec2<T>(20, 25))
+
+  COMPARE(rect.l(), 10)
+  COMPARE(rect.t(), 15)
+  COMPARE(rect.r(), 30)
+  COMPARE(rect.b(), 40)
+
+  VERIFY(rect == rect)
+  VERIFY(rect == SGRect<T>(10, 15, 20, 25))
+  VERIFY(rect != SGRect<T>(11, 15, 20, 25))
+
+  VERIFY(rect.contains(10, 15))
+  VERIFY(!rect.contains(9, 15))
+  VERIFY(rect.contains(9, 15, 1))
+}
+
 bool
 GeodesyTest(void)
 {
@@ -350,6 +380,10 @@ main(void)
     return EXIT_FAILURE;
   if (!MatrixTest<double>())
     return EXIT_FAILURE;
+
+  // Do rect tests
+  doRectTest<int>();
+  doRectTest<double>();
 
   // Check geodetic/geocentric/cartesian conversions
   if (!GeodesyTest())

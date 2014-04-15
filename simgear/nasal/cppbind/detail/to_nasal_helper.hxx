@@ -22,6 +22,8 @@
 
 #include "nasal_traits.hxx"
 
+#include <simgear/math/SGMath.hxx>
+#include <simgear/math/SGRect.hxx>
 #include <simgear/nasal/nasal.h>
 
 #include <boost/function/function_fwd.hpp>
@@ -144,6 +146,19 @@ namespace nasal
     // double
     double nasal_vec[2] = {vec[0], vec[1]};
     return to_nasal_helper(c, nasal_vec);
+  }
+
+  //----------------------------------------------------------------------------
+  template<class T>
+  naRef to_nasal_helper(naContext c, const SGRect<T>& rect)
+  {
+    std::vector<float> vec(4);
+    vec[0] = rect.l();
+    vec[1] = rect.t();
+    vec[2] = rect.r();
+    vec[3] = rect.b();
+
+    return to_nasal_helper(c, vec);
   }
 
   //----------------------------------------------------------------------------

@@ -737,6 +737,17 @@ namespace nasal
             && dynamic_cast<const typename Ghost::raw_type*>(base) != base )
           return 0;
 
+        if( !getSingletonPtr() )
+        {
+          SG_LOG
+          (
+            SG_NASAL,
+            SG_INFO,
+            "Ghost::getTypeFor: can not get type for unregistered ghost"
+          );
+          return 0;
+        }
+
         // Now check if we can further downcast to one of our derived classes.
         for( typename DerivedList::reverse_iterator
                derived = getSingletonPtr()->_derived_types.rbegin();

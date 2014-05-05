@@ -144,7 +144,10 @@ namespace nasal
   {
     // We take just double because in Nasal every number is represented as
     // double
-    double nasal_vec[2] = {vec[0], vec[1]};
+    double nasal_vec[2] = {
+      static_cast<double>(vec[0]),
+      static_cast<double>(vec[1])
+    };
     return to_nasal_helper(c, nasal_vec);
   }
 

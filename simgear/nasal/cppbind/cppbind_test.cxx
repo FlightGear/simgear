@@ -40,6 +40,10 @@ struct Base
   void setVar(const std::string v) { var = v; }
 
   unsigned long getThis() const { return (unsigned long)this; }
+  bool genericSet(const std::string& key, const std::string& val)
+  {
+    return key == "test";
+  }
 };
 
 void baseVoidFunc(Base& b) {}
@@ -206,7 +210,8 @@ int main(int argc, char* argv[])
     .method("int2args", &baseFunc2Args)
     .method("bool2args", &Base::test2Args)
     .method("str_ptr", &testPtr)
-    .method("this", &Base::getThis);
+    .method("this", &Base::getThis)
+    ._set(&Base::genericSet);
   Ghost<DerivedPtr>::init("DerivedPtr")
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)
@@ -318,6 +323,18 @@ int main(int argc, char* argv[])
   VERIFY( objects[0] == d );
   VERIFY( objects[1] == d2 );
   VERIFY( objects[2] == d3 );
+
+  // Calling fallback setter for unset values
+  const char* src_code = "me.test = 3;";
+  int errLine = -1;
+  naRef code = naParseCode( c, to_nasal(c, "source.nas"), 0,
+                            (char*)src_code, strlen(src_code),
+                            &errLine );
+  ret = naCallMethod(code, derived, 0, 0, naNil());
+
+  VERIFY( !naGetError(c) ) // TODO real error check (this seems to always
+                           //      return 0...
+  VERIFY( from_nasal<int>(c, ret) == 3 )
 
   //----------------------------------------------------------------------------
   // Test nasal::CallContext

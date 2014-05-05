@@ -214,6 +214,10 @@ namespace nasal
       typedef boost::function<naRef(naContext, raw_type&)>          getter_t;
       typedef boost::function<void(naContext, raw_type&, naRef)>    setter_t;
       typedef boost::function<naRef(raw_type&, const CallContext&)> method_t;
+      typedef boost::function<bool( naContext,
+                                    raw_type&,
+                                    const std::string&,
+                                    naRef )>               fallback_setter_t;
 
       class MethodHolder:
         public internal::MethodHolder
@@ -390,6 +394,9 @@ namespace nasal
             );
         }
 
+        if( !_fallback_setter )
+          _fallback_setter = base->_fallback_setter;
+
         return *this;
       }
 
@@ -496,6 +503,47 @@ namespace nasal
             "Member '" << field << "' requires a getter or setter"
           );
         return *this;
+      }
+
+      /**
+       * Register a function which is called upon setting an unknown member of
+       * this ghost.
+       */
+      Ghost& _set(const fallback_setter_t& setter)
+      {
+        _fallback_setter = setter;
+        return *this;
+      }
+
+      /**
+       * Register a method which is called upon setting an unknown member of
+       * this ghost.
+       *
+       * @code{cpp}
+       * class MyClass
+       * {
+       *   public:
+       *     bool setMember( const std::string& key,
+       *                     const std::string& value );
+       * }
+       *
+       * Ghost<MyClassPtr>::init("Test")
+       *   ._set(&MyClass::setMember);
+       * @endcode
+       */
+      template<class Param>
+      Ghost _set(bool (raw_type::*setter)(const std::string&, Param))
+      {
+        // Setter signature: bool( naContext,
+        //                         raw_type&,
+        //                         const std::string&,
+        //                         naRef )
+        return _set(boost::bind(
+          setter,
+          _2,
+          _3,
+          boost::bind(from_nasal_ptr<Param>::get(), _1, _4)
+        ));
       }
 
       /**
@@ -835,7 +883,8 @@ namespace nasal
       };
 
       typedef std::auto_ptr<Ghost> GhostPtr;
-      MemberMap _members;
+      MemberMap         _members;
+      fallback_setter_t _fallback_setter;
 
       explicit Ghost(const std::string& name):
         GhostMetadata(name, &_ghost_type)
@@ -913,17 +962,23 @@ namespace nasal
       static void setMember(naContext c, void* g, naRef field, naRef val)
       {
         const std::string key = nasal::from_nasal<std::string>(c, field);
-        typename MemberMap::iterator member =
-          getSingletonPtr()->_members.find(key);
+        const MemberMap& members = getSingletonPtr()->_members;
 
-        if( member == getSingletonPtr()->_members.end() )
-          naRuntimeError(c, "ghost: No such member: %s", key.c_str());
+        typename MemberMap::const_iterator member = members.find(key);
+        if( member == members.end() )
+        {
+          fallback_setter_t fallback_set = getSingletonPtr()->_fallback_setter;
+          if( !fallback_set )
+            naRuntimeError(c, "ghost: No such member: %s", key.c_str());
+          else if( !fallback_set(c, *getRawPtr(g), key, val) )
+            naRuntimeError(c, "ghost: Failed to write (_set: %s)", key.c_str());
+        }
         else if( member->second.setter.empty() )
           naRuntimeError(c, "ghost: Write protected member: %s", key.c_str());
         else if( member->second.func )
           naRuntimeError(c, "ghost: Write to function: %s", key.c_str());
-
-        member->second.setter(c, *getRawPtr(g), val);
+        else
+          member->second.setter(c, *getRawPtr(g), val);
       }
   };
 

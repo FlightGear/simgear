@@ -881,14 +881,15 @@ namespace nasal
       static const char* getMember(naContext c, void* g, naRef key, naRef* out)
       {
         const std::string key_str = nasal::from_nasal<std::string>(c, key);
-        if( key_str == "parents" )
-        {
-          if( getSingletonPtr()->_parents.empty() )
-            return 0;
-
-          *out = getSingletonPtr()->getParents(c);
-          return "";
-        }
+        // TODO merge instance parents with static class parents
+//        if( key_str == "parents" )
+//        {
+//          if( getSingletonPtr()->_parents.empty() )
+//            return 0;
+//
+//          *out = getSingletonPtr()->getParents(c);
+//          return "";
+//        }
 
         typename MemberMap::iterator member =
           getSingletonPtr()->_members.find(key_str);

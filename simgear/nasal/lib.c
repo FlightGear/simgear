@@ -252,7 +252,7 @@ static naRef f_call(naContext c, naRef me, int argc, naRef* args)
     callargs = argc > 1 ? args[1] : naNil();
     callme = argc > 2 ? args[2] : naNil(); // Might be nil, that's OK
     callns = argc > 3 ? args[3] : naNil(); // ditto
-    if(!IS_HASH(callme)) callme = naNil();
+    if(!IS_HASH(callme) && !IS_GHOST(callme)) callme = naNil();
     if(!IS_HASH(callns)) callns = naNil();
     if(argc==0 || !IS_FUNC(args[0]) || (!IS_NIL(callargs) && !IS_VEC(callargs)))
         ARGERR();

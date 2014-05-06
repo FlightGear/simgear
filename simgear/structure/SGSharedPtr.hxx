@@ -22,6 +22,7 @@
 #define SGSharedPtr_HXX
 
 #include "SGReferenced.hxx"
+#include <algorithm>
 
 /// This class is a pointer proxy doing reference counting on the object
 /// it is pointing to.
@@ -60,16 +61,16 @@ public:
   SGSharedPtr(const SGSharedPtr<U>& p) : _ptr(p.get())
   { get(_ptr); }
   ~SGSharedPtr(void)
-  { put(); }
+  { reset(); }
   
   SGSharedPtr& operator=(const SGSharedPtr& p)
-  { assign(p.get()); return *this; }
+  { reset(p.get()); return *this; }
   template<typename U>
   SGSharedPtr& operator=(const SGSharedPtr<U>& p)
-  { assign(p.get()); return *this; }
+  { reset(p.get()); return *this; }
   template<typename U>
   SGSharedPtr& operator=(U* p)
-  { assign(p); return *this; }
+  { reset(p); return *this; }
 
   T* operator->(void) const
   { return _ptr; }
@@ -83,6 +84,10 @@ public:
   { return _ptr; }
   T* release()
   { T* tmp = _ptr; _ptr = 0; T::put(tmp); return tmp; }
+  void reset()
+  { if (!T::put(_ptr)) delete _ptr; _ptr = 0; }
+  void reset(T* p)
+  { SGSharedPtr(p).swap(*this); }
 
   bool isShared(void) const
   { return T::shared(_ptr); }
@@ -93,20 +98,16 @@ public:
   { return _ptr != (T*)0; }
 
   void clear()
-  { put(); }
-  void swap(SGSharedPtr& sharedPtr)
-  { T* tmp = _ptr; _ptr = sharedPtr._ptr; sharedPtr._ptr = tmp; }
+  { reset(); }
+  void swap(SGSharedPtr& other)
+  { std::swap(_ptr, other._ptr); }
 
 private:
-  void assign(T* p)
-  { get(p); put(); _ptr = p; }
   void assignNonRef(T* p)
-  { put(); _ptr = p; }
+  { reset(); _ptr = p; }
 
   void get(const T* p) const
   { T::get(p); }
-  void put(void)
-  { if (!T::put(_ptr)) delete _ptr; _ptr = 0; }
   
   // The reference itself.
   T* _ptr;

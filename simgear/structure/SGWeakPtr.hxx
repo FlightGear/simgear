@@ -23,6 +23,8 @@
 template<typename T>
 class SGWeakPtr {
 public:
+  typedef T element_type;
+
   SGWeakPtr(void)
   { }
   SGWeakPtr(const SGWeakPtr& p) : mWeakData(p.mWeakData)
@@ -31,7 +33,7 @@ public:
   { assign(ptr); }
   template<typename U>
   SGWeakPtr(const SGSharedPtr<U>& p)
-  { SGSharedPtr<T> sharedPtr = p; assign(sharedPtr.get()); }
+  { assign(p.get()); }
   template<typename U>
   SGWeakPtr(const SGWeakPtr<U>& p)
   { SGSharedPtr<T> sharedPtr = p.lock(); assign(sharedPtr.get()); }
@@ -40,12 +42,22 @@ public:
   
   template<typename U>
   SGWeakPtr& operator=(const SGSharedPtr<U>& p)
-  { SGSharedPtr<T> sharedPtr = p; assign(sharedPtr.get()); return *this; }
+  { assign(p.get()); return *this; }
   template<typename U>
   SGWeakPtr& operator=(const SGWeakPtr<U>& p)
   { SGSharedPtr<T> sharedPtr = p.lock(); assign(sharedPtr.get()); return *this; }
   SGWeakPtr& operator=(const SGWeakPtr& p)
   { mWeakData = p.mWeakData; return *this; }
+
+  template<typename U>
+  bool operator==(const SGWeakPtr<U>& rhs) const
+  { return mWeakData == rhs.mWeakData; }
+  template<typename U>
+  bool operator!=(const SGWeakPtr<U>& rhs) const
+  { return mWeakData != rhs.mWeakData; }
+  template<typename U>
+  bool operator<(const SGWeakPtr<U>& rhs) const
+  { return mWeakData < rhs.mWeakData; }
 
   SGSharedPtr<T> lock(void) const
   {
@@ -56,8 +68,13 @@ public:
     return sharedPtr;
   }
 
+  bool expired() const
+  { return !mWeakData || mWeakData->mRefcount == 0; }
+
+  void reset()
+  { mWeakData.reset(); }
   void clear()
-  { mWeakData = 0; }
+  { mWeakData.reset(); }
   void swap(SGWeakPtr& weakPtr)
   { mWeakData.swap(weakPtr.mWeakData); }
 

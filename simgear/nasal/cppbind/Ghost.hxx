@@ -44,6 +44,12 @@ inline T* get_pointer(boost::weak_ptr<T> const& p)
   return p.lock().get();
 }
 
+template<class T>
+inline T* get_pointer(SGWeakPtr<T> const& p)
+{
+  return p.lock().get();
+}
+
 /**
  * Bindings between C++ and the Nasal scripting language
  */

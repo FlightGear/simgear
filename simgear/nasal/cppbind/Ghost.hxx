@@ -538,7 +538,7 @@ namespace nasal
        * @endcode
        */
       template<class Param>
-      Ghost _set(bool (raw_type::*setter)(const std::string&, Param))
+      Ghost& _set(bool (raw_type::*setter)(const std::string&, Param))
       {
         // Setter signature: bool( naContext,
         //                         raw_type&,
@@ -550,6 +550,34 @@ namespace nasal
           _3,
           boost::bind(from_nasal_ptr<Param>::get(), _1, _4)
         ));
+      }
+
+      /**
+       * Register a method which is called upon setting an unknown member of
+       * this ghost.
+       *
+       * @code{cpp}
+       * class MyClass
+       * {
+       *   public:
+       *     bool setMember( naContext c,
+       *                     const std::string& key,
+       *                     naRef value );
+       * }
+       *
+       * Ghost<MyClassPtr>::init("Test")
+       *   ._set(&MyClass::setMember);
+       * @endcode
+       */
+      Ghost& _set(bool (raw_type::*setter)( naContext,
+                                            const std::string&,
+                                            naRef ))
+      {
+        // Setter signature: bool( naContext,
+        //                         raw_type&,
+        //                         const std::string&,
+        //                         naRef )
+        return _set( boost::bind(setter, _2, _1, _3, _4) );
       }
 
       /**

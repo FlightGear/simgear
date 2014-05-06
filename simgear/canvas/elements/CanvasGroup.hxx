@@ -56,28 +56,27 @@ namespace canvas
                                    const std::string& id );
 
       template<class T>
-      boost::shared_ptr<T> createChild(const std::string& id = "")
+      SGSharedPtr<T> createChild(const std::string& id = "")
       {
-        return boost::dynamic_pointer_cast<T>( createChild(T::TYPE_NAME, id) );
+        return dynamic_cast<T*>( createChild(T::TYPE_NAME, id).get() );
       }
 
       template<class T>
-      boost::shared_ptr<T> getChild(const SGPropertyNode* node)
+      SGSharedPtr<T> getChild(const SGPropertyNode* node)
       {
-        return boost::dynamic_pointer_cast<T>( getChild(node) );
+        return dynamic_cast<T*>( getChild(node).get() );
       }
 
       template<class T>
-      boost::shared_ptr<T> getChild(const std::string& id)
+      SGSharedPtr<T> getChild(const std::string& id)
       {
-        return boost::dynamic_pointer_cast<T>( getChild(id) );
+        return dynamic_cast<T*>( getChild(id).get() );
       }
 
       template<class T>
-      boost::shared_ptr<T> getOrCreateChild(const std::string& id)
+      SGSharedPtr<T> getOrCreateChild(const std::string& id)
       {
-        return
-          boost::dynamic_pointer_cast<T>( getOrCreateChild(T::TYPE_NAME, id) );
+        return dynamic_cast<T*>( getOrCreateChild(T::TYPE_NAME, id).get() );
       }
 
       /**

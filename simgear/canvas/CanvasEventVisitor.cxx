@@ -20,7 +20,6 @@
 #include "CanvasEvent.hxx"
 #include "CanvasEventVisitor.hxx"
 #include <simgear/canvas/elements/CanvasElement.hxx>
-#include <iostream>
 
 namespace simgear
 {
@@ -73,7 +72,7 @@ namespace canvas
           && !el.hitBound(_target_path.front().local_pos, pos, local_pos) )
         return false;
 
-      EventTarget target = {el.getWeakPtr(), local_pos};
+      EventTarget target = {ElementPtr(&el), local_pos};
       _target_path.push_back(target);
 
       if( el.traverse(*this) || &el == _root.get() )

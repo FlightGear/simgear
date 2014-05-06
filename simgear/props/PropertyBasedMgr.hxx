@@ -22,7 +22,6 @@
 #include "PropertyBasedElement.hxx"
 #include <simgear/structure/subsystem_mgr.hxx>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <vector>
 

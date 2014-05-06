@@ -205,7 +205,6 @@ namespace canvas
       typedef std::map<std::string, PlacementFactory> PlacementFactoryMap;
       static PlacementFactoryMap _placement_factories;
 
-      virtual void setSelf(const PropertyBasedElementPtr& self);
       void setStatusFlags(unsigned int flags, bool set = true);
 
     private:

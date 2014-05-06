@@ -140,7 +140,6 @@ namespace simgear
     }
 
     PropertyBasedElementPtr el = _element_factory(child);
-    el->setSelf( el );
     _elements[index] = el;
     elementCreated( el );
   }

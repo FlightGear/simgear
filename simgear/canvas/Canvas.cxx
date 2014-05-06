@@ -48,8 +48,12 @@ namespace canvas
   void Canvas::CullCallback::operator()( osg::Node* node,
                                          osg::NodeVisitor* nv )
   {
-    if( (nv->getTraversalMask() & simgear::MODEL_BIT) && !_canvas.expired() )
-      _canvas.lock()->enableRendering();
+    if( (nv->getTraversalMask() & simgear::MODEL_BIT) )
+    {
+      CanvasPtr canvas = _canvas.lock();
+      if( canvas )
+        canvas->enableRendering();
+    }
 
     traverse(node, nv);
   }
@@ -72,6 +76,13 @@ namespace canvas
   {
     _status = 0;
     setStatusFlags(MISSING_SIZE_X | MISSING_SIZE_Y);
+
+    _root_group.reset( new Group(this, _node) );
+
+    // Remove automatically created property listener as we forward them on our
+    // own
+    _root_group->removeListener();
+    _cull_callback = new CullCallback(this);
   }
 
   //----------------------------------------------------------------------------
@@ -239,21 +250,23 @@ namespace canvas
 
     if( _visible || _render_always )
     {
-      BOOST_FOREACH(CanvasWeakPtr canvas, _child_canvases)
+      BOOST_FOREACH(CanvasWeakPtr canvas_weak, _child_canvases)
       {
         // TODO should we check if the image the child canvas is displayed
         //      within is really visible?
-        if( !canvas.expired() )
-          canvas.lock()->_visible = true;
+        CanvasPtr canvas = canvas_weak.lock();
+        if( canvas )
+          canvas->_visible = true;
       }
 
       if( _render_dirty )
       {
         // Also mark all canvases this canvas is displayed within as dirty
-        BOOST_FOREACH(CanvasWeakPtr canvas, _parent_canvases)
+        BOOST_FOREACH(CanvasWeakPtr canvas_weak, _parent_canvases)
         {
-          if( !canvas.expired() )
-            canvas.lock()->_render_dirty = true;
+          CanvasPtr canvas = canvas_weak.lock();
+          if( canvas )
+            canvas->_render_dirty = true;
         }
       }
 
@@ -296,11 +309,7 @@ namespace canvas
       if( placement_factory != _placement_factories.end() )
       {
         Placements& placements = _placements[ node->getIndex() ] =
-          placement_factory->second
-          (
-            node,
-            boost::static_pointer_cast<Canvas>(_self.lock())
-          );
+          placement_factory->second(node, this);
         node->setStringValue
         (
           "status-msg",
@@ -611,23 +620,6 @@ namespace canvas
   SystemAdapterPtr Canvas::getSystemAdapter()
   {
     return _system_adapter;
-  }
-
-  //----------------------------------------------------------------------------
-  void Canvas::setSelf(const PropertyBasedElementPtr& self)
-  {
-    PropertyBasedElement::setSelf(self);
-
-    CanvasPtr canvas = boost::static_pointer_cast<Canvas>(self);
-
-    _root_group.reset( new Group(canvas, _node) );
-    _root_group->setSelf(_root_group);
-
-    // Remove automatically created property listener as we forward them on our
-    // own
-    _root_group->removeListener();
-
-    _cull_callback = new CullCallback(canvas);
   }
 
   //----------------------------------------------------------------------------

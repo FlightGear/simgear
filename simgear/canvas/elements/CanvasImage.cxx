@@ -75,8 +75,9 @@ namespace canvas
                            osg::Drawable* drawable,
                            osg::RenderInfo* renderInfo ) const
   {
-    if( !_canvas.expired() )
-      _canvas.lock()->enableRendering();
+    CanvasPtr canvas = _canvas.lock();
+    if( canvas )
+      canvas->enableRendering();
 
     if( !_cull_next_frame )
       // TODO check if window/image should be culled

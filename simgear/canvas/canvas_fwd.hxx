@@ -39,8 +39,8 @@ namespace canvas
 
 #define SG_FWD_DECL(name)\
   class name;\
-  typedef boost::shared_ptr<name> name##Ptr;\
-  typedef boost::weak_ptr<name> name##WeakPtr;
+  typedef SGSharedPtr<name> name##Ptr;\
+  typedef SGWeakPtr<name> name##WeakPtr;
 
   SG_FWD_DECL(Canvas)
   SG_FWD_DECL(Element)
@@ -49,6 +49,13 @@ namespace canvas
   SG_FWD_DECL(Map)
   SG_FWD_DECL(Path)
   SG_FWD_DECL(Text)
+
+#undef SG_FWD_DECL
+
+#define SG_FWD_DECL(name)\
+  class name;\
+  typedef boost::shared_ptr<name> name##Ptr;\
+  typedef boost::weak_ptr<name> name##WeakPtr;
 
   SG_FWD_DECL(Event)
   SG_FWD_DECL(MouseEvent)

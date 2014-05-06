@@ -144,17 +144,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Element::setSelf(const PropertyBasedElementPtr& self)
-  {
-    PropertyBasedElement::setSelf(self);
-
-    _transform->setUserData
-    (
-      new OSGUserData(boost::static_pointer_cast<Element>(self))
-    );
-  }
-
-  //----------------------------------------------------------------------------
   void Element::onDestroy()
   {
     if( !_transform.valid() )
@@ -169,15 +158,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  ElementWeakPtr Element::getWeakPtr() const
-  {
-    return boost::static_pointer_cast<Element>(_self.lock());
-  }
-
-  //----------------------------------------------------------------------------
   ElementPtr Element::getParent()
   {
-    return _parent ? _parent->getWeakPtr().lock() : ElementPtr();
+    return _parent;
   }
 
   //----------------------------------------------------------------------------
@@ -674,6 +657,8 @@ namespace canvas
                 "PreOrderBin",
                 osg::StateSet::OVERRIDE_RENDERBIN_DETAILS
               );
+
+    _transform->setUserData( new OSGUserData(this) );
   }
 
   //----------------------------------------------------------------------------

@@ -45,25 +45,25 @@ namespace canvas
   //----------------------------------------------------------------------------
   CanvasPtr CanvasMgr::createCanvas(const std::string& name)
   {
-    return boost::static_pointer_cast<Canvas>( createElement(name) );
+    return static_cast<Canvas*>( createElement(name).get() );
   }
 
   //----------------------------------------------------------------------------
   CanvasPtr CanvasMgr::getCanvas(size_t index) const
   {
-    return boost::static_pointer_cast<Canvas>( getElement(index) );
+    return static_cast<Canvas*>( getElement(index).get() );
   }
 
   //----------------------------------------------------------------------------
   CanvasPtr CanvasMgr::getCanvas(const std::string& name) const
   {
-    return boost::static_pointer_cast<Canvas>( getElement(name) );
+    return static_cast<Canvas*>( getElement(name).get() );
   }
 
   //----------------------------------------------------------------------------
   void CanvasMgr::elementCreated(PropertyBasedElementPtr element)
   {
-    CanvasPtr canvas = boost::static_pointer_cast<Canvas>(element);
+    CanvasPtr canvas = static_cast<Canvas*>(element.get());
     canvas->setCanvasMgr(this);
   }
 

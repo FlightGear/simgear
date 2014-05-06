@@ -90,11 +90,8 @@ namespace canvas
        *
        */
       virtual ~Element() = 0;
-
-      virtual void setSelf(const PropertyBasedElementPtr& self);
       virtual void onDestroy();
 
-      ElementWeakPtr getWeakPtr() const;
       ElementPtr getParent();
 
       /**
@@ -200,9 +197,7 @@ namespace canvas
                       const Style& style,
                       Element* parent )
       {
-        ElementPtr el( new Derived(canvas, node, style, parent) );
-        el->setSelf(el);
-        return el;
+        return ElementPtr( new Derived(canvas, node, style, parent) );
       }
 
     protected:

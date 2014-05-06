@@ -65,10 +65,4 @@ namespace simgear
     return _node;
   }
 
-  //----------------------------------------------------------------------------
-  void PropertyBasedElement::setSelf(const PropertyBasedElementPtr& self)
-  {
-    _self = self;
-  }
-
 } // namespace simgear

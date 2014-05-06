@@ -146,7 +146,7 @@ namespace canvas
       if( el->get<std::string>("id") == id )
         return el;
 
-      GroupPtr group = boost::dynamic_pointer_cast<Group>(el);
+      Group* group = dynamic_cast<Group*>(el.get());
       if( group )
         groups.push_back(group);
     }

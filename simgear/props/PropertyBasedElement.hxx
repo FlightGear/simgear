@@ -20,24 +20,19 @@
 #define SG_PROPERTY_BASED_ELEMENT_HXX_
 
 #include <simgear/props/props.hxx>
+#include <simgear/structure/SGWeakReferenced.hxx>
 
 #include <boost/call_traits.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 
 namespace simgear
 {
-
-  class PropertyBasedElement;
-  typedef boost::shared_ptr<PropertyBasedElement> PropertyBasedElementPtr;
-  typedef boost::weak_ptr<PropertyBasedElement> PropertyBasedElementWeakPtr;
 
   /**
    * Base class for a property controlled element
    */
   class PropertyBasedElement:
-    public SGPropertyChangeListener
+    public SGPropertyChangeListener,
+    public SGWeakReferenced
   {
     public:
       PropertyBasedElement(SGPropertyNode* node);
@@ -80,14 +75,19 @@ namespace simgear
         return getValue<T>(child);
       }
 
-      virtual void setSelf(const PropertyBasedElementPtr& self);
+      // Unshadow what we have just hidden...
+      using SGWeakReferenced::get;
+
       virtual void onDestroy() {};
 
     protected:
 
       SGPropertyNode_ptr _node;
-      PropertyBasedElementWeakPtr _self;
+
   };
+
+  typedef SGSharedPtr<PropertyBasedElement> PropertyBasedElementPtr;
+  typedef SGWeakPtr<PropertyBasedElement> PropertyBasedElementWeakPtr;
 
 } // namespace simgear
 

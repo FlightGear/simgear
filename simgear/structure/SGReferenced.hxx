@@ -26,7 +26,9 @@
 /// Base class for all reference counted SimGear objects
 /// Classes derived from this one are meant to be managed with
 /// the SGSharedPtr class.
-/// For more info see @SGSharedPtr.
+///
+/// For more info see SGSharedPtr. For using weak references see
+/// SGWeakReferenced.
 
 class SGReferenced {
 public:

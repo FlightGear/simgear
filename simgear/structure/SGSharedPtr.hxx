@@ -24,6 +24,9 @@
 #include "SGReferenced.hxx"
 #include <algorithm>
 
+template<typename T>
+class SGWeakPtr;
+
 /// This class is a pointer proxy doing reference counting on the object
 /// it is pointing to.
 /// The SGSharedPtr class handles reference counting and possible
@@ -42,9 +45,6 @@
 /// There is a very good description of OpenSceneGraphs ref_ptr which is
 /// pretty much the same than this one at
 /// http://dburns.dhs.org/OSG/Articles/RefPointers/RefPointers.html
-
-template<typename T>
-class SGWeakPtr;
 
 template<typename T>
 class SGSharedPtr {

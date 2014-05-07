@@ -21,6 +21,9 @@
 #include "SGReferenced.hxx"
 #include "SGSharedPtr.hxx"
 
+#include <boost/type_traits/is_base_of.hpp>
+#include <boost/utility/enable_if.hpp>
+
 #ifdef _MSC_VER
 # pragma warning(push)
   // C4355: 'this' : used in base member initializer list
@@ -30,7 +33,18 @@
 
 template<typename T>
 class SGWeakPtr;
+class SGVirtualWeakReferenced;
 
+/**
+ * Base class for all reference counted SimGear objects supporting weak
+ * references, not incrementing the reference count.
+ *
+ * Classes derived from this one are meant to be managed with the SGSharedPtr
+ * and SGWeakPtr classes.
+ *
+ * If the class hierarchy contains virtual base classes use
+ * SGVirtualWeakReferenced instead.
+ */
 class SGWeakReferenced {
 public:
   /// The object backref and the reference count for this object need to be
@@ -89,7 +103,7 @@ private:
       } while (!mRefcount.compareAndExchange(count, count + 1));
       // We know that as long as the refcount is not zero, the pointer still
       // points to valid data. So it is safe to work on it.
-      return static_cast<T*>(mWeakReferenced);
+      return up_cast<T>(mWeakReferenced);
     }
 
     SGAtomic mRefcount;
@@ -99,12 +113,74 @@ private:
     WeakData(void);
     WeakData(const WeakData&);
     WeakData& operator=(const WeakData&);
+
+    /// Upcast in a class hierarchy with a virtual base class
+    template<class T>
+    static
+    typename boost::enable_if<
+      boost::is_base_of<SGVirtualWeakReferenced, T>,
+      T*
+    >::type
+    up_cast(SGWeakReferenced* ptr)
+    {
+      // First get the virtual base class, which then can be used to further
+      // upcast.
+      return dynamic_cast<T*>(static_cast<SGVirtualWeakReferenced*>(ptr));
+    }
+
+    /// Upcast in a non-virtual class hierarchy
+    template<class T>
+    static
+    typename boost::disable_if<
+      boost::is_base_of<SGVirtualWeakReferenced, T>,
+      T*
+    >::type
+    up_cast(SGWeakReferenced* ptr)
+    {
+      return static_cast<T*>(ptr);
+    }
   };
 
   SGSharedPtr<WeakData> mWeakData;
 
   template<typename T>
   friend class SGWeakPtr;
+};
+
+/**
+ * Base class for all reference counted SimGear objects with virtual base
+ * classes, supporting weak references.
+ *
+ * Classes derived from this one are meant to be managed with the SGSharedPtr
+ * and SGWeakPtr classes.
+ *
+ * @code{cpp}
+ *
+ * class Base1:
+ *   public virtual SGVirtualWeakReferenced
+ * {};
+ *
+ * class Base2:
+ *   public virtual SGVirtualWeakReferenced
+ * {};
+ *
+ * class Derived:
+ *   public Base1,
+ *   public Base2
+ * {};
+ *
+ * SGSharedPtr<Derived> ptr( new Derived() );
+ * SGWeakPtr<Derived> weak_ptr( ptr );
+ * SGSharedPtr<Base1> ptr1( weak_ptr.lock() );
+ * SGSharedPtr<Base2> ptr2( weak_ptr.lock() );
+ *
+ * @endcode
+ */
+class SGVirtualWeakReferenced:
+  public SGWeakReferenced
+{
+  public:
+    virtual ~SGVirtualWeakReferenced() {}
 };
 
 #ifdef _MSC_VER

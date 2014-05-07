@@ -20,6 +20,10 @@
 
 #include "SGWeakReferenced.hxx"
 
+/**
+ * Class for handling weak references to classes derived from SGWeakReferenced
+ * or SGVirtualWeakReferenced.
+ */
 template<typename T>
 class SGWeakPtr {
 public:

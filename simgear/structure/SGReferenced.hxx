@@ -42,11 +42,11 @@ public:
   { return *this; }
 
   static unsigned get(const SGReferenced* ref)
-  { if (ref) return ++(ref->_refcount); else return ~0u; }
+  { if (ref) return ++(ref->_refcount); else return 0; }
   static unsigned put(const SGReferenced* ref)
-  { if (ref) return --(ref->_refcount); else return ~0u; }
+  { if (ref) return --(ref->_refcount); else return 0; }
   static unsigned count(const SGReferenced* ref)
-  { if (ref) return ref->_refcount; else return ~0u; }
+  { if (ref) return ref->_refcount; else return 0; }
   static bool shared(const SGReferenced* ref)
   { if (ref) return 1u < ref->_refcount; else return false; }
 

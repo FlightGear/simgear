@@ -71,11 +71,11 @@ public:
   /// The usual operations on weak pointers.
   /// The interface should stay the same then what we have in Referenced.
   static unsigned get(const SGWeakReferenced* ref)
-  { if (ref) return ++(ref->mWeakData->mRefcount); else return 0u; }
+  { if (ref) return ++(ref->mWeakData->mRefcount); else return 0; }
   static unsigned put(const SGWeakReferenced* ref)
-  { if (ref) return --(ref->mWeakData->mRefcount); else return ~0u; }
+  { if (ref) return --(ref->mWeakData->mRefcount); else return 0; }
   static unsigned count(const SGWeakReferenced* ref)
-  { if (ref) return ref->mWeakData->mRefcount; else return 0u; }
+  { if (ref) return ref->mWeakData->mRefcount; else return 0; }
 
 private:
   /// Support for weak references, not increasing the reference count

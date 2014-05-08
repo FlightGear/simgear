@@ -55,3 +55,8 @@ target_link_libraries(test_expressions ${TEST_LIBS})
 add_test(expressions ${EXECUTABLE_OUTPUT_PATH}/test_expressions)
 
 endif(ENABLE_TESTS)
+
+add_boost_test(shared_ptr
+  SOURCES shared_ptr_test.cpp
+  LIBRARIES ${TEST_LIBS}
+)

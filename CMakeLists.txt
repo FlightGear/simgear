@@ -163,6 +163,9 @@ if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
 endif()
 
+# Somehow this only works if included before searching for Boost...
+include(BoostTestTargets)
+
 find_package(Boost REQUIRED)
 set (BOOST_CXX_FLAGS "-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION -DBOOST_BIMAP_DISABLE_SERIALIZATION")
 

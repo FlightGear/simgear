@@ -121,12 +121,7 @@ private:
       boost::is_base_of<SGVirtualWeakReferenced, T>,
       T*
     >::type
-    up_cast(SGWeakReferenced* ptr)
-    {
-      // First get the virtual base class, which then can be used to further
-      // upcast.
-      return dynamic_cast<T*>(static_cast<SGVirtualWeakReferenced*>(ptr));
-    }
+    up_cast(SGWeakReferenced* ptr);
 
     /// Upcast in a non-virtual class hierarchy
     template<class T>
@@ -182,6 +177,20 @@ class SGVirtualWeakReferenced:
   public:
     virtual ~SGVirtualWeakReferenced() {}
 };
+
+/// Upcast in a class hierarchy with a virtual base class
+// We (clang) need the definition of SGVirtualWeakReferenced for the static_cast
+template<class T>
+typename boost::enable_if<
+  boost::is_base_of<SGVirtualWeakReferenced, T>,
+  T*
+>::type
+SGWeakReferenced::WeakData::up_cast(SGWeakReferenced* ptr)
+{
+  // First get the virtual base class, which then can be used to further
+  // upcast.
+  return dynamic_cast<T*>(static_cast<SGVirtualWeakReferenced*>(ptr));
+}
 
 #ifdef _MSC_VER
 # pragma warning(pop)

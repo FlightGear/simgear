@@ -49,6 +49,7 @@ namespace canvas
   SG_FWD_DECL(Map)
   SG_FWD_DECL(Path)
   SG_FWD_DECL(Text)
+  SG_FWD_DECL(Window)
 
 #undef SG_FWD_DECL
 

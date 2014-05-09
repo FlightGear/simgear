@@ -33,7 +33,7 @@ namespace canvas
     public:
 
       /**
-       * @param node            Root node of branch used to control canvasses
+       * @param node    Root node of branch used to control canvasses
        */
       CanvasMgr(SGPropertyNode_ptr node);
 

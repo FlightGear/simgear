@@ -11,6 +11,7 @@ set(HEADERS
   CanvasObjectPlacement.hxx
   CanvasPlacement.hxx
   CanvasSystemAdapter.hxx
+  CanvasWindow.hxx
   MouseEvent.hxx
   ODGauge.hxx
   VGInitOperation.hxx
@@ -24,6 +25,7 @@ set(SOURCES
   CanvasMgr.cxx
   CanvasObjectPlacement.cxx
   CanvasPlacement.cxx
+  CanvasWindow.cxx
   ODGauge.cxx
   VGInitOperation.cxx
 )

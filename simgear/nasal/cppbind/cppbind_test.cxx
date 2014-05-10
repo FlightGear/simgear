@@ -82,10 +82,17 @@ class SGReferenceBasedClass:
 
 };
 
+class SGWeakReferenceBasedClass:
+  public SGWeakReferenced
+{
+
+};
+
 typedef boost::shared_ptr<Derived> DerivedPtr;
 typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
 typedef SGSharedPtr<SGReferenceBasedClass> SGRefBasedPtr;
+typedef SGSharedPtr<SGWeakReferenceBasedClass> SGWeakRefBasedPtr;
 
 typedef boost::weak_ptr<Derived> DerivedWeakPtr;
 
@@ -228,6 +235,21 @@ int main(int argc, char* argv[])
 
   Ghost<DerivedWeakPtr>::init("DerivedWeakPtr");
   Ghost<SGRefBasedPtr>::init("SGRefBasedPtr");
+  Ghost<SGWeakRefBasedPtr>::init("SGWeakRefBasedPtr");
+
+  SGWeakRefBasedPtr weak_ptr(new SGWeakReferenceBasedClass());
+  naRef nasal_ref = to_nasal(c, weak_ptr),
+        nasal_ptr = to_nasal(c, weak_ptr.get());
+
+  VERIFY( naIsGhost(nasal_ref) );
+  VERIFY( naIsGhost(nasal_ptr) );
+
+  SGWeakRefBasedPtr ptr1 = from_nasal<SGWeakRefBasedPtr>(c, nasal_ref),
+                    ptr2 = from_nasal<SGWeakRefBasedPtr>(c, nasal_ptr);
+
+  VERIFY( weak_ptr == ptr1 );
+  VERIFY( weak_ptr == ptr2 );
+
 
   VERIFY( Ghost<BasePtr>::isInit() );
   nasal::to_nasal(c, DoubleDerived2Ptr());

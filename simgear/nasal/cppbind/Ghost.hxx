@@ -1067,7 +1067,11 @@ from_nasal_helper(naContext c, naRef ref, const T*)
  * Convert any pointer to a SGReference based object to a ghost.
  */
 template<class T>
-typename boost::enable_if<boost::is_base_of<SGReferenced, T>, naRef>::type
+typename boost::enable_if_c<
+     boost::is_base_of<SGReferenced, T>::value
+  || boost::is_base_of<SGWeakReferenced, T>::value,
+  naRef
+>::type
 to_nasal_helper(naContext c, T* ptr)
 {
   return nasal::Ghost<SGSharedPtr<T> >::create(c, SGSharedPtr<T>(ptr));
@@ -1077,8 +1081,15 @@ to_nasal_helper(naContext c, T* ptr)
  * Convert nasal ghosts/hashes to pointer (of a SGReference based ghost).
  */
 template<class T>
-typename boost::enable_if<
-  boost::is_base_of<SGReferenced, typename boost::remove_pointer<T>::type>,
+typename boost::enable_if_c<
+     boost::is_base_of<
+       SGReferenced,
+       typename boost::remove_pointer<T>::type
+     >::value
+  || boost::is_base_of<
+       SGWeakReferenced,
+       typename boost::remove_pointer<T>::type
+     >::value,
   T
 >::type
 from_nasal_helper(naContext c, naRef ref, const T*)

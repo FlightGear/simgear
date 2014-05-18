@@ -17,8 +17,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "CanvasElement.hxx"
+#include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasEventVisitor.hxx>
-#include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/math/SGMisc.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/scene/material/parseBlendFunc.hxx>
@@ -211,17 +212,7 @@ namespace canvas
       "addEventListener(" << _node->getPath() << ", " << type_str << ")"
     );
 
-    Event::Type type = Event::strToType(type_str);
-    if( type == Event::UNKNOWN )
-    {
-      SG_LOG( SG_GENERAL,
-              SG_WARN,
-              "addEventListener: Unknown event type " << type_str );
-      return false;
-    }
-
-    _listener[ type ].push_back(cb);
-
+    _listener[ Event::getOrRegisterType(type_str) ].push_back(cb);
     return true;
   }
 
@@ -255,7 +246,7 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Element::handleEvent(canvas::EventPtr event)
+  bool Element::handleEvent(EventPtr event)
   {
     ListenerMap::iterator listeners = _listener.find(event->getType());
     if( listeners == _listener.end() )
@@ -265,6 +256,24 @@ namespace canvas
       listener(event);
 
     return true;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::dispatchEvent(EventPtr event)
+  {
+    EventPropagationPath path;
+    path.push_back( EventTarget(this) );
+
+    for( Element* parent = _parent;
+                  parent != NULL;
+                  parent = parent->_parent )
+      path.push_front( EventTarget(parent) );
+
+    CanvasPtr canvas = _canvas.lock();
+    if( !canvas )
+      return false;
+
+    return canvas->propagateEvent(event, path);
   }
 
   //----------------------------------------------------------------------------

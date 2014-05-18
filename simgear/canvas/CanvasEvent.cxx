@@ -26,6 +26,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   Event::Event():
     type(UNKNOWN),
+    time(-1),
     propagation_stopped(false)
   {
 
@@ -38,7 +39,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  Event::Type Event::getType() const
+  bool Event::canBubble() const
+  {
+    return true;
+  }
+
+  //----------------------------------------------------------------------------
+  int Event::getType() const
   {
     return type;
   }
@@ -46,14 +53,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   std::string Event::getTypeString() const
   {
-    switch( type )
-    {
-#     define ENUM_MAPPING(name, str) case name: return str;
-#       include "CanvasEventTypes.hxx"
-#     undef ENUM_MAPPING
-      default:
-        return "unknown";
-    }
+    return typeToStr(type);
   }
 
   //----------------------------------------------------------------------------
@@ -81,23 +81,57 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  Event::Type Event::strToType(const std::string& str)
+  int Event::getOrRegisterType(const std::string& type_str)
   {
-    typedef std::map<std::string, Type> TypeMap;
+    int type = strToType(type_str);
+
+    if( type == UNKNOWN )
+    {
+      // Register new type
+      TypeMap& type_map = getTypeMap();
+      type = type_map.size() + 1; // ids start with 1 (after UNKNOWN)
+      type_map.insert(TypeMap::value_type(type_str, type));
+    }
+
+    return type;
+  }
+
+  //----------------------------------------------------------------------------
+  int Event::strToType(const std::string& str)
+  {
+    TypeMap const& type_map = getTypeMap();
+
+    TypeMap::map_by<name>::const_iterator it = type_map.by<name>().find(str);
+    if( it == type_map.by<name>().end() )
+      return UNKNOWN;
+    return it->second;
+  }
+
+  //----------------------------------------------------------------------------
+  std::string Event::typeToStr(int type)
+  {
+    TypeMap const& type_map = getTypeMap();
+
+    TypeMap::map_by<id>::const_iterator it = type_map.by<id>().find(type);
+    if( it == type_map.by<id>().end() )
+      return "unknown";
+    return it->second;
+  }
+
+  //----------------------------------------------------------------------------
+  Event::TypeMap& Event::getTypeMap()
+  {
     static TypeMap type_map;
 
     if( type_map.empty() )
     {
-#     define ENUM_MAPPING(type, str) type_map[ str ] = type;
-#       include "CanvasEventTypes.hxx"
-#     undef ENUM_MAPPING
+#   define ENUM_MAPPING(type, str)\
+      type_map.insert(TypeMap::value_type(str, type));
+#     include "CanvasEventTypes.hxx"
+#   undef ENUM_MAPPING
     }
 
-    TypeMap::const_iterator it = type_map.find(str);
-    if( it == type_map.end() )
-      return UNKNOWN;
-
-    return it->second;
+    return type_map;
   }
 
 } // namespace canvas

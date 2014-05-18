@@ -20,7 +20,7 @@
 #define CANVAS_WINDOW_HXX_
 
 #include <simgear/canvas/elements/CanvasImage.hxx>
-#include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/props/propertyObject.hxx>
 #include <simgear/misc/CSSBorder.hxx>

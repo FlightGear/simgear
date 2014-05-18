@@ -34,10 +34,7 @@ namespace canvas
     _root(root)
   {
     if( mode == TRAVERSE_DOWN )
-    {
-      EventTarget target = {ElementWeakPtr(), pos};
-      _target_path.push_back(target);
-    }
+      _target_path.push_back( EventTarget(NULL, pos) );
   }
 
   //----------------------------------------------------------------------------
@@ -72,8 +69,7 @@ namespace canvas
           && !el.hitBound(_target_path.front().local_pos, pos, local_pos) )
         return false;
 
-      EventTarget target = {ElementPtr(&el), local_pos};
-      _target_path.push_back(target);
+      _target_path.push_back( EventTarget(&el, local_pos) );
 
       if( el.traverse(*this) || &el == _root.get() )
         return true;

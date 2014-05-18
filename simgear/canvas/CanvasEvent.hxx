@@ -20,13 +20,15 @@
 #define CANVAS_EVENT_HXX_
 
 #include "canvas_fwd.hxx"
+#include <boost/bimap.hpp>
 
 namespace simgear
 {
 namespace canvas
 {
 
-  class Event
+  class Event:
+    public SGReferenced
   {
     public:
 
@@ -36,11 +38,11 @@ namespace canvas
 #       define ENUM_MAPPING(name, str) name,
 #         include "CanvasEventTypes.hxx"
 #       undef ENUM_MAPPING
-        USER_TYPE ///<! first unused id to be used for user defined types (not
-                  ///   implemented yet)
+        CUSTOM_EVENT ///<! all user defined event types share the same id. They
+                     ///   are just differentiated by using the type string.
       };
 
-      Type              type;
+      int               type;
       ElementWeakPtr    target,
                         current_target;
       double            time;
@@ -52,7 +54,19 @@ namespace canvas
       // of the actual event instances.
       virtual ~Event();
 
-      Type getType() const;
+      /**
+       * Get whether this events support bubbling
+       */
+      virtual bool canBubble() const;
+
+      /**
+       * Set type of event.
+       *
+       * If no such type exists it is registered.
+       */
+      void setType(const std::string& type);
+
+      int getType() const;
       std::string getTypeString() const;
 
       ElementWeakPtr getTarget() const;
@@ -62,7 +76,19 @@ namespace canvas
 
       void stopPropagation();
 
-      static Type strToType(const std::string& str);
+      static int getOrRegisterType(const std::string& type);
+      static int strToType(const std::string& type);
+      static std::string typeToStr(int type);
+
+    protected:
+      struct name {};
+      struct id {};
+      typedef boost::bimaps::bimap<
+        boost::bimaps::tagged<std::string, name>,
+        boost::bimaps::tagged<int, id>
+      > TypeMap;
+
+      static TypeMap& getTypeMap();
 
   };
 

@@ -19,8 +19,8 @@
 #include "Canvas.hxx"
 #include "CanvasEventManager.hxx"
 #include "CanvasEventVisitor.hxx"
-#include <simgear/canvas/MouseEvent.hxx>
-#include <simgear/canvas/CanvasPlacement.hxx>
+#include "CanvasPlacement.hxx"
+#include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 
@@ -418,7 +418,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Canvas::handleMouseEvent(const MouseEventPtr& event)
   {
-    if( !_root_group.get() )
+    if( !_root_group )
       return false;
 
     EventVisitor visitor( EventVisitor::TRAVERSE_DOWN,
@@ -428,6 +428,13 @@ namespace canvas
       return false;
 
     return _event_manager->handleEvent(event, visitor.getPropagationPath());
+  }
+
+  //----------------------------------------------------------------------------
+  bool Canvas::propagateEvent( EventPtr const& event,
+                               EventPropagationPath const& path )
+  {
+    return _event_manager->propagateEvent(event, path);
   }
 
   //----------------------------------------------------------------------------

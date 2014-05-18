@@ -1,4 +1,4 @@
-// Mouse event
+///@file Mouse event
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -19,7 +19,7 @@
 #ifndef CANVAS_MOUSE_EVENT_HXX_
 #define CANVAS_MOUSE_EVENT_HXX_
 
-#include "CanvasEvent.hxx"
+#include <simgear/canvas/CanvasEvent.hxx>
 #include <osgGA/GUIEventAdapter>
 
 namespace simgear
@@ -31,26 +31,10 @@ namespace canvas
     public Event
   {
     public:
-      MouseEvent():
-        button(0),
-        buttons(0),
-        modifiers(0),
-        click_count(0)
-      {}
+      MouseEvent();
+      MouseEvent(const osgGA::GUIEventAdapter& ea);
 
-      MouseEvent(const osgGA::GUIEventAdapter& ea):
-        button(0),
-        buttons(ea.getButtonMask()),
-        modifiers(ea.getModKeyMask()),
-        click_count(0)
-      {
-        time = ea.getTime();
-
-        // Convert button mask to index
-        int button_mask = ea.getButton();
-        while( (button_mask >>= 1) > 0 )
-          button += 1;
-      }
+      virtual bool canBubble() const;
 
       osg::Vec2f getScreenPos() const { return screen_pos; }
       osg::Vec2f getClientPos() const { return client_pos; }

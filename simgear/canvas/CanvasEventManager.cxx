@@ -17,7 +17,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "CanvasEventManager.hxx"
-#include "MouseEvent.hxx"
+#include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/canvas/elements/CanvasElement.hxx>
 #include <cmath>
 
@@ -145,6 +145,71 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool EventManager::propagateEvent( const EventPtr& event,
+                                     const EventPropagationPath& path )
+  {
+    event->target = path.back().element;
+    MouseEventPtr mouse_event = dynamic_cast<MouseEvent*>(event.get());
+
+    // Event propagation similar to DOM Level 3 event flow:
+    // http://www.w3.org/TR/DOM-Level-3-Events/#event-flow
+
+    // Position update only needed for drag event (as event needs to be
+    // delivered to element of initial mousedown, but with update positions)
+    if( mouse_event && mouse_event->type == MouseEvent::DRAG )
+    {
+      osg::Vec2f local_pos = mouse_event->client_pos;
+
+      // Capturing phase (currently just update position)
+      for( EventPropagationPath::const_iterator it = path.begin();
+                                                it != path.end();
+                                              ++it )
+      {
+        ElementPtr el = it->element.lock();
+        if( !el )
+          continue;
+
+        it->local_pos = local_pos = el->posToLocal(local_pos);
+      }
+    }
+
+    bool const do_bubble = event->canBubble();
+
+    // Bubbling phase
+    for( EventPropagationPath::const_reverse_iterator
+           it = path.rbegin();
+           it != path.rend();
+         ++it )
+    {
+      ElementPtr el = it->element.lock();
+
+      if( !el )
+      {
+        // Ignore element if it has been destroyed while traversing the event
+        // (eg. removed by another event handler)
+        if( do_bubble )
+          continue;
+        else
+          break;
+      }
+
+      // TODO provide functions to convert delta to local coordinates on demand.
+      //      Maybe also provide a clone method for events as local coordinates
+      //      might differ between different elements receiving the same event.
+      if( mouse_event )
+        mouse_event->local_pos = it->local_pos;
+
+      event->current_target = el;
+      el->handleEvent(event);
+
+      if( event->propagation_stopped || !do_bubble )
+        return true;
+    }
+
+    return true;
+  }
+
+  //----------------------------------------------------------------------------
   bool EventManager::handleClick( const MouseEventPtr& event,
                                   const EventPropagationPath& path )
   {
@@ -247,84 +312,6 @@ namespace canvas
 
     _last_mouse_over.path = path;
     return handled;
-  }
-
-  //----------------------------------------------------------------------------
-  bool EventManager::propagateEvent( const EventPtr& event,
-                                     const EventPropagationPath& path )
-  {
-    event->target = path.back().element;
-    MouseEventPtr mouse_event = boost::dynamic_pointer_cast<MouseEvent>(event);
-
-    // Event propagation similar to DOM Level 3 event flow:
-    // http://www.w3.org/TR/DOM-Level-3-Events/#event-flow
-
-    // Position update only needed for drag event (as event needs to be
-    // delivered to element of initial mousedown, but with update positions)
-    if( mouse_event && mouse_event->type == MouseEvent::DRAG )
-    {
-      osg::Vec2f local_pos = mouse_event->client_pos;
-
-      // Capturing phase (currently just update position)
-      for( EventPropagationPath::const_iterator it = path.begin();
-                                                it != path.end();
-                                              ++it )
-      {
-        ElementPtr el = it->element.lock();
-        if( !el )
-          continue;
-
-        it->local_pos = local_pos = el->posToLocal(local_pos);
-      }
-    }
-
-    // Check if event supports bubbling
-    const Event::Type types_no_bubbling[] = {
-      Event::MOUSE_ENTER,
-      Event::MOUSE_LEAVE,
-    };
-    const size_t num_types_no_bubbling = sizeof(types_no_bubbling)
-                                       / sizeof(types_no_bubbling[0]);
-    bool do_bubble = true;
-    for( size_t i = 0; i < num_types_no_bubbling; ++i )
-      if( event->type == types_no_bubbling[i] )
-      {
-        do_bubble = false;
-        break;
-      }
-
-    // Bubbling phase
-    for( EventPropagationPath::const_reverse_iterator
-           it = path.rbegin();
-           it != path.rend();
-         ++it )
-    {
-      ElementPtr el = it->element.lock();
-
-      if( !el )
-      {
-        // Ignore element if it has been destroyed while traversing the event
-        // (eg. removed by another event handler)
-        if( do_bubble )
-          continue;
-        else
-          break;
-      }
-
-      // TODO provide functions to convert delta to local coordinates on demand.
-      //      Maybe also provide a clone method for events as local coordinates
-      //      might differ between different elements receiving the same event.
-      if( mouse_event )
-        mouse_event->local_pos = it->local_pos;
-
-      event->current_target = el;
-      el->handleEvent(event);
-
-      if( event->propagation_stopped || !do_bubble )
-        return true;
-    }
-
-    return true;
   }
 
   //----------------------------------------------------------------------------

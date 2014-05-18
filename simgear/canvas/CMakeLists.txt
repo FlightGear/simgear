@@ -12,7 +12,6 @@ set(HEADERS
   CanvasPlacement.hxx
   CanvasSystemAdapter.hxx
   CanvasWindow.hxx
-  MouseEvent.hxx
   ODGauge.hxx
   VGInitOperation.hxx
 )
@@ -32,5 +31,6 @@ set(SOURCES
 
 add_subdirectory(ShivaVG/src)
 add_subdirectory(elements)
+add_subdirectory(events)
 
 simgear_scene_component(canvas canvas "${SOURCES}" "${HEADERS}")

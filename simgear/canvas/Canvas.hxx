@@ -146,6 +146,8 @@ namespace canvas
       SGRect<int> getViewport() const;
 
       bool handleMouseEvent(const MouseEventPtr& event);
+      bool propagateEvent( EventPtr const& event,
+                           EventPropagationPath const& path );
 
       virtual void childAdded( SGPropertyNode * parent,
                                SGPropertyNode * child );

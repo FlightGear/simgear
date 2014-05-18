@@ -51,6 +51,10 @@ namespace canvas
   SG_FWD_DECL(Text)
   SG_FWD_DECL(Window)
 
+  SG_FWD_DECL(Event)
+  SG_FWD_DECL(CustomEvent)
+  SG_FWD_DECL(MouseEvent)
+
 #undef SG_FWD_DECL
 
 #define SG_FWD_DECL(name)\
@@ -58,8 +62,6 @@ namespace canvas
   typedef boost::shared_ptr<name> name##Ptr;\
   typedef boost::weak_ptr<name> name##WeakPtr;
 
-  SG_FWD_DECL(Event)
-  SG_FWD_DECL(MouseEvent)
   SG_FWD_DECL(Placement)
   SG_FWD_DECL(SystemAdapter)
 
@@ -67,6 +69,9 @@ namespace canvas
 
   class EventManager;
   class EventVisitor;
+
+  struct EventTarget;
+  typedef std::deque<EventTarget> EventPropagationPath;
 
   typedef std::map<std::string, const SGPropertyNode*> Style;
   typedef ElementPtr (*ElementFactory)( const CanvasWeakPtr&,

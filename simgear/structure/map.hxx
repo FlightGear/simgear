@@ -33,7 +33,7 @@ namespace simgear
       Map() {}
 
       /**
-       * Initilize a new mape with the given key/value pair.
+       * Initialize a new map with the given key/value pair.
        */
       Map(const Key& key, const Value& value)
       {

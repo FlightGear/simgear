@@ -33,8 +33,14 @@ namespace canvas
 
     // Used as storage by EventManager during event propagation
     mutable osg::Vec2f  local_pos;
+
+    EventTarget( Element* el,
+                 const osg::Vec2f pos = osg::Vec2f() ):
+      element(el),
+      local_pos(pos)
+    {}
   };
-  typedef std::deque<EventTarget> EventPropagationPath;
+
   inline bool operator==(const EventTarget& t1, const EventTarget& t2)
   {
     return t1.element.lock() == t2.element.lock();
@@ -47,6 +53,9 @@ namespace canvas
 
       bool handleEvent( const MouseEventPtr& event,
                         const EventPropagationPath& path );
+
+      bool propagateEvent( const EventPtr& event,
+                           const EventPropagationPath& path );
 
     protected:
       struct StampedPropagationPath
@@ -88,9 +97,6 @@ namespace canvas
        */
       bool handleMove( const MouseEventPtr& event,
                        const EventPropagationPath& path );
-
-      bool propagateEvent( const EventPtr& event,
-                           const EventPropagationPath& path );
 
       /**
        * Check if two click events (either mousedown/up or two consecutive

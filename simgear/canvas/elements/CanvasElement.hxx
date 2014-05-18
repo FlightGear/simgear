@@ -108,7 +108,8 @@ namespace canvas
       virtual bool ascend(EventVisitor& visitor);
       virtual bool traverse(EventVisitor& visitor);
 
-      virtual bool handleEvent(canvas::EventPtr event);
+      virtual bool handleEvent(EventPtr event);
+      bool dispatchEvent(EventPtr event);
 
       /**
        *
@@ -233,7 +234,7 @@ namespace canvas
       RelativeScissor  *_scissor;
 
       typedef std::vector<EventListener> Listener;
-      typedef std::map<Event::Type, Listener> ListenerMap;
+      typedef std::map<int, Listener> ListenerMap;
 
       ListenerMap _listener;
 

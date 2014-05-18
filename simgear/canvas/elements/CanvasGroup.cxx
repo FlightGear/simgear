@@ -22,7 +22,7 @@
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
 #include <simgear/canvas/CanvasEventVisitor.hxx>
-#include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/canvas/events/MouseEvent.hxx>
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>

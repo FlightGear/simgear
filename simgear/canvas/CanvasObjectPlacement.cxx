@@ -21,7 +21,7 @@
 
 #include "Canvas.hxx"
 #include "CanvasObjectPlacement.hxx"
-#include "MouseEvent.hxx"
+#include <simgear/canvas/events/MouseEvent.hxx>
 
 #include <simgear/props/props.hxx>
 #include <simgear/scene/util/SGPickCallback.hxx>

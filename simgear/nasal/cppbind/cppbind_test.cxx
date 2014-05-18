@@ -168,6 +168,11 @@ int main(int argc, char* argv[])
   r = to_nasal(c, hash);
   VERIFY( naIsHash(r) );
 
+  simgear::StringMap string_map = from_nasal<simgear::StringMap>(c, r);
+  VERIFY( string_map.at("vec") == "string" )
+  VERIFY( string_map.at("name") == "my-name" )
+  VERIFY( string_map.at("string") == "blub" )
+
   VERIFY( hash.get<std::string>("name") == "my-name" );
   VERIFY( naIsString(hash.get("name")) );
 

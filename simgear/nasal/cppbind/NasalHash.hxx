@@ -22,6 +22,8 @@
 #include "from_nasal.hxx"
 #include "to_nasal.hxx"
 
+#include <simgear/structure/map.hxx>
+
 namespace nasal
 {
 
@@ -102,6 +104,11 @@ namespace nasal
       }
 
       /**
+       * Get a list of all keys
+       */
+      std::vector<std::string> keys() const;
+
+      /**
        * Create a new child hash (module)
        *
        * @param name  Name of the new hash inside this hash
@@ -128,5 +135,22 @@ namespace nasal
   };
 
 } // namespace nasal
+
+template<class Value>
+simgear::Map<std::string, Value>
+from_nasal_helper( naContext c,
+                   naRef ref,
+                   const simgear::Map<std::string, Value>* )
+{
+
+  nasal::Hash hash = from_nasal_helper(c, ref, static_cast<nasal::Hash*>(0));
+  std::vector<std::string> const& keys = hash.keys();
+
+  simgear::Map<std::string, Value> map;
+  for(size_t i = 0; i < keys.size(); ++i)
+    map[ keys[i] ] = hash.get<Value>(keys[i]);
+
+  return map;
+}
 
 #endif /* SG_NASAL_HASH_HXX_ */

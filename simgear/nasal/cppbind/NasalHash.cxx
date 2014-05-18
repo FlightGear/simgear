@@ -55,6 +55,14 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
+  std::vector<std::string> Hash::keys() const
+  {
+    naRef keys = naNewVector(_context);
+    naHash_keys(keys, _hash);
+    return from_nasal<std::vector<std::string> >(_context, keys);
+  }
+
+  //----------------------------------------------------------------------------
   Hash Hash::createHash(const std::string& name)
   {
     Hash hash(_context);

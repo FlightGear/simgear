@@ -467,6 +467,22 @@ namespace nasal
         return member(field, to_getter(getter), to_setter(setter));
       }
 
+      template<class Param>
+      Ghost& member( const std::string& field,
+                     const getter_t& getter,
+                     void (raw_type::*setter)(Param) )
+      {
+        return member(field, getter, to_setter(setter));
+      }
+
+      template<class Ret>
+      Ghost& member( const std::string& field,
+                     Ret (raw_type::*getter)() const,
+                     const setter_t& setter )
+      {
+        return member(field, to_getter(getter), setter);
+      }
+
       /**
        * Register a read only member variable.
        *
@@ -480,6 +496,18 @@ namespace nasal
         return member(field, to_getter(getter), setter_t());
       }
 
+      Ghost& member( const std::string& field,
+                     naRef (*getter)(const raw_type&, naContext) )
+      {
+        return member(field, getter_t(getter), setter_t());
+      }
+
+      Ghost& member( const std::string& field,
+                     naRef (*getter)(raw_type&, naContext) )
+      {
+        return member(field, getter_t(getter), setter_t());
+      }
+
       /**
        * Register a write only member variable.
        *
@@ -491,6 +519,18 @@ namespace nasal
                      void (raw_type::*setter)(Var) )
       {
         return member(field, getter_t(), to_setter(setter));
+      }
+
+      Ghost& member( const std::string& field,
+                     void (*setter)(raw_type&, naContext, naRef) )
+      {
+        return member(field, getter_t(), setter_t(setter));
+      }
+
+      Ghost& member( const std::string& field,
+                     const setter_t& setter )
+      {
+        return member(field, getter_t(), setter);
       }
 
       /**
@@ -550,7 +590,7 @@ namespace nasal
        * {
        *   public:
        *     bool getMember( const std::string& key,
-       *                     std::string& value_out );
+       *                     std::string& value_out ) const;
        * }
        *
        * Ghost<MyClassPtr>::init("Test")
@@ -558,7 +598,7 @@ namespace nasal
        * @endcode
        */
       template<class Param>
-      Ghost& _get(bool (raw_type::*getter)(const std::string&, Param&))
+      Ghost& _get(bool (raw_type::*getter)(const std::string&, Param&) const)
       {
         return _get(
           boost::function<bool (raw_type&, const std::string&, Param&)>(getter)
@@ -584,7 +624,7 @@ namespace nasal
        */
       Ghost& _get(bool (raw_type::*getter)( naContext,
                                             const std::string&,
-                                            naRef& ))
+                                            naRef& ) const)
       {
         return _get( fallback_getter_t(getter) );
       }

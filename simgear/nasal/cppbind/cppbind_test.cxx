@@ -44,7 +44,7 @@ struct Base
   {
     return key == "test";
   }
-  bool genericGet(const std::string& key, std::string& val_out)
+  bool genericGet(const std::string& key, std::string& val_out) const
   {
     if( key != "get_test" )
       return false;
@@ -67,6 +67,16 @@ struct Derived:
   int getX() const { return _x; }
   void setX(int x) { _x = x; }
 };
+
+naRef f_derivedGetRandom(const Derived&, naContext)
+{
+  return naNil();
+}
+void f_derivedSetX(Derived& d, naContext, naRef r)
+{
+  d._x = static_cast<int>(naNumValue(r).num);
+}
+
 struct DoubleDerived:
   public Derived
 {
@@ -237,6 +247,9 @@ int main(int argc, char* argv[])
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)
     .member("x_alternate", &f_derivedGetX)
+    .member("x_mixed", &f_derivedGetRandom, &Derived::setX)
+    .member("x_mixed2", &Derived::getX, &f_derivedSetX)
+    .member("x_w", &f_derivedSetX)
     .method("free_fn", &derivedFreeMember)
     .method("free_member", &derivedFreeMember)
     .method("baseDoIt", &baseFuncCallContext);

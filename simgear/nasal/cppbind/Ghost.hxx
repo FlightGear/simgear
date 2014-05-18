@@ -223,6 +223,10 @@ namespace nasal
       typedef boost::function<bool( naContext,
                                     raw_type&,
                                     const std::string&,
+                                    naRef& )>  fallback_getter_t;
+      typedef boost::function<bool( naContext,
+                                    raw_type&,
+                                    const std::string&,
                                     naRef )>               fallback_setter_t;
 
       class MethodHolder:
@@ -402,6 +406,8 @@ namespace nasal
 
         if( !_fallback_setter )
           _fallback_setter = base->_fallback_setter;
+        if( !_fallback_getter )
+          _fallback_getter = base->_fallback_getter;
 
         return *this;
       }
@@ -509,6 +515,69 @@ namespace nasal
             "Member '" << field << "' requires a getter or setter"
           );
         return *this;
+      }
+
+      /**
+       * Register a function which is called upon retrieving an unknown member
+       * of this ghost.
+       */
+      Ghost& _get(const fallback_getter_t& getter)
+      {
+        _fallback_getter = getter;
+        return *this;
+      }
+
+      /**
+       * Register a method which is called upon retrieving an unknown member of
+       * this ghost.
+       *
+       * @code{cpp}
+       * class MyClass
+       * {
+       *   public:
+       *     bool getMember( const std::string& key,
+       *                     std::string& value_out );
+       * }
+       *
+       * Ghost<MyClassPtr>::init("Test")
+       *   ._get(&MyClass::getMember);
+       * @endcode
+       */
+      template<class Param>
+      Ghost& _get(bool (raw_type::*getter)(const std::string&, Param&))
+      {
+        return _get(boost::bind(
+          convert_param_invoker<Param>, getter, _1, _2, _3, _4
+        ));
+      }
+
+      /**
+       * Register a method which is called upon retrieving an unknown member of
+       * this ghost.
+       *
+       * @code{cpp}
+       * class MyClass
+       * {
+       *   public:
+       *     bool getMember( naContext c,
+       *                     const std::string& key,
+       *                     naRef& value_out );
+       * }
+       *
+       * Ghost<MyClassPtr>::init("Test")
+       *   ._get(&MyClass::getMember);
+       * @endcode
+       */
+      Ghost& _get(bool (raw_type::*getter)( naContext,
+                                            const std::string&,
+                                            naRef& ))
+      {
+        // Getter signature: bool( naContext,
+        //                         raw_type&,
+        //                         const std::string&,
+        //                         naRef& )
+
+        return _get( boost::bind(getter, _2, _1, _3, _4) );
       }
 
       /**
@@ -861,6 +930,29 @@ namespace nasal
         );
       }
 
+      /**
+       * Invoke a method which writes the converted parameter to a reference
+       */
+      template<class Param>
+      static
+      bool convert_param_invoker
+      (
+        const boost::function<bool ( raw_type&,
+                                     const std::string&,
+                                     Param& )>& func,
+        naContext c,
+        raw_type& obj,
+        const std::string& key,
+        naRef& out
+      )
+      {
+        Param p;
+        if( !func(obj, key, p) )
+          return false;
+
+        out = to_nasal(c, p);
+        return true;
+      };
 
       /**
        * Invoke a method which returns a value and convert it to Nasal.
@@ -929,6 +1021,7 @@ namespace nasal
 
       typedef std::auto_ptr<Ghost> GhostPtr;
       MemberMap         _members;
+      fallback_getter_t _fallback_getter;
       fallback_setter_t _fallback_setter;
 
       explicit Ghost(const std::string& name):
@@ -989,9 +1082,13 @@ namespace nasal
           getSingletonPtr()->_members.find(key_str);
 
         if( member == getSingletonPtr()->_members.end() )
-          return 0;
-
-        if( member->second.func )
+        {
+          fallback_getter_t fallback_get = getSingletonPtr()->_fallback_getter;
+          if(    !fallback_get
+              || !fallback_get(c, *getRawPtr(g), key_str, *out) )
+            return 0;
+        }
+        else if( member->second.func )
           *out = member->second.func->get_naRef(c);
         else if( !member->second.getter.empty() )
           *out = member->second.getter(c, *getRawPtr(g));

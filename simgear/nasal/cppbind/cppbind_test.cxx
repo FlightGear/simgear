@@ -44,6 +44,14 @@ struct Base
   {
     return key == "test";
   }
+  bool genericGet(const std::string& key, std::string& val_out)
+  {
+    if( key != "get_test" )
+      return false;
+
+    val_out = "generic-get";
+    return true;
+  }
 };
 
 void baseVoidFunc(Base& b) {}
@@ -218,7 +226,8 @@ int main(int argc, char* argv[])
     .method("bool2args", &Base::test2Args)
     .method("str_ptr", &testPtr)
     .method("this", &Base::getThis)
-    ._set(&Base::genericSet);
+    ._set(&Base::genericSet)
+    ._get(&Base::genericGet);
   Ghost<DerivedPtr>::init("DerivedPtr")
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)
@@ -346,17 +355,32 @@ int main(int argc, char* argv[])
   VERIFY( objects[1] == d2 );
   VERIFY( objects[2] == d3 );
 
-  // Calling fallback setter for unset values
-  const char* src_code = "me.test = 3;";
-  int errLine = -1;
-  naRef code = naParseCode( c, to_nasal(c, "source.nas"), 0,
-                            (char*)src_code, strlen(src_code),
-                            &errLine );
-  ret = naCallMethod(code, derived, 0, 0, naNil());
+  {
+    // Calling fallback setter for unset values
+    const char* src_code = "me.test = 3;";
+    int errLine = -1;
+    naRef code = naParseCode( c, to_nasal(c, "source.nas"), 0,
+                              (char*)src_code, strlen(src_code),
+                              &errLine );
+    ret = naCallMethod(code, derived, 0, 0, naNil());
 
-  VERIFY( !naGetError(c) ) // TODO real error check (this seems to always
-                           //      return 0...
-  VERIFY( from_nasal<int>(c, ret) == 3 )
+    VERIFY( !naGetError(c) ) // TODO real error check (this seems to always
+                             //      return 0...
+    VERIFY( from_nasal<int>(c, ret) == 3 )
+  }
+  {
+    // Calling generic (fallback) getter
+    const char* src_code = "var a = me.get_test;";
+    int errLine = -1;
+    naRef code = naParseCode( c, to_nasal(c, "source.nas"), 0,
+                              (char*)src_code, strlen(src_code),
+                              &errLine );
+    ret = naCallMethod(code, derived, 0, 0, naNil());
+
+    VERIFY( !naGetError(c) ) // TODO real error check (this seems to always
+                             //      return 0...
+    VERIFY( from_nasal<std::string>(c, ret) == "generic-get" );
+  }
 
   //----------------------------------------------------------------------------
   // Test nasal::CallContext

@@ -217,15 +217,15 @@ namespace nasal
       typedef T                                                     pointer;
       typedef naRef (raw_type::*member_func_t)(const CallContext&);
       typedef naRef (*free_func_t)(raw_type&, const CallContext&);
-      typedef boost::function<naRef(naContext, raw_type&)>          getter_t;
-      typedef boost::function<void(naContext, raw_type&, naRef)>    setter_t;
+      typedef boost::function<naRef(raw_type&, naContext)>          getter_t;
+      typedef boost::function<void( raw_type&, naContext, naRef)>   setter_t;
       typedef boost::function<naRef(raw_type&, const CallContext&)> method_t;
-      typedef boost::function<bool( naContext,
-                                    raw_type&,
+      typedef boost::function<bool( raw_type&,
+                                    naContext,
                                     const std::string&,
-                                    naRef& )>  fallback_getter_t;
-      typedef boost::function<bool( naContext,
-                                    raw_type&,
+                                    naRef& )>              fallback_getter_t;
+      typedef boost::function<bool( raw_type&,
+                                    naContext,
                                     const std::string&,
                                     naRef )>               fallback_setter_t;
 
@@ -528,6 +528,20 @@ namespace nasal
       }
 
       /**
+       * Register a function which is called upon retrieving an unknown member
+       * of this ghost, and convert it to the given @a Param type.
+       */
+      template<class Param>
+      Ghost& _get( const boost::function<bool ( raw_type&,
+                                                const std::string&,
+                                                Param& )>& getter )
+      {
+        return _get(boost::bind(
+          convert_param_invoker<Param>, getter, _1, _2, _3, _4
+        ));
+      }
+
+      /**
        * Register a method which is called upon retrieving an unknown member of
        * this ghost.
        *
@@ -546,9 +560,9 @@ namespace nasal
       template<class Param>
       Ghost& _get(bool (raw_type::*getter)(const std::string&, Param&))
       {
-        return _get(boost::bind(
-          convert_param_invoker<Param>, getter, _1, _2, _3, _4
-        ));
+        return _get(
+          boost::function<bool (raw_type&, const std::string&, Param&)>(getter)
+        );
       }
 
       /**
@@ -572,12 +586,7 @@ namespace nasal
                                             const std::string&,
                                             naRef& ))
       {
-        // Getter signature: bool( naContext,
-        //                         raw_type&,
-        //                         const std::string&,
-        //                         naRef& )
-
-        return _get( boost::bind(getter, _2, _1, _3, _4) );
+        return _get( fallback_getter_t(getter) );
       }
 
       /**
@@ -588,6 +597,27 @@ namespace nasal
       {
         _fallback_setter = setter;
         return *this;
+      }
+
+      /**
+       * Register a function which is called upon setting an unknown member of
+       * this ghost, and convert it to the given @a Param type.
+       */
+      template<class Param>
+      Ghost& _set(const boost::function<bool ( raw_type&,
+                                               const std::string&,
+                                               Param )>& setter)
+      {
+        // Setter signature: bool( raw_type&,
+        //                         naContext,
+        //                         const std::string&,
+        //                         naRef )
+        return _set(boost::bind(
+          setter,
+          _1,
+          _3,
+          boost::bind(from_nasal_ptr<Param>::get(), _2, _4)
+        ));
       }
 
       /**
@@ -609,16 +639,9 @@ namespace nasal
       template<class Param>
       Ghost& _set(bool (raw_type::*setter)(const std::string&, Param))
       {
-        // Setter signature: bool( naContext,
-        //                         raw_type&,
-        //                         const std::string&,
-        //                         naRef )
-        return _set(boost::bind(
-          setter,
-          _2,
-          _3,
-          boost::bind(from_nasal_ptr<Param>::get(), _1, _4)
-        ));
+        return _set(
+          boost::function<bool (raw_type&, const std::string&, Param)>(setter)
+        );
       }
 
       /**
@@ -642,11 +665,7 @@ namespace nasal
                                             const std::string&,
                                             naRef ))
       {
-        // Setter signature: bool( naContext,
-        //                         raw_type&,
-        //                         const std::string&,
-        //                         naRef )
-        return _set( boost::bind(setter, _2, _1, _3, _4) );
+        return _set( fallback_setter_t(setter) );
       }
 
       /**
@@ -909,24 +928,24 @@ namespace nasal
         typedef typename boost::call_traits<Ret>::param_type param_type;
         naRef(*to_nasal_)(naContext, param_type) = &to_nasal;
 
-        // Getter signature: naRef(naContext, raw_type&)
+        // Getter signature: naRef(raw_type&, naContext)
         return boost::bind
         (
           to_nasal_,
-          _1,
-          boost::bind(getter, _2)
+          _2,
+          boost::bind(getter, _1)
         );
       }
 
       template<class Param>
       setter_t to_setter(void (raw_type::*setter)(Param))
       {
-        // Setter signature: void(naContext, raw_type&, naRef)
+        // Setter signature: void(raw_type&, naContext, naRef)
         return boost::bind
         (
           setter,
-          _2,
-          boost::bind(from_nasal_ptr<Param>::get(), _1, _3)
+          _1,
+          boost::bind(from_nasal_ptr<Param>::get(), _2, _3)
         );
       }
 
@@ -940,8 +959,8 @@ namespace nasal
         const boost::function<bool ( raw_type&,
                                      const std::string&,
                                      Param& )>& func,
-        naContext c,
         raw_type& obj,
+        naContext c,
         const std::string& key,
         naRef& out
       )
@@ -1085,13 +1104,13 @@ namespace nasal
         {
           fallback_getter_t fallback_get = getSingletonPtr()->_fallback_getter;
           if(    !fallback_get
-              || !fallback_get(c, *getRawPtr(g), key_str, *out) )
+              || !fallback_get(*getRawPtr(g), c, key_str, *out) )
             return 0;
         }
         else if( member->second.func )
           *out = member->second.func->get_naRef(c);
         else if( !member->second.getter.empty() )
-          *out = member->second.getter(c, *getRawPtr(g));
+          *out = member->second.getter(*getRawPtr(g), c);
         else
           return "Read-protected member";
 
@@ -1112,7 +1131,7 @@ namespace nasal
           fallback_setter_t fallback_set = getSingletonPtr()->_fallback_setter;
           if( !fallback_set )
             naRuntimeError(c, "ghost: No such member: %s", key.c_str());
-          else if( !fallback_set(c, *getRawPtr(g), key, val) )
+          else if( !fallback_set(*getRawPtr(g), c, key, val) )
             naRuntimeError(c, "ghost: Failed to write (_set: %s)", key.c_str());
         }
         else if( member->second.setter.empty() )
@@ -1120,7 +1139,7 @@ namespace nasal
         else if( member->second.func )
           naRuntimeError(c, "ghost: Write to function: %s", key.c_str());
         else
-          member->second.setter(c, *getRawPtr(g), val);
+          member->second.setter(*getRawPtr(g), c, val);
       }
   };
 

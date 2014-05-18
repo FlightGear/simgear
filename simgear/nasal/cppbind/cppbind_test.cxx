@@ -105,7 +105,7 @@ typedef SGSharedPtr<SGWeakReferenceBasedClass> SGWeakRefBasedPtr;
 typedef boost::weak_ptr<Derived> DerivedWeakPtr;
 
 naRef derivedFreeMember(Derived&, const nasal::CallContext&) { return naNil(); }
-naRef f_derivedGetX(naContext c, const Derived& d)
+naRef f_derivedGetX(const Derived& d, naContext c)
 {
   return nasal::to_nasal(c, d.getX());
 }

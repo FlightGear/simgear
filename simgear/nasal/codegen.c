@@ -7,6 +7,7 @@
 // These are more sensical predicate names in most contexts in this file
 #define LEFT(tok)   ((tok)->children)
 #define RIGHT(tok)  ((tok)->lastChild)
+#define UNARY(tok)  (LEFT(tok) && LEFT(tok) == RIGHT(tok))
 #define BINARY(tok) (LEFT(tok) && RIGHT(tok) && LEFT(tok)->next == RIGHT(tok))
 
 // Forward references for recursion
@@ -634,11 +635,15 @@ static void genExpr(struct Parser* p, struct Token* t)
         else genExpr(p, LEFT(t));
         break;
     case TOK_LBRA:
-        if(BINARY(t)) {
-            genExtract(p, t);
-        } else {
+        if(UNARY(t)) {
             emit(p, OP_NEWVEC);
             genList(p, LEFT(t), 1);
+        }
+        else if(BINARY(t)) {
+            genExtract(p, t);
+        } else {
+            // forbid usage as 'vec[]'
+            naParseError(p, "missing index or slice expression(s)", t->line);
         }
         break;
     case TOK_LCURL:

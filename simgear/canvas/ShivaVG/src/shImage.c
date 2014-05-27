@@ -37,6 +37,7 @@
 #define _ARRAY_DEFINE
 #include "shArrayBase.h"
 
+#ifndef SH_NO_IMAGE
 
 /*-----------------------------------------------------------
  * Prepares the proper pixel pack/unpack info for the given
@@ -440,6 +441,7 @@ void shLoadColor(SHColor *c, const void *data, SHImageFormatDesc *f)
   if (f->rmask == 0x0) { c->r = 1.0f; c->g = 1.0f; c->b = 1.0f; }
 }
 
+#endif // SH_NO_IMAGE
 
 /*----------------------------------------------
  * Color and Image constructors and destructors
@@ -461,18 +463,28 @@ void SHImage_ctor(SHImage *i)
   i->data = NULL;
   i->width = 0;
   i->height = 0;
+
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   glGenTextures(1, &i->texture);
+#endif
 }
 
 void SHImage_dtor(SHImage *i)
 {
   if (i->data != NULL)
     free(i->data);
-  
+
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   if (glIsTexture(i->texture))
     glDeleteTextures(1, &i->texture);
+#endif
 }
 
+#ifndef SH_NO_IMAGE
 /*--------------------------------------------------------
  * Finds appropriate OpenGL texture size for the size of
  * the given image
@@ -553,6 +565,7 @@ void shUpdateImageTexture(SHImage *i, VGContext *c)
                i->texwidth, i->texheight, 0,
                i->fd.glformat, i->fd.gltype, i->data);
 }
+#endif // SH_NO_IMAGE
 
 /*----------------------------------------------------------
  * Creates a new image object and returns the handle to it
@@ -562,6 +575,10 @@ VG_API_CALL VGImage vgCreateImage(VGImageFormat format,
                                   VGint width, VGint height,
                                   VGbitfield allowedQuality)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+  return VG_INVALID_HANDLE;
+#else
   SHImage *i = NULL;
   SHImageFormatDesc fd;
   VG_GETCONTEXT(VG_INVALID_HANDLE);
@@ -614,12 +631,16 @@ VG_API_CALL VGImage vgCreateImage(VGImageFormat format,
   
   /* Add to resource list */
   shImageArrayPushBack(&context->images, i);
-  
+
   VG_RETURN((VGImage)i);
+#endif // SH_NO_IMAGE
 }
 
 VG_API_CALL void vgDestroyImage(VGImage image)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHint index;
   VG_GETCONTEXT(VG_NO_RETVAL);
   
@@ -630,8 +651,9 @@ VG_API_CALL void vgDestroyImage(VGImage image)
   /* Delete object and remove resource */
   SH_DELETEOBJ(SHImage, (SHImage*)image);
   shImageArrayRemoveAt(&context->images, index);
-  
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*---------------------------------------------------
@@ -642,6 +664,9 @@ VG_API_CALL void vgDestroyImage(VGImage image)
 VG_API_CALL void vgClearImage(VGImage image,
                               VGint x, VGint y, VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHImage *i;
   SHColor clear;
   SHuint8 *data;
@@ -682,8 +707,12 @@ VG_API_CALL void vgClearImage(VGImage image,
     }}
   
   shUpdateImageTexture(i, context);
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
+
+#ifndef SH_NO_IMAGE
 
 /*------------------------------------------------------------
  * Generic function for copying a rectangle area of pixels
@@ -795,6 +824,8 @@ void shCopyPixels(SHuint8 *dst, VGImageFormat dstFormat, SHint dstStride,
   }
 }
 
+#endif // SH_NO_IMAGE
+
 /*---------------------------------------------------------
  * Copies a rectangle area of pixels of size (width,height)
  * from given data buffer to image surface at destination
@@ -806,6 +837,9 @@ VG_API_CALL void vgImageSubData(VGImage image,
                                 VGImageFormat dataFormat,
                                 VGint x, VGint y, VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHImage *i;
   VG_GETCONTEXT(VG_NO_RETVAL);
   
@@ -836,7 +870,9 @@ VG_API_CALL void vgImageSubData(VGImage image,
                x, y, 0, 0, width, height);
   
   shUpdateImageTexture(i, context);
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*---------------------------------------------------------
@@ -851,6 +887,9 @@ VG_API_CALL void vgGetImageSubData(VGImage image,
                                    VGint x, VGint y,
                                    VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHImage *i;
   VG_GETCONTEXT(VG_NO_RETVAL);
   
@@ -879,8 +918,9 @@ VG_API_CALL void vgGetImageSubData(VGImage image,
                i->data, i->fd.vgformat, i->texwidth * i->fd.bytes,
                width, height, i->width, i->height,
                0,0,x,x,width,height);
-  
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*----------------------------------------------------------
@@ -894,6 +934,9 @@ VG_API_CALL void vgCopyImage(VGImage dst, VGint dx, VGint dy,
                              VGint width, VGint height,
                              VGboolean dither)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHImage *s, *d;
   SHuint8 *pixels;
 
@@ -933,7 +976,9 @@ VG_API_CALL void vgCopyImage(VGImage dst, VGint dx, VGint dy,
   free(pixels);
   
   shUpdateImageTexture(d, context);
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*---------------------------------------------------------
@@ -946,6 +991,9 @@ VG_API_CALL void vgSetPixels(VGint dx, VGint dy,
                              VGImage src, VGint sx, VGint sy,
                              VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHImage *i;
   SHuint8 *pixels;
   SHImageFormatDesc winfd;
@@ -986,6 +1034,7 @@ VG_API_CALL void vgSetPixels(VGint dx, VGint dy,
   free(pixels);
 
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*---------------------------------------------------------
@@ -999,6 +1048,9 @@ VG_API_CALL void vgWritePixels(const void * data, VGint dataStride,
                                VGint dx, VGint dy,
                                VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHuint8 *pixels;
   SHImageFormatDesc winfd;
 
@@ -1043,7 +1095,8 @@ VG_API_CALL void vgWritePixels(const void * data, VGint dataStride,
   
   free(pixels);
 
-  VG_RETURN(VG_NO_RETVAL); 
+  VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*-----------------------------------------------------------
@@ -1056,6 +1109,9 @@ VG_API_CALL void vgGetPixels(VGImage dst, VGint dx, VGint dy,
                              VGint sx, VGint sy,
                              VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHImage *i;
   SHuint8 *pixels;
   SHImageFormatDesc winfd;
@@ -1093,7 +1149,9 @@ VG_API_CALL void vgGetPixels(VGImage dst, VGint dx, VGint dy,
   free(pixels);
   
   shUpdateImageTexture(i, context);
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*-----------------------------------------------------------
@@ -1107,6 +1165,9 @@ VG_API_CALL void vgReadPixels(void * data, VGint dataStride,
                               VGint sx, VGint sy,
                               VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   SHuint8 *pixels;
   SHImageFormatDesc winfd;
   VG_GETCONTEXT(VG_NO_RETVAL);
@@ -1146,8 +1207,9 @@ VG_API_CALL void vgReadPixels(void * data, VGint dataStride,
                0, 0, 0, 0, width, height);
 
   free(pixels);
-  
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 /*----------------------------------------------------------
@@ -1160,6 +1222,9 @@ VG_API_CALL void vgCopyPixels(VGint dx, VGint dy,
                               VGint sx, VGint sy,
                               VGint width, VGint height)
 {
+#ifdef SH_NO_IMAGE
+  printf("ShivaVG: images not supported!");
+#else
   VG_GETCONTEXT(VG_NO_RETVAL);
   
   VG_RETURN_ERR_IF(width <= 0 || height <= 0,
@@ -1170,8 +1235,9 @@ VG_API_CALL void vgCopyPixels(VGint dx, VGint dy,
   glRasterPos2i(dx, dy);
   glCopyPixels(sx, sy, width, height, GL_COLOR);
   glRasterPos2i(0, 0);
-  
+
   VG_RETURN(VG_NO_RETVAL);
+#endif // SH_NO_IMAGE
 }
 
 VG_API_CALL VGImage vgChildImage(VGImage parent,

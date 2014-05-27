@@ -158,18 +158,14 @@ SHfloat getMaxFloat();
 
 #if defined(VG_API_LINUX)
     #include <GL/gl.h>
-    #include <GL/glu.h>
     #include <GL/glx.h>
 #elif defined(VG_API_MACOSX)
     #include <OpenGL/gl.h>
-    #include <OpenGL/glu.h>
 #elif defined(VG_API_WINDOWS)
     #include <GL/gl.h>
-    #include <GL/glu.h>
 #else
     #define GL_GLEXT_LEGACY /* don't include glext.h */
     #include <GL/gl.h>
-    #include <GL/glu.h>
     #include <GL/glx.h>
 #endif
 

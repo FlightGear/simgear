@@ -38,4 +38,9 @@
 
 #endif
 
+// We currently do not support using images (inside paths). If we were going to
+// use it loading and unloading needs to happen within OpenSceneGraph to handle
+// synchronization correctly in multithreading mode.
+#define SH_NO_IMAGE
+
 #endif // __SHCONFIG_H

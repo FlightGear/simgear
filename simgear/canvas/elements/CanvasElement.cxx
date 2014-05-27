@@ -419,7 +419,9 @@ namespace canvas
     if( parent == _node )
     {
       const std::string& name = child->getNameString();
-      if( StyleInfo const* style_info = getStyleInfo(name) )
+      if( boost::starts_with(name, "data-") )
+        return;
+      else if( StyleInfo const* style_info = getStyleInfo(name) )
       {
         SGPropertyNode const* style = child;
         if( isStyleEmpty(child) )

@@ -468,7 +468,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Canvas::valueChanged(SGPropertyNode* node)
   {
-    if( boost::starts_with(node->getNameString(), "status") )
+    const std::string& name = node->getNameString();
+
+    if(    boost::starts_with(name, "status")
+        || boost::starts_with(name, "data-") )
       return;
     _render_dirty = true;
 
@@ -507,7 +510,7 @@ namespace canvas
     }
     else if( node->getParent() == _node )
     {
-      if( node->getNameString() == "background" )
+      if( name == "background" )
       {
         osg::Vec4 color;
         if( _texture.getCamera() && parseColor(node->getStringValue(), color) )
@@ -516,35 +519,35 @@ namespace canvas
           _render_dirty = true;
         }
       }
-      else if(    node->getNameString() == "mipmapping"
-              || node->getNameString() == "coverage-samples"
-              || node->getNameString() == "color-samples" )
+      else if(   name == "mipmapping"
+              || name == "coverage-samples"
+              || name == "color-samples" )
       {
         _sampling_dirty = true;
       }
-      else if( node->getNameString() == "additive-blend" )
+      else if( name == "additive-blend" )
       {
         _texture.useAdditiveBlend( node->getBoolValue() );
       }
-      else if( node->getNameString() == "render-always" )
+      else if( name == "render-always" )
       {
         _render_always = node->getBoolValue();
       }
-      else if( node->getNameString() == "size" )
+      else if( name == "size" )
       {
         if( node->getIndex() == 0 )
           setSizeX( node->getIntValue() );
         else if( node->getIndex() == 1 )
           setSizeY( node->getIntValue() );
       }
-      else if( node->getNameString() == "view" )
+      else if( name == "view" )
       {
         if( node->getIndex() == 0 )
           setViewWidth( node->getIntValue() );
         else if( node->getIndex() == 1 )
           setViewHeight( node->getIntValue() );
       }
-      else if( node->getNameString() == "freeze" )
+      else if( name == "freeze" )
         _texture.setRender( node->getBoolValue() );
       else
         handled = false;

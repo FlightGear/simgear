@@ -38,8 +38,8 @@ namespace canvas
 #       define ENUM_MAPPING(name, str) name,
 #         include "CanvasEventTypes.hxx"
 #       undef ENUM_MAPPING
-        CUSTOM_EVENT ///<! all user defined event types share the same id. They
-                     ///   are just differentiated by using the type string.
+        CUSTOM_EVENT ///< all user defined event types share the same id. They
+                     ///  are just differentiated by using the type string.
       };
 
       int               type;

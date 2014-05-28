@@ -1,4 +1,4 @@
-// Interface for 2D Canvas elements
+///@file Interface for 2D Canvas elements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -41,6 +41,9 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * Baseclass for Elements displayed inside a Canvas.
+   */
   class Element:
     public PropertyBasedElement
   {
@@ -69,10 +72,10 @@ namespace canvas
       };
       struct StyleInfo
       {
-        StyleSetter setter; ///!< Function(s) for setting this style
-        std::string type;   ///!< Interpolation type
-        bool inheritable;   ///!< Whether children can inherit this style from
-                            ///   their parents
+        StyleSetter setter; ///< Function(s) for setting this style
+        std::string type;   ///< Interpolation type
+        bool inheritable;   ///< Whether children can inherit this style from
+                            ///  their parents
       };
 
       /**
@@ -80,10 +83,10 @@ namespace canvas
        */
       enum ReferenceFrame
       {
-        GLOBAL, ///!< Global coordinates
-        PARENT, ///!< Coordinates relative to parent coordinate frame
-        LOCAL   ///!< Coordinates relative to local coordinates (parent
-                ///   coordinates with local transformations applied)
+        GLOBAL, ///< Global coordinates
+        PARENT, ///< Coordinates relative to parent coordinate frame
+        LOCAL   ///< Coordinates relative to local coordinates (parent
+                ///  coordinates with local transformations applied)
       };
 
       /**

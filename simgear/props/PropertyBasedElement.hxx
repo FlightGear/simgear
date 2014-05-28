@@ -76,7 +76,101 @@ namespace simgear
       // Unshadow what we have just hidden...
       using SGWeakReferenced::get;
 
+
+      /** @brief Set a HTML5 like data property on this element.
+       *
+       * Set data-* properties on this element. A camel-case @a name will be
+       * converted to a hyphenated name with 'data-' prefixed. Setting a value
+       * with this method does not trigger an update of the canvas and is meant
+       * to store data related to this element (used eg. inside scripts).
+       *
+       * @code{cpp}
+       * // Set value
+       * my_element->setDataProp("mySpecialInt", 3);
+       *
+       * // Get value (with default value)
+       * int val = my_element->getDataProp<int>("mySpecialInt");   // val == 3
+       *     val = my_element->getDataProp<int>("notExisting", 5); // val == 5
+       *
+       * // Check if value exists
+       * SGPropertyNode* node =
+       *   my_element->getDataProp<SGPropertyNode*>("mySpecialInt");
+       * if( node )
+       *   val = node->getIntValue(); // node != NULL, val == 3
+       *
+       * node = my_element->getDataProp<SGPropertyNode*>("notExisting");
+       * // node == NULL
+       * @endcode
+       */
+      template<class T>
+      void setDataProp( const std::string& name,
+                        const T& val )
+      {
+        const std::string& attr = dataPropToAttrName(name);
+        if( !attr.empty() )
+          set<T>(attr, val);
+        else
+          SG_LOG(SG_GENERAL, SG_WARN, "Invalid data-prop name: " << name);
+      }
+
+      /** @brief Get a HTML5 like data property on this element.
+       *
+       * Get value or default value.
+       *
+       * @see setDataProp
+       */
+      template<class T>
+      typename boost::disable_if<
+        boost::is_same<T, SGPropertyNode*>,
+        T
+      >::type getDataProp( const std::string& name,
+                           const T& def = T() ) const
+      {
+        SGPropertyNode* node = getDataProp<SGPropertyNode*>(name);
+        if( node )
+          return getValue<T>(node);
+
+        return def;
+      }
+
+      /** @brief Get a HTML5 like data property on this element.
+       *
+       * Use this variant to check if a property exists.
+       *
+       * @see setDataProp
+       */
+      template<class T>
+      typename boost::enable_if<
+        boost::is_same<T, SGPropertyNode*>,
+        T
+      >::type getDataProp( const std::string& name,
+                           SGPropertyNode* = NULL ) const
+      {
+        const std::string& attr = dataPropToAttrName(name);
+        if( attr.empty() )
+        {
+          SG_LOG(SG_GENERAL, SG_WARN, "Invalid data-prop name: " << name);
+          return NULL;
+        }
+
+        return _node->getNode(attr);
+      }
+
+      /** @brief Check whether a HTML5 like data property exists on this
+       *         element.
+       *
+       */
+      bool hasDataProp(const std::string& name) const;
+
+      /** @brief Remove a HTML5 like data property (if it exists).
+       *
+       */
+      void removeDataProp(const std::string& name);
+
       virtual void onDestroy() {};
+
+      static std::string dataPropToAttrName(const std::string& name);
+      static std::string attrToDataPropName(const std::string& name);
 
     protected:
 

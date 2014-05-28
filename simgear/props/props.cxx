@@ -1002,26 +1002,28 @@ SGPropertyNode::getChildren (const char * name) const
   return children;
 }
 
-
-/**
- * Remove child by position.
- */
-SGPropertyNode_ptr
-SGPropertyNode::removeChild(int pos)
+//------------------------------------------------------------------------------
+bool SGPropertyNode::removeChild(SGPropertyNode* node)
 {
-  SGPropertyNode_ptr node;
+  if( node->_parent != this )
+    return false;
+
+  PropertyList::iterator it =
+    std::find(_children.begin(), _children.end(), node);
+  if( it == _children.end() )
+    return false;
+
+  eraseChild(it);
+  return true;
+}
+
+//------------------------------------------------------------------------------
+SGPropertyNode_ptr SGPropertyNode::removeChild(int pos)
+{
   if (pos < 0 || pos >= (int)_children.size())
-    return node;
+    return SGPropertyNode_ptr();
 
-  PropertyList::iterator it = _children.begin();
-  it += pos;
-  node = _children[pos];
-  _children.erase(it);
-
-  node->setAttribute(REMOVED, true);
-  node->clearValue();
-  fireChildRemoved(node);
-  return node;
+  return eraseChild(_children.begin() + pos);
 }
 
 
@@ -2248,6 +2250,19 @@ SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
   }
   if (_parent != 0)
     _parent->fireChildRemoved(parent, child);
+}
+
+//------------------------------------------------------------------------------
+SGPropertyNode_ptr
+SGPropertyNode::eraseChild(simgear::PropertyList::iterator child)
+{
+  SGPropertyNode_ptr node = *child;
+  node->setAttribute(REMOVED, true);
+  node->clearValue();
+  fireChildRemoved(node);
+
+  _children.erase(child);
+  return node;
 }
 
 ////////////////////////////////////////////////////////////////////////

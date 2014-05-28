@@ -51,4 +51,16 @@ BOOST_AUTO_TEST_CASE( attr_data )
   el->setDataProp("myData", 3);
   BOOST_CHECK_EQUAL( el->getDataProp<int>("myData"), 3 );
   BOOST_CHECK_EQUAL( node->getIntValue("data-my-data"), 3 );
+
+  SGPropertyNode* prop = el->getDataProp<SGPropertyNode*>("notExistingProp");
+  BOOST_CHECK( !prop );
+  prop = el->getDataProp<SGPropertyNode*>("myData");
+  BOOST_CHECK(  prop );
+  BOOST_CHECK_EQUAL( prop->getParent(), node );
+  BOOST_CHECK_EQUAL( prop->getIntValue(), 3 );
+
+  BOOST_CHECK( el->hasDataProp("myData") );
+  el->removeDataProp("myData");
+  BOOST_CHECK( !el->hasDataProp("myData") );
+  BOOST_CHECK_EQUAL( el->getDataProp("myData", 5), 5 );
 }

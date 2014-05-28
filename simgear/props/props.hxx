@@ -911,6 +911,13 @@ public:
   simgear::PropertyList getChildren (const std::string& name) const
   { return getChildren(name.c_str()); }
 
+  /**
+   * Remove child by pointer (if it is a child of this node).
+   *
+   * @return true, if the node was deleted.
+   */
+  bool removeChild(SGPropertyNode* node);
+
   // TODO do we need the removeXXX methods to return the deleted nodes?
   /**
    * Remove child by position.
@@ -1700,6 +1707,8 @@ protected:
   void fireValueChanged (SGPropertyNode * node);
   void fireChildAdded (SGPropertyNode * parent, SGPropertyNode * child);
   void fireChildRemoved (SGPropertyNode * parent, SGPropertyNode * child);
+
+  SGPropertyNode_ptr eraseChild(simgear::PropertyList::iterator child);
 
   /**
    * Protected constructor for making new nodes on demand.

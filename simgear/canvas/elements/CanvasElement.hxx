@@ -107,30 +107,6 @@ namespace canvas
       bool addEventListener(const std::string& type, const EventListener& cb);
       virtual void clearEventListener();
 
-      template<class T>
-      void setDataProp( const std::string& name,
-                        const T& val )
-      {
-        const std::string& attr = dataPropToAttrName(name);
-        if( !attr.empty() )
-          set<T>(attr, val);
-        else
-          SG_LOG(SG_GENERAL, SG_WARN, "Invalid data-prop name: " << name);
-      }
-
-      template<class T>
-      T getDataProp( const std::string& name,
-                     const T& def = T() )
-      {
-        const std::string& attr = dataPropToAttrName(name);
-        if( !attr.empty() )
-          return get<T>(attr, def);
-        else
-          SG_LOG(SG_GENERAL, SG_WARN, "Invalid data-prop name: " << name);
-
-        return def;
-      }
-
       virtual bool accept(EventVisitor& visitor);
       virtual bool ascend(EventVisitor& visitor);
       virtual bool traverse(EventVisitor& visitor);
@@ -227,9 +203,6 @@ namespace canvas
       {
         return ElementPtr( new Derived(canvas, node, style, parent) );
       }
-
-      static std::string dataPropToAttrName(const std::string& name);
-      static std::string attrToDataPropName(const std::string& name);
 
     protected:
 

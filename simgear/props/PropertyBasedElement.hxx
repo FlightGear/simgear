@@ -22,8 +22,6 @@
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGWeakReferenced.hxx>
 
-#include <boost/call_traits.hpp>
-
 namespace simgear
 {
 
@@ -59,14 +57,14 @@ namespace simgear
 
       template<class T>
       void set( const std::string& name,
-                typename boost::call_traits<T>::param_type val )
+                const T& val )
       {
         setValue(_node->getNode(name, true), val);
       }
 
       template<class T>
       T get( const std::string& name,
-             typename boost::call_traits<T>::param_type def = T() )
+             const T& def = T() )
       {
         SGPropertyNode const* child = _node->getNode(name);
         if( !child )

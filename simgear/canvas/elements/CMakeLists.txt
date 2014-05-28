@@ -24,3 +24,8 @@ set(SOURCES
 
 simgear_scene_component(canvas-elements canvas/elements "${SOURCES}" "${HEADERS}")
 simgear_component(canvas-elements/detail canvas/elements/detail "" "${DETAIL_HEADERS}")
+
+add_boost_test(canvas_element
+  SOURCES canvas_element_test.cpp
+  LIBRARIES ${TEST_LIBS}
+)

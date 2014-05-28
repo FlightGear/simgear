@@ -320,10 +320,12 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::childChanged(SGPropertyNode* node)
   {
-    if(    node->getParent()->getParent() == _node
+    SGPropertyNode* parent = node->getParent();
+    SGPropertyNode* grand_parent = parent ? parent->getParent() : NULL;
+
+    if(    grand_parent == _node
         && node->getNameString() == "z-index" )
-      return handleZIndexChanged( getChild(node->getParent()),
-                                  node->getIntValue() );
+      return handleZIndexChanged(getChild(parent), node->getIntValue());
   }
 
   //----------------------------------------------------------------------------

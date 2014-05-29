@@ -95,7 +95,8 @@ namespace canvas
       virtual ~Element() = 0;
       virtual void onDestroy();
 
-      ElementPtr getParent();
+      ElementPtr getParent() const;
+      CanvasWeakPtr getCanvas() const;
 
       /**
        * Called every frame to update internal state
@@ -111,8 +112,8 @@ namespace canvas
       virtual bool ascend(EventVisitor& visitor);
       virtual bool traverse(EventVisitor& visitor);
 
-      virtual bool handleEvent(EventPtr event);
-      bool dispatchEvent(EventPtr event);
+      virtual bool handleEvent(const EventPtr& event);
+      bool dispatchEvent(const EventPtr& event);
 
       /**
        *

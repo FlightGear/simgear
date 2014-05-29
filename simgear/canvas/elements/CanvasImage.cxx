@@ -441,7 +441,7 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Image::handleEvent(EventPtr event)
+  bool Image::handleEvent(const EventPtr& event)
   {
     bool handled = Element::handleEvent(event);
 
@@ -453,7 +453,6 @@ namespace canvas
     if( mouse_event )
     {
       mouse_event.reset( new MouseEvent(*mouse_event) );
-      event = mouse_event;
 
       mouse_event->client_pos = mouse_event->local_pos
                               - toOsg(_region.getMin());

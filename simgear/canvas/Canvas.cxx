@@ -326,9 +326,18 @@ namespace canvas
                                  const EventListener& cb )
   {
     if( !_root_group.get() )
-      throw std::runtime_error("Canvas::AddEventListener: no root group!");
+      throw std::runtime_error("Canvas::addEventListener: no root group!");
 
     return _root_group->addEventListener(type, cb);
+  }
+
+  //----------------------------------------------------------------------------
+  bool Canvas::dispatchEvent(const EventPtr& event)
+  {
+    if( !_root_group.get() )
+      throw std::runtime_error("Canvas::dispatchEvent: no root group!");
+
+    return _root_group->dispatchEvent(event);
   }
 
   //----------------------------------------------------------------------------

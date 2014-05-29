@@ -159,9 +159,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  ElementPtr Element::getParent()
+  ElementPtr Element::getParent() const
   {
     return _parent;
+  }
+
+  //----------------------------------------------------------------------------
+  CanvasWeakPtr Element::getCanvas() const
+  {
+    return _canvas;
   }
 
   //----------------------------------------------------------------------------
@@ -246,20 +252,31 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Element::handleEvent(EventPtr event)
+  bool Element::handleEvent(const EventPtr& event)
   {
     ListenerMap::iterator listeners = _listener.find(event->getType());
     if( listeners == _listener.end() )
       return false;
 
     BOOST_FOREACH(EventListener const& listener, listeners->second)
-      listener(event);
+      try
+      {
+        listener(event);
+      }
+      catch( std::exception const& ex )
+      {
+        SG_LOG(
+          SG_GENERAL,
+          SG_WARN,
+          "canvas::Element: event handler error: '" << ex.what() << "'"
+        );
+      }
 
     return true;
   }
 
   //----------------------------------------------------------------------------
-  bool Element::dispatchEvent(EventPtr event)
+  bool Element::dispatchEvent(const EventPtr& event)
   {
     EventPropagationPath path;
     path.push_back( EventTarget(this) );

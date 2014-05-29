@@ -23,6 +23,7 @@
 #include "to_nasal.hxx"
 
 #include <simgear/structure/map.hxx>
+#include <boost/iterator/iterator_facade.hpp>
 
 namespace nasal
 {
@@ -34,12 +35,20 @@ namespace nasal
   {
     public:
 
+      template<bool> class Entry;
+      template<bool> class Iterator;
+
+      typedef Entry<false>      reference;
+      typedef Entry<true>       const_reference;
+      typedef Iterator<false>   iterator;
+      typedef Iterator<true>    const_iterator;
+
       /**
        * Create a new Nasal Hash
        *
        * @param c   Nasal context for creating the hash
        */
-      Hash(naContext c);
+      explicit Hash(naContext c);
 
       /**
        * Initialize from an existing Nasal Hash
@@ -48,6 +57,11 @@ namespace nasal
        * @param c     Nasal context for creating new Nasal objects
        */
       Hash(naRef hash, naContext c);
+
+      iterator begin();
+      iterator end();
+      const_iterator begin() const;
+      const_iterator end() const;
 
       /**
        * Set member
@@ -72,9 +86,16 @@ namespace nasal
       /**
        * Get member
        *
+       * @param key    Member key
+       */
+      naRef get(naRef key) const;
+
+      /**
+       * Get member
+       *
        * @param name    Member name
        */
-      naRef get(const std::string& name);
+      naRef get(const std::string& name) const;
 
       /**
        * Get member converted to given type
@@ -82,9 +103,13 @@ namespace nasal
        * @tparam T      Type to convert to (using from_nasal)
        * @param name    Member name
        */
-      template<class T>
-      T get(const std::string& name)
+      template<class T, class Key>
+      T get(const Key& name) const
       {
+        BOOST_STATIC_ASSERT(( boost::is_convertible<Key, naRef>::value
+                           || boost::is_convertible<Key, std::string>::value
+                           ));
+
         return from_nasal<T>(_context, get(name));
       }
 
@@ -93,15 +118,25 @@ namespace nasal
        *
        * @tparam Sig    Function signature
        * @param name    Member name
+       * @param key     Member key
        */
-      template<class Sig>
+      template<class Sig, class Key>
       typename boost::enable_if< boost::is_function<Sig>,
                                  boost::function<Sig>
                                >::type
-      get(const std::string& name)
+      get(const Key& name) const
       {
+        BOOST_STATIC_ASSERT(( boost::is_convertible<Key, naRef>::value
+                           || boost::is_convertible<Key, std::string>::value
+                           ));
+
         return from_nasal_helper(_context, get(name), static_cast<Sig*>(0));
       }
+
+      /**
+       * Returns the number of entries in the hash
+       */
+      int size() const;
 
       /**
        * Get a list of all keys
@@ -127,10 +162,118 @@ namespace nasal
        */
       naRef get_naRef() const;
 
+      /**
+       * Get Nasal vector of keys
+       */
+      naRef get_naRefKeys() const;
+
+      /// Hash entry
+      template<bool is_const>
+      class Entry
+      {
+        public:
+          typedef typename boost::mpl::if_c<
+            is_const,
+            Hash const*,
+            Hash*
+          >::type HashPtr;
+
+          Entry(HashPtr hash, naRef key):
+            _hash(hash),
+            _key(key)
+          {
+            assert(hash);
+            assert(!naIsNil(key));
+          }
+
+          std::string getKey() const
+          {
+            if( !_hash || naIsNil(_key) )
+              return std::string();
+
+            return from_nasal<std::string>(_hash->_context, _key);
+          }
+
+          template<class T>
+          T getValue() const
+          {
+            if( !_hash || naIsNil(_key) )
+              return T();
+
+            return _hash->get<T>(_key);
+          }
+
+        private:
+          HashPtr _hash;
+          naRef _key;
+
+      };
+
+      /// Hash iterator
+      template<bool is_const>
+      class Iterator:
+        public boost::iterator_facade<
+          Iterator<is_const>,
+          Entry<is_const>,
+          boost::bidirectional_traversal_tag,
+          Entry<is_const>
+        >
+      {
+        public:
+          typedef typename Entry<is_const>::HashPtr HashPtr;
+          typedef Entry<is_const>                   value_type;
+
+          Iterator():
+            _hash(NULL),
+            _index(0)
+          {}
+
+          Iterator(HashPtr hash, int index):
+            _hash(hash),
+            _index(index)
+          {}
+
+          /**
+           * Convert from iterator to const_iterator or copy within same type
+           */
+          template<bool is_other_const>
+          Iterator( Iterator<is_other_const> const& other,
+                    typename boost::enable_if_c< is_const || !is_other_const,
+                                                 void*
+                                               >::type = NULL ):
+            _hash(other._hash),
+            _index(other._index)
+          {}
+
+        private:
+          friend class boost::iterator_core_access;
+          template <bool> friend class Iterator;
+
+          HashPtr _hash;
+          int _index;
+
+          template<bool is_other_const>
+          bool equal(Iterator<is_other_const> const& other) const
+          {
+            return _hash == other._hash
+                && _index == other._index;
+          }
+
+          void increment() { ++_index; }
+          void decrement() { --_index; }
+
+          value_type dereference() const
+          {
+            return value_type(_hash, naVec_get(_hash->get_naRefKeys(), _index));
+          }
+      };
+
     protected:
 
       naRef _hash;
       naContext _context;
+
+      mutable naRef _keys; //< Store vector of keys (for iterators)
 
   };
 
@@ -142,7 +285,6 @@ from_nasal_helper( naContext c,
                    naRef ref,
                    const simgear::Map<std::string, Value>* )
 {
-
   nasal::Hash hash = from_nasal_helper(c, ref, static_cast<nasal::Hash*>(0));
   std::vector<std::string> const& keys = hash.keys();
 

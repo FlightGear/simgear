@@ -175,6 +175,15 @@ int main(int argc, char* argv[])
   hash.set("string", std::string("blub"));
   hash.set("func", &f_freeFunction);
 
+  VERIFY( hash.size() == 5 )
+  for(Hash::const_iterator it = hash.begin(); it != hash.end(); ++it)
+    VERIFY( hash.get<std::string>(it->getKey()) == it->getValue<std::string>() )
+
+  Hash::iterator it1, it2;
+  Hash::const_iterator it3 = it1, it4(it2);
+  it1 = it2;
+  it3 = it2;
+
   r = to_nasal(c, hash);
   VERIFY( naIsHash(r) );
 

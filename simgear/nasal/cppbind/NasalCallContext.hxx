@@ -38,30 +38,24 @@ namespace nasal
         args(args)
       {}
 
-      bool isNumeric(size_t index) const
-      {
-        return (index < argc && naIsNum(args[index]));
+#define SG_CTX_CHECK_ARG(name, check)\
+      bool is##name(size_t index) const\
+      {\
+        return (index < argc && naIs##check(args[index]));\
       }
 
-      bool isString(size_t index) const
-      {
-        return (index < argc && naIsString(args[index]));
-      }
+      SG_CTX_CHECK_ARG(Code,    Code)
+      SG_CTX_CHECK_ARG(CCode,   CCode)
+      SG_CTX_CHECK_ARG(Func,    Func)
+      SG_CTX_CHECK_ARG(Ghost,   Ghost)
+      SG_CTX_CHECK_ARG(Hash,    Hash)
+      SG_CTX_CHECK_ARG(Nil,     Nil)
+      SG_CTX_CHECK_ARG(Numeric, Num)
+      SG_CTX_CHECK_ARG(Scalar,  Scalar)
+      SG_CTX_CHECK_ARG(String,  String)
+      SG_CTX_CHECK_ARG(Vector,  Vector)
 
-      bool isHash(size_t index) const
-      {
-        return (index < argc && naIsHash(args[index]));
-      }
-
-      bool isVector(size_t index) const
-      {
-        return (index < argc && naIsVector(args[index]));
-      }
-
-      bool isGhost(size_t index) const
-      {
-        return (index < argc && naIsGhost(args[index]));
-      }
+#undef SG_CTX_CHECK_ARG
 
       void popFront(size_t num = 1)
       {

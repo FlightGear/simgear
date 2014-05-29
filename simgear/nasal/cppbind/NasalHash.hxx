@@ -183,7 +183,7 @@ namespace nasal
             _key(key)
           {
             assert(hash);
-            assert(!naIsNil(key));
+            assert(naIsScalar(key));
           }
 
           std::string getKey() const

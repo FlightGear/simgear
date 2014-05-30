@@ -286,11 +286,10 @@ from_nasal_helper( naContext c,
                    const simgear::Map<std::string, Value>* )
 {
   nasal::Hash hash = from_nasal_helper(c, ref, static_cast<nasal::Hash*>(0));
-  std::vector<std::string> const& keys = hash.keys();
 
   simgear::Map<std::string, Value> map;
-  for(size_t i = 0; i < keys.size(); ++i)
-    map[ keys[i] ] = hash.get<Value>(keys[i]);
+  for(nasal::Hash::const_iterator it = hash.begin(); it != hash.end(); ++it)
+    map[ it->getKey() ] = it->getValue<Value>();
 
   return map;
 }

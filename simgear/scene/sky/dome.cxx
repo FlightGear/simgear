@@ -52,54 +52,26 @@
 using namespace osg;
 using namespace simgear;
 
-// proportions of max dimensions fed to the build() routine
-static const float center_elev = 1.0;
-
 namespace
 {
-/* unused ?
-struct DomeParam
-{
-    float radius;
-    float elev;
-} domeParams[] = {{.5, .8660},  // 60deg from horizon
-                  {.8660, .5},  // 30deg from horizon
-                  // Original dome horizon vertices
-                  {0.9701, 0.2425},
-                  {0.9960, 0.0885},
-                  {1.0, 0.0},
-                  {0.9922, -0.1240}};
-*/
+  // proportions of max dimensions fed to the build() routine
+  const float center_elev = 1.0;
 
-const int numRings = 64; //sizeof(domeParams) / sizeof(domeParams[0]);
-const int numBands = 64; // 12
-const int halfBands = numBands / 2;
+  const int numRings = 64; //sizeof(domeParams) / sizeof(domeParams[0]);
+  const int numBands = 64; // 12
+  const int halfBands = numBands / 2;
 
-// Make dome a bit over half sphere
-const float domeAngle = 120.0;
+  // Make dome a bit over half sphere
+  const float domeAngle = 120.0;
 
-const float bandDelta = 360.0 / numBands;
-const float ringDelta = domeAngle / (numRings+1);
+  const float bandDelta = 360.0 / numBands;
+  const float ringDelta = domeAngle / (numRings+1);
 
-// Which band is at horizon
-const int halfRings = numRings * (90.0 / domeAngle);
-const int upperRings = numRings * (60.0 / domeAngle); // top half
-const int middleRings = numRings * (15.0 / domeAngle);
-
+  // Which band is at horizon
+  const int halfRings = numRings * (90.0 / domeAngle);
+  const int upperRings = numRings * (60.0 / domeAngle); // top half
+  const int middleRings = numRings * (15.0 / domeAngle);
 }
-
-static const float upper_radius = 0.9701; // (.6, 0.15)
-static const float upper_elev = 0.2425;
-
-static const float middle_radius = 0.9960; // (.9, .08)
-static const float middle_elev = 0.0885;
-
-static const float lower_radius = 1.0;
-static const float lower_elev = 0.0;
-
-static const float bottom_radius = 0.9922; // (.8, -.1)
-static const float bottom_elev = -0.1240;
-
 
 // Constructor
 SGSkyDome::SGSkyDome( void ) {
@@ -147,15 +119,6 @@ void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
             *pusher = grid(j, i);  *pusher =  grid(j + 1, (i + 1)%bands);
             *pusher =  grid(j + 1, i);
         }
-        // and up the next one
-/*        for (int j = rings - 1; j > 0; --j) {
-            *pusher = grid(j, i + 1);  *pusher = grid(j - 1, i + 1);
-            *pusher = grid(j, (i + 2) % bands);
-            *pusher = grid(j, (i + 2) % bands); *pusher = grid(j - 1, i + 1);
-            *pusher = grid(j - 1, (i + 2) % bands);
-        }
-        *pusher = grid(0, i + 1);  *pusher = 0;
-        *pusher = grid(0, (i + 2) % bands);*/
     }
 }
 
@@ -164,7 +127,6 @@ osg::Node*
 SGSkyDome::build( double hscale, double vscale, simgear::SGReaderWriterOptions *options ) {
 
     EffectGeode* geode = new EffectGeode;
-//    Geode* geode = new Geode;
     geode->setName("Skydome");
     geode->setCullingActive(false); // Prevent skydome from being culled away
 

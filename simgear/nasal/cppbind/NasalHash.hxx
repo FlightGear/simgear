@@ -200,7 +200,7 @@ namespace nasal
             if( !_hash || naIsNil(_key) )
               return T();
 
-            return _hash->get<T>(_key);
+            return _hash->template get<T>(_key);
           }
 
         private:

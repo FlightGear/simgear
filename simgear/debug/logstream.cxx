@@ -70,6 +70,7 @@ const char* debugClassToString(sgDebugClass c)
     case SG_ENVIRONMENT:return "environment";
     case SG_SOUND:      return "sound";
     case SG_NAVAID:     return "navaid";
+    case SG_GUI:        return "gui";
     default:            return "unknown";
     }
 }
@@ -438,4 +439,4 @@ void requestConsole()
 	global_privateLogstream->requestConsole();
 }
 
-} // of namespace simgear 
+} // of namespace simgear

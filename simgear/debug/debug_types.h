@@ -31,7 +31,8 @@ typedef enum {
     SG_ENVIRONMENT = 0x00100000,
     SG_SOUND       = 0x00200000,
     SG_NAVAID      = 0x00400000,
-    SG_UNDEFD      = 0x00800000, // For range checking
+    SG_GUI         = 0x00800000,
+    SG_UNDEFD      = 0x01000000, // For range checking
 
     SG_ALL         = 0xFFFFFFFF
 } sgDebugClass;

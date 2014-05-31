@@ -32,5 +32,6 @@ set(SOURCES
 add_subdirectory(ShivaVG/src)
 add_subdirectory(elements)
 add_subdirectory(events)
+add_subdirectory(layout)
 
 simgear_scene_component(canvas canvas "${SOURCES}" "${HEADERS}")

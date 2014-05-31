@@ -30,7 +30,7 @@ namespace simgear
    */
   class PropertyBasedElement:
     public SGPropertyChangeListener,
-    public SGWeakReferenced
+    public virtual SGVirtualWeakReferenced
   {
     public:
       PropertyBasedElement(SGPropertyNode* node);

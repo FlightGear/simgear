@@ -23,6 +23,7 @@
 #include "ODGauge.hxx"
 
 #include <simgear/canvas/elements/CanvasGroup.hxx>
+#include <simgear/canvas/layout/Layout.hxx>
 #include <simgear/math/SGRect.hxx>
 #include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/props/propertyObject.hxx>
@@ -48,9 +49,11 @@ namespace canvas
       enum StatusFlags
       {
         STATUS_OK,
-        STATUS_DIRTY     = 1,
-        MISSING_SIZE_X = STATUS_DIRTY << 1,
+        STATUS_DIRTY   = 1,
+        LAYOUT_DIRTY   = STATUS_DIRTY << 1,
+        MISSING_SIZE_X = LAYOUT_DIRTY << 1,
         MISSING_SIZE_Y = MISSING_SIZE_X << 1,
+        MISSING_SIZE   = MISSING_SIZE_X | MISSING_SIZE_Y,
         CREATE_FAILED  = MISSING_SIZE_Y << 1
       };
 
@@ -120,6 +123,12 @@ namespace canvas
        * Get the root group of the canvas
        */
       GroupPtr getRootGroup();
+
+      /**
+       * Set the layout of the canvas (the layout will automatically update with
+       * the viewport size of the canvas)
+       */
+      void setLayout(const LayoutRef& layout);
 
       /**
        * Enable rendering for the next frame
@@ -195,7 +204,9 @@ namespace canvas
            _visible;
 
       ODGauge _texture;
-      GroupPtr _root_group;
+
+      GroupPtr  _root_group;
+      LayoutRef _layout;
 
       CullCallbackPtr _cull_callback;
       bool _render_always; //<! Used to disable automatic lazy rendering (culling)

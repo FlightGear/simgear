@@ -20,6 +20,7 @@
 #define CANVAS_WINDOW_HXX_
 
 #include <simgear/canvas/elements/CanvasImage.hxx>
+#include <simgear/canvas/layout/Layout.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/props/propertyObject.hxx>
@@ -34,7 +35,8 @@ namespace canvas
 {
 
   class Window:
-    public Image
+    public Image,
+    public LayoutItem
   {
     public:
       static const std::string TYPE_NAME;
@@ -75,6 +77,8 @@ namespace canvas
       void setCanvasContent(CanvasPtr canvas);
       simgear::canvas::CanvasWeakPtr getCanvasContent() const;
 
+      void setLayout(const LayoutRef& layout);
+
       CanvasPtr getCanvasDecoration() const;
 
       bool isResizable() const;
@@ -101,6 +105,7 @@ namespace canvas
 
       CanvasPtr        _canvas_decoration;
       CanvasWeakPtr    _canvas_content;
+      LayoutRef        _layout;
 
       ImagePtr _image_content,
                _image_shadow;

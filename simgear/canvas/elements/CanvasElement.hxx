@@ -167,7 +167,7 @@ namespace canvas
 
       /**
        * Get bounding box (may not be as tight as bounding box returned by
-       * #getTightBounds)
+       * #getTightBoundingBox)
        */
       osg::BoundingBox getBoundingBox() const;
 

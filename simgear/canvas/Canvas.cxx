@@ -192,6 +192,14 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Canvas::setLayout(const LayoutRef& layout)
+  {
+    _layout = layout;
+    _layout->setCanvas(this);
+    _status |= LAYOUT_DIRTY;
+  }
+
+  //----------------------------------------------------------------------------
   void Canvas::enableRendering(bool force)
   {
     _visible = true;
@@ -202,11 +210,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Canvas::update(double delta_time_sec)
   {
-    if(    (!_texture.serviceable() && _status != STATUS_DIRTY)
-        || (_status & CREATE_FAILED) )
+    if( _status & (CREATE_FAILED | MISSING_SIZE) )
       return;
 
-    if( _status == STATUS_DIRTY )
+    if( _status & STATUS_DIRTY )
     {
       _texture.setSize(_size_x, _size_y);
 
@@ -246,6 +253,17 @@ namespace canvas
         setStatusFlags(CREATE_FAILED);
         return;
       }
+    }
+
+    if( _layout )
+    {
+      if( (_status & LAYOUT_DIRTY) )
+      {
+        _layout->setGeometry(SGRecti(0, 0, _view_width, _view_height));
+        _status &= ~LAYOUT_DIRTY;
+      }
+      else
+        _layout->update();
     }
 
     if( _visible || _render_always )
@@ -392,6 +410,7 @@ namespace canvas
     if( _view_width == w )
       return;
     _view_width = w;
+    _status |= LAYOUT_DIRTY;
 
     _texture.setViewSize(_view_width, _view_height);
   }
@@ -402,6 +421,7 @@ namespace canvas
     if( _view_height == h )
       return;
     _view_height = h;
+    _status |= LAYOUT_DIRTY;
 
     _texture.setViewSize(_view_width, _view_height);
   }
@@ -657,7 +677,7 @@ namespace canvas
       _status_msg = "Missing size-y";
     else if( _status & CREATE_FAILED )
       _status_msg = "Creating render target failed";
-    else if( _status == STATUS_DIRTY )
+    else if( _status & STATUS_DIRTY )
       _status_msg = "Creation pending...";
     else
       _status_msg = "Ok";

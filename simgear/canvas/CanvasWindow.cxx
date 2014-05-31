@@ -125,6 +125,11 @@ namespace canvas
   void Window::setCanvasContent(CanvasPtr canvas)
   {
     _canvas_content = canvas;
+    if( _layout )
+    {
+      canvas->setLayout(_layout);
+      _layout.clear();
+    }
 
     if( _image_content )
       // Placement within decoration canvas
@@ -137,6 +142,16 @@ namespace canvas
   CanvasWeakPtr Window::getCanvasContent() const
   {
     return _canvas_content;
+  }
+
+  //----------------------------------------------------------------------------
+  void Window::setLayout(const LayoutRef& layout)
+  {
+    CanvasPtr canvas = _canvas_content.lock();
+    if( canvas )
+      canvas->setLayout(layout);
+    else
+      _layout = layout; // keep layout until content canvas is set
   }
 
   //----------------------------------------------------------------------------

@@ -72,7 +72,12 @@ public:
      * filter consists of required / minimum values, AND-ed together.
      */
     PackageList packagesMatching(const SGPropertyNode* aFilter) const;
-    
+
+    /**
+     * packages which are locally installed
+     */
+    PackageList installedPackages() const;
+
     /**
      * retrieve all the packages in the catalog which are installed
      * and have a pendig update

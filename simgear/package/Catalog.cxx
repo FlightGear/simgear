@@ -198,6 +198,17 @@ Catalog::packagesNeedingUpdate() const
     return r;
 }
 
+PackageList
+Catalog::installedPackages() const
+{
+  PackageList r;
+  BOOST_FOREACH(PackageRef p, m_packages) {
+    if (p->isInstalled()) {
+      r.push_back(p);
+    }
+  }
+}
+  
 void Catalog::refresh()
 {
     Downloader* dl = new Downloader(this, url());

@@ -24,6 +24,9 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+
 #include <simgear/package/Delegate.hxx>
 
 namespace simgear
@@ -39,17 +42,21 @@ class Package;
 class Catalog;
 class Root;
 
-typedef std::vector<Package*> PackageList;
-typedef std::vector<Catalog*> CatalogList;
+typedef SGSharedPtr<Package> PackageRef;
+typedef SGSharedPtr<Catalog> CatalogRef;
+typedef SGSharedPtr<Install> InstallRef;
+  
+typedef std::vector<PackageRef> PackageList;
+typedef std::vector<CatalogRef> CatalogList;
 
-class Catalog
+  class Catalog : public SGReferenced
 {
 public:
     virtual ~Catalog();
     
-    static Catalog* createFromUrl(Root* aRoot, const std::string& aUrl);
+    static CatalogRef createFromUrl(Root* aRoot, const std::string& aUrl);
     
-    static Catalog* createFromPath(Root* aRoot, const SGPath& aPath);
+    static CatalogRef createFromPath(Root* aRoot, const SGPath& aPath);
     
     static CatalogList allCatalogs();
     
@@ -81,7 +88,7 @@ public:
     
     std::string description() const;
     
-    Package* getPackageById(const std::string& aId) const;
+    PackageRef getPackageById(const std::string& aId) const;
     
     /**
      * test if the catalog data was retrieved longer ago than the
@@ -113,7 +120,8 @@ private:
     Root* m_root;
     SGPropertyNode_ptr m_props;
     SGPath m_installRoot;
-    
+    std::string m_url;
+  
     PackageList m_packages;
     time_t m_retrievedTime;
 };  

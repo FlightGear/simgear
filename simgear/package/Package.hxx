@@ -24,6 +24,9 @@
 #include <simgear/props/props.hxx>
 #include <simgear/misc/strutils.hxx>
 
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+
 typedef std::set<std::string> string_set;
 
 namespace simgear
@@ -36,16 +39,20 @@ namespace pkg
 class Install;
 class Catalog;
 class Package;
+  
+typedef SGSharedPtr<Package> PackageRef;
+typedef SGSharedPtr<Catalog> CatalogRef;
+typedef SGSharedPtr<Install> InstallRef;
 
-typedef std::vector<Package*> PackageList;
+typedef std::vector<PackageRef> PackageList;
     
-class Package
+  class Package : public SGReferenced
 {
 public:
     /**
      * get or create an install for the package
      */
-    Install* install();
+    InstallRef install();
     
     bool isInstalled() const;
     
@@ -76,7 +83,7 @@ public:
 
     unsigned int revision() const;
     
-    Catalog* catalog() const
+    CatalogRef catalog() const
         { return m_catalog; }
     
     bool matches(const SGPropertyNode* aFilter) const;
@@ -97,7 +104,7 @@ public:
 private:
     friend class Catalog;
     
-    Package(const SGPropertyNode* aProps, Catalog* aCatalog);
+    Package(const SGPropertyNode* aProps, CatalogRef aCatalog);
     
     void initWithProps(const SGPropertyNode* aProps);
     
@@ -105,7 +112,7 @@ private:
     
     SGPropertyNode_ptr m_props;
     string_set m_tags;
-    Catalog* m_catalog;
+    CatalogRef m_catalog;
 };
 
 

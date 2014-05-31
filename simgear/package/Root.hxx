@@ -24,6 +24,9 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/package/Delegate.hxx>
 
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+
 class SGPropertyNode;
 
 namespace simgear
@@ -41,11 +44,15 @@ namespace pkg
 class Package;
 class Catalog;
 class Install;
+  
+typedef SGSharedPtr<Package> PackageRef;
+typedef SGSharedPtr<Catalog> CatalogRef;
+typedef SGSharedPtr<Install> InstallRef;
+  
+typedef std::vector<PackageRef> PackageList;
+typedef std::vector<CatalogRef> CatalogList;
 
-typedef std::vector<Package*> PackageList;
-typedef std::vector<Catalog*> CatalogList;
-
-class Root
+class Root : public SGReferenced
 {
 public:
     Root(const SGPath& aPath, const std::string& aVersion);
@@ -97,30 +104,32 @@ public:
      */ 
     PackageList packagesNeedingUpdate() const;
      
-    Package* getPackageById(const std::string& aId) const;
+    PackageRef getPackageById(const std::string& aId) const;
     
-    Catalog* getCatalogById(const std::string& aId) const;
+    CatalogRef getCatalogById(const std::string& aId) const;
     
-    void scheduleToUpdate(Install* aInstall);
+    void scheduleToUpdate(InstallRef aInstall);
 private:
     friend class Install;
     friend class Catalog;    
     
 
-    void catalogRefreshBegin(Catalog* aCat);
-    void catalogRefreshComplete(Catalog* aCat, Delegate::FailureCode aReason);
+    void catalogRefreshBegin(CatalogRef aCat);
+    void catalogRefreshComplete(CatalogRef aCat, Delegate::FailureCode aReason);
         
-    void startNext(Install* aCurrent);
+    void startNext(InstallRef aCurrent);
     
-    void startInstall(Install* aInstall);
-    void installProgress(Install* aInstall, unsigned int aBytes, unsigned int aTotal);
-    void finishInstall(Install* aInstall);    
-    void failedInstall(Install* aInstall, Delegate::FailureCode aReason);
+    void startInstall(InstallRef aInstall);
+    void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal);
+    void finishInstall(InstallRef aInstall);
+    void failedInstall(InstallRef aInstall, Delegate::FailureCode aReason);
 
     class RootPrivate;
     std::auto_ptr<RootPrivate> d;
 };
-    
+  
+typedef SGSharedPtr<Root> RootRef;
+  
 } // of namespace pkg
 
 } // of namespace simgear

@@ -23,6 +23,9 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/package/Delegate.hxx>
 
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+
 namespace simgear
 {
     
@@ -32,22 +35,27 @@ namespace pkg
 // forward decls
 class Package;
 class Catalog;
-    
+class Install;
+  
+typedef SGSharedPtr<Package> PackageRef;
+typedef SGSharedPtr<Catalog> CatalogRef;  
+typedef SGSharedPtr<Install> InstallRef;
+  
 /**
  *
  */
-class Install
+class Install : public SGReferenced
 {
 public:
     /**
      * create from a directory on disk, or fail.
      */
-    static Install* createFromPath(const SGPath& aPath, Catalog* aCat);
+    static InstallRef createFromPath(const SGPath& aPath, CatalogRef aCat);
     
     unsigned int revsion() const
         { return m_revision; }
     
-    Package* package() const
+    PackageRef package() const
         { return m_package; } 
     
     SGPath path() const
@@ -70,7 +78,7 @@ private:
     class PackageArchiveDownloader;
     friend class PackageArchiveDownloader;
     
-    Install(Package* aPkg, const SGPath& aPath);
+    Install(PackageRef aPkg, const SGPath& aPath);
     
     void parseRevision();
     void writeRevisionFile();
@@ -78,7 +86,7 @@ private:
     void installResult(Delegate::FailureCode aReason);
     void installProgress(unsigned int aBytes, unsigned int aTotal);
     
-    Package* m_package;
+    PackageRef m_package;
     unsigned int m_revision; ///< revision on disk
     SGPath m_path; ///< installation point on disk
     

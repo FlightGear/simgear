@@ -42,7 +42,7 @@ namespace pkg {
 class Install::PackageArchiveDownloader : public HTTP::Request
 {
 public:
-    PackageArchiveDownloader(Install* aOwner) :
+    PackageArchiveDownloader(InstallRef aOwner) :
         HTTP::Request("" /* dummy URL */),
         m_owner(aOwner)
     {
@@ -247,7 +247,7 @@ private:
         m_urls.erase(m_urls.begin()); // pop first URL
     }
     
-    Install* m_owner;
+    InstallRef m_owner;
     string_list m_urls;
     SG_MD5_CTX m_md5;
     std::string m_buffer;
@@ -256,7 +256,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////
     
-Install::Install(Package* aPkg, const SGPath& aPath) :
+Install::Install(PackageRef aPkg, const SGPath& aPath) :
     m_package(aPkg),
     m_path(aPath),
     m_download(NULL)
@@ -264,10 +264,10 @@ Install::Install(Package* aPkg, const SGPath& aPath) :
     parseRevision();
 }
 
-Install* Install::createFromPath(const SGPath& aPath, Catalog* aCat)
+InstallRef Install::createFromPath(const SGPath& aPath, CatalogRef aCat)
 {
     std::string id = aPath.file();
-    Package* pkg = aCat->getPackageById(id);
+    PackageRef pkg = aCat->getPackageById(id);
     if (!pkg)
         throw sg_exception("no package with id:" + id);
     

@@ -37,7 +37,7 @@ namespace simgear {
     
 namespace pkg {
 
-typedef std::map<std::string, Catalog*> CatalogDict;
+typedef std::map<std::string, CatalogRef> CatalogDict;
     
 class Root::RootPrivate
 {
@@ -58,8 +58,8 @@ public:
     Delegate* delegate;
     std::string version;
     
-    std::set<Catalog*> refreshing;
-    std::deque<Install*> updateDeque;
+    std::set<CatalogRef> refreshing;
+    std::deque<InstallRef> updateDeque;
     std::deque<HTTP::Request_ptr> httpPendingRequests;
 };
     
@@ -114,7 +114,7 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
     }
     
     BOOST_FOREACH(SGPath c, dir.children(Dir::TYPE_DIR)) {
-        Catalog* cat = Catalog::createFromPath(this, c);
+        CatalogRef cat = Catalog::createFromPath(this, c);
         if (cat) {
            d->catalogs[cat->id()] = cat;
         }
@@ -131,7 +131,7 @@ std::string Root::catalogVersion() const
     return d->version;
 }
     
-Catalog* Root::getCatalogById(const std::string& aId) const
+CatalogRef Root::getCatalogById(const std::string& aId) const
 {
     CatalogDict::const_iterator it = d->catalogs.find(aId);
     if (it == d->catalogs.end()) {
@@ -141,11 +141,11 @@ Catalog* Root::getCatalogById(const std::string& aId) const
     return it->second;
 }
 
-Package* Root::getPackageById(const std::string& aName) const
+PackageRef Root::getPackageById(const std::string& aName) const
 {
     size_t lastDot = aName.rfind('.');
     
-    Package* pkg = NULL;
+    PackageRef pkg = NULL;
     if (lastDot == std::string::npos) {
         // naked package ID
         CatalogDict::const_iterator it = d->catalogs.begin();
@@ -161,7 +161,7 @@ Package* Root::getPackageById(const std::string& aName) const
     
     std::string catalogId = aName.substr(0, lastDot);
     std::string id = aName.substr(lastDot + 1);    
-    Catalog* catalog = getCatalogById(catalogId);
+    CatalogRef catalog = getCatalogById(catalogId);
     if (!catalog) {
         return NULL;
     }
@@ -233,7 +233,7 @@ std::string Root::getLocale() const
     return d->locale;
 }
 
-void Root::scheduleToUpdate(Install* aInstall)
+void Root::scheduleToUpdate(InstallRef aInstall)
 {
     if (!aInstall) {
         throw sg_exception("missing argument to scheduleToUpdate");
@@ -254,21 +254,21 @@ void Root::scheduleToUpdate(Install* aInstall)
     }
 }
 
-void Root::startInstall(Install* aInstall)
+void Root::startInstall(InstallRef aInstall)
 {
     if (d->delegate) {
-        d->delegate->startInstall(aInstall);
+        d->delegate->startInstall(aInstall.ptr());
     }
 }
 
-void Root::installProgress(Install* aInstall, unsigned int aBytes, unsigned int aTotal)
+void Root::installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal)
 {
     if (d->delegate) {
-        d->delegate->installProgress(aInstall, aBytes, aTotal);
+        d->delegate->installProgress(aInstall.ptr(), aBytes, aTotal);
     }
 }
 
-void Root::startNext(Install* aCurrent)
+void Root::startNext(InstallRef aCurrent)
 {
     if (d->updateDeque.front() != aCurrent) {
         SG_LOG(SG_GENERAL, SG_ALERT, "current install of package not head of the deque");
@@ -281,32 +281,32 @@ void Root::startNext(Install* aCurrent)
     }
 }
 
-void Root::finishInstall(Install* aInstall)
+void Root::finishInstall(InstallRef aInstall)
 {
     if (d->delegate) {
-        d->delegate->finishInstall(aInstall);
+        d->delegate->finishInstall(aInstall.ptr());
     }
     
     startNext(aInstall);
 }
 
-void Root::failedInstall(Install* aInstall, Delegate::FailureCode aReason)
+void Root::failedInstall(InstallRef aInstall, Delegate::FailureCode aReason)
 {
     SG_LOG(SG_GENERAL, SG_ALERT, "failed to install package:" 
         << aInstall->package()->id() << ":" << aReason);
     if (d->delegate) {
-        d->delegate->failedInstall(aInstall, aReason);
+        d->delegate->failedInstall(aInstall.ptr(), aReason);
     }
     
     startNext(aInstall);
 }
 
-void Root::catalogRefreshBegin(Catalog* aCat)
+void Root::catalogRefreshBegin(CatalogRef aCat)
 {
     d->refreshing.insert(aCat);
 }
 
-void Root::catalogRefreshComplete(Catalog* aCat, Delegate::FailureCode aReason)
+void Root::catalogRefreshComplete(CatalogRef aCat, Delegate::FailureCode aReason)
 {
     CatalogDict::iterator catIt = d->catalogs.find(aCat->id());
     if (aReason != Delegate::FAIL_SUCCESS) {
@@ -319,7 +319,9 @@ void Root::catalogRefreshComplete(Catalog* aCat, Delegate::FailureCode aReason)
         bool isPermanentFailure = (aReason == Delegate::FAIL_VERSION);
         if (isPermanentFailure) {
             SG_LOG(SG_GENERAL, SG_WARN, "permanent failure for catalog:" << aCat->id());
-            d->catalogs.erase(catIt);
+            if (catIt != d->catalogs.end()) {
+                d->catalogs.erase(catIt);
+            }
         }
     } else if (catIt == d->catalogs.end()) {
         // first fresh, add to our storage now

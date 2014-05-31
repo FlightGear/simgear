@@ -132,7 +132,7 @@ int main(int argc, char** argv)
     } else if (!strcmp(argv[1], "refresh")) {
         root->refresh(true);
     } else if (!strcmp(argv[1], "install")) {
-        pkg::Package* pkg = root->getPackageById(argv[2]);
+        pkg::PackageRef pkg = root->getPackageById(argv[2]);
         if (!pkg) {
             cerr << "unknown package:" << argv[2] << endl;
             return EXIT_FAILURE;
@@ -143,12 +143,12 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
         
-        pkg::Catalog* catalog = pkg->catalog();
+        pkg::CatalogRef catalog = pkg->catalog();
         cout << "Will install:" << pkg->id() << " from " << catalog->id() <<
                 "(" << catalog->description() << ")" << endl;
         pkg->install();
     } else if (!strcmp(argv[1], "uninstall") || !strcmp(argv[1], "remove")) {
-        pkg::Package* pkg = root->getPackageById(argv[2]);
+        pkg::PackageRef pkg = root->getPackageById(argv[2]);
         if (!pkg) {
             cerr << "unknown package:" << argv[2] << endl;
             return EXIT_FAILURE;
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
             cout << "\t" << p->id() << " " << p->getLocalisedProp("name") << endl;
         }
     } else if (!strcmp(argv[1], "info")) {
-        pkg::Package* pkg = root->getPackageById(argv[2]);
+        pkg::PackageRef pkg = root->getPackageById(argv[2]);
         if (!pkg) {
             cerr << "unknown package:" << argv[2] << endl;
             return EXIT_FAILURE;

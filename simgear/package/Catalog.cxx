@@ -43,7 +43,7 @@ CatalogList static_catalogs;
 class Catalog::Downloader : public HTTP::Request
 {
 public:
-    Downloader(Catalog* aOwner, const std::string& aUrl) :
+    Downloader(CatalogRef aOwner, const std::string& aUrl) :
         HTTP::Request(aUrl),
         m_owner(aOwner)
     {        
@@ -106,7 +106,7 @@ private:
         return false;
     }
     
-    Catalog* m_owner;  
+    CatalogRef m_owner;
     std::string m_buffer;
 };
 
@@ -130,16 +130,17 @@ Catalog::~Catalog()
     static_catalogs.erase(it);
 }
 
-Catalog* Catalog::createFromUrl(Root* aRoot, const std::string& aUrl)
+CatalogRef Catalog::createFromUrl(Root* aRoot, const std::string& aUrl)
 {
-    Catalog* c = new Catalog(aRoot);
+    CatalogRef c = new Catalog(aRoot);
+    c->m_url = aUrl;
     Downloader* dl = new Downloader(c, aUrl);
     aRoot->makeHTTPRequest(dl);
     
     return c;
 }
     
-Catalog* Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
+CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 {
     SGPath xml = aPath;
     xml.append("catalog.xml");
@@ -161,7 +162,7 @@ Catalog* Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
         return NULL;
     }
     
-    Catalog* c = new Catalog(aRoot);
+    CatalogRef c = new Catalog(aRoot);
     c->m_installRoot = aPath;
     c->parseProps(props);
     c->parseTimestamp();
@@ -173,7 +174,7 @@ PackageList
 Catalog::packagesMatching(const SGPropertyNode* aFilter) const
 {
     PackageList r;
-    BOOST_FOREACH(Package* p, m_packages) {
+    BOOST_FOREACH(PackageRef p, m_packages) {
         if (p->matches(aFilter)) {
             r.push_back(p);
         }
@@ -185,7 +186,7 @@ PackageList
 Catalog::packagesNeedingUpdate() const
 {
     PackageList r;
-    BOOST_FOREACH(Package* p, m_packages) {
+    BOOST_FOREACH(PackageRef p, m_packages) {
         if (!p->isInstalled()) {
             continue;
         }
@@ -213,14 +214,26 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
     for (int i = 0; i < nChildren; i++) {
         const SGPropertyNode* pkgProps = aProps->getChild(i);
         if (strcmp(pkgProps->getName(), "package") == 0) {
-            Package* p = new Package(pkgProps, this);
+            PackageRef p = new Package(pkgProps, this);
             m_packages.push_back(p);   
         } else {
             SGPropertyNode* c = m_props->getChild(pkgProps->getName(), pkgProps->getIndex(), true);
             copyProperties(pkgProps, c);
         }
     } // of children iteration
-    
+  
+    if (!m_url.empty()) {
+        if (m_url != m_props->getStringValue("url")) {
+            // this effectively allows packages to migrate to new locations,
+            // although if we're going to rely on that feature we should
+            // maybe formalise it!
+            SG_LOG(SG_GENERAL, SG_WARN, "package downloaded from:" << m_url
+                   << " is now at: " << m_props->getStringValue("url"));
+        }
+    }
+  
+    m_url = m_props->getStringValue("url");
+
     if (m_installRoot.isNull()) {
         m_installRoot = m_root->path();
         m_installRoot.append(id());
@@ -230,9 +243,9 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
     }
 }
 
-Package* Catalog::getPackageById(const std::string& aId) const
+PackageRef Catalog::getPackageById(const std::string& aId) const
 {
-    BOOST_FOREACH(Package* p, m_packages) {
+    BOOST_FOREACH(PackageRef p, m_packages) {
         if (p->id() == aId) {
             return p;
         }
@@ -248,7 +261,7 @@ std::string Catalog::id() const
 
 std::string Catalog::url() const
 {
-    return m_props->getStringValue("url");
+    return m_url;
 }
 
 std::string Catalog::description() const

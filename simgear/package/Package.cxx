@@ -31,7 +31,7 @@ namespace simgear {
     
 namespace pkg {
 
-Package::Package(const SGPropertyNode* aProps, Catalog* aCatalog) :
+Package::Package(const SGPropertyNode* aProps, CatalogRef aCatalog) :
     m_catalog(aCatalog)
 {
     initWithProps(aProps);
@@ -83,7 +83,7 @@ bool Package::isInstalled() const
     return p.exists();
 }
 
-Install* Package::install()
+InstallRef Package::install()
 {
     SGPath p(m_catalog->installRoot());
     p.append("Aircraft");
@@ -92,7 +92,7 @@ Install* Package::install()
         return Install::createFromPath(p, m_catalog);
     }
     
-    Install* ins = new Install(this, p);
+    InstallRef ins(new Install(this, p));
     m_catalog->root()->scheduleToUpdate(ins);
     return ins;
 }
@@ -174,7 +174,7 @@ PackageList Package::dependencies() const
     // prefer local hangar package if possible, in case someone does something
     // silly with naming. Of course flightgear's aircraft search doesn't know
     // about hanagrs, so names still need to be unique.
-        Package* depPkg = m_catalog->getPackageById(depName);
+        PackageRef depPkg = m_catalog->getPackageById(depName);
         if (!depPkg) {   
             Root* rt = m_catalog->root();
             depPkg = rt->getPackageById(depName);

@@ -569,6 +569,12 @@ namespace canvas
         else if( node->getIndex() == 1 )
           setSizeY( node->getIntValue() );
       }
+      else if( name == "update" )
+      {
+        if( _root_group )
+          _root_group->update(0);
+        return update(0);
+      }
       else if( name == "view" )
       {
         if( node->getIndex() == 0 )

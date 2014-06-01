@@ -4,6 +4,7 @@ set(HEADERS
   Ghost.hxx
   NasalCallContext.hxx
   NasalHash.hxx
+  NasalObject.hxx
   NasalObjectHolder.hxx
   NasalString.hxx
   from_nasal.hxx
@@ -21,6 +22,7 @@ set(DETAIL_HEADERS
 set(SOURCES
   NasalHash.cxx
   NasalString.cxx
+  NasalObject.cxx
   detail/from_nasal_helper.cxx
   detail/to_nasal_helper.cxx
 )

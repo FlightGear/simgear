@@ -25,8 +25,10 @@
 #include <simgear/canvas/elements/CanvasGroup.hxx>
 #include <simgear/canvas/layout/Layout.hxx>
 #include <simgear/math/SGRect.hxx>
+#include <simgear/nasal/cppbind/NasalObject.hxx>
 #include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/props/propertyObject.hxx>
+
 #include <osg/NodeCallback>
 #include <osg/observer_ptr>
 
@@ -42,7 +44,8 @@ namespace canvas
   class MouseEvent;
 
   class Canvas:
-    public PropertyBasedElement
+    public PropertyBasedElement,
+    public nasal::Object
   {
     public:
 

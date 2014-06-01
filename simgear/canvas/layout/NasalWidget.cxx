@@ -28,9 +28,9 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   NasalWidget::NasalWidget(naRef impl):
-    _nasal_impl(impl)
+    Object(impl)
   {
-    assert( naIsHash(_nasal_impl.get_naRef()) );
+
   }
 
   //----------------------------------------------------------------------------
@@ -38,29 +38,31 @@ namespace canvas
   {
     if( _geometry == geom )
       return;
-
     _geometry = geom;
 
-    if( _set_geometry )
-      _set_geometry(_nasal_impl.get_naRef(), geom);
+    if( !_set_geometry )
+      return;
+
+    naContext c = naNewContext();
+    try
+    {
+      _set_geometry(nasal::to_nasal(c, this), geom);
+    }
+    catch( std::exception const& ex )
+    {
+      SG_LOG(
+        SG_GUI,
+        SG_WARN,
+        "NasalWidget::setGeometry: callback error: '" << ex.what() << "'"
+      );
+    }
+    naFreeContext(c);
   }
 
   //----------------------------------------------------------------------------
   void NasalWidget::setSetGeometryFunc(const SetGeometryFunc& func)
   {
     _set_geometry = func;
-  }
-
-  //----------------------------------------------------------------------------
-  void NasalWidget::setImpl(naRef obj)
-  {
-    _nasal_impl.reset(obj);
-  }
-
-  //----------------------------------------------------------------------------
-  naRef NasalWidget::getImpl() const
-  {
-    return _nasal_impl.get_naRef();
   }
 
   //----------------------------------------------------------------------------
@@ -96,16 +98,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool NasalWidget::_set(naContext c, const std::string& key, naRef val)
-  {
-    if( !_nasal_impl.valid() )
-      return false;
-
-    nasal::Hash(_nasal_impl.get_naRef(), c).set(key, val);
-    return true;
-  }
-
-  //----------------------------------------------------------------------------
   static naRef f_makeNasalWidget(const nasal::CallContext& ctx)
   {
     return ctx.to_nasal(NasalWidgetRef(
@@ -118,8 +110,7 @@ namespace canvas
   {
     nasal::Ghost<NasalWidgetRef>::init("canvas.Widget")
       .bases<LayoutItemRef>()
-      ._set(&NasalWidget::_set)
-      .member("parents", &NasalWidget::getParents)
+      .bases<nasal::ObjectRef>()
       .method("setSetGeometryFunc", &NasalWidget::setSetGeometryFunc)
       .method("setSizeHint", &NasalWidget::setSizeHint)
       .method("setMinimumSize", &NasalWidget::setMinimumSize)
@@ -127,13 +118,6 @@ namespace canvas
 
     nasal::Hash widget_hash = ns.createHash("Widget");
     widget_hash.set("new", &f_makeNasalWidget);
-  }
-
-  //----------------------------------------------------------------------------
-  naRef NasalWidget::getParents(NasalWidget& w, naContext c)
-  {
-    naRef parents[] = { w._nasal_impl.get_naRef() };
-    return nasal::to_nasal(c, parents);
   }
 
   //----------------------------------------------------------------------------

@@ -23,6 +23,7 @@
 
 #include <simgear/nasal/cppbind/from_nasal.hxx>
 #include <simgear/nasal/cppbind/NasalHash.hxx>
+#include <simgear/nasal/cppbind/NasalObject.hxx>
 
 namespace simgear
 {
@@ -33,7 +34,8 @@ namespace canvas
    * Baseclass/ghost to create widgets with Nasal.
    */
   class NasalWidget:
-    public LayoutItem
+    public LayoutItem,
+    public nasal::Object
   {
     public:
 
@@ -50,14 +52,9 @@ namespace canvas
 
       void setSetGeometryFunc(const SetGeometryFunc& func);
 
-      void setImpl(naRef obj);
-      naRef getImpl() const;
-
       void setSizeHint(const SGVec2i& s);
       void setMinimumSize(const SGVec2i& s);
       void setMaximumSize(const SGVec2i& s);
-
-      bool _set(naContext c, const std::string& key, naRef val);
 
       /**
        * @param ns  Namespace to register the class interface
@@ -66,9 +63,6 @@ namespace canvas
 
     protected:
       SetGeometryFunc       _set_geometry;
-      nasal::ObjectHolder<> _nasal_impl;
-
-      static naRef getParents(NasalWidget&, naContext);
 
       virtual SGVec2i sizeHintImpl() const;
       virtual SGVec2i minimumSizeImpl() const;

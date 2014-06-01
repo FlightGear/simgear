@@ -93,7 +93,7 @@ namespace canvas
       CanvasPtr getCanvas() const;
 
       /**
-       * Set the parent layout item (usally this is a layout).
+       * Set the parent layout item (usually this is a layout).
        */
       void setParent(const LayoutItemWeakRef& parent);
 

@@ -76,7 +76,7 @@ namespace simgear
       return PropertyBasedElementPtr();
 
     BOOST_FOREACH(PropertyBasedElementPtr el, _elements)
-      if( el->getProps()->getStringValue("name") == name )
+      if( el && el->getProps()->getStringValue("name") == name )
         return el;
 
     return PropertyBasedElementPtr();

@@ -66,7 +66,24 @@ bool Package::matches(const SGPropertyNode* aFilter) const
                 return false;
             }
         }
-        
+      
+        // substring search of name, description
+        if (strcmp(c->getName(), "name") == 0) {
+          std::string n(c->getStringValue());
+          size_t pos = name().find(n);
+          if (pos == std::string::npos) {
+            return false;
+          }
+        }
+      
+        if (strcmp(c->getName(), "description") == 0) {
+          std::string n(c->getStringValue());
+          size_t pos = description().find(n);
+          if (pos == std::string::npos) {
+            return false;
+          }
+        }
+
         SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << c->getName());
     } // of filter props iteration
     

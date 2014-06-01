@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
 #include <simgear/debug/logstream.hxx> 
 #include <simgear/structure/exception.hxx>
@@ -42,7 +43,8 @@ void Package::initWithProps(const SGPropertyNode* aProps)
     m_props = const_cast<SGPropertyNode*>(aProps);
 // cache tag values
     BOOST_FOREACH(const SGPropertyNode* c, aProps->getChildren("tag")) {
-        m_tags.insert(c->getStringValue());
+      std::string t(c->getStringValue());
+      m_tags.insert(boost::to_lower_copy(t));
     }
 }
 
@@ -62,6 +64,7 @@ bool Package::matches(const SGPropertyNode* aFilter) const
         
         if (strcmp(c->getName(), "tag") == 0) {
             std::string tag(c->getStringValue());
+            boost::to_lower(tag);
             if (m_tags.find(tag) == m_tags.end()) {
                 return false;
             }
@@ -70,7 +73,8 @@ bool Package::matches(const SGPropertyNode* aFilter) const
         // substring search of name, description
         if (strcmp(c->getName(), "name") == 0) {
           std::string n(c->getStringValue());
-          size_t pos = name().find(n);
+          boost::to_lower(n);
+          size_t pos = boost::to_lower_copy(name()).find(n);
           if (pos == std::string::npos) {
             return false;
           }
@@ -78,7 +82,8 @@ bool Package::matches(const SGPropertyNode* aFilter) const
       
         if (strcmp(c->getName(), "description") == 0) {
           std::string n(c->getStringValue());
-          size_t pos = description().find(n);
+          boost::to_lower(n);
+          size_t pos = boost::to_lower_copy(description()).find(n);
           if (pos == std::string::npos) {
             return false;
           }

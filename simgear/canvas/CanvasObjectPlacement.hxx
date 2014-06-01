@@ -1,4 +1,4 @@
-// Canvas placement for placing a canvas texture onto osg objects.
+///@file Placement for putting a canvas texture onto OpenSceneGraph objects.
 //
 // It also provides a SGPickCallback for passing mouse events to the canvas and
 // manages emissive lighting of the placed canvas.
@@ -19,7 +19,7 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_PICK_PLACEMENT_HXX_
+#ifndef CANVAS_OBJECT_PLACEMENT_HXX_
 #define CANVAS_OBJECT_PLACEMENT_HXX_
 
 #include "CanvasPlacement.hxx"
@@ -33,6 +33,9 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * Place a Canvas onto an osg object (as texture).
+   */
   class ObjectPlacement:
     public Placement
   {
@@ -72,4 +75,4 @@ namespace canvas
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_PICK_PLACEMENT_HXX_ */
+#endif /* CANVAS_OBJECT_PLACEMENT_HXX_ */

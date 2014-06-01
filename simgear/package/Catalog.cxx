@@ -207,6 +207,7 @@ Catalog::installedPackages() const
       r.push_back(p);
     }
   }
+  return r;
 }
   
 void Catalog::refresh()

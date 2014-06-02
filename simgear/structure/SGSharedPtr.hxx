@@ -60,6 +60,9 @@ public:
   template<typename U>
   SGSharedPtr(const SGSharedPtr<U>& p) : _ptr(p.get())
   { get(_ptr); }
+  template<typename U>
+  explicit SGSharedPtr(const SGWeakPtr<U>& p): _ptr(0)
+  { reset(p.lock().get()); }
   ~SGSharedPtr(void)
   { reset(); }
   

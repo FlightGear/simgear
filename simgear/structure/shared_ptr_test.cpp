@@ -72,6 +72,9 @@ BOOST_AUTO_TEST_CASE( virtual_weak_ptr )
   SGSharedPtr<Base1> ptr1( weak_ptr.lock() );
   BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 2 );
 
+  // converting constructor
+  BOOST_REQUIRE_EQUAL( SGSharedPtr<Base1>(weak_ptr), ptr1 );
+
   SGSharedPtr<Base2> ptr2( weak_ptr.lock() );
   BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 3 );
 

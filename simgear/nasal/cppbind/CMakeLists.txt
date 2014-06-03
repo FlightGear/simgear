@@ -35,3 +35,8 @@ if(ENABLE_TESTS)
   add_test(cppbind ${EXECUTABLE_OUTPUT_PATH}/test_cppbind)
   target_link_libraries(test_cppbind ${TEST_LIBS})
 endif(ENABLE_TESTS)
+
+add_boost_test(cppbind_ghost
+  SOURCES cppbind_test_ghost.cxx
+  LIBRARIES ${TEST_LIBS}
+)

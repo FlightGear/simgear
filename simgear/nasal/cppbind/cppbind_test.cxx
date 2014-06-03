@@ -269,7 +269,6 @@ int main(int argc, char* argv[])
     .member("base", &DoubleDerived2::getBase)
     .method("doIt", &DoubleDerived2::doSomeBaseWork);
 
-  Ghost<DerivedWeakPtr>::init("DerivedWeakPtr");
   Ghost<SGRefBasedPtr>::init("SGRefBasedPtr");
   Ghost<SGWeakRefBasedPtr>::init("SGWeakRefBasedPtr");
 
@@ -372,9 +371,9 @@ int main(int argc, char* argv[])
   VERIFY( from_nasal<BasePtr>(c, derived_obj.get_naRef()) == d3 );
 
   std::vector<naRef> nasal_objects;
-  nasal_objects.push_back( Ghost<BasePtr>::create(c, d) );
-  nasal_objects.push_back( Ghost<BasePtr>::create(c, d2) );
-  nasal_objects.push_back( Ghost<BasePtr>::create(c, d3) );
+  nasal_objects.push_back( Ghost<BasePtr>::makeGhost(c, d) );
+  nasal_objects.push_back( Ghost<BasePtr>::makeGhost(c, d2) );
+  nasal_objects.push_back( Ghost<BasePtr>::makeGhost(c, d3) );
   naRef obj_vec = to_nasal(c, nasal_objects);
 
   std::vector<BasePtr> objects = from_nasal<std::vector<BasePtr> >(c, obj_vec);

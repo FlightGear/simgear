@@ -232,10 +232,8 @@ namespace nasal
   class Ghost:
     public internal::GhostMetadata
   {
-      BOOST_STATIC_ASSERT_MSG(
-        (shared_ptr_traits<T>::is_strong::value),
-        "Shared pointer required for Ghost! (no weak pointer!)"
-      );
+      // Shared pointer required for Ghost (no weak pointer!)
+      BOOST_STATIC_ASSERT((shared_ptr_traits<T>::is_strong::value));
 
     public:
       typedef typename T::element_type                              raw_type;

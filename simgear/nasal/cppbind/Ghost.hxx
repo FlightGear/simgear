@@ -67,7 +67,7 @@ inline T* get_pointer(osg::observer_ptr<T> const& p)
 # define SG_GET_TEMPLATE_MEMBER(type, member) &member
 #else
   // VS (2008, 2010, ... ?) only allow this version.
-# define SG_GET_TEMPLATE_MEMBER(type, member) &type::member
+# define SG_GET_TEMPLATE_MEMBER(type, member) &type::template member
 #endif
 
 /**

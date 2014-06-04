@@ -58,6 +58,18 @@ inline T* get_pointer(osg::observer_ptr<T> const& p)
   return ref.get();
 }
 
+// Both ways of retrieving the address of a static member function
+// should be legal but not all compilers know this.
+// g++-4.4.7+ has been tested to work with both versions
+#if defined(SG_GCC_VERSION) && SG_GCC_VERSION < 40407
+  // The old version of g++ used on Jenkins (16.11.2012) only compiles
+  // this version.
+# define SG_GET_TEMPLATE_MEMBER(type, member) &member
+#else
+  // VS (2008, 2010, ... ?) only allow this version.
+# define SG_GET_TEMPLATE_MEMBER(type, member) &type::member
+#endif
+
 /**
  * Bindings between C++ and the Nasal scripting language
  */
@@ -396,20 +408,9 @@ namespace nasal
         ));
 
         BaseGhost* base = BaseGhost::getSingletonPtr();
-        base->addDerived
-        (
+        base->addDerived(
           this,
-          // Both ways of retrieving the address of a static member function
-          // should be legal but not all compilers know this.
-          // g++-4.4.7+ has been tested to work with both versions
-#if defined(SG_GCC_VERSION) && SG_GCC_VERSION < 40407
-          // The old version of g++ used on Jenkins (16.11.2012) only compiles
-          // this version.
-          &getTypeFor<BaseGhost>
-#else
-          // VS (2008, 2010, ... ?) only allow this version.
-          &Ghost::getTypeFor<BaseGhost>
-#endif
+          SG_GET_TEMPLATE_MEMBER(Ghost, getTypeFor<BaseGhost>)
         );
 
         // Replace any getter that is not available in the current class.
@@ -1155,17 +1156,25 @@ namespace nasal
                        &_ghost_type_strong,
                        supports_weak_ref<T>::value ? &_ghost_type_weak : NULL )
       {
-        _ghost_type_strong.destroy = &destroy<strong_ref>;
+        _ghost_type_strong.destroy =
+          SG_GET_TEMPLATE_MEMBER(Ghost, destroy<strong_ref>);
         _ghost_type_strong.name = _name_strong.c_str();
-        _ghost_type_strong.get_member = &getMember<false>;
-        _ghost_type_strong.set_member = &setMember<false>;
+        _ghost_type_strong.get_member =
+          SG_GET_TEMPLATE_MEMBER(Ghost, getMember<false>);
+        _ghost_type_strong.set_member =
+          SG_GET_TEMPLATE_MEMBER(Ghost, setMember<false>);
 
-        _ghost_type_weak.destroy = &destroy<weak_ref>;
+        _ghost_type_weak.destroy =
+          SG_GET_TEMPLATE_MEMBER(Ghost, destroy<weak_ref>);
         _ghost_type_weak.name = _name_weak.c_str();
 
         bool can_weak = supports_weak_ref<T>::value;
-        _ghost_type_weak.get_member = can_weak ? &getMember<true> : 0;
-        _ghost_type_weak.set_member = can_weak ? &setMember<true> : 0;
+        _ghost_type_weak.get_member = can_weak
+          ? SG_GET_TEMPLATE_MEMBER(Ghost, getMember<true>)
+          : 0;
+        _ghost_type_weak.set_member = can_weak
+          ? SG_GET_TEMPLATE_MEMBER(Ghost, setMember<true>)
+          : 0;
       }
 
       static GhostPtr& getSingletonHolder()

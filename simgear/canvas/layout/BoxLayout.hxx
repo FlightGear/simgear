@@ -106,6 +106,8 @@ namespace canvas
       VBoxLayout();
   };
 
+  typedef SGSharedPtr<BoxLayout> BoxLayoutRef;
+
 } // namespace canvas
 } // namespace simgear
 

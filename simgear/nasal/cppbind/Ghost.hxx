@@ -1197,10 +1197,10 @@ namespace nasal
       /**
        * Callback for retrieving a ghost member.
        */
-      static const char* getMember( naContext c,
-                                    raw_type& obj,
-                                    naRef key,
-                                    naRef* out )
+      static const char* getMemberImpl( naContext c,
+                                        raw_type& obj,
+                                        naRef key,
+                                        naRef* out )
       {
         const std::string key_str = nasal::from_nasal<std::string>(c, key);
         // TODO merge instance parents with static class parents
@@ -1240,16 +1240,16 @@ namespace nasal
                                     naRef* out )
       {
         strong_ref const& ptr = getPtr<strong_ref, is_weak>(ghost);
-        return getMember(c, *get_pointer(ptr), key, out);
+        return getMemberImpl(c, *get_pointer(ptr), key, out);
       }
 
       /**
        * Callback for writing to a ghost member.
        */
-      static void setMember( naContext c,
-                             raw_type& obj,
-                             naRef field,
-                             naRef val )
+      static void setMemberImpl( naContext c,
+                                 raw_type& obj,
+                                 naRef field,
+                                 naRef val )
       {
         const std::string key = nasal::from_nasal<std::string>(c, field);
         const MemberMap& members = getSingletonPtr()->_members;
@@ -1278,7 +1278,7 @@ namespace nasal
                              naRef val )
       {
         strong_ref const& ptr = getPtr<strong_ref, is_weak>(ghost);
-        return setMember(c, *get_pointer(ptr), field, val);
+        return setMemberImpl(c, *get_pointer(ptr), field, val);
       }
   };
 

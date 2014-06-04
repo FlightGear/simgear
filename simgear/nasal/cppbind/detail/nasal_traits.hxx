@@ -20,18 +20,32 @@
 #ifndef SG_NASAL_TRAITS_HXX_
 #define SG_NASAL_TRAITS_HXX_
 
-#include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/structure/SGWeakPtr.hxx>
-
-#include <osg/ref_ptr>
-#include <osg/observer_ptr>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 #include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 
+// Forward declarations
+class SGWeakReferenced;
+template<class T> class SGSharedPtr;
+template<class T> class SGWeakPtr;
+template<class T> class SGVec2;
+
+namespace boost
+{
+  template<class T> class shared_ptr;
+  template<class T> class weak_ptr;
+}
+namespace osg
+{
+  template<class T> class ref_ptr;
+  template<class T> class observer_ptr;
+
+  class Vec2b;
+  class Vec2d;
+  class Vec2f;
+  class Vec2s;
+}
+
+// The actual traits...
 namespace nasal
 {
   template<class T>
@@ -42,25 +56,11 @@ namespace nasal
   struct attr< type >:\
     public boost::integral_constant<bool, true> {};
 
-#ifdef SGVec2_H
-  SG_MAKE_TRAIT(<class T>, SGVec2<T>, is_vec2)
-#endif
-
-#ifdef OSG_VEC2B
-  SG_MAKE_TRAIT(<>, osg::Vec2b, is_vec2)
-#endif
-
-#ifdef OSG_VEC2D
-  SG_MAKE_TRAIT(<>, osg::Vec2d, is_vec2)
-#endif
-
-#ifdef OSG_VEC2F
-  SG_MAKE_TRAIT(<>, osg::Vec2f, is_vec2)
-#endif
-
-#ifdef OSG_VEC2S
-  SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
-#endif
+SG_MAKE_TRAIT(<class T>, SGVec2<T>, is_vec2)
+SG_MAKE_TRAIT(<>, osg::Vec2b, is_vec2)
+SG_MAKE_TRAIT(<>, osg::Vec2d, is_vec2)
+SG_MAKE_TRAIT(<>, osg::Vec2f, is_vec2)
+SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
 
 #undef SG_MAKE_TRAIT
 

@@ -201,6 +201,20 @@ namespace nasal
   typedef SGSharedPtr<internal::MethodHolder> MethodHolderPtr;
   typedef SGWeakPtr<internal::MethodHolder> MethodHolderWeakPtr;
 
+  // Dummy template to create shorter and easy to understand compile errors if
+  // trying to wrap the wrong type as a Ghost.
+  template<class T, class Enable = void>
+  class Ghost
+  {
+    public:
+      BOOST_STATIC_ASSERT(("Ghost can only wrap shared pointer!"
+        && is_strong_ref<T>::value
+      ));
+
+      static Ghost& init(const std::string& name);
+      static bool isInit();
+  };
+
   /**
    * Class for exposing C++ objects to Nasal
    *
@@ -241,11 +255,11 @@ namespace nasal
    * @endcode
    */
   template<class T>
-  class Ghost:
+  class Ghost<T, typename boost::enable_if<is_strong_ref<T> >::type>:
     public internal::GhostMetadata
   {
       // Shared pointer required for Ghost (no weak pointer!)
-      BOOST_STATIC_ASSERT((shared_ptr_traits<T>::is_strong::value));
+      BOOST_STATIC_ASSERT((is_strong_ref<T>::value));
 
     public:
       typedef typename T::element_type                              raw_type;
@@ -871,7 +885,7 @@ namespace nasal
 
     private:
 
-      template<class>
+      template<class, class>
       friend class Ghost;
 
       static naGhostType _ghost_type_strong, //!< Stored as shared pointer
@@ -1283,9 +1297,14 @@ namespace nasal
   };
 
   template<class T>
-  naGhostType Ghost<T>::_ghost_type_strong;
+  naGhostType
+  Ghost<T, typename boost::enable_if<is_strong_ref<T> >::type>
+  ::_ghost_type_strong;
+
   template<class T>
-  naGhostType Ghost<T>::_ghost_type_weak;
+  naGhostType
+  Ghost<T, typename boost::enable_if<is_strong_ref<T> >::type>
+  ::_ghost_type_weak;
 
 } // namespace nasal
 

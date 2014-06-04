@@ -1168,13 +1168,18 @@ namespace nasal
           SG_GET_TEMPLATE_MEMBER(Ghost, destroy<weak_ref>);
         _ghost_type_weak.name = _name_weak.c_str();
 
-        bool can_weak = supports_weak_ref<T>::value;
-        _ghost_type_weak.get_member = can_weak
-          ? SG_GET_TEMPLATE_MEMBER(Ghost, getMember<true>)
-          : 0;
-        _ghost_type_weak.set_member = can_weak
-          ? SG_GET_TEMPLATE_MEMBER(Ghost, setMember<true>)
-          : 0;
+        if( supports_weak_ref<T>::value )
+        {
+          _ghost_type_weak.get_member =
+            SG_GET_TEMPLATE_MEMBER(Ghost, getMember<true>);
+          _ghost_type_weak.set_member =
+            SG_GET_TEMPLATE_MEMBER(Ghost, setMember<true>);
+        }
+        else
+        {
+          _ghost_type_weak.get_member = 0;
+          _ghost_type_weak.set_member = 0;
+        }
       }
 
       static GhostPtr& getSingletonHolder()

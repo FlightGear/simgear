@@ -67,6 +67,12 @@ public:
      * perform a refresh of the catalog contents
      */
     void refresh();
+
+    /**
+     * Get all packages in this catalog.
+     */
+    PackageList const& packages() const;
+
     /**
      * retrieve packages in this catalog matching a filter.
      * filter consists of required / minimum values, AND-ed together.

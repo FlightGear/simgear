@@ -170,6 +170,12 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     return c;
 }
 
+PackageList const&
+Catalog::packages() const
+{
+  return m_packages;
+}
+
 PackageList
 Catalog::packagesMatching(const SGPropertyNode* aFilter) const
 {

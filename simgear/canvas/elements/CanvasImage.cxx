@@ -25,7 +25,6 @@
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/io/HTTPClient.hxx>
 
 #include <osg/Array>
 #include <osg/Geometry>
@@ -149,7 +148,8 @@ namespace canvas
   //----------------------------------------------------------------------------
   Image::~Image()
   {
-
+    if( _http_request )
+      _http_request->abort("image destroyed");
   }
 
   //----------------------------------------------------------------------------
@@ -526,6 +526,13 @@ namespace canvas
       if( name == "file" )
         SG_LOG(SG_GL, SG_WARN, "'file' is deprecated. Use 'src' instead");
 
+      // Abort pending request
+      if( _http_request )
+      {
+        _http_request->abort("setting new image");
+        _http_request.reset();
+      }
+
       static const std::string PROTOCOL_SEP = "://";
 
       std::string url = child->getStringValue(),
@@ -580,9 +587,11 @@ namespace canvas
       else if( protocol == "http" || protocol == "https" )
       // TODO check https
       {
-        Canvas::getSystemAdapter()
+        _http_request =
+          Canvas::getSystemAdapter()
           ->getHTTPClient()
           ->load(url)
+          // TODO handle capture of 'this'
           ->done(this, &Image::handleImageLoadDone);
       }
       else
@@ -663,6 +672,11 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Image::handleImageLoadDone(HTTP::Request* req)
   {
+    // Ignore stale/expired requests
+    if( _http_request != req )
+      return;
+    _http_request.reset();
+
     if( req->responseCode() != 200 )
     {
       SG_LOG(SG_IO, SG_WARN, "failed to download '" << req->url() << "': "

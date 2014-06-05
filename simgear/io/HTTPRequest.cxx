@@ -304,7 +304,9 @@ void Request::setFailure(int code, const std::string& reason)
 {
   _responseStatus = code;
   _responseReason = reason;
-  setReadyState(FAILED);
+
+  if( !isComplete() )
+    setReadyState(FAILED);
 }
 
 //------------------------------------------------------------------------------
@@ -346,9 +348,6 @@ void Request::abort()
 //----------------------------------------------------------------------------
 void Request::abort(const std::string& reason)
 {
-  if( isComplete() )
-    return;
-
   setFailure(-1, reason);
   _willClose = true;
 }

@@ -22,6 +22,7 @@
 #include "CanvasElement.hxx"
 
 #include <simgear/canvas/canvas_fwd.hxx>
+#include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/CSSBorder.hxx>
 #include <osg/Texture2D>
 
@@ -113,6 +114,7 @@ namespace canvas
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas
       CanvasWeakPtr _src_canvas;
+      HTTP::Request_ptr _http_request;
 
       osg::ref_ptr<osg::Geometry>  _geom;
       osg::ref_ptr<osg::DrawArrays>_prim;

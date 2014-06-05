@@ -50,12 +50,99 @@ namespace canvas
   {
     public:
 
-      ReferenceFrame    _coord_reference;
-      osg::Matrix       _parent_inverse;
+      ReferenceFrame                _coord_reference;
+      osg::observer_ptr<osg::Node>  _node;
 
-      RelativeScissor():
-        _coord_reference(GLOBAL)
+      RelativeScissor(osg::Node* node = NULL):
+        _coord_reference(GLOBAL),
+        _node(node)
+      {
+        _width = 0;
+        _height = 0;
+      }
+
+      /** Copy constructor using CopyOp to manage deep vs shallow copy. */
+      RelativeScissor( const RelativeScissor& vp,
+                       const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY ):
+        Scissor(vp, copyop),
+        _coord_reference(vp._coord_reference),
+        _node(vp._node)
       {}
+
+      META_StateAttribute(simgear, RelativeScissor, SCISSOR);
+
+      /** Return -1 if *this < *rhs, 0 if *this==*rhs, 1 if *this>*rhs. */
+      virtual int compare(const StateAttribute& sa) const
+      {
+        // check the types are equal and then create the rhs variable
+        // used by the COMPARE_StateAttribute_Parameter macros below.
+        COMPARE_StateAttribute_Types(RelativeScissor,sa)
+
+        // compare each parameter in turn against the rhs.
+        COMPARE_StateAttribute_Parameter(_x)
+        COMPARE_StateAttribute_Parameter(_y)
+        COMPARE_StateAttribute_Parameter(_width)
+        COMPARE_StateAttribute_Parameter(_height)
+        COMPARE_StateAttribute_Parameter(_coord_reference)
+        COMPARE_StateAttribute_Parameter(_node)
+
+        return 0; // passed all the above comparison macros, must be equal.
+      }
+
+      virtual void apply(osg::State& state) const
+      {
+        if( _width <= 0 || _height <= 0 )
+          return;
+
+        const osg::Viewport* vp = state.getCurrentViewport();
+        float w2 = 0.5 * vp->width(),
+              h2 = 0.5 * vp->height();
+
+        osg::Matrix model_view
+        (
+          w2, 0,  0, 0,
+          0,  h2, 0, 0,
+          0,  0,  1, 0,
+          w2, h2, 0, 1
+        );
+        model_view.preMult(state.getProjectionMatrix());
+
+        if( _coord_reference != GLOBAL )
+        {
+          osg::Node* ref_obj = _node.get();
+
+          if( _coord_reference == PARENT )
+          {
+            if( _node->getNumParents() < 1 )
+            {
+              SG_LOG(SG_GL, SG_WARN, "RelativeScissor: missing parent.");
+              return;
+            }
+
+            ref_obj = _node->getParent(0);
+          }
+
+          osg::MatrixList const& parent_matrices = ref_obj->getWorldMatrices();
+          assert( !parent_matrices.empty() );
+          model_view.preMult(parent_matrices.front());
+        }
+
+        const osg::Vec2 scale( model_view(0,0), model_view(1,1)),
+                        offset(model_view(3,0), model_view(3,1));
+
+        // TODO check/warn for rotation?
+        GLint x = SGMiscf::roundToInt(scale.x() * _x + offset.x()),
+              y = SGMiscf::roundToInt(scale.y() * _y + offset.y()),
+              w = SGMiscf::roundToInt(std::fabs(scale.x()) * _width),
+              h = SGMiscf::roundToInt(std::fabs(scale.y()) * _height);
+
+        if( scale.x() < 0 )
+          x -= w;
+        if( scale.y() < 0 )
+          y -= h;
+
+        glScissor(x, y, w, h);
+      }
 
       bool contains(const osg::Vec2f& pos) const
       {
@@ -75,47 +162,6 @@ namespace canvas
         }
 
         return false;
-      }
-
-      virtual void apply(osg::State& state) const
-      {
-        const osg::Viewport* vp = state.getCurrentViewport();
-        float w2 = 0.5 * vp->width(),
-              h2 = 0.5 * vp->height();
-
-        osg::Matrix model_view
-        (
-          w2, 0,  0, 0,
-          0,  h2, 0, 0,
-          0,  0,  1, 0,
-          w2, h2, 0, 1
-        );
-        model_view.preMult(state.getProjectionMatrix());
-
-        if( _coord_reference != GLOBAL )
-        {
-          model_view.preMult(state.getModelViewMatrix());
-
-          if( _coord_reference == PARENT )
-            model_view.preMult(_parent_inverse);
-        }
-
-        const osg::Vec2 scale( model_view(0,0), model_view(1,1)),
-                        offset(model_view(3,0), model_view(3,1));
-
-        // TODO check/warn for rotation?
-
-        GLint x = SGMiscf::roundToInt(scale.x() * _x + offset.x()),
-              y = SGMiscf::roundToInt(scale.y() * _y + offset.y()),
-              w = SGMiscf::roundToInt(std::fabs(scale.x()) * _width),
-              h = SGMiscf::roundToInt(std::fabs(scale.y()) * _height);
-
-        if( scale.x() < 0 )
-          x -= w;
-        if( scale.y() < 0 )
-          y -= h;
-
-        glScissor(x, y, w, h);
       }
   };
 
@@ -178,15 +224,6 @@ namespace canvas
 
     // Trigger matrix update
     getMatrix();
-
-    // TODO limit bounding box to scissor
-    if( _attributes_dirty & SCISSOR_COORDS )
-    {
-      if( _scissor && _scissor->_coord_reference != GLOBAL )
-        _scissor->_parent_inverse = _transform->getInverseMatrix();
-
-      _attributes_dirty &= ~SCISSOR_COORDS;
-    }
 
     // Update bounding box on manual update (manual updates pass zero dt)
     if( dt == 0 && _drawable )
@@ -524,28 +561,29 @@ namespace canvas
       return;
     }
 
-    _scissor = new RelativeScissor();
+    if( !_scissor )
+      _scissor = new RelativeScissor(_transform.get());
+
     // <top>, <right>, <bottom>, <left>
     _scissor->x() = SGMiscf::roundToInt(values[3]);
     _scissor->y() = SGMiscf::roundToInt(values[0]);
     _scissor->width() = SGMiscf::roundToInt(width);
     _scissor->height() = SGMiscf::roundToInt(height);
 
-    getOrCreateStateSet()->setAttributeAndModes(_scissor);
-
     SGPropertyNode* clip_frame = _node->getChild("clip-frame", 0);
     if( clip_frame )
       valueChanged(clip_frame);
+    else
+      _scissor->_coord_reference = GLOBAL;
+
+    getOrCreateStateSet()->setAttributeAndModes(_scissor);
   }
 
   //----------------------------------------------------------------------------
   void Element::setClipFrame(ReferenceFrame rf)
   {
     if( _scissor )
-    {
       _scissor->_coord_reference = rf;
-      _attributes_dirty |= SCISSOR_COORDS;
-    }
   }
 
   //----------------------------------------------------------------------------
@@ -647,7 +685,6 @@ namespace canvas
     }
     _transform->setMatrix(m);
     _attributes_dirty &= ~TRANSFORM;
-    _attributes_dirty |= SCISSOR_COORDS;
 
     return m;
   }

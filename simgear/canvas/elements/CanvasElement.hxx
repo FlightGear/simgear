@@ -211,8 +211,7 @@ namespace canvas
       {
         TRANSFORM       = 1,
         BLEND_FUNC      = TRANSFORM << 1,
-        SCISSOR_COORDS  = BLEND_FUNC << 1,
-        LAST_ATTRIBUTE  = SCISSOR_COORDS << 1
+        LAST_ATTRIBUTE  = BLEND_FUNC << 1
       };
 
       enum TransformType

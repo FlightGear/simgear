@@ -20,7 +20,7 @@ int main()
            "third line ends with both\r\n"
            "fourth line as well\r\n"
            "fifth line is another CR/LF line\r\n"
-           "end of test\r\n", 1024);
+           "end of test\r\n", 158);
        f.close();
    }
 

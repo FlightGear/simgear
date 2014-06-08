@@ -43,6 +43,8 @@ namespace canvas
   {
     public:
 
+      static const SGVec2i MAX_SIZE;
+
       LayoutItem();
       virtual ~LayoutItem();
 

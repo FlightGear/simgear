@@ -192,6 +192,42 @@ BOOST_AUTO_TEST_CASE( horizontal_layout )
 }
 
 //------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( spacer_layouting )
+{
+  sc::HBoxLayout hbox;
+  TestWidgetRef w1( new TestWidget( SGVec2i(16, 16),
+                                    SGVec2i(32, 32),
+                                    SGVec2i(9999, 9999) ) ),
+                w2( new TestWidget(*w1) );
+
+  hbox.addItem(w1);
+  hbox.addItem(w2);
+  hbox.addStretch(1);
+
+  BOOST_CHECK_EQUAL(hbox.minimumSize(), SGVec2i(37, 16));
+  BOOST_CHECK_EQUAL(hbox.sizeHint(), SGVec2i(69, 32));
+  BOOST_CHECK_EQUAL(hbox.maximumSize(), sc::LayoutItem::MAX_SIZE);
+
+  hbox.setGeometry(SGRecti(0, 0, 256, 40));
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 32, 40));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(37, 0, 32, 40));
+
+  // now center with increased spacing between both widgets
+  hbox.insertStretch(0, 1);
+  hbox.insertSpacing(2, 10);
+
+  BOOST_CHECK_EQUAL(hbox.minimumSize(), SGVec2i(47, 16));
+  BOOST_CHECK_EQUAL(hbox.sizeHint(), SGVec2i(79, 32));
+  BOOST_CHECK_EQUAL(hbox.maximumSize(), sc::LayoutItem::MAX_SIZE);
+
+  hbox.update();
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(88,  0, 32, 40));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(135, 0, 32, 40));
+}
+
+//------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( vertical_layout)
 {
   sc::BoxLayout vbox(sc::BoxLayout::TopToBottom);

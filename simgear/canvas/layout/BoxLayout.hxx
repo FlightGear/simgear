@@ -45,6 +45,16 @@ namespace canvas
 
       void addItem(const LayoutItemRef& item, int stretch);
 
+      void addStretch(int stretch = 0);
+
+      void addSpacing(int size);
+
+      void insertItem(int index, const LayoutItemRef& item, int stretch = 0);
+
+      void insertStretch(int index, int stretch = 0);
+
+      void insertSpacing(int index, int size);
+
       /**
        * Set the stretch factor of the item at position @a index to @a stretch.
        */
@@ -63,6 +73,8 @@ namespace canvas
 
       virtual void setCanvas(const CanvasWeakPtr& canvas);
 
+      bool horiz() const;
+
     protected:
 
       typedef const int& (SGVec2i::*CoordGetter)() const;
@@ -72,7 +84,7 @@ namespace canvas
                                         //   (fixed) direction
 
       int _padding;
-      bool _reverse; //<! if true, right-to-left/bottom-to-top layouting
+      Direction _direction;
 
       mutable std::vector<ItemData> _layout_items;
       mutable ItemData _layout_data;

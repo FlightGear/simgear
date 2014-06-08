@@ -23,10 +23,15 @@ namespace simgear
 {
 namespace canvas
 {
+  const SGVec2i LayoutItem::MAX_SIZE( SGLimits<int>::max(),
+                                      SGLimits<int>::max() );
 
   //----------------------------------------------------------------------------
   LayoutItem::LayoutItem():
-    _flags(0)
+    _flags(0),
+    _size_hint(16, 16),
+    _min_size(0, 0),
+    _max_size(MAX_SIZE)
   {
     invalidate();
   }
@@ -132,19 +137,19 @@ namespace canvas
   //----------------------------------------------------------------------------
   SGVec2i LayoutItem::sizeHintImpl() const
   {
-    return SGVec2i(16, 16);
+    return _size_hint;
   }
 
   //----------------------------------------------------------------------------
   SGVec2i LayoutItem::minimumSizeImpl() const
   {
-    return SGVec2i(0, 0);
+    return _min_size;
   }
 
   //----------------------------------------------------------------------------
   SGVec2i LayoutItem::maximumSizeImpl() const
   {
-    return SGVec2i(SGLimits<int>::max(), SGLimits<int>::max());
+    return _max_size;
   }
 
 } // namespace canvas

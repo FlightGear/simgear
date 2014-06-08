@@ -17,6 +17,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "BoxLayout.hxx"
+#include "SpacerItem.hxx"
 #include <simgear/canvas/Canvas.hxx>
 
 namespace simgear
@@ -40,6 +41,24 @@ namespace canvas
   //----------------------------------------------------------------------------
   void BoxLayout::addItem(const LayoutItemRef& item, int stretch)
   {
+    insertItem(-1, item, stretch);
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::addStretch(int stretch)
+  {
+    insertStretch(-1, stretch);
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::addSpacing(int size)
+  {
+    insertSpacing(-1, size);
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::insertItem(int index, const LayoutItemRef& item, int stretch)
+  {
     ItemData item_data = {0};
     item_data.layout_item = item;
     item_data.stretch = std::max(0, stretch);
@@ -47,9 +66,29 @@ namespace canvas
     item->setCanvas(_canvas);
     item->setParent(this);
 
-    _layout_items.push_back(item_data);
+    if( index < 0 )
+      _layout_items.push_back(item_data);
+    else
+      _layout_items.insert(_layout_items.begin() + index, item_data);
 
     invalidate();
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::insertStretch(int index, int stretch)
+  {
+    insertItem(index, LayoutItemRef(new SpacerItem()), stretch);
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::insertSpacing(int index, int size)
+  {
+    SGVec2i size_hint = horiz()
+                          ? SGVec2i(size, 0)
+                          : SGVec2i(0, size),
+                max_size  = size_hint;
+
+    insertItem(index, LayoutItemRef(new SpacerItem(size_hint, max_size)));
   }
 
   //----------------------------------------------------------------------------
@@ -90,13 +129,12 @@ namespace canvas
   //----------------------------------------------------------------------------
   void BoxLayout::setDirection(Direction dir)
   {
+    _direction = dir;
     _get_layout_coord = &SGVec2i::x;
     _get_fixed_coord = &SGVec2i::y;
 
-    if( dir == TopToBottom || dir == BottomToTop )
+    if( !horiz() )
       std::swap(_get_layout_coord, _get_fixed_coord);
-
-    _reverse = (dir == RightToLeft || dir == BottomToTop );
 
     invalidate();
   }
@@ -104,10 +142,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   BoxLayout::Direction BoxLayout::direction() const
   {
-    if( _get_layout_coord == static_cast<CoordGetter>(&SGVec2i::x) )
-      return _reverse ? RightToLeft : LeftToRight;
-    else
-      return _reverse ? BottomToTop : TopToBottom;
+    return _direction;
   }
 
   //----------------------------------------------------------------------------
@@ -117,6 +152,12 @@ namespace canvas
 
     for(size_t i = 0; i < _layout_items.size(); ++i)
       _layout_items[i].layout_item->setCanvas(canvas);
+  }
+
+  //----------------------------------------------------------------------------
+  bool BoxLayout::horiz() const
+  {
+    return (_direction == LeftToRight) || (_direction == RightToLeft);
   }
 
   //----------------------------------------------------------------------------
@@ -140,15 +181,19 @@ namespace canvas
       item_data.max_size  = (item.maximumSize().*_get_layout_coord)();
       item_data.size_hint = (item.sizeHint().*_get_layout_coord)();
 
-      if( is_first )
+      if( !dynamic_cast<SpacerItem*>(item_data.layout_item.get()) )
       {
-        item_data.padding_orig = 0;
-        is_first = false;
+        if( is_first )
+        {
+          item_data.padding_orig = 0;
+          is_first = false;
+        }
+        else
+        {
+          item_data.padding_orig = _padding;
+          _layout_data.padding += item_data.padding_orig;
+        }
       }
-      else
-        item_data.padding_orig = _padding;
-
-     _layout_data.padding += item_data.padding_orig;
 
       // Add sizes of all children in layout direction
       safeAdd(min_size.x(),  item_data.min_size);
@@ -160,7 +205,7 @@ namespace canvas
                                 (item.minimumSize().*_get_fixed_coord)() );
       max_size.y()  = std::max( max_size.y(),
                                 (item.maximumSize().*_get_fixed_coord)() );
-      size_hint.y() = std::max( min_size.y(),
+      size_hint.y() = std::max( size_hint.y(),
                                 (item.sizeHint().*_get_fixed_coord)() );
     }
 
@@ -216,14 +261,16 @@ namespace canvas
     int fixed_size = (geom.size().*_get_fixed_coord)();
     SGVec2i cur_pos( (geom.pos().*_get_layout_coord)(),
                      (geom.pos().*_get_fixed_coord)() );
-    if( _reverse )
+
+    bool reverse = (_direction == RightToLeft) || (_direction == BottomToTop);
+    if( reverse )
       cur_pos.x() += (geom.size().*_get_layout_coord)();
 
     // TODO handle reverse layouting (rtl/btt)
     for(size_t i = 0; i < _layout_items.size(); ++i)
     {
       ItemData const& data = _layout_items[i];
-      cur_pos.x() += _reverse ? -data.padding - data.size : data.padding;
+      cur_pos.x() += reverse ? -data.padding - data.size : data.padding;
 
       SGVec2i size(
         data.size,
@@ -242,7 +289,7 @@ namespace canvas
         (size.*_get_fixed_coord)()
       ));
 
-      if( !_reverse )
+      if( !reverse )
         cur_pos.x() += data.size;
       cur_pos.y() -= offset_fixed;
     }

@@ -5,6 +5,7 @@ set(HEADERS
   Layout.hxx
   LayoutItem.hxx
   NasalWidget.hxx
+  SpacerItem.hxx
 )
 
 set(SOURCES
@@ -12,6 +13,7 @@ set(SOURCES
   Layout.cxx
   LayoutItem.cxx
   NasalWidget.cxx
+  SpacerItem.cxx
 )
 
 simgear_scene_component(canvas-layout canvas/layout "${SOURCES}" "${HEADERS}")

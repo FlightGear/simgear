@@ -24,6 +24,7 @@
 #include <simgear/canvas/canvas_fwd.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/CSSBorder.hxx>
+#include <simgear/misc/SVGpreserveAspectRatio.hxx>
 #include <osg/Texture2D>
 
 namespace simgear
@@ -62,6 +63,17 @@ namespace canvas
       void setFill(const std::string& fill);
 
       /**
+       * @see http://www.w3.org/TR/css3-background/#border-image-outset
+       */
+      void setOutset(const std::string& outset);
+
+      /**
+       * @see
+       *   http://www.w3.org/TR/SVG11/coords.html#PreserveAspectRatioAttribute
+       */
+      void setPreserveAspectRatio(const std::string& scale);
+
+      /**
        * Set image slice (aka. 9-scale)
        *
        * @see http://www.w3.org/TR/css3-background/#border-image-slice
@@ -78,11 +90,6 @@ namespace canvas
        * @see http://www.w3.org/TR/css3-background/#border-image-width
        */
       void setSliceWidth(const std::string& width);
-
-      /**
-       * http://www.w3.org/TR/css3-background/#border-image-outset
-       */
-      void setOutset(const std::string& outset);
 
       const SGRect<float>& getRegion() const;
 
@@ -126,9 +133,11 @@ namespace canvas
       SGRect<float>   _src_rect,
                       _region;
 
-      CSSBorder       _slice,
-                      _slice_width,
-                      _outset;
+      SVGpreserveAspectRatio _preserve_aspect_ratio;
+
+      CSSBorder       _outset,
+                      _slice,
+                      _slice_width;
   };
 
 } // namespace canvas

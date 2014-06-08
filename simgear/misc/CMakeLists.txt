@@ -5,6 +5,7 @@ set(HEADERS
     CSSBorder.hxx
     ListDiff.hxx
     ResourceManager.hxx
+    SVGpreserveAspectRatio.hxx
     interpolator.hxx
     make_new.hxx
     sg_dir.hxx
@@ -22,6 +23,7 @@ set(HEADERS
 set(SOURCES
     CSSBorder.cxx
     ResourceManager.cxx
+    SVGpreserveAspectRatio.cxx
     interpolator.cxx
     sg_dir.cxx
     sg_path.cxx
@@ -62,3 +64,8 @@ add_test(path ${EXECUTABLE_OUTPUT_PATH}/test_path)
 target_link_libraries(test_path ${TEST_LIBS})
 
 endif(ENABLE_TESTS)
+
+add_boost_test(SVGpreserveAspectRatio
+  SOURCES SVGpreserveAspectRatio_test.cxx
+  LIBRARIES ${TEST_LIBS}
+)

@@ -96,9 +96,10 @@ namespace canvas
       return;
 
     addStyle("fill", "color", &Image::setFill);
+    addStyle("outset", "", &Image::setOutset);
+    addStyle("preserveAspectRatio", "", &Image::setPreserveAspectRatio);
     addStyle("slice", "", &Image::setSlice);
     addStyle("slice-width", "", &Image::setSliceWidth);
-    addStyle("outset", "", &Image::setOutset);
   }
 
   //----------------------------------------------------------------------------
@@ -214,6 +215,10 @@ namespace canvas
       if( !_slice.isValid() )
       {
         setQuad(0, region.getMin(), region.getMax());
+
+        if( !_preserve_aspect_ratio.scaleToFill() )
+          // We need to update texture coordinates to keep the aspect ratio
+          _attributes_dirty |= SRC_RECT;
       }
       else
       {
@@ -290,6 +295,66 @@ namespace canvas
 
       if( !_slice.isValid() )
       {
+        // Image scaling preserving aspect ratio. Change texture coordinates to
+        // scale image accordingly.
+        //
+        // TODO allow to specify what happens to not filled space (eg. color,
+        //      or texture repeat/mirror)
+        //
+        // http://www.w3.org/TR/SVG11/coords.html#PreserveAspectRatioAttribute
+        if( !_preserve_aspect_ratio.scaleToFill() )
+        {
+          osg::BoundingBox const& bb = getBoundingBox();
+          float dst_width = bb._max.x() - bb._min.x(),
+                dst_height = bb._max.y() - bb._min.y();
+          float scale_x = dst_width / tex_dim.width(),
+                scale_y = dst_height / tex_dim.height();
+
+          float scale = _preserve_aspect_ratio.scaleToFit()
+                      ? std::min(scale_x, scale_y)
+                      : std::max(scale_x, scale_y);
+
+          if( scale_x != scale )
+          {
+            float d = scale_x / scale - 1;
+            if(  _preserve_aspect_ratio.alignX()
+              == SVGpreserveAspectRatio::ALIGN_MIN )
+            {
+              src_rect.r() += d;
+            }
+            else if(  _preserve_aspect_ratio.alignX()
+                   == SVGpreserveAspectRatio::ALIGN_MAX )
+            {
+              src_rect.l() -= d;
+            }
+            else
+            {
+              src_rect.l() -= d / 2;
+              src_rect.r() += d / 2;
+            }
+          }
+
+          if( scale_y != scale )
+          {
+            float d = scale_y / scale - 1;
+            if(  _preserve_aspect_ratio.alignY()
+              == SVGpreserveAspectRatio::ALIGN_MIN )
+            {
+              src_rect.b() -= d;
+            }
+            else if(  _preserve_aspect_ratio.alignY()
+                   == SVGpreserveAspectRatio::ALIGN_MAX )
+            {
+              src_rect.t() += d;
+            }
+            else
+            {
+              src_rect.t() += d / 2;
+              src_rect.b() -= d / 2;
+            }
+          }
+        }
+
         setQuadUV(0, src_rect.getMin(), src_rect.getMax());
       }
       else
@@ -414,6 +479,20 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Image::setOutset(const std::string& outset)
+  {
+    _outset = CSSBorder::parse(outset);
+    _attributes_dirty |= DEST_SIZE;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setPreserveAspectRatio(const std::string& scale)
+  {
+    _preserve_aspect_ratio = SVGpreserveAspectRatio::parse(scale);
+    _attributes_dirty |= SRC_RECT;
+  }
+
+  //----------------------------------------------------------------------------
   void Image::setSlice(const std::string& slice)
   {
     _slice = CSSBorder::parse(slice);
@@ -424,13 +503,6 @@ namespace canvas
   void Image::setSliceWidth(const std::string& width)
   {
     _slice_width = CSSBorder::parse(width);
-    _attributes_dirty |= DEST_SIZE;
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setOutset(const std::string& outset)
-  {
-    _outset = CSSBorder::parse(outset);
     _attributes_dirty |= DEST_SIZE;
   }
 

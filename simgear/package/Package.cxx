@@ -161,7 +161,7 @@ string_list Package::thumbnailUrls() const
 string_list Package::downloadUrls() const
 {
     string_list r;
-    BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("download")) {
+    BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("url")) {
         r.push_back(dl->getStringValue());
     }
     return r;

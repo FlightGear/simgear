@@ -63,6 +63,10 @@ add_executable(test_path path_test.cxx )
 add_test(path ${EXECUTABLE_OUTPUT_PATH}/test_path)
 target_link_libraries(test_path ${TEST_LIBS})
 
+add_executable(test_utf8tolatin1 utf8tolatin1_test.cxx )
+add_test(utf8tolatin1 ${EXECUTABLE_OUTPUT_PATH}/test_utf8tolatin1)
+target_link_libraries(test_utf8tolatin1 ${TEST_LIBS})
+
 endif(ENABLE_TESTS)
 
 add_boost_test(SVGpreserveAspectRatio

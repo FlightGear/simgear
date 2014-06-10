@@ -37,6 +37,7 @@ public:
     typedef enum {
         FAIL_SUCCESS = 0, ///< not a failure :)
         FAIL_UNKNOWN = 1,
+        FAIL_IN_PROGRESS, ///< downloading/installation in progress (not a failure :P)
         FAIL_CHECKSUM,  ///< package MD5 verificstion failed
         FAIL_DOWNLOAD,  ///< network issue
         FAIL_EXTRACT,   ///< package archive failed to extract cleanly

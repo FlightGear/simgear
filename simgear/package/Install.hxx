@@ -26,6 +26,9 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+
 namespace simgear
 {
     
@@ -47,6 +50,10 @@ typedef SGSharedPtr<Install> InstallRef;
 class Install : public SGReferenced
 {
 public:
+    typedef boost::function<void(Install*)> Callback;
+    typedef boost::function<void(Install*, unsigned int, unsigned int)>
+                                            ProgressCallback;
+
     /**
      * create from a directory on disk, or fail.
      */
@@ -66,12 +73,65 @@ public:
     void startUpdate();
     
     void uninstall();
+
+    /**
+     * Set the handler to be called when the installation successfully
+     * completes.
+     *
+     * @note If the installation is already complete, the handler is called
+     *       immediately.
+     */
+    Install* done(const Callback& cb);
+
+    template<class C>
+    Install* done(C* instance, void (C::*mem_func)(Install*))
+    {
+      return done(boost::bind(mem_func, instance, _1));
+    }
+
+    /**
+     * Set the handler to be called when the installation fails or is aborted.
+     *
+     * @note If the installation has already failed, the handler is called
+     *       immediately.
+     */
+    Install* fail(const Callback& cb);
+
+    template<class C>
+    Install* fail(C* instance, void (C::*mem_func)(Install*))
+    {
+      return fail(boost::bind(mem_func, instance, _1));
+    }
+
+    /**
+     * Set the handler to be called when the installation either successfully
+     * completes or fails.
+     *
+     * @note If the installation is already complete or has already failed, the
+     *       handler is called immediately.
+     */
+    Install* always(const Callback& cb);
+
+    template<class C>
+    Install* always(C* instance, void (C::*mem_func)(Install*))
+    {
+      return always(boost::bind(mem_func, instance, _1));
+    }
     
-// boost signals time?
-    // failure
-    // progress
-    // completed
-    
+    /**
+     * Set the handler to be called during downloading the installation file
+     * indicating the progress of the download.
+     *
+     */
+    Install* progress(const ProgressCallback& cb);
+
+    template<class C>
+    Install* progress(C* instance,
+                      void (C::*mem_func)(Install*, unsigned int, unsigned int))
+    {
+      return progress(boost::bind(mem_func, instance, _1, _2, _3));
+    }
+
 private:
     friend class Package;
     
@@ -91,6 +151,14 @@ private:
     SGPath m_path; ///< installation point on disk
     
     PackageArchiveDownloader* m_download;
+
+    Delegate::FailureCode _status;
+
+    Callback          _cb_done,
+                      _cb_fail,
+                      _cb_always;
+    ProgressCallback  _cb_progress;
+
 };
     
     

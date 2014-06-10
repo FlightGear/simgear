@@ -255,11 +255,11 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////
-    
 Install::Install(PackageRef aPkg, const SGPath& aPath) :
     m_package(aPkg),
     m_path(aPath),
-    m_download(NULL)
+    m_download(NULL),
+    _status(Delegate::FAIL_IN_PROGRESS)
 {
     parseRevision();
 }
@@ -315,24 +315,75 @@ void Install::uninstall()
 {
     Dir d(m_path);
     d.remove(true);
-    delete this;
 }
 
+//------------------------------------------------------------------------------
+Install* Install::done(const Callback& cb)
+{
+  if( _status == Delegate::FAIL_SUCCESS )
+    cb(this);
+  else
+    _cb_done = cb;
+
+  return this;
+}
+
+//------------------------------------------------------------------------------
+Install* Install::fail(const Callback& cb)
+{
+  if(    _status != Delegate::FAIL_SUCCESS
+      && _status != Delegate::FAIL_IN_PROGRESS )
+    cb(this);
+  else
+    _cb_fail = cb;
+
+  return this;
+}
+
+//------------------------------------------------------------------------------
+Install* Install::always(const Callback& cb)
+{
+  if( _status != Delegate::FAIL_IN_PROGRESS )
+    cb(this);
+  else
+    _cb_always = cb;
+
+  return this;
+}
+
+//------------------------------------------------------------------------------
+Install* Install::progress(const ProgressCallback& cb)
+{
+  _cb_progress = cb;
+  return this;
+}
+
+//------------------------------------------------------------------------------
 void Install::installResult(Delegate::FailureCode aReason)
 {
     if (aReason == Delegate::FAIL_SUCCESS) {
         m_package->catalog()->root()->finishInstall(this);
+        if( _cb_done )
+          _cb_done(this);
     } else {
         m_package->catalog()->root()->failedInstall(this, aReason);
+        if( _cb_fail )
+          _cb_fail(this);
     }
+
+    if( _cb_always )
+      _cb_always(this);
 }
-    
+
+//------------------------------------------------------------------------------
 void Install::installProgress(unsigned int aBytes, unsigned int aTotal)
 {
     m_package->catalog()->root()->installProgress(this, aBytes, aTotal);
+    if( _cb_progress )
+      _cb_progress(this, aBytes, aTotal);
 }
 
-    
+
 } // of namespace pkg
 
 } // of namespace simgear

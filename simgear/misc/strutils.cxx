@@ -53,8 +53,11 @@ namespace simgear {
 		size_t len = get_length (p);
 		if (len == 1) return *p;
 		value_type res = static_cast<unsigned char> ( *p & (0xff >> (len + 1))) << ((len - 1) * 6 );
-		for (--len; len; --len)
-			res |= (static_cast<unsigned char> (*(++p)) - 0x80) << ((len - 1) * 6);
+		for (--len; len; --len) {
+		        value_type next_byte = static_cast<unsigned char> (*(++p)) - 0x80;
+		        if (next_byte & 0xC0) return 0x00ffffff; // invalid UTF-8
+			res |= next_byte << ((len - 1) * 6);
+			}
 		return res;
 	}
 
@@ -62,6 +65,7 @@ namespace simgear {
 		string s_latin1;
 		for (string::iterator p = s_utf8.begin(); p != s_utf8.end(); ++p) {
 			value_type value = get_value<string::iterator&>(p);
+			if (value > 0x10ffff) return s_utf8; // invalid UTF-8: guess that the input was already Latin-1
 			if (value > 0xff) SG_LOG(SG_IO, SG_WARN, "utf8ToLatin1: wrong char value: " << value);
 			s_latin1 += static_cast<char>(value);
 		}

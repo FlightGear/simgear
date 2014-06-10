@@ -53,7 +53,9 @@ public:
      * get or create an install for the package
      */
     InstallRef install();
-    
+
+    InstallRef existingInstall() const;
+
     bool isInstalled() const;
     
     std::string id() const;
@@ -102,6 +104,8 @@ public:
      */
     PackageList dependencies() const;
 private:
+    SGPath pathOnDisk() const;
+
     friend class Catalog;
     
     Package(const SGPropertyNode* aProps, CatalogRef aCatalog);

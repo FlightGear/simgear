@@ -97,19 +97,21 @@ bool Package::matches(const SGPropertyNode* aFilter) const
 
 bool Package::isInstalled() const
 {
-    SGPath p(m_catalog->installRoot());
-    p.append("Aircraft");
-    p.append(id());
-    
     // anything to check for? look for a valid revision file?
-    return p.exists();
+    return pathOnDisk().exists();
 }
 
-InstallRef Package::install()
+SGPath Package::pathOnDisk() const
 {
     SGPath p(m_catalog->installRoot());
     p.append("Aircraft");
     p.append(id());
+    return p;
+}
+
+InstallRef Package::install()
+{
+    SGPath p(pathOnDisk());
     if (p.exists()) {
         return Install::createFromPath(p, m_catalog);
     }
@@ -117,6 +119,16 @@ InstallRef Package::install()
     InstallRef ins(new Install(this, p));
     m_catalog->root()->scheduleToUpdate(ins);
     return ins;
+}
+
+InstallRef Package::existingInstall() const
+{
+    SGPath p(pathOnDisk());
+    if (p.exists()) {
+        return Install::createFromPath(p, m_catalog);
+    }
+
+    return NULL;
 }
 
 std::string Package::id() const

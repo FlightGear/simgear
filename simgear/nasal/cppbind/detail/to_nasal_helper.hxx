@@ -155,11 +155,11 @@ namespace nasal
   template<class T>
   naRef to_nasal_helper(naContext c, const SGRect<T>& rect)
   {
-    std::vector<float> vec(4);
-    vec[0] = rect.l();
-    vec[1] = rect.t();
-    vec[2] = rect.r();
-    vec[3] = rect.b();
+    std::vector<double> vec(4);
+    vec[0] = rect.x();
+    vec[1] = rect.y();
+    vec[2] = rect.width();
+    vec[3] = rect.height();
 
     return to_nasal_helper(c, vec);
   }

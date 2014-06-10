@@ -22,6 +22,8 @@
 
 #include "nasal_traits.hxx"
 
+#include <simgear/math/SGMath.hxx>
+#include <simgear/math/SGRect.hxx>
 #include <simgear/nasal/nasal.h>
 #include <simgear/nasal/cppbind/NasalObjectHolder.hxx>
 #include <simgear/nasal/cppbind/to_nasal.hxx>
@@ -206,6 +208,20 @@ namespace nasal
     if( vec.size() != 2 )
       throw bad_nasal_cast("Expected vector with two elements");
     return Vec2(vec[0], vec[1]);
+  }
+
+  /**
+   * Convert a Nasal vector with 4 elements ([x, y, w, h]) to an SGRect
+   */
+  template<class T>
+  SGRect<T> from_nasal_helper(naContext c, naRef ref, const SGRect<T>*)
+  {
+    std::vector<double> vec =
+      from_nasal_helper(c, ref, static_cast<std::vector<double>*>(0));
+    if( vec.size() != 4 )
+      throw bad_nasal_cast("Expected vector with four elements");
+
+    return SGRect<T>(vec[0], vec[1], vec[2], vec[3]);
   }
 
   // Helpers for wrapping calls to Nasal functions into boost::function

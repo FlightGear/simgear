@@ -53,7 +53,9 @@ bool Package::matches(const SGPropertyNode* aFilter) const
     int nChildren = aFilter->nChildren();
     for (int i = 0; i < nChildren; i++) {
         const SGPropertyNode* c = aFilter->getChild(i);
-        if (strutils::starts_with(c->getName(), "rating-")) {
+        const std::string& filter_name = c->getNameString();
+
+        if (strutils::starts_with(filter_name, "rating-")) {
             int minRating = c->getIntValue();
             std::string rname = c->getName() + 7;
             int ourRating = m_props->getChild("rating")->getIntValue(rname, 0);
@@ -61,17 +63,15 @@ bool Package::matches(const SGPropertyNode* aFilter) const
                 return false;
             }
         }
-        
-        if (strcmp(c->getName(), "tag") == 0) {
+        else if (filter_name == "tag") {
             std::string tag(c->getStringValue());
             boost::to_lower(tag);
             if (m_tags.find(tag) == m_tags.end()) {
                 return false;
             }
         }
-      
         // substring search of name, description
-        if (strcmp(c->getName(), "name") == 0) {
+        else if (filter_name == "name") {
           std::string n(c->getStringValue());
           boost::to_lower(n);
           size_t pos = boost::to_lower_copy(name()).find(n);
@@ -79,8 +79,7 @@ bool Package::matches(const SGPropertyNode* aFilter) const
             return false;
           }
         }
-      
-        if (strcmp(c->getName(), "description") == 0) {
+        else if (filter_name == "description") {
           std::string n(c->getStringValue());
           boost::to_lower(n);
           size_t pos = boost::to_lower_copy(description()).find(n);
@@ -88,8 +87,8 @@ bool Package::matches(const SGPropertyNode* aFilter) const
             return false;
           }
         }
-
-        SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << c->getName());
+        else
+          SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << filter_name);
     } // of filter props iteration
     
     return true;

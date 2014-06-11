@@ -55,6 +55,10 @@ namespace canvas
 
       void insertSpacing(int index, int size);
 
+      virtual size_t count() const;
+      virtual LayoutItemRef itemAt(size_t index);
+      virtual LayoutItemRef takeAt(size_t index);
+
       /**
        * Set the stretch factor of the item at position @a index to @a stretch.
        */
@@ -86,7 +90,9 @@ namespace canvas
       int _padding;
       Direction _direction;
 
-      mutable std::vector<ItemData> _layout_items;
+      typedef std::vector<ItemData> LayoutItems;
+
+      mutable LayoutItems _layout_items;
       mutable ItemData _layout_data;
 
       void updateSizeHints() const;

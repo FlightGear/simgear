@@ -40,6 +40,32 @@ namespace canvas
       virtual void setSpacing(int spacing) = 0;
       virtual int spacing() const = 0;
 
+      /**
+       * Get the number of items.
+       */
+      virtual size_t count() const = 0;
+
+      /**
+       * Get the item at position @a index.
+       *
+       * If there is no such item the function must do nothing and return an
+       * empty reference.
+       */
+      virtual LayoutItemRef itemAt(size_t index) = 0;
+
+      /**
+       * Remove and get the item at position @a index.
+       *
+       * If there is no such item the function must do nothing and return an
+       * empty reference.
+       */
+      virtual LayoutItemRef takeAt(size_t index) = 0;
+
+      /**
+       * Remove the given @a item from the layout.
+       */
+      void removeItem(const LayoutItemRef& item);
+
     protected:
       enum LayoutFlags
       {

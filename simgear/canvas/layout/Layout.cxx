@@ -55,6 +55,19 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Layout::removeItem(const LayoutItemRef& item)
+  {
+    size_t i = 0;
+    while( LayoutItemRef child = itemAt(i) )
+    {
+      if( item == child )
+        return (void)takeAt(i);
+
+      ++i;
+    }
+  }
+
+  //----------------------------------------------------------------------------
   void Layout::ItemData::reset()
   {
     layout_item = 0;

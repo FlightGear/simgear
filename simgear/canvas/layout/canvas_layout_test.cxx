@@ -255,6 +255,33 @@ BOOST_AUTO_TEST_CASE( vertical_layout)
   vbox.setDirection(sc::BoxLayout::BottomToTop);
 }
 
+BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
+{
+  sc::HBoxLayout hbox;
+
+  BOOST_CHECK_EQUAL(hbox.count(), 0);
+  BOOST_CHECK(!hbox.itemAt(0));
+  BOOST_CHECK(!hbox.takeAt(0));
+
+  TestWidgetRef w1( new TestWidget( SGVec2i(16,   16),
+                                    SGVec2i(32,   32),
+                                    SGVec2i(9999, 32) ) ),
+                w2( new TestWidget(*w1) );
+
+  hbox.addItem(w1);
+  BOOST_CHECK_EQUAL(hbox.count(), 1);
+  BOOST_CHECK_EQUAL(hbox.itemAt(0), w1);
+
+  hbox.insertItem(0, w2);
+  BOOST_CHECK_EQUAL(hbox.count(), 2);
+  BOOST_CHECK_EQUAL(hbox.itemAt(0), w2);
+  BOOST_CHECK_EQUAL(hbox.itemAt(1), w1);
+
+  hbox.removeItem(w2);
+  BOOST_CHECK_EQUAL(hbox.count(), 1);
+  BOOST_CHECK_EQUAL(hbox.itemAt(0), w1);
+}
+
 //------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( nasal_layout )
 {

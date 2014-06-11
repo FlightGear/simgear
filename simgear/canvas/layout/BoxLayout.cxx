@@ -92,6 +92,36 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  size_t BoxLayout::count() const
+  {
+    return _layout_items.size();
+  }
+
+  //----------------------------------------------------------------------------
+  LayoutItemRef BoxLayout::itemAt(size_t index)
+  {
+    if( index >= _layout_items.size() )
+      return LayoutItemRef();
+
+    return _layout_items[index].layout_item;
+  }
+
+  //----------------------------------------------------------------------------
+  LayoutItemRef BoxLayout::takeAt(size_t index)
+  {
+    if( index >= _layout_items.size() )
+      return LayoutItemRef();
+
+    LayoutItems::iterator it = _layout_items.begin() + index;
+    LayoutItemRef item = it->layout_item;
+    _layout_items.erase(it);
+
+    invalidate();
+
+    return item;
+  }
+
+  //----------------------------------------------------------------------------
   void BoxLayout::setStretch(size_t index, int stretch)
   {
     if( index >= _layout_items.size() )

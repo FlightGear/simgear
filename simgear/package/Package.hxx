@@ -89,7 +89,9 @@ public:
     std::string getLocalisedProp(const std::string& aName) const;
 
     unsigned int revision() const;
-    
+  
+    size_t fileSizeBytes() const;
+  
     CatalogRef catalog() const
         { return m_catalog; }
     

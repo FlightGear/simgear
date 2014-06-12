@@ -151,6 +151,11 @@ std::string Package::name() const
     return m_props->getStringValue("name");
 }
 
+size_t Package::fileSizeBytes() const
+{
+    return m_props->getIntValue("file-size-bytes");
+}
+  
 std::string Package::description() const
 {
     return getLocalisedProp("decription");

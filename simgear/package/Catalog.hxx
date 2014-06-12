@@ -124,8 +124,8 @@ private:
     friend class Downloader;
   
     friend class Install;
-    void registerInstall(InstallRef ins);
-    void unregisterInstall(InstallRef ins);
+    void registerInstall(Install* ins);
+    void unregisterInstall(Install* ins);
   
     void parseProps(const SGPropertyNode* aProps);
     

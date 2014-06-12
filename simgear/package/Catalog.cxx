@@ -356,7 +356,7 @@ void Catalog::refreshComplete(Delegate::FailureCode aReason)
     m_root->catalogRefreshComplete(this, aReason);
 }
 
-void Catalog::registerInstall(InstallRef ins)
+void Catalog::registerInstall(Install* ins)
 {
   if (!ins || ins->package()->catalog() != this) {
     return;
@@ -365,7 +365,7 @@ void Catalog::registerInstall(InstallRef ins)
   m_installed[ins->package()] = ins;
 }
 
-void Catalog::unregisterInstall(InstallRef ins)
+void Catalog::unregisterInstall(Install* ins)
 {
   if (!ins || ins->package()->catalog() != this) {
     return;

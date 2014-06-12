@@ -114,6 +114,18 @@ class SGRect
     void setBottom(T b) { _max.y() = b; }
 
     /**
+     * Expand rectangle to include the given position
+     */
+    void expandBy(T x, T y)
+    {
+      if( x < _min.x() ) _min.x() = x;
+      if( x > _max.x() ) _max.x() = x;
+
+      if( y < _min.y() ) _min.y() = y;
+      if( y > _max.y() ) _max.y() = y;
+    }
+
+    /**
      * Move rect by vector
      */
     SGRect& operator+=(const SGVec2<T>& offset)

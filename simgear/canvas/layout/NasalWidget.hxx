@@ -40,6 +40,7 @@ namespace canvas
     public:
 
       typedef boost::function<void (nasal::Me, const SGRecti&)> SetGeometryFunc;
+      typedef boost::function<int (nasal::Me, int)> HeightForWidthFunc;
 
       /**
        *
@@ -51,10 +52,16 @@ namespace canvas
       virtual void setGeometry(const SGRecti& geom);
 
       void setSetGeometryFunc(const SetGeometryFunc& func);
+      void setHeightForWidthFunc(const HeightForWidthFunc& func);
+      void setMinimumHeightForWidthFunc(const HeightForWidthFunc& func);
 
       void setSizeHint(const SGVec2i& s);
       void setMinimumSize(const SGVec2i& s);
       void setMaximumSize(const SGVec2i& s);
+
+      virtual bool hasHeightForWidth() const;
+      virtual int heightForWidth(int w) const;
+      virtual int minimumHeightForWidth(int w) const;
 
       /**
        * @param ns  Namespace to register the class interface
@@ -63,6 +70,11 @@ namespace canvas
 
     protected:
       SetGeometryFunc       _set_geometry;
+      HeightForWidthFunc    _height_for_width,
+                            _min_height_for_width;
+
+      int callHeightForWidthFunc( const HeightForWidthFunc& hfw,
+                                  int w ) const;
 
       virtual SGVec2i sizeHintImpl() const;
       virtual SGVec2i minimumSizeImpl() const;

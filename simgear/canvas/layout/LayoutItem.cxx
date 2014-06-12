@@ -79,6 +79,24 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool LayoutItem::hasHeightForWidth() const
+  {
+    return false;
+  }
+
+  //----------------------------------------------------------------------------
+  int LayoutItem::heightForWidth(int w) const
+  {
+    return -1;
+  }
+
+  //------------------------------------------------------------------------------
+  int LayoutItem::minimumHeightForWidth(int w) const
+  {
+    return heightForWidth(w);
+  }
+
+  //----------------------------------------------------------------------------
   void LayoutItem::invalidate()
   {
     _flags |= SIZE_HINT_DIRTY

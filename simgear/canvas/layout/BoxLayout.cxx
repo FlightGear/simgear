@@ -176,6 +176,35 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool BoxLayout::hasHeightForWidth() const
+  {
+    if( _flags & SIZE_INFO_DIRTY )
+      updateSizeHints();
+
+    return _layout_data.has_hfw;
+  }
+
+  //----------------------------------------------------------------------------
+  int BoxLayout::heightForWidth(int w) const
+  {
+    if( !hasHeightForWidth() )
+      return -1;
+
+    updateWFHCache(w);
+    return _hfw_height;
+  }
+
+  //----------------------------------------------------------------------------
+  int BoxLayout::minimumHeightForWidth(int w) const
+  {
+    if( !hasHeightForWidth() )
+      return -1;
+
+    updateWFHCache(w);
+    return _hfw_min_height;
+  }
+
+  //----------------------------------------------------------------------------
   void BoxLayout::setCanvas(const CanvasWeakPtr& canvas)
   {
     _canvas = canvas;
@@ -198,6 +227,8 @@ namespace canvas
             size_hint(0, 0);
 
     _layout_data.reset();
+    _hfw_width = _hfw_height = _hfw_min_height = -1;
+
     bool is_first = true;
 
     for(size_t i = 0; i < _layout_items.size(); ++i)
@@ -210,6 +241,7 @@ namespace canvas
       item_data.min_size  = (item.minimumSize().*_get_layout_coord)();
       item_data.max_size  = (item.maximumSize().*_get_layout_coord)();
       item_data.size_hint = (item.sizeHint().*_get_layout_coord)();
+      item_data.has_hfw = item.hasHeightForWidth();
 
       if( !dynamic_cast<SpacerItem*>(item_data.layout_item.get()) )
       {
@@ -237,6 +269,8 @@ namespace canvas
                                 (item.maximumSize().*_get_fixed_coord)() );
       size_hint.y() = std::max( size_hint.y(),
                                 (item.sizeHint().*_get_fixed_coord)() );
+
+      _layout_data.has_hfw = _layout_data.has_hfw || item.hasHeightForWidth();
     }
 
     safeAdd(min_size.x(),  _layout_data.padding);
@@ -256,6 +290,40 @@ namespace canvas
     _size_hint.y() = (size_hint.*_get_fixed_coord)();
 
     _flags &= ~SIZE_INFO_DIRTY;
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::updateWFHCache(int w) const
+  {
+    if( w == _hfw_width )
+      return;
+
+    _hfw_height = 0;
+    _hfw_min_height = 0;
+
+    if( horiz() )
+    {
+      _layout_data.size = w;
+      const_cast<BoxLayout*>(this)->distribute(_layout_items, _layout_data);
+
+      for(size_t i = 0; i < _layout_items.size(); ++i)
+      {
+        ItemData const& data = _layout_items[i];
+        _hfw_height = std::max(_hfw_height, data.hfw(data.size));
+        _hfw_min_height = std::max(_hfw_min_height, data.mhfw(data.size));
+      }
+    }
+    else
+    {
+      for(size_t i = 0; i < _layout_items.size(); ++i)
+      {
+        ItemData const& data = _layout_items[i];
+        _hfw_height += data.hfw(w) + data.padding_orig;
+        _hfw_min_height += data.mhfw(w) + data.padding_orig;
+      }
+    }
+
+    _hfw_width = w;
   }
 
   //----------------------------------------------------------------------------
@@ -285,9 +353,45 @@ namespace canvas
     if( _flags & SIZE_INFO_DIRTY )
       updateSizeHints();
 
+    // Store current size hints because vertical layouts containing
+    // height-for-width items the size hints are update for the actual width of
+    // the layout
+    int min_size_save = _layout_data.min_size,
+        size_hint_save = _layout_data.size_hint;
+
     _layout_data.size = (geom.size().*_get_layout_coord)();
+
+    // update width dependent data for layouting of vertical layouts
+    if( _layout_data.has_hfw && !horiz() )
+    {
+      for(size_t i = 0; i < _layout_items.size(); ++i)
+      {
+        ItemData& data = _layout_items[i];
+        if( data.has_hfw )
+        {
+          int w = SGMisc<int>::clip( geom.width(),
+                                     data.layout_item->minimumSize().x(),
+                                     data.layout_item->maximumSize().x() );
+
+          int d = data.layout_item->minimumHeightForWidth(w) - data.min_size;
+          data.min_size += d;
+          _layout_data.min_size += d;
+
+          d = data.layout_item->heightForWidth(w) - data.size_hint;
+          data.size_hint += d;
+          _layout_data.size_hint += d;
+        }
+      }
+    }
+
+    // now do the actual layouting
     distribute(_layout_items, _layout_data);
 
+    // Restore size hints possibly changed by vertical layouting
+    _layout_data.min_size = min_size_save;
+    _layout_data.size_hint = size_hint_save;
+
+    // and finally set the layouted geometry for each item
     int fixed_size = (geom.size().*_get_fixed_coord)();
     SGVec2i cur_pos( (geom.pos().*_get_layout_coord)(),
                      (geom.pos().*_get_fixed_coord)() );
@@ -296,7 +400,6 @@ namespace canvas
     if( reverse )
       cur_pos.x() += (geom.size().*_get_layout_coord)();
 
-    // TODO handle reverse layouting (rtl/btt)
     for(size_t i = 0; i < _layout_items.size(); ++i)
     {
       ItemData const& data = _layout_items[i];

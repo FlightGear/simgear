@@ -78,7 +78,26 @@ namespace canvas
     padding     = 0;
     size        = 0;
     stretch     = 0;
+    has_hfw     = false;
     done        = false;
+  }
+
+  //----------------------------------------------------------------------------
+  int Layout::ItemData::hfw(int w) const
+  {
+    if( has_hfw )
+      return layout_item->heightForWidth(w);
+    else
+      return layout_item->sizeHint().y();
+  }
+
+  //----------------------------------------------------------------------------
+  int Layout::ItemData::mhfw(int w) const
+  {
+    if( has_hfw )
+      return layout_item->minimumHeightForWidth(w);
+    else
+      return layout_item->minimumSize().y();
   }
 
   //----------------------------------------------------------------------------
@@ -121,6 +140,15 @@ namespace canvas
         d.size = less_then_hint ? d.min_size : d.size_hint;
         d.padding = d.padding_orig;
         d.done = d.size >= (less_then_hint ? d.size_hint : d.max_size);
+
+        SG_LOG(
+          SG_GUI,
+          SG_DEBUG,
+          i << ") initial=" << d.size
+            << ", min=" << d.min_size
+            << ", hint=" << d.size_hint
+            << ", max=" << d.max_size
+        );
 
         if( d.done )
         {

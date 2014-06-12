@@ -34,7 +34,7 @@ class SGRect
 
     }
 
-    SGRect(const SGVec2<T>& pt):
+    explicit SGRect(const SGVec2<T>& pt):
       _min(pt),
       _max(pt)
     {

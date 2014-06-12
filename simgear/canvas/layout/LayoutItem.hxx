@@ -63,6 +63,10 @@ namespace canvas
        */
       SGVec2i maximumSize() const;
 
+      virtual bool hasHeightForWidth() const;
+      virtual int heightForWidth(int w) const;
+      virtual int minimumHeightForWidth(int w) const;
+
       /**
        * Mark all cached data as invalid and require it to be recalculated.
        */

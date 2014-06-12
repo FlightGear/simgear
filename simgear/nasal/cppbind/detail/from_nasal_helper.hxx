@@ -144,6 +144,9 @@ namespace nasal
   boost::function<Sig>
   from_nasal_helper(naContext c, naRef ref, boost::function<Sig>*)
   {
+    if( naIsNil(ref) )
+      return boost::function<Sig>();
+
     if(    !naIsCode(ref)
         && !naIsCCode(ref)
         && !naIsFunc(ref) )

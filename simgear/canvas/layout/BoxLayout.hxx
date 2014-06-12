@@ -75,6 +75,10 @@ namespace canvas
       void setDirection(Direction dir);
       Direction direction() const;
 
+      virtual bool hasHeightForWidth() const;
+      virtual int heightForWidth(int w) const;
+      virtual int minimumHeightForWidth(int w) const;
+
       virtual void setCanvas(const CanvasWeakPtr& canvas);
 
       bool horiz() const;
@@ -95,7 +99,13 @@ namespace canvas
       mutable LayoutItems _layout_items;
       mutable ItemData _layout_data;
 
+      // Cache for last height-for-width query
+      mutable int _hfw_width,
+                  _hfw_height,
+                  _hfw_min_height;
+
       void updateSizeHints() const;
+      void updateWFHCache(int w) const;
 
       virtual SGVec2i sizeHintImpl() const;
       virtual SGVec2i minimumSizeImpl() const;

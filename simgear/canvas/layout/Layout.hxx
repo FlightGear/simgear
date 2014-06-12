@@ -83,10 +83,14 @@ namespace canvas
                 padding,      //<! padding before element (layouted)
                 size,         //<! layouted size
                 stretch;      //<! stretch factor
-        bool    done;         //<! layouting done
+        bool    has_hfw : 1,  //<! height for width
+                done : 1;     //<! layouting done
 
         /** Clear values (reset to default/empty state) */
         void reset();
+
+        int hfw(int w) const;
+        int mhfw(int w) const;
       };
 
       /**

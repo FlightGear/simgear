@@ -44,7 +44,7 @@ class TestWidget:
   public:
     TestWidget( const SGVec2i& min_size,
                 const SGVec2i& size_hint,
-                const SGVec2i& max_size )
+                const SGVec2i& max_size = MAX_SIZE )
     {
       _size_hint = size_hint;
       _min_size = min_size;
@@ -72,6 +72,34 @@ class TestWidget:
     virtual SGVec2i sizeHintImpl() const { return _size_hint; }
     virtual SGVec2i minimumSizeImpl() const { return _min_size; }
     virtual SGVec2i maximumSizeImpl() const { return _max_size; }
+};
+
+class TestWidgetHFW:
+  public TestWidget
+{
+  public:
+    TestWidgetHFW( const SGVec2i& min_size,
+                   const SGVec2i& size_hint,
+                   const SGVec2i& max_size = MAX_SIZE ):
+      TestWidget(min_size, size_hint, max_size)
+    {
+
+    }
+
+    virtual bool hasHeightForWidth() const
+    {
+      return true;
+    }
+
+    virtual int heightForWidth(int w) const
+    {
+      return _size_hint.x() * _size_hint.y() / w;
+    }
+
+    virtual int minimumHeightForWidth(int w) const
+    {
+      return _min_size.x() * _min_size.y() / w;
+    }
 };
 
 typedef SGSharedPtr<TestWidget> TestWidgetRef;
@@ -255,6 +283,7 @@ BOOST_AUTO_TEST_CASE( vertical_layout)
   vbox.setDirection(sc::BoxLayout::BottomToTop);
 }
 
+//------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
 {
   sc::HBoxLayout hbox;
@@ -280,6 +309,89 @@ BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
   hbox.removeItem(w2);
   BOOST_CHECK_EQUAL(hbox.count(), 1);
   BOOST_CHECK_EQUAL(hbox.itemAt(0), w1);
+}
+
+//------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( boxlayout_hfw )
+{
+  TestWidgetRef w1( new TestWidgetHFW( SGVec2i(16,   16),
+                                       SGVec2i(32,   32) ) ),
+                w2( new TestWidgetHFW( SGVec2i(24,   24),
+                                       SGVec2i(48,   48) ) );
+
+  BOOST_CHECK_EQUAL(w1->heightForWidth(16), 64);
+  BOOST_CHECK_EQUAL(w1->minimumHeightForWidth(16), 16);
+  BOOST_CHECK_EQUAL(w2->heightForWidth(24), 96);
+  BOOST_CHECK_EQUAL(w2->minimumHeightForWidth(24), 24);
+
+  TestWidgetRef w_no_hfw( new TestWidget( SGVec2i(16,   16),
+                                          SGVec2i(32,   32) ) );
+  BOOST_CHECK(!w_no_hfw->hasHeightForWidth());
+  BOOST_CHECK_EQUAL(w_no_hfw->heightForWidth(16), -1);
+  BOOST_CHECK_EQUAL(w_no_hfw->minimumHeightForWidth(16), -1);
+
+  // horizontal
+  sc::HBoxLayout hbox;
+  hbox.setSpacing(5);
+  hbox.addItem(w1);
+  hbox.addItem(w2);
+
+  BOOST_CHECK_EQUAL(hbox.heightForWidth(45), w2->heightForWidth(24));
+  BOOST_CHECK_EQUAL(hbox.heightForWidth(85), w2->heightForWidth(48));
+
+  hbox.addItem(w_no_hfw);
+
+  BOOST_CHECK_EQUAL(hbox.heightForWidth(66), 96);
+  BOOST_CHECK_EQUAL(hbox.heightForWidth(122), 48);
+  BOOST_CHECK_EQUAL(hbox.minimumHeightForWidth(66), 24);
+  BOOST_CHECK_EQUAL(hbox.minimumHeightForWidth(122), 16);
+
+  hbox.setGeometry(SGRecti(0, 0, 66, 24));
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  16, 24));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(21, 0, 24, 24));
+  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(50, 0, 16, 24));
+
+  // vertical
+  sc::VBoxLayout vbox;
+  vbox.setSpacing(5);
+  vbox.addItem(w1);
+  vbox.addItem(w2);
+
+  BOOST_CHECK_EQUAL(vbox.heightForWidth(24), 143);
+  BOOST_CHECK_EQUAL(vbox.heightForWidth(48), 74);
+  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(24), 39);
+  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(48), 22);
+
+  vbox.addItem(w_no_hfw);
+
+  BOOST_CHECK_EQUAL(vbox.heightForWidth(24), 180);
+  BOOST_CHECK_EQUAL(vbox.heightForWidth(48), 111);
+  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(24), 60);
+  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(48), 43);
+
+  SGVec2i min_size = vbox.minimumSize(),
+          size_hint = vbox.sizeHint();
+
+  BOOST_CHECK_EQUAL(min_size, SGVec2i(24, 66));
+  BOOST_CHECK_EQUAL(size_hint, SGVec2i(48, 122));
+
+  vbox.setGeometry(SGRecti(0, 0, 24, 122));
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  24, 33));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 38, 24, 47));
+  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
+
+  // Vertical layouting modifies size hints, so check if they are correctly
+  // restored
+  BOOST_CHECK_EQUAL(min_size, vbox.minimumSize());
+  BOOST_CHECK_EQUAL(size_hint, vbox.sizeHint());
+
+  vbox.setGeometry(SGRecti(0, 0, 50, 122));
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  50, 44));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 49, 50, 70));
+  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 124, 50, 56));
 }
 
 //------------------------------------------------------------------------------

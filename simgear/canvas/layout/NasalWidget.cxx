@@ -66,6 +66,20 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void NasalWidget::setHeightForWidthFunc(const HeightForWidthFunc& func)
+  {
+    _height_for_width = func;
+    invalidateParent();
+  }
+
+  //----------------------------------------------------------------------------
+  void NasalWidget::setMinimumHeightForWidthFunc(const HeightForWidthFunc& func)
+  {
+    _min_height_for_width = func;
+    invalidateParent();
+  }
+
+  //----------------------------------------------------------------------------
   void NasalWidget::setSizeHint(const SGVec2i& s)
   {
     if( _size_hint == s )
@@ -98,6 +112,28 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool NasalWidget::hasHeightForWidth() const
+  {
+    return !_height_for_width.empty() || !_min_height_for_width.empty();
+  }
+
+  //----------------------------------------------------------------------------
+  int NasalWidget::heightForWidth(int w) const
+  {
+    return callHeightForWidthFunc( _height_for_width.empty()
+                                 ? _min_height_for_width
+                                 : _height_for_width, w );
+  }
+
+  //----------------------------------------------------------------------------
+  int NasalWidget::minimumHeightForWidth(int w) const
+  {
+    return callHeightForWidthFunc( _min_height_for_width.empty()
+                                 ? _height_for_width
+                                 : _min_height_for_width, w );
+  }
+
+  //----------------------------------------------------------------------------
   static naRef f_makeNasalWidget(const nasal::CallContext& ctx)
   {
     return ctx.to_nasal(NasalWidgetRef(
@@ -112,12 +148,40 @@ namespace canvas
       .bases<LayoutItemRef>()
       .bases<nasal::ObjectRef>()
       .method("setSetGeometryFunc", &NasalWidget::setSetGeometryFunc)
+      .method("setMinimumHeightForWidthFunc",
+                                    &NasalWidget::setMinimumHeightForWidthFunc)
+      .method("setHeightForWidthFunc", &NasalWidget::setHeightForWidthFunc)
       .method("setSizeHint", &NasalWidget::setSizeHint)
       .method("setMinimumSize", &NasalWidget::setMinimumSize)
       .method("setMaximumSize", &NasalWidget::setMaximumSize);
 
     nasal::Hash widget_hash = ns.createHash("Widget");
     widget_hash.set("new", &f_makeNasalWidget);
+  }
+
+  //----------------------------------------------------------------------------
+  int NasalWidget::callHeightForWidthFunc( const HeightForWidthFunc& hfw,
+                                           int w ) const
+  {
+    if( hfw.empty() )
+      return -1;
+
+    naContext c = naNewContext();
+    try
+    {
+      return hfw(nasal::to_nasal(c, const_cast<NasalWidget*>(this)), w);
+    }
+    catch( std::exception const& ex )
+    {
+      SG_LOG(
+        SG_GUI,
+        SG_WARN,
+        "NasalWidget.heightForWidth: callback error: '" << ex.what() << "'"
+      );
+    }
+    naFreeContext(c);
+
+    return -1;
   }
 
   //----------------------------------------------------------------------------

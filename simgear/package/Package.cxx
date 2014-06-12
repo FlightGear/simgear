@@ -158,7 +158,7 @@ size_t Package::fileSizeBytes() const
   
 std::string Package::description() const
 {
-    return getLocalisedProp("decription");
+    return getLocalisedProp("description");
 }
     
 SGPropertyNode* Package::properties() const

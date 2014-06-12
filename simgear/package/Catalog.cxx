@@ -216,6 +216,23 @@ Catalog::installedPackages() const
   return r;
 }
   
+InstallRef Catalog::installForPackage(PackageRef pkg) const
+{
+    PackageInstallDict::const_iterator it = m_installed.find(pkg);
+    if (it == m_installed.end()) {
+        // check if it exists on disk, create
+
+        SGPath p(pkg->pathOnDisk());
+        if (p.exists()) {
+            return Install::createFromPath(p, CatalogRef(const_cast<Catalog*>(this)));
+        }
+      
+        return NULL;
+    }
+  
+    return it->second;
+}
+  
 void Catalog::refresh()
 {
     Downloader* dl = new Downloader(this, url());
@@ -339,6 +356,23 @@ void Catalog::refreshComplete(Delegate::FailureCode aReason)
     m_root->catalogRefreshComplete(this, aReason);
 }
 
+void Catalog::registerInstall(InstallRef ins)
+{
+  if (!ins || ins->package()->catalog() != this) {
+    return;
+  }
+  
+  m_installed[ins->package()] = ins;
+}
+
+void Catalog::unregisterInstall(InstallRef ins)
+{
+  if (!ins || ins->package()->catalog() != this) {
+    return;
+  }
+  
+  m_installed.erase(ins->package());
+}
 
 } // of namespace pkg
 

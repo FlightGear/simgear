@@ -110,24 +110,20 @@ SGPath Package::pathOnDisk() const
 
 InstallRef Package::install()
 {
-    SGPath p(pathOnDisk());
-    if (p.exists()) {
-        return Install::createFromPath(p, m_catalog);
+    InstallRef ins = existingInstall();
+    if (ins) {
+        return ins;
     }
-    
-    InstallRef ins(new Install(this, p));
+  
+  // start a new install
+    ins = new Install(this, pathOnDisk());
     m_catalog->root()->scheduleToUpdate(ins);
     return ins;
 }
 
 InstallRef Package::existingInstall() const
 {
-    SGPath p(pathOnDisk());
-    if (p.exists()) {
-        return Install::createFromPath(p, m_catalog);
-    }
-
-    return NULL;
+    return m_catalog->installForPackage(const_cast<Package*>(this));
 }
 
 std::string Package::id() const

@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <ctime>
+#include <map>
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
@@ -41,7 +42,8 @@ namespace pkg
 class Package;
 class Catalog;
 class Root;
-
+class Install;
+  
 typedef SGSharedPtr<Package> PackageRef;
 typedef SGSharedPtr<Catalog> CatalogRef;
 typedef SGSharedPtr<Install> InstallRef;
@@ -100,7 +102,9 @@ public:
     std::string description() const;
     
     PackageRef getPackageById(const std::string& aId) const;
-    
+  
+    InstallRef installForPackage(PackageRef pkg) const;
+  
     /**
      * test if the catalog data was retrieved longer ago than the
      * maximum permitted age for this catalog.
@@ -118,7 +122,11 @@ private:
     
     class Downloader;
     friend class Downloader;
-    
+  
+    friend class Install;
+    void registerInstall(InstallRef ins);
+    void unregisterInstall(InstallRef ins);
+  
     void parseProps(const SGPropertyNode* aProps);
     
     void refreshComplete(Delegate::FailureCode aReason);
@@ -135,7 +143,12 @@ private:
   
     PackageList m_packages;
     time_t m_retrievedTime;
-};  
+  
+  // important that this is a weak-ref to Installs,
+  // since it is only cleaned up in the Install destructor
+    typedef std::map<PackageRef, Install*> PackageInstallDict;
+    PackageInstallDict m_installed;
+};
     
 } // of namespace pkg
 

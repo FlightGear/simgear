@@ -50,6 +50,8 @@ typedef SGSharedPtr<Install> InstallRef;
 class Install : public SGReferenced
 {
 public:
+    virtual ~Install();
+  
     typedef boost::function<void(Install*)> Callback;
     typedef boost::function<void(Install*, unsigned int, unsigned int)>
                                             ProgressCallback;

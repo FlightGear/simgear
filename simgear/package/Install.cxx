@@ -262,6 +262,12 @@ Install::Install(PackageRef aPkg, const SGPath& aPath) :
     _status(Delegate::FAIL_IN_PROGRESS)
 {
     parseRevision();
+    m_package->catalog()->registerInstall(this);
+}
+  
+Install::~Install()
+{
+    m_package->catalog()->unregisterInstall(this);
 }
 
 InstallRef Install::createFromPath(const SGPath& aPath, CatalogRef aCat)

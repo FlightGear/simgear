@@ -135,6 +135,11 @@ std::string Package::id() const
     return m_props->getStringValue("id");
 }
 
+std::string Package::qualifiedId() const
+{
+    return m_catalog->id() + "." + id();
+}
+
 std::string Package::md5() const
 {
     return m_props->getStringValue("md5");

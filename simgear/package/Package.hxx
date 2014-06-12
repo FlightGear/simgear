@@ -59,6 +59,11 @@ public:
     bool isInstalled() const;
     
     std::string id() const;
+
+    /**
+     * Fully-qualified ID, including our catalog'd ID
+     */
+    std::string qualifiedId() const;
     
     /**
      * human-readable name - note this is probably not localised,

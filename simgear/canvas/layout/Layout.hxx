@@ -66,6 +66,11 @@ namespace canvas
        */
       void removeItem(const LayoutItemRef& item);
 
+      /**
+       * Remove all items.
+       */
+      virtual void clear();
+
     protected:
       enum LayoutFlags
       {

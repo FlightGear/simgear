@@ -122,6 +122,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void BoxLayout::clear()
+  {
+    _layout_items.clear();
+    invalidate();
+  }
+
+  //----------------------------------------------------------------------------
   void BoxLayout::setStretch(size_t index, int stretch)
   {
     if( index >= _layout_items.size() )

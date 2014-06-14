@@ -58,6 +58,7 @@ namespace canvas
       virtual size_t count() const;
       virtual LayoutItemRef itemAt(size_t index);
       virtual LayoutItemRef takeAt(size_t index);
+      virtual void clear();
 
       /**
        * Set the stretch factor of the item at position @a index to @a stretch.

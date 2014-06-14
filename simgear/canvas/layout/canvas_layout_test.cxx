@@ -309,6 +309,12 @@ BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
   hbox.removeItem(w2);
   BOOST_CHECK_EQUAL(hbox.count(), 1);
   BOOST_CHECK_EQUAL(hbox.itemAt(0), w1);
+
+  hbox.addItem(w2);
+  BOOST_CHECK_EQUAL(hbox.count(), 2);
+
+  hbox.clear();
+  BOOST_CHECK_EQUAL(hbox.count(), 0);
 }
 
 //------------------------------------------------------------------------------

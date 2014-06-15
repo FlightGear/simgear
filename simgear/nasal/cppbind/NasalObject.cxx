@@ -42,6 +42,12 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
+  bool Object::valid() const
+  {
+    return _nasal_impl.valid();
+  }
+
+  //----------------------------------------------------------------------------
   bool Object::_set(naContext c, const std::string& key, naRef val)
   {
     if( !_nasal_impl.valid() )

@@ -108,6 +108,9 @@ namespace canvas
        */
       LayoutItemRef getParent() const;
 
+      /// Called before item is removed from a layout
+      virtual void onRemove() {}
+
     protected:
 
       friend class Canvas;

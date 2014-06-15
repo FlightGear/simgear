@@ -45,11 +45,11 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Layout::setGeometry(const SGRecti& geom)
   {
-    if( geom == _geometry )
-      return;
-
-    _geometry = geom;
-    _flags |= LAYOUT_DIRTY;
+    if( geom != _geometry )
+    {
+      _geometry = geom;
+      _flags |= LAYOUT_DIRTY;
+    }
 
     update();
   }

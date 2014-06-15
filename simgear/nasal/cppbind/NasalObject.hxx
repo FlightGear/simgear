@@ -39,6 +39,8 @@ namespace nasal
       void setImpl(naRef obj);
       naRef getImpl() const;
 
+      bool valid() const;
+
       bool _set(naContext c, const std::string& key, naRef val);
       bool _get(naContext c, const std::string& key, naRef& out);
 

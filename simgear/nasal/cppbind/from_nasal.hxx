@@ -63,6 +63,16 @@ namespace nasal
     }
   };
 
+  template<class T>
+  T get_member(naContext c, naRef obj, const std::string& name)
+  {
+    naRef out;
+    if( !naMember_get(c, obj, to_nasal(c, name), &out) )
+      return T();
+
+    return from_nasal<T>(c, out);
+  }
+
 } // namespace nasal
 
 #endif /* SG_FROM_NASAL_HXX_ */

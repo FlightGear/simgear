@@ -49,7 +49,9 @@ namespace canvas
        */
       NasalWidget(naRef impl);
 
+      virtual void invalidate();
       virtual void setGeometry(const SGRecti& geom);
+      virtual void onRemove();
 
       void setSetGeometryFunc(const SetGeometryFunc& func);
       void setHeightForWidthFunc(const HeightForWidthFunc& func);
@@ -69,6 +71,12 @@ namespace canvas
       static void setupGhost(nasal::Hash& ns);
 
     protected:
+      enum WidgetFlags
+      {
+        LAYOUT_DIRTY = LayoutItem::LAST_FLAG << 1,
+        LAST_FLAG = LAYOUT_DIRTY
+      };
+
       SetGeometryFunc       _set_geometry;
       HeightForWidthFunc    _height_for_width,
                             _min_height_for_width;

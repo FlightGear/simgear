@@ -34,19 +34,25 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void NasalWidget::invalidate()
+  {
+    LayoutItem::invalidate();
+    _flags |= LAYOUT_DIRTY;
+  }
+
+  //----------------------------------------------------------------------------
   void NasalWidget::setGeometry(const SGRect<int>& geom)
   {
-    if( _geometry == geom )
-      return;
-    _geometry = geom;
-
-    if( !_set_geometry )
+    if( _geometry != geom )
+      _geometry = geom;
+    else if( !(_flags & LAYOUT_DIRTY) || !_set_geometry )
       return;
 
     naContext c = naNewContext();
     try
     {
       _set_geometry(nasal::to_nasal(c, this), geom);
+      _flags &= ~LAYOUT_DIRTY;
     }
     catch( std::exception const& ex )
     {
@@ -54,6 +60,33 @@ namespace canvas
         SG_GUI,
         SG_WARN,
         "NasalWidget::setGeometry: callback error: '" << ex.what() << "'"
+      );
+    }
+    naFreeContext(c);
+  }
+
+  //----------------------------------------------------------------------------
+  void NasalWidget::onRemove()
+  {
+    if( !_nasal_impl.valid() )
+      return;
+
+    typedef boost::function<void(nasal::Me)> Deleter;
+
+    naContext c = naNewContext();
+    try
+    {
+      Deleter del =
+        nasal::get_member<Deleter>(c, _nasal_impl.get_naRef(), "onRemove");
+      if( del )
+        del(_nasal_impl.get_naRef());
+    }
+    catch( std::exception const& ex )
+    {
+      SG_LOG(
+        SG_GUI,
+        SG_WARN,
+        "NasalWidget::onRemove: callback error: '" << ex.what() << "'"
       );
     }
     naFreeContext(c);

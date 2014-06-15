@@ -99,10 +99,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void LayoutItem::invalidate()
   {
-    _flags |= SIZE_HINT_DIRTY
-           |  MINIMUM_SIZE_DIRTY
-           |  MAXIMUM_SIZE_DIRTY;
-
+    _flags |= SIZE_INFO_DIRTY;
     invalidateParent();
   }
 

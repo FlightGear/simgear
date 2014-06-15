@@ -33,6 +33,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  BoxLayout::~BoxLayout()
+  {
+    _parent.reset(); // No need to invalidate parent again...
+    clear();
+  }
+
+  //----------------------------------------------------------------------------
   void BoxLayout::addItem(const LayoutItemRef& item)
   {
     return addItem(item, 0);
@@ -114,6 +121,7 @@ namespace canvas
 
     LayoutItems::iterator it = _layout_items.begin() + index;
     LayoutItemRef item = it->layout_item;
+    item->onRemove();
     _layout_items.erase(it);
 
     invalidate();
@@ -124,6 +132,12 @@ namespace canvas
   //----------------------------------------------------------------------------
   void BoxLayout::clear()
   {
+    for( LayoutItems::iterator it = _layout_items.begin();
+                               it != _layout_items.end();
+                             ++it )
+    {
+      it->layout_item->onRemove();
+    }
     _layout_items.clear();
     invalidate();
   }

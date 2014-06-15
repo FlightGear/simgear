@@ -40,6 +40,7 @@ namespace canvas
       };
 
       BoxLayout(Direction dir);
+      ~BoxLayout();
 
       virtual void addItem(const LayoutItemRef& item);
 

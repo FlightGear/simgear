@@ -51,7 +51,7 @@ typedef SGSharedPtr<Install> InstallRef;
 typedef std::vector<PackageRef> PackageList;
 typedef std::vector<CatalogRef> CatalogList;
 
-  class Catalog : public SGReferenced
+class Catalog : public SGReferenced
 {
 public:
     virtual ~Catalog();
@@ -140,9 +140,12 @@ private:
     SGPropertyNode_ptr m_props;
     SGPath m_installRoot;
     std::string m_url;
-  
+
     PackageList m_packages;
     time_t m_retrievedTime;
+
+    typedef std::map<std::string, Package*> PackageWeakMap;
+    PackageWeakMap m_variantDict;
   
   // important that this is a weak-ref to Installs,
   // since it is only cleaned up in the Install destructor

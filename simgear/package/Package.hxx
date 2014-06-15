@@ -61,6 +61,12 @@ public:
     std::string id() const;
 
     /**
+     * Variant IDs. Note the primary ID will always be included as 
+     * variants()[0], to simplify enumerating all variants
+     */
+    string_list variants() const;
+
+    /**
      * Fully-qualified ID, including our catalog'd ID
      */
     std::string qualifiedId() const;
@@ -70,7 +76,12 @@ public:
      * although this is not ruled out for the future.
      */
     std::string name() const;
-    
+
+    /**
+     * Human readable name of a variant
+     */
+    std::string nameForVariant(const std::string& vid) const;
+
     /**
      * syntactic sugar to get the localised description
      */
@@ -118,10 +129,13 @@ private:
     Package(const SGPropertyNode* aProps, CatalogRef aCatalog);
     
     void initWithProps(const SGPropertyNode* aProps);
-    
+
+    void updateFromProps(const SGPropertyNode* aProps);
+
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
     
     SGPropertyNode_ptr m_props;
+    std::string m_id;
     string_set m_tags;
     CatalogRef m_catalog;
 };

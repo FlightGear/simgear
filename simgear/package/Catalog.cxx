@@ -244,19 +244,47 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
 {
     // copy everything except package children?
     m_props = new SGPropertyNode;
-    
+
+    m_variantDict.clear(); // will rebuild during parse
+    std::set<PackageRef> orphans;
+    orphans.insert(m_packages.begin(), m_packages.end());
+
     int nChildren = aProps->nChildren();
     for (int i = 0; i < nChildren; i++) {
         const SGPropertyNode* pkgProps = aProps->getChild(i);
         if (strcmp(pkgProps->getName(), "package") == 0) {
-            PackageRef p = new Package(pkgProps, this);
-            m_packages.push_back(p);   
+            PackageRef p = getPackageById(pkgProps->getStringValue("id"));
+            if (p) {
+                // existing package
+                p->updateFromProps(pkgProps);
+                orphans.erase(p); // not an orphan
+            } else {
+                // new package
+                p = new Package(pkgProps, this);
+                m_packages.push_back(p);
+            }
+
+            string_list vars(p->variants());
+            for (string_list::iterator it = vars.begin(); it != vars.end(); ++it) {
+                m_variantDict[*it] = p.ptr();
+            }
         } else {
             SGPropertyNode* c = m_props->getChild(pkgProps->getName(), pkgProps->getIndex(), true);
             copyProperties(pkgProps, c);
         }
     } // of children iteration
-  
+
+    if (!orphans.empty()) {
+        SG_LOG(SG_GENERAL, SG_WARN, "have orphan packages: will become inaccesible");
+        std::set<PackageRef>::iterator it;
+        for (it = orphans.begin(); it != orphans.end(); ++it) {
+            SG_LOG(SG_GENERAL, SG_WARN, "\torphan package:" << (*it)->qualifiedId());
+            PackageList::iterator pit = std::find(m_packages.begin(), m_packages.end(), *it);
+            assert(pit != m_packages.end());
+            m_packages.erase(pit);
+        }
+    }
+
     if (!m_url.empty()) {
         if (m_url != m_props->getStringValue("url")) {
             // this effectively allows packages to migrate to new locations,
@@ -280,13 +308,13 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
 
 PackageRef Catalog::getPackageById(const std::string& aId) const
 {
-    BOOST_FOREACH(PackageRef p, m_packages) {
-        if (p->id() == aId) {
-            return p;
-        }
-    }
-    
-    return NULL; // not found
+    // search the variant dict here, so looking up aircraft variants
+    // works as expected.
+    PackageWeakMap::const_iterator it = m_variantDict.find(aId);
+    if (it == m_variantDict.end())
+        return NULL;
+
+    return it->second;
 }
 
 std::string Catalog::id() const

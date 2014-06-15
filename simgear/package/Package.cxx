@@ -46,6 +46,14 @@ void Package::initWithProps(const SGPropertyNode* aProps)
       std::string t(c->getStringValue());
       m_tags.insert(boost::to_lower_copy(t));
     }
+
+    m_id = m_props->getStringValue("id");
+}
+
+void Package::updateFromProps(const SGPropertyNode* aProps)
+{
+    m_tags.clear();
+    initWithProps(aProps);
 }
 
 bool Package::matches(const SGPropertyNode* aFilter) const
@@ -133,7 +141,7 @@ InstallRef Package::existingInstall() const
 
 std::string Package::id() const
 {
-    return m_props->getStringValue("id");
+    return m_id;
 }
 
 std::string Package::qualifiedId() const
@@ -239,6 +247,34 @@ PackageList Package::dependencies() const
     }
     
     return result;
+}
+
+string_list Package::variants() const
+{
+    string_list result;
+    result.push_back(id());
+
+    BOOST_FOREACH(SGPropertyNode* var, m_props->getChildren("variant")) {
+        result.push_back(var->getStringValue("id"));
+    }
+
+    return result;
+}
+
+std::string Package::nameForVariant(const std::string& vid) const
+{
+    if (vid == id()) {
+        return name();
+    }
+
+    BOOST_FOREACH(SGPropertyNode* var, m_props->getChildren("variant")) {
+        if (vid == var->getStringValue("id")) {
+            return var->getStringValue("name");
+        }
+    }
+
+
+    throw sg_exception("Unknow variant +" + vid + " in package " + id());
 }
 
 } // of namespace pkg

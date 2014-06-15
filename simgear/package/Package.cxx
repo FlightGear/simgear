@@ -87,6 +87,11 @@ bool Package::matches(const SGPropertyNode* aFilter) const
             return false;
           }
         }
+        else if (filter_name == "installed") {
+          if (isInstalled() != c->getBoolValue()) {
+            return false;
+          }
+        }
         else
           SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << filter_name);
     } // of filter props iteration

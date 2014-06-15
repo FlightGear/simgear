@@ -83,6 +83,7 @@ BOOST_AUTO_TEST_CASE( ghost_weak_strong_nasal_conversion )
 
   naFreeContext(c);
   naGC();
+  nasal::ghostProcessDestroyList();
 
   BOOST_REQUIRE( !weak.lock() );
 }

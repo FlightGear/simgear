@@ -20,6 +20,7 @@ set(DETAIL_HEADERS
 )
 
 set(SOURCES
+  Ghost.cxx
   NasalHash.cxx
   NasalString.cxx
   NasalObject.cxx

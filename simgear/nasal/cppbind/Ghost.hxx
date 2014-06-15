@@ -83,40 +83,18 @@ namespace nasal
     class GhostMetadata
     {
       public:
+        typedef void(*Deleter)(void*);
+        typedef std::vector<std::pair<Deleter, void*> > DestroyList;
+
+        static DestroyList _destroy_list;
+
         /**
          * Add a nasal base class to the ghost. Will be available in the ghosts
          * parents array.
          */
-        void addNasalBase(const naRef& parent)
-        {
-          assert( naIsHash(parent) );
-          _parents.push_back(parent);
-        }
+        void addNasalBase(const naRef& parent);
 
-        bool isBaseOf(naGhostType* ghost_type, bool& is_weak) const
-        {
-          if( ghost_type == _ghost_type_strong_ptr )
-          {
-            is_weak = false;
-            return true;
-          }
-
-          if( ghost_type == _ghost_type_weak_ptr )
-          {
-            is_weak = true;
-            return true;
-          }
-
-          for( DerivedList::const_iterator derived = _derived_classes.begin();
-                                           derived != _derived_classes.end();
-                                         ++derived )
-          {
-            if( (*derived)->isBaseOf(ghost_type, is_weak) )
-              return true;
-          }
-
-          return false;
-        }
+        bool isBaseOf(naGhostType* ghost_type, bool& is_weak) const;
 
       protected:
 
@@ -131,33 +109,11 @@ namespace nasal
 
         GhostMetadata( const std::string& name,
                        const naGhostType* ghost_type_strong,
-                       const naGhostType* ghost_type_weak ):
-          _name_strong(name),
-          _name_weak(name + " (weak ref)"),
-          _ghost_type_strong_ptr(ghost_type_strong),
-          _ghost_type_weak_ptr(ghost_type_weak)
-        {
+                       const naGhostType* ghost_type_weak );
 
-        }
+        void addDerived(const GhostMetadata* derived);
 
-        void addDerived(const GhostMetadata* derived)
-        {
-          assert(derived);
-          _derived_classes.push_back(derived);
-
-          SG_LOG
-          (
-            SG_NASAL,
-            SG_INFO,
-            "Ghost::addDerived: " << _name_strong << " -> "
-                                  << derived->_name_strong
-          );
-        }
-
-        naRef getParents(naContext c)
-        {
-          return nasal::to_nasal(c, _parents);
-        }
+        naRef getParents(naContext c);
     };
 
     /**
@@ -197,6 +153,15 @@ namespace nasal
       public boost::is_same<typename reduced_type<T1>::type, T2>
     {};
   }
+
+  /** @brief Destroy all ghost queued for deletion.
+   *
+   * This needs can not be done directly during garbage collection, as
+   * destructors may execute Nasal code which requires creating new Nasal
+   * contexts. Creating a Nasal context during garbage collection is not
+   * possible and leads to a dead lock.
+   */
+  void ghostProcessDestroyList();
 
   typedef SGSharedPtr<internal::MethodHolder> MethodHolderPtr;
   typedef SGWeakPtr<internal::MethodHolder> MethodHolderWeakPtr;
@@ -1171,7 +1136,7 @@ namespace nasal
                        supports_weak_ref<T>::value ? &_ghost_type_weak : NULL )
       {
         _ghost_type_strong.destroy =
-          SG_GET_TEMPLATE_MEMBER(Ghost, destroy<strong_ref>);
+          SG_GET_TEMPLATE_MEMBER(Ghost, queueDestroy<strong_ref>);
         _ghost_type_strong.name = _name_strong.c_str();
         _ghost_type_strong.get_member =
           SG_GET_TEMPLATE_MEMBER(Ghost, getMember<false>);
@@ -1179,7 +1144,7 @@ namespace nasal
           SG_GET_TEMPLATE_MEMBER(Ghost, setMember<false>);
 
         _ghost_type_weak.destroy =
-          SG_GET_TEMPLATE_MEMBER(Ghost, destroy<weak_ref>);
+          SG_GET_TEMPLATE_MEMBER(Ghost, queueDestroy<weak_ref>);
         _ghost_type_weak.name = _name_weak.c_str();
 
         if( supports_weak_ref<T>::value )
@@ -1206,6 +1171,12 @@ namespace nasal
       static void destroy(void *ptr)
       {
         delete static_cast<Type*>(ptr);
+      }
+
+      template<class Type>
+      static void queueDestroy(void *ptr)
+      {
+        _destroy_list.push_back( DestroyList::value_type(&destroy<Type>, ptr) );
       }
 
       /**

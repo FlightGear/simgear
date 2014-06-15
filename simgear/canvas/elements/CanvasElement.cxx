@@ -229,7 +229,7 @@ namespace canvas
     if( dt == 0 && _drawable )
       _drawable->getBound();
 
-    if( _attributes_dirty & BLEND_FUNC )
+    if( (_attributes_dirty & BLEND_FUNC) && _transform.valid() )
     {
       parseBlendFunc(
         _transform->getOrCreateStateSet(),
@@ -512,9 +512,13 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::setClip(const std::string& clip)
   {
+    osg::StateSet* ss = getOrCreateStateSet();
+    if( !ss )
+      return;
+
     if( clip.empty() || clip == "auto" )
     {
-      getOrCreateStateSet()->removeAttribute(osg::StateAttribute::SCISSOR);
+      ss->removeAttribute(osg::StateAttribute::SCISSOR);
       _scissor = 0;
       return;
     }
@@ -576,7 +580,7 @@ namespace canvas
     else
       _scissor->_coord_reference = GLOBAL;
 
-    getOrCreateStateSet()->setAttributeAndModes(_scissor);
+    ss->setAttributeAndModes(_scissor);
   }
 
   //----------------------------------------------------------------------------
@@ -821,8 +825,12 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::StateSet* Element::getOrCreateStateSet()
   {
-    return _drawable ? _drawable->getOrCreateStateSet()
-                     : _transform->getOrCreateStateSet();
+    if( _drawable.valid() )
+      return _drawable->getOrCreateStateSet();
+    if( _transform.valid() )
+      return _transform->getOrCreateStateSet();
+
+    return 0;
   }
 
   //----------------------------------------------------------------------------

@@ -49,6 +49,8 @@ namespace canvas
        */
       NasalWidget(naRef impl);
 
+      ~NasalWidget();
+
       virtual void invalidate();
       virtual void setGeometry(const SGRecti& geom);
       virtual void onRemove();

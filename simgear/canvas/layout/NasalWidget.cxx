@@ -34,6 +34,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  NasalWidget::~NasalWidget()
+  {
+    onRemove();
+  }
+
+  //----------------------------------------------------------------------------
   void NasalWidget::invalidate()
   {
     LayoutItem::invalidate();

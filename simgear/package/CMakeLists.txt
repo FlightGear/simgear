@@ -7,6 +7,7 @@ set(HEADERS
     Install.hxx
     Root.hxx
     Delegate.hxx
+    md5.h # TODO expose somehow more elegant (eg. a function accepting a string)
     )
 
 set(SOURCES 
@@ -15,7 +16,7 @@ set(SOURCES
     Install.cxx
     Root.cxx
 # internal helpers
-    md5.c md5.h
+    md5.c
     ioapi.c ioapi_mem.c ioapi.h
     unzip.h unzip.c
     )

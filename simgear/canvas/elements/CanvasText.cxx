@@ -40,7 +40,7 @@ namespace canvas
       void setFill(const std::string& fill);
       void setBackgroundColor(const std::string& fill);
 
-      int heightForWidth(int w) const;
+      SGVec2i sizeForWidth(int w) const;
       osg::Vec2 handleHit(const osg::Vec2f& pos);
 
       virtual osg::BoundingBox computeBound() const;
@@ -98,16 +98,16 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   // simplified version of osgText::Text::computeGlyphRepresentation() to
-  // just calculate the height for a given weight. Glpyh calculations/creating
+  // just calculate the size for a given weight. Glpyh calculations/creating
   // is not necessary for this...
-  int Text::TextOSG::heightForWidth(int w) const
+  SGVec2i Text::TextOSG::sizeForWidth(int w) const
   {
     if( _text.empty() )
-      return 0;
+      return SGVec2i(0, 0);
 
     osgText::Font* activefont = const_cast<osgText::Font*>(getActiveFont());
     if( !activefont )
-      return -1;
+      return SGVec2i(-1, -1);
 
     float max_width_safe = _maximumWidth;
     const_cast<TextOSG*>(this)->_maximumWidth = w;
@@ -368,7 +368,7 @@ namespace canvas
 
     const_cast<TextOSG*>(this)->_maximumWidth = max_width_safe;
 
-    return bb.height();
+    return bb.size();
   }
 
   //----------------------------------------------------------------------------
@@ -648,7 +648,13 @@ namespace canvas
   //----------------------------------------------------------------------------
   int Text::heightForWidth(int w) const
   {
-    return _text->heightForWidth(w);
+    return _text->sizeForWidth(w).y();
+  }
+
+  //----------------------------------------------------------------------------
+  int Text::maxWidth() const
+  {
+    return _text->sizeForWidth(INT_MAX).x();
   }
 
   //----------------------------------------------------------------------------

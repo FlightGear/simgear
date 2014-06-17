@@ -47,6 +47,7 @@ namespace canvas
       void setAlignment(const char* align);
 
       int heightForWidth(int w) const;
+      int maxWidth() const;
       osg::Vec2 getNearestCursor(const osg::Vec2& pos) const;
 
     protected:

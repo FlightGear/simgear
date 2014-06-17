@@ -166,6 +166,15 @@ static int defArg(struct Parser* p, struct Token* t)
         RIGHT(t)->num *= -1;
         return defArg(p, RIGHT(t));
     }
+    if(t->type == TOK_CAT && RIGHT(t) &&
+       RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str)
+    {
+        /* default arguments are constants, but "~1" parses as two
+         * tokens, so we have to subset the expression generator for that
+         * case */
+        RIGHT(t)->num = ~(int)RIGHT(t)->num;
+        return defArg(p, RIGHT(t));
+    }
     return findConstantIndex(p, t);
 }
 
@@ -678,6 +687,21 @@ static void genExpr(struct Parser* p, struct Token* t)
         genExpr(p, RIGHT(t)); // unary negation (see also TOK_MINUS!)
         emit(p, OP_NEG);
         break;
+    case TOK_CAT:
+        if(BINARY(t)) {
+            genBinOp(OP_CAT,    p, t); // string concatenation
+        } else if(RIGHT(t) && RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str) {
+            RIGHT(t)->num = ~(int)RIGHT(t)->num; // Pre-negate constants
+            genScalarConstant(p, RIGHT(t));
+        } else {
+            genExpr(p, RIGHT(t));       // unary, bitwise negation
+            emit(p, OP_BIT_NEG);
+        }
+        break;
+    case TOK_BIT_NEG:
+        genExpr(p, RIGHT(t)); // unary, bitwise negation (see also TOK_CAT!)
+        emit(p, OP_BIT_NEG);
+        break;
     case TOK_DOT:
         genExpr(p, LEFT(t));
         if(!RIGHT(t) || RIGHT(t)->type != TOK_SYMBOL)
@@ -690,10 +714,12 @@ static void genExpr(struct Parser* p, struct Token* t)
     case TOK_AND: case TOK_OR:
         genShortCircuit(p, t);
         break;
+    case TOK_BIT_AND:genBinOp(OP_BIT_AND, p, t); break;
+    case TOK_BIT_OR: genBinOp(OP_BIT_OR,  p, t); break;
+    case TOK_BIT_XOR:genBinOp(OP_BIT_XOR, p, t); break;
     case TOK_MUL:   genBinOp(OP_MUL,    p, t); break;
     case TOK_PLUS:  genBinOp(OP_PLUS,   p, t); break;
     case TOK_DIV:   genBinOp(OP_DIV,    p, t); break;
-    case TOK_CAT:   genBinOp(OP_CAT,    p, t); break;
     case TOK_LT:    genBinOp(OP_LT,     p, t); break;
     case TOK_LTE:   genBinOp(OP_LTE,    p, t); break;
     case TOK_EQ:    genBinOp(OP_EQ,     p, t); break;
@@ -705,6 +731,9 @@ static void genExpr(struct Parser* p, struct Token* t)
     case TOK_MULEQ:   genEqOp(OP_MUL, p, t);   break;
     case TOK_DIVEQ:   genEqOp(OP_DIV, p, t);   break;
     case TOK_CATEQ:   genEqOp(OP_CAT, p, t);   break;
+    case TOK_BIT_ANDEQ: genEqOp(OP_BIT_AND, p, t); break;
+    case TOK_BIT_OREQ:  genEqOp(OP_BIT_OR,  p, t); break;
+    case TOK_BIT_XOREQ: genEqOp(OP_BIT_XOR, p, t); break;
     default:
         naParseError(p, "parse error", t->line);
     };

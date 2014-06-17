@@ -8,6 +8,9 @@ static const struct Lexeme {
     {"and", TOK_AND},
     {"or",  TOK_OR},
     {"!",   TOK_NOT},
+    {"&",   TOK_BIT_AND},
+    {"|",   TOK_BIT_OR},
+    {"^",   TOK_BIT_XOR},
     {"(", TOK_LPAR},
     {")", TOK_RPAR},
     {"[", TOK_LBRA},
@@ -49,6 +52,9 @@ static const struct Lexeme {
     {"*=", TOK_MULEQ},
     {"/=", TOK_DIVEQ},
     {"~=", TOK_CATEQ},
+    {"&=", TOK_BIT_ANDEQ},
+    {"|=", TOK_BIT_OREQ},
+    {"^=", TOK_BIT_XOREQ},
     {"forindex", TOK_FORINDEX},
 };
 
@@ -136,13 +142,14 @@ static void newToken(struct Parser* p, int pos, int type,
     tok->lastChild = 0;
     tok->rule = 0;
     
-    // Context sensitivity hack: a "-" following a binary operator of
+    // Context sensitivity hack: a "-" or "~" following a binary operator of
     // equal or higher precedence must be a unary negation.  Needed to
     // get precedence right in the parser for expressiong like "a * -2"
-    if(type == TOK_MINUS && tok->prev) {
+    if((type == TOK_MINUS || type == TOK_CAT) && tok->prev) {
         int pt = tok->prev->type;
-        if(pt==TOK_PLUS||pt==TOK_MINUS||pt==TOK_CAT||pt==TOK_MUL||pt==TOK_DIV)
-            tok->type = type = TOK_NEG;
+        if( pt==TOK_PLUS||pt==TOK_MINUS||pt==TOK_CAT||pt==TOK_MUL||pt==TOK_DIV
+         || pt==TOK_BIT_AND||pt==TOK_BIT_OR||pt==TOK_BIT_XOR )
+            tok->type = type = (type == TOK_MINUS ? TOK_NEG : TOK_BIT_NEG);
     }
 
     if(!p->tree.children) p->tree.children = tok;

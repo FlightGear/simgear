@@ -592,6 +592,9 @@ static naRef run(naContext ctx)
         case OP_LTE:   BINOP(l <= r ? 1 : 0); break;
         case OP_GT:    BINOP(l >  r ? 1 : 0); break;
         case OP_GTE:   BINOP(l >= r ? 1 : 0); break;
+        case OP_BIT_AND: BINOP((int)l & (int)r); break;
+        case OP_BIT_OR:  BINOP((int)l | (int)r); break;
+        case OP_BIT_XOR: BINOP((int)l ^ (int)r); break;
 #undef BINOP
 
         case OP_EQ: case OP_NEQ:
@@ -604,6 +607,9 @@ static naRef run(naContext ctx)
             break;
         case OP_NEG:
             STK(1) = naNum(-numify(ctx, STK(1)));
+            break;
+        case OP_BIT_NEG:
+            STK(1) = naNum(~(int)numify(ctx, STK(1)));
             break;
         case OP_NOT:
             STK(1) = naNum(boolify(ctx, STK(1)) ? 0 : 1);

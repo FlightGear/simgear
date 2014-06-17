@@ -5,7 +5,7 @@
 
 // Static precedence table, from low (loose binding, do first) to high
 // (tight binding, do last).
-#define MAX_PREC_TOKS 6
+#define MAX_PREC_TOKS 9
 static const struct precedence {
     int toks[MAX_PREC_TOKS];
     int rule;
@@ -14,16 +14,22 @@ static const struct precedence {
     { { TOK_ELLIPSIS },                        PREC_SUFFIX  },
     { { TOK_RETURN, TOK_BREAK, TOK_CONTINUE }, PREC_PREFIX  },
     { { TOK_ASSIGN, TOK_PLUSEQ, TOK_MINUSEQ,
-        TOK_MULEQ, TOK_DIVEQ, TOK_CATEQ     }, PREC_REVERSE },
+        TOK_MULEQ, TOK_DIVEQ, TOK_CATEQ,
+        TOK_BIT_ANDEQ, TOK_BIT_OREQ,
+        TOK_BIT_XOREQ },                       PREC_REVERSE },
     { { TOK_COLON, TOK_QUESTION },             PREC_REVERSE },
     { { TOK_VAR },                             PREC_PREFIX  },
+    { { TOK_BIT_OR },                          PREC_BINARY  },
+    { { TOK_BIT_XOR },                         PREC_BINARY  },
+    { { TOK_BIT_AND },                         PREC_BINARY  },
     { { TOK_OR },                              PREC_BINARY  },
     { { TOK_AND },                             PREC_BINARY  },
     { { TOK_EQ, TOK_NEQ },                     PREC_BINARY  },
     { { TOK_LT, TOK_LTE, TOK_GT, TOK_GTE },    PREC_BINARY  },
     { { TOK_PLUS, TOK_MINUS, TOK_CAT },        PREC_BINARY  },
     { { TOK_MUL, TOK_DIV },                    PREC_BINARY  },
-    { { TOK_MINUS, TOK_NEG, TOK_NOT },         PREC_PREFIX  },
+    { { TOK_MINUS, TOK_NEG, TOK_NOT,
+        TOK_CAT, TOK_BIT_NEG },                PREC_PREFIX  },
     { { TOK_LPAR, TOK_LBRA },                  PREC_SUFFIX  },
     { { TOK_DOT },                             PREC_BINARY  },
 };

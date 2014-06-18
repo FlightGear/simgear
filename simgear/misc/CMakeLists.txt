@@ -53,10 +53,6 @@ add_executable(test_tabbed_values tabbed_values_test.cxx)
 add_test(tabbed_values ${EXECUTABLE_OUTPUT_PATH}/test_tabbed_values)
 target_link_libraries(test_tabbed_values ${TEST_LIBS})
 
-add_executable(test_strings strutils_test.cxx )
-add_test(strings ${EXECUTABLE_OUTPUT_PATH}/test_strings)
-target_link_libraries(test_strings ${TEST_LIBS})
-
 add_executable(test_streams sgstream_test.cxx )
 add_test(streams ${EXECUTABLE_OUTPUT_PATH}/test_streams)
 target_link_libraries(test_streams ${TEST_LIBS})
@@ -74,6 +70,11 @@ add_boost_test(SimpleMarkdown
 
 add_boost_test(SVGpreserveAspectRatio
   SOURCES SVGpreserveAspectRatio_test.cxx
+  LIBRARIES ${TEST_LIBS}
+)
+
+add_boost_test(strutils
+  SOURCES strutils_test.cxx
   LIBRARIES ${TEST_LIBS}
 )
 

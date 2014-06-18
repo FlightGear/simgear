@@ -30,6 +30,7 @@
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/strutils.hxx>
 
 extern "C" {
     void fill_memory_filefunc (zlib_filefunc_def*);
@@ -91,17 +92,12 @@ protected:
 
         unsigned char digest[MD5_DIGEST_LENGTH];
         SG_MD5Final(digest, &m_md5);
-    // convert final sum to hex
-        const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-        std::stringstream hexMd5;
-        for (int i=0; i<MD5_DIGEST_LENGTH;++i) {
-            hexMd5 << hexChar[digest[i] >> 4];
-            hexMd5 << hexChar[digest[i] & 0x0f];
-        }
-        
-        if (hexMd5.str() != m_owner->package()->md5()) {
+        std::string const hex_md5 =
+          strutils::encodeHex(digest, MD5_DIGEST_LENGTH);
+
+        if (hex_md5 != m_owner->package()->md5()) {
             SG_LOG(SG_GENERAL, SG_ALERT, "md5 verification failed:\n"
-                << "\t" << hexMd5.str() << "\n\t"
+                << "\t" << hex_md5 << "\n\t"
                 << m_owner->package()->md5() << "\n\t"
                 << "downloading from:" << url());
             doFailure(Delegate::FAIL_CHECKSUM);

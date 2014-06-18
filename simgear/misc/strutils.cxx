@@ -27,6 +27,7 @@
 #include "strutils.hxx"
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/package/md5.h>
 
 using std::string;
 using std::vector;
@@ -401,8 +402,32 @@ std::string convertWindowsLocal8BitToUtf8(const std::string& a)
 #endif
 }
 
+//------------------------------------------------------------------------------
+std::string md5(const unsigned char* data, size_t num)
+{
+  SG_MD5_CTX md5_ctx;
+  SG_MD5Init(&md5_ctx);
+  SG_MD5Update(&md5_ctx, data, num);
 
+  unsigned char digest[MD5_DIGEST_LENGTH];
+  SG_MD5Final(digest, &md5_ctx);
 
+  return encodeHex(digest, MD5_DIGEST_LENGTH);
+}
+
+//------------------------------------------------------------------------------
+std::string md5(const char* data, size_t num)
+{
+  return md5(reinterpret_cast<const unsigned char*>(data), num);
+}
+
+//------------------------------------------------------------------------------
+std::string md5(const std::string& str)
+{
+  return md5(reinterpret_cast<const unsigned char*>(str.c_str()), str.size());
+}
+
+//------------------------------------------------------------------------------
 static const std::string base64_chars =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 "abcdefghijklmnopqrstuvwxyz"
@@ -482,28 +507,24 @@ void decodeBase64(const std::string& encoded_string, std::vector<unsigned char>&
   }
 }  
 
+//------------------------------------------------------------------------------
 const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 std::string encodeHex(const std::string& bytes)
 {
-  std::string hex;
-  size_t count = bytes.size();
-  for (unsigned int i=0; i<count;++i) {
-      unsigned char c = bytes[i];
-      hex.push_back(hexChar[c >> 4]);
-      hex.push_back(hexChar[c & 0x0f]);
-  }
-  
-  return hex;
+  return encodeHex(
+    reinterpret_cast<const unsigned char*>(bytes.c_str()),
+    bytes.size()
+  );
 }
 
 std::string encodeHex(const unsigned char* rawBytes, unsigned int length)
 {
-  std::string hex;
+  std::string hex(length * 2, '\0');
   for (unsigned int i=0; i<length;++i) {
       unsigned char c = *rawBytes++;
-      hex.push_back(hexChar[c >> 4]);
-      hex.push_back(hexChar[c & 0x0f]);
+      hex[i * 2] = hexChar[c >> 4];
+      hex[i * 2 + 1] = hexChar[c & 0x0f];
   }
   
   return hex;

@@ -177,6 +177,13 @@ namespace simgear {
 #endif
 
     /**
+     * Get md5 hash of raw data.
+     */
+    std::string md5(const unsigned char* data, size_t num);
+    std::string md5(const char* data, size_t num);
+    std::string md5(const std::string& str);
+
+    /**
      * convert base-64 encoded data to raw bytes (possibly with embedded
      * NULs). Throws an exception if input data is not base64, or is
      * malformed

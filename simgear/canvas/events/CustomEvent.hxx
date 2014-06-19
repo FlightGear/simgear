@@ -39,6 +39,7 @@ namespace canvas
        * @param data        Optional user data stored in event
        */
       CustomEvent( std::string const& type_str,
+                   bool bubbles = false,
                    StringMap const& data = StringMap() );
 
       /**
@@ -47,6 +48,7 @@ namespace canvas
        * @param data        Optional user data stored in event
        */
       CustomEvent( int type_id,
+                   bool bubbles = false,
                    StringMap const& data = StringMap() );
 
       /**

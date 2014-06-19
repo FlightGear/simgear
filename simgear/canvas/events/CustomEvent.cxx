@@ -25,16 +25,20 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   CustomEvent::CustomEvent( std::string const& type_str,
+                            bool bubbles,
                             StringMap const& data ):
-    detail(data)
+    detail(data),
+    bubbles(bubbles)
   {
     type = getOrRegisterType(type_str);
   }
 
   //----------------------------------------------------------------------------
   CustomEvent::CustomEvent( int type_id,
+                            bool bubbles,
                             StringMap const& data ):
-    detail(data)
+    detail(data),
+    bubbles(bubbles)
   {
     type = type_id;
 //    TypeMap::map_by<id>::type const& type_map = getTypeMap().by<id>();

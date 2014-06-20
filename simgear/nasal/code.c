@@ -71,7 +71,9 @@ static double numify(naContext ctx, naRef o)
     else if(IS_NIL(o)) ERR(ctx, "nil used in numeric context");
     else if(!IS_STR(o)) ERR(ctx, "non-scalar in numeric context");
     else if(naStr_tonum(o, &n)) return n;
-    else ERR(ctx, "non-numeric string in numeric context");
+    else naRuntimeError( ctx,
+                         "non-numeric string in numeric context: '%s'",
+                         naStr_data(o) );
     return 0;
 }
 

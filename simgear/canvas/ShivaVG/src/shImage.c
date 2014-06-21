@@ -917,7 +917,7 @@ VG_API_CALL void vgGetImageSubData(VGImage image,
   shCopyPixels(data, dataFormat, dataStride,
                i->data, i->fd.vgformat, i->texwidth * i->fd.bytes,
                width, height, i->width, i->height,
-               0,0,x,x,width,height);
+               0,0,x,y,width,height);
 
   VG_RETURN(VG_NO_RETVAL);
 #endif // SH_NO_IMAGE

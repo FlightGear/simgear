@@ -124,11 +124,13 @@ int shLineLineXsection(SHVector2 *o1, SHVector2 *v1,
   SHfloat DX = rightU * (-v2->y) - rightD * (-v2->x);
 /*SHfloat DY = v1.x   * rightD  - v1.y   * rightU;*/
   
-  SHfloat t1 = DX / D;
+  SHfloat t1;
   
   if (D == 0.0f)
     return 0;
-  
+
+  t1 = DX / D;
+
   xsection->x = o1->x + t1*v1->x;
   xsection->y = o1->y + t1*v1->y;
   return 1;

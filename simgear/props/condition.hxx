@@ -38,6 +38,8 @@ public:
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const { }
 };
 
+typedef SGSharedPtr<SGCondition> SGConditionRef;
+
 
 /**
  * Base class for a conditional components.
@@ -56,7 +58,7 @@ public:
   virtual const SGCondition * getCondition () const { return _condition; }
   virtual bool test () const;
 private:
-  SGSharedPtr<SGCondition> _condition;
+  SGConditionRef _condition;
 };
 
 

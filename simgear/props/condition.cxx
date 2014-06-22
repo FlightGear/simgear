@@ -69,7 +69,7 @@ public:
   virtual bool test () const;
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const;
 private:
-  SGSharedPtr<SGCondition> _condition;
+  SGConditionRef _condition;
 };
 
 
@@ -89,7 +89,7 @@ public:
   virtual void addCondition (SGCondition * condition);
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const;
 private:
-  std::vector<SGSharedPtr<SGCondition> > _conditions;
+  std::vector<SGConditionRef> _conditions;
 };
 
 
@@ -109,7 +109,7 @@ public:
   virtual void addCondition (SGCondition * condition);
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const;
 private:
-  std::vector<SGSharedPtr<SGCondition> > _conditions;
+  std::vector<SGConditionRef> _conditions;
 };
 
 

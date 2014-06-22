@@ -2,6 +2,8 @@
 #include <BoostTestTargetConfig.h>
 
 #include "Ghost.hxx"
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
 class Base1:
   public virtual SGVirtualWeakReferenced
@@ -36,6 +38,7 @@ typedef SGSharedPtr<SGReferenced> SGReferencedPtr;
   CHECK_PTR_TRAIT_TYPE(weak, weak_ref, weak)\
 
 CHECK_PTR_TRAIT(DerivedPtr, DerivedWeakPtr)
+CHECK_PTR_TRAIT(boost::shared_ptr<Base1>, boost::weak_ptr<Base1>)
 
 #undef CHECK_PTR_TRAIT
 #undef CHECK_PTR_TRAIT_TYPE
@@ -86,4 +89,53 @@ BOOST_AUTO_TEST_CASE( ghost_weak_strong_nasal_conversion )
   nasal::ghostProcessDestroyList();
 
   BOOST_REQUIRE( !weak.lock() );
+}
+
+#define CHECK_PTR_STORAGE_TRAIT_TYPE(ptr_t, storage)\
+  BOOST_STATIC_ASSERT((boost::is_same<\
+    nasal::shared_ptr_storage<ptr_t>::storage_type,\
+    storage\
+  >::value));
+
+CHECK_PTR_STORAGE_TRAIT_TYPE(DerivedPtr, Derived)
+CHECK_PTR_STORAGE_TRAIT_TYPE(DerivedWeakPtr, DerivedWeakPtr)
+
+typedef boost::shared_ptr<Derived> BoostDerivedPtr;
+CHECK_PTR_STORAGE_TRAIT_TYPE(BoostDerivedPtr, BoostDerivedPtr)
+
+typedef boost::weak_ptr<Derived> BoostDerivedWeakPtr;
+CHECK_PTR_STORAGE_TRAIT_TYPE(BoostDerivedWeakPtr, BoostDerivedWeakPtr)
+
+#undef CHECK_PTR_STORAGE_TRAIT_TYPE
+
+BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<Base1Ptr>::is_intrusive::value));
+BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<Base2Ptr>::is_intrusive::value));
+BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<DerivedPtr>::is_intrusive::value));
+BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<DerivedWeakPtr>::is_intrusive::value));
+BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<SGReferencedPtr>::is_intrusive::value));
+
+BOOST_STATIC_ASSERT((!nasal::shared_ptr_traits<boost::shared_ptr<Derived> >::is_intrusive::value));
+BOOST_STATIC_ASSERT((!nasal::shared_ptr_traits<boost::weak_ptr<Derived> >::is_intrusive::value));
+
+BOOST_AUTO_TEST_CASE( storage_traits )
+{
+  DerivedPtr d = new Derived();
+
+  Derived* d_raw = nasal::shared_ptr_storage<DerivedPtr>::ref(d);
+  BOOST_REQUIRE_EQUAL(d_raw, d.get());
+  BOOST_REQUIRE_EQUAL(d.getNumRefs(), 2);
+
+  DerivedWeakPtr* d_weak = nasal::shared_ptr_storage<DerivedWeakPtr>::ref(d);
+  BOOST_REQUIRE_EQUAL(
+    nasal::shared_ptr_storage<DerivedWeakPtr>::get<Derived*>(d_weak),
+    d_raw
+  );
+
+  d.reset();
+  BOOST_REQUIRE_EQUAL(Derived::count(d_raw), 1);
+
+  nasal::shared_ptr_storage<DerivedPtr>::unref(d_raw);
+  BOOST_REQUIRE(d_weak->expired());
+
+  nasal::shared_ptr_storage<DerivedWeakPtr>::unref(d_weak);
 }

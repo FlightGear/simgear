@@ -252,12 +252,12 @@ static int lexStringLiteral(struct Parser* p, int index, char q)
     return i+1;
 }
 
-static int lexHexLiteral(struct Parser* p, int index)
+static int lexIntLiteral(struct Parser* p, int index, int base)
 {
     int nib, i = index;
     double d = 0;
-    while(i < p->len && (nib = hex(p->buf[i])) >= 0) {
-        d = d*16 + nib;
+    while(i < p->len && (nib = hex(p->buf[i])) >= 0 && nib < base) {
+        d = d * base + nib;
         i++;
     }
     newToken(p, index, TOK_LITERAL, 0, 0, d);
@@ -273,8 +273,12 @@ static int lexNumLiteral(struct Parser* p, int index)
     unsigned char* buf = (unsigned char*)p->buf;
     double d;
 
-    if(buf[i] == '0' && i+2<len && buf[i+1] == 'x' && ISHEX(buf[i+2]))
-       return lexHexLiteral(p, index+2);
+    if(buf[i] == '0') {
+        if(i+2<len && buf[i+1] == 'x' && ISHEX(buf[i+2]))
+            return lexIntLiteral(p, index+2, 16);
+        if(i+1<len && ISNUM(buf[i+1]) )
+            return lexIntLiteral(p, index+1, 8);
+    }
 
     while(i<len && ISNUM(buf[i])) i++;
     if(i<len && buf[i] == '.') {

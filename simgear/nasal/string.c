@@ -132,15 +132,25 @@ void naStr_gcclean(struct naStr* str)
 // remaining 67%.
 ////////////////////////////////////////////////////////////////////////
 
-// Reads an unsigned decimal out of the scalar starting at i, stores
-// it in v, and returns the next index to start at.  Zero-length
-// decimal numbers are allowed, and are returned as zero.
-static int readdec(unsigned char* s, int len, int i, double* v)
+// TODO unify with number conversion in lex.c
+static int hex(char c)
 {
+    if(c >= '0' && c <= '9') return c - '0';
+    if(c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if(c >= 'a' && c <= 'f') return c - 'a' + 10;
+    return -1;
+}
+
+// Reads an unsigned integer out of the scalar starting at i, stores
+// it in v, and returns the next index to start at.  Zero-length
+// integer numbers are allowed, and are returned as zero.
+static int readint(unsigned char* s, int len, int i, double* v, int base)
+{
+    int val;
     *v = 0;
     if(i >= len) return len;
-    while(i < len && s[i] >= '0' && s[i] <= '9') {
-        *v= (*v) * 10 + (s[i] - '0');
+    while(i < len && (val = hex(s[i])) >= 0 && val < base) {
+        *v= (*v) * base + val;
         i++;
     }
     return i;
@@ -151,12 +161,16 @@ static int readdec(unsigned char* s, int len, int i, double* v)
 // decimal numbers are allowed, and are returned as zero.
 static int readsigned(unsigned char* s, int len, int i, double* v)
 {
-    int i0 = i, i2;
+    int i0 = i, i2, base = 10;
     double sgn=1, val;
     if(i >= len) { *v = 0; return len; }
     if(s[i] == '+')      { i++; }
     else if(s[i] == '-') { i++; sgn = -1; }
-    i2 = readdec(s, len, i, &val);
+    if(s[i] == '0') {
+      i++; base = 8;
+      if( i < len && s[i] == 'x' ) { i++; base = 16; }
+    }
+    i2 = readint(s, len, i, &val, base);
     if(i0 == i && i2 == i) {
         *v = 0;
         return i0; // don't successfully parse bare "+" or "-"
@@ -201,7 +215,7 @@ static int tonum(unsigned char* s, int len, double* result)
     // Read the fractional part, if any
     if(i < len && s[i] == '.') {
         i++;
-        fraclen = readdec(s, len, i, &frac) - i;
+        fraclen = readint(s, len, i, &frac, 10) - i;
         i += fraclen;
     }
 

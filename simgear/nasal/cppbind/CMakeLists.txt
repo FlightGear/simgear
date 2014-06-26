@@ -41,3 +41,8 @@ add_boost_test(cppbind_ghost
   SOURCES cppbind_test_ghost.cxx
   LIBRARIES ${TEST_LIBS}
 )
+
+add_boost_test(nasal_num
+  SOURCES nasal_num_test.cxx
+  LIBRARIES ${TEST_LIBS}
+)

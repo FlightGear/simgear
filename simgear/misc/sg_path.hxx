@@ -206,9 +206,12 @@ public:
 
     /**
      * Create the designated directory.
+     *
+     * @param mode Permissions. See:
+     *    http://en.wikipedia.org/wiki/File_system_permissions#Numeric_notation
      * @return 0 on success, or <0 on failure.
      */
-    int create_dir(mode_t mode);
+    int create_dir(mode_t mode = 0755);
 
     /**
      * Check if reading file is allowed. Readabilty does not imply the existance

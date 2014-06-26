@@ -477,14 +477,23 @@ bool SGPath::isFile() const
   return _exists && _isFile;
 }
 
+//------------------------------------------------------------------------------
 #ifdef _WIN32
 #  define sgMkDir(d,m)       _mkdir(d)
 #else
 #  define sgMkDir(d,m)       mkdir(d,m)
 #endif
 
+int SGPath::create_dir(mode_t mode)
+{
+  if( !canWrite() )
+  {
+    SG_LOG( SG_IO,
+            SG_WARN, "Error creating directory for '" << str() << "'"
+                                                    " reason: access denied" );
+    return -3;
+  }
 
-int SGPath::create_dir( mode_t mode ) {
     string_list dirlist = sgPathSplit(dir());
     if ( dirlist.empty() )
         return -1;
@@ -501,37 +510,31 @@ int SGPath::create_dir( mode_t mode ) {
         i = 2;
     }
 #endif
-    struct stat info;
-    int r;
-    for(; ( r = stat( dir.c_str(), &info ) ) == 0 && i < path_elements.size(); i++) {
-        dir.append(path_elements[i]);
-    }
-    if ( r == 0 ) {
-        return 0; // Directory already exists
-    }
-    for(;;)
+  struct stat info;
+  int r;
+  for(; (r = stat(dir.c_str(), &info)) == 0 && i < path_elements.size(); ++i)
+    dir.append(path_elements[i]);
+  if( r == 0 )
+      return 0; // Directory already exists
+
+  for(;;)
+  {
+    if( sgMkDir(dir.c_str(), mode) )
     {
-      if( !dir.canWrite() )
-      {
-        SG_LOG( SG_IO,
-                SG_WARN, "Error creating directory: (" << dir.str() << ")" <<
-                                                  " reason: access denied" );
-        return -3;
-      }
-      else if( sgMkDir(dir.c_str(), mode) )
-      {
-        SG_LOG( SG_IO,
-                SG_ALERT, "Error creating directory: (" << dir.str() << ")" );
-        return -2;
-      }
-
-      if( i >= path_elements.size() )
-        return  0;
-
-      dir.append(path_elements[i++]);
+      SG_LOG( SG_IO,
+              SG_ALERT, "Error creating directory: (" << dir.str() << ")" );
+      return -2;
     }
+    else
+      SG_LOG(SG_IO, SG_DEBUG, "Directory created: " << dir.str());
 
-    return 0;
+    if( i >= path_elements.size() )
+      return 0;
+
+    dir.append(path_elements[i++]);
+  }
+
+  return 0;
 }
 
 string_list sgPathBranchSplit( const string &dirpath ) {

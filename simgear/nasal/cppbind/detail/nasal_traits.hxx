@@ -20,6 +20,7 @@
 #ifndef SG_NASAL_TRAITS_HXX_
 #define SG_NASAL_TRAITS_HXX_
 
+#include <boost/mpl/logical.hpp>
 #include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -157,9 +158,14 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
     }
     template<class U>
     static
-    typename boost::enable_if_c<
-         boost::is_same<U, strong_ref>::value
-      || (boost::is_same<U, weak_ref>::value && supports_weak_ref<U>::value),
+    typename boost::enable_if<
+      boost::mpl::or_<
+        boost::is_same<U, strong_ref>,
+        boost::mpl::and_<
+          boost::is_same<U, weak_ref>,
+          supports_weak_ref<U>
+        >
+      >,
       U
     >::type
     get(storage_type* ptr)
@@ -168,9 +174,11 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
     }
     template<class U>
     static
-    typename boost::enable_if_c<
-         boost::is_same<U, weak_ref>::value
-      && !supports_weak_ref<U>::value,
+    typename boost::enable_if<
+      boost::mpl::and_<
+        boost::is_same<U, weak_ref>,
+        boost::mpl::not_<supports_weak_ref<U> >
+      >,
       U
     >::type
     get(storage_type* ptr)
@@ -201,9 +209,14 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
       }
       template<class U>
       static
-      typename boost::enable_if_c<
-           boost::is_same<U, strong_ref>::value
-        || (boost::is_same<U, weak_ref>::value && supports_weak_ref<U>::value),
+      typename boost::enable_if<
+        boost::mpl::or_<
+          boost::is_same<U, strong_ref>,
+          boost::mpl::and_<
+            boost::is_same<U, weak_ref>,
+            supports_weak_ref<U>
+          >
+        >,
         U
       >::type
       get(storage_type* ptr)
@@ -212,9 +225,11 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
       }
       template<class U>
       static
-      typename boost::enable_if_c<
-           boost::is_same<U, weak_ref>::value
-        && !supports_weak_ref<U>::value,
+      typename boost::enable_if<
+        boost::mpl::and_<
+          boost::is_same<U, weak_ref>,
+          boost::mpl::not_<supports_weak_ref<U> >
+        >,
         U
       >::type
       get(storage_type* ptr)

@@ -395,9 +395,17 @@ BOOST_AUTO_TEST_CASE( boxlayout_hfw )
 
   vbox.setGeometry(SGRecti(0, 0, 50, 122));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  50, 44));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 49, 50, 70));
-  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 124, 50, 56));
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  50, 25));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 30, 50, 51));
+  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 86, 50, 36));
+
+  // Same geometry as before -> should get same widget geometry
+  // (check internal size hint cache updates correctly)
+  vbox.setGeometry(SGRecti(0, 0, 24, 122));
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  24, 33));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 38, 24, 47));
+  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
 }
 
 //------------------------------------------------------------------------------

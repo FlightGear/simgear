@@ -394,13 +394,16 @@ namespace canvas
                                      data.layout_item->minimumSize().x(),
                                      data.layout_item->maximumSize().x() );
 
-          int d = data.layout_item->minimumHeightForWidth(w) - data.min_size;
-          data.min_size += d;
-          _layout_data.min_size += d;
+          data.min_size = data.mhfw(w);
+          data.size_hint = data.hfw(w);
 
-          d = data.layout_item->heightForWidth(w) - data.size_hint;
-          data.size_hint += d;
-          _layout_data.size_hint += d;
+          // Update size hints for layouting with difference to size hints
+          // calculated by using the size hints provided (without trading
+          // height for width)
+          _layout_data.min_size  += data.min_size
+                                  - data.layout_item->minimumSize().y();
+          _layout_data.size_hint += data.size_hint
+                                  - data.layout_item->sizeHint().y();
         }
       }
     }

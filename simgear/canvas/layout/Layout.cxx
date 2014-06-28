@@ -124,7 +124,11 @@ namespace canvas
 
     SG_LOG( SG_GUI,
             SG_DEBUG,
-            "Layout::distribute(" << num_children << " items)" );
+            "Layout::distribute(" << space.size << "px for "
+                                  << num_children << " items, s.t."
+                                  << " min=" << space.min_size
+                                  << ", hint=" << space.size_hint
+                                  << ", max=" << space.max_size << ")" );
 
     if( space.size < space.min_size )
     {

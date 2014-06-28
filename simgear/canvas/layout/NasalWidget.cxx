@@ -108,14 +108,14 @@ namespace canvas
   void NasalWidget::setHeightForWidthFunc(const HeightForWidthFunc& func)
   {
     _height_for_width = func;
-    invalidateParent();
+    invalidate();
   }
 
   //----------------------------------------------------------------------------
   void NasalWidget::setMinimumHeightForWidthFunc(const HeightForWidthFunc& func)
   {
     _min_height_for_width = func;
-    invalidateParent();
+    invalidate();
   }
 
   //----------------------------------------------------------------------------
@@ -127,7 +127,7 @@ namespace canvas
     _size_hint = s;
 
     // TODO just invalidate size_hint? Probably not a performance issue...
-    invalidateParent();
+    invalidate();
   }
 
   //----------------------------------------------------------------------------
@@ -137,7 +137,7 @@ namespace canvas
       return;
 
     _min_size = s;
-    invalidateParent();
+    invalidate();
   }
 
   //----------------------------------------------------------------------------
@@ -147,7 +147,7 @@ namespace canvas
       return;
 
     _max_size = s;
-    invalidateParent();
+    invalidate();
   }
 
   //----------------------------------------------------------------------------

@@ -85,7 +85,7 @@ namespace canvas
       Deleter del =
         nasal::get_member<Deleter>(c, _nasal_impl.get_naRef(), "onRemove");
       if( del )
-        del(_nasal_impl.get_naRef());
+        del(nasal::to_nasal(c, this));
     }
     catch( std::exception const& ex )
     {

@@ -39,7 +39,7 @@ Request* Request::done(const Callback& cb)
   if( _ready_state == DONE )
     cb(this);
   else
-    _cb_done = cb;
+    _cb_done.push_back(cb);
 
   return this;
 }
@@ -50,7 +50,7 @@ Request* Request::fail(const Callback& cb)
   if( _ready_state == FAILED )
     cb(this);
   else
-    _cb_fail = cb;
+    _cb_fail.push_back(cb);
 
   return this;
 }
@@ -61,7 +61,7 @@ Request* Request::always(const Callback& cb)
   if( isComplete() )
     cb(this);
   else
-    _cb_always = cb;
+    _cb_always.push_back(cb);
 
   return this;
 }
@@ -321,22 +321,19 @@ void Request::setReadyState(ReadyState state)
     onDone();
     onAlways();
 
-    if( _cb_done )
-      _cb_done(this);
+    _cb_done(this);
   }
   else if( state == FAILED )
   {
     onFail();
     onAlways();
 
-    if( _cb_fail )
-      _cb_fail(this);
+    _cb_fail(this);
   }
   else
     return;
 
-  if( _cb_always )
-    _cb_always(this);
+  _cb_always(this);
 }
 
 //------------------------------------------------------------------------------

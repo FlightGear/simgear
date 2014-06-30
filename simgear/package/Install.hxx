@@ -23,11 +23,11 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/package/Delegate.hxx>
 
+#include <simgear/structure/function_list.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 #include <boost/bind.hpp>
-#include <boost/function.hpp>
 
 namespace simgear
 {
@@ -156,11 +156,10 @@ private:
 
     Delegate::FailureCode _status;
 
-    Callback          _cb_done,
-                      _cb_fail,
-                      _cb_always;
-    ProgressCallback  _cb_progress;
-
+    function_list<Callback>         _cb_done,
+                                    _cb_fail,
+                                    _cb_always;
+    function_list<ProgressCallback> _cb_progress;
 };
     
     

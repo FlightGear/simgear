@@ -3,13 +3,13 @@
 
 #include <map>
 
+#include <simgear/structure/function_list.hxx>
 #include <simgear/structure/map.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/sg_types.hxx>
 
 #include <boost/bind.hpp>
-#include <boost/function.hpp>
 
 class SGPropertyNode;
 
@@ -47,7 +47,7 @@ public:
                                             { return _request_headers.get(key); }
 
     /**
-     * Set the handler to be called when the request successfully completes.
+     * Add a handler to be called when the request successfully completes.
      *
      * @note If the request is already complete, the handler is called
      *       immediately.
@@ -61,7 +61,7 @@ public:
     }
 
     /**
-     * Set the handler to be called when the request completes or aborts with an
+     * Add a handler to be called when the request completes or aborts with an
      * error.
      *
      * @note If the request has already failed, the handler is called
@@ -76,8 +76,8 @@ public:
     }
 
     /**
-     * Set the handler to be called when the request either successfully
-     * completes or fails.
+     * Add a handler to be called when the request either successfully completes
+     * or fails.
      *
      * @note If the request is already complete or has already failed, the
      *       handler is called immediately.
@@ -224,9 +224,9 @@ private:
     unsigned int  _responseLength;
     unsigned int  _receivedBodyBytes;
 
-    Callback      _cb_done,
-                  _cb_fail,
-                  _cb_always;
+    function_list<Callback> _cb_done,
+                            _cb_fail,
+                            _cb_always;
 
     ReadyState    _ready_state;
     bool          _willClose;

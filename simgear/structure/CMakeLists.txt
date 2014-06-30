@@ -21,11 +21,16 @@ set(HEADERS
     commands.hxx
     event_mgr.hxx
     exception.hxx
+    function_list.hxx
     intern.hxx
     map.hxx
     subsystem_mgr.hxx
     StateMachine.hxx
     )
+
+set(DETAIL_HEADERS
+  detail/function_list_template.hxx
+)
 
 set(SOURCES
     SGAtomic.cxx
@@ -43,6 +48,7 @@ set(SOURCES
     )
 
 simgear_component(structure structure "${SOURCES}" "${HEADERS}")
+simgear_component(structure/detail structure/detail "" "${DETAIL_HEADERS}")
 
 if(ENABLE_TESTS)
 
@@ -55,6 +61,11 @@ target_link_libraries(test_expressions ${TEST_LIBS})
 add_test(expressions ${EXECUTABLE_OUTPUT_PATH}/test_expressions)
 
 endif(ENABLE_TESTS)
+
+add_boost_test(function_list
+  SOURCES function_list_test.cxx
+  LIBRARIES ${TEST_LIBS}
+)
 
 add_boost_test(shared_ptr
   SOURCES shared_ptr_test.cpp

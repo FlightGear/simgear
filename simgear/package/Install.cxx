@@ -317,6 +317,7 @@ void Install::uninstall()
 {
     Dir d(m_path);
     d.remove(true);
+    m_package->catalog()->unregisterInstall(this);
 }
 
 //------------------------------------------------------------------------------

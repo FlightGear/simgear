@@ -131,12 +131,25 @@ InstallRef Package::install()
   // start a new install
     ins = new Install(this, pathOnDisk());
     m_catalog->root()->scheduleToUpdate(ins);
+
+    _install_cb(this, ins);
+
     return ins;
 }
 
-InstallRef Package::existingInstall() const
+InstallRef Package::existingInstall(const InstallCallback& cb) const
 {
-    return m_catalog->installForPackage(const_cast<Package*>(this));
+  InstallRef install = m_catalog->installForPackage(const_cast<Package*>(this));
+
+  if( cb )
+  {
+    _install_cb.push_back(cb);
+
+    if( install )
+      cb(const_cast<Package*>(this), install);
+  }
+
+  return install;
 }
 
 std::string Package::id() const

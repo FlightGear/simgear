@@ -24,6 +24,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/misc/strutils.hxx>
 
+#include <simgear/structure/function_list.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
@@ -49,12 +50,16 @@ typedef std::vector<PackageRef> PackageList;
   class Package : public SGReferenced
 {
 public:
+
+    typedef boost::function<void(Package*, Install*)> InstallCallback;
+
     /**
      * get or create an install for the package
      */
     InstallRef install();
 
-    InstallRef existingInstall() const;
+    InstallRef
+    existingInstall(const InstallCallback& cb = InstallCallback()) const;
 
     bool isInstalled() const;
     
@@ -138,6 +143,8 @@ private:
     std::string m_id;
     string_set m_tags;
     CatalogRef m_catalog;
+
+    mutable function_list<InstallCallback> _install_cb;
 };
 
 

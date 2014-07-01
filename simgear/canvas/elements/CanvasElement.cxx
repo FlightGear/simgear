@@ -202,6 +202,13 @@ namespace canvas
     {
       parent->removeChild(_transform.get());
     }
+
+    // Hide in case someone still holds a reference
+    setVisible(false);
+    removeListener();
+
+    _parent = 0;
+    _transform = 0;
   }
 
   //----------------------------------------------------------------------------

@@ -39,7 +39,8 @@ namespace simgear
   //----------------------------------------------------------------------------
   void PropertyBasedElement::removeListener()
   {
-    _node->removeChangeListener(this);
+    if( _node )
+      _node->removeChangeListener(this);
   }
 
   //----------------------------------------------------------------------------

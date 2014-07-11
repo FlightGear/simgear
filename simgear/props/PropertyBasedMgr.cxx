@@ -96,7 +96,7 @@ namespace simgear
     _name_elements( name_elements ),
     _element_factory( element_factory )
   {
-    _props->setAttribute(SGPropertyNode::PRESERVE, true);
+
   }
 
   //----------------------------------------------------------------------------

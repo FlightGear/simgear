@@ -1695,6 +1695,12 @@ void SGPropertyNode::setInterpolationMgr(simgear::PropertyInterpolationMgr* mgr)
   _interpolation_mgr = mgr;
 }
 
+//------------------------------------------------------------------------------
+simgear::PropertyInterpolationMgr* SGPropertyNode::getInterpolationMgr()
+{
+  return _interpolation_mgr;
+}
+
 simgear::PropertyInterpolationMgr* SGPropertyNode::_interpolation_mgr = 0;
 
 //------------------------------------------------------------------------------

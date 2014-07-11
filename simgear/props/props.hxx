@@ -1303,6 +1303,11 @@ public:
   static void setInterpolationMgr(simgear::PropertyInterpolationMgr* mgr);
 
   /**
+   * Get the interpolation manager
+   */
+  static simgear::PropertyInterpolationMgr* getInterpolationMgr();
+
+  /**
    * Print the value of the property to a stream.
    */
   std::ostream& printOn(std::ostream& stream) const;

@@ -84,7 +84,10 @@ class FindGroupVisitor:
 
       if( !_group )
         _group = &group;
-      else
+
+      // Different paths can exists for example with a picking animation (pick
+      // render group)
+      else if( _group != &group )
         SG_LOG
         (
           SG_IO,
@@ -178,7 +181,10 @@ class SGTrackToAnimation::UpdateCallback:
         float proj = _lock_axis * _track_axis;
         if( proj != 0.0 )
         {
-          anim->log(SG_WARN, "track-axis not perpendicular to lock-axis");
+          if( _slave_dof < 2 )
+            // Without slave_dof >= 2, can not rotate out of plane normal to
+            // lock axis.
+            anim->log(SG_WARN, "track-axis not perpendicular to lock-axis");
 
           // Make tracking axis perpendicular to locked axis
           _track_axis -= _lock_axis * proj;

@@ -43,6 +43,7 @@ namespace canvas
   {
     public:
 
+      /** Maximum item size (indicating no limit) */
       static const SGVec2i MAX_SIZE;
 
       LayoutItem();

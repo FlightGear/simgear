@@ -409,12 +409,44 @@ BOOST_AUTO_TEST_CASE( boxlayout_hfw )
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( nasal_layout )
+BOOST_AUTO_TEST_CASE( nasal_widget )
 {
   naContext c = naNewContext();
   naRef me = naNewHash(c);
 
-  sc::LayoutItemRef nasal_item( new sc::NasalWidget(me) );
+  sc::NasalWidgetRef w( new sc::NasalWidget(me) );
+
+  // Default layout sizes (no user set values)
+  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(16, 16));
+  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(32, 32));
+  BOOST_CHECK_EQUAL(w->maximumSize(), sc::LayoutItem::MAX_SIZE);
+
+  // Changed layout sizes
+  w->setLayoutMinimumSize( SGVec2i(2, 12) );
+  w->setLayoutSizeHint(    SGVec2i(3, 13) );
+  w->setLayoutMaximumSize( SGVec2i(4, 14) );
+
+  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(2, 12));
+  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(3, 13));
+  BOOST_CHECK_EQUAL(w->maximumSize(), SGVec2i(4, 14));
+
+  // User set values (overwrite layout sizes)
+  w->setMinimumSize( SGVec2i(15, 16) );
+  w->setSizeHint(    SGVec2i(17, 18) );
+  w->setMaximumSize( SGVec2i(19, 20) );
+
+  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(15, 16));
+  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(17, 18));
+  BOOST_CHECK_EQUAL(w->maximumSize(), SGVec2i(19, 20));
+
+  // Only vertical user set values (layout/default for horizontal hints)
+  w->setMinimumSize( SGVec2i(0, 21) );
+  w->setSizeHint(    SGVec2i(0, 22) );
+  w->setMaximumSize( SGVec2i(SGLimits<int>::max(), 23) );
+
+  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(2, 21));
+  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(3, 22));
+  BOOST_CHECK_EQUAL(w->maximumSize(), SGVec2i(4, 23));
 
   naFreeContext(c);
 }

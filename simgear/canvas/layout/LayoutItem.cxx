@@ -29,7 +29,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   LayoutItem::LayoutItem():
     _flags(0),
-    _size_hint(16, 16),
+    _size_hint(0, 0),
     _min_size(0, 0),
     _max_size(MAX_SIZE)
   {

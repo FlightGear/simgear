@@ -28,7 +28,13 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   NasalWidget::NasalWidget(naRef impl):
-    Object(impl)
+    Object(impl),
+    _layout_size_hint(32, 32),
+    _layout_min_size(16, 16),
+    _layout_max_size(MAX_SIZE),
+    _user_size_hint(0, 0),
+    _user_min_size(0, 0),
+    _user_max_size(MAX_SIZE)
   {
 
   }
@@ -121,10 +127,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   void NasalWidget::setSizeHint(const SGVec2i& s)
   {
-    if( _size_hint == s )
+    if( _user_size_hint == s )
       return;
 
-    _size_hint = s;
+    _user_size_hint = s;
 
     // TODO just invalidate size_hint? Probably not a performance issue...
     invalidate();
@@ -133,20 +139,50 @@ namespace canvas
   //----------------------------------------------------------------------------
   void NasalWidget::setMinimumSize(const SGVec2i& s)
   {
-    if( _min_size == s )
+    if( _user_min_size == s )
       return;
 
-    _min_size = s;
+    _user_min_size = s;
     invalidate();
   }
 
   //----------------------------------------------------------------------------
   void NasalWidget::setMaximumSize(const SGVec2i& s)
   {
-    if( _max_size == s )
+    if( _user_max_size == s )
       return;
 
-    _max_size = s;
+    _user_max_size = s;
+    invalidate();
+  }
+
+  //----------------------------------------------------------------------------
+  void NasalWidget::setLayoutSizeHint(const SGVec2i& s)
+  {
+    if( _layout_size_hint == s )
+      return;
+
+    _layout_size_hint = s;
+    invalidate();
+  }
+
+  //----------------------------------------------------------------------------
+  void NasalWidget::setLayoutMinimumSize(const SGVec2i& s)
+  {
+    if( _layout_min_size == s )
+      return;
+
+    _layout_min_size = s;
+    invalidate();
+  }
+
+  //----------------------------------------------------------------------------
+  void NasalWidget::setLayoutMaximumSize(const SGVec2i& s)
+  {
+    if( _layout_max_size == s )
+      return;
+
+    _layout_max_size = s;
     invalidate();
   }
 
@@ -192,7 +228,10 @@ namespace canvas
       .method("setHeightForWidthFunc", &NasalWidget::setHeightForWidthFunc)
       .method("setSizeHint", &NasalWidget::setSizeHint)
       .method("setMinimumSize", &NasalWidget::setMinimumSize)
-      .method("setMaximumSize", &NasalWidget::setMaximumSize);
+      .method("setMaximumSize", &NasalWidget::setMaximumSize)
+      .method("setLayoutSizeHint", &NasalWidget::setLayoutSizeHint)
+      .method("setLayoutMinimumSize", &NasalWidget::setLayoutMinimumSize)
+      .method("setLayoutMaximumSize", &NasalWidget::setLayoutMaximumSize);
 
     nasal::Hash widget_hash = ns.createHash("Widget");
     widget_hash.set("new", &f_makeNasalWidget);
@@ -226,19 +265,30 @@ namespace canvas
   //----------------------------------------------------------------------------
   SGVec2i NasalWidget::sizeHintImpl() const
   {
-    return _size_hint;
+    return SGVec2i(
+      _user_size_hint.x() > 0 ? _user_size_hint.x() : _layout_size_hint.x(),
+      _user_size_hint.y() > 0 ? _user_size_hint.y() : _layout_size_hint.y()
+    );
   }
 
   //----------------------------------------------------------------------------
   SGVec2i NasalWidget::minimumSizeImpl() const
   {
-    return _min_size;
+    return SGVec2i(
+      _user_min_size.x() > 0 ? _user_min_size.x() : _layout_min_size.x(),
+      _user_min_size.y() > 0 ? _user_min_size.y() : _layout_min_size.y()
+    );
   }
 
   //----------------------------------------------------------------------------
   SGVec2i NasalWidget::maximumSizeImpl() const
   {
-    return _max_size;
+    return SGVec2i(
+      _user_max_size.x() < MAX_SIZE.x() ? _user_max_size.x()
+                                        : _layout_max_size.x(),
+      _user_max_size.y() < MAX_SIZE.y() ? _user_max_size.y()
+                                        : _layout_max_size.y()
+    );
   }
 
 } // namespace canvas

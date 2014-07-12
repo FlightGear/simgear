@@ -59,9 +59,30 @@ namespace canvas
       void setHeightForWidthFunc(const HeightForWidthFunc& func);
       void setMinimumHeightForWidthFunc(const HeightForWidthFunc& func);
 
+      /** Set size hint.
+       *
+       * Overrides default size hint. Set to (0, 0) to fall back to default size
+       * hint.
+       */
       void setSizeHint(const SGVec2i& s);
+
+      /** Set minimum size.
+       *
+       * Overrides default minimum size. Set to (0, 0) to fall back to default
+       * minimum size.
+       */
       void setMinimumSize(const SGVec2i& s);
+
+      /** Set maximum size.
+       *
+       * Overrides default maximum size hint. Set to LayoutItem::MAX_SIZE to
+       * fall back to default maximum size.
+       */
       void setMaximumSize(const SGVec2i& s);
+
+      void setLayoutSizeHint(const SGVec2i& s);
+      void setLayoutMinimumSize(const SGVec2i& s);
+      void setLayoutMaximumSize(const SGVec2i& s);
 
       virtual bool hasHeightForWidth() const;
       virtual int heightForWidth(int w) const;
@@ -82,6 +103,13 @@ namespace canvas
       SetGeometryFunc       _set_geometry;
       HeightForWidthFunc    _height_for_width,
                             _min_height_for_width;
+
+      SGVec2i _layout_size_hint,
+              _layout_min_size,
+              _layout_max_size,
+              _user_size_hint,
+              _user_min_size,
+              _user_max_size;
 
       int callHeightForWidthFunc( const HeightForWidthFunc& hfw,
                                   int w ) const;

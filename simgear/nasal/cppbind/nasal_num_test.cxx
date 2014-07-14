@@ -72,9 +72,13 @@ static void runNumTests( double (TestContext::*test_double)(const std::string&),
   BOOST_CHECK_CLOSE((c.*test_int)("-1e7"), -1e7, 1e-5);
   BOOST_CHECK_CLOSE((c.*test_int)("2E07"), 2e07, 1e-5);
 
-  BOOST_CHECK_EQUAL((c.*test_int)("0755"), 0755);
-  BOOST_CHECK_EQUAL((c.*test_int)("0055"), 055);
-  BOOST_CHECK_EQUAL((c.*test_int)("-0155"), -0155);
+  BOOST_CHECK_EQUAL((c.*test_int)("0755"), 755);
+  BOOST_CHECK_EQUAL((c.*test_int)("0055"), 55);
+  BOOST_CHECK_EQUAL((c.*test_int)("-0155"), -155);
+
+  BOOST_CHECK_EQUAL((c.*test_int)("0o755"), 0755);
+  BOOST_CHECK_EQUAL((c.*test_int)("0o055"), 055);
+  BOOST_CHECK_EQUAL((c.*test_int)("-0o155"), -0155);
 
   BOOST_CHECK_EQUAL((c.*test_int)("0x755"), 0x755);
   BOOST_CHECK_EQUAL((c.*test_int)("0x055"), 0x55);

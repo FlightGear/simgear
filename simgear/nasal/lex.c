@@ -273,11 +273,11 @@ static int lexNumLiteral(struct Parser* p, int index)
     unsigned char* buf = (unsigned char*)p->buf;
     double d;
 
-    if(buf[i] == '0') {
-        if(i+2<len && buf[i+1] == 'x' && ISHEX(buf[i+2]))
+    if( buf[i] == '0' && i + 2 < len ) {
+        if( buf[i+1] == 'x' && ISHEX(buf[i+2]) )
             return lexIntLiteral(p, index+2, 16);
-        if(i+1<len && ISNUM(buf[i+1]) )
-            return lexIntLiteral(p, index+1, 8);
+        if( buf[i+1] == 'o' && ISNUM(buf[i+2]) )
+            return lexIntLiteral(p, index+2, 8);
     }
 
     while(i<len && ISNUM(buf[i])) i++;

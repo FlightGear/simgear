@@ -166,9 +166,9 @@ static int readsigned(unsigned char* s, int len, int i, double* v)
     if(i >= len) { *v = 0; return len; }
     if(s[i] == '+')      { i++; }
     else if(s[i] == '-') { i++; sgn = -1; }
-    if(s[i] == '0') {
-      i++; base = 8;
-      if( i < len && s[i] == 'x' ) { i++; base = 16; }
+    if(s[i] == '0' && ++i < len) {
+      if( s[i] == 'x' ) { i++; base = 16; }
+      if( s[i] == 'o' ) { i++; base = 8;  }
     }
     i2 = readint(s, len, i, &val, base);
     if(i0 == i && i2 == i) {

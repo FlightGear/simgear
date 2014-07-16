@@ -153,6 +153,24 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool BoxLayout::setStretchFactor(const LayoutItemRef& item, int stretch)
+  {
+    for( LayoutItems::iterator it = _layout_items.begin();
+                               it != _layout_items.end();
+                             ++it )
+    {
+      if( item == it->layout_item )
+      {
+        it->stretch = std::max(0, stretch);
+        invalidate();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  //----------------------------------------------------------------------------
   int BoxLayout::stretch(size_t index) const
   {
     if( index >= _layout_items.size() )

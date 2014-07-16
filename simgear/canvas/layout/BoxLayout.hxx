@@ -67,6 +67,14 @@ namespace canvas
       void setStretch(size_t index, int stretch);
 
       /**
+       * Set the stretch factor of the given @a item to @a stretch, if it exists
+       * in this layout.
+       *
+       * @return true, if the @a item was found in the layout
+       */
+      bool setStretchFactor(const LayoutItemRef& item, int stretch);
+
+      /**
        * Get the stretch factor of the item at position @a index
        */
       int stretch(size_t index) const;

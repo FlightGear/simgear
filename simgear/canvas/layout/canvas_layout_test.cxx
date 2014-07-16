@@ -216,6 +216,15 @@ BOOST_AUTO_TEST_CASE( horizontal_layout )
 
     BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,   0, 125, 32));
     BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(130, 0, 126, 32));
+
+    BOOST_REQUIRE( hbox.setStretchFactor(w1, 2) );
+    BOOST_REQUIRE( hbox.setStretchFactor(w2, 3) );
+    BOOST_CHECK_EQUAL(hbox.stretch(0), 2);
+    BOOST_CHECK_EQUAL(hbox.stretch(1), 3);
+
+    hbox.removeItem(w1);
+
+    BOOST_CHECK( !hbox.setStretchFactor(w1, 0) );
   }
 }
 

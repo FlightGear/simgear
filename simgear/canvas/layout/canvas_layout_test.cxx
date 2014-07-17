@@ -295,35 +295,41 @@ BOOST_AUTO_TEST_CASE( vertical_layout)
 //------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
 {
-  sc::HBoxLayout hbox;
+  sc::BoxLayoutRef hbox( new sc::HBoxLayout );
 
-  BOOST_CHECK_EQUAL(hbox.count(), 0);
-  BOOST_CHECK(!hbox.itemAt(0));
-  BOOST_CHECK(!hbox.takeAt(0));
+  BOOST_CHECK_EQUAL(hbox->count(), 0);
+  BOOST_CHECK(!hbox->itemAt(0));
+  BOOST_CHECK(!hbox->takeAt(0));
 
   TestWidgetRef w1( new TestWidget( SGVec2i(16,   16),
                                     SGVec2i(32,   32),
                                     SGVec2i(9999, 32) ) ),
                 w2( new TestWidget(*w1) );
 
-  hbox.addItem(w1);
-  BOOST_CHECK_EQUAL(hbox.count(), 1);
-  BOOST_CHECK_EQUAL(hbox.itemAt(0), w1);
+  hbox->addItem(w1);
+  BOOST_CHECK_EQUAL(hbox->count(), 1);
+  BOOST_CHECK_EQUAL(hbox->itemAt(0), w1);
+  BOOST_CHECK_EQUAL(w1->getParent(), hbox);
 
-  hbox.insertItem(0, w2);
-  BOOST_CHECK_EQUAL(hbox.count(), 2);
-  BOOST_CHECK_EQUAL(hbox.itemAt(0), w2);
-  BOOST_CHECK_EQUAL(hbox.itemAt(1), w1);
+  hbox->insertItem(0, w2);
+  BOOST_CHECK_EQUAL(hbox->count(), 2);
+  BOOST_CHECK_EQUAL(hbox->itemAt(0), w2);
+  BOOST_CHECK_EQUAL(hbox->itemAt(1), w1);
+  BOOST_CHECK_EQUAL(w2->getParent(), hbox);
 
-  hbox.removeItem(w2);
-  BOOST_CHECK_EQUAL(hbox.count(), 1);
-  BOOST_CHECK_EQUAL(hbox.itemAt(0), w1);
+  hbox->removeItem(w2);
+  BOOST_CHECK_EQUAL(hbox->count(), 1);
+  BOOST_CHECK_EQUAL(hbox->itemAt(0), w1);
+  BOOST_CHECK( !w2->getParent() );
 
-  hbox.addItem(w2);
-  BOOST_CHECK_EQUAL(hbox.count(), 2);
+  hbox->addItem(w2);
+  BOOST_CHECK_EQUAL(hbox->count(), 2);
+  BOOST_CHECK_EQUAL(w2->getParent(), hbox);
 
-  hbox.clear();
-  BOOST_CHECK_EQUAL(hbox.count(), 0);
+  hbox->clear();
+  BOOST_CHECK_EQUAL(hbox->count(), 0);
+  BOOST_CHECK( !w1->getParent() );
+  BOOST_CHECK( !w2->getParent() );
 }
 
 //------------------------------------------------------------------------------

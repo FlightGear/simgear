@@ -70,8 +70,12 @@ namespace canvas
     item_data.layout_item = item;
     item_data.stretch = std::max(0, stretch);
 
-    item->setCanvas(_canvas);
-    item->setParent(this);
+    if( SGWeakReferenced::count(this) )
+      item->setParent(this);
+    else
+      SG_LOG( SG_GUI,
+              SG_WARN,
+              "Adding item to expired or non-refcounted layout" );
 
     if( index < 0 )
       _layout_items.push_back(item_data);
@@ -121,6 +125,7 @@ namespace canvas
 
     LayoutItems::iterator it = _layout_items.begin() + index;
     LayoutItemRef item = it->layout_item;
+    item->setParent(LayoutItemWeakRef());
     item->onRemove();
     _layout_items.erase(it);
 
@@ -136,6 +141,7 @@ namespace canvas
                                it != _layout_items.end();
                              ++it )
     {
+      it->layout_item->setParent(LayoutItemWeakRef());
       it->layout_item->onRemove();
     }
     _layout_items.clear();

@@ -26,7 +26,7 @@
 
 #include <osg/Drawable>
 #include <osg/Geode>
-#include <osg/Scissor>
+#include <osg/StateAttribute>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/foreach.hpp>
@@ -46,27 +46,34 @@ namespace canvas
    * glScissor with coordinates relative to different reference frames.
    */
   class Element::RelativeScissor:
-    public osg::Scissor
+    public osg::StateAttribute
   {
     public:
 
       ReferenceFrame                _coord_reference;
       osg::observer_ptr<osg::Node>  _node;
 
-      RelativeScissor(osg::Node* node = NULL):
+      explicit RelativeScissor(osg::Node* node = NULL):
         _coord_reference(GLOBAL),
-        _node(node)
+        _node(node),
+        _x(0),
+        _y(0),
+        _width(0),
+        _height(0)
       {
-        _width = 0;
-        _height = 0;
+
       }
 
       /** Copy constructor using CopyOp to manage deep vs shallow copy. */
       RelativeScissor( const RelativeScissor& vp,
                        const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY ):
-        Scissor(vp, copyop),
+        StateAttribute(vp, copyop),
         _coord_reference(vp._coord_reference),
-        _node(vp._node)
+        _node(vp._node),
+        _x(vp._x),
+        _y(vp._y),
+        _width(vp._width),
+        _height(vp._height)
       {}
 
       META_StateAttribute(simgear, RelativeScissor, SCISSOR);
@@ -88,6 +95,24 @@ namespace canvas
 
         return 0; // passed all the above comparison macros, must be equal.
       }
+
+      virtual bool getModeUsage(StateAttribute::ModeUsage& usage) const
+      {
+        usage.usesMode(GL_SCISSOR_TEST);
+        return true;
+      }
+
+      inline float& x() { return _x; }
+      inline float x() const { return _x; }
+
+      inline float& y() { return _y; }
+      inline float y() const { return _y; }
+
+      inline float& width() { return _width; }
+      inline float width() const { return _width; }
+
+      inline float& height() { return _height; }
+      inline float height() const { return _height; }
 
       virtual void apply(osg::State& state) const
       {
@@ -163,6 +188,12 @@ namespace canvas
 
         return false;
       }
+
+    protected:
+      float _x,
+            _y,
+            _width,
+            _height;
   };
 
   //----------------------------------------------------------------------------
@@ -576,10 +607,10 @@ namespace canvas
       _scissor = new RelativeScissor(_transform.get());
 
     // <top>, <right>, <bottom>, <left>
-    _scissor->x() = SGMiscf::roundToInt(values[3]);
-    _scissor->y() = SGMiscf::roundToInt(values[0]);
-    _scissor->width() = SGMiscf::roundToInt(width);
-    _scissor->height() = SGMiscf::roundToInt(height);
+    _scissor->x() = values[3];
+    _scissor->y() = values[0];
+    _scissor->width() = width;
+    _scissor->height() = height;
 
     SGPropertyNode* clip_frame = _node->getChild("clip-frame", 0);
     if( clip_frame )

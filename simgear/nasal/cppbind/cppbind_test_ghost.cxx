@@ -2,6 +2,8 @@
 #include <BoostTestTargetConfig.h>
 
 #include "Ghost.hxx"
+#include "NasalContext.hxx"
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -49,14 +51,19 @@ BOOST_STATIC_ASSERT(( nasal::supports_weak_ref<DerivedPtr>::value));
 BOOST_STATIC_ASSERT(( nasal::supports_weak_ref<DerivedWeakPtr>::value));
 BOOST_STATIC_ASSERT((!nasal::supports_weak_ref<SGReferencedPtr>::value));
 
-BOOST_AUTO_TEST_CASE( ghost_weak_strong_nasal_conversion )
+static void setupGhosts()
 {
   nasal::Ghost<Base1Ptr>::init("Base1");
   nasal::Ghost<Base2Ptr>::init("Base2");
   nasal::Ghost<DerivedPtr>::init("Derived")
     .bases<Base1Ptr>()
     .bases<Base2Ptr>();
+}
 
+//------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( ghost_weak_strong_nasal_conversion )
+{
+  setupGhosts();
   naContext c = naNewContext();
 
   DerivedPtr d = new Derived();
@@ -91,6 +98,45 @@ BOOST_AUTO_TEST_CASE( ghost_weak_strong_nasal_conversion )
   BOOST_REQUIRE( !weak.lock() );
 }
 
+//------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( ghost_casting_storage )
+{
+  setupGhosts();
+  nasal::Context c;
+
+  // Check converting to and from every class in the hierarchy for an instance
+  // of the leaf class
+  DerivedPtr d = new Derived();
+
+  naRef na_d = nasal::to_nasal(c, d),
+        na_b1 = nasal::to_nasal(c, Base1Ptr(d)),
+        na_b2 = nasal::to_nasal(c, Base2Ptr(d));
+
+  Derived *d0 = nasal::from_nasal<Derived*>(c, na_d),
+          *d1 = nasal::from_nasal<Derived*>(c, na_b1),
+          *d2 = nasal::from_nasal<Derived*>(c, na_b2);
+
+  BOOST_CHECK_EQUAL(d0, d.get());
+  BOOST_CHECK_EQUAL(d1, d.get());
+  BOOST_CHECK_EQUAL(d2, d.get());
+
+  Base1 *b1 = nasal::from_nasal<Base1*>(c, na_b1);
+  BOOST_CHECK_EQUAL(b1, static_cast<Base1*>(d.get()));
+
+  Base2 *b2 = nasal::from_nasal<Base2*>(c, na_b2);
+  BOOST_CHECK_EQUAL(b2, static_cast<Base2*>(d.get()));
+
+  // Check converting from base class instance to derived classes is not
+  // possible
+  Base1Ptr b1_ref = new Base1();
+  na_b1 = nasal::to_nasal(c, b1_ref);
+
+  BOOST_CHECK_EQUAL(nasal::from_nasal<Base1*>(c, na_b1), b1_ref.get());
+  BOOST_CHECK(!nasal::from_nasal<Base2*>(c, na_b1));
+  BOOST_CHECK(!nasal::from_nasal<Derived*>(c, na_b1));
+}
+
+//------------------------------------------------------------------------------
 #define CHECK_PTR_STORAGE_TRAIT_TYPE(ptr_t, storage)\
   BOOST_STATIC_ASSERT((boost::is_same<\
     nasal::shared_ptr_storage<ptr_t>::storage_type,\

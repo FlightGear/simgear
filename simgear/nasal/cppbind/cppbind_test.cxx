@@ -322,10 +322,6 @@ int main(int argc, char* argv[])
           == ref_based.get() );
   VERIFY( from_nasal<SGRefBasedPtr>(c, na_ref_based) == ref_based );
 
-  VERIFY( Ghost<BasePtr>::isBaseOf(derived) );
-  VERIFY( Ghost<DerivedPtr>::isBaseOf(derived) );
-  VERIFY( Ghost<DoubleDerived2Ptr>::isBaseOf(derived) );
-
   VERIFY( from_nasal<BasePtr>(c, derived) == d3 );
   VERIFY( from_nasal<BasePtr>(c, derived) != d2 );
   VERIFY(    from_nasal<DerivedPtr>(c, derived)

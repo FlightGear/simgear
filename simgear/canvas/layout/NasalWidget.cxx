@@ -19,6 +19,7 @@
 #include "NasalWidget.hxx"
 
 #include <simgear/canvas/Canvas.hxx>
+#include <simgear/nasal/cppbind/NasalContext.hxx>
 #include <simgear/nasal/cppbind/Ghost.hxx>
 
 namespace simgear
@@ -56,13 +57,17 @@ namespace canvas
   void NasalWidget::setGeometry(const SGRect<int>& geom)
   {
     if( _geometry != geom )
+    {
       _geometry = geom;
-    else if( !(_flags & LAYOUT_DIRTY) || !_set_geometry )
+      _flags |= LAYOUT_DIRTY;
+    }
+
+    if( !_set_geometry || !(_flags & LAYOUT_DIRTY) )
       return;
 
-    naContext c = naNewContext();
     try
     {
+      nasal::Context c;
       _set_geometry(nasal::to_nasal(c, this), geom);
       _flags &= ~LAYOUT_DIRTY;
     }
@@ -74,7 +79,6 @@ namespace canvas
         "NasalWidget::setGeometry: callback error: '" << ex.what() << "'"
       );
     }
-    naFreeContext(c);
   }
 
   //----------------------------------------------------------------------------

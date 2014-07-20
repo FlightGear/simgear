@@ -17,6 +17,7 @@ set(DETAIL_HEADERS
   detail/from_nasal_helper.hxx
   detail/functor_templates.hxx
   detail/nasal_traits.hxx
+  detail/NasalObject_callMethod_templates.hxx
   detail/to_nasal_helper.hxx
 )
 

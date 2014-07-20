@@ -322,7 +322,7 @@ namespace nasal
               return holder->_method
               (
                 *get_pointer(ref),
-                CallContext(c, argc, args)
+                CallContext(c, me, argc, args)
               );
             }
             catch(const std::exception& ex)

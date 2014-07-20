@@ -417,7 +417,7 @@ int main(int argc, char* argv[])
     to_nasal(c, int_vec),
     to_nasal(c, map)
   };
-  CallContext cc(c, sizeof(args)/sizeof(args[0]), args);
+  CallContext cc(c, naNil(), sizeof(args)/sizeof(args[0]), args);
   VERIFY( cc.requireArg<std::string>(0) == "test-arg" );
   VERIFY( cc.getArg<std::string>(0) == "test-arg" );
   VERIFY( cc.getArg<std::string>(10) == "" );

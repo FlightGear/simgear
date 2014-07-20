@@ -8,7 +8,7 @@ class TestContext:
 {
   public:
     TestContext():
-      CallContext(naNewContext(), 0, 0)
+      CallContext(naNewContext(), naNil(), 0, 0)
     {}
 
     ~TestContext()

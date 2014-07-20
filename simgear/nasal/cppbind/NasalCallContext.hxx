@@ -32,8 +32,9 @@ namespace nasal
   class CallContext
   {
     public:
-      CallContext(naContext c, size_t argc, naRef* args):
+      CallContext(naContext c, naRef me, size_t argc, naRef* args):
         c(c),
+        me(me),
         argc(argc),
         args(args)
       {}
@@ -120,6 +121,7 @@ namespace nasal
       }
 
       naContext   c;
+      naRef       me;
       size_t      argc;
       naRef      *args;
   };

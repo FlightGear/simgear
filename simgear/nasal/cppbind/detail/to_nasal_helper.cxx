@@ -87,7 +87,7 @@ namespace nasal
 
     try
     {
-      return (*func)(nasal::CallContext(c, argc, args));
+      return (*func)(nasal::CallContext(c, me, argc, args));
     }
     catch(const std::exception& ex)
     {

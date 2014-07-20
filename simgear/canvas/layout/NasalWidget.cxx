@@ -84,18 +84,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   void NasalWidget::onRemove()
   {
-    if( !_nasal_impl.valid() )
-      return;
-
-    typedef boost::function<void(nasal::Me)> Deleter;
-
-    naContext c = naNewContext();
     try
     {
-      Deleter del =
-        nasal::get_member<Deleter>(c, _nasal_impl.get_naRef(), "onRemove");
-      if( del )
-        del(nasal::to_nasal(c, this));
+      callMethod<void>("onRemove");
     }
     catch( std::exception const& ex )
     {
@@ -105,7 +96,6 @@ namespace canvas
         "NasalWidget::onRemove: callback error: '" << ex.what() << "'"
       );
     }
-    naFreeContext(c);
   }
 
   //----------------------------------------------------------------------------

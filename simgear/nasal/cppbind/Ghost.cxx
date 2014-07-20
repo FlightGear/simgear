@@ -33,7 +33,7 @@ namespace nasal
     }
 
     //--------------------------------------------------------------------------
-    bool GhostMetadata::isBaseOf(naGhostType* ghost_type, bool& is_weak) const
+    bool GhostMetadata::isInstance(naGhostType* ghost_type, bool& is_weak) const
     {
       if( ghost_type == _ghost_type_strong_ptr )
       {
@@ -45,14 +45,6 @@ namespace nasal
       {
         is_weak = true;
         return true;
-      }
-
-      for( DerivedList::const_iterator derived = _derived_classes.begin();
-                                       derived != _derived_classes.end();
-                                     ++derived )
-      {
-        if( (*derived)->isBaseOf(ghost_type, is_weak) )
-          return true;
       }
 
       return false;
@@ -74,7 +66,6 @@ namespace nasal
     void GhostMetadata::addDerived(const GhostMetadata* derived)
     {
       assert(derived);
-      _derived_classes.push_back(derived);
 
       SG_LOG
       (

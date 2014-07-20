@@ -43,6 +43,9 @@ namespace osg
   template<class T> class ref_ptr;
   template<class T> class observer_ptr;
 
+  template<class T, class Y>
+  ref_ptr<T> static_pointer_cast(const ref_ptr<Y>&);
+
   class Vec2b;
   class Vec2d;
   class Vec2f;

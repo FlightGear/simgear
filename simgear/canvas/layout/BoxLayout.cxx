@@ -278,10 +278,12 @@ namespace canvas
 
     for(size_t i = 0; i < _layout_items.size(); ++i)
     {
-      // TODO check visible
-
       ItemData& item_data = _layout_items[i];
       LayoutItem const& item = *item_data.layout_item;
+
+      item_data.visible = item.isVisible();
+      if( !item_data.visible )
+        continue;
 
       item_data.min_size  = (item.minimumSize().*_get_layout_coord)();
       item_data.max_size  = (item.maximumSize().*_get_layout_coord)();
@@ -354,6 +356,9 @@ namespace canvas
       for(size_t i = 0; i < _layout_items.size(); ++i)
       {
         ItemData const& data = _layout_items[i];
+        if( !data.visible )
+          continue;
+
         _hfw_height = std::max(_hfw_height, data.hfw(data.size));
         _hfw_min_height = std::max(_hfw_min_height, data.mhfw(data.size));
       }
@@ -363,6 +368,9 @@ namespace canvas
       for(size_t i = 0; i < _layout_items.size(); ++i)
       {
         ItemData const& data = _layout_items[i];
+        if( !data.visible )
+          continue;
+
         _hfw_height += data.hfw(w) + data.padding_orig;
         _hfw_min_height += data.mhfw(w) + data.padding_orig;
       }
@@ -412,6 +420,9 @@ namespace canvas
       for(size_t i = 0; i < _layout_items.size(); ++i)
       {
         ItemData& data = _layout_items[i];
+        if( !data.visible )
+          continue;
+
         if( data.has_hfw )
         {
           int w = SGMisc<int>::clip( geom.width(),
@@ -451,6 +462,9 @@ namespace canvas
     for(size_t i = 0; i < _layout_items.size(); ++i)
     {
       ItemData const& data = _layout_items[i];
+      if( !data.visible )
+        continue;
+
       cur_pos.x() += reverse ? -data.padding - data.size : data.padding;
 
       SGVec2i size(
@@ -474,6 +488,13 @@ namespace canvas
         cur_pos.x() += data.size;
       cur_pos.y() -= offset_fixed;
     }
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::visibilityChanged(bool visible)
+  {
+    for(size_t i = 0; i < _layout_items.size(); ++i)
+      callSetVisibleInternal(_layout_items[i].layout_item.get(), visible);
   }
 
   //----------------------------------------------------------------------------

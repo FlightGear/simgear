@@ -173,6 +173,19 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Window::setVisible(bool visible)
+  {
+    LayoutItem::setVisible(visible);
+    Element::setVisible(LayoutItem::isVisible());
+  }
+
+  //----------------------------------------------------------------------------
+  bool Window::isVisible() const
+  {
+    return Element::isVisible();
+  }
+
+  //----------------------------------------------------------------------------
   void Window::raise()
   {
     // on writing the z-index the window always is moved to the top of all other

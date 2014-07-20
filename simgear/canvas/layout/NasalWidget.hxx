@@ -118,6 +118,8 @@ namespace canvas
       virtual SGVec2i minimumSizeImpl() const;
       virtual SGVec2i maximumSizeImpl() const;
 
+      virtual void visibilityChanged(bool visible);
+
   };
 
   typedef SGSharedPtr<NasalWidget> NasalWidgetRef;

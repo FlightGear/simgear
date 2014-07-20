@@ -285,5 +285,22 @@ namespace canvas
     );
   }
 
+  //----------------------------------------------------------------------------
+  void NasalWidget::visibilityChanged(bool visible)
+  {
+    try
+    {
+      callMethod<void>("visibilityChanged", visible);
+    }
+    catch( std::exception const& ex )
+    {
+      SG_LOG(
+        SG_GUI,
+        SG_WARN,
+        "NasalWidget::visibilityChanged: callback error: '" << ex.what() << "'"
+      );
+    }
+  }
+
 } // namespace canvas
 } // namespace simgear

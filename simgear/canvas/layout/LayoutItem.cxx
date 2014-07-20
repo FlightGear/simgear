@@ -28,7 +28,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   LayoutItem::LayoutItem():
-    _flags(0),
+    _flags(VISIBLE),
     _size_hint(0, 0),
     _min_size(0, 0),
     _max_size(MAX_SIZE)
@@ -97,6 +97,29 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void LayoutItem::setVisible(bool visible)
+  {
+    if( visible )
+      _flags &= ~EXPLICITLY_HIDDEN;
+    else
+      _flags |= EXPLICITLY_HIDDEN;
+
+    setVisibleInternal(visible);
+  }
+
+  //----------------------------------------------------------------------------
+  bool LayoutItem::isVisible() const
+  {
+    return _flags & VISIBLE;
+  }
+
+  //----------------------------------------------------------------------------
+  bool LayoutItem::isExplicitlyHidden() const
+  {
+    return _flags & EXPLICITLY_HIDDEN;
+  }
+
+  //----------------------------------------------------------------------------
   void LayoutItem::invalidate()
   {
     _flags |= SIZE_INFO_DIRTY;
@@ -141,6 +164,8 @@ namespace canvas
     _parent = parent;
     LayoutItemRef parent_ref = parent.lock();
     setCanvas(parent_ref ? parent_ref->_canvas : CanvasWeakPtr());
+
+    setVisibleInternal(!parent_ref || parent_ref->isVisible());
   }
 
   //----------------------------------------------------------------------------
@@ -165,6 +190,32 @@ namespace canvas
   SGVec2i LayoutItem::maximumSizeImpl() const
   {
     return _max_size;
+  }
+
+  //----------------------------------------------------------------------------
+  void LayoutItem::setVisibleInternal(bool visible)
+  {
+    LayoutItemRef parent = getParent();
+    if( isExplicitlyHidden() || (parent && !parent->isVisible()) )
+      visible = false;
+
+    if( isVisible() == visible )
+      return;
+
+    invalidateParent();
+
+    if( visible )
+      _flags |= VISIBLE;
+    else
+      _flags &= ~VISIBLE;
+
+    visibilityChanged(visible);
+  }
+
+  //----------------------------------------------------------------------------
+  void LayoutItem::callSetVisibleInternal(LayoutItem* item, bool visible)
+  {
+    item->setVisibleInternal(visible);
   }
 
 } // namespace canvas

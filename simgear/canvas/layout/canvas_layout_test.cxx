@@ -23,6 +23,8 @@
 #include "NasalWidget.hxx"
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/nasal/cppbind/NasalContext.hxx>
+
 #include <cstdlib>
 
 //------------------------------------------------------------------------------
@@ -72,6 +74,12 @@ class TestWidget:
     virtual SGVec2i sizeHintImpl() const { return _size_hint; }
     virtual SGVec2i minimumSizeImpl() const { return _min_size; }
     virtual SGVec2i maximumSizeImpl() const { return _max_size; }
+
+    virtual void visibilityChanged(bool visible)
+    {
+      if( !visible )
+        _geom.set(0, 0, 0, 0);
+    }
 };
 
 class TestWidgetHFW:
@@ -333,6 +341,77 @@ BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
 }
 
 //------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( boxlayout_visibility )
+{
+  sc::BoxLayoutRef hbox( new sc::HBoxLayout );
+  TestWidgetRef w1( new TestWidget( SGVec2i(16, 16),
+                                    SGVec2i(32, 32) ) ),
+                w2( new TestWidget(*w1) ),
+                w3( new TestWidget(*w1) );
+
+  hbox->addItem(w1);
+  hbox->addItem(w2);
+  hbox->addItem(w3);
+
+  BOOST_REQUIRE_EQUAL(hbox->sizeHint().x(), 3 * 32 + 2 * hbox->spacing());
+
+  hbox->setGeometry(SGRecti(0, 0, 69, 32));
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 20, 32));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(25, 0, 20, 32));
+  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(50, 0, 19, 32));
+
+  w2->setVisible(false);
+
+  BOOST_REQUIRE(hbox->isVisible());
+  BOOST_REQUIRE(w1->isVisible());
+  BOOST_REQUIRE(!w2->isVisible());
+  BOOST_REQUIRE(w2->isExplicitlyHidden());
+  BOOST_REQUIRE(w3->isVisible());
+
+  BOOST_CHECK_EQUAL(hbox->sizeHint().x(), 2 * 32 + 1 * hbox->spacing());
+
+  hbox->update();
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 32, 32));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0,  0,  0,  0));
+  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(37, 0, 32, 32));
+
+  hbox->setVisible(false);
+
+  BOOST_REQUIRE(!hbox->isVisible());
+  BOOST_REQUIRE(hbox->isExplicitlyHidden());
+  BOOST_REQUIRE(!w1->isVisible());
+  BOOST_REQUIRE(!w1->isExplicitlyHidden());
+  BOOST_REQUIRE(!w2->isVisible());
+  BOOST_REQUIRE(w2->isExplicitlyHidden());
+  BOOST_REQUIRE(!w3->isVisible());
+  BOOST_REQUIRE(!w3->isExplicitlyHidden());
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 0, 0));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 0, 0, 0));
+  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(0, 0, 0, 0));
+
+  w2->setVisible(true);
+
+  BOOST_REQUIRE(!w2->isVisible());
+  BOOST_REQUIRE(!w2->isExplicitlyHidden());
+
+  hbox->setVisible(true);
+
+  BOOST_REQUIRE(hbox->isVisible());
+  BOOST_REQUIRE(w1->isVisible());
+  BOOST_REQUIRE(w2->isVisible());
+  BOOST_REQUIRE(w3->isVisible());
+
+  hbox->update();
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 20, 32));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(25, 0, 20, 32));
+  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(50, 0, 19, 32));
+}
+
+//------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( boxlayout_hfw )
 {
   TestWidgetRef w1( new TestWidgetHFW( SGVec2i(16,   16),
@@ -423,13 +502,30 @@ BOOST_AUTO_TEST_CASE( boxlayout_hfw )
   BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
 }
 
+// TODO extend to_nasal_helper for automatic argument conversion
+static naRef f_Widget_visibilityChanged(nasal::CallContext ctx)
+{
+  sc::NasalWidget* w = ctx.from_nasal<sc::NasalWidget*>(ctx.me);
+
+  if( !ctx.requireArg<bool>(0) )
+    w->setGeometry(SGRecti(0, 0, -1, -1));
+
+  return naNil();
+}
+
 //------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( nasal_widget )
 {
-  naContext c = naNewContext();
-  naRef me = naNewHash(c);
+  nasal::Context c;
+  nasal::Hash globals = c.newHash();
 
-  sc::NasalWidgetRef w( new sc::NasalWidget(me) );
+  nasal::Object::setupGhost();
+  nasal::Ghost<sc::LayoutItemRef>::init("LayoutItem");
+  sc::NasalWidget::setupGhost(globals);
+
+  nasal::Hash me = c.newHash();
+  me.set("visibilityChanged", &f_Widget_visibilityChanged);
+  sc::NasalWidgetRef w( new sc::NasalWidget(me.get_naRef()) );
 
   // Default layout sizes (no user set values)
   BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(16, 16));
@@ -463,5 +559,6 @@ BOOST_AUTO_TEST_CASE( nasal_widget )
   BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(3, 22));
   BOOST_CHECK_EQUAL(w->maximumSize(), SGVec2i(4, 23));
 
-  naFreeContext(c);
+  w->setVisible(false);
+  BOOST_CHECK_EQUAL(w->geometry(), SGRecti(0, 0, -1, -1));
 }

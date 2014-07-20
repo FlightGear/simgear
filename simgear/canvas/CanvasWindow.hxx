@@ -84,6 +84,9 @@ namespace canvas
       bool isResizable() const;
       bool isCapturingEvents() const;
 
+      virtual void setVisible(bool visible);
+      virtual bool isVisible() const;
+
       /**
        * Moves window on top of all other windows with the same z-index.
        *

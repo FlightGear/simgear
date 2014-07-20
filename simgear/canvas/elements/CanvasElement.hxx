@@ -128,12 +128,12 @@ namespace canvas
       /**
        * Set visibility of the element.
        */
-      void setVisible(bool visible);
+      virtual void setVisible(bool visible);
 
       /**
        * Get whether the element is visible or hidden.
        */
-      bool isVisible() const;
+      virtual bool isVisible() const;
 
       osg::MatrixTransform* getMatrixTransform();
       osg::MatrixTransform const* getMatrixTransform() const;

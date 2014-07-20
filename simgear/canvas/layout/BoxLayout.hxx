@@ -122,6 +122,8 @@ namespace canvas
       virtual SGVec2i maximumSizeImpl() const;
 
       virtual void doLayout(const SGRecti& geom);
+
+      virtual void visibilityChanged(bool visible);
   };
 
   /**

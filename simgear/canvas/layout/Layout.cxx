@@ -27,7 +27,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Layout::update()
   {
-    if( !(_flags & (LAYOUT_DIRTY | SIZE_INFO_DIRTY)) )
+    if( !(_flags & (LAYOUT_DIRTY | SIZE_INFO_DIRTY)) || !isVisible() )
       return;
 
     doLayout(_geometry);
@@ -85,6 +85,7 @@ namespace canvas
     padding     = 0;
     size        = 0;
     stretch     = 0;
+    visible     = false;
     has_hfw     = false;
     done        = false;
   }
@@ -120,7 +121,7 @@ namespace canvas
   void Layout::distribute(std::vector<ItemData>& items, const ItemData& space)
   {
     const int num_children = static_cast<int>(items.size());
-    _num_not_done = num_children;
+    _num_not_done = 0;
 
     SG_LOG( SG_GUI,
             SG_DEBUG,
@@ -148,6 +149,9 @@ namespace canvas
       for(int i = 0; i < num_children; ++i)
       {
         ItemData& d = items[i];
+        if( !d.visible )
+          continue;
+
         d.size = less_then_hint ? d.min_size : d.size_hint;
         d.padding = d.padding_orig;
         d.done = d.size >= (less_then_hint ? d.size_hint : d.max_size);
@@ -162,10 +166,8 @@ namespace canvas
         );
 
         if( d.done )
-        {
-          _num_not_done -= 1;
           continue;
-        }
+        _num_not_done += 1;
 
         if( d.stretch > 0 )
         {
@@ -191,6 +193,8 @@ namespace canvas
         for(int i = 0; i < num_children; ++i)
         {
           ItemData& d = items[i];
+          if( !d.visible )
+            continue;
 
           SG_LOG(
             SG_GUI,
@@ -267,7 +271,16 @@ namespace canvas
       _space_left = space.size - space.max_size;
       for(int i = 0; i < num_children; ++i)
       {
+        if( items[i].visible )
+          _num_not_done += 1;
+      }
+
+      for(int i = 0; i < num_children; ++i)
+      {
         ItemData& d = items[i];
+        if( !d.visible )
+          continue;
+
         d.size = d.max_size;
 
         // Add superfluous space as padding
@@ -284,10 +297,11 @@ namespace canvas
     for(int i = 0; i < num_children; ++i)
     {
       ItemData const& d = items[i];
-      SG_LOG( SG_GUI,
-              SG_DEBUG,
-              i << ") pad=" << d.padding
-                << ", size = " << d.size );
+      if( d.visible )
+        SG_LOG(SG_GUI, SG_DEBUG, i << ") pad=" << d.padding
+                                   << ", size= " << d.size);
+      else
+        SG_LOG(SG_GUI, SG_DEBUG, i << ") [hidden]");
     }
   }
 

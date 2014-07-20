@@ -68,6 +68,14 @@ namespace canvas
       virtual int heightForWidth(int w) const;
       virtual int minimumHeightForWidth(int w) const;
 
+      virtual void setVisible(bool visible);
+      virtual bool isVisible() const;
+
+      bool isExplicitlyHidden() const;
+
+      void show() { setVisible(true); }
+      void hide() { setVisible(false); }
+
       /**
        * Mark all cached data as invalid and require it to be recalculated.
        */
@@ -124,7 +132,9 @@ namespace canvas
         SIZE_INFO_DIRTY = SIZE_HINT_DIRTY
                         | MINIMUM_SIZE_DIRTY
                         | MAXIMUM_SIZE_DIRTY,
-        LAST_FLAG = MAXIMUM_SIZE_DIRTY
+        EXPLICITLY_HIDDEN = MAXIMUM_SIZE_DIRTY << 1,
+        VISIBLE = EXPLICITLY_HIDDEN << 1,
+        LAST_FLAG = VISIBLE
       };
 
       CanvasWeakPtr     _canvas;
@@ -140,6 +150,18 @@ namespace canvas
       virtual SGVec2i sizeHintImpl() const;
       virtual SGVec2i minimumSizeImpl() const;
       virtual SGVec2i maximumSizeImpl() const;
+
+      /**
+       * @return whether the visibility has changed.
+       */
+      void setVisibleInternal(bool visible);
+
+      virtual void visibilityChanged(bool visible) {}
+
+      /**
+       * Allow calling the protected setVisibleImpl from derived classes
+       */
+      static void callSetVisibleInternal(LayoutItem* item, bool visible);
 
   };
 

@@ -163,7 +163,12 @@ namespace canvas
   {
     _parent = parent;
     LayoutItemRef parent_ref = parent.lock();
-    setCanvas(parent_ref ? parent_ref->_canvas : CanvasWeakPtr());
+
+    if( parent_ref )
+      // Only change the canvas if there is a new parent. If the item is removed
+      // keep the old canvas, as it may be used for example during the call to
+      // onRemove.
+      setCanvas(parent_ref->_canvas);
 
     setVisibleInternal(!parent_ref || parent_ref->isVisible());
   }

@@ -109,15 +109,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Layout::safeAdd(int& a, int b)
-  {
-    if( SGLimits<int>::max() - b < a )
-      a = SGLimits<int>::max();
-    else
-      a += b;
-  }
-
-  //----------------------------------------------------------------------------
   void Layout::distribute(std::vector<ItemData>& items, const ItemData& space)
   {
     const int num_children = static_cast<int>(items.size());

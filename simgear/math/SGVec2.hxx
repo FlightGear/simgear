@@ -196,6 +196,17 @@ SGVec2<T>
 max(S s, const SGVec2<T>& v)
 { return SGVec2<T>(SGMisc<T>::max(s, v(0)), SGMisc<T>::max(s, v(1))); }
 
+/// Add two vectors taking care of (integer) overflows. The values are limited
+/// to the respective minimum and maximum values.
+template<class T>
+SGVec2<T> addClipOverflow(SGVec2<T> const& lhs, SGVec2<T> const& rhs)
+{
+  return SGVec2<T>(
+    SGMisc<T>::addClipOverflow(lhs.x(), rhs.x()),
+    SGMisc<T>::addClipOverflow(lhs.y(), rhs.y())
+  );
+}
+
 /// Scalar dot product
 template<typename T>
 inline

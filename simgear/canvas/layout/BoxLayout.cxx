@@ -305,9 +305,9 @@ namespace canvas
       }
 
       // Add sizes of all children in layout direction
-      safeAdd(min_size.x(),  item_data.min_size);
-      safeAdd(max_size.x(),  item_data.max_size);
-      safeAdd(size_hint.x(), item_data.size_hint);
+      SGMisc<int>::addClipOverflowInplace(min_size.x(),  item_data.min_size);
+      SGMisc<int>::addClipOverflowInplace(max_size.x(),  item_data.max_size);
+      SGMisc<int>::addClipOverflowInplace(size_hint.x(), item_data.size_hint);
 
       // Take maximum in fixed (non-layouted) direction
       min_size.y()  = std::max( min_size.y(),
@@ -320,9 +320,9 @@ namespace canvas
       _layout_data.has_hfw = _layout_data.has_hfw || item.hasHeightForWidth();
     }
 
-    safeAdd(min_size.x(),  _layout_data.padding);
-    safeAdd(max_size.x(),  _layout_data.padding);
-    safeAdd(size_hint.x(), _layout_data.padding);
+    SGMisc<int>::addClipOverflowInplace(min_size.x(),  _layout_data.padding);
+    SGMisc<int>::addClipOverflowInplace(max_size.x(),  _layout_data.padding);
+    SGMisc<int>::addClipOverflowInplace(size_hint.x(), _layout_data.padding);
 
     _layout_data.min_size = min_size.x();
     _layout_data.max_size = max_size.x();

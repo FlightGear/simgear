@@ -41,6 +41,30 @@ public:
   static T clip(const T& a, const T& _min, const T& _max)
   { return max(_min, min(_max, a)); }
 
+
+  /// Add two (integer) values taking care of overflows.
+  static T addClipOverflow(T a, T b)
+  {
+    if( b > 0 )
+    {
+      if( SGLimits<T>::max() - b < a )
+        return SGLimits<T>::max();
+    }
+    else
+    {
+      if( SGLimits<T>::min() - b > a )
+        return SGLimits<T>::min();
+    }
+
+    return a + b;
+  }
+
+  /// Add two (integer) values in place, taking care of overflows.
+  static T& addClipOverflowInplace(T& a, T b)
+  {
+    return a = addClipOverflow(a, b);
+  }
+
   /**
    * Seek a variable towards a target value with given rate and timestep
    *

@@ -105,11 +105,6 @@ namespace canvas
       virtual void doLayout(const SGRecti& geom) = 0;
 
       /**
-       * Add two integers taking care of overflow (limit to INT_MAX)
-       */
-      static void safeAdd(int& a, int b);
-
-      /**
        * Distribute the available @a space to all @a items
        */
       void distribute(std::vector<ItemData>& items, const ItemData& space);

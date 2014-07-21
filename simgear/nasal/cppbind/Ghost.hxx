@@ -78,6 +78,10 @@ get_pointer(T ptr)
   // The old version of g++ used on Jenkins (16.11.2012) only compiles
   // this version.
 # define SG_GET_TEMPLATE_MEMBER(type, member) &member
+
+  // With old g++ on Jenkins (21.07.2014), ADL for boost::static_pointer_cast
+  // does not work.
+  using boost::static_pointer_cast;
 #else
   // VS (2008, 2010, ... ?) only allow this version.
 # define SG_GET_TEMPLATE_MEMBER(type, member) &type::template member

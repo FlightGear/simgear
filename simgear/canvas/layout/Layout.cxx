@@ -25,36 +25,6 @@ namespace canvas
 {
 
   //----------------------------------------------------------------------------
-  void Layout::update()
-  {
-    if( !(_flags & (LAYOUT_DIRTY | SIZE_INFO_DIRTY)) || !isVisible() )
-      return;
-
-    doLayout(_geometry);
-
-    _flags &= ~LAYOUT_DIRTY;
-  }
-
-  //----------------------------------------------------------------------------
-  void Layout::invalidate()
-  {
-    LayoutItem::invalidate();
-    _flags |= LAYOUT_DIRTY;
-  }
-
-  //----------------------------------------------------------------------------
-  void Layout::setGeometry(const SGRecti& geom)
-  {
-    if( geom != _geometry )
-    {
-      _geometry = geom;
-      _flags |= LAYOUT_DIRTY;
-    }
-
-    update();
-  }
-
-  //----------------------------------------------------------------------------
   void Layout::removeItem(const LayoutItemRef& item)
   {
     size_t i = 0;
@@ -106,6 +76,14 @@ namespace canvas
       return layout_item->minimumHeightForWidth(w);
     else
       return layout_item->minimumSize().y();
+  }
+
+  //----------------------------------------------------------------------------
+  void Layout::contentsRectChanged(const SGRecti& rect)
+  {
+    doLayout(rect);
+
+    _flags &= ~LAYOUT_DIRTY;
   }
 
   //----------------------------------------------------------------------------

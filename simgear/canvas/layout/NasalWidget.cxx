@@ -47,41 +47,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void NasalWidget::invalidate()
-  {
-    LayoutItem::invalidate();
-    _flags |= LAYOUT_DIRTY;
-  }
-
-  //----------------------------------------------------------------------------
-  void NasalWidget::setGeometry(const SGRect<int>& geom)
-  {
-    if( _geometry != geom )
-    {
-      _geometry = geom;
-      _flags |= LAYOUT_DIRTY;
-    }
-
-    if( !_set_geometry || !(_flags & LAYOUT_DIRTY) )
-      return;
-
-    try
-    {
-      nasal::Context c;
-      _set_geometry(nasal::to_nasal(c, this), geom);
-      _flags &= ~LAYOUT_DIRTY;
-    }
-    catch( std::exception const& ex )
-    {
-      SG_LOG(
-        SG_GUI,
-        SG_WARN,
-        "NasalWidget::setGeometry: callback error: '" << ex.what() << "'"
-      );
-    }
-  }
-
-  //----------------------------------------------------------------------------
   void NasalWidget::onRemove()
   {
     try
@@ -187,22 +152,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  int NasalWidget::heightForWidth(int w) const
-  {
-    return callHeightForWidthFunc( _height_for_width.empty()
-                                 ? _min_height_for_width
-                                 : _height_for_width, w );
-  }
-
-  //----------------------------------------------------------------------------
-  int NasalWidget::minimumHeightForWidth(int w) const
-  {
-    return callHeightForWidthFunc( _min_height_for_width.empty()
-                                 ? _height_for_width
-                                 : _min_height_for_width, w );
-  }
-
-  //----------------------------------------------------------------------------
   static naRef f_makeNasalWidget(const nasal::CallContext& ctx)
   {
     return ctx.to_nasal(NasalWidgetRef(
@@ -283,6 +232,46 @@ namespace canvas
       _user_max_size.y() < MAX_SIZE.y() ? _user_max_size.y()
                                         : _layout_max_size.y()
     );
+  }
+
+
+  //----------------------------------------------------------------------------
+  int NasalWidget::heightForWidthImpl(int w) const
+  {
+    return callHeightForWidthFunc( _height_for_width.empty()
+                                 ? _min_height_for_width
+                                 : _height_for_width, w );
+  }
+
+  //----------------------------------------------------------------------------
+  int NasalWidget::minimumHeightForWidthImpl(int w) const
+  {
+    return callHeightForWidthFunc( _min_height_for_width.empty()
+                                 ? _height_for_width
+                                 : _min_height_for_width, w );
+  }
+
+
+  //----------------------------------------------------------------------------
+  void NasalWidget::contentsRectChanged(const SGRect<int>& rect)
+  {
+    if( !_set_geometry )
+      return;
+
+    try
+    {
+      nasal::Context c;
+      _set_geometry(nasal::to_nasal(c, this), rect);
+      _flags &= ~LAYOUT_DIRTY;
+    }
+    catch( std::exception const& ex )
+    {
+      SG_LOG(
+        SG_GUI,
+        SG_WARN,
+        "NasalWidget::setGeometry: callback error: '" << ex.what() << "'"
+      );
+    }
   }
 
   //----------------------------------------------------------------------------

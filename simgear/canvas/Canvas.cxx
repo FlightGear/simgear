@@ -196,7 +196,6 @@ namespace canvas
   {
     _layout = layout;
     _layout->setCanvas(this);
-    _status |= LAYOUT_DIRTY;
   }
 
   //----------------------------------------------------------------------------
@@ -256,15 +255,7 @@ namespace canvas
     }
 
     if( _layout )
-    {
-      if( (_status & LAYOUT_DIRTY) )
-      {
-        _layout->setGeometry(SGRecti(0, 0, _view_width, _view_height));
-        _status &= ~LAYOUT_DIRTY;
-      }
-      else
-        _layout->update();
-    }
+      _layout->setGeometry(SGRecti(0, 0, _view_width, _view_height));
 
     if( _visible || _render_always )
     {
@@ -410,7 +401,6 @@ namespace canvas
     if( _view_width == w )
       return;
     _view_width = w;
-    _status |= LAYOUT_DIRTY;
 
     _texture.setViewSize(_view_width, _view_height);
   }
@@ -421,7 +411,6 @@ namespace canvas
     if( _view_height == h )
       return;
     _view_height = h;
-    _status |= LAYOUT_DIRTY;
 
     _texture.setViewSize(_view_width, _view_height);
   }

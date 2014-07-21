@@ -51,8 +51,6 @@ namespace canvas
 
       ~NasalWidget();
 
-      virtual void invalidate();
-      virtual void setGeometry(const SGRecti& geom);
       virtual void onRemove();
 
       void setSetGeometryFunc(const SetGeometryFunc& func);
@@ -85,8 +83,6 @@ namespace canvas
       void setLayoutMaximumSize(const SGVec2i& s);
 
       virtual bool hasHeightForWidth() const;
-      virtual int heightForWidth(int w) const;
-      virtual int minimumHeightForWidth(int w) const;
 
       /**
        * @param ns  Namespace to register the class interface
@@ -117,6 +113,11 @@ namespace canvas
       virtual SGVec2i sizeHintImpl() const;
       virtual SGVec2i minimumSizeImpl() const;
       virtual SGVec2i maximumSizeImpl() const;
+
+      virtual int heightForWidthImpl(int w) const;
+      virtual int minimumHeightForWidthImpl(int w) const;
+
+      virtual void contentsRectChanged(const SGRecti& rect);
 
       virtual void visibilityChanged(bool visible);
 

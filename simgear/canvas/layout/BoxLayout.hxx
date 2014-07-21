@@ -86,8 +86,6 @@ namespace canvas
       Direction direction() const;
 
       virtual bool hasHeightForWidth() const;
-      virtual int heightForWidth(int w) const;
-      virtual int minimumHeightForWidth(int w) const;
 
       virtual void setCanvas(const CanvasWeakPtr& canvas);
 
@@ -120,6 +118,9 @@ namespace canvas
       virtual SGVec2i sizeHintImpl() const;
       virtual SGVec2i minimumSizeImpl() const;
       virtual SGVec2i maximumSizeImpl() const;
+
+      virtual int heightForWidthImpl(int w) const;
+      virtual int minimumHeightForWidthImpl(int w) const;
 
       virtual void doLayout(const SGRecti& geom);
 

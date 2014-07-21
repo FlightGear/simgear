@@ -230,26 +230,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  int BoxLayout::heightForWidth(int w) const
-  {
-    if( !hasHeightForWidth() )
-      return -1;
-
-    updateWFHCache(w);
-    return _hfw_height;
-  }
-
-  //----------------------------------------------------------------------------
-  int BoxLayout::minimumHeightForWidth(int w) const
-  {
-    if( !hasHeightForWidth() )
-      return -1;
-
-    updateWFHCache(w);
-    return _hfw_min_height;
-  }
-
-  //----------------------------------------------------------------------------
   void BoxLayout::setCanvas(const CanvasWeakPtr& canvas)
   {
     _canvas = canvas;
@@ -398,6 +378,27 @@ namespace canvas
   {
     updateSizeHints();
     return _max_size;
+  }
+
+
+  //----------------------------------------------------------------------------
+  int BoxLayout::heightForWidthImpl(int w) const
+  {
+    if( !hasHeightForWidth() )
+      return -1;
+
+    updateWFHCache(w);
+    return _hfw_height;
+  }
+
+  //----------------------------------------------------------------------------
+  int BoxLayout::minimumHeightForWidthImpl(int w) const
+  {
+    if( !hasHeightForWidth() )
+      return -1;
+
+    updateWFHCache(w);
+    return _hfw_min_height;
   }
 
   //----------------------------------------------------------------------------

@@ -23,6 +23,54 @@ namespace simgear
 {
 namespace canvas
 {
+
+  //----------------------------------------------------------------------------
+  Margins::Margins(int m):
+    l(m), t(m), r(m), b(m)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  Margins::Margins(int h, int v):
+    l(h), t(v),
+    r(h), b(v)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  Margins::Margins(int l, int t, int r, int b):
+    l(l), t(t), r(r), b(b)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  int Margins::horiz() const
+  {
+    return l + r;
+  }
+
+  //----------------------------------------------------------------------------
+  int Margins::vert() const
+  {
+    return t + b;
+  }
+
+  //----------------------------------------------------------------------------
+  SGVec2i Margins::size() const
+  {
+    return SGVec2i(horiz(), vert());
+  }
+
+  //----------------------------------------------------------------------------
+  bool Margins::isNull() const
+  {
+    return l == 0 && t == 0 && r == 0 && b == 0;
+  }
+
+  //----------------------------------------------------------------------------
   const SGVec2i LayoutItem::MAX_SIZE( SGLimits<int>::max(),
                                       SGLimits<int>::max() );
 
@@ -43,6 +91,44 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void LayoutItem::setContentsMargins(const Margins& margins)
+  {
+    _margins = margins;
+  }
+
+  //----------------------------------------------------------------------------
+  void LayoutItem::setContentsMargins(int left, int top, int right, int bottom)
+  {
+    _margins.l = left;
+    _margins.t = top;
+    _margins.r = right;
+    _margins.b = bottom;
+  }
+
+  //----------------------------------------------------------------------------
+  void LayoutItem::setContentsMargin(int margin)
+  {
+    setContentsMargins(margin, margin, margin, margin);
+  }
+
+  //----------------------------------------------------------------------------
+  Margins LayoutItem::getContentsMargins() const
+  {
+    return _margins;
+  }
+
+  //----------------------------------------------------------------------------
+  SGRecti LayoutItem::contentsRect() const
+  {
+    return SGRecti(
+      _geometry.x() + _margins.l,
+      _geometry.y() + _margins.t,
+      std::max(0, _geometry.width() - _margins.horiz()),
+      std::max(0, _geometry.height() - _margins.vert())
+    );
+  }
+
+  //----------------------------------------------------------------------------
   SGVec2i LayoutItem::sizeHint() const
   {
     if( _flags & SIZE_HINT_DIRTY )
@@ -51,7 +137,7 @@ namespace canvas
       _flags &= ~SIZE_HINT_DIRTY;
     }
 
-    return _size_hint;
+    return addClipOverflow(_size_hint, _margins.size());
   }
 
   //----------------------------------------------------------------------------
@@ -63,7 +149,7 @@ namespace canvas
       _flags &= ~MINIMUM_SIZE_DIRTY;
     }
 
-    return _min_size;
+    return addClipOverflow(_min_size, _margins.size());
   }
 
   //----------------------------------------------------------------------------
@@ -75,7 +161,7 @@ namespace canvas
       _flags &= ~MAXIMUM_SIZE_DIRTY;
     }
 
-    return _max_size;
+    return addClipOverflow(_max_size, _margins.size());
   }
 
   //----------------------------------------------------------------------------
@@ -87,13 +173,15 @@ namespace canvas
   //----------------------------------------------------------------------------
   int LayoutItem::heightForWidth(int w) const
   {
-    return -1;
+    int h = heightForWidthImpl(w - _margins.horiz());
+    return h < 0 ? -1 : SGMisc<int>::addClipOverflow(h, _margins.vert());
   }
 
   //------------------------------------------------------------------------------
   int LayoutItem::minimumHeightForWidth(int w) const
   {
-    return heightForWidth(w);
+    int h = minimumHeightForWidthImpl(w - _margins.horiz());
+    return h < 0 ? -1 : SGMisc<int>::addClipOverflow(h, _margins.vert());
   }
 
   //----------------------------------------------------------------------------
@@ -122,7 +210,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void LayoutItem::invalidate()
   {
-    _flags |= SIZE_INFO_DIRTY;
+    _flags |= SIZE_INFO_DIRTY | LAYOUT_DIRTY;
     invalidateParent();
   }
 
@@ -135,9 +223,22 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void LayoutItem::update()
+  {
+    if( (_flags & LAYOUT_DIRTY) && isVisible() )
+      contentsRectChanged( contentsRect() );
+  }
+
+  //----------------------------------------------------------------------------
   void LayoutItem::setGeometry(const SGRecti& geom)
   {
-    _geometry = geom;
+    if( geom != _geometry )
+    {
+      _geometry = geom;
+      _flags |= LAYOUT_DIRTY;
+    }
+
+    update();
   }
 
   //----------------------------------------------------------------------------
@@ -195,6 +296,18 @@ namespace canvas
   SGVec2i LayoutItem::maximumSizeImpl() const
   {
     return _max_size;
+  }
+
+  //----------------------------------------------------------------------------
+  int LayoutItem::heightForWidthImpl(int w) const
+  {
+    return -1;
+  }
+
+  //------------------------------------------------------------------------------
+  int LayoutItem::minimumHeightForWidthImpl(int w) const
+  {
+    return heightForWidth(w);
   }
 
   //----------------------------------------------------------------------------

@@ -64,12 +64,7 @@ class TestWidget:
     void setMaxSize(const SGVec2i& size) { _max_size = size; }
     void setSizeHint(const SGVec2i& size) { _size_hint = size; }
 
-    virtual void setGeometry(const SGRecti& geom) { _geom = geom; }
-    virtual SGRecti geometry() const { return _geom; }
-
   protected:
-
-    SGRecti _geom;
 
     virtual SGVec2i sizeHintImpl() const { return _size_hint; }
     virtual SGVec2i minimumSizeImpl() const { return _min_size; }
@@ -78,7 +73,7 @@ class TestWidget:
     virtual void visibilityChanged(bool visible)
     {
       if( !visible )
-        _geom.set(0, 0, 0, 0);
+        _geometry.set(0, 0, 0, 0);
     }
 };
 
@@ -99,12 +94,12 @@ class TestWidgetHFW:
       return true;
     }
 
-    virtual int heightForWidth(int w) const
+    virtual int heightForWidthImpl(int w) const
     {
       return _size_hint.x() * _size_hint.y() / w;
     }
 
-    virtual int minimumHeightForWidth(int w) const
+    virtual int minimumHeightForWidthImpl(int w) const
     {
       return _min_size.x() * _min_size.y() / w;
     }
@@ -412,6 +407,96 @@ BOOST_AUTO_TEST_CASE( boxlayout_visibility )
 }
 
 //------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( boxlayout_contents_margins )
+{
+  sc::Margins m;
+
+  BOOST_REQUIRE(m.isNull());
+
+  m = sc::Margins(5);
+
+  BOOST_REQUIRE_EQUAL(m.l, 5);
+  BOOST_REQUIRE_EQUAL(m.t, 5);
+  BOOST_REQUIRE_EQUAL(m.r, 5);
+  BOOST_REQUIRE_EQUAL(m.b, 5);
+
+  m = sc::Margins(6, 7);
+
+  BOOST_REQUIRE_EQUAL(m.l, 6);
+  BOOST_REQUIRE_EQUAL(m.t, 7);
+  BOOST_REQUIRE_EQUAL(m.r, 6);
+  BOOST_REQUIRE_EQUAL(m.b, 7);
+
+  BOOST_REQUIRE_EQUAL(m.horiz(), 12);
+  BOOST_REQUIRE_EQUAL(m.vert(), 14);
+  BOOST_REQUIRE(!m.isNull());
+
+  m = sc::Margins(1, 2, 3, 4);
+
+  BOOST_REQUIRE_EQUAL(m.l, 1);
+  BOOST_REQUIRE_EQUAL(m.t, 2);
+  BOOST_REQUIRE_EQUAL(m.r, 3);
+  BOOST_REQUIRE_EQUAL(m.b, 4);
+
+  BOOST_REQUIRE_EQUAL(m.horiz(), 4);
+  BOOST_REQUIRE_EQUAL(m.vert(), 6);
+  BOOST_REQUIRE_EQUAL(m.size(), SGVec2i(4, 6));
+
+  sc::BoxLayoutRef hbox( new sc::HBoxLayout );
+
+  hbox->setContentsMargins(5, 10, 15, 20);
+
+  BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(20, 30));
+  BOOST_CHECK_EQUAL(hbox->sizeHint(),    SGVec2i(20, 30));
+  BOOST_CHECK_EQUAL(hbox->maximumSize(), SGVec2i(20, 30));
+
+  hbox->setGeometry(SGRecti(0, 0, 30, 40));
+
+  BOOST_CHECK_EQUAL(hbox->contentsRect(), SGRecti(5, 10, 10, 10));
+
+  TestWidgetRef w1( new TestWidget( SGVec2i(16, 16),
+                                    SGVec2i(32, 32) ) ),
+                w2( new TestWidget(*w1) ),
+                w3( new TestWidget(*w1) );
+
+  w1->setContentsMargin(5);
+  w2->setContentsMargin(6);
+  w3->setContentsMargin(7);
+
+  BOOST_CHECK_EQUAL(w1->minimumSize(), SGVec2i(26, 26));
+  BOOST_CHECK_EQUAL(w1->sizeHint(),    SGVec2i(42, 42));
+  BOOST_CHECK_EQUAL(w1->maximumSize(), sc::LayoutItem::MAX_SIZE);
+
+  BOOST_CHECK_EQUAL(w2->minimumSize(), SGVec2i(28, 28));
+  BOOST_CHECK_EQUAL(w2->sizeHint(),    SGVec2i(44, 44));
+  BOOST_CHECK_EQUAL(w2->maximumSize(), sc::LayoutItem::MAX_SIZE);
+
+  BOOST_CHECK_EQUAL(w3->minimumSize(), SGVec2i(30, 30));
+  BOOST_CHECK_EQUAL(w3->sizeHint(),    SGVec2i(46, 46));
+  BOOST_CHECK_EQUAL(w3->maximumSize(), sc::LayoutItem::MAX_SIZE);
+
+  hbox->addItem(w1);
+  hbox->addItem(w2);
+  hbox->addItem(w3);
+
+  BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(114, 60));
+  BOOST_CHECK_EQUAL(hbox->sizeHint(),    SGVec2i(162, 76));
+  BOOST_CHECK_EQUAL(hbox->maximumSize(), sc::LayoutItem::MAX_SIZE);
+
+  hbox->setGeometry(SGRecti(0, 0, hbox->sizeHint().x(), hbox->sizeHint().y()));
+
+  BOOST_CHECK_EQUAL(hbox->contentsRect(), SGRecti(5, 10, 142, 46));
+
+  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(5,   10, 42, 46));
+  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(52,  10, 44, 46));
+  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(101, 10, 46, 46));
+
+  BOOST_CHECK_EQUAL(w1->contentsRect(), SGRecti(10,  15, 32, 36));
+  BOOST_CHECK_EQUAL(w2->contentsRect(), SGRecti(58,  16, 32, 34));
+  BOOST_CHECK_EQUAL(w3->contentsRect(), SGRecti(108, 17, 32, 32));
+}
+
+//------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( boxlayout_hfw )
 {
   TestWidgetRef w1( new TestWidgetHFW( SGVec2i(16,   16),
@@ -502,6 +587,7 @@ BOOST_AUTO_TEST_CASE( boxlayout_hfw )
   BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
 }
 
+//------------------------------------------------------------------------------
 // TODO extend to_nasal_helper for automatic argument conversion
 static naRef f_Widget_visibilityChanged(nasal::CallContext ctx)
 {

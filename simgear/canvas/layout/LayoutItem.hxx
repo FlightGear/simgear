@@ -35,6 +35,53 @@ namespace canvas
   typedef SGWeakPtr<LayoutItem> LayoutItemWeakRef;
 
   /**
+   * Holds the four margins for a rectangle.
+   */
+  struct Margins
+  {
+    int l, t, r, b;
+
+    /**
+     * Set all margins to the same value @a m.
+     */
+    explicit Margins(int m = 0);
+
+    /**
+     * Set horizontal and vertical margins to the same values @a h and @a v
+     * respectively.
+     *
+     * @param h Horizontal margins
+     * @param v Vertical margins
+     */
+    Margins(int h, int v);
+
+    /**
+     * Set the margins to the given values.
+     */
+    Margins(int left, int top, int right, int bottom);
+
+    /**
+     * Get the total horizontal margin (sum of left and right margin).
+     */
+    int horiz() const;
+
+    /**
+     * Get the total vertical margin (sum of top and bottom margin).
+     */
+    int vert() const;
+
+    /**
+     * Get total horizontal and vertical margin as vector.
+     */
+    SGVec2i size() const;
+
+    /**
+     * Returns true if all margins are 0.
+     */
+    bool isNull() const;
+  };
+
+  /**
    * Base class for all layouting elements. Specializations either implement a
    * layouting algorithm or a widget.
    */
@@ -48,6 +95,49 @@ namespace canvas
 
       LayoutItem();
       virtual ~LayoutItem();
+
+      /**
+       * Set the margins to use by the layout system around the item.
+       *
+       * The margins define the size of the clear area around an item. It
+       * increases the size hints and reduces the size of the geometry()
+       * available to child layouts and widgets.
+       *
+       * @see Margins
+       */
+      void setContentsMargins(const Margins& margins);
+
+      /**
+       * Set the individual margins.
+       *
+       * @see setContentsMargins(const Margins&)
+       */
+      void setContentsMargins(int left, int top, int right, int bottom);
+
+      /**
+       * Set all margins to the same value.
+       *
+       * @see setContentsMargins(const Margins&)
+       */
+      void setContentsMargin(int margin);
+
+      /**
+       * Get the currently used margins.
+       *
+       * @see setContentsMargins(const Margins&)
+       * @see Margins
+       */
+      Margins getContentsMargins() const;
+
+      /**
+       * Get the area available to the contents.
+       *
+       * This is equal to the geometry() reduced by the sizes of the margins.
+       *
+       * @see setContentsMargins(const Margins&)
+       * @see geometry()
+       */
+      SGRecti contentsRect() const;
 
       /**
        * Get the preferred size of this item.
@@ -64,9 +154,36 @@ namespace canvas
        */
       SGVec2i maximumSize() const;
 
+      /**
+       * Returns true if this items preferred and minimum height depend on its
+       * width.
+       *
+       * The default implementation returns false. Reimplement for items
+       * providing height for width.
+       *
+       * @see heightForWidth()
+       * @see minimumHeightForWidth()
+       */
       virtual bool hasHeightForWidth() const;
-      virtual int heightForWidth(int w) const;
-      virtual int minimumHeightForWidth(int w) const;
+
+      /**
+       * Returns the preferred height for the given width @q w.
+       *
+       * Reimplement heightForWidthImpl() for items providing height for width.
+       *
+       * @see hasHeightForWidth()
+       */
+      int heightForWidth(int w) const;
+
+      /**
+       * Returns the minimum height for the given width @q w.
+       *
+       * Reimplement minimumHeightForWidthImpl() for items providing height for
+       * width.
+       *
+       * @see hasHeightForWidth()
+       */
+      int minimumHeightForWidth(int w) const;
 
       virtual void setVisible(bool visible);
       virtual bool isVisible() const;
@@ -82,9 +199,14 @@ namespace canvas
       virtual void invalidate();
 
       /**
-       * Mark all cached data of parent item as invalid (if it is known)
+       * Mark all cached data of parent item as invalid (if the parent is set).
        */
       void invalidateParent();
+
+      /**
+       * Apply any changes not applied yet.
+       */
+      void update();
 
       /**
        * Set position and size of this element. For layouts this triggers a
@@ -134,13 +256,15 @@ namespace canvas
                         | MAXIMUM_SIZE_DIRTY,
         EXPLICITLY_HIDDEN = MAXIMUM_SIZE_DIRTY << 1,
         VISIBLE = EXPLICITLY_HIDDEN << 1,
-        LAST_FLAG = VISIBLE
+        LAYOUT_DIRTY = VISIBLE << 1,
+        LAST_FLAG = LAYOUT_DIRTY
       };
 
       CanvasWeakPtr     _canvas;
       LayoutItemWeakRef _parent;
 
       SGRecti           _geometry;
+      Margins           _margins;
 
       mutable uint32_t  _flags;
       mutable SGVec2i   _size_hint,
@@ -152,9 +276,41 @@ namespace canvas
       virtual SGVec2i maximumSizeImpl() const;
 
       /**
+       * Returns the preferred height for the given width @q w.
+       *
+       * The default implementation returns -1, indicating that the preferred
+       * height is independent of the given width.
+       *
+       * Reimplement this function for items supporting height for width.
+       *
+       * @note Do not take margins into account, as this is already handled
+       *       before calling this function.
+       *
+       * @see hasHeightForWidth()
+       */
+      virtual int heightForWidthImpl(int w) const;
+
+      /**
+       * Returns the minimum height for the given width @q w.
+       *
+       * The default implementation returns -1, indicating that the minimum
+       * height is independent of the given width.
+       *
+       * Reimplement this function for items supporting height for width.
+       *
+       * @note Do not take margins into account, as this is already handled
+       *       before calling this function.
+       *
+       * @see hasHeightForWidth()
+       */
+      virtual int minimumHeightForWidthImpl(int w) const;
+
+      /**
        * @return whether the visibility has changed.
        */
       void setVisibleInternal(bool visible);
+
+      virtual void contentsRectChanged(const SGRecti& rect) {};
 
       virtual void visibilityChanged(bool visible) {}
 

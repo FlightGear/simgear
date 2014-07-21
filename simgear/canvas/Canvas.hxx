@@ -53,8 +53,7 @@ namespace canvas
       {
         STATUS_OK,
         STATUS_DIRTY   = 1,
-        LAYOUT_DIRTY   = STATUS_DIRTY << 1,
-        MISSING_SIZE_X = LAYOUT_DIRTY << 1,
+        MISSING_SIZE_X = STATUS_DIRTY << 1,
         MISSING_SIZE_Y = MISSING_SIZE_X << 1,
         MISSING_SIZE   = MISSING_SIZE_X | MISSING_SIZE_Y,
         CREATE_FAILED  = MISSING_SIZE_Y << 1

@@ -31,11 +31,6 @@ namespace canvas
     public LayoutItem
   {
     public:
-      void update();
-
-      virtual void invalidate();
-      virtual void setGeometry(const SGRecti& geom);
-
       virtual void addItem(const LayoutItemRef& item) = 0;
       virtual void setSpacing(int spacing) = 0;
       virtual int spacing() const = 0;
@@ -74,8 +69,7 @@ namespace canvas
     protected:
       enum LayoutFlags
       {
-        LAYOUT_DIRTY = LayoutItem::LAST_FLAG << 1,
-        LAST_FLAG = LAYOUT_DIRTY
+        LAST_FLAG = LayoutItem::LAST_FLAG
       };
 
       struct ItemData
@@ -98,6 +92,8 @@ namespace canvas
         int hfw(int w) const;
         int mhfw(int w) const;
       };
+
+      virtual void contentsRectChanged(const SGRecti& rect);
 
       /**
        * Override to implement the actual layouting

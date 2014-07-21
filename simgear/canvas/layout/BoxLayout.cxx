@@ -125,8 +125,8 @@ namespace canvas
 
     LayoutItems::iterator it = _layout_items.begin() + index;
     LayoutItemRef item = it->layout_item;
-    item->setParent(LayoutItemWeakRef());
     item->onRemove();
+    item->setParent(LayoutItemWeakRef());
     _layout_items.erase(it);
 
     invalidate();
@@ -141,8 +141,8 @@ namespace canvas
                                it != _layout_items.end();
                              ++it )
     {
-      it->layout_item->setParent(LayoutItemWeakRef());
       it->layout_item->onRemove();
+      it->layout_item->setParent(LayoutItemWeakRef());
     }
     _layout_items.clear();
     invalidate();

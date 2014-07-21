@@ -167,7 +167,7 @@ namespace canvas
       virtual bool hasHeightForWidth() const;
 
       /**
-       * Returns the preferred height for the given width @q w.
+       * Returns the preferred height for the given width @a w.
        *
        * Reimplement heightForWidthImpl() for items providing height for width.
        *
@@ -176,7 +176,7 @@ namespace canvas
       int heightForWidth(int w) const;
 
       /**
-       * Returns the minimum height for the given width @q w.
+       * Returns the minimum height for the given width @a w.
        *
        * Reimplement minimumHeightForWidthImpl() for items providing height for
        * width.
@@ -276,7 +276,7 @@ namespace canvas
       virtual SGVec2i maximumSizeImpl() const;
 
       /**
-       * Returns the preferred height for the given width @q w.
+       * Returns the preferred height for the given width @a w.
        *
        * The default implementation returns -1, indicating that the preferred
        * height is independent of the given width.
@@ -291,7 +291,7 @@ namespace canvas
       virtual int heightForWidthImpl(int w) const;
 
       /**
-       * Returns the minimum height for the given width @q w.
+       * Returns the minimum height for the given width @a w.
        *
        * The default implementation returns -1, indicating that the minimum
        * height is independent of the given width.

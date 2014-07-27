@@ -38,6 +38,7 @@ namespace canvas
       void setCharacterAspect(float aspect);
       void setLineHeight(float factor);
       void setFill(const std::string& fill);
+      void setStroke(const std::string& color);
       void setBackgroundColor(const std::string& fill);
 
       SGVec2i sizeForWidth(int w) const;
@@ -86,6 +87,19 @@ namespace canvas
     osg::Vec4 color;
     if( parseColor(fill, color) )
       setColor( color );
+  }
+
+  //----------------------------------------------------------------------------
+  void Text::TextOSG::setStroke(const std::string& stroke)
+  {
+    osg::Vec4 color;
+    if( stroke == "none" || !parseColor(stroke, color) )
+      setBackdropType(NONE);
+    else
+    {
+      setBackdropType(OUTLINE);
+      setBackdropColor(color);
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -546,6 +560,7 @@ namespace canvas
 
     addStyle("fill", "color", &TextOSG::setFill, text);
     addStyle("background", "color", &TextOSG::setBackgroundColor, text);
+    addStyle("stroke", "color", &TextOSG::setStroke, text);
     addStyle("character-size",
              "numeric",
              static_cast<

@@ -21,6 +21,7 @@
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <osg/Version>
+#include <osgDB/Registry>
 #include <osgText/Text>
 
 namespace simgear
@@ -582,6 +583,10 @@ namespace canvas
     addStyle("font", "", &Text::setFont);
     addStyle("alignment", "", &Text::setAlignment);
     addStyle("text", "", &Text::setText, false);
+
+    osgDB::Registry* reg = osgDB::Registry::instance();
+    if( !reg->getReaderWriterForExtension("ttf") )
+      SG_LOG(SG_GL, SG_ALERT, "canvas::Text: Missing 'ttf' font reader");
   }
 
   //----------------------------------------------------------------------------

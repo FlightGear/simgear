@@ -100,6 +100,10 @@ namespace canvas
     addStyle("preserveAspectRatio", "", &Image::setPreserveAspectRatio);
     addStyle("slice", "", &Image::setSlice);
     addStyle("slice-width", "", &Image::setSliceWidth);
+
+    osgDB::Registry* reg = osgDB::Registry::instance();
+    if( !reg->getReaderWriterForExtension("png") )
+      SG_LOG(SG_GL, SG_ALERT, "canvas::Image: Missing 'png' image reader");
   }
 
   //----------------------------------------------------------------------------

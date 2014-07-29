@@ -280,6 +280,9 @@ namespace canvas
                                          ->createChild<Image>("content");
       _image_content->setSrcCanvas(content);
 
+      // Forward keyboard events to content
+      _image_content->setFocus();
+
       // Draw content on top of decoration
       _image_content->set<int>("z-index", 1);
     }

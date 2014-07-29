@@ -108,9 +108,15 @@ namespace canvas
       bool addEventListener(const std::string& type, const EventListener& cb);
       virtual void clearEventListener();
 
+      /// Get (keyboard) input focus.
+      void setFocus();
+
       virtual bool accept(EventVisitor& visitor);
       virtual bool ascend(EventVisitor& visitor);
       virtual bool traverse(EventVisitor& visitor);
+
+      /// Get the number of event handlers for the given type
+      size_t numEventHandler(int type) const;
 
       virtual bool handleEvent(const EventPtr& event);
       bool dispatchEvent(const EventPtr& event);

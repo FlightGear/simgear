@@ -133,6 +133,15 @@ namespace canvas
       void setLayout(const LayoutRef& layout);
 
       /**
+       * Set the focus to the given element.
+       *
+       * The focus element will receive all keyboard events propagated to this
+       * canvas. If there is no valid focus element the root group will receive
+       * the events instead.
+       */
+      void setFocusElement(const ElementPtr& el);
+
+      /**
        * Enable rendering for the next frame
        *
        * @param force   Force redraw even if nothing has changed (if dirty flag
@@ -159,6 +168,8 @@ namespace canvas
       SGRect<int> getViewport() const;
 
       bool handleMouseEvent(const MouseEventPtr& event);
+      bool handleKeyboardEvent(const KeyboardEventPtr& event);
+
       bool propagateEvent( EventPtr const& event,
                            EventPropagationPath const& path );
 
@@ -209,6 +220,8 @@ namespace canvas
 
       GroupPtr  _root_group;
       LayoutRef _layout;
+
+      ElementWeakPtr _focus_element;
 
       CullCallbackPtr _cull_callback;
       bool _render_always; //<! Used to disable automatic lazy rendering (culling)

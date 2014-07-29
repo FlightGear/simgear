@@ -304,6 +304,14 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Element::setFocus()
+  {
+    CanvasPtr canvas = _canvas.lock();
+    if( canvas )
+      canvas->setFocusElement(this);
+  }
+
+  //----------------------------------------------------------------------------
   bool Element::accept(EventVisitor& visitor)
   {
     if( !isVisible() )
@@ -324,6 +332,15 @@ namespace canvas
   bool Element::traverse(EventVisitor& visitor)
   {
     return true;
+  }
+
+  //----------------------------------------------------------------------------
+  size_t Element::numEventHandler(int type) const
+  {
+    ListenerMap::const_iterator listeners = _listener.find(type);
+    if( listeners != _listener.end() )
+      return listeners->second.size();
+    return 0;
   }
 
   //----------------------------------------------------------------------------

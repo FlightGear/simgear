@@ -19,8 +19,7 @@
 #ifndef CANVAS_MOUSE_EVENT_HXX_
 #define CANVAS_MOUSE_EVENT_HXX_
 
-#include <simgear/canvas/CanvasEvent.hxx>
-#include <osgGA/GUIEventAdapter>
+#include "DeviceEvent.hxx"
 
 namespace simgear
 {
@@ -28,7 +27,7 @@ namespace canvas
 {
 
   class MouseEvent:
-    public Event
+    public DeviceEvent
   {
     public:
       MouseEvent();
@@ -55,7 +54,6 @@ namespace canvas
 
       int getButton() const { return button; }
       int getButtonMask() const { return buttons; }
-      int getModifiers() const { return modifiers; }
 
       int getCurrentClickCount() const { return click_count; }
 
@@ -65,7 +63,6 @@ namespace canvas
                   delta;
       int         button,       //<! Button for this event
                   buttons,      //<! Current button state
-                  modifiers,    //<! Keyboard modifier state
                   click_count;  //<! Current click count
   };
 

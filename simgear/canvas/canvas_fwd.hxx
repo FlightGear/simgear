@@ -53,6 +53,8 @@ namespace canvas
 
   SG_FWD_DECL(Event)
   SG_FWD_DECL(CustomEvent)
+  SG_FWD_DECL(DeviceEvent)
+  SG_FWD_DECL(KeyboardEvent)
   SG_FWD_DECL(MouseEvent)
 
 #undef SG_FWD_DECL

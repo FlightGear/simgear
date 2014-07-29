@@ -1,4 +1,4 @@
-// Mouse event
+// Input device event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,7 +16,7 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#include "MouseEvent.hxx"
+#include "DeviceEvent.hxx"
 #include <osgGA/GUIEventAdapter>
 
 namespace simgear
@@ -25,43 +25,41 @@ namespace canvas
 {
 
   //----------------------------------------------------------------------------
-  MouseEvent::MouseEvent():
-    button(0),
-    buttons(0),
-    click_count(0)
+  DeviceEvent::DeviceEvent():
+    modifiers(0)
   {
 
   }
 
   //----------------------------------------------------------------------------
-  MouseEvent::MouseEvent(const osgGA::GUIEventAdapter& ea):
-    DeviceEvent(ea),
-    button(0),
-    buttons(ea.getButtonMask()),
-    click_count(0)
+  DeviceEvent::DeviceEvent(const osgGA::GUIEventAdapter& ea):
+    modifiers(ea.getModKeyMask())
   {
-    // Convert button mask to index
-    int button_mask = ea.getButton();
-    while( (button_mask >>= 1) > 0 )
-      button += 1;
+    time = ea.getTime();
   }
 
   //----------------------------------------------------------------------------
-  bool MouseEvent::canBubble() const
+  bool DeviceEvent::ctrlKey() const
   {
-    // Check if event supports bubbling
-    const Event::Type types_no_bubbling[] = {
-      Event::MOUSE_ENTER,
-      Event::MOUSE_LEAVE,
-    };
-    const size_t num_types_no_bubbling = sizeof(types_no_bubbling)
-                                       / sizeof(types_no_bubbling[0]);
+    return (modifiers & osgGA::GUIEventAdapter::MODKEY_CTRL) != 0;
+  }
 
-    for( size_t i = 0; i < num_types_no_bubbling; ++i )
-      if( type == types_no_bubbling[i] )
-        return false;
+  //----------------------------------------------------------------------------
+  bool DeviceEvent::shiftKey() const
+  {
+    return (modifiers & osgGA::GUIEventAdapter::MODKEY_SHIFT) != 0;
+  }
 
-    return true;
+  //----------------------------------------------------------------------------
+  bool DeviceEvent::altKey() const
+  {
+    return (modifiers & osgGA::GUIEventAdapter::MODKEY_ALT) != 0;
+  }
+
+  //----------------------------------------------------------------------------
+  bool DeviceEvent::metaKey() const
+  {
+    return (modifiers & osgGA::GUIEventAdapter::MODKEY_META) != 0;
   }
 
 } // namespace canvas

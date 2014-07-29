@@ -20,6 +20,7 @@
 #include "CanvasEventManager.hxx"
 #include "CanvasEventVisitor.hxx"
 #include "CanvasPlacement.hxx"
+#include <simgear/canvas/events/KeyboardEvent.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
@@ -196,6 +197,19 @@ namespace canvas
   {
     _layout = layout;
     _layout->setCanvas(this);
+  }
+
+  //----------------------------------------------------------------------------
+  void Canvas::setFocusElement(const ElementPtr& el)
+  {
+    if( el && el->getCanvas().lock() != this )
+    {
+      SG_LOG(SG_GUI, SG_WARN, "setFocusElement: element not from this canvas");
+      return;
+    }
+
+    // TODO focus out/in events
+    _focus_element = el;
   }
 
   //----------------------------------------------------------------------------
@@ -446,6 +460,18 @@ namespace canvas
       return false;
 
     return _event_manager->handleEvent(event, visitor.getPropagationPath());
+  }
+
+  //----------------------------------------------------------------------------
+  bool Canvas::handleKeyboardEvent(const KeyboardEventPtr& event)
+  {
+    ElementPtr target = _focus_element.lock();
+    if( !target )
+      target = _root_group;
+    if( !target )
+      return false;
+
+    return target->dispatchEvent(event);
   }
 
   //----------------------------------------------------------------------------

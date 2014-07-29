@@ -21,6 +21,7 @@
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasMgr.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
+#include <simgear/canvas/events/KeyboardEvent.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/parse_color.hxx>
@@ -525,8 +526,7 @@ namespace canvas
     if( !src_canvas )
       return handled;
 
-    MouseEventPtr mouse_event = dynamic_cast<MouseEvent*>(event.get());
-    if( mouse_event )
+    if( MouseEventPtr mouse_event = dynamic_cast<MouseEvent*>(event.get()) )
     {
       mouse_event.reset( new MouseEvent(*mouse_event) );
 
@@ -550,6 +550,11 @@ namespace canvas
       mouse_event->local_pos = mouse_event->client_pos;
 
       handled |= src_canvas->handleMouseEvent(mouse_event);
+    }
+    else if( KeyboardEventPtr keyboard_event =
+               dynamic_cast<KeyboardEvent*>(event.get()) )
+    {
+      handled |= src_canvas->handleKeyboardEvent(keyboard_event);
     }
 
     return handled;

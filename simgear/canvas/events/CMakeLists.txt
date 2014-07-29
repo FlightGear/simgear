@@ -2,11 +2,15 @@ include (SimGearComponent)
 
 set(HEADERS
   CustomEvent.hxx
+  DeviceEvent.hxx
+  KeyboardEvent.hxx
   MouseEvent.hxx
 )
 
 set(SOURCES
   CustomEvent.cxx
+  DeviceEvent.cxx
+  KeyboardEvent.cxx
   MouseEvent.cxx
 )
 

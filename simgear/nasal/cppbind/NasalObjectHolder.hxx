@@ -1,4 +1,5 @@
-///@file Wrapper class for keeping Nasal objects save from the garbage collector
+///@file
+/// Wrapper class for keeping Nasal objects save from the garbage collector.
 //
 // Copyright (C) 2013  Thomas Geymayer <tomgey@gmail.com>
 //

@@ -1,4 +1,4 @@
-// Basic class for canvas layouts
+/// @file
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -27,6 +27,9 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * Base class for all Canvas layouts.
+   */
   class Layout:
     public LayoutItem
   {

@@ -1,4 +1,5 @@
-///@file Mouse event
+///@file
+/// Mouse event
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -26,6 +27,9 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * Mouse (button/move/wheel) event
+   */
   class MouseEvent:
     public DeviceEvent
   {

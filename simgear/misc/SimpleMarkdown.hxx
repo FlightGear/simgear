@@ -1,4 +1,5 @@
-///@file Really simple markdown parser
+///@file
+/// Really simple markdown parser.
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

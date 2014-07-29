@@ -1,4 +1,5 @@
-///@file Interface for 2D Canvas elements
+///@file
+/// Interface for 2D Canvas elements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -42,7 +43,7 @@ namespace canvas
 {
 
   /**
-   * Baseclass for Elements displayed inside a Canvas.
+   * Base class for Elements displayed inside a Canvas.
    */
   class Element:
     public PropertyBasedElement

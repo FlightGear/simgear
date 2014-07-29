@@ -1,4 +1,4 @@
-///@file Object exposed to Nasal including a Nasal hash for data storage.
+///@file
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -28,6 +28,9 @@
 
 namespace nasal
 {
+  /**
+   * Object exposed to Nasal including a Nasal hash for data storage.
+   */
   class Object:
     public virtual SGVirtualWeakReferenced
   {

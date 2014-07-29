@@ -1,4 +1,4 @@
-///@file HTTP request keeping response in memory.
+///@file
 //
 // Copyright (C) 2013  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -27,6 +27,9 @@ namespace simgear
 namespace HTTP
 {
 
+  /**
+   * HTTP request keeping response in memory.
+   */
   class MemoryRequest:
     public Request
   {

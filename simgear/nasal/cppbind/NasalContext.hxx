@@ -1,4 +1,4 @@
-///@file Manage lifetime and encapsulate a Nasal context
+///@file
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -24,6 +24,9 @@
 namespace nasal
 {
 
+  /**
+   * Manage lifetime and encapsulate a Nasal context.
+   */
   class Context
   {
     public:

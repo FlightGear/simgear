@@ -60,11 +60,22 @@ namespace simgear
       return 0.5 + 0.5 * (*easeOut)(t - 1);
   }
 
+  /**
+   * Helper for exponential ease out with integer exponent.
+   *
+   * @tparam N      Exponent.
+   * @tparam is_odd If the exponent is odd.
+   */
   template<size_t N, bool is_odd>
   struct easeOutImpl;
 
-  /// http://easings.net/#easeOutCubic (N = 3)
-  /// http://easings.net/#easeOutQuint (N = 5)
+  /**
+   * Ease out with odd integer exponent.
+   *
+   * @tparam N Exponent.
+   * @see http://easings.net/#easeOutCubic (N = 3)
+   * @see http://easings.net/#easeOutQuint (N = 5)
+   */
   template<size_t N>
   struct easeOutImpl<N, true>
   {
@@ -74,8 +85,13 @@ namespace simgear
     }
   };
 
-  /// http://easings.net/#easeOutQuad  (N = 2)
-  /// http://easings.net/#easeOutQuart (N = 4)
+  /**
+   * Ease out with even integer exponent.
+   *
+   * @tparam N Exponent.
+   * @see http://easings.net/#easeOutQuad  (N = 2)
+   * @see http://easings.net/#easeOutQuart (N = 4)
+   */
   template<size_t N>
   struct easeOutImpl<N, false>
   {
@@ -85,10 +101,15 @@ namespace simgear
     }
   };
 
-  /// http://easings.net/#easeOutQuad  (N = 2)
-  /// http://easings.net/#easeOutCubic (N = 3)
-  /// http://easings.net/#easeOutQuart (N = 4)
-  /// http://easings.net/#easeOutQuint (N = 5)
+  /**
+   * Exponential ease out with integer exponent.
+   *
+   * @see http://easings.net/#easeOutQuad  (N = 2)
+   * @see http://easings.net/#easeOutCubic (N = 3)
+   * @see http://easings.net/#easeOutQuart (N = 4)
+   * @see http://easings.net/#easeOutQuint (N = 5)
+   * @see easeOutImpl
+   */
   template<size_t N>
   double easeOutPow(double t)
   {

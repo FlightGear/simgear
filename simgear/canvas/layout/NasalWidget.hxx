@@ -1,4 +1,5 @@
-///@file Glue for GUI widgets implemented in Nasal space
+///@file
+/// Glue for GUI widgets implemented in Nasal space.
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -31,7 +32,7 @@ namespace canvas
 {
 
   /**
-   * Baseclass/ghost to create widgets with Nasal.
+   * Base class/ghost to implement gui widgets in Nasal space.
    */
   class NasalWidget:
     public LayoutItem,

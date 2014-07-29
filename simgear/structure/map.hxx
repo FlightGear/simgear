@@ -1,4 +1,4 @@
-///@file Extended std::map with methods for easier usage.
+///@file
 //
 // Copyright (C) 2013  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -25,6 +25,9 @@
 namespace simgear
 {
 
+  /**
+   * Extended std::map with methods for easier usage.
+   */
   template<class Key, class Value>
   class Map:
     public std::map<Key, Value>

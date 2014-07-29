@@ -1,4 +1,5 @@
-///@file Canvas user defined event
+///@file
+/// Canvas user defined event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -27,6 +28,10 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * User defined event (optionally carrying additional context information or
+   * data).
+   */
   class CustomEvent:
     public Event
   {

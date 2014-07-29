@@ -1,4 +1,4 @@
-///@file HTTP request writing response to a file.
+///@file
 //
 // Copyright (C) 2013  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -27,6 +27,9 @@ namespace simgear
 namespace HTTP
 {
 
+  /**
+   * HTTP request writing response to a file.
+   */
   class FileRequest:
     public Request
   {

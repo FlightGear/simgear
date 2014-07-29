@@ -1,4 +1,4 @@
-///@file Handle a list of callbacks like a single boost::function
+///@file
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -39,6 +39,11 @@ namespace simgear
 # define BOOST_PP_FILENAME_1 <simgear/structure/detail/function_list_template.hxx>
 # include BOOST_PP_ITERATE()
 
+  /**
+   * Handle a list of callbacks like a single boost::function.
+   *
+   * @tparam Sig    Function signature.
+   */
   template<typename Sig>
   class function_list<boost::function<Sig> >:
     public function_list<Sig>

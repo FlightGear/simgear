@@ -1,4 +1,5 @@
-///@file The canvas for rendering with the 2d API
+///@file
+/// The canvas for rendering with the 2d API
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -43,6 +44,9 @@ namespace canvas
   class CanvasMgr;
   class MouseEvent;
 
+  /**
+   * Canvas to draw onto (to an off-screen render target).
+   */
   class Canvas:
     public PropertyBasedElement,
     public nasal::Object

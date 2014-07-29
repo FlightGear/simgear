@@ -1,4 +1,4 @@
-// Align items horizontally or vertically in a box
+/// @file
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -26,6 +26,11 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * Align LayoutItems horizontally or vertically in a box.
+   *
+   * @see http://qt-project.org/doc/qt-4.8/qboxlayout.html#details
+   */
   class BoxLayout:
     public Layout
   {

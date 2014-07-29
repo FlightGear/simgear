@@ -1,4 +1,5 @@
-///@file Keyboard event
+///@file
+/// Keyboard event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -26,6 +27,9 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * Keyboard (button up/down) event
+   */
   class KeyboardEvent:
     public DeviceEvent
   {

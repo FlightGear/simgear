@@ -1,4 +1,4 @@
-///@file Wrapper class for Nasal strings
+///@file
 //
 // Copyright (C) 2013  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -26,7 +26,7 @@ namespace nasal
 {
 
   /**
-   * A Nasal String
+   * Wrapper class for Nasal strings.
    */
   class String
   {

@@ -1,4 +1,4 @@
-///@file Element providing blank space in a layout.
+///@file
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

@@ -1,7 +1,8 @@
-///@file Placement for putting a canvas texture onto OpenSceneGraph objects.
-//
-// It also provides a SGPickCallback for passing mouse events to the canvas and
-// manages emissive lighting of the placed canvas.
+///@file
+/// Placement for putting a canvas texture onto OpenSceneGraph objects.
+///
+/// It also provides a SGPickCallback for passing mouse events to the canvas and
+/// manages emissive lighting of the placed canvas.
 //
 // Copyright (C) 2013  Thomas Geymayer <tomgey@gmail.com>
 //

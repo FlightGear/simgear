@@ -1,4 +1,5 @@
-// Canvas Event for event model similar to DOM Level 3 Event Model
+/// @file
+/// Canvas Event for event model similar to DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -27,19 +28,28 @@ namespace simgear
 namespace canvas
 {
 
+  /**
+   * Base class for all Canvas events.
+   *
+   * The event system is closely following the specification of the DOM Level 3
+   * Event Model.
+   */
   class Event:
     public SGReferenced
   {
     public:
 
+      /// Event type identifier
       enum Type
       {
         UNKNOWN,
-#       define ENUM_MAPPING(name, str) name,
+#       define ENUM_MAPPING(name, str, class_name)\
+                 name, /*!< class_name (type=str) */
 #         include "CanvasEventTypes.hxx"
 #       undef ENUM_MAPPING
-        CUSTOM_EVENT ///< all user defined event types share the same id. They
-                     ///  are just differentiated by using the type string.
+        CUSTOM_EVENT ///< First event type id available for user defined event
+                     ///  type.
+                     /// @see CustomEvent
       };
 
       int               type;

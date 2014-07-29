@@ -125,7 +125,7 @@ namespace canvas
 
     if( type_map.empty() )
     {
-#   define ENUM_MAPPING(type, str)\
+#   define ENUM_MAPPING(type, str, class_name)\
       type_map.insert(TypeMap::value_type(str, type));
 #     include "CanvasEventTypes.hxx"
 #   undef ENUM_MAPPING

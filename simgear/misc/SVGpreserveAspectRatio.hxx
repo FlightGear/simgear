@@ -1,4 +1,5 @@
-///@file Parse and represent SVG preserveAspectRatio attribute
+///@file
+/// Parse and represent SVG preserveAspectRatio attribute.
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -53,6 +54,7 @@ namespace simgear
 
       bool operator==(const SVGpreserveAspectRatio& rhs) const;
 
+      /// Parse preserveAspectRatio from string.
       static SVGpreserveAspectRatio parse(const std::string& str);
 
     private:

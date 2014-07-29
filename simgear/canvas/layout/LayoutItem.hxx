@@ -1,4 +1,5 @@
-///@file Basic element for layouting canvas elements
+///@file
+/// Basic element for layouting canvas elements.
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

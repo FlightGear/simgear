@@ -1,4 +1,4 @@
-///@file Wrapper class for Nasal hashes
+///@file
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -29,7 +29,7 @@ namespace nasal
 {
 
   /**
-   * A Nasal Hash
+   * Wrapper class for Nasal hashes.
    */
   class Hash
   {

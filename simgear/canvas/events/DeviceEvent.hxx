@@ -1,4 +1,5 @@
-///@file Input device event (keyboard/mouse)
+///@file
+/// Input device event (keyboard/mouse)
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -35,14 +36,25 @@ namespace canvas
     public Event
   {
     public:
+      /// Default initialization (no active keyboard modifier).
       DeviceEvent();
+
+      /// Initialize from an OpenSceneGraph event.
       DeviceEvent(const osgGA::GUIEventAdapter& ea);
 
+      /// Get mask of active keyboard modifiers at the time of the event.
       int getModifiers() const { return modifiers; }
 
+      /// Get if a Ctrl modifier was active.
       bool ctrlKey() const;
+
+      /// Get if a Shift modifier was active.
       bool shiftKey() const;
+
+      /// Get if an Alt modifier was active.
       bool altKey() const;
+
+      /// Get if a Meta modifier was active.
       bool metaKey() const;
 
     protected:

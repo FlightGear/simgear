@@ -17,12 +17,20 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "KeyboardEvent.hxx"
+#include "utf8.h"
 
 #include <osgGA/GUIEventAdapter>
 
-#include <boost/container/flat_map.hpp>
-#include <boost/container/flat_set.hpp>
-#include <boost/locale/encoding_utf.hpp>
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 104800
+# include <boost/container/flat_map.hpp>
+# include <boost/container/flat_set.hpp>
+#else
+# include <map>
+# include <set>
+#endif
+
+#include <iterator>
 
 namespace simgear
 {
@@ -90,8 +98,15 @@ namespace canvas
     // Use an empty string ("") to just use the value reported by the operating
     // system.
     typedef std::pair<const char*, uint8_t> InternalKeyInfo;
+
+#if BOOST_VERSION >= 104800
     typedef boost::container::flat_map<int, InternalKeyInfo> InternalKeyMap;
     typedef boost::container::flat_set<int> KeyList;
+#else
+#   warning "Use Boost >= 1.48 for faster and more memory efficient key lookup"
+    typedef std::map<int, InternalKeyInfo> InternalKeyMap;
+    typedef std::set<int> KeyList;
+#endif
 
     static InternalKeyMap key_map;
     static KeyList num_pad_keys;
@@ -251,7 +266,12 @@ namespace canvas
 
     // Empty or no mapping -> convert UTF-32 key value to UTF-8
     if( _name.empty() )
-      _name = boost::locale::conv::utf_to_utf<char>(&_key, &_key + 1);
+    {
+      if( !utf8::internal::is_code_point_valid(_key) )
+        _name = "Unidentified";
+      else
+        utf8::unchecked::append(_key, std::back_inserter(_name));
+    }
 
     // Keys on the numpad with NumLock enabled are reported just like their
     // equivalent keys in the standard key block. Using the unmodified key value

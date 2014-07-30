@@ -385,6 +385,8 @@ endif()
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 
+include_directories(3rdparty/utf8/source)
+
 add_subdirectory(3rdparty)
 add_subdirectory(simgear)
 

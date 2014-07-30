@@ -27,7 +27,8 @@ namespace canvas
   Event::Event():
     type(UNKNOWN),
     time(-1),
-    propagation_stopped(false)
+    propagation_stopped(false),
+    default_prevented(false)
   {
 
   }
@@ -78,6 +79,18 @@ namespace canvas
   void Event::stopPropagation()
   {
     propagation_stopped = true;
+  }
+
+  //----------------------------------------------------------------------------
+  void Event::preventDefault()
+  {
+    default_prevented = true;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Event::defaultPrevented() const
+  {
+    return default_prevented;
   }
 
   //----------------------------------------------------------------------------

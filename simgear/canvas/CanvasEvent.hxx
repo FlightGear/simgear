@@ -56,7 +56,8 @@ namespace canvas
       ElementWeakPtr    target,
                         current_target;
       double            time;
-      bool              propagation_stopped;
+      bool              propagation_stopped,
+                        default_prevented;
 
       Event();
 
@@ -82,9 +83,32 @@ namespace canvas
       ElementWeakPtr getTarget() const;
       ElementWeakPtr getCurrentTarget() const;
 
+      /**
+       * Get time at which the event was generated.
+       */
       double getTime() const;
 
+      /**
+       * Prevent further propagation of the event during event flow.
+       *
+       * @note This does not prevent calling further event handlers registered
+       *       on the current event target.
+       */
       void stopPropagation();
+
+      /**
+       * Cancel any default action normally taken as result of this event.
+       *
+       * @note For event handlers registered on the DesktopGroup (Nasal:
+       *       canvas.getDesktop()) this stops the event from being further
+       *       propagated to the normal FlightGear input event handling code.
+       */
+      void preventDefault();
+
+      /**
+       * Get if preventDefault() has been called.
+       */
+      bool defaultPrevented() const;
 
       static int getOrRegisterType(const std::string& type);
       static int strToType(const std::string& type);

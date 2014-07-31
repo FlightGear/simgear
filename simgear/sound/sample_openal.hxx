@@ -1,4 +1,5 @@
-// sample_openal.hxx -- Audio sample encapsulation class
+///@file
+/// Provides an audio sample encapsulation class.
 // 
 // Written by Curtis Olson, started April 2004.
 // Modified to match the new SoundSystem by Erik Hofman, October 2009
@@ -6,26 +7,19 @@
 // Copyright (C) 2004  Curtis L. Olson - http://www.flightgear.org/~curt
 // Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// Library General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software Foundation,
-// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
-/**
- * \file audio sample.hxx
- * Provides a audio sample encapsulation
- */
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef _SG_SAMPLE_HXX
 #define _SG_SAMPLE_HXX 1
@@ -45,7 +39,9 @@ class SGPath;
  
 
 /**
- * manages everything we need to know for an individual audio sample
+ * Encapsulate and audio sample.
+ *
+ * Manages everything we need to know for an individual audio sample.
  */
 
 class SGSoundSample : public SGReferenced {
@@ -95,6 +91,7 @@ public:
      * Test if this audio sample configuration has changed since the last call.
      * Calling this function will reset the flag so calling it a second
      * time in a row will return false.
+     *
      * @return Return true is the configuration has changed in the mean time.
      */
     bool has_changed() {
@@ -105,6 +102,7 @@ public:
      * Test if static data of audio sample configuration has changed.
      * Calling this function will reset the flag so calling it a second
      * time in a row will return false.
+     *
      * @return Return true is the static data has changed in the mean time.
      */
     bool has_static_data_changed() {
@@ -114,7 +112,8 @@ public:
     /**
      * Schedule this audio sample for playing. Actual playing will only start
      * at the next call op SoundGroup::update()
-     * @param _loop Define whether this sound should be played in a loop.
+     *
+     * @param loop Whether this sound should be played in a loop.
      */
     void play( bool loop = false ) {
         _playing = true; _loop = loop; _changed = true; _static_changed = true;
@@ -122,6 +121,7 @@ public:
 
     /**
      * Check if this audio sample is set to be continuous looping.
+     *
      * @return Return true if this audio sample is set to looping.
      */
     inline bool is_looping() { return _loop; }
@@ -405,7 +405,8 @@ public:
     /**
      * Set the velocity vector (in meters per second) of this sound.
      * This is in the local frame coordinate system; x=north, y=east, z=down
-     * @param Velocity vector
+     *
+     * @param vel Velocity vector
      */
     inline void set_velocity( const SGVec3f& vel ) {
         _velocity = vel; _changed = true;

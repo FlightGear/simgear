@@ -1,36 +1,26 @@
-// queue.hxx -- Sample Queue encapsulation class
-// 
+///@file
+/// Provides a sample queue encapsulation
+//
 // based on sample.hxx
 // 
 // Copyright (C) 2010 Erik Hofman <erik@ehofman.com>
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// Library General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software Foundation,
-// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
-/**
- * \file audio sample.hxx
- * Provides a sample queue encapsulation
- */
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef _SG_QUEUE_HXX
 #define _SG_QUEUE_HXX 1
-
-#ifndef __cplusplus
-# error This library requires C++
-#endif
 
 #include <string>
 #include <vector>
@@ -68,20 +58,23 @@ public:
     virtual void stop();
 
     /**
-     * Queue new data for this audio sample
-     * @param data Pointer to a memory block containg this audio sample data.
-     * @param len length of the sample buffer in bytes
+     * Queue new data for this audio sample.
+     *
+     * @param data  Pointer to a memory block containg this audio sample data.
+     * @param len   Length of the sample buffer in bytes.
      */
-    void add( const void* smp_data, size_t len );
+    void add( const void* data, size_t len );
 
     /**
-     * Set the source id of this source
+     * Set the source id of this source.
+     *
      * @param sid OpenAL source-id
      */
     virtual void set_source(unsigned int sid);
 
     /**
      * Test if the buffer-id of this audio sample may be passed to OpenAL.
+     *
      * @return false for sample queue
      */
     inline bool is_valid_buffer() const { return false; }

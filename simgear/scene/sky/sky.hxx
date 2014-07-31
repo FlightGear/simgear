@@ -29,10 +29,6 @@
 #define _SG_SKY_HXX
 
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <simgear/compiler.h>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
@@ -57,29 +53,36 @@ namespace simgear {
 class SGReaderWriterOptions;
 }
 
-typedef struct {
-    SGVec3d pos;
-    SGGeod pos_geod;
-    SGQuatd ori;
-    double spin;
-	double gst;
-	double sun_dist;
-	double moon_dist;
-	double sun_angle;
-} SGSkyState;
+struct SGSkyState
+{
+  SGVec3d pos;     //!< View position in world Cartesian coordinates.
+  SGGeod pos_geod;
+  SGQuatd ori;
+  double spin;     //!< An offset angle for orienting the sky effects with the
+                   //   sun position so sunset and sunrise effects look correct.
+  double gst;      //!< GMT side real time.
+  double sun_dist; //!< the sun's distance from the current view point
+                   //   (to keep it inside your view volume).
+  double moon_dist;//!< The moon's distance from the current view point.
+  double sun_angle;
+};
 
-typedef struct {
-	SGVec3f sky_color;
-    SGVec3f adj_sky_color;
-    SGVec3f fog_color;
-	SGVec3f cloud_color;
-	double sun_angle, moon_angle;
-} SGSkyColor;
+struct SGSkyColor
+{
+  SGVec3f sky_color;
+  SGVec3f adj_sky_color;
+  SGVec3f fog_color;
+  SGVec3f cloud_color;
+  double sun_angle,
+         moon_angle;
+};
 
 /**
+ * \anchor SGSky-details
+ *
  * A class to model a realistic (time/date/position) based sky.
  *
- * Introduction 
+ * Introduction
  *
  * The SGSky class models a blended sky dome, a haloed sun, a textured
  * moon with phase that properly matches the date, stars and planets,
@@ -164,10 +167,10 @@ typedef struct {
 
  * A typical application might do the following: 
 
- * <li> thesky->preDraw( my_altitude );
- * <li> thesky->drawUpperClouds();
- * <li> ssgCullAndDraw ( myscene ) ;
- * <li> thesky->drawLowerClouds();
+ * \li thesky->preDraw( my_altitude );
+ * \li thesky->drawUpperClouds();
+ * \li ssgCullAndDraw ( myscene ) ;
+ * \li thesky->drawLowerClouds();
 
  * The current altitude in meters is passed to the preDraw() method
  * so the clouds layers can be rendered correction from most distant
@@ -261,84 +264,54 @@ public:
 
     /**
      * Initialize the sky and connect the components to the scene
-     * graph at the provided branch.  See discussion in detailed class
-     * description.
-     * @param h_radius_m horizontal radius of sky dome
-     * @param v_radius_m vertical radius of sky dome
-     * @param sun_size size of sun
-     * @param moon_size size of moon
-     * @param nplanets number of planets
-     * @param planet_data an array of planet right ascensions, declinations,
-     *        and magnitudes
-     * @param nstars number of stars
-     * @param star_data an array of star right ascensions, declinations,
-     *        and magnitudes
+     * graph at the provided branch.
+     *
+     * @note See discussion in \ref SGSky-details "detailed class description".
+     *
+     * @param h_radius_m    Horizontal radius of sky dome
+     * @param v_radius_m    Vertical radius of sky dome
+     * @param sun_size      Size of sun
+     * @param moon_size     Size of moon
+     * @param eph           Current positions of planets and stars
+     * @param node          Property node connecting sun with environment
+     * @param options
      */
-    void build( double h_radius_m, double v_radius_m,
-                double sun_size, double moon_size,
-                const SGEphemeris& eph, SGPropertyNode *property_tree_node,
-                simgear::SGReaderWriterOptions* options);
+    void build( double h_radius_m,
+                double v_radius_m,
+                double sun_size,
+                double moon_size,
+                const SGEphemeris& eph,
+                SGPropertyNode *node,
+                simgear::SGReaderWriterOptions* options );
 
     /**
-     * Repaint the sky components based on current value of sun_angle,
-     * sky, and fog colors.  You can also specify new star and planet
-     * data so that we can optionally change the magnitude of these
-     * (for day/night transitions.)  See discussion in detailed
-     * class description.
+     * Repaint the sky components based on current sun angle, and sky and fog
+     * colors.
      *
-     * Sun and moon angles are specified in degrees relative to local up
-     * <li> 0 degrees = high noon
-     * <li> 90 degrees = sun rise/set
-     * <li> 180 degrees = darkest midnight
-     * @param sky_color the base sky color (for the top of the dome)
-     * @param fog_color the fog color (for the horizon)
-     * @param sun_angle the sun angle with the horizon (for sunrise/sunset
-     *        effects)
-     * @param moon_angle the moon angle (so we can make it more yellow
-     *        at the horizon)
-     * @param nplanets number of planets
-     * @param planet_data an array of planet right ascensions, declinations,
-     *        and magnitudes
-     * @param nstars number of stars
-     * @param star_data an array of star right ascensions, declinations,
-     *        and magnitudes
+     * @note See discussion in \ref SGSky-details "detailed class description".
+     *
+     * @param sky_color The base sky color (for the top of the dome)
+     * @param eph       Current positions of planets and stars
      */
-    bool repaint( const SGSkyColor &sc, const SGEphemeris& eph );
+    bool repaint( const SGSkyColor &sky_color,
+                  const SGEphemeris& eph );
 
     /**
-     * Reposition the sky at the specified origin and orientation
+     * Reposition the sky at the specified origin and orientation.
      *
-     * lon specifies a rotation about the Z axis
-     * lat specifies a rotation about the new Y axis
-     * spin specifies a rotation about the new Z axis (this allows
-     * additional orientation for the sunrise/set effects and is used
-     * by the skydome and perhaps clouds.  See discussion in detailed
-     * class description.
-     * @param view_pos specify your view position in world Cartesian
-     *        coordinates
-     * @param zero_elev the zero elevation position in world Cartesian
-     *        coordinates
-     * @param view_up the up vector in world Cartesian coordinates
-     * @param lon current longitude
-     * @param lat current latitude
-     * @param alt current altitude
-     * @param spin an offset angle for orienting the sky effects with the
-     *        sun position so sunset and sunrise effects look correct.
-     * @param gst GMT side real time
-     * @param sun_ra the sun's current right ascension
-     * @param sun_dec the sun's current declination
-     * @param sun_dist the sun's distance from the current view point
-     *        (to keep it inside your view volume.)
-     * @param moon_ra the moon's current right ascension
-     * @param moon_dec the moon's current declination
-     * @param moon_dist the moon's distance from the current view point. 
+     * @note See discussion in \ref SGSky-details "detailed class description".
+     *
      */
-    bool reposition( const SGSkyState &st, const SGEphemeris& eph, double dt = 0.0 );
+    bool reposition( const SGSkyState& sky_state,
+                     const SGEphemeris& eph,
+                     double dt = 0.0 );
 
     /**
      * Modify the given visibility based on cloud layers, thickness,
-     * transition range, and simulated "puffs".  See discussion in detailed
-     * class description.
+     * transition range, and simulated "puffs".
+     *
+     * @note See discussion in \ref SGSky-details "detailed class description".
+     *
      * @param alt current altitude
      * @param time_factor amount of time since modify_vis() last called so
      *        we can scale effect rates properly despite variable frame rates.
@@ -350,7 +323,8 @@ public:
 
     /** 
      * Specify the texture path (optional, defaults to current directory)
-     * @param path base path to texture locations
+     *
+     * @param path Base path to texture locations
      */
     void texture_path( const std::string& path );
 
@@ -424,7 +398,8 @@ public:
     float get_3dCloudVisRange() const;
 
     /** Set 3D cloud visibility range
-     * @param density 3D cloud visibility range
+     *
+     * @param vis 3D cloud visibility range
      */
     void set_3dCloudVisRange(float vis);
 
@@ -432,7 +407,8 @@ public:
     float get_3dCloudImpostorDistance() const;
 
     /** Set 3D cloud impostor distance
-     * @param density 3D cloud impostor distance
+     *
+     * @param vis 3D cloud impostor distance
      */
     void set_3dCloudImpostorDistance(float vis);
 
@@ -456,7 +432,8 @@ public:
     bool get_3dCloudUseImpostors() const;
 
     /** Set 3D cloud impostor usage
-     * @param wrap whether use impostors for 3D clouds
+     *
+     * @param imp whether use impostors for 3D clouds
      */
     void set_3dCloudUseImpostors(bool imp);
 

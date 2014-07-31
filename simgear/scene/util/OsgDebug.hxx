@@ -1,4 +1,5 @@
-///@file Helper for OSG related debugging
+///@file
+/// Helper for OSG related debugging
 //
 // Copyright (C) 2013  Thomas Geymayer <tomgey@gmail.com>
 //

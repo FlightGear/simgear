@@ -101,11 +101,11 @@ public:
   /**
    * Register a new command with the manager.
    *
-   * @param name The command name.  Any existing command with
-   * the same name will silently be overwritten.
-   * @param command A pointer to a one-arg function returning
-   * a bool result.  The argument is always a const pointer to
-   * an SGPropertyNode (which may contain multiple values).
+   * @param name    The command name. Any existing command with the same name
+   *                will silently be overwritten.
+   * @param f       A pointer to a one-arg function returning a bool result. The
+   *                argument is always a const pointer to an SGPropertyNode
+   *                (which may contain multiple values).
    */
   void addCommand(const std::string& name, command_t f)
   { addCommandObject(name, new FunctionCommand(f)); }

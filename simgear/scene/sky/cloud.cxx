@@ -500,8 +500,12 @@ bool SGCloudLayer::repaint( const SGVec3f& fog_color ) {
 // lat specifies a rotation about the new Y axis
 // spin specifies a rotation about the new Z axis (and orients the
 // sunrise/set effects
-bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, double lat,
-        		       double alt, double dt )
+bool SGCloudLayer::reposition( const SGVec3f& p,
+                               const SGVec3f& up,
+                               double lon,
+                               double lat,
+                               double alt,
+                               double dt )
 {
 
     if (getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR)

@@ -252,15 +252,14 @@ class SGRawBase<T, 0> : public SGRawExtended
 /**
  * Abstract base class for a raw value.
  *
- * <p>The property manager is implemented in two layers.  The {@link
- * SGPropertyNode} is the highest and most abstract layer,
- * representing an LValue/RValue pair: it records the position of the
- * property in the property tree and contains facilities for
- * navigation to other nodes.  It is guaranteed to be persistent: the
- * {@link SGPropertyNode} will not change during a session, even if
- * the property is bound and unbound multiple times.</p>
+ * The property manager is implemented in two layers. The SGPropertyNode is the
+ * highest and most abstract layer, representing an LValue/RValue pair: it
+ * records the position of the property in the property tree and contains
+ * facilities for navigation to other nodes. It is guaranteed to be persistent:
+ * the SGPropertyNode will not change during a session, even if the property is
+ * bound and unbound multiple times.
  *
- * <p>When the property value is not managed internally in the
+ * When the property value is not managed internally in the
  * SGPropertyNode, the SGPropertyNode will contain a reference to an
  * SGRawValue (this class), which provides an abstract way to get,
  * set, and clone the underlying value.  The SGRawValue may change
@@ -268,13 +267,12 @@ class SGRawBase<T, 0> : public SGRawExtended
  * unbound to various data source, but the abstract SGPropertyNode
  * layer insulates the application from those changes.
  *
- * <p>The SGPropertyNode class always keeps a *copy* of a raw value,
- * not the original one passed to it; if you override a derived class
- * but do not replace the {@link #clone} method, strange things will
- * happen.</p>
+ * The SGPropertyNode class always keeps a *copy* of a raw value, not the
+ * original one passed to it; if you override a derived class but do not replace
+ * the {@link SGRaw::clone clone()} method, strange things will happen.
  *
- * <p>All derived SGRawValue classes must implement {@link #getValue},
- * {@link #setValue}, and {@link #clone} for the appropriate type.</p>
+ * All derived SGRawValue classes must implement getValue(), setValue(), and
+ * {@link SGRaw::clone clone()} for the appropriate type.
  *
  * @see SGPropertyNode
  * @see SGRawValuePointer
@@ -696,9 +694,15 @@ class SGPropertyChangeListener
 {
 public:
   virtual ~SGPropertyChangeListener ();
-  virtual void valueChanged (SGPropertyNode * node);
-  virtual void childAdded (SGPropertyNode * parent, SGPropertyNode * child);
-  virtual void childRemoved (SGPropertyNode * parent, SGPropertyNode * child);
+
+  /// Called if value of \a node has changed.
+  virtual void valueChanged(SGPropertyNode * node);
+
+  /// Called if \a child has been added to the given \a parent.
+  virtual void childAdded(SGPropertyNode * parent, SGPropertyNode * child);
+
+  /// Called if \a child has been removed from its \a parent.
+  virtual void childRemoved(SGPropertyNode * parent, SGPropertyNode * child);
 
 protected:
   friend class SGPropertyNode;
@@ -1289,7 +1293,7 @@ public:
    *
    * @param type        Type of interpolation ("numeric", "color", etc.)
    * @param values      Nodes containing intermediate and target values
-   * @param duration    Durations for each interpolation step (in seconds)
+   * @param deltas      Durations for each interpolation step (in seconds)
    * @param easing      Easing function (http://easings.net/)
    */
   bool interpolate( const std::string& type,

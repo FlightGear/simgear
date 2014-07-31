@@ -45,7 +45,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 
-using std::string;
 using std::vector;
 
 
@@ -408,7 +407,7 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
 }
 
 // add a sample group, return true if successful
-bool SGSoundMgr::add( SGSampleGroup *sgrp, const string& refname )
+bool SGSoundMgr::add( SGSampleGroup *sgrp, const std::string& refname )
 {
     sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it != d->_sample_groups.end() ) {
@@ -424,7 +423,7 @@ bool SGSoundMgr::add( SGSampleGroup *sgrp, const string& refname )
 
 
 // remove a sound effect, return true if successful
-bool SGSoundMgr::remove( const string &refname )
+bool SGSoundMgr::remove( const std::string &refname )
 {
     sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it == d->_sample_groups.end() ) {
@@ -439,7 +438,7 @@ bool SGSoundMgr::remove( const string &refname )
 
 
 // return true of the specified sound exists in the sound manager system
-bool SGSoundMgr::exists( const string &refname ) {
+bool SGSoundMgr::exists( const std::string &refname ) {
     sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
     return ( sample_grp_it != d->_sample_groups.end() );
 }
@@ -447,7 +446,7 @@ bool SGSoundMgr::exists( const string &refname ) {
 
 // return a pointer to the SGSampleGroup if the specified sound exists
 // in the sound manager system, otherwise return NULL
-SGSampleGroup *SGSoundMgr::find( const string &refname, bool create ) {
+SGSampleGroup *SGSoundMgr::find( const std::string &refname, bool create ) {
     sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it == d->_sample_groups.end() ) {
         // sample group was not found.
@@ -524,7 +523,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 #ifdef ENABLE_SOUND
     if ( !sample->is_valid_buffer() ) {
         // sample was not yet loaded or removed again
-        string sample_name = sample->get_sample_name();
+        std::string sample_name = sample->get_sample_name();
         void *sample_data = NULL;
 
         // see if the sample name is already cached
@@ -588,7 +587,7 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 {
     if ( !sample->is_queue() )
     {
-        string sample_name = sample->get_sample_name();
+        std::string sample_name = sample->get_sample_name();
         buffer_map_iterator buffer_it = d->_buffers.find( sample_name );
         if ( buffer_it == d->_buffers.end() ) {
             // buffer was not found
@@ -608,8 +607,11 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
     }
 }
 
-bool SGSoundMgr::load(const string &samplepath, void **dbuf, int *fmt,
-                                          size_t *sz, int *frq )
+bool SGSoundMgr::load( const std::string &samplepath,
+                       void **dbuf,
+                       int *fmt,
+                       size_t *sz,
+                       int *frq )
 {
     if ( !is_working() )
         return false;
@@ -668,7 +670,7 @@ vector<const char*> SGSoundMgr::get_available_devices()
 }
 
 
-bool SGSoundMgr::testForError(void *p, string s)
+bool SGSoundMgr::testForError(void *p, std::string s)
 {
    if (p == NULL) {
       SG_LOG( SG_SOUND, SG_ALERT, "Error: " << s);
@@ -678,7 +680,7 @@ bool SGSoundMgr::testForError(void *p, string s)
 }
 
 
-bool SGSoundMgr::testForALError(string s)
+bool SGSoundMgr::testForALError(std::string s)
 {
 #ifdef ENABLE_SOUND
     ALenum error = alGetError();
@@ -691,7 +693,7 @@ bool SGSoundMgr::testForALError(string s)
     return false;
 }
 
-bool SGSoundMgr::testForALCError(string s)
+bool SGSoundMgr::testForALCError(std::string s)
 {
 #ifdef ENABLE_SOUND
     ALCenum error;

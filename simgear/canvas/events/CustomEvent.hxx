@@ -41,6 +41,7 @@ namespace canvas
        *
        * @param type_str    Event type name (if name does not exist yet it will
        *                    be registered as new event type)
+       * @param bubbles     If this event should take part in the bubbling phase
        * @param data        Optional user data stored in event
        */
       CustomEvent( std::string const& type_str,
@@ -50,6 +51,7 @@ namespace canvas
       /**
        *
        * @param type_id     Event type id
+       * @param bubbles     If this event should take part in the bubbling phase
        * @param data        Optional user data stored in event
        */
       CustomEvent( int type_id,
@@ -66,10 +68,16 @@ namespace canvas
        */
       StringMap const& getDetail() const { return detail; }
 
+      /**
+       * Get whether this event supports bubbling.
+       *
+       * @see #bubbles
+       * @see CustomEvent()
+       */
       virtual bool canBubble() const { return bubbles; }
 
-      StringMap detail; //<! user data map
-      bool bubbles;
+      StringMap detail; //!< User data map
+      bool bubbles;     //!< Whether the event supports bubbling
   };
 
 } // namespace canvas

@@ -279,9 +279,10 @@ namespace canvas
       /**
        * Register a function for setting a style specified by the given property
        *
-       * @param name    Property name
-       * @param type    Interpolation type
-       * @param setter  Setter function
+       * @param name        Property name
+       * @param type        Interpolation type
+       * @param setter      Setter function
+       * @param inheritable If this style propagates to child elements
        *
        * @tparam T1         Type of value used to retrieve value from property
        *                    node

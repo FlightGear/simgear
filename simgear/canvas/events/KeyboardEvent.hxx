@@ -61,14 +61,14 @@ namespace canvas
       bool isModifier() const;
 
     protected:
-      uint32_t _key,            //<! Key identifier for this event
-               _unmodified_key; //<! Virtual key identifier without any
+      uint32_t _key,            //!< Key identifier for this event
+               _unmodified_key; //!< Virtual key identifier without any
                                 //   modifiers applied
-      bool     _repeat;         //<! If key has been depressed long enough to
+      bool     _repeat;         //!< If key has been depressed long enough to
                                 //   generate key repetition
 
-      mutable std::string _name;        //<! Printable representation/name
-      mutable uint8_t _location; //<! Location of the key on the keyboard
+      mutable std::string _name; //!< Printable representation/name
+      mutable uint8_t _location; //!< Location of the key on the keyboard
 
   };
 

@@ -146,16 +146,16 @@ public:
     /**
      * Wait for this condition variable to be signaled.
      *
-     * @param SGMutex& reference to a locked mutex.
+     * @param mutex Reference to a locked mutex.
      */
-    void wait(SGMutex&);
+    void wait(SGMutex& mutex);
 
     /**
-     * Wait for this condition variable to be signaled for at most
-     * 'ms' milliseconds.
+     * Wait for this condition variable to be signaled for at most \a 'msec'
+     * milliseconds.
      *
-     * @param mutex reference to a locked mutex.
-     * @param ms milliseconds to wait for a signal.
+     * @param mutex Reference to a locked mutex.
+     * @param msec  Milliseconds to wait for a signal.
      *
      * @return
      */

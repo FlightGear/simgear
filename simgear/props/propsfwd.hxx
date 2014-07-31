@@ -1,5 +1,5 @@
-/**
- * \file propsfwwd.hxx
+/** \file
+ *
  * Forward declarations for properties (and related structures)
  */
  
@@ -9,10 +9,10 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 
 class SGPropertyNode;
- 
+
 typedef SGSharedPtr<SGPropertyNode> SGPropertyNode_ptr;
 typedef SGSharedPtr<const SGPropertyNode> SGConstPropertyNode_ptr;
- 
+
 class SGCondition; 
 
 #endif // of SG_PROPS_FWD_HXX

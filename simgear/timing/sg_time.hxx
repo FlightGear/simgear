@@ -116,13 +116,15 @@ public:
      * If you don't know your position when you call the SGTime
      * constructor, you can just use the first form (which assumes 0,
      * 0).
-     * @param lon_rad current longitude (radians)
-     * @param lat_rad current latitude (radians)
-     * @param root root path point to data file location (timezone, etc.)
-     * @param init_time provide an initialization time, 0 means use
-              current clock time */
-    SGTime( const SGGeod& location, const SGPath& root,
-               time_t init_time );
+     *
+     * @param location  Current geodetic location
+     * @param root      Root path point to data file location (timezone, etc.)
+     * @param init_time Provide an initialization time, 0 means use current
+     *                  clock time
+     */
+    SGTime( const SGGeod& location,
+            const SGPath& root,
+            time_t init_time );
 
     /**
      * Create an instance given a data file path.
@@ -140,12 +142,13 @@ public:
      * you to offset "sim" time relative to "real" time. The update()
      * method is designed to be called by the host application before
      * every frame.
-     * @param lon_rad current longitude (radians)
-     * @param lat_rad current latitude (radians)
-     * @param ct specify a unix time, otherwise specify 0 to use current
-              clock time
-     * @param warp an optional time offset specified in seconds.  This
-     *        allows us to advance or rewind "time" if we choose to.  */
+     *
+     * @param location  Current geodetic location
+     * @param ct        Specify a unix time, otherwise specify 0 to use current
+     *                  clock time
+     * @param warp      Optional time offset in seconds. This allows to advance
+     *                  or rewind "time".
+     */
     void update( const SGGeod& location, time_t ct, long int warp );
 
     /** Deprecated method. To be removed after the next release... */
@@ -158,9 +161,10 @@ public:
      * enough that your timezone may have changed as well. In the
      * FlightGear project we call updateLocal() every few minutes from
      * our periodic event manager.
-     * @param lon_rad current longitude (radians)
-     * @param lat_rad current latitude (radians)
-     * @param root base path containing time zone directory */
+     *
+     * @param location  Current geodetic location
+     * @param root      Bbase path containing time zone directory
+     */
     void updateLocal( const SGGeod& location, const std::string& root );
 
     /** @return current system/unix time in seconds */

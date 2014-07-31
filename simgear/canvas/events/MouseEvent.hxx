@@ -61,13 +61,13 @@ namespace canvas
 
       int getCurrentClickCount() const { return click_count; }
 
-      osg::Vec2f  screen_pos,   //<! Position in screen coordinates
-                  client_pos,   //<! Position in window/canvas coordinates
-                  local_pos,    //<! Position in local/element coordinates
+      osg::Vec2f  screen_pos,   //!< Position in screen coordinates
+                  client_pos,   //!< Position in window/canvas coordinates
+                  local_pos,    //!< Position in local/element coordinates
                   delta;
-      int         button,       //<! Button for this event
-                  buttons,      //<! Current button state
-                  click_count;  //<! Current click count
+      int         button,       //!< Button for this event
+                  buttons,      //!< Current button state
+                  click_count;  //!< Current click count
   };
 
 } // namespace canvas

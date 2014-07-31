@@ -44,9 +44,8 @@
 
 #include "sg_file.hxx"
 
-using std::string;
 
-SGFile::SGFile(const string &file, int repeat_)
+SGFile::SGFile(const std::string &file, int repeat_)
     : file_name(file), fp(-1), eof_flag(true), repeat(repeat_), iteration(0)
 {
     set_type( sgFileType );

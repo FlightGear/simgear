@@ -52,7 +52,6 @@ using std::cerr;
 using std::endl;
 using std::find;
 using std::sort;
-using std::string;
 using std::vector;
 using std::stringstream;
 
@@ -104,7 +103,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
       i++;
     }
     if (i != max && *i != '/')
-      throw string("illegal character after . or ..");
+      throw std::string("illegal character after . or ..");
   } else if (isalpha(*i) || *i == '_') {
     i++;
 
@@ -117,7 +116,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
       } else if (*i == '[' || *i == '/') {
 	break;
       } else {
-        string err = "'";
+        std::string err = "'";
         err.push_back(*i);
         err.append("' found in propertyname after '"+node->getNameString()+"'");
         err.append("\nname may contain only ._- and alphanumeric characters");
@@ -129,7 +128,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
 
   else {
     if (path.begin() == i) {
-      string err = "'";
+      std::string err = "'";
       err.push_back(*i);
       err.append("' found in propertyname after '"+node->getNameString()+"'");
       err.append("\nname must begin with alpha or '_'");
@@ -140,7 +139,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
 }
 
 // Validate the name of a single node
-inline bool validateName(const string& name)
+inline bool validateName(const std::string& name)
 {
   using namespace boost;
   if (name.empty())
@@ -287,7 +286,7 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
   if (equals(name, "..")) {
     SGPropertyNode * parent = current->getParent();
     if (parent == 0)
-      throw string("attempt to move past root with '..'");
+      throw std::string("attempt to move past root with '..'");
     return find_node_aux(parent, ++itr, create, last_index);
   }
   int index = -1;
@@ -320,10 +319,10 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
           }
         }
         if (i == token.end() || *i != ']')
-          throw string("unterminated index (looking for ']')");
+          throw std::string("unterminated index (looking for ']')");
       } else {
-        throw string("illegal characters in token: ")
-          + string(name.begin(), name.end());
+        throw std::string("illegal characters in token: ")
+          + std::string(name.begin(), name.end());
       }
     }
   }
@@ -733,12 +732,12 @@ SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(_name))
-    throw string("plain name expected instead of '") + _name + '\'';
+    throw std::string("plain name expected instead of '") + _name + '\'';
 }
 
-SGPropertyNode::SGPropertyNode (const string& name,
-				int index,
-				SGPropertyNode * parent)
+SGPropertyNode::SGPropertyNode( const std::string& name,
+                                int index,
+                                SGPropertyNode * parent)
   : _index(index),
     _name(name),
     _parent(parent),
@@ -750,7 +749,7 @@ SGPropertyNode::SGPropertyNode (const string& name,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(name))
-    throw string("plain name expected instead of '") + _name + '\'';
+    throw std::string("plain name expected instead of '") + _name + '\'';
 }
 
 /**
@@ -956,7 +955,7 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
 }
 
 SGPropertyNode *
-SGPropertyNode::getChild (const string& name, int index, bool create)
+SGPropertyNode::getChild (const std::string& name, int index, bool create)
 {
   SGPropertyNode* node = getExistingChild(name.begin(), name.end(), index);
   if (node) {
@@ -1072,10 +1071,10 @@ SGPropertyNode::removeAllChildren()
   _children.clear();
 }
 
-string
+std::string
 SGPropertyNode::getDisplayName (bool simplify) const
 {
-  string display_name = _name;
+  std::string display_name = _name;
   if (_index != 0 || !simplify) {
     stringstream sstr;
     sstr << '[' << _index << ']';
@@ -1084,14 +1083,14 @@ SGPropertyNode::getDisplayName (bool simplify) const
   return display_name;
 }
 
-string
+std::string
 SGPropertyNode::getPath (bool simplify) const
 {
   typedef std::vector<SGConstPropertyNode_ptr> PList;
   PList pathList;
   for (const SGPropertyNode* node = this; node->_parent; node = node->_parent)
     pathList.push_back(node);
-  string result;
+  std::string result;
   for (PList::reverse_iterator itr = pathList.rbegin(),
          rend = pathList.rend();
        itr != rend;
@@ -1672,7 +1671,7 @@ bool SGPropertyNode::interpolate( const std::string& type,
 
 //------------------------------------------------------------------------------
 bool SGPropertyNode::interpolate( const std::string& type,
-                                  const PropertyList& values,
+                                  const simgear::PropertyList& values,
                                   const double_list& deltas,
                                   const std::string& easing )
 {
@@ -1810,7 +1809,7 @@ SGPropertyNode::untie ()
   }
   case props::STRING:
   case props::UNSPECIFIED: {
-    string val = getStringValue();
+    std::string val = getStringValue();
     clearValue();
     _type = props::STRING;
     _local_val.string_val = copy_string(val.c_str());

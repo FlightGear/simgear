@@ -32,7 +32,7 @@ ConditionNode::ConditionNode()
 {
 }
 
-ConditionNode::ConditionNode(const ConditionNode& rhs, const CopyOp& op)
+ConditionNode::ConditionNode(const ConditionNode& rhs, const osg::CopyOp& op)
     : Group(rhs, op), _condition(rhs._condition)
 {
 }

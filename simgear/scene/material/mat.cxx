@@ -68,10 +68,8 @@
 #include "Pass.hxx"
 
 using std::map;
-using std::string;
 using namespace simgear;
 
-
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructor.
 ////////////////////////////////////////////////////////////////////////
@@ -82,8 +80,10 @@ SGMaterial::_internal_state::_internal_state(Effect *e, bool l,
 {
 }
 
-SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l, 
-                                             const SGReaderWriterOptions* o)
+SGMaterial::_internal_state::_internal_state( Effect *e,
+                                              const std::string &t,
+                                              bool l,
+                                              const SGReaderWriterOptions* o )
     : effect(e), effect_realized(l), options(o)
 {
     texture_paths.push_back(std::make_pair(t,0));
@@ -132,7 +132,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     std::vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
     for (unsigned int i = 0; i < textures.size(); i++)
     {
-        string tname = textures[i]->getStringValue();
+        std::string tname = textures[i]->getStringValue();
 
         if (tname.empty()) {
             tname = "unknown.rgb";
@@ -140,7 +140,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
         SGPath tpath("Textures.high");
         tpath.append(tname);
-        string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
+        std::string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
         if (fullTexPath.empty()) {
             tpath.set("Textures");
             tpath.append(tname);
@@ -170,14 +170,14 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         std::vector<SGPropertyNode_ptr> textures = texturesets[i]->getChildren("texture");
         for (unsigned int j = 0; j < textures.size(); j++)
         {
-            string tname = textures[j]->getStringValue();
+            std::string tname = textures[j]->getStringValue();
             if (tname.empty()) {
                 tname = "unknown.rgb";
             }
 
             SGPath tpath("Textures.high");
             tpath.append(tname);
-            string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
+            std::string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
             if (fullTexPath.empty()) {
                 tpath.set("Textures");
                 tpath.append(tname);
@@ -215,12 +215,13 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     std::vector<SGPropertyNode_ptr> masks = props->getChildren("object-mask");
     for (unsigned int i = 0; i < masks.size(); i++)
     {
-        string omname = masks[i]->getStringValue();
+        std::string omname = masks[i]->getStringValue();
 
         if (! omname.empty()) {
             SGPath ompath("Textures.high");
             ompath.append(omname);
-            string fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
+            std::string fullMaskPath =
+              SGModelLib::findDataFile(ompath.str(), options);
 
             if (fullMaskPath.empty()) {
                 ompath.set("Textures");
@@ -279,7 +280,8 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_coverage = props->getDoubleValue("building-coverage", 0.0);
     building_spacing = props->getDoubleValue("building-spacing-m", 5.0);
     
-    string bt = props->getStringValue("building-texture", "Textures/buildings.png");
+    std::string bt = props->getStringValue( "building-texture",
+                                            "Textures/buildings.png" );
     building_texture = SGModelLib::findDataFile(bt, options);    
     
     if (building_texture.empty()) {
@@ -340,7 +342,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
     
     if (treeTexNode) {
-        string treeTexPath = props->getStringValue("tree-texture");
+        std::string treeTexPath = props->getStringValue("tree-texture");
 
         if (! treeTexPath.empty()) {
             SGPath treePath("Textures.high");
@@ -540,9 +542,9 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
     }
 }
 
-SGMaterialGlyph* SGMaterial::get_glyph (const string& name) const
+SGMaterialGlyph* SGMaterial::get_glyph (const std::string& name) const
 {
-    map<string, SGSharedPtr<SGMaterialGlyph> >::const_iterator it;
+    map<std::string, SGSharedPtr<SGMaterialGlyph> >::const_iterator it;
     it = glyphs.find(name);
     if (it == glyphs.end())
         return 0;

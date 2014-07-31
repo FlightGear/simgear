@@ -99,9 +99,9 @@ namespace canvas
     protected:
 
       typedef const int& (SGVec2i::*CoordGetter)() const;
-      CoordGetter _get_layout_coord,    //<! getter for coordinate in layout
+      CoordGetter _get_layout_coord,    //!< getter for coordinate in layout
                                         //   direction
-                  _get_fixed_coord;     //<! getter for coordinate in secondary
+                  _get_fixed_coord;     //!< getter for coordinate in secondary
                                         //   (fixed) direction
 
       int _padding;

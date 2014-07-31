@@ -28,14 +28,18 @@ namespace simgear
 {
 using namespace osg;
 
-NodeAndDrawableVisitor::NodeAndDrawableVisitor(NodeVisitor::TraversalMode tm) :
-    NodeVisitor(tm)
+NodeAndDrawableVisitor::NodeAndDrawableVisitor(
+  osg::NodeVisitor::TraversalMode tm
+):
+  NodeVisitor(tm)
 {
 }
 
-NodeAndDrawableVisitor::NodeAndDrawableVisitor(NodeVisitor::VisitorType type,
-                                               NodeVisitor::TraversalMode tm) :
-    NodeVisitor(type, tm)
+NodeAndDrawableVisitor::NodeAndDrawableVisitor(
+  osg::NodeVisitor::VisitorType type,
+  osg::NodeVisitor::TraversalMode tm
+):
+  NodeVisitor(type, tm)
 {
 }
 
@@ -43,16 +47,16 @@ NodeAndDrawableVisitor::~NodeAndDrawableVisitor()
 {
 }
 
-void NodeAndDrawableVisitor::apply(Node& node)
+void NodeAndDrawableVisitor::apply(osg::Node& node)
 {
     traverse(node);
 }
 
-void NodeAndDrawableVisitor::apply(Drawable& Drawable)
+void NodeAndDrawableVisitor::apply(osg::Drawable& Drawable)
 {
 }
 
-void NodeAndDrawableVisitor::traverse(Node& node)
+void NodeAndDrawableVisitor::traverse(osg::Node& node)
 {
     TraversalMode tm = getTraversalMode();
     if (tm == TRAVERSE_NONE) {

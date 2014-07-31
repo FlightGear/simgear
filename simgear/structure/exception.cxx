@@ -13,8 +13,6 @@
 
 #include <simgear/misc/sg_path.hxx>
 
-using std::string;
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_location class.
 ////////////////////////////////////////////////////////////////////////
@@ -148,10 +146,10 @@ sg_throwable::getMessage () const
   return _message;
 }
 
-const string
+const std::string
 sg_throwable::getFormattedMessage () const
 {
-  return string(getMessage());
+  return std::string(getMessage());
 }
 
 void
@@ -204,7 +202,7 @@ sg_error::sg_error (const char* message, const char *origin)
 {
 }
 
-sg_error::sg_error (const string& message, const string& origin)
+sg_error::sg_error(const std::string& message, const std::string& origin)
   : sg_throwable(message.c_str(), origin.c_str())
 {
 }
@@ -212,7 +210,7 @@ sg_error::sg_error (const string& message, const string& origin)
 sg_error::~sg_error () throw ()
 {
 }
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_exception class.
 ////////////////////////////////////////////////////////////////////////
@@ -227,7 +225,8 @@ sg_exception::sg_exception (const char* message, const char* origin)
 {
 }
 
-sg_exception::sg_exception (const string& message, const string& origin)
+sg_exception::sg_exception( const std::string& message,
+                            const std::string& origin )
   : sg_throwable(message.c_str(), origin.c_str())
 {
 }
@@ -235,7 +234,7 @@ sg_exception::sg_exception (const string& message, const string& origin)
 sg_exception::~sg_exception () throw ()
 {
 }
-
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_io_exception.
 ////////////////////////////////////////////////////////////////////////
@@ -258,34 +257,36 @@ sg_io_exception::sg_io_exception (const char* message,
 {
 }
 
-sg_io_exception::sg_io_exception (const string& message, const string& origin)
+sg_io_exception::sg_io_exception( const std::string& message,
+                                  const std::string& origin )
   : sg_exception(message, origin)
 {
 }
 
-sg_io_exception::sg_io_exception (const string& message,
-				  const sg_location &location,
-				  const string& origin)
+sg_io_exception::sg_io_exception( const std::string& message,
+                                  const sg_location &location,
+                                  const std::string& origin )
   : sg_exception(message, origin),
     _location(location)
 {
 }
 
-sg_io_exception::sg_io_exception (const string &message, const SGPath& origin)
+sg_io_exception::sg_io_exception( const std::string &message,
+                                  const SGPath& origin )
     : sg_exception(message, origin.str())
 {
-    
+
 }
 
 sg_io_exception::~sg_io_exception () throw ()
 {
 }
 
-const string
+const std::string
 sg_io_exception::getFormattedMessage () const
 {
-  string ret = getMessage();
-  string loc = getLocation().asString();
+  std::string ret = getMessage();
+  std::string loc = getLocation().asString();
   if (loc.length()) {
     ret += "\n at ";
     ret += loc;
@@ -325,9 +326,9 @@ sg_format_exception::sg_format_exception (const char* message,
   setText(text);
 }
 
-sg_format_exception::sg_format_exception (const string& message,
-					  const string& text,
-					  const string& origin)
+sg_format_exception::sg_format_exception( const std::string& message,
+                                          const std::string& text,
+                                          const std::string& origin )
   : sg_exception(message, origin)
 {
   setText(text.c_str());
@@ -371,8 +372,8 @@ sg_range_exception::sg_range_exception (const char* message,
 {
 }
 
-sg_range_exception::sg_range_exception(const string& message,
-                                       const string& origin)
+sg_range_exception::sg_range_exception(const std::string& message,
+                                       const std::string& origin)
   : sg_exception(message, origin)
 {
 }

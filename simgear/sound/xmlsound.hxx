@@ -1,30 +1,26 @@
-// sound.hxx -- Sound class implementation
+///@file
+/// Sound class implementation
+///
+/// Provides a class to manage a single sound event including things like
+/// looping, volume and pitch changes.
 //
 // Started by Erik Hofman, February 2002
 //
 // Copyright (C) 2002  Erik Hofman - erik@ehofman.com
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// Library General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
-/** 
- * \file sound.hxx 
- * Provides a class to manage a single sound event including things
- * like looping, volume and pitch changes.
- */
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef _SG_SOUND_HXX
 #define _SG_SOUND_HXX 1
@@ -71,6 +67,7 @@ public:
    * and a sound manager class has to be defined.
    *
    * A sound configuration file would look like this:
+   * @code{xml}
    *  <fx>
    *   <event_name>
    *    <name/> Define the name of the event. For reference only.
@@ -98,16 +95,20 @@ public:
    *   <event_name>
    *   </event_name>
    *  </fx>
+   * @endcode
    *
-   * @param root The root node of the programs property tree.
-   * @param child A pointer to the location of the current event as defined
-   * in the configuration file.
-   * @param sgrp A pointer to a pre-initialized sample group class.
-   * @param avionics A pointer to the pre-initialized avionics sample group.
-   * @param path The path where the audio files remain.
+   * @param root        The root node of the programs property tree.
+   * @param child       A pointer to the location of the current event as
+   *                    defined in the configuration file.
+   * @param sgrp        A pointer to a pre-initialized sample group class.
+   * @param avionics    A pointer to the pre-initialized avionics sample group.
+   * @param path        The path where the audio files remain.
    */
-  virtual void init (SGPropertyNode *, SGPropertyNode *, SGSampleGroup *,
-                     SGSampleGroup *, const SGPath& currentDir);
+  virtual void init( SGPropertyNode *root,
+                     SGPropertyNode *child,
+                     SGSampleGroup *sgrp,
+                     SGSampleGroup *avionics,
+                     const SGPath& path );
 
   /**
    * Check whether an event has happened and if action has to be taken.

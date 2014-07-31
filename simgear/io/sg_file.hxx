@@ -1,37 +1,31 @@
-/** \file sg_file.hxx
- * File I/O routines.
- */
-
+///@file
+/// File I/O routines.
+//
 // Written by Curtis Olson, started November 1999.
 //
 // Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// Library General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef _SG_FILE_HXX
 #define _SG_FILE_HXX
 
 #include <simgear/compiler.h>
-
-#include <string>
-
 #include "iochannel.hxx"
 
+#include <string>
 
 /**
  * A file I/O class based on SGIOChannel.
@@ -91,7 +85,4 @@ public:
     virtual bool eof() const { return eof_flag; };
 };
 
-
 #endif // _SG_FILE_HXX
-
-

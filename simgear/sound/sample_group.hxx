@@ -1,30 +1,26 @@
-// sample_group.hxx -- Manage a group of samples relative to a base position
+///@file
+/// Manage a group of samples relative to a base position
+///
+/// Sample groups contain all sounds related to one specific object and
+/// have to be added to the sound manager, otherwise they won't get processed.
 //
 // Written for the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// Library General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software Foundation,
-// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
-/**
- * \file sample_group.hxx
- * sample groups contain all sounds related to one specific object and
- * have to be added to the sound manager, otherwise they won't get processed.
- */
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef _SG_SAMPLE_GROUP_OPENAL_HXX
 #define _SG_SAMPLE_GROUP_OPENAL_HXX 1
@@ -137,7 +133,7 @@ public:
      * @param looping Define if the sound should loop continuously
      * @return true if the audio sample exsists and is scheduled for playing
      */
-    bool play( const std::string& refname, bool looping );
+    bool play( const std::string& refname, bool looping = false );
     
     /**
      * Request to start playing the referred audio sample looping.

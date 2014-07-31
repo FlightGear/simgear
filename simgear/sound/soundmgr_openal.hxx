@@ -1,4 +1,8 @@
-// soundmgr.hxx -- Sound effect management class
+///@file
+/// Sound effect management class
+///
+/// Provides a sound manager class to keep track of multiple sounds and manage
+/// playing them with different effects and timings.
 //
 // Sound manager initially written by David Findlay
 // <david_j_findlay@yahoo.com.au> 2001
@@ -9,28 +13,19 @@
 // Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
 // Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// Library General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software Foundation,
-// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
-/**
- * \file soundmgr.hxx
- * Provides a sound manager class to keep track of
- * multiple sounds and manage playing them with different effects and
- * timings.
- */
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef _SG_SOUNDMGR_OPENAL_HXX
 #define _SG_SOUNDMGR_OPENAL_HXX 1
@@ -114,13 +109,16 @@ public:
 
     /**
      * Find a specified sample group in the sound manager
+     *
      * @param refname Reference name of the sample group to find
+     * @param create  If the group should be create if it does not exist
      * @return A pointer to the SGSampleGroup
      */
     SGSampleGroup *find( const std::string& refname, bool create = false );
 
     /**
      * Set the Cartesian position of the sound manager.
+     *
      * @param pos OpenAL listener position
      */
     void set_position( const SGVec3d& pos, const SGGeod& pos_geod );
@@ -132,6 +130,7 @@ public:
     /**
      * Get the position of the sound manager.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     *
      * @return OpenAL listener position
      */
     const SGVec3d& get_position() const;
@@ -139,7 +138,8 @@ public:
     /**
      * Set the velocity vector (in meters per second) of the sound manager
      * This is the horizontal local frame; x=north, y=east, z=down
-     * @param Velocity vector
+     *
+     * @param vel Velocity vector
      */
     void set_velocity( const SGVec3d& vel ) {
         _velocity = vel; _changed = true;
@@ -148,18 +148,21 @@ public:
     /**
      * Get the velocity vector of the sound manager
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     *
      * @return Velocity vector of the OpenAL listener
      */
     inline SGVec3f get_velocity() { return toVec3f(_velocity); }
 
     /**
      * Set the orientation of the sound manager
+     *
      * @param ori Quaternation containing the orientation information
      */
     void set_orientation( const SGQuatd& ori );
 
     /**
      * Get the orientation of the sound manager
+     *
      * @return Quaternation containing the orientation information
      */
     const SGQuatd& get_orientation() const;
@@ -167,6 +170,7 @@ public:
     /**
      * Get the direction vector of the sound manager
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     *
      * @return Look-at direction of the OpenAL listener
      */
     SGVec3f get_direction() const;
@@ -179,24 +183,28 @@ public:
 
     /**
      * Set the master volume.
+     *
      * @param vol Volume (must be between 0.0 and 1.0)
      */
     void set_volume( float vol );
 
     /**
      * Get the master volume.
+     *
      * @return Volume (must be between 0.0 and 1.0)
      */
     inline float get_volume() { return _volume; }
 
     /**
      * Get a free OpenAL source-id
+     *
      * @return NO_SOURCE if no source is available
      */
     unsigned int request_source();
 
     /**
      * Free an OpenAL source-id for future use
+     *
      * @param source OpenAL source-id to free
      */
     void release_source( unsigned int source );
@@ -204,6 +212,7 @@ public:
     /**
      * Get a free OpenAL buffer-id
      * The buffer-id will be assigned to the sample by calling this function.
+     *
      * @param sample Pointer to an audio sample to assign the buffer-id to
      * @return NO_BUFFER if loading of the buffer failed.
      */
@@ -211,6 +220,7 @@ public:
 
     /**
      * Free an OpenAL buffer-id for this sample
+     *
      * @param sample Pointer to an audio sample for which to free the buffer
      */
     void release_buffer( SGSoundSample *sample );
@@ -218,6 +228,7 @@ public:
     /**
      * Test if the position of the sound manager has changed.
      * The value will be set to false upon the next call to update_late()
+     *
      * @return true if the position has changed
      */
     inline bool has_changed() { return _changed; }
@@ -232,6 +243,7 @@ public:
 
     /**
      * Load a sample file and return it's configuration and data.
+     *
      * @param samplepath Path to the file to load
      * @param data Pointer to a variable that points to the allocated data
      * @param format Pointer to a vairable that gets the OpenAL format
@@ -239,8 +251,11 @@ public:
      * @param freq Pointer to a vairable that gets the sample frequency in Herz
      * @return true if succesful, false on error
      */
-    bool load(const std::string &samplepath, void **data, int *format,
-                                         size_t *size, int *freq );
+    bool load( const std::string &samplepath,
+               void **data,
+               int *format,
+               size_t *size,
+               int *freq );
 
     /**
      * Get a list of available playback devices.

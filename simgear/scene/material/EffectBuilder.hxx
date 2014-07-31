@@ -295,9 +295,9 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
                                              const char* name);
 
 /**
- * Get the name of a node mentioned in a <use> clause from the global property
+ * Get the name of a node mentioned in a \<use\> clause from the global property
  * tree.
- * @return empty if prop doesn't contain a <use> clause; otherwise the
+ * @return empty if prop doesn't contain a \<use\> clause; otherwise the
  * mentioned node name.
  */
 std::string getGlobalProperty(const SGPropertyNode* prop,
@@ -597,9 +597,9 @@ inline void setDynamicVariance(osg::Object* obj)
 /**
  * Initialize the value and the possible updating of an effect
  * attribute. If the value is specified directly, set it. Otherwise,
- * use the <use> tag to look at the parameters. Again, if there is a
+ * use the \<use\> tag to look at the parameters. Again, if there is a
  * value there set it directly. Otherwise, the parameter contains its
- * own <use> tag referring to a property in the global property tree;
+ * own \<use\> tag referring to a property in the global property tree;
  * install a change listener that will set the attribute when the
  * property changes.
  *
@@ -641,12 +641,12 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
  * The parameter may be updated at runtime.
  *
  * If the value is specified directly, set it. Otherwise, use the
- * <use> tag to look at the parameters. Again, if there is a value
+ * \<use\> tag to look at the parameters. Again, if there is a value
  * there set it directly. Otherwise, the parameter contains one or several
- * <use> tags. If there is one tag, it is a property that is the root
+ * \<use\> tags. If there is one tag, it is a property that is the root
  * for the values needed to update the parameter; nameIter holds the
  * names of the properties relative to the root. If there are several
- * <use> tags, they each hold the name of the property holding the
+ * \<use\> tags, they each hold the name of the property holding the
  * value for the corresponding vector member.
  *
  * Install a change listener that will set the attribute when the

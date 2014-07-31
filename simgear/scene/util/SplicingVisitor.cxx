@@ -16,7 +16,7 @@ void SplicingVisitor::reset()
     NodeVisitor::reset();
 }
 
-NodeList SplicingVisitor::traverse(Node& node)
+NodeList SplicingVisitor::traverse(osg::Node& node)
 {
     NodeList result;
     _childStack.push_back(NodeList());
@@ -25,21 +25,22 @@ NodeList SplicingVisitor::traverse(Node& node)
     _childStack.pop_back();
     return result;
 }
-void SplicingVisitor::apply(Node& node)
+void SplicingVisitor::apply(osg::Node& node)
 {
     NodeVisitor::traverse(node);
     pushNode(&node);
 }
 
-void SplicingVisitor::apply(Group& node)
+void SplicingVisitor::apply(osg::Group& node)
 {
     if (pushNode(getNewNode(node)))
         return;
     pushResultNode(&node, &node, traverse(node));
 }
 
-Group* SplicingVisitor::pushResultNode(Group* node, Group* newNode,
-                                       const NodeList& children)
+osg::Group* SplicingVisitor::pushResultNode( osg::Group* node,
+                                             osg::Group* newNode,
+                                             const osg::NodeList& children )
 {
     ref_ptr<Group> result;
     if (node == newNode) {
@@ -56,21 +57,21 @@ Group* SplicingVisitor::pushResultNode(Group* node, Group* newNode,
     return result.get();
 }
 
-Node* SplicingVisitor::pushResultNode(Node* node, Node* newNode)
+osg::Node* SplicingVisitor::pushResultNode(osg::Node* node, osg::Node* newNode)
 {
     _childStack.back().push_back(newNode);
     recordNewNode(node, newNode);
     return newNode;
 }
 
-Node* SplicingVisitor::pushNode(Node* node)
+osg::Node* SplicingVisitor::pushNode(osg::Node* node)
 {
     if (node)
         _childStack.back().push_back(node);
     return node;
 }
 
-Node* SplicingVisitor::getResult()
+osg::Node* SplicingVisitor::getResult()
 {
     NodeList& top = _childStack.at(0);
     if (top.empty()) {
@@ -87,7 +88,7 @@ Node* SplicingVisitor::getResult()
     }
 }
 
-Node* SplicingVisitor::getNewNode(osg::Node* node)
+osg::Node* SplicingVisitor::getNewNode(osg::Node* node)
 {
     ref_ptr<Node> tmpPtr(node);
     NodeMap::iterator itr;

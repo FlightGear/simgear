@@ -38,21 +38,21 @@ public:
     /**
      * Add an item to the end of the queue.
      *
-     * @param T object to add.
+     * @param item  object to add.
      */
     virtual void push( const T& item ) = 0;
 
     /**
      * View the item from the head of the queue.
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T front() = 0;
 
     /**
      * Get an item from the head of the queue.
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T pop() = 0;
 
@@ -86,12 +86,12 @@ public:
     /**
      * Destroy this object.
      */
-    ~SGLockedQueue() {}
+    virtual ~SGLockedQueue() {}
 
     /**
      * Returns whether this queue is empty (contains no elements).
      *
-     * @return bool True if queue is empty, otherwisr false.
+     * @return True if queue is empty, otherwise false.
      */
     virtual bool empty() {
 	SGGuard<SGMutex> g(mutex);
@@ -101,7 +101,7 @@ public:
     /**
      * Add an item to the end of the queue.
      *
-     * @param T object to add.
+     * @param item object to add.
      */
     virtual void push( const T& item ) {
 	SGGuard<SGMutex> g(mutex);
@@ -111,7 +111,7 @@ public:
     /**
      * View the item from the head of the queue.
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T front() {
 	SGGuard<SGMutex> g(mutex);
@@ -123,7 +123,7 @@ public:
     /**
      * Get an item from the head of the queue.
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T pop() {
 	SGGuard<SGMutex> g(mutex);
@@ -142,7 +142,7 @@ public:
     /**
      * Query the size of the queue
      *
-     * @return size_t size of queue.
+     * @return Size of queue.
      */
     virtual size_t size() {
 	SGGuard<SGMutex> g(mutex);
@@ -178,7 +178,7 @@ public:
     /**
      * Destroy this queue.
      */
-    ~SGBlockingQueue() {}
+    virtual ~SGBlockingQueue() {}
 
     /**
      *
@@ -191,7 +191,7 @@ public:
     /**
      * Add an item to the end of the queue.
      *
-     * @param T object to add.
+     * @param item The object to add.
      */
     virtual void push( const T& item ) {
 	SGGuard<SGMutex> g(mutex);
@@ -203,7 +203,7 @@ public:
      * View the item from the head of the queue.
      * Calling thread is not suspended
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T front() {
 	SGGuard<SGMutex> g(mutex);
@@ -219,7 +219,7 @@ public:
      * Get an item from the head of the queue.
      * If no items are available then the calling thread is suspended
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T pop() {
 	SGGuard<SGMutex> g(mutex);
@@ -238,7 +238,7 @@ public:
     /**
      * Query the size of the queue
      *
-     * @return size_t size of queue.
+     * @return Size of queue.
      */
     virtual size_t size() {
 	SGGuard<SGMutex> g(mutex);
@@ -280,7 +280,7 @@ public:
     /**
      * Destroy this dequeue.
      */
-    ~SGBlockingDeque() {}
+    virtual ~SGBlockingDeque() {}
 
     /**
      *
@@ -301,7 +301,7 @@ public:
     /**
      * Add an item to the front of the queue.
      *
-     * @param T object to add.
+     * @param item The object to add.
      */
     virtual void push_front( const T& item ) {
     SGGuard<SGMutex> g(mutex);
@@ -312,7 +312,7 @@ public:
     /**
      * Add an item to the back of the queue.
      *
-     * @param T object to add.
+     * @param item The object to add.
      */
     virtual void push_back( const T& item ) {
     SGGuard<SGMutex> g(mutex);
@@ -324,7 +324,7 @@ public:
      * View the item from the head of the queue.
      * Calling thread is not suspended
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T front() {
     SGGuard<SGMutex> g(mutex);
@@ -340,7 +340,7 @@ public:
      * Get an item from the head of the queue.
      * If no items are available then the calling thread is suspended
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T pop_front() {
     SGGuard<SGMutex> g(mutex);
@@ -360,7 +360,7 @@ public:
      * Get an item from the tail of the queue.
      * If no items are available then the calling thread is suspended
      *
-     * @return T next available object.
+     * @return The next available object.
      */
     virtual T pop_back() {
     SGGuard<SGMutex> g(mutex);
@@ -379,7 +379,7 @@ public:
     /**
      * Query the size of the queue
      *
-     * @return size_t size of queue.
+     * @return Size of queue.
      */
     virtual size_t size() {
     SGGuard<SGMutex> g(mutex);

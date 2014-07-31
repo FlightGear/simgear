@@ -33,8 +33,6 @@
 #include "soundmgr_openal_private.hxx"
 #include "sample_group.hxx"
 
-using std::string;
-
 #ifdef HAVE_STD_ISNAN
 using std::isnan;
 #endif
@@ -57,7 +55,8 @@ SGSampleGroup::SGSampleGroup () :
     _samples.clear();
 }
 
-SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
+SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr,
+                               const std::string &refname ):
     _smgr(smgr),
     _refname(refname),
     _active(false), 
@@ -227,8 +226,9 @@ void SGSampleGroup::update( double dt ) {
 }
 
 // add a sound effect, return true if successful
-bool SGSampleGroup::add( SGSharedPtr<SGSoundSample> sound, const string& refname ) {
-
+bool SGSampleGroup::add( SGSharedPtr<SGSoundSample> sound,
+                         const std::string& refname )
+{
     sample_map_iterator sample_it = _samples.find( refname );
     if ( sample_it != _samples.end() ) {
         // sample name already exists
@@ -241,7 +241,7 @@ bool SGSampleGroup::add( SGSharedPtr<SGSoundSample> sound, const string& refname
 
 
 // remove a sound effect, return true if successful
-bool SGSampleGroup::remove( const string &refname ) {
+bool SGSampleGroup::remove( const std::string &refname ) {
 
     sample_map_iterator sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
@@ -259,7 +259,7 @@ bool SGSampleGroup::remove( const string &refname ) {
 
 
 // return true of the specified sound exists in the sound manager system
-bool SGSampleGroup::exists( const string &refname ) {
+bool SGSampleGroup::exists( const std::string &refname ) {
     sample_map_iterator sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
         // sample was not found
@@ -272,7 +272,7 @@ bool SGSampleGroup::exists( const string &refname ) {
 
 // return a pointer to the SGSoundSample if the specified sound exists
 // in the sound manager system, otherwise return NULL
-SGSoundSample *SGSampleGroup::find( const string &refname ) {
+SGSoundSample *SGSampleGroup::find( const std::string &refname ) {
     sample_map_iterator sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
         // sample was not found
@@ -353,7 +353,9 @@ SGSampleGroup::resume ()
 
 
 // tell the scheduler to play the indexed sample in a continuous loop
-bool SGSampleGroup::play( const string &refname, bool looping = false ) {
+bool SGSampleGroup::play( const std::string &refname,
+                          bool looping )
+{
     SGSoundSample *sample = find( refname );
 
     if ( sample == NULL ) {
@@ -366,7 +368,7 @@ bool SGSampleGroup::play( const string &refname, bool looping = false ) {
 
 
 // return true of the specified sound is currently being played
-bool SGSampleGroup::is_playing( const string& refname ) {
+bool SGSampleGroup::is_playing( const std::string& refname ) {
     SGSoundSample *sample = find( refname );
 
     if ( sample == NULL ) {
@@ -377,7 +379,7 @@ bool SGSampleGroup::is_playing( const string& refname ) {
 }
 
 // immediate stop playing the sound
-bool SGSampleGroup::stop( const string& refname ) {
+bool SGSampleGroup::stop( const std::string& refname ) {
     SGSoundSample *sample  = find( refname );
 
     if ( sample == NULL ) {
@@ -488,7 +490,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample )
 #endif
 }
 
-bool SGSampleGroup::testForError(void *p, string s)
+bool SGSampleGroup::testForError(void *p, std::string s)
 {
    if (p == NULL) {
       SG_LOG( SG_SOUND, SG_ALERT, "Error (sample group): " << s);
@@ -497,7 +499,7 @@ bool SGSampleGroup::testForError(void *p, string s)
    return false;
 }
 
-bool SGSampleGroup::testForALError(string s)
+bool SGSampleGroup::testForALError(std::string s)
 {
 #ifdef SG_C
     ALenum error = alGetError();

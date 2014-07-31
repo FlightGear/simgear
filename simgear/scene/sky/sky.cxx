@@ -79,9 +79,12 @@ SGSky::~SGSky( void )
 
 // initialize the sky and connect the components to the scene graph at
 // the provided branch
-void SGSky::build( double h_radius_m, double v_radius_m,
-                   double sun_size, double moon_size,
-                   const SGEphemeris& eph, SGPropertyNode *property_tree_node,
+void SGSky::build( double h_radius_m,
+                   double v_radius_m,
+                   double sun_size,
+                   double moon_size,
+                   const SGEphemeris& eph,
+                   SGPropertyNode *property_tree_node,
                    simgear::SGReaderWriterOptions* options )
 {
     dome = new SGSkyDome;

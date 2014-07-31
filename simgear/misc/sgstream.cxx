@@ -27,7 +27,6 @@
 
 #include "sgstream.hxx"
 
-using std::string;
 using std::istream;
 using std::ostream;
 
@@ -40,7 +39,7 @@ sg_gzifstream::sg_gzifstream()
 //
 // Open a possibly gzipped file for reading.
 //
-sg_gzifstream::sg_gzifstream( const string& name, ios_openmode io_mode )
+sg_gzifstream::sg_gzifstream( const std::string& name, ios_openmode io_mode )
     : istream(&gzbuf)
 {
     this->open( name, io_mode );
@@ -65,12 +64,12 @@ sg_gzifstream::sg_gzifstream( int fd, ios_openmode io_mode )
 // then append ".gz" and try again.
 //
 void
-sg_gzifstream::open( const string& name, ios_openmode io_mode )
+sg_gzifstream::open( const std::string& name, ios_openmode io_mode )
 {
     gzbuf.open( name.c_str(), io_mode );
     if ( ! gzbuf.is_open() )
     {
-	string s = name;
+    std::string s = name;
 	if ( s.substr( s.length() - 3, 3 ) == ".gz" )
 	{
 	    // remove ".gz" suffix
@@ -160,7 +159,7 @@ sg_gzofstream::sg_gzofstream()
 //
 // Open a file for gzipped writing.
 //
-sg_gzofstream::sg_gzofstream( const string& name, ios_openmode io_mode )
+sg_gzofstream::sg_gzofstream( const std::string& name, ios_openmode io_mode )
     : ostream(&gzbuf)
 {
     this->open( name, io_mode );
@@ -181,7 +180,7 @@ sg_gzofstream::sg_gzofstream( int fd, ios_openmode io_mode )
 // Open a file for gzipped writing.
 //
 void
-sg_gzofstream::open( const string& name, ios_openmode io_mode )
+sg_gzofstream::open( const std::string& name, ios_openmode io_mode )
 {
     gzbuf.open( name.c_str(), io_mode );
 }

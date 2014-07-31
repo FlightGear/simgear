@@ -1,22 +1,21 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2005-2012 Mathias Froehlich 
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- */
+///@file
+/// Pointer proxy doing reference counting.
+//
+// Copyright (C) 2005-2012 Mathias Froehlich
+//
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library General Public License for more details.
+//
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef SGSharedPtr_HXX
 #define SGSharedPtr_HXX
@@ -31,7 +30,7 @@ class SGWeakPtr;
 /// it is pointing to.
 /// The SGSharedPtr class handles reference counting and possible
 /// destruction if no nore references are in use automatically.
-/// Classes derived from @SGReferenced can be handled with SGSharedPtr.
+/// Classes derived from SGReferenced can be handled with SGSharedPtr.
 /// Once you have a SGSharedPtr available you can use it just like
 /// a usual pointer with the exception that you don't need to delete it.
 /// Such a reference is initialized by zero if not initialized with a

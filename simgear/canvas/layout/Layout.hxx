@@ -81,13 +81,13 @@ namespace canvas
         int     size_hint,
                 min_size,
                 max_size,
-                padding_orig, //<! original padding as specified by the user
-                padding,      //<! padding before element (layouted)
-                size,         //<! layouted size
-                stretch;      //<! stretch factor
+                padding_orig, //!< original padding as specified by the user
+                padding,      //!< padding before element (layouted)
+                size,         //!< layouted size
+                stretch;      //!< stretch factor
         bool    visible : 1,
-                has_hfw : 1,  //<! height for width
-                done : 1;     //<! layouting done
+                has_hfw : 1,  //!< height for width
+                done : 1;     //!< layouting done
 
         /** Clear values (reset to default/empty state) */
         void reset();
@@ -110,12 +110,12 @@ namespace canvas
 
     private:
 
-      int _num_not_done, //<! number of children not layouted yet
-          _sum_stretch,  //<! sum of stretch factors of all not yet layouted
+      int _num_not_done, //!< number of children not layouted yet
+          _sum_stretch,  //!< sum of stretch factors of all not yet layouted
                          //   children
-          _space_stretch,//<! space currently assigned to all not yet layouted
+          _space_stretch,//!< space currently assigned to all not yet layouted
                          //   stretchable children
-          _space_left;   //<! remaining space not used by any child yet
+          _space_left;   //!< remaining space not used by any child yet
 
   };
 

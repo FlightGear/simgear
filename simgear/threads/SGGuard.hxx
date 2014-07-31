@@ -13,21 +13,18 @@ public:
 
     /**
      * Create an SGGuard object and lock the passed lockable object.
-     * @param SGLOCK A lockable object.
+     * @param l A lockable object.
      */
     inline SGGuard( SGLOCK& l ) : lock(l) { lock.lock(); }
 
     /**
-     * Destroy this object and unlock the locakable object.
+     * Destroy this object and unlock the lockable object.
      */
     inline ~SGGuard() { lock.unlock(); }
 
 private:
 
-    /**
-     * A lockable object.
-     */
-    SGLOCK& lock;
+    SGLOCK& lock; //!< A lockable object
 
 private:
     // Disable copying.

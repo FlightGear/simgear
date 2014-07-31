@@ -39,8 +39,8 @@ namespace simgear
       /**
        * Remove the property listener of the element.
        *
-       * You will need to call the appropriate methods (#childAdded,
-       * #childRemoved, #valueChanged) yourself to ensure the element still
+       * You will need to call the appropriate methods (childAdded(),
+       * childRemoved(), valueChanged()) yourself to ensure the element still
        * receives the needed events.
        */
       void removeListener();

@@ -228,12 +228,12 @@ namespace canvas
       ElementWeakPtr _focus_element;
 
       CullCallbackPtr _cull_callback;
-      bool _render_always; //<! Used to disable automatic lazy rendering (culling)
+      bool _render_always; //!< Used to disable automatic lazy rendering (culling)
 
       std::vector<SGPropertyNode*> _dirty_placements;
       std::vector<Placements> _placements;
-      std::set<CanvasWeakPtr> _parent_canvases, //<! Canvases showing this canvas
-                              _child_canvases;  //<! Canvases displayed within
+      std::set<CanvasWeakPtr> _parent_canvases, //!< Canvases showing this canvas
+                              _child_canvases;  //!< Canvases displayed within
                                                 //   this canvas
 
       typedef std::map<std::string, PlacementFactory> PlacementFactoryMap;

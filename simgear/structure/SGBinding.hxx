@@ -41,7 +41,7 @@ public:
     /**
      * Convenience constructor.
      *
-     * @param node The binding will be built from this node.
+     * @param commandName TODO
      */
     SGBinding(const std::string& commandName);
 
@@ -49,8 +49,10 @@ public:
    * Convenience constructor.
    *
    * @param node The binding will be built from this node.
+   * @param root Property root used while building binding.
    */
-  SGBinding (const SGPropertyNode * node, SGPropertyNode* root);
+  SGBinding( const SGPropertyNode *node,
+             SGPropertyNode *root );
 
 
   /**
@@ -97,6 +99,8 @@ public:
    * Read a binding from a property node.
    *
    * @param node The property node containing the binding.
+   * @param root The property root node used while building the binding from
+   *             \a node.
    */
   void read (const SGPropertyNode * node, SGPropertyNode* root);
 

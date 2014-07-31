@@ -111,7 +111,6 @@ public:
     void calcApronPts(double tex_width);
     
 };
-}
 
 void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
                          double clon, double clat,
@@ -238,8 +237,6 @@ void OceanMesh::calcApronPts(double tex_width)
     }
 }
 
-namespace
-{
 // Enter the vertices of triangles that fill one row of the
 // mesh. The vertices are entered in counter-clockwise order.
 void fillDrawElementsRow(int width, short row0Start, short row1Start,

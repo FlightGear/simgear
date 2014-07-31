@@ -36,8 +36,6 @@
 
 #include "interpolater.hxx"
 
-using std::string;
-
 // Constructor -- starts with an empty table.
 SGInterpTable::SGInterpTable()
 {
@@ -55,7 +53,7 @@ SGInterpTable::SGInterpTable(const SGPropertyNode* interpolation)
 
 // Constructor -- loads the interpolation table from the specified
 // file
-SGInterpTable::SGInterpTable( const string& file ) 
+SGInterpTable::SGInterpTable( const std::string& file )
 {
     SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
 

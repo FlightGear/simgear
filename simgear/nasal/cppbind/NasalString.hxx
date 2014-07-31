@@ -47,7 +47,7 @@ namespace nasal
        *
        * @param str   Existing Nasal String
        */
-      String(naRef string);
+      String(naRef str);
 
       const char* c_str() const;
       const char* begin() const;

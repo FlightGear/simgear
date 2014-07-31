@@ -214,13 +214,13 @@ public:
      * orientation.
      * @param p position vector
      * @param up the local up vector
-     * @param lon specifies a rotation about the Z axis
-     * @param lat specifies a rotation about the new Y axis
-     * @param spin specifies a rotation about the new Z axis
-     *        (and orients the sunrise/set effects)
+     * @param lon TODO
+     * @param lat TODO
+     * @param alt TODO
      * @param dt the time elapsed since the last call
      */
-    bool reposition( const SGVec3f& p, const SGVec3f& up,
+    bool reposition( const SGVec3f& p,
+                     const SGVec3f& up,
                      double lon, double lat, double alt,
                      double dt = 0.0 );
 

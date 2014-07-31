@@ -118,7 +118,6 @@ namespace nasal
        *
        * @tparam Sig    Function signature
        * @param name    Member name
-       * @param key     Member key
        */
       template<class Sig, class Key>
       typename boost::enable_if< boost::is_function<Sig>,

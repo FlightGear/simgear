@@ -100,7 +100,7 @@ TextureUpdateVisitor::TextureUpdateVisitor(const osgDB::FilePathList& pathList) 
 {
 }
 
-void TextureUpdateVisitor::apply(Node& node)
+void TextureUpdateVisitor::apply(osg::Node& node)
 {
     StateSet* stateSet = cloneStateSet(node.getStateSet());
     if (stateSet)

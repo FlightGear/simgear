@@ -127,21 +127,22 @@ public:
     
     /**
      * Construct a bucket given a specific location.
-     * @param dlon longitude specified in degrees
-     * @param dlat latitude specified in degrees
+     *
+     * @param geod Geodetic location
      */
     SGBucket(const SGGeod& geod);
 
     /** Construct a bucket given a unique bucket index number.
+     *
      * @param bindex unique bucket index
      */
     SGBucket(const long int bindex);
 
 #ifndef NO_DEPRECATED_API
     /**
-     * Reset a bucket to represent a new lat and lon
-     * @param dlon longitude specified in degrees
-     * @param dlat latitude specified in degrees
+     * Reset a bucket to represent a new location.
+     *
+     * @param geod New geodetic location
      */
     void set_bucket(const SGGeod& geod);
 

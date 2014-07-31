@@ -161,7 +161,7 @@ struct naFunc {
 struct naCCode {
     GC_HEADER;
     union {
-        naCFunction fptr; //<! pointer to simple callback function. Invalid if
+        naCFunction fptr; //!< pointer to simple callback function. Invalid if
                           //   fptru is not NULL.
         struct {
             void* user_data;

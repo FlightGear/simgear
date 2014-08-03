@@ -1,6 +1,7 @@
 include (SimGearComponent)
 
 set(HEADERS
+  AlignFlag_values.hxx
   BoxLayout.hxx
   Layout.hxx
   LayoutItem.hxx

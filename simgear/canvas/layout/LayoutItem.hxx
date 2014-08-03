@@ -89,25 +89,9 @@ namespace canvas
    */
   enum AlignmentFlag
   {
-    AlignFill = 0,            //!< Use all available space
-
-    AlignLeft = 0x01,         //!< Align with left edge
-    AlignRight = 0x02,        //!< Align with right edge
-    AlignHCenter = 0x04,      //!< Center horizontally in available space
-
-    AlignTop = 0x20,          //!< Align with top edge
-    AlignBottom = 0x40,       //!< Align with bottom edge
-    AlignVCenter = 0x80,      //!< Center vertically in available space
-
-    AlignCenter = AlignVCenter  //!< Center both vertically and horizontally
-                | AlignHCenter,
-
-    AlignHorizontal_Mask = AlignLeft
-                         | AlignRight
-                         | AlignHCenter,
-    AlignVertical_Mask = AlignTop
-                       | AlignBottom
-                       | AlignVCenter
+#define ALIGN_ENUM_MAPPING(key, val, comment) key = val, /*!< comment */
+#  include "AlignFlag_values.hxx"
+#undef ALIGN_ENUM_MAPPING
   };
 
   /**

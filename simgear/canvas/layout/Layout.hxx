@@ -69,6 +69,18 @@ namespace canvas
        */
       virtual void clear();
 
+      /**
+       * Get the actual geometry of this layout given the rectangle \a geom
+       * taking into account the alignment flags and size hints. For layouts,
+       * if no alignment (different to AlignFill) is set, the whole area is
+       * used. Excess space is distributed by the layouting algorithm and
+       * handled by the individual children.
+       *
+       * @param geom    Area available to this layout.
+       * @return The resulting geometry for this layout.
+       */
+      virtual SGRecti alignmentRect(const SGRecti& geom) const;
+
     protected:
       enum LayoutFlags
       {
@@ -86,6 +98,7 @@ namespace canvas
                 size,         //!< layouted size
                 stretch;      //!< stretch factor
         bool    visible : 1,
+                has_align: 1, //!< Has alignment factor set (!= AlignFill)
                 has_hfw : 1,  //!< height for width
                 done : 1;     //!< layouting done
 
@@ -95,6 +108,8 @@ namespace canvas
         int hfw(int w) const;
         int mhfw(int w) const;
       };
+
+      Layout();
 
       virtual void contentsRectChanged(const SGRecti& rect);
 

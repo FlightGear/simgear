@@ -49,13 +49,18 @@ namespace canvas
 
       virtual void addItem(const LayoutItemRef& item);
 
-      void addItem(const LayoutItemRef& item, int stretch);
+      void addItem( const LayoutItemRef& item,
+                    int stretch,
+                    uint8_t alignment = 0 );
 
       void addStretch(int stretch = 0);
 
       void addSpacing(int size);
 
-      void insertItem(int index, const LayoutItemRef& item, int stretch = 0);
+      void insertItem( int index,
+                       const LayoutItemRef& item,
+                       int stretch = 0,
+                       uint8_t alignment = 0 );
 
       void insertStretch(int index, int stretch = 0);
 

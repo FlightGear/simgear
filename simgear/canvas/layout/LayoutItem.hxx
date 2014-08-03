@@ -83,6 +83,34 @@ namespace canvas
   };
 
   /**
+   * Flags for LayoutItem alignment inside Layouts.
+   *
+   * @note You can only use one horizontal and one vertical flag at the same.
+   */
+  enum AlignmentFlag
+  {
+    AlignFill = 0,            //!< Use all available space
+
+    AlignLeft = 0x01,         //!< Align with left edge
+    AlignRight = 0x02,        //!< Align with right edge
+    AlignHCenter = 0x04,      //!< Center horizontally in available space
+
+    AlignTop = 0x20,          //!< Align with top edge
+    AlignBottom = 0x40,       //!< Align with bottom edge
+    AlignVCenter = 0x80,      //!< Center vertically in available space
+
+    AlignCenter = AlignVCenter  //!< Center both vertically and horizontally
+                | AlignHCenter,
+
+    AlignHorizontal_Mask = AlignLeft
+                         | AlignRight
+                         | AlignHCenter,
+    AlignVertical_Mask = AlignTop
+                       | AlignBottom
+                       | AlignVCenter
+  };
+
+  /**
    * Base class for all layouting elements. Specializations either implement a
    * layouting algorithm or a widget.
    */
@@ -186,6 +214,22 @@ namespace canvas
        */
       int minimumHeightForWidth(int w) const;
 
+      /**
+       * Set alignment of item within @link{Layout Layouts}.
+       *
+       * @param alignment Bitwise combination of vertical and horizontal
+       *                  alignment flags.
+       * @see AlignmentFlag
+       */
+      void setAlignment(uint8_t alignment);
+
+      /**
+       * Get all alignment flags.
+       *
+       * @see AlignmentFlag
+       */
+      uint8_t alignment() const;
+
       virtual void setVisible(bool visible);
       virtual bool isVisible() const;
 
@@ -219,6 +263,20 @@ namespace canvas
        * Get position and size of this element.
        */
       virtual SGRecti geometry() const;
+
+      /**
+       * Get the actual geometry of this item given the rectangle \a geom
+       * taking into account the alignment flags and size hints.
+       *
+       * @param geom    Area available to this item.
+       * @return The resulting geometry for this item.
+       *
+       * @see setAlignment()
+       * @see minimumSize()
+       * @see maximumSize()
+       * @see sizeHint()
+       */
+      virtual SGRecti alignmentRect(const SGRecti& geom) const;
 
       /**
        * Set the canvas this item is attached to.
@@ -266,6 +324,7 @@ namespace canvas
 
       SGRecti           _geometry;
       Margins           _margins;
+      uint8_t           _alignment;
 
       mutable uint32_t  _flags;
       mutable SGVec2i   _size_hint,

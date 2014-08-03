@@ -46,9 +46,11 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void BoxLayout::addItem(const LayoutItemRef& item, int stretch)
+  void BoxLayout::addItem( const LayoutItemRef& item,
+                           int stretch,
+                           uint8_t alignment )
   {
-    insertItem(-1, item, stretch);
+    insertItem(-1, item, stretch, alignment);
   }
 
   //----------------------------------------------------------------------------
@@ -64,11 +66,17 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void BoxLayout::insertItem(int index, const LayoutItemRef& item, int stretch)
+  void BoxLayout::insertItem( int index,
+                              const LayoutItemRef& item,
+                              int stretch,
+                              uint8_t alignment )
   {
     ItemData item_data = {0};
     item_data.layout_item = item;
     item_data.stretch = std::max(0, stretch);
+
+    if( alignment != AlignFill )
+      item->setAlignment(alignment);
 
     if( SGWeakReferenced::count(this) )
       item->setParent(this);
@@ -270,6 +278,11 @@ namespace canvas
       item_data.size_hint = (item.sizeHint().*_get_layout_coord)();
       item_data.has_hfw = item.hasHeightForWidth();
 
+      uint8_t alignment_mask = horiz()
+                             ? AlignHorizontal_Mask
+                             : AlignVertical_Mask;
+      item_data.has_align = (item.alignment() & alignment_mask) != 0;
+
       if( !dynamic_cast<SpacerItem*>(item_data.layout_item.get()) )
       {
         if( is_first )
@@ -452,7 +465,10 @@ namespace canvas
     _layout_data.size_hint = size_hint_save;
 
     // and finally set the layouted geometry for each item
-    int fixed_size = (geom.size().*_get_fixed_coord)();
+    SGVec2i size( 0,
+                 // Always assign all available space. Alignment handles final
+                 // size.
+                 (geom.size().*_get_fixed_coord)() );
     SGVec2i cur_pos( (geom.pos().*_get_layout_coord)(),
                      (geom.pos().*_get_fixed_coord)() );
 
@@ -467,16 +483,7 @@ namespace canvas
         continue;
 
       cur_pos.x() += reverse ? -data.padding - data.size : data.padding;
-
-      SGVec2i size(
-        data.size,
-        std::min( (data.layout_item->maximumSize().*_get_fixed_coord)(),
-                  fixed_size )
-      );
-
-      // Center in fixed direction (TODO allow specifying alignment)
-      int offset_fixed = (fixed_size - size.y()) / 2;
-      cur_pos.y() += offset_fixed;
+      size.x() = data.size;
 
       data.layout_item->setGeometry(SGRecti(
         (cur_pos.*_get_layout_coord)(),
@@ -487,7 +494,6 @@ namespace canvas
 
       if( !reverse )
         cur_pos.x() += data.size;
-      cur_pos.y() -= offset_fixed;
     }
   }
 

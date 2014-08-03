@@ -76,6 +76,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   LayoutItem::LayoutItem():
+    _alignment(AlignFill),
     _flags(VISIBLE),
     _size_hint(0, 0),
     _min_size(0, 0),
@@ -185,6 +186,22 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void LayoutItem::setAlignment(uint8_t align)
+  {
+    if( align == _alignment )
+      return;
+
+    _alignment = align;
+    invalidateParent();
+  }
+
+  //----------------------------------------------------------------------------
+  uint8_t LayoutItem::alignment() const
+  {
+    return _alignment;
+  }
+
+  //----------------------------------------------------------------------------
   void LayoutItem::setVisible(bool visible)
   {
     if( visible )
@@ -232,9 +249,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   void LayoutItem::setGeometry(const SGRecti& geom)
   {
-    if( geom != _geometry )
+    SGRecti ar = alignmentRect(geom);
+    if( ar != _geometry )
     {
-      _geometry = geom;
+      _geometry = ar;
       _flags |= LAYOUT_DIRTY;
     }
 
@@ -245,6 +263,41 @@ namespace canvas
   SGRecti LayoutItem::geometry() const
   {
     return _geometry;
+  }
+
+  //----------------------------------------------------------------------------
+  SGRecti LayoutItem::alignmentRect(const SGRecti& geom) const
+  {
+    uint8_t halign = alignment() & AlignHorizontal_Mask,
+            valign = alignment() & AlignVertical_Mask;
+
+    // Size
+    SGVec2i size = sizeHint();
+
+    if( halign == AlignFill )
+      size.x() = maximumSize().x();
+    size.x() = std::min(size.x(), geom.width());
+
+    if( valign == AlignFill )
+      size.y() = maximumSize().y();
+    else if( hasHeightForWidth() )
+      size.y() = heightForWidth(size.x());
+    size.y() = std::min(size.y(), geom.height());
+
+    // Position
+    SGVec2i pos = geom.pos();
+
+    if( halign & AlignRight )
+      pos.x() += geom.width() - size.x();
+    else if( !(halign & AlignLeft) )
+      pos.x() += (geom.width() - size.x()) / 2;
+
+    if( valign & AlignBottom )
+      pos.y() += geom.height() - size.y();
+    else if( !(valign & AlignTop) )
+      pos.y() += (geom.height() - size.y()) / 2;
+
+    return SGRecti(pos, pos + size);
   }
 
   //----------------------------------------------------------------------------

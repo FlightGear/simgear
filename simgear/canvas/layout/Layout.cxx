@@ -45,6 +45,19 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  SGRecti Layout::alignmentRect(const SGRecti& geom) const
+  {
+    return alignment() == AlignFill
+         // Without explicit alignment (default == AlignFill) use the whole
+         // available space and let the layout and its items distribute the
+         // excess space.
+         ? geom
+
+         // Otherwise align according to flags.
+         : LayoutItem::alignmentRect(geom);
+  }
+
+  //----------------------------------------------------------------------------
   void Layout::ItemData::reset()
   {
     layout_item = 0;
@@ -56,6 +69,7 @@ namespace canvas
     size        = 0;
     stretch     = 0;
     visible     = false;
+    has_align   = false;
     has_hfw     = false;
     done        = false;
   }
@@ -76,6 +90,16 @@ namespace canvas
       return layout_item->minimumHeightForWidth(w);
     else
       return layout_item->minimumSize().y();
+  }
+
+  //----------------------------------------------------------------------------
+  Layout::Layout():
+    _num_not_done(0),
+    _sum_stretch(0),
+    _space_stretch(0),
+    _space_left(0)
+  {
+
   }
 
   //----------------------------------------------------------------------------
@@ -238,11 +262,26 @@ namespace canvas
     else
     {
       _space_left = space.size - space.max_size;
+      int num_align = 0;
       for(int i = 0; i < num_children; ++i)
       {
-        if( items[i].visible )
-          _num_not_done += 1;
+        if( !items[i].visible )
+          continue;
+
+        _num_not_done += 1;
+
+        if( items[i].has_align )
+          num_align += 1;
       }
+
+      SG_LOG(
+        SG_GUI,
+        SG_DEBUG,
+        "Distributing excess space:"
+             " not_done=" << _num_not_done
+         << ", num_align=" << num_align
+         << ", space_left=" << _space_left
+      );
 
       for(int i = 0; i < num_children; ++i)
       {
@@ -250,15 +289,32 @@ namespace canvas
         if( !d.visible )
           continue;
 
+        d.padding = d.padding_orig;
         d.size = d.max_size;
 
-        // Add superfluous space as padding
-        d.padding = d.padding_orig + _space_left
-                                   // Padding after last child...
-                                   / (_num_not_done + 1);
+        int space_add = 0;
 
-        _space_left -= d.padding - d.padding_orig;
-        _num_not_done -= 1;
+        if( d.has_align )
+        {
+          // Equally distribute superfluous space and let each child items
+          // alignment handle the exact usage.
+          space_add = _space_left / num_align;
+          num_align -= 1;
+
+          d.size += space_add;
+        }
+        else if( num_align <= 0 )
+        {
+          // Add superfluous space as padding
+          space_add = _space_left
+                    // Padding after last child...
+                    / (_num_not_done + 1);
+          _num_not_done -= 1;
+
+          d.padding += space_add;
+        }
+
+        _space_left -= space_add;
       }
     }
 

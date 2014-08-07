@@ -181,7 +181,7 @@ else()
         message(STATUS "Sound support: ENABLED")
     endif(ENABLE_SOUND)
     
-    find_package(OpenSceneGraph 3.2.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgUtil)
+    find_package(OpenSceneGraph 3.2.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgViewer osgUtil)
 endif(SIMGEAR_HEADLESS)
 
 find_package(ZLIB REQUIRED)

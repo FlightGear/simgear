@@ -60,9 +60,21 @@ void ShaderGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
     }
 }
 
-BoundingBox ShaderGeometry::computeBound() const
+BoundingBox
+#if OSG_VERSION_LESS_THAN(3,3,2)
+ShaderGeometry::computeBound()
+#else
+ShaderGeometry::computeBoundingBox()
+#endif
+const
 {
-    const BoundingBox& geom_box = _geometry->getBound();
+    const BoundingBox& geom_box =
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      _geometry->getBound();
+#else
+      _geometry->getBoundingBox();
+#endif
+
     BoundingBox bb;
     const Vec4Array* posScales = _posScaleArray.get();
     if (!posScales)

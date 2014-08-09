@@ -140,27 +140,40 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
     EffectGeode::DrawablesIterator itr = begin;
     bool computeNearFar
         = cv->getComputeNearFarMode() != CullVisitor::DO_NOT_COMPUTE_NEAR_FAR;
-    for (int i = 0; i < NUM_DRAWABLES && itr != end; ++itr, ++i) {
-        Drawable* drawable = itr->get();
-        const BoundingBox& bb = drawable->getBound();
-        if ((drawable->getCullCallback()
-             && drawable->getCullCallback()->cull(cv, drawable,
-                                                  &cv->getRenderInfo()))
-            || (isCullingActive && cv->isCulled(bb))) {
-            depth[i] = FLT_MAX;
-            continue;
+    for (int i = 0; i < NUM_DRAWABLES && itr != end; ++itr, ++i)
+    {
+      Drawable* drawable = itr->get();
+
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      const BoundingBox& bb = drawable->getBound();
+      osg::Drawable::CullCallback* cull = drawable->getCullCallback();
+#else
+      const BoundingBox& bb = drawable->getBoundingBox();
+      osg::Drawable::CullCallback* cull =
+        dynamic_cast<osg::Drawable::CullCallback*>(drawable->getCullCallback());
+#endif
+
+      if(   (cull && cull->cull(cv, drawable, &cv->getRenderInfo()))
+         || (isCullingActive && cv->isCulled(bb)) )
+      {
+        depth[i] = FLT_MAX;
+        continue;
+      }
+
+      if( computeNearFar && bb.valid() )
+      {
+        if( !cv->updateCalculatedNearFar(matrix, *drawable, false) )
+        {
+          depth[i] = FLT_MAX;
+          continue;
         }
-        if (computeNearFar && bb.valid()) {
-            if (!cv->updateCalculatedNearFar(matrix, *drawable, false)) {
-                depth[i] = FLT_MAX;
-                continue;
-            }
-        }
-        depth[i] = (bb.valid()
-                    ? cv->getDistanceFromEyePoint(bb.center(), false)
-                    : 0.0f);
-        if (isNaN(depth[i]))
-            depth[i] = FLT_MAX;
+      }
+
+      depth[i] = bb.valid()
+               ? cv->getDistanceFromEyePoint(bb.center(), false)
+               : 0.0f;
+      if( isNaN(depth[i]) )
+        depth[i] = FLT_MAX;
     }
     EffectCullVisitor* ecv = dynamic_cast<EffectCullVisitor*>( cv );
     EffectGeode::DrawablesIterator drawablesEnd = itr;

@@ -23,9 +23,10 @@
 #define _SG_VASI_DRAWABLE_HXX
 
 #include <simgear/compiler.h>
+#include <simgear/math/SGMath.hxx>
 
 #include <osg/Drawable>
-#include <simgear/math/SGMath.hxx>
+#include <osg/Version>
 
 class SGVasiDrawable : public osg::Drawable {
   struct LightData;
@@ -49,7 +50,13 @@ public:
                 const SGVec3f& up);
 
   virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
-  virtual osg::BoundingBox computeBound() const;
+  virtual osg::BoundingBox
+#if OSG_VERSION_LESS_THAN(3,3,2)
+  computeBound()
+#else
+  computeBoundingBox()
+#endif
+  const;
 
 private:
   SGVec4f getColor(float angleDeg) const;

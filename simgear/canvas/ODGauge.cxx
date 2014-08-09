@@ -44,6 +44,7 @@
 #include <osg/ShadeModel>
 #include <osg/StateSet>
 #include <osg/FrameBufferObject> // for GL_DEPTH_STENCIL_EXT on Windows
+#include <osg/Version>
 #include <osgUtil/RenderBin>
 
 #include <cassert>
@@ -266,7 +267,15 @@ namespace canvas
   //----------------------------------------------------------------------------
   void ODGauge::reinit()
   {
-    osg::NodeCallback* cull_callback = camera ? camera->getCullCallback() : 0;
+    osg::NodeCallback* cull_callback =
+      camera
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      ? camera->getCullCallback()
+#else
+      ? dynamic_cast<osg::NodeCallback*>(camera->getCullCallback())
+#endif
+      : 0;
+
     clear();
     allocRT(cull_callback);
   }

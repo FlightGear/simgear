@@ -20,6 +20,7 @@
 #include <simgear/scene/util/parse_color.hxx>
 
 #include <osg/Drawable>
+#include <osg/Version>
 
 #include <vg/openvg.h>
 #include <cassert>
@@ -372,7 +373,13 @@ namespace canvas
       /**
        * Compute the bounding box
        */
-      virtual osg::BoundingBox computeBound() const
+      virtual osg::BoundingBox
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      computeBound()
+#else
+      computeBoundingBox()
+#endif
+      const
       {
         if( _path == VG_INVALID_HANDLE || (_attributes_dirty & PATH) )
           return osg::BoundingBox();

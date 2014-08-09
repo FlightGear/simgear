@@ -24,7 +24,9 @@
 #endif
 
 #include "SGEnlargeBoundingBox.hxx"
+
 #include <osg/Drawable>
+#include <osg/Version>
 
 SGEnlargeBoundingBox::SGEnlargeBoundingBox(float offset) :
   _offset(offset)
@@ -41,7 +43,13 @@ SGEnlargeBoundingBox::SGEnlargeBoundingBox(const SGEnlargeBoundingBox& cb,
 osg::BoundingBox
 SGEnlargeBoundingBox::computeBound(const osg::Drawable& drawable) const
 {
-  osg::BoundingBox bound = drawable.computeBound();
+  osg::BoundingBox bound =
+#if OSG_VERSION_LESS_THAN(3,3,2)
+    drawable.computeBound();
+#else
+    drawable.computeBoundingBox();
+#endif
+
   if (!bound.valid())
     return bound;
   return osg::BoundingBox(bound._min - osg::Vec3(_offset, _offset, _offset),

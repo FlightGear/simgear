@@ -27,6 +27,7 @@
 #include <osg/Drawable>
 #include <osg/Geode>
 #include <osg/StateAttribute>
+#include <osg/Version>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/foreach.hpp>
@@ -649,7 +650,11 @@ namespace canvas
   osg::BoundingBox Element::getBoundingBox() const
   {
     if( _drawable )
+#if OSG_VERSION_LESS_THAN(3,3,2)
       return _drawable->getBound();
+#else
+      return _drawable->getBoundingBox();
+#endif
 
     osg::BoundingBox bb;
 
@@ -672,7 +677,13 @@ namespace canvas
       return osg::BoundingBox();
 
     osg::BoundingBox transformed;
-    const osg::BoundingBox& bb = _drawable->getBound();
+    const osg::BoundingBox& bb =
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      _drawable->getBound();
+#else
+      _drawable->getBoundingBox();
+#endif
+
     for(int i = 0; i < 4; ++i)
       transformed.expandBy( bb.corner(i) * m );
 

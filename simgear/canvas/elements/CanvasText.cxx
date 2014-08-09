@@ -45,7 +45,13 @@ namespace canvas
       SGVec2i sizeForWidth(int w) const;
       osg::Vec2 handleHit(const osg::Vec2f& pos);
 
-      virtual osg::BoundingBox computeBound() const;
+      virtual osg::BoundingBox
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      computeBound()
+#else
+      computeBoundingBox()
+#endif
+      const;
 
     protected:
 
@@ -467,9 +473,20 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  osg::BoundingBox Text::TextOSG::computeBound() const
+  osg::BoundingBox
+#if OSG_VERSION_LESS_THAN(3,3,2)
+  Text::TextOSG::computeBound()
+#else
+  Text::TextOSG::computeBoundingBox()
+#endif
+  const
   {
-    osg::BoundingBox bb = osgText::Text::computeBound();
+    osg::BoundingBox bb =
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      osgText::Text::computeBound();
+#else
+      osgText::Text::computeBoundingBox();
+#endif
 
 #if OSG_VERSION_LESS_THAN(3,1,0)
     if( bb.valid() )

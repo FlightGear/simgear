@@ -104,7 +104,12 @@ SGVasiDrawable::drawImplementation(osg::RenderInfo& renderInfo) const
 }
 
 osg::BoundingBox
-SGVasiDrawable::computeBound() const
+#if OSG_VERSION_LESS_THAN(3,3,2)
+SGVasiDrawable::computeBound()
+#else
+SGVasiDrawable::computeBoundingBox()
+#endif
+const
 {
   osg::BoundingBox bb;
   for (unsigned i = 0; i < _lights.size(); ++i)

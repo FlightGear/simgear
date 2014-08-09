@@ -20,6 +20,7 @@
 #include "UpdateOnceCallback.hxx"
 
 #include <osg/Node>
+#include <osg/NodeVisitor>
 
 namespace simgear
 {

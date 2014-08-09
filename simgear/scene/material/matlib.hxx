@@ -29,6 +29,7 @@
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/math/SGMath.hxx>
 
 #include <memory>
 #include <string>		// Standard C++ string library
@@ -40,6 +41,27 @@ class SGPropertyNode;
 
 namespace simgear { class Effect; }
 namespace osg { class Geode; }
+
+// Material cache class
+class SGMaterialCache : public osg::Referenced
+{
+private:
+    typedef std::map < std::string, SGSharedPtr<SGMaterial> > material_cache;
+    material_cache cache;
+
+public:
+    // Constructor
+    SGMaterialCache ( void );
+
+    // Insertion
+    void insert( const std::string& name, SGSharedPtr<SGMaterial> material );
+
+    // Lookup
+    SGMaterial *find( const std::string& material ) const;
+
+    // Destructor
+    ~SGMaterialCache ( void );
+};
 
 // Material management class
 class SGMaterialLib : public SGReferenced
@@ -59,9 +81,6 @@ private:
 
     material_map matlib;
     
-    typedef std::map < std::string, SGSharedPtr<SGMaterial> > active_material_cache;
-    active_material_cache active_cache;
-    
 public:
 
     // Constructor
@@ -71,24 +90,24 @@ public:
     bool load( const std::string &fg_root, const std::string& mpath,
             SGPropertyNode *prop_root );
     // find a material record by material name
-    SGMaterial *find( const std::string& material ) const;
+    SGMaterial *find( const std::string& material, SGVec2f center ) const;
+    SGMaterial *find( const std::string& material, const SGGeod& center ) const;
 
     /**
-     * Material lookup involves evaluation of SGConditions to determine which
-     * possible material (by season, region, etc) is valid. This involves
-     * vproperty tree queries, so repeated calls to find() can cause
+     * Material lookup involves evaluation of position and SGConditions to
+     * determine which possible material (by season, region, etc) is valid.
+     * This involves property tree queries, so repeated calls to find() can cause
      * race conditions when called from the osgDB pager thread. (especially
      * during startup)
      *
      * To fix this, and also avoid repeated re-evaluation of the material
-     * conditions, we provide a version which uses a cached, threadsafe table
-     * of the currently valid materials. The main thread calls the refresh
-     * method below to evaluate the valid materials, and findCached can be
-     * safely called from other threads with no access to unprotected state.
+     * conditions, we provide factory method to generate a material library
+     * cache of the valid materials based on the current state and a given position.
      */
-    SGMaterial *findCached( const std::string& material ) const;
-    void refreshActiveMaterials();
-    
+
+    SGMaterialCache *generateMatCache( SGVec2f center);
+    SGMaterialCache *generateMatCache( SGGeod center);
+
     material_map_iterator begin() { return matlib.begin(); }
     const_material_map_iterator begin() const { return matlib.begin(); }
 
@@ -99,6 +118,7 @@ public:
 
     // Destructor
     ~SGMaterialLib ( void );
+
 };
 
 typedef SGSharedPtr<SGMaterialLib> SGMaterialLibPtr;

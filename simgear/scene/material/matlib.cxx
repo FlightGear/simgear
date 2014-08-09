@@ -37,6 +37,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
@@ -68,11 +69,11 @@ SGMaterialLib::SGMaterialLib ( void ) :
 bool SGMaterialLib::load( const string &fg_root, const string& mpath,
         SGPropertyNode *prop_root )
 {
-    SGPropertyNode materials;
+    SGPropertyNode materialblocks;
 
     SG_LOG( SG_INPUT, SG_INFO, "Reading materials from " << mpath );
     try {
-        readProperties( mpath, &materials );
+        readProperties( mpath, &materialblocks );
     } catch (const sg_exception &ex) {
         SG_LOG( SG_INPUT, SG_ALERT, "Error reading materials: "
                 << ex.getMessage() );
@@ -82,44 +83,88 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
         = new osgDB::Options;
     options->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     options->setDatabasePath(fg_root);
-    int nMaterials = materials.nChildren();
-    for (int i = 0; i < nMaterials; i++) {
-        const SGPropertyNode *node = materials.getChild(i);
-        if (!strcmp(node->getName(), "material")) {
-            SGSharedPtr<SGMaterial> m = new SGMaterial(options.get(), node, prop_root);
 
-            std::vector<SGPropertyNode_ptr>names = node->getChildren("name");
-            for ( unsigned int j = 0; j < names.size(); j++ ) {
-                string name = names[j]->getStringValue();
-                // cerr << "Material " << name << endl;
-                matlib[name].push_back(m);
-                m->add_name(name);
-                SG_LOG( SG_TERRAIN, SG_DEBUG, "  Loading material "
-                        << names[j]->getStringValue() );
-            }
-        } else {
-            SG_LOG(SG_INPUT, SG_WARN,
-                   "Skipping bad material entry " << node->getName());
-        }
+    simgear::PropertyList blocks = materialblocks.getChildren("region");
+    simgear::PropertyList::const_iterator block_iter = blocks.begin();
+
+    for (; block_iter != blocks.end(); block_iter++) {
+    	SGPropertyNode_ptr node = block_iter->get();
+
+		// Read name node purely for logging purposes
+		const SGPropertyNode *nameNode = node->getChild("name");
+		if (nameNode) {
+			SG_LOG( SG_TERRAIN, SG_INFO, "Loading region "
+					<< nameNode->getStringValue());
+		}
+
+		// Read list of areas
+		AreaList* arealist = new AreaList;
+
+		const simgear::PropertyList areas = node->getChildren("area");
+		simgear::PropertyList::const_iterator area_iter = areas.begin();
+		for (; area_iter != areas.end(); area_iter++) {
+			float x1 = area_iter->get()->getFloatValue("lon1", -180.0f);
+			float x2 = area_iter->get()->getFloatValue("lon2", 180.0);
+			float y1 = area_iter->get()->getFloatValue("lat1", -90.0f);
+			float y2 = area_iter->get()->getFloatValue("lat2", 90.0f);
+			SGRect<float> rect = SGRect<float>(
+					fminf(x1, x2),
+					fminf(y1, y2),
+					fabs(x2 - x1),
+					fabs(y2 - y1));
+			arealist->push_back(rect);
+			SG_LOG( SG_TERRAIN, SG_INFO, " Area ("
+					<< rect.x() << ","
+					<< rect.y() << ") width:"
+					<< rect.width() << " height:"
+					<< rect.height());
+		}
+
+		// Read conditions node
+		const SGPropertyNode *conditionNode = node->getChild("condition");
+		SGSharedPtr<const SGCondition> condition;
+		if (conditionNode) {
+			condition = sgReadCondition(prop_root, conditionNode);
+		}
+
+		// Now build all the materials for this set of areas and conditions
+
+		const simgear::PropertyList materials = node->getChildren("material");
+		simgear::PropertyList::const_iterator materials_iter = materials.begin();
+		for (; materials_iter != materials.end(); materials_iter++) {
+			const SGPropertyNode *node = materials_iter->get();
+			SGSharedPtr<SGMaterial> m =
+					new SGMaterial(options.get(), node, prop_root, arealist, condition);
+
+			std::vector<SGPropertyNode_ptr>names = node->getChildren("name");
+			for ( unsigned int j = 0; j < names.size(); j++ ) {
+				string name = names[j]->getStringValue();
+				// cerr << "Material " << name << endl;
+				matlib[name].push_back(m);
+				m->add_name(name);
+				SG_LOG( SG_TERRAIN, SG_DEBUG, "  Loading material "
+						<< names[j]->getStringValue() );
+			}
+		}
     }
 
     return true;
 }
 
-// find a material record by material name
-SGMaterial *SGMaterialLib::find( const string& material ) const
+// find a material record by material name and tile center
+SGMaterial *SGMaterialLib::find( const string& material, const SGVec2f center ) const
 {
     SGMaterial *result = NULL;
     const_material_map_iterator it = matlib.find( material );
     if ( it != end() ) {            
         // We now have a list of materials that match this
-        // name. Find the first one that either doesn't have
-        // a condition, or has a condition that evaluates
-        // to true.
-        material_list::const_iterator iter = it->second.begin();
-        while (iter != it->second.end()) {            
+        // name. Find the first one that matches.
+    	// We start at the end of the list, as the materials
+    	// list is ordered with the smallest regions at the end.
+        material_list::const_reverse_iterator iter = it->second.rbegin();
+        while (iter != it->second.rend()) {
             result = *iter;
-            if (result->valid()) {
+            if (result->valid(center)) {
                 return result;
             }
             iter++;
@@ -129,30 +174,30 @@ SGMaterial *SGMaterialLib::find( const string& material ) const
     return NULL;
 }
 
-void SGMaterialLib::refreshActiveMaterials()
+// find a material record by material name and tile center
+SGMaterial *SGMaterialLib::find( const string& material, const SGGeod& center ) const
 {
-    active_material_cache newCache;
-    material_map_iterator it = matlib.begin();
-    for (; it != matlib.end(); ++it) {
-        newCache[it->first] = find(it->first);
-    }
-    
-    // use this approach to minimise the time we're holding the lock
-    // lock on the mutex (and hence, would block findCached calls)
-    SGGuard<SGMutex> g(d->mutex);
-    active_cache = newCache;
+	SGVec2f c = SGVec2f(center.getLongitudeDeg(), center.getLatitudeDeg());
+	return find(material, c);
 }
 
-SGMaterial *SGMaterialLib::findCached( const string& material ) const
+SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center)
 {
-    SGGuard<SGMutex> g(d->mutex);
+	SGMaterialCache* newCache = new SGMaterialCache();
+    material_map::const_reverse_iterator it = matlib.rbegin();
+    for (; it != matlib.rend(); ++it) {
+        newCache->insert(it->first, find(it->first, center));
+    }
     
-    active_material_cache::const_iterator it = active_cache.find(material);
-    if (it == active_cache.end())
-        return NULL;
-    
-    return it->second;
+    return newCache;
 }
+
+SGMaterialCache *SGMaterialLib::generateMatCache(SGGeod center)
+{
+	SGVec2f c = SGVec2f(center.getLongitudeDeg(), center.getLatitudeDeg());
+	return SGMaterialLib::generateMatCache(c);
+}
+
 
 // Destructor
 SGMaterialLib::~SGMaterialLib ( void ) {
@@ -175,4 +220,29 @@ const SGMaterial *SGMaterialLib::findMaterial(const osg::Geode* geode)
     if (!userData)
         return 0;
     return userData->getMaterial();
+}
+
+// Constructor
+SGMaterialCache::SGMaterialCache ( void )
+{
+}
+
+// Insertion into the material cache
+void SGMaterialCache::insert(const std::string& name, SGSharedPtr<SGMaterial> material) {
+	cache[name] = material;
+}
+
+// Search of the material cache
+SGMaterial *SGMaterialCache::find(const string& material) const
+{
+    SGMaterialCache::material_cache::const_iterator it = cache.find(material);
+    if (it == cache.end())
+        return NULL;
+
+    return it->second;
+}
+
+// Destructor
+SGMaterialCache::~SGMaterialCache ( void ) {
+    SG_LOG( SG_GENERAL, SG_INFO, "SGMaterialCache::~SGMaterialCache() size=" << cache.size());
 }

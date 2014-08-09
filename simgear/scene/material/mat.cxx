@@ -96,19 +96,27 @@ void SGMaterial::_internal_state::add_texture(const std::string &t, int i)
 
 SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
                         const SGPropertyNode *props,
-                        SGPropertyNode *prop_root )
+                        SGPropertyNode *prop_root,
+                        AreaList *a,
+						SGSharedPtr<const SGCondition> c)
 {
     init();
+    areas = a;
+    condition = c;
     read_properties( options, props, prop_root );
     buildEffectProperties(options);
 }
 
 SGMaterial::SGMaterial( const osgDB::Options* options,
                         const SGPropertyNode *props, 
-                        SGPropertyNode *prop_root)
+                        SGPropertyNode *prop_root,
+                        AreaList *a,
+                        SGSharedPtr<const SGCondition> c)
 {
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(options);
+    areas = a;
+    condition = c;
     init();
     read_properties(opt.get(), props, prop_root);
     buildEffectProperties(opt.get());
@@ -409,12 +417,6 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     } else {
         parameters = new SGPropertyNode();
     }
-
-    // Read conditions node
-    const SGPropertyNode *conditionNode = props->getChild("condition");
-    if (conditionNode) {
-        condition = sgReadCondition(prop_root, conditionNode);
-    }
 }
 
 
@@ -552,13 +554,43 @@ SGMaterialGlyph* SGMaterial::get_glyph (const std::string& name) const
     return it->second;
 }
 
-bool SGMaterial::valid() const
-{ 
-  if (condition) {
-    return condition->test();       
-  } else {
-    return true;
-  }
+bool SGMaterial::valid(SGVec2f loc) const
+{
+	SG_LOG( SG_TERRAIN, SG_BULK, "Checking materials for location ("
+			<< loc.x() << ","
+			<< loc.y() << ")");
+
+	// Check location first again the areas the material is valid for
+	AreaList::const_iterator i = areas->begin();
+
+	if (i == areas->end()) {
+		// No areas defined, so simply check against condition
+		if (condition) {
+			return condition->test();
+		} else {
+			return true;
+		}
+	}
+
+	for (; i != areas->end(); i++) {
+
+		SG_LOG( SG_TERRAIN, SG_BULK, "Checking area ("
+				<< i->x() << ","
+				<< i->y() << ") width:"
+				<< i->width() << " height:"
+				<< i->height());
+		// Areas defined, so check that the tile location falls within it
+		// before checking against condition
+		if (i->contains(loc.x(), loc.y())) {
+			if (condition) {
+				return condition->test();
+			} else {
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 

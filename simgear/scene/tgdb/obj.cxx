@@ -141,7 +141,7 @@ public:
   }
 
   bool
-  insertPtGeometry(const SGBinObject& obj, SGMaterialLib* matlib)
+  insertPtGeometry(const SGBinObject& obj, SGMaterialCache* matcache)
   {
     if (obj.get_pts_v().size() != obj.get_pts_n().size()) {
       SG_LOG(SG_TERRAIN, SG_ALERT,
@@ -151,9 +151,7 @@ public:
 
     for (unsigned grp = 0; grp < obj.get_pts_v().size(); ++grp) {
       std::string materialName = obj.get_pt_materials()[grp];
-      SGMaterial* material = 0;
-      if (matlib)
-          material = matlib->findCached(materialName);
+      SGMaterial* material = matcache->find(materialName);
       SGVec4f color = getMaterialLightColor(material);
 
       if (3 <= materialName.size() && materialName.substr(0, 3) != "RWY") {
@@ -381,11 +379,11 @@ public:
     }
   }
 
-  SGVec2f getTexCoordScale(const std::string& name, SGMaterialLib* matlib)
+  SGVec2f getTexCoordScale(const std::string& name, SGMaterialCache* matcache)
   {
-    if (!matlib)
+    if (!matcache)
       return SGVec2f(1, 1);
-    SGMaterial* material = matlib->findCached(name);
+    SGMaterial* material = matcache->find(name);
     if (!material)
       return SGVec2f(1, 1);
 
@@ -393,7 +391,7 @@ public:
   }
 
   bool
-  insertSurfaceGeometry(const SGBinObject& obj, SGMaterialLib* matlib)
+  insertSurfaceGeometry(const SGBinObject& obj, SGMaterialCache* matcache)
   {
     if (obj.get_tris_n().size() < obj.get_tris_v().size() ||
         obj.get_tris_tcs().size() < obj.get_tris_v().size()) {
@@ -404,7 +402,7 @@ public:
 
     for (unsigned grp = 0; grp < obj.get_tris_v().size(); ++grp) {
       std::string materialName = obj.get_tri_materials()[grp];
-      SGVec2f tc0Scale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc0Scale = getTexCoordScale(materialName, matcache);
       SGVec2f tc1Scale(1.0, 1.0);
       addTriangleGeometry(materialTriangleMap[materialName],
                           obj, grp, tc0Scale, tc1Scale );
@@ -418,7 +416,7 @@ public:
     }
     for (unsigned grp = 0; grp < obj.get_strips_v().size(); ++grp) {
       std::string materialName = obj.get_strip_materials()[grp];
-      SGVec2f tc0Scale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc0Scale = getTexCoordScale(materialName, matcache);
       SGVec2f tc1Scale(1.0, 1.0);
       addStripGeometry(materialTriangleMap[materialName],
                           obj, grp, tc0Scale, tc1Scale);
@@ -432,7 +430,7 @@ public:
     }
     for (unsigned grp = 0; grp < obj.get_fans_v().size(); ++grp) {
       std::string materialName = obj.get_fan_materials()[grp];
-      SGVec2f tc0Scale = getTexCoordScale(materialName, matlib);
+      SGVec2f tc0Scale = getTexCoordScale(materialName, matcache);
       SGVec2f tc1Scale(1.0, 1.0);
       addFanGeometry(materialTriangleMap[materialName],
                        obj, grp, tc0Scale, tc1Scale );
@@ -440,7 +438,7 @@ public:
     return true;
   }
 
-  osg::Node* getSurfaceGeometry(SGMaterialLib* matlib, bool useVBOs) const
+  osg::Node* getSurfaceGeometry(SGMaterialCache* matcache, bool useVBOs) const
   {
     if (materialTriangleMap.empty())
       return 0;
@@ -456,8 +454,8 @@ public:
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       osg::Geometry* geometry = i->second.buildGeometry(useVBOs);
       SGMaterial *mat = NULL;
-      if (matlib) {
-        mat = matlib->findCached(i->first);
+      if (matcache) {
+        mat = matcache->find(i->first);
       }
       eg = new EffectGeode;
       eg->setName("EffectGeode");
@@ -478,7 +476,7 @@ public:
     }
   }
 
-  void computeRandomSurfaceLights(SGMaterialLib* matlib)
+  void computeRandomSurfaceLights(SGMaterialCache* matcache)
   {
     SGMaterialTriangleMap::iterator i;
 
@@ -487,7 +485,7 @@ public:
     mt_init(&seed, unsigned(123));
 
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      SGMaterial *mat = matlib->findCached(i->first);
+      SGMaterial *mat = matcache->find(i->first);
       if (!mat)
         continue;
 
@@ -530,7 +528,7 @@ public:
   }
 
   void computeRandomObjectsAndBuildings(
-    SGMaterialLib* matlib,
+    SGMaterialCache* matcache,
     float building_density,
     bool use_random_objects,
     bool use_random_buildings,
@@ -543,7 +541,7 @@ public:
     mt_init(&seed, unsigned(123));
 
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      SGMaterial *mat = matlib->findCached(i->first);
+      SGMaterial *mat = matcache->find(i->first);
       SGTexturedTriangleBin triangleBin = i->second;
 
       if (!mat)
@@ -850,7 +848,7 @@ public:
     }
   }
 
-  void computeRandomForest(SGMaterialLib* matlib, float vegetation_density)
+  void computeRandomForest(SGMaterialCache* matcache, float vegetation_density)
   {
     SGMaterialTriangleMap::iterator i;
 
@@ -860,7 +858,7 @@ public:
     mt_init(&seed, unsigned(586));
 
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      SGMaterial *mat = matlib->findCached(i->first);
+      SGMaterial *mat = matcache->find(i->first);
       if (!mat)
         continue;
 
@@ -910,11 +908,11 @@ public:
     }
   }
 
-  bool insertBinObj(const SGBinObject& obj, SGMaterialLib* matlib)
+  bool insertBinObj(const SGBinObject& obj, SGMaterialCache* matcache)
   {
-    if (!insertPtGeometry(obj, matlib))
+    if (!insertPtGeometry(obj, matcache))
       return false;
-    if (!insertSurfaceGeometry(obj, matlib))
+    if (!insertSurfaceGeometry(obj, matcache))
       return false;
     return true;
   }
@@ -978,6 +976,7 @@ public:
         return NULL;
 
       SGMaterialLibPtr matlib;
+      SGMaterialCache* matcache = 0;
       bool useVBOs = false;
       bool simplifyNear    = false;
       double ratio       = SG_SIMPLIFIER_RATIO;
@@ -1001,6 +1000,9 @@ public:
       SGGeod geodPos = SGGeod::fromCart(center);
       SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
 
+      // Generate a materials cache
+      if (matlib) matcache = matlib->generateMatCache(geodPos);
+
       // rotate the tiles so that the bounding boxes get nearly axis aligned.
       // this will help the collision tree's bounding boxes a bit ...
       std::vector<SGVec3d> nodes = tile.get_wgs84_nodes();
@@ -1016,10 +1018,10 @@ public:
 
       osg::ref_ptr<SGTileGeometryBin> tileGeometryBin = new SGTileGeometryBin;
 
-      if (!tileGeometryBin->insertBinObj(tile, matlib))
+      if (!tileGeometryBin->insertBinObj(tile, matcache))
         return NULL;
 
-      osg::Node* node = tileGeometryBin->getSurfaceGeometry(matlib, useVBOs);
+      osg::Node* node = tileGeometryBin->getSurfaceGeometry(matcache, useVBOs);
       if (node && simplifyNear) {
         osgUtil::Simplifier simplifier(ratio, maxError, maxLength);
         node->accept(simplifier);
@@ -1031,14 +1033,8 @@ public:
     // Generate all the lighting objects for the tile.
     osg::LOD* generateLightingTileObjects()
     {
-      SGMaterialLibPtr matlib;
-
-      if (_options)
-        matlib = _options->getMaterialLib();
-
-      // FIXME: ugly, has a side effect
-      if (matlib)
-        _tileGeometryBin->computeRandomSurfaceLights(matlib);
+      if (_matcache)
+        _tileGeometryBin->computeRandomSurfaceLights(_matcache);
 
       GroundLightManager* lightManager = GroundLightManager::instance();
       osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
@@ -1080,14 +1076,14 @@ public:
         vasiGeode->setEffect(vasiEffect);
         SGVec4f red(1, 0, 0, 1);
         SGMaterial* mat = 0;
-        if (matlib)
-          mat = matlib->findCached("RWY_RED_LIGHTS");
+        if (_matcache)
+          mat = _matcache->find("RWY_RED_LIGHTS");
         if (mat)
           red = mat->get_light_color();
         SGVec4f white(1, 1, 1, 1);
         mat = 0;
-        if (matlib)
-          mat = matlib->findCached("RWY_WHITE_LIGHTS");
+        if (_matcache)
+          mat = _matcache->find("RWY_WHITE_LIGHTS");
         if (mat)
           white = mat->get_light_color();
         SGDirectionalLightListBin::const_iterator i;
@@ -1211,7 +1207,7 @@ public:
 
 
       if (matlib && (use_random_objects || use_random_buildings)) {
-        _tileGeometryBin->computeRandomObjectsAndBuildings(matlib,
+        _tileGeometryBin->computeRandomObjectsAndBuildings(_matcache,
                                                          building_density,
                                                          use_random_objects,
                                                          use_random_buildings,
@@ -1274,7 +1270,7 @@ public:
 
       if (use_random_vegetation && matlib) {
         // Now add some random forest.
-        _tileGeometryBin->computeRandomForest(matlib, vegetation_density);
+        _tileGeometryBin->computeRandomForest(_matcache, vegetation_density);
 
         if (! _tileGeometryBin->randomForest.empty()) {
           forestNode = createForest(_tileGeometryBin->randomForest, osg::Matrix::identity(),
@@ -1301,6 +1297,7 @@ public:
 
     /// The original options to use for this bunch of models
     osg::ref_ptr<SGReaderWriterOptions> _options;
+    osg::ref_ptr<SGMaterialCache> _matcache;
     osg::ref_ptr<SGTileGeometryBin> _tileGeometryBin;
     string _path;
     bool _loadterrain;
@@ -1314,6 +1311,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       return NULL;
 
     SGMaterialLibPtr matlib;
+    osg::ref_ptr<SGMaterialCache> matcache;
     bool useVBOs = false;
     bool simplifyDistant = false;
     bool simplifyNear    = false;
@@ -1340,6 +1338,8 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     SGVec3d center = tile.get_gbs_center();
     SGGeod geodPos = SGGeod::fromCart(center);
     SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
+    if (matlib)
+    	matcache = matlib->generateMatCache(geodPos);
 
     // rotate the tiles so that the bounding boxes get nearly axis aligned.
     // this will help the collision tree's bounding boxes a bit ...
@@ -1356,11 +1356,10 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
 
     osg::ref_ptr<SGTileGeometryBin> tileGeometryBin = new SGTileGeometryBin;
 
-    if (!tileGeometryBin->insertBinObj(tile, matlib))
+    if (!tileGeometryBin->insertBinObj(tile, matcache))
       return NULL;
 
-
-    osg::Node* node = tileGeometryBin->getSurfaceGeometry(matlib, useVBOs);
+    osg::Node* node = tileGeometryBin->getSurfaceGeometry(matcache, useVBOs);
     if (node && simplifyDistant) {
       osgUtil::Simplifier simplifier(ratio, maxError, maxLength);
       node->accept(simplifier);
@@ -1399,6 +1398,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     randomObjectCallback->_tileGeometryBin = tileGeometryBin;
     randomObjectCallback->_path = std::string(path);
     randomObjectCallback->_loadterrain = ! (simplifyNear == simplifyDistant);
+    randomObjectCallback->_matcache = matcache;
 
     osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
     callbackOptions->setReadFileCallback(randomObjectCallback.get());

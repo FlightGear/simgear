@@ -42,13 +42,17 @@ namespace osg
 class StateSet;
 }
 
-
-typedef osg::ref_ptr<osg::Texture2D> Texture2DRef;
-    
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/threads/SGThread.hxx> // for SGMutex
+#include <simgear/math/SGLimits.hxx>
+#include <simgear/math/SGMisc.hxx>
 #include <simgear/math/SGMath.hxx>
+#include <simgear/math/SGVec2.hxx>
+#include <simgear/math/SGRect.hxx>
 #include <simgear/bvh/BVHMaterial.hxx>
+
+typedef osg::ref_ptr<osg::Texture2D> Texture2DRef;
+typedef std::vector<SGRect <float> > AreaList;
 
 namespace simgear
 {
@@ -88,13 +92,19 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const osgDB::Options*, 
-              const SGPropertyNode *props, 
-              SGPropertyNode *prop_root);
+  SGMaterial(const osgDB::Options*,
+             const SGPropertyNode *props,
+             SGPropertyNode *prop_root,
+             AreaList *a,
+			 SGSharedPtr<const SGCondition> c);
+
 
   SGMaterial(const simgear::SGReaderWriterOptions*,
              const SGPropertyNode *props,
-             SGPropertyNode *prop_root);
+             SGPropertyNode *prop_root,
+             AreaList *a,
+			 SGSharedPtr<const SGCondition> c);
+
   /**
    * Destructor.
    */
@@ -306,9 +316,9 @@ public:
   
   /**
    * Evaluate whether this material is valid given the current global
-   * property state.
+   * property state and the tile location.
    */
-     bool valid() const;
+     bool valid(SGVec2f loc) const;
 
   /**
    * Return pointer to glyph class, or 0 if it doesn't exist.
@@ -474,6 +484,9 @@ private:
   // Condition, indicating when this material is active
   SGSharedPtr<const SGCondition> condition;
   
+  // List of geographical rectangles for this material
+  AreaList* areas;
+
   // Parameters from the materials file
   const SGPropertyNode* parameters;
 

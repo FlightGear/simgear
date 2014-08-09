@@ -260,7 +260,7 @@ AirportSignBuilder::AirportSignBuilder(SGMaterialLib* mats, const SGGeod& center
     
     assert(mats);
     d->materials = mats;
-    d->signCaseGeometry = d->getGeometry(d->materials->find("signcase")->get_effect());
+    d->signCaseGeometry = d->getGeometry(d->materials->find("signcase", center)->get_effect());
 }
 
 osg::Node* AirportSignBuilder::getSignsGroup()
@@ -430,7 +430,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
         }
 
         if (! newmat.empty()) {
-            material = d->materials->find(newmat);
+            material = d->materials->find(newmat, pos);
             newmat.clear();
         }
 
@@ -504,7 +504,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
   // Part II: typeset
     double boxwidth = std::max(total_width1, total_width2) * 0.5;
     double hpos = -boxwidth;
-    SGMaterial *mat = d->materials->find("signcase");
+    SGMaterial *mat = d->materials->find("signcase", pos);
   
     double coverSize = fabs(total_width1 - total_width2) * 0.5;
     element_info* s1 = new element_info(mat, mat->get_glyph("cover1"), sign_height, coverSize);

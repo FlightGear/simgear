@@ -31,6 +31,7 @@
 #include <osg/Geometry>
 #include <osg/PrimitiveSet>
 #include <osgDB/Registry>
+#include <osg/Version>
 
 namespace simgear
 {

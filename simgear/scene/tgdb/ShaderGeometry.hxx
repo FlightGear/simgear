@@ -32,6 +32,7 @@
 #include <osg/RenderInfo>
 #include <osg/Vec3>
 #include <osg/Vec4>
+#include <osg/Version>
 
 namespace simgear
 {

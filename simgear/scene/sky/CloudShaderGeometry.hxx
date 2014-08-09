@@ -32,6 +32,7 @@
 #include <osg/Vec3>
 #include <osg/Vec4>
 #include <osg/buffered_value>
+#include <osg/Version>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/math/sg_random.h>

@@ -1045,7 +1045,11 @@ public:
         osg::Group* groundLights0 = new osg::Group;
         groundLights0->setStateSet(lightManager->getGroundLightStateSet());
         groundLights0->setNodeMask(GROUNDLIGHTS0_BIT);
-        osg::Geode* geode = new osg::Geode;
+
+        EffectGeode* geode = new EffectGeode;
+        Effect*  lightEffect = getLightEffect(24, osg::Vec3(1, 0.001, 0.00001), 1, 8, false, _options);
+
+        geode->setEffect(lightEffect);
         geode->addDrawable(SGLightFactory::getLights(_tileGeometryBin->tileLights));
         geode->addDrawable(SGLightFactory::getLights(_tileGeometryBin->randomTileLights, 4, -0.3f));
         groundLights0->addChild(geode);
@@ -1059,11 +1063,14 @@ public:
         osg::Group* groundLights2 = new osg::Group;
         groundLights2->setStateSet(lightManager->getGroundLightStateSet());
         groundLights2->setNodeMask(GROUNDLIGHTS2_BIT);
-        osg::Geode* geode = new osg::Geode;
+        EffectGeode* geode = new EffectGeode;
+        Effect*  lightEffect = getLightEffect(24, osg::Vec3(1, 0.001, 0.00001), 1, 8, false, _options);
+        geode->setEffect(lightEffect);
         geode->addDrawable(SGLightFactory::getLights(_tileGeometryBin->randomTileLights, 2, -0.15f));
         groundLights1->addChild(geode);
         lightGroup->addChild(groundLights1);
-        geode = new osg::Geode;
+        geode = new EffectGeode;
+        geode->setEffect(lightEffect);
         geode->addDrawable(SGLightFactory::getLights(_tileGeometryBin->randomTileLights));
         groundLights2->addChild(geode);
         lightGroup->addChild(groundLights2);

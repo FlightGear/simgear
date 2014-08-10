@@ -398,7 +398,13 @@ namespace canvas
 
     // Drawables have a bounding box...
     if( _drawable )
-      return _drawable->getBound().contains(osg::Vec3f(local_pos, 0));
+      return _drawable->
+#if OSG_VERSION_LESS_THAN(3,3,2)
+      getBound()
+#else
+      getBoundingBox()
+#endif
+      .contains(osg::Vec3f(local_pos, 0));
     else if( _transform.valid() )
       // ... for other elements, i.e. groups only a bounding sphere is available
       return _transform->getBound().contains(osg::Vec3f(parent_pos, 0));

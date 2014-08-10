@@ -59,6 +59,7 @@ class DemoEventHandler:
                                        << ", loc=" << evt.location()
                                        << ", char=" << evt.charCode()
                                        << ", key=" << evt.keyCode()
+                                       << (evt.isPrint() ? ", printable" : "")
                                        << std::endl;
       return true;
     }
@@ -72,5 +73,6 @@ int main()
   viewer.addEventHandler(handler);
 
   viewer.setUpViewInWindow(100, 100, 200, 100, 0);
+  viewer.setRunMaxFrameRate(5);
   return viewer.run();
 }

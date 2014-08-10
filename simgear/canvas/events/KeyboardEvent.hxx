@@ -60,6 +60,9 @@ namespace canvas
       /// Whether the key which has triggered this event is a modifier
       bool isModifier() const;
 
+      /// Whether this events represents an input of a printable character
+      bool isPrint() const;
+
     protected:
       uint32_t _key,            //!< Key identifier for this event
                _unmodified_key; //!< Virtual key identifier without any

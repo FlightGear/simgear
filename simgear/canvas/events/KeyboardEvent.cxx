@@ -298,5 +298,18 @@ namespace canvas
         || _key == KEY_AltGraph;
   }
 
+  //----------------------------------------------------------------------------
+  bool KeyboardEvent::isPrint() const
+  {
+    const std::string& key_name = key();
+    if( key_name.empty() )
+      return false;
+
+    // Check if _name contains exactly one (UTF-8 encoded) printable character.
+    std::string::const_iterator it = key_name.begin();
+    utf8::next(it, key_name.end());
+    return it == key_name.end();
+  }
+
 } // namespace canvas
 } // namespace simgear

@@ -83,7 +83,7 @@ namespace canvas
   };
 
   /**
-   * Flags for LayoutItem alignment inside Layouts.
+   * Flags for LayoutItem alignment inside {@link Layout Layouts}.
    *
    * @note You can only use one horizontal and one vertical flag at the same.
    */
@@ -199,7 +199,7 @@ namespace canvas
       int minimumHeightForWidth(int w) const;
 
       /**
-       * Set alignment of item within @link{Layout Layouts}.
+       * Set alignment of item within {@link Layout Layouts}.
        *
        * @param alignment Bitwise combination of vertical and horizontal
        *                  alignment flags.

@@ -108,8 +108,8 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
 			float y1 = area_iter->get()->getFloatValue("lat1", -90.0f);
 			float y2 = area_iter->get()->getFloatValue("lat2", 90.0f);
 			SGRect<float> rect = SGRect<float>(
-					fminf(x1, x2),
-					fminf(y1, y2),
+					std::min<float>(x1, x2),
+					std::min<float>(y1, y2),
 					fabs(x2 - x1),
 					fabs(y2 - y1));
 			arealist->push_back(rect);

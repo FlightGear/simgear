@@ -28,11 +28,11 @@ namespace simgear
 {
 namespace canvas
 {
+  class TextLine;
   class Text::TextOSG:
     public osgText::Text
   {
     public:
-
       TextOSG(canvas::Text* text);
 
       void setFontResolution(int res);
@@ -42,8 +42,19 @@ namespace canvas
       void setStroke(const std::string& color);
       void setBackgroundColor(const std::string& fill);
 
+      float lineHeight() const;
+
+      /// Get the number of lines
+      size_t lineCount() const;
+
+      /// Get line @a i
+      TextLine lineAt(size_t i) const;
+
+      /// Get nearest line to given y-coordinate
+      TextLine nearestLine(float pos_y) const;
+
+
       SGVec2i sizeForWidth(int w) const;
-      osg::Vec2 handleHit(const osg::Vec2f& pos);
 
       virtual osg::BoundingBox
 #if OSG_VERSION_LESS_THAN(3,3,2)
@@ -55,10 +66,152 @@ namespace canvas
 
     protected:
 
+      friend class TextLine;
+
       canvas::Text *_text_element;
 
       virtual void computePositions(unsigned int contextID) const;
   };
+
+  class TextLine
+  {
+    public:
+      TextLine();
+      TextLine(size_t line, Text::TextOSG const* text);
+
+      /// Number of characters on this line
+      size_t size() const;
+      bool empty() const;
+
+      osg::Vec2 cursorPos(size_t i) const;
+      osg::Vec2 nearestCursor(float x) const;
+
+    protected:
+      typedef Text::TextOSG::GlyphQuads GlyphQuads;
+
+      Text::TextOSG const *_text;
+      GlyphQuads const    *_quads;
+
+      size_t _line,
+             _begin,
+             _end;
+  };
+
+  //----------------------------------------------------------------------------
+  TextLine::TextLine():
+    _text(NULL),
+    _quads(NULL),
+    _line(0),
+    _begin(-1),
+    _end(-1)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  TextLine::TextLine(size_t line, Text::TextOSG const* text):
+    _text(text),
+    _quads(NULL),
+    _line(line),
+    _begin(-1),
+    _end(-1)
+  {
+    if( !text || text->_textureGlyphQuadMap.empty() || !_text->lineCount() )
+      return;
+
+    _quads = &text->_textureGlyphQuadMap.begin()->second;
+
+    GlyphQuads::LineNumbers const& line_numbers = _quads->_lineNumbers;
+    GlyphQuads::LineNumbers::const_iterator begin_it =
+      std::lower_bound(line_numbers.begin(), line_numbers.end(), _line);
+
+    if( begin_it == line_numbers.end() || *begin_it != _line )
+      // empty line or past last line
+      return;
+
+    _begin = begin_it - line_numbers.begin();
+    _end = std::upper_bound(begin_it, line_numbers.end(), _line)
+         - line_numbers.begin();
+  }
+
+  //----------------------------------------------------------------------------
+  size_t TextLine::size() const
+  {
+    return _end - _begin;
+  }
+
+  //----------------------------------------------------------------------------
+  bool TextLine::empty() const
+  {
+    return _end == _begin;
+  }
+
+  //----------------------------------------------------------------------------
+  osg::Vec2 TextLine::cursorPos(size_t i) const
+  {
+    if( !_quads || i > size() )
+      return osg::Vec2(-1, -1);
+
+    osg::Vec2 pos(0, _text->_offset.y() + _line * _text->lineHeight());
+
+    if( empty() )
+      return pos;
+
+    GlyphQuads::Coords2 const& coords = _quads->_coords;
+    size_t global_i = _begin + i;
+
+    if( global_i == _begin )
+      // before first character of line
+      pos.x() = coords[_begin * 4].x();
+    else if( global_i == _end )
+      // After Last character of line
+      pos.x() = coords[(_end - 1) * 4 + 2].x();
+    else
+    {
+      float prev_l = coords[(global_i - 1) * 4].x(),
+            prev_r = coords[(global_i - 1) * 4 + 2].x(),
+            cur_l = coords[global_i * 4].x();
+
+      if( prev_l == prev_r )
+        // If previous character width is zero set to begin of next character
+        // (Happens eg. with spaces)
+        pos.x() = cur_l;
+      else
+        // position at center between characters
+        pos.x() = 0.5 * (prev_r + cur_l);
+    }
+
+    return pos;
+  }
+
+  //----------------------------------------------------------------------------
+  osg::Vec2 TextLine::nearestCursor(float x) const
+  {
+    if( empty() )
+      return cursorPos(0);
+
+    GlyphQuads::Glyphs const& glyphs = _quads->_glyphs;
+    GlyphQuads::Coords2 const& coords = _quads->_coords;
+
+    float const HIT_FRACTION = 0.6;
+    float const character_width = _text->getCharacterHeight()
+                                * _text->getCharacterAspectRatio();
+
+    size_t i = _begin;
+    for(; i < _end; ++i)
+    {
+      // Get threshold for mouse x position for setting cursor before or after
+      // current character
+      float threshold = coords[i * 4].x()
+                      + HIT_FRACTION * glyphs[i]->getHorizontalAdvance()
+                                     * character_width;
+
+      if( x <= threshold )
+        break;
+    }
+
+    return cursorPos(i - _begin);
+  }
 
   //----------------------------------------------------------------------------
   Text::TextOSG::TextOSG(canvas::Text* text):
@@ -115,6 +268,45 @@ namespace canvas
     osg::Vec4 color;
     if( parseColor(fill, color) )
       setBoundingBoxColor( color );
+  }
+
+  //----------------------------------------------------------------------------
+  float Text::TextOSG::lineHeight() const
+  {
+    return (1 + _lineSpacing) * _characterHeight;
+  }
+
+  //----------------------------------------------------------------------------
+  size_t Text::TextOSG::lineCount() const
+  {
+    return _lineCount;
+  }
+
+  //----------------------------------------------------------------------------
+  TextLine Text::TextOSG::lineAt(size_t i) const
+  {
+    return TextLine(i, this);
+  }
+
+  //----------------------------------------------------------------------------
+  TextLine Text::TextOSG::nearestLine(float pos_y) const
+  {
+    osgText::Font const* font = getActiveFont();
+    if( !font || lineCount() <= 0 )
+      return TextLine(0, this);
+
+    float asc = .9f, desc = -.2f;
+    font->getVerticalSize(asc, desc);
+
+    float first_line_y = _offset.y()
+                       - (1 + _lineSpacing / 2 + desc) * _characterHeight;
+
+    size_t line_num = std::min<size_t>(
+      std::max<size_t>(0, (pos_y - first_line_y) / lineHeight()),
+      lineCount() - 1
+    );
+
+    return TextLine(line_num, this);
   }
 
   //----------------------------------------------------------------------------
@@ -393,86 +585,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  osg::Vec2 Text::TextOSG::handleHit(const osg::Vec2f& pos)
-  {
-    float line_height = _characterHeight + _lineSpacing;
-
-    // TODO check with align other than TOP
-    float first_line_y = -0.5 * _lineSpacing;//_offset.y() - _characterHeight;
-    size_t line = std::max<int>(0, (pos.y() - first_line_y) / line_height);
-
-    if( _textureGlyphQuadMap.empty() )
-      return osg::Vec2(-1, -1);
-
-    // TODO check when it can be larger
-    assert( _textureGlyphQuadMap.size() == 1 );
-
-    const GlyphQuads& glyphquad = _textureGlyphQuadMap.begin()->second;
-    const GlyphQuads::Glyphs& glyphs = glyphquad._glyphs;
-    const GlyphQuads::Coords2& coords = glyphquad._coords;
-    const GlyphQuads::LineNumbers& line_numbers = glyphquad._lineNumbers;
-
-    const float HIT_FRACTION = 0.6;
-    const float character_width = getCharacterHeight()
-                                * getCharacterAspectRatio();
-
-    float y = (line + 0.5) * line_height;
-
-    bool line_found = false;
-    for(size_t i = 0; i < line_numbers.size(); ++i)
-    {
-      if( line_numbers[i] != line )
-      {
-        if( !line_found )
-        {
-          if( line_numbers[i] < line )
-            // Wait for the correct line...
-            continue;
-
-          // We have already passed the correct line -> It's empty...
-          return osg::Vec2(0, y);
-        }
-
-        // Next line and not returned -> not before any character
-        // -> return position after last character of line
-        return osg::Vec2(coords[(i - 1) * 4 + 2].x(), y);
-      }
-
-      line_found = true;
-
-      // Get threshold for mouse x position for setting cursor before or after
-      // current character
-      float threshold = coords[i * 4].x()
-                      + HIT_FRACTION * glyphs[i]->getHorizontalAdvance()
-                                     * character_width;
-
-      if( pos.x() <= threshold )
-      {
-        osg::Vec2 hit(0, y);
-        if( i == 0 || line_numbers[i - 1] != line )
-          // first character of line
-          hit.x() = coords[i * 4].x();
-        else if( coords[(i - 1) * 4].x() == coords[(i - 1) * 4 + 2].x() )
-          // If previous character width is zero set to begin of next character
-          // (Happens eg. with spaces)
-          hit.x() = coords[i * 4].x();
-        else
-          // position at center between characters
-          hit.x() = 0.5 * (coords[(i - 1) * 4 + 2].x() + coords[i * 4].x());
-
-        return hit;
-      }
-    }
-
-    // Nothing found -> return position after last character
-    return osg::Vec2
-    (
-      coords.back().x(),
-      (_lineCount - 0.5) * line_height
-    );
-  }
-
-  //----------------------------------------------------------------------------
   osg::BoundingBox
 #if OSG_VERSION_LESS_THAN(3,3,2)
   Text::TextOSG::computeBound()
@@ -695,9 +807,27 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  size_t Text::lineCount() const
+  {
+    return _text->lineCount();
+  }
+
+  //----------------------------------------------------------------------------
+  size_t Text::lineLength(size_t line) const
+  {
+    return _text->lineAt(line).size();
+  }
+
+  //----------------------------------------------------------------------------
   osg::Vec2 Text::getNearestCursor(const osg::Vec2& pos) const
   {
-    return _text->handleHit(pos);
+    return _text->nearestLine(pos.y()).nearestCursor(pos.x());
+  }
+
+  //----------------------------------------------------------------------------
+  osg::Vec2 Text::getCursorPos(size_t line, size_t character) const
+  {
+    return _text->lineAt(line).cursorPos(character);
   }
 
 } // namespace canvas

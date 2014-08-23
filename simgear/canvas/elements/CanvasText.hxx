@@ -29,6 +29,7 @@ namespace simgear
 namespace canvas
 {
 
+  class TextLine;
   class Text:
     public Element
   {
@@ -48,10 +49,19 @@ namespace canvas
 
       int heightForWidth(int w) const;
       int maxWidth() const;
+
+      /// Number of text lines.
+      size_t lineCount() const;
+
+      /// Number of characters in @a line.
+      size_t lineLength(size_t line) const;
+
       osg::Vec2 getNearestCursor(const osg::Vec2& pos) const;
+      osg::Vec2 getCursorPos(size_t line, size_t character) const;
 
     protected:
 
+      friend class TextLine;
       class TextOSG;
       osg::ref_ptr<TextOSG> _text;
 

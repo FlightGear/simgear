@@ -305,10 +305,18 @@ namespace canvas
     if( key_name.empty() )
       return false;
 
-    // Check if _name contains exactly one (UTF-8 encoded) printable character.
     std::string::const_iterator it = key_name.begin();
-    utf8::next(it, key_name.end());
-    return it == key_name.end();
+    uint32_t cp = utf8::next(it, key_name.end());
+
+    // Check if _name contains exactly one (UTF-8 encoded) character.
+    if( it != key_name.end() )
+      return false;
+
+    // C0 and C1 control characters are not printable.
+    if( cp <= 0x1f || (0x7f <= cp && cp <= 0x9f) )
+      return false;
+
+    return true;
   }
 
 } // namespace canvas

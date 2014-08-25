@@ -70,7 +70,8 @@ namespace canvas
         _mode(0),
         _fill_rule(VG_EVEN_ODD),
         _stroke_width(1),
-        _stroke_linecap(VG_CAP_BUTT)
+        _stroke_linecap(VG_CAP_BUTT),
+        _stroke_linejoin(VG_JOIN_MITER)
       {
         setSupportsDisplayList(false);
         setDataVariance(Object::DYNAMIC);
@@ -204,6 +205,21 @@ namespace canvas
       }
 
       /**
+       * Set stroke-linejoin
+       *
+       * @see http://www.w3.org/TR/SVG/painting.html#StrokeLinejoinProperty
+       */
+      void setStrokeLinejoin(const std::string& linejoin)
+      {
+        if( linejoin == "round" )
+          _stroke_linejoin = VG_JOIN_ROUND;
+        else if( linejoin == "bevel" )
+          _stroke_linejoin = VG_JOIN_BEVEL;
+        else
+          _stroke_linejoin = VG_JOIN_MITER;
+      }
+
+      /**
        * Draw callback
        */
       virtual void drawImplementation(osg::RenderInfo& renderInfo) const
@@ -252,6 +268,7 @@ namespace canvas
 
           vgSetf(VG_STROKE_LINE_WIDTH, _stroke_width);
           vgSeti(VG_STROKE_CAP_STYLE, _stroke_linecap);
+          vgSeti(VG_STROKE_JOIN_STYLE, _stroke_linejoin);
           vgSetfv( VG_STROKE_DASH_PATTERN,
                    _stroke_dash.size(),
                    _stroke_dash.empty() ? 0 : &_stroke_dash[0] );
@@ -426,6 +443,7 @@ namespace canvas
       VGfloat               _stroke_width;
       std::vector<VGfloat>  _stroke_dash;
       VGCapStyle            _stroke_linecap;
+      VGJoinStyle            _stroke_linejoin;
 
       osg::Vec3f transformPoint( const osg::Matrix& m,
                                  osg::Vec2f pos ) const
@@ -506,6 +524,7 @@ namespace canvas
     addStyle("stroke-width", "numeric", &PathDrawable::setStrokeWidth, path);
     addStyle("stroke-dasharray", "", &PathDrawable::setStrokeDashArray, path);
     addStyle("stroke-linecap", "", &PathDrawable::setStrokeLinecap, path);
+    addStyle("stroke-linejoin", "", &PathDrawable::setStrokeLinejoin, path);
   }
 
   //----------------------------------------------------------------------------

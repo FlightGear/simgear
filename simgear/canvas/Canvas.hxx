@@ -146,6 +146,13 @@ namespace canvas
       void setFocusElement(const ElementPtr& el);
 
       /**
+       * Clear the focus element.
+       *
+       * @see setFocusElement()
+       */
+      void clearFocusElement();
+
+      /**
        * Enable rendering for the next frame
        *
        * @param force   Force redraw even if nothing has changed (if dirty flag

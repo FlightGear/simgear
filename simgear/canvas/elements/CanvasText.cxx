@@ -28,7 +28,6 @@ namespace simgear
 {
 namespace canvas
 {
-  class TextLine;
   class Text::TextOSG:
     public osgText::Text
   {

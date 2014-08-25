@@ -213,6 +213,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Canvas::clearFocusElement()
+  {
+    _focus_element.reset();
+  }
+
+  //----------------------------------------------------------------------------
   void Canvas::enableRendering(bool force)
   {
     _visible = true;

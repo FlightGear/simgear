@@ -146,17 +146,12 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             tname = "unknown.rgb";
         }
 
-        SGPath tpath("Textures.high");
+        SGPath tpath("Textures");
         tpath.append(tname);
         std::string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
         if (fullTexPath.empty()) {
-            tpath.set("Textures");
-            tpath.append(tname);
-            fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
-            if (fullTexPath.empty()) {
-                SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
-                        << tname << "\" in Textures or Textures.high folders.");
-            }
+            SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                    << tname << "\" in Textures folders.");
         }
 
         if (tpath.lower_extension() == "dds") {
@@ -183,17 +178,12 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                 tname = "unknown.rgb";
             }
 
-            SGPath tpath("Textures.high");
+            SGPath tpath("Textures");
             tpath.append(tname);
             std::string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
             if (fullTexPath.empty()) {
-                tpath.set("Textures");
-                tpath.append(tname);
-                fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
-                if (fullTexPath.empty() ) {
-                    SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
-                            << tname << "\" in Textures or Textures.high folders.");
-                }
+                SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                        << tname << "\" in Textures folders.");
             }
 
             if (j == 0) {
@@ -226,20 +216,13 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         std::string omname = masks[i]->getStringValue();
 
         if (! omname.empty()) {
-            SGPath ompath("Textures.high");
+            SGPath ompath("Textures");
             ompath.append(omname);
-            std::string fullMaskPath =
-              SGModelLib::findDataFile(ompath.str(), options);
-
-            if (fullMaskPath.empty()) {
-                ompath.set("Textures");
-                ompath.append(omname);
-                fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
-            }
+            std::string fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
 
             if (fullMaskPath.empty()) {
                 SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
-                        << omname << "\" in Textures or Textures.high folders.");
+                        << omname << "\" in Textures folders.");
             }
             else
             {
@@ -353,14 +336,13 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         std::string treeTexPath = props->getStringValue("tree-texture");
 
         if (! treeTexPath.empty()) {
-            SGPath treePath("Textures.high");
+            SGPath treePath("Textures");
             treePath.append(treeTexPath);
             tree_texture = SGModelLib::findDataFile(treePath.str(), options);
 
             if (tree_texture.empty()) {
-                treePath.set("Textures");
-                treePath.append(treeTexPath);
-                tree_texture = SGModelLib::findDataFile(treePath.str(), options);
+                SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                        << treeTexPath << "\" in Textures folders.");
             }
         }
     }

@@ -52,7 +52,9 @@ void EffectGeode::setEffect(Effect* effect)
     _effect = effect;
     if (!_effect)
         return;
+    //TODO: do we leak the callbacks or does the geode own pointer afterwards?
     addUpdateCallback(new Effect::InitializeCallback);
+    addUpdateCallback(new Effect::UpdateCallback);
 }
 
 void EffectGeode::resizeGLObjectBuffers(unsigned int maxSize)

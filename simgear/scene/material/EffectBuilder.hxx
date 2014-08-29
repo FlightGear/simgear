@@ -496,19 +496,17 @@ make_OSGFunctor(Obj* obj, void (Obj::*const func)(const OSGParam&))
 template<typename OSGParamType, typename ObjType, typename F>
 class ScalarChangeListener
     : public SGPropertyChangeListener, public InitializeWhenAdded,
+      public PropertyPoller,
       public Effect::Updater
 {
 public:
     ScalarChangeListener(ObjType* obj, const F& setter,
                          const std::string& propName)
-        : _obj(obj), _setter(setter)
+        : _obj(obj), _setter(setter), _propName(propName)
     {
-        _propName = new std::string(propName);
     }
     virtual ~ScalarChangeListener()
     {
-        delete _propName;
-        _propName = 0;
     }
     void valueChanged(SGPropertyNode* node)
     {
@@ -516,16 +514,20 @@ public:
     }
     void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot)
     {
-        SGPropertyNode* listenProp = makeNode(propRoot, *_propName);
-        delete _propName;
-        _propName = 0;
-        if (listenProp)
-            listenProp->addChangeListener(this, true);
+        _listenProp = makeNode(propRoot, _propName);
+//        if ( _listenProp.valid() )
+//            _listenProp->addChangeListener(this, true);
+    }
+    void pollProperties(Effect* effect)
+    {
+        if( false == _listenProp.valid() ) return;
+        valueChanged(_listenProp);
     }
 private:
+    SGPropertyNode_ptr _listenProp;
     osg::ref_ptr<ObjType> _obj;
     F _setter;
-    std::string* _propName;
+    std::string _propName;
 };
 
 template<typename T, typename Func>

@@ -65,6 +65,8 @@ namespace canvas
       class TextOSG;
       osg::ref_ptr<TextOSG> _text;
 
+      virtual osg::StateSet* getOrCreateStateSet();
+
   };
 
 } // namespace canvas

@@ -148,8 +148,12 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::Vec2 TextLine::cursorPos(size_t i) const
   {
-    if( !_quads || i > size() )
-      return osg::Vec2(-1, -1);
+    if( !_quads )
+      return osg::Vec2(0, 0);
+
+    if( i > size() )
+      // Position after last character if out of range (TODO better exception?)
+      i = size();
 
     osg::Vec2 pos(0, _text->_offset.y() + _line * _text->lineHeight());
 
@@ -827,6 +831,17 @@ namespace canvas
   osg::Vec2 Text::getCursorPos(size_t line, size_t character) const
   {
     return _text->lineAt(line).cursorPos(character);
+  }
+
+  //----------------------------------------------------------------------------
+  osg::StateSet* Text::getOrCreateStateSet()
+  {
+    if( !_transform.valid() )
+      return 0;
+
+    // Only check for StateSet on Transform, as the text stateset is shared
+    // between all text instances using the same font (texture).
+    return _transform->getOrCreateStateSet();
   }
 
 } // namespace canvas

@@ -564,7 +564,7 @@ namespace canvas
       /**
        * Get stateset of drawable if available or use transform otherwise
        */
-      osg::StateSet* getOrCreateStateSet();
+      virtual osg::StateSet* getOrCreateStateSet();
 
       void setupStyle();
 

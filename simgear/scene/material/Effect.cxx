@@ -87,6 +87,85 @@ using namespace osgUtil;
 
 using namespace effect;
 
+class UniformFactoryImpl {
+public:
+    ref_ptr<Uniform> getUniform( Effect * effect, 
+                                 const string & name, 
+                                 Uniform::Type uniformType, 
+                                 SGConstPropertyNode_ptr valProp, 
+                                 const SGReaderWriterOptions* options );
+private:
+    // Default names for vector property components
+    static const char* vec3Names[];
+    static const char* vec4Names[];
+
+    std::map<std::string,ref_ptr<Uniform> > uniformCache;
+};
+
+const char* UniformFactoryImpl::vec3Names[] = {"x", "y", "z"};
+const char* UniformFactoryImpl::vec4Names[] = {"x", "y", "z", "w"};
+
+ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect, 
+                                 const string & name, 
+                                 Uniform::Type uniformType, 
+                                 SGConstPropertyNode_ptr valProp,
+                                 const SGReaderWriterOptions* options )
+{
+
+    ref_ptr<Uniform> uniform = uniformCache[name];
+    if( !uniform.valid() ) {
+       SG_LOG(SG_ALL,SG_ALERT,"new uniform '" << name << "'");
+       uniformCache[name] = uniform = new Uniform;
+    } else {
+      SG_LOG(SG_ALL,SG_ALERT,"reusing uniform '" << name << "'");
+      return uniform;
+    }
+
+    uniform->setName(name);
+    uniform->setType(uniformType);
+    switch (uniformType) {
+    case Uniform::BOOL:
+        initFromParameters(effect, valProp, uniform.get(),
+                           static_cast<bool (Uniform::*)(bool)>(&Uniform::set),
+                           options);
+        break;
+    case Uniform::FLOAT:
+        initFromParameters(effect, valProp, uniform.get(),
+                           static_cast<bool (Uniform::*)(float)>(&Uniform::set),
+                           options);
+        break;
+    case Uniform::FLOAT_VEC3:
+        initFromParameters(effect, valProp, uniform.get(),
+                           static_cast<bool (Uniform::*)(const Vec3&)>(&Uniform::set),
+                           vec3Names, options);
+        break;
+    case Uniform::FLOAT_VEC4:
+        initFromParameters(effect, valProp, uniform.get(),
+                           static_cast<bool (Uniform::*)(const Vec4&)>(&Uniform::set),
+                           vec4Names, options);
+        break;
+    case Uniform::INT:
+    case Uniform::SAMPLER_1D:
+    case Uniform::SAMPLER_2D:
+    case Uniform::SAMPLER_3D:
+    case Uniform::SAMPLER_1D_SHADOW:
+    case Uniform::SAMPLER_2D_SHADOW:
+    case Uniform::SAMPLER_CUBE:
+        initFromParameters(effect, valProp, uniform.get(),
+                           static_cast<bool (Uniform::*)(int)>(&Uniform::set),
+                           options);
+        break;
+    default: // avoid compiler warning
+        break;
+    }
+
+    return uniform;
+}
+
+
+typedef Singleton<UniformFactoryImpl> UniformFactory;
+
+
 Effect::Effect()
     : _cache(0), _isRealized(false)
 {
@@ -172,10 +251,6 @@ void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
                    "skipping unknown pass attribute " << attrProp->getName());
     }
 }
-
-// Default names for vector property components
-const char* vec3Names[] = {"x", "y", "z"};
-const char* vec4Names[] = {"x", "y", "z", "w"};
 
 osg::Vec4f getColor(const SGPropertyNode* prop)
 {
@@ -898,10 +973,10 @@ struct UniformBuilder :public PassAttributeBuilder
         }
         if (!isAttributeActive(effect, prop))
             return;
-        const SGPropertyNode* nameProp = prop->getChild("name");
-        const SGPropertyNode* typeProp = prop->getChild("type");
-        const SGPropertyNode* positionedProp = prop->getChild("positioned");
-        const SGPropertyNode* valProp = prop->getChild("value");
+        SGConstPropertyNode_ptr nameProp = prop->getChild("name");
+        SGConstPropertyNode_ptr typeProp = prop->getChild("type");
+        SGConstPropertyNode_ptr positionedProp = prop->getChild("positioned");
+        SGConstPropertyNode_ptr valProp = prop->getChild("value");
         string name;
         Uniform::Type uniformType = Uniform::FLOAT;
         if (nameProp) {
@@ -941,44 +1016,9 @@ struct UniformBuilder :public PassAttributeBuilder
         } else {
             findAttr(uniformTypes, typeProp, uniformType);
         }
-        ref_ptr<Uniform> uniform = new Uniform;
-        uniform->setName(name);
-        uniform->setType(uniformType);
-        switch (uniformType) {
-        case Uniform::BOOL:
-            initFromParameters(effect, valProp, uniform.get(),
-                               static_cast<bool (Uniform::*)(bool)>(&Uniform::set),
-                               options);
-            break;
-        case Uniform::FLOAT:
-            initFromParameters(effect, valProp, uniform.get(),
-                               static_cast<bool (Uniform::*)(float)>(&Uniform::set),
-                               options);
-            break;
-        case Uniform::FLOAT_VEC3:
-            initFromParameters(effect, valProp, uniform.get(),
-                               static_cast<bool (Uniform::*)(const Vec3&)>(&Uniform::set),
-                               vec3Names, options);
-            break;
-        case Uniform::FLOAT_VEC4:
-            initFromParameters(effect, valProp, uniform.get(),
-                               static_cast<bool (Uniform::*)(const Vec4&)>(&Uniform::set),
-                               vec4Names, options);
-            break;
-        case Uniform::INT:
-        case Uniform::SAMPLER_1D:
-        case Uniform::SAMPLER_2D:
-        case Uniform::SAMPLER_3D:
-        case Uniform::SAMPLER_1D_SHADOW:
-        case Uniform::SAMPLER_2D_SHADOW:
-        case Uniform::SAMPLER_CUBE:
-            initFromParameters(effect, valProp, uniform.get(),
-                               static_cast<bool (Uniform::*)(int)>(&Uniform::set),
-                               options);
-            break;
-        default: // avoid compiler warning
-            break;
-        }
+        ref_ptr<Uniform> uniform = UniformFactory::instance()->
+          getUniform( effect, name, uniformType, valProp, options );
+
         // optimize common uniforms
         if (uniformType == Uniform::SAMPLER_2D || uniformType == Uniform::INT)
         {

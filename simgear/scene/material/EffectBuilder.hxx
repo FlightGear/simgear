@@ -516,6 +516,7 @@ public:
     }
     void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot)
     {
+        SG_LOG(SG_ALL,SG_ALERT,"Adding change listener to " << *_propName );
         SGPropertyNode* listenProp = makeNode(propRoot, *_propName);
         delete _propName;
         _propName = 0;

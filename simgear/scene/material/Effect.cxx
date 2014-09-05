@@ -1356,28 +1356,6 @@ void Effect::InitializeCallback::doUpdate(osg::Node* node, osg::NodeVisitor* nv)
     }
 }
 
-void Effect::UpdateCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-    EffectGeode* eg = dynamic_cast<EffectGeode*>(node);
-    if (!eg)
-        return;
-    Effect* effect = eg->getEffect();
-    if (!effect)
-        return;
-
-    for (vector<SGSharedPtr<Updater> >::iterator itr = effect->_extraData.begin(),
-             end = effect->_extraData.end();
-         itr != end;
-         ++itr) {
-        PropertyPoller * poller
-            = dynamic_cast<PropertyPoller*>(itr->ptr());
-        if (poller)
-            poller->pollProperties(effect);
-    }
-
-    traverse(node, nv);
-}
-
 bool Effect::Key::EqualTo::operator()(const Effect::Key& lhs,
                                       const Effect::Key& rhs) const
 {

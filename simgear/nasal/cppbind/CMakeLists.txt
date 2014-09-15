@@ -34,14 +34,13 @@ set(SOURCES
 simgear_component(nasal/cppbind nasal/cppbind "${SOURCES}" "${HEADERS}")
 simgear_component(nasal/cppbind/detail nasal/cppbind/detail "" "${DETAIL_HEADERS}")
 
-if(ENABLE_TESTS)
-  add_executable(test_cppbind cppbind_test.cxx)
-  add_test(cppbind ${EXECUTABLE_OUTPUT_PATH}/test_cppbind)
-  target_link_libraries(test_cppbind ${TEST_LIBS})
-endif(ENABLE_TESTS)
-
 add_boost_test(cppbind_ghost
   SOURCES cppbind_test_ghost.cxx
+  LIBRARIES ${TEST_LIBS}
+)
+
+add_boost_test(cppbind_misc
+  SOURCES cppbind_test.cxx
   LIBRARIES ${TEST_LIBS}
 )
 

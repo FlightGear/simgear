@@ -47,7 +47,7 @@ namespace nasal
 
   /**
    * Get pointer to specific version of from_nasal, converting to a type
-   * compatible to Var.
+   * compatible to \a Var.
    */
   template<class Var>
   struct from_nasal_ptr
@@ -63,6 +63,9 @@ namespace nasal
     }
   };
 
+  /**
+   * Get member of hash, ghost (also searching in parent objects).
+   */
   template<class T>
   T get_member(naContext c, naRef obj, const std::string& name)
   {

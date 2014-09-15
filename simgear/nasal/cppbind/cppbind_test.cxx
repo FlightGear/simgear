@@ -1,22 +1,17 @@
-#include <simgear/math/SGMath.hxx>
+#define BOOST_TEST_MODULE cppbind
+#include <BoostTestTargetConfig.h>
 
 #include "Ghost.hxx"
 #include "NasalHash.hxx"
 #include "NasalString.hxx"
+
+#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/map.hxx>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
 #include <cstring>
-#include <iostream>
-
-#define VERIFY(a) \
-  if( !(a) ) \
-  { \
-    std::cerr << "failed: line " << __LINE__ << ": " << #a << std::endl; \
-    return 1; \
-  }
 
 enum MyEnum
 {
@@ -121,7 +116,7 @@ naRef f_derivedGetX(const Derived& d, naContext c)
 }
 naRef f_freeFunction(nasal::CallContext c) { return c.requireArg<naRef>(0); }
 
-int main(int argc, char* argv[])
+BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
 {
   naContext c = naNewContext();
   naRef r;
@@ -129,44 +124,36 @@ int main(int argc, char* argv[])
   using namespace nasal;
 
   r = to_nasal(c, ENUM_ANOTHER);
-  VERIFY( from_nasal<int>(c, r) == ENUM_ANOTHER );
+  BOOST_CHECK_EQUAL(from_nasal<int>(c, r), ENUM_ANOTHER);
 
   r = to_nasal(c, "Test");
-  VERIFY( strncmp("Test", naStr_data(r), naStr_len(r)) == 0 );
-  VERIFY( from_nasal<std::string>(c, r) == "Test" );
+  BOOST_CHECK( strncmp("Test", naStr_data(r), naStr_len(r)) == 0 );
+  BOOST_CHECK_EQUAL(from_nasal<std::string>(c, r), "Test");
 
   r = to_nasal(c, std::string("Test"));
-  VERIFY( strncmp("Test", naStr_data(r), naStr_len(r)) == 0 );
-  VERIFY( from_nasal<std::string>(c, r) == "Test" );
+  BOOST_CHECK( strncmp("Test", naStr_data(r), naStr_len(r)) == 0 );
+  BOOST_CHECK_EQUAL(from_nasal<std::string>(c, r), "Test");
 
   r = to_nasal(c, 42);
-  VERIFY( naNumValue(r).num == 42 );
-  VERIFY( from_nasal<int>(c, r) == 42 );
+  BOOST_CHECK_EQUAL(naNumValue(r).num, 42);
+  BOOST_CHECK_EQUAL(from_nasal<int>(c, r), 42);
 
   r = to_nasal(c, 4.2f);
-  VERIFY( naNumValue(r).num == 4.2f );
-  VERIFY( from_nasal<float>(c, r) == 4.2f );
+  BOOST_CHECK_EQUAL(naNumValue(r).num, 4.2f);
+  BOOST_CHECK_EQUAL(from_nasal<float>(c, r), 4.2f);
 
   float test_data[3] = {0, 4, 2};
   r = to_nasal(c, test_data);
 
   SGVec2f vec(0,2);
   r = to_nasal(c, vec);
-  VERIFY( from_nasal<SGVec2f>(c, r) == vec );
+  BOOST_CHECK_EQUAL(from_nasal<SGVec2f>(c, r), vec);
 
   std::vector<int> std_vec;
   r = to_nasal(c, std_vec);
 
   r = to_nasal(c, "string");
-  try
-  {
-    from_nasal<int>(c, r);
-
-    std::cerr << "failed: Expected bad_nasal_cast to be thrown" << std::endl;
-    return 1;
-  }
-  catch(nasal::bad_nasal_cast&)
-  {}
+  BOOST_CHECK_THROW(from_nasal<int>(c, r), bad_nasal_cast);
 
   Hash hash(c);
   hash.set("vec", r);
@@ -175,9 +162,10 @@ int main(int argc, char* argv[])
   hash.set("string", std::string("blub"));
   hash.set("func", &f_freeFunction);
 
-  VERIFY( hash.size() == 5 )
+  BOOST_CHECK_EQUAL(hash.size(), 5);
   for(Hash::const_iterator it = hash.begin(); it != hash.end(); ++it)
-    VERIFY( hash.get<std::string>(it->getKey()) == it->getValue<std::string>() )
+    BOOST_CHECK_EQUAL( hash.get<std::string>(it->getKey()),
+                       it->getValue<std::string>() );
 
   Hash::iterator it1, it2;
   Hash::const_iterator it3 = it1, it4(it2);
@@ -185,15 +173,15 @@ int main(int argc, char* argv[])
   it3 = it2;
 
   r = to_nasal(c, hash);
-  VERIFY( naIsHash(r) );
+  BOOST_REQUIRE( naIsHash(r) );
 
   simgear::StringMap string_map = from_nasal<simgear::StringMap>(c, r);
-  VERIFY( string_map.at("vec") == "string" )
-  VERIFY( string_map.at("name") == "my-name" )
-  VERIFY( string_map.at("string") == "blub" )
+  BOOST_CHECK_EQUAL(string_map.at("vec"), "string");
+  BOOST_CHECK_EQUAL(string_map.at("name"), "my-name");
+  BOOST_CHECK_EQUAL(string_map.at("string"), "blub");
 
-  VERIFY( hash.get<std::string>("name") == "my-name" );
-  VERIFY( naIsString(hash.get("name")) );
+  BOOST_CHECK_EQUAL(hash.get<std::string>("name"), "my-name");
+  BOOST_CHECK(naIsString(hash.get("name")));
 
   Hash mod = hash.createHash("mod");
   mod.set("parent", hash);
@@ -201,35 +189,35 @@ int main(int argc, char* argv[])
 
   // 'func' is a C++ function registered to Nasal and now converted back to C++
   boost::function<int (int)> f = hash.get<int (int)>("func");
-  VERIFY( f );
-  VERIFY( f(3) == 3 );
+  BOOST_REQUIRE( f );
+  BOOST_CHECK_EQUAL(f(3), 3);
 
   boost::function<std::string (int)> fs = hash.get<std::string (int)>("func");
-  VERIFY( fs );
-  VERIFY( fs(14) == "14" );
+  BOOST_REQUIRE( fs );
+  BOOST_CHECK_EQUAL(fs(14), "14");
 
   typedef boost::function<void (int)> FuncVoidInt;
   FuncVoidInt fvi = hash.get<FuncVoidInt>("func");
-  VERIFY( fvi );
+  BOOST_REQUIRE( fvi );
   fvi(123);
 
   typedef boost::function<std::string (const std::string&, int, float)> FuncMultiArg;
   FuncMultiArg fma = hash.get<FuncMultiArg>("func");
-  VERIFY( fma );
-  VERIFY( fma("test", 3, .5) == "test" );
+  BOOST_REQUIRE( fma );
+  BOOST_CHECK_EQUAL(fma("test", 3, .5), "test");
 
   typedef boost::function<naRef (naRef)> naRefMemFunc;
   naRefMemFunc fmem = hash.get<naRefMemFunc>("func");
-  VERIFY( fmem );
+  BOOST_REQUIRE( fmem );
   naRef ret = fmem(hash.get_naRef()),
         hash_ref = hash.get_naRef();
-  VERIFY( naIsIdentical(ret, hash_ref) );
+  BOOST_CHECK( naIsIdentical(ret, hash_ref) );
 
   // Check if nasal::Me gets passed as self/me and remaining arguments are
   // passed on to function
   typedef boost::function<int (Me, int)> MeIntFunc;
   MeIntFunc fmeint = hash.get<MeIntFunc>("func");
-  VERIFY( fmeint(naNil(), 5) == 5 );
+  BOOST_CHECK_EQUAL(fmeint(naNil(), 5), 5);
 
   //----------------------------------------------------------------------------
   // Test exposing classes to Nasal
@@ -276,78 +264,80 @@ int main(int argc, char* argv[])
   naRef nasal_ref = to_nasal(c, weak_ptr),
         nasal_ptr = to_nasal(c, weak_ptr.get());
 
-  VERIFY( naIsGhost(nasal_ref) );
-  VERIFY( naIsGhost(nasal_ptr) );
+  BOOST_REQUIRE( naIsGhost(nasal_ref) );
+  BOOST_REQUIRE( naIsGhost(nasal_ptr) );
 
   SGWeakRefBasedPtr ptr1 = from_nasal<SGWeakRefBasedPtr>(c, nasal_ref),
                     ptr2 = from_nasal<SGWeakRefBasedPtr>(c, nasal_ptr);
 
-  VERIFY( weak_ptr == ptr1 );
-  VERIFY( weak_ptr == ptr2 );
+  BOOST_CHECK_EQUAL(weak_ptr, ptr1);
+  BOOST_CHECK_EQUAL(weak_ptr, ptr2);
 
 
-  VERIFY( Ghost<BasePtr>::isInit() );
+  BOOST_REQUIRE( Ghost<BasePtr>::isInit() );
   nasal::to_nasal(c, DoubleDerived2Ptr());
 
   BasePtr d( new Derived );
   naRef derived = to_nasal(c, d);
-  VERIFY( naIsGhost(derived) );
-  VERIFY( std::string("DerivedPtr") == naGhost_type(derived)->name );
+  BOOST_REQUIRE( naIsGhost(derived) );
+  BOOST_CHECK_EQUAL( std::string("DerivedPtr"), naGhost_type(derived)->name );
 
   // Get member function from ghost...
   naRef thisGetter = naNil();
-  VERIFY( naMember_get(c, derived, to_nasal(c, "this"), &thisGetter) );
-  VERIFY( naIsFunc(thisGetter) );
+  BOOST_CHECK( naMember_get(c, derived, to_nasal(c, "this"), &thisGetter) );
+  BOOST_CHECK( naIsFunc(thisGetter) );
 
   // ...and check if it really gets passed the correct instance
   typedef boost::function<unsigned long (Me)> MemFunc;
   MemFunc fGetThis = from_nasal<MemFunc>(c, thisGetter);
-  VERIFY( fGetThis );
-  VERIFY( fGetThis(derived) == (unsigned long)d.get() );
+  BOOST_REQUIRE( fGetThis );
+  BOOST_CHECK_EQUAL( fGetThis(derived), (unsigned long)d.get() );
 
   BasePtr d2( new DoubleDerived );
   derived = to_nasal(c, d2);
-  VERIFY( naIsGhost(derived) );
-  VERIFY( std::string("DoubleDerivedPtr") ==  naGhost_type(derived)->name );
+  BOOST_CHECK( naIsGhost(derived) );
+  BOOST_CHECK_EQUAL( std::string("DoubleDerivedPtr"),
+                     naGhost_type(derived)->name );
 
   BasePtr d3( new DoubleDerived2 );
   derived = to_nasal(c, d3);
-  VERIFY( naIsGhost(derived) );
-  VERIFY( std::string("DoubleDerived2Ptr") ==  naGhost_type(derived)->name );
+  BOOST_CHECK( naIsGhost(derived) );
+  BOOST_CHECK_EQUAL( std::string("DoubleDerived2Ptr"),
+                     naGhost_type(derived)->name );
 
   SGRefBasedPtr ref_based( new SGReferenceBasedClass );
   naRef na_ref_based = to_nasal(c, ref_based.get());
-  VERIFY( naIsGhost(na_ref_based) );
-  VERIFY(    from_nasal<SGReferenceBasedClass*>(c, na_ref_based)
-          == ref_based.get() );
-  VERIFY( from_nasal<SGRefBasedPtr>(c, na_ref_based) == ref_based );
+  BOOST_CHECK( naIsGhost(na_ref_based) );
+  BOOST_CHECK_EQUAL( from_nasal<SGReferenceBasedClass*>(c, na_ref_based),
+                     ref_based.get() );
+  BOOST_CHECK_EQUAL( from_nasal<SGRefBasedPtr>(c, na_ref_based), ref_based );
 
-  VERIFY( from_nasal<BasePtr>(c, derived) == d3 );
-  VERIFY( from_nasal<BasePtr>(c, derived) != d2 );
-  VERIFY(    from_nasal<DerivedPtr>(c, derived)
-          == boost::dynamic_pointer_cast<Derived>(d3) );
-  VERIFY(    from_nasal<DoubleDerived2Ptr>(c, derived)
-          == boost::dynamic_pointer_cast<DoubleDerived2>(d3) );
-  VERIFY( !from_nasal<DoubleDerivedPtr>(c, derived) );
+  BOOST_CHECK_EQUAL( from_nasal<BasePtr>(c, derived), d3 );
+  BOOST_CHECK_NE( from_nasal<BasePtr>(c, derived), d2 );
+  BOOST_CHECK_EQUAL( from_nasal<DerivedPtr>(c, derived),
+                     boost::dynamic_pointer_cast<Derived>(d3) );
+  BOOST_CHECK_EQUAL( from_nasal<DoubleDerived2Ptr>(c, derived),
+                     boost::dynamic_pointer_cast<DoubleDerived2>(d3) );
+  BOOST_CHECK_THROW( from_nasal<DoubleDerivedPtr>(c, derived), bad_nasal_cast );
 
   std::map<std::string, BasePtr> instances;
-  VERIFY( naIsHash(to_nasal(c, instances)) );
+  BOOST_CHECK( naIsHash(to_nasal(c, instances)) );
 
   std::map<std::string, DerivedPtr> instances_d;
-  VERIFY( naIsHash(to_nasal(c, instances_d)) );
+  BOOST_CHECK( naIsHash(to_nasal(c, instances_d)) );
 
   std::map<std::string, int> int_map;
-  VERIFY( naIsHash(to_nasal(c, int_map)) );
+  BOOST_CHECK( naIsHash(to_nasal(c, int_map)) );
 
   std::map<std::string, std::vector<int> > int_vector_map;
-  VERIFY( naIsHash(to_nasal(c, int_vector_map)) );
+  BOOST_CHECK( naIsHash(to_nasal(c, int_vector_map)) );
 
   simgear::StringMap dict =
     simgear::StringMap("hello", "value")
                       ("key2", "value2");
   naRef na_dict = to_nasal(c, dict);
-  VERIFY( naIsHash(na_dict) );
-  VERIFY( Hash(na_dict, c).get<std::string>("key2") == "value2" );
+  BOOST_REQUIRE( naIsHash(na_dict) );
+  BOOST_CHECK_EQUAL( Hash(na_dict, c).get<std::string>("key2"), "value2" );
 
   // Check converting to Ghost if using Nasal hashes with actual ghost inside
   // the hashes parents vector
@@ -357,14 +347,14 @@ int main(int argc, char* argv[])
 
   Hash obj(c);
   obj.set("parents", parents);
-  VERIFY( from_nasal<BasePtr>(c, obj.get_naRef()) == d3 );
+  BOOST_CHECK_EQUAL( from_nasal<BasePtr>(c, obj.get_naRef()), d3 );
 
   // Check recursive parents (aka parent-of-parent)
   std::vector<naRef> parents2;
   parents2.push_back(obj.get_naRef());
   Hash derived_obj(c);
   derived_obj.set("parents", parents2);
-  VERIFY( from_nasal<BasePtr>(c, derived_obj.get_naRef()) == d3 );
+  BOOST_CHECK_EQUAL( from_nasal<BasePtr>(c, derived_obj.get_naRef()), d3 );
 
   std::vector<naRef> nasal_objects;
   nasal_objects.push_back( Ghost<BasePtr>::makeGhost(c, d) );
@@ -373,9 +363,9 @@ int main(int argc, char* argv[])
   naRef obj_vec = to_nasal(c, nasal_objects);
 
   std::vector<BasePtr> objects = from_nasal<std::vector<BasePtr> >(c, obj_vec);
-  VERIFY( objects[0] == d );
-  VERIFY( objects[1] == d2 );
-  VERIFY( objects[2] == d3 );
+  BOOST_CHECK_EQUAL( objects[0], d );
+  BOOST_CHECK_EQUAL( objects[1], d2 );
+  BOOST_CHECK_EQUAL( objects[2], d3 );
 
   {
     // Calling fallback setter for unset values
@@ -386,9 +376,9 @@ int main(int argc, char* argv[])
                               &errLine );
     ret = naCallMethod(code, derived, 0, 0, naNil());
 
-    VERIFY( !naGetError(c) ) // TODO real error check (this seems to always
-                             //      return 0...
-    VERIFY( from_nasal<int>(c, ret) == 3 )
+    BOOST_REQUIRE( !naGetError(c) ); // TODO real error check (this seems to
+                                     //      always return 0...
+    BOOST_CHECK_EQUAL( from_nasal<int>(c, ret), 3 );
   }
   {
     // Calling generic (fallback) getter
@@ -399,9 +389,9 @@ int main(int argc, char* argv[])
                               &errLine );
     ret = naCallMethod(code, derived, 0, 0, naNil());
 
-    VERIFY( !naGetError(c) ) // TODO real error check (this seems to always
-                             //      return 0...
-    VERIFY( from_nasal<std::string>(c, ret) == "generic-get" );
+    BOOST_REQUIRE( !naGetError(c) ); // TODO real error check (this seems to
+                                     //      always return 0...
+    BOOST_CHECK_EQUAL( from_nasal<std::string>(c, ret), "generic-get" );
   }
 
   //----------------------------------------------------------------------------
@@ -418,54 +408,52 @@ int main(int argc, char* argv[])
     to_nasal(c, map)
   };
   CallContext cc(c, naNil(), sizeof(args)/sizeof(args[0]), args);
-  VERIFY( cc.requireArg<std::string>(0) == "test-arg" );
-  VERIFY( cc.getArg<std::string>(0) == "test-arg" );
-  VERIFY( cc.getArg<std::string>(10) == "" );
-  VERIFY( cc.isString(0) );
-  VERIFY( !cc.isNumeric(0) );
-  VERIFY( !cc.isVector(0) );
-  VERIFY( !cc.isHash(0) );
-  VERIFY( !cc.isGhost(0) );
-  VERIFY( cc.isNumeric(1) );
-  VERIFY( cc.isVector(2) );
-  VERIFY( cc.isHash(3) );
+  BOOST_CHECK_EQUAL( cc.requireArg<std::string>(0), "test-arg" );
+  BOOST_CHECK_EQUAL( cc.getArg<std::string>(0), "test-arg" );
+  BOOST_CHECK_EQUAL( cc.getArg<std::string>(10), "" );
+  BOOST_CHECK( cc.isString(0) );
+  BOOST_CHECK( !cc.isNumeric(0) );
+  BOOST_CHECK( !cc.isVector(0) );
+  BOOST_CHECK( !cc.isHash(0) );
+  BOOST_CHECK( !cc.isGhost(0) );
+  BOOST_CHECK( cc.isNumeric(1) );
+  BOOST_CHECK( cc.isVector(2) );
+  BOOST_CHECK( cc.isHash(3) );
 
   naRef args_vec = nasal::to_nasal(c, args);
-  VERIFY( naIsVector(args_vec) );
+  BOOST_CHECK( naIsVector(args_vec) );
 
   //----------------------------------------------------------------------------
   // Test nasal::String
   //----------------------------------------------------------------------------
 
   String string( to_nasal(c, "Test") );
-  VERIFY( from_nasal<std::string>(c, string.get_naRef()) == "Test" );
-  VERIFY( string.c_str() == std::string("Test") );
-  VERIFY( string.starts_with(string) );
-  VERIFY( string.starts_with(String(c, "T")) );
-  VERIFY( string.starts_with(String(c, "Te")) );
-  VERIFY( string.starts_with(String(c, "Tes")) );
-  VERIFY( string.starts_with(String(c, "Test")) );
-  VERIFY( !string.starts_with(String(c, "Test1")) );
-  VERIFY( !string.starts_with(String(c, "bb")) );
-  VERIFY( !string.starts_with(String(c, "bbasdasdafasd")) );
-  VERIFY( string.ends_with(String(c, "t")) );
-  VERIFY( string.ends_with(String(c, "st")) );
-  VERIFY( string.ends_with(String(c, "est")) );
-  VERIFY( string.ends_with(String(c, "Test")) );
-  VERIFY( !string.ends_with(String(c, "1Test")) );
-  VERIFY( !string.ends_with(String(c, "abc")) );
-  VERIFY( !string.ends_with(String(c, "estasdasd")) );
-  VERIFY( string.find('e') == 1 );
-  VERIFY( string.find('9') == String::npos );
-  VERIFY( string.find_first_of(String(c, "st")) == 2 );
-  VERIFY( string.find_first_of(String(c, "st"), 3) == 3 );
-  VERIFY( string.find_first_of(String(c, "xyz")) == String::npos );
-  VERIFY( string.find_first_not_of(String(c, "Tst")) == 1 );
-  VERIFY( string.find_first_not_of(String(c, "Tse"), 2) == 3 );
-  VERIFY( string.find_first_not_of(String(c, "abc")) == 0 );
-  VERIFY( string.find_first_not_of(String(c, "abc"), 20) == String::npos );
+  BOOST_CHECK_EQUAL( from_nasal<std::string>(c, string.get_naRef()), "Test" );
+  BOOST_CHECK_EQUAL( string.c_str(), std::string("Test") );
+  BOOST_CHECK( string.starts_with(string) );
+  BOOST_CHECK( string.starts_with(String(c, "T")) );
+  BOOST_CHECK( string.starts_with(String(c, "Te")) );
+  BOOST_CHECK( string.starts_with(String(c, "Tes")) );
+  BOOST_CHECK( string.starts_with(String(c, "Test")) );
+  BOOST_CHECK( !string.starts_with(String(c, "Test1")) );
+  BOOST_CHECK( !string.starts_with(String(c, "bb")) );
+  BOOST_CHECK( !string.starts_with(String(c, "bbasdasdafasd")) );
+  BOOST_CHECK( string.ends_with(String(c, "t")) );
+  BOOST_CHECK( string.ends_with(String(c, "st")) );
+  BOOST_CHECK( string.ends_with(String(c, "est")) );
+  BOOST_CHECK( string.ends_with(String(c, "Test")) );
+  BOOST_CHECK( !string.ends_with(String(c, "1Test")) );
+  BOOST_CHECK( !string.ends_with(String(c, "abc")) );
+  BOOST_CHECK( !string.ends_with(String(c, "estasdasd")) );
+  BOOST_CHECK_EQUAL( string.find('e'), 1 );
+  BOOST_CHECK_EQUAL( string.find('9'), String::npos );
+  BOOST_CHECK_EQUAL( string.find_first_of(String(c, "st")), 2 );
+  BOOST_CHECK_EQUAL( string.find_first_of(String(c, "st"), 3), 3 );
+  BOOST_CHECK_EQUAL( string.find_first_of(String(c, "xyz")), String::npos );
+  BOOST_CHECK_EQUAL( string.find_first_not_of(String(c, "Tst")), 1 );
+  BOOST_CHECK_EQUAL( string.find_first_not_of(String(c, "Tse"), 2), 3 );
+  BOOST_CHECK_EQUAL( string.find_first_not_of(String(c, "abc")), 0 );
+  BOOST_CHECK_EQUAL( string.find_first_not_of(String(c, "abc"), 20), String::npos );
 
   naFreeContext(c);
-
-  return 0;
 }

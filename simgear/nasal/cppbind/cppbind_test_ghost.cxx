@@ -77,7 +77,8 @@ BOOST_AUTO_TEST_CASE( ghost_weak_strong_nasal_conversion )
   BOOST_CHECK_EQUAL( nasal::from_nasal<DerivedPtr>(c, na_d), d );
 
   d.reset();
-  BOOST_REQUIRE( !nasal::from_nasal<DerivedPtr>(c, na_d) );
+  BOOST_REQUIRE_THROW( nasal::from_nasal<DerivedPtr>(c, na_d),
+                       nasal::bad_nasal_cast );
 
   // store strong pointer and extract weak pointer
   d.reset(new Derived);
@@ -132,8 +133,8 @@ BOOST_AUTO_TEST_CASE( ghost_casting_storage )
   na_b1 = nasal::to_nasal(c, b1_ref);
 
   BOOST_CHECK_EQUAL(nasal::from_nasal<Base1*>(c, na_b1), b1_ref.get());
-  BOOST_CHECK(!nasal::from_nasal<Base2*>(c, na_b1));
-  BOOST_CHECK(!nasal::from_nasal<Derived*>(c, na_b1));
+  BOOST_CHECK_THROW(nasal::from_nasal<Base2*>(c, na_b1), nasal::bad_nasal_cast);
+  BOOST_CHECK_THROW(nasal::from_nasal<Derived*>(c, na_b1), nasal::bad_nasal_cast);
 }
 
 //------------------------------------------------------------------------------

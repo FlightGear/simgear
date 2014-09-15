@@ -880,6 +880,41 @@ namespace nasal
         return strong_ref();
       }
 
+      /**
+       * Convert Nasal object to C++ object and check if it has the correct
+       * type.
+       *
+       * @see fromNasal
+       */
+      static strong_ref fromNasalChecked(naContext c, naRef me)
+      {
+        strong_ref obj = fromNasal(c, me);
+        if( obj )
+          return obj;
+        if( naIsNil(me) )
+          return strong_ref();
+
+        std::string msg = "Can not convert to '"
+                        + getSingletonPtr()->_name_strong
+                        + "': ";
+
+        naGhostType* ghost_type = naGhost_type(me);
+        if( ghost_type )
+          msg += "not a derived class (or expired weak ref): "
+                 "'" + std::string(ghost_type->name) + "'";
+        else if( naIsHash(me) )
+        {
+          if( !naIsVector(naHash_cget(me, const_cast<char*>("parents"))) )
+            msg += "missing parents vector";
+          else
+            msg += "not a derived hash";
+        }
+        else
+          msg += "not an object";
+
+        throw bad_nasal_cast(msg);
+      }
+
     private:
 
       template<class, class>
@@ -1420,7 +1455,7 @@ typename boost::enable_if<
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
   typedef typename nasal::shared_ptr_traits<T>::strong_ref strong_ref;
-  return T(nasal::Ghost<strong_ref>::fromNasal(c, ref));
+  return T(nasal::Ghost<strong_ref>::fromNasalChecked(c, ref));
 }
 
 /**
@@ -1455,7 +1490,7 @@ typename boost::enable_if_c<
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
   typedef SGSharedPtr<typename boost::remove_pointer<T>::type> TypeRef;
-  return T(nasal::Ghost<TypeRef>::fromNasal(c, ref));
+  return T(nasal::Ghost<TypeRef>::fromNasalChecked(c, ref));
 }
 
 /**
@@ -1482,7 +1517,7 @@ typename boost::enable_if<
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
   typedef osg::ref_ptr<typename boost::remove_pointer<T>::type> TypeRef;
-  return T(nasal::Ghost<TypeRef>::fromNasal(c, ref));
+  return T(nasal::Ghost<TypeRef>::fromNasalChecked(c, ref));
 }
 
 #endif /* SG_NASAL_GHOST_HXX_ */

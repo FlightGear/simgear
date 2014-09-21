@@ -409,6 +409,15 @@ sgLoad3DModel_internal(const SGPath& path,
           continue;
         }
 
+        if(sub_props->hasChild("usage")){ /* We don't want load this file and its content now */
+            bool isInterior = (std::string(sub_props->getStringValue("usage")) == "interior");
+            bool isAI = (std::string(prop_root->getStringValue("type")) == "AI");
+            if(isInterior && isAI){
+                 props->addChild("interior-path")->setStringValue(submodelPath.str());
+                 continue;
+            }
+        }
+
         try {
             submodel = sgLoad3DModel_internal(submodelPath, options.get(),
                                               sub_props->getNode("overlay"));

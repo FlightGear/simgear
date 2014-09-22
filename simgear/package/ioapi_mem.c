@@ -88,7 +88,7 @@ voidpf ZCALLBACK fopen_mem_func (opaque, filename, mode)
      * size of an int and therefore may need addressing for 64bit
      * architectures
      */
-    if (sscanf(filename,"%p+%x",&mem->base,&mem->size)!=2)
+    if (sscanf(filename,"%p+%lx",&mem->base,&mem->size)!=2)
       return NULL;
 
     if (mode & ZLIB_FILEFUNC_MODE_CREATE)
@@ -202,7 +202,7 @@ int ZCALLBACK ferror_mem_func (opaque, stream)
    voidpf opaque;
    voidpf stream;
 {
-    ourmemory_t *mem = (ourmemory_t *)stream;
+    // ourmemory_t *mem = (ourmemory_t *)stream;
     /* We never return errors */
     return 0;
 }

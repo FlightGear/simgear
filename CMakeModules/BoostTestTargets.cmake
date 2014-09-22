@@ -51,15 +51,15 @@ if("${Boost_VERSION}0" LESS "1034000")
 		"NOTE: boost::test-based targets and tests cannot "
 		"be added: boost >= 1.34.0 required but not found. "
 		"(found: '${Boost_VERSION}'; want >=103400) ")
-	if(BUILD_TESTING)
+	if(ENABLE_TESTS)
 		message(FATAL_ERROR
 			${_shared_msg}
-			"You may disable BUILD_TESTING to continue without the "
+			"You may disable ENABLE_TESTS to continue without the "
 			"tests.")
 	else()
 		message(STATUS
 			${_shared_msg}
-			"BUILD_TESTING disabled, so continuing anyway.")
+			"ENABLE_TESTS disabled, so continuing anyway.")
 	endif()
 endif()
 
@@ -88,7 +88,7 @@ if(Boost_FOUND AND NOT "${Boost_VERSION}0" LESS "1034000")
 endif()
 
 function(add_boost_test _name)
-	if(NOT BUILD_TESTING)
+	if(NOT ENABLE_TESTS)
 		return()
 	endif()
 

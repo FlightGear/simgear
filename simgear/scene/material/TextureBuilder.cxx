@@ -859,12 +859,9 @@ TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp,
 #endif
     const SGPropertyNode* colorNode = envProp->getChild("constant-color");
     if (colorNode) {
-    	DeferredPropertyListener* listener = initFromParameters(effect, colorNode, result,
+    	initFromParameters(effect, colorNode, result,
                            &TexEnvCombine::setConstantColor, colorFields,
                            options);
-    	if (listener != 0) {
-        	SG_LOG(SG_ALL,SG_ALERT,"Texture with property defined parameter");
-    	}
     }
     return result;
 }
@@ -961,8 +958,8 @@ private:
     string buffer;
 };
 
-class BufferNameChangeListener : public SGPropertyChangeListener, public InitializeWhenAdded,
-      public Effect::Updater {
+class BufferNameChangeListener : public SGPropertyChangeListener,
+      public DeferredPropertyListener {
 public:
     BufferNameChangeListener(Pass* p, int u, const std::string& pn) : pass(p), unit(u)
     {
@@ -978,7 +975,7 @@ public:
         const char* buffer = node->getStringValue();
         pass->setBufferUnit(unit, buffer);
     }
-    void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot)
+    void activate(SGPropertyNode* propRoot)
     {
         SGPropertyNode* listenProp = makeNode(propRoot, *propName);
         delete propName;
@@ -1014,7 +1011,7 @@ Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
     } else {
         std::string propName = getGlobalProperty(nameProp, options);
         BufferNameChangeListener* listener = new BufferNameChangeListener(pass, unit, propName);
-        effect->addUpdater(listener);
+        effect->addDeferredPropertyListener(listener);
     }
 
     // Return white for now. Would be overridden in Technique::ProcessDrawable

@@ -107,7 +107,6 @@ private:
 
     typedef boost::tuple<std::string, Uniform::Type, std::string> UniformCacheKey;
     typedef boost::tuple<ref_ptr<Uniform>, SGPropertyChangeListener*> UniformCacheValue;
-    //std::map<UniformCacheKey,UniformCacheValue > uniformCache;
     std::map<UniformCacheKey,ref_ptr<Uniform> > uniformCache;
 
     typedef std::queue<DeferredPropertyListener*> DeferredListenerList;
@@ -147,8 +146,6 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
 	}
 
 	UniformCacheKey key = boost::make_tuple(name, uniformType, val);
-	//UniformCacheValue value = uniformCache[key];
-    //ref_ptr<Uniform> uniform = value.get_head();
 	ref_ptr<Uniform> uniform = uniformCache[key];
 
     if (uniform.valid()) {
@@ -158,28 +155,27 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
 
     SG_LOG(SG_GL,SG_DEBUG,"new uniform " << name << " value " << uniformCache.size());
     uniformCache[key] = uniform = new Uniform;
-    DeferredPropertyListener* updater = 0;
 
     uniform->setName(name);
     uniform->setType(uniformType);
     switch (uniformType) {
     case Uniform::BOOL:
-    	updater = initFromParameters(effect, valProp, uniform.get(),
+    	initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(bool)>(&Uniform::set),
                            options);
         break;
     case Uniform::FLOAT:
-    	updater = initFromParameters(effect, valProp, uniform.get(),
+    	initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(float)>(&Uniform::set),
                            options);
         break;
     case Uniform::FLOAT_VEC3:
-    	updater = initFromParameters(effect, valProp, uniform.get(),
+    	initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(const Vec3&)>(&Uniform::set),
                            vec3Names, options);
         break;
     case Uniform::FLOAT_VEC4:
-    	updater = initFromParameters(effect, valProp, uniform.get(),
+    	initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(const Vec4&)>(&Uniform::set),
                            vec4Names, options);
         break;
@@ -190,7 +186,7 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
     case Uniform::SAMPLER_1D_SHADOW:
     case Uniform::SAMPLER_2D_SHADOW:
     case Uniform::SAMPLER_CUBE:
-    	updater = initFromParameters(effect, valProp, uniform.get(),
+    	initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(int)>(&Uniform::set),
                            options);
         break;
@@ -199,7 +195,6 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
         break;
     }
 
-    addListener(updater);
     return uniform;
 }
 
@@ -1443,6 +1438,11 @@ bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
     return true;
 }
 
+void Effect::addDeferredPropertyListener(DeferredPropertyListener* listener)
+{
+	UniformFactory::instance()->addListener(listener);
+}
+
 void Effect::InitializeCallback::doUpdate(osg::Node* node, osg::NodeVisitor* nv)
 {
     EffectGeode* eg = dynamic_cast<EffectGeode*>(node);
@@ -1455,16 +1455,6 @@ void Effect::InitializeCallback::doUpdate(osg::Node* node, osg::NodeVisitor* nv)
 
     // Initialize all queued listeners
     UniformFactory::instance()->updateListeners(root);
-
-    for (vector<SGSharedPtr<Updater> >::iterator itr = effect->_extraData.begin(),
-             end = effect->_extraData.end();
-         itr != end;
-         ++itr) {
-        InitializeWhenAdded* adder
-            = dynamic_cast<InitializeWhenAdded*>(itr->ptr());
-        if (adder)
-            adder->initOnAdd(effect, root);
-    }
 }
 
 bool Effect::Key::EqualTo::operator()(const Effect::Key& lhs,

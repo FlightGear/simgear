@@ -607,33 +607,33 @@ inline void setDynamicVariance(osg::Object* obj)
  * used.
  */
 template<typename OSGParamType, typename ObjType, typename F>
-DeferredPropertyListener*
+void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    const F& setter, const SGReaderWriterOptions* options)
 {
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
-    ScalarChangeListener<OSGParamType, ObjType, F>* listener = 0;
     if (!valProp)
-        return listener;
+        return;
     if (valProp->nChildren() == 0) {
         setter(obj, valProp->getValue<OSGParamType>());
     } else {
         setDynamicVariance(obj);
         std::string propName = getGlobalProperty(valProp, options);
-        listener
+        ScalarChangeListener<OSGParamType, ObjType, F>* listener
             = new ScalarChangeListener<OSGParamType, ObjType, F>(obj, setter,
                                                                  propName);
+        effect->addDeferredPropertyListener(listener);
     }
-    return listener;
+    return;
 }
 
 template<typename OSGParamType, typename ObjType, typename SetterReturn>
-inline DeferredPropertyListener*
+inline void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    SetterReturn (ObjType::*setter)(const OSGParamType),
                    const SGReaderWriterOptions* options)
 {
-    return initFromParameters<OSGParamType>(effect, prop, obj,
+	initFromParameters<OSGParamType>(effect, prop, obj,
                                      boost::bind(setter, _1, _2), options);
 }
 
@@ -658,17 +658,16 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
  */
 template<typename OSGParamType, typename ObjType, typename NameItrType,
          typename F>
-DeferredPropertyListener*
+void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    const F& setter,
                    NameItrType nameItr, const SGReaderWriterOptions* options)
 {
     typedef typename Bridge<OSGParamType>::sg_type sg_type;
-    DeferredPropertyListener* listener = 0;
     const int numComponents = props::NumComponents<sg_type>::num_components;
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
-        return listener;
+        return;
     if (valProp->nChildren() == 0) { // Has <use>?
         setter(obj, Bridge<OSGParamType>::get(valProp->getValue<sg_type>()));
     } else {
@@ -678,22 +677,23 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
         if (paramNames.empty())
             throw BuilderException();
         std::vector<std::string>::const_iterator pitr = paramNames.begin();
-        listener
+        DeferredPropertyListener* listener
             =  new_EEPropListener<sg_type>(make_OSGFunctor<OSGParamType>
                                            (obj, setter),
                                            0, pitr, pitr + numComponents);
+        effect->addDeferredPropertyListener(listener);
     }
-    return listener;
+    return;
 }
 
 template<typename OSGParamType, typename ObjType, typename NameItrType,
          typename SetterReturn>
-inline DeferredPropertyListener*
+inline void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    SetterReturn (ObjType::*setter)(const OSGParamType&),
                    NameItrType nameItr, const SGReaderWriterOptions* options)
 {
-    return initFromParameters<OSGParamType>(effect, prop, obj,
+    initFromParameters<OSGParamType>(effect, prop, obj,
                                      boost::bind(setter, _1, _2), nameItr,
                                      options);
 }

@@ -54,31 +54,11 @@ class SGReaderWriterOptions;
  * things, like manipulations of the global property tree, are are
  * only safe in the update process.
  */
-
-class InitializeWhenAdded
-{
-public:
-    InitializeWhenAdded() : _initialized(false) {};
-    virtual ~InitializeWhenAdded() {};
-    void initOnAdd(Effect* effect, SGPropertyNode* propRoot)
-    {
-        if (!_initialized) {
-            initOnAddImpl(effect, propRoot);
-            _initialized = true;
-        }
-    }
-    bool getInitialized() const { return _initialized; }
-private:
-    virtual void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot) = 0;
-    bool _initialized;
-};
-
 class DeferredPropertyListener {
 public:
     virtual void activate(SGPropertyNode* propRoot) {};
     virtual ~DeferredPropertyListener() {};
 };
-
 
 class Effect : public osg::Object
 {
@@ -111,16 +91,7 @@ public:
      * Build the techniques from the effect properties.
      */
     bool realizeTechniques(const SGReaderWriterOptions* options = 0);
-    /**
-     * Updaters that should be derefed when the effect is
-     * deleted. Updaters arrange to be run by listening on properties
-     * or something.
-     */
-    struct Updater : public virtual SGReferenced
-    {
-        virtual ~Updater() {}
-    };
-    void addUpdater(Updater* data) { _extraData.push_back(data); }
+    void addDeferredPropertyListener(DeferredPropertyListener* listener);
     // Callback that is added to the effect geode to initialize the
     // effect.
     friend struct InitializeCallback;
@@ -129,7 +100,6 @@ public:
         void doUpdate(osg::Node* node, osg::NodeVisitor* nv);
     };
 protected:
-    std::vector<SGSharedPtr<Updater> > _extraData;
     ~Effect();
     // Support for a cache of effects that inherit from this one, so
     // Effect objects with the same parameters and techniques can be

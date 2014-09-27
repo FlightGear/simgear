@@ -73,6 +73,13 @@ private:
     bool _initialized;
 };
 
+class DeferredPropertyListener {
+public:
+    virtual void activate(SGPropertyNode* propRoot) {};
+    virtual ~DeferredPropertyListener() {};
+};
+
+
 class Effect : public osg::Object
 {
 public:

@@ -30,6 +30,7 @@
 #include <functional>
 #include <iterator>
 #include <map>
+#include <queue>
 #include <utility>
 #include <boost/tr1/unordered_map.hpp>
 
@@ -77,7 +78,8 @@
 #include <simgear/structure/OSGUtils.hxx>
 #include <simgear/structure/SGExpression.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
-
+#include <simgear/threads/SGThread.hxx>
+#include <simgear/threads/SGGuard.hxx>
 
 namespace simgear
 {
@@ -94,12 +96,22 @@ public:
                                  Uniform::Type uniformType, 
                                  SGConstPropertyNode_ptr valProp, 
                                  const SGReaderWriterOptions* options );
+    void updateListeners( SGPropertyNode* propRoot );
+    void addListener(DeferredPropertyListener* listener);
 private:
     // Default names for vector property components
     static const char* vec3Names[];
     static const char* vec4Names[];
 
-    std::map<std::string,ref_ptr<Uniform> > uniformCache;
+    SGMutex _mutex;
+
+    typedef boost::tuple<std::string, Uniform::Type, std::string> UniformCacheKey;
+    typedef boost::tuple<ref_ptr<Uniform>, SGPropertyChangeListener*> UniformCacheValue;
+    //std::map<UniformCacheKey,UniformCacheValue > uniformCache;
+    std::map<UniformCacheKey,ref_ptr<Uniform> > uniformCache;
+
+    typedef std::queue<DeferredPropertyListener*> DeferredListenerList;
+    DeferredListenerList deferredListenerList;
 };
 
 const char* UniformFactoryImpl::vec3Names[] = {"x", "y", "z"};
@@ -111,36 +123,63 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
                                  SGConstPropertyNode_ptr valProp,
                                  const SGReaderWriterOptions* options )
 {
+	SGGuard<SGMutex> scopeLock(_mutex);
+	std::string val = "0";
 
-    ref_ptr<Uniform> uniform = uniformCache[name];
-    if( !uniform.valid() ) {
-       SG_LOG(SG_ALL,SG_ALERT,"new uniform '" << name << "'");
-       uniformCache[name] = uniform = new Uniform;
-    } else {
-      SG_LOG(SG_ALL,SG_ALERT,"reusing uniform '" << name << "'");
-      return uniform;
+	if (valProp->nChildren() == 0) {
+		// Completely static value
+		val = valProp->getStringValue();
+	} else {
+		// Value references <parameters> section of Effect
+		const SGPropertyNode* prop = getEffectPropertyNode(effect, valProp);
+
+		if (prop) {
+			if (prop->nChildren() == 0) {
+				// Static value in parameters section
+				val = prop->getStringValue();
+			} else {
+				// Dynamic property value in parameters section
+				val = getGlobalProperty(prop, options);
+			}
+		} else {
+			SG_LOG(SG_GL,SG_DEBUG,"Invalid parameter " << valProp->getName() << " for uniform " << name << " in Effect ");
+		}
+	}
+
+	UniformCacheKey key = boost::make_tuple(name, uniformType, val);
+	//UniformCacheValue value = uniformCache[key];
+    //ref_ptr<Uniform> uniform = value.get_head();
+	ref_ptr<Uniform> uniform = uniformCache[key];
+
+    if (uniform.valid()) {
+    	// We've got a hit to cache - simply return it
+    	return uniform;
     }
+
+    SG_LOG(SG_GL,SG_DEBUG,"new uniform " << name << " value " << uniformCache.size());
+    uniformCache[key] = uniform = new Uniform;
+    DeferredPropertyListener* updater = 0;
 
     uniform->setName(name);
     uniform->setType(uniformType);
     switch (uniformType) {
     case Uniform::BOOL:
-        initFromParameters(effect, valProp, uniform.get(),
+    	updater = initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(bool)>(&Uniform::set),
                            options);
         break;
     case Uniform::FLOAT:
-        initFromParameters(effect, valProp, uniform.get(),
+    	updater = initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(float)>(&Uniform::set),
                            options);
         break;
     case Uniform::FLOAT_VEC3:
-        initFromParameters(effect, valProp, uniform.get(),
+    	updater = initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(const Vec3&)>(&Uniform::set),
                            vec3Names, options);
         break;
     case Uniform::FLOAT_VEC4:
-        initFromParameters(effect, valProp, uniform.get(),
+    	updater = initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(const Vec4&)>(&Uniform::set),
                            vec4Names, options);
         break;
@@ -151,17 +190,43 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
     case Uniform::SAMPLER_1D_SHADOW:
     case Uniform::SAMPLER_2D_SHADOW:
     case Uniform::SAMPLER_CUBE:
-        initFromParameters(effect, valProp, uniform.get(),
+    	updater = initFromParameters(effect, valProp, uniform.get(),
                            static_cast<bool (Uniform::*)(int)>(&Uniform::set),
                            options);
         break;
     default: // avoid compiler warning
+    	SG_LOG(SG_ALL,SG_ALERT,"UNKNOWN Uniform type '" << uniformType << "'");
         break;
     }
 
+    addListener(updater);
     return uniform;
 }
 
+void UniformFactoryImpl::addListener(DeferredPropertyListener* listener)
+{
+    if (listener != 0) {
+    	// Uniform requires a property listener. Add it to the list to be
+    	// created when the main thread gets to it.
+    	deferredListenerList.push(listener);
+    }
+}
+
+void UniformFactoryImpl::updateListeners( SGPropertyNode* propRoot )
+{
+	SGGuard<SGMutex> scopeLock(_mutex);
+
+	if (deferredListenerList.empty()) return;
+
+	SG_LOG(SG_GL,SG_DEBUG,"Adding " << deferredListenerList.size() << " listeners for effects.");
+
+	// Instantiate all queued listeners
+	while (! deferredListenerList.empty()) {
+		DeferredPropertyListener* listener = deferredListenerList.front();
+		listener->activate(propRoot);
+		deferredListenerList.pop();
+	}
+}
 
 typedef Singleton<UniformFactoryImpl> UniformFactory;
 
@@ -183,6 +248,8 @@ Effect::Effect(const Effect& rhs, const CopyOp& copyop)
         techniques.push_back(static_cast<Technique*>(copyop(itr->get())));
 
     generator = rhs.generator;
+    _name = rhs._name;
+    _name += " clone";
 }
 
 // Assume that the last technique is always valid.
@@ -1385,6 +1452,10 @@ void Effect::InitializeCallback::doUpdate(osg::Node* node, osg::NodeVisitor* nv)
     if (!effect)
         return;
     SGPropertyNode* root = getPropertyRoot();
+
+    // Initialize all queued listeners
+    UniformFactory::instance()->updateListeners(root);
+
     for (vector<SGSharedPtr<Updater> >::iterator itr = effect->_extraData.begin(),
              end = effect->_extraData.end();
          itr != end;

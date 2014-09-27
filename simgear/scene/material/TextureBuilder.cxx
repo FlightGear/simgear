@@ -858,10 +858,14 @@ TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp,
     }
 #endif
     const SGPropertyNode* colorNode = envProp->getChild("constant-color");
-    if (colorNode)
-        initFromParameters(effect, colorNode, result,
+    if (colorNode) {
+    	DeferredPropertyListener* listener = initFromParameters(effect, colorNode, result,
                            &TexEnvCombine::setConstantColor, colorFields,
                            options);
+    	if (listener != 0) {
+        	SG_LOG(SG_ALL,SG_ALERT,"Texture with property defined parameter");
+    	}
+    }
     return result;
 }
 

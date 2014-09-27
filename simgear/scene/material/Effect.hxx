@@ -73,16 +73,12 @@ private:
     bool _initialized;
 };
 
-class PropertyPoller
-{
+class DeferredPropertyListener {
 public:
-    PropertyPoller()  {};
-    virtual ~PropertyPoller() {};
-    virtual void pollProperties(Effect* effect)
-    {
-    }
-private:
+    virtual void activate(SGPropertyNode* propRoot) {};
+    virtual ~DeferredPropertyListener() {};
 };
+
 
 class Effect : public osg::Object
 {
@@ -131,17 +127,6 @@ public:
     struct InitializeCallback : public UpdateOnceCallback
     {
         void doUpdate(osg::Node* node, osg::NodeVisitor* nv);
-    };
-    friend struct UpdateCallback;
-    struct UpdateCallback : public osg::NodeCallback
-    {
-        UpdateCallback() {}
-        UpdateCallback(const UpdateCallback& nc, const osg::CopyOp& copyop)
-        : osg::NodeCallback(nc, copyop)
-        {
-        }
-
-        virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
     };
 protected:
     std::vector<SGSharedPtr<Updater> > _extraData;

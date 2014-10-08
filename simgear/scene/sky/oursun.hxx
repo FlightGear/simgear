@@ -51,6 +51,7 @@ class SGSun : public SGReferenced {
     // distance of light traveling through the atmosphere
     double path_distance;
     double sun_exp2_punch_through;
+    double horizon_angle;
 
     SGPropertyNode_ptr env_node;
 

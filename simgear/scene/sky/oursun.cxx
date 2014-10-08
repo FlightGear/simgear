@@ -52,7 +52,7 @@ using namespace simgear;
 // Constructor
 SGSun::SGSun( void ) :
     visibility(-9999.0), prev_sun_angle(-9999.0), path_distance(60000.0),
-    sun_exp2_punch_through(7.0e-06)
+    sun_exp2_punch_through(7.0e-06), horizon_angle(0.0)
 {
 
 }
@@ -341,6 +341,13 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         gamma_correct_rgb( scene_color._v );
         gamma_correct_rgb( sun_color._v );
 
+	if (sun_angle >91.0 * 3.1415/180.0 + horizon_angle)
+		{
+		sun_color[3] = 0;
+		o_halo_color[3]=0;
+		i_halo_color[3]=0;
+		}
+
         (*sun_cl)[0] = sun_color;
         sun_cl->dirty();
         (*scene_cl)[0] = scene_color;
@@ -403,6 +410,9 @@ bool SGSun::reposition( double rightAscension, double declination,
          double alt_half = sqrt( pow ( r_tropo, 2 ) + pow( path_distance / 2, 2 ) - r_tropo * path_distance * cos( asin( sin_beta )) ) - r_earth;
 
          if ( alt_half < 0.0 ) alt_half = 0.0;
+
+	 //angle at which the sun is visible below the horizon
+	 horizon_angle = acos(r_earth/position_radius);
 
          // Push the data to the property tree, so it can be used in the enviromental code
          if ( env_node ){

@@ -109,6 +109,7 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     params->getNode("min-size",true)->setValue(minSize);
     params->getNode("max-size",true)->setValue(maxSize);
     params->getNode("cull-face",true)->setValue(directional ? "back" : "off");
+    params->getNode("directional",true)->setValue(directional);
 
     effect = makeEffect(effectProp, true, options);
 

@@ -37,10 +37,14 @@ class SGPrecipitation : public osg::Referenced
 private:
     bool _freeze;
     bool _enabled;
+    bool _droplet_external;
 
     float _snow_intensity;
     float _rain_intensity;
     float _clip_distance;
+    float _rain_droplet_size;
+    float _snow_flake_size;
+    float _illumination;
 	
     osg::Vec3 _wind_vec;
 	
@@ -54,8 +58,13 @@ public:
 	
     void setWindProperty(double, double);
     void setFreezing(bool);
+    void setDropletExternal(bool);
     void setRainIntensity(float);
     void setSnowIntensity(float);
+    void setRainDropletSize(float);
+    void setSnowFlakeSize(float);
+    void setIllumination(float);
+    void setClipDistance(float);
 
     void setEnabled( bool );
     bool getEnabled() const;

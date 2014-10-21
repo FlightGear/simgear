@@ -37,7 +37,7 @@
  * Build a new OSG object from osgParticle.
  */
 SGPrecipitation::SGPrecipitation() :
-    _freeze(false), _enabled(true), _snow_intensity(0.0), _rain_intensity(0.0), _clip_distance(5.0)
+    _freeze(false), _enabled(true), _droplet_external(false), _snow_intensity(0.0), _rain_intensity(0.0), _clip_distance(5.0), _rain_droplet_size(0.0), _snow_flake_size(0.0), _illumination(1.0)
 {
     _precipitationEffect = new osgParticle::PrecipitationEffect;
 }
@@ -45,6 +45,11 @@ SGPrecipitation::SGPrecipitation() :
 void SGPrecipitation::setEnabled( bool value )
 {
     _enabled = value;
+}
+
+void SGPrecipitation::setDropletExternal( bool value )
+{
+    _droplet_external = value;
 }
 
 bool SGPrecipitation::getEnabled() const
@@ -66,7 +71,7 @@ osg::Group* SGPrecipitation::build(void)
     _precipitationEffect->rain(0);	
 
     if (_clip_distance!=0.0)
-    {    
+    {
         osg::ref_ptr<osg::ClipNode> clipNode = new osg::ClipNode;
         clipNode->addClipPlane( new osg::ClipPlane( 0 ) );
         clipNode->getClipPlane(0)->setClipPlane( 0.0, 0.0, -1.0, -_clip_distance );
@@ -119,17 +124,72 @@ void SGPrecipitation::setRainIntensity(float intensity)
         this->_rain_intensity = intensity;
 }
 
+/**
+ * @brief Define the rain droplet size
+ *
+ * This function permits you to define and change the rain droplet size
+ * which is used if external droplet size control is enabled
+ */
 
-/** 
+void SGPrecipitation::setRainDropletSize(float size)
+{
+    _rain_droplet_size = size;
+}
+
+
+/**
+ * @brief Define the illumination multiplier
+ *
+ * This function permits you to define and change the rain droplet size
+ * which is used if external droplet size control is enabled
+ */
+
+void SGPrecipitation::setIllumination(float illumination)
+{
+    _illumination = illumination;
+}
+
+/**
+ * @brief Define the snow flake size
+ *
+ * This function permits you to define and change the snow flake size
+ * which is used if external droplet size control is enabled
+ */
+
+void SGPrecipitation::setSnowFlakeSize(float size)
+{
+    _snow_flake_size = size;
+}
+
+
+/**
+ * @brief Define the rain droplet size
+ *
+ * This function permits you to define and change the rain droplet size
+ * which is used if external droplet size control is enabled
+ */
+
+void SGPrecipitation::setClipDistance(float distance)
+{
+    _clip_distance = distance;
+}
+
+/**
  * @brief Freeze the rain to snow
- * 
- * @param freeze Boolean 
- * 
+ *
+ * @param freeze Boolean
+ *
  * This function permits you to turn off the rain to snow.
  */
 void SGPrecipitation::setFreezing(bool freeze)
 {
+    if ((this->_freeze)&&(!freeze)) // rain freezes suddenly, so we need to unfreeze
+	{
+	this->_rain_intensity = this->_snow_intensity;
+	this->_snow_intensity = 0.0;
+	}
     this->_freeze = freeze;
+
 }
 
 
@@ -137,7 +197,7 @@ void SGPrecipitation::setFreezing(bool freeze)
  * @brief Define the wind direction and speed
  *
  * This function permits you to define and change the wind direction
- * 
+ *
  * After apply the MatrixTransform to the osg::Precipitation object,
  * x points full south... From wind heading and speed, we can calculate
  * the wind vector.
@@ -169,34 +229,74 @@ void SGPrecipitation::setWindProperty(double heading, double speed)
 bool SGPrecipitation::update(void)
 {
     if (this->_freeze) {
-        if (this->_rain_intensity > 0) 
-            this->_snow_intensity = this->_rain_intensity;
+        if (this->_rain_intensity > 0) {
+		this->_snow_intensity = this->_rain_intensity;
+	}
     }
 
     if (_enabled && this->_snow_intensity > 0) {
         _precipitationEffect->setWind(_wind_vec);
-        _precipitationEffect->setParticleSpeed( -0.75f - 0.25f*_snow_intensity);
+
 		
-        _precipitationEffect->setParticleSize(0.02f + 0.03f*_snow_intensity);
-        _precipitationEffect->setMaximumParticleDensity(_snow_intensity * 7.2f);
+	if(_droplet_external)
+		{
+
+		if ((_freeze) && (_rain_droplet_size > 0.03)) // this is hail or sleet
+			{
+			_precipitationEffect->setParticleSize(_rain_droplet_size*1.5f);
+			_precipitationEffect->setParticleSpeed( -1.0f - 22.36f*sqrtf(_rain_droplet_size));
+        		_precipitationEffect->setMaximumParticleDensity(_snow_intensity * 4.8f);
+			}
+		else if (_freeze) // this is snow from frozen small rain droplets
+			{
+			_precipitationEffect->setParticleSize(_rain_droplet_size*1.3f);
+			_precipitationEffect->setParticleSpeed( -0.75f - 0.25f*_snow_intensity);
+        		_precipitationEffect->setMaximumParticleDensity(_snow_intensity * 10.0f);
+			}
+		else // this was snow in the first place
+			{
+			_precipitationEffect->setParticleSize(_snow_flake_size);
+			_precipitationEffect->setParticleSpeed( -0.75f - 0.25f*_snow_intensity);
+        		_precipitationEffect->setMaximumParticleDensity(_snow_intensity * 7.2f);
+			}
+		}
+	else
+		{
+        	_precipitationEffect->setMaximumParticleDensity(_snow_intensity * 7.2f);
+        	_precipitationEffect->setParticleSize(0.02f + 0.03f*_snow_intensity);
+		_precipitationEffect->setParticleSpeed( -0.75f - 0.25f*_snow_intensity);
+		}
+
+
         _precipitationEffect->setCellSize(osg::Vec3(5.0f / (0.25f+_snow_intensity), 5.0f / (0.25f+_snow_intensity), 5.0f));
 		
         _precipitationEffect->setNearTransition(25.f);
         _precipitationEffect->setFarTransition(100.0f - 60.0f*sqrtf(_snow_intensity));
 		
-        _precipitationEffect->setParticleColor(osg::Vec4(0.85, 0.85, 0.85, 1.0) - osg::Vec4(0.1, 0.1, 0.1, 1.0) * _snow_intensity);
+        _precipitationEffect->setParticleColor(osg::Vec4(0.85 * _illumination, 0.85 * _illumination, 0.85 * _illumination, 1.0) - osg::Vec4(0.1, 0.1, 0.1, 1.0) * _snow_intensity);
     } else if (_enabled && this->_rain_intensity > 0) {
+
         _precipitationEffect->setWind(_wind_vec);
-        _precipitationEffect->setParticleSpeed( -2.0f + -5.0f*_rain_intensity);
+
 		
-        _precipitationEffect->setParticleSize(0.01 + 0.02*_rain_intensity);
+	if(_droplet_external)
+		{
+		_precipitationEffect->setParticleSize(_rain_droplet_size);
+		_precipitationEffect->setParticleSpeed( -1.0f - 22.36f*sqrtf(_rain_droplet_size));
+		}
+	else
+		{
+		_precipitationEffect->setParticleSize(0.01 + 0.02*_rain_intensity);
+        	_precipitationEffect->setParticleSpeed( -2.0f + -5.0f*_rain_intensity);
+		}
+		
         _precipitationEffect->setMaximumParticleDensity(_rain_intensity * 7.5f);
         _precipitationEffect->setCellSize(osg::Vec3(5.0f / (0.25f+_rain_intensity), 5.0f / (0.25f+_rain_intensity), 5.0f));
 		
         _precipitationEffect->setNearTransition(25.f);
         _precipitationEffect->setFarTransition(100.0f - 60.0f*sqrtf(_rain_intensity));
 		
-        _precipitationEffect->setParticleColor( osg::Vec4(0x7A, 0xCE, 0xFF, 0x80));
+	_precipitationEffect->setParticleColor( osg::Vec4(0.64 * _illumination, 0.64 * _illumination, 0.64 * _illumination, 0.5));
     } else {
         _precipitationEffect->snow(0);	
         _precipitationEffect->rain(0);	

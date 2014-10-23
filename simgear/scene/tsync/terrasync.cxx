@@ -84,7 +84,7 @@ namespace UpdateInterval
     static const double FailedAttempt     = 10*60;
 }
 
-typedef map<string,time_t> CompletedTiles;
+typedef map<string,time_t> TileAgeCache;
 
 ///////////////////////////////////////////////////////////////////////////////
 // helper functions ///////////////////////////////////////////////////////////
@@ -260,11 +260,12 @@ private:
 
     // commond helpers between both internal and external models
     
-    bool isPathCached(const SyncItem& next) const;
+    SyncItem::Status isPathCached(const SyncItem& next) const;
     void initCompletedTilesPersistentCache();
     void writeCompletedTilesPersistentCache() const;
     void updated(SyncItem item, bool isNewDirectory);
     void fail(SyncItem failedItem);
+    void notFound(SyncItem notFoundItem);
     
     bool _use_built_in;
     HTTP::Client _http;
@@ -273,7 +274,10 @@ private:
    volatile bool _is_dirty;
    volatile bool _stop;
    SGBlockingDeque <SyncItem> waitingTiles;
-   CompletedTiles _completedTiles;
+   
+   TileAgeCache _completedTiles;
+   TileAgeCache _notFoundItems;
+   
    SGBlockingDeque <SyncItem> _freshTiles;
    bool _use_svn;
    string _svn_server;
@@ -488,11 +492,12 @@ void SGTerraSync::SvnThread::runExternal()
         if (_stop)
            break;
 
-        if (isPathCached(next)) {
+        SyncItem::Status cacheStatus = isPathCached(next);
+        if (cacheStatus != SyncItem::Invalid) {
             _cache_hits++;
             SG_LOG(SG_TERRAIN, SG_DEBUG,
                    "Cache hit for: '" << next._dir << "'");
-            next._status = SyncItem::Cached;
+            next._status = cacheStatus;
             _freshTiles.push_back(next);
             _is_dirty = true;
             continue;
@@ -556,11 +561,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         // check result
         SVNRepository::ResultCode res = slot.repository->failure();
         if (res == SVNRepository::SVN_ERROR_NOT_FOUND) {
-            // this is fine, but maybe we should use a different return code
-            // in the future to higher layers can distinguish this case
-            slot.currentItem._status = SyncItem::NotFound;
-            _freshTiles.push_back(slot.currentItem);
-            _is_dirty = true;
+            notFound(slot.currentItem);
         } else if (res != SVNRepository::SVN_NO_ERROR) {
             fail(slot.currentItem);
         } else {
@@ -622,10 +623,11 @@ void SGTerraSync::SvnThread::runInternal()
         // drain the waiting tiles queue into the sync slot queues.
         while (!waitingTiles.empty()) {
             SyncItem next = waitingTiles.pop_front();
-            if (isPathCached(next)) {
+            SyncItem::Status cacheStatus = isPathCached(next);
+            if (cacheStatus != SyncItem::Invalid) {
                 _cache_hits++;
-                SG_LOG(SG_TERRAIN, SG_DEBUG, "TerraSync Cache hit for: '" << next._dir << "'");
-                next._status = SyncItem::Cached;
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "\nTerraSync Cache hit for: '" << next._dir << "'");
+                next._status = cacheStatus;
                 _freshTiles.push_back(next);
                 _is_dirty = true;
                 continue;
@@ -652,22 +654,26 @@ void SGTerraSync::SvnThread::runInternal()
     } // of thread running loop
 }
 
-bool SGTerraSync::SvnThread::isPathCached(const SyncItem& next) const
+SyncItem::Status SGTerraSync::SvnThread::isPathCached(const SyncItem& next) const
 {
-    CompletedTiles::const_iterator ii = _completedTiles.find( next._dir );
+    TileAgeCache::const_iterator ii = _completedTiles.find( next._dir );
     if (ii == _completedTiles.end()) {
-        return false;
+        ii = _notFoundItems.find( next._dir );
+        // Invalid means 'not cached', otherwise we want to return to
+        // higher levels the cache status
+        return (ii == _notFoundItems.end()) ? SyncItem::Invalid : SyncItem::NotFound;
     }
     
-    // check if the path still physically exists
+    // check if the path still physically exists. This is needed to
+    // cope with the user manipulating our cache dir
     SGPath p(_local_dir);
     p.append(next._dir);
     if (!p.exists()) {
-        return false;
+        return SyncItem::Invalid;
     }
     
     time_t now = time(0);
-    return (ii->second > now);
+    return (ii->second > now) ? SyncItem::Cached : SyncItem::Invalid;
 }
 
 void SGTerraSync::SvnThread::fail(SyncItem failedItem)
@@ -679,6 +685,21 @@ void SGTerraSync::SvnThread::fail(SyncItem failedItem)
     _freshTiles.push_back(failedItem);
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
     _is_dirty = true;
+}
+
+void SGTerraSync::SvnThread::notFound(SyncItem item)
+{
+    // treat not found as authorative, so use the same cache expiry
+    // as succesful download. Important for MP models and similar so
+    // we don't spam the server with lookups for models that don't
+    // exist
+    
+    time_t now = time(0);
+    item._status = SyncItem::NotFound;
+    _freshTiles.push_back(item);
+    _is_dirty = true;
+    _notFoundItems[ item._dir ] = now + UpdateInterval::SuccessfulAttempt;
+    writeCompletedTilesPersistentCache();
 }
 
 void SGTerraSync::SvnThread::updated(SyncItem item, bool isNewDirectory)
@@ -718,13 +739,18 @@ void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
     
     for (int i=0; i<cacheRoot->nChildren(); ++i) {
         SGPropertyNode* entry = cacheRoot->getChild(i);
+        bool isNotFound = (strcmp(entry->getName(), "not-found") == 0);
         string tileName = entry->getStringValue("path");
         time_t stamp = entry->getIntValue("stamp");
         if (stamp < now) {
             continue;
         }
         
-        _completedTiles[tileName] = stamp;
+        if (isNotFound) {
+            _completedTiles[tileName] = stamp;
+        } else {
+            _notFoundItems[tileName] = stamp;
+        }
     }
 }
 
@@ -741,9 +767,16 @@ void SGTerraSync::SvnThread::writeCompletedTilesPersistentCache() const
     }
     
     SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
-    CompletedTiles::const_iterator it = _completedTiles.begin();
+    TileAgeCache::const_iterator it = _completedTiles.begin();
     for (; it != _completedTiles.end(); ++it) {
         SGPropertyNode* entry = cacheRoot->addChild("entry");
+        entry->setStringValue("path", it->first);
+        entry->setIntValue("stamp", it->second);
+    }
+    
+    it = _notFoundItems.begin();
+    for (; it != _notFoundItems.end(); ++it) {
+        SGPropertyNode* entry = cacheRoot->addChild("not-found");
         entry->setStringValue("path", it->first);
         entry->setIntValue("stamp", it->second);
     }

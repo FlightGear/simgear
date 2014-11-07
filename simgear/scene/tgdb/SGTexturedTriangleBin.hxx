@@ -22,6 +22,8 @@
 #ifndef SG_TEXTURED_TRIANGLE_BIN_HXX
 #define SG_TEXTURED_TRIANGLE_BIN_HXX
 
+#define MAX_RANDOM_OBJECTS 100.0
+
 #include <osg/Array>
 #include <osg/Geometry>
 #include <osg/PrimitiveSet>
@@ -291,8 +293,8 @@ public:
                         osg::Texture2D* object_mask,
                         std::vector<std::pair<SGVec3f, float> >& points)
   {
-    unsigned num = getNumTriangles();
-    for (unsigned i = 0; i < num; ++i) {
+    unsigned numtriangles = getNumTriangles();
+    for (unsigned i = 0; i < numtriangles; ++i) {
       triangle_ref triangleRef = getTriangleRef(i);
       SGVec3f v0 = getVertex(triangleRef[0]).GetVertex();
       SGVec3f v1 = getVertex(triangleRef[1]).GetVertex();
@@ -311,6 +313,13 @@ public:
       // create the proper random chance of an object being created
       // for this triangle.
       double num = area / coverage + mt_rand(&seed);
+
+      if (num > MAX_RANDOM_OBJECTS) {
+          SG_LOG(SG_TERRAIN, SG_ALERT,
+                 "Per-triangle random object count exceeded limits ("
+        		  << MAX_RANDOM_OBJECTS << ") " << num);
+          num = MAX_RANDOM_OBJECTS;
+      }
 
       // place an object each unit of area
       while ( num > 1.0 ) {

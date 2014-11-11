@@ -26,6 +26,8 @@
 #include <simgear/sg_inlines.h>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>
+
+#include <cstdlib> // for malloc
      
 namespace simgear
 {

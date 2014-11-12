@@ -187,6 +187,10 @@ Effect* makeEffect(SGPropertyNode* prop,
         }
     }
     ref_ptr<Effect> effect;
+    if(!prop->hasChild("name")){
+        setValue(prop->getChild("name", 0, true), "noname");
+    }
+    SGPropertyNode_ptr nameProp = prop->getChild("name");
     // Merge with the parent effect, if any
     SGPropertyNode_ptr inheritProp = prop->getChild("inherits-from");
     Effect* parent = 0;
@@ -214,6 +218,7 @@ Effect* makeEffect(SGPropertyNode* prop,
             }
             if (!effect.valid()) {
                 effect = new Effect;
+                effect->setName(nameProp->getStringValue());
                 effect->root = new SGPropertyNode;
                 mergePropertyTrees(effect->root, prop, parent->root);
                 effect->parametersProp = effect->root->getChild("parameters");
@@ -237,6 +242,7 @@ Effect* makeEffect(SGPropertyNode* prop,
         }
     } else {
         effect = new Effect;
+        effect->setName(nameProp->getStringValue());
         effect->root = prop;
         effect->parametersProp = effect->root->getChild("parameters");
     }

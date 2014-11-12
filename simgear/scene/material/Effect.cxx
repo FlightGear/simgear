@@ -105,7 +105,7 @@ private:
 
     SGMutex _mutex;
 
-    typedef boost::tuple<std::string, Uniform::Type, std::string> UniformCacheKey;
+    typedef boost::tuple<std::string, Uniform::Type, std::string, std::string> UniformCacheKey;
     typedef boost::tuple<ref_ptr<Uniform>, SGPropertyChangeListener*> UniformCacheValue;
     std::map<UniformCacheKey,ref_ptr<Uniform> > uniformCache;
 
@@ -145,7 +145,7 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
 		}
 	}
 
-	UniformCacheKey key = boost::make_tuple(name, uniformType, val);
+	UniformCacheKey key = boost::make_tuple(name, uniformType, val, effect->getName());
 	ref_ptr<Uniform> uniform = uniformCache[key];
 
     if (uniform.valid()) {
@@ -1107,6 +1107,7 @@ InstallAttributeBuilder<UniformBuilder> installUniform("uniform");
 
 // Not sure what to do with "name". At one point I wanted to use it to
 // order the passes, but I do support render bin and stuff too...
+// Clément de l'Hamaide 10/2014: "name" is now used in the UniformCacheKey
 
 struct NameBuilder : public PassAttributeBuilder
 {

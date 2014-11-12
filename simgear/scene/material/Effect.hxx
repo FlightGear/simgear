@@ -99,6 +99,9 @@ public:
     {
         void doUpdate(osg::Node* node, osg::NodeVisitor* nv);
     };
+
+    std::string getName(){return _name;}
+    void setName(std::string name){_name = name;}
 protected:
     ~Effect();
     // Support for a cache of effects that inherit from this one, so
@@ -137,6 +140,7 @@ protected:
     friend Effect* makeEffect(SGPropertyNode* prop, bool realizeTechniques,
                               const SGReaderWriterOptions* options);
     bool _isRealized;
+    std::string _name;
 };
 // Automatic support for boost hash function
 size_t hash_value(const Effect::Key&);

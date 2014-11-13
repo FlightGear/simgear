@@ -102,6 +102,7 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
     max_shade_lighting_factor = cld_def->getFloatValue("max-shade-lighting-factor", min(min_shade_lighting_factor  + 0.1, 1.0));
     
     zscale = cld_def->getFloatValue("z-scale", 1.0);
+    alpha_factor = cld_def->getFloatValue("alpha-factor",1.0);
     texture = cld_def->getStringValue("texture", "cl_cumulus.png");
 
     // Create a new Effect for the texture, if required.
@@ -169,7 +170,8 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
                                                       bottom_factor,
                                                       shade_factor,
                                                       height,
-                                                      zscale);
+                                                      zscale,
+                                                      alpha_factor);
         
     // Determine the cull distance. This is used to remove sprites that are too close together.
     // The value is squared as we use vector calculations.

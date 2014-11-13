@@ -54,8 +54,10 @@ class CloudShaderGeometry : public osg::Drawable
             setUseDisplayList(false); 
         }
 
-        CloudShaderGeometry(int vx, int vy, float width, float height, float ts, float ms, float bs, float shade, float ch, float zsc) :
-            varieties_x(vx), varieties_y(vy), top_factor(ts), middle_factor(ms), bottom_factor(bs), shade_factor(shade), cloud_height(ch), zscale(zsc)
+        CloudShaderGeometry(int vx, int vy, float width, float height, float ts, float ms, float bs, float shade, float ch, float zsc, float af) :
+            varieties_x(vx), varieties_y(vy), top_factor(ts), middle_factor(ms),
+            bottom_factor(bs), shade_factor(shade), cloud_height(ch), zscale(zsc),
+            alpha_factor(af)
         { 
             setUseDisplayList(false); 
             float x = width/2.0f;
@@ -121,6 +123,7 @@ class CloudShaderGeometry : public osg::Drawable
         float shade_factor;
         float cloud_height;
         float zscale;
+        float alpha_factor;
                 
         // Bounding box extents.
         osg::BoundingBox _bbox;

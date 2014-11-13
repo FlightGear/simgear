@@ -129,7 +129,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
     }
     
     const Extensions* extensions = getExtensions(state.getContextID(),true);
-    GLfloat ua1[3] = { (GLfloat) 1.0f,
+    GLfloat ua1[3] = { (GLfloat) alpha_factor,
                        (GLfloat) shade_factor,
                        (GLfloat) cloud_height };
     GLfloat ua2[3] = { (GLfloat) bottom_factor,

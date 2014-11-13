@@ -93,6 +93,8 @@ private:
         // zscale indicates how sprites should be scaled vertically
         // after billboarding. 
         float zscale;
+        // alpha_factor is the transparency adjustment of the clouds
+        float alpha_factor;
         bool height_map_texture;
         int num_sprites;
         int num_textures_x;

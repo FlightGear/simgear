@@ -160,6 +160,7 @@ SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
     plod->setName("Paged LOD for \"" + path + "\"");
     plod->setFileName(0, path);
     plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
+    plod->setMinimumExpiryTime( 0, prop_root->getDoubleValue("/sim/rendering/plod-minimum-expiry-time-secs", 180.0 ) );
 
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());

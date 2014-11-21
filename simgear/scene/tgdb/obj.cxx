@@ -628,6 +628,8 @@ public:
 
               // place an object each unit of area
               while ( n > 1.0 ) {
+            	n -= 1.0;
+
                 float a = mt_rand(&seed);
                 float b = mt_rand(&seed);
                 if ( a + b > 1 ) {
@@ -650,7 +652,6 @@ public:
                 float edge_dist = *std::min_element(edges, edges + 3);
 
                 if (edge_dist < spacing) {
-                  n -= 1.0;
                   continue;
                 }
 
@@ -665,7 +666,6 @@ public:
 
                   if (mt_rand(&seed) > img->getColor(x, y).b()) {
                     // Failed object mask check
-                    n -= 1.0;
                     continue;
                   }
 
@@ -680,7 +680,7 @@ public:
                   float min_dist2 = (l->second + object->get_spacing_m()) *
                                     (l->second + object->get_spacing_m());
 
-                  if (distSqr(l->first, randomPoint) > min_dist2) {
+                  if (distSqr(l->first, randomPoint) < min_dist2) {
                     close = true;
                     continue;
                   }

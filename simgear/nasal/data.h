@@ -175,6 +175,7 @@ struct naGhost {
     GC_HEADER;
     naGhostType* gtype;
     void* ptr;
+    naRef data; //!< Nasal data bound to the lifetime of the ghost.
 };
 
 struct naPool {

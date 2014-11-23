@@ -1,10 +1,9 @@
 #define BOOST_TEST_MODULE cppbind
 #include <BoostTestTargetConfig.h>
 
-#include "Ghost.hxx"
-#include "NasalHash.hxx"
-#include "NasalString.hxx"
-
+#include <simgear/nasal/cppbind/Ghost.hxx>
+#include <simgear/nasal/cppbind/NasalHash.hxx>
+#include <simgear/nasal/cppbind/NasalString.hxx>
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/map.hxx>
 

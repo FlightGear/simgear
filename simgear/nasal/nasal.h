@@ -281,6 +281,16 @@ naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
 naRef        naNewGhost2(naContext c, naGhostType* t, void* ghost);
 naGhostType* naGhost_type(naRef ghost);
 void*        naGhost_ptr(naRef ghost);
+/**
+ * Attach a nasal object to the given ghost. Binds the lifetime of @a data to
+ * the lifetime of the @a ghost.
+ */
+void         naGhost_setData(naRef ghost, naRef data);
+/**
+ * Retrieve the object attached to the @a ghost, previously set with
+ * naGhost_setData().
+ */
+naRef        naGhost_data(naRef ghost);
 int          naIsGhost(naRef r);
 
 // Acquires a "modification lock" on a context, allowing the C code to

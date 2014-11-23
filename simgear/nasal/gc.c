@@ -177,7 +177,7 @@ static void newBlock(struct naPool* p, int need)
     newb->next = p->blocks;
     p->blocks = newb;
     naBZero(newb->block, need * p->elemsz);
-    
+
     if(need > p->freesz - p->freetop) need = p->freesz - p->freetop;
     p->nfree = 0;
     p->free = p->free0 + p->freetop;
@@ -263,6 +263,9 @@ static void mark(naRef r)
         mark(PTR(r).func->namespace);
         mark(PTR(r).func->next);
         break;
+    case T_GHOST:
+        mark(PTR(r).ghost->data);
+        break;
     }
 }
 
@@ -300,7 +303,7 @@ static void reap(struct naPool* p)
 
     // allocs of this type until the next collection
     globals->allocCount += total/2;
-    
+
     // Allocate more if necessary (try to keep 25-50% of the objects
     // available)
     if(p->nfree < total/4) {

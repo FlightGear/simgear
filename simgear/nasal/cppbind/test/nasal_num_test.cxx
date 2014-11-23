@@ -1,51 +1,7 @@
-#define BOOST_TEST_MODULE cppbind
+#define BOOST_TEST_MODULE nasal
 #include <BoostTestTargetConfig.h>
 
-#include "NasalCallContext.hxx"
-
-class TestContext:
-  public nasal::CallContext
-{
-  public:
-    TestContext():
-      CallContext(naNewContext(), naNil(), 0, 0)
-    {}
-
-    ~TestContext()
-    {
-      naFreeContext(c);
-    }
-
-    template<class T>
-    T from_str(const std::string& str)
-    {
-      return from_nasal<T>(to_nasal(str));
-    }
-
-    naRef exec(const std::string& code_str, nasal::Me me)
-    {
-      int err_line = -1;
-      naRef code = naParseCode( c, to_nasal("<TextContext::exec>"), 0,
-                                (char*)code_str.c_str(), code_str.length(),
-                                &err_line );
-      if( !naIsCode(code) )
-        throw std::runtime_error("Failed to parse code: " + code_str);
-
-      return naCallMethod(code, me, 0, 0, naNil());
-    }
-
-    template<class T>
-    T exec(const std::string& code)
-    {
-      return from_nasal<T>(exec(code, naNil()));
-    }
-
-    template<class T>
-    T convert(const std::string& str)
-    {
-      return from_nasal<T>(to_nasal(str));
-    }
-};
+#include "TestContext.hxx"
 
 static void runNumTests( double (TestContext::*test_double)(const std::string&),
                          int (TestContext::*test_int)(const std::string&) )

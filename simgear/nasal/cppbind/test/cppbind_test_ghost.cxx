@@ -1,8 +1,8 @@
 #define BOOST_TEST_MODULE cppbind
 #include <BoostTestTargetConfig.h>
 
-#include "Ghost.hxx"
-#include "NasalContext.hxx"
+#include <simgear/nasal/cppbind/Ghost.hxx>
+#include <simgear/nasal/cppbind/NasalContext.hxx>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>

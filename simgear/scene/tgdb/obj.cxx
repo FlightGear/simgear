@@ -40,6 +40,7 @@
 #include <osg/Referenced>
 #include <osg/StateSet>
 #include <osg/Switch>
+#include <osgDB/ReaderWriter>
 
 #include <osgUtil/Simplifier>
 
@@ -79,6 +80,7 @@
 #define SG_SIMPLIFIER_MAX_ERROR 2000.0
 #define SG_OBJECT_RANGE 9000.0
 #define SG_TILE_RADIUS 14000.0
+#define SG_TILE_MIN_EXPIRY 180.0
 
 using namespace simgear;
 
@@ -102,6 +104,13 @@ public:
   SGDirectionalLightListBin reilLights;
   SGMatModelBin randomModels;
   SGBuildingBinList randomBuildings;
+  bool tileRandomSurfaceLightsComputed;
+  bool tileRandomObjectsComputed;
+
+  SGTileGeometryBin() {
+	  tileRandomSurfaceLightsComputed = false;
+	  tileRandomObjectsComputed = false;
+  }
 
   static SGVec4f
   getMaterialLightColor(const SGMaterial* material)
@@ -480,6 +489,12 @@ public:
   {
     SGMaterialTriangleMap::iterator i;
 
+    // Only compute the lights if we haven't already done so.
+    // For example, the light data will still exist if the
+    // PagedLOD expires.
+    if (tileRandomSurfaceLightsComputed) return;
+    tileRandomSurfaceLightsComputed = true;
+
     // generate a repeatable random seed
     mt seed;
     mt_init(&seed, unsigned(123));
@@ -535,6 +550,10 @@ public:
     bool useVBOs)
   {
     SGMaterialTriangleMap::iterator i;
+
+    // Only compute the random objects if we haven't already done so
+    if (tileRandomObjectsComputed) return;
+    tileRandomObjectsComputed = true;
 
     // generate a repeatable random seed
     mt seed;
@@ -1326,6 +1345,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     double maxLength   = SG_SIMPLIFIER_MAX_LENGTH;
     double maxError    = SG_SIMPLIFIER_MAX_ERROR;
     double object_range = SG_OBJECT_RANGE;
+    double tile_min_expiry = SG_TILE_MIN_EXPIRY;
 
     if (options) {
       matlib = options->getMaterialLib();
@@ -1339,7 +1359,8 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       ratio = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/ratio", ratio);
       maxLength = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-length", maxLength);
       maxError = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-error", maxError);
-			object_range = propertyNode->getDoubleValue("/sim/rendering/static-lod/rough", object_range);
+      object_range = propertyNode->getDoubleValue("/sim/rendering/static-lod/rough", object_range);
+      tile_min_expiry= propertyNode->getDoubleValue("/sim/rendering/plod-minimum-expiry-time-secs", tile_min_expiry);
     }
 
     SGVec3d center = tile.get_gbs_center();
@@ -1361,7 +1382,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       normals[i] = hlOrf.transform(normals[i]);
     tile.set_normals(normals);
 
-    osg::ref_ptr<SGTileGeometryBin> tileGeometryBin = new SGTileGeometryBin;
+    osg::ref_ptr<SGTileGeometryBin> tileGeometryBin = new SGTileGeometryBin();
 
     if (!tileGeometryBin->insertBinObj(tile, matcache))
       return NULL;
@@ -1399,19 +1420,25 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       }
     }
 
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(options);
+
     // we just need to know about the read file callback that itself holds the data
-    osg::ref_ptr<RandomObjectCallback> randomObjectCallback = new RandomObjectCallback;
-    randomObjectCallback->_options = SGReaderWriterOptions::copyOrCreate(options);
+    RandomObjectCallback* randomObjectCallback = new RandomObjectCallback;
+    randomObjectCallback->_options = opt;
     randomObjectCallback->_tileGeometryBin = tileGeometryBin;
     randomObjectCallback->_path = std::string(path);
     randomObjectCallback->_loadterrain = ! (simplifyNear == simplifyDistant);
     randomObjectCallback->_matcache = matcache;
 
     osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
-    callbackOptions->setReadFileCallback(randomObjectCallback.get());
+    callbackOptions->setObjectCacheHint(osgDB::Options::CACHE_ALL);
+    callbackOptions->setReadFileCallback(randomObjectCallback);
     pagedLOD->setDatabaseOptions(callbackOptions.get());
 
-    pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
+    // Ensure that the random objects aren't expired too quickly
+    pagedLOD->setMinimumExpiryTime(pagedLOD->getNumChildren(), tile_min_expiry);
+    pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy filename for random objects callback");
     pagedLOD->setRange(pagedLOD->getNumChildren(), 0, object_range + SG_TILE_RADIUS);
     transform->addChild(pagedLOD);
     transform->setNodeMask( ~simgear::MODELLIGHT_BIT );

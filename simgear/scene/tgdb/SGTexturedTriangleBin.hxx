@@ -104,34 +104,35 @@ private:
 // not an advantage on modern hardware.
 class DrawElementsFacade {
 public:
-    DrawElementsFacade(unsigned numVerts) :
-        _ushortElements(0), _uintElements(0)
+    DrawElementsFacade(void) : count(0)
     {
-        if (numVerts > 65535)
-            _uintElements
-                = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
-        else
-            _ushortElements
-                = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLES);
+        _uintElements = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
+        _ushortElements = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLES);
     }
     
     void push_back(unsigned val)
     {
-        if (_uintElements)
-            _uintElements->push_back(val);
-        else
+        count++;
+        if (count < 65536) {
             _ushortElements->push_back(val);
+        }
+        _uintElements->push_back(val);
     }
 
     osg::DrawElements* getDrawElements()
     {
-        if (_uintElements)
+        if (count > 65535) {
+            free (_ushortElements);
             return _uintElements;
-        return _ushortElements;
+        } else {
+            free (_uintElements);
+            return _ushortElements;
+        }
     }
 protected:
     osg::DrawElementsUShort* _ushortElements;
     osg::DrawElementsUInt* _uintElements;
+    unsigned count;
 };
 
 class SGTexturedTriangleBin : public SGTriangleBin<SGVertNormTex> {
@@ -398,7 +399,7 @@ public:
     const unsigned invalid = ~unsigned(0);
     std::vector<unsigned> indexMap(getNumVertices(), invalid);
 
-    DrawElementsFacade deFacade(vertices->size());
+    DrawElementsFacade deFacade;
     for (index_type i = 0; i < triangles.size(); ++i) {
       triangle_ref triangle = triangles[i];
       if (indexMap[triangle[0]] == invalid) {

@@ -274,6 +274,15 @@ static void read_indices(char* buffer,
             if (vaMask & SG_VA_FLOAT_3) vas[7].push_back(*src++);
         }
     } // of elements in the index
+    
+    // WS2.0 fix : toss zero area triangles
+    if ( ( count == 3 ) && (indexMask & SG_IDX_VERTICES) ) {
+        if ( (vertices[0] == vertices[1]) || 
+             (vertices[1] == vertices[2]) || 
+             (vertices[2] == vertices[0]) ) {
+            vertices.clear();
+        }
+    }
 }
 
 template <class T>
@@ -468,12 +477,15 @@ void SGBinObject::read_object( gzFile fp,
             read_indices<uint16_t>(ptr, nbytes, idx_mask, vertex_attrib_mask, vs, ns, cs, tcs, vas );
         }
 
-        vertices.push_back( vs );
-        normals.push_back( ns );
-        colors.push_back( cs );
-        texCoords.push_back( tcs );
-        vertexAttribs.push_back( vas );
-        materials.push_back( material );
+        // Fix for WS2.0 - ignore zero area triangles
+        if ( !vs.empty() ) {
+            vertices.push_back( vs );
+            normals.push_back( ns );
+            colors.push_back( cs );
+            texCoords.push_back( tcs );
+            vertexAttribs.push_back( vas );
+            materials.push_back( material );
+        }
     } // of element iteration
 }
 

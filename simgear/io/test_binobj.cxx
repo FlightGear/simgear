@@ -108,10 +108,6 @@ int_list make_tri(int maxIndex)
         c = (random() % maxIndex);
     
         valid = ( (a!=b) && (b!=c) && (c!=a) );
-        
-        if (!valid) {
-            num_invalid++;
-        }
     }
     
     if (!valid) {

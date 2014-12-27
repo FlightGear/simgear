@@ -93,13 +93,36 @@ void compareTexCoords(const SGBinObject& rd, const std::vector<SGVec2f>& b)
         VERIFY(equivalent(pos, b[i], 0.001f));        
     }
 }
- 
+
 int_list make_tri(int maxIndex)
 {
     int_list r;
-    r.push_back(random() % maxIndex);
-    r.push_back(random() % maxIndex);
-    r.push_back(random() % maxIndex);
+    int a, b, c;
+        
+    bool valid = false;
+    int retry  = 10;
+    
+    while(!valid && retry--) {
+        a = (random() % maxIndex);
+        b = (random() % maxIndex);
+        c = (random() % maxIndex);
+    
+        valid = ( (a!=b) && (b!=c) && (c!=a) );
+        
+        if (!valid) {
+            num_invalid++;
+        }
+    }
+    
+    if (!valid) {
+        cerr << "can't generate valid triangle" << endl;
+        exit(1);
+    }
+    
+    r.push_back(a);
+    r.push_back(b);
+    r.push_back(c);
+    
     return r;
 }
 

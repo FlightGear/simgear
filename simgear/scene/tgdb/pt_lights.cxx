@@ -99,7 +99,11 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     }
 
     SGPropertyNode_ptr effectProp = new SGPropertyNode;
-    makeChild(effectProp, "inherits-from")->setStringValue("Effects/surface-lights");
+    if (directional) {
+    	makeChild(effectProp, "inherits-from")->setStringValue("Effects/surface-lights-directional");
+    } else {
+    	makeChild(effectProp, "inherits-from")->setStringValue("Effects/surface-lights");
+    }
 
     SGPropertyNode* params = makeChild(effectProp, "parameters");
     params->getNode("size",true)->setValue(size);
@@ -153,23 +157,34 @@ SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light)
 {
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
-  osg::Vec3Array* normals = new osg::Vec3Array;
 
-  vertices->push_back(toOsg(light.position));
-  colors->push_back(toOsg(light.color));
-  normals->push_back(toOsg(normalize(light.normal)));
+  SGVec4f visibleColor(light.color);
+  SGVec4f invisibleColor(visibleColor[0], visibleColor[1],
+                         visibleColor[2], 0);
+  SGVec3f normal = normalize(light.normal);
+  SGVec3f perp1 = perpendicular(normal);
+  SGVec3f perp2 = cross(normal, perp1);
+  SGVec3f position = light.position;
+  vertices->push_back(toOsg(position));
+  vertices->push_back(toOsg(position + perp1));
+  vertices->push_back(toOsg(position + perp2));
+  colors->push_back(toOsg(visibleColor));
+  colors->push_back(toOsg(invisibleColor));
+  colors->push_back(toOsg(invisibleColor));
 
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
-  geometry->setNormalArray(normals, osg::Array::BIND_PER_VERTEX);
-  geometry->setColorArray(colors, osg::Array::BIND_PER_VERTEX);
+  geometry->setNormalBinding(osg::Geometry::BIND_OFF);
+  geometry->setColorArray(colors);
+  geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+
   // Enlarge the bounding box to avoid such light nodes being victim to
   // small feature culling.
   geometry->setComputeBoundingBoxCallback(new SGEnlargeBoundingBox(1));
 
   osg::DrawArrays* drawArrays;
-  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
+  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
   return geometry;
@@ -231,22 +246,36 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
 
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
-  osg::Vec3Array* normals = new osg::Vec3Array;
 
   for (unsigned i = 0; i < lights.getNumLights(); ++i) {
-    vertices->push_back(toOsg(lights.getLight(i).position));
-    colors->push_back(toOsg(lights.getLight(i).color));
-    normals->push_back(toOsg(normalize(lights.getLight(i).normal)));
+	  SGVec4f visibleColor(lights.getLight(i).color);
+	  SGVec4f invisibleColor(visibleColor[0], visibleColor[1],
+	                         visibleColor[2], 0);
+	  SGVec3f normal = normalize(lights.getLight(i).normal);
+	  SGVec3f perp1 = perpendicular(normal);
+	  SGVec3f perp2 = cross(normal, perp1);
+	  SGVec3f position = lights.getLight(i).position;
+	  vertices->push_back(toOsg(position));
+	  vertices->push_back(toOsg(position + perp1));
+	  vertices->push_back(toOsg(position + perp2));
+	  colors->push_back(toOsg(visibleColor));
+	  colors->push_back(toOsg(invisibleColor));
+	  colors->push_back(toOsg(invisibleColor));
   }
 
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
-  geometry->setNormalArray(normals, osg::Array::BIND_PER_VERTEX);
+  geometry->setNormalBinding(osg::Geometry::BIND_OFF);
   geometry->setColorArray(colors, osg::Array::BIND_PER_VERTEX);
 
+
+  //osg::StateSet* stateSet = geometry->getOrCreateStateSet();
+  //stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
+  //stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+
   osg::DrawArrays* drawArrays;
-  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
+  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
   return geometry;

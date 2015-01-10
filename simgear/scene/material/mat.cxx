@@ -441,7 +441,7 @@ Effect* SGMaterial::get_effect(int i)
     return _status[i].effect.get();
 }
 
-Effect* SGMaterial::get_effect(const SGTexturedTriangleBin& triangleBin)
+Effect* SGMaterial::get_one_effect(int texIndex)
 {
     SGGuard<SGMutex> g(_lock);
     if (_status.empty()) {
@@ -449,7 +449,7 @@ Effect* SGMaterial::get_effect(const SGTexturedTriangleBin& triangleBin)
         return 0;
     }
     
-    int i = triangleBin.getTextureIndex() % _status.size();
+    int i = texIndex % _status.size();
     return get_effect(i);
 }
 
@@ -460,7 +460,7 @@ Effect* SGMaterial::get_effect()
 }
 
 
-osg::Texture2D* SGMaterial::get_object_mask(const SGTexturedTriangleBin& triangleBin)
+osg::Texture2D* SGMaterial::get_one_object_mask(int texIndex)
 {
     if (_status.empty()) {
         SG_LOG( SG_GENERAL, SG_WARN, "No mask available.");
@@ -469,7 +469,7 @@ osg::Texture2D* SGMaterial::get_object_mask(const SGTexturedTriangleBin& triangl
     
     // Note that the object mask is closely linked to the texture/effect
     // so we index based on the texture index, 
-    unsigned int i = triangleBin.getTextureIndex() % _status.size();
+    unsigned int i = texIndex % _status.size();
     if (i < _masks.size()) {
         return _masks[i].get();
     } else {

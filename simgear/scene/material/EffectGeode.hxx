@@ -23,6 +23,7 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 
 #include "Effect.hxx"
+#include "mat.hxx"
 
 namespace simgear
 {
@@ -69,6 +70,8 @@ class EffectGeode : public osg::Geode
     META_Node(simgear,EffectGeode);
     Effect* getEffect() const { return _effect.get(); }
     void setEffect(Effect* effect);
+    SGMaterial* getMaterial() const { return _material; }
+    void setMaterial(SGMaterial* mat) { _material = mat; }
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* = 0) const;
 
@@ -83,6 +86,7 @@ class EffectGeode : public osg::Geode
     void runGenerators(osg::Geometry *geometry);
 private:
     osg::ref_ptr<Effect> _effect;
+    SGMaterial* _material;
 };
 }
 #endif

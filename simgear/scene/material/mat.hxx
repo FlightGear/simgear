@@ -119,13 +119,13 @@ public:
   /**
    * Get the textured state.
    */
-  simgear::Effect* get_effect(const SGTexturedTriangleBin& triangleBin);
+  simgear::Effect* get_one_effect(int texIndex);
   simgear::Effect* get_effect();
 
   /**
    * Get the textured state.
    */
-  osg::Texture2D* get_object_mask(const SGTexturedTriangleBin& triangleBin);
+  osg::Texture2D* get_one_object_mask(int texIndex);
 
 
   /**

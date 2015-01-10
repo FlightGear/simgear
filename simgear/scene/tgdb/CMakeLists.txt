@@ -8,9 +8,12 @@ set(HEADERS
     SGDirectionalLightBin.hxx
     SGLightBin.hxx
     SGModelBin.hxx
+    SGNodeTriangles.hxx
     SGOceanTile.hxx
     SGReaderWriterBTG.hxx
     SGTexturedTriangleBin.hxx
+    SGTileDetailsCallback.hxx
+    SGTileGeometryBin.hxx
     SGTriangleBin.hxx
     SGVasiDrawable.hxx
     SGVertexArrayBin.hxx

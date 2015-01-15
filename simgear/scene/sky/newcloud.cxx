@@ -151,8 +151,10 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     float height = min_height + mt_rand(seed) * (max_height - min_height) - min_sprite_height;
     
     if (width  < 0.0) { width  = 0.0; }
-    if (height < 0.0) { height = 0.0; }
     
+    // Protect against divide by 0 issues later when assigning index_y
+    if (height <= 0.0) { height = 0.01; }
+
     // Determine appropriate shading factors
     float top_factor = min_top_lighting_factor + mt_rand(seed) * (max_top_lighting_factor - min_top_lighting_factor);
     float middle_factor = min_middle_lighting_factor + mt_rand(seed) * (max_middle_lighting_factor - min_middle_lighting_factor);

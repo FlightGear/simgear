@@ -28,6 +28,9 @@ using namespace osg;
 
 void UpdateOnceCallback::operator()(Node* node, NodeVisitor* nv)
 {
+    ref_ptr<UpdateOnceCallback> prevent_premature_deletion=this;
+    // workaround for crash bug in OSG 3.2.1
+    // https://bugs.debian.org/765855
     doUpdate(node, nv);
     node->removeUpdateCallback(this);
     // The callback could be deleted now.

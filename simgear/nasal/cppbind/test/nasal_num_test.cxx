@@ -39,6 +39,12 @@ static void runNumTests( double (TestContext::*test_double)(const std::string&),
   BOOST_CHECK_EQUAL((c.*test_int)("0x755"), 0x755);
   BOOST_CHECK_EQUAL((c.*test_int)("0x055"), 0x55);
   BOOST_CHECK_EQUAL((c.*test_int)("-0x155"), -0x155);
+  
+  BOOST_CHECK_CLOSE((c.*test_double)("2.000000953656983160"),
+  2.000000953656983160, 1e-5);
+  /* this value has bit pattern 0x400000007fff6789L,
+  * so will look like a pointer if the endianness is set wrong
+  * (see naref.h, data.h)*/
 }
 
 BOOST_AUTO_TEST_CASE( parse_num )

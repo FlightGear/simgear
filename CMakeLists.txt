@@ -4,6 +4,10 @@ include (CheckIncludeFile)
 include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
 
+# set this before project()
+# using 10.7 because boost requires libc++ and 10.6 doesn't include it
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+
 project(SimGear)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
@@ -299,6 +303,9 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
    set(WARNING_FLAGS_CXX "-Wall -Wno-overloaded-virtual")
    set(WARNING_FLAGS_C   "-Wall")
+   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

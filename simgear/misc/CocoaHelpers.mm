@@ -28,11 +28,12 @@ SGPath appleSpecialFolder(int dirType, int domainMask, const SGPath& def)
 {
     CocoaAutoreleasePool ap;
     NSFileManager* fm = [NSFileManager defaultManager];
-    NSURL* pathUrl = [fm URLForDirectory:dirType
-                                     inDomain:domainMask
-                             appropriateForURL:Nil
-                                       create:YES
-                                         error:nil];
+    NSSearchPathDirectory d = static_cast<NSSearchPathDirectory>(dirType);
+    NSURL* pathUrl = [fm URLForDirectory:d
+                                inDomain:domainMask
+                       appropriateForURL:Nil
+                                  create:YES
+                                   error:nil];
     if (!pathUrl) {
         return def;;
     }

@@ -1,11 +1,18 @@
 cmake_minimum_required (VERSION 2.6.4)
+
+if(COMMAND cmake_policy)
+    cmake_policy(SET CMP0054 NEW)
+    cmake_policy(SET CMP0042 NEW)
+endif()
+
 include (CheckFunctionExists)
 include (CheckIncludeFile)
 include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
 
 # set this before project()
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+# using 10.7 because boost requires libc++ and 10.6 doesn't include it
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
 
 project(SimGear)
 
@@ -164,12 +171,6 @@ endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
-
-  # force libstdc++, not libc++
-  set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libstdc++")
-  list(APPEND CMAKE_CXX_FLAGS "-stdlib=libstdc++")
-  list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libstdc++")
-  list(APPEND CMAKE_SHARED_LINKER_FLAGS "-stdlib=libstdc++")
 endif()
 
 # Somehow this only works if included before searching for Boost...

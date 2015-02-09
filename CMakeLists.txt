@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 2.6.4)
 
 if(COMMAND cmake_policy)
-    cmake_policy(SET CMP0054 NEW)
-    cmake_policy(SET CMP0042 NEW)
+    if(${CMAKE_MAJOR_VERSION} GREATER 2) # version 3 or higher
+        cmake_policy(SET CMP0054 NEW)
+        cmake_policy(SET CMP0042 NEW)
+    endif()
 endif()
 
 include (CheckFunctionExists)

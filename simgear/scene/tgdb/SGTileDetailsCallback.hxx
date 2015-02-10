@@ -871,7 +871,7 @@ public:
         lightGroup->addChild(groundLights2);
       }
 
-      if (vasiLights.empty()) {
+      if (! vasiLights.empty()) {
         EffectGeode* vasiGeode = new EffectGeode;        
         Effect* vasiEffect = getLightEffect(24, osg::Vec3(1, 0.0001, 0.000001), 1, 24, true, _options);
         vasiGeode->setEffect(vasiEffect);

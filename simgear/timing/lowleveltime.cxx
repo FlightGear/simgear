@@ -47,7 +47,7 @@
 
 
 /* BIG FAT WARNING: NOTICE THAT I HARDCODED ENDIANNES. PLEASE CHANGE THIS */
-#ifndef BIG_ENDIAN 
+#ifndef BIG_ENDIAN
 #define BIG_ENDIAN 4321
 #endif
 
@@ -55,13 +55,13 @@
 #define LITTLE_ENDIAN 1234
 #endif
 
-#ifndef BYTE_ORDER 
+#ifndef BYTE_ORDER
 #define BYTE_ORDER LITTLE_ENDIAN
 #endif
 
 
 #ifndef BYTE_ORDER
-#define BYTE_ORDER 
+#define BYTE_ORDER
 #endif
 
 /* END OF BIG FAT WARNING */
@@ -267,7 +267,7 @@ void show(const char *zone, time_t t, int v)
 
 static char *abbr(struct tm *tmp)
 {
-	register char *	result;
+	char *	result;
 	static char	nada;
 
 	if (tmp->tm_isdst != 0 && tmp->tm_isdst != 1)
@@ -329,21 +329,21 @@ static void fgtzset_internal (int always, const char *tz)
   fgtzfile_read (tz);
   if (use_fgtzfile)
     return;
-  // The default behaviour of the original tzset_internal (int always, char* tz) 
+  // The default behaviour of the original tzset_internal (int always, char* tz)
   // function is to set up a default timezone, in any case file_read() fails
   // Currently this leads to problems, because it modifies the system timezone
-  // and not the local aircraft timezone, contained in FlightGear. I could adapt 
+  // and not the local aircraft timezone, contained in FlightGear. I could adapt
   // this in future versions of this code, but doubt whether this is what we really
-  // want. So right now, throw an exception when timezone information reading failed. 
+  // want. So right now, throw an exception when timezone information reading failed.
   // Guess I'll change that to something like 12 * (FG_LON / 180.0)
-  // 
+  //
   // For now, I'll leave it like this.
   else
   {
     throw sg_exception("Timezone reading failed");
   }
   // this emacs "comment out" function is cool!
- 
+
 //   // /* No data file found.  Default to UTC if nothing specified.  */
 // //   printf ("1. Current local time          = %24s", asctime(localtime(&now)));
 //   if (tz == NULL || *tz == '\0')
@@ -580,7 +580,7 @@ static void fgtzset_internal (int always, const char *tz)
 //       tzr->computed_for = -1;
 //     }
 // //   printf ("10. Current local time          = %24s", asctime(localtime(&now)));
-// 
+//
 }
 
 /************************************************************************/
@@ -627,7 +627,7 @@ static int fgcompute_change (fgtz_rule *rule, int year)
   //     tz_rule *rule;
   // int year;
 {
-  register time_t t;
+  time_t t;
   int y;
 
   if (year != -1 && rule->computed_for == year)
@@ -660,8 +660,8 @@ static int fgcompute_change (fgtz_rule *rule, int year)
     case fgtz_rule::M:
       /* Mm.n.d - Nth "Dth day" of month M.  */
       {
-	register int i, d, m1, yy0, yy1, yy2, dow;
-	register const unsigned short int *myday =
+	int i, d, m1, yy0, yy1, yy2, dow;
+	const unsigned short int *myday =
 	  &mon_yday[isleap (year)][rule->m];
 
 	/* First add SECSPERDAY for each day in months before M.  */
@@ -707,7 +707,7 @@ static int fgcompute_change (fgtz_rule *rule, int year)
 int fgtzfile_compute (time_t timer, int use_localtime,
 		  long int *leap_correct, int *leap_hit)
 {
-  register size_t i;
+  size_t i;
 
   if (use_localtime)
     {
@@ -788,10 +788,10 @@ void fgtzfile_read (const char *file)
 {
   // static const char default_tzdir[] = TZDIR;
   size_t num_isstd, num_isgmt;
-  register FILE *f;
+  FILE *f;
   struct tzhead tzhead;
   size_t chars;
-  register size_t i;
+  size_t i;
   struct ttinfo *info;
 
   use_fgtzfile = 0;
@@ -1046,8 +1046,8 @@ void offtime (const time_t *t, long int offset, struct tm *tp)
   // long int offset;
   // struct tm *tp;
 {
-  register long int days, rem, y;
-  register const unsigned short int *ip;
+  long int days, rem, y;
+  const unsigned short int *ip;
 
   days = *t / SECS_PER_DAY;
   rem = *t % SECS_PER_DAY;
@@ -1145,7 +1145,7 @@ time_t sgGMTime()
     // http://linux.die.net/man/3/timegm
     // but for the moment we'll assume time(0) on Unix is UTC, and hence we
     // return it directly.
-    
+
 	time_t now_sec = time(0);
 #if defined(SG_WINDOWS)
     struct tm now;

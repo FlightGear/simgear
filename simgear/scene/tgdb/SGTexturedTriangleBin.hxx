@@ -28,6 +28,7 @@
 #include <osg/Geometry>
 #include <osg/PrimitiveSet>
 #include <osg/Texture2D>
+#include <osg/ref_ptr>
 #include <stdio.h>
 
 #include <simgear/math/sg_random.h>
@@ -122,16 +123,16 @@ public:
     osg::DrawElements* getDrawElements()
     {
         if (count > 65535) {
-            free (_ushortElements);
+            _ushortElements = 0;
             return _uintElements;
         } else {
-            free (_uintElements);
+            _uintElements = 0;
             return _ushortElements;
         }
     }
 protected:
-    osg::DrawElementsUShort* _ushortElements;
-    osg::DrawElementsUInt* _uintElements;
+    osg::ref_ptr<osg::DrawElementsUShort> _ushortElements;
+    osg::ref_ptr<osg::DrawElementsUInt> _uintElements;
     unsigned count;
 };
 

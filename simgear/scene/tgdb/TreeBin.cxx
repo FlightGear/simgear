@@ -343,7 +343,7 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
             (!iter->second.lock(effect)))
         {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
-            makeChild(effectProp, "inherits-from")->setStringValue("Effects/tree");
+            makeChild(effectProp, "inherits-from")->setStringValue(forest->teffect);
             SGPropertyNode* params = makeChild(effectProp, "parameters");
             // emphasize n = 0
             params->getChild("texture", 0, true)->getChild("image", 0, true)

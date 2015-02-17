@@ -273,6 +273,14 @@ public:
    * @return the texture to use for trees.
    */
   inline std::string get_tree_texture () const { return  tree_texture; }
+
+
+  /**
+   * Get the effect file name to use for trees
+   *
+   * @return the effect to use for this set of trees.
+   */
+  inline std::string get_tree_effect () const { return  tree_effect; }
   
   /**
    * Get the cosine of the maximum tree density slope angle. We
@@ -476,6 +484,9 @@ private:
   
   // Tree texture, typically a strip of applicable tree textures
   std::string tree_texture;
+
+  // Tree effect to be used for a particular material
+  std::string tree_effect;
   
   // Object mask, a simple RGB texture used as a mask when placing
   // random vegetation, objects and buildings

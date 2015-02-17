@@ -723,6 +723,7 @@ public:
             BOOST_FOREACH(bin, randomForest)
             {
                 if ((bin->texture           == mat->get_tree_texture()  ) &&
+                		(bin->teffect           == mat->get_tree_effect()   ) &&
                     (bin->texture_varieties == mat->get_tree_varieties()) &&
                     (bin->range             == mat->get_tree_range()    ) &&
                     (bin->width             == mat->get_tree_width()    ) &&
@@ -736,6 +737,8 @@ public:
                 bin = new TreeBin();
                 bin->texture = mat->get_tree_texture();
                 SG_LOG(SG_INPUT, SG_DEBUG, "Tree texture " << bin->texture);
+                bin->teffect = mat->get_tree_effect();
+                SG_LOG(SG_INPUT, SG_DEBUG, "Tree effect " << bin->teffect);
                 bin->range   = mat->get_tree_range();
                 bin->width   = mat->get_tree_width();
                 bin->height  = mat->get_tree_height();

@@ -49,6 +49,7 @@ public:
     float height;
     float width;
     std::string texture;
+    std::string teffect;
     
     void insert(const Tree& t)
     { _trees.push_back(t); }

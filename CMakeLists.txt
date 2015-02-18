@@ -4,11 +4,10 @@ include (CheckIncludeFile)
 include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
 
-# set this before project()
+project(SimGear)
+
 # using 10.7 because boost requires libc++ and 10.6 doesn't include it
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
-
-project(SimGear)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
 file(READ version versionFile)
@@ -38,7 +37,7 @@ SET(CPACK_INSTALL_CMAKE_PROJECTS  ${CMAKE_CURRENT_BINARY_DIR};SimGear;ALL;/)
 
 # split version string into components, note CMAKE_MATCH_0 is the entire regexp match
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${SIMGEAR_VERSION} )
-set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1}) 
+set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
 set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
 
@@ -179,12 +178,12 @@ if(SIMGEAR_HEADLESS)
 else()
     message(STATUS "SimGear mode: NORMAL")
     find_package(OpenGL REQUIRED)
-    
+
     if (ENABLE_SOUND)
         find_package(OpenAL REQUIRED)
         message(STATUS "Sound support: ENABLED")
     endif(ENABLE_SOUND)
-    
+
     find_package(OpenSceneGraph 3.2.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgViewer osgUtil)
 endif(SIMGEAR_HEADLESS)
 
@@ -201,8 +200,8 @@ else()
     # XML_STATIC is important to avoid sg_expat_external.h
     # declaring symbols as declspec(import)
     add_definitions(-DHAVE_EXPAT_CONFIG_H -DXML_STATIC)
-    set(EXPAT_INCLUDE_DIRS 
-	    ${PROJECT_SOURCE_DIR}/3rdparty/expat 
+    set(EXPAT_INCLUDE_DIRS
+	    ${PROJECT_SOURCE_DIR}/3rdparty/expat
 	    ${PROJECT_BINARY_DIR}/3rdparty/expat)
 endif(SYSTEM_EXPAT)
 
@@ -279,12 +278,12 @@ SET(CMAKE_MINSIZEREL_POSTFIX "" CACHE STRING "add a postfix, usually empty on wi
 
 # isnan might not be real symbol, so can't check using function_exists
 check_cxx_source_compiles(
-    "#include <cmath> 
+    "#include <cmath>
     int main() { return isnan(0.0);} "
     HAVE_ISNAN)
 
 check_cxx_source_compiles(
-    "#include <cmath> 
+    "#include <cmath>
     int main() { return std::isnan(0.0);} "
     HAVE_STD_ISNAN)
 
@@ -327,16 +326,16 @@ if(WIN32)
         # foreach(warning 4244 4251 4267 4275 4290 4786 4305 4996)
         #     SET(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
         # endforeach(warning)
-        
+
         set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /wd4996 /wd4250 -Dstrdup=_strdup")
         if (${MSVC_VERSION} GREATER 1599)
             set( MSVC_LD_FLAGS "/FORCE:MULTIPLE" )
         endif (${MSVC_VERSION} GREATER 1599)
     endif(MSVC)
-    
+
     # assumed on Windows
     set(HAVE_GETLOCALTIME 1)
-    
+
     set( WINSOCK_LIBRARY "ws2_32.lib" )
     set( RT_LIBRARY "winmm" )
 endif(WIN32)
@@ -345,15 +344,15 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 
-# use BEFORE to ensure local directories are used first, 
+# use BEFORE to ensure local directories are used first,
 # ahead of system-installed libs
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 
-include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} 
-    ${Boost_INCLUDE_DIRS} 
-    ${ZLIB_INCLUDE_DIR} 
+include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+    ${ZLIB_INCLUDE_DIR}
     ${OPENAL_INCLUDE_DIR}
 )
 
@@ -406,5 +405,5 @@ CONFIGURE_FILE(
   IMMEDIATE @ONLY)
 ADD_CUSTOM_TARGET(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-  
+
 

@@ -36,10 +36,10 @@ namespace simgear
 class TreeBin {
 public:
   struct Tree {
-    Tree(const SGVec3f& p) :
-      position(p)
-    { }
     SGVec3f position;
+    SGVec3f tnormal;
+    Tree(const SGVec3f& p, const SGVec3f& t) : position(p),tnormal(t)
+    { }
   };
 
     typedef std::vector<Tree> TreeList;
@@ -53,8 +53,9 @@ public:
     
     void insert(const Tree& t)
     { _trees.push_back(t); }
-    void insert(const SGVec3f& p, int t, float s)
-    { insert(Tree(p)); }
+
+    void insert(const SGVec3f& p, const SGVec3f& tnorm)
+    {insert(Tree(p,tnorm));}
 
     unsigned getNumTrees() const
     { return _trees.size(); }

@@ -723,7 +723,7 @@ public:
             BOOST_FOREACH(bin, randomForest)
             {
                 if ((bin->texture           == mat->get_tree_texture()  ) &&
-                		(bin->teffect           == mat->get_tree_effect()   ) &&
+                    (bin->teffect           == mat->get_tree_effect()   ) &&
                     (bin->texture_varieties == mat->get_tree_varieties()) &&
                     (bin->range             == mat->get_tree_range()    ) &&
                     (bin->width             == mat->get_tree_width()    ) &&
@@ -747,16 +747,19 @@ public:
             }
             
             std::vector<SGVec3f> randomPoints;
+            std::vector<SGVec3f> randomPointNormals;
             matTris[i].addRandomTreePoints(wood_coverage,
                                            mat->get_one_object_mask(matTris[i].getTextureIndex()),
                                            vegetation_density,
                                            mat->get_cos_tree_max_density_slope_angle(),
                                            mat->get_cos_tree_zero_density_slope_angle(),
-                                           randomPoints);
+                                           randomPoints,
+                                           randomPointNormals);
             
             std::vector<SGVec3f>::iterator k;
-            for (k = randomPoints.begin(); k != randomPoints.end(); ++k) {
-                bin->insert(*k);
+            std::vector<SGVec3f>::iterator j;
+            for (k = randomPoints.begin(), j = randomPointNormals.begin(); k != randomPoints.end(); ++k, ++j) {
+	              bin->insert(*k, *j);
             }
         }
     }

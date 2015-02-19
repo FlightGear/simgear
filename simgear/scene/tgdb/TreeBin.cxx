@@ -49,6 +49,7 @@
 #include <simgear/scene/util/QuadTreeBuilder.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 
 #include "ShaderGeometry.hxx"
@@ -61,6 +62,9 @@ using namespace osg;
 
 namespace simgear
 {
+
+bool use_tree_shadows;
+bool use_tree_normals;
 
 // Tree instance scheme:
 // vertex - local position of quad vertex.
@@ -164,15 +168,24 @@ Geometry* createTreeGeometry(float width, float height, int varieties)
     // Positions
     quadGeom->setColorArray(new Vec3Array);
     quadGeom->setColorBinding(Geometry::BIND_PER_VERTEX);
-    FloatArray* rotation = new FloatArray(2);
+    // Normals
+    if (use_tree_shadows || use_tree_normals)
+	{
+    	quadGeom->setSecondaryColorArray(new Vec3Array);
+    	quadGeom->setSecondaryColorBinding(Geometry::BIND_PER_VERTEX);
+	}	
+    FloatArray* rotation = new FloatArray(3);
     (*rotation)[0] = 0.0;
     (*rotation)[1] = PI_2;
+    if (use_tree_shadows) {(*rotation)[2] = -1.0;}
     quadGeom->setFogCoordArray(rotation);
     quadGeom->setFogCoordBinding(Geometry::BIND_PER_PRIMITIVE_SET);
     // The primitive sets render the same geometry, but the second
     // will rotated 90 degrees by the vertex shader, which uses the
     // fog coordinate as a rotation.
-    for (int i = 0; i < 2; ++i)
+    int imax = 2;
+    if (use_tree_shadows) {imax = 3;}
+    for (int i = 0; i < imax; ++i)
         quadGeom->addPrimitiveSet(new DrawArrays(PrimitiveSet::QUADS));
     return quadGeom;
 }
@@ -184,13 +197,17 @@ EffectGeode* createTreeGeode(float width, float height, int varieties)
     return result;
 }
 
-void addTreeToLeafGeode(Geode* geode, const SGVec3f& p)
+void addTreeToLeafGeode(Geode* geode, const SGVec3f& p, const SGVec3f& t)
 {
     Vec3 pos = toOsg(p);
+    Vec3 ter = toOsg(t);
     unsigned int numDrawables = geode->getNumDrawables();
     Geometry* geom
         = static_cast<Geometry*>(geode->getDrawable(numDrawables - 1));
     Vec3Array* posArray = static_cast<Vec3Array*>(geom->getColorArray());
+    Vec3Array* tnormalArray;
+    if (use_tree_shadows || use_tree_normals) 
+	{tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());}
     if (posArray->size()
         >= static_cast<Vec3Array*>(geom->getVertexArray())->size()) {
         Vec3Array* paramsArray
@@ -198,11 +215,17 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p)
         Vec3 params = (*paramsArray)[0];
         geom = createTreeGeometry(params.x(), params.y(), params.z());
         posArray = static_cast<Vec3Array*>(geom->getColorArray());
+	if (use_tree_shadows || use_tree_normals) 
+		{tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());}
         geode->addDrawable(geom);
     }
     posArray->insert(posArray->end(), 4, pos);
+    if (use_tree_shadows || use_tree_normals) 
+    	{tnormalArray->insert(tnormalArray->end(),4,ter);}
     size_t numVerts = posArray->size();
-    for (int i = 0; i < 2; ++i) {
+    int imax = 2;
+    if (use_tree_shadows) {imax = 3;}
+    for (int i = 0; i < imax; ++i) {
         DrawArrays* primSet
             = static_cast<DrawArrays*>(geom->getPrimitiveSet(i));
         primSet->setCount(numVerts);
@@ -218,14 +241,14 @@ namespace
 {
 struct MakeTreesLeaf
 {
-    MakeTreesLeaf(float range, int varieties, float width, float height,
+    MakeTreesLeaf(float range, int varieties, float width, float height, 
         Effect* effect) :
         _range(range),  _varieties(varieties),
         _width(width), _height(height), _effect(effect) {}
 
     MakeTreesLeaf(const MakeTreesLeaf& rhs) :
         _range(rhs._range),
-        _varieties(rhs._varieties), _width(rhs._width), _height(rhs._height),
+        _varieties(rhs._varieties), _width(rhs._width), _height(rhs._height), 
         _effect(rhs._effect)
     {}
 
@@ -255,7 +278,7 @@ struct AddTreesLeafObject
     void operator() (LOD* lod, const TreeBin::Tree& tree) const
     {
         Geode* geode = static_cast<Geode*>(lod->getChild(int(tree.position.x() * 10.0f) % lod->getNumChildren()));
-        addTreeToLeafGeode(geode, tree.position);
+        addTreeToLeafGeode(geode, tree.position, tree.tnormal);
     }
 };
 
@@ -277,7 +300,8 @@ struct TreeTransformer
     TreeBin::Tree operator()(const TreeBin::Tree& tree) const
     {
         Vec3 pos = toOsg(tree.position);
-        return TreeBin::Tree(toSG(pos * mat));
+	Vec3 norm = toOsg(tree.tnormal);
+        return TreeBin::Tree(toSG(pos * mat),toSG(norm * mat));
     }
     Matrix mat;
 };
@@ -332,6 +356,20 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
     MatrixTransform* mt = new MatrixTransform(transform);
 
     SGTreeBinList::iterator i;
+     
+    use_tree_shadows = false;
+    use_tree_normals = false;
+    if (options) {
+        SGPropertyNode* propertyNode = options->getPropertyNode().get();
+        if (propertyNode) {
+            use_tree_shadows
+                = propertyNode->getBoolValue("/sim/rendering/random-vegetation-shadows",
+                                             use_tree_shadows);
+           use_tree_normals
+                = propertyNode->getBoolValue("/sim/rendering/random-vegetation-normals",
+                                             use_tree_normals);
+		}	
+	}
 
     for (i = forestList.begin(); i != forestList.end(); ++i) {
         TreeBin* forest = *i;

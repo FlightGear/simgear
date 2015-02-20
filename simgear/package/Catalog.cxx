@@ -33,10 +33,8 @@
 #include <simgear/package/Install.hxx>
 
 namespace simgear {
-    
-namespace pkg {
 
-CatalogList static_catalogs;
+namespace pkg {
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -46,25 +44,25 @@ public:
     Downloader(CatalogRef aOwner, const std::string& aUrl) :
         HTTP::Request(aUrl),
         m_owner(aOwner)
-    {        
+    {
     }
-    
+
 protected:
     virtual void gotBodyData(const char* s, int n)
     {
         m_buffer += std::string(s, n);
     }
-    
+
     virtual void onDone()
-    {        
+    {
         if (responseCode() != 200) {
             SG_LOG(SG_GENERAL, SG_ALERT, "catalog download failure:" << m_owner->url());
             m_owner->refreshComplete(Delegate::FAIL_DOWNLOAD);
             return;
         }
-        
+
         SGPropertyNode* props = new SGPropertyNode;
-        
+
         try {
             readProperties(m_buffer.data(), m_buffer.size(), props);
             m_owner->parseProps(props);
@@ -73,7 +71,7 @@ protected:
             m_owner->refreshComplete(Delegate::FAIL_EXTRACT);
             return;
         }
-        
+
         std::string ver(m_owner->root()->catalogVersion());
         if (!checkVersion(ver, props)) {
             SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version mismatch:\n\t"
@@ -81,7 +79,7 @@ protected:
             m_owner->refreshComplete(Delegate::FAIL_VERSION);
             return;
         }
-        
+
         // cache the catalog data, now we have a valid install root
         Dir d(m_owner->installRoot());
         SGPath p = d.file("catalog.xml");
@@ -89,12 +87,12 @@ protected:
         std::ofstream f(p.c_str(), std::ios::out | std::ios::trunc);
         f.write(m_buffer.data(), m_buffer.size());
         f.close();
-        
+
         time(&m_owner->m_retrievedTime);
         m_owner->writeTimestamp();
         m_owner->refreshComplete(Delegate::FAIL_SUCCESS);
     }
-    
+
 private:
     bool checkVersion(const std::string& aVersion, SGPropertyNode* aProps)
     {
@@ -105,29 +103,21 @@ private:
         }
         return false;
     }
-    
+
     CatalogRef m_owner;
     std::string m_buffer;
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
-CatalogList Catalog::allCatalogs()
-{
-    return static_catalogs;
-}
-
 Catalog::Catalog(Root *aRoot) :
     m_root(aRoot),
     m_retrievedTime(0)
 {
-    static_catalogs.push_back(this);
 }
 
 Catalog::~Catalog()
 {
-    CatalogList::iterator it = std::find(static_catalogs.begin(), static_catalogs.end(), this);
-    static_catalogs.erase(it);
 }
 
 CatalogRef Catalog::createFromUrl(Root* aRoot, const std::string& aUrl)
@@ -136,10 +126,10 @@ CatalogRef Catalog::createFromUrl(Root* aRoot, const std::string& aUrl)
     c->m_url = aUrl;
     Downloader* dl = new Downloader(c, aUrl);
     aRoot->makeHTTPRequest(dl);
-    
+
     return c;
 }
-    
+
 CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 {
     SGPath xml = aPath;
@@ -147,26 +137,26 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     if (!xml.exists()) {
         return NULL;
     }
-    
+
     SGPropertyNode_ptr props;
     try {
         props = new SGPropertyNode;
         readProperties(xml.str(), props);
     } catch (sg_exception& e) {
-        return NULL;    
+        return NULL;
     }
-    
+
     if (props->getStringValue("version") != aRoot->catalogVersion()) {
         SG_LOG(SG_GENERAL, SG_WARN, "skipping catalog at " << aPath << ", version mismatch:\n\t"
                << props->getStringValue("version") << " vs required " << aRoot->catalogVersion());
         return NULL;
     }
-    
+
     CatalogRef c = new Catalog(aRoot);
     c->m_installRoot = aPath;
     c->parseProps(props);
     c->parseTimestamp();
-    
+
     return c;
 }
 
@@ -196,7 +186,7 @@ Catalog::packagesNeedingUpdate() const
         if (!p->isInstalled()) {
             continue;
         }
-        
+
         if (p->install()->hasUpdate()) {
             r.push_back(p);
         }
@@ -215,7 +205,7 @@ Catalog::installedPackages() const
   }
   return r;
 }
-  
+
 InstallRef Catalog::installForPackage(PackageRef pkg) const
 {
     PackageInstallDict::const_iterator it = m_installed.find(pkg);
@@ -226,13 +216,13 @@ InstallRef Catalog::installForPackage(PackageRef pkg) const
         if (p.exists()) {
             return Install::createFromPath(p, CatalogRef(const_cast<Catalog*>(this)));
         }
-      
+
         return NULL;
     }
-  
+
     return it->second;
 }
-  
+
 void Catalog::refresh()
 {
     Downloader* dl = new Downloader(this, url());
@@ -294,13 +284,13 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
                    << " is now at: " << m_props->getStringValue("url"));
         }
     }
-  
+
     m_url = m_props->getStringValue("url");
 
     if (m_installRoot.isNull()) {
         m_installRoot = m_root->path();
         m_installRoot.append(id());
-        
+
         Dir d(m_installRoot);
         d.create(0755);
     }
@@ -331,7 +321,7 @@ std::string Catalog::description() const
 {
     return getLocalisedString(m_props, "description");
 }
-    
+
 SGPropertyNode* Catalog::properties() const
 {
     return m_props.ptr();
@@ -366,7 +356,7 @@ bool Catalog::needsRefresh() const
     unsigned int maxAge = m_props->getIntValue("max-age-sec", m_root->maxAgeSeconds());
     return (ageInSeconds() > maxAge);
 }
-    
+
 std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const
 {
     if (aRoot->hasChild(m_root->getLocale())) {
@@ -375,7 +365,7 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
             return localeRoot->getStringValue(aName);
         }
     }
-    
+
     return aRoot->getStringValue(aName);
 }
 
@@ -389,7 +379,7 @@ void Catalog::registerInstall(Install* ins)
   if (!ins || ins->package()->catalog() != this) {
     return;
   }
-  
+
   m_installed[ins->package()] = ins;
 }
 
@@ -398,7 +388,7 @@ void Catalog::unregisterInstall(Install* ins)
   if (!ins || ins->package()->catalog() != this) {
     return;
   }
-  
+
   m_installed.erase(ins->package());
 }
 

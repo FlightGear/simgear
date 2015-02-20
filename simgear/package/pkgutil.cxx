@@ -26,7 +26,7 @@
 #include <iostream>
 #include <cstring>
 
-using namespace simgear; 
+using namespace simgear;
 using namespace std;
 
 bool keepRunning = true;
@@ -37,29 +37,29 @@ public:
     virtual void refreshComplete()
     {
     }
-    
+
     virtual void failedRefresh(pkg::Catalog* aCatalog, FailureCode aReason)
     {
         cerr << "failed refresh of " << aCatalog->description() << ":" << aReason << endl;
     }
-    
+
     virtual void startInstall(pkg::Install* aInstall)
     {
         _lastPercent = 999;
         cout << "starting install of " << aInstall->package()->name() << endl;
     }
-    
+
     virtual void installProgress(pkg::Install* aInstall, unsigned int bytes, unsigned int total)
     {
         unsigned int percent = (bytes * 100) / total;
         if (percent == _lastPercent) {
             return;
         }
-        
+
         _lastPercent = percent;
         cout << percent << "%" << endl;
     }
-    
+
     virtual void finishInstall(pkg::Install* aInstall)
     {
         cout << "done install of " << aInstall->package()->name() << endl;
@@ -71,7 +71,7 @@ public:
     }
 private:
     unsigned int _lastPercent;
-    
+
 };
 
 void printRating(pkg::Package* pkg, const std::string& aRating, const std::string& aLabel)
@@ -87,24 +87,24 @@ void printPackageInfo(pkg::Package* pkg)
     cout << "Name:" << pkg->name() << endl;
     cout << "Description:" << pkg->description() << endl;
     cout << "Long description:\n" << pkg->getLocalisedProp("long-description") << endl << endl;
-    
+
     if (pkg->properties()->hasChild("author")) {
         cout << "Authors:" << endl;
         BOOST_FOREACH(SGPropertyNode* author, pkg->properties()->getChildren("author")) {
             if (author->hasChild("name")) {
                 cout << "\t" << author->getStringValue("name") << endl;
-                
+
             } else {
                 // simple author structure
                 cout << "\t" << author->getStringValue() << endl;
             }
-        
-            
+
+
         }
-        
+
         cout << endl;
     }
-    
+
     cout << "Ratings:" << endl;
     printRating(pkg, "fdm",     "Flight-model    ");
     printRating(pkg, "cockpit", "Cockpit         ");
@@ -117,15 +117,15 @@ int main(int argc, char** argv)
 
     HTTP::Client* http = new HTTP::Client();
     pkg::Root* root = new pkg::Root(Dir::current().path(), "");
-    
+
     MyDelegate dlg;
     root->setDelegate(&dlg);
-    
+
     cout << "Package root is:" << Dir::current().path() << endl;
-    cout << "have " << pkg::Catalog::allCatalogs().size() << " catalog(s)" << endl;
-        
+    cout << "have " << root->catalogs().size() << " catalog(s)" << endl;
+
     root->setHTTPClient(http);
-    
+
     if (!strcmp(argv[1], "add")) {
         std::string url(argv[2]);
         pkg::Catalog::createFromUrl(root, url);
@@ -137,12 +137,12 @@ int main(int argc, char** argv)
             cerr << "unknown package:" << argv[2] << endl;
             return EXIT_FAILURE;
         }
-        
+
         if (pkg->isInstalled()) {
             cout << "package " << pkg->id() << " is already installed at " << pkg->install()->path() << endl;
             return EXIT_SUCCESS;
         }
-        
+
         pkg::CatalogRef catalog = pkg->catalog();
         cout << "Will install:" << pkg->id() << " from " << catalog->id() <<
                 "(" << catalog->description() << ")" << endl;
@@ -153,12 +153,12 @@ int main(int argc, char** argv)
             cerr << "unknown package:" << argv[2] << endl;
             return EXIT_FAILURE;
         }
-        
+
         if (!pkg->isInstalled()) {
             cerr << "package " << argv[2] << " not installed" << endl;
             return EXIT_FAILURE;
         }
-        
+
         cout << "Will uninstall:" << pkg->id() << endl;
         pkg->install()->uninstall();
     } else if (!strcmp(argv[1], "update-all")) {
@@ -172,7 +172,7 @@ int main(int argc, char** argv)
             cout << "no packages with updates" << endl;
             return EXIT_SUCCESS;
         }
-        
+
         cout << updates.size() << " packages have updates" << endl;
         BOOST_FOREACH(pkg::Package* p, updates) {
             cout << "\t" << p->id() << " " << p->getLocalisedProp("name") << endl;
@@ -183,13 +183,13 @@ int main(int argc, char** argv)
             cerr << "unknown package:" << argv[2] << endl;
             return EXIT_FAILURE;
         }
-    
+
         printPackageInfo(pkg);
     } else {
         cerr << "unknown command:" << argv[1] << endl;
         return EXIT_FAILURE;
     }
-    
+
     while (http->hasActiveRequests()) {
         http->update();
     }

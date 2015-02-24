@@ -14,11 +14,10 @@ include (CheckIncludeFile)
 include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
 
-# set this before project()
+project(SimGear)
+
 # using 10.7 because boost requires libc++ and 10.6 doesn't include it
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
-
-project(SimGear)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
 file(READ version versionFile)

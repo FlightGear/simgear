@@ -34,7 +34,10 @@ namespace canvas
     public:
       struct ScreenPosition
       {
-        ScreenPosition() {}
+        ScreenPosition():
+          x(0),
+          y(0)
+        {}
 
         ScreenPosition(double x, double y):
           x(x),
@@ -67,8 +70,11 @@ namespace canvas
     public:
 
       HorizontalProjection():
-        _cos_rot(1),
-        _sin_rot(0),
+        _ref_lat(0),
+        _ref_lon(0),
+        _angle(0),
+        _cos_angle(1),
+        _sin_angle(0),
         _range(5)
       {
         setScreenRange(200);
@@ -88,9 +94,19 @@ namespace canvas
        */
       void setOrientation(float hdg)
       {
+        _angle = hdg;
+
         hdg = SGMiscf::deg2rad(hdg);
-        _sin_rot = sin(hdg);
-        _cos_rot = cos(hdg);
+        _sin_angle = sin(hdg);
+        _cos_angle = cos(hdg);
+      }
+
+      /**
+       * Get orientation/heading of the projection (in degree)
+       */
+      float orientation() const
+      {
+        return _angle;
       }
 
       void setRange(double range)
@@ -114,8 +130,8 @@ namespace canvas
         pos.y *= scale;
         return ScreenPosition
         (
-          _cos_rot * pos.x - _sin_rot * pos.y,
-         -_sin_rot * pos.x - _cos_rot * pos.y
+          _cos_angle * pos.x - _sin_angle * pos.y,
+         -_sin_angle * pos.x - _cos_angle * pos.y
         );
       }
 
@@ -129,10 +145,11 @@ namespace canvas
        */
       virtual ScreenPosition project(double lat, double lon) const = 0;
 
-      double  _ref_lat,
-              _ref_lon,
-              _cos_rot,
-              _sin_rot,
+      double  _ref_lat,   ///<! Reference latitude (radian)
+              _ref_lon,   ///<! Reference latitude (radian)
+              _angle,     ///<! Map rotation angle (degree)
+              _cos_angle,
+              _sin_angle,
               _range;
   };
 

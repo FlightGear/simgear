@@ -44,6 +44,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   const std::string GEO = "-geo";
+  const std::string HDG = "hdg";
   const std::string Map::TYPE_NAME = "map";
 
   //----------------------------------------------------------------------------
@@ -112,87 +113,44 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Map::childAdded(SGPropertyNode* parent, SGPropertyNode* child)
   {
-    if( !boost::ends_with(child->getNameString(), GEO) )
+    if( boost::ends_with(child->getNameString(), GEO) )
+      _geo_nodes[child].reset(new GeoNodePair());
+    else if( parent != _node && child->getNameString() == HDG )
+      _hdg_nodes.insert(child);
+    else
       return Element::childAdded(parent, child);
-
-    _geo_nodes[child].reset(new GeoNodePair());
   }
 
   //----------------------------------------------------------------------------
   void Map::childRemoved(SGPropertyNode* parent, SGPropertyNode* child)
   {
-    if( !boost::ends_with(child->getNameString(), GEO) )
+    if( boost::ends_with(child->getNameString(), GEO) )
+      // TODO remove from other node
+      _geo_nodes.erase(child);
+    else if( parent != _node && child->getName() == HDG )
+      _hdg_nodes.erase(child);
+    else
       return Element::childRemoved(parent, child);
-
-    // TODO remove from other node
-    _geo_nodes.erase(child);
   }
 
   //----------------------------------------------------------------------------
-  void Map::valueChanged(SGPropertyNode * child)
+  void Map::valueChanged(SGPropertyNode* child)
   {
-    const std::string& name = child->getNameString();
-
-    if( !boost::ends_with(name, GEO) )
-      return Group::valueChanged(child);
-
-    GeoNodes::iterator it_geo_node = _geo_nodes.find(child);
-    if( it_geo_node == _geo_nodes.end() )
-      LOG_GEO_RET("geo node not found!")
-    GeoNodePair* geo_node = it_geo_node->second.get();
-
-    geo_node->setDirty();
-
-    if( geo_node->getStatus() & GeoNodePair::INCOMPLETE )
+    if( child->getParent() != _node )
     {
-      // Detect lat, lon tuples...
-      GeoCoord coord = parseGeoCoord(child->getStringValue());
-      int index_other = -1;
+      const std::string& name = child->getNameString();
 
-      switch( coord.type )
-      {
-        case GeoCoord::LATITUDE:
-          index_other = child->getIndex() + 1;
-          geo_node->setNodeLat(child);
-          break;
-        case GeoCoord::LONGITUDE:
-          index_other = child->getIndex() - 1;
-          geo_node->setNodeLon(child);
-          break;
-        default:
-          LOG_GEO_RET("Invalid geo coord")
-      }
-
-      SGPropertyNode *other = child->getParent()->getChild(name, index_other);
-      if( !other )
-        return;
-
-      GeoCoord coord_other = parseGeoCoord(other->getStringValue());
-      if(    coord_other.type == GeoCoord::INVALID
-          || coord_other.type == coord.type )
-        return;
-
-      GeoNodes::iterator it_geo_node_other = _geo_nodes.find(other);
-      if( it_geo_node_other == _geo_nodes.end() )
-        LOG_GEO_RET("other geo node not found!")
-      GeoNodePair* geo_node_other = it_geo_node_other->second.get();
-
-      // Let use both nodes use the same GeoNodePair instance
-      if( geo_node_other != geo_node )
-        it_geo_node_other->second = it_geo_node->second;
-
-      if( coord_other.type == GeoCoord::LATITUDE )
-        geo_node->setNodeLat(other);
-      else
-        geo_node->setNodeLon(other);
-
-      // Set name for resulting screen coordinate nodes
-      geo_node->setTargetName( name.substr(0, name.length() - GEO.length()) );
+      if( boost::ends_with(name, GEO) )
+        return geoNodeChanged(child);
+      else if( name == HDG )
+        return hdgNodeChanged(child);
     }
+
+    return Group::valueChanged(child);
   }
 
   //----------------------------------------------------------------------------
-  void Map::childChanged(SGPropertyNode * child)
+  void Map::childChanged(SGPropertyNode* child)
   {
     if( child->getParent() != _node )
       return Group::childChanged(child);
@@ -201,8 +159,14 @@ namespace canvas
         || child->getNameString() == "ref-lon" )
       _projection->setWorldPosition( _node->getDoubleValue("ref-lat"),
                                      _node->getDoubleValue("ref-lon") );
-    else if( child->getNameString() == "hdg" )
+    else if( child->getNameString() == HDG )
+    {
       _projection->setOrientation(child->getFloatValue());
+      for( NodeSet::iterator it = _hdg_nodes.begin();
+                             it != _hdg_nodes.end();
+                           ++it )
+        hdgNodeChanged(*it);
+    }
     else if( child->getNameString() == "range" )
       _projection->setRange(child->getDoubleValue());
     else if( child->getNameString() == "screen-range" )
@@ -211,6 +175,74 @@ namespace canvas
       return Group::childChanged(child);
 
     _projection_dirty = true;
+  }
+
+  //----------------------------------------------------------------------------
+  void Map::geoNodeChanged(SGPropertyNode* child)
+  {
+    GeoNodes::iterator it_geo_node = _geo_nodes.find(child);
+    if( it_geo_node == _geo_nodes.end() )
+      LOG_GEO_RET("GeoNode not found!")
+    GeoNodePair* geo_node = it_geo_node->second.get();
+
+    geo_node->setDirty();
+
+    if( !(geo_node->getStatus() & GeoNodePair::INCOMPLETE) )
+      return;
+
+    // Detect lat, lon tuples...
+    GeoCoord coord = parseGeoCoord(child->getStringValue());
+    int index_other = -1;
+
+    switch( coord.type )
+    {
+      case GeoCoord::LATITUDE:
+        index_other = child->getIndex() + 1;
+        geo_node->setNodeLat(child);
+        break;
+      case GeoCoord::LONGITUDE:
+        index_other = child->getIndex() - 1;
+        geo_node->setNodeLon(child);
+        break;
+      default:
+        LOG_GEO_RET("Invalid geo coord")
+    }
+
+    const std::string& name = child->getNameString();
+    SGPropertyNode *other = child->getParent()->getChild(name, index_other);
+    if( !other )
+      return;
+
+    GeoCoord coord_other = parseGeoCoord(other->getStringValue());
+    if(    coord_other.type == GeoCoord::INVALID
+        || coord_other.type == coord.type )
+      return;
+
+    GeoNodes::iterator it_geo_node_other = _geo_nodes.find(other);
+    if( it_geo_node_other == _geo_nodes.end() )
+      LOG_GEO_RET("other geo node not found!")
+    GeoNodePair* geo_node_other = it_geo_node_other->second.get();
+
+    // Let use both nodes use the same GeoNodePair instance
+    if( geo_node_other != geo_node )
+      it_geo_node_other->second = it_geo_node->second;
+
+    if( coord_other.type == GeoCoord::LATITUDE )
+      geo_node->setNodeLat(other);
+    else
+      geo_node->setNodeLon(other);
+
+    // Set name for resulting screen coordinate nodes
+    geo_node->setTargetName( name.substr(0, name.length() - GEO.length()) );
+  }
+
+  //----------------------------------------------------------------------------
+  void Map::hdgNodeChanged(SGPropertyNode* child)
+  {
+    child->getParent()->setFloatValue(
+      "tf[0]/rot",
+      SGMiscf::deg2rad(child->getFloatValue() - _projection->orientation())
+    );
   }
 
   //----------------------------------------------------------------------------

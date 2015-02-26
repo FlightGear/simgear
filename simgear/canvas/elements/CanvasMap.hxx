@@ -24,6 +24,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 namespace simgear
 {
@@ -59,14 +60,18 @@ namespace canvas
       typedef boost::unordered_map< SGPropertyNode*,
                                     boost::shared_ptr<GeoNodePair>
                                   > GeoNodes;
+      typedef boost::unordered_set<SGPropertyNode*> NodeSet;
+
       GeoNodes _geo_nodes;
+      NodeSet  _hdg_nodes;
       boost::shared_ptr<HorizontalProjection> _projection;
       bool _projection_dirty;
 
       struct GeoCoord
       {
         GeoCoord():
-          type(INVALID)
+          type(INVALID),
+          value(0)
         {}
         enum
         {
@@ -76,6 +81,9 @@ namespace canvas
         } type;
         double value;
       };
+
+      void geoNodeChanged(SGPropertyNode * child);
+      void hdgNodeChanged(SGPropertyNode * child);
 
       GeoCoord parseGeoCoord(const std::string& val) const;
   };

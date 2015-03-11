@@ -548,7 +548,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
 {
     if (slot.repository.get()) {
         if (slot.repository->isDoingSync()) {
-#if 0
+#if 1
             if (slot.stamp.elapsedMSec() > slot.nextWarnTimeout) {
                 SG_LOG(SG_TERRAIN, SG_INFO, "sync taking a long time:" << slot.currentItem._dir << " taken " << slot.stamp.elapsedMSec());
                 SG_LOG(SG_TERRAIN, SG_INFO, "HTTP status:" << _http.hasActiveRequests());
@@ -605,7 +605,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         slot.nextWarnTimeout = 20000;
         slot.stamp.stamp();
         slot.busy = true;
-        SG_LOG(SG_TERRAIN, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
+        SG_LOG(SG_TERRAIN, SG_INFO, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
     }
 }
 
@@ -683,6 +683,8 @@ void SGTerraSync::SvnThread::fail(SyncItem failedItem)
     _fail_count++;
     failedItem._status = SyncItem::Failed;
     _freshTiles.push_back(failedItem);
+    SG_LOG(SG_TERRAIN,SG_INFO,
+           "Faield to sync'" << failedItem._dir << "'");
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
     _is_dirty = true;
 }

@@ -109,6 +109,12 @@ public:
     CatalogRef getCatalogById(const std::string& aId) const;
     
     void scheduleToUpdate(InstallRef aInstall);
+    
+    /**
+     * remove a catalog. Will uninstall all packages originating
+     * from the catalog too.
+     */
+    bool removeCatalogById(const std::string& aId);
 private:
     friend class Install;
     friend class Catalog;    

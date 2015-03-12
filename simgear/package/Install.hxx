@@ -73,9 +73,11 @@ public:
     bool hasUpdate() const;
     
     void startUpdate();
-    
-    void uninstall();
 
+    bool uninstall();
+
+    bool isDownloading() const;
+    
     /**
      * Set the handler to be called when the installation successfully
      * completes.

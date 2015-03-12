@@ -22,11 +22,14 @@
 #include <ctime>
 #include <map>
 
+#include <boost/bind.hpp>
+
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/structure/function_list.hxx>
 
 #include <simgear/package/Delegate.hxx>
 
@@ -63,6 +66,11 @@ public:
     Root* root() const
         { return m_root;};
 
+    /**
+     * uninstall this catalog entirely, including all installed packages
+     */
+    bool uninstall();
+    
     /**
      * perform a refresh of the catalog contents
      */
@@ -115,6 +123,18 @@ public:
      * access the raw property data in the catalog
      */
     SGPropertyNode* properties() const;
+    
+    Delegate::FailureCode status() const;
+    
+    typedef boost::function<void(Catalog*)> Callback;
+    
+    void addStatusCallback(const Callback& cb);
+
+    template<class C>
+    void addStatusCallback(C* instance, void (C::*mem_func)(Catalog*))
+    {
+      return addStatusCallback(boost::bind(mem_func, instance, _1));
+    }
 private:
     Catalog(Root* aRoot);
 
@@ -134,11 +154,14 @@ private:
 
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
 
+    void changeStatus(Delegate::FailureCode newStatus);
+
     Root* m_root;
     SGPropertyNode_ptr m_props;
     SGPath m_installRoot;
     std::string m_url;
-
+    Delegate::FailureCode m_status;
+    
     PackageList m_packages;
     time_t m_retrievedTime;
 
@@ -149,6 +172,8 @@ private:
   // since it is only cleaned up in the Install destructor
     typedef std::map<PackageRef, Install*> PackageInstallDict;
     PackageInstallDict m_installed;
+    
+    function_list<Callback> m_statusCallbacks;
 };
 
 } // of namespace pkg

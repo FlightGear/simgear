@@ -42,7 +42,8 @@ public:
         FAIL_DOWNLOAD,  ///< network issue
         FAIL_EXTRACT,   ///< package archive failed to extract cleanly
         FAIL_FILESYSTEM,    ///< unknown filesystem error occurred
-        FAIL_VERSION ///< version check mismatch
+        FAIL_VERSION, ///< version check mismatch
+        CATALOG_REFRESHED
     } FailureCode;
     
     

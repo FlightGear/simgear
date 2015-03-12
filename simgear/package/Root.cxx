@@ -336,6 +336,28 @@ void Root::catalogRefreshComplete(CatalogRef aCat, Delegate::FailureCode aReason
     }
 }
 
+bool Root::removeCatalogById(const std::string& aId)
+{
+    CatalogDict::iterator catIt = d->catalogs.find(aId);
+    if (catIt == d->catalogs.end()) {
+        SG_LOG(SG_GENERAL, SG_WARN, "removeCatalogById: unknown ID:" << aId);
+        return false;
+    }
+    
+    CatalogRef cat = catIt->second;
+    
+    // drop the reference
+    d->catalogs.erase(catIt);
+    
+    bool ok = cat->uninstall();
+    if (!ok) {
+        SG_LOG(SG_GENERAL, SG_WARN, "removeCatalogById: catalog :" << aId
+            << "failed to uninstall");
+    }
+    
+    return ok;
+}
+
 } // of namespace pkg
 
 } // of namespace simgear

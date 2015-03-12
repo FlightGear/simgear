@@ -45,6 +45,8 @@ public:
         HTTP::Request(aUrl),
         m_owner(aOwner)
     {
+        // refreshing
+        m_owner->changeStatus(Delegate::FAIL_IN_PROGRESS);
     }
 
 protected:
@@ -90,7 +92,7 @@ protected:
 
         time(&m_owner->m_retrievedTime);
         m_owner->writeTimestamp();
-        m_owner->refreshComplete(Delegate::FAIL_SUCCESS);
+        m_owner->refreshComplete(Delegate::CATALOG_REFRESHED);
     }
 
 private:
@@ -112,6 +114,7 @@ private:
 
 Catalog::Catalog(Root *aRoot) :
     m_root(aRoot),
+    m_status(Delegate::FAIL_UNKNOWN),
     m_retrievedTime(0)
 {
 }
@@ -154,10 +157,37 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 
     CatalogRef c = new Catalog(aRoot);
     c->m_installRoot = aPath;
-    c->parseProps(props);
+    c->parseProps(props); // will set status
     c->parseTimestamp();
 
     return c;
+}
+
+bool Catalog::uninstall()
+{
+    bool ok;
+    bool atLeastOneFailure = false;
+    
+    BOOST_FOREACH(PackageRef p, installedPackages()) {
+        ok = p->existingInstall()->uninstall();
+        if (!ok) {
+            SG_LOG(SG_GENERAL, SG_WARN, "uninstall of package " <<
+                p->id() << " failed");
+            // continue trying other packages, bailing out here
+            // gains us nothing
+            atLeastOneFailure = true;
+        }
+    }
+
+    Dir d(m_installRoot);
+    ok = d.remove(true /* recursive */);
+    if (!ok) {
+        atLeastOneFailure = true;
+    }
+    
+    changeStatus(atLeastOneFailure ? Delegate::FAIL_FILESYSTEM
+                                   : Delegate::FAIL_SUCCESS);
+    return ok;
 }
 
 PackageList const&
@@ -226,6 +256,7 @@ InstallRef Catalog::installForPackage(PackageRef pkg) const
 void Catalog::refresh()
 {
     Downloader* dl = new Downloader(this, url());
+    // will iupdate status to IN_PROGRESS
     m_root->makeHTTPRequest(dl);
     m_root->catalogRefreshBegin(this);
 }
@@ -294,6 +325,9 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
         Dir d(m_installRoot);
         d.create(0755);
     }
+    
+    // parsed XML ok, mark status as valid
+    changeStatus(Delegate::FAIL_SUCCESS);
 }
 
 PackageRef Catalog::getPackageById(const std::string& aId) const
@@ -372,6 +406,7 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
 void Catalog::refreshComplete(Delegate::FailureCode aReason)
 {
     m_root->catalogRefreshComplete(this, aReason);
+    changeStatus(aReason);
 }
 
 void Catalog::registerInstall(Install* ins)
@@ -390,6 +425,26 @@ void Catalog::unregisterInstall(Install* ins)
   }
 
   m_installed.erase(ins->package());
+}
+
+void Catalog::changeStatus(Delegate::FailureCode newStatus)
+{
+    if (m_status == newStatus) {
+        return;
+    }
+    
+    m_status = newStatus;
+    m_statusCallbacks(this);
+}
+
+void Catalog::addStatusCallback(const Callback& cb)
+{
+    m_statusCallbacks.push_back(cb);
+}
+
+Delegate::FailureCode Catalog::status() const
+{
+    return m_status;
 }
 
 } // of namespace pkg

@@ -313,11 +313,21 @@ void Install::startUpdate()
     m_package->catalog()->root()->startInstall(this);
 }
 
-void Install::uninstall()
+bool Install::uninstall()
 {
     Dir d(m_path);
-    d.remove(true);
+    if (!d.remove(true)) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "package uninstall failed: couldn't remove path " << m_path);
+        return false;
+    }
+    
     m_package->catalog()->unregisterInstall(this);
+    return true;
+}
+
+bool Install::isDownloading() const
+{
+    return (m_download != NULL);
 }
 
 //------------------------------------------------------------------------------

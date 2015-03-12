@@ -239,7 +239,6 @@ void SVNDirectory::deleteChildByName(const std::string& nm)
 {
     DAVResource* child = dav->childWithName(nm);
     if (!child) {
-//        std::cerr << "ZZZ: deleteChildByName: unknown:" << nm << std::endl;
         return;
     }
 
@@ -247,17 +246,24 @@ void SVNDirectory::deleteChildByName(const std::string& nm)
     
     if (child->isCollection()) {
         Dir d(path);
-        d.remove(true);
-    
+        bool ok = d.remove(true);
+        if (!ok) {
+            SG_LOG(SG_NETWORK, SG_ALERT, "SVNDirectory::deleteChildByName: failed to remove dir:"
+                   << nm << " at path:\n\t" << path);
+        }
+
         DirectoryList::iterator it = findChildDir(nm);
         if (it != _children.end()) {
             SVNDirectory* c = *it;
-    //        std::cout << "YYY: deleting SVNDirectory for:" << nm << std::endl;
             delete c;
             _children.erase(it);
         }
     } else {
-        path.remove();
+        bool ok = path.remove();
+        if (!ok) {
+            SG_LOG(SG_NETWORK, SG_ALERT, "SVNDirectory::deleteChildByName: failed to remove path:" << nm
+                   << " at path:\n\t" << path);
+        }
     }
 
     dav->removeChild(child);

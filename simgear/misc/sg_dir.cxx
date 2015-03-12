@@ -382,6 +382,7 @@ bool Dir::remove(bool recursive)
     
     if (recursive) {
         if (!removeChildren()) {
+            SG_LOG(SG_IO, SG_WARN, "Dir at:" << _path << " failed to remove children");
             return false;
         }
     } // of recursive deletion

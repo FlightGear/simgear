@@ -36,6 +36,27 @@ namespace simgear {
 
 namespace pkg {
 
+bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
+{
+    BOOST_FOREACH(SGPropertyNode* v, props->getChildren("version")) {
+        if (v->getStringValue() == aVersion) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string redirectUrlForVersion(const std::string& aVersion, SGPropertyNode_ptr props)
+{
+    BOOST_FOREACH(SGPropertyNode* v, props->getChildren("alternate-version")) {
+        if (v->getStringValue("version") == aVersion) {
+            return v->getStringValue("url");
+        }
+    }
+    
+    return std::string();
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 class Catalog::Downloader : public HTTP::Request
@@ -47,6 +68,7 @@ public:
     {
         // refreshing
         m_owner->changeStatus(Delegate::FAIL_IN_PROGRESS);
+
     }
 
 protected:
@@ -78,9 +100,23 @@ protected:
         if (!checkVersion(ver, props)) {
             SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version mismatch:\n\t"
                    << props->getStringValue("version") << " vs required " << ver);
-            m_owner->refreshComplete(Delegate::FAIL_VERSION);
+
+            // check for a version redirect entry
+            std::string url = redirectUrlForVersion(ver, props);
+            if (!url.empty()) {
+                SG_LOG(SG_GENERAL, SG_WARN, "redirecting from " << m_owner->url() <<
+                       " to \n\t" << url);
+
+                // update the URL and kick off a new request
+                m_owner->m_url = url;
+                Downloader* dl = new Downloader(m_owner, url);
+                m_owner->root()->makeHTTPRequest(dl);
+            } else {
+                m_owner->refreshComplete(Delegate::FAIL_VERSION);
+            }
+
             return;
-        }
+        } // of version check failed
 
         // cache the catalog data, now we have a valid install root
         Dir d(m_owner->installRoot());
@@ -150,9 +186,19 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     }
 
     if (props->getStringValue("version") != aRoot->catalogVersion()) {
-        SG_LOG(SG_GENERAL, SG_WARN, "skipping catalog at " << aPath << ", version mismatch:\n\t"
+        std::string redirect = redirectUrlForVersion(aRoot->catalogVersion(), props);
+        if (!redirect.empty()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "catalog at " << aPath << ", version mismatch:\n\t"
+                   << "redirecting to alternate URL:" << redirect);
+            CatalogRef c = Catalog::createFromUrl(aRoot, redirect);
+            c->m_installRoot = aPath;
+            return c;
+        } else {
+            SG_LOG(SG_GENERAL, SG_WARN, "skipping catalog at " << aPath << ", version mismatch:\n\t"
                << props->getStringValue("version") << " vs required " << aRoot->catalogVersion());
-        return NULL;
+            return NULL;
+        }
+
     }
 
     CatalogRef c = new Catalog(aRoot);

@@ -142,6 +142,9 @@ naRef naIOGhost(naContext c, FILE* f)
     return naNewGhost(c, &naIOGhostType, ghost);
 }
 
+#if SG_NASAL_UNRESTRICTED_OPEN
+// Allows unrestricted file access, which would be a security hole
+// Replaced by the one in flightgear src/Scripting/NasalSys.cxx
 static naRef f_open(naContext c, naRef me, int argc, naRef* args)
 {
     FILE* f;
@@ -152,6 +155,7 @@ static naRef f_open(naContext c, naRef me, int argc, naRef* args)
     if(!f) naRuntimeError(c, strerror(errno));
     return naIOGhost(c, f);
 }
+#endif
 
 // frees buffer before tossing an error
 static int getcguard(naContext ctx, FILE* f, void* buf)
@@ -244,7 +248,9 @@ static naCFuncItem funcs[] = {
     { "seek", f_seek },
     { "tell", f_tell },
     { "flush", f_flush },
+#if SG_NASAL_UNRESTRICTED_OPEN
     { "open", f_open },
+#endif
     { "readln", f_readln },
     { "stat", f_stat },
     { 0 }

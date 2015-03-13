@@ -1,5 +1,8 @@
 #ifndef _IOLIB_H
 #define _IOLIB_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "nasal.h"
 
@@ -33,5 +36,7 @@ extern struct naIOType naStdIOType;
 
 // Defined in iolib.c, there is no "library" header to put this in
 naRef naIOGhost(naContext c, FILE* f);
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif // _IOLIB_H

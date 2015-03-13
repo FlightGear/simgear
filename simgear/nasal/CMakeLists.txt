@@ -4,6 +4,7 @@ include (SimGearComponent)
 set(HEADERS 
     naref.h
     nasal.h
+    iolib.h
     )
 
 set(SOURCES 
@@ -26,7 +27,6 @@ set(SOURCES
     vector.c
     code.h
     data.h
-    iolib.h
     parse.h
     )
 

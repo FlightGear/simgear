@@ -176,6 +176,11 @@ if(APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR
+	${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+    find_package(Threads REQUIRED)
+endif()
+    
 # Somehow this only works if included before searching for Boost...
 include(BoostTestTargets)
 
@@ -198,7 +203,6 @@ else()
 endif(SIMGEAR_HEADLESS)
 
 find_package(ZLIB REQUIRED)
-find_package(Threads REQUIRED)
 
 if (SYSTEM_EXPAT)
     message(STATUS "Requested to use system Expat library, forcing SIMGEAR_SHARED to true")

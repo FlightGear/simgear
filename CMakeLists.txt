@@ -11,6 +11,7 @@ endif()
 
 include (CheckFunctionExists)
 include (CheckIncludeFile)
+include (CheckLibraryExists)
 include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
 

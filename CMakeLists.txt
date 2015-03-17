@@ -16,9 +16,6 @@ include (CheckCXXCompilerFlag)
 
 project(SimGear)
 
-# using 10.7 because boost requires libc++ and 10.6 doesn't include it
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
-
 # read 'version' file into a variable (stripping any newlines or spaces)
 file(READ version versionFile)
 string(STRIP ${versionFile} SIMGEAR_VERSION)
@@ -174,6 +171,9 @@ endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
+  
+  # using 10.7 because boost requires libc++ and 10.6 doesn't include it
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
 endif()
 
 # Somehow this only works if included before searching for Boost...

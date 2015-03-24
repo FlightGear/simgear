@@ -141,8 +141,12 @@ int main(int argc, char* argv[])
     
 // add
     pc.add("/opt/local");
+#ifdef _WIN32
+    COMPARE(pc.str(), std::string("/usr/local/include/;/opt/local"));
+#else
     COMPARE(pc.str(), std::string("/usr/local/include/:/opt/local"));
-    
+#endif
+
 // concat
     SGPath pd = pb;
     pd.concat("-1");

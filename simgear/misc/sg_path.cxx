@@ -56,7 +56,8 @@ static const char sgSearchPathSep = ':';
 #endif
 
 #ifdef _WIN32
-#include <ShlObj.h> // for CSIDL
+#include <ShlObj.h>         // for CSIDL
+#include <Knownfolders.h>   // for Standard Folder GUIDs
 
 static SGPath pathForCSIDL(int csidl, const SGPath& def)
 {
@@ -80,6 +81,31 @@ static SGPath pathForCSIDL(int csidl, const SGPath& def)
 
 	return def;
 }
+
+static SGPath pathForKnownFolder(REFKNOWNFOLDERID folderId, const SGPath& def)
+{
+    // system call will allocate dynamic memory... which we must release when done
+    wchar_t* localFolder = 0;
+    if (SHGetKnownFolderPath(folderId, KF_FLAG_DEFAULT_PATH, NULL, &localFolder) == S_OK) {
+        // copy into local memory
+        char path[MAX_PATH];
+        size_t len;
+        if (wcstombs_s(&len, path, localFolder, MAX_PATH) != S_OK) {
+            path[0] = '\0';
+            SG_LOG(SG_GENERAL, SG_WARN, "WCS to MBS failed");
+        }
+
+        SGPath folder_path = SGPath(path, def.getPermissionChecker());
+
+        // release dynamic memory
+        CoTaskMemFree(static_cast<void*>(localFolder));
+
+        return folder_path;
+    }
+
+    return def;
+}
+
 #elif __APPLE__
 
 // defined in CocoaHelpers.mm
@@ -705,6 +731,16 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
     case HOME:
       return home(def);
 #ifdef _WIN32
+#   if (WINVER > 0x0501)
+    case DESKTOP:
+        return pathForKnownFolder(FOLDERID_Desktop, def);
+    case DOWNLOADS:
+        return pathForKnownFolder(FOLDERID_Downloads, def);
+    case DOCUMENTS:
+        return pathForKnownFolder(FOLDERID_Documents, def);
+    case PICTURES:
+        return pathForKnownFolder(FOLDERID_Pictures, def);
+#   else
     case DESKTOP:
       return pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def);
     case DOWNLOADS:
@@ -718,6 +754,7 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
       return pathForCSIDL(CSIDL_MYDOCUMENTS, def);
     case PICTURES:
       return pathForCSIDL(CSIDL_MYPICTURES, def);
+#   endif
 #elif __APPLE__
       // since this is C++, we can't include NSPathUtilities.h to access the enum
       // values, so hard-coding them here (they are stable, don't worry)
@@ -756,20 +793,15 @@ SGPath SGPath::fromEnv(const char* name, const SGPath& def)
   return def;
 }
 
+//------------------------------------------------------------------------------
+SGPath SGPath::home(const SGPath& def)
+{
 #ifdef _WIN32
-//------------------------------------------------------------------------------
-SGPath SGPath::home(const SGPath& def)
-{
-  // TODO
-  return def;
-}
+    return fromEnv("USERPROFILE", def);
 #else
-//------------------------------------------------------------------------------
-SGPath SGPath::home(const SGPath& def)
-{
-  return fromEnv("HOME", def);
-}
+    return fromEnv("HOME", def);
 #endif
+}
 
 //------------------------------------------------------------------------------
 SGPath SGPath::desktop(const SGPath& def)

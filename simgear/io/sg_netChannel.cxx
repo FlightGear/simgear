@@ -251,6 +251,11 @@ NetChannelPoller::removeChannel(NetChannel* channel)
     assert(channel->poller == this);
     channel->poller = NULL;
     
+    // portability: MSVC throws assertion failure when empty
+    if (channels.empty()) {
+        return;
+    }
+
     ChannelList::iterator it = channels.begin();
     for (; it != channels.end(); ++it) {
         if (*it == channel) {

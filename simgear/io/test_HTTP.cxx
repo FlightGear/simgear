@@ -379,6 +379,8 @@ class TestServer : public NetChannel
 public:   
     TestServer()
     {
+        Socket::initSockets();
+
         open();
         bind(NULL, 2000); // localhost, any port
         listen(5);
@@ -414,14 +416,14 @@ TestServer testServer;
 void waitForComplete(HTTP::Client* cl, TestRequest* tr)
 {
     SGTimeStamp start(SGTimeStamp::now());
-    while (start.elapsedMSec() <  1000) {
+    while (start.elapsedMSec() <  10000) {
         cl->update();
         testServer.poll();
         
         if (tr->complete) {
             return;
         }
-        SGTimeStamp::sleepForMSec(1);
+        SGTimeStamp::sleepForMSec(15);
     }
     
     cerr << "timed out" << endl;
@@ -430,14 +432,14 @@ void waitForComplete(HTTP::Client* cl, TestRequest* tr)
 void waitForFailed(HTTP::Client* cl, TestRequest* tr)
 {
     SGTimeStamp start(SGTimeStamp::now());
-    while (start.elapsedMSec() <  1000) {
+    while (start.elapsedMSec() <  10000) {
         cl->update();
         testServer.poll();
         
         if (tr->failed) {
             return;
         }
-        SGTimeStamp::sleepForMSec(1);
+        SGTimeStamp::sleepForMSec(15);
     }
     
     cerr << "timed out waiting for failure" << endl;

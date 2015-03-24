@@ -32,6 +32,7 @@
 
 #include <cstring>
 #include <cstdlib> // for atoi
+#include <algorithm>
 
 using std::string;
 

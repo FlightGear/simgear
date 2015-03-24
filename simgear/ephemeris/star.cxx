@@ -22,7 +22,7 @@
  * $Id$
  **************************************************************************/
 
-#include <math.h>
+#include <cmath>
 
 #include <simgear/debug/logstream.hxx>
 

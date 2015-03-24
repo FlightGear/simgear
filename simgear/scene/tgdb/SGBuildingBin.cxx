@@ -386,10 +386,10 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
           int row = ((int) (mt_rand(&seed) * 1000)) % 5;
           float base_y = (float) row * 16.0 * 3.0 / 1024.0;
           float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-          float left_x = 32.0 / 1024.0 * round((float) building.width / 6.0f);
+          float left_x = 32.0 / 1024.0 * SGMisc<double>::round((float)building.width / 6.0f);
           float right_x = 0.0f;
           float front_x = 384.0/1024.0;
-          float back_x = 384.0/1024.0 + 32.0 / 1024.0 * round((float) building.depth/ 6.0f);
+          float back_x = 384.0 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round((float)building.depth / 6.0f);
 
           // BASEMENT - uses the baseline texture
           for (unsigned int i = 0; i < 16; i++) {
@@ -424,7 +424,7 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
           if (building.pitched) {
             // Use the entire height of the roof texture
             top_y = base_y + 16.0 * 3.0 / 1024.0;
-            left_x = 512/1024.0 + 32.0 / 1024.0 * round(building.width / 6.0f);
+            left_x = 512 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round(building.width / 6.0f);
             right_x = 512/1024.0;
             front_x = 480.0/1024.0;
             back_x = 512.0/1024.0;
@@ -475,7 +475,7 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
           int column = ((int) (mt_rand(&seed) * 1000)) % 5;
           float base_y = 288 / 1024.0;
           float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-          float left_x = column * 192.0 /1024.0 + 32.0 / 1024.0 * round((float) building.width / 10.0f);
+          float left_x = column * 192.0 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round((float)building.width / 10.0f);
           float right_x = column * 192.0 /1024.0;
 
           // BASEMENT - uses the baseline texture
@@ -560,7 +560,7 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
           int column = ((int) (mt_rand(&seed) * 1000)) % 8;
           float base_y = 576 / 1024.0;
           float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-          float left_x = column * 128.0 /1024.0 + 32.0 / 1024.0 * round((float) building.width / 20.0f);
+          float left_x = column * 128.0 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round((float)building.width / 20.0f);
           float right_x = column * 128.0 /1024.0;
 
           // BASEMENT - uses the baseline texture

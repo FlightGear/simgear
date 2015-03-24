@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <cstring>
 #include <sstream>
+#include <algorithm>
 
 #include "strutils.hxx"
 

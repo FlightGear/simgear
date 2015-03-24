@@ -26,7 +26,7 @@
 #endif
 
 
-#include <math.h>
+#include <cmath>
 
 #include <simgear/magvar/magvar.hxx>
 #include <simgear/math/SGMath.hxx>

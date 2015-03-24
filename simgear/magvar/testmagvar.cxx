@@ -1,8 +1,8 @@
 /* 2/14/00 fixed help message- dip angle (down positive), variation (E positive) */
 
-#include	<stdio.h>
-#include	<stdlib.h>
-#include	<math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cmath>
 
 #include <simgear/constants.h>
 

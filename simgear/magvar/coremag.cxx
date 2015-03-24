@@ -79,7 +79,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 #include <simgear/constants.h>
 #include <simgear/sg_inlines.h>

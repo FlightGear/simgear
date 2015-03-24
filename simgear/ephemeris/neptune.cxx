@@ -25,7 +25,7 @@
 #ifdef __BORLANDC__
 #  define exception c_exception
 #endif
-#include <math.h>
+#include <cmath>
 
 #include "neptune.hxx"
 

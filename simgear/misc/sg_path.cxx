@@ -57,7 +57,7 @@ static const char sgSearchPathSep = ':';
 
 #ifdef _WIN32
 #include <ShlObj.h>         // for CSIDL
-#include <Knownfolders.h>   // for Standard Folder GUIDs
+#include <versionhelpers.h>
 
 static SGPath pathForCSIDL(int csidl, const SGPath& def)
 {
@@ -84,23 +84,34 @@ static SGPath pathForCSIDL(int csidl, const SGPath& def)
 
 static SGPath pathForKnownFolder(REFKNOWNFOLDERID folderId, const SGPath& def)
 {
-    // system call will allocate dynamic memory... which we must release when done
-    wchar_t* localFolder = 0;
-    if (SHGetKnownFolderPath(folderId, KF_FLAG_DEFAULT_PATH, NULL, &localFolder) == S_OK) {
-        // copy into local memory
-        char path[MAX_PATH];
-        size_t len;
-        if (wcstombs_s(&len, path, localFolder, MAX_PATH) != S_OK) {
-            path[0] = '\0';
-            SG_LOG(SG_GENERAL, SG_WARN, "WCS to MBS failed");
+    typedef HRESULT (WINAPI*PSHGKFP)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR*);
+
+    HINSTANCE shellDll = LoadLibrary(TEXT("shell32"));
+    if (shellDll != NULL) {
+        PSHGKFP pSHGetKnownFolderPath = (PSHGKFP) GetProcAddress(shellDll, "SHGetKnownFolderPath");
+        if (pSHGetKnownFolderPath != NULL) {
+            // system call will allocate dynamic memory... which we must release when done
+            wchar_t* localFolder = 0;
+
+            if (pSHGetKnownFolderPath(folderId, KF_FLAG_DEFAULT_PATH, NULL, &localFolder) == S_OK) {
+                // copy into local memory
+                char path[MAX_PATH];
+                size_t len;
+                if (wcstombs_s(&len, path, localFolder, MAX_PATH) != S_OK) {
+                    path[0] = '\0';
+                    SG_LOG(SG_GENERAL, SG_WARN, "WCS to MBS failed");
+                }
+
+                SGPath folder_path = SGPath(path, def.getPermissionChecker());
+
+                // release dynamic memory
+                CoTaskMemFree(static_cast<void*>(localFolder));
+
+                return folder_path;
+            }
         }
 
-        SGPath folder_path = SGPath(path, def.getPermissionChecker());
-
-        // release dynamic memory
-        CoTaskMemFree(static_cast<void*>(localFolder));
-
-        return folder_path;
+        FreeLibrary(shellDll);
     }
 
     return def;
@@ -730,31 +741,35 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
   {
     case HOME:
       return home(def);
-#ifdef _WIN32
-#   if (WINVER > 0x0501)
-    case DESKTOP:
-        return pathForKnownFolder(FOLDERID_Desktop, def);
-    case DOWNLOADS:
-        return pathForKnownFolder(FOLDERID_Downloads, def);
-    case DOCUMENTS:
-        return pathForKnownFolder(FOLDERID_Documents, def);
-    case PICTURES:
-        return pathForKnownFolder(FOLDERID_Pictures, def);
-#   else
-    case DESKTOP:
-      return pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def);
-    case DOWNLOADS:
-      // TODO use KnownFolders
-      // http://msdn.microsoft.com/en-us/library/bb776911%28v=vs.85%29.aspx
-      if( !def.isNull() )
-        return def;
 
-      return pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def);
+#ifdef _WIN32
+    case DESKTOP:
+        if (IsWindowsVistaOrGreater())
+            return pathForKnownFolder(FOLDERID_Desktop, def);
+
+        return pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def);
+
+    case DOWNLOADS:
+        if (IsWindowsVistaOrGreater())
+            return pathForKnownFolder(FOLDERID_Downloads, def);
+
+        if (!def.isNull())
+            return def;
+
+        return pathForCSIDL(CSIDL_DESKTOPDIRECTORY, def);
+
     case DOCUMENTS:
-      return pathForCSIDL(CSIDL_MYDOCUMENTS, def);
+        if (IsWindowsVistaOrGreater())
+            return pathForKnownFolder(FOLDERID_Documents, def);
+
+        return pathForCSIDL(CSIDL_MYDOCUMENTS, def);
+
     case PICTURES:
-      return pathForCSIDL(CSIDL_MYPICTURES, def);
-#   endif
+        if (IsWindowsVistaOrGreater())
+            return pathForKnownFolder(FOLDERID_Pictures, def);
+
+        return pathForCSIDL(CSIDL_MYPICTURES, def);
+
 #elif __APPLE__
       // since this is C++, we can't include NSPathUtilities.h to access the enum
       // values, so hard-coding them here (they are stable, don't worry)

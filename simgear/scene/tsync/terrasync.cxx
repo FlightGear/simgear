@@ -199,6 +199,43 @@ static unsigned int syncSlotForType(SyncItem::Type ty)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Base server query
+///////////////////////////////////////////////////////////////////////////////
+
+class ServerSelectQuery : public HTTP::Request
+{
+public:
+    ServerSelectQuery() :
+        HTTP::Request("http://scenery.flightgear.org/svn-server", "GET")
+    {
+    }
+
+    std::string svnUrl() const
+    {
+        std::string s = simgear::strutils::strip(m_url);
+        if (s.at(s.length() - 1) == '/') {
+            s = s.substr(0, s.length() - 1);
+        }
+
+        return s;
+    }
+protected:
+    virtual void gotBodyData(const char* s, int n)
+    {
+        m_url.append(std::string(s, n));
+    }
+
+    virtual void onFail()
+    {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Failed to query TerraSync SVN server");
+        HTTP::Request::onFail();
+    }
+
+private:
+    std::string m_url;
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // SGTerraSync::SvnThread /////////////////////////////////////////////////////
@@ -363,14 +400,7 @@ bool SGTerraSync::SvnThread::start()
 
     _use_svn |= _use_built_in;
 
-    if ((_use_svn)&&(_svn_server==""))
-    {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
-               "Cannot start scenery download. Subversion scenery server is undefined.");
-        _fail_count++;
-        _stalled = true;
-        return false;
-    }
+
     if ((!_use_svn)&&(_rsync_server==""))
     {
         SG_LOG(SG_TERRAIN,SG_ALERT,
@@ -472,6 +502,28 @@ void SGTerraSync::SvnThread::run()
 {
     _active = true;
     initCompletedTilesPersistentCache();
+
+    {
+        if (_svn_server.empty()) {
+            SG_LOG(SG_TERRAIN,SG_INFO, "Querying closest TerraSync server");
+            ServerSelectQuery* ssq = new ServerSelectQuery;
+            HTTP::Request_ptr req = ssq;
+            _http.makeRequest(req);
+            while (!req->isComplete()) {
+                _http.update(20);
+            }
+
+            _svn_server = ssq->svnUrl();
+            SG_LOG(SG_TERRAIN,SG_INFO, "Closest TerraSync server:" << _svn_server);
+        } else {
+            SG_LOG(SG_TERRAIN,SG_INFO, "Explicit: TerraSync server:" << _svn_server);
+        }
+
+        if (_svn_server.empty()) {
+            // default value
+            _svn_server = "http://foxtrot.mgras.net:8080/terrascenery/trunk/data/Scenery";
+        }
+    }
 
     if (_use_built_in) {
         runInternal();

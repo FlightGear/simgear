@@ -15,6 +15,10 @@ include (CheckLibraryExists)
 include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
 
+# using 10.7 because boost requires libc++ and 10.6 doesn't include it
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk)
+
 project(SimGear)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
@@ -172,16 +176,13 @@ endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
-  
-  # using 10.7 because boost requires libc++ and 10.6 doesn't include it
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR
 	${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     find_package(Threads REQUIRED)
 endif()
-    
+
 # Somehow this only works if included before searching for Boost...
 include(BoostTestTargets)
 

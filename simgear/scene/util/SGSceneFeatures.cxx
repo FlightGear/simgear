@@ -25,11 +25,13 @@
 
 #include "SGSceneFeatures.hxx"
 
+#include <osg/Version>
 #include <osg/FragmentProgram>
 #include <osg/VertexProgram>
 #include <osg/Point>
 #include <osg/PointSprite>
 #include <osg/Texture>
+#include <osg/GLExtensions>
 
 #include <OpenThreads/Mutex>
 #include <OpenThreads/ScopedLock>
@@ -84,12 +86,18 @@ SGSceneFeatures::setTextureCompression(osg::Texture* texture) const
 bool
 SGSceneFeatures::getHavePointSprites(unsigned contextId) const
 {
+#if OSG_VERSION_LESS_THAN(3,3,3)
   return osg::PointSprite::isPointSpriteSupported(contextId);
+#else
+  const osg::GLExtensions* ex = osg::GLExtensions::Get(contextId, true);
+  return ex && ex->isPointSpriteSupported;
+#endif
 }
 
 bool
 SGSceneFeatures::getHaveFragmentPrograms(unsigned contextId) const
 {
+#if OSG_VERSION_LESS_THAN(3,3,3)
   const osg::FragmentProgram::Extensions* fpe;
   fpe = osg::FragmentProgram::getExtensions(contextId, true);
   if (!fpe)
@@ -98,11 +106,16 @@ SGSceneFeatures::getHaveFragmentPrograms(unsigned contextId) const
     return false;
   
   return true;
+#else
+  const osg::GLExtensions* ex = osg::GLExtensions::Get(contextId, true);
+  return ex && ex->isFragmentProgramSupported;
+#endif
 }
 
 bool
 SGSceneFeatures::getHaveVertexPrograms(unsigned contextId) const
 {
+#if OSG_VERSION_LESS_THAN(3,3,3)
   const osg::VertexProgram::Extensions* vpe;
   vpe = osg::VertexProgram::getExtensions(contextId, true);
   if (!vpe)
@@ -111,6 +124,10 @@ SGSceneFeatures::getHaveVertexPrograms(unsigned contextId) const
     return false;
   
   return true;
+#else
+  const osg::GLExtensions* ex = osg::GLExtensions::Get(contextId, true);
+  return ex && ex->isVertexProgramSupported;
+#endif
 }
 
 bool
@@ -124,6 +141,7 @@ SGSceneFeatures::getHaveShaderPrograms(unsigned contextId) const
 bool
 SGSceneFeatures::getHavePointParameters(unsigned contextId) const
 {
+#if OSG_VERSION_LESS_THAN(3,3,3)
   const osg::Point::Extensions* pe;
   pe = osg::Point::getExtensions(contextId, true);
   if (!pe)
@@ -131,5 +149,9 @@ SGSceneFeatures::getHavePointParameters(unsigned contextId) const
   if (!pe->isPointParametersSupported())
     return false;
   return true;
+#else
+  const osg::GLExtensions* ex = osg::GLExtensions::Get(contextId, true);
+  return ex && ex->isPointParametersSupported;
+#endif
 }
 

@@ -47,7 +47,11 @@ void ShaderGeometry::addObject(const Vec3& position, float scale,
 void ShaderGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
 {
     State& state = *renderInfo.getState();
+#if OSG_VERSION_LESS_THAN(3,3,3)
     const Extensions* extensions = getExtensions(state.getContextID(), true);
+#else
+    const GLExtensions* extensions = GLExtensions::Get(state.getContextID(), true);
+#endif
     Vec4Array::const_iterator citer = _posScaleArray->begin();
     Vec4Array::const_iterator cend = _posScaleArray->end();
     FloatArray::const_iterator viter = _vertexAttribArray->begin();

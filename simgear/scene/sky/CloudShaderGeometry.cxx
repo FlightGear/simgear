@@ -127,8 +127,12 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         
         sortData.frameSorted = frameNumber;
     }
-    
+
+#if OSG_VERSION_LESS_THAN(3,3,3)
     const Extensions* extensions = getExtensions(state.getContextID(),true);
+#else
+    const GLExtensions* extensions = GLExtensions::Get(state.getContextID(), true);
+#endif
     GLfloat ua1[3] = { (GLfloat) alpha_factor,
                        (GLfloat) shade_factor,
                        (GLfloat) cloud_height };

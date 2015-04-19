@@ -326,9 +326,15 @@ public:
             = GL2Extensions::Get(static_cast<unsigned>(contextId), true);
         if (!extensions)
             return;
+#if OSG_VERSION_LESS_THAN(3,3,3)
         if (!extensions->isGlslSupported())
             return;
         value = extensions->getLanguageVersion();
+#else
+        if (!extensions->isGlslSupported)
+            return;
+        value = extensions->glslLanguageVersion;
+#endif
     }
 };
 
@@ -357,7 +363,11 @@ public:
            = GL2Extensions::Get(static_cast<unsigned>(contextId), true);
        if (!extensions)
            return;
+#if OSG_VERSION_LESS_THAN(3,3,3)
        value = extensions->isGlslSupported();
+#else
+       value = extensions->isGlslSupported;
+#endif
    }
 };
 

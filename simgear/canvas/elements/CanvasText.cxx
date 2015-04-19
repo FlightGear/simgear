@@ -159,8 +159,12 @@ namespace canvas
 
     if( empty() )
       return pos;
-
+#if OSG_VERSION_LESS_THAN(3,3,4)
     GlyphQuads::Coords2 const& coords = _quads->_coords;
+#else
+    GlyphQuads::Coords2 refCoords = _quads->_coords;
+    GlyphQuads::Coords2::element_type &coords = *refCoords.get();
+#endif
     size_t global_i = _begin + i;
 
     if( global_i == _begin )
@@ -194,7 +198,12 @@ namespace canvas
       return cursorPos(0);
 
     GlyphQuads::Glyphs const& glyphs = _quads->_glyphs;
+    #if OSG_VERSION_LESS_THAN(3,3,4)
     GlyphQuads::Coords2 const& coords = _quads->_coords;
+#else
+    GlyphQuads::Coords2 refCoords = _quads->_coords;
+    GlyphQuads::Coords2::element_type &coords = *refCoords.get();
+#endif
 
     float const HIT_FRACTION = 0.6;
     float const character_width = _text->getCharacterHeight()
@@ -627,7 +636,13 @@ namespace canvas
 
     const GlyphQuads& quads = _textureGlyphQuadMap.begin()->second;
     const GlyphQuads::Glyphs& glyphs = quads._glyphs;
-    const GlyphQuads::Coords2& coords = quads._coords;
+#if OSG_VERSION_LESS_THAN(3,3,4)
+    GlyphQuads::Coords2 const& coords = quads._coords;
+#else
+    GlyphQuads::Coords2 refCoords = quads._coords;
+    GlyphQuads::Coords2::element_type &coords = *refCoords.get();
+#endif
+
     const GlyphQuads::LineNumbers& line_numbers = quads._lineNumbers;
 
     float wr = _characterHeight / getCharacterAspectRatio();

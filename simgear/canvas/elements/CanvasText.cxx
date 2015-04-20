@@ -159,7 +159,7 @@ namespace canvas
 
     if( empty() )
       return pos;
-#if OSG_VERSION_LESS_THAN(3,3,4)
+#if OSG_VERSION_LESS_THAN(3,3,5)
     GlyphQuads::Coords2 const& coords = _quads->_coords;
 #else
     GlyphQuads::Coords2 refCoords = _quads->_coords;
@@ -198,7 +198,7 @@ namespace canvas
       return cursorPos(0);
 
     GlyphQuads::Glyphs const& glyphs = _quads->_glyphs;
-    #if OSG_VERSION_LESS_THAN(3,3,4)
+    #if OSG_VERSION_LESS_THAN(3,3,5)
     GlyphQuads::Coords2 const& coords = _quads->_coords;
 #else
     GlyphQuads::Coords2 refCoords = _quads->_coords;
@@ -636,7 +636,7 @@ namespace canvas
 
     const GlyphQuads& quads = _textureGlyphQuadMap.begin()->second;
     const GlyphQuads::Glyphs& glyphs = quads._glyphs;
-#if OSG_VERSION_LESS_THAN(3,3,4)
+#if OSG_VERSION_LESS_THAN(3,3,5)
     GlyphQuads::Coords2 const& coords = quads._coords;
 #else
     GlyphQuads::Coords2 refCoords = quads._coords;

@@ -128,7 +128,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         sortData.frameSorted = frameNumber;
     }
 
-#if OSG_VERSION_LESS_THAN(3,3,3)
+#if OSG_VERSION_LESS_THAN(3,3,4)
     const Extensions* extensions = getExtensions(state.getContextID(),true);
 #else
     const GLExtensions* extensions = GLExtensions::Get(state.getContextID(), true);

@@ -86,7 +86,7 @@ SGSceneFeatures::setTextureCompression(osg::Texture* texture) const
 bool
 SGSceneFeatures::getHavePointSprites(unsigned contextId) const
 {
-#if OSG_VERSION_LESS_THAN(3,3,3)
+#if OSG_VERSION_LESS_THAN(3,3,4)
   return osg::PointSprite::isPointSpriteSupported(contextId);
 #else
   const osg::GLExtensions* ex = osg::GLExtensions::Get(contextId, true);
@@ -97,7 +97,7 @@ SGSceneFeatures::getHavePointSprites(unsigned contextId) const
 bool
 SGSceneFeatures::getHaveFragmentPrograms(unsigned contextId) const
 {
-#if OSG_VERSION_LESS_THAN(3,3,3)
+#if OSG_VERSION_LESS_THAN(3,3,4)
   const osg::FragmentProgram::Extensions* fpe;
   fpe = osg::FragmentProgram::getExtensions(contextId, true);
   if (!fpe)
@@ -115,7 +115,7 @@ SGSceneFeatures::getHaveFragmentPrograms(unsigned contextId) const
 bool
 SGSceneFeatures::getHaveVertexPrograms(unsigned contextId) const
 {
-#if OSG_VERSION_LESS_THAN(3,3,3)
+#if OSG_VERSION_LESS_THAN(3,3,4)
   const osg::VertexProgram::Extensions* vpe;
   vpe = osg::VertexProgram::getExtensions(contextId, true);
   if (!vpe)
@@ -141,7 +141,7 @@ SGSceneFeatures::getHaveShaderPrograms(unsigned contextId) const
 bool
 SGSceneFeatures::getHavePointParameters(unsigned contextId) const
 {
-#if OSG_VERSION_LESS_THAN(3,3,3)
+#if OSG_VERSION_LESS_THAN(3,3,4)
   const osg::Point::Extensions* pe;
   pe = osg::Point::getExtensions(contextId, true);
   if (!pe)

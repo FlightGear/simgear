@@ -47,7 +47,7 @@ void ShaderGeometry::addObject(const Vec3& position, float scale,
 void ShaderGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
 {
     State& state = *renderInfo.getState();
-#if OSG_VERSION_LESS_THAN(3,3,3)
+#if OSG_VERSION_LESS_THAN(3,3,4)
     const Extensions* extensions = getExtensions(state.getContextID(), true);
 #else
     const GLExtensions* extensions = GLExtensions::Get(state.getContextID(), true);

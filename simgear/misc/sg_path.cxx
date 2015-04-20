@@ -57,7 +57,9 @@ static const char sgSearchPathSep = ':';
 
 #ifdef _WIN32
 #include <ShlObj.h>         // for CSIDL
-#include <versionhelpers.h>
+// TODO: replace this include file with the official <versionhelpers.h> header
+// included in the Windows 8.1 SDK
+#include "sgversionhelpers.hxx"
 
 static SGPath pathForCSIDL(int csidl, const SGPath& def)
 {

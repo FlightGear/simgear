@@ -1,7 +1,7 @@
 
 include (SimGearComponent)
 
-set(HEADERS 
+set(HEADERS
     CSSBorder.hxx
     ListDiff.hxx
     ResourceManager.hxx
@@ -36,6 +36,10 @@ set(SOURCES
     zfstream.cxx
     gzcontainerfile.cxx
     )
+
+if (WINDOWS)
+    list(APPEND HEADERS sgversionhelpers.hxx)
+endif()
 
 if (APPLE)
     list(APPEND SOURCES CocoaHelpers.mm)

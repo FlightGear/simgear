@@ -456,7 +456,7 @@ void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
         t->setTriggerCondition(cond);
         
         t->setExcludeTarget(tDesc->getBoolValue("exclude-target", true));
-        BOOST_FOREACH(SGPropertyNode* src, desc->getChildren("source")) {
+        BOOST_FOREACH(SGPropertyNode* src, tDesc->getChildren("source")) {
             State_ptr srcState = findStateByName(src->getStringValue());
             t->addSourceState(srcState);
         }

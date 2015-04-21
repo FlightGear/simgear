@@ -439,9 +439,9 @@ void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
         std::string nm = stateDesc->getStringValue("name");
         State_ptr st(new State(nm));
         
-        readBindingList(stateDesc, "enter", root, st->d->_updateBindings);
-        readBindingList(stateDesc, "exit", root, st->d->_entryBindings);
-        readBindingList(stateDesc, "update", root, st->d->_exitBindings);
+        readBindingList(stateDesc, "enter", root, st->d->_entryBindings);
+        readBindingList(stateDesc, "update", root, st->d->_updateBindings);
+        readBindingList(stateDesc, "exit", root, st->d->_exitBindings);
         
         addState(st);
     } // of states iteration

@@ -5,5 +5,29 @@
     <description>First test catalog</description>
     <url>http://download.flightgear.org/catalog1/catalog.xml</url>
     <version>8.1.*</version>
+    <version>8.0.0</version>
+    <version>8.2.0</version>
+    
+    <package>
+        <id>alpha</id>
+        <name>Alpha package</name>
+        <revision type="int">8</revision>
+        <file-size-bytes type="int">1234567</file-size-bytes>
+    </package>
+    
+    <package>
+        <id>c172p</id>
+        <name>Cessna 172-P</name>
+        <description>A plane made by Cessna</description>
+        <revision type="int">42</revision>
+        <file-size-bytes type="int">34567</file-size-bytes>
+        
+        <tags>
+            <tag>cessna</tag>
+            <tag>ga</tag>
+            <tag>piston</tag>
+            <tag>ifr</tag>
+        </tags>
+    </package>
 </PropertyList>
     

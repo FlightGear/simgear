@@ -26,6 +26,7 @@
 
 #include <simgear/package/Catalog.hxx>
 #include <simgear/package/Root.hxx>
+#include <simgear/package/Package.hxx>
 
 #include <simgear/misc/sg_dir.hxx>
 
@@ -45,9 +46,28 @@ int parseTest()
     COMPARE(cat->description(), "First test catalog");
 
 // check the packages too
+    COMPARE(cat->packages().size(), 2);
+
+    pkg::PackageRef p1 = cat->packages().front();
+    COMPARE(p1->catalog(), cat.ptr());
+
+    COMPARE(p1->id(), "alpha");
+    COMPARE(p1->qualifiedId(), "org.flightgear.test.catalog1.alpha");
+    COMPARE(p1->name(), "Alpha package");
+    COMPARE(p1->revision(), 8);
+    COMPARE(p1->fileSizeBytes(), 1234567);
+
+
+    pkg::PackageRef p2 = cat->getPackageById("c172p");
+    VERIFY(p2.valid());
+    COMPARE(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
+    COMPARE(p2->description(), "A plane made by Cessna");
+
+
+
+// test filtering / searching too
 
     delete root;
-
     return EXIT_SUCCESS;
 }
 

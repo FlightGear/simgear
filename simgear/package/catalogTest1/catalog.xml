@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+    <id>org.flightgear.test.catalog1</id>
+    <description>First test catalog</description>
+    <url>http://download.flightgear.org/catalog1/catalog.xml</url>
+    <version>8.1.*</version>
+</PropertyList>
+    

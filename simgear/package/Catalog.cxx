@@ -39,8 +39,18 @@ namespace pkg {
 bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
     BOOST_FOREACH(SGPropertyNode* v, props->getChildren("version")) {
-        if (v->getStringValue() == aVersion) {
+        std::string s(v->getStringValue());
+        if (s== aVersion) {
             return true;
+        }
+
+        // allow 3.5.* to match any of 3.5.0, 3.5.1rc1, 3.5.11 or so on
+        if (strutils::ends_with(s, ".*")) {
+            size_t lastDot = aVersion.rfind('.');
+            std::string ver = aVersion.substr(0, lastDot);
+            if (ver == s.substr(0, s.length() - 2)) {
+                return true;
+            }
         }
     }
     return false;
@@ -132,15 +142,6 @@ protected:
     }
 
 private:
-    bool checkVersion(const std::string& aVersion, SGPropertyNode* aProps)
-    {
-        BOOST_FOREACH(SGPropertyNode* v, aProps->getChildren("version")) {
-            if (v->getStringValue() == aVersion) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     CatalogRef m_owner;
     std::string m_buffer;
@@ -185,7 +186,7 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
         return NULL;
     }
 
-    if (props->getStringValue("version") != aRoot->catalogVersion()) {
+    if (!checkVersion(aRoot->catalogVersion(), props)) {
         std::string redirect = redirectUrlForVersion(aRoot->catalogVersion(), props);
         if (!redirect.empty()) {
             SG_LOG(SG_GENERAL, SG_WARN, "catalog at " << aPath << ", version mismatch:\n\t"

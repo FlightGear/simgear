@@ -46,7 +46,7 @@ int parseTest()
     COMPARE(cat->description(), "First test catalog");
 
 // check the packages too
-    COMPARE(cat->packages().size(), 2);
+    COMPARE(cat->packages().size(), 3);
 
     pkg::PackageRef p1 = cat->packages().front();
     COMPARE(p1->catalog(), cat.ptr());
@@ -66,6 +66,34 @@ int parseTest()
 
 
 // test filtering / searching too
+    string_set tags(p2->tags());
+    COMPARE(tags.size(), 4);
+    VERIFY(tags.find("ifr") != tags.end());
+    VERIFY(tags.find("cessna") != tags.end());
+    VERIFY(tags.find("jet") == tags.end());
+
+
+    SGPropertyNode_ptr queryA(new SGPropertyNode);
+    queryA->setStringValue("tag", "ifr");
+    VERIFY(p2->matches(queryA.ptr()));
+
+    SGPropertyNode_ptr queryB(new SGPropertyNode);
+    queryB->setStringValue("name", "ces");
+    VERIFY(p2->matches(queryB.ptr()));
+
+    SGPropertyNode_ptr queryC(new SGPropertyNode);
+    queryC->setStringValue("name", "foo");
+    VERIFY(!p2->matches(queryC.ptr()));
+
+    SGPropertyNode_ptr queryD(new SGPropertyNode);
+    queryD->setIntValue("rating-FDM", 3);
+    VERIFY(p2->matches(queryD.ptr()));
+
+    SGPropertyNode_ptr queryE(new SGPropertyNode);
+    queryE->setIntValue("rating-model", 5);
+    queryE->setStringValue("description", "cessna");
+    VERIFY(p2->matches(queryE.ptr()));
+
 
     delete root;
     return EXIT_SUCCESS;

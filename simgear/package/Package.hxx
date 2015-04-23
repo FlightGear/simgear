@@ -112,7 +112,9 @@ public:
         { return m_catalog; }
     
     bool matches(const SGPropertyNode* aFilter) const;
-    
+
+    string_set tags() const;
+
     /**
      * download URLs for the package
      */

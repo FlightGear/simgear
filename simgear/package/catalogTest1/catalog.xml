@@ -7,27 +7,58 @@
     <version>8.1.*</version>
     <version>8.0.0</version>
     <version>8.2.0</version>
-    
+
     <package>
         <id>alpha</id>
         <name>Alpha package</name>
         <revision type="int">8</revision>
         <file-size-bytes type="int">1234567</file-size-bytes>
     </package>
-    
+
     <package>
         <id>c172p</id>
         <name>Cessna 172-P</name>
         <description>A plane made by Cessna</description>
         <revision type="int">42</revision>
         <file-size-bytes type="int">34567</file-size-bytes>
-        
-        <tags>
-            <tag>cessna</tag>
-            <tag>ga</tag>
-            <tag>piston</tag>
-            <tag>ifr</tag>
-        </tags>
+
+        <tag>cessna</tag>
+        <tag>ga</tag>
+        <tag>piston</tag>
+        <tag>ifr</tag>
+
+        <rating>
+          <FDM type="int">3</FDM>
+          <systems type="int">4</systems>
+          <model type="int">5</model>
+          <cockpit type="int">4</cockpit>
+        </rating>
+
+        <!-- local dependency -->
+        <depends>
+            <id>org.flightgear.test.catalog1.common-sounds</id>
+            <revision>10</revision>
+        </depends>
+
+        <variant>
+            <id>c172p-2d-panel</id>
+            <name>C172 with 2d panel only</name>
+        </variant>
+
+        <variant>
+            <id>c172p-floats</id>
+            <name>C172 with floats</name>
+        </variant>
+
+        <variant>
+            <id>c172p-skis</id>
+            <name>C172 with skis</name>
+        </variant>
+    </package>
+
+    <package>
+        <id>common-sounds</id>
+        <name>Common sound files for test catalog aircraft</name>
+        <revision>10</revision>
     </package>
 </PropertyList>
-    

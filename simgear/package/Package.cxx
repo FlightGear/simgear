@@ -186,6 +186,11 @@ std::string Package::description() const
 {
     return getLocalisedProp("description");
 }
+
+string_set Package::tags() const
+{
+    return m_tags;
+}
     
 SGPropertyNode* Package::properties() const
 {
@@ -238,7 +243,7 @@ PackageList Package::dependencies() const
         
     // prefer local hangar package if possible, in case someone does something
     // silly with naming. Of course flightgear's aircraft search doesn't know
-    // about hanagrs, so names still need to be unique.
+    // about hangars, so names still need to be unique.
         PackageRef depPkg = m_catalog->getPackageById(depName);
         if (!depPkg) {   
             Root* rt = m_catalog->root();

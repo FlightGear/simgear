@@ -401,8 +401,9 @@ void SGSampleGroup::set_volume( float vol )
 
 // set the source position and orientation of all managed sounds
 void SGSampleGroup::update_pos_and_orientation() {
- 
-    SGVec3d position = SGVec3d::fromGeod(_base_pos) - _smgr->get_position();
+
+    SGVec3d base_position = SGVec3d::fromGeod(_base_pos);
+    SGVec3d smgr_position = _smgr->get_position();
     SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos);
     SGQuatd ec2body = hlOr*_orientation;
 
@@ -418,12 +419,14 @@ void SGSampleGroup::update_pos_and_orientation() {
         sample->set_master_volume( _volume );
         sample->set_orientation( _orientation );
         sample->set_rotation( ec2body );
-        sample->set_position( position );
+        sample->set_position(base_position);
         sample->set_velocity( velocity );
 
         // Test if a sample is farther away than max distance, if so
         // stop the sound playback and free it's source.
         if (!_tied_to_listener) {
+            sample->update_pos_and_orientation();
+            SGVec3d position = sample->get_position() - smgr_position;
             float max2 = sample->get_max_dist() * sample->get_max_dist();
             float dist2 = position[0]*position[0]
                           + position[1]*position[1] + position[2]*position[2];
@@ -449,7 +452,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample )
     } else {
         sample->update_pos_and_orientation();
         orientation = sample->get_orientation();
-        position = sample->get_position();
+        position = sample->get_position() - _smgr->get_position();
         velocity = sample->get_velocity();
     }
 

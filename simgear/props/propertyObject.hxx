@@ -144,9 +144,9 @@ public:
 
 #undef SG_DEF_ASSIGN_OP
 
-  SGPropertyNode* node() const
+  SGPropertyNode* node(bool aCreate = false) const
   {
-    return PropertyObjectBase::node(false);
+    return PropertyObjectBase::node(aCreate);
   }
 }; // of template PropertyObject
 

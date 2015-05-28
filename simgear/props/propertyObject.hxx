@@ -237,9 +237,9 @@ public:
     return (s == value);    
   }
 
-  SGPropertyNode* node() const
+  SGPropertyNode* node(bool aCreate = false) const
   {
-    return PropertyObjectBase::node(false);
+    return PropertyObjectBase::node(aCreate);
   }
 private:
 };

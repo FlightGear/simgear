@@ -128,7 +128,13 @@ namespace canvas
       // TODO remove from other node
       _geo_nodes.erase(child);
     else if( parent != _node && child->getName() == HDG )
+    {
       _hdg_nodes.erase(child);
+
+      // Remove rotation matrix (tf[0]) and return to element always being
+      // oriented upwards (or any orientation inside other matrices).
+      child->getParent()->removeChild("tf", 0);
+    }
     else
       return Element::childRemoved(parent, child);
   }

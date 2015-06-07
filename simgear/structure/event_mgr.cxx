@@ -58,8 +58,11 @@ void SGEventMgr::unbind()
 void SGEventMgr::init()
 {
     if (_inited) {
-        SG_LOG(SG_GENERAL, SG_WARN, "duplicate init of SGEventMgr");
+        // protected against duplicate calls here, in case
+		// init ever does something more complex in the future.
+		return;
     }
+	
     _inited = true;
 }
 

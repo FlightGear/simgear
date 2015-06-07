@@ -513,8 +513,12 @@ void SGTerraSync::SvnThread::run()
                 _http.update(20);
             }
 
-            _svn_server = ssq->svnUrl();
-            SG_LOG(SG_TERRAIN,SG_INFO, "Closest TerraSync server:" << _svn_server);
+            if (req->readyState() == HTTP::Request::DONE) {
+                _svn_server = ssq->svnUrl();
+                SG_LOG(SG_TERRAIN,SG_INFO, "Closest TerraSync server:" << _svn_server);
+            } else {
+                SG_LOG(SG_TERRAIN,SG_WARN, "Failed to query closest TerraSync server");
+            }
         } else {
             SG_LOG(SG_TERRAIN,SG_INFO, "Explicit: TerraSync server:" << _svn_server);
         }

@@ -66,14 +66,6 @@ namespace nasal
     void GhostMetadata::addDerived(const GhostMetadata* derived)
     {
       assert(derived);
-
-      SG_LOG
-      (
-        SG_NASAL,
-        SG_INFO,
-        "Ghost::addDerived: " << _name_strong << " -> "
-                              << derived->_name_strong
-      );
     }
 
     //--------------------------------------------------------------------------

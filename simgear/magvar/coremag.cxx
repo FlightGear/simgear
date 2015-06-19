@@ -27,7 +27,7 @@
 // Updated coefficient arrays to use the current wmm2005 model,
 // (valid between 2005.0 and 2010.0)
 // Also removed unused variables and corrected earth radii constants
-// to the values for WGS84 and wmm2005.
+// to the values for WGS84 and WMM2005.
 // Reference:
 //     McLean, S., S. Macmillan, S. Maus, V. Lesur, A.
 //     Thomson, and D. Dater, December 2004, The
@@ -37,10 +37,10 @@
 // 25/10/2006  Wim Van Hoydonck -- wim.van.hoydonck@gmail.com
 //
 //
-// Updated coefficient arrays to use the current wmm2015 model,
+// Updated coefficient arrays to use the current WMM2015 model,
 // (valid between 2015.0 and 2020.0)
 // Also removed unused variables and corrected earth radii constants
-// to the values for WGS84 and wmm2015.
+// to the values for WGS84 and WMM2015.
 // Reference:
 //     A. Chulliat , S. Macmillan, P. Alken, C. Beggan, M.
 //     Nair, B. Hamilton, A. Woods, V. Ridley,
@@ -209,8 +209,8 @@ double calc_magvar( double lat, double lon, double h, long dat, double* field )
 {
     /* output field B_r,B_th,B_phi,B_x,B_y,B_z */
     int n,m;
-    /* reference date for current model is 1 januari 2005 */
-    long date0_wmm2015 = yymmdd_to_julian_days(5,1,1);
+    /* reference date for current model is 1 januari 2015 */
+    long date0_wmm2015 = yymmdd_to_julian_days(15,1,1);
 
     double yearfrac,sr,r,theta,c,s,psi,fn,fn_0,B_r,B_theta,B_phi,X,Y,Z;
     double sinpsi, cospsi, inv_s;
@@ -297,7 +297,7 @@ double calc_magvar( double lat, double lon, double h, long dat, double* field )
 
     /* compute Gauss coefficients gnm and hnm of degree n and order m for the desired time
        achieved by adjusting the coefficients at time t0 for linear secular variation */
-    /* wmm2015 */
+    /* WMM2015 */
     yearfrac = (dat - date0_wmm2015) / 365.25;
     for ( n = 1; n <= nmax; n++ ) {
 	for ( m = 0; m <= nmax; m++ ) {
@@ -421,7 +421,7 @@ double SGMagVarOrig( double lat, double lon, double h, long dat, double* field )
     }
 
     /* compute gnm, hnm at dat */
-    /* wmm2015 */
+    /* WMM2015 */
     yearfrac = (dat - date0_wmm2015) / 365.25;
     for ( n = 1; n <= nmax; n++ ) {
 	for ( m = 0; m <= nmax; m++ ) {

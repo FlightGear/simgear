@@ -849,7 +849,7 @@ std::string SGPath::realpath() const
   #endif
     if (!buf)
     {
-        SG_LOG(SG_IO, SG_ALERT, "ERROR: The path '" << path << "' does not exist in the file system.");
+        SG_LOG(SG_IO, SG_WARN, "ERROR: The path '" << path << "' does not exist in the file system.");
         return path;
     }
     std::string p(buf);

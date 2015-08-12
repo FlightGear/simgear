@@ -62,8 +62,10 @@ public:
     
     void setLocale(const std::string& aLocale);
         
-    void setDelegate(Delegate* aDelegate);
-        
+    void addDelegate(Delegate* aDelegate);
+    
+    void removeDelegate(Delegate* aDelegate);
+    
     std::string getLocale() const;
     
     CatalogList catalogs() const;
@@ -93,6 +95,11 @@ public:
     void refresh(bool aForce = false);
 
     /**
+     *
+     */
+    PackageList allPackages() const;
+    
+    /**
      * retrieve packages matching a filter.
      * filter consists of required / minimum values, AND-ed together.
      */
@@ -115,21 +122,33 @@ public:
      * from the catalog too.
      */
     bool removeCatalogById(const std::string& aId);
+    
+    /**
+     * request thumbnail data from the cache / network
+     */
+    void requestThumbnailData(const std::string& aUrl);
+    
+    bool isInstallQueued(InstallRef aInstall) const;
 private:
     friend class Install;
     friend class Catalog;    
+    friend class Package;
     
-
-    void catalogRefreshBegin(CatalogRef aCat);
-    void catalogRefreshComplete(CatalogRef aCat, Delegate::FailureCode aReason);
+    InstallRef existingInstallForPackage(PackageRef p) const;
+    
+    void catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason);
         
     void startNext(InstallRef aCurrent);
     
     void startInstall(InstallRef aInstall);
     void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal);
-    void finishInstall(InstallRef aInstall);
-    void failedInstall(InstallRef aInstall, Delegate::FailureCode aReason);
-
+    void finishInstall(InstallRef aInstall, Delegate::StatusCode aReason);
+    void cancelDownload(InstallRef aInstall);
+    
+    void registerInstall(InstallRef ins);
+    void unregisterInstall(InstallRef ins);
+    
+    class ThumbnailDownloader;
     class RootPrivate;
     std::auto_ptr<RootPrivate> d;
 };

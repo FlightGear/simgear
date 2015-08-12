@@ -77,8 +77,8 @@ public:
         m_owner(aOwner)
     {
         // refreshing
-        m_owner->changeStatus(Delegate::FAIL_IN_PROGRESS);
-
+        m_owner->changeStatus(Delegate::STATUS_IN_PROGRESS);
+        SG_LOG(SG_GENERAL, SG_WARN, "downloading " << aUrl);
     }
 
 protected:
@@ -138,7 +138,7 @@ protected:
 
         time(&m_owner->m_retrievedTime);
         m_owner->writeTimestamp();
-        m_owner->refreshComplete(Delegate::CATALOG_REFRESHED);
+        m_owner->refreshComplete(Delegate::STATUS_REFRESHED);
     }
 
 private:
@@ -200,6 +200,8 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
             return NULL;
         }
 
+    } else {
+        SG_LOG(SG_GENERAL, SG_INFO, "creating catalog from:" << aPath);
     }
 
     CatalogRef c = new Catalog(aRoot);
@@ -233,7 +235,7 @@ bool Catalog::uninstall()
     }
     
     changeStatus(atLeastOneFailure ? Delegate::FAIL_FILESYSTEM
-                                   : Delegate::FAIL_SUCCESS);
+                                   : Delegate::STATUS_SUCCESS);
     return ok;
 }
 
@@ -283,31 +285,25 @@ Catalog::installedPackages() const
   return r;
 }
 
-InstallRef Catalog::installForPackage(PackageRef pkg) const
-{
-    PackageInstallDict::const_iterator it = m_installed.find(pkg);
-    if (it == m_installed.end()) {
-        // check if it exists on disk, create
-
-        SGPath p(pkg->pathOnDisk());
-        if (p.exists()) {
-            return Install::createFromPath(p, CatalogRef(const_cast<Catalog*>(this)));
-        }
-
-        return NULL;
-    }
-
-    return it->second;
-}
-
 void Catalog::refresh()
 {
     Downloader* dl = new Downloader(this, url());
-    // will iupdate status to IN_PROGRESS
+    // will update status to IN_PROGRESS
     m_root->makeHTTPRequest(dl);
-    m_root->catalogRefreshBegin(this);
 }
 
+struct FindById
+{
+    FindById(const std::string &id) : m_id(id) {}
+    
+    bool operator()(const PackageRef& ref) const
+    {
+        return ref->id() == m_id;
+    }
+    
+    std::string m_id;
+};
+    
 void Catalog::parseProps(const SGPropertyNode* aProps)
 {
     // copy everything except package children?
@@ -321,8 +317,14 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
     for (int i = 0; i < nChildren; i++) {
         const SGPropertyNode* pkgProps = aProps->getChild(i);
         if (strcmp(pkgProps->getName(), "package") == 0) {
-            PackageRef p = getPackageById(pkgProps->getStringValue("id"));
-            if (p) {
+            // can't use getPackageById here becuase the variant dict isn't
+            // built yet. Instead we need to look at m_packages directly.
+            
+            PackageList::iterator pit = std::find_if(m_packages.begin(), m_packages.end(),
+                                                  FindById(pkgProps->getStringValue("id")));
+            PackageRef p;
+            if (pit != m_packages.end()) {
+                p = *pit;
                 // existing package
                 p->updateFromProps(pkgProps);
                 orphans.erase(p); // not an orphan
@@ -374,7 +376,7 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
     }
     
     // parsed XML ok, mark status as valid
-    changeStatus(Delegate::FAIL_SUCCESS);
+    changeStatus(Delegate::STATUS_SUCCESS);
 }
 
 PackageRef Catalog::getPackageById(const std::string& aId) const
@@ -440,6 +442,10 @@ bool Catalog::needsRefresh() const
 
 std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const
 {
+    if (!aRoot) {
+        return std::string();
+    }
+    
     if (aRoot->hasChild(m_root->getLocale())) {
         const SGPropertyNode* localeRoot = aRoot->getChild(m_root->getLocale().c_str());
         if (localeRoot->hasChild(aName)) {
@@ -450,37 +456,20 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
     return aRoot->getStringValue(aName);
 }
 
-void Catalog::refreshComplete(Delegate::FailureCode aReason)
+void Catalog::refreshComplete(Delegate::StatusCode aReason)
 {
-    m_root->catalogRefreshComplete(this, aReason);
+    m_root->catalogRefreshStatus(this, aReason);
     changeStatus(aReason);
 }
 
-void Catalog::registerInstall(Install* ins)
-{
-  if (!ins || ins->package()->catalog() != this) {
-    return;
-  }
-
-  m_installed[ins->package()] = ins;
-}
-
-void Catalog::unregisterInstall(Install* ins)
-{
-  if (!ins || ins->package()->catalog() != this) {
-    return;
-  }
-
-  m_installed.erase(ins->package());
-}
-
-void Catalog::changeStatus(Delegate::FailureCode newStatus)
+void Catalog::changeStatus(Delegate::StatusCode newStatus)
 {
     if (m_status == newStatus) {
         return;
     }
     
     m_status = newStatus;
+    m_root->catalogRefreshStatus(this, newStatus);
     m_statusCallbacks(this);
 }
 
@@ -489,7 +478,7 @@ void Catalog::addStatusCallback(const Callback& cb)
     m_statusCallbacks.push_back(cb);
 }
 
-Delegate::FailureCode Catalog::status() const
+Delegate::StatusCode Catalog::status() const
 {
     return m_status;
 }

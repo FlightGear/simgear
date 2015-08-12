@@ -70,7 +70,7 @@ public:
      * uninstall this catalog entirely, including all installed packages
      */
     bool uninstall();
-    
+
     /**
      * perform a refresh of the catalog contents
      */
@@ -109,8 +109,6 @@ public:
 
     PackageRef getPackageById(const std::string& aId) const;
 
-    InstallRef installForPackage(PackageRef pkg) const;
-
     /**
      * test if the catalog data was retrieved longer ago than the
      * maximum permitted age for this catalog.
@@ -123,11 +121,11 @@ public:
      * access the raw property data in the catalog
      */
     SGPropertyNode* properties() const;
-    
-    Delegate::FailureCode status() const;
-    
+
+    Delegate::StatusCode status() const;
+
     typedef boost::function<void(Catalog*)> Callback;
-    
+
     void addStatusCallback(const Callback& cb);
 
     template<class C>
@@ -141,38 +139,29 @@ private:
     class Downloader;
     friend class Downloader;
 
-    friend class Install;
-    void registerInstall(Install* ins);
-    void unregisterInstall(Install* ins);
-
     void parseProps(const SGPropertyNode* aProps);
 
-    void refreshComplete(Delegate::FailureCode aReason);
+    void refreshComplete(Delegate::StatusCode aReason);
 
     void parseTimestamp();
     void writeTimestamp();
 
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
 
-    void changeStatus(Delegate::FailureCode newStatus);
+    void changeStatus(Delegate::StatusCode newStatus);
 
     Root* m_root;
     SGPropertyNode_ptr m_props;
     SGPath m_installRoot;
     std::string m_url;
-    Delegate::FailureCode m_status;
-    
+    Delegate::StatusCode m_status;
+
     PackageList m_packages;
     time_t m_retrievedTime;
 
     typedef std::map<std::string, Package*> PackageWeakMap;
     PackageWeakMap m_variantDict;
 
-  // important that this is a weak-ref to Installs,
-  // since it is only cleaned up in the Install destructor
-    typedef std::map<PackageRef, Install*> PackageInstallDict;
-    PackageInstallDict m_installed;
-    
     function_list<Callback> m_statusCallbacks;
 };
 

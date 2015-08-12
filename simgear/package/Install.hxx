@@ -21,11 +21,13 @@
 #include <vector>
 
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/sg_dir.hxx>
 #include <simgear/package/Delegate.hxx>
 
 #include <simgear/structure/function_list.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/io/HTTPRequest.hxx>
 
 #include <boost/bind.hpp>
 
@@ -77,6 +79,31 @@ public:
     bool uninstall();
 
     bool isDownloading() const;
+    
+    bool isQueued() const;
+    
+    int downloadedPercent() const;
+    
+    size_t downloadedBytes() const;
+    
+    /**
+     * full path to the primary -set.xml file for this install
+     */
+    SGPath primarySetPath() const;
+    
+    /**
+     * if a download is in progress, cancel it. If this is the first install
+     * of the package (as opposed to an update), the install will be cleaned
+     * up once the last reference is gone.
+     */
+    void cancelDownload();
+    
+    /**
+     * return the thumbnails associated with this install, but as locations
+     * on the file system, not URLs. It is assumed the order of thumbnails
+     * is consistent with the URLs returned from Package::thumbnailUrls()
+     */
+    PathList thumbnailPaths() const;
     
     /**
      * Set the handler to be called when the installation successfully
@@ -147,16 +174,16 @@ private:
     void parseRevision();
     void writeRevisionFile();
     
-    void installResult(Delegate::FailureCode aReason);
+    void installResult(Delegate::StatusCode aReason);
     void installProgress(unsigned int aBytes, unsigned int aTotal);
     
     PackageRef m_package;
     unsigned int m_revision; ///< revision on disk
     SGPath m_path; ///< installation point on disk
     
-    PackageArchiveDownloader* m_download;
+    HTTP::Request_ptr m_download;
 
-    Delegate::FailureCode _status;
+    Delegate::StatusCode m_status;
 
     function_list<Callback>         _cb_done,
                                     _cb_fail,

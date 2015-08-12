@@ -34,22 +34,28 @@ bool keepRunning = true;
 class MyDelegate : public pkg::Delegate
 {
 public:
-    virtual void refreshComplete()
+    virtual void catalogRefreshed(pkg::CatalogRef aCatalog, StatusCode aReason)
     {
+        if (aReason == STATUS_REFRESHED) {
+            if (aCatalog.ptr() == NULL) {
+                cout << "refreshed all catalogs" << endl;
+            } else {
+                cout << "refreshed catalog " << aCatalog->url() << endl;
+            }
+        } else if (aReason == STATUS_IN_PROGRESS) {
+            cout << "started refresh of " << aCatalog->url() << endl;
+        } else {
+            cerr << "failed refresh of " << aCatalog->url() << ":" << aReason << endl;
+        }
     }
 
-    virtual void failedRefresh(pkg::Catalog* aCatalog, FailureCode aReason)
-    {
-        cerr << "failed refresh of " << aCatalog->description() << ":" << aReason << endl;
-    }
-
-    virtual void startInstall(pkg::Install* aInstall)
+    virtual void startInstall(pkg::InstallRef aInstall)
     {
         _lastPercent = 999;
         cout << "starting install of " << aInstall->package()->name() << endl;
     }
 
-    virtual void installProgress(pkg::Install* aInstall, unsigned int bytes, unsigned int total)
+    virtual void installProgress(pkg::InstallRef aInstall, unsigned int bytes, unsigned int total)
     {
         unsigned int percent = (bytes * 100) / total;
         if (percent == _lastPercent) {
@@ -60,15 +66,15 @@ public:
         cout << percent << "%" << endl;
     }
 
-    virtual void finishInstall(pkg::Install* aInstall)
+    virtual void finishInstall(pkg::InstallRef aInstall, StatusCode aReason)
     {
-        cout << "done install of " << aInstall->package()->name() << endl;
+        if (aReason == STATUS_SUCCESS) {
+            cout << "done install of " << aInstall->package()->name() << endl;
+        } else {
+            cerr << "failed install of " << aInstall->package()->name() << endl;
+        }
     }
 
-    virtual void failedInstall(pkg::Install* aInstall, FailureCode aReason)
-    {
-        cerr << "failed install of " << aInstall->package()->name() << endl;
-    }
 private:
     unsigned int _lastPercent;
 
@@ -119,7 +125,7 @@ int main(int argc, char** argv)
     pkg::Root* root = new pkg::Root(Dir::current().path(), "");
 
     MyDelegate dlg;
-    root->setDelegate(&dlg);
+    root->addDelegate(&dlg);
 
     cout << "Package root is:" << Dir::current().path() << endl;
     cout << "have " << root->catalogs().size() << " catalog(s)" << endl;

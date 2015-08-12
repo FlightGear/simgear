@@ -139,7 +139,7 @@ InstallRef Package::install()
 
 InstallRef Package::existingInstall(const InstallCallback& cb) const
 {
-  InstallRef install = m_catalog->installForPackage(const_cast<Package*>(this));
+  InstallRef install = m_catalog->root()->existingInstallForPackage(const_cast<Package*>(this));
 
   if( cb )
   {
@@ -169,6 +169,10 @@ std::string Package::md5() const
 
 unsigned int Package::revision() const
 {
+    if (!m_props) {
+        return 0;
+    }
+    
     return m_props->getIntValue("revision");
 }
     
@@ -200,15 +204,36 @@ SGPropertyNode* Package::properties() const
 string_list Package::thumbnailUrls() const
 {
     string_list r;
+    if (!m_props) {
+        return r;
+    }
+    
     BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("thumbnail")) {
         r.push_back(dl->getStringValue());
     }
     return r;
 }
 
+string_list Package::thumbnails() const
+{
+    string_list r;
+    if (!m_props) {
+        return r;
+    }
+    
+    BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("thumbnail-path")) {
+        r.push_back(dl->getStringValue());
+    }
+    return r;
+}
+    
 string_list Package::downloadUrls() const
 {
     string_list r;
+    if (!m_props) {
+        return r;
+    }
+    
     BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("url")) {
         r.push_back(dl->getStringValue());
     }

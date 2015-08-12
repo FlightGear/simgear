@@ -18,6 +18,8 @@
 #ifndef SG_PACKAGE_DELEGATE_HXX
 #define SG_PACKAGE_DELEGATE_HXX
 
+#include <simgear/structure/SGSharedPtr.hxx>
+
 namespace simgear
 {
         
@@ -26,6 +28,9 @@ namespace pkg
     
 class Install;
 class Catalog;
+
+typedef SGSharedPtr<Catalog> CatalogRef;
+typedef SGSharedPtr<Install> InstallRef;
     
 /**
  * package delegate is the mechanism to discover progress / completion /
@@ -35,39 +40,35 @@ class Delegate
 {
 public:
     typedef enum {
-        FAIL_SUCCESS = 0, ///< not a failure :)
+        STATUS_SUCCESS = 0,
         FAIL_UNKNOWN = 1,
-        FAIL_IN_PROGRESS, ///< downloading/installation in progress (not a failure :P)
+        STATUS_IN_PROGRESS, ///< downloading/installation in progress
         FAIL_CHECKSUM,  ///< package MD5 verificstion failed
         FAIL_DOWNLOAD,  ///< network issue
         FAIL_EXTRACT,   ///< package archive failed to extract cleanly
         FAIL_FILESYSTEM,    ///< unknown filesystem error occurred
         FAIL_VERSION, ///< version check mismatch
-        CATALOG_REFRESHED
-    } FailureCode;
+        STATUS_REFRESHED,
+        USER_CANCELLED
+    } StatusCode;
     
     
     virtual ~Delegate() { }
     
-    /**
-     * invoked when all catalogs have finished refreshing - either successfully
-     * or with a failure.
-     */
-    virtual void refreshComplete() = 0;
     
     /**
-     * emitted when a catalog fails to refresh, due to a network issue or
-     * some other failure.
+     * emitted when a catalog refesh completes, either success or failure
+     * If catalog is null, this means /all/ catalogs have been refreshed
      */
-    virtual void failedRefresh(Catalog*, FailureCode aReason) = 0;
+    virtual void catalogRefreshed(CatalogRef, StatusCode aReason) = 0;
     
-    virtual void startInstall(Install* aInstall) = 0;
-    virtual void installProgress(Install* aInstall, unsigned int aBytes, unsigned int aTotal) = 0;
-    virtual void finishInstall(Install* aInstall) = 0;
+    virtual void startInstall(InstallRef aInstall) = 0;
+    virtual void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal) = 0;
+    virtual void finishInstall(InstallRef aInstall, StatusCode aReason) = 0;
     
-   
-    virtual void failedInstall(Install* aInstall, FailureCode aReason) = 0;
-    
+    virtual void dataForThumbnail(const std::string& aThumbnailUrl,
+                                  size_t lenth, const uint8_t* bytes)
+    {}
 };  
     
 } // of namespace pkg

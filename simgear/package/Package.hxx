@@ -123,6 +123,11 @@ public:
     string_list thumbnailUrls() const;
     
     /**
+     * thumbnail file paths within the package on disk
+     */
+    string_list thumbnails() const;
+    
+    /**
      * Packages we depend upon.
      * If the dependency list cannot be satisifed for some reason,
      * this will raise an sg_exception.
@@ -132,6 +137,7 @@ private:
     SGPath pathOnDisk() const;
 
     friend class Catalog;
+    friend class Root;
     
     Package(const SGPropertyNode* aProps, CatalogRef aCatalog);
     

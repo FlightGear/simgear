@@ -219,6 +219,7 @@ public:
             activeRequest->responseStart(buffer);
         } catch (sg_exception& e) {
             handleError(EIO);
+            return;
         }
         
       state = STATE_GETTING_HEADERS;

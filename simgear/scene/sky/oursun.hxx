@@ -45,6 +45,7 @@ class SGSun : public SGReferenced {
     osg::ref_ptr<osg::Vec4Array> scene_cl;
     osg::ref_ptr<osg::Vec4Array> ihalo_cl;
     osg::ref_ptr<osg::Vec4Array> ohalo_cl;
+    osg::ref_ptr<osg::Vec4Array> brilliance_cl;
 
     double visibility;
     double prev_sun_angle;

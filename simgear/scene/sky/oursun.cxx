@@ -216,6 +216,46 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 
     sun_transform->addChild( geode );
 
+
+    // set up the brilliance state
+
+    geode = new osg::Geode;
+    stateSet = geode->getOrCreateStateSet();
+    stateSet->setRenderBinDetails(-9, "RenderBin");
+
+
+    texture = SGLoadTexture2D("brilliance.png", options.get());
+    stateSet->setTextureAttributeAndModes(0, texture);
+
+
+    // Build ssg structure
+    brilliance_cl = new osg::Vec4Array;
+    brilliance_cl->push_back(osg::Vec4(1, 1, 1, 1));
+
+    double brilliance_size = sun_size * 12.0;
+    osg::Vec3Array* brilliance_vl = new osg::Vec3Array;
+    brilliance_vl->push_back(osg::Vec3(-brilliance_size, 0, -brilliance_size));
+    brilliance_vl->push_back(osg::Vec3(brilliance_size, 0, -brilliance_size));
+    brilliance_vl->push_back(osg::Vec3(-brilliance_size, 0, brilliance_size));
+    brilliance_vl->push_back(osg::Vec3(brilliance_size, 0, brilliance_size));
+
+    osg::Vec2Array* brilliance_tl = new osg::Vec2Array;
+    brilliance_tl->push_back(osg::Vec2(0, 0));
+    brilliance_tl->push_back(osg::Vec2(1, 0));
+    brilliance_tl->push_back(osg::Vec2(0, 1));
+    brilliance_tl->push_back(osg::Vec2(1, 1));
+
+    geometry = new osg::Geometry;
+    geometry->setUseDisplayList(false);
+    geometry->setVertexArray(brilliance_vl);
+    geometry->setColorArray(brilliance_cl.get(), osg::Array::BIND_OVERALL);
+    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
+    geometry->setTexCoordArray(0, brilliance_tl, osg::Array::BIND_PER_VERTEX);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    geode->addDrawable(geometry);
+
+    sun_transform->addChild( geode );
+
     // force a repaint of the sun colors with arbitrary defaults
     repaint( 0.0, 1.0 );
 
@@ -262,7 +302,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         }
 
         // ok, now let's go and generate the sun and scene color
-        osg::Vec4 i_halo_color, o_halo_color, scene_color, sun_color;
+        osg::Vec4 i_halo_color, o_halo_color, scene_color, sun_color, brilliance_color;
 
         // Some comments:
         // * When the sunangle changes, light has to travel a longer
@@ -336,16 +376,29 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         if (o_halo_color[3] > 1) o_halo_color[3] = 1;
         if (o_halo_color[3] < 0) o_halo_color[3] = 0;
 
+	brilliance_color[0] = i_halo_color[0];
+	brilliance_color[1] = i_halo_color[1];
+	brilliance_color[2] = i_halo_color[2];
+
+	double norm = (i_halo_color[0] * i_halo_color[0] + i_halo_color[1] * i_halo_color[1] + i_halo_color[2] * i_halo_color[2])/1.732;
+
+	brilliance_color[3] = pow(norm, 6.0);
+	if (brilliance_color[3] < 0.0) {brilliance_color[3] = 0.0;}
+	
+
+
         gamma_correct_rgb( i_halo_color._v );
         gamma_correct_rgb( o_halo_color._v );
         gamma_correct_rgb( scene_color._v );
         gamma_correct_rgb( sun_color._v );
+        gamma_correct_rgb( brilliance_color._v );
 
 	if (sun_angle >91.0 * 3.1415/180.0 + horizon_angle)
 		{
 		sun_color[3] = 0;
 		o_halo_color[3]=0;
 		i_halo_color[3]=0;
+		brilliance_color[3]=0;
 		}
 
         (*sun_cl)[0] = sun_color;
@@ -356,6 +409,8 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         ihalo_cl->dirty();
         (*ohalo_cl)[0] = o_halo_color;
         ohalo_cl->dirty();
+	(*brilliance_cl)[0] = brilliance_color;
+        brilliance_cl->dirty();
     }
 
     return true;

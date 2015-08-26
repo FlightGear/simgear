@@ -239,9 +239,10 @@ void SGSoundMgr::init()
 
     if (_vendor == "Creative Labs Inc.") {
        _bad_doppler = true;
-
+#if 0
     } else if (_vendor == "OpenAL Community" && _renderer == "OpenAL Soft") {
        _bad_doppler = true;
+#endif
     }
 
     if (d->_free_sources.empty()) {

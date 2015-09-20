@@ -17,7 +17,6 @@ include (CheckCXXCompilerFlag)
 
 # using 10.7 because boost requires libc++ and 10.6 doesn't include it
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
-set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk)
 
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)

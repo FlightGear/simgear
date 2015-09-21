@@ -18,20 +18,21 @@
 #ifndef SG_PACKAGE_DELEGATE_HXX
 #define SG_PACKAGE_DELEGATE_HXX
 
+#include <cstdint>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 namespace simgear
 {
-        
+
 namespace pkg
 {
-    
+
 class Install;
 class Catalog;
 
 typedef SGSharedPtr<Catalog> CatalogRef;
 typedef SGSharedPtr<Install> InstallRef;
-    
+
 /**
  * package delegate is the mechanism to discover progress / completion /
  * errors in packaging steps asynchronously.
@@ -51,26 +52,26 @@ public:
         STATUS_REFRESHED,
         USER_CANCELLED
     } StatusCode;
-    
-    
+
+
     virtual ~Delegate() { }
-    
-    
+
+
     /**
      * emitted when a catalog refesh completes, either success or failure
      * If catalog is null, this means /all/ catalogs have been refreshed
      */
     virtual void catalogRefreshed(CatalogRef, StatusCode aReason) = 0;
-    
+
     virtual void startInstall(InstallRef aInstall) = 0;
     virtual void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal) = 0;
     virtual void finishInstall(InstallRef aInstall, StatusCode aReason) = 0;
-    
+
     virtual void dataForThumbnail(const std::string& aThumbnailUrl,
                                   size_t lenth, const uint8_t* bytes)
     {}
-};  
-    
+};
+
 } // of namespace pkg
 
 } // of namespace simgear

@@ -18,7 +18,7 @@
 #ifndef SG_PACKAGE_DELEGATE_HXX
 #define SG_PACKAGE_DELEGATE_HXX
 
-#include <cstdint>
+#include <simgear/misc/stdint.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 namespace simgear

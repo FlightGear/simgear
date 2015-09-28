@@ -66,6 +66,17 @@ public:
         }
     }
 
+    ~PackageArchiveDownloader()
+    {
+        // always clean up our extraction dir: if we successfully downloaded
+        // and installed it will be an empty dir, if we failed it might contain
+        // (some) of the package files.
+        Dir d(m_extractPath);
+        if (d.exists()) {
+            d.remove(true /* recursive */);
+        }
+    }
+
     size_t downloadedBytes() const
     {
         return m_downloaded;
@@ -138,13 +149,16 @@ protected:
         }
 
         if (m_owner->path().exists()) {
-            //std::cout << "removing existing path" << std::endl;
             Dir destDir(m_owner->path());
             destDir.remove(true /* recursive */);
         }
 
-        m_extractPath.append(m_owner->package()->dirName());
-        bool ok = m_extractPath.rename(m_owner->path());
+        // build a path like /path/to/packages/org.some.catalog/Aircraft/extract_xxxx/MyAircraftDir
+        SGPath extractedPath = m_extractPath;
+        extractedPath.append(m_owner->package()->dirName());
+
+        // rename it to path/to/packages/org.some.catalog/Aircraft/MyAircraftDir
+        bool ok = extractedPath.rename(m_owner->path());
         if (!ok) {
             doFailure(Delegate::FAIL_FILESYSTEM);
             return;

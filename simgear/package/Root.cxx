@@ -111,7 +111,6 @@ public:
                                    Delegate::StatusCode status, const std::string& bytes)
     {
         std::string u(request->url());
-        SG_LOG(SG_IO, SG_INFO, "downloaded thumbnail:" << u);
         if (status == Delegate::STATUS_SUCCESS) {
             thumbnailCache[u] = bytes;
             fireDataForThumbnail(u, bytes);

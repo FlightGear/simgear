@@ -30,6 +30,7 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/structure/function_list.hxx>
+#include <simgear/io/HTTPRequest.hxx>
 
 #include <simgear/package/Delegate.hxx>
 
@@ -157,6 +158,7 @@ private:
     SGPath m_installRoot;
     std::string m_url;
     Delegate::StatusCode m_status;
+    HTTP::Request_ptr m_refreshRequest;
 
     PackageList m_packages;
     time_t m_retrievedTime;

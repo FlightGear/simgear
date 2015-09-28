@@ -78,7 +78,6 @@ public:
     {
         // refreshing
         m_owner->changeStatus(Delegate::STATUS_IN_PROGRESS);
-        SG_LOG(SG_GENERAL, SG_WARN, "downloading " << aUrl);
     }
 
 protected:
@@ -177,9 +176,7 @@ CatalogRef Catalog::createFromUrl(Root* aRoot, const std::string& aUrl)
 {
     CatalogRef c = new Catalog(aRoot);
     c->m_url = aUrl;
-    Downloader* dl = new Downloader(c, aUrl);
-    aRoot->makeHTTPRequest(dl);
-
+    c->refresh();
     return c;
 }
 
@@ -219,8 +216,11 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 
     CatalogRef c = new Catalog(aRoot);
     c->m_installRoot = aPath;
-    c->parseProps(props); // will set status
+    c->parseProps(props);
     c->parseTimestamp();
+
+    // parsed XML ok, mark status as valid
+    c->changeStatus(Delegate::STATUS_SUCCESS);
 
     return c;
 }
@@ -300,7 +300,13 @@ Catalog::installedPackages() const
 
 void Catalog::refresh()
 {
+    if (m_refreshRequest.valid()) {
+        // refresh in progress
+        return;
+    }
+
     Downloader* dl = new Downloader(this, url());
+    m_refreshRequest = dl;
     // will update status to IN_PROGRESS
     m_root->makeHTTPRequest(dl);
 }
@@ -387,9 +393,6 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
         Dir d(m_installRoot);
         d.create(0755);
     }
-    
-    // parsed XML ok, mark status as valid
-    changeStatus(Delegate::STATUS_SUCCESS);
 }
 
 PackageRef Catalog::getPackageById(const std::string& aId) const
@@ -483,8 +486,8 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
 
 void Catalog::refreshComplete(Delegate::StatusCode aReason)
 {
-    m_root->catalogRefreshStatus(this, aReason);
     changeStatus(aReason);
+    m_refreshRequest.reset();
 }
 
 void Catalog::changeStatus(Delegate::StatusCode newStatus)

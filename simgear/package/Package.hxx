@@ -133,6 +133,12 @@ public:
      * this will raise an sg_exception.
      */
     PackageList dependencies() const;
+
+    /**
+     * Name of the package directory on disk. This may or may not be the
+     * same as the primary ID, depending on the aircraft author
+     */
+    std::string dirName() const;
 private:
     SGPath pathOnDisk() const;
 

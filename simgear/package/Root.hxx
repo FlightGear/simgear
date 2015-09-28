@@ -83,11 +83,17 @@ public:
     void makeHTTPRequest(HTTP::Request* req);
     
     /**
-     * the version string of the root. Catalogs must match this version,
+     * The catalog XML/property version in use. This is used to make incomaptible
+     * changes to the package/catalog syntax
+     */
+    int catalogVersion() const;
+
+    /**
+     * the version string of the application. Catalogs must match this version,
      * or they will be ignored / rejected.
      */
-    std::string catalogVersion() const;
-    
+    std::string applicationVersion() const;
+
     /**
      * refresh catalogs which are more than the maximum age (24 hours by default)
      * set force to true, to download all catalogs regardless of age.

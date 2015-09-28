@@ -117,7 +117,7 @@ SGPath Package::pathOnDisk() const
 {
     SGPath p(m_catalog->installRoot());
     p.append("Aircraft");
-    p.append(id());
+    p.append(dirName());
     return p;
 }
 
@@ -139,7 +139,12 @@ InstallRef Package::install()
 
 InstallRef Package::existingInstall(const InstallCallback& cb) const
 {
-  InstallRef install = m_catalog->root()->existingInstallForPackage(const_cast<Package*>(this));
+    InstallRef install;
+    try {
+        install = m_catalog->root()->existingInstallForPackage(const_cast<Package*>(this));
+    } catch (std::exception& e) {
+        return InstallRef();
+    }
 
   if( cb )
   {
@@ -165,6 +170,14 @@ std::string Package::qualifiedId() const
 std::string Package::md5() const
 {
     return m_props->getStringValue("md5");
+}
+
+std::string Package::dirName() const
+{
+    std::string r(m_props->getStringValue("dir"));
+    if (r.empty())
+        throw sg_exception("missing dir property on catalog package entry for " + m_id);
+    return r;
 }
 
 unsigned int Package::revision() const

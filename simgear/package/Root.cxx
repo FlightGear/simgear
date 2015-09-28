@@ -246,8 +246,13 @@ Root::~Root()
 {
     
 }
+
+int Root::catalogVersion() const
+{
+    return 4;
+}
     
-std::string Root::catalogVersion() const
+std::string Root::applicationVersion() const
 {
     return d->version;
 }
@@ -442,11 +447,13 @@ void Root::finishInstall(InstallRef aInstall, Delegate::StatusCode aReason)
         SG_LOG(SG_GENERAL, SG_ALERT, "failed to install package:"
                << aInstall->package()->id() << ":" << aReason);
     }
-    
-    d->fireFinishInstall(aInstall, aReason);
+
+    // order matters here, so a call to 'isQueued' from a finish-install
+    // callback returns false, not true
     startNext(aInstall);
+    d->fireFinishInstall(aInstall, aReason);
 }
-    
+
 void Root::cancelDownload(InstallRef aInstall)
 {
     RootPrivate::UpdateDeque::iterator it =
@@ -544,7 +551,10 @@ InstallRef Root::existingInstallForPackage(PackageRef p) const
             // this will add to our cache, and hence, modify m_installs
             return Install::createFromPath(path, p->catalog());
         }
- 
+
+        // insert a null reference into the dictionary, so we don't call
+        // the pathOnDisk -> exists codepath repeatedley
+        d->m_installs[p] = InstallRef();
         return InstallRef();
     }
     

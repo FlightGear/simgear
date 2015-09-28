@@ -44,11 +44,12 @@ public:
         STATUS_SUCCESS = 0,
         FAIL_UNKNOWN = 1,
         STATUS_IN_PROGRESS, ///< downloading/installation in progress
-        FAIL_CHECKSUM,  ///< package MD5 verificstion failed
-        FAIL_DOWNLOAD,  ///< network issue
-        FAIL_EXTRACT,   ///< package archive failed to extract cleanly
+        FAIL_CHECKSUM,      ///< package MD5 verificstion failed
+        FAIL_DOWNLOAD,      ///< network issue
+        FAIL_EXTRACT,       ///< package archive failed to extract cleanly
         FAIL_FILESYSTEM,    ///< unknown filesystem error occurred
-        FAIL_VERSION, ///< version check mismatch
+        FAIL_VERSION,       ///< version check mismatch
+        FAIL_NOT_FOUND,     ///< package URL returned a 404
         STATUS_REFRESHED,
         USER_CANCELLED
     } StatusCode;

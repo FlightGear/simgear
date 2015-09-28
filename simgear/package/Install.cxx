@@ -106,8 +106,14 @@ protected:
     virtual void onDone()
     {
         if (responseCode() != 200) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "download failure");
-            doFailure(Delegate::FAIL_DOWNLOAD);
+            SG_LOG(SG_GENERAL, SG_ALERT, "download failure:" << responseCode() <<
+                   "\n\t" << url());
+            Delegate::StatusCode code = Delegate::FAIL_DOWNLOAD;
+            if (responseCode() == 404) {
+                code = Delegate::FAIL_NOT_FOUND;
+            }
+
+            doFailure(code);
             return;
         }
 
@@ -137,7 +143,7 @@ protected:
             destDir.remove(true /* recursive */);
         }
 
-        m_extractPath.append(m_owner->package()->id());
+        m_extractPath.append(m_owner->package()->dirName());
         bool ok = m_extractPath.rename(m_owner->path());
         if (!ok) {
             doFailure(Delegate::FAIL_FILESYSTEM);
@@ -296,10 +302,10 @@ Install::~Install()
 
 InstallRef Install::createFromPath(const SGPath& aPath, CatalogRef aCat)
 {
-    std::string id = aPath.file();
-    PackageRef pkg = aCat->getPackageById(id);
+    std::string path = aPath.file();
+    PackageRef pkg = aCat->getPackageByPath(path);
     if (!pkg)
-        throw sg_exception("no package with id:" + id);
+        throw sg_exception("no package with path:" + path);
 
     return new Install(pkg, aPath);
 }

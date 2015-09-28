@@ -90,8 +90,13 @@ protected:
     virtual void onDone()
     {
         if (responseCode() != 200) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "catalog download failure:" << m_owner->url());
-            m_owner->refreshComplete(Delegate::FAIL_DOWNLOAD);
+            Delegate::StatusCode code = Delegate::FAIL_DOWNLOAD;
+            SG_LOG(SG_GENERAL, SG_ALERT, "catalog download failure:" << m_owner->url()
+                   << "\n\t" << responseCode());
+            if (responseCode() == 404) {
+                code = Delegate::FAIL_NOT_FOUND;
+            }
+            m_owner->refreshComplete(code);
             return;
         }
 
@@ -106,7 +111,15 @@ protected:
             return;
         }
 
-        std::string ver(m_owner->root()->catalogVersion());
+        if (m_owner->root()->catalogVersion() != props->getIntValue("catalog-version")) {
+            SG_LOG(SG_GENERAL, SG_WARN, "catalog:" << m_owner->url() << " is not version "
+                   << m_owner->root()->catalogVersion());
+            m_owner->refreshComplete(Delegate::FAIL_VERSION);
+            return;
+        }
+
+
+        std::string ver(m_owner->root()->applicationVersion());
         if (!checkVersion(ver, props)) {
             SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version mismatch:\n\t"
                    << props->getStringValue("version") << " vs required " << ver);
@@ -186,8 +199,8 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
         return NULL;
     }
 
-    if (!checkVersion(aRoot->catalogVersion(), props)) {
-        std::string redirect = redirectUrlForVersion(aRoot->catalogVersion(), props);
+    if (!checkVersion(aRoot->applicationVersion(), props)) {
+        std::string redirect = redirectUrlForVersion(aRoot->applicationVersion(), props);
         if (!redirect.empty()) {
             SG_LOG(SG_GENERAL, SG_WARN, "catalog at " << aPath << ", version mismatch:\n\t"
                    << "redirecting to alternate URL:" << redirect);
@@ -385,9 +398,21 @@ PackageRef Catalog::getPackageById(const std::string& aId) const
     // works as expected.
     PackageWeakMap::const_iterator it = m_variantDict.find(aId);
     if (it == m_variantDict.end())
-        return NULL;
+        return PackageRef();
 
     return it->second;
+}
+
+PackageRef Catalog::getPackageByPath(const std::string& aPath) const
+{
+    PackageList::const_iterator it;
+    for (it = m_packages.begin(); it != m_packages.end(); ++it) {
+        if ((*it)->dirName() == aPath) {
+            return *it;
+        }
+    }
+
+    return PackageRef();
 }
 
 std::string Catalog::id() const

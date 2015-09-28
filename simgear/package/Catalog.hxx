@@ -109,6 +109,8 @@ public:
 
     PackageRef getPackageById(const std::string& aId) const;
 
+    PackageRef getPackageByPath(const std::string& aPath) const;
+
     /**
      * test if the catalog data was retrieved longer ago than the
      * maximum permitted age for this catalog.

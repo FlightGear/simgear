@@ -40,7 +40,7 @@ namespace canvas
       Text( const CanvasWeakPtr& canvas,
             const SGPropertyNode_ptr& node,
             const Style& parent_style,
-            Element* parent = 0 );
+            ElementWeakPtr parent = 0 );
       ~Text();
 
       void setText(const char* text);

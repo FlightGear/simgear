@@ -70,7 +70,7 @@ namespace canvas
   Group::Group( const CanvasWeakPtr& canvas,
                 const SGPropertyNode_ptr& node,
                 const Style& parent_style,
-                Element* parent ):
+                ElementWeakPtr parent ):
     Element(canvas, node, parent_style, parent)
   {
     staticInit();

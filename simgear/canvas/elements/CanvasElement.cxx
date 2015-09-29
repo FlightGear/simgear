@@ -207,19 +207,6 @@ namespace canvas
   //----------------------------------------------------------------------------
   Element::~Element()
   {
-    if( !_transform.valid() )
-      return;
-
-    for(unsigned int i = 0; i < _transform->getNumChildren(); ++i)
-    {
-      OSGUserData* ud =
-        static_cast<OSGUserData*>(_transform->getChild(i)->getUserData());
-
-      if( ud )
-        // Ensure parent is cleared to prevent accessing released memory if an
-        // element somehow survives longer than his parent.
-        ud->element->_parent = 0;
-    }
   }
 
   //----------------------------------------------------------------------------
@@ -246,7 +233,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   ElementPtr Element::getParent() const
   {
-    return _parent;
+    return _parent.lock();
   }
 
   //----------------------------------------------------------------------------
@@ -324,8 +311,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Element::ascend(EventVisitor& visitor)
   {
-    if( _parent )
-      return _parent->accept(visitor);
+    ElementPtr parent = getParent();
+    if( parent )
+      return parent->accept(visitor);
     return true;
   }
 
@@ -374,9 +362,9 @@ namespace canvas
     EventPropagationPath path;
     path.push_back( EventTarget(this) );
 
-    for( Element* parent = _parent;
-                  parent != NULL;
-                  parent = parent->_parent )
+    for( ElementPtr parent = getParent();
+                    parent.valid();
+                    parent = parent->getParent() )
       path.push_front( EventTarget(parent) );
 
     CanvasPtr canvas = _canvas.lock();
@@ -772,7 +760,7 @@ namespace canvas
   Element::Element( const CanvasWeakPtr& canvas,
                     const SGPropertyNode_ptr& node,
                     const Style& parent_style,
-                    Element* parent ):
+                    ElementWeakPtr parent ):
     PropertyBasedElement(node),
     _canvas( canvas ),
     _parent( parent ),
@@ -871,11 +859,12 @@ namespace canvas
   Element::getParentStyle(const SGPropertyNode* child) const
   {
     // Try to get value from parent...
-    if( _parent )
+    ElementPtr parent = getParent();
+    if( parent )
     {
       Style::const_iterator style =
-        _parent->_style.find(child->getNameString());
-      if( style != _parent->_style.end() )
+        parent->_style.find(child->getNameString());
+      if( style != parent->_style.end() )
         return style->second;
     }
 

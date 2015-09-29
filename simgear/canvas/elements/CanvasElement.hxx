@@ -232,8 +232,8 @@ namespace canvas
 
       class RelativeScissor;
 
-      CanvasWeakPtr _canvas;
-      Element      *_parent;
+      CanvasWeakPtr   _canvas;
+      ElementWeakPtr  _parent;
 
       mutable uint32_t _attributes_dirty;
 
@@ -256,7 +256,7 @@ namespace canvas
       Element( const CanvasWeakPtr& canvas,
                const SGPropertyNode_ptr& node,
                const Style& parent_style,
-               Element* parent );
+               ElementWeakPtr parent );
 
       /**
        * Returns false on first call and true on any successive call. Use to

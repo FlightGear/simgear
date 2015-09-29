@@ -42,7 +42,7 @@ namespace canvas
       Map( const CanvasWeakPtr& canvas,
            const SGPropertyNode_ptr& node,
            const Style& parent_style,
-           Element* parent = 0 );
+           ElementWeakPtr parent = 0 );
       virtual ~Map();
 
       virtual void update(double dt);

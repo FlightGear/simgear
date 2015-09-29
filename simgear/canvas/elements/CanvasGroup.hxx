@@ -45,7 +45,7 @@ namespace canvas
       Group( const CanvasWeakPtr& canvas,
              const SGPropertyNode_ptr& node,
              const Style& parent_style = Style(),
-             Element* parent = 0 );
+             ElementWeakPtr parent = 0 );
       virtual ~Group();
 
       ElementPtr createChild( const std::string& type,

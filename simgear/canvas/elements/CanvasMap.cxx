@@ -62,7 +62,7 @@ namespace canvas
   Map::Map( const CanvasWeakPtr& canvas,
             const SGPropertyNode_ptr& node,
             const Style& parent_style,
-            Element* parent ):
+            ElementWeakPtr parent ):
     Group(canvas, node, parent_style, parent),
     // TODO make projection configurable
     _projection(new SansonFlamsteedProjection),

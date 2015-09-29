@@ -50,7 +50,7 @@ namespace canvas
       Image( const CanvasWeakPtr& canvas,
              const SGPropertyNode_ptr& node,
              const Style& parent_style = Style(),
-             Element* parent = 0 );
+             ElementWeakPtr parent = 0 );
       virtual ~Image();
 
       virtual void update(double dt);

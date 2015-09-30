@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6.4)
+cmake_minimum_required (VERSION 2.8.11)
 
 if(COMMAND cmake_policy)
    if(POLICY CMP0054)
@@ -79,12 +79,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 # Determine name of library installation directory, i.e. "lib" vs "lib64", which
 # differs between all Debian-based vs all other Linux distros.
 # See cmake bug #11964, http://cmake.org/gitweb?p=cmake.git;a=commit;h=126c993d
-# GNUInstallDirs requires CMake >= 2.8.5, use own file for older cmake
-if(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
-  include(GNUInstallDirs)
-else(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
-  include(OldGNUInstallDirs)
-endif(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
+include(GNUInstallDirs)
 message(STATUS "Library installation directory: ${CMAKE_INSTALL_LIBDIR}")
 
 #####################################################################################

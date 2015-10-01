@@ -99,6 +99,11 @@ public:
      */
     uint64_t totalBytesDownloaded() const;
 private:
+    // libCurl callbacks
+    static size_t requestWriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata);
+    static size_t requestReadCallback(char *ptr, size_t size, size_t nmemb, void *userdata);
+    static size_t requestHeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata);
+
     void requestFinished(Connection* con);
     
     void receivedBytes(unsigned int count);

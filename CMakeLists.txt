@@ -202,6 +202,7 @@ else()
 endif(SIMGEAR_HEADLESS)
 
 find_package(ZLIB REQUIRED)
+find_package(Curl REQUIRED)
 
 if (SYSTEM_EXPAT)
     message(STATUS "Requested to use system Expat library, forcing SIMGEAR_SHARED to true")
@@ -368,6 +369,7 @@ include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
     ${OPENAL_INCLUDE_DIR}
+    ${CURL_INCLUDE_DIRS}
 )
 
 add_definitions(-DHAVE_CONFIG_H)
@@ -396,7 +398,8 @@ set(TEST_LIBS_INTERNAL_CORE
     ${WINSOCK_LIBRARY}
     ${RT_LIBRARY}
     ${DL_LIBRARY}
-    ${COCOA_LIBRARY})
+    ${COCOA_LIBRARY}
+    ${CURL_LIBRARIES})
 set(TEST_LIBS SimGearCore ${TEST_LIBS_INTERNAL_CORE})
 
 if(NOT SIMGEAR_HEADLESS)

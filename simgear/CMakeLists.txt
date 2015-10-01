@@ -1,7 +1,7 @@
 
 file(WRITE ${PROJECT_BINARY_DIR}/simgear/version.h "#define SIMGEAR_VERSION ${SIMGEAR_VERSION}")
 
-foreach( mylibfolder 
+foreach( mylibfolder
         bucket
         bvh
         debug
@@ -122,7 +122,8 @@ target_link_libraries(SimGearCore
     ${DL_LIBRARY}
     ${EXPAT_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${COCOA_LIBRARY})
+    ${COCOA_LIBRARY}
+    ${CURL_LIBRARIES})
 
 if(NOT SIMGEAR_HEADLESS)
     target_link_libraries(SimGearScene

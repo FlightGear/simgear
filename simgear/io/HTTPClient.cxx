@@ -35,6 +35,8 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include <curl/multi.h>
+
 #include <simgear/io/sg_netChat.hxx>
 #include <simgear/io/HTTPContentDecode.hxx>
 #include <simgear/misc/strutils.hxx>
@@ -50,6 +52,9 @@
 #    define SIMGEAR_VERSION "simgear-development"
 #  endif
 #endif
+
+#define WITH_CURL 1
+
 
 namespace simgear
 {
@@ -68,24 +73,26 @@ typedef std::list<Request_ptr> RequestList;
 class Client::ClientPrivate
 {
 public:
+    CURLM* curlMulti;
+
     std::string userAgent;
     std::string proxy;
     int proxyPort;
     std::string proxyAuth;
     NetChannelPoller poller;
     unsigned int maxConnections;
-    
+
     RequestList pendingRequests;
-    
+
 // connections by host (potentially more than one)
     ConnectionDict connections;
-    
+
     SGTimeStamp timeTransferSample;
     unsigned int bytesTransferred;
     unsigned int lastTransferRate;
     uint64_t totalBytesDownloaded;
 };
-  
+
 class Connection : public NetChat
 {
 public:
@@ -633,12 +640,21 @@ Client::Client() :
     d->lastTransferRate = 0;
     d->timeTransferSample.stamp();
     d->totalBytesDownloaded = 0;
-    
+
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
+
+    static bool didInitCurlGlobal = false;
+    if (!didInitCurlGlobal) {
+      curl_global_init(CURL_GLOBAL_ALL);
+      didInitCurlGlobal = true;
+    }
+
+    d->curlMulti = curl_multi_init();
 }
 
 Client::~Client()
 {
+  curl_multi_cleanup(d->curlMulti);
 }
 
 void Client::setMaxConnections(unsigned int maxCon)
@@ -646,8 +662,11 @@ void Client::setMaxConnections(unsigned int maxCon)
     if (maxCon < 1) {
         throw sg_range_exception("illegal HTTP::Client::setMaxConnections value");
     }
-    
+
     d->maxConnections = maxCon;
+
+
+    curl_multi_setopt(d->curlMulti, CURLMOPT_MAXCONNECTS, (long) maxCon);
 }
 
 void Client::update(int waitTimeout)
@@ -697,6 +716,36 @@ void Client::update(int waitTimeout)
             makeRequest(req);
         }
     }
+
+    int remainingActive, messagesInQueue;
+    curl_multi_perform(d->curlMulti, &remainingActive);
+
+    CURLMsg* msg;
+    while ((msg = curl_multi_info_read(d->curlMulti, &messagesInQueue))) {
+      if (msg->msg == CURLMSG_DONE) {
+        Request* req;
+        CURL *e = msg->easy_handle;
+        curl_easy_getinfo(e, CURLINFO_PRIVATE, &req);
+
+        long responseCode;
+        curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &responseCode);
+
+
+        req->responseComplete();
+
+
+        fprintf(stderr, "R: %d - %s\n",
+                msg->data.result, curl_easy_strerror(msg->data.result));
+        curl_multi_remove_handle(d->curlMulti, e);
+
+        // balance the reference we take in makeRequest
+        SGReferenced::put(req);
+        curl_easy_cleanup(e);
+      }
+      else {
+        fprintf(stderr, "E: CURLMsg (%d)\n", msg->msg);
+      }
+    } // of curl message processing loop
 }
 
 void Client::makeRequest(const Request_ptr& r)
@@ -709,18 +758,38 @@ void Client::makeRequest(const Request_ptr& r)
         return;
     }
 
+#if defined(WITH_CURL)
+    CURL* curlRequest = curl_easy_init();
+    curl_easy_setopt(curlRequest, CURLOPT_URL, r->url().c_str());
+
+    // maulaly increase the ref count of the request
+    SGReferenced::get(r.get());
+    curl_easy_setopt(curlRequest, CURLOPT_PRIVATE, r.get());
+    // disable built-in libCurl progress feedback
+    curl_easy_setopt(curlRequest, CURLOPT_NOPROGRESS, 0);
+
+    curl_easy_setopt(curlRequest, CURLOPT_WRITEFUNCTION, requestWriteCallback);
+    curl_easy_setopt(curlRequest, CURLOPT_WRITEDATA, r.get());
+    curl_easy_setopt(curlRequest, CURLOPT_READFUNCTION, requestReadCallback);
+    curl_easy_setopt(curlRequest, CURLOPT_READDATA, r.get());
+    curl_easy_setopt(curlRequest, CURLOPT_HEADERFUNCTION, requestHeaderCallback);
+    curl_easy_setopt(curlRequest, CURLOPT_HEADERDATA, r.get());
+
+
+    curl_multi_add_handle(d->curlMulti, curlRequest);
+#else
     if( r->url().find("http://") != 0 ) {
         r->setFailure(EINVAL, "only HTTP protocol is supported");
         return;
     }
-    
+
     std::string host = r->host();
     int port = r->port();
     if (!d->proxy.empty()) {
         host = d->proxy;
         port = d->proxyPort;
     }
-    
+
     Connection* con = NULL;
     std::stringstream ss;
     ss << host << "-" << port;
@@ -774,6 +843,7 @@ void Client::makeRequest(const Request_ptr& r)
     }
     
     con->queueRequest(r);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -872,6 +942,47 @@ unsigned int Client::transferRateBytesPerSec() const
 uint64_t Client::totalBytesDownloaded() const
 {
     return d->totalBytesDownloaded;
+}
+
+size_t Client::requestWriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  size_t byteSize = size * nmemb;
+
+  Request* req = static_cast<Request*>(userdata);
+  req->gotBodyData(ptr, byteSize);
+  return byteSize;
+}
+
+size_t Client::requestReadCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  size_t byteSize = size * nmemb;
+  Request* req = static_cast<Request*>(userdata);
+  size_t actualBytes = req->getBodyData(ptr, 0, byteSize);
+  if (actualBytes < byteSize) {
+    SG_LOG(SG_IO, SG_WARN, "Request getBodyData underflow" << req->url());
+  }
+  return actualBytes;
+}
+
+size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems, void *userdata)
+{
+  size_t byteSize = size * nitems;
+  Request* req = static_cast<Request*>(userdata);
+
+  std::string h = strutils::simplify(std::string(rawBuffer));
+  int colonPos = h.find(':');
+  if (colonPos < 0) {
+      SG_LOG(SG_IO, SG_WARN, "malformed HTTP response header:" << h);
+      return byteSize;
+  }
+
+  SG_LOG(SG_IO, SG_WARN, "curl got header:" << h);
+  std::string key = strutils::simplify(h.substr(0, colonPos));
+  std::string lkey = boost::to_lower_copy(key);
+  std::string value = strutils::strip(h.substr(colonPos + 1));
+
+  req->responseHeader(key, value);
+  return byteSize;
 }
 
 } // of namespace HTTP

@@ -38,15 +38,15 @@ namespace HTTP
 
 // forward decls
 class Connection;
-    
+
 class Client
 {
 public:
     Client();
     ~Client();
-    
+
     void update(int waitTimeout = 0);
-    
+
     void makeRequest(const Request_ptr& r);
 
     /**
@@ -68,31 +68,31 @@ public:
 
     void setUserAgent(const std::string& ua);
     void setProxy(const std::string& proxy, int port, const std::string& auth = "");
-    
+
     /**
      * Specify the maximum permitted simultaneous connections
      * (default value is 1)
      */
     void setMaxConnections(unsigned int maxCons);
-    
+
     const std::string& userAgent() const;
-        
+
     const std::string& proxyHost() const;
-        
+
     const std::string& proxyAuth() const;
-    
+
     /**
      * predicate, check if at least one connection is active, with at
      * least one request active or queued.
      */
     bool hasActiveRequests() const;
-    
+
     /**
      * crude tracking of bytes-per-second transferred over the socket.
      * suitable for user feedback and rough profiling, nothing more.
      */
     unsigned int transferRateBytesPerSec() const;
-    
+
     /**
      * total bytes downloaded by this HTTP client, for bandwidth usage
      * monitoring
@@ -105,12 +105,12 @@ private:
     static size_t requestHeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata);
 
     void requestFinished(Connection* con);
-    
+
     void receivedBytes(unsigned int count);
-    
+
     friend class Connection;
     friend class Request;
-    
+
     class ClientPrivate;
     std::auto_ptr<ClientPrivate> d;
 };

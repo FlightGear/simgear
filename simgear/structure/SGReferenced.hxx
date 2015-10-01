@@ -1,6 +1,6 @@
 /* -*-c++-*-
  *
- * Copyright (C) 2005-2006 Mathias Froehlich 
+ * Copyright (C) 2005-2006 Mathias Froehlich
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

@@ -124,19 +124,19 @@ public:
     void setBodyData( const SGPropertyNode* data );
 
     virtual void setUrl(const std::string& url);
-    
+
     virtual std::string method() const
         { return _method; }
     virtual std::string url() const
         { return _url; }
-    
+
     virtual std::string scheme() const;
     virtual std::string path() const;
     virtual std::string host() const;
     virtual std::string hostAndPort() const;
     virtual unsigned short port() const;
     virtual std::string query() const;
-    
+
     StringMap const& responseHeaders() const
         { return _responseHeaders; }
 
@@ -144,13 +144,13 @@ public:
 
     virtual int responseCode() const
         { return _responseStatus; }
-        
+
     virtual std::string responseReason() const
         { return _responseReason; }
-        
+
     void setResponseLength(unsigned int l);
     virtual unsigned int responseLength() const;
-  
+
     /**
      * Check if request contains body data.
      */
@@ -165,32 +165,32 @@ public:
      * Retrieve the size of the request body.
      */
     virtual size_t bodyLength() const;
-    
+
     /**
      * Retrieve the body data bytes. Will be passed the maximum body bytes
      * to return in the buffer, and must return the actual number
-     * of bytes written. 
+     * of bytes written.
      */
     virtual size_t getBodyData(char* s, size_t offset, size_t max_count) const;
-  
+
     /**
      * running total of body bytes received so far. Can be used
      * to generate a completion percentage, if the response length is
-     * known. 
+     * known.
      */
     unsigned int responseBytesReceived() const
         { return _receivedBodyBytes; }
-        
+
     enum HTTPVersion {
         HTTP_VERSION_UNKNOWN = 0,
         HTTP_0_x, // 0.9 or similar
         HTTP_1_0,
         HTTP_1_1
     };
-    
+
     HTTPVersion responseVersion() const
         { return _responseVersion; }
-    
+
     ReadyState readyState() const { return _ready_state; }
 
     /**
@@ -226,7 +226,7 @@ private:
     friend class Client;
     friend class Connection;
     friend class ContentDecoder;
-    
+
     Request(const Request&); // = delete;
     Request& operator=(const Request&); // = delete;
 

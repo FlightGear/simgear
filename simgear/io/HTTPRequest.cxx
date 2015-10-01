@@ -133,19 +133,25 @@ void Request::responseStart(const std::string& r)
     const int maxSplit = 2; // HTTP/1.1 nnn reason-string
     string_list parts = strutils::split(r, NULL, maxSplit);
     if (parts.size() != 3) {
-        throw sg_io_exception("bad HTTP response");
+        throw sg_io_exception("bad HTTP response:" + r);
     }
-    
+
     _responseVersion = decodeHTTPVersion(parts[0]);
     _responseStatus = strutils::to_int(parts[1]);
     _responseReason = parts[2];
+
+    setReadyState(STATUS_RECEIVED);
 }
 
 //------------------------------------------------------------------------------
 void Request::responseHeader(const std::string& key, const std::string& value)
 {
-  if( key == "connection" )
+  if( key == "connection" ) {
     _willClose = (value.find("close") != std::string::npos);
+  } else if (key == "content-length") {
+    int sz = strutils::to_int(value);
+    setResponseLength(sz);
+  }
 
   _responseHeaders[key] = value;
 }

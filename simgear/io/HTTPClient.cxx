@@ -21,6 +21,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+
 #include "HTTPClient.hxx"
 #include "HTTPFileRequest.hxx"
 
@@ -35,8 +36,16 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include <simgear/simgear_config.h>
+
+#if defined(ENABLE_CURL)
+  #include <curl/multi.h>
+#else
+    #include <simgear/io/HTTPContentDecode.hxx>
+#endif
+
 #include <simgear/io/sg_netChat.hxx>
-#include <simgear/io/HTTPContentDecode.hxx>
+
 #include <simgear/misc/strutils.hxx>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
@@ -68,24 +77,32 @@ typedef std::list<Request_ptr> RequestList;
 class Client::ClientPrivate
 {
 public:
+#if defined(ENABLE_CURL)
+    CURLM* curlMulti;
+    bool haveActiveRequests;
+#else
+    NetChannelPoller poller;
+// connections by host (potentially more than one)
+    ConnectionDict connections;
+#endif
+
     std::string userAgent;
     std::string proxy;
     int proxyPort;
     std::string proxyAuth;
-    NetChannelPoller poller;
     unsigned int maxConnections;
-    
+
     RequestList pendingRequests;
-    
-// connections by host (potentially more than one)
-    ConnectionDict connections;
-    
+
+
+
     SGTimeStamp timeTransferSample;
     unsigned int bytesTransferred;
     unsigned int lastTransferRate;
     uint64_t totalBytesDownloaded;
 };
-  
+
+#if !defined(ENABLE_CURL)
 class Connection : public NetChat
 {
 public:
@@ -623,6 +640,7 @@ private:
 
     ContentDecoder _contentDecoder;
 };
+#endif // of !ENABLE_CURL
 
 Client::Client() :
     d(new ClientPrivate)
@@ -633,12 +651,24 @@ Client::Client() :
     d->lastTransferRate = 0;
     d->timeTransferSample.stamp();
     d->totalBytesDownloaded = 0;
-    
+
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
+#if defined(ENABLE_CURL)
+    static bool didInitCurlGlobal = false;
+    if (!didInitCurlGlobal) {
+      curl_global_init(CURL_GLOBAL_ALL);
+      didInitCurlGlobal = true;
+    }
+
+    d->curlMulti = curl_multi_init();
+#endif
 }
 
 Client::~Client()
 {
+#if defined(ENABLE_CURL)
+  curl_multi_cleanup(d->curlMulti);
+#endif
 }
 
 void Client::setMaxConnections(unsigned int maxCon)
@@ -646,12 +676,49 @@ void Client::setMaxConnections(unsigned int maxCon)
     if (maxCon < 1) {
         throw sg_range_exception("illegal HTTP::Client::setMaxConnections value");
     }
-    
+
     d->maxConnections = maxCon;
+#if defined(ENABLE_CURL)
+    curl_multi_setopt(d->curlMulti, CURLMOPT_MAXCONNECTS, (long) maxCon);
+#endif
 }
 
 void Client::update(int waitTimeout)
 {
+#if defined(ENABLE_CURL)
+    int remainingActive, messagesInQueue;
+    curl_multi_perform(d->curlMulti, &remainingActive);
+    d->haveActiveRequests = (remainingActive > 0);
+
+    CURLMsg* msg;
+    while ((msg = curl_multi_info_read(d->curlMulti, &messagesInQueue))) {
+      if (msg->msg == CURLMSG_DONE) {
+        Request* req;
+        CURL *e = msg->easy_handle;
+        curl_easy_getinfo(e, CURLINFO_PRIVATE, &req);
+
+        long responseCode;
+        curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &responseCode);
+
+        if (msg->data.result == 0) {
+          req->responseComplete();
+        } else {
+          fprintf(stderr, "Result: %d - %s\n",
+                msg->data.result, curl_easy_strerror(msg->data.result));
+          req->setFailure(msg->data.result, curl_easy_strerror(msg->data.result));
+        }
+
+        curl_multi_remove_handle(d->curlMulti, e);
+
+        // balance the reference we take in makeRequest
+        SGReferenced::put(req);
+        curl_easy_cleanup(e);
+      }
+      else {
+        SG_LOG(SG_IO, SG_ALERT, "CurlMSG:" << msg->msg);
+      }
+    } // of curl message processing loop
+#else
     if (!d->poller.hasChannels() && (waitTimeout > 0)) {
         SGTimeStamp::sleepForMSec(waitTimeout);
     } else {
@@ -697,6 +764,7 @@ void Client::update(int waitTimeout)
             makeRequest(req);
         }
     }
+#endif
 }
 
 void Client::makeRequest(const Request_ptr& r)
@@ -709,18 +777,94 @@ void Client::makeRequest(const Request_ptr& r)
         return;
     }
 
+#if defined(ENABLE_CURL)
+    CURL* curlRequest = curl_easy_init();
+    curl_easy_setopt(curlRequest, CURLOPT_URL, r->url().c_str());
+
+    // manually increase the ref count of the request
+    SGReferenced::get(r.get());
+    curl_easy_setopt(curlRequest, CURLOPT_PRIVATE, r.get());
+    // disable built-in libCurl progress feedback
+    curl_easy_setopt(curlRequest, CURLOPT_NOPROGRESS, 1);
+
+    curl_easy_setopt(curlRequest, CURLOPT_WRITEFUNCTION, requestWriteCallback);
+    curl_easy_setopt(curlRequest, CURLOPT_WRITEDATA, r.get());
+    curl_easy_setopt(curlRequest, CURLOPT_HEADERFUNCTION, requestHeaderCallback);
+    curl_easy_setopt(curlRequest, CURLOPT_HEADERDATA, r.get());
+
+    curl_easy_setopt(curlRequest, CURLOPT_USERAGENT, d->userAgent.c_str());
+
+    if (!d->proxy.empty()) {
+      curl_easy_setopt(curlRequest, CURLOPT_PROXY, d->proxy.c_str());
+      curl_easy_setopt(curlRequest, CURLOPT_PROXYPORT, d->proxyPort);
+
+      if (!d->proxyAuth.empty()) {
+        curl_easy_setopt(curlRequest, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
+        curl_easy_setopt(curlRequest, CURLOPT_PROXYUSERPWD, d->proxyAuth.c_str());
+      }
+    }
+
+    std::string method = boost::to_lower_copy(r->method());
+    if (method == "get") {
+      curl_easy_setopt(curlRequest, CURLOPT_HTTPGET, 1);
+    } else if (method == "put") {
+      curl_easy_setopt(curlRequest, CURLOPT_PUT, 1);
+      curl_easy_setopt(curlRequest, CURLOPT_UPLOAD, 1);
+    } else if (method == "post") {
+      // see http://curl.haxx.se/libcurl/c/CURLOPT_POST.html
+      curl_easy_setopt(curlRequest, CURLOPT_HTTPPOST, 1);
+
+      std::string q = r->query().substr(1);
+      curl_easy_setopt(curlRequest, CURLOPT_COPYPOSTFIELDS, q.c_str());
+
+      // reset URL to exclude query pieces
+      std::string urlWithoutQuery = r->url();
+      std::string::size_type queryPos = urlWithoutQuery.find('?');
+      urlWithoutQuery.resize(queryPos);
+      curl_easy_setopt(curlRequest, CURLOPT_URL, urlWithoutQuery.c_str());
+    } else {
+      curl_easy_setopt(curlRequest, CURLOPT_CUSTOMREQUEST, r->method().c_str());
+    }
+
+    struct curl_slist* headerList = NULL;
+    if (r->hasBodyData() && (method != "post")) {
+      curl_easy_setopt(curlRequest, CURLOPT_UPLOAD, 1);
+      curl_easy_setopt(curlRequest, CURLOPT_INFILESIZE, r->bodyLength());
+      curl_easy_setopt(curlRequest, CURLOPT_READFUNCTION, requestReadCallback);
+      curl_easy_setopt(curlRequest, CURLOPT_READDATA, r.get());
+      std::string h = "Content-Type:" + r->bodyType();
+      headerList = curl_slist_append(headerList, h.c_str());
+    }
+
+    StringMap::const_iterator it;
+    for (it = r->requestHeaders().begin(); it != r->requestHeaders().end(); ++it) {
+      std::string h = it->first + ": " + it->second;
+      headerList = curl_slist_append(headerList, h.c_str());
+    }
+
+    if (headerList != NULL) {
+      curl_easy_setopt(curlRequest, CURLOPT_HTTPHEADER, headerList);
+    }
+
+    curl_multi_add_handle(d->curlMulti, curlRequest);
+    d->haveActiveRequests = true;
+
+// FIXME - premature?
+    r->requestStart();
+
+#else
     if( r->url().find("http://") != 0 ) {
         r->setFailure(EINVAL, "only HTTP protocol is supported");
         return;
     }
-    
+
     std::string host = r->host();
     int port = r->port();
     if (!d->proxy.empty()) {
         host = d->proxy;
         port = d->proxyPort;
     }
-    
+
     Connection* con = NULL;
     std::stringstream ss;
     ss << host << "-" << port;
@@ -774,6 +918,7 @@ void Client::makeRequest(const Request_ptr& r)
     }
 
     con->queueRequest(r);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -829,12 +974,16 @@ void Client::setProxy( const std::string& proxy,
 
 bool Client::hasActiveRequests() const
 {
+  #if defined(ENABLE_CURL)
+    return d->haveActiveRequests;
+  #else
     ConnectionDict::const_iterator it = d->connections.begin();
     for (; it != d->connections.end(); ++it) {
         if (it->second->isActive()) return true;
     }
 
     return false;
+#endif
 }
 
 void Client::receivedBytes(unsigned int count)
@@ -872,6 +1021,63 @@ unsigned int Client::transferRateBytesPerSec() const
 uint64_t Client::totalBytesDownloaded() const
 {
     return d->totalBytesDownloaded;
+}
+
+size_t Client::requestWriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  size_t byteSize = size * nmemb;
+
+  Request* req = static_cast<Request*>(userdata);
+  req->processBodyBytes(ptr, byteSize);
+  return byteSize;
+}
+
+size_t Client::requestReadCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  size_t maxBytes = size * nmemb;
+  Request* req = static_cast<Request*>(userdata);
+  size_t actualBytes = req->getBodyData(ptr, 0, maxBytes);
+  return actualBytes;
+}
+
+size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems, void *userdata)
+{
+  size_t byteSize = size * nitems;
+  Request* req = static_cast<Request*>(userdata);
+  std::string h = strutils::simplify(std::string(rawBuffer, byteSize));
+
+  if (req->readyState() == HTTP::Request::OPENED) {
+    req->responseStart(h);
+    return byteSize;
+  }
+
+  if (h.empty()) {
+      // got a 100-continue reponse; restart
+      if (req->responseCode() == 100) {
+          req->setReadyState(HTTP::Request::OPENED);
+          return byteSize;
+      }
+
+    req->responseHeadersComplete();
+    return byteSize;
+  }
+
+  if (req->responseCode() == 100) {
+      return byteSize; // skip headers associated with 100-continue status
+  }
+
+  int colonPos = h.find(':');
+  if (colonPos == std::string::npos) {
+      SG_LOG(SG_IO, SG_WARN, "malformed HTTP response header:" << h);
+      return byteSize;
+  }
+
+  std::string key = strutils::simplify(h.substr(0, colonPos));
+  std::string lkey = boost::to_lower_copy(key);
+  std::string value = strutils::strip(h.substr(colonPos + 1));
+
+  req->responseHeader(lkey, value);
+  return byteSize;
 }
 
 } // of namespace HTTP

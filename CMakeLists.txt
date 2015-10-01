@@ -116,6 +116,7 @@ option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
+option(ENABLE_CURL      "Set to ON to use libCurl as the HTTP client backend" OFF)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_BINARY_DIR} PATH)
@@ -202,6 +203,11 @@ else()
 endif(SIMGEAR_HEADLESS)
 
 find_package(ZLIB REQUIRED)
+
+if (ENABLE_CURL)
+  find_package(Curl REQUIRED)
+  message(STATUS "Curl HTTP client: ENABLED")
+endif()
 
 if (SYSTEM_EXPAT)
     message(STATUS "Requested to use system Expat library, forcing SIMGEAR_SHARED to true")
@@ -368,6 +374,7 @@ include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
     ${OPENAL_INCLUDE_DIR}
+    ${CURL_INCLUDE_DIRS}
 )
 
 add_definitions(-DHAVE_CONFIG_H)
@@ -396,7 +403,8 @@ set(TEST_LIBS_INTERNAL_CORE
     ${WINSOCK_LIBRARY}
     ${RT_LIBRARY}
     ${DL_LIBRARY}
-    ${COCOA_LIBRARY})
+    ${COCOA_LIBRARY}
+    ${CURL_LIBRARIES})
 set(TEST_LIBS SimGearCore ${TEST_LIBS_INTERNAL_CORE})
 
 if(NOT SIMGEAR_HEADLESS)

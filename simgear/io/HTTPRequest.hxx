@@ -50,6 +50,7 @@ public:
     {
       UNSENT = 0,
       OPENED,
+      STATUS_RECEIVED,
       HEADERS_RECEIVED,
       LOADING,
       DONE,

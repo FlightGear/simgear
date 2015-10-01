@@ -18,7 +18,6 @@ set(HEADERS
     HTTPFileRequest.hxx
     HTTPMemoryRequest.hxx
     HTTPRequest.hxx
-    HTTPContentDecode.hxx
     DAVMultiStatus.hxx
     SVNRepository.hxx
     SVNDirectory.hxx
@@ -41,12 +40,16 @@ set(SOURCES
     HTTPFileRequest.cxx
     HTTPMemoryRequest.cxx
     HTTPRequest.cxx
-    HTTPContentDecode.cxx
     DAVMultiStatus.cxx
     SVNRepository.cxx
     SVNDirectory.cxx
     SVNReportParser.cxx
     )
+
+if (NOT ENABLE_CURL)
+  list(APPEND SOURCES HTTPContentDecode.cxx)
+  list(APPEND HEADERS HTTPContentDecode.hxx)
+endif()
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
@@ -70,8 +73,8 @@ add_executable(decode_binobj decode_binobj.cxx)
 target_link_libraries(decode_binobj ${TEST_LIBS})
 
 add_executable(test_binobj test_binobj.cxx)
-target_link_libraries(test_binobj ${TEST_LIBS}) 
-    
+target_link_libraries(test_binobj ${TEST_LIBS})
+
 add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
 
 endif(ENABLE_TESTS)

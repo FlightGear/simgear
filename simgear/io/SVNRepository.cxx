@@ -120,6 +120,7 @@ namespace { // anonmouse
         Request(repo->baseUrl, "PROPFIND"),
         _repo(repo)
       {
+        assert(repo);
         requestHeader("Depth") = "0";
         setBodyData( PROPFIND_REQUEST_BODY,
                      "application/xml; charset=\"utf-8\"" );
@@ -138,6 +139,8 @@ namespace { // anonmouse
             _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
             _repo = NULL;
         }
+
+        Request::responseHeadersComplete();
       }
   
       virtual void onDone()

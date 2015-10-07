@@ -133,19 +133,25 @@ void Request::responseStart(const std::string& r)
     const int maxSplit = 2; // HTTP/1.1 nnn reason-string
     string_list parts = strutils::split(r, NULL, maxSplit);
     if (parts.size() != 3) {
-        throw sg_io_exception("bad HTTP response");
+        throw sg_io_exception("bad HTTP response:" + r);
     }
-    
+
     _responseVersion = decodeHTTPVersion(parts[0]);
     _responseStatus = strutils::to_int(parts[1]);
     _responseReason = parts[2];
+
+    setReadyState(STATUS_RECEIVED);
 }
 
 //------------------------------------------------------------------------------
 void Request::responseHeader(const std::string& key, const std::string& value)
 {
-  if( key == "connection" )
+  if( key == "connection" ) {
     _willClose = (value.find("close") != std::string::npos);
+  } else if (key == "content-length") {
+    int sz = strutils::to_int(value);
+    setResponseLength(sz);
+  }
 
   _responseHeaders[key] = value;
 }
@@ -207,7 +213,7 @@ std::string Request::scheme() const
     if (firstColon > 0) {
         return url().substr(0, firstColon);
     }
-    
+
     return ""; // couldn't parse scheme
 }
 
@@ -219,20 +225,20 @@ std::string Request::path() const
     if (schemeEnd < 0) {
         return ""; // couldn't parse scheme
     }
-    
+
     int hostEnd = u.find('/', schemeEnd + 3);
     if (hostEnd < 0) {
-// couldn't parse host, or URL looks like 'http://foo.com' (no trailing '/') 
-// fixup to root resource path: '/' 
-        return "/"; 
+// couldn't parse host, or URL looks like 'http://foo.com' (no trailing '/')
+// fixup to root resource path: '/'
+        return "/";
     }
-    
+
     int query = u.find('?', hostEnd + 1);
     if (query < 0) {
         // all remainder of URL is path
         return u.substr(hostEnd);
     }
-    
+
     return u.substr(hostEnd, query - hostEnd);
 }
 
@@ -244,7 +250,7 @@ std::string Request::query() const
   if (query < 0) {
     return "";  //no query string found
   }
-  
+
   return u.substr(query);   //includes question mark
 }
 

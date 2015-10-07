@@ -12,6 +12,7 @@
 #include <simgear/io/sg_netChat.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
+#include <simgear/debug/logstream.hxx>
 
 using std::cout;
 using std::cerr;
@@ -46,7 +47,7 @@ char body2[body2Size];
         cerr << "failed:" << #a << endl; \
         exit(1); \
     }
-    
+
 class TestRequest : public HTTP::Request
 {
 public:
@@ -54,41 +55,42 @@ public:
     bool failed;
     string bodyData;
 
-    TestRequest(const std::string& url, const std::string method = "GET") : 
+    TestRequest(const std::string& url, const std::string method = "GET") :
         HTTP::Request(url, method),
         complete(false)
     {
 
     }
-    
+
     std::map<string, string> headers;
 protected:
-    
+
     virtual void onDone()
     {
         complete = true;
-    }  
-    
+    }
+
     virtual void onFail()
     {
         failed = true;
     }
-    
+
     virtual void gotBodyData(const char* s, int n)
     {
       //std::cout << "got body data:'" << string(s, n) << "'" <<std::endl;
         bodyData += string(s, n);
     }
-    
+
     virtual void responseHeader(const string& header, const string& value)
     {
+        Request::responseHeader(header, value);
         headers[header] =  value;
     }
 };
 
 class TestServerChannel : public NetChat
 {
-public:  
+public:
     enum State
     {
         STATE_IDLE = 0,
@@ -96,19 +98,19 @@ public:
         STATE_CLOSING,
         STATE_REQUEST_BODY
     };
-    
+
     TestServerChannel()
     {
         state = STATE_IDLE;
         setTerminator("\r\n");
-        
+
     }
-    
+
     virtual void collectIncomingData(const char* s, int n)
     {
         buffer += string(s, n);
     }
-    
+
     virtual void foundTerminator(void)
     {
         if (state == STATE_IDLE) {
@@ -118,16 +120,16 @@ public:
                 cerr << "malformed request:" << buffer << endl;
                 exit(-1);
             }
-            
+
             method = line[0];
             path = line[1];
-            
+
             string::size_type queryPos = path.find('?');
             if (queryPos != string::npos) {
                 parseArgs(path.substr(queryPos + 1));
                 path = path.substr(0, queryPos);
             }
-            
+
             httpVersion = line[2];
             requestHeaders.clear();
             buffer.clear();
@@ -138,10 +140,10 @@ public:
                 receivedRequestHeaders();
                 return;
             }
-            
+
             string::size_type colonPos = buffer.find(':');
             if (colonPos == string::npos) {
-                cerr << "malformed HTTP response header:" << buffer << endl;
+                cerr << "test malformed HTTP response header:" << buffer << endl;
                 buffer.clear();
                 return;
             }
@@ -156,8 +158,8 @@ public:
         } else if (state == STATE_CLOSING) {
           // ignore!
         }
-    }  
-    
+    }
+
     void parseArgs(const string& argData)
     {
         string_list argv = strutils::split(argData, "&");
@@ -173,11 +175,10 @@ public:
             args[key] = value;
         }
     }
-    
+
     void receivedRequestHeaders()
     {
         state = STATE_IDLE;
-        
         if (path == "/test1") {
             string contentStr(BODY1);
             stringstream d;
@@ -205,7 +206,7 @@ public:
         } else if (path == "/test_headers") {
             COMPARE(requestHeaders["X-Foo"], string("Bar"));
             COMPARE(requestHeaders["X-AnotherHeader"], string("A longer value"));
-            
+
             string contentStr(BODY1);
             stringstream d;
             d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
@@ -235,11 +236,11 @@ public:
             if (requestHeaders["Host"] != "www.google.com") {
                 sendErrorResponse(400, true, "bad destination");
             }
-            
+
             if (requestHeaders["Proxy-Authorization"] != string()) {
-                sendErrorResponse(401, false, "bad auth"); // shouldn't supply auth
+                sendErrorResponse(401, false, "bad auth, not empty"); // shouldn't supply auth
             }
-            
+
             sendBody2();
         } else if (path == "http://www.google.com/test3") {
             // proxy test
@@ -247,8 +248,28 @@ public:
                 sendErrorResponse(400, true, "bad destination");
             }
 
-            if (requestHeaders["Proxy-Authorization"] != "ABCDEF") {
-                sendErrorResponse(401, false, "bad auth"); // forbidden
+            string credentials = requestHeaders["Proxy-Authorization"];
+            if (credentials.substr(0, 5) != "Basic") {
+              // request basic auth
+              stringstream d;
+              d << "HTTP/1.1 " << 407 << " " << reasonForCode(407) << "\r\n";
+              d << "WWW-Authenticate: Basic real=\"simgear\"\r\n";
+              d << "\r\n"; // final CRLF to terminate the headers
+              push(d.str().c_str());
+              return;
+            }
+
+            std::vector<unsigned char> userAndPass;
+            strutils::decodeBase64(credentials.substr(6), userAndPass);
+            std::string decodedUserPass((char*) userAndPass.data(), userAndPass.size());
+
+            if (decodedUserPass != "johndoe:swordfish") {
+                std::map<string, string>::const_iterator it;
+                for (it = requestHeaders.begin(); it != requestHeaders.end(); ++it) {
+                  cerr << "header:" << it->first << " = " << it->second << endl;
+                }
+
+                sendErrorResponse(401, false, "bad auth, not as set"); // forbidden
             }
 
             sendBody2();
@@ -291,43 +312,78 @@ public:
                  sendErrorResponse(400, true, "bad content type");
                  return;
             }
-            
+
             requestContentLength = strutils::to_int(requestHeaders["Content-Length"]);
             setByteCount(requestContentLength);
             state = STATE_REQUEST_BODY;
+        } else if ((path == "/test_put") || (path == "/test_create")) {
+              if (requestHeaders["Content-Type"] != "x-application/foobar") {
+                  cerr << "bad content type: '" << requestHeaders["Content-Type"] << "'" << endl;
+                   sendErrorResponse(400, true, "bad content type");
+                   return;
+              }
+
+              requestContentLength = strutils::to_int(requestHeaders["Content-Length"]);
+              setByteCount(requestContentLength);
+              state = STATE_REQUEST_BODY;
         } else {
             sendErrorResponse(404, false, "");
         }
     }
-    
+
     void closeAfterSending()
     {
       state = STATE_CLOSING;
       closeWhenDone();
     }
-  
+
     void receivedBody()
     {
         state = STATE_IDLE;
         if (method == "POST") {
             parseArgs(buffer);
         }
-        
+
         if (path == "/test_post") {
             if ((args["foo"] != "abc") || (args["bar"] != "1234") || (args["username"] != "johndoe")) {
                 sendErrorResponse(400, true, "bad arguments");
                 return;
             }
-            
+
             stringstream d;
             d << "HTTP/1.1 " << 204 << " " << reasonForCode(204) << "\r\n";
             d << "\r\n"; // final CRLF to terminate the headers
             push(d.str().c_str());
-            
-            cerr << "sent 204 response ok" << endl;
+        } else if (path == "/test_put") {
+          std::cerr << "sending PUT response" << std::endl;
+
+          COMPARE(buffer, BODY3);
+          stringstream d;
+          d << "HTTP/1.1 " << 204 << " " << reasonForCode(204) << "\r\n";
+          d << "\r\n"; // final CRLF to terminate the headers
+          push(d.str().c_str());
+        } else if (path == "/test_create") {
+          std::cerr << "sending create response" << std::endl;
+
+          std::string entityStr = "http://localhost:2000/something.txt";
+
+          COMPARE(buffer, BODY3);
+          stringstream d;
+          d << "HTTP/1.1 " << 201 << " " << reasonForCode(201) << "\r\n";
+          d << "Location:" << entityStr << "\r\n";
+          d << "Content-Length:" << entityStr.size() << "\r\n";
+          d << "\r\n"; // final CRLF to terminate the headers
+          d << entityStr;
+
+          push(d.str().c_str());
+        } else {
+          std::cerr << "weird URL " << path << std::endl;
+          sendErrorResponse(400, true, "bad URL:" + path);
         }
+
+        buffer.clear();
     }
-    
+
     void sendBody2()
     {
         stringstream d;
@@ -337,32 +393,36 @@ public:
         push(d.str().c_str());
         bufferSend(body2, body2Size);
     }
-    
+
     void sendErrorResponse(int code, bool close, string content)
     {
         cerr << "sending error " << code << " for " << path << endl;
+        cerr << "\tcontent:" << content << endl;
+
         stringstream headerData;
         headerData << "HTTP/1.1 " << code << " " << reasonForCode(code) << "\r\n";
         headerData << "Content-Length:" << content.size() << "\r\n";
         headerData << "\r\n"; // final CRLF to terminate the headers
         push(headerData.str().c_str());
         push(content.c_str());
-        
+
         if (close) {
             closeWhenDone();
         }
     }
-    
-    string reasonForCode(int code) 
+
+    string reasonForCode(int code)
     {
         switch (code) {
             case 200: return "OK";
+            case 201: return "Created";
             case 204: return "no content";
             case 404: return "not found";
+            case 407: return "proxy authentication required";
             default: return "unknown code";
         }
     }
-    
+
     State state;
     string buffer;
     string method;
@@ -376,7 +436,7 @@ public:
 class TestServer : public NetChannel
 {
     simgear::NetChannelPoller _poller;
-public:   
+public:
     TestServer()
     {
         Socket::initSockets();
@@ -384,14 +444,14 @@ public:
         open();
         bind(NULL, 2000); // localhost, any port
         listen(5);
-        
+
         _poller.addChannel(this);
     }
-    
+
     virtual ~TestServer()
-    {    
+    {
     }
-    
+
     virtual bool writable (void) { return false ; }
 
     virtual void handleAccept (void)
@@ -401,10 +461,10 @@ public:
         //cout << "did accept from " << addr.getHost() << ":" << addr.getPort() << endl;
         TestServerChannel* chan = new TestServerChannel();
         chan->setHandle(handle);
-        
+
         _poller.addChannel(chan);
     }
-    
+
     void poll()
     {
         _poller.poll();
@@ -419,13 +479,13 @@ void waitForComplete(HTTP::Client* cl, TestRequest* tr)
     while (start.elapsedMSec() <  10000) {
         cl->update();
         testServer.poll();
-        
+
         if (tr->complete) {
             return;
         }
         SGTimeStamp::sleepForMSec(15);
     }
-    
+
     cerr << "timed out" << endl;
 }
 
@@ -435,23 +495,24 @@ void waitForFailed(HTTP::Client* cl, TestRequest* tr)
     while (start.elapsedMSec() <  10000) {
         cl->update();
         testServer.poll();
-        
+
         if (tr->failed) {
             return;
         }
         SGTimeStamp::sleepForMSec(15);
     }
-    
+
     cerr << "timed out waiting for failure" << endl;
 }
 
 int main(int argc, char* argv[])
 {
-    
+    sglog().setLogLevels( SG_ALL, SG_INFO );
+
     HTTP::Client cl;
     // force all requests to use the same connection for this test
-    cl.setMaxConnections(1); 
-    
+    cl.setMaxConnections(1);
+
 // test URL parsing
     TestRequest* tr1 = new TestRequest("http://localhost.woo.zar:2000/test1?foo=bar");
     COMPARE(tr1->scheme(), "http");
@@ -459,14 +520,14 @@ int main(int argc, char* argv[])
     COMPARE(tr1->host(), "localhost.woo.zar");
     COMPARE(tr1->port(), 2000);
     COMPARE(tr1->path(), "/test1");
-    
+
     TestRequest* tr2 = new TestRequest("http://192.168.1.1/test1/dir/thing/file.png");
     COMPARE(tr2->scheme(), "http");
     COMPARE(tr2->hostAndPort(), "192.168.1.1");
     COMPARE(tr2->host(), "192.168.1.1");
     COMPARE(tr2->port(), 80);
     COMPARE(tr2->path(), "/test1/dir/thing/file.png");
-    
+
 // basic get request
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/test1");
@@ -480,12 +541,12 @@ int main(int argc, char* argv[])
         COMPARE(tr->responseBytesReceived(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
     }
-    
+
     {
       TestRequest* tr = new TestRequest("http://localhost:2000/testLorem");
       HTTP::Request_ptr own(tr);
       cl.makeRequest(tr);
-      
+
       waitForComplete(&cl, tr);
       COMPARE(tr->responseCode(), 200);
       COMPARE(tr->responseReason(), string("OK"));
@@ -493,7 +554,7 @@ int main(int argc, char* argv[])
       COMPARE(tr->responseBytesReceived(), strlen(BODY3));
       COMPARE(tr->bodyData, string(BODY3));
     }
-  
+
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/test_args?foo=abc&bar=1234&username=johndoe");
         HTTP::Request_ptr own(tr);
@@ -501,9 +562,7 @@ int main(int argc, char* argv[])
         waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
     }
-    
-    cerr << "done args" << endl;
-    
+
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/test_headers");
         HTTP::Request_ptr own(tr);
@@ -518,12 +577,12 @@ int main(int argc, char* argv[])
         COMPARE(tr->responseBytesReceived(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
     }
-    
+
 // larger get request
     for (unsigned int i=0; i<body2Size; ++i) {
         body2[i] = (i << 4) | (i >> 2);
     }
-    
+
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/test2");
         HTTP::Request_ptr own(tr);
@@ -533,8 +592,8 @@ int main(int argc, char* argv[])
         COMPARE(tr->responseBytesReceived(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
     }
-    
-    cerr << "testing chunked" << endl;
+
+    cerr << "testing chunked transfer encoding" << endl;
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/testchunked");
         HTTP::Request_ptr own(tr);
@@ -548,7 +607,7 @@ int main(int argc, char* argv[])
     // check trailers made it too
         COMPARE(tr->headers["x-foobar"], string("wibble"));
     }
-    
+
 // test 404
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/not-found");
@@ -615,9 +674,9 @@ int main(int argc, char* argv[])
         COMPARE(tr->responseLength(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
     }
-    
+
     {
-        cl.setProxy("localhost", 2000, "ABCDEF");
+        cl.setProxy("localhost", 2000, "johndoe:swordfish");
         TestRequest* tr = new TestRequest("http://www.google.com/test3");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
@@ -626,81 +685,104 @@ int main(int argc, char* argv[])
         COMPARE(tr->responseBytesReceived(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
     }
-    
+
 // pipelining
-    cout << "testing HTTP 1.1 pipelineing" << endl;
-  
+    cout << "testing HTTP 1.1 pipelining" << endl;
+
     {
-                                
+
         cl.setProxy("", 80);
         TestRequest* tr = new TestRequest("http://localhost:2000/test1");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        
-        
+
+
         TestRequest* tr2 = new TestRequest("http://localhost:2000/testLorem");
         HTTP::Request_ptr own2(tr2);
         cl.makeRequest(tr2);
-        
+
         TestRequest* tr3 = new TestRequest("http://localhost:2000/test1");
         HTTP::Request_ptr own3(tr3);
         cl.makeRequest(tr3);
-        
+
         waitForComplete(&cl, tr3);
         VERIFY(tr->complete);
         VERIFY(tr2->complete);
         COMPARE(tr->bodyData, string(BODY1));
-      
+
         COMPARE(tr2->responseLength(), strlen(BODY3));
         COMPARE(tr2->responseBytesReceived(), strlen(BODY3));
         COMPARE(tr2->bodyData, string(BODY3));
-      
+
         COMPARE(tr3->bodyData, string(BODY1));
     }
-    
+
 // multiple requests with an HTTP 1.0 server
     {
         cout << "http 1.0 multiple requests" << endl;
-        
+
         cl.setProxy("", 80);
         TestRequest* tr = new TestRequest("http://localhost:2000/test_1_0/A");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        
+
         TestRequest* tr2 = new TestRequest("http://localhost:2000/test_1_0/B");
         HTTP::Request_ptr own2(tr2);
         cl.makeRequest(tr2);
-        
+
         TestRequest* tr3 = new TestRequest("http://localhost:2000/test_1_0/C");
         HTTP::Request_ptr own3(tr3);
         cl.makeRequest(tr3);
-        
+
         waitForComplete(&cl, tr3);
         VERIFY(tr->complete);
         VERIFY(tr2->complete);
-        
+
         COMPARE(tr->responseLength(), strlen(BODY1));
         COMPARE(tr->responseBytesReceived(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
-      
+
         COMPARE(tr2->responseLength(), strlen(BODY3));
         COMPARE(tr2->responseBytesReceived(), strlen(BODY3));
         COMPARE(tr2->bodyData, string(BODY3));
         COMPARE(tr3->bodyData, string(BODY1));
     }
-    
+
 // POST
     {
-        cout << "POST" << endl;
+        cout << "testing POST" << endl;
         TestRequest* tr = new TestRequest("http://localhost:2000/test_post?foo=abc&bar=1234&username=johndoe", "POST");
         tr->setBodyData("", "application/x-www-form-urlencoded");
-        
+
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 204);
     }
-    
+
+    // PUT
+        {
+            cout << "testing PUT" << endl;
+            TestRequest* tr = new TestRequest("http://localhost:2000/test_put", "PUT");
+            tr->setBodyData(BODY3, "x-application/foobar");
+
+            HTTP::Request_ptr own(tr);
+            cl.makeRequest(tr);
+            waitForComplete(&cl, tr);
+            COMPARE(tr->responseCode(), 204);
+        }
+
+        {
+            cout << "testing PUT create" << endl;
+            TestRequest* tr = new TestRequest("http://localhost:2000/test_create", "PUT");
+            tr->setBodyData(BODY3, "x-application/foobar");
+
+            HTTP::Request_ptr own(tr);
+            cl.makeRequest(tr);
+            waitForComplete(&cl, tr);
+            COMPARE(tr->responseCode(), 201);
+        }
+
     // test_zero_length_content
     {
         cout << "zero-length-content-response" << endl;
@@ -712,8 +794,8 @@ int main(int argc, char* argv[])
         COMPARE(tr->bodyData, string());
         COMPARE(tr->responseBytesReceived(), 0);
     }
-    
-    
+
+
     cout << "all tests passed ok" << endl;
     return EXIT_SUCCESS;
 }

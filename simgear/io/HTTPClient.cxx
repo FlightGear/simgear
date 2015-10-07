@@ -734,8 +734,10 @@ void Client::update(int waitTimeout)
         req->responseComplete();
 
 
-        fprintf(stderr, "R: %d - %s\n",
+        if (msg->data.result != 0) {
+          fprintf(stderr, "Result: %d - %s\n",
                 msg->data.result, curl_easy_strerror(msg->data.result));
+          }
         curl_multi_remove_handle(d->curlMulti, e);
 
         // balance the reference we take in makeRequest
@@ -743,7 +745,7 @@ void Client::update(int waitTimeout)
         curl_easy_cleanup(e);
       }
       else {
-        fprintf(stderr, "E: CURLMsg (%d)\n", msg->msg);
+        SG_LOG(SG_IO, SG_ALERT, "CurlMSG:" << msg->msg);
       }
     } // of curl message processing loop
 }
@@ -762,21 +764,76 @@ void Client::makeRequest(const Request_ptr& r)
     CURL* curlRequest = curl_easy_init();
     curl_easy_setopt(curlRequest, CURLOPT_URL, r->url().c_str());
 
-    // maulaly increase the ref count of the request
+    // manually increase the ref count of the request
     SGReferenced::get(r.get());
     curl_easy_setopt(curlRequest, CURLOPT_PRIVATE, r.get());
     // disable built-in libCurl progress feedback
-    curl_easy_setopt(curlRequest, CURLOPT_NOPROGRESS, 0);
+    curl_easy_setopt(curlRequest, CURLOPT_NOPROGRESS, 1);
 
     curl_easy_setopt(curlRequest, CURLOPT_WRITEFUNCTION, requestWriteCallback);
     curl_easy_setopt(curlRequest, CURLOPT_WRITEDATA, r.get());
-    curl_easy_setopt(curlRequest, CURLOPT_READFUNCTION, requestReadCallback);
-    curl_easy_setopt(curlRequest, CURLOPT_READDATA, r.get());
     curl_easy_setopt(curlRequest, CURLOPT_HEADERFUNCTION, requestHeaderCallback);
     curl_easy_setopt(curlRequest, CURLOPT_HEADERDATA, r.get());
 
+    curl_easy_setopt(curlRequest, CURLOPT_USERAGENT, d->userAgent.c_str());
+
+    if (!d->proxy.empty()) {
+      curl_easy_setopt(curlRequest, CURLOPT_PROXY, d->proxy.c_str());
+      curl_easy_setopt(curlRequest, CURLOPT_PROXYPORT, d->proxyPort);
+
+      if (!d->proxyAuth.empty()) {
+        curl_easy_setopt(curlRequest, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
+        curl_easy_setopt(curlRequest, CURLOPT_PROXYUSERPWD, d->proxyAuth.c_str());
+      }
+    }
+
+    std::string method = boost::to_lower_copy(r->method());
+    if (method == "get") {
+      curl_easy_setopt(curlRequest, CURLOPT_HTTPGET, 1);
+    } else if (method == "put") {
+      curl_easy_setopt(curlRequest, CURLOPT_PUT, 1);
+      curl_easy_setopt(curlRequest, CURLOPT_UPLOAD, 1);
+    } else if (method == "post") {
+      // see http://curl.haxx.se/libcurl/c/CURLOPT_POST.html
+      curl_easy_setopt(curlRequest, CURLOPT_HTTPPOST, 1);
+
+      std::string q = r->query().substr(1);
+      curl_easy_setopt(curlRequest, CURLOPT_COPYPOSTFIELDS, q.c_str());
+
+      // reset URL to exclude query pieces
+      std::string urlWithoutQuery = r->url();
+      std::string::size_type queryPos = urlWithoutQuery.find('?');
+      urlWithoutQuery.resize(queryPos);
+      curl_easy_setopt(curlRequest, CURLOPT_URL, urlWithoutQuery.c_str());
+    } else {
+      curl_easy_setopt(curlRequest, CURLOPT_CUSTOMREQUEST, r->method().c_str());
+    }
+
+    struct curl_slist* headerList = NULL;
+    if (r->hasBodyData() && (method != "post")) {
+      curl_easy_setopt(curlRequest, CURLOPT_UPLOAD, 1);
+      curl_easy_setopt(curlRequest, CURLOPT_INFILESIZE, r->bodyLength());
+      curl_easy_setopt(curlRequest, CURLOPT_READFUNCTION, requestReadCallback);
+      curl_easy_setopt(curlRequest, CURLOPT_READDATA, r.get());
+      std::string h = "Content-Type:" + r->bodyType();
+      headerList = curl_slist_append(headerList, h.c_str());
+    }
+
+    StringMap::const_iterator it;
+    for (it = r->requestHeaders().begin(); it != r->requestHeaders().end(); ++it) {
+      std::string h = it->first + ": " + it->second;
+      headerList = curl_slist_append(headerList, h.c_str());
+    }
+
+    if (headerList != NULL) {
+      curl_easy_setopt(curlRequest, CURLOPT_HTTPHEADER, headerList);
+    }
 
     curl_multi_add_handle(d->curlMulti, curlRequest);
+
+// FIXME - premature?
+    r->requestStart();
+
 #else
     if( r->url().find("http://") != 0 ) {
         r->setFailure(EINVAL, "only HTTP protocol is supported");
@@ -949,18 +1006,15 @@ size_t Client::requestWriteCallback(char *ptr, size_t size, size_t nmemb, void *
   size_t byteSize = size * nmemb;
 
   Request* req = static_cast<Request*>(userdata);
-  req->gotBodyData(ptr, byteSize);
+  req->processBodyBytes(ptr, byteSize);
   return byteSize;
 }
 
 size_t Client::requestReadCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  size_t byteSize = size * nmemb;
+  size_t maxBytes = size * nmemb;
   Request* req = static_cast<Request*>(userdata);
-  size_t actualBytes = req->getBodyData(ptr, 0, byteSize);
-  if (actualBytes < byteSize) {
-    SG_LOG(SG_IO, SG_WARN, "Request getBodyData underflow" << req->url());
-  }
+  size_t actualBytes = req->getBodyData(ptr, 0, maxBytes);
   return actualBytes;
 }
 
@@ -968,20 +1022,29 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
 {
   size_t byteSize = size * nitems;
   Request* req = static_cast<Request*>(userdata);
+  std::string h = strutils::simplify(std::string(rawBuffer, byteSize));
 
-  std::string h = strutils::simplify(std::string(rawBuffer));
+  if (req->readyState() == HTTP::Request::OPENED) {
+    req->responseStart(h);
+    return byteSize;
+  }
+
+  if (h.empty()) {
+    req->responseHeadersComplete();
+    return byteSize;
+  }
+
   int colonPos = h.find(':');
-  if (colonPos < 0) {
+  if (colonPos == std::string::npos) {
       SG_LOG(SG_IO, SG_WARN, "malformed HTTP response header:" << h);
       return byteSize;
   }
 
-  SG_LOG(SG_IO, SG_WARN, "curl got header:" << h);
   std::string key = strutils::simplify(h.substr(0, colonPos));
   std::string lkey = boost::to_lower_copy(key);
   std::string value = strutils::strip(h.substr(colonPos + 1));
 
-  req->responseHeader(key, value);
+  req->responseHeader(lkey, value);
   return byteSize;
 }
 

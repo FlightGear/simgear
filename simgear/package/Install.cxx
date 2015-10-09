@@ -98,6 +98,8 @@ protected:
 
     virtual void responseHeadersComplete()
     {
+        Request::responseHeadersComplete();
+
         Dir d(m_extractPath);
         d.create(0755);
 

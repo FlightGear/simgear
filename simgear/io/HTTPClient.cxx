@@ -1030,8 +1030,18 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
   }
 
   if (h.empty()) {
+      // got a 100-continue reponse; restart
+      if (req->responseCode() == 100) {
+          req->setReadyState(HTTP::Request::OPENED);
+          return byteSize;
+      }
+
     req->responseHeadersComplete();
     return byteSize;
+  }
+
+  if (req->responseCode() == 100) {
+      return byteSize; // skip headers associated with 100-continue status
   }
 
   int colonPos = h.find(':');

@@ -730,14 +730,14 @@ void Client::update(int waitTimeout)
         long responseCode;
         curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &responseCode);
 
-
-        req->responseComplete();
-
-
-        if (msg->data.result != 0) {
+        if (msg->data.result == 0) {
+          req->responseComplete();
+        } else {
           fprintf(stderr, "Result: %d - %s\n",
                 msg->data.result, curl_easy_strerror(msg->data.result));
-          }
+          req->setFailure(msg->data.result, curl_easy_strerror(msg->data.result));
+        }
+
         curl_multi_remove_handle(d->curlMulti, e);
 
         // balance the reference we take in makeRequest

@@ -789,11 +789,6 @@ public:
             float coverage = mat->get_light_coverage();
             if (coverage <= 0)
                 continue;
-            if (coverage < 10000.0) {
-                SG_LOG(SG_INPUT, SG_ALERT, "Light coverage is "
-                << coverage << ", pushing up to 10000");
-                coverage = 10000;
-            }
                         
             int texIndex = matTris[i].getTextureIndex();
             

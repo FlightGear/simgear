@@ -44,6 +44,7 @@
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/scene/util/OptionsReadFileCallback.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/QuadTreeBuilder.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
@@ -113,48 +114,73 @@ struct ReaderWriterSTG::_ModelBin {
     };
 
     class DelayLoadReadFileCallback : public OptionsReadFileCallback {
+
+    private:
+      // QuadTreeBuilder for structuring static objects
+      struct MakeQuadLeaf {
+          osg::LOD* operator() () const { return new osg::LOD; }
+      };
+      struct AddModelLOD {
+          void operator() (osg::LOD* leaf, _ObjectStatic o) const
+          {
+            osg::ref_ptr<osg::Node> node;
+            if (o._proxy)  {
+                osg::ref_ptr<osg::ProxyNode> proxy = new osg::ProxyNode;
+                proxy->setName("proxyNode");
+                proxy->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
+                proxy->setFileName(0, o._name);
+                proxy->setDatabaseOptions(o._options.get());
+                node = proxy;
+            } else {
+                node = osgDB::readRefNodeFile(o._name, o._options.get());
+                if (!node.valid()) {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, o._errorLocation << ": Failed to load "
+                           << o._token << " '" << o._name << "'");
+                    return;
+                }
+            }
+            if (SGPath(o._name).lower_extension() == "ac")
+                node->setNodeMask(~simgear::MODELLIGHT_BIT);
+
+            osg::Matrix matrix;
+            matrix = makeZUpFrame(SGGeod::fromDegM(o._lon, o._lat, o._elev));
+            matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(o._hdg), osg::Vec3(0, 0, 1)));
+            matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(o._pitch), osg::Vec3(0, 1, 0)));
+            matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(o._roll), osg::Vec3(1, 0, 0)));
+
+            osg::MatrixTransform* matrixTransform;
+            matrixTransform = new osg::MatrixTransform(matrix);
+            matrixTransform->setName("rotateStaticObject");
+            matrixTransform->setDataVariance(osg::Object::STATIC);
+            matrixTransform->addChild(node.get());
+            leaf->addChild(matrixTransform, 0, 20000); //TODO: Make configurable?
+          }
+      };
+      struct GetModelLODCoord {
+          GetModelLODCoord() {}
+          GetModelLODCoord(const GetModelLODCoord& rhs)
+          {}
+          osg::Vec3 operator() (const _ObjectStatic& o) const
+          {
+              SGVec3d coord;
+              SGGeodesy::SGGeodToCart(SGGeod::fromDegM(o._lon, o._lat, o._elev), coord);
+              return toOsg(coord);
+          }
+      };
+      typedef QuadTreeBuilder<osg::LOD*, _ObjectStatic, MakeQuadLeaf, AddModelLOD,
+                              GetModelLODCoord>  STGObjectsQuadtree;
+
+
     public:
         virtual osgDB::ReaderWriter::ReadResult
         readNode(const std::string&, const osgDB::Options*)
         {
-            osg::ref_ptr<osg::Group> group = new osg::Group;
+            STGObjectsQuadtree quadtree((GetModelLODCoord()), (AddModelLOD()));
+            quadtree.buildQuadTree(_objectStaticList.begin(), _objectStaticList.end());
+            osg::ref_ptr<osg::Group> group = quadtree.getRoot();
             group->setName("STG-group-A");
             group->setDataVariance(osg::Object::STATIC);
-            
-            for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
-                osg::ref_ptr<osg::Node> node;
-                if (i->_proxy)  {
-                    osg::ref_ptr<osg::ProxyNode> proxy = new osg::ProxyNode;
-                    proxy->setName("proxyNode");
-                    proxy->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
-                    proxy->setFileName(0, i->_name);
-                    proxy->setDatabaseOptions(i->_options.get());
-                    node = proxy;
-                } else {
-                    node = osgDB::readRefNodeFile(i->_name, i->_options.get());
-                    if (!node.valid()) {
-                        SG_LOG(SG_TERRAIN, SG_ALERT, i->_errorLocation << ": Failed to load "
-                               << i->_token << " '" << i->_name << "'");
-                        continue;
-                    }
-                }
-                if (SGPath(i->_name).lower_extension() == "ac")
-                    node->setNodeMask(~simgear::MODELLIGHT_BIT);
-                
-                osg::Matrix matrix;
-                matrix = makeZUpFrame(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev));
-                matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_hdg), osg::Vec3(0, 0, 1)));
-                matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_pitch), osg::Vec3(0, 1, 0)));
-                matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(i->_roll), osg::Vec3(1, 0, 0)));
-                
-                osg::MatrixTransform* matrixTransform;
-                matrixTransform = new osg::MatrixTransform(matrix);
-                matrixTransform->setName("positionStaticObject");
-                matrixTransform->setDataVariance(osg::Object::STATIC);
-                matrixTransform->addChild(node.get());
-                group->addChild(matrixTransform);
-            }
-            
+
             simgear::AirportSignBuilder signBuilder(_options->getMaterialLib(), _bucket.get_center());
             for (std::list<_Sign>::iterator i = _signList.begin(); i != _signList.end(); ++i)
                 signBuilder.addSign(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev), i->_hdg, i->_name, i->_size);

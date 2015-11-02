@@ -736,9 +736,9 @@ public:
             if (!found) {
                 bin = new TreeBin();
                 bin->texture = mat->get_tree_texture();
-                SG_LOG(SG_INPUT, SG_DEBUG, "Tree texture " << bin->texture);
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree texture " << bin->texture);
                 bin->teffect = mat->get_tree_effect();
-                SG_LOG(SG_INPUT, SG_DEBUG, "Tree effect " << bin->teffect);
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree effect " << bin->teffect);
                 bin->range   = mat->get_tree_range();
                 bin->width   = mat->get_tree_width();
                 bin->height  = mat->get_tree_height();

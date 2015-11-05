@@ -458,6 +458,7 @@ public:
      * @return Sample name
      */
     inline std::string get_sample_name() const { return _refname; }
+    inline void set_sample_name(const std::string& refname) { _refname = refname; }
 
     inline virtual bool is_queue() const { return false; }
 

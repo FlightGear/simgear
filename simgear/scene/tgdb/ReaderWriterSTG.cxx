@@ -130,6 +130,12 @@ struct ReaderWriterSTG::_ModelBin {
                 proxy->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
                 proxy->setFileName(0, o._name);
                 proxy->setDatabaseOptions(o._options.get());
+
+                // Give the node some values so the Quadtree builder has
+                // a BoundingBox to work with prior to the model being loaded.
+                proxy->setCenter(osg::Vec3f(0.0f,0.0f,0.0f));
+                proxy->setRadius(10);
+                proxy->setCenterMode(osg::ProxyNode::UNION_OF_BOUNDING_SPHERE_AND_USER_DEFINED);
                 node = proxy;
             } else {
                 node = osgDB::readRefNodeFile(o._name, o._options.get());
@@ -292,7 +298,7 @@ struct ReaderWriterSTG::_ModelBin {
             // read a line
             std::string line;
             std::getline(stream, line);
-            
+
             // strip comments
             std::string::size_type hash_pos = line.find('#');
             if (hash_pos != std::string::npos)

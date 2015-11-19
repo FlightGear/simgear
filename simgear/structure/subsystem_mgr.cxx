@@ -301,8 +301,6 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
                                  double min_step_sec)
 {
     Member * member = get_member(name, true);
-    if (member->subsystem != 0)
-        delete member->subsystem;
     member->name = name;
     member->subsystem = subsystem;
     member->min_step_sec = min_step_sec;
@@ -430,11 +428,11 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 
 
 SGSubsystemMgr::SGSubsystemMgr () :
+  _groups(MAX_GROUPS),
   _initPosition(0)
 {
-  for (int i = 0; i < MAX_GROUPS; i++) {
-    _groups[i] = new SGSubsystemGroup;
-  }
+  for (int i = 0; i < MAX_GROUPS; i++)
+    _groups[i].reset(new SGSubsystemGroup);
 }
 
 SGSubsystemMgr::~SGSubsystemMgr ()
@@ -442,10 +440,7 @@ SGSubsystemMgr::~SGSubsystemMgr ()
   // ensure get_subsystem returns NULL from now onwards,
   // before the SGSubsystemGroup destructors are run
   _subsystem_map.clear();
-  
-  for (int i = 0; i < MAX_GROUPS; i++) {
-    delete _groups[i];
-  }
+  _groups.clear();
 }
 
 void

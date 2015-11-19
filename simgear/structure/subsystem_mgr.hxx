@@ -345,6 +345,8 @@ private:
     unsigned int _initPosition;
 };
 
+typedef SGSharedPtr<SGSubsystemGroup> SGSubsystemGroupRef;
+
 /**
  * Manage subsystems for FlightGear.
  *
@@ -413,9 +415,9 @@ public:
     void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
 
 private:
-    SGSubsystemGroup* _groups[MAX_GROUPS];
+    std::vector<SGSubsystemGroupRef> _groups;
     unsigned int _initPosition;
-  
+
     // non-owning reference
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;
     SubsystemDict _subsystem_map;

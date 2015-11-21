@@ -835,25 +835,39 @@ SGPath SGPath::documents(const SGPath& def)
 //------------------------------------------------------------------------------
 std::string SGPath::realpath() const
 {
-#if (defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1050)
-    // Workaround for Mac OS 10.5. Somehow fgfs crashes on Mac at ::realpath. 
-    // This means relative paths cannot be used on Mac OS <= 10.5
-    return path;
-#else
-  #if defined(_MSC_VER) /*for MS compilers */ || defined(_WIN32) /*needed for non MS windows compilers like MingW*/
+#if defined(_MSC_VER) /*for MS compilers */ || defined(_WIN32) /*needed for non MS windows compilers like MingW*/
     // with absPath NULL, will allocate, and ignore length
     char *buf = _fullpath( NULL, path.c_str(), _MAX_PATH );
-  #else
+#else
     // POSIX
     char* buf = ::realpath(path.c_str(), NULL);
-  #endif
-    if (!buf)
+#endif
+    if (!buf) // File does not exist: return the realpath it would have if created now
+              // (needed for fgValidatePath security)
     {
-        SG_LOG(SG_IO, SG_WARN, "ERROR: The path '" << path << "' does not exist in the file system.");
-        return path;
+        if (path.empty()) {
+            return SGPath(".").realpath(); // current directory
+        }
+        std::string this_dir = dir();
+        if (isAbsolute() && this_dir.empty()) { // top level
+            this_dir = "/";
+        }
+        if (file() == "..") {
+            this_dir = SGPath(SGPath(this_dir).realpath()).dir();
+            if (this_dir.empty()) { // invalid path: .. above root
+                return "";
+            }
+            return SGPath(this_dir).realpath(); // use native path separator,
+                        // and handle 'existing/nonexisting/../symlink' paths
+        }
+        return SGPath(this_dir).realpath() +
+#if defined(_MSC_VER) || defined(_WIN32)
+          "\\" + file();
+#else
+          "/" + file();
+#endif
     }
     std::string p(buf);
     free(buf);
     return p;
-#endif
 }

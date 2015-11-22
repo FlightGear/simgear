@@ -207,7 +207,7 @@ std::string Request::scheme() const
     if (firstColon > 0) {
         return url().substr(0, firstColon);
     }
-    
+
     return ""; // couldn't parse scheme
 }
 
@@ -219,20 +219,20 @@ std::string Request::path() const
     if (schemeEnd < 0) {
         return ""; // couldn't parse scheme
     }
-    
+
     int hostEnd = u.find('/', schemeEnd + 3);
     if (hostEnd < 0) {
-// couldn't parse host, or URL looks like 'http://foo.com' (no trailing '/') 
-// fixup to root resource path: '/' 
-        return "/"; 
+// couldn't parse host, or URL looks like 'http://foo.com' (no trailing '/')
+// fixup to root resource path: '/'
+        return "/";
     }
-    
+
     int query = u.find('?', hostEnd + 1);
     if (query < 0) {
         // all remainder of URL is path
         return u.substr(hostEnd);
     }
-    
+
     return u.substr(hostEnd, query - hostEnd);
 }
 
@@ -244,7 +244,7 @@ std::string Request::query() const
   if (query < 0) {
     return "";  //no query string found
   }
-  
+
   return u.substr(query);   //includes question mark
 }
 

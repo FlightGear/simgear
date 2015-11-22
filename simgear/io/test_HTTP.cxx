@@ -46,7 +46,7 @@ char body2[body2Size];
         cerr << "failed:" << #a << endl; \
         exit(1); \
     }
-    
+
 class TestRequest : public HTTP::Request
 {
 public:

@@ -34,7 +34,7 @@
 #include <simgear/package/Catalog.hxx>
 
 namespace simgear {
-    
+
 namespace pkg {
 
 typedef std::map<std::string, CatalogRef> CatalogDict;
@@ -50,20 +50,20 @@ public:
     m_owner(aOwner)
     {
     }
-    
+
 protected:
     virtual void gotBodyData(const char* s, int n)
     {
         m_buffer += std::string(s, n);
     }
-    
+
     virtual void onDone();
-    
+
 private:
     Root::RootPrivate* m_owner;
     std::string m_buffer;
 };
-    
+
 class Root::RootPrivate
 {
 public:
@@ -72,7 +72,7 @@ public:
         maxAgeSeconds(60 * 60 * 24)
     {
     }
-    
+
     void fireStartInstall(InstallRef install)
     {
         DelegateVec::const_iterator it;
@@ -80,7 +80,7 @@ public:
             (*it)->startInstall(install);
         }
     }
-    
+
     void fireInstallProgress(InstallRef install,
                              unsigned int aBytes, unsigned int aTotal)
     {
@@ -89,7 +89,7 @@ public:
             (*it)->installProgress(install, aBytes, aTotal);
         }
     }
-    
+
     void fireFinishInstall(InstallRef install, Delegate::StatusCode status)
     {
         DelegateVec::const_iterator it;
@@ -97,7 +97,7 @@ public:
             (*it)->finishInstall(install, status);
         }
     }
-    
+
     void fireRefreshStatus(CatalogRef catalog, Delegate::StatusCode status)
     {
         DelegateVec::const_iterator it;
@@ -122,10 +122,10 @@ public:
             thumbnailCache[u] = bytes;
             fireDataForThumbnail(u, bytes);
         }
-        
+
         downloadNextPendingThumbnail();
     }
-    
+
     void fireDataForThumbnail(const std::string& aUrl, const std::string& bytes)
     {
         DelegateVec::const_iterator it;
@@ -134,48 +134,48 @@ public:
             (*it)->dataForThumbnail(aUrl, bytes.size(), data);
         }
     }
-    
+
     void downloadNextPendingThumbnail()
     {
         thumbnailDownloadRequest.clear();
         if (pendingThumbnails.empty()) {
             return;
         }
-        
+
         std::string u = pendingThumbnails.front();
         pendingThumbnails.pop_front();
         thumbnailDownloadRequest = new Root::ThumbnailDownloader(this, u);
-        
+
         if (http) {
             http->makeRequest(thumbnailDownloadRequest);
         } else {
             httpPendingRequests.push_back(thumbnailDownloadRequest);
         }
     }
-    
+
     DelegateVec delegates;
-    
+
     SGPath path;
     std::string locale;
     HTTP::Client* http;
     CatalogDict catalogs;
     unsigned int maxAgeSeconds;
     std::string version;
-    
+
     std::set<CatalogRef> refreshing;
     typedef std::deque<InstallRef> UpdateDeque;
     UpdateDeque updateDeque;
     std::deque<HTTP::Request_ptr> httpPendingRequests;
-    
+
     HTTP::Request_ptr thumbnailDownloadRequest;
     StringDeque pendingThumbnails;
     MemThumbnailCache thumbnailCache;
-    
+
     typedef std::map<PackageRef, InstallRef> InstallCache;
     InstallCache m_installs;
 };
-    
-    
+
+
 void Root::ThumbnailDownloader::onDone()
 {
     if (responseCode() != 200) {
@@ -183,23 +183,23 @@ void Root::ThumbnailDownloader::onDone()
         m_owner->thumbnailDownloadComplete(this, Delegate::FAIL_DOWNLOAD, std::string());
         return;
     }
-    
+
     m_owner->thumbnailDownloadComplete(this, Delegate::STATUS_SUCCESS, m_buffer);
     //time(&m_owner->m_retrievedTime);
     //m_owner->writeTimestamp();
     //m_owner->refreshComplete(Delegate::STATUS_REFRESHED);
 }
-    
+
 SGPath Root::path() const
 {
     return d->path;
 }
-    
+
 void Root::setMaxAgeSeconds(unsigned int seconds)
 {
     d->maxAgeSeconds = seconds;
 }
-    
+
 unsigned int Root::maxAgeSeconds() const
 {
     return d->maxAgeSeconds;
@@ -221,10 +221,10 @@ void Root::makeHTTPRequest(HTTP::Request *req)
         d->http->makeRequest(req);
         return;
     }
-    
+
     d->httpPendingRequests.push_back(req);
 }
-    
+
 Root::Root(const SGPath& aPath, const std::string& aVersion) :
     d(new RootPrivate)
 {
@@ -233,13 +233,13 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
     if (getenv("LOCALE")) {
         d->locale = getenv("LOCALE");
     }
-    
+
     Dir dir(aPath);
     if (!dir.exists()) {
         dir.create(0755);
         return;
     }
-    
+
     BOOST_FOREACH(SGPath c, dir.children(Dir::TYPE_DIR)) {
         CatalogRef cat = Catalog::createFromPath(this, c);
         if (cat) {
@@ -250,33 +250,33 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
 
 Root::~Root()
 {
-    
+
 }
 
 int Root::catalogVersion() const
 {
     return 4;
 }
-    
+
 std::string Root::applicationVersion() const
 {
     return d->version;
 }
-    
+
 CatalogRef Root::getCatalogById(const std::string& aId) const
 {
     CatalogDict::const_iterator it = d->catalogs.find(aId);
     if (it == d->catalogs.end()) {
         return NULL;
     }
-    
+
     return it->second;
 }
 
 PackageRef Root::getPackageById(const std::string& aName) const
 {
     size_t lastDot = aName.rfind('.');
-    
+
     PackageRef pkg = NULL;
     if (lastDot == std::string::npos) {
         // naked package ID
@@ -287,17 +287,17 @@ PackageRef Root::getPackageById(const std::string& aName) const
                 return pkg;
             }
         }
-        
+
         return NULL;
     }
-    
+
     std::string catalogId = aName.substr(0, lastDot);
-    std::string id = aName.substr(lastDot + 1);    
+    std::string id = aName.substr(lastDot + 1);
     CatalogRef catalog = getCatalogById(catalogId);
     if (!catalog) {
         return NULL;
     }
-            
+
     return catalog->getPackageById(id);
 }
 
@@ -308,7 +308,7 @@ CatalogList Root::catalogs() const
     for (; it != d->catalogs.end(); ++it) {
         r.push_back(it->second);
     }
-    
+
     return r;
 }
 
@@ -316,27 +316,27 @@ PackageList
 Root::allPackages() const
 {
     PackageList r;
-    
+
     CatalogDict::const_iterator it = d->catalogs.begin();
     for (; it != d->catalogs.end(); ++it) {
         const PackageList& r2(it->second->packages());
         r.insert(r.end(), r2.begin(), r2.end());
     }
-    
+
     return r;
 }
-    
+
 PackageList
 Root::packagesMatching(const SGPropertyNode* aFilter) const
 {
     PackageList r;
-    
+
     CatalogDict::const_iterator it = d->catalogs.begin();
     for (; it != d->catalogs.end(); ++it) {
         PackageList r2(it->second->packagesMatching(aFilter));
         r.insert(r.end(), r2.begin(), r2.end());
     }
-    
+
     return r;
 }
 
@@ -344,13 +344,13 @@ PackageList
 Root::packagesNeedingUpdate() const
 {
     PackageList r;
-    
+
     CatalogDict::const_iterator it = d->catalogs.begin();
     for (; it != d->catalogs.end(); ++it) {
         PackageList r2(it->second->packagesNeedingUpdate());
         r.insert(r.end(), r2.begin(), r2.end());
     }
-    
+
     return r;
 }
 
@@ -364,7 +364,7 @@ void Root::refresh(bool aForce)
             didStartAny = true;
         }
     }
-    
+
     if (!didStartAny) {
         // signal refresh complete to the delegate already
         d->fireRefreshStatus(CatalogRef(), Delegate::STATUS_REFRESHED);
@@ -375,7 +375,7 @@ void Root::addDelegate(simgear::pkg::Delegate *aDelegate)
 {
     d->delegates.push_back(aDelegate);
 }
-    
+
 void Root::removeDelegate(simgear::pkg::Delegate *aDelegate)
 {
     DelegateVec::iterator it = std::find(d->delegates.begin(),
@@ -385,7 +385,7 @@ void Root::removeDelegate(simgear::pkg::Delegate *aDelegate)
     }
     d->delegates.erase(it);
 }
-    
+
 void Root::setLocale(const std::string& aLocale)
 {
     d->locale = aLocale;
@@ -401,7 +401,7 @@ void Root::scheduleToUpdate(InstallRef aInstall)
     if (!aInstall) {
         throw sg_exception("missing argument to scheduleToUpdate");
     }
-    
+
     PackageList deps = aInstall->package()->dependencies();
     BOOST_FOREACH(Package* dep, deps) {
         // will internally schedule for update if required
@@ -411,7 +411,7 @@ void Root::scheduleToUpdate(InstallRef aInstall)
 
     bool wasEmpty = d->updateDeque.empty();
     d->updateDeque.push_back(aInstall);
-    
+
     if (wasEmpty) {
         aInstall->startUpdate();
     }
@@ -423,7 +423,7 @@ bool Root::isInstallQueued(InstallRef aInstall) const
         std::find(d->updateDeque.begin(), d->updateDeque.end(), aInstall);
     return (it != d->updateDeque.end());
 }
-    
+
 void Root::startInstall(InstallRef aInstall)
 {
     d->fireStartInstall(aInstall);
@@ -441,7 +441,7 @@ void Root::startNext(InstallRef aCurrent)
     } else {
         d->updateDeque.pop_front();
     }
-    
+
     if (!d->updateDeque.empty()) {
         d->updateDeque.front()->startUpdate();
     }
@@ -549,7 +549,7 @@ void Root::requestThumbnailData(const std::string& aUrl)
         // in cache but empty data, still fetching
     }
 }
-    
+
 InstallRef Root::existingInstallForPackage(PackageRef p) const
 {
     RootPrivate::InstallCache::const_iterator it =
@@ -567,16 +567,16 @@ InstallRef Root::existingInstallForPackage(PackageRef p) const
         d->m_installs[p] = InstallRef();
         return InstallRef();
     }
-    
+
     return it->second;
 }
-    
+
 void Root::registerInstall(InstallRef ins)
 {
     if (!ins.valid()) {
         return;
     }
-    
+
     d->m_installs[ins->package()] = ins;
 }
 
@@ -585,10 +585,10 @@ void Root::unregisterInstall(InstallRef ins)
     if (!ins .valid()) {
         return;
     }
-    
+
     d->m_installs.erase(ins->package());
 }
-    
+
 } // of namespace pkg
 
 } // of namespace simgear

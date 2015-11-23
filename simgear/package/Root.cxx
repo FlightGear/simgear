@@ -105,8 +105,15 @@ public:
             (*it)->catalogRefreshed(catalog, status);
         }
     }
-    
-    
+
+    void firePackagesChanged()
+    {
+      DelegateVec::const_iterator it;
+      for (it = delegates.begin(); it != delegates.end(); ++it) {
+          (*it)->availablePackagesChanged();
+      }
+    }
+
     void thumbnailDownloadComplete(HTTP::Request_ptr request,
                                    Delegate::StatusCode status, const std::string& bytes)
     {
@@ -475,15 +482,10 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
 
     if (aReason == Delegate::STATUS_IN_PROGRESS) {
         d->refreshing.insert(aCat);
-
-        if (catIt == d->catalogs.end()) {
-            // first fresh, add to our storage now
-            d->catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));
-        }
     } else {
         d->refreshing.erase(aCat);
     }
-    
+
     if ((aReason != Delegate::STATUS_REFRESHED) && (aReason != Delegate::STATUS_IN_PROGRESS)) {
         // if the failure is permanent, delete the catalog from our
         // list (don't touch it on disk)
@@ -495,9 +497,15 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
             }
         }
     }
-    
+
+    if ((aReason == Delegate::STATUS_REFRESHED) && (catIt == d->catalogs.end())) {
+        assert(!aCat->id().empty());
+        d->catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));
+    }
+
     if (d->refreshing.empty()) {
         d->fireRefreshStatus(CatalogRef(), Delegate::STATUS_REFRESHED);
+        d->firePackagesChanged();
     }
 }
 
@@ -508,21 +516,24 @@ bool Root::removeCatalogById(const std::string& aId)
         SG_LOG(SG_GENERAL, SG_WARN, "removeCatalogById: unknown ID:" << aId);
         return false;
     }
-    
+
     CatalogRef cat = catIt->second;
-    
+
     // drop the reference
     d->catalogs.erase(catIt);
-    
+
     bool ok = cat->uninstall();
     if (!ok) {
         SG_LOG(SG_GENERAL, SG_WARN, "removeCatalogById: catalog :" << aId
             << "failed to uninstall");
     }
-    
+
+    // notify that a catalog is being removed
+    d->firePackagesChanged();
+
     return ok;
 }
-    
+
 void Root::requestThumbnailData(const std::string& aUrl)
 {
     MemThumbnailCache::iterator it = d->thumbnailCache.find(aUrl);

@@ -68,9 +68,13 @@ public:
     virtual void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal) = 0;
     virtual void finishInstall(InstallRef aInstall, StatusCode aReason) = 0;
 
+    /**
+     * Notification when catalogs/packages are added or removed
+     */
+    virtual void availablePackagesChanged() {}
+
     virtual void dataForThumbnail(const std::string& aThumbnailUrl,
-                                  size_t lenth, const uint8_t* bytes)
-    {}
+                                  size_t lenth, const uint8_t* bytes) {}
 };
 
 } // of namespace pkg

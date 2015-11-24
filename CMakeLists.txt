@@ -205,7 +205,7 @@ endif(SIMGEAR_HEADLESS)
 find_package(ZLIB REQUIRED)
 
 if (ENABLE_CURL)
-  find_package(Curl REQUIRED)
+  find_package(CURL REQUIRED)
   message(STATUS "Curl HTTP client: ENABLED")
 endif()
 

@@ -54,6 +54,7 @@ SGModelLib::panel_func SGModelLib::static_panelFunc = NULL;
 void SGModelLib::init(const string &root_dir, SGPropertyNode* root)
 {
     osgDB::Registry::instance()->getDataFilePathList().push_front(root_dir);
+    osgDB::Registry::instance()->getOptions()->getDatabasePathList().push_front(root_dir);
     static_propRoot = root;
 }
 
@@ -114,6 +115,7 @@ SGModelLib::loadModel(const string &path,
 {
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
+    opt->getDatabasePathList().push_front( osgDB::getFilePath(path) );
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     
@@ -136,8 +138,10 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
     proxyNode->setFileName(0, path);
 
+
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
+    opt->getDatabasePathList().push_front( osgDB::getFilePath(path) );
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);

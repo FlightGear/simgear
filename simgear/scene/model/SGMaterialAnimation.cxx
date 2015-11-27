@@ -364,6 +364,8 @@ public:
       if (_textureProp) {
         std::string textureName = _textureProp->getStringValue();
         if (_textureName != textureName) {
+          _textureName = textureName;
+
           while (stateSet->getTextureAttribute(0,
 					       osg::StateAttribute::TEXTURE)) {
             stateSet->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
@@ -377,8 +379,12 @@ public:
 					    osg::StateAttribute::OVERRIDE);
               stateSet->setTextureMode(0, GL_TEXTURE_2D,
                                        osg::StateAttribute::ON);
-              _textureName = textureName;
             }
+          } else {
+              SG_LOG(SG_IO, SG_WARN, "texture animation: requested texture : " << textureName << " not found. Searched paths:" );
+              for( osgDB::FilePathList::iterator it = _texturePathList.begin(); it != _texturePathList.end(); ++it ) {
+                SG_LOG(SG_IO, SG_WARN, " - " << *it );
+              }
           }
         }
       }

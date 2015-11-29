@@ -106,6 +106,8 @@ public:
 
     std::string url() const;
 
+    std::string name() const;
+
     std::string description() const;
 
     PackageRef getPackageById(const std::string& aId) const;

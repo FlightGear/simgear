@@ -63,7 +63,7 @@ std::string redirectUrlForVersion(const std::string& aVersion, SGPropertyNode_pt
             return v->getStringValue("url");
         }
     }
-    
+
     return std::string();
 }
 
@@ -229,7 +229,7 @@ bool Catalog::uninstall()
 {
     bool ok;
     bool atLeastOneFailure = false;
-    
+
     BOOST_FOREACH(PackageRef p, installedPackages()) {
         ok = p->existingInstall()->uninstall();
         if (!ok) {
@@ -246,7 +246,7 @@ bool Catalog::uninstall()
     if (!ok) {
         atLeastOneFailure = true;
     }
-    
+
     changeStatus(atLeastOneFailure ? Delegate::FAIL_FILESYSTEM
                                    : Delegate::STATUS_SUCCESS);
     return ok;
@@ -314,15 +314,15 @@ void Catalog::refresh()
 struct FindById
 {
     FindById(const std::string &id) : m_id(id) {}
-    
+
     bool operator()(const PackageRef& ref) const
     {
         return ref->id() == m_id;
     }
-    
+
     std::string m_id;
 };
-    
+
 void Catalog::parseProps(const SGPropertyNode* aProps)
 {
     // copy everything except package children?
@@ -338,7 +338,7 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
         if (strcmp(pkgProps->getName(), "package") == 0) {
             // can't use getPackageById here becuase the variant dict isn't
             // built yet. Instead we need to look at m_packages directly.
-            
+
             PackageList::iterator pit = std::find_if(m_packages.begin(), m_packages.end(),
                                                   FindById(pkgProps->getStringValue("id")));
             PackageRef p;
@@ -428,6 +428,11 @@ std::string Catalog::url() const
     return m_url;
 }
 
+std::string Catalog::name() const
+{
+    return getLocalisedString(m_props, "name");
+}
+
 std::string Catalog::description() const
 {
     return getLocalisedString(m_props, "description");
@@ -473,7 +478,7 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
     if (!aRoot) {
         return std::string();
     }
-    
+
     if (aRoot->hasChild(m_root->getLocale())) {
         const SGPropertyNode* localeRoot = aRoot->getChild(m_root->getLocale().c_str());
         if (localeRoot->hasChild(aName)) {
@@ -495,7 +500,7 @@ void Catalog::changeStatus(Delegate::StatusCode newStatus)
     if (m_status == newStatus) {
         return;
     }
-    
+
     m_status = newStatus;
     m_root->catalogRefreshStatus(this, newStatus);
     m_statusCallbacks(this);

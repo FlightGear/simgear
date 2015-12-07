@@ -80,24 +80,35 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
     eccAnom, ecl, actTime,
     xv, yv, v, r, xh, yh, zh, xg, yg, zg, xe, ye, ze,
     Ls, Lm, D, F, mpar, gclat, rho, HA, g,
-    geoRa, geoDec;
+    geoRa, geoDec,
+    cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl, rcoslatEcl,
+    FlesstwoD, MlesstwoD, twoD, twoM, twolat;
   
   updateOrbElements(mjd);
   actTime = sgCalcActTime(mjd);
 
   // calculate the angle between ecliptic and equatorial coordinate system
   // in Radians
-  ecl = ((SGD_DEGREES_TO_RADIANS * 23.4393) - (SGD_DEGREES_TO_RADIANS * 3.563E-7) * actTime);  
+  ecl = SGD_DEGREES_TO_RADIANS * (23.4393 - 3.563E-7 * actTime);
   eccAnom = sgCalcEccAnom(M, e);  // Calculate the eccentric anomaly
   xv = a * (cos(eccAnom) - e);
   yv = a * (sqrt(1.0 - e*e) * sin(eccAnom));
   v = atan2(yv, xv);               // the moon's true anomaly
   r = sqrt (xv*xv + yv*yv);       // and its distance
   
+  // repetitive calculations, minimised for speed
+  cosN = cos(N);
+  sinN = sin(N);
+  cosvw = cos(v+w);
+  sinvw = sin(v+w);
+  sinvw_cosi = sinvw * cos(i);
+  cosecl = cos(ecl);
+  sinecl = sin(ecl);
+
   // estimate the geocentric rectangular coordinates here
-  xh = r * (cos(N) * cos (v+w) - sin (N) * sin(v+w) * cos(i));
-  yh = r * (sin(N) * cos (v+w) + cos (N) * sin(v+w) * cos(i));
-  zh = r * (sin(v+w) * sin(i));
+  xh = r * (cosN * cosvw - sinN * sinvw_cosi);
+  yh = r * (sinN * cosvw + cosN * sinvw_cosi);
+  zh = r * (sinvw * sin(i));
 
   // calculate the ecliptic latitude and longitude here
   lonEcl = atan2 (yh, xh);
@@ -110,37 +121,43 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   Lm = M + w + N;
   D = Lm - Ls;
   F = Lm - N;
+
+  twoD = 2 * D;
+  twoM = 2 * M;
+  FlesstwoD = F - twoD;
+  MlesstwoD = M - twoD;
   
-  lonEcl += SGD_DEGREES_TO_RADIANS * (-1.274 * sin (M - 2*D)
-			  +0.658 * sin (2*D)
+  lonEcl += SGD_DEGREES_TO_RADIANS * (-1.274 * sin(MlesstwoD)
+			  +0.658 * sin(twoD)
 			  -0.186 * sin(ourSun->getM())
-			  -0.059 * sin(2*M - 2*D)
-			  -0.057 * sin(M - 2*D + ourSun->getM())
-			  +0.053 * sin(M + 2*D)
-			  +0.046 * sin(2*D - ourSun->getM())
+			  -0.059 * sin(twoM - twoD)
+			  -0.057 * sin(MlesstwoD + ourSun->getM())
+			  +0.053 * sin(M + twoD)
+			  +0.046 * sin(twoD - ourSun->getM())
 			  +0.041 * sin(M - ourSun->getM())
 			  -0.035 * sin(D)
 			  -0.031 * sin(M + ourSun->getM())
-			  -0.015 * sin(2*F - 2*D)
+			  -0.015 * sin(2*F - twoD)
 			  +0.011 * sin(M - 4*D)
 			  );
-  latEcl += SGD_DEGREES_TO_RADIANS * (-0.173 * sin(F-2*D)
-			  -0.055 * sin(M - F - 2*D)
-			  -0.046 * sin(M + F - 2*D)
-			  +0.033 * sin(F + 2*D)
-			  +0.017 * sin(2*M + F)
+  latEcl += SGD_DEGREES_TO_RADIANS * (-0.173 * sin(FlesstwoD)
+			  -0.055 * sin(M - FlesstwoD)
+			  -0.046 * sin(M + FlesstwoD)
+			  +0.033 * sin(F + twoD)
+			  +0.017 * sin(twoM + F)
 			  );
-  r += (-0.58 * cos(M - 2*D)
-	-0.46 * cos(2*D)
+  r += (-0.58 * cos(MlesstwoD)
+	-0.46 * cos(twoD)
 	);
   // SG_LOG(SG_GENERAL, SG_INFO, "Running moon update");
-  xg = r * cos(lonEcl) * cos(latEcl);
-  yg = r * sin(lonEcl) * cos(latEcl);
+  rcoslatEcl = r * cos(latEcl);
+  xg =     cos(lonEcl) * rcoslatEcl;
+  yg =     sin(lonEcl) * rcoslatEcl;
   zg = r *               sin(latEcl);
   
   xe = xg;
-  ye = yg * cos(ecl) -zg * sin(ecl);
-  ze = yg * sin(ecl) +zg * cos(ecl);
+  ye = yg * cosecl -zg * sinecl;
+  ze = yg * sinecl +zg * cosecl;
 
   geoRa  = atan2(ye, xe);
   geoDec = atan2(ze, sqrt(xe*xe + ye*ye));
@@ -160,11 +177,11 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   // SG_LOG( SG_GENERAL, SG_INFO, "r = " << r << " mpar = " << mpar );
   // SG_LOG( SG_GENERAL, SG_INFO, "lat = " << f->get_Latitude() );
 
-  gclat = lat - 0.003358 * 
-      sin (2 * SGD_DEGREES_TO_RADIANS * lat );
+  twolat = 2 * SGD_DEGREES_TO_RADIANS * lat;
+  gclat = lat - 0.003358 * sin(twolat);
   // SG_LOG( SG_GENERAL, SG_INFO, "gclat = " << gclat );
 
-  rho = 0.99883 + 0.00167 * cos(2 * SGD_DEGREES_TO_RADIANS * lat);
+  rho = 0.99883 + 0.00167 * cos(twolat);
   // SG_LOG( SG_GENERAL, SG_INFO, "rho = " << rho );
   
   if (geoRa < 0)

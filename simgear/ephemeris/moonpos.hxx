@@ -36,6 +36,9 @@ class MoonPos : public CelestialBody
 
 private:
 
+    double xg, yg;     // the moon's rectangular geocentric coordinates
+    double ye, ze;     // the moon's rectangular equatorial coordinates
+    double distance;   // the moon's distance to the earth
     // void TexInit();  // This should move to the constructor eventually.
 
     // GLUquadricObj *moonObject;
@@ -54,7 +57,48 @@ public:
     ~MoonPos();
     void updatePosition(double mjd, double lst, double lat, Star *ourSun);
     // void newImage();
+    double getM() const;
+    double getw() const;
+    double getxg() const;
+    double getyg() const;
+    double getye() const;
+    double getze() const;
+    double getDistance() const;
 };
 
+inline double MoonPos::getM() const
+{
+  return M;
+}
+
+inline double MoonPos::getw() const
+{
+  return w;
+}
+
+inline double MoonPos::getxg() const
+{
+  return xg;
+}
+
+inline double MoonPos::getyg() const
+{
+  return yg;
+}
+
+inline double MoonPos::getye() const
+{
+   return ye;
+}
+
+inline double MoonPos::getze() const
+{
+   return ze;
+}
+
+inline double MoonPos::getDistance() const
+{
+  return distance;
+}
 
 #endif // _MOONPOS_HXX_

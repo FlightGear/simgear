@@ -78,7 +78,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
 {
   double 
     eccAnom, ecl, actTime,
-    xv, yv, v, r, xh, yh, zh, xg, yg, zg, xe, ye, ze,
+    xv, yv, v, r, xh, yh, zh, zg, xe,
     Ls, Lm, D, F, mpar, gclat, rho, HA, g,
     geoRa, geoDec,
     cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl, rcoslatEcl,
@@ -149,6 +149,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   r += (-0.58 * cos(MlesstwoD)
 	-0.46 * cos(twoD)
 	);
+  distance = r;
   // SG_LOG(SG_GENERAL, SG_INFO, "Running moon update");
   rcoslatEcl = r * cos(latEcl);
   xg =     cos(lonEcl) * rcoslatEcl;

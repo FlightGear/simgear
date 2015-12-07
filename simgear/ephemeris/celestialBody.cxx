@@ -52,7 +52,8 @@
 void CelestialBody::updatePosition(double mjd, Star *ourSun)
 {
   double eccAnom, v, ecl, actTime, 
-    xv, yv, xh, yh, zh, xg, yg, zg, xe, ye, ze;
+    xv, yv, xh, yh, zh, xg, yg, zg, xe, ye, ze,
+    cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl;
 
   updateOrbElements(mjd);
   actTime = sgCalcActTime(mjd);
@@ -66,10 +67,19 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
   v = atan2(yv, xv);           // the planet's true anomaly
   r = sqrt (xv*xv + yv*yv);    // the planet's distance
   
+  // repetitive calculations, minimised for speed
+  cosN = cos(N);
+  sinN = sin(N);
+  cosvw = cos(v+w);
+  sinvw = sin(v+w);
+  sinvw_cosi = sinvw * cos(i);
+  cosecl = cos(ecl);
+  sinecl = sin(ecl);
+
   // calculate the planet's position in 3D space
-  xh = r * (cos(N) * cos(v+w) - sin(N) * sin(v+w) * cos(i));
-  yh = r * (sin(N) * cos(v+w) + cos(N) * sin(v+w) * cos(i));
-  zh = r * (sin(v+w) * sin(i));
+  xh = r * (cosN * cosvw - sinN * sinvw_cosi);
+  yh = r * (sinN * cosvw + cosN * sinvw_cosi);
+  zh = r * (sinvw * sin(i));
 
   // calculate the ecliptic longitude and latitude
   xg = xh + ourSun->getxs();
@@ -80,8 +90,8 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
   latEcl = atan2(zh, sqrt(xh*xh+yh*yh));
 
   xe = xg;
-  ye = yg * cos(ecl) - zg * sin(ecl);
-  ze = yg * sin(ecl) + zg * cos(ecl);
+  ye = yg * cosecl - zg * sinecl;
+  ze = yg * sinecl + zg * cosecl;
   rightAscension = atan2(ye, xe);
   declination = atan2(ze, sqrt(xe*xe + ye*ye));
   /* SG_LOG(SG_GENERAL, SG_INFO, "Planet found at : " 

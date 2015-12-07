@@ -114,8 +114,8 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   lonEcl = atan2 (yh, xh);
   latEcl = atan2(zh, sqrt(xh*xh + yh*yh));
 
-  /* Calculate a number of perturbatioin, i.e. disturbances caused by the 
-   * gravitational infuence of the sun and the other major planets.
+  /* Calculate a number of perturbation, i.e. disturbances caused by the 
+   * gravitational influence of the sun and the other major planets.
    * The largest of these even have a name */
   Ls = ourSun->getM() + ourSun->getw();
   Lm = M + w + N;
@@ -171,7 +171,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   // topocentric ra and dec. i.e. the position as seen from the
   // surface of the earth, instead of the center of the earth
 
-  // First calculate the moon's parrallax, that is, the apparent size of the 
+  // First calculate the moon's parallax, that is, the apparent size of the 
   // (equatorial) radius of the earth, as seen from the moon 
   mpar = asin ( 1 / r);
   // SG_LOG( SG_GENERAL, SG_INFO, "r = " << r << " mpar = " << mpar );

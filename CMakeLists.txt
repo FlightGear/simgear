@@ -174,6 +174,10 @@ endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
+
+# this should be handled by setting CMAKE_OSX_DEPLOYMENT_TARGET
+# but it's not working reliably, so forcing it for now
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR

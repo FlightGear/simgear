@@ -30,6 +30,7 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
+#include <simgear/props/props.hxx>
      
 class SGPath;
 
@@ -334,7 +335,13 @@ public:
      * @param pos position in Cartesian coordinates
      */
     inline void set_position( const SGVec3d& pos ) {
-       _base_pos = pos; _changed = true;
+        _base_pos = pos; _changed = true;
+    }
+
+    inline void set_position_properties(SGPropertyNode_ptr pos[3]) {
+        _pos_prop[0] = pos[0]; _pos_prop[1] = pos[1]; _pos_prop[2] = pos[2];
+        if (pos[0] || pos[1] || pos[2]) _use_pos_props = true;
+        _changed = true;
     }
 
     /**
@@ -477,6 +484,7 @@ protected:
 private:
 
     // Position of the source sound.
+    SGPropertyNode_ptr _pos_prop[3];	// always absolute
     SGVec3d _absolute_pos;      // absolute position
     SGVec3d _relative_pos;      // position relative to the base position
     SGVec3d _direction;         // orientation offset
@@ -514,6 +522,7 @@ private:
     bool _static_changed;
     bool _out_of_range;
     bool _is_file;
+    bool _use_pos_props;
 
     std::string random_string();
 };

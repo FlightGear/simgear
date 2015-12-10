@@ -31,6 +31,7 @@
 #include <simgear/compiler.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props.hxx>
@@ -249,10 +250,27 @@ SGXmlSound::init( SGPropertyNode *root,
    //
    SGVec3f offset_pos = SGVec3f::zeros();
    SGPropertyNode_ptr prop = node->getChild("position");
+   SGPropertyNode_ptr pos_prop[3];
    if ( prop != NULL ) {
        offset_pos[0] = -prop->getDoubleValue("x", 0.0);
        offset_pos[1] = -prop->getDoubleValue("y", 0.0);
        offset_pos[2] = -prop->getDoubleValue("z", 0.0);
+
+       pos_prop[0] = prop->getChild("x");
+       if (pos_prop[0]) pos_prop[0] = pos_prop[0]->getNode("property");
+       if (pos_prop[0]) {
+           pos_prop[0] = root->getNode(pos_prop[0]->getStringValue(), true);
+       }
+       pos_prop[1] = prop->getChild("y");
+       if (pos_prop[1]) pos_prop[1] = pos_prop[1]->getNode("property");
+       if (pos_prop[1]) {
+           pos_prop[1] = root->getNode(pos_prop[1]->getStringValue(), true);
+       }
+       pos_prop[2] = prop->getChild("z");
+       if (pos_prop[2]) pos_prop[2] = pos_prop[1]->getNode("property");
+       if (pos_prop[2]) {
+           pos_prop[2] = root->getNode(pos_prop[2]->getStringValue(), true);
+       }
    }
 
    //
@@ -284,9 +302,11 @@ SGXmlSound::init( SGPropertyNode *root,
    _sample = new SGSoundSample(soundFileStr.c_str(), path);
    if (!_sample->file_path().exists()) {
       throw sg_io_exception("XML sound: couldn't find file: '" + soundFileStr + "'");
+      return;
    }
    
    _sample->set_relative_position( offset_pos );
+   _sample->set_position_properties( pos_prop );
    _sample->set_direction( dir );
    _sample->set_audio_cone( inner, outer, outer_gain );
    _sample->set_reference_dist( reference_dist );

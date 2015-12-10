@@ -28,6 +28,7 @@
 
 #include <stdlib.h>	// rand(), free()
 #include <cstring>
+#include <stdio.h>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
@@ -78,8 +79,12 @@ SGSoundSample::SGSoundSample() :
     _playing(false),
     _static_changed(true),
     _out_of_range(false),
-    _is_file(false)
+    _is_file(false),
+    _use_pos_props(false)
 {
+    _pos_prop[0] = 0;
+    _pos_prop[1] = 0;
+    _pos_prop[2] = 0;
 }
 
 // constructor
@@ -114,10 +119,14 @@ SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
     _playing(false),
     _static_changed(true),
     _out_of_range(false),
-    _is_file(true)
+    _is_file(true),
+    _use_pos_props(false)
 {
     SGPath p = simgear::ResourceManager::instance()->findPath(file, currentDir);
     _refname = p.str();
+    _pos_prop[0] = 0;
+    _pos_prop[1] = 0;
+    _pos_prop[2] = 0;
 }
 
 // constructor
@@ -152,10 +161,14 @@ SGSoundSample::SGSoundSample( const unsigned char** data,
     _playing(false),
     _static_changed(true),
     _out_of_range(false),
-    _is_file(false)
+    _is_file(false),
+    _use_pos_props(false)
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
+    _pos_prop[0] = 0;
+    _pos_prop[1] = 0;
+    _pos_prop[2] = 0;
 }
 
 // constructor
@@ -189,10 +202,14 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
     _playing(false),
     _static_changed(true),
     _out_of_range(false),
-    _is_file(false)
+    _is_file(false),
+    _use_pos_props(false)
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
+    _pos_prop[0] = 0;
+    _pos_prop[1] = 0;
+    _pos_prop[2] = 0;
 }
 
 
@@ -203,9 +220,16 @@ SGSoundSample::~SGSoundSample() {
 
 void SGSoundSample::update_pos_and_orientation() {
 
-    _absolute_pos = _base_pos;
-    if (_relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {
-       _absolute_pos += _rotation.rotate( _relative_pos );
+    if (_use_pos_props) {
+        if (_pos_prop[0]) _absolute_pos[0] = _pos_prop[0]->getDoubleValue();
+        if (_pos_prop[1]) _absolute_pos[1] = _pos_prop[1]->getDoubleValue();
+        if (_pos_prop[2]) _absolute_pos[2] = _pos_prop[2]->getDoubleValue();
+    }
+    else {
+        _absolute_pos = _base_pos;
+        if (_relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {
+           _absolute_pos += _rotation.rotate( _relative_pos );
+        }
     }
 
     _orivec = SGVec3f::zeros();

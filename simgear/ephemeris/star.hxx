@@ -33,6 +33,7 @@ class Star : public CelestialBody
 
 private:
 
+    double lonEcl;     // the sun's true longitude
     double xs, ys;     // the sun's rectangular geocentric coordinates
     double ye, ze;     // the sun's rectangularequatorial rectangular geocentric coordinates
     double distance;   // the sun's distance to the earth
@@ -50,6 +51,7 @@ public:
     double getye() const;
     double getze() const;
     double getDistance() const;
+    double getlonEcl() const;
 };
 
 
@@ -88,6 +90,10 @@ inline double Star::getDistance() const
   return distance;
 }
 
+inline double Star::getlonEcl() const
+{
+  return lonEcl;
+}
 
 #endif // _STAR_HXX_
 

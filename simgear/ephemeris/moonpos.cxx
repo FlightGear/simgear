@@ -211,4 +211,8 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   /* SG_LOG( SG_GENERAL, SG_INFO, 
 	  "Ra = (" << (SGD_RADIANS_TO_DEGREES *rightAscension) 
 	  << "), Dec= (" << (SGD_RADIANS_TO_DEGREES *declination) << ")" ); */
+
+  // Moon age and phase calculation
+  age = lonEcl - ourSun->getlonEcl();
+  phase = (1 - cos(age)) / 2;
 }

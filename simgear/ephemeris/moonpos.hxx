@@ -39,6 +39,8 @@ private:
     double xg, yg;     // the moon's rectangular geocentric coordinates
     double ye, ze;     // the moon's rectangular equatorial coordinates
     double distance;   // the moon's distance to the earth
+    double age;        // the moon's age from 0 to 2pi
+    double phase;      // the moon's phase
     // void TexInit();  // This should move to the constructor eventually.
 
     // GLUquadricObj *moonObject;
@@ -64,6 +66,8 @@ public:
     double getye() const;
     double getze() const;
     double getDistance() const;
+    double getAge() const;
+    double getPhase() const;
 };
 
 inline double MoonPos::getM() const
@@ -99,6 +103,16 @@ inline double MoonPos::getze() const
 inline double MoonPos::getDistance() const
 {
   return distance;
+}
+
+inline double MoonPos::getAge() const
+{
+  return age;
+}
+
+inline double MoonPos::getPhase() const
+{
+  return phase;
 }
 
 #endif // _MOONPOS_HXX_

@@ -34,7 +34,7 @@
 #include <vector>
 #include <map>
 #include <memory> // for std::auto_ptr
-     
+
 #include <simgear/compiler.h>
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/math/SGMath.hxx>
@@ -55,7 +55,7 @@ public:
 
     void init();
     void update(double dt);
-    
+
     void suspend();
     void resume();
     void stop();
@@ -93,7 +93,7 @@ public:
      */
     bool add( SGSampleGroup *sgrp, const std::string& refname );
 
-    /** 
+    /**
      * Remove a sample group from the sound manager.
      * @param refname Reference name of the sample group to remove
      * @return true if successful, false otherwise
@@ -268,11 +268,12 @@ public:
     const std::string& get_vendor() { return _vendor; }
     const std::string& get_renderer() { return _renderer; }
 
+    static const char* subsystemName() { return "sound"; };
 private:
     class SoundManagerPrivate;
     /// private implementation object
     std::auto_ptr<SoundManagerPrivate> d;
-        
+
     bool _active;
     bool _changed;
     float _volume;
@@ -298,5 +299,3 @@ private:
 
 
 #endif // _SG_SOUNDMGR_OPENAL_HXX
-
-

@@ -39,7 +39,7 @@ private:
     std::string eventName;
     SGTimeStamp time;
 
-public: 
+public:
     TimingInfo(const std::string& name, const SGTimeStamp &t) :
         eventName(name), time(t)
     { }
@@ -153,7 +153,7 @@ public:
     INIT_DONE,      ///< subsystem is fully initialised
     INIT_CONTINUE   ///< init should be called again
   } InitStatus;
-  
+
   virtual InitStatus incrementalInit ();
 
   /**
@@ -186,7 +186,7 @@ public:
    * </p>
    */
   virtual void shutdown ();
-   
+
   /**
    * Acquire the subsystem's property bindings.
    *
@@ -267,7 +267,7 @@ public:
   void reportTiming(void);
 
   /**
-   * Place time stamps at strategic points in the execution of subsystems 
+   * Place time stamps at strategic points in the execution of subsystems
    * update() member functions. Predominantly for debugging purposes.
    */
   void stamp(const std::string& name);
@@ -324,12 +324,12 @@ public:
      *
      */
     void set_fixed_update_time(double fixed_dt);
-	 
+
 	/**
 	 * retrive list of member subsystem names
-	 */ 
+	 */
     string_list member_names() const;
-	 
+
 private:
 
     class Member;
@@ -337,10 +337,10 @@ private:
 
     typedef std::vector<Member *> MemberVec;
     MemberVec _members;
-    
+
     double _fixedUpdateTime;
     double _updateTimeRemainder;
-    
+
   /// index of the member we are currently init-ing
     unsigned int _initPosition;
 };
@@ -398,7 +398,7 @@ public:
 
     virtual void add (const char * name,
                       SGSubsystem * subsystem,
-                      GroupType group = GENERAL, 
+                      GroupType group = GENERAL,
                       double min_time_sec = 0);
 
     /**
@@ -413,6 +413,12 @@ public:
 
     void reportTiming();
     void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
+
+    template<class T>
+    T* get_subsystem() const
+    {
+        return dynamic_cast<T*>(get_subsystem(T::subsystemName()));
+    }
 
 private:
     std::vector<SGSubsystemGroupRef> _groups;

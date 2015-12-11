@@ -1066,7 +1066,7 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
       return byteSize; // skip headers associated with 100-continue status
   }
 
-  int colonPos = h.find(':');
+  size_t colonPos = h.find(':');
   if (colonPos == std::string::npos) {
       SG_LOG(SG_IO, SG_WARN, "malformed HTTP response header:" << h);
       return byteSize;

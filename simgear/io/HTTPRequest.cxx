@@ -325,6 +325,7 @@ unsigned int Request::responseLength() const
 //------------------------------------------------------------------------------
 void Request::setFailure(int code, const std::string& reason)
 {
+    SG_LOG(SG_IO, SG_WARN, "HTTP request: set failure:" << code << " reason " << reason);
   _responseStatus = code;
   _responseReason = reason;
 

@@ -607,7 +607,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
 #if 1
             if (slot.stamp.elapsedMSec() > (int)slot.nextWarnTimeout) {
                 SG_LOG(SG_TERRAIN, SG_INFO, "sync taking a long time:" << slot.currentItem._dir << " taken " << slot.stamp.elapsedMSec());
-                SG_LOG(SG_TERRAIN, SG_INFO, "HTTP status:" << _http.hasActiveRequests());
+                SG_LOG(SG_TERRAIN, SG_INFO, "HTTP request count:" << _http.hasActiveRequests());
                 slot.nextWarnTimeout += 10000;
             }
 #endif

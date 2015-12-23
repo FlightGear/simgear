@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/math/SGMath.hxx>
 
 #include <math.h>
 
@@ -82,8 +83,9 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
     Ls, Lm, D, F, mpar, gclat, rho, HA, g,
     geoRa, geoDec,
     cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl, rcoslatEcl,
-    FlesstwoD, MlesstwoD, twoD, twoM, twolat;
+    FlesstwoD, MlesstwoD, twoD, twoM, twolat, alpha;
   
+  double conv = 1.0319696543787917;    // The log foot-candle to log lux conversion factor.
   updateOrbElements(mjd);
   actTime = sgCalcActTime(mjd);
 
@@ -215,4 +217,14 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   // Moon age and phase calculation
   age = lonEcl - ourSun->getlonEcl();
   phase = (1 - cos(age)) / 2;
+
+  // The log of the illuminance of the moon outside the atmosphere.
+  // This is the base 10 log of equation 20 from Krisciunas K. and Schaefer B.E.
+  // (1991). A model of the brightness of moonlight, Publ. Astron. Soc. Pacif.
+  // 103(667), 1033-1039 (DOI: http://dx.doi.org/10.1086/132921).
+  alpha = SGD_RADIANS_TO_DEGREES * SGMiscd::normalizeAngle(age + SGMiscd::pi());
+  log_I = -0.4 * (3.84 + 0.026*fabs(alpha) + 4e-9*pow(alpha, 4.0));
+
+  // Convert from foot-candles to lux.
+  log_I += conv;
 }

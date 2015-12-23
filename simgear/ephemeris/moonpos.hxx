@@ -41,6 +41,7 @@ private:
     double distance;   // the moon's distance to the earth
     double age;        // the moon's age from 0 to 2pi
     double phase;      // the moon's phase
+    double log_I;      // the moon's illuminance outside the atmosphere (logged)
     // void TexInit();  // This should move to the constructor eventually.
 
     // GLUquadricObj *moonObject;
@@ -68,6 +69,7 @@ public:
     double getDistance() const;
     double getAge() const;
     double getPhase() const;
+    double getLogIlluminance() const;
 };
 
 inline double MoonPos::getM() const
@@ -113,6 +115,11 @@ inline double MoonPos::getAge() const
 inline double MoonPos::getPhase() const
 {
   return phase;
+}
+
+inline double MoonPos::getLogIlluminance() const
+{
+  return log_I;
 }
 
 #endif // _MOONPOS_HXX_

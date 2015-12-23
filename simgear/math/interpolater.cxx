@@ -67,7 +67,7 @@ SGInterpTable::SGInterpTable( const std::string& file )
     while ( in ) {
       double ind, dep;
       in >> ind >> dep;
-      in >> skipws;
+      in >> std::skipws;
       _table[ind] = dep;
     }
 }

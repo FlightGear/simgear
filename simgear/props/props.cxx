@@ -11,8 +11,6 @@
 #endif
 
 #include "props.hxx"
-#include "PropertyInterpolationMgr.hxx"
-#include "vectorPropTemplates.hxx"
 
 #include <algorithm>
 #include <limits>
@@ -24,31 +22,30 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <boost/algorithm/string/find_iterator.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/bind.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/range.hpp>
-
 #if PROPS_STANDALONE
-#include <iostream>
+# include <iostream>
+using std::cerr;
 #else
+# include <boost/algorithm/string/find_iterator.hpp>
+# include <boost/algorithm/string/predicate.hpp>
+# include <boost/algorithm/string/classification.hpp>
+# include <boost/bind.hpp>
+# include <boost/functional/hash.hpp>
+# include <boost/range.hpp>
+# include <simgear/compiler.h>
+# include <simgear/debug/logstream.hxx>
 
-#include <simgear/compiler.h>
-#include <simgear/debug/logstream.hxx>
+# include "PropertyInterpolationMgr.hxx"
+# include "vectorPropTemplates.hxx"
 
-#if ( _MSC_VER == 1200 )
+# if ( _MSC_VER == 1200 )
 // MSVC 6 is buggy, and needs something strange here
 using std::vector<SGPropertyNode_ptr>;
 using std::vector<SGPropertyChangeListener *>;
 using std::vector<SGPropertyNode *>;
-#endif
+# endif
 #endif
 
-#if PROPS_STANDALONE
-using std::cerr;
-#endif
 using std::endl;
 using std::find;
 using std::sort;
@@ -83,6 +80,14 @@ public:
 ////////////////////////////////////////////////////////////////////////
 // Local path normalization code.
 ////////////////////////////////////////////////////////////////////////
+
+#if PROPS_STANDALONE
+struct PathComponent
+{
+  string name;
+  int index;
+};
+#endif
 
 /**
  * Parse the name for a path component.
@@ -146,9 +151,148 @@ inline bool validateName(const std::string& name)
     return false;
   if (!isalpha(name[0]) && name[0] != '_')
     return false;
+#if PROPS_STANDALONE
+  std::string is_any_of("_-.");
+  bool rv = true;
+  for(unsigned i=1; i<name.length(); ++i) {
+    if (!isalnum(name[i]) && is_any_of.find(name[i]) == std::string::npos)  {
+      rv = false;
+      break;
+    }
+  }
+  return rv;
+#else
   return all(make_iterator_range(name.begin(), name.end()),
              is_alnum() || is_any_of("_-."));
+#endif
 }
+
+#if PROPS_STANDALONE
+/**
+ * Parse the name for a path component.
+ *
+ * Name: [_a-zA-Z][-._a-zA-Z0-9]*
+ */
+static inline const string
+parse_name (const string &path, int &i)
+{
+  string name = "";
+  int max = (int)path.size();
+
+  if (path[i] == '.') {
+    i++;
+    if (i < max && path[i] == '.') {
+      i++;
+      name = "..";
+    } else {
+      name = ".";
+    }
+    if (i < max && path[i] != '/')
+      throw string("Illegal character after " + name);
+  }
+
+  else if (isalpha(path[i]) || path[i] == '_') {
+    name += path[i];
+    i++;
+
+	      // The rules inside a name are a little
+	      // less restrictive.
+    while (i < max) {
+      if (isalpha(path[i]) || isdigit(path[i]) || path[i] == '_' ||
+      path[i] == '-' || path[i] == '.') {
+        name += path[i];
+      } else if (path[i] == '[' || path[i] == '/') {
+        break;
+      } else {
+        throw string("name may contain only ._- and alphanumeric characters");
+      }
+      i++;
+    }
+  }
+
+  else {
+    if (name.size() == 0)
+      throw string("name must begin with alpha or '_'");
+  }
+
+  return name;
+}
+
+
+/**
+ * Parse the optional integer index for a path component.
+ *
+ * Index: "[" [0-9]+ "]"
+ */
+static inline int
+parse_index (const string &path, int &i)
+{
+  int index = 0;
+
+  if (path[i] != '[')
+    return 0;
+  else
+    i++;
+
+  for (int max = (int)path.size(); i < max; i++) {
+    if (isdigit(path[i])) {
+      index = (index * 10) + (path[i] - '0');
+    } else if (path[i] == ']') {
+      i++;
+      return index;
+    } else {
+      break;
+    }
+  }
+
+  throw string("unterminated index (looking for ']')");
+}
+
+/**
+ * Parse a single path component.
+ *
+ * Component: Name Index?
+ */
+static inline PathComponent
+parse_component (const string &path, int &i)
+{
+  PathComponent component;
+  component.name = parse_name(path, i);
+  if (component.name[0] != '.')
+    component.index = parse_index(path, i);
+  else
+    component.index = -1;
+  return component;
+}
+
+/**
+ * Parse a path into its components.
+ */
+static void
+parse_path (const string &path, vector<PathComponent> &components)
+{
+  int pos = 0;
+  int max = (int)path.size();
+
+  // Check for initial '/'
+  if (path[pos] == '/') {
+    PathComponent root;
+    root.name = "";
+    root.index = -1;
+    components.push_back(root);
+    pos++;
+    while (pos < max && path[pos] == '/')
+      pos++;
+  }
+
+  while (pos < max) {
+    components.push_back(parse_component(path, pos));
+    while (pos < max && path[pos] == '/')
+      pos++;
+  }
+}
+#endif
+
 
 ////////////////////////////////////////////////////////////////////////
 // Other static utility functions.
@@ -182,6 +326,13 @@ static int
 find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
 {
   size_t nNodes = nodes.size();
+#if PROPS_STANDALONE
+  for (int i = 0; i < nNodes; i++) {
+    SGPropertyNode * node = nodes[i];
+    if (node->getIndex() == index && compare_strings(node->getName(), begin))
+      return i;
+  }
+#else
   boost::iterator_range<Itr> name(begin, end);
   for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
@@ -191,6 +342,7 @@ find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
     if (node->getIndex() == index && boost::equals(node->getName(), name))
       return static_cast<int>(i);
   }
+#endif
   return -1;
 }
 
@@ -333,11 +485,57 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
 
 // Internal function for parsing property paths. last_index provides
 // and index value for the last node name token, if supplied.
+#if PROPS_STANDALONE
+static SGPropertyNode *
+find_node (SGPropertyNode * current,
+     const vector<PathComponent> &components,
+     int position,
+     bool create)
+{
+  // Run off the end of the list
+  if (current == 0) {
+    return 0;
+  }
+
+  // Success! This is the one we want.
+  else if (position >= (int)components.size()) {
+    return (current->getAttribute(SGPropertyNode::REMOVED) ? 0 : current);
+  }
+
+  // Empty component means root.
+  else if (components[position].name == "") {
+    return find_node(current->getRootNode(), components, position + 1, create);
+  }
+
+  // . means current directory
+  else if (components[position].name == ".") {
+    return find_node(current, components, position + 1, create);
+  }
+
+  // .. means parent directory
+  else if (components[position].name == "..") {
+    SGPropertyNode * parent = current->getParent();
+    if (parent == 0)
+      throw string("Attempt to move past root with '..'");
+    else
+      return find_node(parent, components, position + 1, create);
+  }
+
+  // Otherwise, a child name
+  else {
+    SGPropertyNode * child =
+      current->getChild(components[position].name.c_str(),
+      components[position].index,
+      create);
+    return find_node(child, components, position + 1, create);
+  }
+}
+#else
 template<typename Range>
 SGPropertyNode*
 find_node (SGPropertyNode * current,
            const Range& path,
-	   bool create,
+           bool create,
            int last_index = -1)
 {
   using namespace boost;
@@ -351,6 +549,7 @@ find_node (SGPropertyNode * current,
    else
      return find_node_aux(current, itr, create, last_index);
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Private methods from SGPropertyNode (may be inlined for speed).
@@ -611,13 +810,8 @@ SGPropertyNode::make_string () const
 void
 SGPropertyNode::trace_write () const
 {
-#if PROPS_STANDALONE
-  cerr << "TRACE: Write node " << getPath () << ", value \""
-       << make_string() << '"' << endl;
-#else
   SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Write node " << getPath()
 	 << ", value \"" << make_string() << '"');
-#endif
 }
 
 /**
@@ -626,13 +820,8 @@ SGPropertyNode::trace_write () const
 void
 SGPropertyNode::trace_read () const
 {
-#if PROPS_STANDALONE
-  cerr << "TRACE: Write node " << getPath () << ", value \""
-       << make_string() << '"' << endl;
-#else
   SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Read node " << getPath()
 	 << ", value \"" << make_string() << '"');
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -786,8 +975,6 @@ SGPropertyNode::alias (SGPropertyNode * target)
     return true;
   }
 
-#if PROPS_STANDALONE
-#else
   if (!target)
   {
     SG_LOG(SG_GENERAL, SG_ALERT,
@@ -809,7 +996,6 @@ SGPropertyNode::alias (SGPropertyNode * target)
     SG_LOG(SG_GENERAL, SG_ALERT, "Failed to create alias at " << target->getPath() << ". "
            "Source " << getPath() << " is a tied property.");
   }
-#endif
 
   return false;
 }
@@ -957,11 +1143,18 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
 SGPropertyNode *
 SGPropertyNode::getChild (const std::string& name, int index, bool create)
 {
+#if PROPS_STANDALONE
+  const char *n = name.c_str();
+  int pos = find_child(n, n + strlen(n), index, _children);
+  if (pos >= 0) {
+    return _children[pos];
+#else
   SGPropertyNode* node = getExistingChild(name.begin(), name.end(), index);
   if (node) {
       return node;
+#endif
     } else if (create) {
-      node = new SGPropertyNode(name, index, this);
+      SGPropertyNode* node = new SGPropertyNode(name, index, this);
       _children.push_back(node);
       fireChildAdded(node);
       return node;
@@ -1635,12 +1828,14 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
   case props::UNSPECIFIED:
     result = set_string(value);
     break;
+#if !PROPS_STANDALONE
   case props::VEC3D:
       result = static_cast<SGRawValue<SGVec3d>*>(_value.val)->setValue(parseString<SGVec3d>(value));
       break;
   case props::VEC4D:
       result = static_cast<SGRawValue<SGVec4d>*>(_value.val)->setValue(parseString<SGVec4d>(value));
       break;
+#endif
   case props::NONE:
   default:
     break;
@@ -1652,6 +1847,7 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
 }
 
 //------------------------------------------------------------------------------
+#if !PROPS_STANDALONE
 bool SGPropertyNode::interpolate( const std::string& type,
                                   const SGPropertyNode& target,
                                   double duration,
@@ -1701,6 +1897,7 @@ simgear::PropertyInterpolationMgr* SGPropertyNode::getInterpolationMgr()
 }
 
 simgear::PropertyInterpolationMgr* SGPropertyNode::_interpolation_mgr = 0;
+#endif
 
 //------------------------------------------------------------------------------
 std::ostream& SGPropertyNode::printOn(std::ostream& stream) const
@@ -1854,20 +2051,37 @@ SGPropertyNode::getRootNode () const
 SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, bool create)
 {
+#if PROPS_STANDALONE
+  vector<PathComponent> components;
+  parse_path(relative_path, components);
+  return find_node(this, components, 0, create);
+
+#else
   using namespace boost;
 
   return find_node(this, make_iterator_range(relative_path, relative_path
                                              + strlen(relative_path)),
                    create);
+#endif
 }
 
 SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, int index, bool create)
 {
+#if PROPS_STANDALONE
+  vector<PathComponent> components;
+  parse_path(relative_path, components);
+  if (components.size() > 0)
+    components.back().index = index;
+  return find_node(this, components, 0, create);
+
+#else
   using namespace boost;
+
   return find_node(this, make_iterator_range(relative_path, relative_path
                                              + strlen(relative_path)),
                    create, index);
+#endif
 }
 
 const SGPropertyNode *
@@ -2315,6 +2529,7 @@ SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
     _properties.erase(it);
 }
 
+#if !PROPS_STANDALONE
 template<>
 std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const
 {
@@ -2351,9 +2566,11 @@ std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const
     }
     return stream;
 }
+#endif
 
 namespace simgear
 {
+#if !PROPS_STANDALONE
 template<>
 std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
 {
@@ -2362,6 +2579,7 @@ std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
     }
     return stream;
 }
+#endif
 
 namespace
 {
@@ -2389,10 +2607,12 @@ bool compareNodeValue(const SGPropertyNode& lhs, const SGPropertyNode& rhs)
     case props::STRING:
     case props::UNSPECIFIED:
         return !strcmp(lhs.getStringValue(), rhs.getStringValue());
+#if !PROPS_STANDALONE
     case props::VEC3D:
         return lhs.getValue<SGVec3d>() == rhs.getValue<SGVec3d>();
     case props::VEC4D:
         return lhs.getValue<SGVec4d>() == rhs.getValue<SGVec4d>();
+#endif
     default:
         return false;
     }
@@ -2449,10 +2669,10 @@ struct PropertyPlaceLess {
     }
 };
 
+#if !PROPS_STANDALONE
 size_t hash_value(const SGPropertyNode& node)
 {
     using namespace boost;
-
     if (node.nChildren() == 0) {
         switch (node.getType()) {
         case props::NONE:
@@ -2503,5 +2723,6 @@ size_t hash_value(const SGPropertyNode& node)
         return seed;
     }
 }
+#endif
 
 // end of props.cxx

@@ -22,23 +22,53 @@
 #include <sstream>
 #include <typeinfo>
 
-#include <boost/utility.hpp>
-#include <boost/type_traits/is_enum.hpp>
-
-#if PROPS_STANDALONE
-#else
 #include <simgear/compiler.h>
-#include <simgear/debug/logstream.hxx>
+#if PROPS_STANDALONE
+// taken from: boost/utility/enable_if.hpp
+#ifndef SG_LOG
+# define SG_GENERAL	0
+# define SG_ALERT	0
+# define SG_WARN		1
+# define SG_LOG(type, level, message) (type) ? (std::cerr <<message << endl) : (std::cout <<message << endl)
 #endif
+namespace boost {
+  template <bool B, class T = void>
+  struct enable_if_c {
+    typedef T type;
+  };
 
+  template <class T>
+  struct enable_if_c<false, T> {};
 
-#include <simgear/math/SGMathFwd.hxx>
-#include <simgear/math/sg_types.hxx>
+  template <class Cond, class T = void>
+  struct enable_if : public enable_if_c<Cond::value, T> {};
+
+  template <bool B, class T = void>
+  struct disable_if_c {
+    typedef T type;
+  };
+
+  template <class T>
+  struct disable_if_c<true, T> {};
+
+  template <class Cond, class T = void>
+  struct disable_if : public disable_if_c<Cond::value, T> {};
+}
+#else
+# include <boost/utility.hpp>
+# include <boost/type_traits/is_enum.hpp>
+
+# include <simgear/debug/logstream.hxx>
+# include <simgear/math/SGMathFwd.hxx>
+# include <simgear/math/sg_types.hxx>
+#endif
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 // XXX This whole file should be in the simgear namespace, but I don't
 // have the guts yet...
+
+using namespace std;
 
 namespace simgear
 {
@@ -1275,6 +1305,7 @@ public:
     return ret;
   }
 
+#if !PROPS_STANDALONE
   /**
    * Interpolate current value to target value within given time.
    *
@@ -1310,6 +1341,7 @@ public:
    * Get the interpolation manager
    */
   static simgear::PropertyInterpolationMgr* getInterpolationMgr();
+#endif
 
   /**
    * Print the value of the property to a stream.
@@ -1807,7 +1839,11 @@ private:
 
 // Convenience functions for use in templates
 template<typename T>
+#if PROPS_STANDALONE
+T
+#else
 typename boost::disable_if<boost::is_enum<T>, T>::type
+#endif
 getValue(const SGPropertyNode*);
 
 template<>
@@ -1871,7 +1907,11 @@ namespace simgear
 
 /** Extract enum from SGPropertyNode */
 template<typename T>
+#if PROPS_STANDALONE
+inline T
+#else
 inline typename boost::enable_if<boost::is_enum<T>, T>::type
+#endif
 getValue(const SGPropertyNode* node)
 {
   typedef simgear::enum_traits<T> Traits;

@@ -427,19 +427,14 @@ bool SGSun::reposition( double rightAscension, double declination,
 {
     // GST - GMT sidereal time
     osg::Matrix T2, RA, DEC;
-
     // xglRotatef( ((SGD_RADIANS_TO_DEGREES * rightAscension)- 90.0),
     //             0.0, 0.0, 1.0);
     RA.makeRotate(rightAscension - 90*SGD_DEGREES_TO_RADIANS, osg::Vec3(0, 0, 1));
-
     // xglRotatef((SGD_RADIANS_TO_DEGREES * declination), 1.0, 0.0, 0.0);
     DEC.makeRotate(declination, osg::Vec3(1, 0, 0));
-
     // xglTranslatef(0,sun_dist);
     T2.makeTranslate(osg::Vec3(0, sun_dist, 0));
-
     sun_transform->setMatrix(T2*DEC*RA);
-
     // Suncolor related things:
     if ( prev_sun_angle != sun_angle ) {
       if ( sun_angle == 0 ) sun_angle = 0.1;
@@ -467,7 +462,7 @@ bool SGSun::reposition( double rightAscension, double declination,
          if ( alt_half < 0.0 ) alt_half = 0.0;
 
 	 //angle at which the sun is visible below the horizon
-	 horizon_angle = acos(r_earth/position_radius);
+	 horizon_angle = acos(min(r_earth/position_radius, 1.0));
 
          // Push the data to the property tree, so it can be used in the enviromental code
          if ( env_node ){

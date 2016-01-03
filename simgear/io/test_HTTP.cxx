@@ -293,6 +293,12 @@ public:
             d << contentStr;
             push(d.str().c_str());
             closeAfterSending();
+        } else if (path == "/test_abrupt_close") {
+            // simulate server doing socket close before sending any
+            // response - this used to cause a TerraSync failure since we
+            // would get stuck restarting the request
+            closeAfterSending();
+
         } else if (path == "/test_args") {
             if ((args["foo"] != "abc") || (args["bar"] != "1234") || (args["username"] != "johndoe")) {
                 sendErrorResponse(400, true, "bad arguments");
@@ -654,15 +660,25 @@ int main(int argc, char* argv[])
     }
     cout << "done3" << endl;
 // test connectToHost failure
-/*
+
     {
         TestRequest* tr = new TestRequest("http://not.found/something");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        waitForFailed(tr);
-        COMPARE(tr->responseCode(), -1);
+        waitForFailed(&cl, tr);
+        COMPARE(tr->responseCode(), ENOENT);
     }
-    */
+
+
+    // test server-side abrupt close
+    {
+        TestRequest* tr = new TestRequest("http://localhost:2000/test_abrupt_close");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        waitForFailed(&cl, tr);
+        COMPARE(tr->responseCode(), 500);
+    }
+
 // test proxy
     {
         cl.setProxy("localhost", 2000);

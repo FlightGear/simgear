@@ -227,6 +227,13 @@ void NetChannel::handleAccept (void) {
 
 void NetChannel::handleError (int error)
 {
+    if (error == EINPROGRESS) {
+        // this shoudl never happen, because we should use isNonBlocking to check
+        // such error codes.
+        SG_LOG(SG_IO, SG_WARN, "Got EINPROGRESS at NetChannel::handleError: suggests broken logic somewhere else");
+        return; // not an actual error, don't warn
+    }
+
     // warn about address lookup failures seperately, don't warn again.
     // (and we (ab-)use ENOENT to mean 'name not found'.
     if (error != ENOENT) {

@@ -106,10 +106,11 @@ public:
 class Connection : public NetChat
 {
 public:
-    Connection(Client* pr) :
+    Connection(Client* pr, const std::string& conId) :
         client(pr),
         state(STATE_CLOSED),
-        port(DEFAULT_HTTP_PORT)
+        port(DEFAULT_HTTP_PORT),
+        connectionId(conId)
     {
     }
 
@@ -140,6 +141,11 @@ public:
     virtual void handleError(int error)
     {
         const char* errStr = strerror(error);
+        SG_LOG(SG_IO, SG_WARN, "HTTP Connection handleError:" << error << " ("
+               << errStr << ")");
+
+        debugDumpRequests();
+
         if (!activeRequest)
         {
         // connection level failure, eg name lookup or routing
@@ -168,6 +174,11 @@ public:
         state = STATE_SOCKET_ERROR;
     }
 
+    void handleTimeout()
+    {
+        handleError(ETIMEDOUT);
+    }
+
     virtual void handleClose()
     {
         NetChat::handleClose();
@@ -180,6 +191,13 @@ public:
             state =  STATE_CLOSED;
             responseComplete();
         } else {
+            if (state == STATE_WAITING_FOR_RESPONSE) {
+                assert(!sentRequests.empty());
+                sentRequests.front()->setFailure(500, "server closed connection unexpectedly");
+                // no active request, but don't restore the front sent one
+                sentRequests.erase(sentRequests.begin());
+            }
+
             if (activeRequest) {
                 activeRequest->setFailure(500, "server closed connection");
                 // remove the failed request from sentRequests, so it does
@@ -205,19 +223,6 @@ public:
       queuedRequests.insert(queuedRequests.begin(),
                               sentRequests.begin(), sentRequests.end());
       sentRequests.clear();
-    }
-
-    void handleTimeout()
-    {
-        NetChat::handleError(ETIMEDOUT);
-        if (activeRequest) {
-            SG_LOG(SG_IO, SG_DEBUG, "HTTP socket timeout");
-            activeRequest->setFailure(ETIMEDOUT, "socket timeout");
-            activeRequest = NULL;
-            _contentDecoder.reset();
-        }
-
-        state = STATE_SOCKET_ERROR;
     }
 
     void queueRequest(const Request_ptr& r)
@@ -356,9 +361,7 @@ public:
           }
         }
 
-      //   SG_LOG(SG_IO, SG_INFO, "did start request:" << r->url() <<
-      //       "\n\t @ " << reinterpret_cast<void*>(r.ptr()) <<
-      //      "\n\t on connection " << this);
+        SG_LOG(SG_IO, SG_DEBUG, "con:" << connectionId << " did start request:" << r->url());
       // successfully sent, remove from queue, and maybe send the next
       queuedRequests.pop_front();
       sentRequests.push_back(r);
@@ -423,21 +426,23 @@ public:
 
     bool hasIdleTimeout() const
     {
-        if (state != STATE_IDLE) {
+        if ((state != STATE_IDLE) && (state != STATE_CLOSED)) {
             return false;
         }
 
         assert(sentRequests.empty());
-        return idleTime.elapsedMSec() > 1000 * 10; // ten seconds
+        bool isTimedOut = (idleTime.elapsedMSec() > (1000 * 10)); // 10 seconds
+        return isTimedOut;
     }
 
     bool hasErrorTimeout() const
     {
-      if (state == STATE_IDLE) {
+      if ((state == STATE_IDLE) || (state == STATE_CLOSED)) {
         return false;
       }
 
-      return idleTime.elapsedMSec() > (1000 * 30); // 30 seconds
+        bool isTimedOut = (idleTime.elapsedMSec() > (1000 * 30)); // 30 seconds
+        return isTimedOut;
     }
 
     bool hasError() const
@@ -454,17 +459,37 @@ public:
     {
         return !queuedRequests.empty() || !sentRequests.empty();
     }
+
+    void debugDumpRequests() const
+    {
+        SG_LOG(SG_IO, SG_DEBUG, "requests for:" << host << ":" << port << " (conId=" << connectionId
+               << "; state=" << state << ")");
+        if (activeRequest) {
+            SG_LOG(SG_IO, SG_DEBUG, "\tactive:" << activeRequest->url());
+        } else {
+            SG_LOG(SG_IO, SG_DEBUG, "\tNo active request");
+        }
+
+        BOOST_FOREACH(Request_ptr req, sentRequests) {
+            SG_LOG(SG_IO, SG_DEBUG, "\tsent:" << req->url());
+        }
+
+        BOOST_FOREACH(Request_ptr req, queuedRequests) {
+            SG_LOG(SG_IO, SG_DEBUG, "\tqueued:" << req->url());
+        }
+    }
 private:
     bool connectToHost()
     {
         SG_LOG(SG_IO, SG_DEBUG, "HTTP connecting to " << host << ":" << port);
 
         if (!open()) {
-            SG_LOG(SG_ALL, SG_WARN, "HTTP::Connection: connectToHost: open() failed");
+            SG_LOG(SG_IO, SG_WARN, "HTTP::Connection: connectToHost: open() failed");
             return false;
         }
 
         if (connect(host.c_str(), port) != 0) {
+            SG_LOG(SG_IO, SG_WARN, "HTTP::Connection: connectToHost: connect() failed");
             return false;
         }
 
@@ -605,7 +630,6 @@ private:
 
     // notify request after we change state, so this connection is idle
     // if completion triggers other requests (which is likely)
-        //   SG_LOG(SG_IO, SG_INFO, "*** responseComplete:" << activeRequest->url());
         completedRequest->responseComplete();
         client->requestFinished(this);
 
@@ -639,6 +663,7 @@ private:
     RequestList sentRequests;
 
     ContentDecoder _contentDecoder;
+    std::string connectionId;
 };
 #endif // of !ENABLE_CURL
 
@@ -910,7 +935,7 @@ void Client::makeRequest(const Request_ptr& r)
 
     // allocate a new connection object
     if (!con) {
-        con = new Connection(this);
+        con = new Connection(this, connectionId);
         con->setServer(host, port);
         d->poller.addChannel(con);
         d->connections.insert(d->connections.end(),
@@ -1078,6 +1103,20 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
 
   req->responseHeader(lkey, value);
   return byteSize;
+}
+
+void Client::debugDumpRequests()
+{
+#if defined(ENABLE_CURL)
+
+#else
+    SG_LOG(SG_IO, SG_INFO, "== HTTP connection dump");
+    ConnectionDict::iterator it = d->connections.begin();
+    for (; it != d->connections.end(); ++it) {
+        it->second->debugDumpRequests();
+    }
+    SG_LOG(SG_IO, SG_INFO, "==");
+#endif
 }
 
 } // of namespace HTTP

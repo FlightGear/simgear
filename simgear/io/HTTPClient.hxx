@@ -98,6 +98,8 @@ public:
      * monitoring
      */
     uint64_t totalBytesDownloaded() const;
+
+    void debugDumpRequests();
 private:
     // libCurl callbacks
     static size_t requestWriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata);

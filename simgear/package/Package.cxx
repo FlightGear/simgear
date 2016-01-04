@@ -167,6 +167,11 @@ std::string Package::qualifiedId() const
     return m_catalog->id() + "." + id();
 }
 
+std::string Package::qualifiedVariantId(const unsigned int variantIndex) const
+{
+    return m_catalog->id() + "." + variants()[variantIndex];
+}
+
 std::string Package::md5() const
 {
     return m_props->getStringValue("md5");
@@ -332,6 +337,20 @@ std::string Package::nameForVariant(const std::string& vid) const
 
     throw sg_exception("Unknow variant +" + vid + " in package " + id());
 }
+
+std::string Package::nameForVariant(const unsigned int vIndex) const
+{
+    if (vIndex == 0)
+        return name();
+
+    // offset by minus one to allow for index 0 being the primary
+    SGPropertyNode_ptr var = m_props->getChild("variant", vIndex - 1);
+    if (var)
+        return var->getStringValue("name");
+
+    throw sg_exception("Unknow variant in package " + id());
+}
+
 
 } // of namespace pkg
 

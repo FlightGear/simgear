@@ -75,6 +75,11 @@ public:
      * Fully-qualified ID, including our catalog'd ID
      */
     std::string qualifiedId() const;
+
+    /**
+     * Fully-qualified ID, including our catalog'd ID
+     */
+    std::string qualifiedVariantId(const unsigned int variantIndex) const;
     
     /**
      * human-readable name - note this is probably not localised,
@@ -86,6 +91,8 @@ public:
      * Human readable name of a variant
      */
     std::string nameForVariant(const std::string& vid) const;
+
+    std::string nameForVariant(const unsigned int vIndex) const;
 
     /**
      * syntactic sugar to get the localised description

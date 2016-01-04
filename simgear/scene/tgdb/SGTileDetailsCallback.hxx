@@ -97,7 +97,7 @@ public:
     virtual ~SGTileDetailsCallback() 
     {
         num_tdcb--;
-        SG_LOG( SG_GENERAL, SG_INFO, "SGTileDetailsCallback::~SGTileDetailsCallback() num cbs left " << num_tdcb  );
+        SG_LOG( SG_TERRAIN, SG_DEBUG, "SGTileDetailsCallback::~SGTileDetailsCallback() num cbs left " << num_tdcb  );
     }
     
     virtual osgDB::ReaderWriter::ReadResult readNode(

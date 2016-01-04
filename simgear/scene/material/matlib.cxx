@@ -201,7 +201,7 @@ SGMaterialCache *SGMaterialLib::generateMatCache(SGGeod center)
 
 // Destructor
 SGMaterialLib::~SGMaterialLib ( void ) {
-    SG_LOG( SG_GENERAL, SG_INFO, "SGMaterialLib::~SGMaterialLib() size=" << matlib.size());
+    SG_LOG( SG_TERRAIN, SG_DEBUG, "SGMaterialLib::~SGMaterialLib() size=" << matlib.size());
 }
 
 const SGMaterial *SGMaterialLib::findMaterial(const osg::Geode* geode)
@@ -244,5 +244,5 @@ SGMaterial *SGMaterialCache::find(const string& material) const
 
 // Destructor
 SGMaterialCache::~SGMaterialCache ( void ) {
-    SG_LOG( SG_GENERAL, SG_INFO, "SGMaterialCache::~SGMaterialCache() size=" << cache.size());
+    SG_LOG( SG_TERRAIN, SG_DEBUG, "SGMaterialCache::~SGMaterialCache() size=" << cache.size());
 }

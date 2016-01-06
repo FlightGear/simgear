@@ -58,7 +58,8 @@ public:
 
     TestRequest(const std::string& url, const std::string method = "GET") :
         HTTP::Request(url, method),
-        complete(false)
+        complete(false),
+        failed(false)
     {
 
     }
@@ -663,7 +664,7 @@ int main(int argc, char* argv[])
 // test connectToHost failure
 
 // causes timeout on Jenkins slaves
-#if 0
+#if 1
     {
         TestRequest* tr = new TestRequest("http://not.found/something");
         HTTP::Request_ptr own(tr);
@@ -673,6 +674,7 @@ int main(int argc, char* argv[])
     }
 #endif
 
+  cout << "testing abrupt close" << endl;
     // test server-side abrupt close
     {
         TestRequest* tr = new TestRequest("http://localhost:2000/test_abrupt_close");
@@ -682,6 +684,7 @@ int main(int argc, char* argv[])
         COMPARE(tr->responseCode(), 500);
     }
 
+cout << "testing proxy close" << endl;
 // test proxy
     {
         cl.setProxy("localhost", 2000);

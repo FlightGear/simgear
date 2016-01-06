@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <errno.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -661,6 +662,8 @@ int main(int argc, char* argv[])
     cout << "done3" << endl;
 // test connectToHost failure
 
+// causes timeout on Jenkins slaves
+#if 0
     {
         TestRequest* tr = new TestRequest("http://not.found/something");
         HTTP::Request_ptr own(tr);
@@ -668,7 +671,7 @@ int main(int argc, char* argv[])
         waitForFailed(&cl, tr);
         COMPARE(tr->responseCode(), ENOENT);
     }
-
+#endif
 
     // test server-side abrupt close
     {

@@ -234,6 +234,7 @@ SGSubsystemGroup::update (double delta_time_sec)
     if ((delta_time_sec > 0.0) && (_fixedUpdateTime > 0.0)) {
       double localDelta = delta_time_sec + _updateTimeRemainder;
       loopCount = SGMiscd::roundToInt(localDelta / _fixedUpdateTime);
+      loopCount = std::max(0, loopCount);
       _updateTimeRemainder = delta_time_sec - (loopCount * _fixedUpdateTime);
       delta_time_sec = _fixedUpdateTime;
     }

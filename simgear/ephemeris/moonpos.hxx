@@ -42,6 +42,7 @@ private:
     double age;        // the moon's age from 0 to 2pi
     double phase;      // the moon's phase
     double log_I;      // the moon's illuminance outside the atmosphere (logged)
+    double I_factor;   // the illuminance factor for the moon, between 0 and 1.
     // void TexInit();  // This should move to the constructor eventually.
 
     // GLUquadricObj *moonObject;
@@ -70,6 +71,7 @@ public:
     double getAge() const;
     double getPhase() const;
     double getLogIlluminance() const;
+    double getIlluminanceFactor() const;
 };
 
 inline double MoonPos::getM() const
@@ -120,6 +122,11 @@ inline double MoonPos::getPhase() const
 inline double MoonPos::getLogIlluminance() const
 {
   return log_I;
+}
+
+inline double MoonPos::getIlluminanceFactor() const
+{
+  return I_factor;
 }
 
 #endif // _MOONPOS_HXX_

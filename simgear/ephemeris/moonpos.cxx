@@ -85,6 +85,8 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
     cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl, rcoslatEcl,
     FlesstwoD, MlesstwoD, twoD, twoM, twolat, alpha;
   
+  double max_loglux = -0.504030345621;
+  double min_loglux = -4.39964634562;
   double conv = 1.0319696543787917;    // The log foot-candle to log lux conversion factor.
   updateOrbElements(mjd);
   actTime = sgCalcActTime(mjd);
@@ -227,4 +229,8 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
 
   // Convert from foot-candles to lux.
   log_I += conv;
+
+  // The moon's illuminance factor, bracketed between 0 and 1.
+  I_factor = (log_I - max_loglux) / (max_loglux - min_loglux) + 1.0;
+  I_factor = SGMiscd::clip(I_factor, 0, 1);
 }

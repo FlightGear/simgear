@@ -7,6 +7,8 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include <simgear/simgear_config.h>
+
 #include "HTTPClient.hxx"
 #include "HTTPRequest.hxx"
 
@@ -14,6 +16,10 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/debug/logstream.hxx>
+
+#if defined(ENABLE_CURL)
+#include <curl/multi.h>
+#endif
 
 using std::cout;
 using std::cerr;
@@ -663,16 +669,21 @@ int main(int argc, char* argv[])
     cout << "done3" << endl;
 // test connectToHost failure
 
-// causes timeout on Jenkins slaves
-#if 1
     {
         TestRequest* tr = new TestRequest("http://not.found/something");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForFailed(&cl, tr);
-        COMPARE(tr->responseCode(), ENOENT);
-    }
+
+
+
+#if defined(ENABLE_CURL)
+      const int HOST_NOT_FOUND_CODE = CURLE_COULDNT_RESOLVE_HOST;
+#else
+      const int HOST_NOT_FOUND_CODE = ENOENT;
 #endif
+        COMPARE(tr->responseCode(), HOST_NOT_FOUND_CODE);
+    }
 
   cout << "testing abrupt close" << endl;
     // test server-side abrupt close
@@ -681,7 +692,13 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForFailed(&cl, tr);
-        COMPARE(tr->responseCode(), 500);
+
+  #if defined(ENABLE_CURL)
+        const int SERVER_NO_DATA_CODE = CURLE_GOT_NOTHING;
+  #else
+        const int SERVER_NO_DATA_CODESERVER_NO_DATA_CODE = 500;
+  #endif
+        COMPARE(tr->responseCode(), SERVER_NO_DATA_CODE);
     }
 
 cout << "testing proxy close" << endl;

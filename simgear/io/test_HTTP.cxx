@@ -696,7 +696,7 @@ int main(int argc, char* argv[])
   #if defined(ENABLE_CURL)
         const int SERVER_NO_DATA_CODE = CURLE_GOT_NOTHING;
   #else
-        const int SERVER_NO_DATA_CODESERVER_NO_DATA_CODE = 500;
+        const int SERVER_NO_DATA_CODE = 500;
   #endif
         COMPARE(tr->responseCode(), SERVER_NO_DATA_CODE);
     }

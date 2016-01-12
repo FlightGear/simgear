@@ -190,6 +190,12 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #  define DEPRECATED
 #endif
 
+#if defined(__clang__)
+#  define SG_NO_RETURN [[noreturn]]
+#else
+#  define SG_NO_RETURN
+#endif
+
 //
 // No user modifiable definitions beyond here.
 //

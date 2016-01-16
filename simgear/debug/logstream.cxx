@@ -71,6 +71,7 @@ const char* debugClassToString(sgDebugClass c)
     case SG_SOUND:      return "sound";
     case SG_NAVAID:     return "navaid";
     case SG_GUI:        return "gui";
+    case SG_TERRASYNC:  return "terrasync";
     default:            return "unknown";
     }
 }

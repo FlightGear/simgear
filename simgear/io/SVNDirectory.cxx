@@ -96,14 +96,14 @@ void SVNDirectory::parseCache()
   LineState lineState = LINESTATE_HREF;
   std::ifstream file(p.c_str());
     if (!file.is_open()) {
-        SG_LOG(SG_IO, SG_WARN, "unable to open cache file for reading:" << p);
+        SG_LOG(SG_TERRASYNC, SG_WARN, "unable to open cache file for reading:" << p);
         return;
     }
   bool doneSelf = false;
     
   file.getline(href, 1024);
   if (strcmp(CACHE_VERSION_4_TOKEN, href)) {
-    SG_LOG(SG_IO, SG_WARN, "invalid cache file [missing header token]:" << p << " '" << href << "'");
+    SG_LOG(SG_TERRASYNC, SG_WARN, "invalid cache file [missing header token]:" << p << " '" << href << "'");
     return;
   }
     
@@ -183,7 +183,7 @@ void SVNDirectory::writeCache()
 void SVNDirectory::setBaseUrl(const string& url)
 {
     if (_parent) {
-        SG_LOG(SG_IO, SG_ALERT, "setting base URL on non-root directory " << url);
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "setting base URL on non-root directory " << url);
         return;
     }
     
@@ -248,7 +248,7 @@ void SVNDirectory::deleteChildByName(const std::string& nm)
         Dir d(path);
         bool ok = d.remove(true);
         if (!ok) {
-            SG_LOG(SG_NETWORK, SG_ALERT, "SVNDirectory::deleteChildByName: failed to remove dir:"
+            SG_LOG(SG_TERRASYNC, SG_ALERT, "SVNDirectory::deleteChildByName: failed to remove dir:"
                    << nm << " at path:\n\t" << path);
         }
 
@@ -261,7 +261,7 @@ void SVNDirectory::deleteChildByName(const std::string& nm)
     } else {
         bool ok = path.remove();
         if (!ok) {
-            SG_LOG(SG_NETWORK, SG_ALERT, "SVNDirectory::deleteChildByName: failed to remove path:" << nm
+            SG_LOG(SG_TERRASYNC, SG_ALERT, "SVNDirectory::deleteChildByName: failed to remove path:" << nm
                    << " at path:\n\t" << path);
         }
     }

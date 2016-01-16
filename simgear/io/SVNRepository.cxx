@@ -73,7 +73,7 @@ public:
     
     void updateFailed(HTTP::Request* req, SVNRepository::ResultCode err)
     {
-        SG_LOG(SG_IO, SG_WARN, "SVN: failed to update from:" << req->url()
+        SG_LOG(SG_TERRASYNC, SG_WARN, "SVN: failed to update from:" << req->url()
             << "\n(repository:" << p->baseUrl() << ")");
         isUpdating = false;
         status = err;
@@ -134,7 +134,7 @@ namespace { // anonmouse
         } else if (responseCode() == 404) {
             _repo->propFindFailed(this, SVNRepository::SVN_ERROR_NOT_FOUND);
         } else {
-            SG_LOG(SG_IO, SG_WARN, "request for:" << url() << 
+            SG_LOG(SG_TERRASYNC, SG_WARN, "request for:" << url() <<
                 " return code " << responseCode());
             _repo->propFindFailed(this, SVNRepository::SVN_ERROR_SOCKET);
             _repo = NULL;
@@ -231,7 +231,7 @@ protected:
         _repo->updateFailed(this, SVNRepository::SVN_ERROR_NOT_FOUND);
         _failed = true;
     } else {
-        SG_LOG(SG_IO, SG_WARN, "SVN: request for:" << url() <<
+        SG_LOG(SG_TERRASYNC, SG_WARN, "SVN: request for:" << url() <<
         " got HTTP status " << responseCode());
         _repo->updateFailed(this, SVNRepository::SVN_ERROR_HTTP);
         _failed = true;
@@ -331,7 +331,7 @@ void SVNRepository::update()
     }
         
     if (_d->targetRevision == rootDir()->cachedRevision()) {
-        SG_LOG(SG_IO, SG_DEBUG, baseUrl() << " in sync at version " << _d->targetRevision);
+        SG_LOG(SG_TERRASYNC, SG_DEBUG, baseUrl() << " in sync at version " << _d->targetRevision);
         _d->isUpdating = false;
         return;
     }
@@ -375,7 +375,7 @@ void SVNRepoPrivate::propFindComplete(HTTP::Request* req, DAVCollection* c)
 void SVNRepoPrivate::propFindFailed(HTTP::Request *req, SVNRepository::ResultCode err)
 {
     if (err != SVNRepository::SVN_ERROR_NOT_FOUND) {
-        SG_LOG(SG_IO, SG_WARN, "PropFind failed for:" << req->url());
+        SG_LOG(SG_TERRASYNC, SG_WARN, "PropFind failed for:" << req->url());
     }
     
     isUpdating = false;

@@ -228,7 +228,7 @@ protected:
 
     virtual void onFail()
     {
-        SG_LOG(SG_TERRAIN, SG_ALERT, "Failed to query TerraSync SVN server");
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "Failed to query TerraSync SVN server");
         HTTP::Request::onFail();
     }
 
@@ -369,7 +369,7 @@ bool SGTerraSync::SvnThread::start()
 
     if (_local_dir=="")
     {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
+        SG_LOG(SG_TERRASYNC,SG_ALERT,
                "Cannot start scenery download. Local cache directory is undefined.");
         _fail_count++;
         _stalled = true;
@@ -379,7 +379,7 @@ bool SGTerraSync::SvnThread::start()
     SGPath path(_local_dir);
     if (!path.exists())
     {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
+        SG_LOG(SG_TERRASYNC,SG_ALERT,
                "Cannot start scenery download. Directory '" << _local_dir <<
                "' does not exist. Set correct directory path or create directory folder.");
         _fail_count++;
@@ -390,7 +390,7 @@ bool SGTerraSync::SvnThread::start()
     path.append("version");
     if (path.exists())
     {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
+        SG_LOG(SG_TERRASYNC,SG_ALERT,
                "Cannot start scenery download. Directory '" << _local_dir <<
                "' contains the base package. Use a separate directory.");
         _fail_count++;
@@ -403,7 +403,7 @@ bool SGTerraSync::SvnThread::start()
 
     if ((!_use_svn)&&(_rsync_server==""))
     {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
+        SG_LOG(SG_TERRASYNC,SG_ALERT,
                "Cannot start scenery download. Rsync scenery server is undefined.");
         _fail_count++;
         _stalled = true;
@@ -435,7 +435,7 @@ bool SGTerraSync::SvnThread::start()
 
     // not really an alert - but we want to (always) see this message, so user is
     // aware we're downloading scenery (and using bandwidth).
-    SG_LOG(SG_TERRAIN,SG_ALERT,
+    SG_LOG(SG_TERRASYNC,SG_ALERT,
            "Starting automatic scenery download/synchronization. "
            << status
            << "Directory: '" << _local_dir << "'.");
@@ -475,7 +475,7 @@ bool SGTerraSync::SvnThread::runExternalSyncCommand(const char* dir)
 #else
     command = buf.str();
 #endif
-    SG_LOG(SG_TERRAIN,SG_DEBUG, "sync command '" << command << "'");
+    SG_LOG(SG_TERRASYNC,SG_DEBUG, "sync command '" << command << "'");
 
 #ifdef SG_WINDOWS
     // tbd: does Windows support "popen"?
@@ -490,7 +490,7 @@ bool SGTerraSync::SvnThread::runExternalSyncCommand(const char* dir)
 
     if (rc)
     {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
+        SG_LOG(SG_TERRASYNC,SG_ALERT,
                "Failed to synchronize directory '" << dir << "', " <<
                "error code= " << rc);
         return false;
@@ -505,7 +505,7 @@ void SGTerraSync::SvnThread::run()
 
     {
         if (_svn_server.empty()) {
-            SG_LOG(SG_TERRAIN,SG_INFO, "Querying closest TerraSync server");
+            SG_LOG(SG_TERRASYNC,SG_INFO, "Querying closest TerraSync server");
             ServerSelectQuery* ssq = new ServerSelectQuery;
             HTTP::Request_ptr req = ssq;
             _http.makeRequest(req);
@@ -515,12 +515,12 @@ void SGTerraSync::SvnThread::run()
 
             if (req->readyState() == HTTP::Request::DONE) {
                 _svn_server = ssq->svnUrl();
-                SG_LOG(SG_TERRAIN,SG_INFO, "Closest TerraSync server:" << _svn_server);
+                SG_LOG(SG_TERRASYNC,SG_INFO, "Closest TerraSync server:" << _svn_server);
             } else {
-                SG_LOG(SG_TERRAIN,SG_WARN, "Failed to query closest TerraSync server");
+                SG_LOG(SG_TERRASYNC,SG_WARN, "Failed to query closest TerraSync server");
             }
         } else {
-            SG_LOG(SG_TERRAIN,SG_INFO, "Explicit: TerraSync server:" << _svn_server);
+            SG_LOG(SG_TERRASYNC,SG_INFO, "Explicit: TerraSync server:" << _svn_server);
         }
 
         if (_svn_server.empty()) {
@@ -551,7 +551,7 @@ void SGTerraSync::SvnThread::runExternal()
         SyncItem::Status cacheStatus = isPathCached(next);
         if (cacheStatus != SyncItem::Invalid) {
             _cache_hits++;
-            SG_LOG(SG_TERRAIN, SG_DEBUG,
+            SG_LOG(SG_TERRASYNC, SG_DEBUG,
                    "Cache hit for: '" << next._dir << "'");
             next._status = cacheStatus;
             _freshTiles.push_back(next);
@@ -581,7 +581,7 @@ void SGTerraSync::SvnThread::syncPathExternal(const SyncItem& next)
         if (isNewDirectory) {
             int rc = path.create_dir( 0755 );
             if (rc) {
-                SG_LOG(SG_TERRAIN,SG_ALERT,
+                SG_LOG(SG_TERRASYNC,SG_ALERT,
                        "Cannot create directory '" << path << "', return code = " << rc );
                 throw sg_exception("Cannot create directory for terrasync", path.str());
             }
@@ -606,8 +606,8 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         if (slot.repository->isDoingSync()) {
 #if 1
             if (slot.stamp.elapsedMSec() > (int)slot.nextWarnTimeout) {
-                SG_LOG(SG_TERRAIN, SG_INFO, "sync taking a long time:" << slot.currentItem._dir << " taken " << slot.stamp.elapsedMSec());
-                SG_LOG(SG_TERRAIN, SG_INFO, "HTTP request count:" << _http.hasActiveRequests());
+                SG_LOG(SG_TERRASYNC, SG_INFO, "sync taking a long time:" << slot.currentItem._dir << " taken " << slot.stamp.elapsedMSec());
+                SG_LOG(SG_TERRASYNC, SG_INFO, "HTTP request count:" << _http.hasActiveRequests());
                 slot.nextWarnTimeout += 10000;
             }
 #endif
@@ -622,7 +622,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
             fail(slot.currentItem);
         } else {
             updated(slot.currentItem, slot.isNewDirectory);
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " finished ("
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " finished ("
                    << slot.stamp.elapsedMSec() << " msec");
         }
 
@@ -642,7 +642,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         if (slot.isNewDirectory) {
             int rc = path.create_dir( 0755 );
             if (rc) {
-                SG_LOG(SG_TERRAIN,SG_ALERT,
+                SG_LOG(SG_TERRASYNC,SG_ALERT,
                        "Cannot create directory '" << path << "', return code = " << rc );
                 fail(slot.currentItem);
                 return;
@@ -661,7 +661,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         slot.nextWarnTimeout = 20000;
         slot.stamp.stamp();
         slot.busy = true;
-        SG_LOG(SG_TERRAIN, SG_INFO, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
+        SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
     }
 }
 
@@ -682,7 +682,7 @@ void SGTerraSync::SvnThread::runInternal()
             SyncItem::Status cacheStatus = isPathCached(next);
             if (cacheStatus != SyncItem::Invalid) {
                 _cache_hits++;
-                SG_LOG(SG_TERRAIN, SG_DEBUG, "\nTerraSync Cache hit for: '" << next._dir << "'");
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "\nTerraSync Cache hit for: '" << next._dir << "'");
                 next._status = cacheStatus;
                 _freshTiles.push_back(next);
                 _is_dirty = true;
@@ -739,7 +739,7 @@ void SGTerraSync::SvnThread::fail(SyncItem failedItem)
     _fail_count++;
     failedItem._status = SyncItem::Failed;
     _freshTiles.push_back(failedItem);
-    SG_LOG(SG_TERRAIN,SG_INFO,
+    SG_LOG(SG_TERRASYNC,SG_INFO,
            "Faield to sync'" << failedItem._dir << "'");
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
     _is_dirty = true;
@@ -765,7 +765,7 @@ void SGTerraSync::SvnThread::updated(SyncItem item, bool isNewDirectory)
     time_t now = time(0);
     _consecutive_errors = 0;
     _success_count++;
-    SG_LOG(SG_TERRAIN,SG_INFO,
+    SG_LOG(SG_TERRASYNC,SG_INFO,
            "Successfully synchronized directory '" << item._dir << "'");
 
     item._status = SyncItem::Updated;
@@ -791,7 +791,7 @@ void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
     try {
         readProperties(_persistentCachePath.str(), cacheRoot);
     } catch (sg_exception& e) {
-        SG_LOG(SG_TERRAIN, SG_INFO, "corrupted persistent cache, discarding");
+        SG_LOG(SG_TERRASYNC, SG_INFO, "corrupted persistent cache, discarding");
         return;
     }
 
@@ -852,7 +852,7 @@ SGTerraSync::SGTerraSync() :
     _inited(false)
 {
     _svnThread = new SvnThread();
-    _log = new BufferedLogCallback(SG_TERRAIN, SG_INFO);
+    _log = new BufferedLogCallback(SG_TERRASYNC, SG_INFO);
     _log->truncateAt(255);
 
     sglog().addCallback(_log);
@@ -977,13 +977,13 @@ void SGTerraSync::update(double)
         {
             if (_svnThread->_stalled)
             {
-                SG_LOG(SG_TERRAIN,SG_ALERT,
+                SG_LOG(SG_TERRASYNC,SG_ALERT,
                        "Automatic scenery download/synchronization stalled. Too many errors.");
             }
             else
             {
                 // not really an alert - just always show this message
-                SG_LOG(SG_TERRAIN,SG_ALERT,
+                SG_LOG(SG_TERRASYNC,SG_ALERT,
                         "Automatic scenery download/synchronization has stopped.");
             }
             _stalledNode->setBoolValue(_svnThread->_stalled);

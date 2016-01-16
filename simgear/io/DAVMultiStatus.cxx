@@ -193,7 +193,7 @@ public:
   {
     if (tagStack.empty()) {
       if (strcmp(name, DAV_MULTISTATUS_TAG)) {
-        SG_LOG(SG_IO, SG_WARN, "root element is not " <<
+        SG_LOG(SG_TERRASYNC, SG_WARN, "root element is not " <<
                DAV_MULTISTATUS_TAG << ", got:" << name);
       } else {
         
@@ -202,7 +202,7 @@ public:
       // not at the root element
       if (tagStack.back() == DAV_MULTISTATUS_TAG) {
         if (strcmp(name, DAV_RESPONSE_TAG)) {
-          SG_LOG(SG_IO, SG_WARN, "multistatus child is not response: saw:"
+          SG_LOG(SG_TERRASYNC, SG_WARN, "multistatus child is not response: saw:"
                  << name);
         }
       }
@@ -362,7 +362,7 @@ void DAVMultiStatus::parseXML(const char* data, int size)
   }
   
   if (!XML_Parse(_d->xmlParser, data, size, false)) {
-    SG_LOG(SG_IO, SG_WARN, "DAV parse error:" << XML_ErrorString(XML_GetErrorCode(_d->xmlParser))
+    SG_LOG(SG_TERRASYNC, SG_WARN, "DAV parse error:" << XML_ErrorString(XML_GetErrorCode(_d->xmlParser))
            << " at line:" << XML_GetCurrentLineNumber(_d->xmlParser)
            << " column " << XML_GetCurrentColumnNumber(_d->xmlParser));
     
@@ -376,7 +376,7 @@ void DAVMultiStatus::finishParse()
 {
   if (_d->parserInited) {
     if (!XML_Parse(_d->xmlParser, NULL, 0, true)) {
-        SG_LOG(SG_IO, SG_WARN, "DAV parse error:" << XML_ErrorString(XML_GetErrorCode(_d->xmlParser))
+        SG_LOG(SG_TERRASYNC, SG_WARN, "DAV parse error:" << XML_ErrorString(XML_GetErrorCode(_d->xmlParser))
                << " at line:" << XML_GetCurrentLineNumber(_d->xmlParser)
                << " column " << XML_GetCurrentColumnNumber(_d->xmlParser));
         _d->valid = false;

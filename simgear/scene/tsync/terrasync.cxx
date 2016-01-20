@@ -740,7 +740,7 @@ void SGTerraSync::SvnThread::fail(SyncItem failedItem)
     failedItem._status = SyncItem::Failed;
     _freshTiles.push_back(failedItem);
     SG_LOG(SG_TERRASYNC,SG_INFO,
-           "Faield to sync'" << failedItem._dir << "'");
+           "Failed to sync'" << failedItem._dir << "'");
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
     _is_dirty = true;
 }

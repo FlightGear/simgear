@@ -12,7 +12,8 @@
 #include "HTTPClient.hxx"
 #include "HTTPRequest.hxx"
 
-#include <simgear/io/sg_netChat.hxx>
+#include "test_HTTP.hxx"
+
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/debug/logstream.hxx>
@@ -96,97 +97,12 @@ protected:
     }
 };
 
-class TestServerChannel : public NetChat
+class HTTPTestChannel : public TestServerChannel
 {
 public:
-    enum State
+
+    virtual void processRequestHeaders()
     {
-        STATE_IDLE = 0,
-        STATE_HEADERS,
-        STATE_CLOSING,
-        STATE_REQUEST_BODY
-    };
-
-    TestServerChannel()
-    {
-        state = STATE_IDLE;
-        setTerminator("\r\n");
-
-    }
-
-    virtual void collectIncomingData(const char* s, int n)
-    {
-        buffer += string(s, n);
-    }
-
-    virtual void foundTerminator(void)
-    {
-        if (state == STATE_IDLE) {
-            state = STATE_HEADERS;
-            string_list line = strutils::split(buffer, NULL, 3);
-            if (line.size() < 3) {
-                cerr << "malformed request:" << buffer << endl;
-                exit(-1);
-            }
-
-            method = line[0];
-            path = line[1];
-
-            string::size_type queryPos = path.find('?');
-            if (queryPos != string::npos) {
-                parseArgs(path.substr(queryPos + 1));
-                path = path.substr(0, queryPos);
-            }
-
-            httpVersion = line[2];
-            requestHeaders.clear();
-            buffer.clear();
-        } else if (state == STATE_HEADERS) {
-            string s = strutils::simplify(buffer);
-            if (s.empty()) {
-                buffer.clear();
-                receivedRequestHeaders();
-                return;
-            }
-
-            string::size_type colonPos = buffer.find(':');
-            if (colonPos == string::npos) {
-                cerr << "test malformed HTTP response header:" << buffer << endl;
-                buffer.clear();
-                return;
-            }
-
-            string key = strutils::simplify(buffer.substr(0, colonPos));
-            string value = strutils::strip(buffer.substr(colonPos + 1));
-            requestHeaders[key] = value;
-            buffer.clear();
-        } else if (state == STATE_REQUEST_BODY) {
-            receivedBody();
-            setTerminator("\r\n");
-        } else if (state == STATE_CLOSING) {
-          // ignore!
-        }
-    }
-
-    void parseArgs(const string& argData)
-    {
-        string_list argv = strutils::split(argData, "&");
-        for (unsigned int a=0; a<argv.size(); ++a) {
-            string::size_type eqPos = argv[a].find('=');
-            if (eqPos == string::npos) {
-                cerr << "malformed HTTP argument:" << argv[a] << endl;
-                continue;
-            }
-
-            string key = argv[a].substr(0, eqPos);
-            string value = argv[a].substr(eqPos + 1);
-            args[key] = value;
-        }
-    }
-
-    void receivedRequestHeaders()
-    {
-        state = STATE_IDLE;
         if (path == "/test1") {
             string contentStr(BODY1);
             stringstream d;
@@ -341,24 +257,13 @@ public:
               setByteCount(requestContentLength);
               state = STATE_REQUEST_BODY;
         } else {
-            sendErrorResponse(404, false, "");
+          TestServerChannel::processRequestHeaders();
         }
     }
 
-    void closeAfterSending()
+    void procesRequestBody()
     {
-      state = STATE_CLOSING;
-      closeWhenDone();
-    }
-
-    void receivedBody()
-    {
-        state = STATE_IDLE;
-        if (method == "POST") {
-            parseArgs(buffer);
-        }
-
-        if (path == "/test_post") {
+      if (path == "/test_post") {
             if ((args["foo"] != "abc") || (args["bar"] != "1234") || (args["username"] != "johndoe")) {
                 sendErrorResponse(400, true, "bad arguments");
                 return;
@@ -391,11 +296,8 @@ public:
 
           push(d.str().c_str());
         } else {
-          std::cerr << "weird URL " << path << std::endl;
-          sendErrorResponse(400, true, "bad URL:" + path);
+          TestServerChannel::processRequestBody();
         }
-
-        buffer.clear();
     }
 
     void sendBody2()
@@ -407,85 +309,9 @@ public:
         push(d.str().c_str());
         bufferSend(body2, body2Size);
     }
-
-    void sendErrorResponse(int code, bool close, string content)
-    {
-        cerr << "sending error " << code << " for " << path << endl;
-        cerr << "\tcontent:" << content << endl;
-
-        stringstream headerData;
-        headerData << "HTTP/1.1 " << code << " " << reasonForCode(code) << "\r\n";
-        headerData << "Content-Length:" << content.size() << "\r\n";
-        headerData << "\r\n"; // final CRLF to terminate the headers
-        push(headerData.str().c_str());
-        push(content.c_str());
-
-        if (close) {
-            closeWhenDone();
-        }
-    }
-
-    string reasonForCode(int code)
-    {
-        switch (code) {
-            case 200: return "OK";
-            case 201: return "Created";
-            case 204: return "no content";
-            case 404: return "not found";
-            case 407: return "proxy authentication required";
-            default: return "unknown code";
-        }
-    }
-
-    State state;
-    string buffer;
-    string method;
-    string path;
-    string httpVersion;
-    std::map<string, string> requestHeaders;
-    std::map<string, string> args;
-    int requestContentLength;
 };
 
-class TestServer : public NetChannel
-{
-    simgear::NetChannelPoller _poller;
-public:
-    TestServer()
-    {
-        Socket::initSockets();
-
-        open();
-        bind(NULL, 2000); // localhost, any port
-        listen(5);
-
-        _poller.addChannel(this);
-    }
-
-    virtual ~TestServer()
-    {
-    }
-
-    virtual bool writable (void) { return false ; }
-
-    virtual void handleAccept (void)
-    {
-        simgear::IPAddress addr ;
-        int handle = accept ( &addr ) ;
-        //cout << "did accept from " << addr.getHost() << ":" << addr.getPort() << endl;
-        TestServerChannel* chan = new TestServerChannel();
-        chan->setHandle(handle);
-
-        _poller.addChannel(chan);
-    }
-
-    void poll()
-    {
-        _poller.poll();
-    }
-};
-
-TestServer testServer;
+TestServer<HTTPTestChannel> testServer;
 
 void waitForComplete(HTTP::Client* cl, TestRequest* tr)
 {

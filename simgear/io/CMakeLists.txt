@@ -23,6 +23,7 @@ set(HEADERS
     SVNRepository.hxx
     SVNDirectory.hxx
     SVNReportParser.hxx
+    HTTPRepository.hxx
     )
 
 set(SOURCES
@@ -46,6 +47,7 @@ set(SOURCES
     SVNRepository.cxx
     SVNDirectory.cxx
     SVNReportParser.cxx
+    HTTPRepository.cxx
     )
 
 if (NOT ENABLE_CURL)
@@ -78,5 +80,9 @@ add_executable(test_binobj test_binobj.cxx)
 target_link_libraries(test_binobj ${TEST_LIBS})
 
 add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
+
+add_executable(test_repository test_repository.cxx)
+target_link_libraries(test_repository ${TEST_LIBS})
+add_test(http_repository ${EXECUTABLE_OUTPUT_PATH}/test_repository)
 
 endif(ENABLE_TESTS)

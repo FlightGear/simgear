@@ -233,7 +233,8 @@ SGPath::SGPath(const SGPath& p) :
   _exists(p._exists),
   _isDir(p._isDir),
   _isFile(p._isFile),
-  _modTime(p._modTime)
+  _modTime(p._modTime),
+  _size(p._size)
 {
 }
 
@@ -250,6 +251,7 @@ SGPath& SGPath::operator=(const SGPath& p)
   _isDir = p._isDir;
   _isFile = p._isFile;
   _modTime = p._modTime;
+  _size = p._size;
   return *this;
 }
 
@@ -283,6 +285,7 @@ SGPath::PermissionChecker SGPath::getPermissionChecker() const
 void SGPath::set_cached(bool cached)
 {
   _cacheEnabled = cached;
+  _cached = false;
 }
 
 // append another piece to the existing path
@@ -445,6 +448,7 @@ void SGPath::validate() const
     _isFile = ((S_IFREG & buf.st_mode ) !=0);
     _isDir = ((S_IFDIR & buf.st_mode ) !=0);
     _modTime = buf.st_mtime;
+    _size = buf.st_size;
   }
 
 #else
@@ -457,6 +461,7 @@ void SGPath::validate() const
     _isFile = ((S_ISREG(buf.st_mode )) != 0);
     _isDir = ((S_ISDIR(buf.st_mode )) != 0);
     _modTime = buf.st_mtime;
+    _size = buf.st_size;
   }
   
 #endif
@@ -684,6 +689,12 @@ time_t SGPath::modTime() const
 {
     validate();
     return _modTime;
+}
+
+size_t SGPath::sizeInBytes() const
+{
+    validate();
+    return _size;
 }
 
 bool SGPath::operator==(const SGPath& other) const

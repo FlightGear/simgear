@@ -10,6 +10,7 @@ set(HEADERS
     interpolator.hxx
     make_new.hxx
     sg_dir.hxx
+    sg_hash.hxx
     sg_path.hxx
     sgstream.hxx
     stdint.hxx
@@ -29,6 +30,7 @@ set(SOURCES
     interpolator.cxx
     sg_dir.cxx
     sg_path.cxx
+    sg_hash.cxx
     sgstream.cxx
     strutils.cxx
     tabbed_values.cxx

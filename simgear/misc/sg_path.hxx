@@ -252,7 +252,12 @@ public:
      * modification time of the file
      */
     time_t modTime() const;
-    
+
+    /**
+     *
+     */
+    size_t sizeInBytes() const;
+
     /**
      * rename the file / directory we point at, to a new name
      * this may fail if the new location is on a different volume / share,
@@ -315,6 +320,7 @@ private:
     mutable bool _isDir : 1;
     mutable bool _isFile : 1;
     mutable time_t _modTime;
+    mutable size_t _size;
 };
 
 /// Output to an ostream

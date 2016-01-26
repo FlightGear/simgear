@@ -244,7 +244,7 @@ class SVNReportParser::SVNReportParserPrivate
 public:
   SVNReportParserPrivate(SVNRepository* repo) :
     tree(repo),
-    status(SVNRepository::SVN_NO_ERROR),
+    status(AbstractRepository::REPO_NO_ERROR),
     parserInited(false),
     currentPath(repo->fsBase())
   {
@@ -258,7 +258,7 @@ public:
   
   void startElement (const char * name, const char** attributes)
   {    
-      if (status != SVNRepository::SVN_NO_ERROR) {
+      if (status != AbstractRepository::REPO_NO_ERROR) {
           return;
       }
       
@@ -277,7 +277,7 @@ public:
       currentPath = filePath;
        
       if (!filePath.exists()) {
-          fail(SVNRepository::SVN_ERROR_FILE_NOT_FOUND);
+          fail(AbstractRepository::REPO_ERROR_FILE_NOT_FOUND);
           return;
       }
 
@@ -386,7 +386,7 @@ public:
   
   void endElement (const char * name)
   {
-      if (status != SVNRepository::SVN_NO_ERROR) {
+      if (status != SVNRepository::REPO_NO_ERROR) {
           return;
       }
       
@@ -420,7 +420,7 @@ public:
     } else if (!strcmp(name, SVN_DAV_MD5_CHECKSUM)) {
       // validate against (presumably) just written file
       if (decodedFileMd5 != md5Sum) {
-        fail(SVNRepository::SVN_ERROR_CHECKSUM);
+        fail(SVNRepository::REPO_ERROR_CHECKSUM);
       }
     } else if (!strcmp(name, SVN_OPEN_DIRECTORY_TAG)) {
         currentDir->updateReportComplete();
@@ -443,7 +443,7 @@ public:
   
   void data (const char * s, int length)
   {
-      if (status != SVNRepository::SVN_NO_ERROR) {
+      if (status != SVNRepository::REPO_NO_ERROR) {
           return;
       }
       
@@ -544,7 +544,7 @@ SVNReportParser::~SVNReportParser()
 SVNRepository::ResultCode
 SVNReportParser::innerParseXML(const char* data, int size)
 {
-    if (_d->status != SVNRepository::SVN_NO_ERROR) {
+    if (_d->status != SVNRepository::REPO_NO_ERROR) {
         return _d->status;
     }
     
@@ -568,7 +568,7 @@ SVNReportParser::innerParseXML(const char* data, int size)
 SVNRepository::ResultCode
 SVNReportParser::parseXML(const char* data, int size)
 {
-    if (_d->status != SVNRepository::SVN_NO_ERROR) {
+    if (_d->status != SVNRepository::REPO_NO_ERROR) {
         return _d->status;
     }
     
@@ -586,7 +586,7 @@ SVNReportParser::parseXML(const char* data, int size)
 
 SVNRepository::ResultCode SVNReportParser::finishParse()
 {
-    if (_d->status != SVNRepository::SVN_NO_ERROR) {
+    if (_d->status != SVNRepository::REPO_NO_ERROR) {
         return _d->status;
     }
     

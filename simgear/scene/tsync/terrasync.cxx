@@ -169,7 +169,7 @@ public:
     SyncItem currentItem;
     bool isNewDirectory;
     std::queue<SyncItem> queue;
-    std::auto_ptr<SVNRepository> repository;
+    std::auto_ptr<AbstractRepository> repository;
     SGTimeStamp stamp;
     bool busy; ///< is the slot working or idle
 
@@ -617,9 +617,9 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
 
         // check result
         SVNRepository::ResultCode res = slot.repository->failure();
-        if (res == SVNRepository::SVN_ERROR_NOT_FOUND) {
+        if (res == AbstractRepository::REPO_ERROR_NOT_FOUND) {
             notFound(slot.currentItem);
-        } else if (res != SVNRepository::SVN_NO_ERROR) {
+        } else if (res != AbstractRepository::REPO_NO_ERROR) {
             fail(slot.currentItem);
         } else {
             updated(slot.currentItem, slot.isNewDirectory);

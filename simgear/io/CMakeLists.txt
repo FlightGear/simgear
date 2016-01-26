@@ -18,6 +18,7 @@ set(HEADERS
     HTTPFileRequest.hxx
     HTTPMemoryRequest.hxx
     HTTPRequest.hxx
+    AbstractRepository.hxx
     DAVMultiStatus.hxx
     SVNRepository.hxx
     SVNDirectory.hxx
@@ -40,6 +41,7 @@ set(SOURCES
     HTTPFileRequest.cxx
     HTTPMemoryRequest.cxx
     HTTPRequest.cxx
+    AbstractRepository.cxx
     DAVMultiStatus.cxx
     SVNRepository.cxx
     SVNDirectory.cxx

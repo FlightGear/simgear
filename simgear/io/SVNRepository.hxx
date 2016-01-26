@@ -17,62 +17,42 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-#ifndef SG_IO_DAVMIRRORTREE_HXX
-#define SG_IO_DAVMIRRORTREE_HXX
+#ifndef SG_IO_SVN_REPOSITORY_HXX
+#define SG_IO_SVN_REPOSITORY_HXX
 
-#include <string>
-#include <vector>
-#include <memory>
-
-#include <simgear/misc/sg_path.hxx>
+#include <simgear/io/AbstractRepository.hxx>
 
 namespace simgear  {
-  
-  namespace HTTP {
-    class Client;
-  }
-  
-class SVNDirectory;  
+
+class SVNDirectory;
 class SVNRepoPrivate;
 
-class SVNRepository
+class SVNRepository : public AbstractRepository
 {
 public:
-  
+
     SVNRepository(const SGPath& root, HTTP::Client* cl);
-    ~SVNRepository();
+    virtual ~SVNRepository();
 
     SVNDirectory* rootDir() const;
-    SGPath fsBase() const;
+    virtual SGPath fsBase() const;
 
-    void setBaseUrl(const std::string& url);
-    std::string baseUrl() const;
+    virtual void setBaseUrl(const std::string& url);
+    virtual std::string baseUrl() const;
 
-    HTTP::Client* http() const;
+    virtual HTTP::Client* http() const;
 
-    void update();
+    virtual void update();
 
-    bool isDoingSync() const;
-    
-    enum ResultCode {
-        SVN_NO_ERROR = 0,
-        SVN_ERROR_NOT_FOUND,
-        SVN_ERROR_SOCKET,
-        SVN_ERROR_XML,
-        SVN_ERROR_TXDELTA,
-        SVN_ERROR_IO,
-        SVN_ERROR_CHECKSUM,
-        SVN_ERROR_FILE_NOT_FOUND,
-        SVN_ERROR_HTTP
-    };
-    
-    ResultCode failure() const;
+    virtual bool isDoingSync() const;
+
+    virtual ResultCode failure() const;
 private:
     bool isBare() const;
-    
+
     std::auto_ptr<SVNRepoPrivate> _d;
 };
 
 } // of namespace simgear
 
-#endif // of SG_IO_DAVMIRRORTREE_HXX
+#endif // of SG_IO_SVN_REPOSITORY_HXX

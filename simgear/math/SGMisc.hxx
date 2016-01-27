@@ -154,7 +154,7 @@ public:
   static bool isNaN(const T& v)
   {
 #ifdef HAVE_ISNAN
-    return isnan(v);
+    return (isnan(v) != 0);
 #elif defined HAVE_STD_ISNAN
     return std::isnan(v);
 #else

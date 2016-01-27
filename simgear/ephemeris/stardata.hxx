@@ -41,7 +41,7 @@ public:
     bool load( const SGPath& path );
 
     // stars
-    inline int getNumStars() const { return _stars.size(); }
+    inline int getNumStars() const { return static_cast<int>(_stars.size()); }
     inline SGVec3d *getStars() { return &(_stars[0]); }
 
 private:

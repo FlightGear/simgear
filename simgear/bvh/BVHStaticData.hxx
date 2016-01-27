@@ -31,13 +31,13 @@ public:
     virtual ~BVHStaticData() {}
     
     unsigned addVertex(const SGVec3f& vertex)
-    { _vertices.push_back(vertex); return _vertices.size() - 1; }
+    { _vertices.push_back(vertex); return static_cast<unsigned>(_vertices.size() - 1); }
     const SGVec3f& getVertex(unsigned i) const
     { return _vertices[i]; }
     
     
     unsigned addMaterial(const BVHMaterial* material)
-    { _materials.push_back(material); return _materials.size() - 1; }
+    { _materials.push_back(material); return static_cast<unsigned>(_materials.size() - 1); }
     const BVHMaterial* getMaterial(unsigned i) const
     { if (_materials.size() <= i) return 0; return _materials[i]; }
 

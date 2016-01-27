@@ -43,7 +43,7 @@ public:
     void removeChild(BVHNode* child);
     
     unsigned getNumChildren() const
-    { return _children.size(); }
+    { return static_cast<unsigned>(_children.size()); }
     const BVHNode* getChild(unsigned i) const
     { if (_children.size() <= i) return 0; return _children[i]; }
     BVHNode* getChild(unsigned i)

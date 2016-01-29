@@ -54,8 +54,10 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY LINKER_LANGUAGE CXX)
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
-    install(TARGETS SimGearCore EXPORT SimGearCoreConfig LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(EXPORT SimGearCoreConfig DESTINATION share/SimGearCore)
+    install(TARGETS SimGearCore
+            EXPORT SimGearTargets
+            LIBRARY DESTINATION
+            ${CMAKE_INSTALL_LIBDIR})
 
     if(NOT SIMGEAR_HEADLESS)
         add_library(SimGearScene SHARED ${sceneSources})
@@ -64,8 +66,10 @@ if(SIMGEAR_SHARED)
         set_property(TARGET SimGearScene PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
         # EXPORT SimGearSceneConfig
-        install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
-    #    install(EXPORT SimGearSceneConfig DESTINATION share/SimGearScene)
+        install(TARGETS SimGearScene
+                EXPORT SimGearTargets
+                LIBRARY
+                DESTINATION ${CMAKE_INSTALL_LIBDIR} )
     endif()
 
 else()
@@ -90,7 +94,9 @@ else()
 	endforeach()
 
     add_library(SimGearCore STATIC ${coreSources} ${localExpatSources})
-    install(TARGETS SimGearCore ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(TARGETS SimGearCore
+            EXPORT SimGearTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
     if(NOT SIMGEAR_HEADLESS)
 		get_property(FG_GROUPS_SCENE_SOURCES_C GLOBAL PROPERTY FG_GROUPS_SCENE_SOURCES_C)
@@ -112,7 +118,9 @@ else()
 		endforeach()
 
         add_library(SimGearScene STATIC ${sceneSources})
-        install(TARGETS SimGearScene ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(TARGETS SimGearScene
+                EXPORT SimGearTargets
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
 

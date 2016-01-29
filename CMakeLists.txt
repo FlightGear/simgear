@@ -14,6 +14,7 @@ include (CheckIncludeFile)
 include (CheckLibraryExists)
 include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
+include (GenerateExportHeader)
 
 # using 10.7 because boost requires libc++ and 10.6 doesn't include it
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
@@ -422,6 +423,43 @@ include_directories(3rdparty/utf8/source)
 
 add_subdirectory(3rdparty)
 add_subdirectory(simgear)
+
+#-----------------------------------------------------------------------------
+### Export stuff, see https://cmake.org/cmake/help/v3.2/manual/cmake-packages.7.html#creating-packages
+#-----------------------------------------------------------------------------
+
+generate_export_header(SimGearCore)
+generate_export_header(SimGearScene)
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearConfigVersion.cmake"
+  VERSION ${SIMGEAR_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+export(EXPORT SimGearTargets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearTargets.cmake"
+  NAMESPACE Upstream::
+)
+
+configure_file(SimGearConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearConfig.cmake"
+  @ONLY
+)
+
+set(ConfigPackageLocation lib/cmake/SimGear)
+install(EXPORT SimGearTargets
+  DESTINATION ${ConfigPackageLocation}
+)
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearConfigVersion.cmake"
+  DESTINATION ${ConfigPackageLocation}
+  COMPONENT Devel
+)
 
 #-----------------------------------------------------------------------------
 ### uninstall target

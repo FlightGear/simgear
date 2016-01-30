@@ -429,7 +429,9 @@ add_subdirectory(simgear)
 #-----------------------------------------------------------------------------
 
 generate_export_header(SimGearCore)
-generate_export_header(SimGearScene)
+if(NOT SIMGEAR_HEADLESS)
+  generate_export_header(SimGearScene)
+endif()
 
 include(CMakePackageConfigHelpers)
 

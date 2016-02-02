@@ -441,11 +441,6 @@ write_basic_package_version_file(
   COMPATIBILITY AnyNewerVersion
 )
 
-export(EXPORT SimGearTargets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearTargets.cmake"
-  NAMESPACE Upstream::
-)
-
 configure_file(SimGearConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearConfig.cmake"
   @ONLY

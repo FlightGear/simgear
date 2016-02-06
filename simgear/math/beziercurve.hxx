@@ -59,7 +59,7 @@ namespace simgear
     }
 
     void setMaxSubdiv( size_t aMaxSubdiv ) { mMaxSubdiv = aMaxSubdiv; }
-    void getMaxSubdiv() const { return mMaxSubdiv; }
+    size_t getMaxSubdiv() const { return mMaxSubdiv; }
     PointList &pointList() { return mPointList; }
     const PointList &pointList() const { return mPointList; }
 

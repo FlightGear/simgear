@@ -343,7 +343,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _stop(false),
     _use_svn(true)
 {
-    _http.setUserAgent("terrascenery-" SG_STRINGIZE(SG_VERSION));
+    _http.setUserAgent("terrascenery-" SG_STRINGIZE(SIMGEAR_VERSION));
 }
 
 void SGTerraSync::SvnThread::stop()

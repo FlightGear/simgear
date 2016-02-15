@@ -51,6 +51,7 @@
 #include <map>
 
 #include <simgear/compiler.h>
+#include <simgear/version.h>
 
 #include "terrasync.hxx"
 

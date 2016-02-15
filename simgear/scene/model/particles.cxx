@@ -62,7 +62,7 @@ void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     osg::Vec3 w(zUpWind.y(), zUpWind.x(), -zUpWind.z());
     wind = om.preMult(w);
 
-    // SG_LOG(SG_GENERAL, SG_ALERT,
+    // SG_LOG(SG_PARTICLES, SG_ALERT,
     //        "wind vector:" << w[0] << "," <<w[1] << "," << w[2]);
 }
 
@@ -104,7 +104,7 @@ osg::Group* Particles::getCommonRoot()
 {
     if(!commonRoot.valid())
     {
-        SG_LOG(SG_GENERAL, SG_DEBUG, "Particle common root called!\n");
+        SG_LOG(SG_PARTICLES, SG_DEBUG, "Particle common root called.");
         commonRoot = new osg::Group;
         commonRoot.get()->setName("common particle system root");
         commonGeode.get()->setName("common particle system geode");
@@ -134,7 +134,23 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                                           const osgDB::Options*
                                           options)
 {
-    SG_LOG(SG_GENERAL, SG_DEBUG, "Setting up a particle system!\n");
+    SG_LOG(SG_PARTICLES, SG_DEBUG,
+           "Setting up a particle system." << std::boolalpha
+        << "\n  Name: " << configNode->getStringValue("name", "")
+        << "\n  Type: " << configNode->getStringValue("type", "point")
+        << "\n  Attach: " << configNode->getStringValue("attach", "")
+        << "\n  Texture: " << configNode->getStringValue("texture", "")
+        << "\n  Emissive: " << configNode->getBoolValue("emissive")
+        << "\n  Lighting: " << configNode->getBoolValue("lighting")
+        << "\n  Align: " << configNode->getStringValue("align", "")
+        << "\n  Placer: " << configNode->hasChild("placer")
+        << "\n  Shooter: " << configNode->hasChild("shooter")
+        << "\n  Particle: " << configNode->hasChild("particle")
+        << "\n  Program: " << configNode->hasChild("program")
+        << "\n    Fluid: " << configNode->getChild("program")->getStringValue("fluid", "air")
+        << "\n    Gravity: " << configNode->getChild("program")->getBoolValue("gravity", true)
+        << "\n    Wind: " << configNode->getChild("program")->getBoolValue("wind", true)
+        << std::noboolalpha);
 
     osgParticle::ParticleSystem *particleSys;
 
@@ -174,7 +190,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
 
     align->setName("particle align");
 
-    //if (dynamic_cast<CustomModularEmitter*>(emitter)==0) SG_LOG(SG_GENERAL, SG_ALERT, "observer error\n");
+    //if (dynamic_cast<CustomModularEmitter*>(emitter)==0) SG_LOG(SG_PARTICLES, SG_ALERT, "observer error\n");
     //align->addObserver(dynamic_cast<CustomModularEmitter*>(emitter));
 
     align->addChild(emitter);
@@ -197,15 +213,15 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
     }
     std::string textureFile;
     if (configNode->hasValue("texture")) {
-        //SG_LOG(SG_GENERAL, SG_ALERT,
+        //SG_LOG(SG_PARTICLES, SG_ALERT,
         //       "requested:"<<configNode->getStringValue("texture","")<<"\n");
         textureFile= osgDB::findFileInPath(configNode->getStringValue("texture",
                                                                       ""),
                                            options->getDatabasePathList());
-        //SG_LOG(SG_GENERAL, SG_ALERT, "found:"<<textureFile<<"\n");
+        //SG_LOG(SG_PARTICLES, SG_ALERT, "found:"<<textureFile<<"\n");
 
         //for(unsigned i = 0; i < options->getDatabasePathList().size(); ++i)
-        //    SG_LOG(SG_GENERAL, SG_ALERT,
+        //    SG_LOG(SG_PARTICLES, SG_ALERT,
         //           "opts:"<<options->getDatabasePathList()[i]<<"\n");
     }
 
@@ -255,7 +271,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                 }
                 emitter->setPlacer(msplacer);
             } else {
-                SG_LOG(SG_GENERAL, SG_ALERT,
+                SG_LOG(SG_PARTICLES, SG_ALERT,
                        "Detected particle system using segment(s) with less than 2 vertices\n");
             }
         } //else the default placer in ModularEmitter is used (PointPlacer)
@@ -481,7 +497,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
     }
 
     if (callback.get()) {  //this means we want property-driven changes
-        SG_LOG(SG_GENERAL, SG_DEBUG, "setting up particle system user data and callback\n");
+        SG_LOG(SG_PARTICLES, SG_DEBUG, "Setting up particle system user data and callback.");
         //setup data and callback
         callback.get()->setGeneralData(dynamic_cast<osgParticle::RadialShooter*>(emitter->getShooter()),
                                        dynamic_cast<osgParticle::RandomRateCounter*>(emitter->getCounter()),
@@ -494,7 +510,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
 
 void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
-    //SG_LOG(SG_GENERAL, SG_ALERT, "callback!\n");
+    //SG_LOG(SG_PARTICLES, SG_ALERT, "callback!\n");
     this->particleSys->setFrozen(_frozen);
 
     using namespace osg;

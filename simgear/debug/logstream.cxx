@@ -72,6 +72,7 @@ const char* debugClassToString(sgDebugClass c)
     case SG_NAVAID:     return "navaid";
     case SG_GUI:        return "gui";
     case SG_TERRASYNC:  return "terrasync";
+    case SG_PARTICLES:  return "particles";
     default:            return "unknown";
     }
 }

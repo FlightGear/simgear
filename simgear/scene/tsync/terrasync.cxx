@@ -22,10 +22,7 @@
 //
 // $Id$
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
-
+#include <simgear_config.h>
 #include <simgear/compiler.h>
 
 #ifdef HAVE_WINDOWS_H
@@ -50,7 +47,6 @@
 #include <string>
 #include <map>
 
-#include <simgear/compiler.h>
 #include <simgear/version.h>
 
 #include "terrasync.hxx"
@@ -64,6 +60,7 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/io/SVNRepository.hxx>
+#include <simgear/io/HTTPRepository.hxx>
 #include <simgear/structure/exception.hxx>
 
 static const bool svn_built_in_available = true;
@@ -258,6 +255,10 @@ public:
 
    void   setSvnServer(string server)       { _svn_server   = stripPath(server);}
    void   setSvnDataServer(string server)   { _svn_data_server   = stripPath(server);}
+   void   setHTTPServer(const std::string& server)
+   {
+      _httpServer = stripPath(server);
+   }
 
    void   setExtSvnUtility(string svn_util) { _svn_command  = simgear::strutils::strip(svn_util);}
    void   setRsyncServer(string server)     { _rsync_server = simgear::strutils::strip(server);}
@@ -324,6 +325,7 @@ private:
    string _rsync_server;
    string _local_dir;
    SGPath _persistentCachePath;
+   string _httpServer;
 };
 
 SGTerraSync::SvnThread::SvnThread() :
@@ -651,11 +653,16 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         } // of creating directory step
 
         string serverUrl(_svn_server);
-        if (slot.currentItem._type == SyncItem::AIData) {
-            serverUrl = _svn_data_server;
+        if (!_httpServer.empty()) {
+          slot.repository.reset(new HTTPRepository(path, &_http));
+          serverUrl = _httpServer;
+        } else {
+          if (slot.currentItem._type == SyncItem::AIData) {
+              serverUrl = _svn_data_server;
+          }
+          slot.repository.reset(new SVNRepository(path, &_http));
         }
 
-        slot.repository.reset(new SVNRepository(path, &_http));
         slot.repository->setBaseUrl(serverUrl + "/" + slot.currentItem._dir);
         slot.repository->update();
 
@@ -906,6 +913,7 @@ void SGTerraSync::reinit()
     if (_terraRoot->getBoolValue("enabled",false))
     {
         _svnThread->setSvnServer(_terraRoot->getStringValue("svn-server",""));
+        _svnThread->setHTTPServer(_terraRoot->getStringValue("http-server",""));
         _svnThread->setSvnDataServer(_terraRoot->getStringValue("svn-data-server",""));
         _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));

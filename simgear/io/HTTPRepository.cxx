@@ -18,6 +18,8 @@
 
 #include "HTTPRepository.hxx"
 
+#include <simgear_config.h>
+
 #include <iostream>
 #include <cstring>
 #include <cassert>
@@ -40,6 +42,53 @@
 #include <simgear/structure/exception.hxx>
 
 #include <simgear/misc/sg_hash.hxx>
+
+#if defined(SG_WINDOWS)
+
+/*
+ * public domain strtok_r() by Charlie Gordon
+ *
+ *   from comp.lang.c  9/14/2007
+ *
+ *      http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684
+ *
+ *     (Declaration that it's public domain):
+ *      http://groups.google.com/group/comp.lang.c/msg/7c7b39328fefab9c
+ */
+
+char* strtok_r(
+    char *str,
+    const char *delim,
+    char **nextp)
+{
+    char *ret;
+
+    if (str == NULL)
+    {
+        str = *nextp;
+    }
+
+    str += strspn(str, delim);
+
+    if (*str == '\0')
+    {
+        return NULL;
+    }
+
+    ret = str;
+
+    str += strcspn(str, delim);
+
+    if (*str)
+    {
+        *str++ = '\0';
+    }
+
+    *nextp = str;
+
+    return ret;
+}
+#endif
 
 namespace simgear
 {
@@ -485,39 +534,31 @@ HTTPRepository::failure() const
         FileGetRequest(HTTPDirectory* d, const std::string& file) :
             HTTP::Request(makeUrl(d, file)),
             directory(d),
-            fileName(file),
-            fd(-1)
+            fileName(file)
         {
             SG_LOG(SG_TERRASYNC, SG_INFO, "will GET file " << url());
-
         }
 
     protected:
         virtual void gotBodyData(const char* s, int n)
         {
-            if (fd < 0) {
+            if (!file.get()) {
                 SGPath p(pathInRepo());
-#ifdef SG_WINDOWS
-                int mode = 00666;
-#else
-                mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-#endif
-                fd = ::open(p.c_str(), O_CREAT | O_TRUNC | O_RDWR, mode);
-                if (fd < 0) {
-                    SG_LOG(SG_TERRASYNC, SG_WARN, "unable to create file " << p);
-                    // fail
+                file.reset(new SGFile(p.str()));
+                if (!file->open(SG_IO_OUT)) {
+                  SG_LOG(SG_TERRASYNC, SG_WARN, "unable to create file " << p);
+                  abort("Unable to create output file");
                 }
+
                 sha1_init(&hashContext);
             }
 
-            ::write(fd, s, n);
-            sha1_write(&hashContext, s, n);
-
+            file->write(s, n);
         }
 
         virtual void onDone()
         {
-            ::close(fd);
+            file->close();
             if (responseCode() == 200) {
                 std::string hash = strutils::encodeHex((char*) sha1_result(&hashContext));
                 directory->didUpdateFile(fileName, hash);
@@ -545,7 +586,7 @@ HTTPRepository::failure() const
         HTTPDirectory* directory;
         std::string fileName; // if empty, we're getting the directory itself
         simgear::sha1nfo hashContext;
-        int fd;
+        std::auto_ptr<SGFile> file;
     };
 
     class DirGetRequest : public HTTP::Request
@@ -687,15 +728,15 @@ HTTPRepository::failure() const
         sha1_init(&info);
         char* buf = static_cast<char*>(malloc(1024 * 1024));
         size_t readLen;
-        int fd = ::open(p.c_str(), O_RDONLY);
-        if (fd < 0) {
+        SGFile f(p.str());
+        if (!f.open(SG_IO_IN)) {
             throw sg_io_exception("Couldn't open file for compute hash", p);
         }
-        while ((readLen = ::read(fd, buf, 1024 * 1024)) > 0) {
+        while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
             sha1_write(&info, buf, readLen);
         }
 
-        ::close(fd);
+        f.close();
         free(buf);
         std::string hashBytes((char*) sha1_result(&info), HASH_LENGTH);
         return strutils::encodeHex(hashBytes);

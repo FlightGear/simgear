@@ -26,6 +26,7 @@
 #include <map>
 #include <set>
 #include <fstream>
+#include <memory>
 
 #include <boost/foreach.hpp>
 
@@ -51,12 +52,12 @@ typedef std::vector<HTTP::Request_ptr> RequestVector;
 class SVNRepoPrivate
 {
 public:
-    SVNRepoPrivate(SVNRepository* parent) : 
-        p(parent), 
+    SVNRepoPrivate(SVNRepository* parent) :
+        p(parent),
         isUpdating(false),
         status(SVNRepository::REPO_NO_ERROR)
     { ; }
-    
+
     SVNRepository* p; // link back to outer
     SVNDirectory* rootCollection;
     HTTP::Client* http;
@@ -65,12 +66,12 @@ public:
     std::string targetRevision;
     bool isUpdating;
     SVNRepository::ResultCode status;
-    
+
     void svnUpdateDone()
     {
         isUpdating = false;
     }
-    
+
     void updateFailed(HTTP::Request* req, SVNRepository::ResultCode err)
     {
         SG_LOG(SG_TERRASYNC, SG_WARN, "SVN: failed to update from:" << req->url()
@@ -78,29 +79,29 @@ public:
         isUpdating = false;
         status = err;
     }
-      
+
     void propFindComplete(HTTP::Request* req, DAVCollection* col);
     void propFindFailed(HTTP::Request* req, SVNRepository::ResultCode err);
 };
 
 
 namespace { // anonmouse
-    
+
     string makeAbsoluteUrl(const string& url, const string& base)
     {
       if (strutils::starts_with(url, "http://"))
         return url; // already absolute
-  
+
       assert(strutils::starts_with(base, "http://"));
       int schemeEnd = base.find("://");
       int hostEnd = base.find('/', schemeEnd + 3);
       if (hostEnd < 0) {
         return url;
       }
-  
+
       return base.substr(0, hostEnd) + url;
     }
-    
+
     // keep the responses small by only requesting the properties we actually
     // care about; the ETag, length and MD5-sum
     const char* PROPFIND_REQUEST_BODY =
@@ -142,7 +143,7 @@ namespace { // anonmouse
 
         Request::responseHeadersComplete();
       }
-  
+
       virtual void onDone()
       {
         if (responseCode() == 207) {
@@ -154,7 +155,7 @@ namespace { // anonmouse
           }
         }
       }
-  
+
       virtual void gotBodyData(const char* s, int n)
       {
         if (responseCode() != 207) {
@@ -162,7 +163,7 @@ namespace { // anonmouse
         }
         _davStatus.parseXML(s, n);
       }
-        
+
         virtual void onFail()
         {
             HTTP::Request::onFail();
@@ -171,7 +172,7 @@ namespace { // anonmouse
 				_repo = NULL;
 			}
         }
-        
+
     private:
       SVNRepoPrivate* _repo;
       DAVMultiStatus _davStatus;
@@ -181,14 +182,14 @@ class UpdateReportRequest:
   public HTTP::Request
 {
 public:
-  UpdateReportRequest(SVNRepoPrivate* repo, 
+  UpdateReportRequest(SVNRepoPrivate* repo,
       const std::string& aVersionName,
       bool startEmpty) :
     HTTP::Request("", "REPORT"),
     _parser(repo->p),
     _repo(repo),
     _failed(false)
-  {       
+  {
     setUrl(repo->vccUrl);
     std::string request =
     "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
@@ -218,7 +219,7 @@ protected:
       if (_failed) {
           return;
       }
-      
+
     if (responseCode() == 200) {
           SVNRepository::ResultCode err = _parser.finishParse();
           if (err) {
@@ -239,15 +240,15 @@ protected:
   }
 
   virtual void gotBodyData(const char* s, int n)
-  {    
+  {
       if (_failed) {
           return;
       }
-      
+
     if (responseCode() != 200) {
         return;
     }
-    
+
     SVNRepository::ResultCode err = _parser.parseXML(s, n);
     if (err) {
         _failed = true;
@@ -270,15 +271,15 @@ private:
   SVNRepoPrivate* _repo;
   bool _failed;
 };
-        
-} // anonymous 
+
+} // anonymous
 
 SVNRepository::SVNRepository(const SGPath& base, HTTP::Client *cl) :
     _d(new SVNRepoPrivate(this))
 {
   _d->http = cl;
   _d->rootCollection = new SVNDirectory(this, base);
-  _d->baseUrl = _d->rootCollection->url();  
+  _d->baseUrl = _d->rootCollection->url();
 }
 
 SVNRepository::~SVNRepository()
@@ -312,42 +313,42 @@ bool SVNRepository::isBare() const
     if (!fsBase().exists() || Dir(fsBase()).isEmpty()) {
         return true;
     }
-    
+
     if (_d->vccUrl.empty()) {
         return true;
     }
-    
+
     return false;
 }
 
 void SVNRepository::update()
-{  
+{
     _d->status = REPO_NO_ERROR;
-    if (_d->targetRevision.empty() || _d->vccUrl.empty()) {        
-        _d->isUpdating = true;        
+    if (_d->targetRevision.empty() || _d->vccUrl.empty()) {
+        _d->isUpdating = true;
         PropFindRequest* pfr = new PropFindRequest(_d.get());
         http()->makeRequest(pfr);
         return;
     }
-        
+
     if (_d->targetRevision == rootDir()->cachedRevision()) {
         SG_LOG(SG_TERRASYNC, SG_DEBUG, baseUrl() << " in sync at version " << _d->targetRevision);
         _d->isUpdating = false;
         return;
     }
-    
+
     _d->isUpdating = true;
-    UpdateReportRequest* urr = new UpdateReportRequest(_d.get(), 
+    UpdateReportRequest* urr = new UpdateReportRequest(_d.get(),
         _d->targetRevision, isBare());
     http()->makeRequest(urr);
 }
-  
+
 bool SVNRepository::isDoingSync() const
 {
     if (_d->status != REPO_NO_ERROR) {
         return false;
     }
-    
+
     return _d->isUpdating || _d->rootCollection->isDoingSync();
 }
 
@@ -368,16 +369,16 @@ void SVNRepoPrivate::propFindComplete(HTTP::Request* req, DAVCollection* c)
 {
     targetRevision = c->versionName();
     vccUrl = makeAbsoluteUrl(c->versionControlledConfiguration(), baseUrl);
-    rootCollection->collection()->setVersionControlledConfiguration(vccUrl);    
+    rootCollection->collection()->setVersionControlledConfiguration(vccUrl);
     p->update();
 }
-  
+
 void SVNRepoPrivate::propFindFailed(HTTP::Request *req, SVNRepository::ResultCode err)
 {
     if (err != SVNRepository::REPO_ERROR_NOT_FOUND) {
         SG_LOG(SG_TERRASYNC, SG_WARN, "PropFind failed for:" << req->url());
     }
-    
+
     isUpdating = false;
     status = err;
 }

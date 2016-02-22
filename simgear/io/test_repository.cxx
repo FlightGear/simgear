@@ -111,7 +111,7 @@ public:
     TestRepoEntry* childEntry(const std::string& name) const
     {
         assert(isDir);
-        for (int i=0; i<children.size(); ++i) {
+        for (size_t i=0; i<children.size(); ++i) {
             if (children[i]->name == name) {
                 return children[i];
             }
@@ -143,7 +143,7 @@ TestRepoEntry::TestRepoEntry(TestRepoEntry* pr, const std::string& nm, bool d) :
 
 TestRepoEntry::~TestRepoEntry()
 {
-    for (int i=0; i<children.size(); ++i) {
+    for (size_t i=0; i<children.size(); ++i) {
         delete children[i];
     }
 }
@@ -154,7 +154,7 @@ std::string TestRepoEntry::data() const
         std::ostringstream os;
         os << "version:1\n";
         os << "path:" << pathInRepo() << "\n";
-        for (int i=0; i<children.size(); ++i) {
+        for (size_t i=0; i<children.size(); ++i) {
             os << children[i]->indexLine() << "\n";
         }
         return os.str();
@@ -184,7 +184,7 @@ void TestRepoEntry::clearRequestCounts()
 {
     requestCount = 0;
     if (isDir) {
-        for (int i=0; i<children.size(); ++i) {
+        for (size_t i=0; i<children.size(); ++i) {
             children[i]->clearRequestCounts();
         }
     }
@@ -300,7 +300,7 @@ void createFile(const SGPath& basePath, const std::string& relPath, int revision
 
     std::string prName = comps.at(comps.size() - 2);
     {
-        std::ofstream f(p.str(), std::ios::trunc | std::ios::out);
+        std::ofstream f(p.str().c_str(), std::ios::trunc | std::ios::out);
         f << dataForFile(prName, comps.back(), revision);
     }
 }
@@ -378,7 +378,7 @@ void testModifyLocalFiles(HTTP::Client* cl)
     SGPath modFile(p);
     modFile.append("dirB/subdirA/fileBAA");
     {
-        std::ofstream of(modFile.str(), std::ios::out | std::ios::trunc);
+        std::ofstream of(modFile.str().c_str(), std::ios::out | std::ios::trunc);
         of << "complete nonsense";
         of.close();
     }

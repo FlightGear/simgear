@@ -149,11 +149,12 @@ public:
   {
       SGPath p(absolutePath());
       if (p.exists()) {
-          bool indexValid = false;
+// what is indexValid for?
+//          bool indexValid = false;
           try {
               // already exists on disk
               parseDirIndex(children);
-              indexValid = true;
+//              indexValid = true;
               std::sort(children.begin(), children.end());
           } catch (sg_exception& e) {
               // parsing cache failed
@@ -336,7 +337,7 @@ private:
     {
         SGPath p(absolutePath());
         p.append(".dirindex");
-        std::ifstream indexStream( p.str(), std::ios::in );
+        std::ifstream indexStream( p.str().c_str(), std::ios::in );
 
         if ( !indexStream.is_open() ) {
             throw sg_io_exception("cannot open dirIndex file", p);
@@ -593,7 +594,7 @@ HTTPRepository::failure() const
 
                     // dir index data has changed, so write to disk and update
                     // the hash accordingly
-                    std::ofstream of(pathInRepo().str(), std::ios::trunc | std::ios::out);
+                    std::ofstream of(pathInRepo().str().c_str(), std::ios::trunc | std::ios::out);
                     assert(of.is_open());
                     of.write(body.data(), body.size());
                     of.close();
@@ -732,7 +733,7 @@ HTTPRepository::failure() const
         SGPath cachePath = basePath;
         cachePath.append(".hashes");
 
-        std::ofstream stream(cachePath.str(),std::ios::out | std::ios::trunc);
+        std::ofstream stream(cachePath.str().c_str(),std::ios::out | std::ios::trunc);
         HashCache::const_iterator it;
         for (it = hashes.begin(); it != hashes.end(); ++it) {
             stream << it->filePath << ":" << it->modTime << ":"
@@ -750,7 +751,7 @@ HTTPRepository::failure() const
             return;
         }
 
-        std::ifstream stream(cachePath.str(), std::ios::in);
+        std::ifstream stream(cachePath.str().c_str(), std::ios::in);
         char buf[2048];
         char* lastToken;
 

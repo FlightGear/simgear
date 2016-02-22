@@ -21,6 +21,7 @@
 #define SG_IO_HTTP_REPOSITORY_HXX
 
 #include <simgear/io/AbstractRepository.hxx>
+#include <memory>
 
 namespace simgear  {
 

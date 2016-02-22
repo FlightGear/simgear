@@ -300,7 +300,7 @@ void createFile(const SGPath& basePath, const std::string& relPath, int revision
 
     std::string prName = comps.at(comps.size() - 2);
     {
-        std::ofstream f(p.str().c_str(), std::ios::trunc | std::ios::out);
+        std::ofstream f(p.c_str(), std::ios::trunc | std::ios::out);
         f << dataForFile(prName, comps.back(), revision);
     }
 }
@@ -378,7 +378,7 @@ void testModifyLocalFiles(HTTP::Client* cl)
     SGPath modFile(p);
     modFile.append("dirB/subdirA/fileBAA");
     {
-        std::ofstream of(modFile.str().c_str(), std::ios::out | std::ios::trunc);
+        std::ofstream of(modFile.c_str(), std::ios::out | std::ios::trunc);
         of << "complete nonsense";
         of.close();
     }

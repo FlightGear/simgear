@@ -181,7 +181,7 @@ public:
 
         open();
         bind(NULL, 2000); // localhost, any port
-        listen(5);
+        listen(16);
 
         _poller.addChannel(this);
     }

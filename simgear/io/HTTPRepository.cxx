@@ -633,7 +633,10 @@ HTTPRepository::failure() const
                     // dir index data has changed, so write to disk and update
                     // the hash accordingly
                     std::ofstream of(pathInRepo().c_str(), std::ios::trunc | std::ios::out);
-                    assert(of.is_open());
+                    if (!of.is_open()) {
+                        throw sg_io_exception("Failed to open directory index file for writing", pathInRepo().c_str());
+                    }
+
                     of.write(body.data(), body.size());
                     of.close();
                     directory->dirIndexUpdated(hash);

@@ -261,7 +261,7 @@ public:
         }
     }
 
-    void procesRequestBody()
+    void processRequestBody()
     {
       if (path == "/test_post") {
             if ((args["foo"] != "abc") || (args["bar"] != "1234") || (args["username"] != "johndoe")) {

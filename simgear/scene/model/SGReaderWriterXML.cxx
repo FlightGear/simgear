@@ -485,6 +485,7 @@ sgLoad3DModel_internal(const SGPath& path,
         std::vector<SGPropertyNode_ptr> particle_nodes;
         particle_nodes = props->getChildren("particlesystem");
         for (unsigned i = 0; i < particle_nodes.size(); ++i) {
+            SG_LOG(SG_PARTICLES, SG_DEBUG, "Reading in particle " << i << " from file: " << path.str());
             osg::ref_ptr<SGReaderWriterOptions> options2;
             options2 = new SGReaderWriterOptions(*options);
             if (i==0) {

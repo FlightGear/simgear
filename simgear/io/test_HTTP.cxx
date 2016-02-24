@@ -557,7 +557,9 @@ cout << "testing proxy close" << endl;
     cout << "testing HTTP 1.1 pipelining" << endl;
 
     {
-
+        testServer.resetConnectCount();
+        cl.clearAllConnections();
+        
         cl.setProxy("", 80);
         TestRequest* tr = new TestRequest("http://localhost:2000/test1");
         HTTP::Request_ptr own(tr);
@@ -582,6 +584,8 @@ cout << "testing proxy close" << endl;
         COMPARE(tr2->bodyData, string(BODY3));
 
         COMPARE(tr3->bodyData, string(BODY1));
+
+        COMPARE(testServer.connectCount(), 1);
     }
 
 // multiple requests with an HTTP 1.0 server

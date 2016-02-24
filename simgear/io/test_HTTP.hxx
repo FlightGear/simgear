@@ -174,10 +174,13 @@ template <class T>
 class TestServer : public NetChannel
 {
     simgear::NetChannelPoller _poller;
+    int _connectCount;
 public:
     TestServer()
     {
         Socket::initSockets();
+
+        _connectCount = 0;
 
         open();
         bind(NULL, 2000); // localhost, any port
@@ -200,11 +203,23 @@ public:
         chan->setHandle(handle);
 
         _poller.addChannel(chan);
+
+        _connectCount++;
     }
 
     void poll()
     {
         _poller.poll();
+    }
+
+    void resetConnectCount()
+    {
+        _connectCount = 0;
+    }
+
+    int connectCount()
+    {
+        return _connectCount;
     }
 };
 

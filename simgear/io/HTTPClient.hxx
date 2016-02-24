@@ -100,6 +100,8 @@ public:
     uint64_t totalBytesDownloaded() const;
 
     void debugDumpRequests();
+
+    void clearAllConnections();
 private:
     // libCurl callbacks
     static size_t requestWriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata);

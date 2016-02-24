@@ -80,6 +80,18 @@ public:
 #if defined(ENABLE_CURL)
     CURLM* curlMulti;
     bool haveActiveRequests;
+
+    void createCurlMulti()
+    {
+        curlMulti = curl_multi_init();
+        // see https://curl.haxx.se/libcurl/c/CURLMOPT_PIPELINING.html
+        // we request HTTP 1.1 pipelining
+        curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, CURLPIPE_HTTP1);
+        curl_multi_setopt(curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxConnections);
+        curl_multi_setopt(curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH,
+                          (long) MAX_INFLIGHT_REQUESTS);
+
+    }
 #else
     NetChannelPoller poller;
 // connections by host (potentially more than one)
@@ -685,7 +697,7 @@ Client::Client() :
       didInitCurlGlobal = true;
     }
 
-    d->curlMulti = curl_multi_init();
+    d->createCurlMulti();
 #endif
 }
 
@@ -704,7 +716,7 @@ void Client::setMaxConnections(unsigned int maxCon)
 
     d->maxConnections = maxCon;
 #if defined(ENABLE_CURL)
-    curl_multi_setopt(d->curlMulti, CURLMOPT_MAXCONNECTS, (long) maxCon);
+    curl_multi_setopt(d->curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxCon);
 #endif
 }
 
@@ -818,6 +830,7 @@ void Client::makeRequest(const Request_ptr& r)
     curl_easy_setopt(curlRequest, CURLOPT_HEADERDATA, r.get());
 
     curl_easy_setopt(curlRequest, CURLOPT_USERAGENT, d->userAgent.c_str());
+    curl_easy_setopt(curlRequest, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 
     if (!d->proxy.empty()) {
       curl_easy_setopt(curlRequest, CURLOPT_PROXY, d->proxy.c_str());
@@ -1116,6 +1129,20 @@ void Client::debugDumpRequests()
         it->second->debugDumpRequests();
     }
     SG_LOG(SG_IO, SG_INFO, "==");
+#endif
+}
+
+void Client::clearAllConnections()
+{
+#if defined(ENABLE_CURL)
+    curl_multi_cleanup(d->curlMulti);
+    d->createCurlMulti();
+#else
+    ConnectionDict::iterator it = d->connections.begin();
+    for (; it != d->connections.end(); ++it) {
+        delete it->second;
+    }
+    d->connections.clear();
 #endif
 }
 

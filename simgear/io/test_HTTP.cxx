@@ -86,7 +86,7 @@ protected:
 
     virtual void gotBodyData(const char* s, int n)
     {
-      //std::cout << "got body data:'" << string(s, n) << "'" <<std::endl;
+        //std::cout << "got body data:'" << string(s, n) << "'" <<std::endl;
         bodyData += string(s, n);
     }
 
@@ -256,6 +256,36 @@ public:
               requestContentLength = strutils::to_int(requestHeaders["Content-Length"]);
               setByteCount(requestContentLength);
               state = STATE_REQUEST_BODY;
+        } else if (path == "/test_get_during_send") {
+            // indicate we will send some number of bytes, but only send
+            // some of them now.
+            waitingOnNextRequestToContinue = true;
+
+            string contentStr(BODY3, 100); // only send first 100 chars
+            stringstream d;
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Content-Length:" << strlen(BODY3) << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
+        } else if (path == "/test_get_during_send_2") {
+            stringstream d;
+
+            if (waitingOnNextRequestToContinue) {
+                waitingOnNextRequestToContinue = false;
+                // push the rest of the first request
+                d << string(BODY3).substr(100);
+            }
+
+
+            // push the response to this request
+            string contentStr(BODY1);
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Content-Length:" << contentStr.size() << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
+
         } else {
           TestServerChannel::processRequestHeaders();
         }
@@ -309,6 +339,8 @@ public:
         push(d.str().c_str());
         bufferSend(body2, body2Size);
     }
+
+    bool waitingOnNextRequestToContinue;
 };
 
 TestServer<HTTPTestChannel> testServer;
@@ -666,6 +698,34 @@ cout << "testing proxy close" << endl;
         COMPARE(tr->responseBytesReceived(), 0);
     }
 
+    {
+        cout << "get-during-response-send" << endl;
+        //test_get_during_send
+
+        TestRequest* tr = new TestRequest("http://localhost:2000/test_get_during_send");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+
+        // kick things along
+        for (int i=0; i<10; ++i) {
+            SGTimeStamp::sleepForMSec(1);
+            cl.update();
+            testServer.poll();
+
+        }
+
+        TestRequest* tr2 = new TestRequest("http://localhost:2000/test_get_during_send_2");
+        HTTP::Request_ptr own2(tr2);
+        cl.makeRequest(tr2);
+
+        waitForComplete(&cl, tr2);
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->bodyData, string(BODY3));
+        COMPARE(tr->responseBytesReceived(), strlen(BODY3));
+        COMPARE(tr2->responseCode(), 200);
+        COMPARE(tr2->bodyData, string(BODY1));
+        COMPARE(tr2->responseBytesReceived(), strlen(BODY1));
+    }
 
     cout << "all tests passed ok" << endl;
     return EXIT_SUCCESS;

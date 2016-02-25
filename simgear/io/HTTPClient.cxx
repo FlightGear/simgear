@@ -68,7 +68,7 @@ namespace HTTP
 
 extern const int DEFAULT_HTTP_PORT = 80;
 const char* CONTENT_TYPE_URL_ENCODED = "application/x-www-form-urlencoded";
-const unsigned int MAX_INFLIGHT_REQUESTS = 32;
+const unsigned int MAX_INFLIGHT_REQUESTS = 4;
 
 class Connection;
 typedef std::multimap<std::string, Connection*> ConnectionDict;
@@ -377,7 +377,9 @@ public:
       // successfully sent, remove from queue, and maybe send the next
       queuedRequests.pop_front();
       sentRequests.push_back(r);
-      state = STATE_WAITING_FOR_RESPONSE;
+      if (state == STATE_IDLE) {
+          state = STATE_WAITING_FOR_RESPONSE;
+      }
 
       // pipelining, let's maybe send the next request right away
       tryStartNextRequest();

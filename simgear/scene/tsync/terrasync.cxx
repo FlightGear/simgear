@@ -664,7 +664,16 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         }
 
         slot.repository->setBaseUrl(serverUrl + "/" + slot.currentItem._dir);
-        slot.repository->update();
+        try {
+            slot.repository->update();
+        } catch (sg_exception& e) {
+            SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << " failed to start with error:"
+                   << e.getFormattedMessage());
+            fail(slot.currentItem);
+            slot.busy = false;
+            slot.repository.reset();
+            return;
+        }
 
         slot.nextWarnTimeout = 20000;
         slot.stamp.stamp();
@@ -676,7 +685,12 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
 void SGTerraSync::SvnThread::runInternal()
 {
     while (!_stop) {
-        _http.update(100);
+        try {
+            _http.update(100);
+        } catch (sg_exception& e) {
+            SG_LOG(SG_TERRASYNC, SG_WARN, "failure doing HTTP update" << e.getFormattedMessage());
+        }
+
         _transfer_rate = _http.transferRateBytesPerSec();
         // convert from bytes to kbytes
         _total_kb_downloaded = static_cast<int>(_http.totalBytesDownloaded() / 1024);

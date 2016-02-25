@@ -133,7 +133,9 @@ public:
     std::string computeHashForPath(const SGPath& p);
     void writeHashCache();
 
-    void failedToGetRootIndex();
+    void failedToGetRootIndex(AbstractRepository::ResultCode st);
+    void failedToUpdateChild(const SGPath& relativePath,
+                             AbstractRepository::ResultCode fileStatus);
 
     typedef std::vector<HTTP::Request_ptr> RequestVector;
     RequestVector requests;
@@ -200,7 +202,7 @@ public:
       if (p.exists()) {
           try {
               // already exists on disk
-              parseDirIndex(children);
+              bool ok = parseDirIndex(children);
               std::sort(children.begin(), children.end());
           } catch (sg_exception& e) {
               // parsing cache failed
@@ -234,13 +236,14 @@ public:
         std::sort(children.begin(), children.end());
     }
 
-    void failedToUpdate()
+    void failedToUpdate(AbstractRepository::ResultCode status)
     {
         if (_relativePath.isNull()) {
             // root dir failed
-            _repository->failedToGetRootIndex();
+            _repository->failedToGetRootIndex(status);
         } else {
             SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update dir:" << _relativePath);
+            _repository->failedToUpdateChild(_relativePath, status);
         }
     }
 
@@ -277,8 +280,6 @@ public:
                     p.append(c->name);
                     HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
                     childDir->updateChildrenBasedOnHash();
-                } else {
-                    SG_LOG(SG_TERRASYNC, SG_INFO, "existing file is ok:" << c->name);
                 }
             }
 
@@ -357,11 +358,13 @@ public:
         SG_LOG(SG_TERRASYNC, SG_INFO, "did update:" << fpath);
     }
 
-    void didFailToUpdateFile(const std::string& file)
+    void didFailToUpdateFile(const std::string& file,
+                             AbstractRepository::ResultCode status)
     {
         SGPath fpath(_relativePath);
         fpath.append(file);
         SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update:" << fpath);
+        _repository->failedToUpdateChild(fpath, status);
     }
 private:
 
@@ -379,10 +382,14 @@ private:
         return std::find_if(children.begin(), children.end(), ChildWithName(name));
     }
 
-    void parseDirIndex(ChildInfoList& children)
+    bool parseDirIndex(ChildInfoList& children)
     {
         SGPath p(absolutePath());
         p.append(".dirindex");
+        if (!p.exists()) {
+            return false;
+        }
+
         std::ifstream indexStream( p.c_str(), std::ios::in );
 
         if ( !indexStream.is_open() ) {
@@ -427,6 +434,8 @@ private:
                 children.back().setSize(sizeData);
             }
         }
+
+        return true;
     }
 
     void removeChild(const std::string& name)
@@ -448,6 +457,7 @@ private:
 
         if (!ok) {
             SG_LOG(SG_TERRASYNC, SG_WARN, "removal failed for:" << p);
+            throw sg_io_exception("Failed to remove existing file/dir:", p);
         }
     }
 
@@ -561,10 +571,19 @@ HTTPRepository::failure() const
                 directory->didUpdateFile(fileName, hash);
 
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "got file " << fileName << " in " << directory->absolutePath());
+            } else if (responseCode() == 404) {
+                directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_FILE_NOT_FOUND);
             } else {
-                directory->didFailToUpdateFile(fileName);
+                directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_HTTP);
             }
 
+            directory->repository()->finishedRequest(this);
+        }
+
+        virtual void onFail()
+        {
+            file.reset();
+            directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_SOCKET);
             directory->repository()->finishedRequest(this);
         }
     private:
@@ -645,13 +664,25 @@ HTTPRepository::failure() const
 
                 }
 
-                // either way we've confirmed the index is valid so update
-                // children now
-                directory->updateChildrenBasedOnHash();
+                try {
+                    // either way we've confirmed the index is valid so update
+                    // children now
+                    directory->updateChildrenBasedOnHash();
+                } catch (sg_exception& e) {
+                    directory->failedToUpdate(AbstractRepository::REPO_ERROR_IO);
+                }
+            } else if (responseCode() == 404) {
+                directory->failedToUpdate(AbstractRepository::REPO_ERROR_FILE_NOT_FOUND);
             } else {
-                directory->failedToUpdate();
+                directory->failedToUpdate(AbstractRepository::REPO_ERROR_HTTP);
             }
 
+            directory->repository()->finishedRequest(this);
+        }
+
+        virtual void onFail()
+        {
+            directory->failedToUpdate(AbstractRepository::REPO_ERROR_SOCKET);
             directory->repository()->finishedRequest(this);
         }
     private:
@@ -677,16 +708,16 @@ HTTPRepository::failure() const
     HTTP::Request_ptr HTTPRepoPrivate::updateFile(HTTPDirectory* dir, const std::string& name)
     {
         HTTP::Request_ptr r(new FileGetRequest(dir, name));
-        http->makeRequest(r);
         requests.push_back(r);
+        http->makeRequest(r);
         return r;
     }
 
     HTTP::Request_ptr HTTPRepoPrivate::updateDir(HTTPDirectory* dir)
     {
         HTTP::Request_ptr r(new DirGetRequest(dir));
-        http->makeRequest(r);
         requests.push_back(r);
+        http->makeRequest(r);
         return r;
     }
 
@@ -863,7 +894,7 @@ HTTPRepository::failure() const
     {
         RequestVector::iterator it = std::find(requests.begin(), requests.end(), req);
         if (it == requests.end()) {
-            throw sg_exception("lost request somehow");
+            throw sg_exception("lost request somehow", req->url());
         }
         requests.erase(it);
         if (requests.empty()) {
@@ -871,11 +902,19 @@ HTTPRepository::failure() const
         }
     }
 
-    void HTTPRepoPrivate::failedToGetRootIndex()
+    void HTTPRepoPrivate::failedToGetRootIndex(AbstractRepository::ResultCode st)
     {
         SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl);
-        status = AbstractRepository::REPO_ERROR_NOT_FOUND;
+        status = st;
     }
+
+    void HTTPRepoPrivate::failedToUpdateChild(const SGPath& relativePath,
+                                              AbstractRepository::ResultCode fileStatus)
+    {
+        // this means we only record the last error, should this be improved?
+        status = fileStatus;
+    }
+
 
 
 } // of namespace simgear

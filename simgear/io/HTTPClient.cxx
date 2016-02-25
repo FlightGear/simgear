@@ -86,7 +86,7 @@ public:
         curlMulti = curl_multi_init();
         // see https://curl.haxx.se/libcurl/c/CURLMOPT_PIPELINING.html
         // we request HTTP 1.1 pipelining
-        curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, CURLPIPE_HTTP1);
+        curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, 1 /* aka CURLPIPE_HTTP1 */);
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxConnections);
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH,
                           (long) MAX_INFLIGHT_REQUESTS);

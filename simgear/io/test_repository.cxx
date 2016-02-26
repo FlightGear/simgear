@@ -34,6 +34,14 @@ std::string dataForFile(const std::string& parentName, const std::string& name, 
     return os.str();
 }
 
+std::string hashForData(const std::string& d)
+{
+    simgear::sha1nfo info;
+    sha1_init(&info);
+    sha1_write(&info, d.data(), d.size());
+    return strutils::encodeHex(sha1_result(&info), HASH_LENGTH);
+}
+
 class TestRepoEntry
 {
 public:
@@ -57,8 +65,20 @@ public:
     bool isDir;
     int revision; // for files
     int requestCount;
+    bool getWillFail;
+    bool returnCorruptData;
 
     void clearRequestCounts();
+
+    void setGetWillFail(bool b)
+    {
+        getWillFail = b;
+    }
+
+    void setReturnCorruptData(bool d)
+    {
+        returnCorruptData = d;
+    }
 
     std::string pathInRepo() const
     {
@@ -139,6 +159,8 @@ TestRepoEntry::TestRepoEntry(TestRepoEntry* pr, const std::string& nm, bool d) :
 {
     revision = 2;
     requestCount = 0;
+    getWillFail = false;
+    returnCorruptData = false;
 }
 
 TestRepoEntry::~TestRepoEntry()
@@ -226,8 +248,22 @@ public:
                 return;
             }
 
+            if (entry->getWillFail) {
+                sendErrorResponse(404, false, "entry marked to fail explicitly:" + repoPath);
+                return;
+            }
+
             entry->requestCount++;
-            std::string content(entry->data());
+
+            std::string content;
+            if (entry->returnCorruptData) {
+                content = dataForFile("!$£$!" + entry->parent->name,
+                                      "corrupt_" + entry->name,
+                                      entry->revision);
+            } else {
+                content = entry->data();
+            }
+
             std::stringstream d;
             d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
             d << "Content-Length:" << content.size() << "\r\n";
@@ -475,6 +511,54 @@ void testLossOfLocalFiles(HTTP::Client* cl)
     std::cout << "Passed test: lose and replace local files" << std::endl;
 }
 
+void testAbandonMissingFiles(HTTP::Client* cl)
+{
+    std::auto_ptr<HTTPRepository> repo;
+    SGPath p(simgear::Dir::current().path());
+    p.append("http_repo_missing_files");
+    simgear::Dir pd(p);
+    if (pd.exists()) {
+        pd.removeChildren();
+    }
+
+    global_repo->defineFile("dirA/subdirE/fileAEA");
+    global_repo->findEntry("dirA/subdirE/fileAEA")->setGetWillFail(true);
+
+    repo.reset(new HTTPRepository(p, cl));
+    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->update();
+    waitForUpdateComplete(cl, repo.get());
+    if (repo->failure() != AbstractRepository::REPO_PARTIAL_UPDATE) {
+        throw sg_exception("Bad result from missing files test");
+    }
+
+    global_repo->findEntry("dirA/subdirE/fileAEA")->setGetWillFail(false);
+}
+
+void testAbandonCorruptFiles(HTTP::Client* cl)
+{
+    std::auto_ptr<HTTPRepository> repo;
+    SGPath p(simgear::Dir::current().path());
+    p.append("http_repo_corrupt_files");
+    simgear::Dir pd(p);
+    if (pd.exists()) {
+        pd.removeChildren();
+    }
+
+    global_repo->defineFile("dirB/subdirG/fileBGA");
+    global_repo->findEntry("dirB/subdirG/fileBGA")->setReturnCorruptData(true);
+
+    repo.reset(new HTTPRepository(p, cl));
+    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->update();
+    waitForUpdateComplete(cl, repo.get());
+    if (repo->failure() != AbstractRepository::REPO_PARTIAL_UPDATE) {
+        throw sg_exception("Bad result from corrupt files test");
+    }
+
+    std::cout << "Passed test: detect corrupted download" << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
   sglog().setLogLevels( SG_ALL, SG_INFO );
@@ -502,6 +586,10 @@ int main(int argc, char* argv[])
     testLossOfLocalFiles(&cl);
 
     testMergeExistingFileWithoutDownload(&cl);
+
+    testAbandonMissingFiles(&cl);
+
+    testAbandonCorruptFiles(&cl);
 
     return 0;
 }

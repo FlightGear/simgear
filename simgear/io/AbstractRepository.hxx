@@ -56,7 +56,8 @@ public:
         REPO_ERROR_IO,
         REPO_ERROR_CHECKSUM,
         REPO_ERROR_FILE_NOT_FOUND,
-        REPO_ERROR_HTTP
+        REPO_ERROR_HTTP,
+        REPO_PARTIAL_UPDATE
     };
 
     virtual ResultCode failure() const = 0;

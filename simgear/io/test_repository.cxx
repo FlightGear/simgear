@@ -19,6 +19,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/io/sg_file.hxx>
 
 using namespace simgear;
 
@@ -284,8 +285,11 @@ std::string test_computeHashForPath(const SGPath& p)
     sha1_init(&info);
     char* buf = static_cast<char*>(alloca(1024 * 1024));
     size_t readLen;
-    int fd = ::open(p.c_str(), O_RDONLY);
-    while ((readLen = ::read(fd, buf, 1024 * 1024)) > 0) {
+
+    SGFile f(p.str());
+    f.open(SG_IO_IN);
+
+    while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
         sha1_write(&info, buf, readLen);
     }
 

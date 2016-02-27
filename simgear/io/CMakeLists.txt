@@ -73,6 +73,9 @@ add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
 add_executable(httpget httpget.cxx)
 target_link_libraries(httpget ${TEST_LIBS})
 
+add_executable(http_repo_sync http_repo_sync.cxx)
+target_link_libraries(http_repo_sync ${TEST_LIBS})
+
 add_executable(decode_binobj decode_binobj.cxx)
 target_link_libraries(decode_binobj ${TEST_LIBS})
 

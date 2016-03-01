@@ -631,7 +631,10 @@ HTTPRepository::failure() const
         virtual void onFail()
         {
             file.reset();
-            pathInRepo.remove();
+            if (pathInRepo.exists()) {
+                pathInRepo.remove();
+            }
+            
             if (_directory) {
                 _directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_SOCKET);
                 _directory->repository()->finishedRequest(this);

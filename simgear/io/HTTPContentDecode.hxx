@@ -49,6 +49,8 @@ public:
     
     void receivedBytes(const char* n, size_t s);
 
+    size_t getTotalReceivedBytes() const
+    { return _totalReceivedBytes; }
 private:
     bool consumeGZipHeader();
     void runDecoder();
@@ -63,6 +65,7 @@ private:
     unsigned char* _input;
     size_t _inputAllocated, _inputSize;
     bool _contentDeflate, _needGZipHeader;
+    size_t _totalReceivedBytes;
 };
 
 } // of namespace HTTP

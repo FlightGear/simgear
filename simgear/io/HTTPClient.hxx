@@ -75,6 +75,13 @@ public:
      */
     void setMaxConnections(unsigned int maxCons);
 
+    void setMaxHostConnections(unsigned int maxHostConns);
+
+    /**
+     * maximum depth to pipeline requests - set to 0 to disable pipelining
+     */
+    void setMaxPipelineDepth(unsigned int depth);
+
     const std::string& userAgent() const;
 
     const std::string& proxyHost() const;

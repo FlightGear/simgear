@@ -51,9 +51,9 @@ ContentDecoder::ContentDecoder() :
     _output(NULL),
     _zlib(NULL),
     _input(NULL),
-    _inputAllocated(0),
-    _inputSize(0)
+    _inputAllocated(0)
 {
+    reset();
 }
 
 ContentDecoder::~ContentDecoder()
@@ -82,6 +82,7 @@ void ContentDecoder::reset()
     _contentDeflate = false;
     _needGZipHeader = false;
     _inputSize = 0;
+    _totalReceivedBytes = 0;
 }
 
 void ContentDecoder::initWithRequest(Request_ptr req)
@@ -120,6 +121,7 @@ void ContentDecoder::finish()
 
 void ContentDecoder::receivedBytes(const char* n, size_t s)
 {
+    _totalReceivedBytes += s;
     if (!_contentDeflate) {
         _request->processBodyBytes(n, s);
         return;

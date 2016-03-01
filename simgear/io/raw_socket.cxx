@@ -684,6 +684,15 @@ bool Socket::isNonBlockingError ()
 #endif
 }
 
+int Socket::errorNumber()
+{
+#if defined(WINSOCK)
+    return WSAGetLastError();
+#else
+    return errno;
+#endif
+}
+
 
 //////////////////////////////////////////////////////////////////////
 //

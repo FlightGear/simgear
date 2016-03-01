@@ -101,7 +101,8 @@ public:
   void setBroadcast ( bool broadcast ) ;
 
   static bool isNonBlockingError () ;
-  
+  static int errorNumber();
+
   static int select ( Socket** reads, Socket** writes, int timeout ) ;
 } ;
 

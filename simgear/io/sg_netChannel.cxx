@@ -114,7 +114,7 @@ NetChannel::send (const void * buffer, int size, int flags)
     write_blocked = true ;
     return 0;
   } else {
-    this->handleError (result);
+    this->handleError (errorNumber());
     close();
     return -1;
   }
@@ -134,7 +134,7 @@ NetChannel::recv (void * buffer, int size, int flags)
   } else if (isNonBlockingError ()) {
     return 0;
   } else {
-    this->handleError (result);
+    this->handleError (errorNumber());
     close();
     return -1;
   }
@@ -207,7 +207,7 @@ NetChannel::handleResolve()
         return 0;
     } else {
         // some other error condition
-        handleError (result);
+        handleError (errorNumber());
         close();
         return -1;
     }

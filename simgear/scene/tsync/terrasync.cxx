@@ -927,13 +927,21 @@ void SGTerraSync::reinit()
     if (_terraRoot->getBoolValue("enabled",false))
     {
         _svnThread->setSvnServer(_terraRoot->getStringValue("svn-server",""));
-        _svnThread->setHTTPServer(_terraRoot->getStringValue("http-server",""));
+        std::string httpServer(_terraRoot->getStringValue("http-server",""));
+        _svnThread->setHTTPServer(httpServer);
         _svnThread->setSvnDataServer(_terraRoot->getStringValue("svn-data-server",""));
         _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
         _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
-        _svnThread->setCachePath(SGPath(_terraRoot->getStringValue("cache-path","")));
+
+        if (httpServer.empty()) {
+            // HTTP doesn't benefit from using the persistent cache
+            _svnThread->setCachePath(SGPath(_terraRoot->getStringValue("cache-path","")));
+        } else {
+            SG_LOG(SG_TERRASYNC, SG_INFO, "HTTP repository selected, disabling persistent cache");
+        }
+
         _svnThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
         _svnThread->setUseSvn(_terraRoot->getBoolValue("use-svn",true));
         _svnThread->setExtSvnUtility(_terraRoot->getStringValue("ext-svn-utility","svn"));

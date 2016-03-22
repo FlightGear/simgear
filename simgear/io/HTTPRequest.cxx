@@ -32,6 +32,7 @@ extern const int DEFAULT_HTTP_PORT;
 
 //------------------------------------------------------------------------------
 Request::Request(const std::string& url, const std::string method):
+  _client(0),
   _method(method),
   _url(url),
   _responseVersion(HTTP_VERSION_UNKNOWN),

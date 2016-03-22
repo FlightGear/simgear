@@ -876,6 +876,8 @@ void Client::makeRequest(const Request_ptr& r)
         return;
     }
 
+    r->_client = this;
+
 #if defined(ENABLE_CURL)
     CURL* curlRequest = curl_easy_init();
     curl_easy_setopt(curlRequest, CURLOPT_URL, r->url().c_str());
@@ -1136,9 +1138,14 @@ uint64_t Client::totalBytesDownloaded() const
 size_t Client::requestWriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
   size_t byteSize = size * nmemb;
-
   Request* req = static_cast<Request*>(userdata);
   req->processBodyBytes(ptr, byteSize);
+
+  Client* cl = req->http();
+  if (cl) {
+    cl->receivedBytes(byteSize);
+  }
+
   return byteSize;
 }
 

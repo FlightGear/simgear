@@ -37,6 +37,8 @@ namespace simgear
 namespace HTTP
 {
 
+class Client;
+
 /**
  * Base class for HTTP request (and answer).
  */
@@ -130,6 +132,9 @@ public:
         { return _method; }
     virtual std::string url() const
         { return _url; }
+
+    Client* http() const
+    { return _client; }
 
     virtual std::string scheme() const;
     virtual std::string path() const;
@@ -240,6 +245,8 @@ private:
 
     void processBodyBytes(const char* s, int n);
     void setReadyState(ReadyState state);
+
+    Client*       _client; // HTTP client we're active on
 
     std::string   _method;
     std::string   _url;

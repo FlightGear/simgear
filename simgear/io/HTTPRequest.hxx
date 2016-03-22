@@ -207,6 +207,13 @@ public:
     bool closeAfterComplete() const;
     bool isComplete() const;
 
+    /**
+     * Check if the server response indicates pipelining should be continued.
+     * Currently tests that HTTP_1_1 is explicitly supported, and that the
+     * server/proxy did not request Connection: close
+     */
+    bool serverSupportsPipelining() const;
+
 protected:
     Request(const std::string& url, const std::string method = "GET");
 
@@ -253,6 +260,7 @@ private:
 
     ReadyState    _ready_state;
     bool          _willClose;
+    bool          _connectionCloseHeader;
 };
 
 typedef SGSharedPtr<Request> Request_ptr;

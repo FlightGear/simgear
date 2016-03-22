@@ -651,6 +651,11 @@ private:
         activeRequest->responseHeadersComplete();
         _contentDecoder.initWithRequest(activeRequest);
 
+        if (!activeRequest->serverSupportsPipelining()) {
+            SG_LOG(SG_IO, SG_DEBUG, _connectionId << " disabling pipelining since server does not support it");
+            _maxPipelineLength = 1;
+        }
+
         if (chunkedTransfer) {
             setState(STATE_GETTING_CHUNKED);
         } else if (noMessageBody || (bodyTransferSize == 0)) {

@@ -39,7 +39,8 @@ Request::Request(const std::string& url, const std::string method):
   _responseLength(0),
   _receivedBodyBytes(0),
   _ready_state(UNSENT),
-  _willClose(false)
+  _willClose(false),
+  _connectionCloseHeader(false)
 {
 
 }
@@ -147,7 +148,10 @@ void Request::responseStart(const std::string& r)
 void Request::responseHeader(const std::string& key, const std::string& value)
 {
   if( key == "connection" ) {
-    _willClose = (value.find("close") != std::string::npos);
+    _connectionCloseHeader = (value.find("close") != std::string::npos);
+      // track willClose seperately because other conditions (abort, for
+      // example) can also set it
+    _willClose = _connectionCloseHeader;
   } else if (key == "content-length") {
     int sz = strutils::to_int(value);
     setResponseLength(sz);
@@ -378,6 +382,12 @@ bool Request::closeAfterComplete() const
 {
   // for non HTTP/1.1 connections, assume server closes
   return _willClose || (_responseVersion != HTTP_1_1);
+}
+
+//------------------------------------------------------------------------------
+bool Request::serverSupportsPipelining() const
+{
+    return (_responseVersion == HTTP_1_1) && !_connectionCloseHeader;
 }
 
 //------------------------------------------------------------------------------

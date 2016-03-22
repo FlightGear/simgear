@@ -26,4 +26,9 @@ AbstractRepository::~AbstractRepository()
 
 }
 
+size_t AbstractRepository::bytesStillToDownload() const
+{
+    return 0;
+}
+
 } // of namespace simgear

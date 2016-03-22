@@ -109,8 +109,19 @@ namespace simgear
             _directory = 0;
             abort("Repository cancelled request");
         }
+
+        size_t contentSize() const
+        {
+            return _contentSize;
+        }
+
+        void setContentSize(size_t sz)
+        {
+            _contentSize = sz;
+        }
     protected:
         HTTPDirectory* _directory;
+        size_t _contentSize;
     };
 
     typedef SGSharedPtr<HTTPRepoGetRequest> RepoRequestPtr;
@@ -142,7 +153,8 @@ public:
     HTTPRepoPrivate(HTTPRepository* parent) :
     p(parent),
     isUpdating(false),
-    status(AbstractRepository::REPO_NO_ERROR)
+    status(AbstractRepository::REPO_NO_ERROR),
+    totalDownloaded(0)
     { ; }
 
     ~HTTPRepoPrivate();
@@ -154,9 +166,12 @@ public:
     bool isUpdating;
     AbstractRepository::ResultCode status;
     HTTPDirectory* rootDir;
+    size_t totalDownloaded;
 
-    HTTP::Request_ptr updateFile(HTTPDirectory* dir, const std::string& name);
-    HTTP::Request_ptr updateDir(HTTPDirectory* dir, const std::string& hash);
+    HTTP::Request_ptr updateFile(HTTPDirectory* dir, const std::string& name,
+                                 size_t sz);
+    HTTP::Request_ptr updateDir(HTTPDirectory* dir, const std::string& hash,
+                                size_t sz);
 
     std::string hashForPath(const SGPath& p);
     void updatedFileContents(const SGPath& p, const std::string& newHash);
@@ -235,7 +250,7 @@ public:
       if (p.exists()) {
           try {
               // already exists on disk
-              bool ok = parseDirIndex(children);
+              parseDirIndex(children);
               std::sort(children.begin(), children.end());
           } catch (sg_exception& e) {
               // parsing cache failed
@@ -361,12 +376,12 @@ public:
             }
 
             if (cit->type == ChildInfo::FileType) {
-                _repository->updateFile(this, *it);
+                _repository->updateFile(this, *it, cit->sizeInBytes);
             } else {
                 SGPath p(relativePath());
                 p.append(*it);
                 HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
-                _repository->updateDir(childDir, cit->hash);
+                _repository->updateDir(childDir, cit->hash, cit->sizeInBytes);
             }
         }
     }
@@ -383,7 +398,7 @@ public:
         return _relativePath;
     }
 
-    void didUpdateFile(const std::string& file, const std::string& hash)
+    void didUpdateFile(const std::string& file, const std::string& hash, size_t sz)
     {
         // check hash matches what we expected
         ChildInfoList::iterator it = findIndexChild(file);
@@ -397,6 +412,7 @@ public:
                 _repository->failedToUpdateChild(_relativePath, AbstractRepository::REPO_ERROR_CHECKSUM);
             } else {
                 _repository->updatedFileContents(fpath, hash);
+                _repository->totalDownloaded += sz;
                 //SG_LOG(SG_TERRASYNC, SG_INFO, "did update:" << fpath);
             } // of hash matches
         } // of found in child list
@@ -561,7 +577,7 @@ void HTTPRepository::update()
     _d->status = REPO_NO_ERROR;
     _d->isUpdating = true;
     _d->failures.clear();
-    _d->updateDir(_d->rootDir, std::string());
+    _d->updateDir(_d->rootDir, std::string(), 0);
 }
 
 bool HTTPRepository::isDoingSync() const
@@ -571,6 +587,30 @@ bool HTTPRepository::isDoingSync() const
     }
 
     return _d->isUpdating;
+}
+
+size_t HTTPRepository::bytesToDownload() const
+{
+    size_t result = 0;
+
+    HTTPRepoPrivate::RequestVector::const_iterator r;
+    for (r = _d->requests.begin(); r != _d->requests.end(); ++r) {
+        result += (*r)->contentSize() - (*r)->responseBytesReceived();
+    }
+
+    return result;
+}
+
+size_t HTTPRepository::bytesDownloaded() const
+{
+    size_t result = _d->totalDownloaded;
+
+    HTTPRepoPrivate::RequestVector::const_iterator r;
+    for (r = _d->requests.begin(); r != _d->requests.end(); ++r) {
+        result += (*r)->responseBytesReceived();
+    }
+
+    return result;
 }
 
 AbstractRepository::ResultCode
@@ -617,7 +657,7 @@ HTTPRepository::failure() const
             file->close();
             if (responseCode() == 200) {
                 std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
-                _directory->didUpdateFile(fileName, hash);
+                _directory->didUpdateFile(fileName, hash, contentSize());
                 //SG_LOG(SG_TERRASYNC, SG_INFO, "got file " << fileName << " in " << _directory->absolutePath());
             } else if (responseCode() == 404) {
                 _directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_FILE_NOT_FOUND);
@@ -714,6 +754,8 @@ HTTPRepository::failure() const
                     //SG_LOG(SG_TERRASYNC, SG_INFO, "updated dir index " << _directory->absolutePath());
                 }
 
+                _directory->repository()->totalDownloaded += contentSize();
+
                 try {
                     // either way we've confirmed the index is valid so update
                     // children now
@@ -769,17 +811,19 @@ HTTPRepository::failure() const
         }
     }
 
-    HTTP::Request_ptr HTTPRepoPrivate::updateFile(HTTPDirectory* dir, const std::string& name)
+    HTTP::Request_ptr HTTPRepoPrivate::updateFile(HTTPDirectory* dir, const std::string& name, size_t sz)
     {
         RepoRequestPtr r(new FileGetRequest(dir, name));
+        r->setContentSize(sz);
         requests.push_back(r);
         http->makeRequest(r);
         return r;
     }
 
-    HTTP::Request_ptr HTTPRepoPrivate::updateDir(HTTPDirectory* dir, const std::string& hash)
+    HTTP::Request_ptr HTTPRepoPrivate::updateDir(HTTPDirectory* dir, const std::string& hash, size_t sz)
     {
         RepoRequestPtr r(new DirGetRequest(dir, hash));
+        r->setContentSize(sz);
         requests.push_back(r);
         http->makeRequest(r);
         return r;

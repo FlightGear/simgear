@@ -46,6 +46,10 @@ public:
     virtual bool isDoingSync() const;
 
     virtual ResultCode failure() const;
+
+    virtual size_t bytesToDownload() const;
+
+    virtual size_t bytesDownloaded() const;
 private:
     bool isBare() const;
 

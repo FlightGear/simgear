@@ -47,6 +47,8 @@ public:
 
     virtual bool isDoingSync() const = 0;
 
+    virtual size_t bytesStillToDownload() const;
+
     enum ResultCode {
         REPO_NO_ERROR = 0,
         REPO_ERROR_NOT_FOUND,

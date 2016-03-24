@@ -817,6 +817,7 @@ void Client::update(int waitTimeout)
         SG_LOG(SG_IO, SG_ALERT, "CurlMSG:" << msg->msg);
       }
     } // of curl message processing loop
+    SGTimeStamp::sleepForMSec(waitTimeout);
 #else
     if (!d->poller.hasChannels() && (waitTimeout > 0)) {
         SGTimeStamp::sleepForMSec(waitTimeout);

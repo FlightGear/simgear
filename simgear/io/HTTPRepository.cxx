@@ -40,6 +40,7 @@
 #include <simgear/io/sg_file.hxx>
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/timing/timestamp.hxx>
 
 #include <simgear/misc/sg_hash.hxx>
 
@@ -140,6 +141,7 @@ public:
 
     typedef std::vector<HashCacheEntry> HashCache;
     HashCache hashes;
+    bool hashCacheDirty;
 
     struct Failure
     {
@@ -151,10 +153,11 @@ public:
     FailureList failures;
 
     HTTPRepoPrivate(HTTPRepository* parent) :
-    p(parent),
-    isUpdating(false),
-    status(AbstractRepository::REPO_NO_ERROR),
-    totalDownloaded(0)
+        hashCacheDirty(false),
+        p(parent),
+        isUpdating(false),
+        status(AbstractRepository::REPO_NO_ERROR),
+        totalDownloaded(0)
     { ; }
 
     ~HTTPRepoPrivate();
@@ -184,8 +187,10 @@ public:
                              AbstractRepository::ResultCode fileStatus);
 
     typedef std::vector<RepoRequestPtr> RequestVector;
-    RequestVector requests;
+    RequestVector queuedRequests,
+        activeRequests;
 
+    void makeRequest(RepoRequestPtr req);
     void finishedRequest(const RepoRequestPtr& req);
 
     HTTPDirectory* getOrCreateDirectory(const std::string& path);
@@ -542,6 +547,7 @@ HTTPRepository::HTTPRepository(const SGPath& base, HTTP::Client *cl) :
     _d->http = cl;
     _d->basePath = base;
     _d->rootDir = new HTTPDirectory(_d.get(), "");
+    _d->parseHashCache();
 }
 
 HTTPRepository::~HTTPRepository()
@@ -594,7 +600,11 @@ size_t HTTPRepository::bytesToDownload() const
     size_t result = 0;
 
     HTTPRepoPrivate::RequestVector::const_iterator r;
-    for (r = _d->requests.begin(); r != _d->requests.end(); ++r) {
+    for (r = _d->queuedRequests.begin(); r != _d->queuedRequests.end(); ++r) {
+        result += (*r)->contentSize();
+    }
+
+    for (r = _d->activeRequests.begin(); r != _d->activeRequests.end(); ++r) {
         result += (*r)->contentSize() - (*r)->responseBytesReceived();
     }
 
@@ -606,7 +616,7 @@ size_t HTTPRepository::bytesDownloaded() const
     size_t result = _d->totalDownloaded;
 
     HTTPRepoPrivate::RequestVector::const_iterator r;
-    for (r = _d->requests.begin(); r != _d->requests.end(); ++r) {
+    for (r = _d->activeRequests.begin(); r != _d->activeRequests.end(); ++r) {
         result += (*r)->responseBytesReceived();
     }
 
@@ -759,7 +769,10 @@ HTTPRepository::failure() const
                 try {
                     // either way we've confirmed the index is valid so update
                     // children now
+                    SGTimeStamp st;
+                    st.stamp();
                     _directory->updateChildrenBasedOnHash();
+                    SG_LOG(SG_TERRASYNC, SG_INFO, "after update of:" << _directory->absolutePath() << " child update took:" << st.elapsedMSec());
                 } catch (sg_exception& e) {
                     _directory->failedToUpdate(AbstractRepository::REPO_ERROR_IO);
                 }
@@ -806,7 +819,7 @@ HTTPRepository::failure() const
         }
 
         RequestVector::iterator r;
-        for (r=requests.begin(); r != requests.end(); ++r) {
+        for (r=activeRequests.begin(); r != activeRequests.end(); ++r) {
             (*r)->cancel();
         }
     }
@@ -815,8 +828,7 @@ HTTPRepository::failure() const
     {
         RepoRequestPtr r(new FileGetRequest(dir, name));
         r->setContentSize(sz);
-        requests.push_back(r);
-        http->makeRequest(r);
+        makeRequest(r);
         return r;
     }
 
@@ -824,8 +836,7 @@ HTTPRepository::failure() const
     {
         RepoRequestPtr r(new DirGetRequest(dir, hash));
         r->setContentSize(sz);
-        requests.push_back(r);
-        http->makeRequest(r);
+        makeRequest(r);
         return r;
     }
 
@@ -887,6 +898,7 @@ HTTPRepository::failure() const
         HashCache::iterator it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p.str()));
         if (it != hashes.end()) {
             hashes.erase(it);
+            hashCacheDirty = true;
         }
 
         if (newHash.empty()) {
@@ -905,11 +917,15 @@ HTTPRepository::failure() const
         entry.lengthBytes = p2.sizeInBytes();
         hashes.push_back(entry);
 
-        writeHashCache();
+        hashCacheDirty = true;
     }
 
     void HTTPRepoPrivate::writeHashCache()
     {
+        if (!hashCacheDirty) {
+            return;
+        }
+
         SGPath cachePath = basePath;
         cachePath.append(".hashes");
 
@@ -920,6 +936,7 @@ HTTPRepository::failure() const
             << it->lengthBytes << ":" << it->hashHex << "\n";
         }
         stream.close();
+        hashCacheDirty = false;
     }
 
     void HTTPRepoPrivate::parseHashCache()
@@ -998,14 +1015,34 @@ HTTPRepository::failure() const
         return false;
     }
 
+    void HTTPRepoPrivate::makeRequest(RepoRequestPtr req)
+    {
+        if (activeRequests.size() > 4) {
+            queuedRequests.push_back(req);
+        } else {
+            activeRequests.push_back(req);
+            http->makeRequest(req);
+        }
+    }
+
     void HTTPRepoPrivate::finishedRequest(const RepoRequestPtr& req)
     {
-        RequestVector::iterator it = std::find(requests.begin(), requests.end(), req);
-        if (it == requests.end()) {
+        RequestVector::iterator it = std::find(activeRequests.begin(), activeRequests.end(), req);
+        if (it == activeRequests.end()) {
             throw sg_exception("lost request somehow", req->url());
         }
-        requests.erase(it);
-        if (requests.empty()) {
+        activeRequests.erase(it);
+
+        if (!queuedRequests.empty()) {
+            RepoRequestPtr rr = queuedRequests.front();
+            queuedRequests.erase(queuedRequests.begin());
+            activeRequests.push_back(rr);
+            http->makeRequest(rr);
+        }
+
+        writeHashCache();
+
+        if (activeRequests.empty() && queuedRequests.empty()) {
             isUpdating = false;
         }
     }

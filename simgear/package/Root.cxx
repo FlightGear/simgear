@@ -159,6 +159,7 @@ public:
     std::string locale;
     HTTP::Client* http;
     CatalogDict catalogs;
+    CatalogList disabledCatalogs;
     unsigned int maxAgeSeconds;
     std::string version;
 
@@ -240,10 +241,16 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
         return;
     }
 
-    BOOST_FOREACH(SGPath c, dir.children(Dir::TYPE_DIR)) {
+    BOOST_FOREACH(SGPath c, dir.children(Dir::TYPE_DIR | Dir::NO_DOT_OR_DOTDOT)) {
         CatalogRef cat = Catalog::createFromPath(this, c);
         if (cat) {
-           d->catalogs[cat->id()] = cat;
+            if (cat->status() == Delegate::STATUS_SUCCESS) {
+                d->catalogs[cat->id()] = cat;
+            } else {
+                // catalog has problems, such as needing an update
+                // keep it out of the main collection for now
+                d->disabledCatalogs.push_back(cat);
+            }
         }
     } // of child directories iteration
 }
@@ -357,12 +364,23 @@ Root::packagesNeedingUpdate() const
 void Root::refresh(bool aForce)
 {
     bool didStartAny = false;
+
+    // copy all candidate ctalogs to a seperate list, since refreshing
+    // can modify both the main collection and/or the disabled list
+    CatalogList toRefresh;
     CatalogDict::iterator it = d->catalogs.begin();
     for (; it != d->catalogs.end(); ++it) {
-        if (aForce || it->second->needsRefresh()) {
-            it->second->refresh();
-            didStartAny = true;
-        }
+        toRefresh.push_back(it->second);
+    }
+
+    toRefresh.insert(toRefresh.end(), d->disabledCatalogs.begin(),
+                     d->disabledCatalogs.end());
+
+
+    CatalogList::iterator j = toRefresh.begin();
+    for (; j != toRefresh.end(); ++j) {
+        (*j)->refresh();
+        didStartAny =  true;
     }
 
     if (!didStartAny) {
@@ -486,21 +504,35 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
         d->refreshing.erase(aCat);
     }
 
-    if ((aReason != Delegate::STATUS_REFRESHED) && (aReason != Delegate::STATUS_IN_PROGRESS)) {
-        // if the failure is permanent, delete the catalog from our
-        // list (don't touch it on disk)
-        bool isPermanentFailure = (aReason == Delegate::FAIL_VERSION);
-        if (isPermanentFailure) {
-            SG_LOG(SG_GENERAL, SG_WARN, "permanent failure for catalog:" << aCat->id());
-            if (catIt != d->catalogs.end()) {
-                d->catalogs.erase(catIt);
-            }
-        }
-    }
-
     if ((aReason == Delegate::STATUS_REFRESHED) && (catIt == d->catalogs.end())) {
         assert(!aCat->id().empty());
         d->catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));
+
+        // catalog might have been previously disabled, let's remove in that case
+        CatalogList::iterator j = std::find(d->disabledCatalogs.begin(),
+                                            d->disabledCatalogs.end(),
+                                            aCat);
+        if (j != d->disabledCatalogs.end()) {
+            SG_LOG(SG_GENERAL, SG_INFO, "re-enabling disabled catalog:" << aCat->id());
+            d->disabledCatalogs.erase(j);
+        }
+    }
+
+    if ((aReason != Delegate::STATUS_REFRESHED) &&
+        (aReason != Delegate::STATUS_IN_PROGRESS) &&
+        (aReason != Delegate::STATUS_SUCCESS))
+    {
+        // catalog has errors, disable it
+        CatalogList::iterator j = std::find(d->disabledCatalogs.begin(),
+                                            d->disabledCatalogs.end(),
+                                            aCat);
+        if (j == d->disabledCatalogs.end()) {
+            SG_LOG(SG_GENERAL, SG_INFO, "disabling catalog:" << aCat->id());
+            d->disabledCatalogs.push_back(aCat);
+        }
+
+        // and remove it from the active collection
+        d->catalogs.erase(catIt);
     }
 
     if (d->refreshing.empty()) {
@@ -511,16 +543,30 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
 
 bool Root::removeCatalogById(const std::string& aId)
 {
+    CatalogRef cat;
+
     CatalogDict::iterator catIt = d->catalogs.find(aId);
     if (catIt == d->catalogs.end()) {
-        SG_LOG(SG_GENERAL, SG_WARN, "removeCatalogById: unknown ID:" << aId);
-        return false;
+        // check the disabled list
+        CatalogList::iterator j = d->disabledCatalogs.begin();
+        for (; j != d->disabledCatalogs.end(); ++j) {
+            if ((*j)->id() == aId) {
+                break;
+            }
+        }
+
+        if (j == d->disabledCatalogs.end()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "removeCatalogById: no catalog with id:" << aId);
+            return false;
+        }
+
+        cat = *j;
+        d->disabledCatalogs.erase(j);
+    } else {
+        cat = catIt->second;
+        // drop the reference
+        d->catalogs.erase(catIt);
     }
-
-    CatalogRef cat = catIt->second;
-
-    // drop the reference
-    d->catalogs.erase(catIt);
 
     bool ok = cat->uninstall();
     if (!ok) {

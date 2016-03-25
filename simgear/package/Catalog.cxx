@@ -31,6 +31,7 @@
 #include <simgear/package/Package.hxx>
 #include <simgear/package/Root.hxx>
 #include <simgear/package/Install.hxx>
+#include <simgear/misc/strutils.hxx>
 
 namespace simgear {
 
@@ -40,17 +41,31 @@ bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
     BOOST_FOREACH(SGPropertyNode* v, props->getChildren("version")) {
         std::string s(v->getStringValue());
-        if (s== aVersion) {
+        if (s == aVersion) {
             return true;
         }
 
-        // allow 3.5.* to match any of 3.5.0, 3.5.1rc1, 3.5.11 or so on
-        if (strutils::ends_with(s, ".*")) {
-            size_t lastDot = aVersion.rfind('.');
-            std::string ver = aVersion.substr(0, lastDot);
-            if (ver == s.substr(0, s.length() - 2)) {
-                return true;
+        // examine each dot-seperated component in turn, supporting a wildcard
+        // in the versions from the catalog.
+        string_list appVersionParts = simgear::strutils::split(aVersion, ".");
+        string_list catVersionParts = simgear::strutils::split(s, ".");
+
+        size_t partCount = appVersionParts.size();
+        if (partCount != catVersionParts.size()) {
+            continue;
+        }
+
+        bool ok = true;
+        for (unsigned int p=0; p < partCount; ++p) {
+            if (catVersionParts[p] == "*") {
+                // always passes
+            } else if (appVersionParts[p] != catVersionParts[p]) {
+                ok = false;
             }
+        }
+
+        if (ok) {
+            return true;
         }
     }
     return false;
@@ -196,22 +211,13 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
         return NULL;
     }
 
-    if (!checkVersion(aRoot->applicationVersion(), props)) {
-        std::string redirect = redirectUrlForVersion(aRoot->applicationVersion(), props);
-        if (!redirect.empty()) {
-            SG_LOG(SG_GENERAL, SG_WARN, "catalog at " << aPath << ", version mismatch:\n\t"
-                   << "redirecting to alternate URL:" << redirect);
-            CatalogRef c = Catalog::createFromUrl(aRoot, redirect);
-            c->m_installRoot = aPath;
-            return c;
-        } else {
-            SG_LOG(SG_GENERAL, SG_WARN, "skipping catalog at " << aPath << ", version mismatch:\n\t"
-               << props->getStringValue("version") << " vs required " << aRoot->catalogVersion());
-            return NULL;
-        }
+    bool versionCheckOk = checkVersion(aRoot->applicationVersion(), props);
 
+    if (!versionCheckOk) {
+        SG_LOG(SG_GENERAL, SG_INFO, "catalog at:" << aPath << " failed version check: need" << aRoot->applicationVersion());
+        // keep the catalog but mark it as needing an update
     } else {
-        SG_LOG(SG_GENERAL, SG_INFO, "creating catalog from:" << aPath);
+        SG_LOG(SG_GENERAL, SG_DEBUG, "creating catalog from:" << aPath);
     }
 
     CatalogRef c = new Catalog(aRoot);
@@ -219,8 +225,12 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     c->parseProps(props);
     c->parseTimestamp();
 
-    // parsed XML ok, mark status as valid
-    c->changeStatus(Delegate::STATUS_SUCCESS);
+    if (versionCheckOk) {
+        // parsed XML ok, mark status as valid
+        c->changeStatus(Delegate::STATUS_SUCCESS);
+    } else {
+        c->changeStatus(Delegate::FAIL_VERSION);
+    }
 
     return c;
 }
@@ -469,6 +479,11 @@ unsigned int Catalog::ageInSeconds() const
 
 bool Catalog::needsRefresh() const
 {
+    // always refresh in these cases
+    if ((m_status == Delegate::FAIL_VERSION) || (m_status == Delegate::FAIL_DOWNLOAD)) {
+        return true;
+    }
+
     unsigned int maxAge = m_props->getIntValue("max-age-sec", m_root->maxAgeSeconds());
     return (ageInSeconds() > maxAge);
 }

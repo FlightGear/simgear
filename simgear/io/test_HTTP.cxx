@@ -700,6 +700,7 @@ cout << "testing proxy close" << endl;
 
     {
         cout << "get-during-response-send" << endl;
+        cl.clearAllConnections();
         //test_get_during_send
 
         TestRequest* tr = new TestRequest("http://localhost:2000/test_get_during_send");

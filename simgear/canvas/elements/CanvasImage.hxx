@@ -59,7 +59,7 @@ namespace canvas
       void setSrcCanvas(CanvasPtr canvas);
       CanvasWeakPtr getSrcCanvas() const;
 
-      void setImage(osg::Image *img);
+      void setImage(osg::ref_ptr<osg::Image> img);
       void setFill(const std::string& fill);
 
       /**

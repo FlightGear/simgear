@@ -463,7 +463,7 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Image::setImage(osg::Image *img)
+  void Image::setImage(osg::ref_ptr<osg::Image> img)
   {
     // remove canvas...
     setSrcCanvas( CanvasPtr() );

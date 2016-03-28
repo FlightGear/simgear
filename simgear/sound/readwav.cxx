@@ -77,50 +77,49 @@ namespace
   {
   }
   
-  void codecPCM16 (Buffer* buf)
+  void codecPCM16BE (Buffer* buf)
   {
-    // always byte-swaps here; is this a good idea?
     uint16_t *d = (uint16_t *) buf->data;
     size_t i, l = buf->length / 2;
     for (i = 0; i < l; i++) {
-      *d = sg_bswap_16(*d);
+      *d = sg_bswap_16(*d); ++d;
     }
   }
   
  /*
   * From: http://www.multimedia.cx/simpleaudio.html#tth_sEc6.1
   */
-int16_t mulaw2linear (uint8_t mulawbyte)
- {
-   static const int16_t exp_lut[8] = {
-     0, 132, 396, 924, 1980, 4092, 8316, 16764
-   };
-   int16_t sign, exponent, mantissa, sample;
-   mulawbyte = ~mulawbyte;
-   sign = (mulawbyte & 0x80);
-   exponent = (mulawbyte >> 4) & 0x07;
-   mantissa = mulawbyte & 0x0F;
-   sample = exp_lut[exponent] + (mantissa << (exponent + 3));
-   return sign ? -sample : sample;
+  int16_t mulaw2linear (uint8_t mulawbyte)
+  {
+    static const int16_t exp_lut[8] = {
+      0, 132, 396, 924, 1980, 4092, 8316, 16764
+    };
+    int16_t sign, exponent, mantissa, sample;
+    mulawbyte = ~mulawbyte;
+    sign = (mulawbyte & 0x80);
+    exponent = (mulawbyte >> 4) & 0x07;
+    mantissa = mulawbyte & 0x0F;
+    sample = exp_lut[exponent] + (mantissa << (exponent + 3));
+    return sign ? -sample : sample;
  }
 
  void codecULaw (Buffer* b)
  {
-   uint8_t *d = (uint8_t *) b->data;
-   size_t newLength = b->length * 2;
-   int16_t *buf = (int16_t *) malloc(newLength);
-   if (buf == NULL)
-     throw sg_exception("malloc failed decoing ULaw WAV file");
+    uint8_t *d = (uint8_t *) b->data;
+    size_t newLength = b->length * 2;
+    int16_t *buf = (int16_t *) malloc(newLength);
+    if (buf == NULL)
+      throw sg_exception("malloc failed decoing ULaw WAV file");
    
-   for (ALsizei i = 0; i < b->length; i++) {
-       buf[i] = mulaw2linear(d[i]);
+    for (ALsizei i = 0; i < b->length; i++) {
+      buf[i] = mulaw2linear(d[i]);
     }
     
-   free(b->data);
-   b->data = buf;
-   b->length = newLength;
- }
- 
+    free(b->data);
+    b->data = buf;
+    b->length = newLength;
+  }
+
   bool gzSkip(gzFile fd, int skipCount)
   {
       int r = gzseek(fd, skipCount, SEEK_CUR);
@@ -213,10 +212,10 @@ int16_t mulaw2linear (uint8_t mulawbyte)
             switch (audioFormat)
               {
               case 1:            /* PCM */
-                codec = (bitsPerSample == 8 || sgIsLittleEndian()) ? codecLinear : codecPCM16;
+                codec = (bitsPerSample == 8 || sgIsLittleEndian()) ? codecLinear : codecPCM16BE;
                 break;
               case 7:            /* uLaw */
-                bitsPerSample *= 2;       /* ToDo: ??? */
+                bitsPerSample *= 2;  /* uLaw is 16-bit packed into 8 bits */
                 codec = codecULaw;
                 break;
               default:
@@ -263,7 +262,7 @@ ALvoid* loadWAVFromFile(const SGPath& path, ALenum& format, ALsizei& size, ALflo
   }
   
   Buffer b;
-    b.path = path;
+  b.path = path;
     
   gzFile fd;
   fd = gzopen(path.c_str(), "rb");
@@ -271,12 +270,12 @@ ALvoid* loadWAVFromFile(const SGPath& path, ALenum& format, ALsizei& size, ALflo
     throw sg_io_exception("loadWAVFromFile: unable to open file", path);
   }
   
-    loadWavFile(fd, &b);
+  loadWavFile(fd, &b);
   ALvoid* data = b.data;
-    b.data = NULL; // don't free when Buffer does out of scope
-    format = b.format;
-    size = b.length;
-    freqf = b.frequency;
+  b.data = NULL; // don't free when Buffer does out of scope
+  format = b.format;
+  size = b.length;
+  freqf = b.frequency;
   
   gzclose(fd);
   return data;

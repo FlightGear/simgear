@@ -532,8 +532,10 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
         }
 
         // and remove it from the active collection
-        d->catalogs.erase(catIt);
-    }
+        if (catIt != d->catalogs.end()) {
+            d->catalogs.erase(catIt);
+        }
+    } // of catalog has errors case
 
     if (d->refreshing.empty()) {
         d->fireRefreshStatus(CatalogRef(), Delegate::STATUS_REFRESHED);

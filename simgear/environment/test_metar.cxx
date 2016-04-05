@@ -58,6 +58,37 @@ void test_basic()
     COMPARE(m1.getWindDir(), 270);
     FUZZY_COMPARE(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
     
+    COMPARE(m1.getWeather().size(), 1);
+    COMPARE(m1.getClouds().size(), 2);
+
+    FUZZY_COMPARE(m1.getTemperature_C(), 10, TEST_EPSILON);
+    FUZZY_COMPARE(m1.getDewpoint_C(), 5, TEST_EPSILON);
+    FUZZY_COMPARE(m1.getPressure_hPa(), 1025, TEST_EPSILON);
+}
+
+void test_sensor_failure_weather()
+{
+    SGMetar m1("2011/10/20 11:25 EHAM 201125Z 27012KT 240V300 9999 // FEW025CB SCT048 10/05 Q1025");
+    COMPARE(m1.getWindDir(), 270);
+    FUZZY_COMPARE(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
+
+    COMPARE(m1.getWeather().size(), 0);
+    COMPARE(m1.getClouds().size(), 2);
+
+    FUZZY_COMPARE(m1.getTemperature_C(), 10, TEST_EPSILON);
+    FUZZY_COMPARE(m1.getDewpoint_C(), 5, TEST_EPSILON);
+    FUZZY_COMPARE(m1.getPressure_hPa(), 1025, TEST_EPSILON);
+}
+
+void test_sensor_failure_cloud()
+{
+    SGMetar m1("2011/10/20 11:25 EHAM 201125Z 27012KT 240V300 9999 FEW025CB/// SCT048/// 10/05 Q1025");
+    COMPARE(m1.getWindDir(), 270);
+    FUZZY_COMPARE(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
+
+    COMPARE(m1.getWeather().size(), 0);
+    COMPARE(m1.getClouds().size(), 2);
+
     FUZZY_COMPARE(m1.getTemperature_C(), 10, TEST_EPSILON);
     FUZZY_COMPARE(m1.getDewpoint_C(), 5, TEST_EPSILON);
     FUZZY_COMPARE(m1.getPressure_hPa(), 1025, TEST_EPSILON);
@@ -66,7 +97,9 @@ void test_basic()
 int main(int argc, char* argv[])
 {
     try {
-    test_basic();
+        test_basic();
+        test_sensor_failure_weather();
+        test_sensor_failure_cloud();
     } catch (sg_exception& e) {
         cerr << "got exception:" << e.getMessage() << endl;
         return -1;

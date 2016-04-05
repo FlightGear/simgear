@@ -23,6 +23,16 @@
 /**
  * @file metar.cxx
  * Interface for encoded Meteorological Aerodrome Reports (METAR).
+ *
+ * @see WMO-49
+ * Technical Regulations, Basic Documents No. 2 (WMO No. 49)
+ * Volume II - Meteorological Service for International Air Navigation
+ * http://library.wmo.int/pmb_ged/wmo_49-v2_2013_en.pdf
+ *
+ * Refer to Table A3-2 (Template for METAR and SPECI) following page 78.
+ *
+ * For general information:
+ * World Meteorological Organization http://library.wmo.int
  */
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
@@ -465,6 +475,7 @@ bool SGMetar::scanRwyVisRange()
 	char *m = _m;
 	int i;
 	SGMetarRunway r;
+
 	if (*m++ != 'R')
 		return false;
 	if (!scanNumber(&m, &i, 2))
@@ -582,6 +593,14 @@ bool SGMetar::scanWeather()
 	string weather;
 	const struct Token *a;
 
+	// @see WMO-49 Section 4.4.2.9
+	// Denotes a temporary failure of the sensor
+	if (!strncmp(m, "// ", 3)) {
+		_m += 3;
+		_grpcount++;
+		return false;
+	}
+
 	if ((a = scanToken(&m, special))) {
 		if (!scanBoundary(&m))
 			return false;
@@ -591,7 +610,7 @@ bool SGMetar::scanWeather()
 	}
 
 	string pre, post;
-    struct Weather w;
+	struct Weather w;
 	if (*m == '-')
 		m++, pre = "light ", w.intensity = LIGHT;
 	else if (*m == '+')
@@ -685,7 +704,7 @@ bool SGMetar::scanSkyCondition()
 			return false;
 
 		if (i == 3) {
-            cl._coverage = SGMetarCloud::COVERAGE_CLEAR;
+			cl._coverage = SGMetarCloud::COVERAGE_CLEAR;
 			_clouds.push_back(cl);
 		} else {
 			_cavok = true;
@@ -716,7 +735,7 @@ bool SGMetar::scanSkyCondition()
 	} else if (!scanNumber(&m, &i, 3))
 		i = -1;
 
-    if (cl._coverage == SGMetarCloud::COVERAGE_NIL) {
+	if (cl._coverage == SGMetarCloud::COVERAGE_NIL) {
 		if (!scanBoundary(&m))
 			return false;
 		if (i == -1)			// 'VV///'
@@ -735,9 +754,15 @@ bool SGMetar::scanSkyCondition()
 		cl._type = a->id;
 		cl._type_long = a->text;
 	}
+
+	// @see WMO-49 Section 4.5.4.5
+	// Denotes temporary failure of sensor and covers cases like FEW045///
+	if (!strncmp(m, "///", 3))
+		m += 3;
 	if (!scanBoundary(&m))
 		return false;
 	_clouds.push_back(cl);
+
 	_m = m;
 	_grpcount++;
 	return true;

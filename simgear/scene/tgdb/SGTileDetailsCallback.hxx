@@ -55,10 +55,7 @@ typedef std::list<SGDirectionalLightBin> SGDirectionalLightListBin;
 #define SG_SIMPLIFIER_RATIO         (0.001)
 #define SG_SIMPLIFIER_MAX_LENGTH    (1000.0)
 #define SG_SIMPLIFIER_MAX_ERROR     (2000.0)
-#define SG_OBJECT_RANGE             (9000.0)
-#define SG_TILE_RADIUS              (14000.0)
 #define SG_TILE_MIN_EXPIRY          (180.0)
-
 using namespace simgear;
 
 // QuadTreeBuilder is used by Random Objects Generator
@@ -995,6 +992,7 @@ public:
       bool use_random_buildings = false;
       float vegetation_density = 1.0f;
       float building_density = 1.0f;
+      float object_range = SG_OBJECT_RANGE;
       bool useVBOs = false;
       
       osg::ref_ptr<osg::Group> randomObjects;
@@ -1020,6 +1018,9 @@ public:
             building_density
                 = propertyNode->getFloatValue("/sim/rendering/building-density",
                                               building_density);
+            object_range
+                = propertyNode->getFloatValue("/sim/rendering/static-lod/rough",
+                                              object_range);
         }
         
         useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
@@ -1106,9 +1107,10 @@ public:
       if (randomObjects.valid() ||  forestNode.valid() || buildingNode.valid()) {
         objectLOD = new osg::LOD;
 
-        if (randomObjects.valid()) objectLOD->addChild(randomObjects.get(), 0, 20000);
-        if (forestNode.valid())  objectLOD->addChild(forestNode.get(), 0, 20000);
-        if (buildingNode.valid()) objectLOD->addChild(buildingNode.get(), 0, 20000);
+        // random objects, trees and buildings can be displayed up to 2xrange out.
+        if (randomObjects.valid()) objectLOD->addChild(randomObjects.get(), 0, 2.0 * object_range + SG_TILE_RADIUS);
+        if (forestNode.valid())  objectLOD->addChild(forestNode.get(), 0, 2.0 * object_range + SG_TILE_RADIUS);
+        if (buildingNode.valid()) objectLOD->addChild(buildingNode.get(), 0, 2.0 * object_range + SG_TILE_RADIUS);
 
         unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECEIVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
         objectLOD->setNodeMask(nodeMask);

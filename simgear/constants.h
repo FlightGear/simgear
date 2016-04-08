@@ -211,5 +211,10 @@ const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
 /** for backwards compatibility */
 #define SG_SCENERY_FILE_FORMAT "0.4"
 
+/** Default range in m at which all objects are displayed.  Overridden by /sim/rendering/static-lod/rough **/
+#define SG_OBJECT_RANGE     9000.0
+
+/** Radius of scenery tiles in m **/
+#define SG_TILE_RADIUS      14000.0
 
 #endif // _SG_CONSTANTS_H

@@ -195,7 +195,7 @@ protected:
 
     friend class SGMaterial;
 
-    SGMatModelGroup (SGPropertyNode * node);
+    SGMatModelGroup (SGPropertyNode * node, float default_object_range);
 
 private:
 

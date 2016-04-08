@@ -206,7 +206,7 @@ public:
           LOD* result = new LOD;
 
           if (_fade_out) {
-              // Create a series of LOD nodes so buidling cover decreases
+              // Create a series of LOD nodes so building cover decreases
               // gradually with distance from _range to 2*_range
               for (float i = 0.0; i < SG_BUILDING_FADE_OUT_LEVELS; i++)
               {

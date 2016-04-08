@@ -185,8 +185,8 @@ SGMatModel::get_heading_type () const
 // Implementation of SGMatModelGroup.
 ////////////////////////////////////////////////////////////////////////
 
-SGMatModelGroup::SGMatModelGroup (SGPropertyNode * node)
-  : _range_m(node->getDoubleValue("range-m", 2000))
+SGMatModelGroup::SGMatModelGroup (SGPropertyNode * node, float default_object_range)
+  : _range_m(node->getDoubleValue("range-m", default_object_range))
 {
 				// Load the object subnodes
   std::vector<SGPropertyNode_ptr> object_nodes =

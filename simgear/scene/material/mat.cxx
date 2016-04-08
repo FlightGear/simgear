@@ -136,6 +136,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                             const SGPropertyNode *props,
                             SGPropertyNode *prop_root)
 {
+    float default_object_range = prop_root->getFloatValue("/sim/rendering/static-lod/rough", SG_OBJECT_RANGE);
     std::vector<bool> dds;
     std::vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
     for (unsigned int i = 0; i < textures.size(); i++)
@@ -316,7 +317,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_large_min_depth = props->getFloatValue("building-large-min-depth-m", 50.0);
     building_large_max_depth = props->getFloatValue("building-large-max-depth-m", 75.0);
 
-    building_range = props->getDoubleValue("building-range-m", 10000.0);
+    building_range = props->getDoubleValue("building-range-m", default_object_range);
     
     cos_object_max_density_slope_angle  = cos(props->getFloatValue("object-max-density-angle-deg", 20.0) * osg::PI/180.0);
     cos_object_zero_density_slope_angle = cos(props->getFloatValue("object-zero-density-angle-deg", 30.0) * osg::PI/180.0);
@@ -326,7 +327,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     tree_effect = props->getStringValue("tree-effect", "Effects/tree");
     tree_height = props->getDoubleValue("tree-height-m", 0.0);
     tree_width = props->getDoubleValue("tree-width-m", 0.0);
-    tree_range = props->getDoubleValue("tree-range-m", 0.0);
+    tree_range = props->getDoubleValue("tree-range-m", default_object_range);
     tree_varieties = props->getIntValue("tree-varieties", 1);
     cos_tree_max_density_slope_angle  = cos(props->getFloatValue("tree-max-density-angle-deg", 30.0) * osg::PI/180.0);
     cos_tree_zero_density_slope_angle = cos(props->getFloatValue("tree-zero-density-angle-deg", 45.0) * osg::PI/180.0);
@@ -384,7 +385,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     std::vector<SGPropertyNode_ptr> object_group_nodes =
             ((SGPropertyNode *)props)->getChildren("object-group");
     for (unsigned int i = 0; i < object_group_nodes.size(); i++)
-        object_groups.push_back(new SGMatModelGroup(object_group_nodes[i]));
+        object_groups.push_back(new SGMatModelGroup(object_group_nodes[i], default_object_range));
 
     // read glyph table for taxi-/runway-signs
     std::vector<SGPropertyNode_ptr> glyph_nodes = props->getChildren("glyph");

@@ -38,6 +38,7 @@
 #include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
 
+#include <simgear/math/sg_random.h>
 #include <simgear/math/SGGeometry.hxx>
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/debug/logstream.hxx>
@@ -92,7 +93,7 @@ struct ReaderWriterSTG::_ModelBin {
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _ObjectStatic {
-        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0) { }
+        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(SG_OBJECT_RANGE) { }
         std::string _errorLocation;
         std::string _token;
         std::string _name;
@@ -100,6 +101,7 @@ struct ReaderWriterSTG::_ModelBin {
         bool _proxy;
         double _lon, _lat, _elev;
         double _hdg, _pitch, _roll;
+        double _range;
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _Sign {
@@ -159,7 +161,8 @@ struct ReaderWriterSTG::_ModelBin {
             matrixTransform->setName("rotateStaticObject");
             matrixTransform->setDataVariance(osg::Object::STATIC);
             matrixTransform->addChild(node.get());
-            leaf->addChild(matrixTransform, 0, 20000); //TODO: Make configurable?
+
+            leaf->addChild(matrixTransform, 0, o._range);
           }
       };
       struct GetModelLODCoord {
@@ -196,6 +199,7 @@ struct ReaderWriterSTG::_ModelBin {
             return group.release();
         }
         
+        mt _seed;
         std::list<_ObjectStatic> _objectStaticList;
         std::list<_Sign> _signList;
         
@@ -205,6 +209,7 @@ struct ReaderWriterSTG::_ModelBin {
     };
     
     _ModelBin() :
+        _object_range(SG_OBJECT_RANGE),
         _foundBase(false)
     { }
 
@@ -289,6 +294,12 @@ struct ReaderWriterSTG::_ModelBin {
     
         std::string filePath = osgDB::getFilePath(absoluteFileName);
 
+        // Bucket provides a consistent seed
+        // so we have consistent set of pseudo-random numbers for each STG file
+        mt seed;
+        int bucket = atoi(SGPath(absoluteFileName).file_base().c_str());
+        mt_init(&seed, bucket);
+
         // do only load airport btg files.
         bool onlyAirports = options->getPluginStringData("SimGear::FG_ONLY_AIRPORTS") == "ON";
         // do only load terrain btg files
@@ -320,7 +331,13 @@ struct ReaderWriterSTG::_ModelBin {
             
             SGPath path = filePath;
             path.append(name);
-            
+
+            // Determine an appropriate range for the object, which has some randomness
+            double range = _object_range;
+            double lrand = mt_rand(&seed);
+            if      (lrand < 0.1) range = range * 2.0;
+            else if (lrand < 0.4) range = range * 1.5;
+
             if (token == "OBJECT_BASE") {
                 // Load only once (first found)
                 SG_LOG( SG_TERRAIN, SG_BULK, "    " << token << " " << name );
@@ -361,6 +378,7 @@ struct ReaderWriterSTG::_ModelBin {
                         obj._agl = (token == "OBJECT_STATIC_AGL");
                         obj._proxy = true;
                         in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+                        obj._range = range;
                         obj._options = opt;
                         _objectStaticList.push_back(obj);
                     }
@@ -380,6 +398,7 @@ struct ReaderWriterSTG::_ModelBin {
                         obj._agl = (token == "OBJECT_SHARED_AGL");
                         obj._proxy = false;
                         in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+                        obj._range = range;
                         obj._options = opt;
                         _objectStaticList.push_back(obj);
                     }
@@ -408,6 +427,9 @@ struct ReaderWriterSTG::_ModelBin {
     {
         osg::ref_ptr<SGReaderWriterOptions> options;
         options = SGReaderWriterOptions::copyOrCreate(opt);
+
+        // Determine object ranges
+        _object_range = atof(options->getPluginStringData("SimGear::ROUGH_LOD_RANGE").c_str());
 
         osg::ref_ptr<osg::Group> terrainGroup = new osg::Group;
         terrainGroup->setDataVariance(osg::Object::STATIC);
@@ -472,12 +494,15 @@ struct ReaderWriterSTG::_ModelBin {
             pagedLOD->setDatabaseOptions(callbackOptions.get());
             
             pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
-            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 30000);
+
+            // Objects may end up displayed up to 2x the object range.
+            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range + SG_TILE_RADIUS);
             
             return pagedLOD;
         }
     }
     
+    double _object_range;
     bool _foundBase;
     std::list<_Object> _objectList;
     std::list<_ObjectStatic> _objectStaticList;

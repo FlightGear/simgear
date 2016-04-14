@@ -81,6 +81,11 @@ public:
      * set yet.
      */
     void makeHTTPRequest(HTTP::Request* req);
+
+    /**
+     * Cancel an HTTP request.
+     */
+    void cancelHTTPRequest(HTTP::Request* req, const std::string& reason);
     
     /**
      * The catalog XML/property version in use. This is used to make incomaptible

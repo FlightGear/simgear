@@ -199,16 +199,6 @@ public:
 
     ReadyState readyState() const { return _ready_state; }
 
-    /**
-     * Request aborting this request.
-     */
-    void abort();
-
-    /**
-     * Request aborting this request and specify the reported reaseon for it.
-     */
-    void abort(const std::string& reason);
-
     bool closeAfterComplete() const;
     bool isComplete() const;
 
@@ -245,6 +235,8 @@ private:
 
     void processBodyBytes(const char* s, int n);
     void setReadyState(ReadyState state);
+
+    void setCloseAfterComplete();
 
     Client*       _client; // HTTP client we're active on
 

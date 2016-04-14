@@ -59,8 +59,6 @@ namespace HTTP
         SG_WARN,
         "HTTP::FileRequest: failed to open file '" << _filename << "'"
       );
-
-      abort("Failed to open file.");
     }
   }
 

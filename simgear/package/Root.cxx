@@ -226,6 +226,20 @@ void Root::makeHTTPRequest(HTTP::Request *req)
     d->httpPendingRequests.push_back(req);
 }
 
+void Root::cancelHTTPRequest(HTTP::Request *req, const std::string &reason)
+{
+    if (d->http) {
+        d->http->cancelRequest(req, reason);
+    }
+
+    std::deque<HTTP::Request_ptr>::iterator it = std::find(d->httpPendingRequests.begin(),
+                                                           d->httpPendingRequests.end(),
+                                                           req);
+    if (it != d->httpPendingRequests.end()) {
+        d->httpPendingRequests.erase(it);
+    }
+}
+
 Root::Root(const SGPath& aPath, const std::string& aVersion) :
     d(new RootPrivate)
 {

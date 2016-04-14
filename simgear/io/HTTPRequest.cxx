@@ -366,23 +366,17 @@ void Request::setReadyState(ReadyState state)
 }
 
 //------------------------------------------------------------------------------
-void Request::abort()
-{
-  abort("Request aborted.");
-}
-
-//----------------------------------------------------------------------------
-void Request::abort(const std::string& reason)
-{
-  setFailure(-1, reason);
-  _willClose = true;
-}
-
-//------------------------------------------------------------------------------
 bool Request::closeAfterComplete() const
 {
   // for non HTTP/1.1 connections, assume server closes
   return _willClose || (_responseVersion != HTTP_1_1);
+}
+
+//------------------------------------------------------------------------------
+
+void Request::setCloseAfterComplete()
+{
+    _willClose = true;
 }
 
 //------------------------------------------------------------------------------

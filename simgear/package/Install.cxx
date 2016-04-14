@@ -409,7 +409,7 @@ size_t Install::downloadedBytes() const
 void Install::cancelDownload()
 {
     if (m_download.valid()) {
-        m_download->abort("User cancelled download");
+        m_package->catalog()->root()->cancelHTTPRequest(m_download, "User cancelled download");
     }
 
     if (m_revision == 0) {

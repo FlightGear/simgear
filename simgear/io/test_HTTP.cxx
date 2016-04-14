@@ -698,6 +698,74 @@ cout << "testing proxy close" << endl;
         COMPARE(tr->responseBytesReceived(), 0);
     }
 
+    // test cancel
+    {
+        cout <<  "cancel  request" << endl;
+        testServer.resetConnectCount();
+        cl.clearAllConnections();
+
+        cl.setProxy("", 80);
+        TestRequest* tr = new TestRequest("http://localhost:2000/test1");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+
+        TestRequest* tr2 = new TestRequest("http://localhost:2000/testLorem");
+        HTTP::Request_ptr own2(tr2);
+        cl.makeRequest(tr2);
+
+        TestRequest* tr3 = new TestRequest("http://localhost:2000/test1");
+        HTTP::Request_ptr own3(tr3);
+        cl.makeRequest(tr3);
+
+        cl.cancelRequest(tr, "my reason 1");
+
+        cl.cancelRequest(tr2, "my reason 2");
+
+        waitForComplete(&cl, tr3);
+
+        COMPARE(tr->responseCode(), -1);
+        COMPARE(tr2->responseReason(), "my reason 2");
+
+        COMPARE(tr3->responseLength(), strlen(BODY1));
+        COMPARE(tr3->responseBytesReceived(), strlen(BODY1));
+        COMPARE(tr3->bodyData, string(BODY1));
+    }
+
+    // test cancel
+    {
+        cout <<  "cancel middle request" << endl;
+        testServer.resetConnectCount();
+        cl.clearAllConnections();
+
+        cl.setProxy("", 80);
+        TestRequest* tr = new TestRequest("http://localhost:2000/test1");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+
+        TestRequest* tr2 = new TestRequest("http://localhost:2000/testLorem");
+        HTTP::Request_ptr own2(tr2);
+        cl.makeRequest(tr2);
+
+        TestRequest* tr3 = new TestRequest("http://localhost:2000/test1");
+        HTTP::Request_ptr own3(tr3);
+        cl.makeRequest(tr3);
+
+        cl.cancelRequest(tr2, "middle request");
+
+        waitForComplete(&cl, tr3);
+
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->responseLength(), strlen(BODY1));
+        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
+        COMPARE(tr->bodyData, string(BODY1));
+
+        COMPARE(tr2->responseCode(), -1);
+
+        COMPARE(tr3->responseLength(), strlen(BODY1));
+        COMPARE(tr3->responseBytesReceived(), strlen(BODY1));
+        COMPARE(tr3->bodyData, string(BODY1));
+    }
+
     {
         cout << "get-during-response-send" << endl;
         cl.clearAllConnections();

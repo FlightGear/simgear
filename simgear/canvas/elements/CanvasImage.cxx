@@ -155,8 +155,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   Image::~Image()
   {
-    if( _http_request )
-      _http_request->abort("image destroyed");
+      if( _http_request ) {
+          Canvas::getSystemAdapter()->getHTTPClient()->cancelRequest(_http_request, "image destroyed");
+      }
   }
 
   //----------------------------------------------------------------------------
@@ -618,7 +619,7 @@ namespace canvas
       // Abort pending request
       if( _http_request )
       {
-        _http_request->abort("setting new image");
+          Canvas::getSystemAdapter()->getHTTPClient()->cancelRequest(_http_request, "setting new image");
         _http_request.reset();
       }
 

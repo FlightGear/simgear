@@ -49,6 +49,8 @@ public:
 
     void makeRequest(const Request_ptr& r);
 
+    void cancelRequest(const Request_ptr& r, std::string reason = std::string());
+
     /**
      * Download a resource and save it to a file.
      *

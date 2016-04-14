@@ -105,11 +105,7 @@ namespace simgear
         {
         }
 
-        virtual void cancel()
-        {
-            _directory = 0;
-            abort("Repository cancelled request");
-        }
+        virtual void cancel();
 
         size_t contentSize() const
         {
@@ -633,6 +629,12 @@ HTTPRepository::failure() const
     return _d->status;
 }
 
+    void HTTPRepoGetRequest::cancel()
+    {
+        _directory->repository()->http->cancelRequest(this, "Reposiotry cancelled");
+        _directory = 0;
+    }
+
     class FileGetRequest : public HTTPRepoGetRequest
     {
     public:
@@ -652,7 +654,7 @@ HTTPRepository::failure() const
                 file.reset(new SGFile(pathInRepo.str()));
                 if (!file->open(SG_IO_OUT)) {
                   SG_LOG(SG_TERRASYNC, SG_WARN, "unable to create file " << pathInRepo);
-                  abort("Unable to create output file");
+                  _directory->repository()->http->cancelRequest(this, "Unable to create output file");
                 }
 
                 sha1_init(&hashContext);

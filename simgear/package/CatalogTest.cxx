@@ -23,14 +23,91 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 
 #include <simgear/package/Catalog.hxx>
 #include <simgear/package/Root.hxx>
 #include <simgear/package/Package.hxx>
+#include <simgear/package/Install.hxx>
 
+#include <simgear/misc/test_macros.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/timing/timestamp.hxx>
+
+#include <simgear/io/test_HTTP.hxx>
+#include <simgear/io/HTTPClient.hxx>
+#include <simgear/io/sg_file.hxx>
+#include <simgear/structure/exception.hxx>
 
 using namespace simgear;
+
+std::string readFileIntoString(const SGPath& path)
+{
+    std::string contents;
+
+    size_t readLen;
+    SGFile f(path.str());
+    if (!f.open(SG_IO_IN)) {
+        throw sg_io_exception("Couldn't open file", path);
+    }
+
+    char buf[8192];
+    while ((readLen = f.read(buf, 8192)) > 0) {
+        contents += std::string(buf, readLen);
+    }
+
+    return contents;
+}
+
+SGPath global_serverFilesRoot;
+
+class TestPackageChannel : public TestServerChannel
+{
+public:
+
+    virtual void processRequestHeaders()
+    {
+        state = STATE_IDLE;
+
+        SGPath localPath(global_serverFilesRoot);
+        localPath.append(path);
+
+        //SG_LOG(SG_IO, SG_INFO, "local path is:" << localPath.str());
+
+        if (localPath.exists()) {
+            std::string content = readFileIntoString(localPath);
+            std::stringstream d;
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Content-Length:" << content.size() << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << content;
+
+            std::string ds(d.str());
+            bufferSend(ds.data(), ds.size());
+        } else {
+            sendErrorResponse(404, false, "");
+        }
+    }
+};
+
+TestServer<TestPackageChannel> testServer;
+
+void waitForUpdateComplete(HTTP::Client* cl, pkg::Root* root)
+{
+    SGTimeStamp start(SGTimeStamp::now());
+    while (start.elapsedMSec() <  10000) {
+        cl->update();
+        testServer.poll();
+
+        if (!cl->hasActiveRequests()) {
+            return;
+        }
+
+        SGTimeStamp::sleepForMSec(15);
+    }
+
+    std::cerr << "timed out" << std::endl;
+}
 
 int parseTest()
 {
@@ -55,7 +132,7 @@ int parseTest()
     COMPARE(p1->qualifiedId(), "org.flightgear.test.catalog1.alpha");
     COMPARE(p1->name(), "Alpha package");
     COMPARE(p1->revision(), 8);
-    COMPARE(p1->fileSizeBytes(), 1234567);
+    COMPARE(p1->fileSizeBytes(), 593);
 
 
     pkg::PackageRef p2 = cat->getPackageById("c172p");
@@ -99,9 +176,139 @@ int parseTest()
     return EXIT_SUCCESS;
 }
 
+void testAddCatalog(HTTP::Client* cl)
+{
+// erase dir
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_add_catalog");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    // specify a test dir
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+
+    waitForUpdateComplete(cl, root);
+
+// verify on disk state
+    SGPath p(rootPath);
+    p.append("org.flightgear.test.catalog1");
+    p.append("catalog.xml");
+    VERIFY(p.exists());
+    COMPARE(root->allPackages().size(), 3);
+    COMPARE(root->catalogs().size(), 1);
+
+    pkg::PackageRef p1 = root->getPackageById("alpha");
+    COMPARE(p1->id(), "alpha");
+
+    pkg::PackageRef p2 = root->getPackageById("org.flightgear.test.catalog1.c172p");
+    COMPARE(p2->id(), "c172p");
+    COMPARE(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
+
+}
+
+void testInstallPackage(HTTP::Client* cl)
+{
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_install_with_dep");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    // specify a test dir
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.c172p");
+    pkg::InstallRef ins = p1->install();
+
+    VERIFY(ins->isQueued());
+
+    waitForUpdateComplete(cl, root);
+    VERIFY(p1->isInstalled());
+    VERIFY(p1->existingInstall() == ins);
+
+    pkg::PackageRef commonDeps = root->getPackageById("common-sounds");
+    VERIFY(commonDeps->existingInstall());
+
+    // verify on disk state
+    SGPath p(rootPath);
+    p.append("org.flightgear.test.catalog1");
+    p.append("Aircraft");
+    p.append("c172p");
+
+    COMPARE(p, ins->path());
+
+    p.append("c172p-floats-set.xml");
+    VERIFY(p.exists());
+
+    SGPath p2(rootPath);
+    p2.append("org.flightgear.test.catalog1");
+    p2.append("Aircraft");
+    p2.append("sounds");
+    p2.append("sharedfile.txt");
+    VERIFY(p2.exists());
+}
+
+void testUninstall(HTTP::Client* cl)
+{
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_uninstall");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.c172p");
+    pkg::InstallRef ins = p1->install();
+
+    waitForUpdateComplete(cl, root);
+
+    VERIFY(p1->isInstalled());
+
+    ins->uninstall();
+
+    VERIFY(!ins->path().exists());
+}
+
+void testRemoveCatalog()
+{
+
+}
+
+void testRefreshCatalog()
+{
+
+  // check for pending updates
+}
+
+
 int main(int argc, char* argv[])
 {
+    sglog().setLogLevels( SG_ALL, SG_DEBUG );
+
+    HTTP::Client cl;
+    cl.setMaxConnections(1);
+
+    global_serverFilesRoot = SGPath(SRC_DIR);
+
+    testAddCatalog(&cl);
+
     parseTest();
+
+    testInstallPackage(&cl);
+    
+    testUninstall(&cl);
+    
     std::cout << "Successfully passed all tests!" << std::endl;
     return EXIT_SUCCESS;
 }

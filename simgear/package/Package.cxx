@@ -281,7 +281,7 @@ PackageList Package::dependencies() const
     PackageList result;
     
     BOOST_FOREACH(SGPropertyNode* dep, m_props->getChildren("depends")) {
-        std::string depName = dep->getStringValue("package");
+        std::string depName = dep->getStringValue("id");
         unsigned int rev = dep->getIntValue("revision", 0);
         
     // prefer local hangar package if possible, in case someone does something

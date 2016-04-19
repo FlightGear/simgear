@@ -280,9 +280,42 @@ void testUninstall(HTTP::Client* cl)
     VERIFY(!ins->path().exists());
 }
 
-void testRemoveCatalog()
+void testRemoveCatalog(HTTP::Client* cl)
 {
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_catalog_remove");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
 
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+
+    {
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        waitForUpdateComplete(cl, root);
+    }
+
+    {
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.c172p");
+        pkg::InstallRef ins = p1->install();
+
+        waitForUpdateComplete(cl, root);
+
+        VERIFY(p1->isInstalled());
+    }
+
+    root->removeCatalogById("org.flightgear.test.catalog1");
+
+
+    SGPath p2(rootPath);
+    p2.append("org.flightgear.test.catalog1");
+    VERIFY(!p2.exists());
+
+    VERIFY(root->allPackages().empty());
+    VERIFY(root->catalogs().empty());
+
+    pkg::CatalogRef c = root->getCatalogById("org.flightgear.test.catalog1");
+    COMPARE(c, pkg::CatalogRef());
 }
 
 void testRefreshCatalog()
@@ -308,6 +341,8 @@ int main(int argc, char* argv[])
     testInstallPackage(&cl);
     
     testUninstall(&cl);
+
+    testRemoveCatalog(&cl);
     
     std::cout << "Successfully passed all tests!" << std::endl;
     return EXIT_SUCCESS;

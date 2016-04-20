@@ -13,7 +13,7 @@
     <package>
         <id>alpha</id>
         <name>Alpha package</name>
-        <revision type="int">8</revision>
+        <revision type="int">9</revision>
         <file-size-bytes type="int">593</file-size-bytes>
 
         <md5>a469c4b837f0521db48616cfe65ac1ea</md5>
@@ -71,10 +71,22 @@
     <package>
         <id>common-sounds</id>
         <name>Common sound files for test catalog aircraft</name>
-        <revision>10</revision>
+        <revision>11</revision>
         <dir>sounds</dir>
         <url>http://localhost:2000/catalogTest1/common-sounds.zip</url>
         <file-size-bytes>360</file-size-bytes>
         <md5>acf9eb89cf396eb42f8823d9cdf17584</md5>
+    </package>
+
+    <package>
+        <id>dc3</id>
+        <name>DC-3</name>
+        <revision type="int">9</revision>
+        <file-size-bytes type="int">593</file-size-bytes>
+
+        <md5>a469c4b837f0521db48616cfe65ac1ea</md5>
+        <url>http://localhost:2000/catalogTest1/alpha.zip</url>
+
+        <dir>dc3</dir>
     </package>
 </PropertyList>

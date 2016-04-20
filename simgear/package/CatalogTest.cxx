@@ -60,6 +60,7 @@ std::string readFileIntoString(const SGPath& path)
 }
 
 SGPath global_serverFilesRoot;
+unsigned int global_catalogVersion = 0;
 
 class TestPackageChannel : public TestServerChannel
 {
@@ -68,11 +69,20 @@ public:
     virtual void processRequestHeaders()
     {
         state = STATE_IDLE;
-
         SGPath localPath(global_serverFilesRoot);
+
+
+        if (path == "/catalogTest1/catalog.xml") {
+            if (global_catalogVersion > 0) {
+                std::stringstream ss;
+                ss << "/catalogTest1/catalog-v" << global_catalogVersion << ".xml";
+                path = ss.str();
+            }
+        }
+
         localPath.append(path);
 
-        //SG_LOG(SG_IO, SG_INFO, "local path is:" << localPath.str());
+      //  SG_LOG(SG_IO, SG_INFO, "local path is:" << localPath.str());
 
         if (localPath.exists()) {
             std::string content = readFileIntoString(localPath);
@@ -119,7 +129,7 @@ int parseTest()
     VERIFY(cat.valid());
 
     COMPARE(cat->id(), "org.flightgear.test.catalog1");
-    COMPARE(cat->url(), "http://download.flightgear.org/catalog1/catalog.xml");
+    COMPARE(cat->url(), "http://localhost:2000/catalogTest1/catalog.xml");
     COMPARE(cat->description(), "First test catalog");
 
 // check the packages too
@@ -318,10 +328,79 @@ void testRemoveCatalog(HTTP::Client* cl)
     COMPARE(c, pkg::CatalogRef());
 }
 
-void testRefreshCatalog()
+template <class T>
+bool contains(const std::vector<T>& vec, const T& item)
 {
+    typename std::vector<T>::const_iterator it = std::find(vec.begin(), vec.end(), item);
+    return (it != vec.end());
+}
 
-  // check for pending updates
+void testRefreshCatalog(HTTP::Client* cl)
+{
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_catalog_refresh_update");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+
+    {
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        waitForUpdateComplete(cl, root);
+    }
+
+    {
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.c172p");
+        pkg::InstallRef ins = p1->install();
+
+        pkg::PackageRef p2 = root->getPackageById("org.flightgear.test.catalog1.alpha");
+        pkg::InstallRef ins2 = p2->install();
+
+        waitForUpdateComplete(cl, root);
+
+        VERIFY(p1->isInstalled());
+        VERIFY(p2->isInstalled());
+    }
+
+    VERIFY(root->packagesNeedingUpdate().empty());
+
+    global_catalogVersion = 2;
+
+    VERIFY(!cl->hasActiveRequests());
+    root->refresh();
+
+    // should be a no-op due to catalog age testing
+    VERIFY(!cl->hasActiveRequests());
+
+    // force it this time
+    root->refresh(true);
+    VERIFY(cl->hasActiveRequests());
+    waitForUpdateComplete(cl, root);
+
+    pkg::CatalogRef c = root->getCatalogById("org.flightgear.test.catalog1");
+    COMPARE(c->ageInSeconds(), 0);
+
+    VERIFY(root->getPackageById("dc3") != pkg::PackageRef());
+    COMPARE(root->packagesNeedingUpdate().size(), 2);
+
+    pkg::PackageList needingUpdate = root->packagesNeedingUpdate();
+    VERIFY(contains(needingUpdate, root->getPackageById("common-sounds")));
+    VERIFY(contains(needingUpdate, root->getPackageById("org.flightgear.test.catalog1.alpha")));
+
+    pkg::InstallRef ins = root->getPackageById("alpha")->existingInstall();
+    VERIFY(ins->hasUpdate());
+
+    for (pkg::PackageList::const_iterator it = needingUpdate.begin();
+         it != needingUpdate.end(); ++it)
+    {
+        root->scheduleToUpdate((*it)->existingInstall());
+    }
+
+    waitForUpdateComplete(cl, root);
+
+    VERIFY(root->packagesNeedingUpdate().empty());
+    COMPARE(root->getPackageById("common-sounds")->revision(), 11);
 }
 
 
@@ -343,7 +422,9 @@ int main(int argc, char* argv[])
     testUninstall(&cl);
 
     testRemoveCatalog(&cl);
-    
+
+    testRefreshCatalog(&cl);
+
     std::cout << "Successfully passed all tests!" << std::endl;
     return EXIT_SUCCESS;
 }

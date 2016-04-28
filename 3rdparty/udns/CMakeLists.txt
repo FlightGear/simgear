@@ -11,7 +11,6 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/confi
 include_directories(${CMAKE_BINARY_DIR})
 
 set(HEADERS
-	config.h
 )
 
 set(SOURCES
@@ -35,5 +34,3 @@ set(SOURCES
 )
 
 simgear_component(udns 3rdparty/udns "${SOURCES}" "${HEADERS}")
-#simgear_component(utf8-internal 3rdparty/utf8/utf8 "" "${HEADERS_utf8}")
-

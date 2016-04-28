@@ -3,3 +3,7 @@ if (NOT SYSTEM_EXPAT)
 endif()
 
 add_subdirectory(utf8)
+
+if (ENABLE_DNS)
+	add_subdirectory(udns)
+endif()

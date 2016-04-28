@@ -1,0 +1,4 @@
+#cmakedefine HAVE_POLL
+#cmakedefine HAVE_GETOPT
+#cmakedefine HAVE_INET_PTON_NTOP
+#cmakedefine HAVE_IPv6

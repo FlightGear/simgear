@@ -118,6 +118,7 @@ option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applicati
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
 option(ENABLE_CURL      "Set to ON to use libCurl as the HTTP client backend" OFF)
+option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" OFF)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_BINARY_DIR} PATH)
@@ -420,6 +421,13 @@ endif()
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 
 include_directories(3rdparty/utf8/source)
+if (ENABLE_DNS)
+    message(STATUS "DNS resolver: ENABLED")
+    include_directories(3rdparty/udns)
+else()
+    message(STATUS "DNS resolver: DISABLED")
+endif()
+
 
 add_subdirectory(3rdparty)
 add_subdirectory(simgear)

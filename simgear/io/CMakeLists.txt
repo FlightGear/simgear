@@ -55,6 +55,11 @@ if (NOT ENABLE_CURL)
   list(APPEND HEADERS HTTPContentDecode.hxx)
 endif()
 
+if(ENABLE_DNS)
+  list(APPEND SOURCES DNSClient.cxx)
+  list(APPEND HEADERS DNSClient.hxx)
+endif()
+
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
@@ -69,6 +74,12 @@ add_executable(test_http test_HTTP.cxx)
 target_link_libraries(test_http ${TEST_LIBS})
 
 add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
+
+if(ENABLE_DNS)
+	add_executable(test_dns test_DNS.cxx)
+	target_link_libraries(test_dns ${TEST_LIBS})
+	add_test(dns ${EXECUTABLE_OUTPUT_PATH}/test_dns)
+endif()
 
 add_executable(httpget httpget.cxx)
 target_link_libraries(httpget ${TEST_LIBS})

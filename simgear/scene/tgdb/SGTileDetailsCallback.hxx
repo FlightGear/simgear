@@ -387,7 +387,7 @@ public:
             float cos_zero_density_angle = mat->get_cos_object_zero_density_slope_angle();
             float cos_max_density_angle  = mat->get_cos_object_max_density_slope_angle();
             
-            if (building_coverage == 0)
+            if ((building_coverage == 0) && (group_count ==0))
                 continue;
             
             SGBuildingBin* bin = NULL;

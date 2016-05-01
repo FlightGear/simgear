@@ -130,6 +130,8 @@ SGMatModel::load_models( SGPropertyNode *prop_root )
         
       } else {
         SG_LOG(SG_INPUT, SG_ALERT, "Failed to load object " << _paths[i]);
+        // Ensure the vector contains something, otherwise get_random_model below fails
+        _models.push_back(new osg::Node());
       }
     }
   }

@@ -142,7 +142,7 @@ InstallRef Package::existingInstall(const InstallCallback& cb) const
     InstallRef install;
     try {
         install = m_catalog->root()->existingInstallForPackage(const_cast<Package*>(this));
-    } catch (std::exception& e) {
+    } catch (std::exception& ) {
         return InstallRef();
     }
 

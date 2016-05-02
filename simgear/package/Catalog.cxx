@@ -119,7 +119,7 @@ protected:
         try {
             readProperties(m_buffer.data(), m_buffer.size(), props);
             m_owner->parseProps(props);
-        } catch (sg_exception& e) {
+        } catch (sg_exception& ) {
             SG_LOG(SG_GENERAL, SG_ALERT, "catalog parse failure:" << m_owner->url());
             m_owner->refreshComplete(Delegate::FAIL_EXTRACT);
             return;
@@ -207,7 +207,7 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     try {
         props = new SGPropertyNode;
         readProperties(xml.str(), props);
-    } catch (sg_exception& e) {
+    } catch (sg_exception& ) {
         return NULL;
     }
 

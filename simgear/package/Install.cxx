@@ -273,7 +273,7 @@ private:
                     throw sg_io_exception("failed to go to next file in the archive");
                 }
             }
-        } catch (sg_exception& e) {
+        } catch (sg_exception& ) {
             result = false;
         }
 

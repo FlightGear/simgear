@@ -253,7 +253,7 @@ public:
               // already exists on disk
               parseDirIndex(children);
               std::sort(children.begin(), children.end());
-          } catch (sg_exception& e) {
+          } catch (sg_exception& ) {
               // parsing cache failed
               children.clear();
           }
@@ -775,7 +775,7 @@ HTTPRepository::failure() const
                     st.stamp();
                     _directory->updateChildrenBasedOnHash();
                     SG_LOG(SG_TERRASYNC, SG_INFO, "after update of:" << _directory->absolutePath() << " child update took:" << st.elapsedMSec());
-                } catch (sg_exception& e) {
+                } catch (sg_exception& ) {
                     _directory->failedToUpdate(AbstractRepository::REPO_ERROR_IO);
                 }
             } else if (responseCode() == 404) {

@@ -23,6 +23,7 @@
 
 #include "DNSClient.hxx"
 #include "udns.h"
+#include <time.h>
 #include <simgear/debug/logstream.hxx>
 
 namespace simgear {

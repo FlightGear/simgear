@@ -39,40 +39,47 @@ namespace DNS
 class Request : public SGReferenced
 {
 public:
-	Request( const std::string & dn );
-	virtual ~Request();
-	std::string getDn() const { return _dn; }
-	int getType() const { return _type; }
-	bool complete() const { return _complete; }
-	void setComplete( bool b = true ) { _complete = b; }
+    Request( const std::string & dn );
+    virtual ~Request();
+    std::string getDn() const { return _dn; }
+    int getType() const { return _type; }
+    bool isComplete() const { return _complete; }
+    bool isTimeout() const;
+    void setComplete( bool b = true ) { _complete = b; }
 
-	virtual void submit() = 0;
+    virtual void submit() = 0;
+
+    std::string cname;
+    std::string qname;
+    unsigned ttl;
 protected:
-	std::string _dn;
-	int _type;
-	bool _complete;
+    std::string _dn;
+    int _type;
+    bool _complete;
+    time_t _timeout_secs;
+    time_t _start;
 };
 
 class NAPTRRequest : public Request
 {
 public:
-	NAPTRRequest( const std::string & dn );
-	virtual void submit();
+    NAPTRRequest( const std::string & dn );
+    virtual void submit();
 
-	struct NAPTR : SGReferenced {
-		int order;
-		int preference;
-		std::string flags;
-		std::string service;
-		std::string regexp;
-		std::string replacement;
-	};
-	typedef SGSharedPtr<NAPTR> NAPTR_ptr;
-	typedef std::vector<NAPTR_ptr> NAPTR_list;
-	std::string cname;
-	std::string qname;
-	unsigned ttl;
-	NAPTR_list entries;
+    struct NAPTR : SGReferenced {
+        int order;
+        int preference;
+        std::string flags;
+        std::string service;
+        std::string regexp;
+        std::string replacement;
+    };
+    typedef SGSharedPtr<NAPTR> NAPTR_ptr;
+    typedef std::vector<NAPTR_ptr> NAPTR_list;
+    NAPTR_list entries;
+
+    std::string qflags;
+    std::string qservice;
 };
 
 typedef SGSharedPtr<Request> Request_ptr;

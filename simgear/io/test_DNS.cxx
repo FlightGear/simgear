@@ -15,6 +15,7 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/timing/timestamp.hxx>
 
 using std::cout;
 using std::cerr;
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
         DNS::Request_ptr r(naptrRequest);
         cl.makeRequest(r);
         while( !r->isComplete() && !r->isTimeout()) {
-            usleep(200000);
+            SGTimeStamp::sleepForMSec(200);
             cl.update(0);
         }
 
@@ -100,7 +101,7 @@ int main(int argc, char* argv[])
         DNS::Request_ptr r(naptrRequest);
         cl.makeRequest(r);
         while( !r->isComplete() && !r->isTimeout()) {
-            usleep(200000);
+            SGTimeStamp::sleepForMSec(200);
             cl.update(0);
         }
 

@@ -117,15 +117,14 @@ static naRef f_fmod(naContext c, naRef me, int argc, naRef* args)
 static naRef f_clamp(naContext c, naRef me, int argc, naRef* args)
 {
     naRef a = naNumValue(argc > 0 ? args[0] : naNil());
-    naRef b = naNumValue(argc > 1 ? args[1] : naNil());
-    naRef x = naNumValue(argc > 2 ? args[2] : naNil());
+    naRef min = naNumValue(argc > 1 ? args[1] : naNil());
+    naRef max = naNumValue(argc > 2 ? args[2] : naNil());
     
-    if(naIsNil(a) || naIsNil(b) || naIsNil(x))
+    if(naIsNil(a) || naIsNil(min) || naIsNil(max))
         naRuntimeError(c, "non numeric arguments to clamp()");
-    
-    if (a.num < b.num) b.num = a.num;
-    if (b.num > x.num) b.num = x.num;
-    return VALIDATE(b);
+
+    a.num = a.num < min.num ? min.num : ( a.num > max.num ? max.num : a.num );
+    return VALIDATE(a);
 }
 
 static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)

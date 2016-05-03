@@ -61,7 +61,9 @@
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/io/SVNRepository.hxx>
 #include <simgear/io/HTTPRepository.hxx>
+#include <simgear/io/DNSClient.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/math/sg_random.h>
 
 static const bool svn_built_in_available = true;
 
@@ -507,7 +509,67 @@ void SGTerraSync::SvnThread::run()
     initCompletedTilesPersistentCache();
 
     {
-        if (_svn_server.empty()) {
+        if (_httpServer == "automatic" ) {
+
+          //TODO: make DN and service settable from properties
+          DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest("terrasync.flightgear.org");
+          naptrRequest->qservice = "ws20";
+
+          naptrRequest->qflags = "U";
+          DNS::Request_ptr r(naptrRequest);
+
+          DNS::Client dnsClient;
+          dnsClient.makeRequest(r);
+          while( !r->isComplete() && !r->isTimeout() )
+            dnsClient.update(0);
+
+          if( naptrRequest->entries.empty() ) {
+              SG_LOG(SG_TERRASYNC, SG_ALERT, "ERROR: automatic terrasync http-server requested, but no DNS entry found.");
+              _httpServer = "";
+          } else {
+              // walk through responses, they are ordered by 1. order and 2. preference
+              // For now, only take entries with lowest order
+              // TODO: try all available servers in the order given by preferenc and order
+                    int order = naptrRequest->entries[0]->order;
+
+                    // get all servers with this order and the same (for now only lowest preference)
+              DNS::NAPTRRequest::NAPTR_list availableServers;
+              for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin();
+                      it != naptrRequest->entries.end();
+                      ++it ) {
+
+                  if( (*it)->order != order )
+                      continue;
+
+                  string regex = (*it)->regexp;
+                  if( false == simgear::strutils::starts_with( (*it)->regexp, "!^.*$!" ) ) {
+                      SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
+                      continue;
+                  }
+
+                  if( false == simgear::strutils::ends_with( (*it)->regexp, "!" ) ) {
+                      SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
+                      continue;
+                  }
+
+                  // always use first entry
+                  if( availableServers.empty() || (*it)->preference == availableServers[0]->preference) {
+                      SG_LOG(SG_TERRASYNC,SG_DEBUG, "available server regexp: " << (*it)->regexp );
+                      availableServers.push_back( *it );
+                  }
+              }
+
+              // now pick a random entry from the available servers
+              DNS::NAPTRRequest::NAPTR_list::size_type idx = sg_random() * availableServers.size();
+              _httpServer = availableServers[idx]->regexp;
+              _httpServer = _httpServer.substr( 6, _httpServer.length()-7 ); // strip search pattern and separators
+
+              SG_LOG(SG_TERRASYNC,SG_INFO, "picking entry # " << idx << ", server is " << _httpServer );
+          }
+        }
+    }
+    if( _httpServer.empty() ) { // don't resolve SVN server is HTTP server is set
+        if ( _svn_server.empty()) {
             SG_LOG(SG_TERRASYNC,SG_INFO, "Querying closest TerraSync server");
             ServerSelectQuery* ssq = new ServerSelectQuery;
             HTTP::Request_ptr req = ssq;
@@ -527,8 +589,10 @@ void SGTerraSync::SvnThread::run()
         }
 
         if (_svn_server.empty()) {
+#if WE_HAVE_A_DEFAULT_SERVER_BUT_WE_DONT_THIS_URL_IS_NO_LONGER_VALID
             // default value
             _svn_server = "http://foxtrot.mgras.net:8080/terrascenery/trunk/data/Scenery";
+#endif
         }
     }
 

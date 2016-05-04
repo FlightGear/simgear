@@ -1,7 +1,7 @@
 
 include (SimGearComponent)
 
-set(HEADERS 
+set(HEADERS
     Catalog.hxx
     Package.hxx
     Install.hxx
@@ -9,7 +9,7 @@ set(HEADERS
     Delegate.hxx
     )
 
-set(SOURCES 
+set(SOURCES
     Catalog.cxx
     Package.cxx
     Install.cxx
@@ -18,6 +18,7 @@ set(SOURCES
     md5.h md5.c
     ioapi.c ioapi_mem.c ioapi.h
     unzip.h unzip.c
+    untar.hxx untar.cxx
     )
 
 simgear_component(package package "${SOURCES}" "${HEADERS}")
@@ -34,7 +35,7 @@ target_link_libraries(catalog_test ${TEST_LIBS})
 
 set_target_properties(catalog_test PROPERTIES
         COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
-        
+
 add_test(catalog_test ${EXECUTABLE_OUTPUT_PATH}/catalog_test)
 
 endif(ENABLE_TESTS)

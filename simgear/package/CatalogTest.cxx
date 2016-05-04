@@ -133,7 +133,7 @@ int parseTest()
     COMPARE(cat->description(), "First test catalog");
 
 // check the packages too
-    COMPARE(cat->packages().size(), 3);
+    COMPARE(cat->packages().size(), 4);
 
     pkg::PackageRef p1 = cat->packages().front();
     COMPARE(p1->catalog(), cat.ptr());
@@ -208,7 +208,7 @@ void testAddCatalog(HTTP::Client* cl)
     p.append("org.flightgear.test.catalog1");
     p.append("catalog.xml");
     VERIFY(p.exists());
-    COMPARE(root->allPackages().size(), 3);
+    COMPARE(root->allPackages().size(), 4);
     COMPARE(root->catalogs().size(), 1);
 
     pkg::PackageRef p1 = root->getPackageById("alpha");
@@ -403,6 +403,42 @@ void testRefreshCatalog(HTTP::Client* cl)
     COMPARE(root->getPackageById("common-sounds")->revision(), 11);
 }
 
+void testInstallTarPackage(HTTP::Client* cl)
+{
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_install_tar");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    // specify a test dir
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+    COMPARE(p1->id(), "b737-NG");
+    pkg::InstallRef ins = p1->install();
+
+    VERIFY(ins->isQueued());
+
+    waitForUpdateComplete(cl, root);
+    VERIFY(p1->isInstalled());
+    VERIFY(p1->existingInstall() == ins);
+
+    // verify on disk state
+    SGPath p(rootPath);
+    p.append("org.flightgear.test.catalog1");
+    p.append("Aircraft");
+    p.append("b737NG");
+
+    COMPARE(p, ins->path());
+
+    p.append("b737-900-set.xml");
+    VERIFY(p.exists());
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -424,6 +460,8 @@ int main(int argc, char* argv[])
     testRemoveCatalog(&cl);
 
     testRefreshCatalog(&cl);
+
+    testInstallTarPackage(&cl);
 
     std::cout << "Successfully passed all tests!" << std::endl;
     return EXIT_SUCCESS;

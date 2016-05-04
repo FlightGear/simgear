@@ -22,6 +22,7 @@
 
 #include <simgear/package/unzip.h>
 #include <simgear/package/md5.h>
+#include <simgear/package/untar.hxx>
 
 #include <simgear/structure/exception.hxx>
 #include <simgear/props/props_io.hxx>
@@ -144,8 +145,8 @@ protected:
             return;
         }
 
-        if (!extractUnzip()) {
-            SG_LOG(SG_GENERAL, SG_WARN, "zip extraction failed");
+        if (!extract()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "archive extraction failed");
             doFailure(Delegate::FAIL_EXTRACT);
             return;
         }
@@ -250,6 +251,22 @@ private:
         unzCloseCurrentFile(zip);
     }
 
+    bool extract()
+    {
+        const std::string u(url());
+        const size_t ul(u.length());
+        if (u.rfind(".zip") == (ul - 4)) {
+            return extractUnzip();
+        }
+
+        if (u.rfind(".tar.gz") == (ul - 7)) {
+            return extractTar();
+        }
+
+        SG_LOG(SG_IO, SG_WARN, "unsupported archive format:" << u);
+        return false;
+    }
+
     bool extractUnzip()
     {
         bool result = true;
@@ -285,6 +302,13 @@ private:
         free(buf);
         unzClose(zip);
         return result;
+    }
+
+    bool extractTar()
+    {
+        TarExtractor tx(m_extractPath);
+        tx.extractBytes(m_buffer.data(), m_buffer.size());
+        return !tx.hasError() && tx.isAtEndOfArchive();
     }
 
     void doFailure(Delegate::StatusCode aReason)

@@ -79,6 +79,30 @@
     </package>
 
     <package>
+        <id>b737-NG</id>
+        <name>Boeing 737 NG</name>
+        <dir>b737NG</dir>
+        <description>A popular twin-engined narrow body jet</description>
+        <revision type="int">112</revision>
+        <file-size-bytes type="int">860</file-size-bytes>
+
+        <tag>boeing</tag>
+        <tag>jet</tag>
+        <tag>ifr</tag>
+
+        <rating>
+          <FDM type="int">5</FDM>
+          <systems type="int">5</systems>
+          <model type="int">4</model>
+          <cockpit type="int">4</cockpit>
+        </rating>
+
+        <md5>a94ca5704f305b90767f40617d194ed6</md5>
+        <url>http://localhost:2000/catalogTest1/b737.tar.gz</url>
+      </package>
+
+
+    <package>
         <id>dc3</id>
         <name>DC-3</name>
         <revision type="int">9</revision>

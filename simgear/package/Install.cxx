@@ -166,6 +166,9 @@ protected:
             return;
         }
 
+        // extract_xxxx directory is now empty, so remove it
+        m_extractPath.remove();
+
         m_owner->m_revision = m_owner->package()->revision();
         m_owner->writeRevisionFile();
         m_owner->m_download.reset(); // so isDownloading reports false

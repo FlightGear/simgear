@@ -21,7 +21,6 @@
 #include <simgear_config.h>
 
 #include <iostream>
-#include <cstring>
 #include <cassert>
 #include <algorithm>
 #include <sstream>
@@ -43,53 +42,6 @@
 #include <simgear/timing/timestamp.hxx>
 
 #include <simgear/misc/sg_hash.hxx>
-
-#if defined(SG_WINDOWS)
-
-/*
- * public domain strtok_r() by Charlie Gordon
- *
- *   from comp.lang.c  9/14/2007
- *
- *      http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684
- *
- *     (Declaration that it's public domain):
- *      http://groups.google.com/group/comp.lang.c/msg/7c7b39328fefab9c
- */
-
-char* strtok_r(
-    char *str,
-    const char *delim,
-    char **nextp)
-{
-    char *ret;
-
-    if (str == NULL)
-    {
-        str = *nextp;
-    }
-
-    str += strspn(str, delim);
-
-    if (*str == '\0')
-    {
-        return NULL;
-    }
-
-    ret = str;
-
-    str += strcspn(str, delim);
-
-    if (*str)
-    {
-        *str++ = '\0';
-    }
-
-    *nextp = str;
-
-    return ret;
-}
-#endif
 
 namespace simgear
 {
@@ -207,10 +159,10 @@ class HTTPDirectory
             DirectoryType
         };
 
-        ChildInfo(Type ty, const char* nameData, const char* hashData) :
+        ChildInfo(Type ty, const std::string & nameData, const std::string & hashData) :
             type(ty),
             name(nameData),
-            hash(hashData ? hashData : ""),
+            hash(hashData),
             sizeInBytes(0)
         {
         }
@@ -222,9 +174,9 @@ class HTTPDirectory
             sizeInBytes(other.sizeInBytes)
         { }
 
-        void setSize(const char* sizeData)
+        void setSize(const std::string & sizeData)
         {
-            sizeInBytes = ::strtol(sizeData, NULL, 10);
+            sizeInBytes = ::strtol(sizeData.c_str(), NULL, 10);
         }
 
         bool operator<(const ChildInfo& other) const
@@ -302,13 +254,16 @@ public:
         string_list indexNames = indexChildren(),
             toBeUpdated, orphans;
         simgear::Dir d(absolutePath());
+        SG_LOG(SG_TERRASYNC, SG_DEBUG, "Dir created for: '" << absolutePath() );
         PathList fsChildren = d.children(0);
+        SG_LOG(SG_TERRASYNC, SG_DEBUG, "Dir has children: '" << fsChildren.size() );
         PathList::const_iterator it = fsChildren.begin();
 
+
         for (; it != fsChildren.end(); ++it) {
-            SG_LOG(SG_TERRASYNC, SG_DEBUG, "processing child: '" << it->str() << "', isDir=" << it->isDir() );
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "processing child: '" << it->str() << "', file=" << it->file() << ",isDir=" << it->isDir() );
             ChildInfo info(it->isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType,
-                           it->file().c_str(), NULL);
+                           it->file(), "");
             std::string hash = hashForChild(info);
             SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash is: '" << hash << "'" );
 
@@ -464,42 +419,47 @@ private:
             throw sg_io_exception("cannot open dirIndex file", p);
         }
 
-        char lineBuffer[512];
-        char* lastToken;
-
         while (!indexStream.eof() ) {
-            indexStream.getline(lineBuffer, 512);
-            lastToken = 0;
-            char* typeData = ::strtok_r(lineBuffer, ":", &lastToken);
-            if (!typeData) {
-                continue; // skip blank line
-            }
+            std::string line;
+            std::getline( indexStream, line );
+            line = simgear::strutils::strip(line);
 
-            if (!typeData) {
-                // malformed entry
-                throw sg_io_exception("Malformed dir index file", p);
-            }
-
-            if (!strcmp(typeData, "version")) {
+            // skip blank line or comment beginning with '#'
+            if( line.empty() || line[0] == '#' )
                 continue;
-            } else if (!strcmp(typeData, "path")) {
+
+            string_list tokens = simgear::strutils::split( line, ":" );
+
+            std::string typeData = tokens[0];
+
+            if( typeData == "version" ) {
+                if( tokens.size() < 2 ) {
+                    SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: missing version number in line '" << line << "'" );
+                    break;
+                }
+                if( tokens[1] != "1" ) {
+                    SG_LOG(SG_TERRASYNC, SG_WARN, "invalid .dirindex file: wrong version number '" << tokens[1] << "' (expected 1)" );
+                    break;
+                }
+            }
+
+            if( typeData == "path" ) {
+                continue; // ignore path, next line
+            }
+
+            if( tokens.size() < 3 ) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: not enough tokens in line '" << line << "' (ignoring line)" );
                 continue;
             }
 
-            char* nameData = ::strtok_r(NULL, ":", &lastToken);
-            char* hashData = ::strtok_r(NULL, ":", &lastToken);
-            char* sizeData = ::strtok_r(NULL, ":", &lastToken);
-
-            if (typeData[0] == 'f') {
-                children.push_back(ChildInfo(ChildInfo::FileType, nameData, hashData));
-            } else if (typeData[0] == 'd') {
-                children.push_back(ChildInfo(ChildInfo::DirectoryType, nameData, hashData));
-            } else {
-                throw sg_io_exception("Malformed line code in dir index file", p);
+            if (typeData != "f" && typeData != "d" ) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: invalid type in line '" << line << "', expected 'd' or 'f', (ignoring line)" );
+                continue;
             }
+            children.push_back(ChildInfo(typeData == "f" ? ChildInfo::FileType : ChildInfo::DirectoryType, tokens[1], tokens[2]));
 
-            if (sizeData) {
-                children.back().setSize(sizeData);
+            if (tokens.size() > 3) {
+                children.back().setSize(tokens[3]);
             }
         }
 
@@ -959,25 +919,34 @@ HTTPRepository::failure() const
         }
 
         std::ifstream stream(cachePath.c_str(), std::ios::in);
-        char buf[2048];
-        char* lastToken;
 
         while (!stream.eof()) {
-            stream.getline(buf, 2048);
-            lastToken = 0;
-            char* nameData = ::strtok_r(buf, ":", &lastToken);
-            char* timeData = ::strtok_r(NULL, ":", &lastToken);
-            char* sizeData = ::strtok_r(NULL, ":", &lastToken);
-            char* hashData = ::strtok_r(NULL, ":", &lastToken);
-            if (!nameData || !timeData || !sizeData || !hashData) {
+            std::string line;
+            std::getline(stream,line);
+            line = simgear::strutils::strip(line);
+            if( line.empty() || line[0] == '#' )
+                continue;
+
+            string_list tokens = simgear::strutils::split( line, ":" );
+            if( tokens.size() < 4 ) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath.str() << "': '" << line << "' (ignoring line)");
+                continue;
+            }
+            const std::string nameData = simgear::strutils::strip(tokens[0]);
+            const std::string timeData = simgear::strutils::strip(tokens[1]);
+            const std::string sizeData = simgear::strutils::strip(tokens[2]);
+            const std::string hashData = simgear::strutils::strip(tokens[3]);
+
+            if (nameData.empty() || timeData.empty() || sizeData.empty() || hashData.empty() ) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath.str() << "': '" << line << "' (ignoring line)");
                 continue;
             }
 
             HashCacheEntry entry;
             entry.filePath = nameData;
             entry.hashHex = hashData;
-            entry.modTime = strtol(timeData, NULL, 10);
-            entry.lengthBytes = strtol(sizeData, NULL, 10);
+            entry.modTime = strtol(timeData.c_str(), NULL, 10);
+            entry.lengthBytes = strtol(sizeData.c_str(), NULL, 10);
             hashes.push_back(entry);
         }
     }

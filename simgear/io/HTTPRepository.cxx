@@ -306,25 +306,31 @@ public:
         PathList::const_iterator it = fsChildren.begin();
 
         for (; it != fsChildren.end(); ++it) {
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "processing child: '" << it->str() << "', isDir=" << it->isDir() );
             ChildInfo info(it->isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType,
                            it->file().c_str(), NULL);
             std::string hash = hashForChild(info);
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash is: '" << hash << "'" );
 
             ChildInfoList::iterator c = findIndexChild(it->file());
             if (c == children.end()) {
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "is orphan '" << it->file() << "'" );
                 orphans.push_back(it->file());
             } else if (c->hash != hash) {
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << it->file() << "', c->name=" << c->name );
                 // file exists, but hash mismatch, schedule update
                 if (!hash.empty()) {
-                    //SG_LOG(SG_TERRASYNC, SG_INFO, "file exists but hash is wrong for:" << c->name);
-                    //SG_LOG(SG_TERRASYNC, SG_INFO, "on disk:" << hash << " vs in info:" << c->hash);
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists but hash is wrong for:" << c->name);
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "on disk:" << hash << " vs in info:" << c->hash);
                 }
 
                 toBeUpdated.push_back(c->name);
             } else {
                 // file exists and hash is valid. If it's a directory,
                 // perform a recursive check.
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists hash is good:" << c->name);
                 if (c->type == ChildInfo::DirectoryType) {
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "going recursive for:" << c->name);
                     SGPath p(relativePath());
                     p.append(c->name);
                     HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
@@ -334,8 +340,10 @@ public:
 
             // remove existing file system children from the index list,
             // so we can detect new children
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "looking for name in indexNames:" << c->name);
             string_list::iterator it = std::find(indexNames.begin(), indexNames.end(), c->name);
             if (it != indexNames.end()) {
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "found name in indexNames, erasing:" << c->name);
                 indexNames.erase(it);
             }
         } // of real children iteration

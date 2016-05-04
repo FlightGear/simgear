@@ -91,7 +91,8 @@ private:
   void writeCache();
   
   DirectoryList::iterator findChildDir(const std::string& dirName);
-      
+  SVNDirectory* parseChildDirectory(const std::string& dirName);
+
   SGPath localPath;
   DAVCollection* dav;
   SVNRepository* repo;

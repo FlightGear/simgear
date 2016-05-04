@@ -136,7 +136,7 @@ void SVNDirectory::parseCache()
         _cachedRevision = versionName;
         doneSelf = true;
       } else {
-        DAVResource* child = addChildDirectory(hrefPtr)->collection();
+        DAVResource* child = parseChildDirectory(hrefPtr)->collection();
           string s = strutils::strip(versionName);
           if (!s.empty()) {
               child->setVersionName(versionName);
@@ -232,6 +232,17 @@ SVNDirectory::addChildDirectory(const std::string& dirName)
     childCol->setVersionName(child->cachedRevision());
     _children.push_back(child);
     writeCache();
+    return child;
+}
+
+SVNDirectory*
+SVNDirectory::parseChildDirectory(const std::string& dirName)
+{
+    assert(!dav->childWithName(dirName));
+    DAVCollection* childCol = dav->createChildCollection(dirName);
+    SVNDirectory* child = new SVNDirectory(this, childCol);
+    childCol->setVersionName(child->cachedRevision());
+    _children.push_back(child);
     return child;
 }
 

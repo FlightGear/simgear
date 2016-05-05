@@ -441,6 +441,7 @@ private:
                     SG_LOG(SG_TERRASYNC, SG_WARN, "invalid .dirindex file: wrong version number '" << tokens[1] << "' (expected 1)" );
                     break;
                 }
+                continue; // version is good, continue
             }
 
             if( typeData == "path" ) {

@@ -268,21 +268,21 @@ public:
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "is orphan '" << it->file() << "'" );
                 orphans.push_back(it->file());
             } else if (c->hash != hash) {
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << it->file() << "', c->name=" << c->name );
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << it->file() );
                 // file exists, but hash mismatch, schedule update
                 if (!hash.empty()) {
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists but hash is wrong for:" << c->name);
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists but hash is wrong for:" << it->file() );
                     SG_LOG(SG_TERRASYNC, SG_DEBUG, "on disk:" << hash << " vs in info:" << c->hash);
                 }
 
-                toBeUpdated.push_back(c->name);
+                toBeUpdated.push_back(it->file() );
             } else {
                 // file exists and hash is valid. If it's a directory,
                 // perform a recursive check.
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists hash is good:" << c->name);
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists hash is good:" << it->file() );
                 if (c->type == ChildInfo::DirectoryType) {
                     SGPath p(relativePath());
-                    p.append(c->name);
+                    p.append(it->file());
                     HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
                     childDir->updateChildrenBasedOnHash();
                 }
@@ -291,7 +291,7 @@ public:
             // remove existing file system children from the index list,
             // so we can detect new children
             // https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Erase-Remove
-            indexNames.erase(std::remove(indexNames.begin(), indexNames.end(), c->name), indexNames.end());
+            indexNames.erase(std::remove(indexNames.begin(), indexNames.end(), it->file()), indexNames.end());
         } // of real children iteration
 
         // all remaining names in indexChilden are new children
@@ -330,6 +330,7 @@ public:
                 continue;
             }
 
+            SG_LOG(SG_TERRASYNC,SG_DEBUG, "scheduling update for " << *it );
             if (cit->type == ChildInfo::FileType) {
                 _repository->updateFile(this, *it, cit->sizeInBytes);
             } else {
@@ -630,10 +631,12 @@ HTTPRepository::failure() const
             if (responseCode() == 200) {
                 std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
                 _directory->didUpdateFile(fileName, hash, contentSize());
-                //SG_LOG(SG_TERRASYNC, SG_INFO, "got file " << fileName << " in " << _directory->absolutePath());
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "got file " << fileName << " in " << _directory->absolutePath());
             } else if (responseCode() == 404) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file not found on server: " << fileName << " for " << _directory->absolutePath());
                 _directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_FILE_NOT_FOUND);
             } else {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file download error on server: " << fileName << " for " << _directory->absolutePath() << ": " << responseCode() );
                 _directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_HTTP);
             }
 

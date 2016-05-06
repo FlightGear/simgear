@@ -612,7 +612,7 @@ HTTPRepository::failure() const
         virtual void gotBodyData(const char* s, int n)
         {
             if (!file.get()) {
-                file.reset(new SGFile(pathInRepo.str()));
+                file.reset(new SGBinaryFile(pathInRepo.str()));
                 if (!file->open(SG_IO_OUT)) {
                   SG_LOG(SG_TERRASYNC, SG_WARN, "unable to create file " << pathInRepo);
                   _directory->repository()->http->cancelRequest(this, "Unable to create output file");
@@ -664,7 +664,7 @@ HTTPRepository::failure() const
         std::string fileName; // if empty, we're getting the directory itself
         SGPath pathInRepo;
         simgear::sha1nfo hashContext;
-        std::auto_ptr<SGFile> file;
+        std::auto_ptr<SGBinaryFile> file;
     };
 
     class DirGetRequest : public HTTPRepoGetRequest

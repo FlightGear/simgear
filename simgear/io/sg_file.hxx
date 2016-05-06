@@ -39,6 +39,7 @@ class SGFile : public SGIOChannel {
     const int repeat;
     int iteration;              // number of current repetition,
                                 // starting at 0
+    int extraoflags;
 
 public:
 
@@ -50,7 +51,7 @@ public:
      * @param file name of file to open
      * @param repeat On eof restart at the beginning of the file
      */
-    SGFile( const std::string& file, int repeat_ = 1 );
+    SGFile( const std::string& file, int repeat_ = 1, int extraoflags = 0);
 
     /**
      * Create an SGFile from an existing, open file-descriptor
@@ -83,6 +84,11 @@ public:
 
     /** @return true of eof conditions exists */
     virtual bool eof() const { return eof_flag; };
+};
+
+class SGBinaryFile : public SGFile {
+public:
+    SGBinaryFile( const std::string& file, int repeat_ = 1 );
 };
 
 #endif // _SG_FILE_HXX

@@ -254,18 +254,14 @@ public:
         string_list indexNames = indexChildren(),
             toBeUpdated, orphans;
         simgear::Dir d(absolutePath());
-        SG_LOG(SG_TERRASYNC, SG_DEBUG, "Dir created for: '" << absolutePath() );
         PathList fsChildren = d.children(0);
-        SG_LOG(SG_TERRASYNC, SG_DEBUG, "Dir has children: '" << fsChildren.size() );
         PathList::const_iterator it = fsChildren.begin();
 
 
         for (; it != fsChildren.end(); ++it) {
-            SG_LOG(SG_TERRASYNC, SG_DEBUG, "processing child: '" << it->str() << "', file=" << it->file() << ",isDir=" << it->isDir() );
             ChildInfo info(it->isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType,
                            it->file(), "");
             std::string hash = hashForChild(info);
-            SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash is: '" << hash << "'" );
 
             ChildInfoList::iterator c = findIndexChild(it->file());
             if (c == children.end()) {
@@ -285,7 +281,6 @@ public:
                 // perform a recursive check.
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists hash is good:" << c->name);
                 if (c->type == ChildInfo::DirectoryType) {
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "going recursive for:" << c->name);
                     SGPath p(relativePath());
                     p.append(c->name);
                     HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
@@ -295,12 +290,8 @@ public:
 
             // remove existing file system children from the index list,
             // so we can detect new children
-            SG_LOG(SG_TERRASYNC, SG_DEBUG, "looking for name in indexNames:" << c->name);
-            string_list::iterator it = std::find(indexNames.begin(), indexNames.end(), c->name);
-            if (it != indexNames.end()) {
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "found name in indexNames, erasing:" << c->name);
-                indexNames.erase(it);
-            }
+            // https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Erase-Remove
+            indexNames.erase(std::remove(indexNames.begin(), indexNames.end(), c->name), indexNames.end());
         } // of real children iteration
 
         // all remaining names in indexChilden are new children

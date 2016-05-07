@@ -286,7 +286,7 @@ std::string test_computeHashForPath(const SGPath& p)
     char* buf = static_cast<char*>(alloca(1024 * 1024));
     size_t readLen;
 
-    SGFile f(p.str());
+    SGBinaryFile f(p.str());
     f.open(SG_IO_IN);
 
     while ((readLen = f.read(buf, 1024 * 1024)) > 0) {

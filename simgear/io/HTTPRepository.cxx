@@ -843,7 +843,7 @@ HTTPRepository::failure() const
         sha1_init(&info);
         char* buf = static_cast<char*>(malloc(1024 * 1024));
         size_t readLen;
-        SGFile f(p.str());
+        SGBinaryFile f(p.str());
         if (!f.open(SG_IO_IN)) {
             throw sg_io_exception("Couldn't open file for compute hash", p);
         }

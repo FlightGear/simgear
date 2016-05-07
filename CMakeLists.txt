@@ -117,7 +117,6 @@ option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
-option(ENABLE_CURL      "Set to ON to use libCurl as the HTTP client backend" OFF)
 option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" ON)
 
 if (MSVC)
@@ -210,11 +209,7 @@ else()
 endif(SIMGEAR_HEADLESS)
 
 find_package(ZLIB REQUIRED)
-
-if (ENABLE_CURL)
-  find_package(CURL REQUIRED)
-  message(STATUS "Curl HTTP client: ENABLED")
-endif()
+find_package(CURL REQUIRED)
 
 if (SYSTEM_EXPAT)
     message(STATUS "Requested to use system Expat library, forcing SIMGEAR_SHARED to true")

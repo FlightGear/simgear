@@ -18,9 +18,7 @@
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/debug/logstream.hxx>
 
-#if defined(ENABLE_CURL)
 #include <curl/multi.h>
-#endif
 
 using std::cout;
 using std::cerr;
@@ -535,11 +533,7 @@ int main(int argc, char* argv[])
 
 
 
-#if defined(ENABLE_CURL)
-      const int HOST_NOT_FOUND_CODE = CURLE_COULDNT_RESOLVE_HOST;
-#else
-      const int HOST_NOT_FOUND_CODE = ENOENT;
-#endif
+        const int HOST_NOT_FOUND_CODE = CURLE_COULDNT_RESOLVE_HOST;
         COMPARE(tr->responseCode(), HOST_NOT_FOUND_CODE);
     }
 
@@ -551,11 +545,7 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
         waitForFailed(&cl, tr);
 
-  #if defined(ENABLE_CURL)
         const int SERVER_NO_DATA_CODE = CURLE_GOT_NOTHING;
-  #else
-        const int SERVER_NO_DATA_CODE = 500;
-  #endif
         COMPARE(tr->responseCode(), SERVER_NO_DATA_CODE);
     }
 
@@ -572,7 +562,6 @@ cout << "testing proxy close" << endl;
         COMPARE(tr->bodyData, string(body2, body2Size));
     }
 
-#if defined(ENABLE_CURL)
     {
         cl.setProxy("localhost", 2000, "johndoe:swordfish");
         TestRequest* tr = new TestRequest("http://www.google.com/test3");
@@ -583,7 +572,6 @@ cout << "testing proxy close" << endl;
         COMPARE(tr->responseBytesReceived(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
     }
-#endif
 
 // pipelining
     cout << "testing HTTP 1.1 pipelining" << endl;
@@ -591,7 +579,7 @@ cout << "testing proxy close" << endl;
     {
         testServer.resetConnectCount();
         cl.clearAllConnections();
-        
+
         cl.setProxy("", 80);
         TestRequest* tr = new TestRequest("http://localhost:2000/test1");
         HTTP::Request_ptr own(tr);

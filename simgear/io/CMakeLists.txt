@@ -50,11 +50,6 @@ set(SOURCES
     HTTPRepository.cxx
     )
 
-if (NOT ENABLE_CURL)
-  list(APPEND SOURCES HTTPContentDecode.cxx)
-  list(APPEND HEADERS HTTPContentDecode.hxx)
-endif()
-
 if(ENABLE_DNS)
   list(APPEND SOURCES DNSClient.cxx)
   list(APPEND HEADERS DNSClient.hxx)

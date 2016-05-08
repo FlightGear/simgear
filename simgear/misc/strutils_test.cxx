@@ -2,6 +2,9 @@
 #define BOOST_TEST_MODULE misc
 #include <BoostTestTargetConfig.h>
 
+#include <errno.h>
+#include <stdlib.h>             // _set_errno() on Windows
+#include <fstream>              // std::ifstream
 #include <simgear/compiler.h>
 #include "strutils.hxx"
 
@@ -77,4 +80,25 @@ BOOST_AUTO_TEST_CASE( md5_hex )
 
   // md5
   BOOST_CHECK_EQUAL(strutils::md5("test"), "098f6bcd4621d373cade4e832627b4f6");
+}
+
+BOOST_AUTO_TEST_CASE( error_string )
+{
+#if defined(SG_WINDOWS)
+  _set_errno(0);
+#else
+  errno = 0;
+#endif
+
+  std::ifstream f("/\\/non-existent/file/a8f7bz97-3ffe-4f5b-b8db-38ccurJL-");
+
+#if defined(SG_WINDOWS)
+  errno_t saved_errno = errno;
+#else
+  int saved_errno = errno;
+#endif
+
+  BOOST_CHECK(!f.is_open());
+  BOOST_CHECK_NE(saved_errno, 0);
+  BOOST_CHECK_GT(strutils::error_string(saved_errno).size(), 0);
 }

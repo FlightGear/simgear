@@ -216,6 +216,14 @@ namespace simgear {
        */
       std::string sanitizePrintfFormat(const std::string& input);
 
+    /**
+     * Get the message corresponding to a given value of errno.
+     *
+     * Similar to strerror(), except it should be thread-safe and returns an
+     * std::string.
+     */
+    std::string error_string(int errnum);
+
   } // end namespace strutils
 } // end namespace simgear
 

@@ -24,11 +24,14 @@
 #include <cstring>
 #include <sstream>
 #include <algorithm>
+#include <string.h>             // strerror_r() and strerror_s()
+#include <errno.h>
 
 #include "strutils.hxx"
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/package/md5.h>
+#include <simgear/compiler.h>   // SG_WINDOWS
 
 using std::string;
 using std::vector;
@@ -595,6 +598,49 @@ string sanitizePrintfFormat(const string& input)
     }
     
     return input;
+}
+
+std::string error_string(int errnum)
+{
+  char buf[512];                // somewhat arbitrary...
+  // This could be simplified with C11 (annex K, optional...), which offers:
+  //
+  //   errno_t strerror_s( char *buf, rsize_t bufsz, errno_t errnum );
+  //   size_t strerrorlen_s( errno_t errnum );
+
+#if defined(SG_WINDOWS)
+  errno_t retcode;
+  // Always makes the string in 'buf' null-terminated
+  retcode = strerror_s(buf, sizeof(buf), errnum);
+#elif defined(_GNU_SOURCE)
+  return std::string(strerror_r(errnum, buf, sizeof(buf)));
+#elif _POSIX_C_SOURCE >= 200112L
+  int retcode;
+  // POSIX.1-2001 and POSIX.1-2008
+  retcode = strerror_r(errnum, buf, sizeof(buf));
+#else
+#error "Could not find a thread-safe alternative to strerror()."
+#endif
+
+#if !defined(_GNU_SOURCE)
+  if (retcode) {
+    std::string msg = "unable to get error message for a given error number";
+    // C++11 would make this shorter with std::to_string()
+    std::ostringstream ostr;
+    ostr << errnum;
+
+#if !defined(SG_WINDOWS)
+    if (retcode == ERANGE) {    // more specific error message in this case
+      msg = std::string("buffer too small to hold the error message for "
+                        "the specified error number");
+    }
+#endif
+
+    throw sg_error(msg, ostr.str());
+  }
+
+  return std::string(buf);
+#endif  // !defined(_GNU_SOURCE)
 }
 
 } // end namespace strutils

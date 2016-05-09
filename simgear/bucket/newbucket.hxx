@@ -288,6 +288,11 @@ public:
      */
     SGBucket sibling(int dx, int dy) const;
     
+    /**
+     * @return multiple buckets offset from this by dx,dy
+     */
+    unsigned int siblings(int dz, int dy, std::vector<SGBucket>& buckets) const;
+    
     // friends
 
     friend std::ostream& operator<< ( std::ostream&, const SGBucket& );

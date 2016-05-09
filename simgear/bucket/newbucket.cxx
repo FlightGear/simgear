@@ -286,6 +286,54 @@ double SGBucket::get_height_m() const {
     return SG_BUCKET_SPAN * degree_height;
 }
 
+unsigned int SGBucket::siblings( int dx, int dy, std::vector<SGBucket>& buckets ) const 
+{
+    if (!isValid()) {
+        SG_LOG(SG_TERRAIN, SG_WARN, "SGBucket::sibling: requesting sibling of invalid bucket");
+        return 0;
+    }
+    
+    double src_span = sg_bucket_span( get_center_lat() );
+   
+    double clat = get_center_lat() + dy * SG_BUCKET_SPAN;
+    // return invalid here instead of clipping, so callers can discard
+    // invalid buckets without having to check if it's an existing one
+    if ((clat < -90.0) || (clat > 90.0)) {
+        return 0;
+    }
+    
+    // find the lon span for the new latitude
+    double trg_span = sg_bucket_span( clat );
+    
+    // if target span < src_span, return multiple buckets...
+    if ( trg_span < src_span ) {
+        // calc center longitude of westernmost sibling
+        double start_lon = get_center_lat() - src_span/2 + trg_span/2;
+        
+        unsigned int num_buckets = src_span/trg_span;
+        for ( unsigned int x = 0; x < num_buckets; x++ ) {
+            double tmp = start_lon + x * trg_span;
+            tmp = SGMiscd::normalizePeriodic(-180.0, 180.0, tmp);
+            
+            SGBucket b;
+            b.innerSet(tmp, clat);
+            
+            buckets.push_back( b );
+        }
+    } else {
+        // just return the single sibling
+        double tmp = get_center_lon() + dx * trg_span;
+        tmp = SGMiscd::normalizePeriodic(-180.0, 180.0, tmp);
+    
+        SGBucket b;
+        b.innerSet(tmp, clat);
+        
+        buckets.push_back( b );
+    }
+    
+    return buckets.size();
+}
+
 SGBucket SGBucket::sibling(int dx, int dy) const
 {
     if (!isValid()) {

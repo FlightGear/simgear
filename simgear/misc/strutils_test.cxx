@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <stdlib.h>             // _set_errno() on Windows
+#include <string>
 #include <fstream>              // std::ifstream
 #include <simgear/compiler.h>
 #include "strutils.hxx"

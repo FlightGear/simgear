@@ -32,6 +32,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/package/md5.h>
 #include <simgear/compiler.h>   // SG_WINDOWS
+#include <simgear/structure/exception.hxx>
 
 using std::string;
 using std::vector;

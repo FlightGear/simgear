@@ -615,7 +615,7 @@ std::string error_string(int errnum)
   retcode = strerror_s(buf, sizeof(buf), errnum);
 #elif defined(_GNU_SOURCE)
   return std::string(strerror_r(errnum, buf, sizeof(buf)));
-#elif _POSIX_C_SOURCE >= 200112L
+#elif (_POSIX_C_SOURCE >= 200112L) || defined(SG_MAC)
   int retcode;
   // POSIX.1-2001 and POSIX.1-2008
   retcode = strerror_r(errnum, buf, sizeof(buf));

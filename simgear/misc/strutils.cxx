@@ -609,7 +609,7 @@ std::string error_string(int errnum)
   //   errno_t strerror_s( char *buf, rsize_t bufsz, errno_t errnum );
   //   size_t strerrorlen_s( errno_t errnum );
 
-#if defined(SG_WINDOWS)
+#if defined(_WIN32)
   errno_t retcode;
   // Always makes the string in 'buf' null-terminated
   retcode = strerror_s(buf, sizeof(buf), errnum);
@@ -630,7 +630,7 @@ std::string error_string(int errnum)
     std::ostringstream ostr;
     ostr << errnum;
 
-#if !defined(SG_WINDOWS)
+#if !defined(_WIN32)
     if (retcode == ERANGE) {    // more specific error message in this case
       msg = std::string("buffer too small to hold the error message for "
                         "the specified error number");

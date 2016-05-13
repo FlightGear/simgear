@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( md5_hex )
 
 BOOST_AUTO_TEST_CASE( error_string )
 {
-#if defined(SG_WINDOWS)
+#if defined(_WIN32)
   _set_errno(0);
 #else
   errno = 0;
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( error_string )
 
   std::ifstream f("/\\/non-existent/file/a8f7bz97-3ffe-4f5b-b8db-38ccurJL-");
 
-#if defined(SG_WINDOWS)
+#if defined(_WIN32)
   errno_t saved_errno = errno;
 #else
   int saved_errno = errno;

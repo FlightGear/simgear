@@ -135,8 +135,7 @@ protected:
 
         std::string ver(m_owner->root()->applicationVersion());
         if (!checkVersion(ver, props)) {
-            SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version mismatch:\n\t"
-                   << props->getStringValue("version") << " vs required " << ver);
+            SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version required " << ver);
 
             // check for a version redirect entry
             std::string url = redirectUrlForVersion(ver, props);

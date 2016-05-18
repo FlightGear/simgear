@@ -167,7 +167,9 @@ protected:
         }
 
         // extract_xxxx directory is now empty, so remove it
-        m_extractPath.remove();
+        if (m_extractPath.exists()) {
+            simgear::Dir(m_extractPath).remove();
+        }
 
         m_owner->m_revision = m_owner->package()->revision();
         m_owner->writeRevisionFile();

@@ -648,10 +648,11 @@ bool SGMetar::scanWeather()
 	weather = pre + weather + post;
 	weather.erase(weather.length() - 1);
 	_weather.push_back(weather);
-    if( ! w.phenomena.empty() )
+    if( ! w.phenomena.empty() ) {
         _weather2.push_back( w );
-	_grpcount++;
-	return true;
+    }
+    _grpcount++;
+    return true;
 }
 
 

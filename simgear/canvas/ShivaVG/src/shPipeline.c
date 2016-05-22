@@ -80,8 +80,12 @@ void updateBlendingStateGL(VGContext *c, int alphaIsOne)
 
   case VG_BLEND_SRC_OVER: default:
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    if (alphaIsOne) glDisable(GL_BLEND);
-    else glEnable(GL_BLEND); break;
+    if (alphaIsOne) {
+      glDisable(GL_BLEND);
+    } else {
+      glEnable(GL_BLEND);
+    }
+    break;
   };
 }
 

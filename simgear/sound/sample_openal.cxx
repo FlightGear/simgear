@@ -260,5 +260,8 @@ SGPath SGSoundSample::file_path() const
 
 void SGSoundSample::free_data()
 {
-   if ( _data != NULL ) free( _data ); _data = NULL;
+   if ( _data != NULL ) {
+     free( _data );
+   }
+   _data = NULL;
 }

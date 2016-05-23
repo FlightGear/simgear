@@ -20,6 +20,9 @@
 
 #include <iosfwd>
 
+#include <simgear/math/SGVec2.hxx>
+#include <simgear/math/SGGeodesy.hxx>
+
 /// 3D Vector Class
 template<typename T>
 class SGVec3 {

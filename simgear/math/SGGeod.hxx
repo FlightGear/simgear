@@ -19,6 +19,7 @@
 #define SGGeod_H
 
 #include <simgear/constants.h>
+#include <simgear/math/SGVec3.hxx>
 
 // #define SG_GEOD_NATIVE_DEGREE
 

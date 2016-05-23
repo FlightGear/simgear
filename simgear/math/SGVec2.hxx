@@ -20,6 +20,10 @@
 
 #include <iosfwd>
 
+#include <simgear/math/SGLimits.hxx>
+#include <simgear/math/SGMisc.hxx>
+#include <simgear/math/SGMathFwd.hxx>
+
 /// 2D Vector Class
 template<typename T>
 class SGVec2 {

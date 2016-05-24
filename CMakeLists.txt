@@ -22,14 +22,14 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)
 
-# Set the C++ standard to C++98 to avoid compilation errors on GCC 6 (which
+# Set the C++ standard to C++11 to avoid compilation errors on GCC 6 (which
 # defaults to C++14).
 if(CMAKE_VERSION VERSION_LESS "3.1")
   if(CMAKE_COMPILER_IS_GNUCXX)
-    set (CMAKE_CXX_FLAGS "--std=gnu++98 ${CMAKE_CXX_FLAGS}")
+    set (CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
   endif()
 else()
-  set (CMAKE_CXX_STANDARD 98)
+  set (CMAKE_CXX_STANDARD 11)
 endif()
 
 project(SimGear)

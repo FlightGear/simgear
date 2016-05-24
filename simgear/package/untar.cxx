@@ -20,6 +20,8 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
+#include <cstddef>
 
 #include <zlib.h>
 

@@ -19,6 +19,7 @@
 
 #include <cstdlib>
 #include <cassert>
+#include <cstdint>
 
 #include <zlib.h>
 

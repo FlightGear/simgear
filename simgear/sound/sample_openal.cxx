@@ -44,172 +44,155 @@
 using std::string;
 
 //
+// SGSoundSampleInfo
+//
+
+// empty constructor
+SGSoundSampleInfo::SGSoundSampleInfo() :
+    _refname(random_string()),
+    _bits(16),
+    _tracks(1),
+    _samples(0),
+    _frequency(22500),
+    _compressed(false),
+    _loop(false),
+    _static_changed(true),
+    _playing(false),
+    _pitch(1.0f),
+    _volume(1.0f),
+    _master_volume(1.0f),
+    _use_pos_props(false),
+    _out_of_range(false),
+    _inner_angle(360.0f),
+    _outer_angle(360.0f),
+    _outer_gain(0.0f),
+    _reference_dist(500.0f),
+    _max_dist(3000.0f),
+    _absolute_pos(SGVec3d::zeros()),
+    _relative_pos(SGVec3d::zeros()),
+    _direction(SGVec3d::zeros()),
+    _velocity(SGVec3f::zeros()),
+    _orientation(SGQuatd::zeros()),
+    _orivec(SGVec3f::zeros()),
+    _base_pos(SGVec3d::zeros()),
+    _rotation(SGQuatd::zeros())
+{
+    _pos_prop[0] = 0;
+    _pos_prop[1] = 0;
+    _pos_prop[2] = 0;
+}
+
+void SGSoundSample::set_format_AL( int fmt )
+{
+    switch(fmt)
+    {
+    case AL_FORMAT_MONO8:
+        _tracks = 1; _bits = 8; _compressed = false;
+        break;
+    case AL_FORMAT_MONO16:
+        _tracks = 1; _bits = 16; _compressed = false;
+        break;
+    case AL_FORMAT_STEREO8:
+        _tracks = 2; _bits = 8; _compressed = false;
+        break;
+    case AL_FORMAT_STEREO16:
+        _tracks = 2; _bits = 16; _compressed = false;
+        break;
+#ifdef AL_EXT_MULAW_MCFORMATS
+    case AL_FORMAT_MONO_MULAW:
+        _tracks = 1; _bits = 16; _compressed = true;
+        break;
+    case AL_FORMAT_STEREO_MULAW:
+        _tracks = 2; _bits = 16; _compressed = true;
+        break;
+#endif
+    default:
+        break;
+    }
+}
+
+unsigned int SGSoundSampleInfo::get_format_AL()
+{
+    unsigned int rv = AL_FORMAT_MONO16;
+
+    if (_tracks == 1 && _bits == 8) rv = AL_FORMAT_MONO8;
+    else if (_tracks == 2 && _bits == 8) rv = AL_FORMAT_STEREO8;
+    else if (_tracks == 2 && _bits == 16) rv = AL_FORMAT_STEREO16;
+#ifdef AL_EXT_MULAW_MCFORMATS
+    else if (_tracks == 1 && _bits == 16 && _compressed) rv = AL_FORMAT_MONO_MULAW;
+    else if (_tracks == 2 && _bits == 16 && _compressed) rv = AL_FORMAT_STEREO_MULAW;
+#endif
+
+    return rv;
+}
+
+std::string SGSoundSampleInfo::random_string()
+{
+    static const char *r = "0123456789abcdefghijklmnopqrstuvwxyz"
+                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    string rstr = "Auto: ";
+    for (int i=0; i<10; i++) {
+        rstr.push_back( r[rand() % strlen(r)] );
+    }
+
+    return rstr;
+}
+
+//
 // SGSoundSample
 //
 
 // empty constructor
 SGSoundSample::SGSoundSample() :
-    _format(AL_FORMAT_MONO8),
-    _size(0),
-    _freq(0),
+    _is_file(false),
     _changed(true),
     _valid_source(false),
     _source(SGSoundMgr::NO_SOURCE),
-    _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3d::zeros()),
-    _direction(SGVec3d::zeros()),
-    _velocity(SGVec3f::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _orivec(SGVec3f::zeros()),
-    _base_pos(SGVec3d::zeros()),
-    _rotation(SGQuatd::zeros()),
-    _refname(random_string()),
     _data(NULL),
     _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER),
-    _inner_angle(360.0),
-    _outer_angle(360.0),
-    _outer_gain(0.0),
-    _pitch(1.0),
-    _volume(1.0),
-    _master_volume(1.0),
-    _reference_dist(500.0),
-    _max_dist(3000.0),
-    _loop(AL_FALSE),
-    _playing(false),
-    _static_changed(true),
-    _out_of_range(false),
-    _is_file(false),
-    _use_pos_props(false)
+    _buffer(SGSoundMgr::NO_BUFFER)
 {
-    _pos_prop[0] = 0;
-    _pos_prop[1] = 0;
-    _pos_prop[2] = 0;
 }
 
 // constructor
 SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
-    _format(AL_FORMAT_MONO8),
-    _size(0),
-    _freq(0),
+    _is_file(true),
     _changed(true),
     _valid_source(false),
     _source(SGSoundMgr::NO_SOURCE),
-    _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3d::zeros()),
-    _direction(SGVec3d::zeros()),
-    _velocity(SGVec3f::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _orivec(SGVec3f::zeros()),
-    _base_pos(SGVec3d::zeros()),
-    _rotation(SGQuatd::zeros()),
-    _refname(file),
     _data(NULL),
     _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER),
-    _inner_angle(360.0),
-    _outer_angle(360.0),
-    _outer_gain(0.0),
-    _pitch(1.0),
-    _volume(1.0),
-    _master_volume(1.0),
-    _reference_dist(500.0),
-    _max_dist(3000.0),
-    _loop(AL_FALSE),
-    _playing(false),
-    _static_changed(true),
-    _out_of_range(false),
-    _is_file(true),
-    _use_pos_props(false)
+    _buffer(SGSoundMgr::NO_BUFFER)
 {
     SGPath p = simgear::ResourceManager::instance()->findPath(file, currentDir);
     _refname = p.str();
-    _pos_prop[0] = 0;
-    _pos_prop[1] = 0;
-    _pos_prop[2] = 0;
 }
 
 // constructor
 SGSoundSample::SGSoundSample( const unsigned char** data,
                               int len, int freq, int format ) :
-    _format(format),
-    _size(len),
-    _freq(freq),
+    _is_file(false),
     _changed(true),
     _valid_source(false),
     _source(SGSoundMgr::NO_SOURCE),
-    _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3d::zeros()),
-    _direction(SGVec3d::zeros()),
-    _velocity(SGVec3f::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _orivec(SGVec3f::zeros()),
-    _base_pos(SGVec3d::zeros()),
-    _rotation(SGQuatd::zeros()),
-    _refname(random_string()),
     _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER),
-    _inner_angle(360.0),
-    _outer_angle(360.0),
-    _outer_gain(0.0),
-    _pitch(1.0),
-    _volume(1.0),
-    _master_volume(1.0),
-    _reference_dist(500.0),
-    _max_dist(3000.0),
-    _loop(AL_FALSE),
-    _playing(false),
-    _static_changed(true),
-    _out_of_range(false),
-    _is_file(false),
-    _use_pos_props(false)
+    _buffer(SGSoundMgr::NO_BUFFER)
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
-    _pos_prop[0] = 0;
-    _pos_prop[1] = 0;
-    _pos_prop[2] = 0;
 }
 
 // constructor
 SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
-    _format(format),
-    _size(len),
-    _freq(freq),
+    _is_file(false),
     _changed(true),
     _valid_source(false),
     _source(SGSoundMgr::NO_SOURCE),
-    _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3d::zeros()),
-    _direction(SGVec3d::zeros()),
-    _velocity(SGVec3f::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _orivec(SGVec3f::zeros()),
-    _base_pos(SGVec3d::zeros()),
-    _rotation(SGQuatd::zeros()),
-    _refname(random_string()),
     _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER),
-    _inner_angle(360.0),
-    _outer_angle(360.0),
-    _outer_gain(0.0),
-    _pitch(1.0),
-    _volume(1.0),
-    _master_volume(1.0),
-    _reference_dist(500.0),
-    _max_dist(3000.0),
-    _loop(AL_FALSE),
-    _playing(false),
-    _static_changed(true),
-    _out_of_range(false),
-    _is_file(false),
-    _use_pos_props(false)
+    _buffer(SGSoundMgr::NO_BUFFER)
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
-    _pos_prop[0] = 0;
-    _pos_prop[1] = 0;
-    _pos_prop[2] = 0;
 }
 
 
@@ -238,23 +221,12 @@ void SGSoundSample::update_pos_and_orientation() {
     }
 }
 
-string SGSoundSample::random_string() {
-      static const char *r = "0123456789abcdefghijklmnopqrstuvwxyz"
-                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      string rstr = "System generated name: ";
-      for (int i=0; i<10; i++) {
-          rstr.push_back( r[rand() % strlen(r)] );
-      }
-
-      return rstr;
-}
-
 SGPath SGSoundSample::file_path() const
 {
   if (!_is_file) {
     return SGPath();
   }
-  
+
   return SGPath(_refname);
 }
 

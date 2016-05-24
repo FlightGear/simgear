@@ -49,8 +49,8 @@ SGSampleQueue::SGSampleQueue( int freq, int format ) :
     _refname(random_string()),
     _playing(false)
 {
-    _freq = freq;
-    _format = format;
+    set_frequency( freq );
+    set_format_AL( format );
     _buffers.clear();
 }
 
@@ -89,12 +89,12 @@ void SGSampleQueue::add( const void* smp_data, size_t len )
        } else {
            alGenBuffers(1, &buffer);
        }
-       alBufferData(buffer, _format, data, len, _freq);
+       alBufferData(buffer, get_format_AL(), data, len, get_frequency());
     }
     else
     {
         alGenBuffers(1, &buffer);
-        alBufferData(buffer, _format, data, len, _freq);
+        alBufferData(buffer, get_format_AL(), data, len, get_frequency());
         _buffers.push_back(buffer);
     }
 #endif

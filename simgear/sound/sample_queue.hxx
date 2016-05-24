@@ -45,7 +45,7 @@ public:
       * @param freq sample frequentie of the samples
       * @param format OpenAL format id of the data
       */
-    SGSampleQueue(int freq, int format = AL_FORMAT_MONO8);
+    SGSampleQueue(int freq, int format = SG_SAMPLE_MONO8);
 
     /**
      * Destructor

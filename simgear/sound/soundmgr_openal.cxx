@@ -550,7 +550,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             }
             
             sample->set_frequency( freq );
-            sample->set_format( format );
+            sample->set_format_AL( format );
             sample->set_size( size );
 
         } else {
@@ -562,7 +562,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
         if ( !testForALError("generate buffer") ) {
             // Copy data to the internal OpenAL buffer
 
-            ALenum format = sample->get_format();
+            ALenum format = sample->get_format_AL();
             ALsizei size = sample->get_size();
             ALsizei freq = sample->get_frequency();
             alBufferData( buffer, format, sample_data, size, freq );

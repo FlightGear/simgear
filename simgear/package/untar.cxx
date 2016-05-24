@@ -19,7 +19,7 @@
 
 #include <cstdlib>
 #include <cassert>
-#include <cstdint>
+#include <stdint.h>
 #include <cstring>
 #include <cstddef>
 
@@ -246,7 +246,7 @@ public:
         }
 
         // reject absolute paths
-        if (p.front() == '/') {
+        if (p.at(0) == '/') {
             return false;
         }
 

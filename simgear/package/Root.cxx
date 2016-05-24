@@ -384,7 +384,7 @@ void Root::refresh(bool aForce)
     CatalogList toRefresh;
     CatalogDict::iterator it = d->catalogs.begin();
     for (; it != d->catalogs.end(); ++it) {
-        int age = it->second->ageInSeconds();
+        unsigned int age = it->second->ageInSeconds();
         if (aForce || (age > maxAgeSeconds())) {
             toRefresh.push_back(it->second);
         }

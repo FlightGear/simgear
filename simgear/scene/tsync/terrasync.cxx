@@ -59,22 +59,13 @@
 #include <simgear/debug/BufferedLogCallback.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/io/HTTPClient.hxx>
-#include <simgear/io/SVNRepository.hxx>
 #include <simgear/io/HTTPRepository.hxx>
 #include <simgear/io/DNSClient.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/math/sg_random.h>
 
-static const bool svn_built_in_available = true;
-
 using namespace simgear;
 using namespace std;
-
-const char* rsync_cmd =
-        "rsync --verbose --archive --delete --perms --owner --group";
-
-const char* svn_options =
-        "checkout -q";
 
 namespace UpdateInterval
 {
@@ -89,6 +80,7 @@ typedef map<string,time_t> TileAgeCache;
 ///////////////////////////////////////////////////////////////////////////////
 // helper functions ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
 string stripPath(string path)
 {
     // svn doesn't like trailing white-spaces or path separators - strip them!
@@ -199,52 +191,15 @@ static unsigned int syncSlotForType(SyncItem::Type ty)
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Base server query
-///////////////////////////////////////////////////////////////////////////////
 
-class ServerSelectQuery : public HTTP::Request
+///////////////////////////////////////////////////////////////////////////////
+// SGTerraSync::WorkerThread //////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+class SGTerraSync::WorkerThread : public SGThread
 {
 public:
-    ServerSelectQuery() :
-        HTTP::Request("http://scenery.flightgear.org/svn-server", "GET")
-    {
-    }
-
-    std::string svnUrl() const
-    {
-        std::string s = simgear::strutils::strip(m_url);
-        if (s.at(s.length() - 1) == '/') {
-            s = s.substr(0, s.length() - 1);
-        }
-
-        return s;
-    }
-protected:
-    virtual void gotBodyData(const char* s, int n)
-    {
-        m_url.append(std::string(s, n));
-    }
-
-    virtual void onFail()
-    {
-        SG_LOG(SG_TERRASYNC, SG_ALERT, "Failed to query TerraSync SVN server");
-        HTTP::Request::onFail();
-    }
-
-private:
-    std::string m_url;
-};
-
-
-///////////////////////////////////////////////////////////////////////////////
-// SGTerraSync::SvnThread /////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-class SGTerraSync::SvnThread : public SGThread
-{
-public:
-   SvnThread();
-   virtual ~SvnThread( ) { stop(); }
+   WorkerThread();
+   virtual ~WorkerThread( ) { stop(); }
 
    void stop();
    bool start();
@@ -255,23 +210,17 @@ public:
    bool hasNewTiles() { return !_freshTiles.empty();}
    SyncItem getNewTile() { return _freshTiles.pop_front();}
 
-   void   setSvnServer(string server)       { _svn_server   = stripPath(server);}
-   void   setSvnDataServer(string server)   { _svn_data_server   = stripPath(server);}
    void   setHTTPServer(const std::string& server)
    {
       _httpServer = stripPath(server);
    }
 
-   void   setExtSvnUtility(string svn_util) { _svn_command  = simgear::strutils::strip(svn_util);}
-   void   setRsyncServer(string server)     { _rsync_server = simgear::strutils::strip(server);}
    void   setLocalDir(string dir)           { _local_dir    = stripPath(dir);}
    string getLocalDir()                     { return _local_dir;}
-   void   setUseSvn(bool use_svn)           { _use_svn = use_svn;}
    void   setAllowedErrorCount(int errors)  {_allowed_errors = errors;}
 
    void   setCachePath(const SGPath& p)     {_persistentCachePath = p;}
    void   setCacheHits(unsigned int hits)   {_cache_hits = hits;}
-   void   setUseBuiltin(bool built_in) { _use_built_in = built_in;}
 
    volatile bool _active;
    volatile bool _running;
@@ -290,11 +239,6 @@ public:
 private:
    virtual void run();
 
-    // external model run and helpers
-    void runExternal();
-    void syncPathExternal(const SyncItem& next);
-    bool runExternalSyncCommand(const char* dir);
-
     // internal mode run and helpers
     void runInternal();
     void updateSyncSlot(SyncSlot& slot);
@@ -308,7 +252,6 @@ private:
     void fail(SyncItem failedItem);
     void notFound(SyncItem notFoundItem);
 
-    bool _use_built_in;
     HTTP::Client _http;
     SyncSlot _syncSlots[NUM_SYNC_SLOTS];
 
@@ -320,17 +263,12 @@ private:
    TileAgeCache _notFoundItems;
 
    SGBlockingDeque <SyncItem> _freshTiles;
-   bool _use_svn;
-   string _svn_server;
-   string _svn_data_server;
-   string _svn_command;
-   string _rsync_server;
    string _local_dir;
    SGPath _persistentCachePath;
    string _httpServer;
 };
 
-SGTerraSync::SvnThread::SvnThread() :
+SGTerraSync::WorkerThread::WorkerThread() :
     _active(false),
     _running(false),
     _busy(false),
@@ -343,15 +281,13 @@ SGTerraSync::SvnThread::SvnThread() :
     _cache_hits(0),
     _transfer_rate(0),
     _total_kb_downloaded(0),
-    _use_built_in(true),
     _is_dirty(false),
-    _stop(false),
-    _use_svn(true)
+    _stop(false)
 {
     _http.setUserAgent("terrascenery-" SG_STRINGIZE(SIMGEAR_VERSION));
 }
 
-void SGTerraSync::SvnThread::stop()
+void SGTerraSync::WorkerThread::stop()
 {
     // drop any pending requests
     waitingTiles.clear();
@@ -367,7 +303,7 @@ void SGTerraSync::SvnThread::stop()
     _running = false;
 }
 
-bool SGTerraSync::SvnThread::start()
+bool SGTerraSync::WorkerThread::start()
 {
     if (_running)
         return false;
@@ -403,18 +339,6 @@ bool SGTerraSync::SvnThread::start()
         return false;
     }
 
-    _use_svn |= _use_built_in;
-
-
-    if ((!_use_svn)&&(_rsync_server==""))
-    {
-        SG_LOG(SG_TERRASYNC,SG_ALERT,
-               "Cannot start scenery download. Rsync scenery server is undefined.");
-        _fail_count++;
-        _stalled = true;
-        return false;
-    }
-
     _fail_count = 0;
     _updated_tile_count = 0;
     _success_count = 0;
@@ -423,20 +347,7 @@ bool SGTerraSync::SvnThread::start()
     _stalled = false;
     _running = true;
 
-    string status;
-
-    if (_use_svn && _use_built_in)
-        status = "Using built-in SVN support. ";
-    else if (_use_svn)
-    {
-        status = "Using external SVN utility '";
-        status += _svn_command;
-        status += "'. ";
-    }
-    else
-    {
-        status = "Using RSYNC. ";
-    }
+    string status = "Using built-in HTTP support.";
 
     // not really an alert - but we want to (always) see this message, so user is
     // aware we're downloading scenery (and using bandwidth).
@@ -449,61 +360,7 @@ bool SGTerraSync::SvnThread::start()
     return true;
 }
 
-bool SGTerraSync::SvnThread::runExternalSyncCommand(const char* dir)
-{
-    ostringstream buf;
-    SGPath localPath( _local_dir );
-    localPath.append( dir );
-
-    if (_use_svn)
-    {
-        buf << "\"" << _svn_command << "\" "
-            << svn_options << " "
-            << "\"" << _svn_server << "/" << dir << "\" "
-            << "\"" << localPath.str_native() << "\"";
-    } else {
-        buf << rsync_cmd << " "
-            << "\"" << _rsync_server << "/" << dir << "/\" "
-            << "\"" << localPath.str_native() << "/\"";
-    }
-
-    string command;
-#ifdef SG_WINDOWS
-        // windows command line parsing is just lovely...
-        // to allow white spaces, the system call needs this:
-        // ""C:\Program Files\something.exe" somearg "some other arg""
-        // Note: whitespace strings quoted by a pair of "" _and_ the
-        //       entire string needs to be wrapped by "" too.
-        // The svn url needs forward slashes (/) as a path separator while
-        // the local path needs windows-native backslash as a path separator.
-    command = "\"" + buf.str() + "\"";
-#else
-    command = buf.str();
-#endif
-    SG_LOG(SG_TERRASYNC,SG_DEBUG, "sync command '" << command << "'");
-
-#ifdef SG_WINDOWS
-    // tbd: does Windows support "popen"?
-    int rc = system( command.c_str() );
-#else
-    FILE* pipe = popen( command.c_str(), "r");
-    int rc=-1;
-    // wait for external process to finish
-    if (pipe)
-        rc = pclose(pipe);
-#endif
-
-    if (rc)
-    {
-        SG_LOG(SG_TERRASYNC,SG_ALERT,
-               "Failed to synchronize directory '" << dir << "', " <<
-               "error code= " << rc);
-        return false;
-    }
-    return true;
-}
-
-void SGTerraSync::SvnThread::run()
+void SGTerraSync::WorkerThread::run()
 {
     _active = true;
     initCompletedTilesPersistentCache();
@@ -566,106 +423,15 @@ void SGTerraSync::SvnThread::run()
           SG_LOG(SG_TERRASYNC,SG_INFO, "picking entry # " << idx << ", server is " << _httpServer );
         }
     }
-    if( _httpServer.empty() ) { // don't resolve SVN server is HTTP server is set
-        if ( _svn_server.empty()) {
-            SG_LOG(SG_TERRASYNC,SG_INFO, "Querying closest TerraSync server");
-            ServerSelectQuery* ssq = new ServerSelectQuery;
-            HTTP::Request_ptr req = ssq;
-            _http.makeRequest(req);
-            while (!req->isComplete()) {
-                _http.update(20);
-            }
 
-            if (req->readyState() == HTTP::Request::DONE) {
-                _svn_server = ssq->svnUrl();
-                SG_LOG(SG_TERRASYNC,SG_INFO, "Closest TerraSync server:" << _svn_server);
-            } else {
-                SG_LOG(SG_TERRASYNC,SG_WARN, "Failed to query closest TerraSync server");
-            }
-        } else {
-            SG_LOG(SG_TERRASYNC,SG_INFO, "Explicit: TerraSync server:" << _svn_server);
-        }
-
-        if (_svn_server.empty()) {
-#if WE_HAVE_A_DEFAULT_SERVER_BUT_WE_DONT_THIS_URL_IS_NO_LONGER_VALID
-            // default value
-            _svn_server = "http://foxtrot.mgras.net:8080/terrascenery/trunk/data/Scenery";
-#endif
-        }
-    }
-
-    if (_use_built_in) {
-        runInternal();
-    } else {
-        runExternal();
-    }
+    runInternal();
 
     _active = false;
     _running = false;
     _is_dirty = true;
 }
 
-void SGTerraSync::SvnThread::runExternal()
-{
-    while (!_stop)
-    {
-        SyncItem next = waitingTiles.pop_front();
-        if (_stop)
-           break;
-
-        SyncItem::Status cacheStatus = isPathCached(next);
-        if (cacheStatus != SyncItem::Invalid) {
-            _cache_hits++;
-            SG_LOG(SG_TERRASYNC, SG_DEBUG,
-                   "Cache hit for: '" << next._dir << "'");
-            next._status = cacheStatus;
-            _freshTiles.push_back(next);
-            _is_dirty = true;
-            continue;
-        }
-
-        syncPathExternal(next);
-
-        if ((_allowed_errors >= 0)&&
-            (_consecutive_errors >= _allowed_errors))
-        {
-            _stalled = true;
-            _stop = true;
-        }
-    } // of thread running loop
-}
-
-void SGTerraSync::SvnThread::syncPathExternal(const SyncItem& next)
-{
-    _busy = true;
-    SGPath path( _local_dir );
-    path.append( next._dir );
-    bool isNewDirectory = !path.exists();
-
-    try {
-        if (isNewDirectory) {
-            int rc = path.create_dir( 0755 );
-            if (rc) {
-                SG_LOG(SG_TERRASYNC,SG_ALERT,
-                       "Cannot create directory '" << path << "', return code = " << rc );
-                throw sg_exception("Cannot create directory for terrasync", path.str());
-            }
-        }
-
-        if (!runExternalSyncCommand(next._dir.c_str())) {
-            throw sg_exception("Running external sync command failed");
-        }
-    } catch (sg_exception& e) {
-        fail(next);
-        _busy = false;
-        return;
-    }
-
-    updated(next, isNewDirectory);
-    _busy = false;
-}
-
-void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
+void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 {
     if (slot.repository.get()) {
         if (slot.repository->isDoingSync()) {
@@ -680,7 +446,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
         }
 
         // check result
-        SVNRepository::ResultCode res = slot.repository->failure();
+        AbstractRepository::ResultCode res = slot.repository->failure();
         if (res == AbstractRepository::REPO_ERROR_NOT_FOUND) {
             notFound(slot.currentItem);
         } else if (res != AbstractRepository::REPO_NO_ERROR) {
@@ -714,18 +480,9 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
             }
         } // of creating directory step
 
-        string serverUrl(_svn_server);
-        if (!_httpServer.empty()) {
-          slot.repository.reset(new HTTPRepository(path, &_http));
-          serverUrl = _httpServer;
-        } else {
-          if (slot.currentItem._type == SyncItem::AIData) {
-              serverUrl = _svn_data_server;
-          }
-          slot.repository.reset(new SVNRepository(path, &_http));
-        }
+        slot.repository.reset(new HTTPRepository(path, &_http));
+        slot.repository->setBaseUrl(_httpServer + "/" + slot.currentItem._dir);
 
-        slot.repository->setBaseUrl(serverUrl + "/" + slot.currentItem._dir);
         try {
             slot.repository->update();
         } catch (sg_exception& e) {
@@ -744,7 +501,7 @@ void SGTerraSync::SvnThread::updateSyncSlot(SyncSlot &slot)
     }
 }
 
-void SGTerraSync::SvnThread::runInternal()
+void SGTerraSync::WorkerThread::runInternal()
 {
     while (!_stop) {
         try {
@@ -794,7 +551,7 @@ void SGTerraSync::SvnThread::runInternal()
     } // of thread running loop
 }
 
-SyncItem::Status SGTerraSync::SvnThread::isPathCached(const SyncItem& next) const
+SyncItem::Status SGTerraSync::WorkerThread::isPathCached(const SyncItem& next) const
 {
     TileAgeCache::const_iterator ii = _completedTiles.find( next._dir );
     if (ii == _completedTiles.end()) {
@@ -816,7 +573,7 @@ SyncItem::Status SGTerraSync::SvnThread::isPathCached(const SyncItem& next) cons
     return (ii->second > now) ? SyncItem::Cached : SyncItem::Invalid;
 }
 
-void SGTerraSync::SvnThread::fail(SyncItem failedItem)
+void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
 {
     time_t now = time(0);
     _consecutive_errors++;
@@ -829,7 +586,7 @@ void SGTerraSync::SvnThread::fail(SyncItem failedItem)
     _is_dirty = true;
 }
 
-void SGTerraSync::SvnThread::notFound(SyncItem item)
+void SGTerraSync::WorkerThread::notFound(SyncItem item)
 {
     // treat not found as authorative, so use the same cache expiry
     // as succesful download. Important for MP models and similar so
@@ -844,7 +601,7 @@ void SGTerraSync::SvnThread::notFound(SyncItem item)
     writeCompletedTilesPersistentCache();
 }
 
-void SGTerraSync::SvnThread::updated(SyncItem item, bool isNewDirectory)
+void SGTerraSync::WorkerThread::updated(SyncItem item, bool isNewDirectory)
 {
     time_t now = time(0);
     _consecutive_errors = 0;
@@ -863,7 +620,7 @@ void SGTerraSync::SvnThread::updated(SyncItem item, bool isNewDirectory)
     writeCompletedTilesPersistentCache();
 }
 
-void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
+void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache()
 {
     if (!_persistentCachePath.exists()) {
         return;
@@ -896,7 +653,7 @@ void SGTerraSync::SvnThread::initCompletedTilesPersistentCache()
     }
 }
 
-void SGTerraSync::SvnThread::writeCompletedTilesPersistentCache() const
+void SGTerraSync::WorkerThread::writeCompletedTilesPersistentCache() const
 {
     // cache is disabled
     if (_persistentCachePath.isNull()) {
@@ -931,11 +688,11 @@ void SGTerraSync::SvnThread::writeCompletedTilesPersistentCache() const
 // SGTerraSync ////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 SGTerraSync::SGTerraSync() :
-    _svnThread(NULL),
+    _workerThread(NULL),
     _bound(false),
     _inited(false)
 {
-    _svnThread = new SvnThread();
+    _workerThread = new WorkerThread();
     _log = new BufferedLogCallback(SG_TERRASYNC, SG_INFO);
     _log->truncateAt(255);
 
@@ -944,8 +701,8 @@ SGTerraSync::SGTerraSync() :
 
 SGTerraSync::~SGTerraSync()
 {
-    delete _svnThread;
-    _svnThread = NULL;
+    delete _workerThread;
+    _workerThread = NULL;
     sglog().removeCallback(_log);
     delete _log;
      _tiedProperties.Untie();
@@ -965,56 +722,42 @@ void SGTerraSync::init()
     _inited = true;
 
     assert(_terraRoot);
-    _terraRoot->setBoolValue("built-in-svn-available",svn_built_in_available);
+    _terraRoot->setBoolValue("built-in-svn-available", true);
 
     reinit();
 }
 
 void SGTerraSync::shutdown()
 {
-     _svnThread->stop();
+     _workerThread->stop();
 }
 
 void SGTerraSync::reinit()
 {
     // do not reinit when enabled and we're already up and running
     if ((_terraRoot->getBoolValue("enabled",false))&&
-         (_svnThread->_active && _svnThread->_running))
+         (_workerThread->_active && _workerThread->_running))
     {
         return;
     }
 
-    _svnThread->stop();
+    _workerThread->stop();
 
     if (_terraRoot->getBoolValue("enabled",false))
     {
-        _svnThread->setSvnServer(_terraRoot->getStringValue("svn-server",""));
         std::string httpServer(_terraRoot->getStringValue("http-server",""));
-        _svnThread->setHTTPServer(httpServer);
-        _svnThread->setSvnDataServer(_terraRoot->getStringValue("svn-data-server",""));
-        _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
-        _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
-        _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
-        _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
+        _workerThread->setHTTPServer(httpServer);
+        _workerThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
+        _workerThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
+        _workerThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
 
-        if (httpServer.empty()) {
-            // HTTP doesn't benefit from using the persistent cache
-            _svnThread->setCachePath(SGPath(_terraRoot->getStringValue("cache-path","")));
-        } else {
-            SG_LOG(SG_TERRASYNC, SG_INFO, "HTTP repository selected, disabling persistent cache");
-        }
-
-        _svnThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
-        _svnThread->setUseSvn(_terraRoot->getBoolValue("use-svn",true));
-        _svnThread->setExtSvnUtility(_terraRoot->getStringValue("ext-svn-utility","svn"));
-
-        if (_svnThread->start())
+        if (_workerThread->start())
         {
             syncAirportsModels();
         }
     }
 
-    _stalledNode->setBoolValue(_svnThread->_stalled);
+    _stalledNode->setBoolValue(_workerThread->_stalled);
 }
 
 void SGTerraSync::bind()
@@ -1024,17 +767,17 @@ void SGTerraSync::bind()
     }
 
     _bound = true;
-    _tiedProperties.Tie( _terraRoot->getNode("busy", true), (bool*) &_svnThread->_busy );
-    _tiedProperties.Tie( _terraRoot->getNode("active", true), (bool*) &_svnThread->_active );
-    _tiedProperties.Tie( _terraRoot->getNode("update-count", true), (int*) &_svnThread->_success_count );
-    _tiedProperties.Tie( _terraRoot->getNode("error-count", true), (int*) &_svnThread->_fail_count );
-    _tiedProperties.Tie( _terraRoot->getNode("tile-count", true), (int*) &_svnThread->_updated_tile_count );
-    _tiedProperties.Tie( _terraRoot->getNode("cache-hits", true), (int*) &_svnThread->_cache_hits );
-    _tiedProperties.Tie( _terraRoot->getNode("transfer-rate-bytes-sec", true), (int*) &_svnThread->_transfer_rate );
+    _tiedProperties.Tie( _terraRoot->getNode("busy", true), (bool*) &_workerThread->_busy );
+    _tiedProperties.Tie( _terraRoot->getNode("active", true), (bool*) &_workerThread->_active );
+    _tiedProperties.Tie( _terraRoot->getNode("update-count", true), (int*) &_workerThread->_success_count );
+    _tiedProperties.Tie( _terraRoot->getNode("error-count", true), (int*) &_workerThread->_fail_count );
+    _tiedProperties.Tie( _terraRoot->getNode("tile-count", true), (int*) &_workerThread->_updated_tile_count );
+    _tiedProperties.Tie( _terraRoot->getNode("cache-hits", true), (int*) &_workerThread->_cache_hits );
+    _tiedProperties.Tie( _terraRoot->getNode("transfer-rate-bytes-sec", true), (int*) &_workerThread->_transfer_rate );
 
     // use kbytes here because propety doesn't support 64-bit and we might conceivably
     // download more than 2G in a single session
-    _tiedProperties.Tie( _terraRoot->getNode("downloaded-kbytes", true), (int*) &_svnThread->_total_kb_downloaded );
+    _tiedProperties.Tie( _terraRoot->getNode("downloaded-kbytes", true), (int*) &_workerThread->_total_kb_downloaded );
 
     _terraRoot->getNode("busy", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("active", true)->setAttribute(SGPropertyNode::WRITE,false);
@@ -1045,13 +788,13 @@ void SGTerraSync::bind()
     _terraRoot->getNode("use-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
     // stalled is used as a signal handler (to connect listeners triggering GUI pop-ups)
     _stalledNode = _terraRoot->getNode("stalled", true);
-    _stalledNode->setBoolValue(_svnThread->_stalled);
+    _stalledNode->setBoolValue(_workerThread->_stalled);
     _stalledNode->setAttribute(SGPropertyNode::PRESERVE,true);
 }
 
 void SGTerraSync::unbind()
 {
-    _svnThread->stop();
+    _workerThread->stop();
     _tiedProperties.Untie();
     _bound = false;
     _inited = false;
@@ -1064,11 +807,11 @@ void SGTerraSync::unbind()
 void SGTerraSync::update(double)
 {
     static SGBucket bucket;
-    if (_svnThread->isDirty())
+    if (_workerThread->isDirty())
     {
-        if (!_svnThread->_active)
+        if (!_workerThread->_active)
         {
-            if (_svnThread->_stalled)
+            if (_workerThread->_stalled)
             {
                 SG_LOG(SG_TERRASYNC,SG_ALERT,
                        "Automatic scenery download/synchronization stalled. Too many errors.");
@@ -1079,12 +822,12 @@ void SGTerraSync::update(double)
                 SG_LOG(SG_TERRASYNC,SG_ALERT,
                         "Automatic scenery download/synchronization has stopped.");
             }
-            _stalledNode->setBoolValue(_svnThread->_stalled);
+            _stalledNode->setBoolValue(_workerThread->_stalled);
         }
 
-        while (_svnThread->hasNewTiles())
+        while (_workerThread->hasNewTiles())
         {
-            SyncItem next = _svnThread->getNewTile();
+            SyncItem next = _workerThread->getNewTile();
 
             if ((next._type == SyncItem::Tile) || (next._type == SyncItem::AIData)) {
                 _activeTileDirs.erase(next._dir);
@@ -1093,7 +836,7 @@ void SGTerraSync::update(double)
     }
 }
 
-bool SGTerraSync::isIdle() {return _svnThread->isIdle();}
+bool SGTerraSync::isIdle() {return _workerThread->isIdle();}
 
 void SGTerraSync::syncAirportsModels()
 {
@@ -1106,12 +849,12 @@ void SGTerraSync::syncAirportsModels()
             ostringstream dir;
             dir << "Airports/" << synced_other;
             SyncItem w(dir.str(), SyncItem::AirportData);
-            _svnThread->request( w );
+            _workerThread->request( w );
         }
     }
 
     SyncItem w("Models", SyncItem::SharedModels);
-    _svnThread->request( w );
+    _workerThread->request( w );
 }
 
 void SGTerraSync::syncAreaByPath(const std::string& aPath)
@@ -1126,7 +869,7 @@ void SGTerraSync::syncAreaByPath(const std::string& aPath)
 
         _activeTileDirs.insert(dir);
         SyncItem w(dir, SyncItem::Tile);
-        _svnThread->request( w );
+        _workerThread->request( w );
     }
 }
 
@@ -1139,7 +882,7 @@ bool SGTerraSync::scheduleTile(const SGBucket& bucket)
 
 bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
 {
-    if (!_svnThread->_running) {
+    if (!_workerThread->_running) {
         return false;
     }
 
@@ -1162,13 +905,13 @@ void SGTerraSync::scheduleDataDir(const std::string& dataDir)
 
     _activeTileDirs.insert(dataDir);
     SyncItem w(dataDir, SyncItem::AIData);
-    _svnThread->request( w );
+    _workerThread->request( w );
 
 }
 
 bool SGTerraSync::isDataDirPending(const std::string& dataDir) const
 {
-    if (!_svnThread->_running) {
+    if (!_workerThread->_running) {
         return false;
     }
 

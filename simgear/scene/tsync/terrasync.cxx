@@ -163,7 +163,7 @@ public:
     std::auto_ptr<HTTPRepository> repository;
     SGTimeStamp stamp;
     bool busy; ///< is the slot working or idle
-
+    unsigned int pendingKBytes;
     unsigned int nextWarnTimeout;
 };
 
@@ -236,6 +236,8 @@ public:
    // kbytes, not bytes, because bytes might overflow 2^31
    volatile int _total_kb_downloaded;
 
+    unsigned int _totalKbPending;
+
 private:
    virtual void run();
 
@@ -281,6 +283,7 @@ SGTerraSync::WorkerThread::WorkerThread() :
     _cache_hits(0),
     _transfer_rate(0),
     _total_kb_downloaded(0),
+    _totalKbPending(0),
     _is_dirty(false),
     _stop(false)
 {
@@ -441,6 +444,7 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
                 SG_LOG(SG_TERRASYNC, SG_INFO, "HTTP request count:" << _http.hasActiveRequests());
                 slot.nextWarnTimeout += 10000;
             }
+            slot.pendingKBytes = slot.repository->bytesToDownload();
 #endif
             return; // easy, still working
         }
@@ -460,6 +464,7 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         // whatever happened, we're done with this repository instance
         slot.busy = false;
         slot.repository.reset();
+        slot.pendingKBytes = 0;
     }
 
     // init and start sync of the next repository
@@ -497,6 +502,8 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         slot.nextWarnTimeout = 20000;
         slot.stamp.stamp();
         slot.busy = true;
+        slot.pendingKBytes = slot.repository->bytesToDownload();
+
         SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
     }
 }
@@ -535,12 +542,16 @@ void SGTerraSync::WorkerThread::runInternal()
         }
 
         bool anySlotBusy = false;
+        unsigned int newPendingCount = 0;
+
         // update each sync slot in turn
         for (unsigned int slot=0; slot < NUM_SYNC_SLOTS; ++slot) {
             updateSyncSlot(_syncSlots[slot]);
+            newPendingCount += _syncSlots[slot].pendingKBytes;
             anySlotBusy |= _syncSlots[slot].busy;
         }
 
+        _totalKbPending = newPendingCount; // approximately atomic update
         _busy = anySlotBusy;
         if (!anySlotBusy) {
             // wait on the blocking deque here, otherwise we spin
@@ -778,6 +789,9 @@ void SGTerraSync::bind()
     // use kbytes here because propety doesn't support 64-bit and we might conceivably
     // download more than 2G in a single session
     _tiedProperties.Tie( _terraRoot->getNode("downloaded-kbytes", true), (int*) &_workerThread->_total_kb_downloaded );
+
+    _tiedProperties.Tie( _terraRoot->getNode("pending-kbytes", true), (int*) &_workerThread->_totalKbPending );
+
 
     _terraRoot->getNode("busy", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("active", true)->setAttribute(SGPropertyNode::WRITE,false);

@@ -144,7 +144,7 @@ protected:
                        " to \n\t" << url);
 
                 // update the URL and kick off a new request
-                m_owner->m_url = url;
+                m_owner->setUrl(url);
                 Downloader* dl = new Downloader(m_owner, url);
                 m_owner->root()->makeHTTPRequest(dl);
             } else {
@@ -437,6 +437,14 @@ std::string Catalog::url() const
     return m_url;
 }
 
+void Catalog::setUrl(const std::string &url)
+{
+    m_url = url;
+    if (m_status == Delegate::FAIL_NOT_FOUND) {
+        m_status = Delegate::FAIL_UNKNOWN;
+    }
+}
+
 std::string Catalog::name() const
 {
     return getLocalisedString(m_props, "name");
@@ -505,8 +513,8 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
 
 void Catalog::refreshComplete(Delegate::StatusCode aReason)
 {
-    changeStatus(aReason);
     m_refreshRequest.reset();
+    changeStatus(aReason);
 }
 
 void Catalog::changeStatus(Delegate::StatusCode newStatus)

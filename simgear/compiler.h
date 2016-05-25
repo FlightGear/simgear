@@ -63,8 +63,10 @@
 #ifdef _MSC_VER
 #  define bcopy(from, to, n) memcpy(to, from, n)
 
-#  if _MSC_VER >= 1200  && _MSC_VER < 1800 // msvc++ 6.0 up to MSVC2013
-#    define isnan _isnan
+#  if _MSC_VER >= 1200 // msvc++ 6.0 up to MSVC2013
+#    if _MSC_VER < 1800
+#      define isnan _isnan
+#    endif
 #    define snprintf _snprintf
 #    if _MSC_VER < 1500
 #      define vsnprintf _vsnprintf

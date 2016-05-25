@@ -94,7 +94,7 @@ public:
     struct Failure
     {
         SGPath path;
-        AbstractRepository::ResultCode error;
+        HTTPRepository::ResultCode error;
     };
 
     typedef std::vector<Failure> FailureList;
@@ -104,7 +104,7 @@ public:
         hashCacheDirty(false),
         p(parent),
         isUpdating(false),
-        status(AbstractRepository::REPO_NO_ERROR),
+        status(HTTPRepository::REPO_NO_ERROR),
         totalDownloaded(0)
     { ; }
 
@@ -115,7 +115,7 @@ public:
     std::string baseUrl;
     SGPath basePath;
     bool isUpdating;
-    AbstractRepository::ResultCode status;
+    HTTPRepository::ResultCode status;
     HTTPDirectory* rootDir;
     size_t totalDownloaded;
 
@@ -130,9 +130,9 @@ public:
     std::string computeHashForPath(const SGPath& p);
     void writeHashCache();
 
-    void failedToGetRootIndex(AbstractRepository::ResultCode st);
+    void failedToGetRootIndex(HTTPRepository::ResultCode st);
     void failedToUpdateChild(const SGPath& relativePath,
-                             AbstractRepository::ResultCode fileStatus);
+                             HTTPRepository::ResultCode fileStatus);
 
     typedef std::vector<RepoRequestPtr> RequestVector;
     RequestVector queuedRequests,
@@ -237,7 +237,7 @@ public:
         std::sort(children.begin(), children.end());
     }
 
-    void failedToUpdate(AbstractRepository::ResultCode status)
+    void failedToUpdate(HTTPRepository::ResultCode status)
     {
         if (_relativePath.isNull()) {
             // root dir failed
@@ -365,7 +365,7 @@ public:
             fpath.append(file);
 
             if (it->hash != hash) {
-                _repository->failedToUpdateChild(_relativePath, AbstractRepository::REPO_ERROR_CHECKSUM);
+                _repository->failedToUpdateChild(_relativePath, HTTPRepository::REPO_ERROR_CHECKSUM);
             } else {
                 _repository->updatedFileContents(fpath, hash);
                 _repository->totalDownloaded += sz;
@@ -375,7 +375,7 @@ public:
     }
 
     void didFailToUpdateFile(const std::string& file,
-                             AbstractRepository::ResultCode status)
+                             HTTPRepository::ResultCode status)
     {
         SGPath fpath(_relativePath);
         fpath.append(file);
@@ -580,7 +580,7 @@ size_t HTTPRepository::bytesDownloaded() const
     return result;
 }
 
-AbstractRepository::ResultCode
+HTTPRepository::ResultCode
 HTTPRepository::failure() const
 {
     if ((_d->status == REPO_NO_ERROR) && !_d->failures.empty()) {
@@ -634,10 +634,10 @@ HTTPRepository::failure() const
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "got file " << fileName << " in " << _directory->absolutePath());
             } else if (responseCode() == 404) {
                 SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file not found on server: " << fileName << " for " << _directory->absolutePath());
-                _directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_FILE_NOT_FOUND);
+                _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
             } else {
                 SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file download error on server: " << fileName << " for " << _directory->absolutePath() << ": " << responseCode() );
-                _directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_HTTP);
+                _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_HTTP);
             }
 
             _directory->repository()->finishedRequest(this);
@@ -651,7 +651,7 @@ HTTPRepository::failure() const
             }
             
             if (_directory) {
-                _directory->didFailToUpdateFile(fileName, AbstractRepository::REPO_ERROR_SOCKET);
+                _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_SOCKET);
                 _directory->repository()->finishedRequest(this);
             }
         }
@@ -701,7 +701,7 @@ HTTPRepository::failure() const
             if (responseCode() == 200) {
                 std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
                 if (!_targetHash.empty() && (hash != _targetHash)) {
-                    _directory->failedToUpdate(AbstractRepository::REPO_ERROR_CHECKSUM);
+                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM);
                     _directory->repository()->finishedRequest(this);
                     return;
                 }
@@ -739,12 +739,12 @@ HTTPRepository::failure() const
                     _directory->updateChildrenBasedOnHash();
                     SG_LOG(SG_TERRASYNC, SG_INFO, "after update of:" << _directory->absolutePath() << " child update took:" << st.elapsedMSec());
                 } catch (sg_exception& ) {
-                    _directory->failedToUpdate(AbstractRepository::REPO_ERROR_IO);
+                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO);
                 }
             } else if (responseCode() == 404) {
-                _directory->failedToUpdate(AbstractRepository::REPO_ERROR_FILE_NOT_FOUND);
+                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
             } else {
-                _directory->failedToUpdate(AbstractRepository::REPO_ERROR_HTTP);
+                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP);
             }
 
             _directory->repository()->finishedRequest(this);
@@ -753,7 +753,7 @@ HTTPRepository::failure() const
         virtual void onFail()
         {
             if (_directory) {
-                _directory->failedToUpdate(AbstractRepository::REPO_ERROR_SOCKET);
+                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_SOCKET);
                 _directory->repository()->finishedRequest(this);
             }
         }
@@ -1021,14 +1021,14 @@ HTTPRepository::failure() const
         }
     }
 
-    void HTTPRepoPrivate::failedToGetRootIndex(AbstractRepository::ResultCode st)
+    void HTTPRepoPrivate::failedToGetRootIndex(HTTPRepository::ResultCode st)
     {
         SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl);
         status = st;
     }
 
     void HTTPRepoPrivate::failedToUpdateChild(const SGPath& relativePath,
-                                              AbstractRepository::ResultCode fileStatus)
+                                              HTTPRepository::ResultCode fileStatus)
     {
         Failure f;
         f.path = relativePath;

@@ -18,7 +18,6 @@ set(HEADERS
     HTTPFileRequest.hxx
     HTTPMemoryRequest.hxx
     HTTPRequest.hxx
-    AbstractRepository.hxx
     HTTPRepository.hxx
     )
 
@@ -38,7 +37,6 @@ set(SOURCES
     HTTPFileRequest.cxx
     HTTPMemoryRequest.cxx
     HTTPRequest.cxx
-    AbstractRepository.cxx
     HTTPRepository.cxx
     )
 

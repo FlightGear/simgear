@@ -20,16 +20,30 @@
 #ifndef SG_IO_HTTP_REPOSITORY_HXX
 #define SG_IO_HTTP_REPOSITORY_HXX
 
-#include <simgear/io/AbstractRepository.hxx>
 #include <memory>
+
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/io/HTTPClient.hxx>
 
 namespace simgear  {
 
 class HTTPRepoPrivate;
 
-class HTTPRepository : public AbstractRepository
+class HTTPRepository
 {
 public:
+    enum ResultCode {
+        REPO_NO_ERROR = 0,
+        REPO_ERROR_NOT_FOUND,
+        REPO_ERROR_SOCKET,
+        SVN_ERROR_XML,
+        SVN_ERROR_TXDELTA,
+        REPO_ERROR_IO,
+        REPO_ERROR_CHECKSUM,
+        REPO_ERROR_FILE_NOT_FOUND,
+        REPO_ERROR_HTTP,
+        REPO_PARTIAL_UPDATE
+    };
 
     HTTPRepository(const SGPath& root, HTTP::Client* cl);
     virtual ~HTTPRepository();

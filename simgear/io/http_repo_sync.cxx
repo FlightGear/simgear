@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
         SGTimeStamp::sleepForMSec(100);
     }
 
-    if (repo->failure() != AbstractRepository::REPO_NO_ERROR) {
+    if (repo->failure() != HTTPRepository::REPO_NO_ERROR) {
         cerr << "got response:" << repo->failure() << endl;
         return EXIT_FAILURE;
     }

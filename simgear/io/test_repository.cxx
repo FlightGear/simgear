@@ -532,7 +532,7 @@ void testAbandonMissingFiles(HTTP::Client* cl)
     repo->setBaseUrl("http://localhost:2000/repo");
     repo->update();
     waitForUpdateComplete(cl, repo.get());
-    if (repo->failure() != AbstractRepository::REPO_PARTIAL_UPDATE) {
+    if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
         throw sg_exception("Bad result from missing files test");
     }
 
@@ -556,7 +556,7 @@ void testAbandonCorruptFiles(HTTP::Client* cl)
     repo->setBaseUrl("http://localhost:2000/repo");
     repo->update();
     waitForUpdateComplete(cl, repo.get());
-    if (repo->failure() != AbstractRepository::REPO_PARTIAL_UPDATE) {
+    if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
         throw sg_exception("Bad result from corrupt files test");
     }
 

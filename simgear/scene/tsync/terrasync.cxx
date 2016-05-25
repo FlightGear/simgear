@@ -160,7 +160,7 @@ public:
     SyncItem currentItem;
     bool isNewDirectory;
     std::queue<SyncItem> queue;
-    std::auto_ptr<AbstractRepository> repository;
+    std::auto_ptr<HTTPRepository> repository;
     SGTimeStamp stamp;
     bool busy; ///< is the slot working or idle
 
@@ -446,10 +446,10 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         }
 
         // check result
-        AbstractRepository::ResultCode res = slot.repository->failure();
-        if (res == AbstractRepository::REPO_ERROR_NOT_FOUND) {
+        HTTPRepository::ResultCode res = slot.repository->failure();
+        if (res == HTTPRepository::REPO_ERROR_NOT_FOUND) {
             notFound(slot.currentItem);
-        } else if (res != AbstractRepository::REPO_NO_ERROR) {
+        } else if (res != HTTPRepository::REPO_NO_ERROR) {
             fail(slot.currentItem);
         } else {
             updated(slot.currentItem, slot.isNewDirectory);

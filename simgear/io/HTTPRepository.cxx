@@ -233,7 +233,7 @@ public:
 
     void dirIndexUpdated(const std::string& hash)
     {
-        SGPath fpath(_relativePath);
+        SGPath fpath(absolutePath());
         fpath.append(".dirindex");
         _repository->updatedFileContents(fpath, hash);
 
@@ -476,7 +476,7 @@ public:
         if (it == children.end()) {
             SG_LOG(SG_TERRASYNC, SG_WARN, "updated file but not found in dir:" << _relativePath << " " << file);
         } else {
-            SGPath fpath(_relativePath);
+            SGPath fpath(absolutePath());
             fpath.append(file);
 
             if (it->hash != hash) {
@@ -588,7 +588,7 @@ private:
             ok = _repository->deleteDirectory(fpath.str());
         } else {
             // remove the hash cache entry
-            _repository->updatedFileContents(fpath, std::string());
+            _repository->updatedFileContents(p, std::string());
             ok = p.remove();
         }
 
@@ -1146,7 +1146,7 @@ HTTPRepository::failure() const
             delete d;
 
             // update the hash cache too
-            updatedFileContents(path, std::string());
+            updatedFileContents(d->absolutePath(), std::string());
 
             return result;
         }

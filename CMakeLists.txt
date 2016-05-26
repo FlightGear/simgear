@@ -114,12 +114,14 @@ endif()
 
 if (NOT MSVC)
 option(SIMGEAR_SHARED   "Set to ON to build SimGear as a shared library/framework" OFF)
-option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system libExpat" OFF)
+option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system expat library" OFF)
+option(SYSTEM_UDNS      "Set to ON to build SimGear using the system udns library" OFF)
 else()
 # Building SimGear DLLs is currently not supported for MSVC.
 set(SIMGEAR_SHARED OFF)
-# Using a system expat is currently not supported for MSVC - it would require shared simgear (DLL).
+# Using external 3rd party libraries is currently not supported for MSVC - it would require shared simgear (DLL).
 set(SYSTEM_EXPAT OFF)
+set(SYSTEM_UDNS OFF)
 endif()
 
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
@@ -426,9 +428,16 @@ endif()
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 
 include_directories(3rdparty/utf8/source)
-if (ENABLE_DNS)
-    message(STATUS "DNS resolver: ENABLED")
-    include_directories(3rdparty/udns)
+
+if(ENABLE_DNS)
+    if(SYSTEM_UDNS)
+        message(STATUS "Requested to use system udns library, forcing SIMGEAR_SHARED to true")
+        set(SIMGEAR_SHARED ON)
+        find_package(Udns REQUIRED)
+    else()
+        message(STATUS "DNS resolver: ENABLED")
+        include_directories(3rdparty/udns)
+    endif()
 else()
     message(STATUS "DNS resolver: DISABLED")
 endif()

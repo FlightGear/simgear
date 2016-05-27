@@ -40,7 +40,7 @@
 #include <simgear/misc/sg_path.hxx>
 
 #include "sample_group.hxx"
-#include "sample_openal.hxx"
+#include "sample.hxx"
 
 using std::string;
 

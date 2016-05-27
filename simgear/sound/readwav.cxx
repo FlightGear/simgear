@@ -30,7 +30,7 @@
 #include <simgear/misc/stdint.hxx>
 #include <simgear/structure/exception.hxx>
 
-#include "sample_openal.hxx"
+#include "sample.hxx"
 
 namespace 
 {

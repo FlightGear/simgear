@@ -1,4 +1,4 @@
-// sample_openal.cxx -- Audio sample encapsulation class
+// sample.cxx -- Audio sample encapsulation class
 // 
 // Written by Curtis Olson, started April 2004.
 // Modified to match the new SoundSystem by Erik Hofman, October 2009
@@ -35,9 +35,9 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/ResourceManager.hxx>
 
-#include "soundmgr_openal.hxx"
-#include "sample_openal.hxx"
 #include "soundmgr_openal_private.hxx"
+#include "soundmgr_openal.hxx"
+#include "sample.hxx"
 
 #define AL_FALSE 0
 

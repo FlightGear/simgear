@@ -47,6 +47,10 @@
 # include <AL/alext.h>
 #endif
 
+#include <simgear/structure/SGSharedPtr.hxx>
+
+class SGSampleGroup;
+
 struct refUint {
     unsigned int refctr;
     ALuint id;

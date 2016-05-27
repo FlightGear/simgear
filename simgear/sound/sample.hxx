@@ -1,4 +1,4 @@
-// sample_openal.hxx -- Audio sample encapsulation class
+// sample.hxx -- Audio sample encapsulation class
 // 
 // Written by Curtis Olson, started April 2004.
 // Modified to match the new SoundSystem by Erik Hofman, October 2009

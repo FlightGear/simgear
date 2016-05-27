@@ -24,7 +24,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <cassert>
 #include <simgear/compiler.h>
 #include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
@@ -78,42 +77,15 @@ SGSampleGroup::~SGSampleGroup ()
     _smgr = 0;
 }
 
-static bool is_sample_stopped(SGSoundSample *sample)
-{
-#ifdef ENABLE_SOUND
-    assert(sample->is_valid_source());
-    unsigned int source = sample->get_source();
-    int result;
-    alGetSourcei( source, AL_SOURCE_STATE, &result );
-    return (result == AL_STOPPED);
-#else
-    return true;
-#endif
-}
-
 void SGSampleGroup::cleanup_removed_samples()
 {
     // Delete any OpenAL buffers that might still be in use.
     unsigned int size = _removed_samples.size();
     for (unsigned int i=0; i<size; ) {
         SGSoundSample *sample = _removed_samples[i];
-        bool stopped = is_sample_stopped(sample);
         
-        if ( sample->is_valid_source() ) {
-            int source = sample->get_source();
-            
-            if ( sample->is_looping() && !stopped) {
-#ifdef ENABLE_SOUND
-                alSourceStop( source );
-#endif
-                stopped = is_sample_stopped(sample);
-            }
-            
-            if ( stopped ) {
-                sample->no_valid_source();
-                _smgr->release_source( source );
-            }
-        }
+        _smgr->sample_stop(sample);
+        bool stopped = _smgr->is_sample_stopped(sample);
         
         if ( stopped ) {
             sample->stop();
@@ -132,52 +104,16 @@ void SGSampleGroup::cleanup_removed_samples()
 
 void SGSampleGroup::start_playing_sample(SGSoundSample *sample)
 {
-#ifdef ENABLE_SOUND
-    //
-    // a request to start playing a sound has been filed.
-    //
-    ALuint source = _smgr->request_source();
-    if (alIsSource(source) == AL_FALSE ) {
-        return;
-    }
-    
-    sample->set_source( source );
+    _smgr->sample_init( sample );
     update_sample_config( sample );
-    ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
-    
-    if ( !sample->is_queue() )
-    {
-        ALuint buffer = _smgr->request_buffer(sample);
-        if (buffer == SGSoundMgr::FAILED_BUFFER ||
-            buffer == SGSoundMgr::NO_BUFFER)
-        {
-            _smgr->release_source(source);
-            return;
-        }
-        
-        // start playing the sample
-        buffer = sample->get_buffer();
-        if ( alIsBuffer(buffer) == AL_TRUE )
-        {
-            alSourcei( source, AL_BUFFER, buffer );
-            testForALError("assign buffer to source");
-        } else
-            SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!");
-    }
-    
-    alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
-    alSourcei( source, AL_LOOPING, looping );
-    alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
-    alSourcePlay( source );
-    testForALError("sample play");
-#endif
+    _smgr->sample_play( sample );
 }
 
 void SGSampleGroup::check_playing_sample(SGSoundSample *sample)
 {
     // check if the sound has stopped by itself
     
-    if (is_sample_stopped(sample)) {
+    if (_smgr->is_sample_stopped(sample)) {
         // sample is stopped because it wasn't looping
         sample->stop();
         sample->no_valid_source();
@@ -291,23 +227,7 @@ SGSampleGroup::stop ()
     sample_map_iterator sample_end = _samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
-
-        if ( sample->is_valid_source() ) {
-#ifdef ENABLE_SOUND
-            ALint source = sample->get_source();
-            if ( sample->is_playing() ) {
-                alSourceStop( source );
-                testForALError("stop");
-            }
-            _smgr->release_source( source );
-#endif
-            sample->no_valid_source();
-        }
-
-        if ( sample->is_valid_buffer() ) {
-            _smgr->release_buffer( sample );
-            sample->no_valid_buffer();
-        }
+        _smgr->sample_destroy( sample );
     }
 }
 
@@ -322,9 +242,7 @@ SGSampleGroup::suspend ()
         for ( ; sample_current != sample_end; ++sample_current ) {
 #ifdef ENABLE_SOUND
             SGSoundSample *sample = sample_current->second;
-            if ( sample->is_valid_source() && sample->is_playing() ) {
-                alSourcePause( sample->get_source() );
-            }
+            _smgr->sample_suspend( sample );
 #endif
         }
         testForALError("suspend");
@@ -341,9 +259,7 @@ SGSampleGroup::resume ()
         sample_map_iterator sample_end = _samples.end();
         for ( ; sample_current != sample_end; ++sample_current ) {
             SGSoundSample *sample = sample_current->second;
-            if ( sample->is_valid_source() && sample->is_playing() ) {
-                alSourcePlay( sample->get_source() );
-            }
+            _smgr->sample_resume( sample );
         }
         testForALError("resume");
 #endif
@@ -469,27 +385,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample )
     if (isNaN(velocity.data())) printf("NaN in source velocity\n");
 #endif
 
-    unsigned int source = sample->get_source();
-    alSourcefv( source, AL_POSITION, toVec3f(position).data() );
-    alSourcefv( source, AL_VELOCITY, velocity.data() );
-    alSourcefv( source, AL_DIRECTION, orientation.data() );
-    testForALError("position and orientation");
-
-    alSourcef( source, AL_PITCH, sample->get_pitch() );
-    alSourcef( source, AL_GAIN, sample->get_volume() );
-    testForALError("pitch and gain");
-
-    if ( sample->has_static_data_changed() ) {
-        alSourcef( source, AL_CONE_INNER_ANGLE, sample->get_innerangle() );
-        alSourcef( source, AL_CONE_OUTER_ANGLE, sample->get_outerangle() );
-        alSourcef( source, AL_CONE_OUTER_GAIN, sample->get_outergain() );
-        testForALError("audio cone");
-
-        alSourcef( source, AL_MAX_DISTANCE, sample->get_max_dist() );
-        alSourcef( source, AL_REFERENCE_DISTANCE,
-                           sample->get_reference_dist() );
-        testForALError("distance rolloff");
-    }
+    _smgr->update_sample_config( sample, position, orientation, velocity );
 #endif
 }
 
@@ -504,14 +400,7 @@ bool SGSampleGroup::testForError(void *p, std::string s)
 
 bool SGSampleGroup::testForALError(std::string s)
 {
-#ifdef SG_C
-    ALenum error = alGetError();
-    if (error != AL_NO_ERROR)  {
-       SG_LOG( SG_SOUND, SG_ALERT, "AL Error (" << _refname << "): "
-                                      << alGetString(error) << " at " << s);
-       return true;
-    }
-#endif
+    _smgr->testForError(s, _refname);
     return false;
 }
 

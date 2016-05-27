@@ -36,7 +36,7 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/structure/exception.hxx>
 
-#include "sample_openal.hxx"
+#include "sample.hxx"
 
 
 typedef std::map < std::string, SGSharedPtr<SGSoundSample> > sample_map;

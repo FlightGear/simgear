@@ -226,6 +226,63 @@ public:
     void release_buffer( SGSoundSample *sample );
 
     /**
+     * Initialize sample for playback.
+     *
+     * @param sample Pointer to an audio sample to initialize.
+     */
+    void sample_init( SGSoundSample *sample );
+
+    /**
+     * Stop and destroy a sample
+     *
+     * @param sample Pointer to an audio sample to destroy.
+     */
+    void sample_destroy( SGSoundSample *sample );
+
+    /**
+     * Start playback of a sample
+     *
+     * @param sample Pointer to an audio sample to start playing.
+     */
+    void sample_play( SGSoundSample *sample );
+
+    /**
+     * Stop a sample
+     *
+     * @param sample Pointer to an audio sample to stop.
+     */
+    void sample_stop( SGSoundSample *sample );
+
+    /**
+     * Suspend playback of a sample
+     *
+     * @param sample Pointer to an audio sample to suspend.
+     */
+    void sample_suspend( SGSoundSample *sample );
+
+    /**
+     * Resume playback of a sample
+     *
+     * @param sample Pointer to an audio sample to resume.
+     */
+    void sample_resume( SGSoundSample *sample );
+
+    /**
+     * Check if a sample is stopped, or still playing
+     *
+     * @param sample Pointer to an audio sample to test.
+     * @return true if the sample is stopped.
+     */
+    bool is_sample_stopped( SGSoundSample *sample );
+
+    /**
+     * Update all status and 3d parameters of a sample.
+     *
+     * @param sample Pointer to an audio sample to update.
+     */
+    void update_sample_config( SGSoundSample *sample, SGVec3d& position, SGVec3f& orientation, SGVec3f& velocity );
+
+    /**
      * Test if the position of the sound manager has changed.
      * The value will be set to false upon the next call to update_late()
      *
@@ -268,6 +325,8 @@ public:
     const std::string& get_vendor() { return _vendor; }
     const std::string& get_renderer() { return _renderer; }
 
+    bool testForError(std::string s, std::string name = "sound manager");
+
     static const char* subsystemName() { return "sound"; };
 private:
     class SoundManagerPrivate;
@@ -290,7 +349,6 @@ private:
     std::string _vendor;
     std::string _device_name;
 
-    bool testForALError(std::string s);
     bool testForALCError(std::string s);
     bool testForError(void *p, std::string s);
 

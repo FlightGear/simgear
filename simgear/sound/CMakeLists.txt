@@ -1,16 +1,16 @@
 include (SimGearComponent)
 
 set(HEADERS 
+    sample.hxx
     sample_group.hxx
-    sample_openal.hxx
     soundmgr_openal.hxx
     xmlsound.hxx
     readwav.hxx
     )
     
 set(SOURCES 
+    sample.cxx
     sample_group.cxx
-    sample_openal.cxx
     soundmgr_openal.cxx
     xmlsound.cxx
     readwav.cxx

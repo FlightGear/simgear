@@ -32,6 +32,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cstring>
+#include <cassert>
 
 #include <boost/foreach.hpp>
 
@@ -215,7 +216,7 @@ void SGSoundMgr::init()
     //        AL_ROLLOFF_FACTOR * (distance - AL_REFERENCE_DISTANCE));
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 
-    testForALError("listener initialization");
+    testForError("listener initialization");
 
     // get a free source one at a time
     // if an error is returned no more (hardware) sources are available
@@ -296,7 +297,7 @@ void SGSoundMgr::stop()
     // clear all OpenAL sources
     BOOST_FOREACH(ALuint source, d->_free_sources) {
         alDeleteSources( 1 , &source );
-        testForALError("SGSoundMgr::stop: delete sources");
+        testForError("SGSoundMgr::stop: delete sources");
     }
     d->_free_sources.clear();
 
@@ -307,7 +308,7 @@ void SGSoundMgr::stop()
         refUint ref = buffers_current->second;
         ALuint buffer = ref.id;
         alDeleteBuffers(1, &buffer);
-        testForALError("SGSoundMgr::stop: delete buffers");
+        testForError("SGSoundMgr::stop: delete buffers");
     }
     
     d->_buffers.clear();
@@ -396,7 +397,7 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
 
             alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
-            testForALError("update");
+            testForError("update");
             _changed = false;
         }
 
@@ -509,7 +510,7 @@ void SGSoundMgr::release_source( unsigned int source )
         }
 
         alSourcei( source, AL_BUFFER, 0 );	// detach the associated buffer
-        testForALError("release_source");
+        testForError("release_source");
   #endif
         d->_free_sources.push_back( source );
         d->_sources_in_use.erase( it );
@@ -559,7 +560,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 
         // create an OpenAL buffer handle
         alGenBuffers(1, &buffer);
-        if ( !testForALError("generate buffer") ) {
+        if ( !testForError("generate buffer") ) {
             // Copy data to the internal OpenAL buffer
 
             ALenum format = AL_NONE;
@@ -571,7 +572,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             ALsizei freq = sample->get_frequency();
             alBufferData( buffer, format, sample_data, size, freq );
 
-            if ( !testForALError("buffer add data") ) {
+            if ( !testForError("buffer add data") ) {
                 sample->set_buffer(buffer);
                 d->_buffers[sample_name] = refUint(buffer);
             }
@@ -605,10 +606,152 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
             alDeleteBuffers(1, &buffer);
 #endif
             d->_buffers.erase( buffer_it );
-            testForALError("release buffer");
+            testForError("release buffer");
         }
     }
 }
+
+void SGSoundMgr::sample_suspend( SGSoundSample *sample )
+{
+    if ( sample->is_valid_source() && sample->is_playing() ) {
+        alSourcePause( sample->get_source() );
+    }
+}
+
+void SGSoundMgr::sample_resume( SGSoundSample *sample )
+{
+    if ( sample->is_valid_source() && sample->is_playing() ) {
+        alSourcePlay( sample->get_source() );
+    }
+}
+
+void SGSoundMgr::sample_init( SGSoundSample *sample )
+{
+#ifdef ENABLE_SOUND
+    //
+    // a request to start playing a sound has been filed.
+    //
+    ALuint source = request_source();
+    if (alIsSource(source) == AL_FALSE ) {
+        return;
+    }
+
+    sample->set_source( source );
+#endif
+}
+
+void SGSoundMgr::sample_play( SGSoundSample *sample )
+{
+#ifdef ENABLE_SOUND
+    ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
+    ALint source = sample->get_source();
+
+    if ( !sample->is_queue() )
+    {
+        ALuint buffer = request_buffer(sample);
+        if (buffer == SGSoundMgr::FAILED_BUFFER ||
+            buffer == SGSoundMgr::NO_BUFFER)
+        {
+            release_source(source);
+            return;
+        }
+
+        // start playing the sample
+        buffer = sample->get_buffer();
+        if ( alIsBuffer(buffer) == AL_TRUE )
+        {
+            alSourcei( source, AL_BUFFER, buffer );
+            testForError("assign buffer to source");
+        } else
+            SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!");
+    }
+
+    alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
+    alSourcei( source, AL_LOOPING, looping );
+    alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
+    alSourcePlay( source );
+    testForError("sample play");
+#endif
+}
+
+void SGSoundMgr::sample_stop( SGSoundSample *sample )
+{
+    if ( sample->is_valid_source() ) {
+        int source = sample->get_source();
+    
+        bool stopped = is_sample_stopped(sample);
+        if ( sample->is_looping() && !stopped) {
+#ifdef ENABLE_SOUND
+            alSourceStop( source );
+#endif          
+            stopped = is_sample_stopped(sample);
+        }
+    
+        if ( stopped ) {
+            sample->no_valid_source();
+            release_source( source );
+        }
+    }
+}
+
+void SGSoundMgr::sample_destroy( SGSoundSample *sample )
+{ 
+    if ( sample->is_valid_source() ) {
+#ifdef ENABLE_SOUND
+        ALint source = sample->get_source();
+        if ( sample->is_playing() ) {
+            alSourceStop( source );
+            testForError("stop");
+        }
+        release_source( source );
+#endif
+        sample->no_valid_source();
+    }
+
+    if ( sample->is_valid_buffer() ) {
+        release_buffer( sample );
+        sample->no_valid_buffer();
+    }
+}
+
+bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
+{
+#ifdef ENABLE_SOUND
+    assert(sample->is_valid_source());
+    unsigned int source = sample->get_source();
+    int result;
+    alGetSourcei( source, AL_SOURCE_STATE, &result );
+    return (result == AL_STOPPED);
+#else
+    return true;
+#endif
+}
+
+void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position, SGVec3f& orientation, SGVec3f& velocity )
+{
+    unsigned int source = sample->get_source();
+    alSourcefv( source, AL_POSITION, toVec3f(position).data() );
+    alSourcefv( source, AL_VELOCITY, velocity.data() );
+    alSourcefv( source, AL_DIRECTION, orientation.data() );
+    testForError("position and orientation");
+
+    alSourcef( source, AL_PITCH, sample->get_pitch() );
+    alSourcef( source, AL_GAIN, sample->get_volume() );
+    testForError("pitch and gain");
+
+    if ( sample->has_static_data_changed() ) {
+        alSourcef( source, AL_CONE_INNER_ANGLE, sample->get_innerangle() );
+        alSourcef( source, AL_CONE_OUTER_ANGLE, sample->get_outerangle() );
+        alSourcef( source, AL_CONE_OUTER_GAIN, sample->get_outergain() );
+        testForError("audio cone");
+
+        alSourcef( source, AL_MAX_DISTANCE, sample->get_max_dist() );
+        alSourcef( source, AL_REFERENCE_DISTANCE,
+                           sample->get_reference_dist() );
+        testForError("distance rolloff");
+    }
+}
+
 
 bool SGSoundMgr::load( const std::string &samplepath,
                        void **dbuf,
@@ -683,12 +826,12 @@ bool SGSoundMgr::testForError(void *p, std::string s)
 }
 
 
-bool SGSoundMgr::testForALError(std::string s)
+bool SGSoundMgr::testForError(std::string s, std::string name)
 {
 #ifdef ENABLE_SOUND
     ALenum error = alGetError();
     if (error != AL_NO_ERROR)  {
-       SG_LOG( SG_SOUND, SG_ALERT, "AL Error (sound manager): "
+       SG_LOG( SG_SOUND, SG_ALERT, "AL Error (" << name << "): "
                                       << alGetString(error) << " at " << s);
        return true;
     }

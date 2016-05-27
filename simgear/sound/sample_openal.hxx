@@ -40,14 +40,13 @@ enum {
     SG_SAMPLE_8BITS = 8,
     SG_SAMPLE_16BITS = 16,
 
+    SG_SAMPLE_UNCOMPRESSED = 0,
     SG_SAMPLE_COMPRESSED = 256,
 
-    SG_SAMPLE_MONO8        = (SG_SAMPLE_MONO|SG_SAMPLE_8BITS),
-    SG_SAMPLE_MONO16       = (SG_SAMPLE_MONO|SG_SAMPLE_16BITS),
-    SG_SAMPLE_STEREO8      = (SG_SAMPLE_STEREO|SG_SAMPLE_8BITS),
-    SG_SAMPLE_STEREO16     = (SG_SAMPLE_STEREO|SG_SAMPLE_16BITS),
-    SG_SAMPLE_MONO_MULAW   = (SG_SAMPLE_MONO16|SG_SAMPLE_COMPRESSED),
-    SG_SAMPLE_STEREO_MULAW = (SG_SAMPLE_STEREO16|SG_SAMPLE_COMPRESSED)
+    SG_SAMPLE_MONO8    = (SG_SAMPLE_MONO|SG_SAMPLE_8BITS),
+    SG_SAMPLE_MONO16   = (SG_SAMPLE_MONO|SG_SAMPLE_16BITS),
+    SG_SAMPLE_MULAW    = (SG_SAMPLE_MONO|SG_SAMPLE_8BITS|SG_SAMPLE_COMPRESSED),
+    SG_SAMPLE_ADPCM    = (SG_SAMPLE_MONO|SG_SAMPLE_4BITS|SG_SAMPLE_COMPRESSED)
 };
 
 
@@ -102,9 +101,8 @@ public:
      * @return Data size
      */
     inline size_t get_size() const {
-printf("<-- samples: %i, tracks: %i, bits: %i\n", _samples, _tracks, _bits);
-return (_samples * _tracks * _bits)/8;
-}
+        return (_samples * _tracks * _bits)/8;
+    }
 
 
     /**

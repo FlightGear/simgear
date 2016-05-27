@@ -92,18 +92,14 @@ void SGSoundSample::set_format_AL( int fmt )
     case AL_FORMAT_MONO16:
         _tracks = 1; _bits = 16; _compressed = false;
         break;
-    case AL_FORMAT_STEREO8:
-        _tracks = 2; _bits = 8; _compressed = false;
-        break;
-    case AL_FORMAT_STEREO16:
-        _tracks = 2; _bits = 16; _compressed = false;
-        break;
 #ifdef AL_EXT_MULAW_MCFORMATS
     case AL_FORMAT_MONO_MULAW:
-        _tracks = 1; _bits = 16; _compressed = true;
+        _tracks = 1; _bits = 8; _compressed = true;
         break;
-    case AL_FORMAT_STEREO_MULAW:
-        _tracks = 2; _bits = 16; _compressed = true;
+#endif
+#ifdef AL_EXT_IMA4
+    case AL_EXT_IMA4:
+        _tracks = 1; _bits = 4; _compressed = true;
         break;
 #endif
     default:
@@ -116,11 +112,13 @@ unsigned int SGSoundSampleInfo::get_format_AL()
     unsigned int rv = AL_FORMAT_MONO16;
 
     if (_tracks == 1 && _bits == 8) rv = AL_FORMAT_MONO8;
-    else if (_tracks == 2 && _bits == 8) rv = AL_FORMAT_STEREO8;
-    else if (_tracks == 2 && _bits == 16) rv = AL_FORMAT_STEREO16;
 #ifdef AL_EXT_MULAW_MCFORMATS
-    else if (_tracks == 1 && _bits == 16 && _compressed) rv = AL_FORMAT_MONO_MULAW;
-    else if (_tracks == 2 && _bits == 16 && _compressed) rv = AL_FORMAT_STEREO_MULAW;
+    else if (_tracks == 1 && _bits == 8 && _compressed)
+        rv = AL_FORMAT_MONO_MULAW;
+#endif
+#ifdef AL_EXT_IMA4
+    else if (_tracks == 1 && _bits == 4 && _compressed) 
+        rv = AL_EXT_IMA4;
 #endif
 
     return rv;

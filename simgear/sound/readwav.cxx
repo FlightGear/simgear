@@ -30,12 +30,14 @@
 #include <simgear/misc/stdint.hxx>
 #include <simgear/structure/exception.hxx>
 
+#include "sample_openal.hxx"
+
 namespace 
 {
   class Buffer {
   public:
     ALvoid* data;
-    ALenum format;
+    unsigned int format;
     ALsizei length;
     ALfloat frequency;
     SGPath path;
@@ -50,24 +52,12 @@ namespace
     }
   };
   
-  ALenum formatConstruct(ALint numChannels, ALint bitsPerSample)
+  unsigned int formatConstruct(ALint numChannels, ALint bitsPerSample)
   {
-    switch (numChannels)
-      {
-      case 1:
-        switch (bitsPerSample) {
-          case 8: return  AL_FORMAT_MONO8;
-          case 16: return AL_FORMAT_MONO16;
-        }
-        break;
-      case 2:
-        switch (bitsPerSample) {
-          case 8: return AL_FORMAT_STEREO8;
-          case 16: return AL_FORMAT_STEREO16;
-          }
-        break;
-      }
-    return AL_NONE;
+    unsigned int rv = 0;
+    if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MONO8;
+    if (numChannels == 1 && bitsPerSample == 16) rv = SG_SAMPLE_MONO16;
+    return rv;
   }
   
 // function prototype for decoding audio data
@@ -255,7 +245,7 @@ namespace
 namespace simgear
 {
 
-ALvoid* loadWAVFromFile(const SGPath& path, ALenum& format, ALsizei& size, ALfloat& freqf)
+ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size, ALfloat& freqf)
 {
   if (!path.exists()) {
     throw sg_io_exception("loadWAVFromFile: file not found", path);
@@ -285,7 +275,7 @@ ALuint createBufferFromFile(const SGPath& path)
 {
   ALuint buffer = -1;
 #ifdef ENABLE_SOUND
-  ALenum format;
+  unsigned int format;
   ALsizei size;
   ALfloat sampleFrequency;
   ALvoid* data = loadWAVFromFile(path, format, size, sampleFrequency);

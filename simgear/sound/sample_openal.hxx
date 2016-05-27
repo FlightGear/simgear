@@ -65,12 +65,6 @@ public:
      * Returns the format of this audio sample.
      * @return SimGear format-id
      */
-    unsigned int get_format_AL();
-
-    /**
-     * Returns the format of this audio sample.
-     * @return SimGear format-id
-     */
     inline unsigned int get_format() { return (_tracks | _bits | _compressed*256); }
 
     /**
@@ -437,8 +431,6 @@ public:
     inline void set_format( int fmt ) {
         _tracks = fmt & 0x3; _bits = fmt & 0x1C; _compressed = fmt & 0x100;
     }
-
-    void set_format_AL( int fmt );
 
     /**
      * Set the frequency (in Herz) of this audio sample.

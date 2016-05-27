@@ -82,48 +82,6 @@ SGSoundSampleInfo::SGSoundSampleInfo() :
     _pos_prop[2] = 0;
 }
 
-void SGSoundSample::set_format_AL( int fmt )
-{
-    switch(fmt)
-    {
-    case AL_FORMAT_MONO8:
-        _tracks = 1; _bits = 8; _compressed = false;
-        break;
-    case AL_FORMAT_MONO16:
-        _tracks = 1; _bits = 16; _compressed = false;
-        break;
-#ifdef AL_EXT_MULAW_MCFORMATS
-    case AL_FORMAT_MONO_MULAW:
-        _tracks = 1; _bits = 8; _compressed = true;
-        break;
-#endif
-#ifdef AL_EXT_IMA4
-    case AL_EXT_IMA4:
-        _tracks = 1; _bits = 4; _compressed = true;
-        break;
-#endif
-    default:
-        break;
-    }
-}
-
-unsigned int SGSoundSampleInfo::get_format_AL()
-{
-    unsigned int rv = AL_FORMAT_MONO16;
-
-    if (_tracks == 1 && _bits == 8) rv = AL_FORMAT_MONO8;
-#ifdef AL_EXT_MULAW_MCFORMATS
-    else if (_tracks == 1 && _bits == 8 && _compressed)
-        rv = AL_FORMAT_MONO_MULAW;
-#endif
-#ifdef AL_EXT_IMA4
-    else if (_tracks == 1 && _bits == 4 && _compressed) 
-        rv = AL_EXT_IMA4;
-#endif
-
-    return rv;
-}
-
 std::string SGSoundSampleInfo::random_string()
 {
     static const char *r = "0123456789abcdefghijklmnopqrstuvwxyz"

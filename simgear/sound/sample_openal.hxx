@@ -30,6 +30,7 @@
 #ifndef _SG_SAMPLE_HXX
 #define _SG_SAMPLE_HXX 1
 
+#include <simgear/math/SGMath.hxx>
 #include <simgear/props/props.hxx>
      
 enum {

@@ -18,11 +18,6 @@ set(HEADERS
     HTTPFileRequest.hxx
     HTTPMemoryRequest.hxx
     HTTPRequest.hxx
-    AbstractRepository.hxx
-    DAVMultiStatus.hxx
-    SVNRepository.hxx
-    SVNDirectory.hxx
-    SVNReportParser.hxx
     HTTPRepository.hxx
     )
 
@@ -42,11 +37,6 @@ set(SOURCES
     HTTPFileRequest.cxx
     HTTPMemoryRequest.cxx
     HTTPRequest.cxx
-    AbstractRepository.cxx
-    DAVMultiStatus.cxx
-    SVNRepository.cxx
-    SVNDirectory.cxx
-    SVNReportParser.cxx
     HTTPRepository.cxx
     )
 
@@ -58,9 +48,6 @@ endif()
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
-
-add_executable(http_svn http_svn.cxx)
-target_link_libraries(http_svn ${TEST_LIBS})
 
 add_executable(test_sock socktest.cxx)
 target_link_libraries(test_sock ${TEST_LIBS})

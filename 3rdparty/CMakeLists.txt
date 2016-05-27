@@ -4,6 +4,6 @@ endif()
 
 add_subdirectory(utf8)
 
-if (ENABLE_DNS)
+if (ENABLE_DNS AND NOT SYSTEM_UDNS)
 	add_subdirectory(udns)
 endif()

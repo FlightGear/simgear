@@ -80,7 +80,9 @@ public:
         // see https://curl.haxx.se/libcurl/c/CURLMOPT_PIPELINING.html
         // we request HTTP 1.1 pipelining
         curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, 1 /* aka CURLPIPE_HTTP1 */);
+#if (LIBCURL_VERSION_MINOR >= 30)
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxConnections);
+#endif
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH,
                           (long) maxPipelineDepth);
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_HOST_CONNECTIONS,
@@ -138,7 +140,9 @@ Client::~Client()
 void Client::setMaxConnections(unsigned int maxCon)
 {
     d->maxConnections = maxCon;
+#if (LIBCURL_VERSION_MINOR >= 30)
     curl_multi_setopt(d->curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxCon);
+#endif
 }
 
 void Client::setMaxHostConnections(unsigned int maxHostCon)

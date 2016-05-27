@@ -33,7 +33,7 @@
 #include "soundmgr_openal_private.hxx"
 #include "sample_group.hxx"
 
-#ifdef HAVE_STD_ISNAN
+#if defined(HAVE_STD_ISNAN) && !defined(HAVE_ISNAN)
 using std::isnan;
 #endif
 

@@ -84,10 +84,10 @@ protected:
     void syncAirportsModels();
  
     
-    class SvnThread;
+    class WorkerThread;
 
 private:
-    SvnThread* _svnThread;
+    WorkerThread* _workerThread;
     SGPropertyNode_ptr _terraRoot;
     SGPropertyNode_ptr _stalledNode;
     SGPropertyNode_ptr _cacheHits;

@@ -106,6 +106,12 @@ public:
 
     std::string url() const;
 
+    /**
+     * update the URL of a package. Does not trigger a refresh, but resets
+     * error state if the previous URL was not found.
+     */
+    void setUrl(const std::string& url);
+
     std::string name() const;
 
     std::string description() const;

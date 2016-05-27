@@ -153,10 +153,10 @@ public:
   /// Use with care: allways code that you do not need to use that!
   static bool isNaN(const T& v)
   {
-#ifdef HAVE_ISNAN
-    return (isnan(v) != 0);
-#elif defined HAVE_STD_ISNAN
+#ifdef HAVE_STD_ISNAN
     return std::isnan(v);
+#elif defined HAVE_ISNAN
+    return (isnan(v) != 0);
 #else
     // Use that every compare involving a NaN returns false
     // But be careful, some usual compiler switches like for example

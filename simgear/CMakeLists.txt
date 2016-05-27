@@ -128,10 +128,19 @@ target_link_libraries(SimGearCore
     ${ZLIB_LIBRARY}
     ${RT_LIBRARY}
     ${DL_LIBRARY}
-    ${EXPAT_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${COCOA_LIBRARY}
     ${CURL_LIBRARIES})
+
+if(SYSTEM_EXPAT)
+    target_link_libraries(SimGearCore
+        ${EXPAT_LIBRARIES})
+endif()
+
+if(ENABLE_DNS AND SYSTEM_UDNS)
+    target_link_libraries(SimGearCore
+        ${UDNS_LIBRARIES})
+endif()
 
 if(NOT SIMGEAR_HEADLESS)
     target_link_libraries(SimGearScene

@@ -16,7 +16,7 @@ class SGPath;
 
 namespace simgear
 {
-  ALvoid* loadWAVFromFile(const SGPath& path, ALenum& format, ALsizei& size, ALfloat& freqf);
+  ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size, ALfloat& freqf);
   
   ALuint createBufferFromFile(const SGPath& path);
 }

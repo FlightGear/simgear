@@ -29,6 +29,10 @@
 #ifndef _SG_SOUNDMGR_OPENAL_PRIVATE_HXX
 #define _SG_SOUNDMGR_OPENAL_PRIVATE_HXX 1
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <string>
 #include <vector>
 #include <map>
@@ -36,15 +40,15 @@
 #if defined(__APPLE__)
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
-# include <OpenAL/alext.h>
 #elif defined(OPENALSDK)
 # include <al.h>
 # include <alc.h>
-# include <alext.h>
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
-# include <AL/alext.h>
+# ifdef HAVE_AL_EXT_H
+#  include <AL/alext.h>
+# endif
 #endif
 
 #include <simgear/structure/SGSharedPtr.hxx>

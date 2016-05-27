@@ -762,7 +762,7 @@ bool SGSoundMgr::load( const std::string &samplepath,
     if ( !is_working() )
         return false;
 
-    ALenum format;
+    unsigned int format;
     ALsizei size;
     ALsizei freq;
     ALvoid *data;

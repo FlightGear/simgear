@@ -82,13 +82,11 @@ public:
         curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, 1 /* aka CURLPIPE_HTTP1 */);
 #if (LIBCURL_VERSION_MINOR >= 30)
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxConnections);
-#endif
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH,
                           (long) maxPipelineDepth);
         curl_multi_setopt(curlMulti, CURLMOPT_MAX_HOST_CONNECTIONS,
                           (long) maxHostConnections);
-
-
+#endif
     }
 
     typedef std::map<Request_ptr, CURL*> RequestCurlMap;
@@ -148,13 +146,17 @@ void Client::setMaxConnections(unsigned int maxCon)
 void Client::setMaxHostConnections(unsigned int maxHostCon)
 {
     d->maxHostConnections = maxHostCon;
+#if (LIBCURL_VERSION_MINOR >= 30)
     curl_multi_setopt(d->curlMulti, CURLMOPT_MAX_HOST_CONNECTIONS, (long) maxHostCon);
+#endif
 }
 
 void Client::setMaxPipelineDepth(unsigned int depth)
 {
     d->maxPipelineDepth = depth;
+#if (LIBCURL_VERSION_MINOR >= 30)
     curl_multi_setopt(d->curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH, (long) depth);
+#endif
 }
 
 void Client::update(int waitTimeout)

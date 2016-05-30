@@ -38,7 +38,7 @@ int main( int argc, char *argv[] ) {
     printf("playing sample1\n");
     sleep(1);
 
-    SGSoundSample *sample2 = new SGSoundSample("jet.wav", srcDir);
+    SGSoundSample *sample2 = new SGSoundSample("jet_ulaw.wav", srcDir);
     sample2->set_volume(0.5);
     sample2->set_pitch(0.4);
     sample2->play_looped();

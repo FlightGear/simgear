@@ -46,9 +46,6 @@
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
-# ifdef HAVE_AL_EXT_H
-#  include <AL/alext.h>
-# endif
 #endif
 
 #include <simgear/structure/SGSharedPtr.hxx>

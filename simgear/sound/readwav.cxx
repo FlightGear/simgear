@@ -52,11 +52,16 @@ namespace
     }
   };
   
-  unsigned int formatConstruct(ALint numChannels, ALint bitsPerSample)
+  unsigned int formatConstruct(ALint numChannels, ALint bitsPerSample, bool compressed)
   {
     unsigned int rv = 0;
-    if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MONO8;
-    if (numChannels == 1 && bitsPerSample == 16) rv = SG_SAMPLE_MONO16;
+    if (!compressed) {
+      if (numChannels == 1 && bitsPerSample == 16) rv = SG_SAMPLE_MONO16;
+      else if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MONO8;
+    } else {
+      if (numChannels == 1 && bitsPerSample == 4) rv = SG_SAMPLE_ADPCM; 
+      else if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MULAW;
+    }
     return rv;
   }
   
@@ -150,6 +155,7 @@ namespace
     assert(b->data == NULL);
     
     bool found_header = false;
+    bool compressed = false;
     uint32_t chunkLength;
     int32_t magic;
     uint16_t audioFormat;
@@ -205,15 +211,20 @@ namespace
                 codec = (bitsPerSample == 8 || sgIsLittleEndian()) ? codecLinear : codecPCM16BE;
                 break;
               case 7:            /* uLaw */
-                bitsPerSample *= 2;  /* uLaw is 16-bit packed into 8 bits */
-                codec = codecULaw;
+                if (alIsExtensionPresent((ALchar *)"AL_EXT_mulaw")) {
+                  compressed = true;
+                  codec = codecLinear;
+                } else {
+                  bitsPerSample *= 2; /* uLaw is 16-bit packed into 8 bits */
+                  codec = codecULaw;
+                }
                 break;
               default:
                 throw sg_io_exception("unsupported WAV encoding", b->path);
               }
               
               b->frequency = samplesPerSecond;
-              b->format = formatConstruct(numChannels, bitsPerSample);
+              b->format = formatConstruct(numChannels, bitsPerSample, compressed);
         } else if (magic == WAV_DATA_4CC) {
             if (!found_header) {
                 /* ToDo: A bit wrong to check here, fmt chunk could come later... */

@@ -51,9 +51,14 @@ using std::vector;
 
 #define MAX_SOURCES	128
 
-
 #ifndef ALC_ALL_DEVICES_SPECIFIER
 # define ALC_ALL_DEVICES_SPECIFIER	0x1013
+#endif
+#ifndef AL_FORMAT_MONO_MULAW_EXT
+# define AL_FORMAT_MONO_MULAW_EXT	0x10014
+#endif
+#ifndef AL_FORMAT_MONO_IMA4
+# define AL_FORMAT_MONO_IMA4		0x1300
 #endif
 
 class SGSoundMgr::SoundManagerPrivate
@@ -565,8 +570,9 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 
             ALenum format = AL_NONE;
             unsigned int fmt = sample->get_format();
-            if (fmt == SG_SAMPLE_MONO8) format = AL_FORMAT_MONO8;
             if (fmt == SG_SAMPLE_MONO16) format = AL_FORMAT_MONO16;
+            else if (fmt == SG_SAMPLE_MONO8) format = AL_FORMAT_MONO8;
+            else if (fmt == SG_SAMPLE_MULAW) format = AL_FORMAT_MONO_MULAW_EXT;
 
             ALsizei size = sample->get_size();
             ALsizei freq = sample->get_frequency();

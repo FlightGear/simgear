@@ -245,7 +245,6 @@ check_include_file(sys/time.h HAVE_SYS_TIME_H)
 check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
-check_include_file(AL/alext.h HAVE_AL_EXT_H)
 
 if(HAVE_INTTYPES_H)
   # ShivaVG needs inttypes.h
@@ -388,7 +387,7 @@ include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
-    ${OPENAL_INCLUDE_DIR}
+    ${OPENAL_INCLUDE_DIRS}
     ${CURL_INCLUDE_DIRS}
 )
 

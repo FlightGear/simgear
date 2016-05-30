@@ -38,6 +38,7 @@ namespace
   public:
     ALvoid* data;
     unsigned int format;
+    unsigned int block_align;
     ALsizei length;
     ALfloat frequency;
     SGPath path;
@@ -96,10 +97,10 @@ namespace
     mantissa = mulawbyte & 0x0F;
     sample = exp_lut[exponent] + (mantissa << (exponent + 3));
     return sign ? -sample : sample;
- }
+  }
 
- void codecULaw (Buffer* b)
- {
+  void codecULaw (Buffer* b)
+  {
     uint8_t *d = (uint8_t *) b->data;
     size_t newLength = b->length * 2;
     int16_t *buf = (int16_t *) malloc(newLength);
@@ -110,6 +111,98 @@ namespace
       buf[i] = mulaw2linear(d[i]);
     }
     
+    free(b->data);
+    b->data = buf;
+    b->length = newLength;
+  }
+
+  int16_t ima2linear (uint8_t nibble, int16_t *val, uint8_t *idx)
+  {
+    const int16_t _ima4_index_table[16] =
+    {
+       -1, -1, -1, -1, 2, 4, 6, 8,
+       -1, -1, -1, -1, 2, 4, 6, 8
+    };
+    const int16_t _ima4_step_table[89] =
+    {
+         7,     8,     9,    10,    11,    12,    13,    14,    16,    17,
+        19,    21,    23,    25,    28,    31,    34,    37,    41,    45,
+        50,    55,    60,    66,    73,    80,    88,    97,   107,   118,
+       130,   143,   157,   173,   190,   209,   230,   253,   279,   307,
+       337,   371,   408,   449,   494,   544,   598,   658,   724,   796,
+       876,   963,  1060,  1166,  1282,  1411,  1552,  1707,  1878,  2066,
+      2272,  2499,  2749,  3024,  3327,  3660,  4026,  4428,  4871,  5358,
+      5894,  6484,  7132,  7845,  8630,  9493, 10442, 11487, 12635, 13899,
+     15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
+    };
+    int32_t predictor;
+    int16_t diff, step;
+    int8_t delta, sign;
+    int8_t index;
+
+    index = *idx;
+    if (index > 88) index = 88;
+    else if (index < 0) index = 0;
+
+    predictor = *val;
+    step = _ima4_step_table[index];
+
+    sign = nibble & 0x8;
+    delta = nibble & 0x7;
+
+    diff = 0;
+    if (delta & 4) diff += step;
+    if (delta & 2) diff += (step >> 1);
+    if (delta & 1) diff += (step >> 2);
+    diff += (step >> 3);
+
+    if (sign) predictor -= diff;
+    else predictor += diff;
+
+    index += _ima4_index_table[nibble];
+    if (index > 88) index = 88;
+    else if (index < 0) index = 0;
+    *idx = index;
+
+    if (predictor < -32768) predictor = -32768;
+    else if (predictor > 32767) predictor = 32767;
+    *val = predictor;
+
+    return *val;
+  }
+
+  void codecIMA4 (Buffer* b)
+  {
+    uint8_t *d = (uint8_t *) b->data;
+    unsigned int block_align = b->block_align;
+    size_t blocks = b->length/block_align;
+    size_t newLength = block_align * blocks * 4;
+    int16_t *buf = (int16_t *) malloc ( newLength );
+    if (buf == NULL)
+      throw sg_exception("malloc failed decoing IMA4 WAV file");
+
+    int16_t *ptr = buf;
+    for (size_t i = 0; i < blocks; i++)
+    {
+      int16_t predictor;
+      uint8_t index;
+
+      predictor = *d++;
+      predictor |= *d++ << 8;
+      index = *d++;
+      d++;
+
+      for (size_t j = 0; j < block_align; j += 4)
+      {
+        for (unsigned int q=0; q<4; q++)
+        {
+          uint8_t nibble = *d++;
+          *ptr++ = ima2linear(nibble & 0xF, &predictor, &index);
+          *ptr++ = ima2linear(nibble >> 4, &predictor, &index);
+        }
+      }
+    }
+
     free(b->data);
     b->data = buf;
     b->length = newLength;
@@ -219,10 +312,23 @@ namespace
                   codec = codecULaw;
                 }
                 break;
+              case 17:		/* IMA4 ADPCM */
+                if (alIsExtensionPresent((ALchar *)"AL_EXT_ima4") &&
+                    (alIsExtensionPresent((ALchar *)"AL_SOFT_block_alignment")
+                     || blockAlign == 65)) {
+                  compressed = true;
+                  codec = codecLinear;
+                } else {
+                  bitsPerSample *= 4; /* uLaw is 16-bit packed into 8 bits */
+                  codec = codecIMA4;
+                  
+                }
+                break;
               default:
                 throw sg_io_exception("unsupported WAV encoding", b->path);
               }
               
+              b->block_align = blockAlign;
               b->frequency = samplesPerSecond;
               b->format = formatConstruct(numChannels, bitsPerSample, compressed);
         } else if (magic == WAV_DATA_4CC) {
@@ -256,7 +362,7 @@ namespace
 namespace simgear
 {
 
-ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size, ALfloat& freqf)
+ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size, ALfloat& freqf, unsigned int& block_align)
 {
   if (!path.exists()) {
     throw sg_io_exception("loadWAVFromFile: file not found", path);
@@ -275,6 +381,7 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   ALvoid* data = b.data;
   b.data = NULL; // don't free when Buffer does out of scope
   format = b.format;
+  block_align = b.block_align;
   size = b.length;
   freqf = b.frequency;
   
@@ -287,9 +394,10 @@ ALuint createBufferFromFile(const SGPath& path)
   ALuint buffer = -1;
 #ifdef ENABLE_SOUND
   unsigned int format;
+  unsigned int block_align;
   ALsizei size;
   ALfloat sampleFrequency;
-  ALvoid* data = loadWAVFromFile(path, format, size, sampleFrequency);
+  ALvoid* data = loadWAVFromFile(path, format, size, sampleFrequency, block_alight);
   assert(data);
   
   alGenBuffers(1, &buffer);
@@ -299,6 +407,7 @@ ALuint createBufferFromFile(const SGPath& path)
   }
     
   alBufferData (buffer, format, data, size, (ALsizei) sampleFrequency);
+  alBufferi (buffer, AL_UNPACK_BLOCK_ALIGNMENT_SOFT, block_align);
   if (alGetError() != AL_NO_ERROR) {
     alDeleteBuffers(1, &buffer);
     free(data);

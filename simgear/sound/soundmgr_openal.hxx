@@ -312,7 +312,8 @@ public:
                void **data,
                int *format,
                size_t *size,
-               int *freq );
+               int *freq,
+               int *block );
 
     /**
      * Get a list of available playback devices.
@@ -333,6 +334,7 @@ private:
     /// private implementation object
     std::auto_ptr<SoundManagerPrivate> d;
 
+    bool _block_support;
     bool _active;
     bool _changed;
     float _volume;

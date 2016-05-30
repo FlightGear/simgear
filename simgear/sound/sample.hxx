@@ -65,7 +65,17 @@ public:
      * Returns the format of this audio sample.
      * @return SimGear format-id
      */
-    inline unsigned int get_format() { return (_tracks | _bits | _compressed*256); }
+    inline unsigned int get_format() {
+        return (_tracks | _bits | _compressed*256);
+    }
+
+    /**
+     * Returns the block alignment of this audio sample.
+     * @return block alignment in bytes
+     */
+    inline unsigned int get_block_align() { 
+        return _block_align;
+    }
 
     /**
      * Get the reference name of this audio sample.
@@ -170,6 +180,7 @@ protected:
     unsigned int _tracks;
     unsigned int _samples;
     unsigned int _frequency;
+    unsigned int _block_align;
     bool _compressed;
     bool _loop;
 
@@ -430,6 +441,14 @@ public:
      */
     inline void set_format( int fmt ) {
         _tracks = fmt & 0x3; _bits = fmt & 0x1C; _compressed = fmt & 0x100;
+    }
+
+    /**
+     * Set the block alignament for compressed audio.
+     * @param block the block alignment in bytes
+     */
+    inline void set_block_align( int block ) {
+        _block_align = block;
     }
 
     /**

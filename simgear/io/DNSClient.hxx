@@ -27,6 +27,8 @@
 #include <memory> // for std::auto_ptr
 #include <string>
 #include <vector>
+#include <ctime> // for time_t
+
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 

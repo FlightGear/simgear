@@ -79,7 +79,7 @@ namespace simgear {
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	static vector<string>
 	split_whitespace( const string& str, int maxsplit )
@@ -125,7 +125,7 @@ namespace simgear {
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	vector<string>
 	split( const string& str, const char* sep, int maxsplit )
@@ -229,7 +229,7 @@ namespace simgear {
 	    return do_strip( s, BOTHSTRIP );
 	}
 
-	string 
+	string
 	rpad( const string & s, string::size_type length, char c )
 	{
 	    string::size_type l = s.length();
@@ -238,7 +238,7 @@ namespace simgear {
 	    return reply.append( length-l, c );
 	}
 
-	string 
+	string
 	lpad( const string & s, size_t length, char c )
 	{
 	    string::size_type l = s.length();
@@ -268,12 +268,12 @@ namespace simgear {
         string result; // reserve size of 's'?
         string::const_iterator it = s.begin(),
             end = s.end();
-    
+
     // advance to first non-space char - simplifes logic in main loop,
-    // since we can always prepend a single space when we see a 
+    // since we can always prepend a single space when we see a
     // space -> non-space transition
         for (; (it != end) && isspace(*it); ++it) { /* nothing */ }
-        
+
         bool lastWasSpace = false;
         for (; it != end; ++it) {
             char c = *it;
@@ -281,18 +281,18 @@ namespace simgear {
                 lastWasSpace = true;
                 continue;
             }
-            
+
             if (lastWasSpace) {
                 result.push_back(' ');
             }
-            
+
             lastWasSpace = false;
             result.push_back(c);
         }
-        
+
         return result;
     }
-    
+
     int to_int(const std::string& s, int base)
     {
         stringstream ss(s);
@@ -301,12 +301,12 @@ namespace simgear {
         case 16:     ss >> std::hex; break;
         default: break;
         }
-        
+
         int result;
         ss >> result;
         return result;
     }
-    
+
     int compare_versions(const string& v1, const string& v2)
     {
         vector<string> v1parts(split(v1, "."));
@@ -325,7 +325,7 @@ namespace simgear {
         // reached end - longer wins
         return v1parts.size() - v2parts.size();
     }
-    
+
     string join(const string_list& l, const string& joinWith)
     {
         string result;
@@ -336,10 +336,10 @@ namespace simgear {
                 result += joinWith;
             }
         }
-        
+
         return result;
     }
-    
+
     string uppercase(const string &s) {
       string rslt(s);
       for(string::iterator p = rslt.begin(); p != rslt.end(); p++){
@@ -361,16 +361,16 @@ namespace simgear {
         *p = tolower(*p);
       }
     }
-    
+
 #if defined(SG_WINDOWS)
 
 #include <windows.h>
-    
+
 static WCharVec convertMultiByteToWString(DWORD encoding, const std::string& a)
 {
     WCharVec result;
     DWORD flags = 0;
-    int requiredWideChars = MultiByteToWideChar(encoding, flags, 
+    int requiredWideChars = MultiByteToWideChar(encoding, flags,
                         a.c_str(), a.size(),
                         NULL, 0);
     result.resize(requiredWideChars);
@@ -391,7 +391,7 @@ std::string convertWindowsLocal8BitToUtf8(const std::string& a)
 #ifdef SG_WINDOWS
     DWORD flags = 0;
     WCharVec wideString = convertMultiByteToWString(CP_ACP, a);
-   
+
     // convert down to UTF-8
     std::vector<char> result;
     int requiredUTF8Chars = WideCharToMultiByte(CP_UTF8, flags,
@@ -454,8 +454,8 @@ static const unsigned char base64_decode_map[128] =
     39,  40,  41,  42,  43,  44,  45,  46,  47,  48,
     49,  50,  51, 127, 127, 127, 127, 127
 };
- 
-        
+
+
 static inline bool is_base64(unsigned char c) {
   return (isalnum(c) || (c == '+') || (c == '/'));
 }
@@ -471,46 +471,46 @@ void decodeBase64(const std::string& encoded_string, std::vector<unsigned char>&
   int j = 0;
   int in_ = 0;
   unsigned char char_array_4[4], char_array_3[3];
-  
+
   while (in_len-- && ( encoded_string[in_] != '=')) {
     if (is_whitespace( encoded_string[in_])) {
-        in_++; 
+        in_++;
         continue;
     }
-    
+
     if (!is_base64(encoded_string[in_])) {
         break;
     }
-    
+
     char_array_4[i++] = encoded_string[in_]; in_++;
     if (i ==4) {
       for (i = 0; i <4; i++)
         char_array_4[i] = base64_decode_map[char_array_4[i]];
-      
+
       char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
       char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
       char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-      
+
       for (i = 0; (i < 3); i++)
         ret.push_back(char_array_3[i]);
       i = 0;
     }
   }
-  
+
   if (i) {
     for (j = i; j <4; j++)
       char_array_4[j] = 0;
-    
+
     for (j = 0; j <4; j++)
       char_array_4[j] = base64_decode_map[char_array_4[j]];
-    
+
     char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
     char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
     char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-    
+
     for (j = 0; (j < i - 1); j++) ret.push_back(char_array_3[j]);
   }
-}  
+}
 
 //------------------------------------------------------------------------------
 const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -531,7 +531,7 @@ std::string encodeHex(const unsigned char* rawBytes, unsigned int length)
       hex[i * 2] = hexChar[c >> 4];
       hex[i * 2 + 1] = hexChar[c & 0x0f];
   }
-  
+
   return hex;
 }
 
@@ -597,7 +597,7 @@ string sanitizePrintfFormat(const string& input)
         SG_LOG(SG_IO, SG_WARN, "sanitizePrintfFormat: bad format string:" << input);
         return string();
     }
-    
+
     return input;
 }
 
@@ -645,5 +645,5 @@ std::string error_string(int errnum)
 }
 
 } // end namespace strutils
-    
+
 } // end namespace simgear

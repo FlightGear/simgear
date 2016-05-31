@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <cstring>
 #include <cstddef>
+#include <algorithm>
 
 #include <zlib.h>
 

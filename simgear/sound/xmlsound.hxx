@@ -33,6 +33,7 @@
 
 #include <simgear/props/propsfwd.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/structure/SGExpression.hxx>
 
 // forward decls
 class SGSampleGroup;
@@ -126,8 +127,9 @@ protected:
   enum { ONCE=0, LOOPED, IN_TRANSIT };
   enum { LEVEL=0, INVERTED, FLIPFLOP };
 
-  // SGXmlSound properties
+  // SGXmlSound properties for
   typedef struct {
+        SGSharedPtr<SGExpressiond> expr;	// sound system version 2.0
         SGPropertyNode_ptr prop;
         double (*fn)(double);
         double *intern;
@@ -147,6 +149,7 @@ private:
   SGPropertyNode_ptr _property;
 
   bool _active;
+  float _version;
   std::string _name;
   int _mode;
   double _prev_value;
@@ -157,6 +160,7 @@ private:
                         // This is useful for lost packets in in-transit mode.
   bool _initialized;
 
+  // sound system version 1.0
   std::vector<_snd_prop> _volume;
   std::vector<_snd_prop> _pitch;
 };

@@ -140,7 +140,12 @@ SGXmlSound::init( SGPropertyNode *root,
    float v = 0.0;
    std::vector<SGPropertyNode_ptr> kids = node->getChildren("volume");
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
-      _snd_prop volume = {NULL, NULL, NULL, 1.0, 0.0, 0.0, 0.0, false};
+      _snd_prop volume = {NULL, NULL, NULL, NULL, 1.0, 0.0, 0.0, 0.0, false};
+
+      SGPropertyNode *n = kids[i]->getChild("expression");
+      if (n != NULL) {
+         volume.expr = SGReadDoubleExpression(root, n->getChild(0));
+      }
 
       propval = kids[i]->getStringValue("property", "");
       if ( propval != "" )
@@ -198,7 +203,12 @@ SGXmlSound::init( SGPropertyNode *root,
    float p = 0.0;
    kids = node->getChildren("pitch");
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
-      _snd_prop pitch = {NULL, NULL, NULL, 1.0, 1.0, 0.0, 0.0, false};
+      _snd_prop pitch = {NULL, NULL, NULL, NULL, 1.0, 1.0, 0.0, 0.0, false};
+
+      SGPropertyNode *n = kids[i]->getChild("expression");
+      if (n != NULL) {
+         pitch.expr = SGReadDoubleExpression(root, n->getChild(0));
+      }
 
       propval = kids[i]->getStringValue("property", "");
       if (propval != "")
@@ -401,15 +411,27 @@ SGXmlSound::update (double dt)
    int max = _volume.size();
    double volume = 1.0;
    double volume_offset = 0.0;
+   bool expr = false;
 
    for(i = 0; i < max; i++) {
       double v = 1.0;
 
-      if (_volume[i].prop)
-         v = _volume[i].prop->getDoubleValue();
+      if (_volume[i].expr) {
+         v = _volume[i].expr->getValue(NULL);
+         expr = true;
+         continue;
+      }
 
-      else if (_volume[i].intern)
+      if (_volume[i].prop) {
+         // do not process if there was an expression defined
+         if (expr) continue;
+
+         v = _volume[i].prop->getDoubleValue();
+      }
+      else if (_volume[i].intern) {
+         // intern sections always get processed.
          v = *_volume[i].intern;
+      }
 
       if (_volume[i].fn)
          v = _volume[i].fn(v);
@@ -438,14 +460,26 @@ SGXmlSound::update (double dt)
    double pitch = 1.0;
    double pitch_offset = 0.0;
 
+   expr = false;
    for(i = 0; i < max; i++) {
       double p = 1.0;
 
-      if (_pitch[i].prop)
-         p = _pitch[i].prop->getDoubleValue();
+      if (_volume[i].expr) {
+         p = _pitch[i].expr->getValue(NULL);
+         expr = true;
+         continue;
+      }
 
-      else if (_pitch[i].intern)
+      if (_pitch[i].prop) {
+         // do not process if there was an expression defined
+         if (expr) continue;
+
+         p = _pitch[i].prop->getDoubleValue();
+      }
+      else if (_pitch[i].intern) {
+         // intern sections always get processed.
          p = *_pitch[i].intern;
+      }
 
       if (_pitch[i].fn)
          p = _pitch[i].fn(p);

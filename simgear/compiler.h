@@ -43,7 +43,7 @@
 #  if __GNUC__ < 3
 #    error Time to upgrade. GNU compilers < 3.0 not supported
 #  elif (__GNUC__ == 3) && (__GNUC_MINOR__ < 4)
-#    warning GCC compilers prior to 3.4 are suspect  
+#    warning GCC compilers prior to 3.4 are suspect
 #  endif
 
 #  define SG_GCC_VERSION (__GNUC__ * 10000 \
@@ -66,8 +66,8 @@
 #  if _MSC_VER >= 1200 // msvc++ 6.0 up to MSVC2013
 #    if _MSC_VER < 1800
 #      define isnan _isnan
+#      define snprintf _snprintf
 #    endif
-#    define snprintf _snprintf
 #    if _MSC_VER < 1500
 #      define vsnprintf _vsnprintf
 #    endif
@@ -203,4 +203,3 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 //
 
 #endif // _SG_COMPILER_H
-

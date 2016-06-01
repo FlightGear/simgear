@@ -43,6 +43,33 @@ static void print_openal_error( ALuint error ) {
     }
 }
 
+ALuint createBufferFromFile(const SGPath& path)
+{
+  ALuint buffer = -1;
+#ifdef ENABLE_SOUND
+  unsigned int format;
+  unsigned int block_align;
+  ALsizei size;
+  ALfloat sampleFrequency;
+  ALvoid* data = loadWAVFromFile(path, format, size, sampleFrequency, block_align);
+  assert(data);
+
+  alGenBuffers(1, &buffer);
+  if (alGetError() != AL_NO_ERROR) {
+    free(data);
+    throw sg_io_exception("OpenAL buffer allocation failed", sg_location(path.str()));
+  }
+
+  alBufferData (buffer, format, data, size, (ALsizei) sampleFrequency);
+  if (alGetError() != AL_NO_ERROR) {
+    alDeleteBuffers(1, &buffer);
+    free(data);
+    throw sg_io_exception("OpenAL setting buffer data failed", sg_location(path.str()));
+  }
+#endif
+  return buffer;
+}
+
 
 int main( int argc, char *argv[] ) 
 {
@@ -111,7 +138,7 @@ int main( int argc, char *argv[] )
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
 
     // Load the sample file
-      buffer = simgear::createBufferFromFile(SGPath(AUDIOFILE));
+      buffer = createBufferFromFile(SGPath(AUDIOFILE));
       if (buffer == AL_NONE) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Failed to buffer data.");
       }

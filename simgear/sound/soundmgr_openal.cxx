@@ -570,25 +570,38 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             sample_data = sample->get_data();
         }
 
+        ALenum format = AL_NONE;
+        switch( sample->get_format() )
+        {
+        case SG_SAMPLE_MONO16:
+            format = AL_FORMAT_MONO16;
+            break;
+        case SG_SAMPLE_MONO8:
+            format = AL_FORMAT_MONO8;
+            break;
+        case SG_SAMPLE_MULAW:
+            format = AL_FORMAT_MONO_MULAW_EXT;
+            break;
+        case SG_SAMPLE_ADPCM:
+            format = AL_FORMAT_MONO_IMA4;
+            break;
+        default:
+            SG_LOG(SG_SOUND, SG_ALERT, "unsupported audio format");
+            return buffer;
+        }
+
         // create an OpenAL buffer handle
         alGenBuffers(1, &buffer);
         if ( !testForError("generate buffer") ) {
             // Copy data to the internal OpenAL buffer
 
-            ALenum format = AL_NONE;
-            unsigned int fmt = sample->get_format();
-            if (fmt == SG_SAMPLE_MONO16) format = AL_FORMAT_MONO16;
-            else if (fmt == SG_SAMPLE_MONO8) format = AL_FORMAT_MONO8;
-            else if (fmt == SG_SAMPLE_MULAW) format = AL_FORMAT_MONO_MULAW_EXT;
-            else if (fmt == SG_SAMPLE_ADPCM) format = AL_FORMAT_MONO_IMA4;
-
             ALsizei size = sample->get_size();
             ALsizei freq = sample->get_frequency();
             alBufferData( buffer, format, sample_data, size, freq );
 
-            if (_block_support) {
-                ALsizei block_align = sample->get_block_align();
-                alBufferi (buffer, AL_UNPACK_BLOCK_ALIGNMENT_SOFT, block_align);
+            if (format == AL_FORMAT_MONO_IMA4 && _block_support) {
+                ALsizei samples_block = BLOCKSIZE_TO_SMP( sample->get_block_align() );
+                alBufferi (buffer, AL_UNPACK_BLOCK_ALIGNMENT_SOFT, samples_block );
             }
 
             if ( !testForError("buffer add data") ) {
@@ -783,14 +796,14 @@ bool SGSoundMgr::load( const std::string &samplepath,
         return false;
 
     unsigned int format;
-    unsigned int block_align;
+    unsigned int blocksz;
     ALsizei size;
     ALsizei freq;
     ALvoid *data;
 
     ALfloat freqf;
 
-    data = simgear::loadWAVFromFile(samplepath, format, size, freqf, block_align );
+    data = simgear::loadWAVFromFile(samplepath, format, size, freqf, blocksz);
     freq = (ALsizei)freqf;
     if (data == NULL) {
         throw sg_io_exception("Failed to load wav file", sg_location(samplepath));
@@ -803,7 +816,7 @@ bool SGSoundMgr::load( const std::string &samplepath,
 
     *dbuf = (void *)data;
     *fmt = (int)format;
-    *block = (int)block_align;
+    *block = (int)blocksz;
     *sz = (size_t)size;
     *frq = (int)freq;
 

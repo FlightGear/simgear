@@ -66,6 +66,7 @@
 #  if _MSC_VER >= 1200 // msvc++ 6.0 up to MSVC2013
 #    if _MSC_VER < 1900
 #      define snprintf _snprintf
+#      define strdup _strdup
 #    endif
 #    if _MSC_VER < 1800
 #      define isnan _isnan
@@ -81,7 +82,7 @@
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float
-#    pragma warning(disable: 4305) //
+#    pragma warning(disable: 4305) // truncation from larer type to smaller
 
 #  else
 #    error What version of MSVC++ is this?

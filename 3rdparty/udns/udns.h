@@ -45,6 +45,7 @@
 #endif
 
 #include <sys/types.h>		/* for time_t */
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {

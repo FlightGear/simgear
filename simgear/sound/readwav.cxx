@@ -319,7 +319,7 @@ namespace
                   compressed = true;
                   codec = codecLinear;
                 } else {
-                  bitsPerSample *= 4; /* uLaw is 16-bit packed into 8 bits */
+                  bitsPerSample *= 4; /* adpcm is 16-bit packed into 4 bits */
                   codec = codecIMA4;
                   
                 }

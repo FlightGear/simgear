@@ -387,7 +387,7 @@ include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
-    ${OPENAL_INCLUDE_DIRS}
+    ${OPENAL_INCLUDE_DIR}
     ${CURL_INCLUDE_DIRS}
 )
 

@@ -291,9 +291,9 @@ namespace
                 !wavReadLE (fd, byteRate) ||
                 !wavReadLE (fd, blockAlign) ||
                 !wavReadLE (fd, bitsPerSample))
-              {
+            {
                 throw sg_io_exception("corrupt or truncated WAV data", b->path);
-              }
+            }
 
             if (!gzSkip(fd, chunkLength - 16))
                 throw sg_io_exception("corrupt or truncated WAV data", b->path);
@@ -387,34 +387,6 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   
   gzclose(fd);
   return data;
-}
-
-ALuint createBufferFromFile(const SGPath& path)
-{
-  ALuint buffer = -1;
-#ifdef ENABLE_SOUND
-  unsigned int format;
-  unsigned int block_align;
-  ALsizei size;
-  ALfloat sampleFrequency;
-  ALvoid* data = loadWAVFromFile(path, format, size, sampleFrequency, block_alight);
-  assert(data);
-  
-  alGenBuffers(1, &buffer);
-  if (alGetError() != AL_NO_ERROR) {
-    free(data);
-    throw sg_io_exception("OpenAL buffer allocation failed", sg_location(path.str()));
-  }
-    
-  alBufferData (buffer, format, data, size, (ALsizei) sampleFrequency);
-  alBufferi (buffer, AL_UNPACK_BLOCK_ALIGNMENT_SOFT, block_align);
-  if (alGetError() != AL_NO_ERROR) {
-    alDeleteBuffers(1, &buffer);
-    free(data);
-    throw sg_io_exception("OpenAL setting buffer data failed", sg_location(path.str()));
-  }
-#endif 
-  return buffer;
 }
 
 } // of namespace simgear

@@ -464,7 +464,7 @@ SGXmlSound::update (double dt)
    for(i = 0; i < max; i++) {
       double p = 1.0;
 
-      if (_volume[i].expr) {
+      if (_pitch[i].expr) {
          p = _pitch[i].expr->getValue(NULL);
          expr = true;
          continue;

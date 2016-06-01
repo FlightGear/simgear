@@ -600,10 +600,8 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             alBufferData( buffer, format, sample_data, size, freq );
 
             if (format == AL_FORMAT_MONO_IMA4 && _block_support) {
-                ALsizei block_align = sample->get_block_align();
-
-                block_align *= 2; // convert from bytes to samples
-                alBufferi (buffer, AL_UNPACK_BLOCK_ALIGNMENT_SOFT, block_align);
+                ALsizei samples_block = BLOCKSIZE_TO_SMP( sample->get_block_align() );
+                alBufferi (buffer, AL_UNPACK_BLOCK_ALIGNMENT_SOFT, samples_block );
             }
 
             if ( !testForError("buffer add data") ) {
@@ -798,14 +796,14 @@ bool SGSoundMgr::load( const std::string &samplepath,
         return false;
 
     unsigned int format;
-    unsigned int block_align;
+    unsigned int blocksz;
     ALsizei size;
     ALsizei freq;
     ALvoid *data;
 
     ALfloat freqf;
 
-    data = simgear::loadWAVFromFile(samplepath, format, size, freqf, block_align );
+    data = simgear::loadWAVFromFile(samplepath, format, size, freqf, blocksz);
     freq = (ALsizei)freqf;
     if (data == NULL) {
         throw sg_io_exception("Failed to load wav file", sg_location(samplepath));
@@ -818,7 +816,7 @@ bool SGSoundMgr::load( const std::string &samplepath,
 
     *dbuf = (void *)data;
     *fmt = (int)format;
-    *block = (int)block_align;
+    *block = (int)blocksz;
     *sz = (size_t)size;
     *frq = (int)freq;
 

@@ -570,24 +570,39 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             sample_data = sample->get_data();
         }
 
+        ALenum format = AL_NONE;
+        switch( sample->get_format() )
+        {
+        case SG_SAMPLE_MONO16:
+            format = AL_FORMAT_MONO16;
+            break;
+        case SG_SAMPLE_MONO8:
+            format = AL_FORMAT_MONO8;
+            break;
+        case SG_SAMPLE_MULAW:
+            format = AL_FORMAT_MONO_MULAW_EXT;
+            break;
+        case SG_SAMPLE_ADPCM:
+            format = AL_FORMAT_MONO_IMA4;
+            break;
+        default:
+            SG_LOG(SG_SOUND, SG_ALERT, "unsupported audio format");
+            return buffer;
+        }
+
         // create an OpenAL buffer handle
         alGenBuffers(1, &buffer);
         if ( !testForError("generate buffer") ) {
             // Copy data to the internal OpenAL buffer
 
-            ALenum format = AL_NONE;
-            unsigned int fmt = sample->get_format();
-            if (fmt == SG_SAMPLE_MONO16) format = AL_FORMAT_MONO16;
-            else if (fmt == SG_SAMPLE_MONO8) format = AL_FORMAT_MONO8;
-            else if (fmt == SG_SAMPLE_MULAW) format = AL_FORMAT_MONO_MULAW_EXT;
-            else if (fmt == SG_SAMPLE_ADPCM) format = AL_FORMAT_MONO_IMA4;
-
             ALsizei size = sample->get_size();
             ALsizei freq = sample->get_frequency();
             alBufferData( buffer, format, sample_data, size, freq );
 
-            if (_block_support) {
+            if (format == AL_FORMAT_MONO_IMA4 && _block_support) {
                 ALsizei block_align = sample->get_block_align();
+
+                block_align *= 2; // convert from bytes to samples
                 alBufferi (buffer, AL_UNPACK_BLOCK_ALIGNMENT_SOFT, block_align);
             }
 

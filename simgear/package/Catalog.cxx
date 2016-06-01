@@ -37,34 +37,43 @@ namespace simgear {
 
 namespace pkg {
 
+bool checkVersionString(const std::string& aVersion, const std::string& aCandidate)
+{
+    if (aCandidate == aVersion) {
+        return true;
+    }
+
+    // examine each dot-seperated component in turn, supporting a wildcard
+    // in the versions from the catalog.
+    string_list appVersionParts = simgear::strutils::split(aVersion, ".");
+    string_list catVersionParts = simgear::strutils::split(aCandidate, ".");
+
+    size_t partCount = appVersionParts.size();
+    bool previousCandidatePartWasWildcard = false;
+
+    for (unsigned int p=0; p < partCount; ++p) {
+        // candidate string is too short, can match if it ended with wildcard
+        // part. This allows candidate '2016.*' to match '2016.1.2' and so on
+        if (catVersionParts.size() <= p) {
+            return previousCandidatePartWasWildcard;
+        }
+
+        if (catVersionParts[p] == "*") {
+            // always passes
+            previousCandidatePartWasWildcard = true;
+        } else if (appVersionParts[p] != catVersionParts[p]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
     BOOST_FOREACH(SGPropertyNode* v, props->getChildren("version")) {
         std::string s(v->getStringValue());
-        if (s == aVersion) {
-            return true;
-        }
-
-        // examine each dot-seperated component in turn, supporting a wildcard
-        // in the versions from the catalog.
-        string_list appVersionParts = simgear::strutils::split(aVersion, ".");
-        string_list catVersionParts = simgear::strutils::split(s, ".");
-
-        size_t partCount = appVersionParts.size();
-        if (partCount != catVersionParts.size()) {
-            continue;
-        }
-
-        bool ok = true;
-        for (unsigned int p=0; p < partCount; ++p) {
-            if (catVersionParts[p] == "*") {
-                // always passes
-            } else if (appVersionParts[p] != catVersionParts[p]) {
-                ok = false;
-            }
-        }
-
-        if (ok) {
+        if (checkVersionString(aVersion, s)) {
             return true;
         }
     }
@@ -74,8 +83,9 @@ bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 std::string redirectUrlForVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
     BOOST_FOREACH(SGPropertyNode* v, props->getChildren("alternate-version")) {
-        if (v->getStringValue("version") == aVersion) {
-            return v->getStringValue("url");
+        std::string s(v->getStringValue("version"));
+        if (checkVersionString(aVersion, s)) {
+            return  v->getStringValue("url");;
         }
     }
 
@@ -124,14 +134,6 @@ protected:
             m_owner->refreshComplete(Delegate::FAIL_EXTRACT);
             return;
         }
-
-        if (m_owner->root()->catalogVersion() != props->getIntValue("catalog-version")) {
-            SG_LOG(SG_GENERAL, SG_WARN, "catalog:" << m_owner->url() << " is not version "
-                   << m_owner->root()->catalogVersion());
-            m_owner->refreshComplete(Delegate::FAIL_VERSION);
-            return;
-        }
-
 
         std::string ver(m_owner->root()->applicationVersion());
         if (!checkVersion(ver, props)) {
@@ -211,7 +213,6 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     }
 
     bool versionCheckOk = checkVersion(aRoot->applicationVersion(), props);
-
     if (!versionCheckOk) {
         SG_LOG(SG_GENERAL, SG_INFO, "catalog at:" << aPath << " failed version check: need" << aRoot->applicationVersion());
         // keep the catalog but mark it as needing an update

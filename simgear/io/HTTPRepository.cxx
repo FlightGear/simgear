@@ -1143,10 +1143,11 @@ HTTPRepository::failure() const
             directories.erase(it);
             Dir dir(d->absolutePath());
             bool result = dir.remove(true);
-            delete d;
 
             // update the hash cache too
             updatedFileContents(d->absolutePath(), std::string());
+
+            delete d;
 
             return result;
         }

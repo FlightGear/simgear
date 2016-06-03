@@ -306,7 +306,9 @@ void Client::cancelRequest(const Request_ptr &r, std::string reason)
     }
 
     CURLMcode err = curl_multi_remove_handle(d->curlMulti, it->second);
-    assert(err == CURLM_OK);
+    if (err != CURLM_OK) {
+      SG_LOG(SG_IO, SG_WARN, "curl_multi_remove_handle failed:" << err);
+    }
 
     // clear the request pointer form the curl-easy object
     curl_easy_setopt(it->second, CURLOPT_PRIVATE, 0);

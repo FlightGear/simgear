@@ -149,14 +149,17 @@ endif (MSVC)
 
 if (MSVC AND MSVC_3RDPARTY_ROOT)
   message(STATUS "3rdparty files located in ${MSVC_3RDPARTY_ROOT}")
+
   set( OSG_MSVC "msvc" )
-  if (${MSVC_VERSION} EQUAL 1700)
+  if (${MSVC_VERSION} EQUAL 1900)
+      set( OSG_MSVC ${OSG_MSVC}140 )
+  elseif (${MSVC_VERSION} EQUAL 1800)
+      set( OSG_MSVC ${OSG_MSVC}120 )
+  elseif (${MSVC_VERSION} EQUAL 1700)
       set( OSG_MSVC ${OSG_MSVC}110 )
   elseif (${MSVC_VERSION} EQUAL 1600)
       set( OSG_MSVC ${OSG_MSVC}100 )
-  else (${MSVC_VERSION} EQUAL 1700)
-      set( OSG_MSVC ${OSG_MSVC}90 )
-  endif (${MSVC_VERSION} EQUAL 1700)
+  endif ()
   if (CMAKE_CL_64)
       set( OSG_MSVC ${OSG_MSVC}-64 )
       set( MSVC_3RDPARTY_DIR 3rdParty.x64 )
@@ -166,7 +169,11 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
 
   set (CMAKE_LIBRARY_PATH ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenScenegraph/lib ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenRTI/lib )
   set (CMAKE_INCLUDE_PATH ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenScenegraph/include ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenRTI/include)
+
+  GET_FILENAME_COMPONENT(MSVC_ROOT_PARENT_DIR ${MSVC_3RDPARTY_ROOT} PATH)
   find_path(BOOST_ROOT boost/version.hpp
+      PATHS
+      ${MSVC_ROOT_PARENT_DIR}
 			${MSVC_3RDPARTY_ROOT}/boost
 			${MSVC_3RDPARTY_ROOT}/boost_1_52_0
 			${MSVC_3RDPARTY_ROOT}/boost_1_51_0

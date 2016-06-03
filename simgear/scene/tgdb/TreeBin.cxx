@@ -173,7 +173,7 @@ Geometry* createTreeGeometry(float width, float height, int varieties)
 	{
     	quadGeom->setSecondaryColorArray(new Vec3Array);
     	quadGeom->setSecondaryColorBinding(Geometry::BIND_PER_VERTEX);
-	}	
+	}
     FloatArray* rotation = new FloatArray(3);
     (*rotation)[0] = 0.0;
     (*rotation)[1] = PI_2;
@@ -205,8 +205,8 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p, const SGVec3f& t)
     Geometry* geom
         = static_cast<Geometry*>(geode->getDrawable(numDrawables - 1));
     Vec3Array* posArray = static_cast<Vec3Array*>(geom->getColorArray());
-    Vec3Array* tnormalArray;
-    if (use_tree_shadows || use_tree_normals) 
+    Vec3Array* tnormalArray = NULL;
+    if (use_tree_shadows || use_tree_normals)
 	{tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());}
     if (posArray->size()
         >= static_cast<Vec3Array*>(geom->getVertexArray())->size()) {
@@ -215,12 +215,12 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p, const SGVec3f& t)
         Vec3 params = (*paramsArray)[0];
         geom = createTreeGeometry(params.x(), params.y(), params.z());
         posArray = static_cast<Vec3Array*>(geom->getColorArray());
-	if (use_tree_shadows || use_tree_normals) 
+	if (use_tree_shadows || use_tree_normals)
 		{tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());}
         geode->addDrawable(geom);
     }
     posArray->insert(posArray->end(), 4, pos);
-    if (use_tree_shadows || use_tree_normals) 
+    if (use_tree_shadows || use_tree_normals)
     	{tnormalArray->insert(tnormalArray->end(),4,ter);}
     size_t numVerts = posArray->size();
     int imax = 2;
@@ -241,14 +241,14 @@ namespace
 {
 struct MakeTreesLeaf
 {
-    MakeTreesLeaf(float range, int varieties, float width, float height, 
+    MakeTreesLeaf(float range, int varieties, float width, float height,
         Effect* effect) :
         _range(range),  _varieties(varieties),
         _width(width), _height(height), _effect(effect) {}
 
     MakeTreesLeaf(const MakeTreesLeaf& rhs) :
         _range(rhs._range),
-        _varieties(rhs._varieties), _width(rhs._width), _height(rhs._height), 
+        _varieties(rhs._varieties), _width(rhs._width), _height(rhs._height),
         _effect(rhs._effect)
     {}
 
@@ -356,7 +356,7 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
     MatrixTransform* mt = new MatrixTransform(transform);
 
     SGTreeBinList::iterator i;
-     
+
     use_tree_shadows = false;
     use_tree_normals = false;
     if (options) {
@@ -368,7 +368,7 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
            use_tree_normals
                 = propertyNode->getBoolValue("/sim/rendering/random-vegetation-normals",
                                              use_tree_normals);
-		}	
+		}
 	}
 
     for (i = forestList.begin(); i != forestList.end(); ++i) {

@@ -380,7 +380,7 @@ TestServer<TestRepositoryChannel> testServer;
 void waitForUpdateComplete(HTTP::Client* cl, HTTPRepository* repo)
 {
     SGTimeStamp start(SGTimeStamp::now());
-    while (start.elapsedMSec() <  10000) {
+    while (start.elapsedMSec() <  20000) {
         cl->update();
         testServer.poll();
 

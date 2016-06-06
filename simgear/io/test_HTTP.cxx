@@ -577,7 +577,7 @@ cout << "testing proxy close" << endl;
     cout << "testing HTTP 1.1 pipelining" << endl;
 
     {
-        testServer.resetConnectCount();
+        testServer.disconnectAll();
         cl.clearAllConnections();
 
         cl.setProxy("", 80);
@@ -689,7 +689,7 @@ cout << "testing proxy close" << endl;
     // test cancel
     {
         cout <<  "cancel  request" << endl;
-        testServer.resetConnectCount();
+        testServer.disconnectAll();
         cl.clearAllConnections();
 
         cl.setProxy("", 80);
@@ -722,7 +722,7 @@ cout << "testing proxy close" << endl;
     // test cancel
     {
         cout <<  "cancel middle request" << endl;
-        testServer.resetConnectCount();
+        testServer.disconnectAll();
         cl.clearAllConnections();
 
         cl.setProxy("", 80);

@@ -2,6 +2,7 @@
 #define SIMGEAR_IO_TEST_HTTP_HXX
 
 #include <sstream>
+#include <vector>
 
 #include <simgear/io/sg_netChat.hxx>
 #include <simgear/misc/strutils.hxx>
@@ -25,6 +26,11 @@ public:
         state = STATE_IDLE;
         setTerminator("\r\n");
 
+    }
+
+    virtual ~TestServerChannel()
+    {
+        std::cerr << "dtor test server channel" << std::endl;
     }
 
     virtual void collectIncomingData(const char* s, int n)
@@ -160,6 +166,13 @@ public:
         }
     }
 
+    virtual void handleClose (void)
+    {
+        std::cerr << "channel close" << std::endl;
+        NetBufferChannel::handleClose();
+    }
+
+
     State state;
     std::string buffer;
     std::string method;
@@ -170,17 +183,25 @@ public:
     int requestContentLength;
 };
 
+class EraseIfClosed
+{
+public:
+    bool operator()(simgear::NetChannel* chan) const
+    {
+        return chan->isClosed();
+    }
+};
+
 template <class T>
 class TestServer : public NetChannel
 {
     simgear::NetChannelPoller _poller;
-    int _connectCount;
+    std::vector<T*> _channels;
 public:
     TestServer()
     {
         Socket::initSockets();
 
-        _connectCount = 0;
 
         open();
         bind(NULL, 2000); // localhost, any port
@@ -199,27 +220,43 @@ public:
     {
         simgear::IPAddress addr ;
         int handle = accept ( &addr ) ;
-        TestServerChannel* chan = new T();
+        T* chan = new T();
         chan->setHandle(handle);
 
+        _channels.push_back(chan);
         _poller.addChannel(chan);
-
-        _connectCount++;
     }
 
     void poll()
     {
         _poller.poll();
-    }
 
-    void resetConnectCount()
-    {
-        _connectCount = 0;
+        typename std::vector<T*>::iterator it;
+        it = std::remove_if(_channels.begin(), _channels.end(), EraseIfClosed());
+
+        for (typename std::vector<T*>::iterator it2 = it; it2 != _channels.end(); ++it2) {
+            _poller.removeChannel(*it2);
+            delete *it2;
+        }
+
+        _channels.erase(it, _channels.end());
+
     }
 
     int connectCount()
     {
-        return _connectCount;
+        return _channels.size();
+    }
+
+    void disconnectAll()
+    {
+        typename std::vector<T*>::iterator it;
+        for (it = _channels.begin(); it != _channels.end(); ++it) {
+            _poller.removeChannel(*it);
+            delete *it;
+        }
+
+        _channels.clear();
     }
 };
 

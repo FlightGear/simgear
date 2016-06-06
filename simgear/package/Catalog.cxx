@@ -124,7 +124,7 @@ protected:
             return;
         }
 
-        SGPropertyNode* props = new SGPropertyNode;
+        SGPropertyNode_ptr props = new SGPropertyNode;
 
         try {
             readProperties(m_buffer.data(), m_buffer.size(), props);

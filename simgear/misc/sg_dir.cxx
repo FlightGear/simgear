@@ -92,8 +92,10 @@ Dir Dir::current()
 #else
     char *buf = ::getcwd(NULL, 0);
 #endif
-    if (!buf && errno == 2) sg_exception("The current directory is invalid");
-    else throw sg_exception(strerror(errno));
+    if (!buf) {
+        if  (errno == 2) sg_exception("The current directory is invalid");
+        else throw sg_exception(strerror(errno));
+    }
 
     SGPath p(buf);
     free(buf);

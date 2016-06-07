@@ -235,7 +235,6 @@ public:
         it = std::remove_if(_channels.begin(), _channels.end(), EraseIfClosed());
 
         for (typename std::vector<T*>::iterator it2 = it; it2 != _channels.end(); ++it2) {
-            _poller.removeChannel(*it2);
             delete *it2;
         }
 

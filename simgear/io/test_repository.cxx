@@ -899,6 +899,9 @@ int main(int argc, char* argv[])
 
     testAbandonCorruptFiles(&cl);
 
+    testServer.disconnectAll();
+    cl.clearAllConnections();
+    
     testPartialUpdateBasic(&cl);
     testPartialUpdateExisting(&cl);
     testPartialUpdateWidenWhileInProgress(&cl);

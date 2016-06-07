@@ -23,6 +23,7 @@
 #endif
 
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/structure/exception.hxx>
 #include <math.h>
 #include <stdlib.h>
 #include <cstdio>
@@ -83,13 +84,17 @@ void Dir::setRemoveOnDestroy()
     _removeOnDestroy = true;
 }
 
+#include <stdio.h>
 Dir Dir::current()
 {
 #ifdef _WIN32
     char* buf = _getcwd(NULL, 0);
 #else
-    char* buf = ::getcwd(NULL, 0);
+    char *buf = ::getcwd(NULL, 0);
 #endif
+    if (!buf && errno == 2) sg_exception("The current directory is invalid");
+    else throw sg_exception(strerror(errno));
+
     SGPath p(buf);
     free(buf);
     return Dir(p);

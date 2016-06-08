@@ -129,13 +129,14 @@ public:
     StderrLogCallback(sgDebugClass c, sgDebugPriority p) :
 		simgear::LogCallback(c, p)
     {
-#ifdef SG_WINDOWS
-        AllocConsole(); // but only if we want a console
-        freopen("conin$", "r", stdin);
-        freopen("conout$", "w", stdout);
-        freopen("conout$", "w", stderr);
-#endif
     }
+
+#if defined (SG_WINDOWS) 
+    ~StderrLogCallback()
+    {
+        FreeConsole();
+    }
+#endif
     
     virtual void operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& aMessage)
@@ -220,20 +221,38 @@ public:
     LogStreamPrivate() :
         m_logClass(SG_ALL), 
         m_logPriority(SG_ALERT),
-        m_isRunning(false),
-		m_consoleRequested(false)
-    { 
+        m_isRunning(false)
+    {
+        bool addStderr = true;
+#if defined (SG_WINDOWS)
+        // Check for stream redirection, has to be done before we call
+        // Attach / AllocConsole
+        bool isFile = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) == FILE_TYPE_DISK); // Redirect to file?
+        if (!isFile) { // No - OK! now set streams to attached console
+            freopen("conout$", "w", stdout);
+            freopen("conout$", "w", stderr);
+        }
 
-#if !defined(SG_WINDOWS)
-        m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
-		m_consoleCallbacks.push_back(m_callbacks.back());
-		m_consoleRequested = true;
+        if (AttachConsole(ATTACH_PARENT_PROCESS) == 0) {
+            // attach failed, don't install the callback
+            addStderr = false;
+        }
 #endif
-
+        if (addStderr) {
+            m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
+            m_consoleCallbacks.push_back(m_callbacks.back());
+        }
 #if defined (SG_WINDOWS) && !defined(NDEBUG)
 		m_callbacks.push_back(new WinDebugLogCallback(m_logClass, m_logPriority));
 		m_consoleCallbacks.push_back(m_callbacks.back());
 #endif
+    }
+
+    ~LogStreamPrivate()
+    {
+        BOOST_FOREACH(simgear::LogCallback* cb, m_callbacks) {
+            delete cb;
+        }
     }
                     
     SGMutex m_lock;
@@ -248,8 +267,7 @@ public:
     sgDebugClass m_logClass;
     sgDebugPriority m_logPriority;
     bool m_isRunning;
-	bool m_consoleRequested;
-    
+
     void startLog()
     {
         SGGuard<SGMutex> g(m_lock);
@@ -329,29 +347,24 @@ public:
         LogEntry entry(c, p, fileName, line, msg);
         m_entries.push(entry);
     }
-
-	void requestConsole()
-	{
-		PauseThread pause(this);
-		if (m_consoleRequested) {
-			return;
-		}
-
-		m_consoleRequested = true;
-		m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
-		m_consoleCallbacks.push_back(m_callbacks.back());
-	}
 };
 
 /////////////////////////////////////////////////////////////////////////////
 
 static logstream* global_logstream = NULL;
 static LogStreamPrivate* global_privateLogstream = NULL;
+static SGMutex global_logStreamLock;
 
 logstream::logstream()
 {
     global_privateLogstream = new LogStreamPrivate;
     global_privateLogstream->startLog();
+}
+
+logstream::~logstream()
+{
+    global_privateLogstream->stop();
+    delete global_privateLogstream;
 }
 
 void
@@ -409,6 +422,7 @@ logstream::set_log_classes( sgDebugClass c)
     global_privateLogstream->setLogLevels(c, global_privateLogstream->m_logPriority);
 }
 
+
 logstream&
 sglog()
 {
@@ -418,8 +432,7 @@ sglog()
     // http://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf
     // in the absence of portable memory barrier ops in Simgear,
     // let's keep this correct & safe
-    static SGMutex m;
-    SGGuard<SGMutex> g(m);
+    SGGuard<SGMutex> g(global_logStreamLock);
     
     if( !global_logstream )
         global_logstream = new logstream();
@@ -437,8 +450,15 @@ namespace simgear
 
 void requestConsole()
 {
-	sglog(); // force creation
-	global_privateLogstream->requestConsole();
+//	sglog(); // force creation
+//	global_privateLogstream->requestConsole();
+}
+
+void shutdownLogging()
+{
+    SGGuard<SGMutex> g(global_logStreamLock);
+    delete global_logstream;
+    global_logstream = 0;
 }
 
 } // of namespace simgear

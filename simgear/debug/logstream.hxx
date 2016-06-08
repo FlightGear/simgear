@@ -59,7 +59,9 @@ private:
  * moment - on other plaforms it's a no-op
  */
 void requestConsole();
-     
+
+void shutdownLogging();
+
 } // of namespace simgear
 
 /**
@@ -68,6 +70,8 @@ void requestConsole();
 class logstream
 {
 public:
+    ~logstream();
+    
     static void initGlobalLogstream();
     /**
      * Set the global log class and priority level.

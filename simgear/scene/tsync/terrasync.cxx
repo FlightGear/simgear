@@ -570,7 +570,7 @@ void SGTerraSync::WorkerThread::runInternal()
 {
     while (!_stop) {
         try {
-            _http.update(100);
+            _http.update(10);
         } catch (sg_exception& e) {
             SG_LOG(SG_TERRASYNC, SG_WARN, "failure doing HTTP update" << e.getFormattedMessage());
         }

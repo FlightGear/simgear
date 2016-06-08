@@ -161,7 +161,15 @@ void Client::setMaxPipelineDepth(unsigned int depth)
 
 void Client::update(int waitTimeout)
 {
-    int remainingActive, messagesInQueue;
+    if (d->requests.empty()) {
+        // curl_multi_wait returns immediately if there's no requests active,
+        // but that can cause high CPU usage for us.
+        SGTimeStamp::sleepForMSec(waitTimeout);
+        return;
+    }
+
+    int remainingActive, messagesInQueue, numFds;
+    curl_multi_wait(d->curlMulti, NULL, 0, waitTimeout, &numFds);
     curl_multi_perform(d->curlMulti, &remainingActive);
 
     CURLMsg* msg;
@@ -202,7 +210,6 @@ void Client::update(int waitTimeout)
           SG_LOG(SG_IO, SG_ALERT, "unknown CurlMSG:" << msg->msg);
       }
     } // of curl message processing loop
-    SGTimeStamp::sleepForMSec(waitTimeout);
 }
 
 void Client::makeRequest(const Request_ptr& r)

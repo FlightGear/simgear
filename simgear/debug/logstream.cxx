@@ -38,9 +38,9 @@
 
 #include <simgear/misc/sg_path.hxx>
 
-#ifdef SG_WINDOWS
+#if defined (SG_WINDOWS) 
 // for AllocConsole, OutputDebugString
-    #include "windows.h"
+    #include <windows.h>
 #endif
 
 const char* debugClassToString(sgDebugClass c)
@@ -227,18 +227,20 @@ public:
 #if defined (SG_WINDOWS)
         // Check for stream redirection, has to be done before we call
         // Attach / AllocConsole
-        bool isFile = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) == FILE_TYPE_DISK); // Redirect to file?
-        if (!isFile) { // No - OK! now set streams to attached console
-            freopen("conout$", "w", stdout);
-            freopen("conout$", "w", stderr);
-        }
-
+        const bool isFile = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) == FILE_TYPE_DISK); // Redirect to file?
         if (AttachConsole(ATTACH_PARENT_PROCESS) == 0) {
             // attach failed, don't install the callback
             addStderr = false;
         }
 #endif
         if (addStderr) {
+#if defined (SG_WINDOWS)
+			if (!isFile) {
+				// No - OK! now set streams to attached console
+				 freopen("conout$", "w", stdout);
+				 freopen("conout$", "w", stderr);
+			}
+#endif
             m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
             m_consoleCallbacks.push_back(m_callbacks.back());
         }

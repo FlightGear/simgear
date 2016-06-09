@@ -366,13 +366,11 @@ if(WIN32)
     endif()
 
     if(MSVC)
-        # turn off various warnings
-        # foreach(warning 4244 4251 4267 4275 4290 4786 4305 4996)
-        #     SET(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
-        # endforeach(warning)
+        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP")
 
-        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /wd4996 /wd4250")
         if (${MSVC_VERSION} GREATER 1599)
+          # needed to avoid link errors on multiply-defined standard C++
+          # symbols. Suspect this may be an OSG-DB export bug
             set( MSVC_LD_FLAGS "/FORCE:MULTIPLE" )
         endif (${MSVC_VERSION} GREATER 1599)
 

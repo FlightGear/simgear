@@ -61,12 +61,14 @@
 // Microsoft compilers.
 //
 #ifdef _MSC_VER
-#  define bcopy(from, to, n) memcpy(to, from, n)
+#  define strcasecmp stricmp
 
 #  if _MSC_VER >= 1200 // msvc++ 6.0 up to MSVC2013
 #    if _MSC_VER < 1900
+#      define bcopy(from, to, n) memcpy(to, from, n)
 #      define snprintf _snprintf
 #      define strdup _strdup
+#      define copysign _copysign
 #    endif
 #    if _MSC_VER < 1800
 #      define isnan _isnan
@@ -74,21 +76,18 @@
 #    if _MSC_VER < 1500
 #      define vsnprintf _vsnprintf
 #    endif
-#    define copysign _copysign
-#    define strcasecmp stricmp
-
-#    undef min
-#    undef max
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float
-#    pragma warning(disable: 4305) // truncation from larer type to smaller
+#    pragma warning(disable: 4305) // truncation from larger type to smaller
+#    pragma warning(disable: 4267) // conversion from size_t to int / 32-bit type
+#    pragma warning(disable: 4996) // don't require _ prefix for standard library functions
+#    pragma warning(disable: 4800) // don't warn about int -> bool performance
 
 #  else
 #    error What version of MSVC++ is this?
 #  endif
-
-#    define SG_COMPILER_STR "Microsoft Visual C++ version " SG_STRINGIZE(_MSC_VER)
+#  define SG_COMPILER_STR "Microsoft Visual C++ version " SG_STRINGIZE(_MSC_VER)
 
 #endif // _MSC_VER
 

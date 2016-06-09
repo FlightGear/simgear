@@ -34,6 +34,7 @@ class TarExtractor
 {
 public:
     TarExtractor(const SGPath& rootPath);
+	~TarExtractor();
 
     void extractBytes(const char* bytes, size_t count);
 

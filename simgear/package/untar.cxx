@@ -278,6 +278,10 @@ TarExtractor::TarExtractor(const SGPath& rootPath) :
     d->zlibStream.next_out = d->zlibOutput;
 }
 
+TarExtractor::~TarExtractor()
+{
+}
+
 void TarExtractor::extractBytes(const char* bytes, size_t count)
 {
     if (d->state >= TarExtractorPrivate::ERROR_STATE) {

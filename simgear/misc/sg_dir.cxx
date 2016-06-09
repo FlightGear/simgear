@@ -93,7 +93,7 @@ Dir Dir::current()
     char *buf = ::getcwd(NULL, 0);
 #endif
     if (!buf) {
-        if  (errno == 2) sg_exception("The current directory is invalid");
+        if  (errno == 2) throw sg_exception("The current directory is invalid");
         else throw sg_exception(strerror(errno));
     }
 

@@ -38,6 +38,9 @@ project(SimGear)
 file(READ version versionFile)
 string(STRIP ${versionFile} SIMGEAR_VERSION)
 
+# add a dependency on the versino file
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS version)
+
 set(FIND_LIBRARY_USE_LIB64_PATHS ON)
 
 # use simgear version also as the SO version (if building SOs)

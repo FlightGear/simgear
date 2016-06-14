@@ -18,7 +18,6 @@ set(SOURCES
     md5.h md5.c
     ioapi.c ioapi_mem.c ioapi.h
     unzip.h unzip.c
-    untar.hxx untar.cxx
     )
 
 simgear_component(package package "${SOURCES}" "${HEADERS}")

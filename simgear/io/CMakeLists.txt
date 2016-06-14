@@ -19,6 +19,7 @@ set(HEADERS
     HTTPMemoryRequest.hxx
     HTTPRequest.hxx
     HTTPRepository.hxx
+    untar.hxx
     )
 
 set(SOURCES
@@ -38,6 +39,7 @@ set(SOURCES
     HTTPMemoryRequest.cxx
     HTTPRequest.cxx
     HTTPRepository.cxx
+    untar.cxx
     )
 
 if(ENABLE_DNS)

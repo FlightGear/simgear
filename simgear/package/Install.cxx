@@ -22,8 +22,8 @@
 
 #include <simgear/package/unzip.h>
 #include <simgear/package/md5.h>
-#include <simgear/package/untar.hxx>
 
+#include <simgear/io/untar.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/package/Catalog.hxx>

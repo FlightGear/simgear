@@ -34,12 +34,9 @@
 namespace simgear
 {
 
-namespace pkg
-{
-
-    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
-    const int ZLIB_INFLATE_WINDOW_BITS = MAX_WBITS;
-    const int ZLIB_DECODE_GZIP_HEADER = 16;
+const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
+const int ZLIB_INFLATE_WINDOW_BITS = MAX_WBITS;
+const int ZLIB_DECODE_GZIP_HEADER = 16;
 
 /* tar Header Block, from POSIX 1003.1-1990.  */
 
@@ -343,7 +340,5 @@ bool TarExtractor::hasError() const
 {
     return (d->state >= TarExtractorPrivate::ERROR_STATE);
 }
-
-} // of pkg
 
 } // of simgear

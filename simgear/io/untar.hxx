@@ -15,17 +15,14 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifndef SG_PKG_UNTAR_HXX
-#define SG_PKG_UNTAR_HXX
+#ifndef SG_IO_UNTAR_HXX
+#define SG_IO_UNTAR_HXX
 
 #include <memory>
 
 #include <simgear/misc/sg_path.hxx>
 
 namespace simgear
-{
-
-namespace pkg
 {
 
 class TarExtractorPrivate;
@@ -46,8 +43,6 @@ private:
     std::auto_ptr<TarExtractorPrivate> d;
 };
 
-} // of namespace pkg
-
 } // of namespace simgear
 
-#endif
+#endif // of SG_IO_UNTAR_HXX

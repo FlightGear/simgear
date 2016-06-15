@@ -83,4 +83,12 @@ add_executable(test_repository test_repository.cxx)
 target_link_libraries(test_repository ${TEST_LIBS})
 add_test(http_repository ${EXECUTABLE_OUTPUT_PATH}/test_repository)
 
+add_executable(test_untar test_untar.cxx)
+
+set_target_properties(test_untar PROPERTIES
+  COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
+
+target_link_libraries(test_untar ${TEST_LIBS})
+add_test(untar ${EXECUTABLE_OUTPUT_PATH}/test_untar)
+
 endif(ENABLE_TESTS)

@@ -63,7 +63,7 @@ typedef struct
     const size_t TAR_HEADER_BLOCK_SIZE = 512;
 
 #define TMAGIC   "ustar"        /* ustar and a null */
-#define TMAGLEN  6
+#define TMAGLEN  5              // 5, not 6, becuase some files use 'ustar '
 #define TVERSION "00"           /* 00 and no null */
 #define TVERSLEN 2
 
@@ -106,10 +106,12 @@ public:
     z_stream zlibStream;
     uint8_t* zlibOutput;
     bool haveInitedZLib;
+    bool uncompressedData; // set if reading a plain .tar (not tar.gz)
     uint8_t* headerPtr;
 
     TarExtractorPrivate() :
-        haveInitedZLib(false)
+        haveInitedZLib(false),
+        uncompressedData(false)
     {
     }
 
@@ -277,6 +279,7 @@ TarExtractor::TarExtractor(const SGPath& rootPath) :
 
 TarExtractor::~TarExtractor()
 {
+
 }
 
 void TarExtractor::extractBytes(const char* bytes, size_t count)
@@ -289,46 +292,63 @@ void TarExtractor::extractBytes(const char* bytes, size_t count)
     d->zlibStream.avail_in = count;
 
     if (!d->haveInitedZLib) {
-        if (inflateInit2(&d->zlibStream, ZLIB_INFLATE_WINDOW_BITS | ZLIB_DECODE_GZIP_HEADER) != Z_OK) {
-            SG_LOG(SG_IO, SG_WARN, "inflateInit2 failed");
-            d->state = TarExtractorPrivate::BAD_DATA;
-            return;
+        // now we have data, see if we're dealing with GZ-compressed data or not
+        uint8_t* ubytes = (uint8_t*) bytes;
+        if ((ubytes[0] == 0x1f) && (ubytes[1] == 0x8b)) {
+            // GZIP identification bytes
+            if (inflateInit2(&d->zlibStream, ZLIB_INFLATE_WINDOW_BITS | ZLIB_DECODE_GZIP_HEADER) != Z_OK) {
+                SG_LOG(SG_IO, SG_WARN, "inflateInit2 failed");
+                d->state = TarExtractorPrivate::BAD_DATA;
+                return;
+            }
         } else {
-            d->haveInitedZLib = true;
-            d->setState(TarExtractorPrivate::READING_HEADER);
-        }
-    }
-    
-    size_t writtenSize;
+            UstarHeaderBlock* header = (UstarHeaderBlock*) bytes;
+            if (strncmp(header->magic, TMAGIC, TMAGLEN) != 0) {
+                SG_LOG(SG_IO, SG_WARN, "didn't find tar magic in header");
+                d->state = TarExtractorPrivate::BAD_DATA;
+                return;
+            }
 
-    // loop, running zlib() inflate and sending output bytes to
-    // our request body handler. Keep calling inflate until no bytes are
-    // written, and ZLIB has consumed all available input
-    do {
-        d->zlibStream.next_out = d->zlibOutput;
-        d->zlibStream.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
-        int result = inflate(&d->zlibStream, Z_NO_FLUSH);
-        if (result == Z_OK || result == Z_STREAM_END) {
-            // nothing to do
-
-        } else if (result == Z_BUF_ERROR) {
-            // transient error, fall through
-        } else {
-            //  _error = result;
-            SG_LOG(SG_IO, SG_WARN, "Permanent ZLib error:" << d->zlibStream.msg);
-            d->state = TarExtractorPrivate::BAD_DATA;
-            return;
+            d->uncompressedData = true;
         }
 
-        writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - d->zlibStream.avail_out;
-        if (writtenSize > 0) {
-            d->processBytes((const char*) d->zlibOutput, writtenSize);
-        }
+        d->haveInitedZLib = true;
+        d->setState(TarExtractorPrivate::READING_HEADER);
+    } // of init on first-bytes case
 
-        if (result == Z_STREAM_END) {
-            break;
-        }
-    } while ((d->zlibStream.avail_in > 0) || (writtenSize > 0));
+    if (d->uncompressedData) {
+        d->processBytes(bytes, count);
+    } else {
+        size_t writtenSize;
+        // loop, running zlib() inflate and sending output bytes to
+        // our request body handler. Keep calling inflate until no bytes are
+        // written, and ZLIB has consumed all available input
+        do {
+            d->zlibStream.next_out = d->zlibOutput;
+            d->zlibStream.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
+            int result = inflate(&d->zlibStream, Z_NO_FLUSH);
+            if (result == Z_OK || result == Z_STREAM_END) {
+                // nothing to do
+
+            } else if (result == Z_BUF_ERROR) {
+                // transient error, fall through
+            } else {
+                //  _error = result;
+                SG_LOG(SG_IO, SG_WARN, "Permanent ZLib error:" << d->zlibStream.msg);
+                d->state = TarExtractorPrivate::BAD_DATA;
+                return;
+            }
+
+            writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - d->zlibStream.avail_out;
+            if (writtenSize > 0) {
+                d->processBytes((const char*) d->zlibOutput, writtenSize);
+            }
+
+            if (result == Z_STREAM_END) {
+                break;
+            }
+        } while ((d->zlibStream.avail_in > 0) || (writtenSize > 0));
+    } // of Zlib-compressed data
 }
 
 bool TarExtractor::isAtEndOfArchive() const
@@ -339,6 +359,60 @@ bool TarExtractor::isAtEndOfArchive() const
 bool TarExtractor::hasError() const
 {
     return (d->state >= TarExtractorPrivate::ERROR_STATE);
+}
+
+bool TarExtractor::isTarData(const uint8_t* bytes, size_t count)
+{
+    if (count < 2) {
+        return false;
+    }
+
+    UstarHeaderBlock* header = 0;
+    if ((bytes[0] == 0x1f) && (bytes[1] == 0x8b)) {
+        // GZIP identification bytes
+        z_stream z;
+        uint8_t* zlibOutput = static_cast<uint8_t*>(alloca(4096));
+        memset(&z, 0, sizeof(z_stream));
+        z.zalloc = Z_NULL;
+        z.zfree = Z_NULL;
+        z.avail_out = 4096;
+        z.next_out = zlibOutput;
+        z.next_in = (uint8_t*) bytes;
+        z.avail_in = count;
+
+        if (inflateInit2(&z, ZLIB_INFLATE_WINDOW_BITS | ZLIB_DECODE_GZIP_HEADER) != Z_OK) {
+            return false;
+        }
+
+        int result = inflate(&z, Z_SYNC_FLUSH);
+        if (result != Z_OK) {
+            SG_LOG(SG_IO, SG_WARN, "inflate failed:" << result);
+            return false; // not tar data
+        }
+
+        size_t written = 4096 - z.avail_out;
+        if (written < TAR_HEADER_BLOCK_SIZE) {
+            SG_LOG(SG_IO, SG_WARN, "insufficient data for header");
+            return false;
+        }
+        
+        header = reinterpret_cast<UstarHeaderBlock*>(zlibOutput);
+    } else {
+        // uncompressed tar
+        if (count < TAR_HEADER_BLOCK_SIZE) {
+            SG_LOG(SG_IO, SG_WARN, "insufficient data for header");
+            return false;
+        }
+
+        header = (UstarHeaderBlock*) bytes;
+    }
+
+    if (strncmp(header->magic, TMAGIC, TMAGLEN) != 0) {
+        SG_LOG(SG_IO, SG_WARN, "not a tar file");
+        return false;
+    }
+
+    return true;
 }
 
 } // of simgear

@@ -20,6 +20,7 @@
 
 #include <memory>
 
+#include <cstdlib>
 #include <simgear/misc/sg_path.hxx>
 
 namespace simgear
@@ -32,6 +33,8 @@ class TarExtractor
 public:
     TarExtractor(const SGPath& rootPath);
 	~TarExtractor();
+
+    static bool isTarData(const uint8_t* bytes, size_t count);
 
     void extractBytes(const char* bytes, size_t count);
 

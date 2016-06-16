@@ -21,6 +21,7 @@
 #include <memory>
 
 #include <cstdlib>
+#include <stdint.h> // for uint8_t
 #include <simgear/misc/sg_path.hxx>
 
 namespace simgear

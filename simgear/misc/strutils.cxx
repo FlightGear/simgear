@@ -407,6 +407,27 @@ std::string convertWindowsLocal8BitToUtf8(const std::string& a)
 #endif
 }
 
+std::string convertUtf8ToWindowsLocal8Bit(const std::string& a)
+{
+#ifdef SG_WINDOWS
+    DWORD flags = 0;
+    WCharVec wideString = convertMultiByteToWString(CP_UTF8, a);
+
+    // convert down to local multi-byte
+    std::vector<char> result;
+    int requiredChars = WideCharToMultiByte(CP_ACP, flags,
+											wideString.data(), wideString.size(),
+                                            NULL, 0, NULL, NULL);
+    result.resize(requiredChars);
+    WideCharToMultiByte(CP_ACP, flags,
+                        wideString.data(), wideString.size(),
+                        result.data(), result.size(), NULL, NULL);
+    return std::string(result.data(), result.size());
+#else
+    return a;
+#endif
+}
+
 //------------------------------------------------------------------------------
 std::string md5(const unsigned char* data, size_t num)
 {

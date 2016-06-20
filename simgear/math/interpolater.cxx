@@ -32,6 +32,7 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sgstream.hxx>
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
 #include "interpolater.hxx"
@@ -57,7 +58,7 @@ SGInterpTable::SGInterpTable( const std::string& file )
 {
     SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
 
-    sg_gzifstream in( file );
+    sg_gzifstream in( SGPath::fromUtf8(file) );
     if ( !in.is_open() ) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Cannot open file: " << file );
         return;

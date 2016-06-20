@@ -8,6 +8,7 @@ using std::cout;
 using std::endl;
 
 #include <simgear/misc/sgstream.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 int main()
 {
@@ -24,7 +25,8 @@ int main()
        f.close();
    }
 
-   sg_gzifstream sg(fileName);
+    SGPath p(fileName);
+   sg_gzifstream sg(p);
    std::string stuff;
    sg >> skipeol;
    sg >> stuff;

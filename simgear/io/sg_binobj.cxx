@@ -491,7 +491,7 @@ void SGBinObject::read_object( gzFile fp,
 
 
 // read a binary file and populate the provided structures.
-bool SGBinObject::read_bin( const string& file ) {
+bool SGBinObject::read_bin( const SGPath& file ) {
     SGVec3d p;
     int i, k;
     size_t j;
@@ -535,13 +535,14 @@ bool SGBinObject::read_bin( const string& file ) {
     fan_materials.clear();
 
     gzFile fp;
-    if ( (fp = gzopen( file.c_str(), "rb" )) == NULL ) {
-        string filegz = file + ".gz";
+    string f = file.local8BitStr();
+    if ( (fp = gzopen( f.c_str(), "rb" )) == NULL ) {
+        string filegz = f + ".gz";
         if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
             SG_LOG( SG_EVENT, SG_ALERT,
                "ERROR: opening " << file << " or " << filegz << " for reading!");
 
-            throw sg_io_exception("Error opening for reading (and .gz)", sg_location(file));
+            throw sg_io_exception("Error opening for reading (and .gz)", sg_location(f));
         }
     }
 
@@ -958,7 +959,7 @@ bool SGBinObject::write_bin_file(const SGPath& file)
 
     gzFile fp;
     if ( (fp = gzopen( file.c_str(), "wb9" )) == NULL ) {
-        cout << "ERROR: opening " << file.str() << " for writing!" << endl;
+        cout << "ERROR: opening " << file << " for writing!" << endl;
         return false;
     }
 
@@ -1064,7 +1065,7 @@ bool SGBinObject::write_bin_file(const SGPath& file)
     gzclose(fp);
 
     if ( sgWriteError() ) {
-        cout << "Error while writing file " << file.str() << endl;
+        cout << "Error while writing file " << file << endl;
         return false;
     }
 
@@ -1082,11 +1083,11 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 
     SGPath file = base + "/" + b.gen_base_path() + "/" + name;
     file.create_dir( 0755 );
-    cout << "Output file = " << file.str() << endl;
+    cout << "Output file = " << file << endl;
 
     FILE *fp;
     if ( (fp = fopen( file.c_str(), "w" )) == NULL ) {
-        cout << "ERROR: opening " << file.str() << " for writing!" << endl;
+        cout << "ERROR: opening " << file << " for writing!" << endl;
         return false;
     }
 
@@ -1240,11 +1241,11 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     // close the file
     fclose(fp);
 
-    string command = "gzip --force --best " + file.str();
+    string command = "gzip --force --best " + file.local8BitStr();
     int err = system(command.c_str());
     if (err)
     {
-        cout << "ERROR: gzip " << file.str() << " failed!" << endl;
+        cout << "ERROR: gzip " << file << " failed!" << endl;
     }
 
     return (err == 0);

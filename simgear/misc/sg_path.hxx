@@ -186,6 +186,10 @@ public:
      * @return path string
      */
     std::string str() const { return path; }
+    std::string utf8Str() const { return path; }
+
+    std::string local8BitStr() const;
+
 
     /**
      * Get the path string
@@ -286,6 +290,10 @@ public:
      */
     static SGPath fromEnv(const char* name, const SGPath& def = SGPath());
 
+    static SGPath fromUtf8(const std::string& bytes, PermissionChecker p = NULL);
+
+    static SGPath fromLocal8Bit(const char* name);
+
     /**
      * Get path to user's home directory
      */
@@ -301,6 +309,11 @@ public:
      */
     static SGPath documents(const SGPath& def = SGPath());
 
+    static std::vector<SGPath> pathsFromEnv(const char* name);
+
+    static std::vector<SGPath> pathsFromLocal8Bit(const std::string& paths);
+
+    static std::string join(const std::vector<SGPath>& paths, const std::string& joinWith);
 private:
 
     void fix();
@@ -328,8 +341,7 @@ template<typename char_type, typename traits_type>
 inline
 std::basic_ostream<char_type, traits_type>&
 operator<<(std::basic_ostream<char_type, traits_type>& s, const SGPath& p)
-{ return s << "Path \"" << p.str() << "\""; }
-
+{ return s << "Path \"" << p.utf8Str() << "\""; }
 
 /**
  * Split a directory string into a list of it's parent directories.

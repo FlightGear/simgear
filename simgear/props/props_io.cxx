@@ -191,7 +191,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
               throw sg_io_exception(message, location,
                                     "SimGear Property Reader");
           }
-          readProperties(path.str(), _root, 0, _extended);
+          readProperties(path, _root, 0, _extended);
       } catch (sg_io_exception &e) {
           setException(e);
       }
@@ -278,7 +278,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
             message += val;
             throw sg_io_exception(message, location, "SimGear Property Reader");
           }
-          readProperties(path.str(), node, 0, _extended);
+          readProperties(path, node, 0, _extended);
         }
         catch (sg_io_exception &e)
         {
@@ -434,11 +434,11 @@ readProperties (istream &input, SGPropertyNode * start_node,
  * @return true if the read succeeded, false otherwise.
  */
 void
-readProperties (const string &file, SGPropertyNode * start_node,
+readProperties (const SGPath &file, SGPropertyNode * start_node,
                 int default_mode, bool extended)
 {
-  PropsVisitor visitor(start_node, file, default_mode, extended);
-  readXML(file, visitor);
+  PropsVisitor visitor(start_node, file.utf8Str(), default_mode, extended);
+  readXML(file.local8BitStr(), visitor);
   if (visitor.hasException())
     throw visitor.getException();
 }
@@ -690,17 +690,17 @@ writeProperties (ostream &output, const SGPropertyNode * start_node,
 
 
 void
-writeProperties (const string &file, const SGPropertyNode * start_node,
+writeProperties (const SGPath &path, const SGPropertyNode * start_node,
                  bool write_all, SGPropertyNode::Attribute archive_flag)
 {
-  SGPath path(file.c_str());
-  path.create_dir(0755);
+  SGPath dpath(path);
+  dpath.create_dir(0755);
 
-  ofstream output(file.c_str());
+  ofstream output(path.local8BitStr().c_str());
   if (output.good()) {
     writeProperties(output, start_node, write_all, archive_flag);
   } else {
-    throw sg_io_exception("Cannot open file", sg_location(file));
+    throw sg_io_exception("Cannot open file", sg_location(path.utf8Str()));
   }
 }
 

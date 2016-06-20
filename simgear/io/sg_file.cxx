@@ -45,7 +45,7 @@
 #include "sg_file.hxx"
 
 
-SGFile::SGFile(const std::string &file, int repeat_, int extraoflags_ )
+SGFile::SGFile(const SGPath &file, int repeat_, int extraoflags_ )
     : file_name(file), fp(-1), eof_flag(true), repeat(repeat_), iteration(0),
       extraoflags(extraoflags_)
 {
@@ -69,24 +69,25 @@ SGFile::~SGFile() {
 bool SGFile::open( const SGProtocolDir d ) {
     set_dir( d );
 
+    std::string n = file_name.local8BitStr();
     if ( get_dir() == SG_IO_OUT ) {
 #ifdef _WIN32
         int mode = _S_IREAD | _S_IWRITE;
 #else
         mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 #endif
-	fp = ::open( file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC | extraoflags, mode );
+        fp = ::open( n.c_str(), O_WRONLY | O_CREAT | O_TRUNC | extraoflags, mode );
     } else if ( get_dir() == SG_IO_IN ) {
-	fp = ::open( file_name.c_str(), O_RDONLY | extraoflags );
+        fp = ::open( n.c_str(), O_RDONLY | extraoflags );
     } else {
-	SG_LOG( SG_IO, SG_ALERT, 
-		"Error:  bidirection mode not available for files." );
-	return false;
+        SG_LOG( SG_IO, SG_ALERT,
+            "Error:  bidirection mode not available for files." );
+        return false;
     }
 
     if ( fp == -1 ) {
-	SG_LOG( SG_IO, SG_ALERT, "Error opening file: "	<< file_name );
-	return false;
+        SG_LOG( SG_IO, SG_ALERT, "Error opening file: "	<< file_name );
+        return false;
     }
 
     eof_flag = false;
@@ -180,7 +181,7 @@ bool SGFile::close() {
     return true;
 }
 
-SGBinaryFile::SGBinaryFile( const std::string& file, int repeat_ ) :
+SGBinaryFile::SGBinaryFile( const SGPath& file, int repeat_ ) :
 #ifdef _WIN32
     SGFile(file,repeat_, _O_BINARY)
 #else

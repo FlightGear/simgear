@@ -27,6 +27,8 @@
 
 #include "sgstream.hxx"
 
+#include <simgear/misc/sg_path.hxx>
+
 using std::istream;
 using std::ostream;
 
@@ -39,7 +41,7 @@ sg_gzifstream::sg_gzifstream()
 //
 // Open a possibly gzipped file for reading.
 //
-sg_gzifstream::sg_gzifstream( const std::string& name, ios_openmode io_mode )
+sg_gzifstream::sg_gzifstream( const SGPath& name, ios_openmode io_mode )
     : istream(&gzbuf)
 {
     this->open( name, io_mode );
@@ -64,26 +66,27 @@ sg_gzifstream::sg_gzifstream( int fd, ios_openmode io_mode )
 // then append ".gz" and try again.
 //
 void
-sg_gzifstream::open( const std::string& name, ios_openmode io_mode )
+sg_gzifstream::open( const SGPath& name, ios_openmode io_mode )
 {
-    gzbuf.open( name.c_str(), io_mode );
+    std::string s = name.local8BitStr();
+
+    gzbuf.open( s.c_str(), io_mode );
     if ( ! gzbuf.is_open() )
     {
-    std::string s = name;
-	if ( s.substr( s.length() - 3, 3 ) == ".gz" )
-	{
-	    // remove ".gz" suffix
-	    s.replace( s.length() - 3, 3, "" );
-// 	    s.erase( s.length() - 3, 3 );
-	}
-	else
-	{
-	    // Append ".gz" suffix
-	    s += ".gz";
-	}
+        if ( s.substr( s.length() - 3, 3 ) == ".gz" )
+        {
+            // remove ".gz" suffix
+            s.replace( s.length() - 3, 3, "" );
+    // 	    s.erase( s.length() - 3, 3 );
+        }
+        else
+        {
+            // Append ".gz" suffix
+            s += ".gz";
+        }
 
-	// Try again.
-	gzbuf.open( s.c_str(), io_mode );
+        // Try again.
+        gzbuf.open( s.c_str(), io_mode );
     }
 }
 

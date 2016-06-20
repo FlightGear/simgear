@@ -268,7 +268,7 @@ public:
      * @param file input file name
      * @return result of read
      */
-    bool read_bin( const std::string& file );
+    bool read_bin( const SGPath& file );
 
     /** 
      * Write out the structures to a binary file.  We assume that the

@@ -14,6 +14,8 @@
 #include "props.hxx"
 #include "props_io.hxx"
 
+#include <simgear/misc/sg_path.hxx>
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -394,7 +396,7 @@ int main (int ac, char ** av)
     try {
       cout << "Reading " << av[i] << endl;
       SGPropertyNode root;
-      readProperties(av[i], &root);
+        readProperties(SGPath::fromLocal8Bit(av[i]), &root);
       writeProperties(cout, &root, true);
       cout << endl;
     } catch (std::string &message) {

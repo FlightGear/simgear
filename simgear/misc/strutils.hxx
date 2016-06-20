@@ -171,6 +171,11 @@ namespace simgear {
      */
     std::string convertWindowsLocal8BitToUtf8(const std::string& a);
 
+      /**
+       *
+       */
+      std::string convertUtf8ToWindowsLocal8Bit(const std::string& a);
+
 #if defined(SG_WINDOWS)
     typedef std::vector<wchar_t> WCharVec;
     WCharVec convertUtf8ToWString(const std::string& a);

@@ -28,7 +28,8 @@ class sg_location
 public:
   enum {max_path = 1024};
   sg_location ();
-  sg_location(const std::string& path, int line = -1, int column = -1);  
+  sg_location(const std::string& path, int line = -1, int column = -1);
+  sg_location(const SGPath& path, int line = -1, int column = -1);
   explicit sg_location(const char* path, int line = -1, int column = -1);
   virtual ~sg_location() throw ();
   virtual const char* getPath() const;
@@ -135,7 +136,6 @@ public:
   sg_io_exception (const std::string &message, const std::string &origin = "");
   sg_io_exception (const std::string &message, const sg_location &location, 
     const std::string &origin = "");
-  sg_io_exception (const std::string &message, const SGPath& origin);
     
   virtual ~sg_io_exception () throw ();
   virtual const std::string getFormattedMessage () const;

@@ -222,6 +222,17 @@ SGPath::SGPath( const SGPath& p,
     fix();
 }
 
+SGPath SGPath::fromLocal8Bit(const char *name)
+{
+    return SGPath(simgear::strutils::convertWindowsLocal8BitToUtf8(name));
+}
+
+SGPath SGPath::fromUtf8(const std::string& bytes, PermissionChecker p)
+{
+    return SGPath(bytes, p);
+}
+
+
 SGPath::SGPath(const SGPath& p) :
   path(p.path),
   _permission_checker(p._permission_checker),
@@ -330,6 +341,10 @@ void SGPath::concat( const string& p ) {
     _rwCached = false;
 }
 
+std::string SGPath::local8BitStr() const
+{
+    return simgear::strutils::convertUtf8ToWindowsLocal8Bit(path);
+}
 
 // Get the file part of the path (everything after the last path sep)
 string SGPath::file() const
@@ -533,7 +548,7 @@ int SGPath::create_dir(mode_t mode)
   if( !canWrite() )
   {
     SG_LOG( SG_IO,
-            SG_WARN, "Error creating directory for '" << str() << "'"
+            SG_WARN, "Error creating directory for '" << *this << "'"
                                                     " reason: access denied" );
     return -3;
   }
@@ -566,11 +581,11 @@ int SGPath::create_dir(mode_t mode)
     if( sgMkDir(dir.c_str(), mode) )
     {
       SG_LOG( SG_IO,
-              SG_ALERT, "Error creating directory: (" << dir.str() << ")" );
+              SG_ALERT, "Error creating directory: (" << dir << ")" );
       return -2;
     }
     else
-      SG_LOG(SG_IO, SG_DEBUG, "Directory created: " << dir.str());
+      SG_LOG(SG_IO, SG_DEBUG, "Directory created: " << dir);
 
     if( i >= path_elements.size() )
       return 0;
@@ -648,7 +663,7 @@ bool SGPath::isNull() const
 std::string SGPath::str_native() const
 {
 #ifdef _WIN32
-    std::string s = str();
+    std::string s = local8BitStr()();
     std::string::size_type pos;
     std::string nativeSeparator;
     nativeSeparator = sgDirPathSepBad;
@@ -658,7 +673,7 @@ std::string SGPath::str_native() const
     }
     return s;
 #else
-    return str();
+    return utf8Str();
 #endif
 }
 
@@ -667,7 +682,7 @@ bool SGPath::remove()
 {
   if( !canWrite() )
   {
-    SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << str() << ")"
+    SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << *this << ")"
                                                " reason: access denied" );
     return false;
   }
@@ -675,7 +690,7 @@ bool SGPath::remove()
   int err = ::unlink(c_str());
   if( err )
   {
-    SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << str() << ") "
+    SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << *this << ") "
                                                " reason: " << strerror(errno) );
     // TODO check if failed unlink can really change any of the cached values
   }
@@ -712,8 +727,8 @@ bool SGPath::rename(const SGPath& newName)
 {
   if( !canRead() || !canWrite() || !newName.canWrite() )
   {
-    SG_LOG( SG_IO, SG_WARN, "rename failed: from " << str() <<
-                                            " to " << newName.str() <<
+    SG_LOG( SG_IO, SG_WARN, "rename failed: from " << *this <<
+                                            " to " << newName <<
                                             " reason: access denied" );
     return false;
   }
@@ -726,10 +741,13 @@ bool SGPath::rename(const SGPath& newName)
 		}
 	}
 #endif
-  if( ::rename(c_str(), newName.c_str()) != 0 )
+    std::string p = local8BitStr();
+    std::string np = newName.local8BitStr();
+
+  if( ::rename(p.c_str(), np.c_str()) != 0 )
   {
-    SG_LOG( SG_IO, SG_WARN, "rename failed: from " << str() <<
-                                            " to " << newName.str() <<
+    SG_LOG( SG_IO, SG_WARN, "rename failed: from " << *this <<
+                                            " to " << newName <<
                                             " reason: " << strerror(errno) );
     return false;
   }
@@ -822,6 +840,39 @@ SGPath SGPath::fromEnv(const char* name, const SGPath& def)
 }
 
 //------------------------------------------------------------------------------
+
+std::vector<SGPath> SGPath::pathsFromEnv(const char *name)
+{
+    std::vector<SGPath> r;
+    const char* val = getenv(name);
+    if (!val) {
+        return r;
+    }
+
+    string_list items =  sgPathSplit(val);
+    string_list_iterator it;
+    for (it = items.begin(); it != items.end(); ++it) {
+        r.push_back(SGPath::fromLocal8Bit(it->c_str()));
+    }
+
+    return r;
+}
+
+//------------------------------------------------------------------------------
+
+std::vector<SGPath> SGPath::pathsFromLocal8Bit(const std::string& paths)
+{
+    std::vector<SGPath> r;
+    string_list items =  sgPathSplit(paths);
+    string_list_iterator it;
+    for (it = items.begin(); it != items.end(); ++it) {
+        r.push_back(SGPath::fromLocal8Bit(it->c_str()));
+    }
+
+    return r;
+}
+
+//------------------------------------------------------------------------------
 SGPath SGPath::home(const SGPath& def)
 {
 #ifdef _WIN32
@@ -882,3 +933,22 @@ std::string SGPath::realpath() const
     free(buf);
     return p;
 }
+
+//------------------------------------------------------------------------------
+
+std::string SGPath::join(const std::vector<SGPath>& paths, const std::string& joinWith)
+{
+    std::string r;
+    if (paths.empty()) {
+        return r;
+    }
+
+    r = paths[0].utf8Str();
+    for (size_t i=1; i<paths.size(); ++i) {
+        r += joinWith + paths[i].utf8Str();
+    }
+
+    return r;
+}
+
+

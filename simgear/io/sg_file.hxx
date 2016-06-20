@@ -23,6 +23,9 @@
 #define _SG_FILE_HXX
 
 #include <simgear/compiler.h>
+
+#include <simgear/misc/sg_path.hxx>
+
 #include "iochannel.hxx"
 
 #include <string>
@@ -32,7 +35,7 @@
  */
 class SGFile : public SGIOChannel {
 
-    std::string file_name;
+    SGPath file_name;
     int fp;
     bool eof_flag;
     // Number of repetitions to play. -1 means loop infinitely.
@@ -51,7 +54,7 @@ public:
      * @param file name of file to open
      * @param repeat On eof restart at the beginning of the file
      */
-    SGFile( const std::string& file, int repeat_ = 1, int extraoflags = 0);
+    SGFile( const SGPath& file, int repeat_ = 1, int extraoflags = 0);
 
     /**
      * Create an SGFile from an existing, open file-descriptor
@@ -80,7 +83,7 @@ public:
     bool close();
 
     /** @return the name of the file being manipulated. */
-    inline std::string get_file_name() const { return file_name; }
+    std::string get_file_name() const { return file_name.utf8Str(); }
 
     /** @return true of eof conditions exists */
     virtual bool eof() const { return eof_flag; };
@@ -88,7 +91,7 @@ public:
 
 class SGBinaryFile : public SGFile {
 public:
-    SGBinaryFile( const std::string& file, int repeat_ = 1 );
+    SGBinaryFile( const SGPath& file, int repeat_ = 1 );
 };
 
 #endif // _SG_FILE_HXX

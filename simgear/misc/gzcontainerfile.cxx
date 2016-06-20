@@ -47,6 +47,7 @@
 
 #include <simgear/props/props_io.hxx>
 #include <simgear/misc/stdint.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include <string.h>
 
@@ -139,7 +140,7 @@ gzContainerWriter::writeContainer(ContainerType Type, SGPropertyNode* root)
 
 gzContainerReader::gzContainerReader(const std::string& name,
                                      const std::string& fileMagic) :
-        sg_gzifstream(name, ios_in | ios_binary),
+        sg_gzifstream(SGPath(name), ios_in | ios_binary),
         filename(name)
 {
     bool ok = (good() && !eof());

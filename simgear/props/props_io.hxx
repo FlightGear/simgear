@@ -29,7 +29,7 @@ void readProperties (std::istream &input, SGPropertyNode * start_node,
 /**
  * Read properties from an XML file.
  */
-void readProperties (const std::string &file, SGPropertyNode * start_node,
+void readProperties (const SGPath &file, SGPropertyNode * start_node,
                      int default_mode = 0, bool extended = false);
 
 
@@ -52,7 +52,7 @@ void writeProperties (std::ostream &output, const SGPropertyNode * start_node,
 /**
  * Write properties to an XML file.
  */
-void writeProperties (const std::string &file,
+void writeProperties (const SGPath &file,
                       const SGPropertyNode * start_node,
 		      bool write_all = false,
 		      SGPropertyNode::Attribute archive_flag = SGPropertyNode::ARCHIVE);

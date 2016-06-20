@@ -33,6 +33,14 @@ sg_location::sg_location (const std::string& path, int line, int column)
   setPath(path.c_str());
 }
 
+sg_location::sg_location (const SGPath& path, int line, int column)
+: _line(line),
+_column(column),
+_byte(-1)
+{
+    setPath(path.utf8Str().c_str());
+}
+
 sg_location::sg_location (const char* path, int line, int column)
   : _line(line),
     _column(column),
@@ -269,13 +277,6 @@ sg_io_exception::sg_io_exception( const std::string& message,
   : sg_exception(message, origin),
     _location(location)
 {
-}
-
-sg_io_exception::sg_io_exception( const std::string &message,
-                                  const SGPath& origin )
-    : sg_exception(message, origin.str())
-{
-
 }
 
 sg_io_exception::~sg_io_exception () throw ()

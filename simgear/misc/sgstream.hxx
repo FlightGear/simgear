@@ -40,6 +40,8 @@
 
 #include <simgear/misc/zfstream.hxx>
 
+class SGPath;
+
 /**
  * An envelope class for gzifstream.
  */
@@ -55,7 +57,7 @@ public:
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
      */
-    sg_gzifstream( const std::string& name,
+    sg_gzifstream( const SGPath& name,
 		   ios_openmode io_mode = ios_in | ios_binary );
 
     /**
@@ -70,7 +72,7 @@ public:
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
      */
-    void open( const std::string& name,
+    void open( const SGPath& name,
 	       ios_openmode io_mode = ios_in|ios_binary );
 
     /**

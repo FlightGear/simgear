@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
             } else if (!strcmp(argv[a], "--auth")) {
                 proxyAuth = argv[++a];
             } else if (!strcmp(argv[a], "-f") || !strcmp(argv[a], "--file")) {
-                outFile = new SGFile(argv[++a]);
+                outFile = new SGFile(SGPath::fromLocal8Bit(argv[++a]));
                 if (!outFile->open(SG_IO_OUT)) {
                     cerr << "failed to open output for writing:" << outFile->get_file_name() << endl;
                     return EXIT_FAILURE;

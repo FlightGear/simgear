@@ -707,7 +707,7 @@ void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache()
     time_t now = time(0);
 
     try {
-        readProperties(_persistentCachePath.str(), cacheRoot);
+        readProperties(_persistentCachePath, cacheRoot);
     } catch (sg_exception& e) {
         SG_LOG(SG_TERRASYNC, SG_INFO, "corrupted persistent cache, discarding");
         return;
@@ -737,7 +737,7 @@ void SGTerraSync::WorkerThread::writeCompletedTilesPersistentCache() const
         return;
     }
 
-    std::ofstream f(_persistentCachePath.c_str(), std::ios::trunc);
+    std::ofstream f(_persistentCachePath.local8BitStr(), std::ios::trunc);
     if (!f.is_open()) {
         return;
     }

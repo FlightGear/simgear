@@ -64,7 +64,7 @@ public:
 
     /** Copy contructor */
     SGPath(const SGPath& p);
-    
+
     SGPath& operator=(const SGPath& p);
 
     /**
@@ -89,8 +89,8 @@ public:
      * Set path to a new value
      * @param p new path
      */
-    void set( const std::string& p );
-    SGPath& operator= ( const char* p ) { this->set(p); return *this; }
+ //   void set( const std::string& p );
+ //   SGPath& operator= ( const char* p ) { this->set(p); return *this; }
 
     bool operator==(const SGPath& other) const;
     bool operator!=(const SGPath& other) const;
@@ -103,7 +103,7 @@ public:
      * retrieved each time it is queried. Caching is enabled by default
      */
     void set_cached(bool cached);
-    
+
     /**
      * Append another piece to the existing path.  Inserts a path
      * separator between the existing component and the new component.
@@ -121,7 +121,7 @@ public:
      * Append a new piece to the existing path.  Inserts a search path
      * separator to the existing path and the new patch component.
      * @param p additional path component */
-    void add( const std::string& p );
+   // void add( const std::string& p );
 
     /**
      * Concatenate a string to the end of the path without inserting a
@@ -141,13 +141,13 @@ public:
      * @return file string
      */
     std::string file() const;
-  
+
     /**
      * Get the directory part of the path.
      * @return directory string
      */
     std::string dir() const;
-  
+
     /**
      * Get the base part of the path (everything but the final extension.)
      * @return the base string
@@ -165,14 +165,14 @@ public:
      * @return the extension string
      */
     std::string extension() const;
-    
+
     /**
      * Get the extension part of the path (everything after the final ".")
      * converted to lowercase
      * @return the extension string
      */
     std::string lower_extension() const;
-    
+
     /**
      * Get the complete extension part of the path (everything after the first ".")
      * this might look like 'tar.gz' or 'txt.Z', or might be identical to 'extension' above
@@ -180,12 +180,12 @@ public:
      * @return the extension string
      */
     std::string complete_lower_extension() const;
-    
+
     /**
      * Get the path string
      * @return path string
      */
-    std::string str() const { return path; }
+  //  std::string str() const { return path; }
     std::string utf8Str() const { return path; }
 
     std::string local8BitStr() const;
@@ -195,12 +195,12 @@ public:
      * Get the path string
      * @return path in "C" string (ptr to char array) form.
      */
-    const char* c_str() const { return path.c_str(); }
+  //  const char* c_str() const { return path.c_str(); }
 
     /**
      * Get the path string in OS native form
      */
-    std::string str_native() const;
+ //   std::string str_native() const;
 
     /**
      * Determine if file exists by attempting to fopen it.
@@ -230,28 +230,28 @@ public:
 
     bool isFile() const;
     bool isDir() const;
-    
+
     /**
      * Opposite sense to isAbsolute
      */
     bool isRelative() const { return !isAbsolute(); }
-    
+
     /**
      * Is this an absolute path?
      * I.e starts with a directory seperator, or a single character + colon
      */
     bool isAbsolute() const;
-    
+
     /**
      * check for default constructed path
      */
     bool isNull() const;
-    
+
     /**
      * delete the file, if possible
      */
     bool remove();
-    
+
     /**
      * modification time of the file
      */
@@ -355,5 +355,3 @@ string_list sgPathSplit( const std::string &search_path );
 
 
 #endif // _SG_PATH_HXX
-
-

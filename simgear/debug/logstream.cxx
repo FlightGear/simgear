@@ -38,7 +38,7 @@
 
 #include <simgear/misc/sg_path.hxx>
 
-#if defined (SG_WINDOWS) 
+#if defined (SG_WINDOWS)
 // for AllocConsole, OutputDebugString
     #include <windows.h>
 #endif
@@ -106,10 +106,10 @@ void LogCallback::setLogLevels( sgDebugClass c, sgDebugPriority p )
 class FileLogCallback : public simgear::LogCallback
 {
 public:
-    FileLogCallback(const std::string& aPath, sgDebugClass c, sgDebugPriority p) :
-	    simgear::LogCallback(c, p),
-        m_file(aPath.c_str(), std::ios_base::out | std::ios_base::trunc)
+    FileLogCallback(const SGPath& aPath, sgDebugClass c, sgDebugPriority p) :
+	    simgear::LogCallback(c, p)
     {
+        m_file.open(aPath.local8BitStr(), std::ios_base::out | std::ios_base::trunc);
     }
 
     virtual void operator()(sgDebugClass c, sgDebugPriority p,
@@ -232,7 +232,7 @@ public:
             // attach failed, don't install the callback
             addStderr = false;
         }
-        
+
         if (!isFile) {
             // No - OK! now set streams to attached console
             freopen("conout$", "w", stdout);
@@ -443,7 +443,7 @@ sglog()
 void
 logstream::logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p )
 {
-    global_privateLogstream->addCallback(new FileLogCallback(aPath.str(), c, p));
+    global_privateLogstream->addCallback(new FileLogCallback(aPath, c, p));
 }
 
 namespace simgear

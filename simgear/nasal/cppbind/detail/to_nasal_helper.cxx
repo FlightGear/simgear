@@ -66,7 +66,7 @@ namespace nasal
   //----------------------------------------------------------------------------
   naRef to_nasal_helper(naContext c, const SGPath& path)
   {
-    return to_nasal_helper(c, path.str());
+    return to_nasal_helper(c, path.utf8Str());
   }
 
   //----------------------------------------------------------------------------

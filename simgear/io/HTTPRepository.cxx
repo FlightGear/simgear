@@ -224,11 +224,11 @@ public:
 
     std::string url() const
     {
-        if (_relativePath.str().empty()) {
+        if (_relativePath.empty()) {
             return _repository->baseUrl;
         }
 
-        return _repository->baseUrl + "/" + _relativePath.str();
+        return _repository->baseUrl + "/" + _relativePath;
     }
 
     void dirIndexUpdated(const std::string& hash)
@@ -247,7 +247,7 @@ public:
     void failedToUpdate(HTTPRepository::ResultCode status)
     {
         _state = UpdateFailed;
-        if (_relativePath.isNull()) {
+        if (_relativePath.empty()) {
             // root dir failed
             _repository->failedToGetRootIndex(status);
         } else {
@@ -293,9 +293,7 @@ public:
                 // perform a recursive check.
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists hash is good:" << it->file() );
                 if (c->type == ChildInfo::DirectoryType) {
-                    SGPath p(relativePath());
-                    p.append(it->file());
-                    HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
+                    HTTPDirectory* childDir = childDirectory(it->file());
                     if (childDir->_state == NotUpdated) {
                         childDir->_state = Updated;
                     }
@@ -344,9 +342,7 @@ public:
         ChildInfoList::iterator cit;
         for (cit = children.begin(); cit != children.end(); ++cit) {
             if (cit->type == ChildInfo::DirectoryType) {
-                SGPath p(relativePath());
-                p.append(cit->name);
-                HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
+                HTTPDirectory* childDir = childDirectory(cit->name);
                 childDir->markSubtreeAsNeedingUpdate();
             }
         } // of child iteration
@@ -361,9 +357,7 @@ public:
         ChildInfoList::iterator cit;
         for (cit = children.begin(); cit != children.end(); ++cit) {
             if (cit->type == ChildInfo::DirectoryType) {
-                SGPath p(relativePath());
-                p.append(cit->name);
-                HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
+                HTTPDirectory* childDir = childDirectory(cit->name);
                 childDir->markSubtreeAsEnabled();
             }
         } // of child iteration
@@ -376,11 +370,11 @@ public:
             markAsEnabled();
         }
 
-        if (_relativePath.isNull()) {
+        if (_relativePath.empty()) {
             return;
         }
 
-        std::string prPath = _relativePath.dir();
+        std::string prPath = SGPath(_relativePath).dir();
         if (prPath.empty()) {
             _repository->rootDir->markAncestorChainAsEnabled();
         } else {
@@ -403,12 +397,15 @@ public:
         ChildInfoList::iterator cit;
         for (cit = children.begin(); cit != children.end(); ++cit) {
             if (cit->type == ChildInfo::DirectoryType) {
-                SGPath p(relativePath());
-                p.append(cit->name);
-                HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
+                HTTPDirectory* childDir = childDirectory(cit->name);
                 childDir->updateIfWaiting(cit->hash, cit->sizeInBytes);
             }
         } // of child iteration
+    }
+
+    HTTPDirectory* childDirectory(const std::string& name)
+    {
+        return _repository->getOrCreateDirectory(relativePath() + "/" + name);
     }
 
     void removeOrphans(const string_list& orphans)
@@ -444,9 +441,7 @@ public:
             if (cit->type == ChildInfo::FileType) {
                 _repository->updateFile(this, *it, cit->sizeInBytes);
             } else {
-                SGPath p(relativePath());
-                p.append(*it);
-                HTTPDirectory* childDir = _repository->getOrCreateDirectory(p.str());
+                HTTPDirectory* childDir = childDirectory(*it);
                 if (childDir->_state == DoNotUpdate) {
                     SG_LOG(SG_TERRASYNC, SG_WARN, "scheduleUpdate, child:" << *it << " is marked do not update so skipping");
                     continue;
@@ -460,11 +455,11 @@ public:
     SGPath absolutePath() const
     {
         SGPath r(_repository->basePath);
-        r.append(_relativePath.str());
+        r.append(_relativePath);
         return r;
     }
 
-    SGPath relativePath() const
+    std::string relativePath() const
     {
         return _relativePath;
     }
@@ -521,7 +516,7 @@ private:
             return false;
         }
 
-        std::ifstream indexStream( p.c_str(), std::ios::in );
+        sg_ifstream indexStream(p, std::ios::in );
 
         if ( !indexStream.is_open() ) {
             throw sg_io_exception("cannot open dirIndex file", p);
@@ -581,11 +576,9 @@ private:
         p.append(name);
         bool ok;
 
-        SGPath fpath(_relativePath);
-        fpath.append(name);
-
+        std::string fpath = _relativePath + "/" + name;
         if (p.isDir()) {
-            ok = _repository->deleteDirectory(fpath.str());
+            ok = _repository->deleteDirectory(fpath);
         } else {
             // remove the hash cache entry
             _repository->updatedFileContents(p, std::string());
@@ -608,8 +601,8 @@ private:
         return _repository->hashForPath(p);
     }
 
-  HTTPRepoPrivate* _repository;
-  SGPath _relativePath; // in URL and file-system space
+    HTTPRepoPrivate* _repository;
+    std::string _relativePath; // in URL and file-system space
 
     typedef enum
     {
@@ -754,7 +747,7 @@ HTTPRepository::failure() const
         virtual void gotBodyData(const char* s, int n)
         {
             if (!file.get()) {
-                file.reset(new SGBinaryFile(pathInRepo.str()));
+                file.reset(new SGBinaryFile(pathInRepo));
                 if (!file->open(SG_IO_OUT)) {
                   SG_LOG(SG_TERRASYNC, SG_WARN, "unable to create file " << pathInRepo);
                   _directory->repository()->http->cancelRequest(this, "Unable to create output file");
@@ -859,9 +852,9 @@ HTTPRepository::failure() const
 
                     // dir index data has changed, so write to disk and update
                     // the hash accordingly
-                    std::ofstream of(pathInRepo().c_str(), std::ios::trunc | std::ios::out);
+                    std::ofstream of(pathInRepo().local8BitStr(), std::ios::trunc | std::ios::out);
                     if (!of.is_open()) {
-                        throw sg_io_exception("Failed to open directory index file for writing", pathInRepo().c_str());
+                        throw sg_io_exception("Failed to open directory index file for writing", pathInRepo());
                     }
 
                     of.write(body.data(), body.size());
@@ -955,7 +948,7 @@ HTTPRepository::failure() const
     class HashEntryWithPath
     {
     public:
-        HashEntryWithPath(const std::string& p) : path(p) {}
+        HashEntryWithPath(const SGPath& p) : path(p.utf8Str()) {}
         bool operator()(const HTTPRepoPrivate::HashCacheEntry& entry) const
         { return entry.filePath == path; }
     private:
@@ -964,7 +957,7 @@ HTTPRepository::failure() const
 
     std::string HTTPRepoPrivate::hashForPath(const SGPath& p)
     {
-        HashCache::iterator it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p.str()));
+        HashCache::iterator it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p));
         if (it != hashes.end()) {
             // ensure data on disk hasn't changed.
             // we could also use the file type here if we were paranoid
@@ -989,7 +982,7 @@ HTTPRepository::failure() const
         sha1_init(&info);
         char* buf = static_cast<char*>(malloc(1024 * 1024));
         size_t readLen;
-        SGBinaryFile f(p.str());
+        SGBinaryFile f(p);
         if (!f.open(SG_IO_IN)) {
             throw sg_io_exception("Couldn't open file for compute hash", p);
         }
@@ -1006,7 +999,7 @@ HTTPRepository::failure() const
     void HTTPRepoPrivate::updatedFileContents(const SGPath& p, const std::string& newHash)
     {
         // remove the existing entry
-        HashCache::iterator it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p.str()));
+        HashCache::iterator it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p));
         if (it != hashes.end()) {
             hashes.erase(it);
             hashCacheDirty = true;
@@ -1022,7 +1015,7 @@ HTTPRepository::failure() const
         p2.set_cached(true);
 
         HashCacheEntry entry;
-        entry.filePath = p.str();
+        entry.filePath = p.utf8Str();
         entry.hashHex = newHash;
         entry.modTime = p2.modTime();
         entry.lengthBytes = p2.sizeInBytes();
@@ -1039,8 +1032,7 @@ HTTPRepository::failure() const
 
         SGPath cachePath = basePath;
         cachePath.append(".hashes");
-
-        std::ofstream stream(cachePath.c_str(),std::ios::out | std::ios::trunc);
+        std::ofstream stream(cachePath.local8BitStr(), std::ios::out | std::ios::trunc);
         HashCache::const_iterator it;
         for (it = hashes.begin(); it != hashes.end(); ++it) {
             stream << it->filePath << ":" << it->modTime << ":"
@@ -1059,7 +1051,7 @@ HTTPRepository::failure() const
             return;
         }
 
-        std::ifstream stream(cachePath.c_str(), std::ios::in);
+        sg_ifstream stream(cachePath, std::ios::in);
 
         while (!stream.eof()) {
             std::string line;
@@ -1070,7 +1062,7 @@ HTTPRepository::failure() const
 
             string_list tokens = simgear::strutils::split( line, ":" );
             if( tokens.size() < 4 ) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath.str() << "': '" << line << "' (ignoring line)");
+                SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath << "': '" << line << "' (ignoring line)");
                 continue;
             }
             const std::string nameData = simgear::strutils::strip(tokens[0]);
@@ -1079,7 +1071,7 @@ HTTPRepository::failure() const
             const std::string hashData = simgear::strutils::strip(tokens[3]);
 
             if (nameData.empty() || timeData.empty() || sizeData.empty() || hashData.empty() ) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath.str() << "': '" << line << "' (ignoring line)");
+                SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath << "': '" << line << "' (ignoring line)");
                 continue;
             }
 
@@ -1097,7 +1089,7 @@ HTTPRepository::failure() const
     public:
         DirectoryWithPath(const std::string& p) : path(p) {}
         bool operator()(const HTTPDirectory* entry) const
-        { return entry->relativePath().str() == path; }
+        { return entry->relativePath() == path; }
     private:
         std::string path;
     };

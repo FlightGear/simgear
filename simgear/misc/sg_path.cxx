@@ -27,6 +27,8 @@
 #include <simgear_config.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/misc/sgstream.hxx>
+
 #include <stdio.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -143,7 +145,7 @@ static SGPath getXDGDir( const std::string& name,
   // path. No other format is supported.
   const std::string XDG_ID = "XDG_" + name + "_DIR=\"";
 
-  std::ifstream user_dirs_file( user_dirs.c_str() );
+  sg_ifstream user_dirs_file( user_dirs );
   std::string line;
   while( std::getline(user_dirs_file, line).good() )
   {
@@ -270,7 +272,7 @@ SGPath& SGPath::operator=(const SGPath& p)
 SGPath::~SGPath() {
 }
 
-
+#if defined(ENABLE_OLD_PATH_API)
 // set path
 void SGPath::set( const string& p ) {
     path = p;
@@ -278,6 +280,7 @@ void SGPath::set( const string& p ) {
     _cached = false;
     _rwCached = false;
 }
+#endif
 
 //------------------------------------------------------------------------------
 void SGPath::setPermissionChecker(PermissionChecker validator)
@@ -322,11 +325,12 @@ SGPath SGPath::operator/( const std::string& p ) const
   return ret;
 }
 
+#if defined(ENABLE_OLD_PATH_API)
 //add a new path component to the existing path string
 void SGPath::add( const string& p ) {
     append( sgSearchPathSep+p );
 }
-
+#endif
 
 // concatenate a string to the end of the path without inserting a
 // path separator
@@ -356,7 +360,7 @@ string SGPath::file() const
         return path;
     }
 }
-  
+
 
 // get the directory part of the path.
 string SGPath::dir() const {
@@ -373,12 +377,12 @@ string SGPath::base() const
 {
     string::size_type index = path.rfind(".");
     string::size_type lastSep = path.rfind(sgDirPathSep);
-    
+
 // tolerate dots inside directory names
     if ((lastSep != string::npos) && (index < lastSep)) {
         return path;
     }
-    
+
     if (index != string::npos) {
         return path.substr(0, index);
     } else {
@@ -394,12 +398,12 @@ string SGPath::file_base() const
     } else {
         ++index; // skip past the separator
     }
-    
+
     string::size_type firstDot = path.find(".", index);
     if (firstDot == string::npos) {
         return path.substr(index); // no extensions
     }
-    
+
     return path.substr(index, firstDot - index);
 }
 
@@ -427,7 +431,7 @@ string SGPath::complete_lower_extension() const
     } else {
         ++index; // skip past the separator
     }
-    
+
     string::size_type firstDot = path.find(".", index);
     if ((firstDot != string::npos)  && (path.find(sgDirPathSep, firstDot) == string::npos)) {
         return boost::to_lower_copy(path.substr(firstDot + 1));
@@ -451,11 +455,11 @@ void SGPath::validate() const
 #ifdef _WIN32
   struct _stat buf ;
   bool remove_trailing = false;
-  string statPath(path);
+  string statPath(path.local8BitStr());
   if ((path.length() > 1) && (path.back() == '/')) {
 	  statPath.pop_back();
   }
-      
+
   if (_stat(statPath.c_str(), &buf ) < 0) {
     _exists = false;
   } else {
@@ -478,7 +482,7 @@ void SGPath::validate() const
     _modTime = buf.st_mtime;
     _size = buf.st_size;
   }
-  
+
 #endif
   _cached = true;
 }
@@ -569,16 +573,17 @@ int SGPath::create_dir(mode_t mode)
         i = 2;
     }
 #endif
+  std::string ds = dir.local8BitStr();
   struct stat info;
   int r;
-  for(; (r = stat(dir.c_str(), &info)) == 0 && i < path_elements.size(); ++i)
+  for(; (r = stat(ds.c_str(), &info)) == 0 && i < path_elements.size(); ++i)
     dir.append(path_elements[i]);
   if( r == 0 )
       return 0; // Directory already exists
 
   for(;;)
   {
-    if( sgMkDir(dir.c_str(), mode) )
+    if( sgMkDir(ds.c_str(), mode) )
     {
       SG_LOG( SG_IO,
               SG_ALERT, "Error creating directory: (" << dir << ")" );
@@ -642,7 +647,7 @@ bool SGPath::isAbsolute() const
   if (path.empty()) {
     return false;
   }
-  
+
 #ifdef _WIN32
   // detect '[A-Za-z]:/'
   if (path.size() > 2) {
@@ -651,7 +656,7 @@ bool SGPath::isAbsolute() const
     }
   }
 #endif
-  
+
   return (path[0] == sgDirPathSep);
 }
 
@@ -660,6 +665,7 @@ bool SGPath::isNull() const
   return path.empty();
 }
 
+#if defined(ENABLE_OLD_PATH_API)
 std::string SGPath::str_native() const
 {
 #ifdef _WIN32
@@ -676,6 +682,7 @@ std::string SGPath::str_native() const
     return utf8Str();
 #endif
 }
+#endif
 
 //------------------------------------------------------------------------------
 bool SGPath::remove()
@@ -687,7 +694,8 @@ bool SGPath::remove()
     return false;
   }
 
-  int err = ::unlink(c_str());
+  std::string ps = local8BitStr();
+  int err = ::unlink(ps.c_str());
   if( err )
   {
     SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << *this << ") "
@@ -950,5 +958,3 @@ std::string SGPath::join(const std::vector<SGPath>& paths, const std::string& jo
 
     return r;
 }
-
-

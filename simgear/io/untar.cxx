@@ -193,7 +193,7 @@ public:
         } else if ((header.typeflag == REGTYPE) || (header.typeflag == AREGTYPE)) {
             currentFileSize = ::strtol(header.size, NULL, 8);
             bytesRemaining = currentFileSize;
-            currentFile.reset(new SGBinaryFile(p.str()));
+            currentFile.reset(new SGBinaryFile(p));
             currentFile->open(SG_IO_OUT);
             setState(READING_FILE);
         } else {

@@ -221,7 +221,7 @@ struct ReaderWriterSTG::_ModelBin {
 
         SGPath path = filePath;
         path.append(".."); path.append(".."); path.append("..");
-        sharedOptions->getDatabasePathList().push_back(path.str());
+        sharedOptions->getDatabasePathList().push_back(path.local8BitStr());
         
         // ensure Models directory synced via TerraSync is searched before the copy in
         // FG_ROOT, so that updated models can be used.
@@ -346,7 +346,7 @@ struct ReaderWriterSTG::_ModelBin {
                     _Object obj;
                     obj._errorLocation = absoluteFileName;
                     obj._token = token;
-                    obj._name = path.str();
+                    obj._name = path.local8BitStr();
                     obj._options = staticOptions(filePath, options);
                     _objectList.push_back(obj);
                 }
@@ -356,7 +356,7 @@ struct ReaderWriterSTG::_ModelBin {
                     _Object obj;
                     obj._errorLocation = absoluteFileName;
                     obj._token = token;
-                    obj._name = path.str();
+                    obj._name = path.local8BitStr();
                     obj._options = staticOptions(filePath, options);
                     _objectList.push_back(obj);
                 }
@@ -555,13 +555,13 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
             objects.append("Objects");
             objects.append(basePath);
             objects.append(fileName);
-            modelBin.read(objects.str(), options);
+            modelBin.read(objects.local8BitStr(), options);
             
             SGPath terrain(*i);
             terrain.append("Terrain");
             terrain.append(basePath);
             terrain.append(fileName);
-            modelBin.read(terrain.str(), options);
+            modelBin.read(terrain.local8BitStr(), options);
         }
     }
 

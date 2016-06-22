@@ -121,7 +121,7 @@ SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
     _buffer(SGSoundMgr::NO_BUFFER)
 {
     SGPath p = simgear::ResourceManager::instance()->findPath(file, currentDir);
-    _refname = p.str();
+    _refname = p.utf8Str();
 }
 
 // constructor

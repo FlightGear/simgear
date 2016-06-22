@@ -87,16 +87,16 @@ void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time 
         if (!static_tzContainer.get()) {
             SGPath zone( root );
             zone.append( "zone.tab" );
-            SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: "
-                   << zone.str() );
-            static_tzContainer.reset(new SGTimeZoneContainer( zone.c_str() ));
+            SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: " << zone );
+            std::string zs = zone.local8BitStr();
+            static_tzContainer.reset(new SGTimeZoneContainer( zs.c_str() ));
         }
 
         SGTimeZone* nearestTz = static_tzContainer->getNearest(location);
 
         SGPath name( root );
         name.append( nearestTz->getDescription() );
-        zonename = name.str();
+        zonename = name.utf8Str();
         SG_LOG( SG_EVENT, SG_DEBUG, "Using zonename = " << zonename );
     } else {
         zonename.erase();
@@ -235,17 +235,18 @@ void SGTime::updateLocal( const SGGeod& aLocation, const string& root ) {
     SGTimeZone* nearestTz = static_tzContainer->getNearest(location);
     SGPath zone( root );
     zone.append ( nearestTz->getDescription() );
-    zonename = zone.str();
+    zonename = zone.utf8Str();
 
     //Avoid troubles when zone.tab hasn't got the right line endings
     if (zonename[zonename.size()-1] == '\r')
     {
       zonename[zonename.size()-1]=0;
-      zone.set( zonename );
+      zone = SGPath(zonename);
     }
 
     currGMT = sgTimeGetGMT( gmtime(&cur_time) );
-    aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zone.c_str())) );
+    std::string zs = zone.local8BitStr();
+    aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zs.c_str())) );
     local_offset = aircraftLocalTime - currGMT;
     // cout << "Using " << local_offset << " as local time offset Timezone is " 
     //      << zonename << endl;

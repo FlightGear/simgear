@@ -27,6 +27,7 @@
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/package/Package.hxx>
 #include <simgear/package/Root.hxx>
@@ -159,8 +160,7 @@ protected:
         // cache the catalog data, now we have a valid install root
         Dir d(m_owner->installRoot());
         SGPath p = d.file("catalog.xml");
-
-        std::ofstream f(p.c_str(), std::ios::out | std::ios::trunc);
+        std::ofstream f(p.local8BitStr(), std::ios::out | std::ios::trunc);
         f.write(m_buffer.data(), m_buffer.size());
         f.close();
 
@@ -207,7 +207,7 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     SGPropertyNode_ptr props;
     try {
         props = new SGPropertyNode;
-        readProperties(xml.str(), props);
+        readProperties(xml, props);
     } catch (sg_exception& ) {
         return NULL;
     }
@@ -465,7 +465,7 @@ void Catalog::parseTimestamp()
 {
     SGPath timestampFile = m_installRoot;
     timestampFile.append(".timestamp");
-    std::ifstream f(timestampFile.c_str(), std::ios::in);
+    sg_ifstream f(timestampFile, std::ios::in);
     f >> m_retrievedTime;
 }
 
@@ -473,7 +473,7 @@ void Catalog::writeTimestamp()
 {
     SGPath timestampFile = m_installRoot;
     timestampFile.append(".timestamp");
-    std::ofstream f(timestampFile.c_str(), std::ios::out | std::ios::trunc);
+    std::ofstream f(timestampFile.local8BitStr(), std::ios::out | std::ios::trunc);
     f << m_retrievedTime << std::endl;
 }
 

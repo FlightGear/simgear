@@ -307,7 +307,7 @@ std::string test_computeHashForPath(const SGPath& p)
     char* buf = static_cast<char*>(alloca(1024 * 1024));
     size_t readLen;
 
-    SGBinaryFile f(p.str());
+    SGBinaryFile f(p);
     f.open(SG_IO_IN);
 
     while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
@@ -370,7 +370,7 @@ void createFile(const SGPath& basePath, const std::string& relPath, int revision
 
     std::string prName = comps.at(comps.size() - 2);
     {
-        std::ofstream f(p.c_str(), std::ios::trunc | std::ios::out);
+        std::ofstream f(p.local8BitStr(), std::ios::trunc | std::ios::out);
         f << dataForFile(prName, comps.back(), revision);
     }
 }
@@ -450,7 +450,7 @@ void testModifyLocalFiles(HTTP::Client* cl)
     SGPath modFile(p);
     modFile.append("dirB/subdirA/fileBAA");
     {
-        std::ofstream of(modFile.c_str(), std::ios::out | std::ios::trunc);
+        std::ofstream of(modFile.local8BitStr(), std::ios::out | std::ios::trunc);
         of << "complete nonsense";
         of.close();
     }

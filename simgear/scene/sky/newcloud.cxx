@@ -118,7 +118,7 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
                            "image"),
                  texture);
         ref_ptr<SGReaderWriterOptions> options;
-        options = SGReaderWriterOptions::fromPath(texture_root.str());
+        options = SGReaderWriterOptions::fromPath(texture_root.local8BitStr());
         effect = makeEffect(pcloudEffect, true, options.get());
         if (effect.valid())
         {

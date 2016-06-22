@@ -63,7 +63,7 @@ void test_empty()
     bool ok = empty.write_bin_file(path);
     VERIFY( ok );
     SGBinObject rd;
-   ok = rd.read_bin(path.str()) ;
+   ok = rd.read_bin(path) ;
    VERIFY( ok);
 
    COMPARE(rd.get_wgs84_nodes().size(), 0);
@@ -192,7 +192,7 @@ void test_basic()
     VERIFY( ok );
     
     SGBinObject rd;
-   ok = rd.read_bin(path.str()) ;
+   ok = rd.read_bin(path) ;
    VERIFY( ok);
    COMPARE(rd.get_version(), 7); // should be version 7 since indices are < 2^16
    COMPARE(rd.get_gbs_center(), center);
@@ -229,7 +229,7 @@ void test_many_tcs()
     VERIFY( ok );
     
     SGBinObject rd;
-   ok = rd.read_bin(path.str()) ;
+   ok = rd.read_bin(path) ;
    VERIFY( ok);
    COMPARE(rd.get_version(), 10); // should be version 10 since indices are > 2^16
    COMPARE(rd.get_wgs84_nodes().size(), points.size());
@@ -266,7 +266,7 @@ void test_big()
     VERIFY( ok );
     
     SGBinObject rd;
-   ok = rd.read_bin(path.str()) ;
+   ok = rd.read_bin(path) ;
    VERIFY( ok);
    COMPARE(rd.get_version(), 10); // should be version 10 since indices are > 2^16
    COMPARE(rd.get_wgs84_nodes().size(), points.size());
@@ -303,7 +303,7 @@ void test_some_objects()
     VERIFY( ok );
     
     SGBinObject rd;
-    ok = rd.read_bin(path.str()) ;
+    ok = rd.read_bin(path) ;
     VERIFY( ok);
     COMPARE(rd.get_version(), 7); // since we have less than 2^15 tris
     COMPARE(rd.get_wgs84_nodes().size(), points.size());
@@ -340,7 +340,7 @@ void test_many_objects()
     VERIFY( ok );
     
     SGBinObject rd;
-    ok = rd.read_bin(path.str()) ;
+    ok = rd.read_bin(path) ;
     VERIFY( ok);
     COMPARE(rd.get_version(), 10); // should be version 10 since indices are > 2^16
     COMPARE(rd.get_wgs84_nodes().size(), points.size());

@@ -663,7 +663,7 @@ bool SGPath::isNull() const
 std::string SGPath::str_native() const
 {
 #ifdef _WIN32
-    std::string s = local8BitStr()();
+    std::string s = local8BitStr();
     std::string::size_type pos;
     std::string nativeSeparator;
     nativeSeparator = sgDirPathSepBad;

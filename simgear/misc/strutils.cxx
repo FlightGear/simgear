@@ -416,6 +416,7 @@ std::string convertUtf8ToWindowsLocal8Bit(const std::string& a)
     // convert down to local multi-byte
     std::vector<char> result;
     int requiredChars = WideCharToMultiByte(CP_ACP, flags,
+											wideString.data(), wideString.size(),
                                             NULL, 0, NULL, NULL);
     result.resize(requiredChars);
     WideCharToMultiByte(CP_ACP, flags,

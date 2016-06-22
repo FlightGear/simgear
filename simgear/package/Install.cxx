@@ -33,6 +33,7 @@
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/misc/sgstream.hxx>
 
 extern "C" {
     void fill_memory_filefunc (zlib_filefunc_def*);
@@ -217,7 +218,7 @@ private:
             throw sg_io_exception("opening current zip file failed", sg_location(name));
         }
 
-        std::ofstream outFile;
+        sg_ofstream outFile;
         bool eof = false;
         SGPath path(m_extractPath);
         path.append(name);
@@ -227,13 +228,13 @@ private:
         if (!parentDir.exists()) {
             bool ok = parentDir.create(0755);
             if (!ok) {
-                throw sg_io_exception("failed to create directory heirarchy for extraction", path.c_str());
+                throw sg_io_exception("failed to create directory heirarchy for extraction", path);
             }
         }
 
-        outFile.open(path.c_str(), std::ios::binary | std::ios::trunc | std::ios::out);
+        outFile.open(path, std::ios::binary | std::ios::trunc | std::ios::out);
         if (outFile.fail()) {
-            throw sg_io_exception("failed to open output file for writing", path.c_str());
+            throw sg_io_exception("failed to open output file for writing", path);
         }
 
         while (!eof) {
@@ -364,7 +365,7 @@ void Install::parseRevision()
         return;
     }
 
-    std::ifstream f(revisionFile.c_str(), std::ios::in);
+    sg_ifstream f(revisionFile, std::ios::in);
     f >> m_revision;
 }
 
@@ -372,7 +373,7 @@ void Install::writeRevisionFile()
 {
     SGPath revisionFile = m_path;
     revisionFile.append(".revision");
-    std::ofstream f(revisionFile.c_str(), std::ios::out | std::ios::trunc);
+    sg_ofstream f(revisionFile, std::ios::out | std::ios::trunc);
     f << m_revision << std::endl;
 }
 

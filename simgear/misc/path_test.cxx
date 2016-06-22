@@ -89,8 +89,8 @@ int main(int argc, char* argv[])
     
 // test basic parsing
     SGPath pb("/Foo/bar/something.png");
-    COMPARE(pb.str(), std::string("/Foo/bar/something.png"));
-    COMPARE(strcmp(pb.c_str(), "/Foo/bar/something.png"), 0);
+    COMPARE(pb.utf8Str(), std::string("/Foo/bar/something.png"));
+    COMPARE(pb.local8BitStr(), std::string("/Foo/bar/something.png"));
     COMPARE(pb.dir(), std::string("/Foo/bar"));
     COMPARE(pb.file(), std::string("something.png"));
     COMPARE(pb.base(), std::string("/Foo/bar/something"));
@@ -101,7 +101,8 @@ int main(int argc, char* argv[])
     
 // relative paths
     SGPath ra("where/to/begin.txt");
-    COMPARE(ra.str(), std::string("where/to/begin.txt"));
+    COMPARE(ra.utf8Str(), std::string("where/to/begin.txt"));
+    COMPARE(ra.local8BitStr(), std::string("where/to/begin.txt"));
     COMPARE(ra.dir(), std::string("where/to"));
     COMPARE(ra.file(), std::string("begin.txt"));
     COMPARE(ra.file_base(), std::string("begin"));
@@ -127,34 +128,26 @@ int main(int argc, char* argv[])
     
 // path fixing
     SGPath rd("where\\to\\begin.txt");
-    COMPARE(rd.str(), std::string("where/to/begin.txt"));
+    COMPARE(rd.utf8Str(), std::string("where/to/begin.txt"));
     
 // test modification
 // append
     SGPath d1("/usr/local");
     SGPath pc = d1;
-    COMPARE(pc.str(), std::string("/usr/local"));
+    COMPARE(pc.utf8Str(), std::string("/usr/local"));
     pc.append("include");
     
-    COMPARE(pc.str(), std::string("/usr/local/include"));
+    COMPARE(pc.utf8Str(), std::string("/usr/local/include"));
     COMPARE(pc.file(), std::string("include"));
-    
-// add
-    pc.add("/opt/local");
-#ifdef _WIN32
-    COMPARE(pc.str(), std::string("/usr/local/include/;/opt/local"));
-#else
-    COMPARE(pc.str(), std::string("/usr/local/include/:/opt/local"));
-#endif
 
 // concat
     SGPath pd = pb;
     pd.concat("-1");
-    COMPARE(pd.str(), std::string("/Foo/bar/something.png-1"));
+    COMPARE(pd.utf8Str(), std::string("/Foo/bar/something.png-1"));
     
 // create with relative path
     SGPath rb(d1, "include/foo");
-    COMPARE(rb.str(), std::string("/usr/local/include/foo"));
+    COMPARE(rb.utf8Str(), std::string("/usr/local/include/foo"));
     VERIFY(rb.isAbsolute());
     
 // lower-casing of file extensions
@@ -170,12 +163,9 @@ int main(int argc, char* argv[])
     COMPARE(extB.lower_extension(), "gz");
     COMPARE(extB.complete_lower_extension(), "html.gz");
 #ifdef _WIN32
-    COMPARE(d1.str_native(), std::string("\\usr\\local"));
-    
     SGPath winAbs("C:\\Windows\\System32");
-    COMPARE(winAbs.str(), std::string("C:/Windows/System32"));
-#else
-    COMPARE(d1.str_native(), std::string("/usr/local"));
+    COMPARE(winAbs.local8BitStr(), std::string("C:/Windows/System32"));
+
 #endif
   
 // paths with only the file components

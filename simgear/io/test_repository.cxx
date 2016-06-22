@@ -18,6 +18,7 @@
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/callback.hxx>
 
@@ -307,7 +308,7 @@ std::string test_computeHashForPath(const SGPath& p)
     char* buf = static_cast<char*>(alloca(1024 * 1024));
     size_t readLen;
 
-    SGBinaryFile f(p.str());
+    SGBinaryFile f(p);
     f.open(SG_IO_IN);
 
     while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
@@ -370,7 +371,7 @@ void createFile(const SGPath& basePath, const std::string& relPath, int revision
 
     std::string prName = comps.at(comps.size() - 2);
     {
-        std::ofstream f(p.c_str(), std::ios::trunc | std::ios::out);
+        sg_ofstream f(p, std::ios::trunc | std::ios::out);
         f << dataForFile(prName, comps.back(), revision);
     }
 }
@@ -450,7 +451,7 @@ void testModifyLocalFiles(HTTP::Client* cl)
     SGPath modFile(p);
     modFile.append("dirB/subdirA/fileBAA");
     {
-        std::ofstream of(modFile.c_str(), std::ios::out | std::ios::trunc);
+        sg_ofstream of(modFile, std::ios::out | std::ios::trunc);
         of << "complete nonsense";
         of.close();
     }
@@ -901,7 +902,7 @@ int main(int argc, char* argv[])
 
     testServer.disconnectAll();
     cl.clearAllConnections();
-    
+
     testPartialUpdateBasic(&cl);
     testPartialUpdateExisting(&cl);
     testPartialUpdateWidenWhileInProgress(&cl);

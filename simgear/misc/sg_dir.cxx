@@ -66,7 +66,7 @@ Dir::Dir(const SGPath& path) :
 }
 
 Dir::Dir(const Dir& rel, const SGPath& relPath) :
-  _path(rel.file(relPath.str())),
+  _path(rel.file(relPath.utf8Str())),
   _removeOnDestroy(false)
 {
     _path.set_cached(false); // disable caching, so create/remove work
@@ -115,7 +115,8 @@ Dir Dir::tempDir(const std::string& templ)
     // Mac OS-X / BSD manual says any number of 'X's, but GLibc manual
     // says exactly six, so that's what I'm going with
     p.concat("-XXXXXX");
-    ::snprintf(buf, 1024, "%s", p.c_str());
+    std::string s = p.local8BitStr();
+    ::snprintf(buf, 1024, "%s", s.c_str());
     if (!mkdtemp(buf)) {
         SG_LOG(SG_IO, SG_WARN, "mkdtemp failed:" << strerror(errno));
         return Dir();
@@ -126,7 +127,7 @@ Dir Dir::tempDir(const std::string& templ)
     SGPath p(tempnam(0, templ.c_str()));
     Dir t(p);
     if (!t.create(0700)) {
-        SG_LOG(SG_IO, SG_WARN, "failed to create temporary directory at " << p.str());
+        SG_LOG(SG_IO, SG_WARN, "failed to create temporary directory at " << p);
     }
     
     return t;
@@ -146,7 +147,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   }
   
 #ifdef _WIN32
-  std::string search(_path.str());
+  std::string search(_path.local8BitStr());
   if (nameFilter.empty()) {
     search += "\\*"; // everything
   } else {
@@ -159,7 +160,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 	  int err = GetLastError();
 	  if (err != ERROR_FILE_NOT_FOUND) {
 		SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: FindFirstFile failed:" << 
-			_path.str() << " with error:" << err);
+			_path << " with error:" << err);
 	  }
     return result;
   }
@@ -195,9 +196,10 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 
   FindClose(find);
 #else
-  DIR* dp = opendir(_path.c_str());
+    std::string ps = _path.local8BitStr();
+  DIR* dp = opendir(ps.c_str());
   if (!dp) {
-    SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: opendir failed:" << _path.str());
+    SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: opendir failed:" << _path);
     return result;
   }
   
@@ -270,9 +272,11 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 bool Dir::isEmpty() const
 {
   bool empty= true;
+  std::string ps = _path.local8BitStr();
 #ifdef _WIN32 
+  ps += "\\*";
   WIN32_FIND_DATA fData;
-  HANDLE find = FindFirstFile("\\*", &fData);
+  HANDLE find = FindFirstFile(ps.c_str(), &fData);
   if (find == INVALID_HANDLE_VALUE) {
     return true;
   }
@@ -293,7 +297,8 @@ bool Dir::isEmpty() const
     
   FindClose(find);
 #else
-  DIR* dp = opendir(_path.c_str());
+
+  DIR* dp = opendir(ps.c_str());
   if (!dp) {
     return true;
   }
@@ -351,9 +356,10 @@ bool Dir::create(mode_t mode)
     }
     
 // finally, create ourselves
-    int err = sgMkDir(_path.c_str(), mode);
+    std::string ps = _path.local8BitStr();
+    int err = sgMkDir(ps.c_str(), mode);
     if (err) {
-        SG_LOG(SG_IO, SG_WARN,  "directory creation failed: (" << _path.str() << ") " << strerror(errno) );
+        SG_LOG(SG_IO, SG_WARN,  "directory creation failed: (" << _path << ") " << strerror(errno) );
     }
     
     return (err == 0);
@@ -393,14 +399,15 @@ bool Dir::remove(bool recursive)
             return false;
         }
     } // of recursive deletion
-    
+
+    std::string ps = _path.local8BitStr();
 #ifdef _WIN32
-    int err = _rmdir(_path.c_str());
+    int err = _rmdir(ps.c_str());
 #else
-    int err = rmdir(_path.c_str());
+    int err = rmdir(ps.c_str());
 #endif
     if (err) {
-        SG_LOG(SG_IO, SG_WARN, "rmdir failed:" << _path.str() << ":" << strerror(errno));
+        SG_LOG(SG_IO, SG_WARN, "rmdir failed:" << _path << ":" << strerror(errno));
     }
     return (err == 0);
 }

@@ -372,7 +372,8 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   b.path = path;
     
   gzFile fd;
-  fd = gzopen(path.c_str(), "rb");
+  std::string ps = path.local8BitStr();
+  fd = gzopen(ps.c_str(), "rb");
   if (!fd) {
     throw sg_io_exception("loadWAVFromFile: unable to open file", path);
   }

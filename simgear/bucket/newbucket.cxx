@@ -227,9 +227,7 @@ std::string SGBucket::gen_base_path() const {
 	    hem, top_lon, pole, top_lat, 
 	    hem, main_lon, pole, main_lat);
 
-    SGPath path( raw_path );
-
-    return path.str();
+    return raw_path;
 }
 
 

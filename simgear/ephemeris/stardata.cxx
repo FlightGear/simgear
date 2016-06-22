@@ -55,12 +55,11 @@ bool SGStarData::load( const SGPath& path ) {
     // build the full path name to the stars data base file
     SGPath tmp = path;
     tmp.append( "stars" );
-    SG_LOG( SG_ASTRO, SG_INFO, "  Loading stars from " << tmp.str() );
+    SG_LOG( SG_ASTRO, SG_INFO, "  Loading stars from " << tmp );
 
-    sg_gzifstream in( tmp.str() );
+    sg_gzifstream in( tmp );
     if ( ! in.is_open() ) {
-	SG_LOG( SG_ASTRO, SG_ALERT, "Cannot open star file: "
-		<< tmp.str() );
+	SG_LOG( SG_ASTRO, SG_ALERT, "Cannot open star file: " << tmp );
         return false;
     }
 

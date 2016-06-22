@@ -47,7 +47,7 @@ SGLoadTexture2D(const SGPath& path,
                 bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {
-    return SGLoadTexture2D(true, path.str(), options, wrapu, wrapv,
+    return SGLoadTexture2D(true, path.local8BitStr(), options, wrapu, wrapv,
                            mipmaplevels);
 }
 
@@ -57,7 +57,7 @@ SGLoadTexture2D(bool staticTexture, const SGPath& path,
                 bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {
-    return SGLoadTexture2D(staticTexture, path.str(), options, wrapu, wrapv,
+    return SGLoadTexture2D(staticTexture, path.local8BitStr(), options, wrapu, wrapv,
                            mipmaplevels);
 }
 

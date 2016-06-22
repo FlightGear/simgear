@@ -260,7 +260,7 @@ sgLoad3DModel_internal(const SGPath& path,
                        SGPropertyNode *overlay)
 {
     if (!path.exists()) {
-      SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path.str() << "\"");
+      SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path << "\"");
       return NULL;
     }
 
@@ -286,7 +286,7 @@ sgLoad3DModel_internal(const SGPath& path,
     // Check for an XML wrapper
     if (modelpath.extension() == "xml") {
        try {
-            readProperties(modelpath.str(), props);
+            readProperties(modelpath, props);
         } catch (const sg_exception &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load xml: "
                    << t.getFormattedMessage());
@@ -304,7 +304,7 @@ sgLoad3DModel_internal(const SGPath& path,
             modelpath = SGModelLib::findDataFile(modelPathStr, NULL, modelDir);
             if (modelpath.isNull())
                 throw sg_io_exception("Model file not found: '" + modelPathStr + "'",
-                        path.str());
+                        path);
 
             if (props->hasValue("/texture-path")) {
                 string texturePathStr = props->getStringValue("/texture-path");
@@ -313,7 +313,7 @@ sgLoad3DModel_internal(const SGPath& path,
                     texturepath = SGModelLib::findDataFile(texturePathStr, NULL, modelDir);
                     if (texturepath.isNull())
                         throw sg_io_exception("Texture file not found: '" + texturePathStr + "'",
-                                path.str());
+                                path);
                 }
             }
         } else {
@@ -333,12 +333,12 @@ sgLoad3DModel_internal(const SGPath& path,
         if (!texturepath.extension().empty())
             texturepath = texturepath.dir();
 
-        options->setDatabasePath(texturepath.str());
+        options->setDatabasePath(texturepath.local8BitStr());
         osgDB::ReaderWriter::ReadResult modelResult;
-        modelResult = osgDB::readNodeFile(modelpath.str(), options.get());
+        modelResult = osgDB::readNodeFile(modelpath.local8BitStr(), options.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
-                                  modelpath.str());
+                                  modelpath);
         model = copyModel(modelResult.getNode());
         // Add an extra reference to the model stored in the database.
         // That is to avoid expiring the object from the cache even if
@@ -362,7 +362,7 @@ sgLoad3DModel_internal(const SGPath& path,
         SetNodeMaskVisitor setNodeMaskVisitor(0, simgear::MODELLIGHT_BIT);
         model->accept(setNodeMaskVisitor);
     }
-    model->setName(modelpath.str());
+    model->setName(modelpath.utf8Str());
 
     bool needTransform=false;
     // Set up the alignment node if needed
@@ -413,7 +413,7 @@ sgLoad3DModel_internal(const SGPath& path,
             bool isInterior = (std::string(sub_props->getStringValue("usage")) == "interior");
             bool isAI = (std::string(prop_root->getStringValue("type")) == "AI");
             if(isInterior && isAI){
-                 props->addChild("interior-path")->setStringValue(submodelPath.str());
+                 props->addChild("interior-path")->setStringValue(submodelPath.utf8Str());
                  continue;
             }
         }
@@ -485,14 +485,14 @@ sgLoad3DModel_internal(const SGPath& path,
         std::vector<SGPropertyNode_ptr> particle_nodes;
         particle_nodes = props->getChildren("particlesystem");
         for (unsigned i = 0; i < particle_nodes.size(); ++i) {
-            SG_LOG(SG_PARTICLES, SG_DEBUG, "Reading in particle " << i << " from file: " << path.str());
+            SG_LOG(SG_PARTICLES, SG_DEBUG, "Reading in particle " << i << " from file: " << path);
             osg::ref_ptr<SGReaderWriterOptions> options2;
             options2 = new SGReaderWriterOptions(*options);
             if (i==0) {
                 if (!texturepath.extension().empty())
                     texturepath = texturepath.dir();
                 
-                options2->setDatabasePath(texturepath.str());
+                options2->setDatabasePath(texturepath.local8BitStr());
             }
             group->addChild(Particles::appendParticles(particle_nodes[i],
                                                        prop_root,
@@ -536,18 +536,18 @@ sgLoad3DModel_internal(const SGPath& path,
         
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,
-                             options.get(), path.str(), i);
+                             options.get(), path.local8BitStr(), i);
     }
     
     if (!needTransform && group->getNumChildren() < 2) {
         model = group->getChild(0);
         group->removeChild(model.get());
         if (data.valid())
-            data->modelLoaded(modelpath.str(), props, model.get());
+            data->modelLoaded(modelpath.utf8Str(), props, model.get());
         return model.release();
     }
     if (data.valid())
-        data->modelLoaded(modelpath.str(), props, group.get());
+        data->modelLoaded(modelpath.utf8Str(), props, group.get());
     if (props->hasChild("debug-outfile")) {
         std::string outputfile = props->getStringValue("debug-outfile",
                                  "debug-model.osg");

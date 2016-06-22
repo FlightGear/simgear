@@ -54,6 +54,7 @@
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/misc/sgstream.hxx>
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>
@@ -707,7 +708,7 @@ void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache()
     time_t now = time(0);
 
     try {
-        readProperties(_persistentCachePath.str(), cacheRoot);
+        readProperties(_persistentCachePath, cacheRoot);
     } catch (sg_exception& e) {
         SG_LOG(SG_TERRASYNC, SG_INFO, "corrupted persistent cache, discarding");
         return;
@@ -737,7 +738,7 @@ void SGTerraSync::WorkerThread::writeCompletedTilesPersistentCache() const
         return;
     }
 
-    std::ofstream f(_persistentCachePath.c_str(), std::ios::trunc);
+    sg_ofstream f(_persistentCachePath, std::ios::trunc);
     if (!f.is_open()) {
         return;
     }

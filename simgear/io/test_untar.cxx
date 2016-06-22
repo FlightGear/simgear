@@ -24,7 +24,7 @@ void testTarGz()
     SGPath p = SGPath(SRC_DIR);
     p.append("test.tar.gz");
 
-    SGBinaryFile f(p.str());
+    SGBinaryFile f(p);
     f.open(SG_IO_IN);
 
     uint8_t* buf = (uint8_t*) alloca(8192);
@@ -39,7 +39,7 @@ void testPlainTar()
     SGPath p = SGPath(SRC_DIR);
     p.append("test2.tar");
 
-    SGBinaryFile f(p.str());
+    SGBinaryFile f(p);
     f.open(SG_IO_IN);
 
     uint8_t* buf = (uint8_t*) alloca(8192);

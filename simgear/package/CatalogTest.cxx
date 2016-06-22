@@ -46,7 +46,7 @@ std::string readFileIntoString(const SGPath& path)
     std::string contents;
 
     size_t readLen;
-    SGBinaryFile f(path.str());
+    SGBinaryFile f(path);
     if (!f.open(SG_IO_IN)) {
         throw sg_io_exception("Couldn't open file", path);
     }

@@ -41,6 +41,7 @@
 #include <string>
 
 class SGPropertyNode;
+class SGPath;
 
 /**
  * A class that provids a simple linear 2d interpolation lookup table.
@@ -69,7 +70,12 @@ public:
      */
     SGInterpTable( const std::string& file );
 
-
+    /**
+     * Constructor. Loads the interpolation table from the specified file.
+     * @param file name of interpolation file
+     */
+    SGInterpTable( const SGPath& path );
+    
     /**
      * Add an entry to the table, extending the table's length.
      *

@@ -66,6 +66,28 @@ SGInterpTable::SGInterpTable( const std::string& file )
 
     in >> skipcomment;
     while ( in ) {
+        double ind, dep;
+        in >> ind >> dep;
+        in >> std::skipws;
+        _table[ind] = dep;
+    }
+}
+
+
+// Constructor -- loads the interpolation table from the specified
+// file
+SGInterpTable::SGInterpTable( const SGPath& file )
+{
+    SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
+
+    sg_gzifstream in( file );
+    if ( !in.is_open() ) {
+        SG_LOG( SG_GENERAL, SG_ALERT, "Cannot open file: " << file );
+        return;
+    }
+
+    in >> skipcomment;
+    while ( in ) {
       double ind, dep;
       in >> ind >> dep;
       in >> std::skipws;

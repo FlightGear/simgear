@@ -33,8 +33,9 @@
 
 #include <simgear/compiler.h>
 
-#  include <istream>
-#  include <ostream>
+#include <istream>
+#include <ostream>
+#include <fstream>
 
 #include <string>
 
@@ -169,6 +170,18 @@ private:
     // Not defined!
     sg_gzofstream( const sg_gzofstream& );
     void operator= ( const sg_gzofstream& );
+};
+
+class sg_ifstream : public std::ifstream
+{
+public:
+    sg_ifstream(const SGPath& path, ios_openmode io_mode = ios_in | ios_binary);
+};
+
+class sg_ofstream : public std::ofstream
+{
+public:
+    sg_ofstream(const SGPath& path, ios_openmode io_mode = ios_out | ios_binary);
 };
 
 #endif /* _SGSTREAM_HXX */

@@ -193,3 +193,17 @@ sg_gzofstream::attach( int fd, ios_openmode io_mode )
 {
     gzbuf.attach( fd, io_mode );
 }
+
+
+sg_ifstream::sg_ifstream(const SGPath& path, ios_openmode io_mode)
+{
+    std::string ps = path.local8BitStr();
+    open(ps.c_str(), io_mode);
+}
+
+
+sg_ofstream::sg_ofstream(const SGPath& path, ios_openmode io_mode)
+{
+    std::string ps = path.local8BitStr();
+    open(ps.c_str(), io_mode);
+}

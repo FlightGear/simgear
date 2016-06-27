@@ -35,6 +35,7 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
 #include <map>
 
 #if defined(__APPLE__)
@@ -50,6 +51,9 @@
 
 #include <simgear/structure/SGSharedPtr.hxx>
 
+#if defined(HAVE_STD_ISNAN) && !defined(HAVE_ISNAN)
+using std::isnan;
+#endif
 class SGSampleGroup;
 
 struct refUint {
@@ -68,6 +72,10 @@ typedef buffer_map::const_iterator  const_buffer_map_iterator;
 typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
+
+inline bool isNaN(float *v) {
+   return (isnan(v[0]) || isnan(v[1]) || isnan(v[2]));
+}
 
 #endif // _SG_SOUNDMGR_OPENAL_PRIVATE_HXX
 

@@ -28,6 +28,7 @@
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
 #endif
+
 #include <stdio.h>
 
 #include <iostream>
@@ -388,9 +389,9 @@ void SGSoundMgr::update( double dt )
 
         if (_changed) {
 #if 0
-if (isNaN(_at_up_vec)) printf("NaN in listener orientation\n");
-if (isNaN(toVec3f(_absolute_pos).data())) printf("NaN in listener position\n");
-if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
+if (isNaN(d->_at_up_vec)) printf("NaN in listener orientation\n");
+if (isNaN(toVec3f(d->_absolute_pos).data())) printf("NaN in listener position\n");
+if (isNaN(toVec3f(_velocity).data())) printf("NaN in listener velocity\n");
 #endif
             alListenerf( AL_GAIN, _volume );
             alListenerfv( AL_ORIENTATION, d->_at_up_vec );

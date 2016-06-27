@@ -32,14 +32,6 @@
 #include "soundmgr_openal_private.hxx"
 #include "sample_group.hxx"
 
-#if defined(HAVE_STD_ISNAN) && !defined(HAVE_ISNAN)
-using std::isnan;
-#endif
-
-bool isNaN(float *v) {
-   return (isnan(v[0]) || isnan(v[1]) || isnan(v[2]));
-}
-
 SGSampleGroup::SGSampleGroup () :
     _smgr(NULL),
     _refname(""),

@@ -136,6 +136,10 @@ SGSoundSample::SGSoundSample( const unsigned char** data,
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
+
+    set_frequency(freq);
+    set_format(format);
+    set_size(len);
 }
 
 // constructor
@@ -149,6 +153,10 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
+
+    set_frequency(freq);
+    set_format(format);
+    set_size(len);
 }
 
 

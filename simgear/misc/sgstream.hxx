@@ -93,8 +93,8 @@ public:
 
 private:
     // Not defined!
-    sg_gzifstream( const sg_gzifstream& );    
-    void operator= ( const sg_gzifstream& );    
+    sg_gzifstream( const sg_gzifstream& );
+    void operator= ( const sg_gzifstream& );
 };
 
 /**
@@ -175,14 +175,22 @@ private:
 class sg_ifstream : public std::ifstream
 {
 public:
+    sg_ifstream() {}
+
     sg_ifstream(const SGPath& path, ios_openmode io_mode = ios_in | ios_binary);
+
+    void open( const SGPath& name,
+	       ios_openmode io_mode = ios_in|ios_binary );
 };
 
 class sg_ofstream : public std::ofstream
 {
 public:
+    sg_ofstream() { }
     sg_ofstream(const SGPath& path, ios_openmode io_mode = ios_out | ios_binary);
+
+    void open( const SGPath& name,
+	       ios_openmode io_mode = ios_out|ios_binary );
 };
 
 #endif /* _SGSTREAM_HXX */
-

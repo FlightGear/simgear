@@ -147,7 +147,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   }
   
 #ifdef _WIN32
-  std::string search(_path.local8Bit());
+  std::string search(_path.local8BitStr());
   if (nameFilter.empty()) {
     search += "\\*"; // everything
   } else {

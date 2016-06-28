@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     COMPARE(extB.complete_lower_extension(), "html.gz");
 #ifdef _WIN32
     SGPath winAbs("C:\\Windows\\System32");
-    COMPARE(winAbs.str(), std::string("C:/Windows/System32"));
+    COMPARE(winAbs.local8BitStr(), std::string("C:/Windows/System32"));
 
 #endif
   

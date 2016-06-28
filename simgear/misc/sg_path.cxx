@@ -455,7 +455,7 @@ void SGPath::validate() const
 #ifdef _WIN32
   struct _stat buf ;
   bool remove_trailing = false;
-  string statPath(path.local8BitStr());
+  string statPath(local8BitStr());
   if ((path.length() > 1) && (path.back() == '/')) {
 	  statPath.pop_back();
   }
@@ -567,13 +567,14 @@ int SGPath::create_dir(mode_t mode)
     unsigned int i = 1;
     SGPath dir(absolute ? string( 1, sgDirPathSep ) : "", _permission_checker);
     dir.concat( path_elements[0] );
+	std::string ds = dir.local8BitStr();
 #ifdef _WIN32
-    if ( dir.str().find(':') != string::npos && path_elements.size() >= 2 ) {
+    if ( ds.find(':') != string::npos && path_elements.size() >= 2 ) {
         dir.append( path_elements[1] );
         i = 2;
+		ds = dir.local8BitStr();
     }
 #endif
-  std::string ds = dir.local8BitStr();
   struct stat info;
   int r;
   for(; (r = stat(ds.c_str(), &info)) == 0 && i < path_elements.size(); ++i)

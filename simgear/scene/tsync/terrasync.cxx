@@ -54,6 +54,7 @@
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/misc/sgstream.hxx>
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>
@@ -737,7 +738,7 @@ void SGTerraSync::WorkerThread::writeCompletedTilesPersistentCache() const
         return;
     }
 
-    std::ofstream f(_persistentCachePath.local8BitStr(), std::ios::trunc);
+    sg_ofstream f(_persistentCachePath, std::ios::trunc);
     if (!f.is_open()) {
         return;
     }

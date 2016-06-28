@@ -36,6 +36,7 @@
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/threads/SGGuard.hxx>
 
+#include <simgear/misc/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #if defined (SG_WINDOWS)
@@ -109,7 +110,7 @@ public:
     FileLogCallback(const SGPath& aPath, sgDebugClass c, sgDebugPriority p) :
 	    simgear::LogCallback(c, p)
     {
-        m_file.open(aPath.local8BitStr(), std::ios_base::out | std::ios_base::trunc);
+        m_file.open(aPath, std::ios_base::out | std::ios_base::trunc);
     }
 
     virtual void operator()(sgDebugClass c, sgDebugPriority p,
@@ -120,7 +121,7 @@ public:
             << ":" << file << ":" << line << ":" << message << std::endl;
     }
 private:
-    std::ofstream m_file;
+    sg_ofstream m_file;
 };
 
 class StderrLogCallback : public simgear::LogCallback

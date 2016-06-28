@@ -852,7 +852,7 @@ HTTPRepository::failure() const
 
                     // dir index data has changed, so write to disk and update
                     // the hash accordingly
-                    std::ofstream of(pathInRepo().local8BitStr(), std::ios::trunc | std::ios::out);
+                    sg_ofstream of(pathInRepo(), std::ios::trunc | std::ios::out);
                     if (!of.is_open()) {
                         throw sg_io_exception("Failed to open directory index file for writing", pathInRepo());
                     }
@@ -1032,7 +1032,7 @@ HTTPRepository::failure() const
 
         SGPath cachePath = basePath;
         cachePath.append(".hashes");
-        std::ofstream stream(cachePath.local8BitStr(), std::ios::out | std::ios::trunc);
+        sg_ofstream stream(cachePath, std::ios::out | std::ios::trunc);
         HashCache::const_iterator it;
         for (it = hashes.begin(); it != hashes.end(); ++it) {
             stream << it->filePath << ":" << it->modTime << ":"

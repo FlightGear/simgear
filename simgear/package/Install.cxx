@@ -218,7 +218,7 @@ private:
             throw sg_io_exception("opening current zip file failed", sg_location(name));
         }
 
-        std::ofstream outFile;
+        sg_ofstream outFile;
         bool eof = false;
         SGPath path(m_extractPath);
         path.append(name);
@@ -232,7 +232,7 @@ private:
             }
         }
 
-        outFile.open(path.local8BitStr(), std::ios::binary | std::ios::trunc | std::ios::out);
+        outFile.open(path, std::ios::binary | std::ios::trunc | std::ios::out);
         if (outFile.fail()) {
             throw sg_io_exception("failed to open output file for writing", path);
         }
@@ -373,7 +373,7 @@ void Install::writeRevisionFile()
 {
     SGPath revisionFile = m_path;
     revisionFile.append(".revision");
-    std::ofstream f(revisionFile.local8BitStr(), std::ios::out | std::ios::trunc);
+    sg_ofstream f(revisionFile, std::ios::out | std::ios::trunc);
     f << m_revision << std::endl;
 }
 

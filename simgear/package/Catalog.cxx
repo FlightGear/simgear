@@ -160,7 +160,7 @@ protected:
         // cache the catalog data, now we have a valid install root
         Dir d(m_owner->installRoot());
         SGPath p = d.file("catalog.xml");
-        std::ofstream f(p.local8BitStr(), std::ios::out | std::ios::trunc);
+        sg_ofstream f(p, std::ios::out | std::ios::trunc);
         f.write(m_buffer.data(), m_buffer.size());
         f.close();
 
@@ -473,7 +473,7 @@ void Catalog::writeTimestamp()
 {
     SGPath timestampFile = m_installRoot;
     timestampFile.append(".timestamp");
-    std::ofstream f(timestampFile.local8BitStr(), std::ios::out | std::ios::trunc);
+    sg_ofstream f(timestampFile, std::ios::out | std::ios::trunc);
     f << m_retrievedTime << std::endl;
 }
 

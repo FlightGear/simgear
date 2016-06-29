@@ -70,6 +70,12 @@ namespace simgear
           break;
         }
       }
+
+	  // needed to avoid incrementing an invalid iterator when we
+	  // erase the last interpolator
+	  if (it == _interpolators.end()) {
+		  break;
+	  }
     }
   }
 

@@ -405,7 +405,8 @@ public:
 
     HTTPDirectory* childDirectory(const std::string& name)
     {
-        return _repository->getOrCreateDirectory(relativePath() + "/" + name);
+        std::string childPath = relativePath().empty() ? name : relativePath() + "/" + name;
+        return _repository->getOrCreateDirectory(childPath);
     }
 
     void removeOrphans(const string_list& orphans)

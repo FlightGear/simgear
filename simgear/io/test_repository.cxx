@@ -256,6 +256,10 @@ public:
                 repoPath = repoPath.substr(0, suffix);
             }
 
+            if (repoPath.find("/") == 0) { // trim leading /
+                repoPath = repoPath.substr(1);
+            }
+
             TestRepoEntry* entry = global_repo->findEntry(repoPath);
             if (!entry) {
                 sendErrorResponse(404, false, "unknown repo path:" + repoPath);

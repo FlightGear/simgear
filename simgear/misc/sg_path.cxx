@@ -374,6 +374,11 @@ string SGPath::dir() const {
     }
 }
 
+SGPath SGPath::dirPath() const
+{
+	return SGPath::fromUtf8(dir());
+}
+
 // get the base part of the path (everything but the extension.)
 string SGPath::base() const
 {
@@ -867,6 +872,20 @@ std::vector<SGPath> SGPath::pathsFromEnv(const char *name)
     }
 
     return r;
+}
+
+//------------------------------------------------------------------------------
+
+std::vector<SGPath> SGPath::pathsFromUtf8(const std::string& paths)
+{
+	std::vector<SGPath> r;
+	string_list items = sgPathSplit(paths);
+	string_list_iterator it;
+	for (it = items.begin(); it != items.end(); ++it) {
+		r.push_back(SGPath::fromUtf8(it->c_str()));
+	}
+
+	return r;
 }
 
 //------------------------------------------------------------------------------

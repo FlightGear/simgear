@@ -268,6 +268,12 @@ public:
      * or if the destination already exists, or is not writeable
      */
     bool rename(const SGPath& newName);
+	
+
+	/**
+	 * return the path of the parent directory of this path.
+	 */
+	SGPath dirPath() const;
 
     enum StandardLocation
     {
@@ -310,6 +316,8 @@ public:
     static SGPath documents(const SGPath& def = SGPath());
 
     static std::vector<SGPath> pathsFromEnv(const char* name);
+
+	static std::vector<SGPath> pathsFromUtf8(const std::string& paths);
 
     static std::vector<SGPath> pathsFromLocal8Bit(const std::string& paths);
 

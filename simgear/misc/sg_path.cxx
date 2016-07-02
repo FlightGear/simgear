@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fstream>
+#include <cstdlib>
 
 #ifdef _WIN32
 #  include <direct.h>
@@ -372,6 +373,11 @@ string SGPath::dir() const {
     } else {
         return "";
     }
+}
+
+SGPath SGPath::dirPath() const
+{
+	return SGPath::fromUtf8(dir());
 }
 
 // get the base part of the path (everything but the extension.)
@@ -872,6 +878,20 @@ std::vector<SGPath> SGPath::pathsFromEnv(const char *name)
 
 //------------------------------------------------------------------------------
 
+std::vector<SGPath> SGPath::pathsFromUtf8(const std::string& paths)
+{
+	std::vector<SGPath> r;
+	string_list items = sgPathSplit(paths);
+	string_list_iterator it;
+	for (it = items.begin(); it != items.end(); ++it) {
+		r.push_back(SGPath::fromUtf8(it->c_str()));
+	}
+
+	return r;
+}
+
+//------------------------------------------------------------------------------
+
 std::vector<SGPath> SGPath::pathsFromLocal8Bit(const std::string& paths)
 {
     std::vector<SGPath> r;
@@ -962,3 +982,22 @@ std::string SGPath::join(const std::vector<SGPath>& paths, const std::string& jo
 
     return r;
 }
+
+//------------------------------------------------------------------------------
+std::wstring SGPath::wstr() const
+{
+#ifdef SG_WINDOWS
+    return std::wstring();
+#else
+    wchar_t wideBuf[2048];
+    size_t count = mbstowcs(wideBuf, path.c_str(), 2048);
+    if (count == -1) {
+        return std::wstring();
+    } else if (count == 2048) {
+        SG_LOG( SG_GENERAL, SG_ALERT, "SGPath::wstr: overflowed conversion buffer for " << *this );
+    }
+
+    return std::wstring(wideBuf, count);
+#endif
+}
+

@@ -41,14 +41,13 @@ namespace HTTP
     if( responseCode() != 200 )
       return setFailure(responseCode(), responseReason());
 
-    if( !_filename.empty() )
+    if( !_filename.isNull() )
     {
       // TODO validate path? (would require to expose fgValidatePath somehow to
       //      simgear)
-      SGPath path(_filename);
-      path.create_dir(0755);
+      _filename.create_dir(0755);
 
-      _file.open(_filename.c_str(), std::ios::binary | std::ios::trunc);
+      _file.open(_filename.c_str(), std::ios::binary | std::ios::trunc | std::ios::out);
     }
 
     if( !_file )

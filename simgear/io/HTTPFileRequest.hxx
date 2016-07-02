@@ -19,6 +19,7 @@
 #ifndef SG_HTTP_FILEREQUEST_HXX_
 #define SG_HTTP_FILEREQUEST_HXX_
 
+#include <simgear/misc/sg_path.hxx>
 #include "HTTPRequest.hxx"
 #include <fstream>
 
@@ -43,7 +44,7 @@ namespace HTTP
       FileRequest(const std::string& url, const std::string& path);
 
     protected:
-      std::string   _filename;
+      SGPath _filename;
       std::ofstream _file;
 
       virtual void responseHeadersComplete();

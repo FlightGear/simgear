@@ -190,6 +190,7 @@ public:
 
     std::string local8BitStr() const;
 
+    std::wstring wstr() const;
 
     /**
      * Get the path string

@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fstream>
+#include <cstdlib>
 
 #ifdef _WIN32
 #  include <direct.h>
@@ -980,3 +981,22 @@ std::string SGPath::join(const std::vector<SGPath>& paths, const std::string& jo
 
     return r;
 }
+
+//------------------------------------------------------------------------------
+std::wstring SGPath::wstr() const
+{
+#ifdef SG_WINDOWS
+    return std::wstring();
+#else
+    wchar_t wideBuf[2048];
+    size_t count = mbstowcs(wideBuf, path.c_str(), 2048);
+    if (count == -1) {
+        return std::wstring();
+    } else if (count == 2048) {
+        SG_LOG( SG_GENERAL, SG_ALERT, "SGPath::wstr: overflowed conversion buffer for " << *this );
+    }
+
+    return std::wstring(wideBuf, count);
+#endif
+}
+

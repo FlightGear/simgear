@@ -988,7 +988,7 @@ std::wstring SGPath::wstr() const
 {
 #ifdef SG_WINDOWS
    size_t buflen = mbstowcs(NULL, path.c_str(), 0)+1;
-   wchar_t wideBuf = malloc(buflen * sizeof(int));
+   wchar_t* wideBuf = malloc(buflen * sizeof(int));
    if (wideBuf) {
        size_t count = mbstowcs(wideBuf, path.c_str(), buflen);
        if (count == (size_t)-1) {
@@ -1002,5 +1002,5 @@ std::wstring SGPath::wstr() const
        SG_LOG( SG_GENERAL, SG_ALERT, "SGPath::wstr: unable to allocate enough memory for " << *this );
    }
 #endif
+   return std::wstring();
 }
-

@@ -162,7 +162,7 @@ sg_gzofstream::sg_gzofstream()
 //
 // Open a file for gzipped writing.
 //
-sg_gzofstream::sg_gzofstream( const std::string& name, ios_openmode io_mode )
+sg_gzofstream::sg_gzofstream( const SGPath& name, ios_openmode io_mode )
     : ostream(&gzbuf)
 {
     this->open( name, io_mode );
@@ -183,9 +183,10 @@ sg_gzofstream::sg_gzofstream( int fd, ios_openmode io_mode )
 // Open a file for gzipped writing.
 //
 void
-sg_gzofstream::open( const std::string& name, ios_openmode io_mode )
+sg_gzofstream::open( const SGPath& name, ios_openmode io_mode )
 {
-    gzbuf.open( name.c_str(), io_mode );
+    std::string ps = name.local8BitStr();
+    gzbuf.open( ps.c_str(), io_mode );
 }
 
 void

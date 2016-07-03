@@ -133,7 +133,7 @@ public:
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
      */
-    sg_gzofstream( const std::string& name,
+    sg_gzofstream( const SGPath& name,
            ios_openmode io_mode = ios_out | ios_binary );
 
     /**
@@ -148,7 +148,7 @@ public:
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
      */
-    void open( const std::string& name,
+    void open( const SGPath& name,
            ios_openmode io_mode = ios_out|ios_binary );
 
     /**

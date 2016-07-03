@@ -271,54 +271,20 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 
 bool Dir::isEmpty() const
 {
-  bool empty= true;
   std::string ps = _path.local8BitStr();
 #ifdef _WIN32 
-  ps += "\\*";
-  WIN32_FIND_DATA fData;
-  HANDLE find = FindFirstFile(ps.c_str(), &fData);
-  if (find == INVALID_HANDLE_VALUE) {
-    return true;
-  }
-  
-// since an empty dir will still have . and .. children, we need
-// watch for those - anything else means the dir is really non-empty
-  bool done = false;
-  for (; !done; done = (FindNextFile(find, &fData) == 0)) {
-    if (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-		  if (!strcmp(fData.cFileName,".") || !strcmp(fData.cFileName,"..")) {
-		    continue;
-		  }
-	  }
-    
-    empty = false;
-    break;
-  }
-    
-  FindClose(find);
+  return PathIsDirectoryEmpty( ps.c_str() );
 #else
+  DIR* dp = opendir( ps.c_str() );
+  if (!dp) return true;
 
-  DIR* dp = opendir(ps.c_str());
-  if (!dp) {
-    return true;
-  }
-    
-  while (true) {
-    struct dirent* entry = readdir(dp);
-    if (!entry) {
-      break; // done iteration
-    }
-    
-    if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
-      continue;
-    }
-      
-    empty = false;
-    break;
-  }
+  int n = 0;
+  dirent* d;
+  while( (d = readdir(dp)) !=NULL ) n++;
   closedir(dp);
+
+  return (n == 2); // '.' and '..' always exist
 #endif
-  return empty;
 }
 
 bool Dir::exists() const

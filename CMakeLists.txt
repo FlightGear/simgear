@@ -384,6 +384,7 @@ if(WIN32)
     set(HAVE_GETLOCALTIME 1)
 
     set( WINSOCK_LIBRARY "ws2_32.lib" )
+    set( SHLWAPI_LIBRARY "Shlwapi.lib" )
     set( RT_LIBRARY "winmm" )
 endif(WIN32)
 
@@ -428,6 +429,7 @@ set(TEST_LIBS_INTERNAL_CORE
     ${CMAKE_THREAD_LIBS_INIT}
     ${ZLIB_LIBRARY}
     ${WINSOCK_LIBRARY}
+    ${SHLWAPI_LIBRARY}
     ${RT_LIBRARY}
     ${DL_LIBRARY}
     ${COCOA_LIBRARY}

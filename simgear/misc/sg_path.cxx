@@ -991,7 +991,7 @@ std::wstring SGPath::wstr() const
    wchar_t wideBuf = malloc(buflen * sizeof(int));
    if (wideBuf) {
        size_t count = mbstowcs(wideBuf, path.c_str(), buflen);
-       if (count == -1) {
+       if (count == (size_t)-1) {
            return std::wstring();
        }
 

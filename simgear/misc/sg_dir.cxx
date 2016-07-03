@@ -280,7 +280,7 @@ bool Dir::isEmpty() const
 
   int n = 0;
   dirent* d;
-  while( (d = readdir(dp)) !=NULL ) n++;
+  while( (d = readdir(dp)) !=NULL && (n < 4) ) n++;
   closedir(dp);
 
   return (n == 2); // '.' and '..' always exist

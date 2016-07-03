@@ -987,17 +987,20 @@ std::string SGPath::join(const std::vector<SGPath>& paths, const std::string& jo
 std::wstring SGPath::wstr() const
 {
 #ifdef SG_WINDOWS
-    return std::wstring();
-#else
-    wchar_t wideBuf[2048];
-    size_t count = mbstowcs(wideBuf, path.c_str(), 2048);
-    if (count == -1) {
-        return std::wstring();
-    } else if (count == 2048) {
-        SG_LOG( SG_GENERAL, SG_ALERT, "SGPath::wstr: overflowed conversion buffer for " << *this );
-    }
+   size_t buflen = mbstowcs(NULL, path.c_str(), 0)+1;
+   wchar_t wideBuf = malloc(buflen * sizeof(int));
+   if (wideBuf) {
+       size_t count = mbstowcs(wideBuf, path.c_str(), buflen);
+       if (count == -1) {
+           return std::wstring();
+       }
 
-    return std::wstring(wideBuf, count);
+       std::wstring rv(wideBuf, count);
+       free(wideBuf);
+       return rv;
+   } else {
+       SG_LOG( SG_GENERAL, SG_ALERT, "SGPath::wstr: unable to allocate enough memory for " << *this );
+   }
 #endif
 }
 

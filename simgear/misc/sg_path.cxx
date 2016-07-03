@@ -987,8 +987,11 @@ std::string SGPath::join(const std::vector<SGPath>& paths, const std::string& jo
 std::wstring SGPath::wstr() const
 {
 #ifdef SG_WINDOWS
-   size_t buflen = mbstowcs(NULL, path.c_str(), 0)+1;
-   wchar_t* wideBuf = (wchar_t*)malloc(buflen * sizeof(int));
+	simgear::strutils::WCharVec ws = simgear::strutils::convertUtf8ToWString(path);
+	return std::wstring(ws.data(), ws.size());
+#else
+   const size_t buflen = mbstowcs(NULL, path.c_str(), 0)+1;
+   wchar_t* wideBuf = (wchar_t*)malloc(buflen * sizeof(wchar_t));
    if (wideBuf) {
        size_t count = mbstowcs(wideBuf, path.c_str(), buflen);
        if (count == (size_t)-1) {

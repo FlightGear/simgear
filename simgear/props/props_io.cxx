@@ -438,7 +438,7 @@ readProperties (const SGPath &file, SGPropertyNode * start_node,
                 int default_mode, bool extended)
 {
   PropsVisitor visitor(start_node, file.utf8Str(), default_mode, extended);
-  readXML(file.local8BitStr(), visitor);
+  readXML(file, visitor);
   if (visitor.hasException())
     throw visitor.getException();
 }

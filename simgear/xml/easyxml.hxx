@@ -11,9 +11,11 @@
 #include <simgear/compiler.h>
 #include <simgear/structure/exception.hxx>
 
-#include <iostream>
+#include <iosfwd>
 #include <string>
 #include <vector>
+
+class SGPath;
 
 typedef struct XML_ParserStruct* XML_Parser;
 
@@ -228,11 +230,11 @@ class ExpatAtts : public XMLAttributes
 {
 public:
   ExpatAtts (const char ** atts) : _atts(atts) {}
-  
+
   virtual int size () const;
   virtual const char * getName (int i) const;
   virtual const char * getValue (int i) const;
-  
+
   virtual const char * getValue (const char * name) const;
 private:
   const char ** _atts;
@@ -282,7 +284,7 @@ public:
    * XML document, after all other methods are invoked, and only
    * if there have been no parsing errors.  The application can use
    * this callback to close or write files, finalize data structures,
-   * and so on, but the application will need to be prepared to 
+   * and so on, but the application will need to be prepared to
    * clean up any resources without this callback in the event of
    * an error.
    *
@@ -299,7 +301,7 @@ public:
    * XML element.  Start and end element calls will be balanced
    * and properly nested: every element has both a start and end
    * callback (even if it was specified with an XML empty element tag),
-   * there is exactly one root element, and every element must end 
+   * there is exactly one root element, and every element must end
    * before its parent does.  Elements may not overlap.
    * Note that the attribute list provided is volatile; it's contents
    * are not guaranteed to persist after the end of the callback.
@@ -454,7 +456,7 @@ private:
  * Read an XML document.
  *
  * This function reads an XML document from the input stream provided,
- * and invokes the callback methods in the visitor object to pass the 
+ * and invokes the callback methods in the visitor object to pass the
  * parsing events back to the application.  When this function
  * returns, the parser will have reported all of the data in the XML
  * document to the application through the visitor callback methods,
@@ -477,7 +479,7 @@ extern void readXML (std::istream &input, XMLVisitor &visitor,
  * Read an XML document.
  *
  * This function reads an XML document from the input stream provided,
- * and invokes the callback methods in the visitor object to pass the 
+ * and invokes the callback methods in the visitor object to pass the
  * parsing events back to the application.  When this function
  * returns, the parser will have reported all of the data in the XML
  * document to the application through the visitor callback methods,
@@ -490,7 +492,7 @@ extern void readXML (std::istream &input, XMLVisitor &visitor,
  * is a problem reading the file.
  * @see XMLVisitor
  */
-extern void readXML (const std::string &path, XMLVisitor &visitor);
+extern void readXML (const SGPath &path, XMLVisitor &visitor);
 
 
 /**
@@ -498,7 +500,7 @@ extern void readXML (const std::string &path, XMLVisitor &visitor);
  * Read an XML document.
  *
  * This function reads an XML document from the buffer provided,
- * and invokes the callback methods in the visitor object to pass the 
+ * and invokes the callback methods in the visitor object to pass the
  * parsing events back to the application.  When this function
  * returns, the parser will have reported all of the data in the XML
  * document to the application through the visitor callback methods,
@@ -516,4 +518,3 @@ extern void readXML (const char *buf, const int size, XMLVisitor &visitor);
 
 
 #endif // __EASYXML_HXX
-

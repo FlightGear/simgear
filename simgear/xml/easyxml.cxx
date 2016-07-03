@@ -23,6 +23,9 @@
 #include <fstream>
 #include <iostream>
 
+#include <simgear/misc/sgstream.hxx>
+#include <simgear/misc/sg_path.hxx>
+
 using std::ifstream;
 using std::istream;
 using std::string;
@@ -283,12 +286,12 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
 }
 
 void
-readXML (const string &path, XMLVisitor &visitor)
+readXML (const SGPath &path, XMLVisitor &visitor)
 {
-  ifstream input(path.c_str());
+  sg_ifstream input(path);
   if (input.good()) {
     try {
-      readXML(input, visitor, path);
+      readXML(input, visitor, path.utf8Str());
     } catch (sg_io_exception &) {
       input.close();
       throw;

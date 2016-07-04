@@ -927,7 +927,7 @@ SGPath SGPath::documents(const SGPath& def)
 }
 
 //------------------------------------------------------------------------------
-std::string SGPath::realpath() const
+SGPath SGPath::realpath() const
 {
 #if defined(_MSC_VER) /*for MS compilers */ || defined(_WIN32) /*needed for non MS windows compilers like MingW*/
     // with absPath NULL, will allocate, and ignore length
@@ -947,21 +947,16 @@ std::string SGPath::realpath() const
             this_dir = "/";
         }
         if (file() == "..") {
-            this_dir = SGPath(SGPath(this_dir).realpath()).dir();
+            this_dir = SGPath(this_dir).realpath().dir();
             if (this_dir.empty()) { // invalid path: .. above root
-                return "";
+                return SGPath();
             }
             return SGPath(this_dir).realpath(); // use native path separator,
                         // and handle 'existing/nonexisting/../symlink' paths
         }
-        return SGPath(this_dir).realpath() +
-#if defined(_MSC_VER) || defined(_WIN32)
-          "\\" + file();
-#else
-          "/" + file();
-#endif
+        return SGPath(this_dir).realpath() / file();
     }
-    std::string p(buf);
+    SGPath p(SGPath::fromLocal8Bit(buf));
     free(buf);
     return p;
 }

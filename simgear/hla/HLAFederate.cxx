@@ -798,7 +798,7 @@ HLAFederate::readRTI1516ObjectModelTemplate(const std::string& objectModel)
     // This one covers the generic attributes, parameters and data types.
     HLAOMTXmlVisitor omtXmlVisitor;
     try {
-        readXML(objectModel, omtXmlVisitor);
+        readXML(SGPath(objectModel), omtXmlVisitor);
     } catch (const sg_throwable& e) {
         SG_LOG(SG_IO, SG_ALERT, "Could not open HLA XML object model file: "
                << e.getMessage());

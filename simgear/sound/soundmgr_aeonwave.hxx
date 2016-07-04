@@ -127,7 +127,7 @@ public:
     void set_position( const SGVec3d& pos, const SGGeod& pos_geod );
 
     void set_position_offset( const SGVec3d& pos ) {
-        _offset_pos = pos; _changed = true;
+        _offset_pos = pos.data(); _changed = true;
     }
 
     /**
@@ -145,7 +145,7 @@ public:
      * @param vel Velocity vector
      */
     void set_velocity( const SGVec3d& vel ) {
-        _velocity = vel; _changed = true;
+        _velocity = vel.data(); _changed = true;
     }
 
     /**
@@ -154,7 +154,7 @@ public:
      *
      * @return Velocity vector of the OpenAL listener
      */
-    inline SGVec3f get_velocity() { return toVec3f(_velocity); }
+    inline SGVec3f get_velocity() { SGVec3f f(_velocity); return f; }
 
     /**
      * Set the orientation of the sound manager
@@ -299,7 +299,7 @@ public:
      * a problem in the implementation or in out code. Until then
      * this function is used to detect the problematic implementations.
      */
-    inline bool bad_doppler_effect() { return _bad_doppler; }
+    inline bool bad_doppler_effect() { return false; }
 
     /**
      * Get a list of available playback devices.
@@ -316,6 +316,7 @@ public:
 
     static const char* subsystemName() { return "sound"; };
 private:
+    class SoundManagerPrivate;
     /// private implementation object
     std::auto_ptr<SoundManagerPrivate> d;
 
@@ -328,11 +329,11 @@ private:
     float _volume;
 
     // Position of the listener.
-    SGVec3d _offset_pos;
+    AAX::Vector64 _offset_pos;
     SGGeod _geod_pos;
 
     // Velocity of the listener.
-    AAX::Vector _velocity;
+    AAX::Vector64 _velocity;
 
     bool testForError(void *p, std::string s);
 

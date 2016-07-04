@@ -111,6 +111,7 @@ public:
     inline size_t get_size() const {
         return (_samples * _tracks * _bits)/8;
     }
+    inline size_t get_no_samples() { return _samples; }
 
 
     /**
@@ -445,6 +446,10 @@ public:
     inline void set_format( int fmt ) {
         _tracks = fmt & 0x3; _bits = fmt & 0x1C; _compressed = fmt & 0x100;
     }
+
+    inline void set_bits_sample( unsigned int b ) { _bits = b; }
+    inline void set_no_tracks( unsigned int t ) { _tracks = t; }
+    inline void set_compressed( bool c ) { _compressed = c; }
 
     /**
      * Set the block alignament for compressed audio.

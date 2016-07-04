@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "simgear/debug/logstream.hxx"
+#include "simgear/misc/sg_path.hxx"
 
 #include "RTIFederate.hxx"
 #include "RTIFederateFactoryRegistry.hxx"

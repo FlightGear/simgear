@@ -73,6 +73,8 @@ public:
      */
     SGPath( const std::string& p, PermissionChecker validator = NULL );
 
+	explicit SGPath(const std::wstring& p, PermissionChecker validator = NULL);
+
     /**
      * Construct a path based on the starting path provided and a relative subpath
      * @param p initial path

@@ -176,10 +176,8 @@ namespace simgear {
        */
       std::string convertUtf8ToWindowsLocal8Bit(const std::string& a);
 
-#if defined(SG_WINDOWS)
-    typedef std::vector<wchar_t> WCharVec;
-    WCharVec convertUtf8ToWString(const std::string& a);
-#endif
+    std::wstring convertUtf8ToWString(const std::string& a);
+	std::string convertWStringToUtf8(const std::wstring& w);
 
     /**
      * Get md5 hash of raw data.

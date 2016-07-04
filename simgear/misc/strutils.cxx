@@ -34,6 +34,11 @@
 #include <simgear/compiler.h>   // SG_WINDOWS
 #include <simgear/structure/exception.hxx>
 
+
+#if defined(SG_WINDOWS)
+	#include <windows.h>
+#endif
+
 using std::string;
 using std::vector;
 using std::stringstream;
@@ -363,12 +368,9 @@ namespace simgear {
     }
 
 #if defined(SG_WINDOWS)
-
-#include <windows.h>
-
-static WCharVec convertMultiByteToWString(DWORD encoding, const std::string& a)
+static std::wstring convertMultiByteToWString(DWORD encoding, const std::string& a)
 {
-    WCharVec result;
+    std::vector<wchar_t> result;
     DWORD flags = 0;
     int requiredWideChars = MultiByteToWideChar(encoding, flags,
                         a.c_str(), a.size(),
@@ -376,32 +378,45 @@ static WCharVec convertMultiByteToWString(DWORD encoding, const std::string& a)
     result.resize(requiredWideChars);
     MultiByteToWideChar(encoding, flags, a.c_str(), a.size(),
                         result.data(), result.size());
-    return result;
+	return std::wstring(result.data(), result.size());
 }
 
-WCharVec convertUtf8ToWString(const std::string& a)
+static std::string convertWStringToMultiByte(DWORD encoding, const std::wstring& w)
 {
-    return convertMultiByteToWString(CP_UTF8, a);
+	std::vector<char> result;
+	DWORD flags = 0;
+	int requiredMBChars = WideCharToMultiByte(encoding, flags,
+		w.data(), w.size(),
+		NULL, 0, NULL, NULL);
+	result.resize(requiredMBChars);
+	WideCharToMultiByte(encoding, flags,
+		w.data(), w.size(),
+		result.data(), result.size(), NULL, NULL);
+	return std::string(result.data(), result.size());
 }
+#endif
+
+std::wstring convertUtf8ToWString(const std::string& a)
+{
+#ifdef SG_WINDOWS
+    return convertMultiByteToWString(CP_UTF8, a);
+#else
+#endif
+}
+
+std::string convertWStringToUtf8(const std::wstring& w)
+{
+#ifdef SG_WINDOWS
+	return convertWStringToMultiByte(CP_UTF8, w);
+#else
 
 #endif
+}
 
 std::string convertWindowsLocal8BitToUtf8(const std::string& a)
 {
 #ifdef SG_WINDOWS
-    DWORD flags = 0;
-    WCharVec wideString = convertMultiByteToWString(CP_ACP, a);
-
-    // convert down to UTF-8
-    std::vector<char> result;
-    int requiredUTF8Chars = WideCharToMultiByte(CP_UTF8, flags,
-                                                wideString.data(), wideString.size(),
-                                                NULL, 0, NULL, NULL);
-    result.resize(requiredUTF8Chars);
-    WideCharToMultiByte(CP_UTF8, flags,
-                        wideString.data(), wideString.size(),
-                        result.data(), result.size(), NULL, NULL);
-    return std::string(result.data(), result.size());
+	return convertWStringToMultiByte(CP_UTF8, convertMultiByteToWString(CP_ACP, a));
 #else
     return a;
 #endif
@@ -410,19 +425,7 @@ std::string convertWindowsLocal8BitToUtf8(const std::string& a)
 std::string convertUtf8ToWindowsLocal8Bit(const std::string& a)
 {
 #ifdef SG_WINDOWS
-    DWORD flags = 0;
-    WCharVec wideString = convertMultiByteToWString(CP_UTF8, a);
-
-    // convert down to local multi-byte
-    std::vector<char> result;
-    int requiredChars = WideCharToMultiByte(CP_ACP, flags,
-											wideString.data(), wideString.size(),
-                                            NULL, 0, NULL, NULL);
-    result.resize(requiredChars);
-    WideCharToMultiByte(CP_ACP, flags,
-                        wideString.data(), wideString.size(),
-                        result.data(), result.size(), NULL, NULL);
-    return std::string(result.data(), result.size());
+	return convertWStringToMultiByte(CP_ACP, convertMultiByteToWString(CP_UTF8, a));
 #else
     return a;
 #endif

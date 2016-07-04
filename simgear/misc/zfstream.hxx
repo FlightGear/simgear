@@ -71,7 +71,7 @@ public:
      * @return file stream
      */
     gzfilebuf* open( const char* name, ios_openmode io_mode );
-
+	
     /** 
      * Attach to an existing file descriptor
      * @param file_descriptor file descriptor

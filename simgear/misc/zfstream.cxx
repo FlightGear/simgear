@@ -22,10 +22,14 @@
 // $Id$
 
 #include <simgear/compiler.h>
+#include <simgear_config.h>
 
 #include <cerrno>
 #include <memory.h>
 #include <stdio.h>
+#include <fcntl.h>
+
+#include <simgear/misc/strutils.hxx>
 
 #include "zfstream.hxx"
 
@@ -110,7 +114,14 @@ gzfilebuf::open( const char *name, ios_openmode io_mode )
 
     char char_mode[10];
     cvt_iomode( char_mode, io_mode );
+
+#if defined(SG_WINDOWS)
+	std::wstring ws = simgear::strutils::convertUtf8ToWString(std::string(name));
+	if ( (file = gzopen_w(ws.c_str(), char_mode)) == NULL ) {
+
+#else
     if ( (file = gzopen(name, char_mode)) == NULL ) {
+#endif
         // perror( "gzfilebuf::open(): " );
         errno = 0;
         return NULL;

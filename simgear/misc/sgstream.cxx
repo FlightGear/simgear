@@ -185,8 +185,7 @@ sg_gzofstream::sg_gzofstream( int fd, ios_openmode io_mode )
 void
 sg_gzofstream::open( const SGPath& name, ios_openmode io_mode )
 {
-    std::string ps = name.local8BitStr();
-    gzbuf.open( ps.c_str(), io_mode );
+    gzbuf.open( name.c_str(), io_mode );
 }
 
 void
@@ -198,24 +197,40 @@ sg_gzofstream::attach( int fd, ios_openmode io_mode )
 
 sg_ifstream::sg_ifstream(const SGPath& path, ios_openmode io_mode)
 {
+#if defined(SG_WINDOWS)
+	std::wstring ps = path.wstr();
+#else
     std::string ps = path.local8BitStr();
-    std::ifstream::open(ps.c_str(), io_mode);
+#endif
+	std::ifstream::open(ps.c_str(), io_mode);
 }
 
 void sg_ifstream::open( const SGPath& name, ios_openmode io_mode )
 {
-    std::string ps = name.local8BitStr();
+#if defined(SG_WINDOWS)
+	std::wstring ps = name.wstr();
+#else
+	std::string ps = name.local8BitStr();
+#endif
     std::ifstream::open(ps.c_str(), io_mode);
 }
 
 sg_ofstream::sg_ofstream(const SGPath& path, ios_openmode io_mode)
 {
-    std::string ps = path.local8BitStr();
+#if defined(SG_WINDOWS)
+	std::wstring ps = path.wstr();
+#else
+	std::string ps = path.local8BitStr();
+#endif
     std::ofstream::open(ps.c_str(), io_mode);
 }
 
 void sg_ofstream::open( const SGPath& name, ios_openmode io_mode )
 {
-    std::string ps = name.local8BitStr();
+#if defined(SG_WINDOWS)
+	std::wstring ps = name.wstr();
+#else
+	std::string ps = name.local8BitStr();
+#endif
     std::ofstream::open(ps.c_str(), io_mode);
 }

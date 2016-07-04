@@ -68,22 +68,22 @@ static const char sgSearchPathSep = ':';
 
 static SGPath pathForCSIDL(int csidl, const SGPath& def)
 {
-	typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, LPSTR, int, BOOL);
+	typedef BOOL (WINAPI*GetSpecialFolderPath)(HWND, PWSTR, int, BOOL);
 	static GetSpecialFolderPath SHGetSpecialFolderPath = NULL;
 
 	// lazy open+resolve of shell32
 	if (!SHGetSpecialFolderPath) {
 		HINSTANCE shellDll = ::LoadLibrary("shell32");
-		SHGetSpecialFolderPath = (GetSpecialFolderPath) GetProcAddress(shellDll, "SHGetSpecialFolderPathA");
+		SHGetSpecialFolderPath = (GetSpecialFolderPath) GetProcAddress(shellDll, "SHGetSpecialFolderPathW");
 	}
 
 	if (!SHGetSpecialFolderPath){
 		return def;
 	}
 
-	char path[MAX_PATH];
+	wchar_t path[MAX_PATH];
 	if (SHGetSpecialFolderPath(0, path, csidl, false)) {
-		return SGPath(path, def.getPermissionChecker());
+		return SGPath(std::wstring(path), def.getPermissionChecker());
 	}
 
 	return def;
@@ -101,16 +101,7 @@ static SGPath pathForKnownFolder(REFKNOWNFOLDERID folderId, const SGPath& def)
             wchar_t* localFolder = 0;
 
             if (pSHGetKnownFolderPath(folderId, KF_FLAG_DEFAULT_PATH, NULL, &localFolder) == S_OK) {
-                // copy into local memory
-                char path[MAX_PATH];
-                size_t len;
-                if (wcstombs_s(&len, path, localFolder, MAX_PATH) != S_OK) {
-                    path[0] = '\0';
-                    SG_LOG(SG_GENERAL, SG_WARN, "WCS to MBS failed");
-                }
-
-                SGPath folder_path = SGPath(path, def.getPermissionChecker());
-
+                SGPath folder_path = SGPath(localFolder, def.getPermissionChecker());
                 // release dynamic memory
                 CoTaskMemFree(static_cast<void*>(localFolder));
 
@@ -212,6 +203,18 @@ SGPath::SGPath( const std::string& p, PermissionChecker validator )
 {
     fix();
 }
+
+// create a path based on "path"
+SGPath::SGPath(const std::wstring& p, PermissionChecker validator) :
+	_permission_checker(validator),
+	_cached(false),
+	_rwCached(false),
+	_cacheEnabled(true)
+{
+	path = simgear::strutils::convertWStringToUtf8(p);
+	fix();
+}
+
 
 // create a path based on "path" and a "subpath"
 SGPath::SGPath( const SGPath& p,
@@ -463,12 +466,12 @@ void SGPath::validate() const
 #ifdef _WIN32
   struct _stat buf ;
   bool remove_trailing = false;
-  string statPath(local8BitStr());
+  std::wstring statPath(wstr());
   if ((path.length() > 1) && (path.back() == '/')) {
 	  statPath.pop_back();
   }
 
-  if (_stat(statPath.c_str(), &buf ) < 0) {
+  if (_wstat(statPath.c_str(), &buf ) < 0) {
     _exists = false;
   } else {
     _exists = true;
@@ -549,11 +552,6 @@ bool SGPath::isFile() const
 }
 
 //------------------------------------------------------------------------------
-#ifdef _WIN32
-#  define sgMkDir(d,m)       _mkdir(d)
-#else
-#  define sgMkDir(d,m)       mkdir(d,m)
-#endif
 
 int SGPath::create_dir(mode_t mode)
 {
@@ -565,35 +563,33 @@ int SGPath::create_dir(mode_t mode)
     return -3;
   }
 
-    string_list dirlist = sgPathSplit(dir());
-    if ( dirlist.empty() )
+    SGPath dirP = dirPath();
+    if (dirP.isNull() )
         return -1;
-    string path = dirlist[0];
-    string_list path_elements = sgPathBranchSplit(path);
-    bool absolute = !path.empty() && path[0] == sgDirPathSep;
+    string_list path_elements = sgPathBranchSplit(dirP.utf8Str());
+	bool absolute = dirP.isAbsolute();
 
     unsigned int i = 1;
-    SGPath dir(absolute ? string( 1, sgDirPathSep ) : "", _permission_checker);
-    dir.concat( path_elements[0] );
-	std::string ds = dir.local8BitStr();
-#ifdef _WIN32
-    if ( ds.find(':') != string::npos && path_elements.size() >= 2 ) {
-        dir.append( path_elements[1] );
-        i = 2;
-        ds = dir.local8BitStr();
-    }
-#endif
-  struct stat info;
-  int r;
-  for(; (r = stat(dir.c_str(), &info)) == 0 && i < path_elements.size(); ++i) {
-    dir.append(path_elements[i]);
-}
-  if( r == 0 )
-      return 0; // Directory already exists
+    SGPath dir(path_elements.front(), _permission_checker);
+
+	while (dir.exists() && (i < path_elements.size())) {
+		dir.append(path_elements[i++]);
+	}
+
+	// already exists
+	if (i == path_elements.size()) {
+		return 0;
+	}
 
   for(;;)
   {
-    if( sgMkDir(dir.c_str(), mode) )
+#if defined (SG_WINDOWS)
+	  std::wstring ds = dir.wstr();
+	  if (_wmkdir(ds.c_str()))
+#else
+	  std::string ds = dir.utf8Str();
+    if( mkdir(ds.c_str(), mode) )
+#endif
     {
       SG_LOG( SG_IO,
               SG_ALERT, "Error creating directory: (" << dir << ")" );
@@ -704,8 +700,13 @@ bool SGPath::remove()
     return false;
   }
 
+#if defined(SG_WINDOWS)
+  std::wstring ps = wstr();
+  int err = _wunlink(ps.c_str());
+#else
   std::string ps = local8BitStr();
   int err = ::unlink(ps.c_str());
+#endif
   if( err )
   {
     SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << *this << ") "
@@ -759,10 +760,17 @@ bool SGPath::rename(const SGPath& newName)
 		}
 	}
 #endif
+
+#if defined(SG_WINDOWS)
+	std::wstring p = wstr();
+	std::wstring np = newName.wstr();
+	if (_wrename(p.c_str(), np.c_str()) != 0)
+#else
     std::string p = local8BitStr();
     std::string np = newName.local8BitStr();
+    if( ::rename(p.c_str(), np.c_str()) != 0 )
+#endif
 
-  if( ::rename(p.c_str(), np.c_str()) != 0 )
   {
     SG_LOG( SG_IO, SG_WARN, "rename failed: from " << *this <<
                                             " to " << newName <<
@@ -851,9 +859,16 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
 //------------------------------------------------------------------------------
 SGPath SGPath::fromEnv(const char* name, const SGPath& def)
 {
+#if defined(SG_WINDOWS)
+	std::wstring wname = simgear::strutils::convertUtf8ToWString(name);
+	const wchar_t* val = _wgetenv(wname.c_str());
+	if (val && val[0])
+		return SGPath(val, def._permission_checker);
+#else
   const char* val = getenv(name);
   if( val && val[0] )
     return SGPath(val, def._permission_checker);
+#endif
   return def;
 }
 
@@ -862,18 +877,21 @@ SGPath SGPath::fromEnv(const char* name, const SGPath& def)
 std::vector<SGPath> SGPath::pathsFromEnv(const char *name)
 {
     std::vector<SGPath> r;
-    const char* val = getenv(name);
-    if (!val) {
-        return r;
-    }
-
-    string_list items =  sgPathSplit(val);
-    string_list_iterator it;
-    for (it = items.begin(); it != items.end(); ++it) {
-        r.push_back(SGPath::fromLocal8Bit(it->c_str()));
-    }
-
-    return r;
+#if defined(SG_WINDOWS)
+	std::wstring wname = simgear::strutils::convertUtf8ToWString(name);
+	const wchar_t* val = _wgetenv(wname.c_str());
+#else
+	const char* val = getenv(name);
+#endif
+	if (!val) {
+		return r;
+	}
+   
+#if defined(SG_WINDOWS)
+	return pathsFromUtf8(simgear::strutils::convertWStringToUtf8(val));
+#else
+	return pathsFromUtf8(val);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -929,9 +947,10 @@ SGPath SGPath::documents(const SGPath& def)
 //------------------------------------------------------------------------------
 SGPath SGPath::realpath() const
 {
-#if defined(_MSC_VER) /*for MS compilers */ || defined(_WIN32) /*needed for non MS windows compilers like MingW*/
+#if defined(SG_WINDOWS)
     // with absPath NULL, will allocate, and ignore length
-    char *buf = _fullpath( NULL, path.c_str(), _MAX_PATH );
+  	std::wstring ws = wstr();
+    wchar_t *buf = _wfullpath( NULL, ws.c_str(), _MAX_PATH );
 #else
     // POSIX
     char* buf = ::realpath(path.c_str(), NULL);
@@ -956,9 +975,15 @@ SGPath SGPath::realpath() const
         }
         return SGPath(this_dir).realpath() / file();
     }
-    SGPath p(SGPath::fromLocal8Bit(buf));
+
+#if defined(SG_WINDOWS)
+	  SGPath p = SGPath(std::wstring(buf), NULL);
+#else
+		SGPath p(SGPath::fromLocal8Bit(buf));
+#endif
     free(buf);
     return p;
+
 }
 
 //------------------------------------------------------------------------------
@@ -981,24 +1006,5 @@ std::string SGPath::join(const std::vector<SGPath>& paths, const std::string& jo
 //------------------------------------------------------------------------------
 std::wstring SGPath::wstr() const
 {
-#ifdef SG_WINDOWS
-	simgear::strutils::WCharVec ws = simgear::strutils::convertUtf8ToWString(path);
-	return std::wstring(ws.data(), ws.size());
-#else
-   const size_t buflen = mbstowcs(NULL, path.c_str(), 0)+1;
-   wchar_t* wideBuf = (wchar_t*)malloc(buflen * sizeof(wchar_t));
-   if (wideBuf) {
-       size_t count = mbstowcs(wideBuf, path.c_str(), buflen);
-       if (count == (size_t)-1) {
-           return std::wstring();
-       }
-
-       std::wstring rv(wideBuf, count);
-       free(wideBuf);
-       return rv;
-   } else {
-       SG_LOG( SG_GENERAL, SG_ALERT, "SGPath::wstr: unable to allocate enough memory for " << *this );
-   }
-#endif
-   return std::wstring();
+	return simgear::strutils::convertUtf8ToWString(path);
 }

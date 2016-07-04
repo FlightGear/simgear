@@ -131,6 +131,7 @@ option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
+option(USE_AEONWAVE     "set to ON to use AeonWave instead of OpenAL" ON)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
 option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" ON)
 
@@ -191,8 +192,12 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
 			)
   # set (BOOST_ROOT ${MSVC_3RDPARTY_ROOT}/boost_1_44_0)
   message(STATUS "BOOST_ROOT is ${BOOST_ROOT}")
-  set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
-  set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib)
+  if (USE_AEONWAVE)
+    find_package(AAX COMPONENTS aax REQUIRED)
+  else()
+    set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
+    set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib)
+  endif()
 endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 if(APPLE)
@@ -209,11 +214,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR
     find_package(Threads REQUIRED)
 endif()
 
-# Somehow this only works if included before searching for Boost...
-include(BoostTestTargets)
-
 find_package(Boost REQUIRED)
 set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION")
+include(BoostTestTargets)
 
 if(SIMGEAR_HEADLESS)
     message(STATUS "SimGear mode: HEADLESS")
@@ -401,9 +404,19 @@ include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
-    ${OPENAL_INCLUDE_DIR}
     ${CURL_INCLUDE_DIRS}
 )
+
+if (USE_AEONWAVE)
+    find_package(AAX COMPONENTS aax REQUIRED)
+    include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
+        ${AAX_INCLUDE_DIR}
+    )
+else()
+    include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
+        ${OPENAL_INCLUDE_DIR}
+    )
+endif()
 
 add_definitions(-DHAVE_CONFIG_H)
 

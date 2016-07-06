@@ -70,6 +70,16 @@ public:
     {
     }
 
+    ~SoundManagerPrivate()
+    {
+        std::vector<const char*>::iterator it;
+        for (it = _devices.begin(); it != _devices.end(); ++it) {
+            free((void*)*it);
+        }
+        _devices.clear();
+        _sample_groups.clear();
+    }
+
     void init() {
         _mtx64 = AAX::Matrix64();
     }
@@ -109,7 +119,7 @@ public:
 
     sample_group_map _sample_groups;
 
-    std::vector<std::string> _devices;
+    std::vector<const char*> _devices;
 };
 
 
@@ -135,7 +145,6 @@ SGSoundMgr::~SGSoundMgr() {
 
     if (is_working())
         stop();
-    d->_sample_groups.clear();
 }
 
 // initialize the sound manager
@@ -153,29 +162,24 @@ void SGSoundMgr::init()
     d->_source_id = 0;
     d->_sources.clear();
 
-    AAX::AeonWave aax;
     AAX::DSP dsp;
-
-    const char* devname = _device_name.c_str();
-    if (_device_name == "")
-        devname = NULL; // use default device
+    if (!_device_name.empty()) {
+        // try non-default device
+        d->_aax = AAX::AeonWave(_device_name.c_str());
+    }
     else
     {
-        // try non-default device
-        aax = AAX::AeonWave(devname);
-    }
-
-    if ((!devname)||(testForError(aax, "Audio device not available, trying default.")) ) {
-        aax = AAX::AeonWave(AAX_MODE_WRITE_STEREO);
-        if (testForError(aax, "Default audio device not available.") ) {
+        testForError(d->_aax, "Audio device not available, trying default.");
+        d->_aax = AAX::AeonWave(AAX_MODE_WRITE_STEREO);
+        if (testForError(d->_aax, "Default audio device not available.") ) {
            return;
         }
     }
 
-    d->_aax = aax;
     d->init();
 
     d->_aax.set(AAX_INITIALIZED);
+    testForError("initialization");
 
     dsp = AAX::DSP(d->_aax, AAX_VOLUME_FILTER);
     dsp.set(AAX_GAIN, 0.0f);
@@ -190,10 +194,10 @@ void SGSoundMgr::init()
     dsp.set(AAX_SOUND_VELOCITY, 340.3f);
     d->_aax.set(dsp);
 
-    testForError("listener initialization");
+    testForError("scenery setup");
 
-    _vendor = d->_aax.info(AAX_VENDOR_STRING);
-    _renderer = d->_aax.info(AAX_RENDERER_STRING);
+    _vendor = (const char *)d->_aax.info(AAX_VENDOR_STRING);
+    _renderer = (const char *)d->_aax.info(AAX_RENDERER_STRING);
 #endif
 }
 
@@ -644,7 +648,6 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
 
 vector<const char*> SGSoundMgr::get_available_devices()
 {
-    vector<const char*> devices;
 #ifdef ENABLE_SOUND
     std::string on = " on ";
     std::string colon = ": ";
@@ -656,13 +659,12 @@ vector<const char*> SGSoundMgr::get_available_devices()
                 else if (r) name += on + r;
                 else if (i) name += colon + i;
 
-                d->_devices.push_back(name);
-                devices.push_back(name.c_str());
+                d->_devices.push_back( strdup(name.c_str()) );
             }
         }
     }
 #endif
-    return devices;
+    return d->_devices;
 }
 
 
@@ -681,7 +683,7 @@ bool SGSoundMgr::testForError(std::string s, std::string name)
 #ifdef ENABLE_SOUND
     enum aaxErrorType error = d->_aax.error_no();
     if (error != AAX_ERROR_NONE) {
-       SG_LOG( SG_SOUND, SG_ALERT, "AL Error (" << name << "): "
+       SG_LOG( SG_SOUND, SG_ALERT, "AeonWave Error (" << name << "): "
                                       << d->_aax.error(error) << " at " << s);
        return true;
     }

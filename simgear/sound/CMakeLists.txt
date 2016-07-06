@@ -3,31 +3,30 @@ include (SimGearComponent)
 set(HEADERS 
     sample.hxx
     sample_group.hxx
-    soundmgr_aeonwave.hxx
     xmlsound.hxx
     readwav.hxx
+    ${CMAKE_CURRENT_BINARY_DIR}/soundmgr.hxx
     )
     
 set(SOURCES 
     sample.cxx
     sample_group.cxx
-    soundmgr_aeonwave.cxx
     xmlsound.cxx
     readwav.cxx
     soundmgr_openal_private.hxx
     )
 
 if (USE_AEONWAVE)
-    set(HEADERS ${HEADERS}
-        soundmgr_aeonwave.hxx
-        )
+    CONFIGURE_FILE(
+        "soundmgr_aeonwave.hxx"
+        "soundmgr.hxx")
     set(SOURCES ${SOURCES}
         soundmgr_aeonwave.cxx
         )
 else()
-    set(HEADERS ${HEADERS}
-        soundmgr_openal.hxx
-        )
+    CONFIGURE_FILE(
+        "soundmgr_openal.hxx"
+        "soundmgr.hxx")
     set(SOURCES ${SOURCES}
         soundmgr_openal.cxx
         )

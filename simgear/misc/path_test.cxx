@@ -9,20 +9,10 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-#define COMPARE(a, b) \
-    if ((a) != (b))  { \
-        cerr << "failed:" << #a << " != " << #b << endl; \
-        exit(1); \
-    }
-
-#define VERIFY(a) \
-    if (!(a))  { \
-        cerr << "failed:" << #a << endl; \
-        exit(1); \
-    }
-    
+#include <simgear/misc/test_macros.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/sgstream.hxx>
 
 void test_dir()
 {
@@ -79,6 +69,47 @@ SGPath::Permissions validateWrite(const SGPath&)
   p.read = false;
   p.write = true;
   return p;
+}
+
+void test_path_dir()
+{
+	SGPath p(simgear::Dir::current().path());
+	p.append("path_dir");
+	simgear::Dir(p).remove(true);
+
+	VERIFY(p.isAbsolute());
+	COMPARE(p.create_dir(0666), 0);
+
+	SGPath sub = p / "subA" / "subB";
+	VERIFY(!sub.exists());
+
+	SGPath subFile = sub / "fileABC.txt";
+	COMPARE(subFile.create_dir(0666), 0);
+	VERIFY(!subFile.exists());
+
+	sub.set_cached(false);
+	VERIFY(sub.exists());
+	VERIFY(sub.isDir());
+
+	SGPath sub2 = p / "subA" / "fileA";
+	{
+		sg_ofstream os(sub2);
+		for (int i = 0; i < 50; ++i) {
+			os << "ABCD" << endl;
+		}
+	}
+	VERIFY(sub2.isFile());
+	COMPARE(sub2.sizeInBytes(), 250);
+
+	simgear::Dir subD(p / "subA");
+	simgear::PathList dirChildren = subD.children(simgear::Dir::TYPE_DIR | simgear::Dir::NO_DOT_OR_DOTDOT);
+	COMPARE(dirChildren.size(), 1);
+	COMPARE(dirChildren[0], subD.path() / "subB");
+
+	simgear::PathList fileChildren = subD.children(simgear::Dir::TYPE_FILE | simgear::Dir::NO_DOT_OR_DOTDOT);
+	COMPARE(fileChildren.size(), 1);
+	COMPARE(fileChildren[0], subD.path() / "fileA");
+
 }
 
 int main(int argc, char* argv[])
@@ -197,6 +228,8 @@ int main(int argc, char* argv[])
 
     test_dir();
     
+	test_path_dir();
+
     cout << "all tests passed OK" << endl;
     return 0; // passed
 }

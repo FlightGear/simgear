@@ -571,7 +571,13 @@ int SGPath::create_dir(mode_t mode)
 
     unsigned int i = 1;
     SGPath dir(path_elements.front(), _permission_checker);
-
+#if defined(SG_WINDOWS)
+	// exists() does not work for drive letter paths, eg 'C:\'. 
+	// Detect this case and skip to the next element immediately
+	if (absolute && path_elements.size() >= 2) {
+		dir.append(path_elements[i++]);
+	}
+#endif
 	while (dir.exists() && (i < path_elements.size())) {
 		dir.append(path_elements[i++]);
 	}
@@ -598,12 +604,14 @@ int SGPath::create_dir(mode_t mode)
     else
       SG_LOG(SG_IO, SG_DEBUG, "Directory created: " << dir);
 
-    if( i >= path_elements.size() )
-      return 0;
+	if (i >= path_elements.size()) {
+		break;
+	}
 
     dir.append(path_elements[i++]);
   }
 
+  _cached = false; // re-stat on next query
   return 0;
 }
 

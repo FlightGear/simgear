@@ -18,9 +18,8 @@
 //
 // $Id$
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
+#include <simgear/compiler.h>
 
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/structure/exception.hxx>
@@ -41,6 +40,7 @@
 #  include <errno.h>
 #endif
 
+#include <simgear/misc/strutils.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <boost/foreach.hpp>
 
@@ -85,11 +85,10 @@ void Dir::setRemoveOnDestroy()
     _removeOnDestroy = true;
 }
 
-#include <stdio.h>
 Dir Dir::current()
 {
-#ifdef _WIN32
-    char* buf = _getcwd(NULL, 0);
+#if defined(SG_WINDOWS)
+    wchar_t* buf = _wgetcwd(NULL, 0);
 #else
     char *buf = ::getcwd(NULL, 0);
 #endif
@@ -125,7 +124,14 @@ Dir Dir::tempDir(const std::string& templ)
     
     return Dir(SGPath(buf));
 #else
+#if defined(SG_WINDOWS)
+	std::wstring wideTemplate = simgear::strutils::convertUtf8ToWString(templ);
+	wchar_t* buf = _wtempnam(0, wideTemplate.c_str());
+	SGPath p(buf);
+	free(buf); // unlike tempnam(), _wtempnam mallocs its result buffer
+#else
     SGPath p(tempnam(0, templ.c_str()));
+#endif
     Dir t(p);
     if (!t.create(0700)) {
         SG_LOG(SG_IO, SG_WARN, "failed to create temporary directory at " << p);
@@ -147,16 +153,16 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     types = TYPE_FILE | TYPE_DIR | NO_DOT_OR_DOTDOT;
   }
   
-#ifdef _WIN32
-  std::string search(_path.local8BitStr());
+#if defined(SG_WINDOWS)
+  std::wstring search(_path.wstr());
   if (nameFilter.empty()) {
-    search += "\\*"; // everything
+    search += simgear::strutils::convertUtf8ToWString("\\*"); // everything
   } else {
-    search += "\\*" + nameFilter;
+    search += simgear::strutils::convertUtf8ToWString("\\*" + nameFilter);
   }
   
-  WIN32_FIND_DATA fData;
-  HANDLE find = FindFirstFile(search.c_str(), &fData);
+  WIN32_FIND_DATAW fData;
+  HANDLE find = FindFirstFileW(search.c_str(), &fData);
   if (find == INVALID_HANDLE_VALUE) {
 	  int err = GetLastError();
 	  if (err != ERROR_FILE_NOT_FOUND) {
@@ -167,16 +173,17 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   }
   
   bool done = false;
-  for (bool done = false; !done; done = (FindNextFile(find, &fData) == 0)) {
+  for (bool done = false; !done; done = (FindNextFileW(find, &fData) == 0)) {
     if (fData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) {
       if (!(types & INCLUDE_HIDDEN)) {
         continue;
       }
     }
     
+	std::string utf8File = simgear::strutils::convertWStringToUtf8(fData.cFileName);
     if (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 	  if (types & NO_DOT_OR_DOTDOT) {
-		if (!strcmp(fData.cFileName,".") || !strcmp(fData.cFileName,"..")) {
+		if ((utf8File == ".") || (utf8File == "..")) {
 		  continue;
 		}
 	  }
@@ -192,7 +199,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
        continue;
     }
 
-    result.push_back(file(fData.cFileName));
+    result.push_back(file(utf8File));
   }
 
   FindClose(find);
@@ -272,10 +279,11 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 
 bool Dir::isEmpty() const
 {
-  std::string ps = _path.local8BitStr();
-#ifdef _WIN32 
-  return PathIsDirectoryEmpty( ps.c_str() );
+#if defined(SG_WINDOWS)
+  std::wstring ps = _path.wstr();
+  return PathIsDirectoryEmptyW( ps.c_str() );
 #else
+  std::string ps = _path.local8BitStr();
   DIR* dp = opendir( ps.c_str() );
   if (!dp) return true;
 
@@ -301,12 +309,6 @@ SGPath Dir::file(const std::string& name) const
   return childPath;  
 }
 
-#ifdef _WIN32
-#  define sgMkDir(d,m)       _mkdir(d)
-#else
-#  define sgMkDir(d,m)       mkdir(d,m)
-#endif
-
 bool Dir::create(mode_t mode)
 {
     if (exists()) {
@@ -323,8 +325,13 @@ bool Dir::create(mode_t mode)
     }
     
 // finally, create ourselves
+#if defined(SG_WINDOWS)
+	std::wstring ps = _path.wstr();
+	int err = _wmkdir(ps.c_str());
+#else
     std::string ps = _path.local8BitStr();
-    int err = sgMkDir(ps.c_str(), mode);
+    int err = mkdir(ps.c_str(), mode);
+#endif
     if (err) {
         SG_LOG(SG_IO, SG_WARN,  "directory creation failed: (" << _path << ") " << strerror(errno) );
     }
@@ -367,10 +374,11 @@ bool Dir::remove(bool recursive)
         }
     } // of recursive deletion
 
-    std::string ps = _path.local8BitStr();
-#ifdef _WIN32
-    int err = _rmdir(ps.c_str());
+#if defined(SG_WINDOWS)
+	std::wstring ps = _path.wstr();
+    int err = _wrmdir(ps.c_str());
 #else
+	std::string ps = _path.local8BitStr();
     int err = rmdir(ps.c_str());
 #endif
     if (err) {

@@ -568,15 +568,17 @@ int SGPath::create_dir(mode_t mode)
         return -1;
     string_list path_elements = sgPathBranchSplit(dirP.utf8Str());
 	bool absolute = dirP.isAbsolute();
-
     unsigned int i = 1;
-    SGPath dir(path_elements.front(), _permission_checker);
+
 #if defined(SG_WINDOWS)
-	// exists() does not work for drive letter paths, eg 'C:\'. 
+    SGPath dir(path_elements.front(), _permission_checker);
+	// exists() does not work for drive letter paths, eg 'C:\'.
 	// Detect this case and skip to the next element immediately
 	if (absolute && path_elements.size() >= 2) {
 		dir.append(path_elements[i++]);
 	}
+#else
+    SGPath dir((absolute ? "/" : "") + path_elements.front(), _permission_checker);
 #endif
 	while (dir.exists() && (i < path_elements.size())) {
 		dir.append(path_elements[i++]);
@@ -597,9 +599,9 @@ int SGPath::create_dir(mode_t mode)
     if( mkdir(ds.c_str(), mode) )
 #endif
     {
-      SG_LOG( SG_IO,
-              SG_ALERT, "Error creating directory: (" << dir << ")" );
-      return -2;
+      SG_LOG( SG_IO, SG_ALERT, "Error creating directory: (" << dir << "):"
+             << simgear::strutils::error_string(errno) );
+        return errno;
     }
     else
       SG_LOG(SG_IO, SG_DEBUG, "Directory created: " << dir);

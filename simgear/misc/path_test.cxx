@@ -78,13 +78,13 @@ void test_path_dir()
 	simgear::Dir(p).remove(true);
 
 	VERIFY(p.isAbsolute());
-	COMPARE(p.create_dir(0666), 0);
+	COMPARE(p.create_dir(0755), 0);
 
 	SGPath sub = p / "subA" / "subB";
 	VERIFY(!sub.exists());
 
 	SGPath subFile = sub / "fileABC.txt";
-	COMPARE(subFile.create_dir(0666), 0);
+	COMPARE(subFile.create_dir(0755), 0);
 	VERIFY(!subFile.exists());
 
 	sub.set_cached(false);

@@ -94,12 +94,29 @@ void test_path_dir()
 	SGPath sub2 = p / "subA" / "fileA";
 	{
 		sg_ofstream os(sub2);
+        VERIFY(os.is_open());
 		for (int i = 0; i < 50; ++i) {
 			os << "ABCD" << endl;
 		}
 	}
 	VERIFY(sub2.isFile());
 	COMPARE(sub2.sizeInBytes(), 250);
+
+    SGPath sub3 = p / "subß" / "file𝕽";
+    sub3.create_dir(0755);
+
+    {
+        sg_ofstream os(sub3);
+        VERIFY(os.is_open());
+        for (int i = 0; i < 20; ++i) {
+            os << "EFGH" << endl;
+        }
+    }
+
+    sub3.set_cached(false);
+    VERIFY(sub3.exists());
+    COMPARE(sub3.sizeInBytes(), 100);
+    COMPARE(sub3.file(), "file𝕽");
 
 	simgear::Dir subD(p / "subA");
 	simgear::PathList dirChildren = subD.children(simgear::Dir::TYPE_DIR | simgear::Dir::NO_DOT_OR_DOTDOT);
@@ -109,6 +126,11 @@ void test_path_dir()
 	simgear::PathList fileChildren = subD.children(simgear::Dir::TYPE_FILE | simgear::Dir::NO_DOT_OR_DOTDOT);
 	COMPARE(fileChildren.size(), 1);
 	COMPARE(fileChildren[0], subD.path() / "fileA");
+
+    simgear::Dir subS(sub3.dirPath());
+    fileChildren = subS.children(simgear::Dir::TYPE_FILE | simgear::Dir::NO_DOT_OR_DOTDOT);
+    COMPARE(fileChildren.size(), 1);
+    COMPARE(fileChildren[0], subS.path() / "file𝕽");
 
 }
 

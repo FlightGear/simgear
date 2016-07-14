@@ -585,7 +585,7 @@ int SGPath::create_dir(mode_t mode)
 	}
 
 	// already exists
-	if (i == path_elements.size()) {
+	if (dir.exists() && (i == path_elements.size())) {
 		return 0;
 	}
 

@@ -73,9 +73,9 @@ SGPath::Permissions validateWrite(const SGPath&)
 
 void test_path_dir()
 {
-	SGPath p(simgear::Dir::current().path());
-	p.append("path_dir");
-	simgear::Dir(p).remove(true);
+	simgear::Dir temp = simgear::Dir::tempDir("path_dir");
+	temp.remove(true);
+    SGPath p = temp.path();
 
 	VERIFY(p.isAbsolute());
 	COMPARE(p.create_dir(0755), 0);

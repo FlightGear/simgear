@@ -47,7 +47,7 @@ namespace HTTP
       //      simgear)
       _filename.create_dir(0755);
 
-      _file.open(_filename.c_str(), std::ios::binary | std::ios::trunc | std::ios::out);
+      _file.open(_filename, std::ios::binary | std::ios::trunc | std::ios::out);
     }
 
     if( !_file )

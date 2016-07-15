@@ -68,8 +68,7 @@ sg_gzifstream::sg_gzifstream( int fd, ios_openmode io_mode )
 void
 sg_gzifstream::open( const SGPath& name, ios_openmode io_mode )
 {
-    std::string s = name.local8BitStr();
-
+    std::string s = name.utf8Str();
     gzbuf.open( s.c_str(), io_mode );
     if ( ! gzbuf.is_open() )
     {
@@ -185,7 +184,8 @@ sg_gzofstream::sg_gzofstream( int fd, ios_openmode io_mode )
 void
 sg_gzofstream::open( const SGPath& name, ios_openmode io_mode )
 {
-    gzbuf.open( name.c_str(), io_mode );
+    std::string s = name.utf8Str();
+    gzbuf.open( s.c_str(), io_mode );
 }
 
 void

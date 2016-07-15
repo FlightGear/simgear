@@ -20,8 +20,10 @@
 #define SG_HTTP_FILEREQUEST_HXX_
 
 #include <simgear/misc/sg_path.hxx>
+
 #include "HTTPRequest.hxx"
-#include <fstream>
+
+#include <simgear/misc/sgstream.hxx>
 
 namespace simgear
 {
@@ -45,7 +47,7 @@ namespace HTTP
 
     protected:
       SGPath _filename;
-      std::ofstream _file;
+      sg_ofstream _file;
 
       virtual void responseHeadersComplete();
       virtual void gotBodyData(const char* s, int n);

@@ -66,7 +66,7 @@ public:
 
     /**
      * Open a stream
-     * @param name file name
+     * @param name file name, UTF-8 encoded
      * @param io_mode mode flags
      * @return file stream
      */

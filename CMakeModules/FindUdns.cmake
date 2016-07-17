@@ -13,7 +13,7 @@
 # http://www.boost.org/LICENSE_1_0.txt)
 
 
-if (UDN_LIBRARIES AND UDN_INCLUDE_DIRS)
+if (UDNS_LIBRARIES AND UDNS_INCLUDE_DIRS)
   # in cache already
   set(UDNS_FOUND TRUE)
 else ()

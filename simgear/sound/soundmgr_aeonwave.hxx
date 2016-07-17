@@ -154,7 +154,7 @@ public:
      *
      * @return Velocity vector of the OpenAL listener
      */
-    inline SGVec3f get_velocity() { SGVec3f f(_velocity); return f; }
+    inline SGVec3f get_velocity() { SGVec3d f(_velocity); return toVec3f(f); }
 
     /**
      * Set the orientation of the sound manager

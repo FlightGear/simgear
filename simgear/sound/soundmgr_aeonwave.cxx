@@ -178,26 +178,29 @@ void SGSoundMgr::init()
 
     d->init();
 
-    d->_aax.set(AAX_INITIALIZED);
-    testForError("initialization");
+    if ( is_working() )
+    {
+        d->_aax.set(AAX_INITIALIZED);
+        testForError("initialization");
 
-    dsp = AAX::DSP(d->_aax, AAX_VOLUME_FILTER);
-    dsp.set(AAX_GAIN, 0.0f);
-    d->_aax.set(dsp);
+        dsp = AAX::DSP(d->_aax, AAX_VOLUME_FILTER);
+        dsp.set(AAX_GAIN, 0.0f);
+        d->_aax.set(dsp);
 
-    dsp = AAX::DSP(d->_aax, AAX_DISTANCE_FILTER);
-    dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED);
-    d->_aax.set(dsp);
+        dsp = AAX::DSP(d->_aax, AAX_DISTANCE_FILTER);
+        dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED);
+        d->_aax.set(dsp);
 
-    dsp = AAX::DSP(d->_aax, AAX_VELOCITY_EFFECT);
-    dsp.set(AAX_DOPPLER_FACTOR, 1.0f);
-    dsp.set(AAX_SOUND_VELOCITY, 340.3f);
-    d->_aax.set(dsp);
+        dsp = AAX::DSP(d->_aax, AAX_VELOCITY_EFFECT);
+        dsp.set(AAX_DOPPLER_FACTOR, 1.0f);
+        dsp.set(AAX_SOUND_VELOCITY, 340.3f);
+        d->_aax.set(dsp);
+        testForError("scenery setup");
 
-    testForError("scenery setup");
-
-    _vendor = (const char *)d->_aax.info(AAX_VENDOR_STRING);
-    _renderer = (const char *)d->_aax.info(AAX_RENDERER_STRING);
+        _vendor = (const char *)d->_aax.info(AAX_VENDOR_STRING);
+        _renderer = (const char *)d->_aax.info(AAX_RENDERER_STRING);
+    }
+    testForError("init");
 #endif
 }
 
@@ -295,7 +298,7 @@ void SGSoundMgr::resume()
 void SGSoundMgr::update( double dt )
 {
 #ifdef ENABLE_SOUND
-    if (_active) {
+    if ( is_working() && _active ) {
         if (_changed) {
             d->update_pos_and_orientation();
         }
@@ -655,9 +658,9 @@ vector<const char*> SGSoundMgr::get_available_devices()
         while (const char* r = d->_aax.devices()) {
             while (const char* i = d->_aax.interfaces()) {
                 std::string name = be;
-                if (i && r) name += on + r + colon + i;
-                else if (r) name += on + r;
-                else if (i) name += colon + i;
+                if (*i && *r) name += on + r + colon + i;
+                else if (*r) name += on + r;
+                else if (*i) name += colon + i;
 
                 d->_devices.push_back( strdup(name.c_str()) );
             }
@@ -693,7 +696,7 @@ bool SGSoundMgr::testForError(std::string s, std::string name)
 
 bool SGSoundMgr::is_working() const 
 {
-    return (d->_aax != NULL);
+    return ((const void*)d->_aax != NULL ? true : false);
 }
 
 const SGQuatd& SGSoundMgr::get_orientation() const

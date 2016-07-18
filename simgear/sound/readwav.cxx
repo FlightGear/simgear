@@ -310,7 +310,7 @@ namespace
                 } else {
                   bitsPerSample *= 2; /* uLaw is 16-bit packed into 8 bits */
                   codec = codecULaw;
- Br	               }
+               }
                 break;
               case 17:		/* IMA4 ADPCM */
                 if (alIsExtensionPresent((ALchar *)"AL_EXT_ima4") &&

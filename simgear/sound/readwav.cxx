@@ -249,14 +249,14 @@ namespace
     
     bool found_header = false;
     bool compressed = false;
+    uint16_t bitsPerSample = 8;
+    uint16_t numChannels = 1;
     uint32_t chunkLength;
     int32_t magic;
     uint16_t audioFormat;
-    uint16_t numChannels;
     uint32_t samplesPerSecond;
     uint32_t byteRate;
     uint16_t blockAlign;
-    uint16_t bitsPerSample;
     Codec *codec = codecLinear;
 
     if (!wavReadBE(fd, magic))
@@ -310,7 +310,7 @@ namespace
                 } else {
                   bitsPerSample *= 2; /* uLaw is 16-bit packed into 8 bits */
                   codec = codecULaw;
-                }
+ Br	               }
                 break;
               case 17:		/* IMA4 ADPCM */
                 if (alIsExtensionPresent((ALchar *)"AL_EXT_ima4") &&

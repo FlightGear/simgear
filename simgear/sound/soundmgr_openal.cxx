@@ -586,6 +586,12 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
         case SG_SAMPLE_ADPCM:
             format = AL_FORMAT_MONO_IMA4;
             break;
+
+        case SG_SAMPLE_STEREO16:
+            format = AL_FORMAT_STEREO16;
+            break;
+        case SG_SAMPLE_STEREO8:
+            format = AL_FORMAT_STEREO8;
         default:
             SG_LOG(SG_SOUND, SG_ALERT, "unsupported audio format");
             return buffer;

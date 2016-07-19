@@ -59,9 +59,13 @@ namespace
     if (!compressed) {
       if (numChannels == 1 && bitsPerSample == 16) rv = SG_SAMPLE_MONO16;
       else if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MONO8;
+      else if (numChannels == 2 && bitsPerSample == 16) rv = SG_SAMPLE_STEREO16;
+      else if (numChannels == 2 && bitsPerSample == 8) rv = SG_SAMPLE_STEREO8;
+      else throw sg_exception("Unsupported audio format");
     } else {
       if (numChannels == 1 && bitsPerSample == 4) rv = SG_SAMPLE_ADPCM; 
       else if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MULAW;
+      else throw sg_exception("Unsupported audio format");
     }
     return rv;
   }

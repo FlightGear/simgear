@@ -394,7 +394,7 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   try {
       loadWavFile(fd, &b);
   } catch (sg_exception& e) {
-      throw sg_io_exception(e.getFormattedMessage() + " for " + path.str());
+      throw sg_io_exception(e.getFormattedMessage() + "\nfor: " + path.str());
   }
 
   ALvoid* data = b.data;

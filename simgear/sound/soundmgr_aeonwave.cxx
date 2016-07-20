@@ -452,9 +452,11 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
             switch( sample->get_format() )
             {
             case SG_SAMPLE_MONO16:
+            case SG_SAMPLE_STEREO16:
                 format = AAX_PCM16S;
                 break;
             case SG_SAMPLE_MONO8:
+            case SG_SAMPLE_STEREO8:
                 format = AAX_PCM8S;
                 break;
             case SG_SAMPLE_MULAW:

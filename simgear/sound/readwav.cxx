@@ -23,6 +23,7 @@
 #include <cassert>
 #include <cstdlib>
 
+#include <stdio.h> // snprintf
 #include <zlib.h> // for gzXXX functions
 
 #include <simgear/misc/sg_path.hxx>
@@ -61,11 +62,19 @@ namespace
       else if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MONO8;
       else if (numChannels == 2 && bitsPerSample == 16) rv = SG_SAMPLE_STEREO16;
       else if (numChannels == 2 && bitsPerSample == 8) rv = SG_SAMPLE_STEREO8;
-      else throw sg_exception("Unsupported audio format");
+      else {
+        char msg[65];
+        snprintf(msg, 64, "Unsupported audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
+        throw sg_exception(msg);
+      }
     } else {
       if (numChannels == 1 && bitsPerSample == 4) rv = SG_SAMPLE_ADPCM; 
       else if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MULAW;
-      else throw sg_exception("Unsupported audio format");
+      else {
+        char msg[65];
+        snprintf(msg, 64, "Unsupported compressed audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
+        throw sg_exception(msg);
+      }
     }
     return rv;
   }
@@ -382,7 +391,12 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
     throw sg_io_exception("loadWAVFromFile: unable to open file", path);
   }
   
-  loadWavFile(fd, &b);
+  try {
+      loadWavFile(fd, &b);
+  } catch (sg_exception& e) {
+      throw sg_io_exception(e.getFormattedMessage() + " for " + path.str());
+  }
+
   ALvoid* data = b.data;
   b.data = NULL; // don't free when Buffer does out of scope
   format = b.format;

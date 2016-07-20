@@ -29,6 +29,7 @@
 #include <simgear/debug/debug_types.h>
 
 #include <sstream>
+#include <vector>
  
 // forward decls
 class SGPath;
@@ -98,6 +99,23 @@ public:
     void log( sgDebugClass c, sgDebugPriority p,
             const char* fileName, int line, const std::string& msg);
 
+    /**
+     * support for the SG_POPUP logging class
+     * set the content of the popup message
+     */
+    void popup( const std::string& msg);
+
+    /**
+     * retrieve the contents of the popup message and clear it's internal
+     * content. The return value may be an empty string.
+     */
+    std::string get_popup();
+
+    /**
+     * return true if a new popup message is available. false otherwise.
+     */
+    bool has_popup();
+
    /**
     * \relates logstream
     * Return the one and only logstream instance.
@@ -119,6 +137,8 @@ public:
 private:
     // constructor
     logstream();
+
+    std::vector<std::string> popup_msgs;
 };
 
 logstream& sglog();
@@ -131,16 +151,16 @@ logstream& sglog();
  * @param P priority
  * @param M message
  */
-#ifdef FG_NDEBUG
-# define SG_LOG(C,P,M)
-#else
-# define SG_LOG(C,P,M) do {                     \
-	if(sglog().would_log(C,P)) {                      \
-        std::ostringstream os;                             \
-        os << M;                                       \
+# define SG_LOGX(C,P,M) \
+    do { if(sglog().would_log(C,P)) {                         \
+        std::ostringstream os; os << M;                  \
         sglog().log(C, P, __FILE__, __LINE__, os.str()); \
-    } \
-} while(0)
+        if (P == SG_POPUP) sglog().popup(os.str());      \
+    } } while(0)
+#ifdef FG_NDEBUG
+# define SG_LOG(C,P,M)	do { if(P == SG_POPUP) SG_LOGX(C,P,M) } while(0)
+#else
+# define SG_LOG(C,P,M)	SG_LOGX(C,P,M)
 #endif
 
 #define SG_ORIGIN __FILE__ ":" SG_STRINGIZE(__LINE__)

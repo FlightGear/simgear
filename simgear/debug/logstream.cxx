@@ -365,6 +365,7 @@ logstream::logstream()
 
 logstream::~logstream()
 {
+    popup_msgs.clear();
     global_privateLogstream->stop();
     delete global_privateLogstream;
 }
@@ -392,6 +393,30 @@ logstream::log( sgDebugClass c, sgDebugPriority p,
         const char* fileName, int line, const std::string& msg)
 {
     global_privateLogstream->log(c, p, fileName, line, msg);
+}
+
+void
+logstream::popup( const std::string& msg)
+{
+    popup_msgs.push_back(msg);
+}
+
+std::string
+logstream::get_popup()
+{
+    std::string rv = "";
+    if (!popup_msgs.empty())
+    {
+        rv = popup_msgs.front();
+        popup_msgs.erase(popup_msgs.begin());
+    }
+    return rv;
+}
+
+bool
+logstream::has_popup()
+{
+    return (popup_msgs.size() > 0) ? true : false;
 }
 
 bool

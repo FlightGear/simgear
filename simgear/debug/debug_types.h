@@ -48,7 +48,8 @@ typedef enum {
     SG_DEBUG,          // Less frequent debug type messages
     SG_INFO,           // Informatory messages
     SG_WARN,           // Possible impending problem
-    SG_ALERT           // Very possible impending problem
+    SG_ALERT,          // Very possible impending problem
+    SG_POPUP           // Severe enough to alert using a pop-up window
     // SG_EXIT,        // Problem (no core)
     // SG_ABORT        // Abandon ship (core)
 } sgDebugPriority;

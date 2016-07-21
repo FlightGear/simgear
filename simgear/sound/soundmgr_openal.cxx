@@ -588,11 +588,11 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             break;
 
         case SG_SAMPLE_STEREO16:
-            SG_LOG(SG_SOUND, SG_ALERT, "Stereo sound detected: " << sample->get_sample_name());
+            SG_LOG(SG_SOUND, SG_POPUP, "Stereo sound detected:\n" << sample->get_sample_name() << "\nUse two separate mono files instead if required.");
             format = AL_FORMAT_STEREO16;
             break;
         case SG_SAMPLE_STEREO8:
-            SG_LOG(SG_SOUND, SG_ALERT, "Stereo sound detected: " << sample->get_sample_name());
+            SG_LOG(SG_SOUND, SG_POPUP, "Stereo sound detected:\n" << sample->get_sample_name() << "\nUse two separate mono files instead if required.");
             format = AL_FORMAT_STEREO8;
         default:
             SG_LOG(SG_SOUND, SG_ALERT, "unsupported audio format");

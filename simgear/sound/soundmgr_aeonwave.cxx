@@ -46,11 +46,11 @@
 #include <simgear/misc/sg_path.hxx>
 
 
-typedef std::map < unsigned int,AAX::Emitter > source_map;
+typedef std::map < unsigned int,aax::Emitter > source_map;
 typedef source_map::iterator source_map_iterator;
 typedef source_map::const_iterator  const_source_map_iterator;
 
-typedef std::map < unsigned int,AAX::Buffer& > buffer_map;
+typedef std::map < unsigned int,aax::Buffer& > buffer_map;
 typedef buffer_map::iterator buffer_map_iterator;
 typedef buffer_map::const_iterator  const_buffer_map_iterator;
 
@@ -81,7 +81,7 @@ public:
     }
 
     void init() {
-        _mtx64 = AAX::Matrix64();
+        _mtx64 = aax::Matrix64();
     }
     
     void update_pos_and_orientation()
@@ -91,16 +91,16 @@ public:
         _mtx64.set(_base_pos.data(), sgv_at.data(), sgv_up.data());
     }
         
-    AAX::AeonWave _aax;
-    AAX::Matrix64 _mtx64;
+    aax::AeonWave _aax;
+    aax::Matrix64 _mtx64;
 
     SGVec3d _base_pos;
     SGQuatd _orientation;
 
     unsigned int _buffer_id;
     buffer_map _buffers;
-    AAX::Buffer nullBuffer;
-    AAX::Buffer& get_buffer(unsigned int id) {
+    aax::Buffer nullBuffer;
+    aax::Buffer& get_buffer(unsigned int id) {
         buffer_map_iterator buffer_it = _buffers.find(id);
         if ( buffer_it != _buffers.end() )  return buffer_it->second;
         SG_LOG(SG_SOUND, SG_ALERT, "unknown buffer id requested.");
@@ -109,8 +109,8 @@ public:
 
     unsigned int _source_id;
     source_map _sources;
-    AAX::Emitter nullEmitter;
-    AAX::Emitter& get_source(unsigned int id) {
+    aax::Emitter nullEmitter;
+    aax::Emitter& get_source(unsigned int id) {
         source_map_iterator source_it = _sources.find(id);
         if ( source_it != _sources.end() )  return source_it->second;
         SG_LOG(SG_SOUND, SG_ALERT, "unknown source id requested.");
@@ -162,15 +162,15 @@ void SGSoundMgr::init()
     d->_source_id = 0;
     d->_sources.clear();
 
-    AAX::DSP dsp;
+    aax::dsp dsp;
     if (!_device_name.empty()) {
         // try non-default device
-        d->_aax = AAX::AeonWave(_device_name.c_str());
+        d->_aax = aax::AeonWave(_device_name.c_str());
     }
     else
     {
         testForError(d->_aax, "Audio device not available, trying default.");
-        d->_aax = AAX::AeonWave(AAX_MODE_WRITE_STEREO);
+        d->_aax = aax::AeonWave(AAX_MODE_WRITE_STEREO);
         if (testForError(d->_aax, "Default audio device not available.") ) {
            return;
         }
@@ -183,15 +183,15 @@ void SGSoundMgr::init()
         d->_aax.set(AAX_INITIALIZED);
         testForError("initialization");
 
-        dsp = AAX::DSP(d->_aax, AAX_VOLUME_FILTER);
+        dsp = aax::dsp(d->_aax, AAX_VOLUME_FILTER);
         dsp.set(AAX_GAIN, 0.0f);
         d->_aax.set(dsp);
 
-        dsp = AAX::DSP(d->_aax, AAX_DISTANCE_FILTER);
+        dsp = aax::dsp(d->_aax, AAX_DISTANCE_FILTER);
         dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED);
         d->_aax.set(dsp);
 
-        dsp = AAX::DSP(d->_aax, AAX_VELOCITY_EFFECT);
+        dsp = aax::dsp(d->_aax, AAX_VELOCITY_EFFECT);
         dsp.set(AAX_DOPPLER_FACTOR, 1.0f);
         dsp.set(AAX_SOUND_VELOCITY, 340.3f);
         d->_aax.set(dsp);
@@ -311,7 +311,7 @@ void SGSoundMgr::update( double dt )
         }
 
         if (_changed) {
-            AAX::DSP dsp = d->_aax.get(AAX_VOLUME_FILTER);
+            aax::dsp dsp = d->_aax.get(AAX_VOLUME_FILTER);
             dsp.set(AAX_GAIN, _volume);
             d->_aax.set(dsp);
 
@@ -328,10 +328,10 @@ void SGSoundMgr::update( double dt )
                 velocity = SGVec3d( _velocity*SG_FEET_TO_METER );
                 velocity = hlOr.backTransform(velocity);
             }
-            AAX::Vector vel(velocity.data());
+            aax::Vector vel(velocity.data());
             d->_aax.sensor_velocity(vel);
 
-            AAX::Matrix mtx = d->_mtx64.toMatrix();
+            aax::Matrix mtx = d->_mtx64.toMatrix();
             d->_aax.sensor_matrix(mtx);
 
             testForError("update");
@@ -409,7 +409,7 @@ void SGSoundMgr::set_volume( float v )
 unsigned int SGSoundMgr::request_source()
 {
     unsigned int id = d->_source_id++;
-    d->_sources.insert( std::make_pair(id,AAX::Emitter()) );
+    d->_sources.insert( std::make_pair(id,aax::Emitter()) );
     return id;
 }
 
@@ -419,7 +419,7 @@ void SGSoundMgr::release_source( unsigned int source )
     source_map_iterator source_it = d->_sources.find(source);
     if ( source_it != d->_sources.end() )
     {
-        AAX::Emitter& emitter = source_it->second;
+        aax::Emitter& emitter = source_it->second;
         emitter.set(AAX_STOPPED);
         emitter.remove_buffer();
         d->_sources.erase(source_it);
@@ -436,7 +436,7 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
         // sample was not yet loaded or removed again
         std::string sample_name = sample->get_sample_name();
 
-        AAX::Buffer& buf = d->_aax.buffer(sample_name);
+        aax::Buffer& buf = d->_aax.buffer(sample_name);
         if (!buf) {
             SG_LOG(SG_SOUND, SG_ALERT,
                    "Unable to create buffer: " << sample_name);
@@ -445,7 +445,7 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
         }
 
         buffer = d->_buffer_id++;
-        d->_buffers.insert( std::make_pair<unsigned int,AAX::Buffer&>(buffer,buf) );
+        d->_buffers.insert( std::make_pair<unsigned int,aax::Buffer&>(buffer,buf) );
 
         if ( !sample->is_file() ) {
             enum aaxFormat format = AAX_FORMAT_NONE;
@@ -510,7 +510,7 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
         {
             sample->no_valid_buffer();
 #ifdef ENABLE_SOUND
-            AAX::Buffer& buffer = buffer_it->second;
+            aax::Buffer& buffer = buffer_it->second;
             d->_aax.destroy(buffer);
 #endif
             d->_buffers.erase(buffer_it);
@@ -522,7 +522,7 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 void SGSoundMgr::sample_suspend( SGSoundSample *sample )
 {
     if ( sample->is_valid_source() && sample->is_playing() ) {
-        AAX::Emitter& emitter = d->get_source(sample->get_source());
+        aax::Emitter& emitter = d->get_source(sample->get_source());
         emitter.set(AAX_SUSPENDED);
     }
 }
@@ -530,7 +530,7 @@ void SGSoundMgr::sample_suspend( SGSoundSample *sample )
 void SGSoundMgr::sample_resume( SGSoundSample *sample )
 {
     if ( sample->is_valid_source() && sample->is_playing() ) {
-        AAX::Emitter& emitter = d->get_source(sample->get_source());
+        aax::Emitter& emitter = d->get_source(sample->get_source());
         emitter.set(AAX_PLAYING);
     }
 }
@@ -545,14 +545,14 @@ void SGSoundMgr::sample_init( SGSoundSample *sample )
 void SGSoundMgr::sample_play( SGSoundSample *sample )
 {
 #ifdef ENABLE_SOUND
-    AAX::Emitter& emitter = d->get_source(sample->get_source());
+    aax::Emitter& emitter = d->get_source(sample->get_source());
 
     if ( !sample->is_queue() ) {
         unsigned int buffer = request_buffer(sample);
         emitter.add( d->get_buffer(buffer) );
     }
 
-    AAX::DSP dsp = emitter.get(AAX_DISTANCE_FILTER);
+    aax::dsp dsp = emitter.get(AAX_DISTANCE_FILTER);
     dsp.set(AAX_ROLLOFF_FACTOR, 0.3f);
     emitter.set(dsp);
 
@@ -570,7 +570,7 @@ void SGSoundMgr::sample_stop( SGSoundSample *sample )
         bool stopped = is_sample_stopped(sample);
         if ( sample->is_looping() && !stopped) {
 #ifdef ENABLE_SOUND
-            AAX::Emitter& emitter = d->get_source(source);
+            aax::Emitter& emitter = d->get_source(source);
             emitter.set(AAX_STOPPED);
 #endif          
             stopped = is_sample_stopped(sample);
@@ -589,7 +589,7 @@ void SGSoundMgr::sample_destroy( SGSoundSample *sample )
 #ifdef ENABLE_SOUND
         unsigned int source = sample->get_source();
         if ( sample->is_playing() ) {
-            AAX::Emitter& emitter = d->get_source(source);
+            aax::Emitter& emitter = d->get_source(source);
             emitter.set(AAX_STOPPED);
         }
         release_source( source );
@@ -607,7 +607,7 @@ bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
 {
 #ifdef ENABLE_SOUND
     assert(sample->is_valid_source());
-    AAX::Emitter& emitter = d->get_source(sample->get_source());
+    aax::Emitter& emitter = d->get_source(sample->get_source());
     int result = emitter.state();
     return (result == AAX_STOPPED);
 #else
@@ -617,14 +617,14 @@ bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
 
 void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position, SGVec3f& orientation, SGVec3f& velocity )
 {
-    AAX::Emitter& emitter = d->get_source(sample->get_source());
-    AAX::DSP dsp;
+    aax::Emitter& emitter = d->get_source(sample->get_source());
+    aax::dsp dsp;
 
-    AAX::Vector64 pos = position.data();
-    AAX::Vector64 ori = orientation.data();
-    AAX::Vector vel = velocity.data();
+    aax::Vector64 pos = position.data();
+    aax::Vector64 ori = orientation.data();
+    aax::Vector vel = velocity.data();
     d->_mtx64.set(pos, ori);
-    AAX::Matrix mtx = d->_mtx64;
+    aax::Matrix mtx = d->_mtx64;
     emitter.matrix(mtx);
     emitter.velocity(vel);
 
@@ -686,10 +686,10 @@ bool SGSoundMgr::testForError(void *p, std::string s)
 bool SGSoundMgr::testForError(std::string s, std::string name)
 {
 #ifdef ENABLE_SOUND
-    enum aaxErrorType error = d->_aax.error_no();
+    enum aaxErrorType error = aax::error_no();
     if (error != AAX_ERROR_NONE) {
        SG_LOG( SG_SOUND, SG_ALERT, "AeonWave Error (" << name << "): "
-                                      << d->_aax.error(error) << " at " << s);
+                                      << aax::error(error) << " at " << s);
        return true;
     }
 #endif

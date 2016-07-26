@@ -22,8 +22,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef _SG_SAMPLE_GROUP_OPENAL_HXX
-#define _SG_SAMPLE_GROUP_OPENAL_HXX 1
+#ifndef _SG_SAMPLE_GROUP_HXX
+#define _SG_SAMPLE_GROUP_HXX 1
 
 
 #include <string>
@@ -76,7 +76,7 @@ public:
 
     /**
      * Update function.
-     * Call this function periodically to update the OpenAL state of all
+     * Call this function periodically to update the state of all
      * samples associated with this class. None op the configuration changes
      * take place without a call to this function.
      */
@@ -225,7 +225,7 @@ private:
     sample_map _samples;
     std::vector< SGSharedPtr<SGSoundSample> > _removed_samples;
 
-    bool testForALError(std::string s);
+    bool testForMgrError(std::string s);
     bool testForError(void *p, std::string s);
 
     void update_pos_and_orientation();

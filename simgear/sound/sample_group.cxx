@@ -69,9 +69,10 @@ SGSampleGroup::~SGSampleGroup ()
     _smgr = 0;
 }
 
+#include <stdio.h>
 void SGSampleGroup::cleanup_removed_samples()
 {
-    // Delete any OpenAL buffers that might still be in use.
+    // Delete any buffers that might still be in use.
     unsigned int size = _removed_samples.size();
     for (unsigned int i=0; i<size; ) {
         SGSoundSample *sample = _removed_samples[i];
@@ -104,7 +105,6 @@ void SGSampleGroup::start_playing_sample(SGSoundSample *sample)
 void SGSampleGroup::check_playing_sample(SGSoundSample *sample)
 {
     // check if the sound has stopped by itself
-    
     if (_smgr->is_sample_stopped(sample)) {
         // sample is stopped because it wasn't looping
         sample->stop();
@@ -128,7 +128,7 @@ void SGSampleGroup::update( double dt ) {
 
     if ( !_active || _pause ) return;
 
-    testForALError("start of update!!\n");
+    testForMgrError("start of update!!\n");
 
     cleanup_removed_samples();
     
@@ -140,6 +140,7 @@ void SGSampleGroup::update( double dt ) {
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
+    size_t i = 0;
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
 
@@ -149,7 +150,7 @@ void SGSampleGroup::update( double dt ) {
         } else if ( sample->is_valid_source() ) {
             check_playing_sample(sample);
         }
-        testForALError("update");
+        testForMgrError("update");
     }
 }
 
@@ -237,7 +238,7 @@ SGSampleGroup::suspend ()
             _smgr->sample_suspend( sample );
 #endif
         }
-        testForALError("suspend");
+        testForMgrError("suspend");
     }
 }
 
@@ -253,7 +254,7 @@ SGSampleGroup::resume ()
             SGSoundSample *sample = sample_current->second;
             _smgr->sample_resume( sample );
         }
-        testForALError("resume");
+        testForMgrError("resume");
 #endif
         _pause = false;
     }
@@ -390,9 +391,9 @@ bool SGSampleGroup::testForError(void *p, std::string s)
    return false;
 }
 
-bool SGSampleGroup::testForALError(std::string s)
+bool SGSampleGroup::testForMgrError(std::string s)
 {
-    _smgr->testForError(s, _refname);
+    _smgr->testForError(s+" (sample group)", _refname);
     return false;
 }
 

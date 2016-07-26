@@ -46,13 +46,15 @@
 #include <simgear/misc/sg_path.hxx>
 
 
-typedef std::map < unsigned int,aax::Emitter > source_map;
+// We keep track of the emitters ourselves.
+typedef std::map < unsigned int, aax::Emitter > source_map;
 typedef source_map::iterator source_map_iterator;
-typedef source_map::const_iterator  const_source_map_iterator;
+typedef source_map::const_iterator const_source_map_iterator;
 
-typedef std::map < unsigned int,aax::Buffer& > buffer_map;
+// The AeonWave class keeps track of the buffers, so use a reference instead.
+typedef std::map < unsigned int, aax::Buffer& > buffer_map;
 typedef buffer_map::iterator buffer_map_iterator;
-typedef buffer_map::const_iterator  const_buffer_map_iterator;
+typedef buffer_map::const_iterator const_buffer_map_iterator;
 
 typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 typedef sample_group_map::iterator sample_group_map_iterator;
@@ -409,7 +411,11 @@ void SGSoundMgr::set_volume( float v )
 unsigned int SGSoundMgr::request_source()
 {
     unsigned int id = d->_source_id++;
-    d->_sources.insert( std::make_pair(id,aax::Emitter()) );
+#if 0
+    d->_sources.insert( std::make_pair(id, aax::Emitter(AAX_ABSOLUTE)) );
+#else
+    d->_sources[id] = aax::Emitter(AAX_ABSOLUTE);
+#endif
     return id;
 }
 

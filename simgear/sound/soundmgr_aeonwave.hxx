@@ -35,8 +35,8 @@
 #include <map>
 #include <memory> // for std::auto_ptr
 
-#include <aax/Matrix>
-#include <aax/AeonWave>
+#include <aax/matrix.hpp>
+#include <aax/aeonwave.hpp>
 
 #include <simgear/compiler.h>
 #include <simgear/structure/subsystem_mgr.hxx>
@@ -329,11 +329,11 @@ private:
     float _volume;
 
     // Position of the listener.
-    AAX::Vector64 _offset_pos;
+    aax::Vector64 _offset_pos;
     SGGeod _geod_pos;
 
     // Velocity of the listener.
-    AAX::Vector64 _velocity;
+    aax::Vector64 _velocity;
 
     bool testForError(void *p, std::string s);
 

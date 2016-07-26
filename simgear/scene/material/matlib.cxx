@@ -93,7 +93,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
 		// Read name node purely for logging purposes
 		const SGPropertyNode *nameNode = node->getChild("name");
 		if (nameNode) {
-			SG_LOG( SG_TERRAIN, SG_INFO, "Loading region "
+			SG_LOG( SG_TERRAIN, SG_DEBUG, "Loading region "
 					<< nameNode->getStringValue());
 		}
 
@@ -113,7 +113,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
 					fabs(x2 - x1),
 					fabs(y2 - y1));
 			arealist->push_back(rect);
-			SG_LOG( SG_TERRAIN, SG_INFO, " Area ("
+			SG_LOG( SG_TERRAIN, SG_DEBUG, " Area ("
 					<< rect.x() << ","
 					<< rect.y() << ") width:"
 					<< rect.width() << " height:"

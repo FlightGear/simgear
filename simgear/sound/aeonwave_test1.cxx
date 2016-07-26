@@ -9,16 +9,16 @@
 #include <unistd.h>	// sleep()
 #endif
 
-#include <aax/AeonWave>
+#include <aax/aeonwave.hpp>
 
 #define AUDIOFILE	SRC_DIR"/jet.wav"
 
-bool testForError(AAX::AeonWave& p, std::string s)
+bool testForError(aax::AeonWave& p, std::string s)
 {
-    enum aaxErrorType error = p.error_no();
+    enum aaxErrorType error = aax::error_no();
     if (error != AAX_ERROR_NONE) {
        std::cout << "AeonWave Error: "
-                 << p.error(error) << " at " << s << std::endl;
+                 << aax::error(error) << " at " << s << std::endl;
         return true;
     }
     return false;
@@ -27,21 +27,30 @@ bool testForError(AAX::AeonWave& p, std::string s)
 
 int main( int argc, char *argv[] ) 
 {
-    AAX::AeonWave aax = AAX::AeonWave(AAX_MODE_WRITE_STEREO);
+    aax::AeonWave aax = aax::AeonWave(AAX_MODE_WRITE_STEREO);
 
     aax.set(AAX_INITIALIZED);
     testForError(aax, "initialization");
 
-    AAX::DSP dsp;
-    dsp = AAX::DSP(aax, AAX_VOLUME_FILTER);
+    aax::Emitter emitter(AAX_ABSOLUTE);
+    aax.add(emitter);
+    testForError(aax, "emitter registering");
+
+    aax::Emitter emitter2;
+    emitter2 = aax::Emitter(AAX_ABSOLUTE);
+    aax.add(emitter2);
+    testForError(aax, "emitter reasignment");
+
+    aax::dsp dsp;
+    dsp = aax::dsp(aax, AAX_VOLUME_FILTER);
     dsp.set(AAX_GAIN, 0.0f);
     aax.set(dsp);
 
-    dsp = AAX::DSP(aax, AAX_DISTANCE_FILTER);
+    dsp = aax::dsp(aax, AAX_DISTANCE_FILTER);
     dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED);
     aax.set(dsp);
 
-    dsp = AAX::DSP(aax, AAX_VELOCITY_EFFECT);
+    dsp = aax::dsp(aax, AAX_VELOCITY_EFFECT);
     dsp.set(AAX_DOPPLER_FACTOR, 1.0f);
     dsp.set(AAX_SOUND_VELOCITY, 340.3f);
     aax.set(dsp);

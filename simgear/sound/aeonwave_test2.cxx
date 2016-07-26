@@ -34,9 +34,7 @@ int main( int argc, char *argv[] ) {
     sample1->set_pitch(1.0);
     sample1->play_looped();
     sgr->add(sample1, "sound1");
-printf("a\n");
     smgr->update(1.0);
-printf("b\n");
     printf("playing sample1\n");
     sleep(1);
 

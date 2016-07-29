@@ -60,6 +60,11 @@ typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
 
+#if 1
+# define TRY(a)	if ((a) == 0) printf("%i: %s\n", __LINE__, aax::error())
+#else
+# define TRY(a)	(a)
+#endif
 #define BLOCKSIZE_TO_SMP(a)		((a) > 1) ? (((a)-4)*2) : 1
 
 class SGSoundMgr::SoundManagerPrivate
@@ -112,7 +117,7 @@ public:
     unsigned int _source_id;
     source_map _sources;
     aax::Emitter nullEmitter;
-    aax::Emitter& get_source(unsigned int id) {
+    aax::Emitter& get_emitter(unsigned int id) {
         source_map_iterator source_it = _sources.find(id);
         if ( source_it != _sources.end() )  return source_it->second;
         SG_LOG(SG_SOUND, SG_ALERT, "unknown source id requested.");
@@ -164,7 +169,6 @@ void SGSoundMgr::init()
     d->_source_id = 0;
     d->_sources.clear();
 
-    aax::dsp dsp;
     if (!_device_name.empty()) {
         // try non-default device
         d->_aax = aax::AeonWave(_device_name.c_str());
@@ -182,21 +186,22 @@ void SGSoundMgr::init()
 
     if ( is_working() )
     {
-        d->_aax.set(AAX_INITIALIZED);
+        TRY( d->_aax.set(AAX_INITIALIZED) );
+        TRY( d->_aax.set(AAX_PLAYING) );
         testForError("initialization");
 
-        dsp = aax::dsp(d->_aax, AAX_VOLUME_FILTER);
-        dsp.set(AAX_GAIN, 0.0f);
-        d->_aax.set(dsp);
+        aax::dsp dsp = aax::dsp(d->_aax, AAX_VOLUME_FILTER);
+        TRY( dsp.set(AAX_GAIN, 0.0f) );
+        TRY( d->_aax.set(dsp) );
 
         dsp = aax::dsp(d->_aax, AAX_DISTANCE_FILTER);
-        dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED);
-        d->_aax.set(dsp);
+        TRY( dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED) );
+        TRY( d->_aax.set(dsp) );
 
         dsp = aax::dsp(d->_aax, AAX_VELOCITY_EFFECT);
-        dsp.set(AAX_DOPPLER_FACTOR, 1.0f);
-        dsp.set(AAX_SOUND_VELOCITY, 340.3f);
-        d->_aax.set(dsp);
+        TRY( dsp.set(AAX_DOPPLER_FACTOR, 1.0f) );
+        TRY( dsp.set(AAX_SOUND_VELOCITY, 340.3f) );
+        TRY( d->_aax.set(dsp) );
         testForError("scenery setup");
 
         _vendor = (const char *)d->_aax.info(AAX_VENDOR_STRING);
@@ -258,7 +263,7 @@ void SGSoundMgr::stop()
 
     if (is_working()) {
         _active = false;
-        d->_aax.set(AAX_STOPPED);
+        TRY( d->_aax.set(AAX_STOPPED) );
 
         _renderer = "unknown";
         _vendor = "unknown";
@@ -314,14 +319,14 @@ void SGSoundMgr::update( double dt )
 
         if (_changed) {
             aax::dsp dsp = d->_aax.get(AAX_VOLUME_FILTER);
-            dsp.set(AAX_GAIN, _volume);
-            d->_aax.set(dsp);
+            TRY( dsp.set(AAX_GAIN, _volume) );
+            TRY( d->_aax.set(dsp) );
 
 #if 0
             // TODO: altitude dependent
             dsp = d->_aax.get(AAX_VELOCITY_EFFECT);
-            dsp.set(AAX_SOUND_VELOCITY, 340.3f);
-            d->_aax.set(dsp);
+            TRY( dsp.set(AAX_SOUND_VELOCITY, 340.3f) );
+            TRY( d->_aax.set(dsp) );
 #endif
 
             SGQuatd hlOr = SGQuatd::fromLonLat( _geod_pos );
@@ -331,10 +336,10 @@ void SGSoundMgr::update( double dt )
                 velocity = hlOr.backTransform(velocity);
             }
             aax::Vector vel(velocity.data());
-            d->_aax.sensor_velocity(vel);
+            TRY( d->_aax.sensor_velocity(vel) );
 
             aax::Matrix mtx = d->_mtx64.toMatrix();
-            d->_aax.sensor_matrix(mtx);
+            TRY( d->_aax.sensor_matrix(mtx) );
 
             testForError("update");
             _changed = false;
@@ -426,8 +431,8 @@ void SGSoundMgr::release_source( unsigned int source )
     if ( source_it != d->_sources.end() )
     {
         aax::Emitter& emitter = source_it->second;
-        emitter.set(AAX_STOPPED);
-        emitter.remove_buffer();
+        TRY( emitter.set(AAX_STOPPED) );
+        TRY( emitter.remove_buffer() );
         d->_sources.erase(source_it);
     }
     else
@@ -436,7 +441,7 @@ void SGSoundMgr::release_source( unsigned int source )
 
 unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
 {
-    unsigned int buffer = NO_BUFFER;
+    unsigned int bufid = NO_BUFFER;
 #ifdef ENABLE_SOUND
     if ( !sample->is_valid_buffer() ) {
         // sample was not yet loaded or removed again
@@ -450,8 +455,8 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
             return FAILED_BUFFER;
         }
 
-        buffer = d->_buffer_id++;
-        d->_buffers.insert( std::make_pair<unsigned int,aax::Buffer&>(buffer,buf) );
+        bufid = d->_buffer_id++;
+        d->_buffers.insert( std::make_pair<unsigned int,aax::Buffer&>(bufid,buf) );
 
         if ( !sample->is_file() ) {
             enum aaxFormat format = AAX_FORMAT_NONE;
@@ -473,21 +478,23 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
                 break;
             default:
                 SG_LOG(SG_SOUND, SG_ALERT, "unsupported audio format");
-                return buffer;
+                return bufid;
             }
 
             unsigned int no_samples = sample->get_no_samples();
-            buf.set(d->_aax, no_samples, 1, format);
-            buf.set( AAX_FREQUENCY, sample->get_frequency() );
-            buf.fill( sample->get_data() );
+            unsigned int no_tracks = sample->get_no_tracks();
+            unsigned int frequency = sample->get_frequency();
+            TRY( buf.set(d->_aax, no_samples, no_tracks, format) );
+            TRY( buf.set(AAX_FREQUENCY, frequency) );
+            TRY( buf.fill(sample->get_data()) );
 
             if (format == AAX_IMA4_ADPCM) {
-                size_t samples_block = BLOCKSIZE_TO_SMP( sample->get_block_align() );
-                buf.set( AAX_BLOCK_ALIGNMENT, samples_block );
+                size_t blocksz = sample->get_block_align();
+                TRY( buf.set(AAX_BLOCK_ALIGNMENT, BLOCKSIZE_TO_SMP(blocksz)) );
             }
         }
 
-        sample->set_buffer(buffer);
+        sample->set_buffer(bufid);
         sample->set_block_align( buf.get(AAX_BLOCK_ALIGNMENT) );
         sample->set_frequency( buf.get(AAX_FREQUENCY) );
         sample->set_no_samples( buf.get(AAX_NO_SAMPLES) );
@@ -500,10 +507,10 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
         sample->set_compressed(c);
     }
     else {
-        buffer = sample->get_buffer();
+        bufid = sample->get_buffer();
     }
 #endif
-    return buffer;
+    return bufid;
 }
 
 void SGSoundMgr::release_buffer(SGSoundSample *sample)
@@ -528,16 +535,16 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 void SGSoundMgr::sample_suspend( SGSoundSample *sample )
 {
     if ( sample->is_valid_source() && sample->is_playing() ) {
-        aax::Emitter& emitter = d->get_source(sample->get_source());
-        emitter.set(AAX_SUSPENDED);
+        aax::Emitter& emitter = d->get_emitter(sample->get_source());
+        TRY( emitter.set(AAX_SUSPENDED) );
     }
 }
 
 void SGSoundMgr::sample_resume( SGSoundSample *sample )
 {
     if ( sample->is_valid_source() && sample->is_playing() ) {
-        aax::Emitter& emitter = d->get_source(sample->get_source());
-        emitter.set(AAX_PLAYING);
+        aax::Emitter& emitter = d->get_emitter(sample->get_source());
+        TRY( emitter.set(AAX_PLAYING) );
     }
 }
 
@@ -551,20 +558,20 @@ void SGSoundMgr::sample_init( SGSoundSample *sample )
 void SGSoundMgr::sample_play( SGSoundSample *sample )
 {
 #ifdef ENABLE_SOUND
-    aax::Emitter& emitter = d->get_source(sample->get_source());
+    aax::Emitter& emitter = d->get_emitter(sample->get_source());
 
     if ( !sample->is_queue() ) {
         unsigned int buffer = request_buffer(sample);
-        emitter.add( d->get_buffer(buffer) );
+        TRY( emitter.add(d->get_buffer(buffer)) );
     }
 
     aax::dsp dsp = emitter.get(AAX_DISTANCE_FILTER);
-    dsp.set(AAX_ROLLOFF_FACTOR, 0.3f);
-    emitter.set(dsp);
+    TRY( dsp.set(AAX_ROLLOFF_FACTOR, 0.3f) );
+    TRY( emitter.set(dsp) );
 
-    emitter.set(AAX_LOOPING, sample->is_looping());
-    emitter.set(AAX_POSITION, AAX_ABSOLUTE);
-    emitter.set(AAX_PLAYING);
+    TRY( emitter.set(AAX_LOOPING, sample->is_looping()) );
+    TRY( emitter.set(AAX_POSITION, AAX_ABSOLUTE) );
+    TRY( emitter.set(AAX_PLAYING) );
 #endif
 }
 
@@ -576,8 +583,8 @@ void SGSoundMgr::sample_stop( SGSoundSample *sample )
         bool stopped = is_sample_stopped(sample);
         if ( sample->is_looping() && !stopped) {
 #ifdef ENABLE_SOUND
-            aax::Emitter& emitter = d->get_source(source);
-            emitter.set(AAX_STOPPED);
+            aax::Emitter& emitter = d->get_emitter(source);
+            TRY( emitter.set(AAX_STOPPED) );
 #endif          
             stopped = is_sample_stopped(sample);
         }
@@ -595,8 +602,8 @@ void SGSoundMgr::sample_destroy( SGSoundSample *sample )
 #ifdef ENABLE_SOUND
         unsigned int source = sample->get_source();
         if ( sample->is_playing() ) {
-            aax::Emitter& emitter = d->get_source(source);
-            emitter.set(AAX_STOPPED);
+            aax::Emitter& emitter = d->get_emitter(source);
+            TRY( emitter.set(AAX_STOPPED) );
         }
         release_source( source );
 #endif
@@ -613,7 +620,7 @@ bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
 {
 #ifdef ENABLE_SOUND
     assert(sample->is_valid_source());
-    aax::Emitter& emitter = d->get_source(sample->get_source());
+    aax::Emitter& emitter = d->get_emitter(sample->get_source());
     int result = emitter.state();
     return (result == AAX_STOPPED);
 #else
@@ -623,7 +630,7 @@ bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
 
 void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position, SGVec3f& orientation, SGVec3f& velocity )
 {
-    aax::Emitter& emitter = d->get_source(sample->get_source());
+    aax::Emitter& emitter = d->get_emitter(sample->get_source());
     aax::dsp dsp;
 
     aax::Vector64 pos = position.data();
@@ -631,28 +638,28 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
     aax::Vector vel = velocity.data();
     d->_mtx64.set(pos, ori);
     aax::Matrix mtx = d->_mtx64;
-    emitter.matrix(mtx);
-    emitter.velocity(vel);
+    TRY( emitter.matrix(mtx) );
+    TRY( emitter.velocity(vel) );
 
     dsp = emitter.get(AAX_VOLUME_FILTER);
-    dsp.set(AAX_GAIN, sample->get_volume());
-    emitter.set(dsp);
+    TRY( dsp.set(AAX_GAIN, sample->get_volume()) );
+    TRY( emitter.set(dsp) );
 
     dsp = emitter.get(AAX_PITCH_EFFECT);
-    dsp.set(AAX_PITCH, sample->get_pitch());
-    emitter.set(dsp);
+    TRY( dsp.set(AAX_PITCH, sample->get_pitch()) );
+    TRY( emitter.set(dsp) );
 
     if ( sample->has_static_data_changed() ) {
         dsp = emitter.get(AAX_ANGULAR_FILTER);
-        dsp.set(AAX_INNER_ANGLE, sample->get_innerangle());
-        dsp.set(AAX_OUTER_ANGLE, sample->get_outerangle());
-        dsp.set(AAX_OUTER_GAIN, sample->get_outergain());
-        emitter.set(dsp);
+        TRY( dsp.set(AAX_INNER_ANGLE, sample->get_innerangle()) );
+        TRY( dsp.set(AAX_OUTER_ANGLE, sample->get_outerangle()) );
+        TRY( dsp.set(AAX_OUTER_GAIN, sample->get_outergain()) );
+        TRY( emitter.set(dsp) );
 
         dsp = emitter.get(AAX_DISTANCE_FILTER);
-        dsp.set(AAX_REF_DISTANCE, sample->get_reference_dist());
-        dsp.set(AAX_MAX_DISTANCE, sample->get_max_dist());
-        emitter.set(dsp);
+        TRY( dsp.set(AAX_REF_DISTANCE, sample->get_reference_dist()) );
+        TRY( dsp.set(AAX_MAX_DISTANCE, sample->get_max_dist()) );
+        TRY( emitter.set(dsp) );
     }
 }
 

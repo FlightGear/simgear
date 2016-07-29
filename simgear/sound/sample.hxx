@@ -112,6 +112,7 @@ public:
         return (_samples * _tracks * _bits)/8;
     }
     inline size_t get_no_samples() { return _samples; }
+    inline size_t get_no_tracks() { return _tracks; }
 
 
     /**

@@ -407,15 +407,12 @@ include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${CURL_INCLUDE_DIRS}
 )
 
+include_directories( ${OPENSCENEGRAPH_INCLUDE_DIRS} )
 if (USE_AEONWAVE)
     find_package(AAX COMPONENTS aax REQUIRED)
-    include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
-        ${AAX_INCLUDE_DIR}
-    )
+    include_directories( ${AAX_INCLUDE_DIR} )
 else()
-    include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
-        ${OPENAL_INCLUDE_DIR}
-    )
+    include_directories( ${OPENAL_INCLUDE_DIR} )
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)

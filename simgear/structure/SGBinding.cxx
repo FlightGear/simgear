@@ -165,3 +165,18 @@ void clearBindingList(const SGBindingList& aBindings)
     }
 }
 
+bool anyBindingEnabled(const SGBindingList& aBindings)
+{
+    if (aBindings.empty()) {
+        return false;
+    }
+
+    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+        if (!b->test()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+

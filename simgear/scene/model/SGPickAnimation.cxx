@@ -107,7 +107,11 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
        if (_buttons.find(button) == _buttons.end()) {
            return false;
        }
-       
+
+       if (!anyBindingEnabled(_bindingsDown)) {
+           return false;
+       }
+
      fireBindingList(_bindingsDown);
      _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
      return true;
@@ -136,7 +140,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
    virtual bool hover( const osg::Vec2d& windowPos,
                        const Info& )
    {
-       if (_hover.empty()) {
+       if (!anyBindingEnabled(_hover)) {
            return false;
        }
        

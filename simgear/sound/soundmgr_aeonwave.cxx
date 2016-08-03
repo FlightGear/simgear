@@ -61,7 +61,7 @@ typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
 
 #if 1
-# define TRY(a)	if ((a) == 0) printf("%i: %s\n", __LINE__, aax::error())
+# define TRY(a)	if ((a) == 0) printf("%i: %s\n", __LINE__, d->_aax.strerror())
 #else
 # define TRY(a)	(a)
 #endif
@@ -702,7 +702,7 @@ bool SGSoundMgr::testForError(std::string s, std::string name)
     enum aaxErrorType error = aax::error_no();
     if (error != AAX_ERROR_NONE) {
        SG_LOG( SG_SOUND, SG_ALERT, "AeonWave Error (" << name << "): "
-                                      << aax::error(error) << " at " << s);
+                                      << aax::strerror(error) << " at " << s);
        return true;
     }
 #endif

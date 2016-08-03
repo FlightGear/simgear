@@ -15,10 +15,10 @@
 
 bool testForError(aax::AeonWave& p, std::string s)
 {
-    enum aaxErrorType error = aax::error_no();
+    enum aaxErrorType error = p.error_no();
     if (error != AAX_ERROR_NONE) {
        std::cout << "AeonWave Error: "
-                 << aax::error(error) << " at " << s << std::endl;
+                 << aax::strerror(error) << " at " << s << std::endl;
         return true;
     }
     return false;

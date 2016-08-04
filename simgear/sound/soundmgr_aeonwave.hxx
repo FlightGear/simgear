@@ -126,10 +126,6 @@ public:
      */
     void set_position( const SGVec3d& pos, const SGGeod& pos_geod );
 
-    void set_position_offset( const SGVec3d& pos ) {
-        _offset_pos = pos.data(); _changed = true;
-    }
-
     /**
      * Get the position of the sound manager.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
@@ -145,7 +141,7 @@ public:
      * @param vel Velocity vector
      */
     void set_velocity( const SGVec3d& vel ) {
-        _velocity = vel.data(); _changed = true;
+        _velocity = vel; _changed = true;
     }
 
     /**
@@ -154,7 +150,7 @@ public:
      *
      * @return Velocity vector of the OpenAL listener
      */
-    inline SGVec3f get_velocity() { SGVec3d f(_velocity); return toVec3f(f); }
+    inline SGVec3f get_velocity() { return toVec3f(_velocity); }
 
     /**
      * Set the orientation of the sound manager
@@ -329,11 +325,10 @@ private:
     float _volume;
 
     // Position of the listener.
-    aax::Vector64 _offset_pos;
     SGGeod _geod_pos;
 
     // Velocity of the listener.
-    aax::Vector64 _velocity;
+    SGVec3d _velocity;
 
     bool testForError(void *p, std::string s);
 

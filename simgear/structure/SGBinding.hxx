@@ -171,4 +171,10 @@ SGBindingList readBindingList(const simgear::PropertyList& aNodes, SGPropertyNod
  */
 void clearBindingList(const SGBindingList& aBindings);
 
+/**
+ * check if at least one binding in the list is enabled. Returns false if bindings
+ * list is empty, or all bindings are conditinally disabled.
+ */
+bool anyBindingEnabled(const SGBindingList& bindings);
+
 #endif

@@ -244,6 +244,8 @@ void Client::makeRequest(const Request_ptr& r)
     curl_easy_setopt(curlRequest, CURLOPT_USERAGENT, d->userAgent.c_str());
     curl_easy_setopt(curlRequest, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 
+    curl_easy_setopt(curlRequest, CURLOPT_FOLLOWLOCATION, 1);
+
     if (!d->proxy.empty()) {
       curl_easy_setopt(curlRequest, CURLOPT_PROXY, d->proxy.c_str());
       curl_easy_setopt(curlRequest, CURLOPT_PROXYPORT, d->proxyPort);

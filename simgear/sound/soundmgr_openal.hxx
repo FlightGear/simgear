@@ -123,10 +123,6 @@ public:
      */
     void set_position( const SGVec3d& pos, const SGGeod& pos_geod );
 
-    void set_position_offset( const SGVec3d& pos ) {
-        _offset_pos = pos; _changed = true;
-    }
-
     /**
      * Get the position of the sound manager.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
@@ -340,7 +336,6 @@ private:
     float _volume;
 
     // Position of the listener.
-    SGVec3d _offset_pos;
     SGGeod _geod_pos;
 
     // Velocity of the listener.

@@ -32,6 +32,9 @@ int main( int argc, char *argv[] )
     aax.set(AAX_INITIALIZED);
     testForError(aax, "initialization");
 
+    aax.set(AAX_PLAYING);
+    testForError(aax, "mixer palying");
+
     aax::Emitter emitter(AAX_ABSOLUTE);
     aax.add(emitter);
     testForError(aax, "emitter registering");
@@ -62,6 +65,20 @@ int main( int argc, char *argv[] )
 
     std::cout << "Vendor: " << _vendor << std::endl;
     std::cout << "Renderer: " << _renderer << std::endl;
+
+    aax::Matrix64 mtx64;
+    mtx64.translate(-5000.0, 12500.0, 1000.0);
+
+    aax::Matrix mtx = mtx64.toMatrix();
+    emitter.matrix(mtx);
+
+    mtx.translate(-5.0, 2.0, 1.0);
+    mtx.inverse();
+    aax.sensor_matrix(mtx);
+
+    aax.set(AAX_PLAYING);
+    emitter.set(AAX_PLAYING);
+    aax.set(AAX_UPDATE);
      
     return 0;
 }

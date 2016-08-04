@@ -71,7 +71,9 @@ class SGSoundMgr::SoundManagerPrivate
 {
 public:
     SoundManagerPrivate() :
+        _absolute_pos(SGVec3d::zeros()),
         _base_pos(SGVec3d::zeros()),
+        _orientation(SGQuatd::zeros()),
         _buffer_id(0),
         _source_id(0)
     {
@@ -88,19 +90,24 @@ public:
     }
 
     void init() {
-        _mtx64 = aax::Matrix64();
+        _mtx = aax::Matrix();
     }
     
     void update_pos_and_orientation()
     {
         SGVec3d sgv_at = _orientation.backTransform(-SGVec3d::e3());
         SGVec3d sgv_up = _orientation.backTransform(SGVec3d::e2());
-        _mtx64.set(_base_pos.data(), sgv_at.data(), sgv_up.data());
+        SGVec3f pos = SGVec3f::zeros();
+
+        _mtx.set(pos.data(), toVec3f(sgv_at).data(), toVec3f(sgv_up).data());
+
+        _absolute_pos = _base_pos;
     }
         
     aax::AeonWave _aax;
-    aax::Matrix64 _mtx64;
+    aax::Matrix _mtx;
 
+    SGVec3d _absolute_pos;
     SGVec3d _base_pos;
     SGQuatd _orientation;
 
@@ -140,7 +147,8 @@ SGSoundMgr::SGSoundMgr() :
     _vendor("unknown"),
     _active(false),
     _changed(true),
-    _volume(0.0)
+    _volume(0.0),
+    _velocity(SGVec3d::zeros())
 {
     d.reset(new SoundManagerPrivate);
     d->_base_pos = SGVec3d::fromGeod(_geod_pos);
@@ -328,18 +336,17 @@ void SGSoundMgr::update( double dt )
             TRY( dsp.set(AAX_SOUND_VELOCITY, 340.3f) );
             TRY( d->_aax.set(dsp) );
 #endif
+            aax::Matrix mtx = d->_mtx;
+            mtx.inverse();
+            TRY( d->_aax.sensor_matrix(mtx) );
 
             SGQuatd hlOr = SGQuatd::fromLonLat( _geod_pos );
             SGVec3d velocity = SGVec3d::zeros();
             if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
-                velocity = SGVec3d( _velocity*SG_FEET_TO_METER );
-                velocity = hlOr.backTransform(velocity);
+                velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
             }
-            aax::Vector vel(velocity.data());
+            aax::Vector vel( toVec3f(velocity).data() );
             TRY( d->_aax.sensor_velocity(vel) );
-
-            aax::Matrix mtx = d->_mtx64.toMatrix();
-            TRY( d->_aax.sensor_matrix(mtx) );
 
             testForError("update");
             _changed = false;
@@ -416,11 +423,7 @@ void SGSoundMgr::set_volume( float v )
 unsigned int SGSoundMgr::request_source()
 {
     unsigned int id = d->_source_id++;
-#if 0
     d->_sources.insert( std::make_pair(id, aax::Emitter(AAX_ABSOLUTE)) );
-#else
-    d->_sources[id] = aax::Emitter(AAX_ABSOLUTE);
-#endif
     return id;
 }
 
@@ -431,7 +434,11 @@ void SGSoundMgr::release_source( unsigned int source )
     if ( source_it != d->_sources.end() )
     {
         aax::Emitter& emitter = source_it->second;
-        TRY( emitter.set(AAX_STOPPED) );
+        enum aaxState state = emitter.state();
+        if (state == AAX_PLAYING || state == AAX_SUSPENDED) {
+           TRY( emitter.set(AAX_STOPPED) );
+           TRY( d->_aax.remove(emitter) );
+        }
         TRY( emitter.remove_buffer() );
         d->_sources.erase(source_it);
     }
@@ -561,16 +568,31 @@ void SGSoundMgr::sample_play( SGSoundSample *sample )
     aax::Emitter& emitter = d->get_emitter(sample->get_source());
 
     if ( !sample->is_queue() ) {
-        unsigned int buffer = request_buffer(sample);
-        TRY( emitter.add(d->get_buffer(buffer)) );
+        unsigned int bufid = request_buffer(sample);
+        if (bufid == SGSoundMgr::FAILED_BUFFER ||
+            bufid == SGSoundMgr::NO_BUFFER)
+        {
+            release_source(sample->get_source());
+            return;
+        }
+
+        aax::Buffer& buffer = d->get_buffer(bufid);
+        if (buffer) {
+            TRY( emitter.add(buffer) );
+        } else
+            SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!");
     }
 
     aax::dsp dsp = emitter.get(AAX_DISTANCE_FILTER);
     TRY( dsp.set(AAX_ROLLOFF_FACTOR, 0.3f) );
+    TRY( dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED) );
     TRY( emitter.set(dsp) );
 
     TRY( emitter.set(AAX_LOOPING, sample->is_looping()) );
     TRY( emitter.set(AAX_POSITION, AAX_ABSOLUTE) );
+
+    TRY( d->_aax.add(emitter) );
+    TRY( emitter.set(AAX_INITIALIZED) );
     TRY( emitter.set(AAX_PLAYING) );
 #endif
 }
@@ -585,6 +607,7 @@ void SGSoundMgr::sample_stop( SGSoundSample *sample )
 #ifdef ENABLE_SOUND
             aax::Emitter& emitter = d->get_emitter(source);
             TRY( emitter.set(AAX_STOPPED) );
+            TRY( d->_aax.remove(emitter) );
 #endif          
             stopped = is_sample_stopped(sample);
         }
@@ -604,6 +627,7 @@ void SGSoundMgr::sample_destroy( SGSoundSample *sample )
         if ( sample->is_playing() ) {
             aax::Emitter& emitter = d->get_emitter(source);
             TRY( emitter.set(AAX_STOPPED) );
+            TRY( d->_aax.remove(emitter) );
         }
         release_source( source );
 #endif
@@ -633,11 +657,11 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
     aax::Emitter& emitter = d->get_emitter(sample->get_source());
     aax::dsp dsp;
 
-    aax::Vector64 pos = position.data();
-    aax::Vector64 ori = orientation.data();
+    aax::Vector pos = toVec3f(position).data();
+    aax::Vector ori = orientation.data();
     aax::Vector vel = velocity.data();
-    d->_mtx64.set(pos, ori);
-    aax::Matrix mtx = d->_mtx64;
+
+    aax::Matrix mtx(pos, ori);
     TRY( emitter.matrix(mtx) );
     TRY( emitter.velocity(vel) );
 
@@ -727,7 +751,7 @@ void SGSoundMgr::set_orientation( const SGQuatd& ori )
 
 const SGVec3d& SGSoundMgr::get_position() const
 { 
-    return d->_base_pos;
+    return d->_absolute_pos;
 }
 
 void SGSoundMgr::set_position( const SGVec3d& pos, const SGGeod& pos_geod )
@@ -738,6 +762,6 @@ void SGSoundMgr::set_position( const SGVec3d& pos, const SGGeod& pos_geod )
 SGVec3f SGSoundMgr::get_direction() const
 {
     aaxVec3f pos, at, up;
-    d->_mtx64.get(pos, at, up);
+    d->_mtx.get(pos, at, up);
     return SGVec3f( at );
 }

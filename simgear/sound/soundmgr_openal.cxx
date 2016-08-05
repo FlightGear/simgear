@@ -138,7 +138,6 @@ SGSoundMgr::SGSoundMgr() :
     _active(false),
     _changed(true),
     _volume(0.0),
-    _offset_pos(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _bad_doppler(false),
     _renderer("unknown"),

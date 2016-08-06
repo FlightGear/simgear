@@ -28,8 +28,7 @@
 #include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
 
-#include "soundmgr_openal.hxx"
-#include "soundmgr_openal_private.hxx"
+#include "soundmgr.hxx"
 #include "sample_group.hxx"
 
 SGSampleGroup::SGSampleGroup () :

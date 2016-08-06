@@ -10,7 +10,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/timing/timestamp.hxx>
 
-#include "soundmgr_openal.hxx"
+#include "soundmgr.hxx"
 #include "sample_group.hxx"
 #include "sample.hxx"
 

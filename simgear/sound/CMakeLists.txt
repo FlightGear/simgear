@@ -5,7 +5,7 @@ set(HEADERS
     sample_group.hxx
     xmlsound.hxx
     readwav.hxx
-    ${CMAKE_CURRENT_BINARY_DIR}/soundmgr.hxx
+    soundmgr.hxx
     )
     
 set(SOURCES 
@@ -17,16 +17,10 @@ set(SOURCES
     )
 
 if (USE_AEONWAVE)
-    CONFIGURE_FILE(
-        "soundmgr_aeonwave.hxx"
-        "soundmgr.hxx")
     set(SOURCES ${SOURCES}
         soundmgr_aeonwave.cxx
         )
 else()
-    CONFIGURE_FILE(
-        "soundmgr_openal.hxx"
-        "soundmgr.hxx")
     set(SOURCES ${SOURCES}
         soundmgr_openal.cxx
         )
@@ -55,7 +49,6 @@ if(ENABLE_TESTS AND ENABLE_SOUND)
         endif()
 
         create_test(aeonwave_test1)
-        create_test(aeonwave_test2)
 
     else ()
         if (SIMGEAR_SHARED)
@@ -66,7 +59,8 @@ if(ENABLE_TESTS AND ENABLE_SOUND)
         endif()
 
         create_test(openal_test1)
-        create_test(openal_test2)
-        create_test(openal_test3)
     endif()
+
+    create_test(soundmgr_test)
+    create_test(soundmgr_test2)
 endif()

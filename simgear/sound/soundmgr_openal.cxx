@@ -1,4 +1,4 @@
-// soundmgr.cxx -- Sound effect management class
+// soundmgr_openal.cxx -- Sound effect management class for OpenAL
 //
 // Sound manager initially written by David Findlay
 // <david_j_findlay@yahoo.com.au> 2001
@@ -38,7 +38,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "soundmgr_openal.hxx"
+#include "soundmgr.hxx"
 #include "readwav.hxx"
 #include "soundmgr_openal_private.hxx"
 #include "sample_group.hxx"

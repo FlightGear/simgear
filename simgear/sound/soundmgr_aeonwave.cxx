@@ -1,4 +1,5 @@
-// soundmgr.cxx -- Sound effect management class
+// soundmgr_aeonwave.cxx -- Sound effect management class
+//                          for the AeonWave 3D and 4D audio rendering engine.
 //
 // Sound manager initially written by David Findlay
 // <david_j_findlay@yahoo.com.au> 2001
@@ -36,8 +37,9 @@
 #include <cassert>
 
 #include <boost/foreach.hpp>
+#include <aax/aeonwave.hpp>
 
-#include "soundmgr_aeonwave.hxx"
+#include "soundmgr.hxx"
 #include "sample_group.hxx"
 
 #include <simgear/sg_inlines.h>
@@ -60,7 +62,7 @@ typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
 
-#if 1
+#ifndef NDEBUG
 # define TRY(a)	if ((a) == 0) printf("%i: %s\n", __LINE__, d->_aax.strerror())
 #else
 # define TRY(a)	(a)
@@ -143,12 +145,12 @@ public:
 
 // constructor
 SGSoundMgr::SGSoundMgr() :
-    _renderer("unknown"),
-    _vendor("unknown"),
     _active(false),
     _changed(true),
     _volume(0.0),
-    _velocity(SGVec3d::zeros())
+    _velocity(SGVec3d::zeros()),
+    _renderer("unknown"),
+    _vendor("unknown")
 {
     d.reset(new SoundManagerPrivate);
     d->_base_pos = SGVec3d::fromGeod(_geod_pos);
@@ -764,4 +766,14 @@ SGVec3f SGSoundMgr::get_direction() const
     aaxVec3f pos, at, up;
     d->_mtx.get(pos, at, up);
     return SGVec3f( at );
+}
+
+bool SGSoundMgr::load( const std::string &samplepath,
+                       void **dbuf,
+                       int *fmt,
+                       size_t *sz,
+                       int *frq,
+                       int *block )
+{
+    return true;
 }

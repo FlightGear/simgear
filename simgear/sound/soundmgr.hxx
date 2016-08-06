@@ -27,8 +27,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef _SG_SOUNDMGR_OPENAL_HXX
-#define _SG_SOUNDMGR_OPENAL_HXX 1
+#ifndef _SG_SOUNDMGR_HXX
+#define _SG_SOUNDMGR_HXX 1
 
 #include <string>
 #include <vector>
@@ -304,13 +304,13 @@ public:
      * @param freq Pointer to a vairable that gets the sample frequency in Herz
      * @return true if succesful, false on error
      */
-    bool load( const std::string &samplepath,
-               void **data,
-               int *format,
-               size_t *size,
-               int *freq,
-               int *block );
-
+    virtual bool load( const std::string &samplepath,
+                       void **data,
+                       int *format,
+                       size_t *size,
+                       int *freq,
+                       int *block );
+ 
     /**
      * Get a list of available playback devices.
      */
@@ -353,4 +353,4 @@ private:
 };
 
 
-#endif // _SG_SOUNDMGR_OPENAL_HXX
+#endif // _SG_SOUNDMGR_HXX

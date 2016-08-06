@@ -35,8 +35,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/ResourceManager.hxx>
 
-#include "soundmgr_openal_private.hxx"
-#include "soundmgr_openal.hxx"
+#include "soundmgr.hxx"
 #include "sample.hxx"
 
 #define AL_FALSE 0

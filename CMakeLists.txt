@@ -192,11 +192,10 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
 			)
   # set (BOOST_ROOT ${MSVC_3RDPARTY_ROOT}/boost_1_44_0)
   message(STATUS "BOOST_ROOT is ${BOOST_ROOT}")
-  if (USE_AEONWAVE)
-    find_package(AAX COMPONENTS aax REQUIRED)
-  else()
+  if (NOT USE_AEONWAVE)
     set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
     set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib)
+    message(STATUS "OPENAL_INCLUDE_DIR is ${OPENAL_INCLUDE_DIR}")
   endif()
 endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
@@ -226,7 +225,14 @@ else()
     find_package(OpenGL REQUIRED)
 
     if (ENABLE_SOUND)
-        find_package(OpenAL REQUIRED)
+        if (USE_AEONWAVE)
+            find_package(AAX COMPONENTS aax REQUIRED)
+            include_directories( ${AAX_INCLUDE_DIR} )
+        else()
+            find_package(OpenAL REQUIRED)
+            include_directories( ${OPENAL_INCLUDE_DIR} )
+        endif()
+
         message(STATUS "Sound support: ENABLED")
     endif(ENABLE_SOUND)
 
@@ -406,14 +412,6 @@ include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
     ${CURL_INCLUDE_DIRS}
 )
-
-include_directories( ${OPENSCENEGRAPH_INCLUDE_DIRS} )
-if (USE_AEONWAVE)
-    find_package(AAX COMPONENTS aax REQUIRED)
-    include_directories( ${AAX_INCLUDE_DIR} )
-else()
-    include_directories( ${OPENAL_INCLUDE_DIR} )
-endif()
 
 add_definitions(-DHAVE_CONFIG_H)
 

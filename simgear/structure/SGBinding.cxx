@@ -172,11 +172,11 @@ bool anyBindingEnabled(const SGBindingList& aBindings)
     }
 
     BOOST_FOREACH(SGBinding_ptr b, aBindings) {
-        if (!b->test()) {
-            return false;
+        if (b->test()) {
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 

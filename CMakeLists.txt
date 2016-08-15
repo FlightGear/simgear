@@ -135,6 +135,10 @@ option(USE_AEONWAVE     "Set to ON to use AeonWave instead of OpenAL" OFF)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
 option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" ON)
 
+# until the fstream fix is applied and generally available in OSG,
+# keep the compatability link option as the default
+option(OSG_FSTREAM_EXPORT_FIXED "Set to ON if the osgDB fstream export patch is applied" OFF)
+
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_BINARY_DIR} PATH)
   if (CMAKE_CL_64)
@@ -377,11 +381,12 @@ if(WIN32)
     if(MSVC)
         set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP")
 
-        if (${MSVC_VERSION} GREATER 1599)
+        if (NOT OSG_FSTREAM_EXPORT_FIXED AND ${MSVC_VERSION} GREATER 1599)
+          message(STATUS "For better linking performance, use OSG with patched fstream header")
           # needed to avoid link errors on multiply-defined standard C++
           # symbols. Suspect this may be an OSG-DB export bug
             set( MSVC_LD_FLAGS "/FORCE:MULTIPLE" )
-        endif (${MSVC_VERSION} GREATER 1599)
+        endif ()
 
         if (${MSVC_VERSION} GREATER 1899)
             # needed for debug builds with VS2015

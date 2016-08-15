@@ -241,6 +241,22 @@ else()
     endif(ENABLE_SOUND)
 
     find_package(OpenSceneGraph 3.2.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgViewer osgUtil)
+    include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS})
+
+    if (MSVC)
+      set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})
+      # ensure OSG was compiled with OSG_USE_UTF8_FILENAME set
+      check_cxx_source_compiles(
+         "#include <osg/Config>
+         #if !defined(OSG_USE_UTF8_FILENAME)
+          #error OSG UTF8 support not enabled
+         #endif
+         int main() { return 0; }"
+         SIMGEAR_OSG_USE_UTF8_FILENAME)
+      if (NOT SIMGEAR_OSG_USE_UTF8_FILENAME)
+        message(WARNING "Please rebuild OSG with OSG_USE_UTF8_FILENAME set to ON")
+      endif()
+    endif()
 endif(SIMGEAR_HEADLESS)
 
 find_package(ZLIB REQUIRED)
@@ -412,7 +428,7 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR})
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 
-include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
+include_directories(
     ${Boost_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
     ${CURL_INCLUDE_DIRS}

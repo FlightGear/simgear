@@ -150,6 +150,7 @@ public:
     typedef std::vector<HTTPDirectory*> DirectoryVector;
     DirectoryVector directories;
 
+    SGPath installedCopyPath;
 };
 
 class HTTPDirectory
@@ -255,6 +256,54 @@ public:
         }
     }
 
+    void copyInstalledChildren()
+    {
+        if (_repository->installedCopyPath.isNull()) {
+            return;
+        }
+        
+        string_list indexNames = indexChildren();
+        const_string_list_iterator nameIt = indexNames.begin();
+        for (; nameIt != indexNames.end(); ++nameIt) {
+            SGPath p(absolutePath());
+            p.append(*nameIt);
+            if (p.exists()) {
+                continue; // only copy if the file is missing entirely
+            }
+
+            ChildInfoList::iterator c = findIndexChild(*nameIt);
+            if (c->type == ChildInfo::DirectoryType) {
+                continue; // only care about files
+            }
+
+            SGPath cp = _repository->installedCopyPath;
+            cp.append(relativePath());
+            cp.append(*nameIt);
+            if (!cp.exists()) {
+                continue;
+            }
+
+            SG_LOG(SG_TERRASYNC, SG_BULK, "new child, copying existing file" << cp << p);
+            
+            SGBinaryFile src(cp);
+            SGBinaryFile dst(p);
+            src.open(SG_IO_IN);
+            dst.open(SG_IO_OUT);
+
+            char* buf = (char*) malloc(cp.sizeInBytes());
+            if (!buf) {
+                continue;
+            }
+
+            src.read(buf, cp.sizeInBytes());
+            dst.write(buf, cp.sizeInBytes());
+            src.close();
+            dst.close();
+
+            free(buf);
+        }
+    }
+
     void updateChildrenBasedOnHash()
     {
         // if we got here for a dir which is still updating or excluded
@@ -262,6 +311,8 @@ public:
         if (_state != Updated) {
             return;
         }
+
+        copyInstalledChildren();
 
         string_list indexNames = indexChildren(),
             toBeUpdated, orphans;
@@ -721,6 +772,11 @@ size_t HTTPRepository::bytesDownloaded() const
     }
 
     return result;
+}
+
+void HTTPRepository::setInstalledCopyPath(const SGPath& copyPath)
+{
+    _d->installedCopyPath = copyPath;
 }
 
 HTTPRepository::ResultCode

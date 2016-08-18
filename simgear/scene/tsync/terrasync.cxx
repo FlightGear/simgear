@@ -274,6 +274,8 @@ public:
    void   setLocalDir(string dir)           { _local_dir    = stripPath(dir);}
    string getLocalDir()                     { return _local_dir;}
 
+    void setInstalledDir(const SGPath& p)  { _installRoot = p; }
+
    void   setAllowedErrorCount(int errors)
     {
         SGGuard<SGMutex> g(_stateLock);
@@ -331,6 +333,7 @@ private:
    string _local_dir;
    SGPath _persistentCachePath;
    string _httpServer;
+    SGPath _installRoot;
 
     TerrasyncThreadState _state;
     SGMutex _stateLock;
@@ -546,6 +549,12 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         slot.repository.reset(new HTTPRepository(path, &_http));
         slot.repository->setEntireRepositoryMode();
         slot.repository->setBaseUrl(_httpServer + "/" + slot.currentItem._dir);
+
+        if (_installRoot.exists()) {
+            SGPath p = _installRoot;
+            p.append(slot.currentItem._dir);
+            slot.repository->setInstalledCopyPath(p);
+        }
 
         try {
             slot.repository->update();
@@ -825,6 +834,9 @@ void SGTerraSync::reinit()
         std::string httpServer(_terraRoot->getStringValue("http-server",""));
         _workerThread->setHTTPServer(httpServer);
         _workerThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
+
+        SGPath installPath(_terraRoot->getStringValue("installation-dir"));
+        _workerThread->setInstalledDir(installPath);
         _workerThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
         _workerThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
 

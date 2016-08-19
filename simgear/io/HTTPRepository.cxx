@@ -1239,7 +1239,7 @@ HTTPRepository::failure() const
 
     void HTTPRepoPrivate::failedToGetRootIndex(HTTPRepository::ResultCode st)
     {
-        SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl);
+        SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl << " " << st);
         status = st;
     }
 
@@ -1288,7 +1288,6 @@ HTTPRepository::failure() const
 
         // maybe there was nothing to do
         if (activeRequests.empty()) {
-            status = HTTPRepository::REPO_NO_ERROR;
             isUpdating = false;
         }
     }

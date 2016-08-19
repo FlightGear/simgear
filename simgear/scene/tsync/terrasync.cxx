@@ -496,6 +496,13 @@ void SGTerraSync::WorkerThread::run()
         }
     }
 
+    if (_httpServer.empty()) {
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "ERROR: no http-server found, terrasync will be disabled");
+        SGGuard<SGMutex> g(_stateLock);
+        _running = false;
+        return;
+    }
+
     runInternal();
 
     {

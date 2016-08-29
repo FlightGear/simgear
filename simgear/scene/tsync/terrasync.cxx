@@ -271,6 +271,16 @@ public:
       _httpServer = stripPath(server);
    }
 
+   void setDNSDN( const std::string & dn )
+   {
+     _dnsdn = simgear::strutils::strip(dn);
+   }
+
+   void setSceneryVersion( const std::string & sceneryVersion )
+   {
+     _sceneryVersion = simgear::strutils::strip(sceneryVersion);
+   }
+
    void   setLocalDir(string dir)           { _local_dir    = stripPath(dir);}
    string getLocalDir()                     { return _local_dir;}
 
@@ -334,6 +344,8 @@ private:
    SGPath _persistentCachePath;
    string _httpServer;
     SGPath _installRoot;
+   string _sceneryVersion;
+   string _dnsdn;
 
     TerrasyncThreadState _state;
     SGMutex _stateLock;
@@ -428,9 +440,8 @@ void SGTerraSync::WorkerThread::run()
 
     if (_httpServer == "automatic" ) {
 
-        //TODO: make DN and service settable from properties
-        DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest("terrasync.flightgear.org");
-        naptrRequest->qservice = "ws20";
+        DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(_dnsdn);
+        naptrRequest->qservice = _sceneryVersion;
 
         naptrRequest->qflags = "U";
         DNS::Request_ptr r(naptrRequest);
@@ -831,8 +842,14 @@ void SGTerraSync::reinit()
 
     if (_terraRoot->getBoolValue("enabled",false))
     {
-        std::string httpServer(_terraRoot->getStringValue("http-server",""));
-        _workerThread->setHTTPServer(httpServer);
+        _workerThread->setHTTPServer( _terraRoot->getStringValue("http-server","") );
+        _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
+#if 1
+        // leave it hardcoded for now, not sure about the security implications for now
+        _workerThread->setDNSDN( "terrasync.flightgear.org");
+#else
+        _workerThread->setDNSDN( _terraRoot->getStringValue("dnsdn","terrasync.flightgear.org") );
+#endif
         _workerThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
 
         SGPath installPath(_terraRoot->getStringValue("installation-dir"));

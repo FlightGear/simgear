@@ -232,13 +232,11 @@ public:
         if (AttachConsole(ATTACH_PARENT_PROCESS) == 0) {
             // attach failed, don't install the callback
             addStderr = false;
-        }
-
-        if (!isFile) {
-            // No - OK! now set streams to attached console
-            freopen("conout$", "w", stdout);
-            freopen("conout$", "w", stderr);
-        }
+        } else if (!isFile) {
+			// No - OK! now set streams to attached console
+			freopen("conout$", "w", stdout);
+			freopen("conout$", "w", stderr);
+		}
 #endif
         if (addStderr) {
             m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));

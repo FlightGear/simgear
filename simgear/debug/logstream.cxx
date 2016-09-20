@@ -42,6 +42,8 @@
 #if defined (SG_WINDOWS)
 // for AllocConsole, OutputDebugString
     #include <windows.h>
+    #include <fcntl.h>
+    #include <io.h>
 #endif
 
 const char* debugClassToString(sgDebugClass c)
@@ -222,26 +224,109 @@ public:
     LogStreamPrivate() :
         m_logClass(SG_ALL),
         m_logPriority(SG_ALERT),
+#if defined (SG_WINDOWS)
+        m_stdout_isRedirectedAlready(false),
+        m_stderr_isRedirectedAlready(false),
+#endif
         m_isRunning(false)
     {
-        bool addStderr = true;
 #if defined (SG_WINDOWS)
-        // Check for stream redirection, has to be done before we call
-        // Attach / AllocConsole
-        const bool isFile = (GetFileType(GetStdHandle(STD_ERROR_HANDLE)) == FILE_TYPE_DISK); // Redirect to file?
-        if (AttachConsole(ATTACH_PARENT_PROCESS) == 0) {
-            // attach failed, don't install the callback
-            addStderr = false;
-        } else if (!isFile) {
-			// No - OK! now set streams to attached console
-			freopen("conout$", "w", stdout);
-			freopen("conout$", "w", stderr);
-		}
-#endif
-        if (addStderr) {
-            m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
-            m_consoleCallbacks.push_back(m_callbacks.back());
+        /*
+         * 2016-09-20(RJH) - Reworked console handling
+         * 1) When started from the console use the console (when no --console)
+         * 2) When started from the GUI (with --console) open a new console window
+         * 3) When started from the GUI (without --console) don't open a new console
+         *    window; stdout/stderr will not appear (except in logfiles as they do now)
+         * 4) When started from the Console (with --console) open a new console window
+         * 5) Ensure that IO redirection still works when started from the console
+         * 
+         * Notes:
+         * 1) fgfs needs to be a GUI subsystem app - which it already is
+         * 2) What can't be done is to make the cmd prompt run fgfs synchronously; 
+         * this is only something that can be done via "start /wait fgfs".
+         */
+
+        int stderr_handle_type = GetFileType(GetStdHandle(STD_ERROR_HANDLE));
+        int stdout_handle_type = GetFileType(GetStdHandle(STD_OUTPUT_HANDLE));
+        int stdout_isNull = 0;
+        int stderr_isNull = 0;
+
+        m_stderr_isRedirectedAlready = stderr_handle_type == FILE_TYPE_DISK || stderr_handle_type == FILE_TYPE_PIPE || stderr_handle_type == FILE_TYPE_CHAR;
+        m_stdout_isRedirectedAlready = stdout_handle_type == FILE_TYPE_DISK || stdout_handle_type == FILE_TYPE_PIPE || stdout_handle_type == FILE_TYPE_CHAR;
+
+        /*
+         * We don't want to attach to the console if either stream has been redirected - so in this case ensure that both streams
+         * are redirected as otherwise something will be lost (as Alloc or Attach Console will cause the handles that were bound
+         * to disappear)
+         */
+        if (m_stdout_isRedirectedAlready){
+                if (!m_stderr_isRedirectedAlready)
+                    *stderr = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_OUTPUT_HANDLE), _O_WRONLY), "a");
+                else
+                    *stderr = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_ERROR_HANDLE), _O_WRONLY), "a");
+
+                *stdout = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_OUTPUT_HANDLE), _O_WRONLY), "a");
+
+        } else {
+            /*
+            * Attempt to attach to the console process of the parent process; when launched from cmd.exe this should be the console, 
+            * when launched via the RUN menu explorer, or another GUI app that wasn't started from the console this will fail.
+            * When it fails we will redirect to the NUL device. This is to ensure that we have valid streams.
+            * Later on in the initialisation sequence the --console option will be processed and this will cause the requestConsole() to
+            * always open a new console, except for streams that are redirected. The same rules apply there, if both streams are redirected
+            * the console will be opened, and it will contain a message to indicate that no output will be present because the streams are redirected
+            */
+            if (AttachConsole(ATTACH_PARENT_PROCESS) == 0) {
+                /*
+                * attach failed - so ensure that the streams are bound to the null device - but only when not already redirected
+                */
+                if (!m_stdout_isRedirectedAlready)
+                {
+                    stdout_isNull = true;
+                    freopen("NUL$", "w", stdout);
+                }
+
+                if (!m_stderr_isRedirectedAlready)
+                {
+                    stderr_isNull = true;
+                    freopen("NUL$", "w", stderr);
+                }
+            }
+            /*
+            * providing that AttachConsole succeeded - we can then either reopen the stream onto the console, or use
+            * _fdopen to attached to the currently redirected (and open stream)
+            */
+            if (!stdout_isNull){
+                if (!m_stdout_isRedirectedAlready)
+                    freopen("conout$", "w", stdout);
+                else 
+                    /*
+                    * for already redirected streams we need to attach the stream to the OS handle that is open.
+                    * - this comes from part of the answer http://stackoverflow.com/a/13841522
+                    *   _open_osfhandle returns an FD for the Win32 Handle, which is then opened using fdopen and
+                    *   hopefully safely assigned to the stream (although it does look wrong to me it works)
+                    * Removing this bit will stop pipes and command line redirection (> 2> and 2>&1 from working)
+                    */
+                    *stdout = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_OUTPUT_HANDLE), _O_WRONLY), "a");
+            }
+
+            if (!stderr_isNull){
+                if (!m_stderr_isRedirectedAlready)
+                    freopen("conout$", "w", stderr);
+                else
+                    *stderr = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_ERROR_HANDLE), _O_WRONLY), "a");
+            }
         }
+        //http://stackoverflow.com/a/25927081
+        //Clear the error state for each of the C++ standard stream objects. 
+        std::wcout.clear();
+        std::cout.clear();
+        std::wcerr.clear();
+        std::cerr.clear();
+#endif
+
+        m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
+        m_consoleCallbacks.push_back(m_callbacks.back());
 #if defined (SG_WINDOWS) && !defined(NDEBUG)
 		m_callbacks.push_back(new WinDebugLogCallback(m_logClass, m_logPriority));
 		m_consoleCallbacks.push_back(m_callbacks.back());
@@ -267,6 +352,11 @@ public:
     sgDebugClass m_logClass;
     sgDebugPriority m_logPriority;
     bool m_isRunning;
+#if defined (SG_WINDOWS)
+    // track whether the console was redirected on launch (in the constructor, which is called early on)
+    bool m_stderr_isRedirectedAlready;
+    bool m_stdout_isRedirectedAlready;
+#endif
 
     void startLog()
     {
@@ -474,9 +564,46 @@ namespace simgear
 {
 
 void requestConsole()
-{
-    // this is a no-op now, stub exists for compatability for the moment.
+{ 
+#if defined (SG_WINDOWS)
+   /*
+    * 2016-09-20(RJH) - Reworked console handling
+    * This is part of the reworked console handling for Win32. This is for building as a Win32 GUI Subsystem where no
+    * console is allocated on launch. If building as a console app then the startup will ensure that a console is created - but
+    * we don't need to handle that.
+    * The new handling is quite simple:
+    *              1. The constructor will ensure that these streams exists. It will attach to the
+    *                 parent command prompt if started from the command prompt, otherwise the
+    *                 stdout/stderr will be bound to the NUL device.
+    *              2. with --console a window will always appear regardless of where the process was
+    *                 started from. Any non redirected streams will be redirected 
+    *              3. You cannot use --console and either redirected stream.
+    *
+    * This is called after the Private Log Stream constructor so we need to undo any console that it has attached to.
+    */
+
+    if (!global_privateLogstream->m_stderr_isRedirectedAlready && !global_privateLogstream->m_stdout_isRedirectedAlready) {
+        FreeConsole();
+        if (AllocConsole()) {
+            if (!global_privateLogstream->m_stdout_isRedirectedAlready)
+                freopen("conout$", "w", stdout);
+
+            if (!global_privateLogstream->m_stderr_isRedirectedAlready)
+                freopen("conout$", "w", stderr);
+
+            //http://stackoverflow.com/a/25927081
+            //Clear the error state for each of the C++ standard stream objects. 
+            std::wcout.clear();
+            std::cout.clear();
+            std::wcerr.clear();
+            std::cerr.clear();
+        }
+    } else {
+        MessageBox(0, "--console ignored because stdout or stderr redirected with > or 2>", "Simgear Error", MB_OK | MB_ICONERROR);
+    }
+#endif
 }
+
 
 void shutdownLogging()
 {

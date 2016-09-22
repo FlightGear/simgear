@@ -93,7 +93,7 @@ struct ReaderWriterSTG::_ModelBin {
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _ObjectStatic {
-        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(SG_OBJECT_RANGE) { }
+        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(SG_OBJECT_RANGE_ROUGH) { }
         std::string _errorLocation;
         std::string _token;
         std::string _name;
@@ -209,7 +209,10 @@ struct ReaderWriterSTG::_ModelBin {
     };
     
     _ModelBin() :
-        _object_range(SG_OBJECT_RANGE),
+        _object_range_bare(SG_OBJECT_RANGE_BARE),
+        _object_range_rough(SG_OBJECT_RANGE_ROUGH),
+        _object_range_detailed(SG_OBJECT_RANGE_DETAILED),
+        _building_mesh_enabled(false),
         _foundBase(false)
     { }
 
@@ -283,6 +286,13 @@ struct ReaderWriterSTG::_ModelBin {
     
     bool read(const std::string& absoluteFileName, const osgDB::Options* options)
     {
+
+				// Determine object ranges
+				_object_range_bare = atof(options->getPluginStringData("SimGear::BARE_LOD_RANGE").c_str());
+				_object_range_rough = atof(options->getPluginStringData("SimGear::ROUGH_LOD_RANGE").c_str());
+				_object_range_detailed = atof(options->getPluginStringData("SimGear::DETAILED_LOD_RANGE").c_str());
+				_building_mesh_enabled = (options->getPluginStringData("SimGear::RENDER_BUILDING_MESH") == "true");
+
         if (absoluteFileName.empty())
             return false;
 
@@ -332,12 +342,6 @@ struct ReaderWriterSTG::_ModelBin {
             SGPath path = filePath;
             path.append(name);
 
-            // Determine an appropriate range for the object, which has some randomness
-            double range = _object_range;
-            double lrand = mt_rand(&seed);
-            if      (lrand < 0.1) range = range * 2.0;
-            else if (lrand < 0.4) range = range * 1.5;
-
             if (token == "OBJECT_BASE") {
                 // Load only once (first found)
                 SG_LOG( SG_TERRAIN, SG_BULK, "    " << token << " " << name );
@@ -361,62 +365,93 @@ struct ReaderWriterSTG::_ModelBin {
                     _objectList.push_back(obj);
                 }
                 
-            } else {
-                // Always OK to load
+            } else if (!onlyTerrain) {
+                // Load non-terrain objects
+
+								// Determine an appropriate range for the object, which has some randomness
+								double range = _object_range_rough;
+								double lrand = mt_rand(&seed);
+								if      (lrand < 0.1) range = range * 2.0;
+								else if (lrand < 0.4) range = range * 1.5;
+
                 if (token == "OBJECT_STATIC" || token == "OBJECT_STATIC_AGL") {
-                    if (!onlyTerrain) {
-                        osg::ref_ptr<SGReaderWriterOptions> opt;
-                        opt = staticOptions(filePath, options);
-                        if (SGPath(name).lower_extension() == "ac")
-                            opt->setInstantiateEffects(true);
-                        else
-                            opt->setInstantiateEffects(false);
-                        _ObjectStatic obj;
-                        obj._errorLocation = absoluteFileName;
-                        obj._token = token;
-                        obj._name = name;
-                        obj._agl = (token == "OBJECT_STATIC_AGL");
-                        obj._proxy = true;
-                        in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
-                        obj._range = range;
-                        obj._options = opt;
-                        _objectStaticList.push_back(obj);
-                    }
-                        
+										osg::ref_ptr<SGReaderWriterOptions> opt;
+										opt = staticOptions(filePath, options);
+										if (SGPath(name).lower_extension() == "ac")
+												opt->setInstantiateEffects(true);
+										else
+												opt->setInstantiateEffects(false);
+										_ObjectStatic obj;
+										obj._errorLocation = absoluteFileName;
+										obj._token = token;
+										obj._name = name;
+										obj._agl = (token == "OBJECT_STATIC_AGL");
+										obj._proxy = true;
+										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+										obj._range = range;
+										obj._options = opt;
+										_objectStaticList.push_back(obj);
                 } else if (token == "OBJECT_SHARED" || token == "OBJECT_SHARED_AGL") {
-                    if (!onlyTerrain) {
-                        osg::ref_ptr<SGReaderWriterOptions> opt;
-                        opt = sharedOptions(filePath, options);
-                        if (SGPath(name).lower_extension() == "ac")
-                            opt->setInstantiateEffects(true);
-                        else
-                            opt->setInstantiateEffects(false);
-                        _ObjectStatic obj;
-                        obj._errorLocation = absoluteFileName;
-                        obj._token = token;
-                        obj._name = name;
-                        obj._agl = (token == "OBJECT_SHARED_AGL");
-                        obj._proxy = false;
-                        in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
-                        obj._range = range;
-                        obj._options = opt;
-                        _objectStaticList.push_back(obj);
-                    }
-
+										osg::ref_ptr<SGReaderWriterOptions> opt;
+										opt = sharedOptions(filePath, options);
+										if (SGPath(name).lower_extension() == "ac")
+												opt->setInstantiateEffects(true);
+										else
+												opt->setInstantiateEffects(false);
+										_ObjectStatic obj;
+										obj._errorLocation = absoluteFileName;
+										obj._token = token;
+										obj._name = name;
+										obj._agl = (token == "OBJECT_SHARED_AGL");
+										obj._proxy = false;
+										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+										obj._range = range;
+										obj._options = opt;
+										_objectStaticList.push_back(obj);
                 } else if (token == "OBJECT_SIGN" || token == "OBJECT_SIGN_AGL") {
-                    if (!onlyTerrain) {
-                        _Sign sign;
-                        sign._token = token;
-                        sign._name = name;
-                        sign._agl = (token == "OBJECT_SIGN_AGL");
-                        in >> sign._lon >> sign._lat >> sign._elev >> sign._hdg >> sign._size;
-                        _signList.push_back(sign);
-                    }
+										_Sign sign;
+										sign._token = token;
+										sign._name = name;
+										sign._agl = (token == "OBJECT_SIGN_AGL");
+										in >> sign._lon >> sign._lat >> sign._elev >> sign._hdg >> sign._size;
+										_signList.push_back(sign);
+                } else if (token == "OBJECT_BUILDING_MESH_ROUGH" || token == "OBJECT_BUILDING_MESH_DETAILED") {
 
+										// Only load if building mesh enabled to avoid impacting low-powered systems
+										if (_building_mesh_enabled) {
+											osg::ref_ptr<SGReaderWriterOptions> opt;
+											opt = staticOptions(filePath, options);
+											if (SGPath(name).lower_extension() == "ac")
+													opt->setInstantiateEffects(true);
+											else
+													opt->setInstantiateEffects(false);
+											_ObjectStatic obj;
+											obj._errorLocation = absoluteFileName;
+											obj._token = token;
+											obj._name = name;
+											obj._agl = false;
+											obj._proxy = true;
+											in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+
+											if (token == "OBJECT_BUILDING_MESH_DETAILED") {
+												// Apply a lower LOD range if this is a detailed building
+												range = _object_range_detailed;
+												double lrand = mt_rand(&seed);
+												if      (lrand < 0.1) range = range * 2.0;
+												else if (lrand < 0.4) range = range * 1.5;
+											}
+
+											obj._range = range;
+											obj._options = opt;
+											_objectStaticList.push_back(obj);
+                    }
                 } else {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                             << ": Unknown token '" << token << "'" );
                 }
+            } else {
+                SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
+                        << ": Unknown token '" << token << "'" );
             }
         }
         
@@ -427,9 +462,6 @@ struct ReaderWriterSTG::_ModelBin {
     {
         osg::ref_ptr<SGReaderWriterOptions> options;
         options = SGReaderWriterOptions::copyOrCreate(opt);
-
-        // Determine object ranges
-        _object_range = atof(options->getPluginStringData("SimGear::ROUGH_LOD_RANGE").c_str());
 
         osg::ref_ptr<osg::Group> terrainGroup = new osg::Group;
         terrainGroup->setDataVariance(osg::Object::STATIC);
@@ -496,13 +528,16 @@ struct ReaderWriterSTG::_ModelBin {
             pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
 
             // Objects may end up displayed up to 2x the object range.
-            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range + SG_TILE_RADIUS);
+            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough + SG_TILE_RADIUS);
             
             return pagedLOD;
         }
     }
     
-    double _object_range;
+    double _object_range_bare;
+    double _object_range_rough;
+    double _object_range_detailed;
+    bool _building_mesh_enabled;
     bool _foundBase;
     std::list<_Object> _objectList;
     std::list<_ObjectStatic> _objectStaticList;

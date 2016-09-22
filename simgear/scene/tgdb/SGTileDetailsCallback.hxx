@@ -992,7 +992,7 @@ public:
       bool use_random_buildings = false;
       float vegetation_density = 1.0f;
       float building_density = 1.0f;
-      float object_range = SG_OBJECT_RANGE;
+      float object_range = SG_OBJECT_RANGE_ROUGH;
       bool useVBOs = false;
       
       osg::ref_ptr<osg::Group> randomObjects;

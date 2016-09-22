@@ -136,7 +136,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                             const SGPropertyNode *props,
                             SGPropertyNode *prop_root)
 {
-    float default_object_range = prop_root->getFloatValue("/sim/rendering/static-lod/rough", SG_OBJECT_RANGE);
+    float default_object_range = prop_root->getFloatValue("/sim/rendering/static-lod/rough", SG_OBJECT_RANGE_ROUGH);
     std::vector<bool> dds;
     std::vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
     for (unsigned int i = 0; i < textures.size(); i++)

@@ -52,7 +52,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     double ratio       = SG_SIMPLIFIER_RATIO;
     double maxLength   = SG_SIMPLIFIER_MAX_LENGTH;
     double maxError    = SG_SIMPLIFIER_MAX_ERROR;
-    double object_range = SG_OBJECT_RANGE;
+    double object_range = SG_OBJECT_RANGE_ROUGH;
     double tile_min_expiry = SG_TILE_MIN_EXPIRY;
 
     if (options) {

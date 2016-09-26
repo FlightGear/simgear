@@ -68,7 +68,7 @@ void SGModelLib::setPanelFunc(panel_func pf)
   static_panelFunc = pf;
 }
 
-std::string SGModelLib::findDataFile(const std::string& file, 
+std::string SGModelLib::findDataFile(const std::string& file,
   const osgDB::Options* opts,
   SGPath currentPath)
 {
@@ -97,8 +97,10 @@ osg::Node* loadFile(const string& path, SGReaderWriterOptions* options)
 {
     using namespace osg;
     using namespace osgDB;
-    if (boost::iends_with(path, ".ac"))
+    if (boost::iends_with(path, ".ac") || boost::iends_with(path, ".obj")) {
         options->setInstantiateEffects(true);
+    }
+
     ref_ptr<Node> model = readRefNodeFile(path, options);
     if (!model)
         return 0;
@@ -118,11 +120,11 @@ SGModelLib::loadModel(const string &path,
     opt->getDatabasePathList().push_front( osgDB::getFilePath(path) );
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
-    
+
     if (load2DPanels) {
        opt->setLoadPanel(static_panelFunc);
     }
-    
+
     osg::Node *n = loadFile(path, opt.get());
     if (n && n->getName().empty())
         n->setName("Direct loaded model \"" + path + "\"");
@@ -145,8 +147,11 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
-    if (SGPath(path).lower_extension() == "ac")
+    std::string lext = SGPath(path).lower_extension();
+    if ((lext == "ac") || (lext == "obj")) {
         opt->setInstantiateEffects(true);
+    }
+
     if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
         opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     else
@@ -171,8 +176,12 @@ SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
-    if (SGPath(path).lower_extension() == "ac")
+    std::string lext = SGPath(path).lower_extension();
+
+    if ((lext == "ac") || (lext == "obj")) {
         opt->setInstantiateEffects(true);
+    }
+
     if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
         opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     else

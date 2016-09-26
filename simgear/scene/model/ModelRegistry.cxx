@@ -1,6 +1,6 @@
 // ModelRegistry.hxx -- interface to the OSG model registry
 //
-// Copyright (C) 2005-2007 Mathias Froehlich 
+// Copyright (C) 2005-2007 Mathias Froehlich
 // Copyright (C) 2007  Tim Moore <timoore@redhat.com>
 //
 // This program is free software; you can redistribute it and/or
@@ -43,6 +43,8 @@
 #include <osgDB/Registry>
 #include <osgDB/SharedStateManager>
 #include <osgUtil/Optimizer>
+
+#include <simgear/sg_inlines.h>
 
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
@@ -155,7 +157,7 @@ public:
     Image* image = texture->getImage(0);
     if (!image)
       return;
-    
+
     texture->setDataVariance(Object::STATIC);
   }
 
@@ -201,7 +203,7 @@ ModelRegistry::readImage(const string& fileName,
           SG_LOG(SG_IO, SG_WARN, "Image loading failed:" << res.message());
           return res;
         }
-        
+
         if (res.loadedFromCache())
             SG_LOG(SG_IO, SG_BULK, "Returning cached image \""
                    << res.getImage()->getFileName() << "\"");
@@ -224,7 +226,7 @@ ModelRegistry::readImage(const string& fileName,
         case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-            
+
             // GL_EXT_texture_sRGB
             // patented, no way to decompress these
 #ifndef GL_EXT_texture_sRGB
@@ -237,7 +239,7 @@ ModelRegistry::readImage(const string& fileName,
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
-            
+
             // GL_TDFX_texture_compression_FXT1
             // can decompress these in software but
             // no code present in simgear.
@@ -247,7 +249,7 @@ ModelRegistry::readImage(const string& fileName,
 #endif
         case GL_COMPRESSED_RGB_FXT1_3DFX:
         case GL_COMPRESSED_RGBA_FXT1_3DFX:
-            
+
             // GL_EXT_texture_compression_rgtc
             // can decompress these in software but
             // no code present in simgear.
@@ -475,7 +477,7 @@ struct ACProcessPolicy {
         osg::Group* root = new Group;
         MatrixTransform* transform = new MatrixTransform;
         root->addChild(transform);
-        
+
         transform->setDataVariance(Object::STATIC);
         transform->setMatrix(m);
         transform->addChild(node);
@@ -489,7 +491,27 @@ typedef ModelRegistryCallback<ACProcessPolicy, DefaultCachePolicy,
                               OSGSubstitutePolicy, BuildLeafBVHPolicy>
 ACCallback;
 
+struct OBJProcessPolicy {
+    OBJProcessPolicy(const string& extension) {}
+    Node* process(Node* node, const string& filename,
+                  const Options* opt)
+    {
+        SG_UNUSED(filename);
+        SG_UNUSED(opt);
+        return node;
+    }
+};
+
+
+typedef ModelRegistryCallback<OBJProcessPolicy,
+                              DefaultCachePolicy,
+                              ACOptimizePolicy,
+                              OSGSubstitutePolicy, BuildLeafBVHPolicy>
+OBJCallback;
+
 namespace
 {
 ModelRegistryCallbackProxy<ACCallback> g_acRegister("ac");
+ModelRegistryCallbackProxy<OBJCallback> g_objRegister("obj");
+
 }

@@ -9,6 +9,10 @@ if(COMMAND cmake_policy)
    endif()
 endif()
 
+if(CMAKE_VERSION VERSION_LESS "3.1")
+  message(WARNING "CMake 3.1 will be required soon, please upgrade")
+endif()
+
 include (CheckFunctionExists)
 include (CheckIncludeFile)
 include (CheckLibraryExists)
@@ -149,8 +153,10 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
   elseif (${MSVC_VERSION} EQUAL 1800)
       set( OSG_MSVC ${OSG_MSVC}120 )
   elseif (${MSVC_VERSION} EQUAL 1700)
+      message(WARNING "Visual Studio 2013 will be required soon, please upgrade")
       set( OSG_MSVC ${OSG_MSVC}110 )
   elseif (${MSVC_VERSION} EQUAL 1600)
+      message(WARNING "Visual Studio 2013 will be required soon, please upgrade")
       set( OSG_MSVC ${OSG_MSVC}100 )
   endif ()
   if (CMAKE_CL_64)
@@ -347,6 +353,10 @@ check_cxx_source_compiles(
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall")
     set(WARNING_FLAGS_C   "-Wall")
+
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.4)
+      message(WARNING "GCC 4.4 will be required soon, please upgrade")
+    endif()
 
     # certain GCC versions don't provide the atomic builds, and hence
     # require is to provide them in SGAtomic.cxx

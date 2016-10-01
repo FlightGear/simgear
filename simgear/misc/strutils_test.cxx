@@ -40,19 +40,38 @@ BOOST_AUTO_TEST_CASE( strutils_functions )
   BOOST_CHECK_EQUAL(strutils::to_int("0000000"), 0);
   BOOST_CHECK_EQUAL(strutils::to_int("-10000"), -10000);
 
-  string_list la = strutils::split("zero one two three four five");
-  BOOST_CHECK_EQUAL(la[2], "two");
-  BOOST_CHECK_EQUAL(la[5], "five");
-  BOOST_CHECK_EQUAL(la.size(), 6);
+  string_list l = strutils::split("zero one two three four five");
+  BOOST_CHECK_EQUAL(l[2], "two");
+  BOOST_CHECK_EQUAL(l[5], "five");
+  BOOST_CHECK_EQUAL(l.size(), 6);
 
-  string_list lb = strutils::split("alpha:beta:gamma:delta", ":", 2);
-  BOOST_CHECK_EQUAL(lb.size(), 3);
-  BOOST_CHECK_EQUAL(lb[0], "alpha");
-  BOOST_CHECK_EQUAL(lb[1], "beta");
-  BOOST_CHECK_EQUAL(lb[2], "gamma:delta");
-
-  std::string j = strutils::join(la, "&");
+  std::string j = strutils::join(l, "&");
   BOOST_CHECK_EQUAL(j, "zero&one&two&three&four&five");
+
+  l = strutils::split("alpha:beta:gamma:delta", ":", 2);
+  BOOST_CHECK_EQUAL(l.size(), 3);
+  BOOST_CHECK_EQUAL(l[0], "alpha");
+  BOOST_CHECK_EQUAL(l[1], "beta");
+  BOOST_CHECK_EQUAL(l[2], "gamma:delta");
+
+  l = strutils::split("", ",");
+  BOOST_CHECK_EQUAL(l.size(), 1);
+  BOOST_CHECK_EQUAL(l[0], "");
+
+  l = strutils::split(",", ",");
+  BOOST_CHECK_EQUAL(l.size(), 2);
+  BOOST_CHECK_EQUAL(l[0], "");
+  BOOST_CHECK_EQUAL(l[1], "");
+
+  l = strutils::split(",,", ",");
+  BOOST_CHECK_EQUAL(l.size(), 3);
+  BOOST_CHECK_EQUAL(l[0], "");
+  BOOST_CHECK_EQUAL(l[1], "");
+  BOOST_CHECK_EQUAL(l[2], "");
+
+  l = strutils::split("  ", ",");
+  BOOST_CHECK_EQUAL(l.size(), 1);
+  BOOST_CHECK_EQUAL(l[0], "  ");
 
   BOOST_CHECK_EQUAL(strutils::unescape("\\ \\n\\t\\x41\\117a"), " \n\tAOa");
 }

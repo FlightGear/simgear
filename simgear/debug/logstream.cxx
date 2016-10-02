@@ -260,13 +260,10 @@ public:
          * to disappear)
          */
         if (m_stdout_isRedirectedAlready){
-                if (!m_stderr_isRedirectedAlready)
-                    *stderr = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_OUTPUT_HANDLE), _O_WRONLY), "a");
-                else
-                    *stderr = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_ERROR_HANDLE), _O_WRONLY), "a");
-
-                *stdout = *_fdopen(_open_osfhandle((intptr_t) GetStdHandle(STD_OUTPUT_HANDLE), _O_WRONLY), "a");
-
+			if (!m_stderr_isRedirectedAlready) {
+				MessageBox(0, "Redirection only works when you use 2>&1 before using > or |\r\n(e.g. fgfs 2>&1 | more)", "Simgear Error", MB_OK | MB_ICONERROR);
+				exit(3);
+			}
         } else {
             /*
             * Attempt to attach to the console process of the parent process; when launched from cmd.exe this should be the console, 
@@ -283,13 +280,13 @@ public:
                 if (!m_stdout_isRedirectedAlready)
                 {
                     stdout_isNull = true;
-                    freopen("NUL$", "w", stdout);
+                    freopen("NUL", "w", stdout);
                 }
 
                 if (!m_stderr_isRedirectedAlready)
                 {
                     stderr_isNull = true;
-                    freopen("NUL$", "w", stderr);
+                    freopen("NUL", "w", stderr);
                 }
             }
             /*

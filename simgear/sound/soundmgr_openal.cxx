@@ -757,11 +757,12 @@ void SGSoundMgr::sample_destroy( SGSoundSample *sample )
 bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
 {
 #ifdef ENABLE_SOUND
-    assert(sample->is_valid_source());
-    unsigned int source = sample->get_source();
-    int result;
-    alGetSourcei( source, AL_SOURCE_STATE, &result );
-    return (result == AL_STOPPED);
+    if ( sample->is_valid_source() ) {
+        ALint source = sample->get_source();
+        ALint result;
+        alGetSourcei( source, AL_SOURCE_STATE, &result );
+        return (result == AL_STOPPED);
+    }
 #else
     return true;
 #endif

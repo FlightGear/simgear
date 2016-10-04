@@ -763,9 +763,8 @@ bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
         alGetSourcei( source, AL_SOURCE_STATE, &result );
         return (result == AL_STOPPED);
     }
-#else
-    return true;
 #endif
+    return true;
 }
 
 void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position, SGVec3f& orientation, SGVec3f& velocity )

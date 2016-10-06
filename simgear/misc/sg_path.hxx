@@ -52,6 +52,9 @@ class SGPath {
 
 public:
 
+    // OS-dependent separator used in paths lists
+    static const char pathListSep;
+
     struct Permissions
     {
       bool read : 1;

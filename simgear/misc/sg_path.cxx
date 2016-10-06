@@ -53,9 +53,9 @@ static const char sgDirPathSep = '/';
 static const char sgDirPathSepBad = '\\';
 
 #ifdef _WIN32
-static const char sgSearchPathSep = ';';
+const char SGPath::pathListSep = ';';
 #else
-static const char sgSearchPathSep = ':';
+const char SGPath::pathListSep = ':';
 #endif
 
 #ifdef _WIN32
@@ -334,7 +334,7 @@ SGPath SGPath::operator/( const std::string& p ) const
 #if defined(ENABLE_OLD_PATH_API)
 //add a new path component to the existing path string
 void SGPath::add( const string& p ) {
-    append( sgSearchPathSep+p );
+    append( SGPath::pathListSep+p );
 }
 #endif
 
@@ -644,7 +644,7 @@ string_list sgPathSplit( const string &search_path ) {
     bool done = false;
 
     while ( !done ) {
-        int index = tmp.find(sgSearchPathSep);
+        int index = tmp.find(SGPath::pathListSep);
         if (index >= 0) {
             result.push_back( tmp.substr(0, index) );
             tmp = tmp.substr( index + 1 );

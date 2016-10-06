@@ -38,12 +38,6 @@ using std::cerr;
 # include "PropertyInterpolationMgr.hxx"
 # include "vectorPropTemplates.hxx"
 
-# if ( _MSC_VER == 1200 )
-// MSVC 6 is buggy, and needs something strange here
-using std::vector<SGPropertyNode_ptr>;
-using std::vector<SGPropertyChangeListener *>;
-using std::vector<SGPropertyNode *>;
-# endif
 #endif
 
 using std::endl;

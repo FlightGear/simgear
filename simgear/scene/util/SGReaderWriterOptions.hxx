@@ -23,7 +23,7 @@
 #include <osgDB/Options>
 #include <simgear/scene/model/modellib.hxx>
 #include <simgear/scene/material/matlib.hxx>
-
+#include <simgear/scene/tgdb/dem.hxx>
 #include <simgear/props/props.hxx>
 
 class SGPropertyNode;
@@ -60,6 +60,7 @@ public:
         osgDB::Options(options, copyop),
         _propertyNode(options._propertyNode),
         _materialLib(options._materialLib),
+        _dem(options._dem),
         _load_panel(options._load_panel),
         _model_data(options._model_data),
         _instantiateEffects(options._instantiateEffects)
@@ -76,6 +77,11 @@ public:
     { return _materialLib; }
     void setMaterialLib(SGMaterialLib* materialLib)
     { _materialLib = materialLib; }
+
+    SGDemPtr getDem() const
+    { return _dem; }
+    void setDem(SGDem* dem)
+    { _dem = dem; }
 
     typedef osg::Node *(*panel_func)(SGPropertyNode *);
 
@@ -103,6 +109,7 @@ protected:
 private:
     SGSharedPtr<SGPropertyNode> _propertyNode;
     SGSharedPtr<SGMaterialLib> _materialLib;
+    SGSharedPtr<SGDem> _dem;
     osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
     bool _instantiateEffects;

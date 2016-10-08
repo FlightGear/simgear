@@ -26,8 +26,14 @@
 #include <ostream>
 #include <sstream>
 
+#include <osg/Geometry>
+
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/math/SGGeometry.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/tgdb/SGMesh.hxx>
+
+#include <stdio.h>
 
 namespace simgear {
 
@@ -293,7 +299,7 @@ public:
         }
         return numTiles;
     }
-  
+
     unsigned getTileTriangles(unsigned i, unsigned j, unsigned width, unsigned height,
                               SGVec3f points[6], SGVec3f normals[6], SGVec2f texCoords[6]) const
     {
@@ -304,7 +310,7 @@ public:
 
         unsigned y0 = _offset[1] + j;
         unsigned y1 = y0 + height;
-    
+        
         SGGeod p00 = _offsetToGeod(x0, y0, 0);
         SGVec3f v00 = SGVec3f::fromGeod(p00);
         SGVec3f n00 = SGQuatf::fromLonLat(p00).backTransform(SGVec3f(0, 0, -1));
@@ -324,7 +330,7 @@ public:
         SGVec3f v01 = SGVec3f::fromGeod(p01);
         SGVec3f n01 = SGQuatf::fromLonLat(p01).backTransform(SGVec3f(0, 0, -1));
         SGVec2f t01(x0*1.0/(360*8), y1*1.0/(180*8));
-    
+
         if (y0 != 0) {
             points[numPoints] = v00;
             normals[numPoints] = n00;
@@ -358,6 +364,90 @@ public:
             ++numPoints;
         }
         return numPoints;
+    }
+
+    osg::Geometry* getTileTriangleMesh(const SGDemPtr dem, unsigned res, const std::vector<unsigned>& lvlRes ) const
+    {
+        unsigned widthLevel  = getWidthLevel();
+        unsigned heightLevel = getHeightLevel();
+
+        unsigned x0 = _offset[0];
+        unsigned x1 = x0 + _size[0];
+
+        unsigned y0 = _offset[1];
+        unsigned y1 = y0 + _size[1];
+
+        SGVec2f t00(x0*1.0/(360*8), y0*1.0/(180*8));
+        SGVec2f t01(x0*1.0/(360*8), y1*1.0/(180*8));
+        SGVec2f t10(x1*1.0/(360*8), y0*1.0/(180*8));
+        SGVec2f t11(x1*1.0/(360*8), y1*1.0/(180*8));
+
+        SGSpheref sphere = getBoundingSphere();
+        osg::Matrixd transform;
+        transform.makeTranslate(toOsg(-sphere.getCenter()));
+
+        // TODO: Instead of sampling via fixed increments, lets 
+        // read the mesh in its native resolution / factor
+        // i.e. level9 is 1/8 degree width/height. ( highest res )
+        // lets create the mesh in max res
+        //
+        // for level 8, use 1/2 native sampling
+        unsigned int mw = lvlRes[widthLevel-1];
+        unsigned int mh = lvlRes[heightLevel-1];
+
+        printf( "create mesh lvl %d,%d as %u x %u\n", widthLevel-1, heightLevel-1, mw, mh );
+
+        // create a mesh of this dimension
+        if ( (y0 != 0) && (y1 != 180*8) ) {
+            // first, get the four boundary vertexes
+            SGGeod p00 = _offsetToGeod(x0, y0, 0); 
+            SGGeod p10 = _offsetToGeod(x1, y0, 0);
+            SGGeod p01 = _offsetToGeod(x0, y1, 0);
+            SGGeod p11 = _offsetToGeod(x1, y1, 0);
+
+            double incu = ( x1*1.0/(360*8) - x0*1.0/(360*8) ) / (mw - 1);
+            double incv = ( y1*1.0/(180*8) - y0*1.0/(180*8) ) / (mh - 1);
+
+            SGMesh mesh( dem, p00, p10, p01, p11, x0, y0, incu, incv, mw, mh, transform );
+
+            osg::Vec4Array* colors = new osg::Vec4Array;
+            colors->push_back(osg::Vec4(1, 1, 1, 1));
+
+            osg::Geometry* geometry = new osg::Geometry;
+            geometry->setDataVariance(osg::Object::STATIC);
+            geometry->setUseVertexBufferObjects(true);
+            geometry->setVertexArray( mesh.getVertices() );
+
+            geometry->setNormalArray( mesh.getNormals() );
+            geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+            geometry->setColorArray(colors);
+            geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+            geometry->setTexCoordArray(0, mesh.getTexCoords() );
+
+            // generate triangles from the grid
+            osg::DrawElementsUInt* indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
+
+            for (unsigned int i = 0; i < mw-1; i++) {
+                for (unsigned int j = 0; j < mh-1; j++) {
+                    // for each point - create 2 triangles with current point in the 
+                    // lower left corner 
+                    indices->push_back( (i+0)*mh + (j+0) );  // 0,0
+                    indices->push_back( (i+1)*mh + (j+0) );  // 1,0
+                    indices->push_back( (i+0)*mh + (j+1) );  // 0,1
+
+                    indices->push_back( (i+1)*mh + (j+1) );  // 1,1
+                    indices->push_back( (i+0)*mh + (j+1) );  // 0,1
+                    indices->push_back( (i+1)*mh + (j+0) );  // 1,0
+                }
+            }
+            indices->setDataVariance(osg::Object::STATIC);
+            geometry->addPrimitiveSet(indices);
+
+            return geometry;
+        } else {
+            // todo - handle poles
+            return 0;
+        }
     }
 
 private:
@@ -398,7 +488,7 @@ private:
 
     static SGGeod _offsetToGeod(unsigned offset0, unsigned offset1, double elev)
     { return SGGeod::fromDegM(_offsetToLongitudeDeg(offset0), _offsetToLatitudeDeg(offset1), elev); }
-  
+
     static unsigned _getLevel(const unsigned factors[], unsigned nFactors, unsigned begin, unsigned end)
     {
         unsigned rbegin = end - 1;

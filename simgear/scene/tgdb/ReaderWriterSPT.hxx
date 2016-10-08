@@ -41,6 +41,7 @@ protected:
 
     osg::ref_ptr<osg::Node> createTree(const BucketBox& bucketBox, const LocalOptions& options, bool topLevel) const;
     osg::ref_ptr<osg::Node> createPagedLOD(const BucketBox& bucketBox, const LocalOptions& options) const;
+    osg::ref_ptr<osg::Node> createTileMesh(const BucketBox& bucketBox, const LocalOptions& options) const;
     osg::ref_ptr<osg::Node> createSeaLevelTile(const BucketBox& bucketBox, const LocalOptions& options) const;
     osg::ref_ptr<osg::StateSet> getLowLODStateSet(const LocalOptions& options) const;
 

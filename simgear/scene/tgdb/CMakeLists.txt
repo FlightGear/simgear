@@ -7,6 +7,7 @@ set(HEADERS
     SGBuildingBin.hxx
     SGDirectionalLightBin.hxx
     SGLightBin.hxx
+    SGMesh.hxx
     SGModelBin.hxx
     SGNodeTriangles.hxx
     SGOceanTile.hxx
@@ -20,6 +21,7 @@ set(HEADERS
     ShaderGeometry.hxx
     TreeBin.hxx
     apt_signs.hxx
+    dem.hxx
     obj.hxx
     pt_lights.hxx
     userdata.hxx
@@ -30,12 +32,15 @@ set(SOURCES
     ReaderWriterSPT.cxx
     ReaderWriterSTG.cxx
     SGBuildingBin.cxx
+    SGMesh.cxx
     SGOceanTile.cxx
     SGReaderWriterBTG.cxx
     SGVasiDrawable.cxx
     ShaderGeometry.cxx
     TreeBin.cxx
     apt_signs.cxx
+    dem.cxx
+    dem_gdal.cxx
     obj.cxx
     pt_lights.cxx
     userdata.cxx

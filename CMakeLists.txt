@@ -118,6 +118,7 @@ endif()
 
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
+option(ENABLE_GDAL      "Set to ON to build SimGear with GDAL support" ON)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
 option(USE_AEONWAVE     "Set to ON to use AeonWave instead of OpenAL" OFF)
@@ -289,6 +290,12 @@ else()
     message(STATUS "RTI: DISABLED")
 endif(ENABLE_RTI)
 
+if(ENABLE_GDAL)
+    find_package(GDAL 2.0.0 REQUIRED)
+endif(ENABLE_GDAL)
+
+include_directories(${GDAL_INCLUDE_DIR})
+
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)
@@ -375,6 +382,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 # boost goes haywire wrt static asserts
     check_cxx_compiler_flag(-Wno-unused-local-typedefs HAS_NOWARN_UNUSED_TYPEDEFS)
@@ -457,7 +466,8 @@ set(TEST_LIBS_INTERNAL_CORE
     ${RT_LIBRARY}
     ${DL_LIBRARY}
     ${COCOA_LIBRARY}
-    ${CURL_LIBRARIES})
+    ${CURL_LIBRARIES}
+    ${GDAL_LIBRARY})
 set(TEST_LIBS SimGearCore ${TEST_LIBS_INTERNAL_CORE})
 
 if(NOT SIMGEAR_HEADLESS)

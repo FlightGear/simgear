@@ -15,3 +15,6 @@ foreach( mylibfolder
 
 endforeach( mylibfolder )
 
+if(ENABLE_GDAL)
+    add_subdirectory(dem)
+endif(ENABLE_GDAL)

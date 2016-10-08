@@ -1,4 +1,4 @@
-// ReaderWriterSPT.cxx -- Provide a paged database for flightgear scenery.
+// ReaderWriterPGT.cxx -- Provide a paged database for flightgear scenery.
 //
 // Copyright (C) 2010 - 2013  Mathias Froehlich
 //
@@ -21,11 +21,11 @@
 #  include <simgear_config.h>
 #endif
 
-#include "ReaderWriterSPT.hxx"
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include "ReaderWriterPGT.hxx"
 
 #include <cassert>
 
-#include <osg/CullFace>
 #include <osg/PagedLOD>
 #include <osg/MatrixTransform>
 #include <osg/Texture2D>
@@ -34,14 +34,17 @@
 #include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
 
+#include <simgear/scene/dem/SGDem.hxx>
+#include <simgear/scene/dem/SGMesh.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 
-#include "BucketBox.hxx"
+#include <simgear/scene/tgdb/BucketBox.hxx>
+#include <simgear/scene/model/ModelRegistry.hxx>
 
 namespace simgear {
 
 // Cull away tiles that we watch from downside
-struct ReaderWriterSPT::CullCallback : public osg::NodeCallback {
+struct ReaderWriterPGT::CullCallback : public osg::NodeCallback {
     virtual ~CullCallback()
     { }
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
@@ -111,33 +114,60 @@ struct ReaderWriterSPT::CullCallback : public osg::NodeCallback {
     }
 };
 
-struct ReaderWriterSPT::LocalOptions {
+struct ReaderWriterPGT::LocalOptions {
     LocalOptions(const osgDB::Options* options) : 
         _options(options)
     {
+        osg::ref_ptr<SGReaderWriterOptions> sgOptions;
+        sgOptions = SGReaderWriterOptions::copyOrCreate(options);
+
         std::string pageLevelsString;
-        if (_options)
-            pageLevelsString = _options->getPluginStringData("SimGear::SPT_PAGE_LEVELS");
+        std::string meshResolutionString;
+        std::string meshTexturing;
+
+        if (_options) {
+            pageLevelsString     = _options->getPluginStringData("SimGear::SPT_PAGE_LEVELS");
+            meshResolutionString = _options->getPluginStringData("SimGear::SPT_MESH_RESOLUTION");
+            meshTexturing        = _options->getPluginStringData("SimGear::SPT_LOD_TEXTURING");
+        }
 
         // Get the default if nothing given from outside
-        if (pageLevelsString.empty()) {
-            // We want an other level of indirection for paging
-            // Here we get about 12x12 deg tiles
-            _pageLevels.push_back(3);
-            // We want an other level of indirection for paging
-            // Here we get about 2x2 deg tiles
-            _pageLevels.push_back(5);
-            // We want an other level of indirection for paging
-            // Here we get about 0.5x0.5 deg tiles
-            _pageLevels.push_back(7);
+        // ignore option - pagelevels come from mesh
+        _pageLevels.push_back(1);
+        _pageLevels.push_back(2);
+
+        // dem level 2 - 2, 4, 12 degrees
+        _pageLevels.push_back(3);
+        _pageLevels.push_back(4);
+        _pageLevels.push_back(5);
+
+        // dem level 1 - 1/8, 1/4, 1/2 and 1 degree
+        _pageLevels.push_back(6);
+        _pageLevels.push_back(7);
+        _pageLevels.push_back(8);
+        _pageLevels.push_back(9);
+
+        _dem = sgOptions->getDem();
+
+        // Get the default if nothing given from outside
+        if (meshResolutionString.empty()) {
+            _meshResolution = 1;
         } else {
             // If configured from outside
-            std::stringstream ss(pageLevelsString);
+            std::stringstream ss(meshResolutionString);
             while (ss.good()) {
-                unsigned level = ~0u;
-                ss >> level;
-                _pageLevels.push_back(level);
+                ss >> _meshResolution;
             }
+        }
+
+        if ( meshTexturing.empty() ) {
+            _textureMethod = SGMesh::TEXTURE_BLUEMARBLE;
+        } else if ( meshTexturing == "bluemarble" ) {
+            _textureMethod = SGMesh::TEXTURE_BLUEMARBLE;
+        } else if ( meshTexturing == "raster" ) {
+            _textureMethod = SGMesh::TEXTURE_RASTER;
+        } else if ( meshTexturing == "debug" ) {
+            _textureMethod = SGMesh::TEXTURE_DEBUG;
         }
     }
 
@@ -171,31 +201,35 @@ struct ReaderWriterSPT::LocalOptions {
 
     const osgDB::Options* _options;
     std::vector<unsigned> _pageLevels;
+
+    SGDemPtr              _dem;
+    unsigned              _meshResolution;
+    SGMesh::TextureMethod _textureMethod;
 };
 
-ReaderWriterSPT::ReaderWriterSPT()
+ReaderWriterPGT::ReaderWriterPGT()
 {
-    supportsExtension("spt", "SimGear paged terrain meta database.");
+    supportsExtension("pgt", "SimGear realtime paged terrain meta database.");
 }
 
-ReaderWriterSPT::~ReaderWriterSPT()
+ReaderWriterPGT::~ReaderWriterPGT()
 {
 }
 
 const char*
-ReaderWriterSPT::className() const
+ReaderWriterPGT::className() const
 {
-    return "simgear::ReaderWriterSPT";
+    return "simgear::ReaderWriterPGT";
 }
 
 osgDB::ReaderWriter::ReadResult
-ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* options) const
+ReaderWriterPGT::readObject(const std::string& fileName, const osgDB::Options* options) const
 {
     // We get called with different extensions. To make sure search continues,
     // we need to return FILE_NOT_HANDLED in this case.
-    if (osgDB::getLowerCaseFileExtension(fileName) != "spt")
+    if (osgDB::getLowerCaseFileExtension(fileName) != "pgt")
         return ReadResult(ReadResult::FILE_NOT_HANDLED);
-    if (fileName != "state.spt")
+    if (fileName != "state.pgt")
         return ReadResult(ReadResult::FILE_NOT_FOUND);
 
     osg::StateSet* stateSet = new osg::StateSet;
@@ -220,11 +254,12 @@ ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* o
 }
 
 osgDB::ReaderWriter::ReadResult
-ReaderWriterSPT::readNode(const std::string& fileName, const osgDB::Options* options) const
+ReaderWriterPGT::readNode(const std::string& fileName, const osgDB::Options* options) const
 {
     LocalOptions localOptions(options);
+    SG_LOG(SG_IO, SG_WARN, "ReaderWriterPGT::readNode - reading:" << fileName );
 
-    // The file name without path and without the spt extension
+    // The file name without path and without the pgt extension
     std::string strippedFileName = osgDB::getStrippedName(fileName);
     if (strippedFileName == "earth")
         return ReadResult(createTree(BucketBox(-180, -90, 360, 180), localOptions, true));
@@ -232,9 +267,11 @@ ReaderWriterSPT::readNode(const std::string& fileName, const osgDB::Options* opt
     std::stringstream ss(strippedFileName);
     BucketBox bucketBox;
     ss >> bucketBox;
-    if (ss.fail())
+    if (ss.fail()) {
+        SG_LOG(SG_IO, SG_WARN, "error reading:" << strippedFileName );
         return ReadResult::FILE_NOT_FOUND;
-    
+    }
+
     BucketBox bucketBoxList[2];
     unsigned bucketBoxListSize = bucketBox.periodicSplit(bucketBoxList);
     if (bucketBoxListSize == 0)
@@ -251,12 +288,13 @@ ReaderWriterSPT::readNode(const std::string& fileName, const osgDB::Options* opt
 }
 
 osg::ref_ptr<osg::Node>
-ReaderWriterSPT::createTree(const BucketBox& bucketBox, const LocalOptions& options, bool topLevel) const
+ReaderWriterPGT::createTree(const BucketBox& bucketBox, const LocalOptions& options, bool topLevel) const
 {
     if (bucketBox.getIsBucketSize()) {
         std::string fileName;
         fileName = bucketBox.getBucket().gen_index_str() + std::string(".stg");
-        return osgDB::readRefNodeFile(fileName, options._options);
+
+        return createTileMesh(bucketBox, options._options);
     } else if (!topLevel && options.isPageLevel(bucketBox.getStartLevel())) {
         return createPagedLOD(bucketBox, options);
     } else {
@@ -283,7 +321,7 @@ ReaderWriterSPT::createTree(const BucketBox& bucketBox, const LocalOptions& opti
 }
 
 osg::ref_ptr<osg::Node>
-ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const LocalOptions& options) const
+ReaderWriterPGT::createPagedLOD(const BucketBox& bucketBox, const LocalOptions& options) const
 {
     osg::PagedLOD* pagedLOD = new osg::PagedLOD;
 
@@ -322,22 +360,22 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const LocalOptions& 
     }
     // Add the static sea level textured shell if there is nothing found
     if (pagedLOD->getNumChildren() == 0) {
-        osg::ref_ptr<osg::Node> node = createSeaLevelTile(bucketBox, options._options);
+        osg::ref_ptr<osg::Node> node = createTileMesh(bucketBox, options._options);
         if (node.valid())
             pagedLOD->addChild(node.get(), range, std::numeric_limits<float>::max());
     }
 
     // Add the paged file name that creates the subtrees on demand
     std::stringstream ss;
-    ss << bucketBox << ".spt";
+    ss << bucketBox << ".pgt";
     pagedLOD->setFileName(pagedLOD->getNumChildren(), ss.str());
     pagedLOD->setRange(pagedLOD->getNumChildren(), 0.0, range);
-    
+
     return pagedLOD;
 }
 
 osg::ref_ptr<osg::Node>
-ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const LocalOptions& options) const
+ReaderWriterPGT::createTileMesh(const BucketBox& bucketBox, const LocalOptions& options) const
 {
     if (options._options->getPluginStringData("SimGear::FG_EARTH") != "ON")
         return 0;
@@ -346,73 +384,29 @@ ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const LocalOptio
     osg::Matrixd transform;
     transform.makeTranslate(toOsg(-sphere.getCenter()));
 
-    osg::Vec3Array* vertices = new osg::Vec3Array;
-    osg::Vec3Array* normals = new osg::Vec3Array;
-    osg::Vec2Array* texCoords = new osg::Vec2Array;
+    // TODO : return geode, not geometry - so we texture in SGMesh
+    // osg::Geometry* geometry = bucketBox.getTileTriangleMesh( options._dem, options._meshResolution, options._textureMethod );
+    osg::Geode* geode = bucketBox.getTileTriangleMesh( options._dem, options._meshResolution, options._textureMethod, options._options );
+    if ( geode ) {
+        transform.makeTranslate(toOsg(sphere.getCenter()));
+        osg::MatrixTransform* matrixTransform = new osg::MatrixTransform(transform);
+        matrixTransform->setDataVariance(osg::Object::STATIC);
+        matrixTransform->addChild(geode);
 
-    unsigned widthLevel = bucketBox.getWidthLevel();
-    unsigned heightLevel = bucketBox.getHeightLevel();
-
-    unsigned incx = bucketBox.getWidthIncrement(widthLevel + 2);
-    incx = std::min(incx, bucketBox.getSize(0));
-    for (unsigned i = 0; incx != 0;) {
-        unsigned incy = bucketBox.getHeightIncrement(heightLevel + 2);
-        incy = std::min(incy, bucketBox.getSize(1));
-        for (unsigned j = 0; incy != 0;) {
-            SGVec3f v[6], n[6];
-            SGVec2f t[6];
-            unsigned num = bucketBox.getTileTriangles(i, j, incx, incy, v, n, t);
-            for (unsigned k = 0; k < num; ++k) {
-                vertices->push_back(transform.preMult(toOsg(v[k])));
-                normals->push_back(toOsg(n[k]));
-                texCoords->push_back(toOsg(t[k]));
-            }
-            j += incy;
-            incy = std::min(incy, bucketBox.getSize(1) - j);
-        }
-        i += incx;
-        incx = std::min(incx, bucketBox.getSize(0) - i);
+        return matrixTransform;
+    } else {
+        return 0;
     }
-
-    osg::Vec4Array* colors = new osg::Vec4Array;
-    colors->push_back(osg::Vec4(1, 1, 1, 1));
-
-    osg::Geometry* geometry = new osg::Geometry;
-    geometry->setDataVariance(osg::Object::STATIC);
-    geometry->setUseVertexBufferObjects(true);
-    geometry->setVertexArray(vertices);
-    geometry->setNormalArray(normals);
-    geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
-    geometry->setColorArray(colors);
-    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
-    geometry->setTexCoordArray(0, texCoords);
-
-    osg::DrawArrays* drawArrays = new osg::DrawArrays(osg::DrawArrays::TRIANGLES, 0, vertices->size());
-    drawArrays->setDataVariance(osg::Object::STATIC);
-    geometry->addPrimitiveSet(drawArrays);
-
-    osg::Geode* geode = new osg::Geode;
-    geode->setDataVariance(osg::Object::STATIC);
-    geode->addDrawable(geometry);
-    osg::ref_ptr<osg::StateSet> stateSet = getLowLODStateSet(options);
-    geode->setStateSet(stateSet.get());
-
-    transform.makeTranslate(toOsg(sphere.getCenter()));
-    osg::MatrixTransform* matrixTransform = new osg::MatrixTransform(transform);
-    matrixTransform->setDataVariance(osg::Object::STATIC);
-    matrixTransform->addChild(geode);
-
-    return matrixTransform;
 }
 
 osg::ref_ptr<osg::StateSet>
-ReaderWriterSPT::getLowLODStateSet(const LocalOptions& options) const
+ReaderWriterPGT::getLowLODStateSet(const LocalOptions& options) const
 {
     osg::ref_ptr<osgDB::Options> localOptions;
     localOptions = static_cast<osgDB::Options*>(options._options->clone(osg::CopyOp()));
     localOptions->setObjectCacheHint(osgDB::Options::CACHE_ALL);
 
-    osg::ref_ptr<osg::Object> object = osgDB::readRefObjectFile("state.spt", localOptions.get());
+    osg::ref_ptr<osg::Object> object = osgDB::readRefObjectFile("state.pgt", localOptions.get());
     if (!dynamic_cast<osg::StateSet*>(object.get()))
         return 0;
 
@@ -421,3 +415,4 @@ ReaderWriterSPT::getLowLODStateSet(const LocalOptions& options) const
 
 } // namespace simgear
 
+// simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_pgtCallbackProxy("pgt");

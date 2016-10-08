@@ -1,7 +1,7 @@
 
 #cmakedefine HAVE_SYS_TIME_H
 #cmakedefine HAVE_SYS_TIMEB_H
-#cmakedefine HAVE_UNISTD_H
+#cmakedefine HAVE_UNISTD_H 1
 
 
 #cmakedefine HAVE_GETTIMEOFDAY
@@ -21,3 +21,4 @@
 #cmakedefine SYSTEM_EXPAT
 #cmakedefine ENABLE_SOUND
 #cmakedefine ENABLE_SIMD
+#cmakedefine ENABLE_GDAL

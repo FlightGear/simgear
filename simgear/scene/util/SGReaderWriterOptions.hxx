@@ -26,6 +26,10 @@
 
 #include <simgear/props/props.hxx>
 
+#ifdef ENABLE_GDAL
+#include <simgear/scene/dem/SGDem.hxx>
+#endif
+
 class SGPropertyNode;
 typedef std::vector < std::string > string_list;
 
@@ -60,6 +64,9 @@ public:
         osgDB::Options(options, copyop),
         _propertyNode(options._propertyNode),
         _materialLib(options._materialLib),
+#ifdef ENABLE_GDAL
+        _dem(options._dem),
+#endif
         _load_panel(options._load_panel),
         _model_data(options._model_data),
         _instantiateEffects(options._instantiateEffects),
@@ -77,6 +84,13 @@ public:
     { return _materialLib; }
     void setMaterialLib(SGMaterialLib* materialLib)
     { _materialLib = materialLib; }
+
+#ifdef ENABLE_GDAL
+    SGDemPtr getDem() const
+    { return _dem; }
+    void setDem(SGDem* dem)
+    { _dem = dem; }
+#endif
 
     typedef osg::Node *(*panel_func)(SGPropertyNode *);
 
@@ -110,6 +124,10 @@ protected:
 private:
     SGSharedPtr<SGPropertyNode> _propertyNode;
     SGSharedPtr<SGMaterialLib> _materialLib;
+#ifdef ENABLE_GDAL
+    SGSharedPtr<SGDem> _dem;
+#endif
+
     osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
     bool _instantiateEffects;

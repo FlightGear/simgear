@@ -26,8 +26,16 @@
 #include <ostream>
 #include <sstream>
 
+#include <osg/Geode>
+#include <osg/CullFace>
+
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/math/SGGeometry.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
+
+#ifdef ENABLE_GDAL
+#include <simgear/scene/dem/SGMesh.hxx>
+#endif
 
 namespace simgear {
 
@@ -293,7 +301,7 @@ public:
         }
         return numTiles;
     }
-  
+
     unsigned getTileTriangles(unsigned i, unsigned j, unsigned width, unsigned height,
                               SGVec3f points[6], SGVec3f normals[6], SGVec2f texCoords[6]) const
     {
@@ -304,7 +312,7 @@ public:
 
         unsigned y0 = _offset[1] + j;
         unsigned y1 = y0 + height;
-    
+        
         SGGeod p00 = _offsetToGeod(x0, y0, 0);
         SGVec3f v00 = SGVec3f::fromGeod(p00);
         SGVec3f n00 = SGQuatf::fromLonLat(p00).backTransform(SGVec3f(0, 0, -1));
@@ -324,7 +332,7 @@ public:
         SGVec3f v01 = SGVec3f::fromGeod(p01);
         SGVec3f n01 = SGQuatf::fromLonLat(p01).backTransform(SGVec3f(0, 0, -1));
         SGVec2f t01(x0*1.0/(360*8), y1*1.0/(180*8));
-    
+
         if (y0 != 0) {
             points[numPoints] = v00;
             normals[numPoints] = n00;
@@ -359,6 +367,33 @@ public:
         }
         return numPoints;
     }
+
+#ifdef ENABLE_GDAL
+    osg::Geode* getTileTriangleMesh( const SGDemPtr dem, unsigned res, SGMesh::TextureMethod tm, const osgDB::Options* options ) const
+    {
+        unsigned widthLevel  = getWidthLevel();
+        unsigned heightLevel = getHeightLevel();
+
+        unsigned x0 = _offset[0];
+        unsigned x1 = x0 + _size[0];
+
+        unsigned y0 = _offset[1];
+        unsigned y1 = y0 + _size[1];
+
+        SGSpheref sphere = getBoundingSphere();
+        osg::Matrixd transform;
+        transform.makeTranslate(toOsg(-sphere.getCenter()));
+
+        // create a mesh of this dimension
+        if ( (y0 != 0) && (y1 != 180*8) ) {
+            SGMesh mesh( dem, x0, y0, x1, y1, heightLevel, widthLevel, transform, tm, options );
+            return mesh.getGeode();
+        } else {
+            // todo - handle poles
+            return 0;
+        }
+    }
+#endif
 
 private:
     static unsigned _normalizeLongitude(unsigned offset)
@@ -398,7 +433,7 @@ private:
 
     static SGGeod _offsetToGeod(unsigned offset0, unsigned offset1, double elev)
     { return SGGeod::fromDegM(_offsetToLongitudeDeg(offset0), _offsetToLatitudeDeg(offset1), elev); }
-  
+
     static unsigned _getLevel(const unsigned factors[], unsigned nFactors, unsigned begin, unsigned end)
     {
         unsigned rbegin = end - 1;

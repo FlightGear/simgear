@@ -25,6 +25,8 @@
 #include <ctype.h> // isspace()
 #include <cerrno>
 
+#include <zlib.h>
+
 #include "sgstream.hxx"
 
 #include <simgear/misc/sg_path.hxx>
@@ -93,6 +95,11 @@ void
 sg_gzifstream::attach( int fd, ios_openmode io_mode )
 {
     gzbuf.attach( fd, io_mode );
+}
+
+z_off_t
+sg_gzifstream::approxOffset() {
+  return gzbuf.approxOffset();
 }
 
 //

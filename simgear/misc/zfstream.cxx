@@ -30,7 +30,10 @@
 #include <fcntl.h>
 
 #include <simgear/misc/strutils.hxx>
+#include <simgear/debug/logstream.hxx>
+#include <simgear/structure/exception.hxx>
 
+#include <zlib.h>
 #include "zfstream.hxx"
 
 //
@@ -180,6 +183,27 @@ gzfilebuf::setcompressionstrategy( int comp_strategy )
     return gzsetparams(file, -2, comp_strategy);
 }
 
+z_off_t
+gzfilebuf::approxOffset() {
+    z_off_t res = gzoffset(file);
+
+    if (res == -1) {
+        int errnum;
+        std::string errMsg = "gzoffset() error: ";
+        const char *gzMsg = gzerror(file, &errnum);
+
+        if (errnum == Z_ERRNO) {
+            errMsg += simgear::strutils::error_string(errno);
+        } else {
+            errMsg += std::string(gzMsg);
+        }
+
+        SG_LOG( SG_GENERAL, SG_ALERT, errMsg );
+        throw sg_io_exception(errMsg);
+    }
+
+    return res;
+}
 
 std::streampos
 gzfilebuf::seekoff( std::streamoff, ios_seekdir, ios_openmode )

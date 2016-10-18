@@ -39,6 +39,7 @@
 
 #include <string>
 
+#include <zlib.h>
 #include <simgear/misc/zfstream.hxx>
 
 class SGPath;
@@ -90,6 +91,15 @@ public:
 
     /** @return true if the file is successfully opened, false otherwise. */
     bool is_open() { return gzbuf.is_open(); }
+
+    /**
+     * @return the current offset in the file being read or written.
+     * The offset corresponds to compressed data if the file is compressed,
+     * and is influenced by buffering performed in zlib, hence the "approx"
+     * qualifier. It should be suitable for progress indicators and such,
+     * though.
+     */
+    z_off_t approxOffset();
 
 private:
     // Not defined!

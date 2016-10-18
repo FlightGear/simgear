@@ -89,6 +89,15 @@ public:
     /** @return true if open, false otherwise */
     bool is_open() const { return (file != NULL); }
 
+    /**
+     * @return the current offset in the file being read or written.
+     * The offset corresponds to compressed data if the file is compressed,
+     * and is influenced by buffering performed in zlib, hence the "approx"
+     * qualifier. It should be suitable for progress indicators and such,
+     * though.
+     */
+    z_off_t approxOffset();
+
     /** @return stream position */
     virtual std::streampos seekoff( std::streamoff off, ios_seekdir way, ios_openmode which );
 

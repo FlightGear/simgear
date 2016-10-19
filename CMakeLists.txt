@@ -250,7 +250,7 @@ else()
     endif()
 endif(SIMGEAR_HEADLESS)
 
-find_package(ZLIB REQUIRED)
+find_package(ZLIB 1.2.4 REQUIRED)
 find_package(CURL REQUIRED)
 
 if (SYSTEM_EXPAT)

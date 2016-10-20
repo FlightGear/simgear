@@ -54,13 +54,15 @@ public:
     sg_gzifstream();
 
     /**
-     * Constructor that attempt to open a file with and without
-     * ".gz" extension.
+     * Constructor that attempts to open a file.
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
+     * @param use_exact_name if false, try to add or remove a ".gz" extension
+     *                       in case the indicated file can't be opened
      */
     sg_gzifstream( const SGPath& name,
-		   ios_openmode io_mode = ios_in | ios_binary );
+		   ios_openmode io_mode = ios_in | ios_binary,
+                   bool use_exact_name = false );
 
     /**
      * Constructor that attaches itself to an existing file descriptor.
@@ -70,12 +72,15 @@ public:
     sg_gzifstream( int fd, ios_openmode io_mode = ios_in|ios_binary );
 
     /**
-     * Attempt to open a file with and without ".gz" extension.
+     * Attempt to open a file.
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
+     * @param use_exact_name if false, try to add or remove a ".gz" extension
+     *                       in case the indicated file can't be opened
      */
     void open( const SGPath& name,
-	       ios_openmode io_mode = ios_in|ios_binary );
+	       ios_openmode io_mode = ios_in|ios_binary,
+               bool use_exact_name = false );
 
     /**
      * Attach to an existing file descriptor.

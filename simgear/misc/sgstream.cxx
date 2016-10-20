@@ -43,10 +43,11 @@ sg_gzifstream::sg_gzifstream()
 //
 // Open a possibly gzipped file for reading.
 //
-sg_gzifstream::sg_gzifstream( const SGPath& name, ios_openmode io_mode )
+sg_gzifstream::sg_gzifstream( const SGPath& name, ios_openmode io_mode,
+  bool use_exact_name )
     : istream(&gzbuf)
 {
-    this->open( name, io_mode );
+    this->open( name, io_mode, use_exact_name );
 }
 
 //-----------------------------------------------------------------------------
@@ -62,17 +63,20 @@ sg_gzifstream::sg_gzifstream( int fd, ios_openmode io_mode )
 //-----------------------------------------------------------------------------
 //
 // Open a possibly gzipped file for reading.
-// If the initial open fails and the filename has a ".gz" extension then
-// remove the extension and try again.
-// If the initial open fails and the filename doesn't have a ".gz" extension
-// then append ".gz" and try again.
+// If 'use_exact_name' is true, just try to open the indicated file, nothing
+// else. Otherwise:
+//   - if the initial open fails and the filename has a ".gz" extension, then
+//     remove it and try again;
+//   - if the initial open fails and the filename doesn't have a ".gz"
+//     extension, then append ".gz" and try again.
 //
 void
-sg_gzifstream::open( const SGPath& name, ios_openmode io_mode )
+sg_gzifstream::open( const SGPath& name, ios_openmode io_mode,
+                     bool use_exact_name )
 {
     std::string s = name.utf8Str();
     gzbuf.open( s.c_str(), io_mode );
-    if ( ! gzbuf.is_open() )
+    if ( ! (gzbuf.is_open() || use_exact_name) )
     {
         if ( s.substr( s.length() - 3, 3 ) == ".gz" )
         {

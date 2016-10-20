@@ -507,7 +507,7 @@ configure_file(SimGearConfig.cmake.in
   @ONLY
 )
 
-set(ConfigPackageLocation lib/cmake/SimGear)
+set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/SimGear)
 install(EXPORT SimGearTargets
   DESTINATION ${ConfigPackageLocation}
 )

@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 3.0)
 
 if(COMMAND cmake_policy)
    if(POLICY CMP0054)
@@ -9,10 +9,6 @@ if(COMMAND cmake_policy)
    endif()
 endif()
 
-if(CMAKE_VERSION VERSION_LESS "3.1")
-  message(WARNING "CMake 3.1 will be required soon, please upgrade")
-endif()
-
 include (CheckFunctionExists)
 include (CheckIncludeFile)
 include (CheckLibraryExists)
@@ -20,23 +16,20 @@ include (CheckCXXSourceCompiles)
 include (CheckCXXCompilerFlag)
 include (GenerateExportHeader)
 
-# using 10.7 because boost requires libc++ and 10.6 doesn't include it
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
-
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)
 
-# Set the C++ standard to C++98 to avoid compilation errors on GCC 6 (which
-# defaults to C++14).
-if(CMAKE_VERSION VERSION_LESS "3.1")
-  if(CMAKE_COMPILER_IS_GNUCXX)
-    set (CMAKE_CXX_FLAGS "-std=gnu++98 ${CMAKE_CXX_FLAGS}")
-  endif()
-else()
-  set (CMAKE_CXX_STANDARD 98)
-endif()
+# let's use & require C++11 - note these are only functional with CMake 3.1
+# we do manual fallbacks for CMake 3.0 in the compilers section
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 project(SimGear)
+
+# using 10.7 because boost requires libc++ and 10.6 doesn't include it
+# Cmake documentation says we must set this before calling project(), but
+# it only seems to be picked up setting it /after/ the call to project()
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
 
 # read 'version' file into a variable (stripping any newlines or spaces)
 file(READ version versionFile)
@@ -196,15 +189,9 @@ endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
-
-# this should be handled by setting CMAKE_OSX_DEPLOYMENT_TARGET
-# but it's not working reliably, so forcing it for now
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.7")
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR
-	${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     find_package(Threads REQUIRED)
 endif()
 
@@ -354,6 +341,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall")
     set(WARNING_FLAGS_C   "-Wall")
 
+    if (CMAKE_VERSION VERSION_LESS 3.1)
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif()
+
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.4)
       message(WARNING "GCC 4.4 will be required soon, please upgrade")
     endif()
@@ -366,13 +357,17 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         GCC_ATOMIC_BUILTINS_FOUND)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # Boost redeclares class members
     set(WARNING_FLAGS_CXX "-Wall -Wno-overloaded-virtual -Wno-redeclared-class-member")
     set(WARNING_FLAGS_C   "-Wall")
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
-    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    # fix Boost compilation :(
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+
+    if (CMAKE_VERSION VERSION_LESS 3.1)
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif()
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

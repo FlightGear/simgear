@@ -155,11 +155,8 @@ SGSubsystemGroup::SGSubsystemGroup () :
 
 SGSubsystemGroup::~SGSubsystemGroup ()
 {
-    // reverse order to prevent order dependency problems
-    for( size_t i = _members.size(); i > 0; i-- )
-    {
-        delete _members[i-1];
-    }
+    std::for_each(_members.rbegin(), _members.rend(),
+                  [](Member *m) { delete m; });
 }
 
 void
@@ -204,24 +201,24 @@ void
 SGSubsystemGroup::shutdown ()
 {
     // reverse order to prevent order dependency problems
-    for( size_t i = _members.size(); i > 0; i-- )
-        _members[i-1]->subsystem->shutdown();
-  _initPosition = 0;
+    std::for_each(_members.rbegin(), _members.rend(),
+                  [](Member* m){ m->subsystem->shutdown();});
+   _initPosition = 0;
 }
 
 void
 SGSubsystemGroup::bind ()
 {
-    for( size_t i = 0; i < _members.size(); i++ )
-        _members[i]->subsystem->bind();
+    std::for_each(_members.begin(), _members.end(),
+                  [](Member* m){ m->subsystem->bind();});
 }
 
 void
 SGSubsystemGroup::unbind ()
 {
     // reverse order to prevent order dependency problems
-    for( size_t i = _members.size(); i > 0; i-- )
-       _members[i-1]->subsystem->unbind();
+    std::for_each(_members.rbegin(), _members.rend(),
+                  [](Member* m){ m->subsystem->unbind();});
 }
 
 void
@@ -242,17 +239,16 @@ SGSubsystemGroup::update (double delta_time_sec)
     bool recordTime = (reportTimingCb != NULL);
     SGTimeStamp timeStamp;
     while (loopCount-- > 0) {
-      for( size_t i = 0; i < _members.size(); i++ )
-      {
+      for (auto member : _members) {
           if (recordTime)
               timeStamp = SGTimeStamp::now();
 
-          _members[i]->update(delta_time_sec); // indirect call
+          member->update(delta_time_sec); // indirect call
 
           if ((recordTime)&&(reportTimingCb))
           {
               timeStamp = SGTimeStamp::now() - timeStamp;
-              _members[i]->updateExecutionTime(timeStamp.toUSecs());
+              member->updateExecutionTime(timeStamp.toUSecs());
           }
       }
     } // of multiple update loop
@@ -261,17 +257,15 @@ SGSubsystemGroup::update (double delta_time_sec)
 void
 SGSubsystemGroup::reportTiming(void)
 {
-    for( size_t i = _members.size(); i > 0; i-- )
-    {
-        _members[i-1]->reportTiming();
-    }
+    std::for_each(_members.rbegin(), _members.rend(),
+                  [](Member* m) { m->reportTiming(); });
 }
 
 void
 SGSubsystemGroup::suspend ()
 {
-    for( size_t i = 0; i < _members.size(); i++ )
-        _members[i]->subsystem->suspend();
+    std::for_each(_members.begin(), _members.end(),
+                  [](const Member* m) { m->subsystem->suspend(); });
 }
 
 void
@@ -285,9 +279,9 @@ string_list
 SGSubsystemGroup::member_names() const
 {
 	string_list result;
-	for( size_t i = 0; i < _members.size(); i++ )
-		result.push_back( _members[i]->name );
-	
+    result.reserve(_members.size());
+    std::for_each(_members.begin(), _members.end(),
+                  [&result](const Member* m) { result.emplace_back(m->name); });
 	return result;
 }
 

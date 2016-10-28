@@ -50,10 +50,8 @@
 #endif
 
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/math/SGMisc.hxx>
 
-#if defined(HAVE_STD_ISNAN) && !defined(HAVE_ISNAN)
-using std::isnan;
-#endif
 class SGSampleGroup;
 
 struct refUint {
@@ -74,7 +72,7 @@ typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
 
 inline bool isNaN(float *v) {
-   return (isnan(v[0]) || isnan(v[1]) || isnan(v[2]));
+   return (SGMisc<float>::isNaN(v[0]) || SGMisc<float>::isNaN(v[1]) || SGMisc<float>::isNaN(v[2]));
 }
 
 #endif // _SG_SOUNDMGR_OPENAL_PRIVATE_HXX

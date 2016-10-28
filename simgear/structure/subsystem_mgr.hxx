@@ -274,7 +274,7 @@ public:
 
 protected:
 
-  bool _suspended;
+  bool _suspended = false;
 
   eventTimeVec timingInfo;
 

@@ -43,7 +43,6 @@ SGSubsystemTimingCb SGSubsystem::reportTimingCb = NULL;
 void* SGSubsystem::reportTimingUserData = NULL;
 
 SGSubsystem::SGSubsystem ()
-  : _suspended(false)
 {
 }
 
@@ -122,13 +121,13 @@ void SGSubsystem::stamp(const string& name)
 ////////////////////////////////////////////////////////////////////////
 
 class SGSubsystemGroup::Member
-{    
+{
 private:
     Member (const Member &member);
 public:
     Member ();
     virtual ~Member ();
-    
+
     virtual void update (double delta_time_sec);
 
     void reportTiming(void) { if (reportTimingCb) reportTimingCb(reportTimingUserData, name, &timeStat); }
@@ -171,15 +170,15 @@ SGSubsystemGroup::incrementalInit()
 {
   if (_initPosition >= _members.size())
     return INIT_DONE;
-  
+
   SGTimeStamp st;
   st.stamp();
   InitStatus memberStatus = _members[_initPosition]->subsystem->incrementalInit();
   _members[_initPosition]->initTime += st.elapsedMSec();
-  
+
   if (memberStatus == INIT_DONE)
     ++_initPosition;
-  
+
   return INIT_CONTINUE;
 }
 
@@ -322,7 +321,7 @@ SGSubsystemGroup::remove_subsystem (const string &name)
             return;
         }
     }
-    
+
     SG_LOG(SG_GENERAL, SG_WARN, "remove_subsystem: missing:" << name);
 }
 
@@ -396,18 +395,18 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
     if (elapsed_sec < min_step_sec) {
         return;
     }
-    
+
     if (subsystem->is_suspended()) {
         return;
     }
-    
+
     try {
       subsystem->update(elapsed_sec);
       elapsed_sec = 0;
     } catch (sg_exception& e) {
       SG_LOG(SG_GENERAL, SG_ALERT, "caught exception processing subsystem:" << name
         << "\nmessage:" << e.getMessage());
-      
+
       if (++exceptionCount > SG_MAX_SUBSYSTEM_EXCEPTIONS) {
         SG_LOG(SG_GENERAL, SG_ALERT, "(exceptionCount=" << exceptionCount <<
           ", suspending)");
@@ -450,11 +449,11 @@ SGSubsystemMgr::incrementalInit()
 {
   if (_initPosition >= MAX_GROUPS)
     return INIT_DONE;
-  
-  InitStatus memberStatus = _groups[_initPosition]->incrementalInit();  
+
+  InitStatus memberStatus = _groups[_initPosition]->incrementalInit();
   if (memberStatus == INIT_DONE)
     ++_initPosition;
-  
+
   return INIT_CONTINUE;
 }
 
@@ -478,7 +477,7 @@ SGSubsystemMgr::shutdown ()
     // reverse order to prevent order dependency problems
     for (int i = MAX_GROUPS-1; i >= 0; i--)
         _groups[i]->shutdown();
-  
+
     _initPosition = 0;
 }
 
@@ -547,9 +546,9 @@ SGSubsystemMgr::remove(const char* name)
   if (s == _subsystem_map.end()) {
     return;
   }
-  
+
   _subsystem_map.erase(s);
-  
+
 // tedious part - we don't know which group the subsystem belongs too
   for (int i = 0; i < MAX_GROUPS; i++) {
     if (_groups[i]->get_subsystem(name) != NULL) {

@@ -18,7 +18,7 @@
 #include "BVHNode.hxx"
 
 #include <algorithm>
-#include <simgear/structure/SGAtomic.hxx>
+#include <atomic>
 #include <simgear/math/SGGeometry.hxx>
 
 namespace simgear {
@@ -35,7 +35,7 @@ BVHNode::~BVHNode()
 BVHNode::Id
 BVHNode::getNewId()
 {
-    static SGAtomic id(0);
+    static std::atomic<unsigned> id(0);
     return ++id;
 }
 

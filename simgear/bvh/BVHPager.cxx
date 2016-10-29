@@ -18,10 +18,11 @@
 #include "BVHPager.hxx"
 
 #include <list>
+// #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
-
 #include "BVHPageNode.hxx"
 #include "BVHPageRequest.hxx"
 
@@ -35,12 +36,12 @@ struct BVHPager::_PrivateData : protected SGThread {
     struct _LockedQueue {
         void _push(const _Request& request)
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             _requestList.push_back(request);
         }
         _Request _pop()
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             if (_requestList.empty())
                 return _Request();
             _Request request;
@@ -49,7 +50,7 @@ struct BVHPager::_PrivateData : protected SGThread {
             return request;
         }
     private:
-        SGMutex _mutex;
+        std::mutex _mutex;
         _RequestList _requestList;
     };
     
@@ -60,25 +61,25 @@ struct BVHPager::_PrivateData : protected SGThread {
         }
         void _push(const _Request& request)
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             bool needSignal = _requestList.empty();
             _requestList.push_back(request);
             if (needSignal)
-                _waitCondition.signal();
+                _waitCondition.notify_one();
         }
         _Request _pop()
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::unique_lock<std::mutex> scopeLock(_mutex);
             while (_requestList.empty())
-                _waitCondition.wait(_mutex);
+                _waitCondition.wait(scopeLock);
             _Request request;
             request.swap(_requestList.front());
             _requestList.pop_front();
             return request;
         }
     private:
-        SGMutex _mutex;
-        SGWaitCondition _waitCondition;
+        std::mutex _mutex;
+        std::condition_variable _waitCondition;
         _RequestList _requestList;
     };
 

@@ -328,14 +328,13 @@ SET(CMAKE_MINSIZEREL_POSTFIX "" CACHE STRING "add a postfix, usually empty on wi
 
 # isnan might not be real symbol, so can't check using function_exists
 check_cxx_source_compiles(
-    "#include <cmath>
-    int main() { return isnan(0.0);} "
-    HAVE_ISNAN)
-
-check_cxx_source_compiles(
-    "#include <cmath>
+    "#include <cstdlib>
     int main() { return std::isnan(0.0);} "
     HAVE_STD_ISNAN)
+
+if (NOT ${HAVE_STD_ISNAN})
+  message(FATAL_ERROR "Your compiler lacks C++11 std::isnan, please update it")
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall")

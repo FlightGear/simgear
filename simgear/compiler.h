@@ -40,22 +40,11 @@
 #define SG_DO_STRINGIZE(X) #X
 
 #ifdef __GNUC__
-#  if __GNUC__ < 3
-#    error Time to upgrade. GNU compilers < 3.0 not supported
-#  elif (__GNUC__ == 3) && (__GNUC_MINOR__ < 4)
-#    warning GCC compilers prior to 3.4 are suspect
-#  endif
-
 #  define SG_GCC_VERSION (__GNUC__ * 10000 \
                      + __GNUC_MINOR__ * 100 \
                      + __GNUC_PATCHLEVEL__)
 #  define SG_COMPILER_STR "GNU C++ version " SG_STRINGIZE(__GNUC__) "." SG_STRINGIZE(__GNUC_MINOR__)
 #endif // __GNUC__
-
-/* KAI C++ */
-#if defined(__KCC)
-#  define SG_COMPILER_STR "Kai C++ version " SG_STRINGIZE(__KCC_VERSION)
-#endif // __KCC
 
 //
 // Microsoft compilers.
@@ -69,12 +58,6 @@
 #      define snprintf _snprintf
 #      define strdup _strdup
 #      define copysign _copysign
-#    endif
-#    if _MSC_VER < 1800
-#      define isnan _isnan
-#    endif
-#    if _MSC_VER < 1500
-#      define vsnprintf _vsnprintf
 #    endif
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
@@ -92,49 +75,6 @@
 #endif // _MSC_VER
 
 //
-// Native SGI compilers
-//
-
-#if defined ( sgi ) && !defined( __GNUC__ )
-# if (_COMPILER_VERSION < 740)
-#  error Need MipsPro 7.4.0 or higher now
-# endif
-
-#define SG_HAVE_NATIVE_SGI_COMPILERS
-
-#pragma set woff 1001,1012,1014,1116,1155,1172,1174
-#pragma set woff 1401,1460,1551,1552,1681
-
-#ifdef __cplusplus
-# pragma set woff 1682,3303
-# pragma set woff 3624
-#endif
-
-#  define SG_COMPILER_STR "SGI MipsPro compiler version " SG_STRINGIZE(_COMPILER_VERSION)
-
-#endif // Native SGI compilers
-
-
-#if defined (__sun)
-#  define SG_UNIX
-#  include <strings.h>
-#  include <memory.h>
-#  if defined ( __cplusplus )
-     // typedef unsigned int size_t;
-     extern "C" {
-       extern void *memmove(void *, const void *, size_t);
-     }
-#  else
-     extern void *memmove(void *, const void *, size_t);
-#  endif // __cplusplus
-
-#  if  !defined( __GNUC__ )
-#   define SG_COMPILER_STR "Sun compiler version " SG_STRINGIZE(__SUNPRO_CC)
-#  endif
-
-#endif // sun
-
-//
 // Intel C++ Compiler
 //
 #if defined(__ICC) || defined (__ECC)
@@ -148,29 +88,10 @@
 #ifdef __APPLE__
 #  define SG_MAC
 #  define SG_UNIX
-#  ifdef __GNUC__
-#    if ( __GNUC__ > 3 ) || ( __GNUC__ == 3 && __GNUC_MINOR__ >= 3 )
-inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
-#    else
-    // any C++ header file undefines isinf and isnan
-    // so this should be included before <iostream>
-    // the functions are STILL in libm (libSystem on mac os x)
-extern "C" int (isnan)(double);
-extern "C" int (isinf)(double);
-#    endif
-#  else
-inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
-#  endif
 #endif
 
 #if defined (__FreeBSD__)
 #  define SG_UNIX
-#include <sys/param.h>
-#  if __FreeBSD_version < 500000
-     extern "C" {
-       inline int isnan(double r) { return !(r <= 0 || r >= 0); }
-     }
-#  endif
 #endif
 
 #if defined (__CYGWIN__)

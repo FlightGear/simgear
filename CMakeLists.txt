@@ -24,16 +24,16 @@ set(CMAKE_OSX_RPATH 1)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
-project(SimGear)
+# read 'version' file into a variable (stripping any newlines or spaces)
+file(READ version versionFile)
+string(STRIP ${versionFile} SIMGEAR_VERSION)
+
+project(SimGear VERSION ${SIMGEAR_VERSION} LANGUAGES C CXX)
 
 # using 10.7 because boost requires libc++ and 10.6 doesn't include it
 # Cmake documentation says we must set this before calling project(), but
 # it only seems to be picked up setting it /after/ the call to project()
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
-
-# read 'version' file into a variable (stripping any newlines or spaces)
-file(READ version versionFile)
-string(STRIP ${versionFile} SIMGEAR_VERSION)
 
 # add a dependency on the versino file
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS version)
@@ -72,8 +72,6 @@ set(CPACK_SOURCE_GENERATOR TBZ2)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "simgear-${SIMGEAR_VERSION}" CACHE INTERNAL "tarball basename")
 set(CPACK_SOURCE_IGNORE_FILES
   "^${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
-
-message(STATUS "ignoring: ${CPACK_SOURCE_IGNORE_FILES}")
 
 include (CPack)
 
@@ -413,8 +411,6 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 
 # use BEFORE to ensure local directories are used first,
 # ahead of system-installed libs
-include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(BEFORE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 
 include_directories(
@@ -459,8 +455,6 @@ if(NOT SIMGEAR_HEADLESS)
 endif()
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
-
-include_directories(3rdparty/utf8/source)
 
 if(ENABLE_DNS)
     if(SYSTEM_UDNS)

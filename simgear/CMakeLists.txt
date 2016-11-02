@@ -54,24 +54,14 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY LINKER_LANGUAGE CXX)
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
-    install(TARGETS SimGearCore
-            EXPORT SimGearTargets
-            LIBRARY DESTINATION
-            ${CMAKE_INSTALL_LIBDIR})
+
 
     if(NOT SIMGEAR_HEADLESS)
         add_library(SimGearScene SHARED ${sceneSources})
         set_property(TARGET SimGearScene PROPERTY LINKER_LANGUAGE CXX)
         set_property(TARGET SimGearScene PROPERTY VERSION   ${SIMGEAR_VERSION})
         set_property(TARGET SimGearScene PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
-
-        # EXPORT SimGearSceneConfig
-        install(TARGETS SimGearScene
-                EXPORT SimGearTargets
-                LIBRARY
-                DESTINATION ${CMAKE_INSTALL_LIBDIR} )
     endif()
-
 else()
     message(STATUS "Library building mode: STATIC LIBRARIES")
 
@@ -94,9 +84,6 @@ else()
 	endforeach()
 
     add_library(SimGearCore STATIC ${coreSources} ${localExpatSources})
-    install(TARGETS SimGearCore
-            EXPORT SimGearTargets
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
     if(NOT SIMGEAR_HEADLESS)
 		get_property(FG_GROUPS_SCENE_SOURCES_C GLOBAL PROPERTY FG_GROUPS_SCENE_SOURCES_C)
@@ -118,11 +105,30 @@ else()
 		endforeach()
 
         add_library(SimGearScene STATIC ${sceneSources})
-        install(TARGETS SimGearScene
-                EXPORT SimGearTargets
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
+
+target_include_directories(SimGearCore PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>)
+
+    install(TARGETS SimGearCore
+            EXPORT SimGearTargets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+if (NOT SIMGEAR_HEADLESS)
+  install(TARGETS SimGearScene
+          EXPORT SimGearTargets
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+  target_include_directories(SimGearScene PUBLIC
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>)
+
+endif()
+
 
 target_link_libraries(SimGearCore
     ${ZLIB_LIBRARY}
@@ -143,6 +149,8 @@ if(ENABLE_DNS AND SYSTEM_UDNS)
 endif()
 
 if(NOT SIMGEAR_HEADLESS)
+    target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
+
     target_link_libraries(SimGearScene
         SimGearCore
         ${ZLIB_LIBRARY}
@@ -150,6 +158,9 @@ if(NOT SIMGEAR_HEADLESS)
         ${OPENAL_LIBRARY}
         ${OPENGL_LIBRARY}
         ${JPEG_LIBRARY})
+
+    # only actually needed by canvas/KeyboardEvent.cxx
+    target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/utf8/source)
 endif()
 
 if(ENABLE_RTI)

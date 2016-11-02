@@ -136,7 +136,8 @@ target_link_libraries(SimGearCore
     ${DL_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${COCOA_LIBRARY}
-    ${CURL_LIBRARIES})
+    ${CURL_LIBRARIES}
+    ${WINSOCK_LIBRARY})
 
 if(SYSTEM_EXPAT)
     target_link_libraries(SimGearCore

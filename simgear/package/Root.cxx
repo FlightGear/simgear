@@ -153,6 +153,12 @@ public:
         }
     }
 
+    void fireFinishUninstall(PackageRef pkg)
+    {
+        std::for_each(delegates.begin(), delegates.end(),
+                      [pkg](Delegate* d) {d->finishUninstall(pkg);});
+    }
+
     DelegateVec delegates;
 
     SGPath path;
@@ -652,6 +658,7 @@ void Root::unregisterInstall(InstallRef ins)
     }
 
     d->m_installs.erase(ins->package());
+    d->fireFinishUninstall(ins->package());
 }
 
 } // of namespace pkg

@@ -29,9 +29,11 @@ namespace pkg
 
 class Install;
 class Catalog;
+class Package;
 
 typedef SGSharedPtr<Catalog> CatalogRef;
 typedef SGSharedPtr<Install> InstallRef;
+typedef SGSharedPtr<Package> PackageRef;
 
 /**
  * package delegate is the mechanism to discover progress / completion /
@@ -67,6 +69,8 @@ public:
     virtual void startInstall(InstallRef aInstall) = 0;
     virtual void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal) = 0;
     virtual void finishInstall(InstallRef aInstall, StatusCode aReason) = 0;
+
+    virtual void finishUninstall(PackageRef aPackage) {}
 
     /**
      * Notification when catalogs/packages are added or removed

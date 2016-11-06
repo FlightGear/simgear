@@ -108,7 +108,7 @@ else()
     endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
 
-target_include_directories(SimGearCore PUBLIC
+target_include_directories(SimGearCore BEFORE PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
@@ -123,7 +123,7 @@ if (NOT SIMGEAR_HEADLESS)
           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-  target_include_directories(SimGearScene PUBLIC
+  target_include_directories(SimGearScene BEFORE PUBLIC
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 

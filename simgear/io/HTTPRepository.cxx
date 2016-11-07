@@ -68,7 +68,7 @@ namespace simgear
         }
     protected:
         HTTPDirectory* _directory;
-        size_t _contentSize;
+        size_t _contentSize = 0;
     };
 
     typedef SGSharedPtr<HTTPRepoGetRequest> RepoRequestPtr;

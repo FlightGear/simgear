@@ -31,6 +31,7 @@
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/structure/event_mgr.hxx>
 
 namespace simgear
 {
@@ -61,6 +62,7 @@ protected:
     time_t _timeout_secs;
     time_t _start;
 };
+typedef SGSharedPtr<Request> Request_ptr;
 
 class NAPTRRequest : public Request
 {
@@ -84,7 +86,32 @@ public:
     std::string qservice;
 };
 
-typedef SGSharedPtr<Request> Request_ptr;
+class SRVRequest : public Request
+{
+public:
+    SRVRequest( const std::string & dn );
+    virtual void submit();
+
+    struct SRV : SGReferenced {
+      int priority;
+      int weight;
+      int port;
+      std::string target;
+    };
+    typedef SGSharedPtr<SRV> SRV_ptr;
+    typedef std::vector<SRV_ptr> SRV_list;
+    SRV_list entries;
+};
+
+class TXTRequest : public Request
+{
+public:
+    TXTRequest( const std::string & dn );
+    virtual void submit();
+
+    typedef std::vector<string> TXT_list;
+    TXT_list entries;
+};
 
 class Client
 {
@@ -99,7 +126,6 @@ public:
 //    void cancelRequest(const Request_ptr& r, std::string reason = std::string());
 
 private:
-
     class ClientPrivate;
     std::auto_ptr<ClientPrivate> d;
 };

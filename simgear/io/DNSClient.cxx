@@ -69,6 +69,75 @@ NAPTRRequest::NAPTRRequest( const std::string & dn ) :
     _type = DNS_T_NAPTR;
 }
 
+SRVRequest::SRVRequest( const std::string & dn ) :
+        Request(dn)
+{
+    _type = DNS_T_SRV;
+}
+
+static void dnscbSRV(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
+{
+    SRVRequest * r = static_cast<SRVRequest*>(data);
+    if (result) {
+        r->cname = result->dnssrv_cname;
+        r->qname = result->dnssrv_qname;
+        r->ttl = result->dnssrv_ttl;
+        for (int i = 0; i < result->dnssrv_nrr; i++) {
+            SRVRequest::SRV_ptr srv(new SRVRequest::SRV);
+            r->entries.push_back(srv);
+            srv->priority = result->dnssrv_srv[i].priority;
+            srv->weight = result->dnssrv_srv[i].weight;
+            srv->port = result->dnssrv_srv[i].port;
+            srv->target = result->dnssrv_srv[i].name;
+        }
+//        std::sort( r->entries.begin(), r->entries.end(), sortNAPTR );
+        free(result);
+    }
+    r->setComplete();
+}
+void SRVRequest::submit()
+{
+    // protocol and service an already encoded in DN so pass in NULL for both
+    if (!dns_submit_srv(NULL, getDn().c_str(), NULL, NULL, 0, dnscbSRV, this )) {
+        SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
+        return;
+    }
+    _start = time(NULL);
+}
+
+TXTRequest::TXTRequest( const std::string & dn ) :
+        Request(dn)
+{
+    _type = DNS_T_TXT;
+}
+
+static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
+{
+    TXTRequest * r = static_cast<TXTRequest*>(data);
+    if (result) {
+        r->cname = result->dnstxt_cname;
+        r->qname = result->dnstxt_qname;
+        r->ttl = result->dnstxt_ttl;
+        for (int i = 0; i < result->dnstxt_nrr; i++) {
+          //TODO: interprete the .len field of dnstxt_txt?
+          r->entries.push_back(string((char*)result->dnstxt_txt[i].txt));
+        }
+        free(result);
+    }
+    r->setComplete();
+}
+
+void TXTRequest::submit()
+{
+    // protocol and service an already encoded in DN so pass in NULL for both
+    if (!dns_submit_txt(NULL, getDn().c_str(), 0, 0, dnscbTXT, this )) {
+        SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
+        return;
+    }
+    _start = time(NULL);
+}
+
+
 static bool sortNAPTR( const NAPTRRequest::NAPTR_ptr a, const NAPTRRequest::NAPTR_ptr b )
 {
     if( a->order > b->order ) return false;
@@ -129,7 +198,6 @@ void Client::makeRequest(const Request_ptr& r)
 {
     r->submit();
 }
-
 
 void Client::update(int waitTimeout)
 {

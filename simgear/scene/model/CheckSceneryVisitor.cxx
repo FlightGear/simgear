@@ -39,6 +39,10 @@ CheckSceneryVisitor::CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::V
     setFrameStamp(framestamp);
 }
 
+CheckSceneryVisitor::~CheckSceneryVisitor()
+{
+}
+
 void CheckSceneryVisitor::apply(osg::Node& node)
 {
     traverse(node);

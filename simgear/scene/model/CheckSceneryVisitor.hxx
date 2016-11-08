@@ -37,6 +37,7 @@ class CheckSceneryVisitor : public osg::NodeVisitor
 {
 public:
     CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range, osg::FrameStamp* framestamp);
+    ~CheckSceneryVisitor();
 
     virtual void apply(osg::Node& node);
     virtual void apply(osg::ProxyNode& node);

@@ -286,11 +286,10 @@ struct ReaderWriterSTG::_ModelBin {
 
     bool read(const std::string& absoluteFileName, const osgDB::Options* options)
     {
-
-				// Determine object ranges.  Mesh size needs to be accounted for.
-				_object_range_bare = 2000.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
-				_object_range_rough = 2000.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
-				_object_range_detailed = 2000.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
+				// Determine object ranges.  Mesh size of 2000mx2000m needs to be accounted for.
+				_object_range_bare = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
+				_object_range_rough = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
+				_object_range_detailed = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
 				_building_mesh_enabled = (options->getPluginStringData("SimGear::RENDER_BUILDING_MESH") == "true");
 
         if (absoluteFileName.empty())

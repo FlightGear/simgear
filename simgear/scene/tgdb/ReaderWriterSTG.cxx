@@ -81,7 +81,7 @@ static SGBucket bucketIndexFromFileName(const std::string& fileName)
   ss >> index;
   if (ss.fail())
     return SGBucket();
-  
+
   return SGBucket(index);
 }
 
@@ -195,19 +195,19 @@ struct ReaderWriterSTG::_ModelBin {
                 signBuilder.addSign(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev), i->_hdg, i->_name, i->_size);
             if (signBuilder.getSignsGroup())
                 group->addChild(signBuilder.getSignsGroup());
-            
+
             return group.release();
         }
-        
+
         mt _seed;
         std::list<_ObjectStatic> _objectStaticList;
         std::list<_Sign> _signList;
-        
+
         /// The original options to use for this bunch of models
         osg::ref_ptr<SGReaderWriterOptions> _options;
         SGBucket _bucket;
     };
-    
+
     _ModelBin() :
         _object_range_bare(SG_OBJECT_RANGE_BARE),
         _object_range_rough(SG_OBJECT_RANGE_ROUGH),
@@ -225,14 +225,14 @@ struct ReaderWriterSTG::_ModelBin {
         SGPath path = filePath;
         path.append(".."); path.append(".."); path.append("..");
         sharedOptions->getDatabasePathList().push_back(path.local8BitStr());
-        
+
         // ensure Models directory synced via TerraSync is searched before the copy in
         // FG_ROOT, so that updated models can be used.
         std::string terrasync_root = options->getPluginStringData("SimGear::TERRASYNC_ROOT");
         if (!terrasync_root.empty()) {
             sharedOptions->getDatabasePathList().push_back(terrasync_root);
         }
-        
+
         std::string fg_root = options->getPluginStringData("SimGear::FG_ROOT");
         sharedOptions->getDatabasePathList().push_back(fg_root);
 
@@ -271,26 +271,26 @@ struct ReaderWriterSTG::_ModelBin {
     {
         SGVec3d start = SGVec3d::fromGeod(SGGeod::fromGeodM(geod, 10000));
         SGVec3d end = SGVec3d::fromGeod(SGGeod::fromGeodM(geod, -1000));
-        
+
         osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
         intersector = new osgUtil::LineSegmentIntersector(toOsg(start), toOsg(end));
         osgUtil::IntersectionVisitor visitor(intersector.get());
         group.accept(visitor);
-        
+
         if (!intersector->containsIntersections())
             return 0;
-        
+
         SGVec3d cart = toSG(intersector->getFirstIntersection().getWorldIntersectPoint());
         return SGGeod::fromCart(cart).getElevationM();
     }
-    
+
     bool read(const std::string& absoluteFileName, const osgDB::Options* options)
     {
 
-				// Determine object ranges
-				_object_range_bare = atof(options->getPluginStringData("SimGear::BARE_LOD_RANGE").c_str());
-				_object_range_rough = atof(options->getPluginStringData("SimGear::ROUGH_LOD_RANGE").c_str());
-				_object_range_detailed = atof(options->getPluginStringData("SimGear::DETAILED_LOD_RANGE").c_str());
+				// Determine object ranges.  Mesh size needs to be accounted for.
+				_object_range_bare = 2000.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
+				_object_range_rough = 2000.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
+				_object_range_detailed = 2000.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
 				_building_mesh_enabled = (options->getPluginStringData("SimGear::RENDER_BUILDING_MESH") == "true");
 
         if (absoluteFileName.empty())
@@ -301,7 +301,7 @@ struct ReaderWriterSTG::_ModelBin {
             return false;
 
         SG_LOG(SG_TERRAIN, SG_INFO, "Loading stg file " << absoluteFileName);
-    
+
         std::string filePath = osgDB::getFilePath(absoluteFileName);
 
         // Bucket provides a consistent seed
@@ -314,7 +314,7 @@ struct ReaderWriterSTG::_ModelBin {
         bool onlyAirports = options->getPluginStringData("SimGear::FG_ONLY_AIRPORTS") == "ON";
         // do only load terrain btg files
         bool onlyTerrain = options->getPluginStringData("SimGear::FG_ONLY_TERRAIN") == "ON";
-        
+
         while (!stream.eof()) {
             // read a line
             std::string line;
@@ -324,21 +324,21 @@ struct ReaderWriterSTG::_ModelBin {
             std::string::size_type hash_pos = line.find('#');
             if (hash_pos != std::string::npos)
                 line.resize(hash_pos);
-            
+
             // and process further
             std::stringstream in(line);
-            
+
             std::string token;
             in >> token;
-            
+
             // No comment
             if (token.empty())
                 continue;
-            
+
             // Then there is always a name
             std::string name;
             in >> name;
-            
+
             SGPath path = filePath;
             path.append(name);
 
@@ -354,7 +354,7 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._options = staticOptions(filePath, options);
                     _objectList.push_back(obj);
                 }
-                
+
             } else if (token == "OBJECT") {
                 if (!onlyAirports || isAirportBtg(name)) {
                     _Object obj;
@@ -364,7 +364,7 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._options = staticOptions(filePath, options);
                     _objectList.push_back(obj);
                 }
-                
+
             } else if (!onlyTerrain) {
                 // Load non-terrain objects
 
@@ -454,10 +454,10 @@ struct ReaderWriterSTG::_ModelBin {
                         << ": Unknown token '" << token << "'" );
             }
         }
-        
+
         return true;
     }
-    
+
     osg::Node* load(const SGBucket& bucket, const osgDB::Options* opt)
     {
         osg::ref_ptr<SGReaderWriterOptions> options;
@@ -466,7 +466,7 @@ struct ReaderWriterSTG::_ModelBin {
         osg::ref_ptr<osg::Group> terrainGroup = new osg::Group;
         terrainGroup->setDataVariance(osg::Object::STATIC);
         terrainGroup->setName("terrain");
-        
+
         if (_foundBase) {
             for (std::list<_Object>::iterator i = _objectList.begin(); i != _objectList.end(); ++i) {
                 osg::ref_ptr<osg::Node> node;
@@ -480,7 +480,7 @@ struct ReaderWriterSTG::_ModelBin {
             }
         } else {
             SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile: " << bucket.gen_base_path() << "/" << bucket.gen_index_str());
-            
+
             osg::Node* node = SGOceanTile(bucket, options->getMaterialLib());
             if (node) {
                 node->setName("SGOceanTile");
@@ -496,7 +496,7 @@ struct ReaderWriterSTG::_ModelBin {
                 continue;
             i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
-        
+
         for (std::list<_Sign>::iterator i = _signList.begin(); i != _signList.end(); ++i) {
             if (!i->_agl)
                 continue;
@@ -510,7 +510,7 @@ struct ReaderWriterSTG::_ModelBin {
             osg::PagedLOD* pagedLOD = new osg::PagedLOD;
             pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
             pagedLOD->setName("pagedObjectLOD");
-            
+
             // This should be visible in any case.
             // If this is replaced by some lower level of detail, the parent LOD node handles this.
             pagedLOD->addChild(terrainGroup, 0, std::numeric_limits<float>::max());
@@ -524,16 +524,16 @@ struct ReaderWriterSTG::_ModelBin {
             osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
             callbackOptions->setReadFileCallback(readFileCallback.get());
             pagedLOD->setDatabaseOptions(callbackOptions.get());
-            
+
             pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
 
             // Objects may end up displayed up to 2x the object range.
             pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough + SG_TILE_RADIUS);
-            
+
             return pagedLOD;
         }
     }
-    
+
     double _object_range_bare;
     double _object_range_rough;
     double _object_range_detailed;
@@ -576,11 +576,11 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
         // For stg meta files, we need options for the search path.
         if (!options)
             return ReadResult::FILE_NOT_FOUND;
-        
+
         SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
-        
+
         std::string basePath = bucket.gen_base_path();
-        
+
         // Stop scanning once an object base is found
         // This is considered a meta file, so apply the scenery path search
         const osgDB::FilePathList& filePathList = options->getDatabasePathList();
@@ -591,7 +591,7 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
             objects.append(basePath);
             objects.append(fileName);
             modelBin.read(objects.local8BitStr(), options);
-            
+
             SGPath terrain(*i);
             terrain.append("Terrain");
             terrain.append(basePath);

@@ -75,6 +75,13 @@ SRVRequest::SRVRequest( const std::string & dn ) :
     _type = DNS_T_SRV;
 }
 
+static bool sortSRV( const SRVRequest::SRV_ptr a, const SRVRequest::SRV_ptr b )
+{
+    if( a->priority > b->priority ) return false;
+    if( a->priority < b->priority ) return true;
+    return a->weight > b->weight;
+}
+
 static void dnscbSRV(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
 {
     SRVRequest * r = static_cast<SRVRequest*>(data);
@@ -90,7 +97,7 @@ static void dnscbSRV(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
             srv->port = result->dnssrv_srv[i].port;
             srv->target = result->dnssrv_srv[i].name;
         }
-//        std::sort( r->entries.begin(), r->entries.end(), sortNAPTR );
+        std::sort( r->entries.begin(), r->entries.end(), sortSRV );
         free(result);
     }
     r->setComplete();
@@ -120,7 +127,12 @@ static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
         r->ttl = result->dnstxt_ttl;
         for (int i = 0; i < result->dnstxt_nrr; i++) {
           //TODO: interprete the .len field of dnstxt_txt?
-          r->entries.push_back(string((char*)result->dnstxt_txt[i].txt));
+          string txt = string((char*)result->dnstxt_txt[i].txt);
+          r->entries.push_back( txt );
+          string_list tokens = simgear::strutils::split( txt, "=", 1 );
+          if( tokens.size() == 2 ) {
+            r->attributes[tokens[0]] = tokens[1];
+          }
         }
         free(result);
     }

@@ -110,7 +110,9 @@ public:
     virtual void submit();
 
     typedef std::vector<string> TXT_list;
+    typedef std::map<std::string,std::string> TXT_Attribute_map;
     TXT_list entries;
+    TXT_Attribute_map attributes;
 };
 
 class Client

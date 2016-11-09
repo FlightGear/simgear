@@ -130,7 +130,7 @@ static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
 void TXTRequest::submit()
 {
     // protocol and service an already encoded in DN so pass in NULL for both
-    if (!dns_submit_txt(NULL, getDn().c_str(), 0, 0, dnscbTXT, this )) {
+    if (!dns_submit_txt(NULL, getDn().c_str(), DNS_C_IN, 0, dnscbTXT, this )) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }

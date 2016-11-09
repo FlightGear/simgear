@@ -75,6 +75,14 @@ SRVRequest::SRVRequest( const std::string & dn ) :
     _type = DNS_T_SRV;
 }
 
+SRVRequest::SRVRequest( const std::string & dn, const string & service, const string & protocol ) :
+        Request(dn),
+        _service(service),
+        _protocol(protocol)
+{
+    _type = DNS_T_SRV;
+}
+
 static bool sortSRV( const SRVRequest::SRV_ptr a, const SRVRequest::SRV_ptr b )
 {
     if( a->priority > b->priority ) return false;
@@ -102,10 +110,11 @@ static void dnscbSRV(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
     }
     r->setComplete();
 }
+
 void SRVRequest::submit()
 {
-    // protocol and service an already encoded in DN so pass in NULL for both
-    if (!dns_submit_srv(NULL, getDn().c_str(), NULL, NULL, 0, dnscbSRV, this )) {
+    // if service is defined, pass service and protocol
+    if (!dns_submit_srv(NULL, getDn().c_str(), _service.empty() ? NULL : _service.c_str(), _service.empty() ? NULL : _protocol.c_str(), 0, dnscbSRV, this )) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }

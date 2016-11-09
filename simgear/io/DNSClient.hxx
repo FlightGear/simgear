@@ -90,6 +90,7 @@ class SRVRequest : public Request
 {
 public:
     SRVRequest( const std::string & dn );
+    SRVRequest( const std::string & dn, const string & service, const string & protocol );
     virtual void submit();
 
     struct SRV : SGReferenced {
@@ -101,6 +102,9 @@ public:
     typedef SGSharedPtr<SRV> SRV_ptr;
     typedef std::vector<SRV_ptr> SRV_list;
     SRV_list entries;
+private:
+    std::string _service;
+    std::string _protocol;
 };
 
 class TXTRequest : public Request

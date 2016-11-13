@@ -207,17 +207,14 @@ else()
     if (ENABLE_SOUND)
         if (USE_AEONWAVE)
             find_package(AAX COMPONENTS aax REQUIRED)
-            include_directories( ${AAX_INCLUDE_DIR} )
         else()
             find_package(OpenAL REQUIRED)
-            include_directories( ${OPENAL_INCLUDE_DIR} )
         endif()
 
         message(STATUS "Sound support: ENABLED")
     endif(ENABLE_SOUND)
 
     find_package(OpenSceneGraph 3.2.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgViewer osgUtil)
-    include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS})
 
     if (MSVC)
       set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})
@@ -252,8 +249,6 @@ else()
 	    ${PROJECT_SOURCE_DIR}/3rdparty/expat
 	    ${PROJECT_BINARY_DIR}/3rdparty/expat)
 endif(SYSTEM_EXPAT)
-
-include_directories(${EXPAT_INCLUDE_DIRS})
 
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
@@ -412,12 +407,6 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 # use BEFORE to ensure local directories are used first,
 # ahead of system-installed libs
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
-
-include_directories(
-    ${Boost_INCLUDE_DIRS}
-    ${ZLIB_INCLUDE_DIR}
-    ${CURL_INCLUDE_DIRS}
-)
 
 add_definitions(-DHAVE_CONFIG_H)
 

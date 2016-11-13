@@ -756,7 +756,12 @@ size_t HTTPRepository::bytesToDownload() const
     }
 
     for (r = _d->activeRequests.begin(); r != _d->activeRequests.end(); ++r) {
-        result += (*r)->contentSize() - (*r)->responseBytesReceived();
+        if ((*r)->contentSize() > 0) {
+            // Content size for root dirindex of a repository is zero,
+            // and returing a negative value breaks everyting, so just ignore
+            // it
+            result += (*r)->contentSize() - (*r)->responseBytesReceived();
+        }
     }
 
     return result;

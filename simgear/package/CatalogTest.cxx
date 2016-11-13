@@ -150,6 +150,43 @@ int parseTest()
     COMPARE(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
     COMPARE(p2->description(), "A plane made by Cessna");
 
+    pkg::Package::ThumbnailVec thumbs = p2->thumbnailsForVariant(0);
+    COMPARE(thumbs.size(), 3);
+
+    auto index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Thumbnail& t)
+                             { return (t.type == pkg::Package::Thumbnail::Type::EXTERIOR); });
+    VERIFY(index != thumbs.end());
+    COMPARE(index->path, "thumb-exterior.png");
+    COMPARE(index->url, "http://foo.bar.com/thumb-exterior.png");
+    VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
+
+    index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Thumbnail& t)
+                        { return (t.type == pkg::Package::Thumbnail::Type::PANEL); });
+    VERIFY(index != thumbs.end());
+    COMPARE(index->path, "thumb-panel.png");
+    COMPARE(index->url, "http://foo.bar.com/thumb-panel.png");
+    VERIFY(index->type == pkg::Package::Thumbnail::Type::PANEL);
+
+// test variants
+    try {
+        p2->indexOfVariant("fofofo");
+        SG_TEST_FAIL("lookup of non-existant variant did not throw");
+    } catch (sg_exception& e) {
+      // expected
+    }
+
+    unsigned int skisVariant = p2->indexOfVariant("c172p-skis");
+    VERIFY(skisVariant > 0);
+
+    pkg::Package::ThumbnailVec thumbs2 = p2->thumbnailsForVariant(skisVariant);
+    COMPARE(thumbs2.size(), 2);
+
+    index = std::find_if(thumbs2.begin(), thumbs2.end(), [](const pkg::Package::Thumbnail& t)
+                              { return (t.type == pkg::Package::Thumbnail::Type::EXTERIOR); });
+    VERIFY(index != thumbs2.end());
+    COMPARE(index->path, "thumb-exterior-skis.png");
+    COMPARE(index->url, "http://foo.bar.com/thumb-exterior-skis.png");
+    VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
 
 
 // test filtering / searching too
@@ -454,7 +491,7 @@ int main(int argc, char* argv[])
     parseTest();
 
     testInstallPackage(&cl);
-    
+
     testUninstall(&cl);
 
     testRemoveCatalog(&cl);

@@ -35,4 +35,9 @@
         exit(1); \
     }
 
+#define SG_TEST_FAIL(msg) \
+  std::cerr << "failure:" << msg; \
+  exit(1);
+
+
 #endif // of SG_MISC_TEST_MACROS_HXX

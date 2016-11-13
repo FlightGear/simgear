@@ -80,7 +80,12 @@ public:
      * Fully-qualified ID, including our catalog'd ID
      */
     std::string qualifiedVariantId(const unsigned int variantIndex) const;
-    
+
+    /**
+     *
+     */
+    unsigned int indexOfVariant(const std::string& vid) const;
+
     /**
      * human-readable name - note this is probably not localised,
      * although this is not ruled out for the future.
@@ -133,6 +138,35 @@ public:
      * thumbnail file paths within the package on disk
      */
     string_list thumbnails() const;
+
+    /**
+     * information about a thumbnail
+     */
+    struct Thumbnail {
+        enum class Type
+        {
+            UNKNOWN,
+            PANEL,
+            INTERIOR,
+            EXTERIOR
+
+            // NIGHT / GROUND as modifiers? does this add any
+            // actual value for GUIs?
+        };
+
+        Thumbnail(const std::string& url, const std::string& path, Type ty = Type::UNKNOWN);
+
+        std::string url;
+        std::string path;
+        Type type = Type::UNKNOWN;
+    };
+
+    typedef std::vector<Thumbnail> ThumbnailVec;
+
+    /**
+     * retrieve all the thumbnails for a variant
+     */
+    ThumbnailVec thumbnailsForVariant(unsigned int vIndex) const;
     
     /**
      * Packages we depend upon.
@@ -159,7 +193,9 @@ private:
     void updateFromProps(const SGPropertyNode* aProps);
 
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
-    
+
+    ThumbnailVec thumbnailsFromProps(const SGPropertyNode_ptr& ptr) const;
+
     SGPropertyNode_ptr m_props;
     std::string m_id;
     string_set m_tags;

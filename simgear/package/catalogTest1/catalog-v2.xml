@@ -48,6 +48,23 @@
             <revision>10</revision>
         </depends>
 
+        <thumbnail>
+          <type>exterior</type>
+          <path>thumb-exterior.png</path>
+          <url>http://foo.bar.com/thumb-exterior.png</url>
+        </thumbnail>
+
+        <thumbnail>
+          <type>panel</type>
+          <path>thumb-panel.png</path>
+          <url>http://foo.bar.com/thumb-panel.png</url>
+        </thumbnail>
+
+        <thumbnail>
+          <path>thumb-something.png</path>
+          <url>http://foo.bar.com/thumb-something.png</url>
+        </thumbnail>
+
         <variant>
             <id>c172p-2d-panel</id>
             <name>C172 with 2d panel only</name>
@@ -56,11 +73,35 @@
         <variant>
             <id>c172p-floats</id>
             <name>C172 with floats</name>
+
+            <thumbnail>
+              <type>exterior</type>
+              <path>thumb-exterior-floats.png</path>
+              <url>http://foo.bar.com/thumb-exterior-floats.png</url>
+            </thumbnail>
+
+            <thumbnail>
+              <type>panel</type>
+              <path>thumb-panel.png</path>
+              <url>http://foo.bar.com/thumb-panel.png</url>
+            </thumbnail>
         </variant>
 
         <variant>
             <id>c172p-skis</id>
             <name>C172 with skis</name>
+
+            <thumbnail>
+              <type>exterior</type>
+              <path>thumb-exterior-skis.png</path>
+              <url>http://foo.bar.com/thumb-exterior-skis.png</url>
+            </thumbnail>
+
+            <thumbnail>
+              <type>panel</type>
+              <path>thumb-panel.png</path>
+              <url>http://foo.bar.com/thumb-panel.png</url>
+            </thumbnail>
         </variant>
 
         <md5>ec0e2ffdf98d6a5c05c77445e5447ff5</md5>
@@ -99,6 +140,18 @@
 
         <md5>a94ca5704f305b90767f40617d194ed6</md5>
         <url>http://localhost:2000/catalogTest1/b737.tar.gz</url>
+
+        <thumbnail>
+          <type>exterior</type>
+          <path>thumb-exterior.png</path>
+          <url>http://foo.bar.com/thumb-exterior.png</url>
+        </thumbnail>
+
+        <thumbnail>
+          <type>panel</type>
+          <path>thumb-panel.png</path>
+          <url>http://foo.bar.com/thumb-panel.png</url>
+        </thumbnail>
       </package>
 
 

@@ -224,8 +224,7 @@ void Client::makeRequest(const Request_ptr& r)
 
     r->_client = this;
 
-    ClientPrivate::RequestCurlMap::iterator rit = d->requests.find(r);
-    assert(rit == d->requests.end());
+    assert(d->requests.find(r) == d->requests.end());
 
     CURL* curlRequest = curl_easy_init();
     curl_easy_setopt(curlRequest, CURLOPT_URL, r->url().c_str());

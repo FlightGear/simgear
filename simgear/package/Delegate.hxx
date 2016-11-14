@@ -70,7 +70,7 @@ public:
     virtual void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal) = 0;
     virtual void finishInstall(InstallRef aInstall, StatusCode aReason) = 0;
 
-    virtual void finishUninstall(PackageRef aPackage) {}
+    virtual void finishUninstall(const PackageRef& aPackage) {};
 
     /**
      * Notification when catalogs/packages are added or removed

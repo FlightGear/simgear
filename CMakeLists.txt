@@ -156,24 +156,15 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
   set (CMAKE_LIBRARY_PATH ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenScenegraph/lib ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenRTI/lib )
   set (CMAKE_INCLUDE_PATH ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenScenegraph/include ${MSVC_3RDPARTY_ROOT}/install/${OSG_MSVC}/OpenRTI/include)
 
-  GET_FILENAME_COMPONENT(MSVC_ROOT_PARENT_DIR ${MSVC_3RDPARTY_ROOT} PATH)
-  find_path(BOOST_ROOT boost/version.hpp
-      PATHS
-      ${MSVC_ROOT_PARENT_DIR}
-			${MSVC_3RDPARTY_ROOT}/boost
-			${MSVC_3RDPARTY_ROOT}/boost_1_52_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_51_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_50_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_49_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_48_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_47_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_46_1
-			${MSVC_3RDPARTY_ROOT}/boost_1_46_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_45_0
-			${MSVC_3RDPARTY_ROOT}/boost_1_44_0
-			)
-  # set (BOOST_ROOT ${MSVC_3RDPARTY_ROOT}/boost_1_44_0)
-  message(STATUS "BOOST_ROOT is ${BOOST_ROOT}")
+  if(NOT BOOST_INCLUDEDIR)
+    # if this variable was not set by the user, set it to 3rdparty root's
+    # parent dir, which is the normal location for people using our
+    # windows-3rd-party repo
+    GET_FILENAME_COMPONENT(MSVC_ROOT_PARENT_DIR ${MSVC_3RDPARTY_ROOT} PATH)
+    set(BOOST_INCLUDEDIR ${MSVC_ROOT_PARENT_DIR})
+    message(STATUS "BOOST_INCLUDEDIR is ${BOOST_INCLUDEDIR}")
+  endif()
+
   if (NOT USE_AEONWAVE)
     set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
     set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib)

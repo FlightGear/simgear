@@ -112,11 +112,10 @@ target_include_directories(SimGearCore BEFORE PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
-target_include_directories(SimGearCore PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories(SimGearCore PUBLIC
+  ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR})
 target_include_directories(SimGearCore PRIVATE
-  ${EXPAT_INCLUDE_DIRS}
-  ${ZLIB_INCLUDE_DIR}
-  ${CURL_INCLUDE_DIRS})
+  ${EXPAT_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
 
     install(TARGETS SimGearCore
             EXPORT SimGearTargets

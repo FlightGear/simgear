@@ -26,7 +26,10 @@
 #include <algorithm>
 #include <string.h>             // strerror_r() and strerror_s()
 #include <errno.h>
-#include <codecvt> // new in C++11
+
+#if defined(HAVE_CPP11_CODECVT)
+    #include <codecvt> // new in C++11
+#endif
 
 #include "strutils.hxx"
 
@@ -401,9 +404,11 @@ std::wstring convertUtf8ToWString(const std::string& a)
 {
 #ifdef SG_WINDOWS
     return convertMultiByteToWString(CP_UTF8, a);
-#else
+#elif defined(HAVE_CPP11_CODECVT)
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> ucs2conv;
     return ucs2conv.from_bytes(a);
+#else
+    return std::wstring();
 #endif
 }
 
@@ -411,9 +416,11 @@ std::string convertWStringToUtf8(const std::wstring& w)
 {
 #ifdef SG_WINDOWS
 	return convertWStringToMultiByte(CP_UTF8, w);
-#else
+#elif defined(HAVE_CPP11_CODECVT)
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> ucs2conv;
     return ucs2conv.to_bytes(w);
+#else
+    return std::string();
 #endif
 }
 

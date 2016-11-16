@@ -42,7 +42,7 @@ public:
         vec[3] = v[3];
     }
 
-    float (&ptr(void))[4] {
+    inline float (&ptr(void))[4] {
         return vec;
     }
 
@@ -197,15 +197,11 @@ public:
         return *this;
     }
 
-    operator const float*() const {
+    inline operator const float*() const {
         return vec;
     }
 
-    operator float*() {
-        return vec;
-    }
-
-    operator void*() {
+    inline operator float*() {
         return vec;
     }
 };
@@ -395,19 +391,207 @@ public:
         return *this;
     }
 
-    operator const double*(void) const {
+    inline operator const double*(void) const {
         return vec;
     }
 
-    operator double*(void) {
+    inline operator double*(void) {
         return vec;
     }
 };
 
-#if 0
-vector operator+(const vector& v);
-vector operator+(const vector& v1, const vector& v2);
+template<>
+class simd4_t<int>
+{
+private:
+   typedef int  __vec4_t[4];
+
+# ifdef __SSE__
+    union {
+        __m128i v4;
+        __vec4_t vec;
+    };
+# else
+    __vec4_t vec;
+# endif
+
+public:
+    simd4_t() {}
+    simd4_t(int i)
+    {
+        vec[0] = vec[1] = vec[2] = vec[3] = i;
+    }
+    simd4_t(const __vec4_t& v)
+    {
+        vec[0] = v[0];
+        vec[1] = v[1];
+        vec[2] = v[2];
+        vec[3] = v[3];
+    }
+
+    inline int (&ptr(void))[4] {
+        return vec;
+    }
+
+    inline const int (&ptr(void) const)[4] {
+        return vec;
+    }
+
+    inline simd4_t& operator=(int i)
+    {
+        vec[0] = vec[1] = vec[2] = vec[3] = i;
+        return *this;
+    }
+
+    inline simd4_t& operator=(const __vec4_t& v)
+    {
+        vec[0] = v[0];
+        vec[1] = v[1];
+        vec[2] = v[2];
+        vec[3] = v[3];
+        return *this;
+    }
+
+    inline simd4_t& operator=(const simd4_t& v)
+    {
+        vec[0] = v[0];
+        vec[1] = v[1];
+        vec[2] = v[2];
+        vec[3] = v[3];
+        return *this;
+    }
+
+    inline simd4_t operator-()
+    {
+        simd4_t r(0.0f);
+        r -= vec;
+        return r;
+    }
+
+    inline simd4_t operator+(int i)
+    {
+        simd4_t r(vec);
+        r += i;
+        return r;
+    }
+
+    inline simd4_t operator-(int i)
+    {
+        simd4_t r(vec);
+        r -= i;
+        return r;
+    }
+
+    inline simd4_t operator*(int i)
+    {
+        simd4_t r(vec);
+        r *= i;
+        return r;
+    }
+
+    inline simd4_t operator/(int i)
+    {
+        simd4_t r(vec);
+        r /= i;
+        return r;
+    }
+
+    inline simd4_t& operator +=(int i)
+    {
+# ifdef __SSE__
+        v4 += i;
+# else
+        vec[0] += i;
+        vec[1] += i;
+        vec[2] += i;
+        vec[3] += i;
+# endif
+        return *this;
+    }
+
+    inline simd4_t& operator -=(int i)
+    {
+# ifdef __SSE__
+        v4 -= i;
+# else
+        vec[0] -= i;
+        vec[1] -= i;
+        vec[2] -= i;
+        vec[3] -= i;
+# endif
+        return *this;
+    }
+
+    inline simd4_t& operator *=(int i)
+    {
+# ifdef __SSE__
+        v4 *= i;
+# else
+        vec[0] *= i;
+        vec[1] *= i;
+        vec[2] *= i;
+        vec[3] *= i;
+# endif
+        return *this;
+    }
+
+    inline simd4_t& operator /=(int i)
+    {
+# ifdef __SSE__
+        v4 /= i;
+# else
+        vec[0] /= i;
+        vec[1] /= i;
+        vec[2] /= i;
+        vec[3] /= i;
 #endif
+        return *this;
+    }
+
+    inline simd4_t& operator +=(__vec4_t v)
+    {
+        vec[0] += v[0];
+        vec[1] += v[1];
+        vec[2] += v[2];
+        vec[3] += v[3];
+        return *this;
+    }
+
+    inline simd4_t& operator -=(__vec4_t v)
+    {
+        vec[0] -= v[0];
+        vec[1] -= v[1];
+        vec[2] -= v[2];
+        vec[3] -= v[3];
+        return *this;
+    }
+
+    inline simd4_t& operator *=(__vec4_t v)
+    {
+        vec[0] *= v[0];
+        vec[1] *= v[1];
+        vec[2] *= v[2];
+        vec[3] *= v[3];
+        return *this;
+    }
+
+    inline simd4_t& operator /=(__vec4_t v)
+    {
+        vec[0] /= v[0];
+        vec[1] /= v[1];
+        vec[2] /= v[2];
+        vec[3] /= v[3];
+        return *this;
+    }
+
+    inline operator const int*() const {
+        return vec;
+    }
+
+    inline operator int*() {
+        return vec;
+    }
+};
 
 #endif /* __SIMD_H__ */
 

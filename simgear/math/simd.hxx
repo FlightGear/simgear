@@ -42,6 +42,14 @@ public:
         vec[3] = v[3];
     }
 
+    float (&ptr(void))[4] {
+        return vec;
+    }
+
+    inline const float (&ptr(void) const)[4] {
+        return vec;
+    }
+
     inline simd4_t& operator=(float f)
     {
         vec[0] = vec[1] = vec[2] = vec[3] = f;
@@ -49,6 +57,15 @@ public:
     }
 
     inline simd4_t& operator=(const __vec4_t& v)
+    {
+        vec[0] = v[0];
+        vec[1] = v[1];
+        vec[2] = v[2];
+        vec[3] = v[3];
+        return *this;
+    }
+
+    inline simd4_t& operator=(const simd4_t& v)
     {
         vec[0] = v[0];
         vec[1] = v[1];
@@ -222,6 +239,14 @@ public:
         vec[3] = v[3];
     }
 
+    inline double (&ptr(void))[4] {
+        return vec;
+    }
+
+    inline const double (&ptr(void) const)[4] {
+        return vec;
+    }
+
     inline simd4_t& operator=(double f)
     {
         vec[0] = vec[1] = vec[2] = vec[3] = f;
@@ -230,6 +255,16 @@ public:
 
     inline simd4_t& operator=(const __vec4_t& v)
     {
+        vec[0] = v[0];
+        vec[1] = v[1];
+        vec[2] = v[2];
+        vec[3] = v[3];
+        return *this;
+    }
+
+    inline simd4_t& operator=(const simd4_t& v)
+    {
+        simd4_t(r);
         vec[0] = v[0];
         vec[1] = v[1];
         vec[2] = v[2];

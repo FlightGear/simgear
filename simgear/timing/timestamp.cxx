@@ -24,18 +24,12 @@
 // $Id$
 
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
-
+#include <simgear_config.h>
 #include <simgear/compiler.h>
 
 #include <ctime>
 #include <cerrno>
 
-#ifdef HAVE_SYS_TIMEB_H
-#  include <sys/timeb.h> // for ftime() and struct timeb
-#endif
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>    // for gettimeofday() and the _POSIX_TIMERS define
 #endif
@@ -49,10 +43,6 @@
 
 #ifdef WIN32
 #  include <windows.h>
-#  if defined( __CYGWIN__ ) || defined( __CYGWIN32__ )
-#    define NEAR /* */
-#    define FAR  /* */
-#  endif
 #  include <mmsystem.h>
 #endif
 
@@ -81,7 +71,8 @@ static clockid_t getClockId()
 
 #endif
 
-void SGTimeStamp::stamp() {
+void SGTimeStamp::stamp()
+{
 #ifdef _WIN32
     unsigned int t;
     t = timeGetTime();
@@ -102,11 +93,6 @@ void SGTimeStamp::stamp() {
     GetLocalTime(&current);
     _sec = current.wSecond;
     _nsec = current.wMilliseconds * 1000 * 1000;
-#elif defined( HAVE_FTIME )
-    struct timeb current;
-    ftime(&current);
-    _sec = current.time;
-    _nsec = current.millitm * 1000 * 1000;
 #else
 # error Port me
 #endif

@@ -239,7 +239,6 @@ endif(SYSTEM_EXPAT)
 
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
-check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
 
@@ -257,12 +256,17 @@ else()
 endif(ENABLE_RTI)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
-check_function_exists(ftime HAVE_FTIME)
-check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(rint HAVE_RINT)
 check_function_exists(mkdtemp HAVE_MKDTEMP)
 check_function_exists(bcopy HAVE_BCOPY)
 check_function_exists(mmap HAVE_MMAP)
+
+if (NOT MSVC)
+  check_function_exists(timegm HAVE_TIMEGM)
+  if (NOT HAVE_TIMEGM)
+    message(FATAL_ERROR "Non-Windows platforms must support timegm()")
+  endif()
+endif()
 
 if(HAVE_UNISTD_H)
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})

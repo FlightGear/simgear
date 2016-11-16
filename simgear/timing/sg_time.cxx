@@ -21,10 +21,7 @@
 // $Id$
 
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
-
+#include <simgear_config.h>
 #include <simgear/compiler.h>
 
 #include <errno.h>		// for errno
@@ -38,9 +35,6 @@
 
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
-#endif
-#ifdef HAVE_SYS_TIMEB_H
-#  include <sys/timeb.h> // for ftime() and struct timeb
 #endif
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>    // for gettimeofday()
@@ -350,26 +344,6 @@ double sgTimeCalcGST( double mjd ) {
 }
 
 
-#if defined( HAVE_TIMEGM ) 
-    // ignore this function
-#elif defined( MK_TIME_IS_GMT )
-    // ignore this function
-#else // ! defined ( MK_TIME_IS_GMT )
-
-    // Fix up timezone if using ftime()
-    static long int fix_up_timezone( long int timezone_orig ) {
-#   if !defined( HAVE_GETTIMEOFDAY ) && defined( HAVE_FTIME )
-	// ftime() needs a little extra help finding the current timezone
-	struct timeb current;
-	ftime(&current);
-	return( current.timezone * 60 );
-#   else
-        return( timezone_orig );
-#   endif
-    }
-#endif
-
-
 /******************************************************************
  * The following are some functions that were included as SGTime
  * members, although they currently don't make use of any of the
@@ -378,28 +352,6 @@ double sgTimeCalcGST( double mjd ) {
 
 // Return time_t for Sat Mar 21 12:00:00 GMT
 //
-// On many systems it is ambiguous if mktime() assumes the input is in
-// GMT, or local timezone.  To address this, a new function called
-// timegm() is appearing.  It works exactly like mktime() but
-// explicitely interprets the input as GMT.
-//
-// timegm() is available and documented under FreeBSD.  It is
-// available, but completely undocumented on my current Debian 2.1
-// distribution.
-//
-// In the absence of timegm() we have to guess what mktime() might do.
-//
-// Many older BSD style systems have a mktime() that assumes the input
-// time in GMT.  But FreeBSD explicitly states that mktime() assumes
-// local time zone
-//
-// The mktime() on many SYSV style systems (such as Linux) usually
-// returns its result assuming you have specified the input time in
-// your local timezone.  Therefore, in the absence if timegm() you
-// have to go to extra trouble to convert back to GMT.
-//
-// If you are having problems with incorrectly positioned astronomical
-// bodies, this is a really good place to start looking.
 
 time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 {
@@ -413,88 +365,14 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
     mt.tm_sec = sec;
     mt.tm_isdst = -1; // let the system determine the proper time zone
 
-    // For now we assume that if daylight is not defined in
-    // /usr/include/time.h that we have a machine with a mktime() that
-    // assumes input is in GMT ... this only matters if we are
-    // building on a system that does not have timegm()
-#if !defined(HAVE_DAYLIGHT)
-#  define MK_TIME_IS_GMT 1
-#endif
-
-#if defined( HAVE_TIMEGM )
+#if defined(SG_WINDOWS)
+    return _mkgmtime(&mt);
+#elif defined( HAVE_TIMEGM )
     return ( timegm(&mt) );
-#elif defined( MK_TIME_IS_GMT )
-    time_t ret = mktime(&mt);
-
-#ifdef __CYGWIN__
-	ret -= _timezone;
-#endif
-
-    // This is necessary as some mktime() calls may
-    // try to access the system timezone files
-    // if this open fails errno is set to 2
-    // CYGWIN for one does this
-    // if ( errno ) {
-    //     perror( "sgTimeGetGMT()" );
-    //     errno = 0;
-    // }
-
-    // reset errno in any event.
-    errno = 0;
-
-    return ret;
-#else // ! defined ( MK_TIME_IS_GMT )
-
-    // timezone seems to work as a proper offset for Linux & Solaris
-#   if defined( __linux__ ) || defined(__sun) ||defined(__CYGWIN__)
-#       define TIMEZONE_OFFSET_WORKS 1
-#   endif
-
-#if defined(__CYGWIN__)
-#define TIMEZONE _timezone
 #else
-#define TIMEZONE timezone
+    #error Unix platforms should have timegm
 #endif
-	
-    time_t start = mktime(&mt);
-
-    SG_LOG( SG_EVENT, SG_DEBUG, "start1 = " << start );
-    // the ctime() call can screw up time progression on some versions
-    // of Linux
-    // fgPrintf( SG_EVENT, SG_DEBUG, "start2 = %s", ctime(&start));
-    SG_LOG( SG_EVENT, SG_DEBUG, "(tm_isdst = " << mt.tm_isdst << ")" );
-
-    TIMEZONE = fix_up_timezone( TIMEZONE );
-
-#  if defined( TIMEZONE_OFFSET_WORKS )
-    SG_LOG( SG_EVENT, SG_DEBUG,
-	    "start = " << start << ", timezone = " << TIMEZONE );
-    return( start - TIMEZONE );
-#  else // ! defined( TIMEZONE_OFFSET_WORKS )
-
-    daylight = mt.tm_isdst;
-    if ( daylight > 0 ) {
-	daylight = 1;
-    } else if ( daylight < 0 ) {
-	SG_LOG( SG_EVENT, SG_WARN, 
-		"OOOPS, problem in sg_time.cxx, no daylight savings info." );
-    }
-
-    long int offset = -(TIMEZONE / 3600 - daylight);
-
-    SG_LOG( SG_EVENT, SG_DEBUG, "  Raw time zone offset = " << TIMEZONE );
-    SG_LOG( SG_EVENT, SG_DEBUG, "  Daylight Savings = " << daylight );
-    SG_LOG( SG_EVENT, SG_DEBUG, "  Local hours from GMT = " << offset );
-    
-    long int start_gmt = start - TIMEZONE + (daylight * 3600);
-    
-    SG_LOG( SG_EVENT, SG_DEBUG, "  March 21 noon (CST) = " << start );
-
-    return ( start_gmt );
-#  endif // ! defined( TIMEZONE_OFFSET_WORKS )
-#endif // ! defined ( MK_TIME_IS_GMT )
 }
-
 
 // format time
 char* sgTimeFormatTime( const struct tm* p, char* buf )

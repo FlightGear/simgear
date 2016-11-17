@@ -19,6 +19,7 @@
 #define SGVec4_H
 
 #include <iosfwd>
+#include "simd.hxx"
 
 /// 4D Vector Class
 template<typename T>
@@ -92,10 +93,10 @@ public:
 
   /// Readonly raw storage interface
   const T (&data(void) const)[4]
-  { return _data; }
+  { return _data.ptr(); }
   /// Readonly raw storage interface
   T (&data(void))[4]
-  { return _data; }
+  { return _data.ptr(); }
 
   /// Inplace addition
   SGVec4& operator+=(const SGVec4& v)
@@ -126,7 +127,7 @@ public:
   { return SGVec4(0, 0, 0, 1); }
 
 private:
-  T _data[4];
+  simd4_t<T> _data;
 };
 
 /// Unary +, do nothing ...

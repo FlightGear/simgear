@@ -32,6 +32,7 @@ set(HEADERS
     sg_geodesy.hxx
     sg_types.hxx
     sg_random.h
+    simd.hxx
     )
 
 set(SOURCES 

@@ -109,7 +109,7 @@ public:
     {
         simd4_t r(*this);
         r += v;
-        return v;
+        return r;
     }
 
     inline simd4_t operator-()
@@ -388,7 +388,7 @@ public:
     {
         simd4_t r(*this);
         r += v;
-        return v;
+        return r;
     }
 
     inline simd4_t operator-()
@@ -665,7 +665,7 @@ public:
     {
         simd4_t r(*this);
         r += v;
-        return v;
+        return r;
     }
 
     inline simd4_t operator-()

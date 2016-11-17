@@ -1,10 +1,9 @@
 #ifndef _NAREF_H
 #define _NAREF_H
 
-#if (defined(__x86_64) && defined(__linux__)) || defined(__sparcv9) || \
-    defined(__powerpc64__)
+#if (defined(__x86_64) && defined(__linux__))
 /* NASAL_NAN64 mode requires 64 bit pointers that only use the
- * lower 48 bits; Win64 and Irix should work with this too, but
+ * lower 48 bits; x86 Win64 and Irix should work with this too, but
  * have not been tested */
 # define NASAL_NAN64
 #elif defined(__BYTE_ORDER__)

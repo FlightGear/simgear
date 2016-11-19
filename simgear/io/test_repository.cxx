@@ -674,6 +674,59 @@ void testDestroyDuringSync(HTTP::Client* cl)
     std::cout << "Passed test destory during sync" << std::endl;
 }
 
+void testCopyInstalledChildren(HTTP::Client* cl)
+{
+    std::auto_ptr<HTTPRepository> repo;
+    SGPath p(simgear::Dir::current().path());
+    p.append("http_repo_copy_installed_children");
+    simgear::Dir pd(p);
+    if (pd.exists()) {
+        pd.removeChildren();
+    }
+
+    // setup installation data
+    SGPath p2(simgear::Dir::current().path());
+    p2.append("http_repo_copy_installed_children_install");
+    simgear::Dir pd2(p2);
+    if (pd2.exists()) {
+        pd2.removeChildren();
+    } else {
+        pd2.create(0700);
+    }
+
+    // fill in 'install' tree data
+    createFile(p, "dirJ/fileJA", 2);
+    createFile(p, "dirJ/fileJB", 3);
+    createFile(p, "dirJ/fileJC", 1);
+
+    global_repo->defineFile("dirJ/fileJA", 2);
+    global_repo->defineFile("dirJ/fileJB", 3);
+    global_repo->defineFile("dirJ/fileJC", 3); // newer
+    global_repo->defineFile("dirJ/fileJD", 3); // not present in install
+
+    global_repo->clearRequestCounts();
+    global_repo->clearFailFlags();
+
+    repo.reset(new HTTPRepository(p, cl));
+    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setInstalledCopyPath(p2);
+    repo->update();
+
+    // verify correct files were downloaded, only dirs
+
+    waitForUpdateComplete(cl, repo.get());
+    verifyFileState(p, "dirJ/fileJA");
+    verifyFileState(p, "dirJ/fileJB");
+    verifyFileState(p, "dirJ/fileJC");
+    verifyFileState(p, "dirJ/fileJD");
+
+    verifyRequestCount("dirJ/fileJA", 0);
+    verifyRequestCount("dirJ/fileJB", 0);
+    verifyRequestCount("dirJ/fileJC", 1);
+    verifyRequestCount("dirJ/fileJD", 1);
+
+    std::cout << "Copy installed children" << std::endl;
+}
 
 int main(int argc, char* argv[])
 {
@@ -717,7 +770,9 @@ int main(int argc, char* argv[])
 
     testServer.disconnectAll();
     cl.clearAllConnections();
-    
+
+    testCopyInstalledChildren(&cl);
+
     std::cout << "all tests passed ok" << std::endl;
     return 0;
 }

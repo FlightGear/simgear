@@ -408,7 +408,6 @@ void testBasicClone(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
     repo->update();
 
     waitForUpdateComplete(cl, repo.get());
@@ -446,7 +445,6 @@ void testModifyLocalFiles(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
     repo->update();
 
     waitForUpdateComplete(cl, repo.get());
@@ -488,7 +486,6 @@ void testMergeExistingFileWithoutDownload(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
 
     createFile(p, "dirC/fileCB", 4); // should match
     createFile(p, "dirC/fileCC", 3); // mismatch
@@ -531,7 +528,6 @@ void testLossOfLocalFiles(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
     repo->update();
     waitForUpdateComplete(cl, repo.get());
     verifyFileState(p, "dirB/subdirA/fileBAA");
@@ -569,7 +565,6 @@ void testAbandonMissingFiles(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
     repo->update();
     waitForUpdateComplete(cl, repo.get());
     if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
@@ -594,11 +589,10 @@ void testAbandonCorruptFiles(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
-
     repo->update();
     waitForUpdateComplete(cl, repo.get());
     if (repo->failure() != HTTPRepository::REPO_ERROR_CHECKSUM) {
+        std::cerr << "Got failure state:" << repo->failure() << std::endl;
         throw sg_exception("Bad result from corrupt files test");
     }
 
@@ -611,149 +605,6 @@ void testAbandonCorruptFiles(HTTP::Client* cl)
     std::cout << "Passed test: detect corrupted download" << std::endl;
 }
 
-void testPartialUpdateBasic(HTTP::Client* cl)
-{
-    std::auto_ptr<HTTPRepository> repo;
-    SGPath p(simgear::Dir::current().path());
-    p.append("http_repo_partial_update");
-    simgear::Dir pd(p);
-    if (pd.exists()) {
-        pd.removeChildren();
-    }
-
-    global_repo->clearRequestCounts();
-    global_repo->clearFailFlags();
-    global_repo->defineFile("dirA/subdirF/fileAFA");
-    global_repo->defineFile("dirA/subdirF/fileAFB");
-    global_repo->defineFile("dirA/subdirH/fileAHA");
-    global_repo->defineFile("dirA/subdirH/fileAHB");
-
-    global_repo->defineFile("dirG/subdirA/subsubA/fileGAAB");
-
-// request subdir of A
-    repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
-    repo->addSubpath("dirA/subdirF");
-    waitForUpdateComplete(cl, repo.get());
-
-    verifyFileState(p, "dirA/subdirF/fileAFA");
-    verifyFileState(p, "dirA/subdirF/fileAFB");
-
-    verifyFileState(p, "fileA"); // files are always synced
-    verifyFileState(p, "dirA/fileAB");
-    verifyFileNotPresent(p, "dirB/subdirB/fileBBB");
-    verifyFileNotPresent(p, "dirD");
-    verifyFileNotPresent(p, "dirA/subdirH/fileAHB");
-
-    verifyRequestCount("dirA", 1);
-    verifyRequestCount("dirA/fileAA", 1);
-    verifyRequestCount("dirA/subdirF", 1);
-    verifyRequestCount("dirA/subdirF/fileAFA", 1);
-    verifyRequestCount("dirA/subdirF/fileAFB", 1);
-    verifyRequestCount("dirB", 0);
-    verifyRequestCount("dirG", 0);
-
-// now request dir B
-    repo->addSubpath("dirB");
-    waitForUpdateComplete(cl, repo.get());
-
-    verifyFileState(p, "dirA/subdirF/fileAFB");
-    verifyFileState(p, "dirB/subdirB/fileBBA");
-    verifyFileState(p, "dirB/subdirB/fileBBB");
-
-    verifyRequestCount("dirB", 1);
-    verifyRequestCount("dirB/subdirA/fileBAC", 1);
-    verifyRequestCount("dirA", 1);
-    verifyRequestCount("dirA/fileAA", 1);
-    verifyRequestCount("dirG", 0);
-
-// widen subdir to parent
-    repo->addSubpath("dirA");
-    waitForUpdateComplete(cl, repo.get());
-
-    verifyFileState(p, "dirA/subdirH/fileAHA");
-    verifyFileState(p, "dirA/subdirH/fileAHB");
-
-    verifyRequestCount("dirA", 1);
-    verifyRequestCount("dirB/subdirA/fileBAC", 1);
-    verifyRequestCount("dirA/subdirF/fileAFA", 1);
-
-// request an already fetched subdir - should be a no-op
-    repo->addSubpath("dirB/subdirB");
-    waitForUpdateComplete(cl, repo.get());
-
-    verifyRequestCount("dirB", 1);
-    verifyRequestCount("dirB/subdirB/fileBBB", 1);
-
-// add new / modify files inside
-    global_repo->defineFile("dirA/subdirF/fileAFC");
-    global_repo->defineFile("dirA/subdirF/fileAFD");
-    repo->update();
-    waitForUpdateComplete(cl, repo.get());
-
-    if (global_repo->requestCount != 2) {
-        throw sg_exception("Bad root request count");
-    }
-
-    verifyFileState(p, "dirA/subdirF/fileAFC");
-    verifyFileState(p, "dirA/subdirF/fileAFD");
-
-    std::cout << "Passed test: basic partial clone and update" << std::endl;
-}
-
-void testPartialUpdateExisting(HTTP::Client* cl)
-{
-    std::auto_ptr<HTTPRepository> repo;
-    SGPath p(simgear::Dir::current().path());
-    p.append("http_repo_partial_update_existing");
-    simgear::Dir pd(p);
-    if (pd.exists()) {
-        pd.removeChildren();
-    }
-
-    global_repo->clearRequestCounts();
-    global_repo->clearFailFlags();
-
-// full update to sync everything
-    repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
-    repo->update();
-    waitForUpdateComplete(cl, repo.get());
-
-// new repo for partial
-    global_repo->clearRequestCounts();
-    repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
-    repo->addSubpath("dirA/subdirF");
-    waitForUpdateComplete(cl, repo.get());
-
-    if (global_repo->requestCount != 1) {
-        throw sg_exception("Bad root request count");
-    }
-
-    verifyRequestCount("dirA", 0);
-    verifyRequestCount("dirA/fileAA", 0);
-    verifyRequestCount("dirA/subdirF", 0);
-    verifyRequestCount("dirA/subdirF/fileAFA", 0);
-    verifyRequestCount("dirA/subdirF/fileAFB", 0);
-
-// and request more dirs
-    // this is a good simulation of terrasync requesting more subdirs of
-    // an already created and in sync tree. should not generate any more
-    // network trip
-    repo->addSubpath("dirC");
-
-    verifyFileState(p, "dirC/subdirA/subsubA/fileCAAA");
-    verifyRequestCount("dirC/subdirA/subsubA/fileCAAA", 0);
-
-    if (global_repo->requestCount != 1) {
-        throw sg_exception("Bad root request count");
-    }
-
-    std::cout << "Passed test: partial update of existing" << std::endl;
-}
-
 void modifyBTree()
 {
     std::cout << "Modifying sub-tree" << std::endl;
@@ -761,50 +612,6 @@ void modifyBTree()
     global_repo->findEntry("dirB/subdirA/fileBAC")->revision++;
     global_repo->defineFile("dirB/subdirZ/fileBZA");
     global_repo->findEntry("dirB/subdirB/fileBBB")->revision++;
-}
-
-void testPartialUpdateWidenWhileInProgress(HTTP::Client* cl)
-{
-    std::auto_ptr<HTTPRepository> repo;
-    SGPath p(simgear::Dir::current().path());
-    p.append("http_repo_partial_update_widen");
-    simgear::Dir pd(p);
-    if (pd.exists()) {
-        pd.removeChildren();
-    }
-
-    global_repo->clearRequestCounts();
-    global_repo->clearFailFlags();
-
-    // full update to sync everything
-    repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
-
-    repo->addSubpath("dirA/subdirF");
-    repo->addSubpath("dirB/subdirB");
-    waitForUpdateComplete(cl, repo.get());
-
-    verifyRequestCount("dirA/subdirF", 1);
-    if (global_repo->requestCount != 1) {
-        throw sg_exception("Bad root request count");
-    }
-
-    repo->addSubpath("dirA");
-    repo->addSubpath("dirB");
-    repo->addSubpath("dirC");
-
-    waitForUpdateComplete(cl, repo.get());
-
-    // should not request the root again
-    verifyRequestCount("dirA/subdirF", 1);
-    if (global_repo->requestCount != 1) {
-        throw sg_exception("Bad root request count");
-    }
-
-    verifyFileState(p, "dirA/subdirF/fileAFA");
-    verifyFileState(p, "dirC/subdirA/subsubA/fileCAAA");
-
-    std::cout << "Passed test: partial update with widen" << std::endl;
 }
 
 void testServerModifyDuringSync(HTTP::Client* cl)
@@ -822,7 +629,6 @@ void testServerModifyDuringSync(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
 
     global_repo->findEntry("dirA/fileAA")->accessCallback.reset(make_callback(&modifyBTree));
 
@@ -832,7 +638,7 @@ void testServerModifyDuringSync(HTTP::Client* cl)
     global_repo->findEntry("dirA/fileAA")->accessCallback.reset();
 
     if (repo->failure() != HTTPRepository::REPO_ERROR_CHECKSUM) {
-        throw sg_exception("Bad result from corrupt files test");
+        throw sg_exception("Bad result from modify during sync test");
     }
 
     std::cout << "Passed test modify server during sync" << std::endl;
@@ -854,7 +660,6 @@ void testDestroyDuringSync(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
-    repo->setEntireRepositoryMode();
 
     repo->update();
 
@@ -872,7 +677,7 @@ void testDestroyDuringSync(HTTP::Client* cl)
 
 int main(int argc, char* argv[])
 {
-  sglog().setLogLevels( SG_ALL, SG_DEBUG );
+  sglog().setLogLevels( SG_ALL, SG_INFO );
 
   HTTP::Client cl;
   cl.setMaxConnections(1);
@@ -907,13 +712,12 @@ int main(int argc, char* argv[])
     testServer.disconnectAll();
     cl.clearAllConnections();
 
-    testPartialUpdateBasic(&cl);
-    testPartialUpdateExisting(&cl);
-    testPartialUpdateWidenWhileInProgress(&cl);
-
     testServerModifyDuringSync(&cl);
-
     testDestroyDuringSync(&cl);
 
+    testServer.disconnectAll();
+    cl.clearAllConnections();
+    
+    std::cout << "all tests passed ok" << std::endl;
     return 0;
 }

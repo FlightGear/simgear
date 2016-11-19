@@ -57,6 +57,8 @@ namespace simgear
         {
         }
 
+        virtual void cancel();
+
         size_t contentSize() const
         {
             return _contentSize;
@@ -102,7 +104,6 @@ public:
         hashCacheDirty(false),
         p(parent),
         isUpdating(false),
-        updateEverything(false),
         status(HTTPRepository::REPO_NO_ERROR),
         totalDownloaded(0)
     { ; }
@@ -114,13 +115,9 @@ public:
     std::string baseUrl;
     SGPath basePath;
     bool isUpdating;
-    bool updateEverything;
-    string_list updatePaths;
     HTTPRepository::ResultCode status;
     HTTPDirectory* rootDir;
     size_t totalDownloaded;
-
-    void updateWaiting();
 
     HTTP::Request_ptr updateFile(HTTPDirectory* dir, const std::string& name,
                                  size_t sz);
@@ -196,12 +193,10 @@ class HTTPDirectory
     typedef std::vector<ChildInfo> ChildInfoList;
     ChildInfoList children;
 
-
 public:
     HTTPDirectory(HTTPRepoPrivate* repo, const std::string& path) :
         _repository(repo),
-        _relativePath(path),
-        _state(DoNotUpdate)
+        _relativePath(path)
   {
       assert(repo);
 
@@ -238,8 +233,6 @@ public:
         fpath.append(".dirindex");
         _repository->updatedFileContents(fpath, hash);
 
-        _state = Updated;
-
         children.clear();
         parseDirIndex(children);
         std::sort(children.begin(), children.end());
@@ -247,7 +240,6 @@ public:
 
     void failedToUpdate(HTTPRepository::ResultCode status)
     {
-        _state = UpdateFailed;
         if (_relativePath.empty()) {
             // root dir failed
             _repository->failedToGetRootIndex(status);
@@ -261,7 +253,7 @@ public:
         if (_repository->installedCopyPath.isNull()) {
             return;
         }
-        
+
         string_list indexNames = indexChildren();
         const_string_list_iterator nameIt = indexNames.begin();
         for (; nameIt != indexNames.end(); ++nameIt) {
@@ -284,7 +276,7 @@ public:
             }
 
             SG_LOG(SG_TERRASYNC, SG_BULK, "new child, copying existing file" << cp << p);
-            
+
             SGBinaryFile src(cp);
             SGBinaryFile dst(p);
             src.open(SG_IO_IN);
@@ -306,11 +298,7 @@ public:
 
     void updateChildrenBasedOnHash()
     {
-        // if we got here for a dir which is still updating or excluded
-        // from updates, just bail out right now.
-        if (_state != Updated) {
-            return;
-        }
+        //SG_LOG(SG_TERRASYNC, SG_DEBUG, "updated children for:" << relativePath());
 
         copyInstalledChildren();
 
@@ -345,9 +333,6 @@ public:
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists hash is good:" << it->file() );
                 if (c->type == ChildInfo::DirectoryType) {
                     HTTPDirectory* childDir = childDirectory(it->file());
-                    if (childDir->_state == NotUpdated) {
-                        childDir->_state = Updated;
-                    }
                     childDir->updateChildrenBasedOnHash();
                 }
             }
@@ -363,95 +348,6 @@ public:
 
         removeOrphans(orphans);
         scheduleUpdates(toBeUpdated);
-    }
-
-    void markAsUpToDate()
-    {
-        _state = Updated;
-    }
-
-    void markAsUpdating()
-    {
-        assert(_state == NotUpdated);
-        _state = HTTPDirectory::UpdateInProgress;
-    }
-
-    void markAsEnabled()
-    {
-        // assert because this should only get invoked on newly created
-        // directory objects which are inside the sub-tree(s) to be updated
-        assert(_state == DoNotUpdate);
-        _state = NotUpdated;
-    }
-
-    void markSubtreeAsNeedingUpdate()
-    {
-        if (_state == Updated) {
-            _state = NotUpdated; // reset back to not-updated
-        }
-
-        ChildInfoList::iterator cit;
-        for (cit = children.begin(); cit != children.end(); ++cit) {
-            if (cit->type == ChildInfo::DirectoryType) {
-                HTTPDirectory* childDir = childDirectory(cit->name);
-                childDir->markSubtreeAsNeedingUpdate();
-            }
-        } // of child iteration
-    }
-
-    void markSubtreeAsEnabled()
-    {
-        if (_state == DoNotUpdate) {
-            markAsEnabled();
-        }
-
-        ChildInfoList::iterator cit;
-        for (cit = children.begin(); cit != children.end(); ++cit) {
-            if (cit->type == ChildInfo::DirectoryType) {
-                HTTPDirectory* childDir = childDirectory(cit->name);
-                childDir->markSubtreeAsEnabled();
-            }
-        } // of child iteration
-    }
-
-
-    void markAncestorChainAsEnabled()
-    {
-        if (_state == DoNotUpdate) {
-            markAsEnabled();
-        }
-
-        if (_relativePath.empty()) {
-            return;
-        }
-
-        std::string prPath = SGPath(_relativePath).dir();
-        if (prPath.empty()) {
-            _repository->rootDir->markAncestorChainAsEnabled();
-        } else {
-            HTTPDirectory* prDir = _repository->getOrCreateDirectory(prPath);
-            prDir->markAncestorChainAsEnabled();
-        }
-    }
-
-    void updateIfWaiting(const std::string& hash, size_t sz)
-    {
-        if (_state == NotUpdated) {
-            _repository->updateDir(this, hash, sz);
-            return;
-        }
-
-        if ((_state == DoNotUpdate) || (_state == UpdateInProgress)) {
-            return;
-        }
-
-        ChildInfoList::iterator cit;
-        for (cit = children.begin(); cit != children.end(); ++cit) {
-            if (cit->type == ChildInfo::DirectoryType) {
-                HTTPDirectory* childDir = childDirectory(cit->name);
-                childDir->updateIfWaiting(cit->hash, cit->sizeInBytes);
-            }
-        } // of child iteration
     }
 
     HTTPDirectory* childDirectory(const std::string& name)
@@ -494,11 +390,6 @@ public:
                 _repository->updateFile(this, *it, cit->sizeInBytes);
             } else {
                 HTTPDirectory* childDir = childDirectory(*it);
-                if (childDir->_state == DoNotUpdate) {
-                    SG_LOG(SG_TERRASYNC, SG_WARN, "scheduleUpdate, child:" << *it << " is marked do not update so skipping");
-                    continue;
-                }
-
                 _repository->updateDir(childDir, cit->hash, cit->sizeInBytes);
             }
         }
@@ -656,16 +547,7 @@ private:
     HTTPRepoPrivate* _repository;
     std::string _relativePath; // in URL and file-system space
 
-    typedef enum
-    {
-        NotUpdated,
-        UpdateInProgress,
-        Updated,
-        UpdateFailed,
-        DoNotUpdate
-    } State;
 
-    State _state;
 };
 
 HTTPRepository::HTTPRepository(const SGPath& base, HTTP::Client *cl) :
@@ -703,38 +585,14 @@ SGPath HTTPRepository::fsBase() const
 
 void HTTPRepository::update()
 {
-    _d->rootDir->markSubtreeAsNeedingUpdate();
-    _d->updateWaiting();
-}
-
-void HTTPRepository::setEntireRepositoryMode()
-{
-    if (!_d->updateEverything) {
-        // this is a one-way decision
-        _d->updateEverything = true;
-    }
-
-    // probably overkill but not expensive so let's check everything
-    // we have in case someone did something funky and switched from partial
-    // to 'whole repo' updating.
-    _d->rootDir->markSubtreeAsEnabled();
-}
-
-
-void HTTPRepository::addSubpath(const std::string& relPath)
-{
-    if (_d->updateEverything) {
-        SG_LOG(SG_TERRASYNC, SG_WARN, "called HTTPRepository::addSubpath but updating everything");
+    if (_d->isUpdating) {
         return;
     }
 
-    _d->updatePaths.push_back(relPath);
-
-    HTTPDirectory* dir = _d->getOrCreateDirectory(relPath);
-    dir->markSubtreeAsEnabled();
-    dir->markAncestorChainAsEnabled();
-
-    _d->updateWaiting();
+    _d->status = REPO_NO_ERROR;
+    _d->isUpdating = true;
+    _d->failures.clear();
+    _d->updateDir(_d->rootDir, std::string(), 0);
 }
 
 bool HTTPRepository::isDoingSync() const
@@ -794,6 +652,12 @@ HTTPRepository::failure() const
     return _d->status;
 }
 
+    void HTTPRepoGetRequest::cancel()
+    {
+        _directory->repository()->http->cancelRequest(this, "Reposiotry cancelled");
+        _directory = 0;
+    }
+
     class FileGetRequest : public HTTPRepoGetRequest
     {
     public:
@@ -825,7 +689,6 @@ HTTPRepository::failure() const
         virtual void onDone()
         {
             file->close();
-
             if (responseCode() == 200) {
                 std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
                 _directory->didUpdateFile(fileName, hash, contentSize());
@@ -922,8 +785,8 @@ HTTPRepository::failure() const
                     of.write(body.data(), body.size());
                     of.close();
                     _directory->dirIndexUpdated(hash);
-                } else {
-                    _directory->markAsUpToDate();
+
+                    //SG_LOG(SG_TERRASYNC, SG_INFO, "updated dir index " << _directory->absolutePath());
                 }
 
                 _directory->repository()->totalDownloaded += contentSize();
@@ -934,7 +797,7 @@ HTTPRepository::failure() const
                     SGTimeStamp st;
                     st.stamp();
                     _directory->updateChildrenBasedOnHash();
-                    SG_LOG(SG_TERRASYNC, SG_INFO, "after update of:" << _directory->absolutePath() << " child update took:" << st.elapsedMSec());
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "after update of:" << _directory->absolutePath() << " child update took:" << st.elapsedMSec());
                 } catch (sg_exception& ) {
                     _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO);
                 }
@@ -999,7 +862,6 @@ HTTPRepository::failure() const
 
     HTTP::Request_ptr HTTPRepoPrivate::updateDir(HTTPDirectory* dir, const std::string& hash, size_t sz)
     {
-        dir->markAsUpdating();
         RepoRequestPtr r(new DirGetRequest(dir, hash));
         r->setContentSize(sz);
         makeRequest(r);
@@ -1166,25 +1028,6 @@ HTTPRepository::failure() const
 
         HTTPDirectory* d = new HTTPDirectory(this, path);
         directories.push_back(d);
-        if (updateEverything) {
-            d->markAsEnabled();
-        } else {
-            string_list::const_iterator s;
-            bool shouldUpdate = false;
-
-            for (s = updatePaths.begin(); s != updatePaths.end(); ++s) {
-                size_t minLen = std::min(path.size(), s->size());
-                if (s->compare(0, minLen, path, 0, minLen) == 0) {
-                    shouldUpdate = true;
-                    break;
-                }
-            } // of paths iteration
-
-            if (shouldUpdate) {
-                d->markAsEnabled();
-            }
-        }
-
         return d;
     }
 
@@ -1278,23 +1121,6 @@ HTTPRepository::failure() const
         failures.push_back(f);
 
         SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update entry:" << relativePath << " code:" << fileStatus);
-    }
-
-    void HTTPRepoPrivate::updateWaiting()
-    {
-        if (!isUpdating) {
-            status = HTTPRepository::REPO_NO_ERROR;
-            isUpdating = true;
-            failures.clear();
-        }
-
-        // find to-be-updated sub-trees and kick them off
-        rootDir->updateIfWaiting(std::string(), 0);
-
-        // maybe there was nothing to do
-        if (activeRequests.empty()) {
-            isUpdating = false;
-        }
     }
 
 } // of namespace simgear

@@ -565,7 +565,6 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         } // of creating directory step
 
         slot.repository.reset(new HTTPRepository(path, &_http));
-        slot.repository->setEntireRepositoryMode();
         slot.repository->setBaseUrl(_httpServer + "/" + slot.currentItem._dir);
 
         if (_installRoot.exists()) {

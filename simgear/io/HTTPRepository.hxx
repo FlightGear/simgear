@@ -57,13 +57,6 @@ public:
 
     virtual void update();
 
-    /**
-     * set if we should sync the entire repository
-     */
-    void setEntireRepositoryMode();
-
-    void addSubpath(const std::string& relPath);
-
     virtual bool isDoingSync() const;
 
     virtual ResultCode failure() const;

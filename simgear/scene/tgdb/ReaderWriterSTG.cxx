@@ -87,14 +87,14 @@ static SGBucket bucketIndexFromFileName(const std::string& fileName)
 
 struct ReaderWriterSTG::_ModelBin {
     struct _Object {
-        std::string _errorLocation;
+        SGPath _errorLocation;
         std::string _token;
         std::string _name;
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _ObjectStatic {
         _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(SG_OBJECT_RANGE_ROUGH) { }
-        std::string _errorLocation;
+        SGPath _errorLocation;
         std::string _token;
         std::string _name;
         bool _agl;
@@ -106,7 +106,7 @@ struct ReaderWriterSTG::_ModelBin {
     };
     struct _Sign {
         _Sign() : _agl(false), _lon(0), _lat(0), _elev(0), _hdg(0), _size(-1) { }
-        std::string _errorLocation;
+        SGPath _errorLocation;
         std::string _token;
         std::string _name;
         bool _agl;
@@ -284,29 +284,32 @@ struct ReaderWriterSTG::_ModelBin {
         return SGGeod::fromCart(cart).getElevationM();
     }
 
-    bool read(const std::string& absoluteFileName, const osgDB::Options* options)
+    bool read(const SGPath& absoluteFileName, const osgDB::Options* options)
     {
-				// Determine object ranges.  Mesh size of 2000mx2000m needs to be accounted for.
-				_object_range_bare = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
-				_object_range_rough = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
-				_object_range_detailed = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
-				_building_mesh_enabled = (options->getPluginStringData("SimGear::RENDER_BUILDING_MESH") == "true");
-
-        if (absoluteFileName.empty())
+        if (!absoluteFileName.exists()) {
             return false;
+        }
 
         sg_gzifstream stream(absoluteFileName);
-        if (!stream.is_open())
+        if (!stream.is_open()) {
             return false;
+        }
+
+        // Determine object ranges.  Mesh size of 2000mx2000m needs to be accounted for.
+        _object_range_bare = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
+        _object_range_rough = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
+        _object_range_detailed = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
+        _building_mesh_enabled = (options->getPluginStringData("SimGear::RENDER_BUILDING_MESH") == "true");
+
 
         SG_LOG(SG_TERRAIN, SG_INFO, "Loading stg file " << absoluteFileName);
 
-        std::string filePath = osgDB::getFilePath(absoluteFileName);
+        std::string filePath = osgDB::getFilePath(absoluteFileName.local8BitStr());
 
         // Bucket provides a consistent seed
         // so we have consistent set of pseudo-random numbers for each STG file
         mt seed;
-        int bucket = atoi(SGPath(absoluteFileName).file_base().c_str());
+        int bucket = atoi(absoluteFileName.file_base().c_str());
         mt_init(&seed, bucket);
 
         // do only load airport btg files.
@@ -467,12 +470,12 @@ struct ReaderWriterSTG::_ModelBin {
         terrainGroup->setName("terrain");
 
         if (_foundBase) {
-            for (std::list<_Object>::iterator i = _objectList.begin(); i != _objectList.end(); ++i) {
+            for (auto stgObject : _objectList) {
                 osg::ref_ptr<osg::Node> node;
-                node = osgDB::readRefNodeFile(i->_name, i->_options.get());
+                node = osgDB::readRefNodeFile(stgObject._name, stgObject._options.get());
                 if (!node.valid()) {
-                    SG_LOG(SG_TERRAIN, SG_ALERT, i->_errorLocation << ": Failed to load "
-                           << i->_token << " '" << i->_name << "'");
+                    SG_LOG(SG_TERRAIN, SG_ALERT, stgObject._errorLocation << ": Failed to load "
+                           << stgObject._token << " '" << stgObject._name << "'");
                     continue;
                 }
                 terrainGroup->addChild(node.get());
@@ -571,31 +574,44 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
     if (osgDB::getSimpleFileName(fileName) != fileName) {
         if (!modelBin.read(fileName, options))
             return ReadResult::FILE_NOT_FOUND;
-    } else {
-        // For stg meta files, we need options for the search path.
-        if (!options)
-            return ReadResult::FILE_NOT_FOUND;
+    }
 
-        SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
+    // For stg meta files, we need options for the search path.
+    if (!options) {
+        return ReadResult::FILE_NOT_FOUND;
+    }
 
-        std::string basePath = bucket.gen_base_path();
+    osg::ref_ptr<SGReaderWriterOptions> sgOpts(SGReaderWriterOptions::copyOrCreate(options));
+    if (sgOpts->getSceneryPathSuffixes().empty()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Loading tile " << fileName << ", no scenery path suffixes were configured so giving up");
+        return ReadResult::FILE_NOT_FOUND;
 
-        // Stop scanning once an object base is found
-        // This is considered a meta file, so apply the scenery path search
-        const osgDB::FilePathList& filePathList = options->getDatabasePathList();
-        for (osgDB::FilePathList::const_iterator i = filePathList.begin();
-             i != filePathList.end() && !modelBin._foundBase; ++i) {
-            SGPath objects(*i);
-            objects.append("Objects");
-            objects.append(basePath);
-            objects.append(fileName);
-            modelBin.read(objects.local8BitStr(), options);
+    }
 
-            SGPath terrain(*i);
-            terrain.append("Terrain");
-            terrain.append(basePath);
-            terrain.append(fileName);
-            modelBin.read(terrain.local8BitStr(), options);
+    SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
+
+    std::string basePath = bucket.gen_base_path();
+
+    // Stop scanning paths once an object base is found
+    // But do load all STGs at the same level (i.e from the same scenery path)
+    const osgDB::FilePathList& filePathList = options->getDatabasePathList();
+    for (auto path : filePathList) {
+        if (modelBin._foundBase) {
+            break;
+        }
+
+        SGPath base(path);
+        // check for non-suffixed file, and warn.
+        SGPath pathWithoutSuffix = base / basePath / fileName;
+        if (pathWithoutSuffix.exists()) {
+            SG_LOG(SG_TERRAIN, SG_ALERT, "Found scenery file " << pathWithoutSuffix << " in scenery path " << path
+                   << ".\nScenery paths without type subdirectories are no longer supported, please move thse files\n"
+                   << "into a an appropriate subdirectory, for example:" << base / "Objects" / basePath / fileName);
+        }
+
+        for (auto suffix : sgOpts->getSceneryPathSuffixes()) {
+            SGPath p = base / suffix / basePath / fileName;
+            modelBin.read(p, options);
         }
     }
 

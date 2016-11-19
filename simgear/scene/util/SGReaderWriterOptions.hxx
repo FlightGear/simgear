@@ -27,7 +27,7 @@
 #include <simgear/props/props.hxx>
 
 class SGPropertyNode;
-
+typedef std::vector < std::string > string_list;
 
 namespace simgear
 {
@@ -62,7 +62,8 @@ public:
         _materialLib(options._materialLib),
         _load_panel(options._load_panel),
         _model_data(options._model_data),
-        _instantiateEffects(options._instantiateEffects)
+        _instantiateEffects(options._instantiateEffects),
+        _sceneryPathSuffixes(options._sceneryPathSuffixes)
     { }
 
     META_Object(simgear, SGReaderWriterOptions);
@@ -94,6 +95,12 @@ public:
     void setInstantiateEffects(bool instantiateEffects)
     { _instantiateEffects = instantiateEffects; }
 
+    const string_list& getSceneryPathSuffixes() const
+    { return _sceneryPathSuffixes; }
+
+    void setSceneryPathSuffixes(const string_list& suffixes)
+    { _sceneryPathSuffixes = suffixes; }
+
     static SGReaderWriterOptions* copyOrCreate(const osgDB::Options* options);
     static SGReaderWriterOptions* fromPath(const std::string& path);
 
@@ -106,6 +113,7 @@ private:
     osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
     bool _instantiateEffects;
+    string_list _sceneryPathSuffixes;
 };
 
 }

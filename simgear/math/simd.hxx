@@ -23,6 +23,10 @@
 # ifdef __SSE__
 #  include <xmmintrin.h>
 # endif
+# ifdef __SSE2__
+#  include <emmintrin.h>
+# endif
+
 
 template<typename T>
 class simd4_t
@@ -35,34 +39,42 @@ template<>
 class simd4_t<float>
 {
 private:
-   typedef float  __vec4_t[4];
+   typedef float  __vec4f_t[4];
 
 # ifdef __SSE__
     union {
-        __m128 v4;
-        __vec4_t vec;
+        __m128 simd4;
+        __vec4f_t vec;
     };
 # else
-    __vec4_t vec;
+    __vec4f_t vec;
 # endif
 
 public:
     simd4_t() {}
     simd4_t(float f)
     {
+# ifdef __SSE__
+        simd4 = _mm_set1_ps(f);
+# else
         vec[0] = vec[1] = vec[2] = vec[3] = f;
+# endif
     }
-    simd4_t(const __vec4_t v)
-    {
-        std::memcpy(vec, v, sizeof(float[4]));
-    }
-    simd4_t(const simd4_t& v)
+    explicit simd4_t(const __vec4f_t v)
     {
 # ifdef __SSE__
-        v4 = v.v4;
-#else
+        simd4 = _mm_loadu_ps(v);
+# else
+        std::memcpy(vec, v, sizeof(float[4]));
+# endif
+    }
+    simd4_t(const simd4_t<float>& v)
+    {
+# ifdef __SSE__
+        simd4 = v.simd4;
+# else
         std::memcpy(vec, v.vec, sizeof(float[4]));
-#endif
+# endif
     }
 
     inline float (&ptr(void))[4] {
@@ -73,23 +85,31 @@ public:
         return vec;
     }
 
-    inline simd4_t& operator=(float f)
-    {
-        vec[0] = vec[1] = vec[2] = vec[3] = f;
-        return *this;
-    }
-    inline simd4_t& operator=(const __vec4_t v)
-    {
-        std::memcpy(vec, v, sizeof(float[4]));
-        return *this;
-    }
-    inline simd4_t& operator=(const simd4_t& v)
+    inline simd4_t<float>& operator=(float f)
     {
 # ifdef __SSE__
-        v4 = v.v4;
-#else
+        simd4 = _mm_set1_ps(f);
+# else
+        vec[0] = vec[1] = vec[2] = vec[3] = f;
+# endif
+        return *this;
+    }
+    inline simd4_t<float>& operator=(const __vec4f_t v)
+    {
+# ifdef __SSE__
+        simd4 = _mm_loadu_ps(v);
+# else
+        std::memcpy(vec, v, sizeof(float[4]));
+# endif
+        return *this;
+    }
+    inline simd4_t<float>& operator=(const simd4_t<float>& v)
+    {
+# ifdef __SSE__
+        simd4 = v.simd4;
+# else
         std::memcpy(vec, v.vec, sizeof(float[4]));
-#endif
+# endif
         return *this;
     }
 
@@ -99,13 +119,13 @@ public:
         r += f;
         return r;
     }
-    inline simd4_t operator+(const __vec4_t v)
+    inline simd4_t operator+(const __vec4f_t v)
     {
         simd4_t r(*this);
         r += v;
         return r;
     }
-    inline simd4_t operator+(const simd4_t& v)
+    inline simd4_t operator+(const simd4_t<float>& v)
     {
         simd4_t r(*this);
         r += v;
@@ -124,13 +144,13 @@ public:
         r -= f;
         return r;
     }
-    inline simd4_t operator-(const __vec4_t v)
+    inline simd4_t operator-(const __vec4f_t v)
     {
         simd4_t r(*this);
         r -= v;
         return r;
     }
-    inline simd4_t operator-(simd4_t& v)
+    inline simd4_t operator-(simd4_t<float>& v)
     {
         simd4_t r(*this);
         r -= v;
@@ -143,13 +163,13 @@ public:
         r *= f;
         return r;
     }
-    inline simd4_t operator*(const __vec4_t v)
+    inline simd4_t operator*(const __vec4f_t v)
     {
         simd4_t r(*this);
         r *= v;
         return r;
     }
-    inline simd4_t operator*(simd4_t& v)
+    inline simd4_t operator*(simd4_t<float>& v)
     {
         simd4_t r(*this);
         r *= v;
@@ -162,23 +182,23 @@ public:
         r /= f;
         return r;
     }
-    inline simd4_t operator/(const __vec4_t v)
+    inline simd4_t operator/(const __vec4f_t v)
     {
         simd4_t r(*this);
         r /= v;
         return r;
     }
-    inline simd4_t operator/(simd4_t& v)
+    inline simd4_t operator/(simd4_t<float>& v)
     {
         simd4_t r(*this);
         r /= v;
         return r;
     }
 
-    inline simd4_t& operator+=(float f)
+    inline simd4_t<float>& operator+=(float f)
     {
 # ifdef __SSE__
-        v4 += f;
+        simd4 += f;
 # else
         vec[0] += f;
         vec[1] += f;
@@ -187,29 +207,29 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator+=(const __vec4_t v)
+    inline simd4_t<float>& operator+=(const __vec4f_t v)
     {
         simd4_t r(v);
         *this += r;
         return *this;
     }
-    inline simd4_t& operator+=(const simd4_t& v)
+    inline simd4_t<float>& operator+=(const simd4_t<float>& v)
     {
 # ifdef __SSE__
-        v4 += v.v4;
+        simd4 += v.simd4;
 # else
         vec[0] += v[0];
         vec[1] += v[1];
         vec[2] += v[2];
         vec[3] += v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator-=(float f)
+    inline simd4_t<float>& operator-=(float f)
     {
 # ifdef __SSE__
-        v4 -= f;
+        simd4 -= f;
 # else
         vec[0] -= f;
         vec[1] -= f;
@@ -218,29 +238,29 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator-=(const __vec4_t v)
+    inline simd4_t<float>& operator-=(const __vec4f_t v)
     {
         simd4_t r(v);
         *this -= r;
         return *this;
     }
-    inline simd4_t& operator-=(const simd4_t& v)
+    inline simd4_t<float>& operator-=(const simd4_t<float>& v)
     {
 # ifdef __SSE__
-        v4 -= v.v4;
+        simd4 -= v.simd4;
 # else
         vec[0] -= v[0];
         vec[1] -= v[1];
         vec[2] -= v[2];
         vec[3] -= v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator *=(float f)
+    inline simd4_t<float>& operator *=(float f)
     {
 # ifdef __SSE__
-        v4 *= f;
+        simd4 *= f;
 # else
         vec[0] *= f;
         vec[1] *= f;
@@ -249,53 +269,54 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator*=(const __vec4_t v)
+    inline simd4_t<float>& operator*=(const __vec4f_t v)
     {
         simd4_t r(v);
         *this *= r;
         return *this;
     }
-    inline simd4_t& operator*=(const simd4_t& v)
+    inline simd4_t<float>& operator*=(const simd4_t<float>& v)
     {
 # ifdef __SSE__
-        v4 *= v.v4;
+        simd4 *= v.simd4;
 # else
         vec[0] *= v[0];
         vec[1] *= v[1];
         vec[2] *= v[2];
         vec[3] *= v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator/=(float f)
+    inline simd4_t<float>& operator/=(float f)
     {
+        f = (1.0f/f);
 # ifdef __SSE__
-        v4 /= f;
+        simd4 *= f;
 # else
-        vec[0] /= f;
-        vec[1] /= f;
-        vec[2] /= f;
-        vec[3] /= f;
-#endif
+        vec[0] *= f;
+        vec[1] *= f;
+        vec[2] *= f;
+        vec[3] *= f;
+# endif
         return *this;
     }
-    inline simd4_t& operator/=(const __vec4_t v)
+    inline simd4_t<float>& operator/=(const __vec4f_t v)
     {
         simd4_t r(v);
         *this /= r;
         return *this;
     }
-    inline simd4_t& operator/=(const simd4_t& v)
+    inline simd4_t<float>& operator/=(const simd4_t<float>& v)
     {
 # ifdef __SSE__
-        v4 /= v.v4;
+        simd4 /= v.simd4;
 # else
         vec[0] /= v[0];
         vec[1] /= v[1];
         vec[2] /= v[2];
         vec[3] /= v[3];
-#endif
+# endif
         return *this;
     }
 
@@ -309,39 +330,46 @@ public:
 };
 
 
-
 template<>
 class simd4_t<double>
 {
 private:
-   typedef double  __vec4_t[4];
+   typedef double  __vec4d_t[4];
 
-# ifdef __SSE__
+# ifdef __SSE2__
     union {
-        __m128d v4;
-        __vec4_t vec;
+        __m128d simd4;
+        __vec4d_t vec;
     };
 # else
-    __vec4_t vec;
+    __vec4d_t vec;
 # endif
 
 public:
     simd4_t() {}
     simd4_t(double d)
     {
+# ifdef __SSE2__
+        simd4 = _mm_set1_pd(d);
+# else
         vec[0] = vec[1] = vec[2] = vec[3] = d;
+# endif
     }
-    simd4_t(const __vec4_t v)
+    explicit simd4_t(const __vec4d_t v)
     {
+# ifdef __SSE2__
+        simd4 = _mm_loadu_pd(v);
+# else
         std::memcpy(vec, v, sizeof(double[4]));
+# endif
     }
-    simd4_t(const simd4_t& v)
+    simd4_t(const simd4_t<double>& v)
     {
-# ifdef __SSE__
-        v4 = v.v4;
-#else
+# ifdef __SSE2__
+        simd4 = v.simd4;
+# else
         std::memcpy(vec, v.vec, sizeof(double[4]));
-#endif
+# endif
     }
 
     inline double (&ptr(void))[4] {
@@ -352,23 +380,31 @@ public:
         return vec;
     }
 
-    inline simd4_t& operator=(double d)
+    inline simd4_t<double>& operator=(double d)
     {
+# ifdef __SSE2__
+        simd4 = _mm_set1_pd(d);
+# else
         vec[0] = vec[1] = vec[2] = vec[3] = d;
+# endif
         return *this;
     }
-    inline simd4_t& operator=(const __vec4_t v)
+    inline simd4_t<double>& operator=(const __vec4d_t v)
     {
+# ifdef __SSE2__
+        simd4 = _mm_loadu_pd(v);
+# else
         std::memcpy(vec, v, sizeof(double[4]));
+# endif
         return *this;
     }
-    inline simd4_t& operator=(const simd4_t& v)
+    inline simd4_t<double>& operator=(const simd4_t<double>& v)
     {
-# ifdef __SSE__
-        v4 = v.v4;
-#else
+# ifdef __SSE2__
+        simd4 = v.simd4;
+# else
         std::memcpy(vec, v.vec, sizeof(double[4]));
-#endif
+# endif
         return *this;
     }
 
@@ -378,13 +414,13 @@ public:
         r += d;
         return r;
     }
-    inline simd4_t operator+(const __vec4_t v)
+    inline simd4_t operator+(const __vec4d_t v)
     {
         simd4_t r(*this);
         r += v;
         return r;
     }
-    inline simd4_t operator+(const simd4_t& v)
+    inline simd4_t operator+(const simd4_t<double>& v)
     {
         simd4_t r(*this);
         r += v;
@@ -403,13 +439,13 @@ public:
         r -= d;
         return r;
     }
-    inline simd4_t operator-(const __vec4_t v)
+    inline simd4_t operator-(const __vec4d_t v)
     {
         simd4_t r(*this);
         r -= v;
         return r;
     }
-    inline simd4_t operator-(simd4_t& v)
+    inline simd4_t operator-(simd4_t<double>& v)
     {
         simd4_t r(*this);
         r -= v;
@@ -422,13 +458,13 @@ public:
         r *= d;
         return r;
     }
-    inline simd4_t operator*(const __vec4_t v)
+    inline simd4_t operator*(const __vec4d_t v)
     {
         simd4_t r(*this);
         r *= v;
         return r;
     }
-    inline simd4_t operator*(simd4_t& v)
+    inline simd4_t operator*(simd4_t<double>& v)
     {
         simd4_t r(*this);
         r *= v;
@@ -441,23 +477,23 @@ public:
         r /= d;
         return r;
     }
-    inline simd4_t operator/(const __vec4_t v)
+    inline simd4_t operator/(const __vec4d_t v)
     {
         simd4_t r(*this);
         r /= v;
         return r;
     }
-    inline simd4_t operator/(simd4_t& v)
+    inline simd4_t operator/(simd4_t<double>& v)
     {
         simd4_t r(*this);
         r /= v;
         return r;
     }
 
-    inline simd4_t& operator+=(double d)
+    inline simd4_t<double>& operator+=(double d)
     {
-# ifdef __SSE__
-        v4 += d;
+# ifdef __SSE2__
+        simd4 += d;
 # else
         vec[0] += d;
         vec[1] += d;
@@ -466,29 +502,29 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator+=(const __vec4_t v)
+    inline simd4_t<double>& operator+=(const __vec4d_t v)
     {
         simd4_t r(v);
         *this += r;
         return *this;
     }
-    inline simd4_t& operator+=(const simd4_t& v)
+    inline simd4_t<double>& operator+=(const simd4_t<double>& v)
     {
-# ifdef __SSE__
-        v4 += v.v4;
+# ifdef __SSE2__
+        simd4 += v.simd4;
 # else
         vec[0] += v[0];
         vec[1] += v[1];
         vec[2] += v[2];
         vec[3] += v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator-=(double d)
+    inline simd4_t<double>& operator-=(double d)
     {
-# ifdef __SSE__
-        v4 -= d;
+# ifdef __SSE2__
+        simd4 -= d;
 # else
         vec[0] -= d;
         vec[1] -= d;
@@ -497,29 +533,29 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator-=(const __vec4_t v)
+    inline simd4_t<double>& operator-=(const __vec4d_t v)
     {
         simd4_t r(v);
         *this -= r;
         return *this;
     }
-    inline simd4_t& operator-=(const simd4_t& v)
+    inline simd4_t<double>& operator-=(const simd4_t<double>& v)
     {
-# ifdef __SSE__
-        v4 -= v.v4;
+# ifdef __SSE2__
+        simd4 -= v.simd4;
 # else
         vec[0] -= v[0];
         vec[1] -= v[1];
         vec[2] -= v[2];
         vec[3] -= v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator *=(double d)
+    inline simd4_t<double>& operator *=(double d)
     {
-# ifdef __SSE__
-        v4 *= d;
+# ifdef __SSE2__
+        simd4 *= d;
 # else
         vec[0] *= d;
         vec[1] *= d;
@@ -528,53 +564,54 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator*=(const __vec4_t v)
+    inline simd4_t<double>& operator*=(const __vec4d_t v)
     {
         simd4_t r(v);
         *this *= r;
         return *this;
     }
-    inline simd4_t& operator*=(const simd4_t& v)
+    inline simd4_t<double>& operator*=(const simd4_t<double>& v)
     {
-# ifdef __SSE__
-        v4 *= v.v4;
+# ifdef __SSE2__
+        simd4 *= v.simd4;
 # else
         vec[0] *= v[0];
         vec[1] *= v[1];
         vec[2] *= v[2];
         vec[3] *= v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator/=(double d)
+    inline simd4_t<double>& operator/=(double d)
     {
-# ifdef __SSE__
-        v4 /= d;
+# ifdef __SSE2__
+        d = (1.0/d);
+        simd4 *= d;
 # else
         vec[0] /= d;
         vec[1] /= d;
         vec[2] /= d;
         vec[3] /= d;
-#endif
+# endif
         return *this;
     }
-    inline simd4_t& operator/=(const __vec4_t v)
+    inline simd4_t<double>& operator/=(const __vec4d_t v)
     {
         simd4_t r(v);
         *this /= r;
         return *this;
     }
-    inline simd4_t& operator/=(const simd4_t& v)
+    inline simd4_t<double>& operator/=(const simd4_t<double>& v)
     {
-# ifdef __SSE__
-        v4 /= v.v4;
+# ifdef __SSE2__
+        simd4 /= v.simd4;
 # else
         vec[0] /= v[0];
         vec[1] /= v[1];
         vec[2] /= v[2];
         vec[3] /= v[3];
-#endif
+# endif
         return *this;
     }
 
@@ -587,38 +624,47 @@ public:
     }
 };
 
+
 template<>
 class simd4_t<int>
 {
 private:
-   typedef int  __vec4_t[4];
+   typedef int  __vec4i_t[4];
 
-# ifdef __SSE__
+# ifdef __SSE2__
     union {
-        __m128i v4;
-        __vec4_t vec;
+        __m128i simd4;
+        __vec4i_t vec;
     };
 # else
-    __vec4_t vec;
+    __vec4i_t vec;
 # endif
 
 public:
     simd4_t() {}
     simd4_t(int i)
     {
+# ifdef __SSE2__
+        simd4 = _mm_set1_epi32(i);
+# else
         vec[0] = vec[1] = vec[2] = vec[3] = i;
+# endif
     }
-    simd4_t(const __vec4_t v)
+    explicit simd4_t(const __vec4i_t v)
     {
+# ifdef __SSE2__
+        simd4 = _mm_loadu_si128((__m128i*)v);
+# else
         std::memcpy(vec, v, sizeof(int[4]));
+# endif
     }
-    simd4_t(const simd4_t& v)
+    simd4_t(const simd4_t<int>& v)
     {
-# ifdef __SSE__
-        v4 = v.v4;
-#else
+# ifdef __SSE2__
+        simd4 = v.simd4;
+# else
         std::memcpy(vec, v.vec, sizeof(int[4]));
-#endif
+# endif
     }
 
     inline int (&ptr(void))[4] {
@@ -629,23 +675,31 @@ public:
         return vec;
     }
 
-    inline simd4_t& operator=(int i)
+    inline simd4_t<int>& operator=(int i)
     {
+# ifdef __SSE2__
+        simd4 = _mm_set1_epi32(i);
+# else
         vec[0] = vec[1] = vec[2] = vec[3] = i;
+# endif
         return *this;
     }
-    inline simd4_t& operator=(const __vec4_t v)
+    inline simd4_t<int>& operator=(const __vec4i_t v)
     {
+# ifdef __SSE2__
+        simd4 = _mm_loadu_si128((__m128i*)v);
+# else
         std::memcpy(vec, v, sizeof(int[4]));
+# endif
         return *this;
     }
-    inline simd4_t& operator=(const simd4_t& v)
+    inline simd4_t<int>& operator=(const simd4_t<int>& v)
     {
-# ifdef __SSE__
-        v4 = v.v4;
-#else
+# ifdef __SSE2__
+        simd4 = v.simd4;
+# else
         std::memcpy(vec, v.vec, sizeof(int[4]));
-#endif
+# endif
         return *this;
     }
 
@@ -655,13 +709,13 @@ public:
         r += i;
         return r;
     }
-    inline simd4_t operator+(const __vec4_t v)
+    inline simd4_t operator+(const __vec4i_t v)
     {
         simd4_t r(*this);
         r += v;
         return r;
     }
-    inline simd4_t operator+(const simd4_t& v)
+    inline simd4_t operator+(const simd4_t<int>& v)
     {
         simd4_t r(*this);
         r += v;
@@ -680,13 +734,13 @@ public:
         r -= i;
         return r;
     }
-    inline simd4_t operator-(const __vec4_t v)
+    inline simd4_t operator-(const __vec4i_t v)
     {
         simd4_t r(*this);
         r -= v;
         return r;
     }
-    inline simd4_t operator-(simd4_t& v)
+    inline simd4_t operator-(simd4_t<int>& v)
     {
         simd4_t r(*this);
         r -= v;
@@ -699,13 +753,13 @@ public:
         r *= i;
         return r;
     }
-    inline simd4_t operator*(const __vec4_t v)
+    inline simd4_t operator*(const __vec4i_t v)
     {
         simd4_t r(*this);
         r *= v;
         return r;
     }
-    inline simd4_t operator*(simd4_t& v)
+    inline simd4_t operator*(simd4_t<int>& v)
     {
         simd4_t r(*this);
         r *= v;
@@ -718,23 +772,23 @@ public:
         r /= i;
         return r;
     }
-    inline simd4_t operator/(const __vec4_t v)
+    inline simd4_t operator/(const __vec4i_t v)
     {
         simd4_t r(*this);
         r /= v;
         return r;
     }
-    inline simd4_t operator/(simd4_t& v)
+    inline simd4_t operator/(simd4_t<int>& v)
     {
         simd4_t r(*this);
         r /= v;
         return r;
     }
 
-    inline simd4_t& operator+=(int i)
+    inline simd4_t<int>& operator+=(int i)
     {
-# ifdef __SSE__
-        v4 += i;
+# ifdef __SSE2__
+        simd4 += i;
 # else
         vec[0] += i;
         vec[1] += i;
@@ -743,29 +797,29 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator+=(const __vec4_t v)
+    inline simd4_t<int>& operator+=(const __vec4i_t v)
     {
         simd4_t r(v);
         *this += r;
         return *this;
     }
-    inline simd4_t& operator+=(const simd4_t& v)
+    inline simd4_t<int>& operator+=(const simd4_t<int>& v)
     {
-# ifdef __SSE__
-        v4 += v.v4;
+# ifdef __SSE2__
+        simd4 += v.simd4;
 # else
         vec[0] += v[0];
         vec[1] += v[1];
         vec[2] += v[2];
         vec[3] += v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator-=(int i)
+    inline simd4_t<int>& operator-=(int i)
     {
-# ifdef __SSE__
-        v4 -= i;
+# ifdef __SSE2__
+        simd4 -= i;
 # else
         vec[0] -= i;
         vec[1] -= i;
@@ -774,29 +828,29 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator-=(const __vec4_t v)
+    inline simd4_t<int>& operator-=(const __vec4i_t v)
     {
         simd4_t r(v);
         *this -= r;
         return *this;
     }
-    inline simd4_t& operator-=(const simd4_t& v)
+    inline simd4_t<int>& operator-=(const simd4_t<int>& v)
     {
-# ifdef __SSE__
-        v4 -= v.v4;
+# ifdef __SSE2__
+        simd4 -= v.simd4;
 # else
         vec[0] -= v[0];
         vec[1] -= v[1];
         vec[2] -= v[2];
         vec[3] -= v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator *=(int i)
+    inline simd4_t<int>& operator *=(int i)
     {
-# ifdef __SSE__
-        v4 *= i;
+# ifdef __SSE2__
+        simd4 *= i;
 # else
         vec[0] *= i;
         vec[1] *= i;
@@ -805,53 +859,54 @@ public:
 # endif
         return *this;
     }
-    inline simd4_t& operator*=(const __vec4_t v)
+    inline simd4_t<int>& operator*=(const __vec4i_t v)
     {
         simd4_t r(v);
         *this *= r;
         return *this;
     }
-    inline simd4_t& operator*=(const simd4_t& v)
+    inline simd4_t<int>& operator*=(const simd4_t<int>& v)
     {
-# ifdef __SSE__
-        v4 *= v.v4;
+# ifdef __SSE2__
+        simd4 *= v.simd4;
 # else
         vec[0] *= v[0];
         vec[1] *= v[1];
         vec[2] *= v[2];
         vec[3] *= v[3];
-#endif
+# endif
         return *this;
     }
 
-    inline simd4_t& operator/=(int i)
+    inline simd4_t<int>& operator/=(int i)
     {
-# ifdef __SSE__
-        v4 /= i;
+# ifdef __SSE2__
+        i = (1/i);
+        simd4 *= i;
 # else
         vec[0] /= i;
         vec[1] /= i;
         vec[2] /= i;
         vec[3] /= i;
-#endif
+# endif
         return *this;
     }
-    inline simd4_t& operator/=(const __vec4_t v)
+    inline simd4_t<int>& operator/=(const __vec4i_t v)
     {
         simd4_t r(v);
         *this /= r;
         return *this;
     }
-    inline simd4_t& operator/=(const simd4_t& v)
+    inline simd4_t<int>& operator/=(const simd4_t<int>& v)
     {
-# ifdef __SSE__
-        v4 /= v.v4;
+# ifdef __SSE2__
+        simd4 /= v.simd4;
 # else
         vec[0] /= v[0];
         vec[1] /= v[1];
         vec[2] /= v[2];
         vec[3] /= v[3];
-#endif
+# endif
         return *this;
     }
 
@@ -863,6 +918,7 @@ public:
         return vec;
     }
 };
+
 
 #endif /* __SIMD_H__ */
 

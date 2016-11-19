@@ -46,6 +46,10 @@ simgear_component(math math "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
+add_executable(sgvec4_test test_sgvec4.cxx)
+target_link_libraries(sgvec4_test ${TEST_LIBS})
+add_test(sgvec4 ${EXECUTABLE_OUTPUT_PATH}/sgvec4_test)
+
 add_executable(math_test SGMathTest.cxx)
 target_link_libraries(math_test ${TEST_LIBS})
 add_test(math ${EXECUTABLE_OUTPUT_PATH}/math_test)

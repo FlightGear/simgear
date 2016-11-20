@@ -23,6 +23,8 @@
 #include <simgear/math/SGVec2.hxx>
 #include <simgear/math/SGGeodesy.hxx>
 
+#include "simd.hxx"
+
 /// 3D Vector Class
 template<typename T>
 class SGVec3 {
@@ -58,7 +60,7 @@ public:
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 3 elements
   explicit SGVec3(const T* d)
-  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
+  { simd4_t<T,3> r(d); _data = r; }
   template<typename S>
   explicit SGVec3(const SGVec3<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
@@ -100,25 +102,31 @@ public:
 
   /// Readonly raw storage interface
   const T (&data(void) const)[3]
-  { return _data; }
+  { return _data.ptr(); }
   /// Readonly raw storage interface
   T (&data(void))[3]
+  { return _data.ptr(); }
+  /// Readonly raw storage interface
+  const simd4_t<T,3> (&simd3(void) const)
+  { return _data; }
+  /// Readonly raw storage interface
+  simd4_t<T,3> (&simd3(void))
   { return _data; }
 
   /// Inplace addition
   SGVec3& operator+=(const SGVec3& v)
-  { data()[0] += v(0); data()[1] += v(1); data()[2] += v(2); return *this; }
+  { _data += v.simd3(); return *this; }
   /// Inplace subtraction
   SGVec3& operator-=(const SGVec3& v)
-  { data()[0] -= v(0); data()[1] -= v(1); data()[2] -= v(2); return *this; }
+  { _data -= v.simd3(); return *this; }
   /// Inplace scalar multiplication
   template<typename S>
   SGVec3& operator*=(S s)
-  { data()[0] *= s; data()[1] *= s; data()[2] *= s; return *this; }
+  { _data *= s; return *this; }
   /// Inplace scalar multiplication by 1/s
   template<typename S>
   SGVec3& operator/=(S s)
-  { return operator*=(1/T(s)); }
+  { _data*=(1/T(s)); return *this; }
 
   /// Return an all zero vector
   static SGVec3 zeros(void)
@@ -139,7 +147,8 @@ public:
   static SGVec3 fromGeoc(const SGGeoc& geoc);
 
 private:
-  T _data[3];
+  simd4_t<T,3> _data;
+  
 };
 
 template<>
@@ -193,36 +202,36 @@ operator+(const SGVec3<T>& v)
 template<typename T>
 inline
 SGVec3<T>
-operator-(const SGVec3<T>& v)
-{ return SGVec3<T>(-v(0), -v(1), -v(2)); }
+operator-(SGVec3<T> v)
+{ v *= -1; return v; }
 
 /// Binary +
 template<typename T>
 inline
 SGVec3<T>
-operator+(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ return SGVec3<T>(v1(0)+v2(0), v1(1)+v2(1), v1(2)+v2(2)); }
+operator+(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1.simd3() += v2.simd3(); return v1; }
 
 /// Binary -
 template<typename T>
 inline
 SGVec3<T>
-operator-(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ return SGVec3<T>(v1(0)-v2(0), v1(1)-v2(1), v1(2)-v2(2)); }
+operator-(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1.simd3() -= v2.simd3(); return v1; }
 
 /// Scalar multiplication
 template<typename S, typename T>
 inline
 SGVec3<T>
-operator*(S s, const SGVec3<T>& v)
-{ return SGVec3<T>(s*v(0), s*v(1), s*v(2)); }
+operator*(S s, SGVec3<T> v)
+{ v.simd3() *= s; return v; }
 
 /// Scalar multiplication
 template<typename S, typename T>
 inline
 SGVec3<T>
-operator*(const SGVec3<T>& v, S s)
-{ return SGVec3<T>(s*v(0), s*v(1), s*v(2)); }
+operator*(SGVec3<T> v, S s)
+{ v.simd3() *= s; return v; }
 
 /// multiplication as a multiplicator, that is assume that the first vector
 /// represents a 3x3 diagonal matrix with the diagonal elements in the vector.
@@ -230,8 +239,8 @@ operator*(const SGVec3<T>& v, S s)
 template<typename T>
 inline
 SGVec3<T>
-mult(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ return SGVec3<T>(v1(0)*v2(0), v1(1)*v2(1), v1(2)*v2(2)); }
+mult(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1.simd3() *= v2.simd3(); return v1; }
 
 /// component wise min
 template<typename T>
@@ -307,8 +316,8 @@ SGVec3<T> addClipOverflow(SGVec3<T> const& lhs, SGVec3<T> const& rhs)
 template<typename T>
 inline
 T
-dot(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ return v1(0)*v2(0) + v1(1)*v2(1) + v1(2)*v2(2); }
+dot(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1.simd3() *= v2.simd3(); return (v1(0)+v1(1)+v1(2)); }
 
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>
@@ -474,8 +483,8 @@ dist(const SGVec3<T>& v1, const SGVec3<T>& v2)
 template<typename T>
 inline
 T
-distSqr(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ SGVec3<T> tmp = v1 - v2; return dot(tmp, tmp); }
+distSqr(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1 -= v2; return dot(v1, v1); }
 
 // calculate the projection of u along the direction of d.
 template<typename T>

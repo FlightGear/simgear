@@ -24,6 +24,8 @@
 #include <simgear/math/SGMisc.hxx>
 #include <simgear/math/SGMathFwd.hxx>
 
+#include "simd.hxx"
+
 /// 2D Vector Class
 template<typename T>
 class SGVec2 {
@@ -48,7 +50,7 @@ public:
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 2 elements
   explicit SGVec2(const T* d)
-  { data()[0] = d[0]; data()[1] = d[1]; }
+  { simd4_t<T,2> r(d); _data = r; }
   template<typename S>
   explicit SGVec2(const SGVec2<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; }
@@ -82,25 +84,30 @@ public:
 
   /// Access raw data
   const T (&data(void) const)[2]
-  { return _data; }
+  { return _data.ptr(); }
   /// Access raw data
   T (&data(void))[2]
+  { return _data.ptr(); }
+  const simd4_t<T,2> (&simd2(void) const)
+  { return _data; }
+  /// Readonly raw storage interface
+  simd4_t<T,2> (&simd2(void))
   { return _data; }
 
   /// Inplace addition
   SGVec2& operator+=(const SGVec2& v)
-  { data()[0] += v(0); data()[1] += v(1); return *this; }
+  { _data += v.simd2(); return *this; }
   /// Inplace subtraction
   SGVec2& operator-=(const SGVec2& v)
-  { data()[0] -= v(0); data()[1] -= v(1); return *this; }
+  { _data -= v.simd2(); return *this; }
   /// Inplace scalar multiplication
   template<typename S>
   SGVec2& operator*=(S s)
-  { data()[0] *= s; data()[1] *= s; return *this; }
+  { _data *= s; return *this; }
   /// Inplace scalar multiplication by 1/s
   template<typename S>
   SGVec2& operator/=(S s)
-  { return operator*=(1/T(s)); }
+  { _data*=(1/T(s)); return *this; }
 
   /// Return an all zero vector
   static SGVec2 zeros(void)
@@ -112,7 +119,7 @@ public:
   { return SGVec2(0, 1); }
 
 private:
-  T _data[2];
+  simd4_t<T,2> _data;
 };
 
 /// Unary +, do nothing ...
@@ -126,36 +133,36 @@ operator+(const SGVec2<T>& v)
 template<typename T>
 inline
 SGVec2<T>
-operator-(const SGVec2<T>& v)
-{ return SGVec2<T>(-v(0), -v(1)); }
+operator-(SGVec2<T> v)
+{ v *= -1; return v; }
 
 /// Binary +
 template<typename T>
 inline
 SGVec2<T>
-operator+(const SGVec2<T>& v1, const SGVec2<T>& v2)
-{ return SGVec2<T>(v1(0)+v2(0), v1(1)+v2(1)); }
+operator+(SGVec2<T> v1, const SGVec2<T>& v2)
+{ v1.simd2() += v2.simd2(); return v1; }
 
 /// Binary -
 template<typename T>
 inline
 SGVec2<T>
-operator-(const SGVec2<T>& v1, const SGVec2<T>& v2)
-{ return SGVec2<T>(v1(0)-v2(0), v1(1)-v2(1)); }
+operator-(SGVec2<T> v1, const SGVec2<T>& v2)
+{ v1.simd2() -= v2.simd2(); return v1; }
 
 /// Scalar multiplication
 template<typename S, typename T>
 inline
 SGVec2<T>
-operator*(S s, const SGVec2<T>& v)
-{ return SGVec2<T>(s*v(0), s*v(1)); }
+operator*(S s, SGVec2<T> v)
+{ v.simd2() *= s; return v; }
 
 /// Scalar multiplication
 template<typename S, typename T>
 inline
 SGVec2<T>
-operator*(const SGVec2<T>& v, S s)
-{ return SGVec2<T>(s*v(0), s*v(1)); }
+operator*(SGVec2<T> v, S s)
+{ v.simd2() *= s; return v; }
 
 /// multiplication as a multiplicator, that is assume that the first vector
 /// represents a 2x2 diagonal matrix with the diagonal elements in the vector.
@@ -163,8 +170,8 @@ operator*(const SGVec2<T>& v, S s)
 template<typename T>
 inline
 SGVec2<T>
-mult(const SGVec2<T>& v1, const SGVec2<T>& v2)
-{ return SGVec2<T>(v1(0)*v2(0), v1(1)*v2(1)); }
+mult(SGVec2<T> v1, const SGVec2<T>& v2)
+{ v1.simd2() *= v2.simd2(); return v1; }
 
 /// component wise min
 template<typename T>
@@ -215,8 +222,8 @@ SGVec2<T> addClipOverflow(SGVec2<T> const& lhs, SGVec2<T> const& rhs)
 template<typename T>
 inline
 T
-dot(const SGVec2<T>& v1, const SGVec2<T>& v2)
-{ return v1(0)*v2(0) + v1(1)*v2(1); }
+dot(SGVec2<T> v1, const SGVec2<T>& v2)
+{ v1.simd2() *= v2.simd2(); return (v1(0)+v1(1)+v1(2)); }
 
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>
@@ -341,8 +348,8 @@ dist(const SGVec2<T>& v1, const SGVec2<T>& v2)
 template<typename T>
 inline
 T
-distSqr(const SGVec2<T>& v1, const SGVec2<T>& v2)
-{ SGVec2<T> tmp = v1 - v2; return dot(tmp, tmp); }
+distSqr(SGVec2<T> v1, const SGVec2<T>& v2)
+{ v1 -= v2; return dot(v1, v1); }
 
 // calculate the projection of u along the direction of d.
 template<typename T>

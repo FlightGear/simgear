@@ -10,10 +10,12 @@
 #include <simgear/compiler.h>
 
 #include <iostream>
+#include <map>
 
 #include "props.hxx"
 #include "props_io.hxx"
 
+#include <simgear/misc/test_macros.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 using std::cout;
@@ -386,6 +388,222 @@ void test_addChild()
   dump_node(&root);
 }
 
+void defineSamplePropertyTree(SGPropertyNode_ptr root)
+{
+    root->setIntValue("position/body/a", 42);
+    root->setIntValue("position/body/c", 1);
+    root->setIntValue("position/body/d", 600);
+
+    root->setDoubleValue("velocity/body/x", 1.23);
+    root->setDoubleValue("velocity/body/y", 4.56);
+    root->setDoubleValue("velocity/body/z", 7.89);
+
+    root->setStringValue("settings/render/foo", "flightgear");
+    root->setStringValue("version", "10.3.19");
+
+    for (int i=0; i<4; ++i) {
+        root->setDoubleValue("controls/engine[" + std::to_string(i) + "]/throttle", 0.1 * i);
+        root->setBoolValue("controls/engine[" + std::to_string(i) + "]/starter", i % 2);
+        root->setDoubleValue("engine[" + std::to_string(i) + "]/rpm", 1000 * i);
+        root->setDoubleValue("engine[" + std::to_string(i) + "]/temp", 100 * i);
+    }
+
+    root->setDoubleValue("controls/doors/door[2]/position-norm", 0.5);
+}
+
+class TestListener : public SGPropertyChangeListener
+{
+public:
+    TestListener(SGPropertyNode* root) : _root(root) {}
+
+    virtual void valueChanged(SGPropertyNode* node) override
+    {
+        valueChangeCount[node]++;
+    }
+
+    int checkValueChangeCount(const std::string& path) const
+    {
+        auto it = valueChangeCount.find(_root->getNode(path));
+        if (it == valueChangeCount.end()) {
+            return 0;
+        }
+
+        return it->second;
+    }
+
+    struct ParentChange
+    {
+        SGPropertyNode_ptr parent, child;
+    };
+
+    virtual void childAdded(SGPropertyNode * parent, SGPropertyNode * child) override
+    {
+        adds.push_back({parent, child});
+    }
+
+    virtual void childRemoved(SGPropertyNode * parent, SGPropertyNode * child) override
+    {
+        removes.push_back({parent, child});
+    }
+
+    std::vector<SGPropertyNode*> addedTo(SGPropertyNode* pr)
+    {
+        std::vector<SGPropertyNode*> result;
+        for (auto c : adds) {
+            if (c.parent == pr) {
+                result.push_back(c.child);
+            }
+        }
+        return result;
+    }
+
+    std::vector<SGPropertyNode*> removedFrom(SGPropertyNode* pr)
+    {
+        std::vector<SGPropertyNode*> result;
+        for (auto c : removes) {
+            if (c.parent == pr) {
+                result.push_back(c.child);
+            }
+        }
+        return result;
+    }
+
+    bool checkAdded(const std::string& pr, SGPropertyNode* n)
+    {
+        auto adds = addedTo(_root->getNode(pr));
+        return std::find(adds.begin(), adds.end(), n) != adds.end();
+    }
+
+    bool checkRemoved(const std::string& pr, SGPropertyNode* n)
+    {
+        auto removes = removedFrom(_root->getNode(pr));
+        return std::find(removes.begin(), removes.end(), n) != removes.end();
+    }
+
+    bool checkRemoved(SGPropertyNode* pr, SGPropertyNode* n)
+    {
+        auto removes = removedFrom(pr);
+        return std::find(removes.begin(), removes.end(), n) != removes.end();
+    }
+
+private:
+    SGPropertyNode* _root;
+    std::map<SGPropertyNode*, unsigned int> valueChangeCount;
+
+    std::vector<ParentChange> adds;
+    std::vector<ParentChange> removes;
+
+};
+
+void testListener()
+{
+    SGPropertyNode_ptr tree(new SGPropertyNode);
+    defineSamplePropertyTree(tree);
+
+    // basic listen
+    {
+        TestListener l(tree.get());
+        tree->getNode("position/body/c")->addChangeListener(&l);
+        tree->getNode("velocity/body/z")->addChangeListener(&l);
+        tree->getNode("controls/engine[2]/starter")->addChangeListener(&l);
+
+        tree->setBoolValue("controls/engine[2]/starter", true);
+        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        COMPARE(l.checkValueChangeCount("position/body/c"), 0);
+
+        tree->setIntValue("position/body/c", 123);
+        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        COMPARE(l.checkValueChangeCount("position/body/c"), 1);
+
+        // verify that changing non-listened props doesn't affect anything
+        tree->setIntValue("position/body/a", 19);
+        tree->setBoolValue("controls/engine[1]/starter", true);
+
+        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        COMPARE(l.checkValueChangeCount("position/body/c"), 1);
+
+    }
+
+    // initial value set
+    // ...
+
+    // delete listener while listening, should be fine
+
+
+
+    // add/remove of child listen
+    {
+        TestListener l(tree.get());
+        tree->getNode("controls")->addChangeListener(&l);
+        tree->getNode("velocity/body")->addChangeListener(&l);
+
+        tree->setDoubleValue("controls/pitch", 0.5);
+        VERIFY(l.checkAdded("controls", tree->getNode("controls/pitch")));
+
+        tree->setIntValue("controls/yaw", 12);
+
+        VERIFY(l.checkAdded("controls", tree->getNode("controls/yaw")));
+
+        // branch as well as leaf nodes should work the same
+        tree->setBoolValue("controls/gears/gear[1]/locked", true);
+        VERIFY(l.checkAdded("controls", tree->getNode("controls/gears")));
+
+        SGPropertyNode_ptr rm = tree->getNode("velocity/body/z");
+        tree->getNode("velocity/body")->removeChild("z");
+        VERIFY(l.checkRemoved("velocity/body", rm.get()));
+
+        COMPARE(l.checkRemoved("velocity/body", tree->getNode("velocity/body/x")), false);
+    }
+
+    // recursive listen
+    tree = new SGPropertyNode;
+    defineSamplePropertyTree(tree);
+
+    {
+        TestListener l(tree.get());
+        tree->getNode("position/body")->addChangeListener(&l);
+        tree->getNode("controls/")->addChangeListener(&l);
+
+        COMPARE(l.checkValueChangeCount("position/body/a"), 0);
+
+        tree->setIntValue("position/body/a", 111);
+        tree->setIntValue("position/body/z", 43);
+
+        COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+        COMPARE(l.checkValueChangeCount("position/body/z"), 1);
+
+        VERIFY(l.checkAdded("position/body", tree->getNode("position/body/z")));
+
+
+        tree->setBoolValue("controls/engine[3]/starter", true);
+        COMPARE(l.checkValueChangeCount("controls/engine[3]/starter"), 1);
+
+        tree->setBoolValue("controls/engines[1]/fuel-cutoff", true);
+        VERIFY(l.checkAdded("controls/engines[1]", tree->getNode("controls/engines[1]/fuel-cutoff")));
+
+        COMPARE(l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
+        //    root->setDoubleValue("controls/doors/door[2]/position-norm", 0.5);
+
+
+        SGPropertyNode_ptr door2Node = tree->getNode("controls/doors/door[2]");
+        SGPropertyNode_ptr door2PosNode = tree->getNode("controls/doors/door[2]/position-norm");
+
+        tree->getNode("controls/doors")->removeChild(door2Node);
+
+        VERIFY(l.checkRemoved("controls/doors", door2Node));
+
+        // default is not recurse for children
+        COMPARE(l.checkRemoved(door2Node, door2PosNode), false);
+
+        // adds *are* seen recursively
+        tree->setStringValue("controls/lights/light[3]/foo/state", "dim");
+        VERIFY(l.checkAdded("controls/lights/light[3]/foo", tree->getNode("controls/lights/light[3]/foo/state")));
+
+    }
+
+}
+
+
 
 int main (int ac, char ** av)
 {
@@ -405,6 +623,8 @@ int main (int ac, char ** av)
   }
 
   test_addChild();
+
+    testListener();
 
   return 0;
 }

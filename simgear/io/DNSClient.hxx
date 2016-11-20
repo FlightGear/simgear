@@ -39,6 +39,7 @@ namespace simgear
 namespace DNS
 {
 
+class Client;
 class Request : public SGReferenced
 {
 public:
@@ -50,7 +51,7 @@ public:
     bool isTimeout() const;
     void setComplete( bool b = true ) { _complete = b; }
 
-    virtual void submit() = 0;
+    virtual void submit( Client * client) = 0;
 
     std::string cname;
     std::string qname;
@@ -68,7 +69,7 @@ class NAPTRRequest : public Request
 {
 public:
     NAPTRRequest( const std::string & dn );
-    virtual void submit();
+    virtual void submit( Client * client );
 
     struct NAPTR : SGReferenced {
         int order;
@@ -91,7 +92,7 @@ class SRVRequest : public Request
 public:
     SRVRequest( const std::string & dn );
     SRVRequest( const std::string & dn, const string & service, const string & protocol );
-    virtual void submit();
+    virtual void submit( Client * client );
 
     struct SRV : SGReferenced {
       int priority;
@@ -111,7 +112,7 @@ class TXTRequest : public Request
 {
 public:
     TXTRequest( const std::string & dn );
-    virtual void submit();
+    virtual void submit( Client * client );
 
     typedef std::vector<string> TXT_list;
     typedef std::map<std::string,std::string> TXT_Attribute_map;
@@ -131,7 +132,6 @@ public:
 
 //    void cancelRequest(const Request_ptr& r, std::string reason = std::string());
 
-private:
     class ClientPrivate;
     std::auto_ptr<ClientPrivate> d;
 };

@@ -22,7 +22,7 @@
 //
 
 #include "DNSClient.hxx"
-#include "udns.h"
+#include <udns.h>
 #include <time.h>
 #include <simgear/debug/logstream.hxx>
 
@@ -33,16 +33,21 @@ namespace DNS {
 class Client::ClientPrivate {
 public:
     ClientPrivate() {
-        if (dns_init(NULL, 0) < 0)
+        ctx = dns_new(NULL);
+
+        if (dns_init(ctx, 0) < 0)
             SG_LOG(SG_IO, SG_ALERT, "Can't init udns library" );
 
-        if( dns_open(NULL) < 0 )
+        if( dns_open(ctx) < 0 )
             SG_LOG(SG_IO, SG_ALERT, "Can't open udns context" );
     }
 
     ~ClientPrivate() {
-        dns_close(NULL);
+        dns_close(ctx);
+        dns_free(ctx);
     }
+
+    struct dns_ctx * ctx;
 };
 
 Request::Request( const std::string & dn ) :
@@ -111,10 +116,10 @@ static void dnscbSRV(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
     r->setComplete();
 }
 
-void SRVRequest::submit()
+void SRVRequest::submit( Client * client )
 {
     // if service is defined, pass service and protocol
-    if (!dns_submit_srv(NULL, getDn().c_str(), _service.empty() ? NULL : _service.c_str(), _service.empty() ? NULL : _protocol.c_str(), 0, dnscbSRV, this )) {
+    if (!dns_submit_srv(client->d->ctx, getDn().c_str(), _service.empty() ? NULL : _service.c_str(), _service.empty() ? NULL : _protocol.c_str(), 0, dnscbSRV, this )) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }
@@ -148,10 +153,10 @@ static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
     r->setComplete();
 }
 
-void TXTRequest::submit()
+void TXTRequest::submit( Client * client )
 {
     // protocol and service an already encoded in DN so pass in NULL for both
-    if (!dns_submit_txt(NULL, getDn().c_str(), DNS_C_IN, 0, dnscbTXT, this )) {
+    if (!dns_submit_txt(client->d->ctx, getDn().c_str(), DNS_C_IN, 0, dnscbTXT, this )) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }
@@ -196,9 +201,9 @@ static void dnscbNAPTR(struct dns_ctx *ctx, struct dns_rr_naptr *result, void *d
     r->setComplete();
 }
 
-void NAPTRRequest::submit()
+void NAPTRRequest::submit( Client * client )
 {
-    if (!dns_submit_naptr(NULL, getDn().c_str(), 0, dnscbNAPTR, this )) {
+    if (!dns_submit_naptr(client->d->ctx, getDn().c_str(), 0, dnscbNAPTR, this )) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }
@@ -217,15 +222,16 @@ Client::Client() :
 
 void Client::makeRequest(const Request_ptr& r)
 {
-    r->submit();
+    r->submit(this);
 }
 
 void Client::update(int waitTimeout)
 {
     time_t now = time(NULL);
-    if( dns_timeouts( NULL, waitTimeout, now ) < 0 )
+    if( dns_timeouts( d->ctx, waitTimeout, now ) < 0 )
         return;
-    dns_ioevent(NULL, now);
+
+    dns_ioevent(d->ctx, now);
 }
 
 } // of namespace DNS

@@ -26,7 +26,7 @@ public:
             (*itr)->addChangeListener(this);
     }
 private:
-    void valueChanged(SGPropertyNode* node);
+    void valueChanged(SGPropertyNode* node) override;
     virtual void valueChangedImplementation();
 
 };
@@ -53,10 +53,10 @@ public:
     }
     bool isDirty() { return _dirty; }
     bool isValid() { return _valid; }
-    void unregister_property(SGPropertyNode* node);
+    virtual void unregister_property(SGPropertyNode* node) override;
     static void fireChangeListeners();
 private:
-    virtual void valueChangedImplementation();
+    virtual void valueChangedImplementation() override;
     virtual void valuesChanged();
     bool _dirty;
     bool _valid;
@@ -90,7 +90,7 @@ public:
         if (initial)
             valuesChanged();
     }
-    virtual void valuesChanged()
+    virtual void valuesChanged() override
     {
         ExtendedPropertyAdapter<T, std::vector<SGPropertyNode*> > adaptor(_watched);
         T val = adaptor();

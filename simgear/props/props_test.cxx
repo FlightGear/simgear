@@ -17,6 +17,7 @@
 
 #include <simgear/misc/test_macros.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/test_macros.hxx>
 
 using std::cout;
 using std::cerr;
@@ -414,10 +415,13 @@ void defineSamplePropertyTree(SGPropertyNode_ptr root)
 class TestListener : public SGPropertyChangeListener
 {
 public:
-    TestListener(SGPropertyNode* root) : _root(root) {}
+    TestListener(SGPropertyNode* root, bool recursive = false) :
+        SGPropertyChangeListener(recursive),
+        _root(root) {}
 
     virtual void valueChanged(SGPropertyNode* node) override
     {
+        std::cout << "saw value changed for:" << node->getPath() << std::endl;
         valueChangeCount[node]++;
     }
 
@@ -486,6 +490,12 @@ public:
         return std::find(removes.begin(), removes.end(), n) != removes.end();
     }
 
+        void resetChangeCounts()
+        {
+            valueChangeCount.clear();
+            adds.clear();
+            removes.clear();
+        }
 private:
     SGPropertyNode* _root;
     std::map<SGPropertyNode*, unsigned int> valueChangeCount;
@@ -525,10 +535,32 @@ void testListener()
     }
 
     // initial value set
-    // ...
+    {
+        TestListener l(tree.get());
+        tree->getNode("velocity/body/y")->addChangeListener(&l, true);
+        tree->getNode("controls/engine[2]/starter")->addChangeListener(&l, true);
+        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        COMPARE(l.checkValueChangeCount("velocity/body/y"), 1);
+    }
 
     // delete listener while listening, should be fine
+    {
+        std::unique_ptr<TestListener> l( new TestListener(tree.get()));
+        tree->getNode("position/body/c")->addChangeListener(l.get());
+        tree->getNode("velocity/body/z")->addChangeListener(l.get());
+        tree->getNode("controls/engine[2]/starter")->addChangeListener(l.get());
 
+        COMPARE(tree->getNode("position/body/c")->nListeners(), 1);
+        COMPARE(tree->getNode("controls/engine[2]/starter")->nListeners(), 1);
+
+        l.reset();
+
+        COMPARE(tree->getNode("position/body/c")->nListeners(), 0);
+        COMPARE(tree->getNode("controls/engine[2]/starter")->nListeners(), 0);
+
+        tree->getNode("position/body/c")->setIntValue(49.0);
+        tree->getNode("controls/engine[2]/starter")->setBoolValue(true);
+    }
 
 
     // add/remove of child listen
@@ -555,12 +587,32 @@ void testListener()
         COMPARE(l.checkRemoved("velocity/body", tree->getNode("velocity/body/x")), false);
     }
 
-    // recursive listen
     tree = new SGPropertyNode;
     defineSamplePropertyTree(tree);
 
+    // ensure basic listenter is not recursive
     {
-        TestListener l(tree.get());
+        TestListener l(tree.get(), false /* not recursive */);
+        tree->getNode("position/body")->addChangeListener(&l);
+        tree->getNode("controls/")->addChangeListener(&l);
+
+        COMPARE(l.checkValueChangeCount("position/body/a"), 0);
+
+        tree->setIntValue("position/body/a", 111);
+        tree->setIntValue("position/body/z", 43);
+
+        COMPARE(l.checkValueChangeCount("position/body/a"), 0);
+        COMPARE(l.checkValueChangeCount("position/body/z"), 0);
+
+        tree->getNode("position/body/new", true);
+        VERIFY(l.checkAdded("position/body", tree->getNode("position/body/new")));
+    }
+
+    tree = new SGPropertyNode;
+    defineSamplePropertyTree(tree);
+    // recursive listen
+    {
+        TestListener l(tree.get(), true /* recursive */);
         tree->getNode("position/body")->addChangeListener(&l);
         tree->getNode("controls/")->addChangeListener(&l);
 
@@ -582,8 +634,9 @@ void testListener()
         VERIFY(l.checkAdded("controls/engines[1]", tree->getNode("controls/engines[1]/fuel-cutoff")));
 
         COMPARE(l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
-        //    root->setDoubleValue("controls/doors/door[2]/position-norm", 0.5);
 
+        tree->setDoubleValue("controls/doors/door[2]/position-norm", 0.5);
+        COMPARE(l.checkValueChangeCount("controls/doors/door[2]/position-norm"), 1);
 
         SGPropertyNode_ptr door2Node = tree->getNode("controls/doors/door[2]");
         SGPropertyNode_ptr door2PosNode = tree->getNode("controls/doors/door[2]/position-norm");
@@ -599,11 +652,171 @@ void testListener()
         tree->setStringValue("controls/lights/light[3]/foo/state", "dim");
         VERIFY(l.checkAdded("controls/lights/light[3]/foo", tree->getNode("controls/lights/light[3]/foo/state")));
 
+
+        // remove a listener
+        tree->getNode("controls")->removeChangeListener(&l);
+
+        // removing listener does not trigger remove notifications
+        VERIFY(!l.checkRemoved("controls", tree->getNode("controls/engine[3]")));
+        VERIFY(!l.checkRemoved("controls/engine[3]", tree->getNode("controls/engine[3]/starter")));
+
+        tree->setBoolValue("controls/engines[1]/fuel-cutoff", false);
+        tree->setBoolValue("controls/engines[9]/fuel-cutoff", true);
+
+        // values should be unchanged
+        COMPARE(l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
+        COMPARE(l.checkValueChangeCount("controls/engines[9]/fuel-cutoff"), 0);
+
     }
 
 }
 
+class TiedPropertyDonor
+{
 
+public:
+
+    int someMember = 100;
+
+    const char* getWrappedA() const { return wrappedMember.c_str(); }
+    void setWrappedA(const char* s) { wrappedMember = std::string(s); }
+
+    std::string wrappedMember;
+    double wrappedB = 1.23;
+
+    double getWrappedB() const { return wrappedB; }
+};
+
+void tiedPropertiesTest()
+{
+    TiedPropertyDonor donor;
+
+    SGPropertyNode_ptr tree(new SGPropertyNode);
+    defineSamplePropertyTree(tree);
+
+    tree->setDoubleValue("position/body/mass", 145.0);
+
+    tree->tie("position/body/a", SGRawValuePointer<int>(&donor.someMember));
+    tree->tie("settings/render/foo", SGRawValueMethods<TiedPropertyDonor, const char*>(donor, &TiedPropertyDonor::getWrappedA, &TiedPropertyDonor::setWrappedA));
+    tree->tie("position/body/mass", SGRawValueMethods<TiedPropertyDonor, double>(donor, &TiedPropertyDonor::getWrappedB, nullptr));
+
+    // tie sets current values of the property onto the setter
+    COMPARE(tree->getStringValue("settings/render/foo"), std::string("flightgear"));
+    COMPARE(tree->getIntValue("position/body/a"), 42);
+
+    // but can't write to this one!
+    COMPARE(tree->getDoubleValue("position/body/mass"), 1.23);
+
+    donor.setWrappedA("hello world");
+    donor.someMember = 13;
+    COMPARE(tree->getIntValue("position/body/a"), 13);
+    COMPARE(tree->getStringValue("settings/render/foo"), std::string("hello world"));
+
+    donor.someMember = 45;
+    donor.wrappedMember = "apples";
+    donor.wrappedB =  5000.0;
+
+    COMPARE(tree->getIntValue("position/body/a"), 45);
+    COMPARE(tree->getStringValue("settings/render/foo"), std::string("apples"));
+    COMPARE(tree->getDoubleValue("position/body/mass"), 5000.0);
+
+    // set value externally
+    tree->setIntValue("position/body/a", 99);
+    COMPARE(donor.someMember, 99);
+
+    tree->setStringValue("settings/render/foo", "lemons");
+    COMPARE(donor.wrappedMember, "lemons");
+
+    // set read-only
+    bool success = tree->setDoubleValue("position/body/mass", 10000.0);
+    VERIFY(!success);
+    COMPARE(donor.wrappedB, 5000.0); // must not have changed
+
+    // un-tieing
+
+    tree->untie("position/body/a");
+    tree->untie("position/body/mass");
+
+    COMPARE(tree->getIntValue("position/body/a"), 99);
+    COMPARE(tree->getDoubleValue("position/body/mass"), 5000.0);
+}
+
+void tiedPropertiesListeners()
+{
+
+    TiedPropertyDonor donor;
+
+    SGPropertyNode_ptr tree(new SGPropertyNode);
+    defineSamplePropertyTree(tree);
+
+    tree->tie("position/body/a", SGRawValuePointer<int>(&donor.someMember));
+    tree->tie("settings/render/foo", SGRawValueMethods<TiedPropertyDonor, const char*>(donor, &TiedPropertyDonor::getWrappedA, &TiedPropertyDonor::setWrappedA));
+    tree->tie("position/body/mass", SGRawValueMethods<TiedPropertyDonor, double>(donor, &TiedPropertyDonor::getWrappedB, nullptr));
+
+    // tie sets current values of the property onto the setter
+    COMPARE(tree->getStringValue("settings/render/foo"), std::string("flightgear"));
+    COMPARE(tree->getIntValue("position/body/a"), 42);
+
+    TestListener l(tree.get());
+
+    tree->getNode("position/body/a")->addChangeListener(&l);
+    tree->getNode("position/body/mass")->addChangeListener(&l);
+    tree->getNode("settings/render/foo")->addChangeListener(&l);
+
+    // firstly test changes via setXXX API and verify they work
+    tree->setIntValue("position/body/a", 99);
+    COMPARE(donor.someMember, 99);
+    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+
+    tree->setDoubleValue("position/body/mass", -123.0);
+    COMPARE(donor.wrappedB, 1.23); // read-only!
+    COMPARE(l.checkValueChangeCount("position/body/mass"), 0);
+
+    tree->setStringValue("settings/render/foo", "thingA");
+    tree->setStringValue("settings/render/foo", "thingB");
+    COMPARE(donor.wrappedMember, std::string("thingB"));
+    COMPARE(l.checkValueChangeCount("settings/render/foo"), 2);
+
+    // now change values from inside the donor and verify it doesn't fire
+    // the listener
+
+    donor.wrappedMember = "pineapples";
+    COMPARE(tree->getStringValue("settings/render/foo"), std::string("pineapples"));
+    COMPARE(l.checkValueChangeCount("settings/render/foo"), 2);
+
+    donor.someMember = 256;
+    COMPARE(tree->getIntValue("position/body/a"), 256);
+    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+
+    // now fire value changed
+    l.resetChangeCounts();
+    donor.wrappedB = 4.000000001;
+
+
+    tree->getNode("position/body/a")->fireValueChanged();
+    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+    COMPARE(tree->getIntValue("position/body/a"), 256);
+
+    l.resetChangeCounts();
+
+    tree->getNode("position/body/a")->fireValueChanged();
+    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+
+    tree->setDoubleValue("position/body/mass", 4.000000001);
+    COMPARE(l.checkValueChangeCount("position/body/mass"), 0); // not changed
+    
+    donor.someMember = 970;
+    COMPARE(l.checkValueChangeCount("position/body/a"), 1); // not changed
+    tree->getNode("position/body/a")->fireValueChanged();
+    COMPARE(l.checkValueChangeCount("position/body/a"), 2); // changed
+
+
+    donor.wrappedMember = "pears";
+    COMPARE(l.checkValueChangeCount("settings/render/foo"), 0); // not changed
+    tree->getNode("settings/render/foo")->fireValueChanged();
+    COMPARE(l.checkValueChangeCount("settings/render/foo"), 1); // changed
+
+}
 
 int main (int ac, char ** av)
 {
@@ -612,11 +825,11 @@ int main (int ac, char ** av)
 
   for (int i = 1; i < ac; i++) {
     try {
-      cout << "Reading " << av[i] << endl;
+    //  cout << "Reading " << av[i] << endl;
       SGPropertyNode root;
         readProperties(SGPath::fromLocal8Bit(av[i]), &root);
       writeProperties(cout, &root, true);
-      cout << endl;
+   //   cout << endl;
     } catch (std::string &message) {
       cout << "Aborted with " << message << endl;
     }
@@ -625,6 +838,8 @@ int main (int ac, char ** av)
   test_addChild();
 
     testListener();
+    tiedPropertiesTest();
+    tiedPropertiesListeners();
 
   return 0;
 }

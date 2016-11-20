@@ -485,11 +485,11 @@ public:
         simd4 = v.simd4;
     }
 
-    int (&ptr(void))[4] {
+    int (&ptr(void))[N] {
         return vec;
     }
 
-    const int (&ptr(void) const)[4] {
+    const int (&ptr(void) const)[N] {
         return vec;
     }
 

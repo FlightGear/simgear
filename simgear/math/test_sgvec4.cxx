@@ -3,7 +3,6 @@
 #include <cmath>
 #include <cfloat>
 
-#include "SGVec3.hxx"
 #include "SGVec4.hxx"
 
 // set to 0 for a timing test
@@ -26,6 +25,7 @@ int main()
 {
   T p[4] = { 1.03, 0.55, 0.707, -0.01 };
   const SGVec4<T> q( 0.31, 0.43, 0.69, 1.0 );
+  float res = 0.0f;
   long int i;
 
   for (i=0; i<MAX; i++)
@@ -68,22 +68,32 @@ int main()
 
     f = dot(x, v);
     g = (x[0]*v[0] + x[1]*v[1] + x[2]*v[2] + x[3]*v[3]);
+#if TEST_ACCURACY
     if (f != g) {
         printf("line: %i: dot: f: %5.4f, g: %5.4f\n", __LINE__, f, g);
     }
+#endif
 
     f = dot(v, v);
     g = (v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3]);
+#if TEST_ACCURACY
     if (f != g) {
         printf("line: %i: dot: f: %5.4f, g: %5.4f\n", __LINE__, f, g);
     }
+#endif
     
     x = v; v -= y;
     SGVec4<T> t = x - y;
     f = dot(v, v);
     g = (t[0]*t[0] + t[1]*t[1] + t[2]*t[2] + t[3]*t[3]);
+#if TEST_ACCURACY
     if (f != g) {
         printf("line: %i: dot: f: %5.4f, g: %5.4f\n", __LINE__, f, g);
     }
+#endif
+
+    res += f;
   }
+
+  printf("res: %f\n", res);
 }

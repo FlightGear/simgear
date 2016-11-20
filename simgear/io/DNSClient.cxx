@@ -33,10 +33,15 @@ namespace DNS {
 class Client::ClientPrivate {
 public:
     ClientPrivate() {
+
+        if( instanceCounter++ == 0 )
+          if (dns_init(NULL, 0) < 0)
+              SG_LOG(SG_IO, SG_ALERT, "Can't init udns library" );
+
         ctx = dns_new(NULL);
 
         if (dns_init(ctx, 0) < 0)
-            SG_LOG(SG_IO, SG_ALERT, "Can't init udns library" );
+            SG_LOG(SG_IO, SG_ALERT, "Can't create udns context" );
 
         if( dns_open(ctx) < 0 )
             SG_LOG(SG_IO, SG_ALERT, "Can't open udns context" );
@@ -45,10 +50,15 @@ public:
     ~ClientPrivate() {
         dns_close(ctx);
         dns_free(ctx);
+        if( --instanceCounter == 0 )
+            dns_close(NULL);
     }
 
     struct dns_ctx * ctx;
+    static size_t instanceCounter;
 };
+
+size_t Client::ClientPrivate::instanceCounter = 0;
 
 Request::Request( const std::string & dn ) :
         _dn(dn),

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cfloat>
 
+#include "SGMathFwd.hxx"
 #include "SGVec4.hxx"
 
 // set to 0 for a timing test

@@ -93,14 +93,14 @@ public:
 
     inline simd4x4_t<T,N>& operator+=(const simd4x4_t<T,N>& m) {
         for (int i=0; i<N*N; i++) {
-           ptr[i] += m[i];
+           array[i] += m[i];
         }
         return *this;
     }
 
     inline simd4x4_t<T,N>& operator-=(const simd4x4_t<T,N>& m) {
         for (int i=0; i<N*N; i++) {
-           ptr[i] -= m[i];
+           array[i] -= m[i];
         }
         return *this;
     }
@@ -108,7 +108,7 @@ public:
     template<typename S>
     inline simd4x4_t<T,N>& operator*=(S s) {
         for (int i=0; i<N*N; i++) {
-           ptr[i] *= s;
+           array[i] *= s;
         }
         return *this;
     }

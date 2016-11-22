@@ -244,15 +244,18 @@ length(const SGVec2<T>& v)
 template<typename T>
 inline
 T
-norm1(const SGVec2<T>& v)
-{ return fabs(v(0)) + fabs(v(1)); }
+norm1(SGVec2<T> v)
+{ v.simd2() = simd4::abs(v.simd2()); return (v(0)+v(1)); }
 
 /// The inf-norm of the vector
 template<typename T>
 inline
 T
-normI(const SGVec2<T>& v)
-{ return SGMisc<T>::max(fabs(v(0)), fabs(v(1))); }
+normI(SGVec2<T> v)
+{
+  v.simd2() = simd4::abs(v.simd2());
+  return SGMisc<T>::max(v(0), v(1));
+}
 
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>
@@ -383,11 +386,11 @@ operator<<(std::basic_ostream<char_type, traits_type>& s, const SGVec2<T>& v)
 inline
 SGVec2f
 toVec2f(const SGVec2d& v)
-{ return SGVec2f((float)v(0), (float)v(1)); }
+{ SGVec2f f(v); return f; }
 
 inline
 SGVec2d
 toVec2d(const SGVec2f& v)
-{ return SGVec2d(v(0), v(1)); }
+{ SGVec2d d(v); return d; }
 
 #endif

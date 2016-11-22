@@ -338,15 +338,18 @@ length(const SGVec3<T>& v)
 template<typename T>
 inline
 T
-norm1(const SGVec3<T>& v)
-{ return fabs(v(0)) + fabs(v(1)) + fabs(v(2)); }
+norm1(SGVec3<T> v)
+{ v.simd3() = simd4::abs(v.simd3()); return (v(0)+v(1)+v(2)); }
 
 /// The inf-norm of the vector
 template<typename T>
 inline
 T
-normI(const SGVec3<T>& v)
-{ return SGMisc<T>::max(fabs(v(0)), fabs(v(1)), fabs(v(2))); }
+normI(SGVec3<T> v)
+{
+  v.simd3() = simd4::abs(v.simd3());
+  return SGMisc<T>::max(v(0), v(1), v(2));
+}
 
 /// Vector cross product
 template<typename T>
@@ -519,11 +522,11 @@ operator<<(std::basic_ostream<char_type, traits_type>& s, const SGVec3<T>& v)
 inline
 SGVec3f
 toVec3f(const SGVec3d& v)
-{ return SGVec3f((float)v(0), (float)v(1), (float)v(2)); }
+{ SGVec3f f(v); return f; }
 
 inline
 SGVec3d
 toVec3d(const SGVec3f& v)
-{ return SGVec3d(v(0), v(1), v(2)); }
+{ SGVec3d d(v); return d; }
 
 #endif

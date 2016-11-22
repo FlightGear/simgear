@@ -18,6 +18,8 @@
 #ifndef SGMatrix_H
 #define SGMatrix_H
 
+#include "simd4x4.hxx"
+
 /// Expression templates for poor programmers ... :)
 template<typename T>
 struct TransNegRef;
@@ -38,13 +40,13 @@ public:
     /// uninitialized values in the debug build very fast ...
 #ifndef NDEBUG
     for (unsigned i = 0; i < nEnts; ++i)
-      _data.flat[i] = SGLimits<T>::quiet_NaN();
+      _data[i] = SGLimits<T>::quiet_NaN();
 #endif
   }
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 16 elements
   explicit SGMatrix(const T* data)
-  { for (unsigned i = 0; i < nEnts; ++i) _data.flat[i] = data[i]; }
+  { for (unsigned i = 0; i < nEnts; ++i) _data[i] = data[i]; }
 
   /// Constructor, build up a SGMatrix from given elements
   SGMatrix(T m00, T m01, T m02, T m03,
@@ -52,14 +54,14 @@ public:
            T m20, T m21, T m22, T m23,
            T m30, T m31, T m32, T m33)
   {
-    _data.flat[0] = m00; _data.flat[1] = m10;
-    _data.flat[2] = m20; _data.flat[3] = m30;
-    _data.flat[4] = m01; _data.flat[5] = m11;
-    _data.flat[6] = m21; _data.flat[7] = m31;
-    _data.flat[8] = m02; _data.flat[9] = m12;
-    _data.flat[10] = m22; _data.flat[11] = m32;
-    _data.flat[12] = m03; _data.flat[13] = m13;
-    _data.flat[14] = m23; _data.flat[15] = m33;
+    _data[0] = m00; _data[1] = m10;
+    _data[2] = m20; _data[3] = m30;
+    _data[4] = m01; _data[5] = m11;
+    _data[6] = m21; _data[7] = m31;
+    _data[8] = m02; _data[9] = m12;
+    _data[10] = m22; _data[11] = m32;
+    _data[12] = m03; _data[13] = m13;
+    _data[14] = m23; _data[15] = m33;
   }
 
   /// Constructor, build up a SGMatrix from a translation
@@ -80,14 +82,14 @@ public:
   template<typename S>
   void set(const SGVec3<S>& trans)
   {
-    _data.flat[0] = 1; _data.flat[4] = 0;
-    _data.flat[8] = 0; _data.flat[12] = T(trans(0));
-    _data.flat[1] = 0; _data.flat[5] = 1;
-    _data.flat[9] = 0; _data.flat[13] = T(trans(1));
-    _data.flat[2] = 0; _data.flat[6] = 0;
-    _data.flat[10] = 1; _data.flat[14] = T(trans(2));
-    _data.flat[3] = 0; _data.flat[7] = 0;
-    _data.flat[11] = 0; _data.flat[15] = 1;
+    _data[0] = 1; _data[4] = 0;
+    _data[8] = 0; _data[12] = T(trans(0));
+    _data[1] = 0; _data[5] = 1;
+    _data[9] = 0; _data[13] = T(trans(1));
+    _data[2] = 0; _data[6] = 0;
+    _data[10] = 1; _data[14] = T(trans(2));
+    _data[3] = 0; _data[7] = 0;
+    _data[11] = 0; _data[15] = 1;
   }
 
   /// Set from a scale/rotation and tranlation
@@ -98,82 +100,89 @@ public:
     T xx = x*x; T yy = y*y; T zz = z*z;
     T wx = w*x; T wy = w*y; T wz = w*z;
     T xy = x*y; T xz = x*z; T yz = y*z;
-    _data.flat[0] = 1-2*(yy+zz); _data.flat[1] = 2*(xy-wz);
-    _data.flat[2] = 2*(xz+wy); _data.flat[3] = 0;
-    _data.flat[4] = 2*(xy+wz); _data.flat[5] = 1-2*(xx+zz);
-    _data.flat[6] = 2*(yz-wx); _data.flat[7] = 0;
-    _data.flat[8] = 2*(xz-wy); _data.flat[9] = 2*(yz+wx);
-    _data.flat[10] = 1-2*(xx+yy); _data.flat[11] = 0;
-    _data.flat[12] = 0; _data.flat[13] = 0;
-    _data.flat[14] = 0; _data.flat[15] = 1;
+    _data[0] = 1-2*(yy+zz); _data[1] = 2*(xy-wz);
+    _data[2] = 2*(xz+wy); _data[3] = 0;
+    _data[4] = 2*(xy+wz); _data[5] = 1-2*(xx+zz);
+    _data[6] = 2*(yz-wx); _data[7] = 0;
+    _data[8] = 2*(xz-wy); _data[9] = 2*(yz+wx);
+    _data[10] = 1-2*(xx+yy); _data[11] = 0;
+    _data[12] = 0; _data[13] = 0;
+    _data[14] = 0; _data[15] = 1;
   }
 
   /// set from a transposed negated matrix
   void set(const TransNegRef<T>& tm)
   {
     const SGMatrix& m = tm.m;
-    _data.flat[0] = m(0,0);
-    _data.flat[1] = m(0,1);
-    _data.flat[2] = m(0,2);
-    _data.flat[3] = m(3,0);
+    _data[0] = m(0,0);
+    _data[1] = m(0,1);
+    _data[2] = m(0,2);
+    _data[3] = m(3,0);
 
-    _data.flat[4] = m(1,0);
-    _data.flat[5] = m(1,1);
-    _data.flat[6] = m(1,2);
-    _data.flat[7] = m(3,1);
+    _data[4] = m(1,0);
+    _data[5] = m(1,1);
+    _data[6] = m(1,2);
+    _data[7] = m(3,1);
 
-    _data.flat[8] = m(2,0);
-    _data.flat[9] = m(2,1);
-    _data.flat[10] = m(2,2);
-    _data.flat[11] = m(3,2);
+    _data[8] = m(2,0);
+    _data[9] = m(2,1);
+    _data[10] = m(2,2);
+    _data[11] = m(3,2);
 
     // Well, this one is ugly here, as that xform method on the current
     // object needs the above data to be already set ...
     SGVec3<T> t = xformVec(SGVec3<T>(m(0,3), m(1,3), m(2,3)));
-    _data.flat[12] = -t(0);
-    _data.flat[13] = -t(1);
-    _data.flat[14] = -t(2);
-    _data.flat[15] = m(3,3);
+    _data[12] = -t(0);
+    _data[13] = -t(1);
+    _data[14] = -t(2);
+    _data[15] = m(3,3);
   }
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i, unsigned j) const
-  { return _data.flat[i + 4*j]; }
+  { return _data[i + 4*j]; }
   /// Access by index, the index is unchecked
   T& operator()(unsigned i, unsigned j)
-  { return _data.flat[i + 4*j]; }
+  { return _data[i + 4*j]; }
 
   /// Access raw data by index, the index is unchecked
   const T& operator[](unsigned i) const
-  { return _data.flat[i]; }
+  { return _data[i]; }
   /// Access by index, the index is unchecked
   T& operator[](unsigned i)
-  { return _data.flat[i]; }
+  { return _data[i]; }
 
   /// Get the data pointer
   const T* data(void) const
-  { return _data.flat; }
+  { return _data; }
   /// Get the data pointer
   T* data(void)
-  { return _data.flat; }
+  { return _data; }
 
   /// Readonly interface function to ssg's sgMat4/sgdMat4
   const T (&sg(void) const)[4][4]
-  { return _data.carray; }
+  { return _data.ptr(); }
   /// Interface function to ssg's sgMat4/sgdMat4
   T (&sg(void))[4][4]
-  { return _data.carray; }
+  { return _data.ptr(); }
+  /// Readonly raw storage interface
+  const simd4x4_t<T,4> (&simd4x4(void) const)
+  { return _data; }
+  /// Readonly raw storage interface
+  simd4x4_t<T,4> (&simd4x4(void))
+  { return _data; }
+
 
   /// Inplace addition
   SGMatrix& operator+=(const SGMatrix& m)
-  { for (unsigned i = 0; i < nEnts; ++i) _data.flat[i] += m._data.flat[i]; return *this; }
+  { for (unsigned i = 0; i < nEnts; ++i) _data[i] += m._data[i]; return *this; }
   /// Inplace subtraction
   SGMatrix& operator-=(const SGMatrix& m)
-  { for (unsigned i = 0; i < nEnts; ++i) _data.flat[i] -= m._data.flat[i]; return *this; }
+  { for (unsigned i = 0; i < nEnts; ++i) _data[i] -= m._data[i]; return *this; }
   /// Inplace scalar multiplication
   template<typename S>
   SGMatrix& operator*=(S s)
-  { for (unsigned i = 0; i < nEnts; ++i) _data.flat[i] *= s; return *this; }
+  { for (unsigned i = 0; i < nEnts; ++i) _data[i] *= s; return *this; }
   /// Inplace scalar multiplication by 1/s
   template<typename S>
   SGMatrix& operator/=(S s)
@@ -259,22 +268,15 @@ public:
 
   /// Return an all zero matrix
   static SGMatrix zeros(void)
-  { return SGMatrix(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); }
+  { SGMatrix r; simd4x4::zeros(r.simd4x4()); return r; }
 
   /// Return a unit matrix
   static SGMatrix unit(void)
-  { return SGMatrix(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); }
+  { SGMatrix r; simd4x4::unit(r.simd4x4()); return r; }
 
 private:
-  /// Required to make that alias safe.
-  union Data {
-    T flat[16];
-    T carray[4][4];
-  };
 
-  /// The actual data, the matrix is stored in column major order,
-  /// that matches the storage format of OpenGL
-  Data _data;
+  simd4x4_t<T,4> _data;
 };
 
 /// Class to distinguish between a matrix and the matrix with a transposed
@@ -296,60 +298,55 @@ operator+(const SGMatrix<T>& m)
 template<typename T>
 inline
 SGMatrix<T>
-operator-(const SGMatrix<T>& m)
+operator-(SGMatrix<T> m)
 {
-  SGMatrix<T> ret;
-  for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    ret[i] = -m[i];
-  return ret;
+  for (unsigned i = 0; i < SGMatrix<T>::nRows; ++i)
+    m[i] = -m[i];
+  return m;
 }
 
 /// Binary +
 template<typename T>
 inline
 SGMatrix<T>
-operator+(const SGMatrix<T>& m1, const SGMatrix<T>& m2)
+operator+(SGMatrix<T> m1, const SGMatrix<T>& m2)
 {
-  SGMatrix<T> ret;
   for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    ret[i] = m1[i] + m2[i];
-  return ret;
+    m1[i] += m2[i];
+  return m1;
 }
 
 /// Binary -
 template<typename T>
 inline
 SGMatrix<T>
-operator-(const SGMatrix<T>& m1, const SGMatrix<T>& m2)
+operator-(SGMatrix<T> m1, const SGMatrix<T>& m2)
 {
-  SGMatrix<T> ret;
   for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    ret[i] = m1[i] - m2[i];
-  return ret;
+    m1[i] -= m2[i];
+  return m1;
 }
 
 /// Scalar multiplication
 template<typename S, typename T>
 inline
 SGMatrix<T>
-operator*(S s, const SGMatrix<T>& m)
+operator*(S s, SGMatrix<T> m)
 {
-  SGMatrix<T> ret;
   for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    ret[i] = s*m[i];
-  return ret;
+    m[i] *= s;
+  return m;
 }
 
 /// Scalar multiplication
 template<typename S, typename T>
 inline
 SGMatrix<T>
-operator*(const SGMatrix<T>& m, S s)
+operator*(SGMatrix<T> m, S s)
 {
-  SGMatrix<T> ret;
   for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    ret[i] = s*m[i];
-  return ret;
+    m[i] *= s;
+  return m;
 }
 
 /// Vector multiplication

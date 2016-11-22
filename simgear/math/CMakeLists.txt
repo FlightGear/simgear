@@ -33,6 +33,7 @@ set(HEADERS
     sg_types.hxx
     sg_random.h
     simd.hxx
+    simd4x4.hxx
     )
 
 set(SOURCES 

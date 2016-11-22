@@ -300,7 +300,7 @@ inline
 SGMatrix<T>
 operator-(SGMatrix<T> m)
 {
-  for (unsigned i = 0; i < SGMatrix<T>::nRows; ++i)
+  for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
     m[i] = -m[i];
   return m;
 }

@@ -223,7 +223,7 @@ template<typename T>
 inline
 T
 dot(SGVec2<T> v1, const SGVec2<T>& v2)
-{ v1.simd2() *= v2.simd2(); return (v1(0)+v1(1)+v1(2)); }
+{ v1.simd2() *= v2.simd2(); return (v1(0)+v1(1)); }
 
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>

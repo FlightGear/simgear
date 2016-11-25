@@ -26,7 +26,7 @@ class simd4_t
 {
 private:
     union {
-       T v4[4];
+       T _v4[4];
        T vec[N];
     };
 
@@ -214,6 +214,36 @@ public:
     }
 };
 
+template<typename T, int N>
+inline simd4_t<T,N> operator+(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+    v1 += v2;
+    return v1;
+}
+
+template<typename T, int N>
+inline simd4_t<T,N> operator-(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+    v1 -= v2;
+    return v1;
+}
+
+template<typename T, int N>
+inline simd4_t<T,N> operator*(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+    v1 *= v2;
+    return v1;
+}
+
+template<typename T, int N>
+inline simd4_t<T,N> operator*(T f, simd4_t<T,N> v) {
+    v *= f;
+    return v;
+}
+
+template<typename T, int N>
+inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
+    v *= f;
+    return v;
+}
+
 namespace simd4
 {
 template<typename T, int N>
@@ -254,11 +284,9 @@ public:
     simd4_t(const simd4_t<float,N>& v) {
         simd4 = v.simd4;
     }
-#if 0
-    simd4_t(const simd4_t<double,N>& v) {
-        simd4 = _mm_movelh_ps(_mm_cvtpd_ps(v.v4()[0]), _mm_cvtpd_ps(v.v4()[1]));
+    simd4_t(const __m128& v) {
+        simd4 = v;
     }
-#endif
 
     inline __m128 (&v4(void)) {
         return simd4;
@@ -350,7 +378,9 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 # endif
 
 
-# ifdef __SSE2
+# ifdef __SSE2__
+#  include <emmintrin.h>
+
 template<int N>
 class simd4_t<double,N>
 {
@@ -374,6 +404,10 @@ public:
     simd4_t(const simd4_t<double,N>& v) {
         simd4[0] = v.simd4[0];
         simd4[1] = v.simd4[1];
+    }
+    simd4_t(const __m128d v[2]) {
+        simd4[0] = v[0];
+        simd4[1] = v[1];
     }
 
     inline __m128d (&v4(void))[2] {
@@ -401,7 +435,7 @@ public:
     }
 
     inline simd4_t<double,N>& operator=(double d) {
-        simd4[0] = simd[1] = _mm_set1_pd(d);
+        simd4[0] = simd4[1] = _mm_set1_pd(d);
         return *this;
     }
     inline simd4_t<double,N>& operator=(const __vec4d_t v) {
@@ -412,6 +446,11 @@ public:
     inline simd4_t<double,N>& operator=(const simd4_t<double,N>& v) {
         simd4[0] = v.simd4[0];
         simd4[1] = v.simd4[1];
+        return *this;
+    }
+    inline simd4_t<double,N>& operator=(const __m128d v[2]) {
+        simd4[0] = v[0];
+        simd4[1] = v[1];
         return *this;
     }
 
@@ -469,8 +508,8 @@ namespace simd4
 template<int N>
 inline simd4_t<double,N>abs(simd4_t<double,N> v) {
     static const __m128d sign_mask = _mm_set1_pd(-0.); // -0. = 1 << 63
-    v.v4[0] = mm_andnot_ps(sign_mask, v4[0]);
-    v.v4[1] = _mm_andnot_ps(sign_mask, v4[1]);
+    v.v4()[0] = _mm_andnot_pd(sign_mask, v.v4()[0]);
+    v.v4()[1] = _mm_andnot_pd(sign_mask, v.v4()[1]);
     return v;
   }
 };
@@ -501,6 +540,17 @@ public:
     }
     simd4_t(const simd4_t<int,N>& v) {
         simd4 = v.simd4;
+    }
+    simd4_t(const __m128i& v) {
+        simd4 = v;
+    }
+
+    inline __m128i (&v4(void)) {
+        return simd4;
+    }
+
+    inline const __m128i (&v4(void) const) {
+        return simd4;
     }
 
     inline const int (&ptr(void) const)[N] {

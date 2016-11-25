@@ -20,7 +20,7 @@
 
 #include <iosfwd>
 
-#include <simgear/math/SGVec2.hxx>
+#include "SGVec2.hxx"
 #include <simgear/math/SGGeodesy.hxx>
 
 #include "simd.hxx"

@@ -206,7 +206,7 @@ size_t Package::fileSizeBytes() const
 
 std::string Package::description() const
 {
-    return getLocalisedProp("description");
+    return getLocalisedProp("description", 0);
 }
 
 string_set Package::tags() const
@@ -258,9 +258,9 @@ string_list Package::downloadUrls() const
     return r;
 }
 
-std::string Package::getLocalisedProp(const std::string& aName) const
+std::string Package::getLocalisedProp(const std::string& aName, const unsigned int vIndex) const
 {
-    return getLocalisedString(m_props, aName.c_str());
+    return getLocalisedString(propsForVariant(vIndex, aName.c_str()), aName.c_str());
 }
 
 std::string Package::getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const
@@ -358,28 +358,31 @@ unsigned int Package::indexOfVariant(const std::string& vid) const
 
 std::string Package::nameForVariant(const unsigned int vIndex) const
 {
-    if (vIndex == 0)
-        return name();
+    return propsForVariant(vIndex, "name")->getStringValue("name");
+}
+
+SGPropertyNode_ptr Package::propsForVariant(const unsigned int vIndex, const char* propName) const
+{
+    if (vIndex == 0) {
+        return m_props;
+    }
 
     // offset by minus one to allow for index 0 being the primary
     SGPropertyNode_ptr var = m_props->getChild("variant", vIndex - 1);
-    if (var)
-        return var->getStringValue("name");
+    if (var) {
+        if (!propName || var->hasChild(propName)) {
+            return var;
+        }
+
+        return m_props;
+    }
 
     throw sg_exception("Unknow variant in package " + id());
 }
 
 Package::ThumbnailVec Package::thumbnailsForVariant(unsigned int vIndex) const
 {
-    if (vIndex == 0) {
-        return thumbnailsFromProps(m_props);
-    }
-
-    SGPropertyNode_ptr var = m_props->getChild("variant", vIndex - 1);
-    if (!var) {
-        throw sg_exception("Unknow variant in package " + id());
-    }
-
+    SGPropertyNode_ptr var = propsForVariant(vIndex);
     return thumbnailsFromProps(var);
 }
 

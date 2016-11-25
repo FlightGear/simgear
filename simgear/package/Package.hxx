@@ -114,7 +114,7 @@ public:
      */
     std::string md5() const;
     
-    std::string getLocalisedProp(const std::string& aName) const;
+    std::string getLocalisedProp(const std::string& aName, const unsigned int vIndex = 0) const;
 
     unsigned int revision() const;
   
@@ -195,6 +195,8 @@ private:
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
 
     ThumbnailVec thumbnailsFromProps(const SGPropertyNode_ptr& ptr) const;
+
+    SGPropertyNode_ptr propsForVariant(const unsigned int vIndex, const char* propName = nullptr) const;
 
     SGPropertyNode_ptr m_props;
     std::string m_id;

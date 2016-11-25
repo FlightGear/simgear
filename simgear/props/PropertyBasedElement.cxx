@@ -24,6 +24,7 @@ namespace simgear
 
   //----------------------------------------------------------------------------
   PropertyBasedElement::PropertyBasedElement(SGPropertyNode* node):
+    SGPropertyChangeListener(true /* recursive */),
     _node(node)
   {
     _node->addChangeListener(this);

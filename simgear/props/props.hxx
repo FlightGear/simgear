@@ -22,6 +22,8 @@
 #include <sstream>
 #include <typeinfo>
 
+#include <cmath> // for fabs
+
 #include <simgear/compiler.h>
 #if PROPS_STANDALONE
 // taken from: boost/utility/enable_if.hpp
@@ -236,19 +238,12 @@ public:
      */
     virtual SGRaw* clone() const = 0;
 
+
 };
 
 class SGRawExtended : public SGRaw
 {
 public:
-    /**    
-     * Make an SGRawValueContainer from the SGRawValue.
-     *
-     * This is a virtual function of SGRawExtended so that
-     * SGPropertyNode::untie doesn't need to know the type of an
-     * extended property.
-     */
-    virtual SGRawExtended* makeContainer() const = 0;
     /**
      * Write value out to a stream
      */
@@ -257,6 +252,15 @@ public:
      * Read value from a stream and store it.
      */
     virtual std::istream& readFrom(std::istream& stream) = 0;
+
+    /**
+     * Make an SGRawValueContainer from the SGRawValue.
+     *
+     * This is a virtual function of SGRawExtended so that
+     * SGPropertyNode::untie doesn't need to know the type of an
+     * extended property.
+     */
+    virtual SGRaw* makeContainer() const = 0;
 };
 
 // Choose between different base classes based on whether the value is
@@ -394,6 +398,7 @@ template<> inline const char * SGRawValue<const char *>::DefaultValue()
 {
   return "";
 }
+
 
 /**
  * A raw value bound to a pointer.
@@ -683,8 +688,7 @@ private:
 template<typename T>
 SGRawExtended* SGRawBase<T, 0>::makeContainer() const
 {
-    return new SGRawValueContainer<T>(static_cast<const SGRawValue<T>*>(this)
-                                      ->getValue());
+    return new SGRawValueContainer<T>(static_cast<const SGRawValue<T>*>(this)->getValue());
 }
 
 template<typename T>
@@ -734,13 +738,22 @@ public:
   /// Called if \a child has been removed from its \a parent.
   virtual void childRemoved(SGPropertyNode * parent, SGPropertyNode * child);
 
+    bool isRecursive() const { return _recursive; }
+
 protected:
-  friend class SGPropertyNode;
-  virtual void register_property (SGPropertyNode * node);
-  virtual void unregister_property (SGPropertyNode * node);
+    SGPropertyChangeListener(bool recursive = false);
+
+    friend class SGPropertyNode;
+
+    virtual void register_property (SGPropertyNode * node);
+    virtual void unregister_property (SGPropertyNode * node);
+
+    void doValueChanged(SGPropertyNode * node);
+    void doChildAdded(SGPropertyNode * parent, SGPropertyNode * child);
 
 private:
-  std::vector<SGPropertyNode *> _properties;
+    const bool _recursive = false;
+    std::vector<SGPropertyNode *> _properties;
 };
 
 
@@ -1141,7 +1154,6 @@ public:
   void setAttribute (Attribute attr, bool state) {
     (state ? _attr |= attr : _attr &= ~attr);
   }
-
 
   /**
    * Get all of the mode attributes for the property node.
@@ -1761,6 +1773,8 @@ protected:
   static simgear::PropertyInterpolationMgr* _interpolation_mgr;
 
 private:
+    // friend so we can poll the SGRaw for tied properties directly.
+    friend class SGPropertyChangeListener;
 
   // Get the raw value
   bool get_bool () const;

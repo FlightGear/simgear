@@ -48,6 +48,8 @@ using std::stringstream;
 
 using namespace simgear;
 
+#define ALTERNATE_RECURSIVE 1
+
 ////////////////////////////////////////////////////////////////////////
 // Local classes.
 ////////////////////////////////////////////////////////////////////////
@@ -2361,8 +2363,26 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
     _listeners = new vector<SGPropertyChangeListener*>;
   _listeners->push_back(listener);
   listener->register_property(this);
-  if (initial)
-    listener->valueChanged(this);
+
+#ifdef ALTERNATE_RECURSIVE
+    if (listener->isRecursive()) {
+        for (auto child : _children) {
+            if (initial) {
+                fireChildAdded(child);
+            }
+            child->addChangeListener(listener, initial);
+        }
+    }
+
+    if (initial) {
+        listener->doValueChanged(this);
+    }
+#else
+    if (initial) {
+        listener->doValueChanged(this);
+        fireCreatedRecursive(false);
+    }
+#endif
 }
 
 void
@@ -2370,6 +2390,7 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
 {
   if (_listeners == 0)
     return;
+
   vector<SGPropertyChangeListener*>::iterator it =
     find(_listeners->begin(), _listeners->end(), listener);
   if (it != _listeners->end()) {
@@ -2380,6 +2401,14 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
       _listeners = 0;
       delete tmp;
     }
+
+#ifdef ALTERNATE_RECURSIVE
+      if (listener->isRecursive()) {
+          for (auto child : _children) {
+              child->removeChangeListener(listener);
+          }
+      }
+#endif
   }
 }
 
@@ -2432,11 +2461,13 @@ SGPropertyNode::fireValueChanged (SGPropertyNode * node)
 {
   if (_listeners != 0) {
     for (unsigned int i = 0; i < _listeners->size(); i++) {
-      (*_listeners)[i]->valueChanged(node);
+      (*_listeners)[i]->doValueChanged(node);
     }
   }
+#if !defined(ALTERNATE_RECURSIVE)
   if (_parent != 0)
     _parent->fireValueChanged(node);
+#endif
 }
 
 void
@@ -2444,12 +2475,19 @@ SGPropertyNode::fireChildAdded (SGPropertyNode * parent,
 				SGPropertyNode * child)
 {
   if (_listeners != 0) {
-    for (unsigned int i = 0; i < _listeners->size(); i++) {
-      (*_listeners)[i]->childAdded(parent, child);
+      for (auto listen : *_listeners) {
+          listen->doChildAdded(parent, child);
+#if defined(ALTERNATE_RECURSIVE)
+          if (listen->isRecursive()) {
+              child->addChangeListener(listen);
+          }
+#endif
     }
   }
+#if !defined(ALTERNATE_RECURSIVE)
   if (_parent != 0)
     _parent->fireChildAdded(parent, child);
+#endif
 }
 
 void
@@ -2457,12 +2495,19 @@ SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
 				  SGPropertyNode * child)
 {
   if (_listeners != 0) {
-    for (unsigned int i = 0; i < _listeners->size(); i++) {
-      (*_listeners)[i]->childRemoved(parent, child);
+    for (auto listen : *_listeners) {
+        listen->childRemoved(parent, child);
+#if defined(ALTERNATE_RECURSIVE)
+        if (listen) {
+            child->removeChangeListener(listen);
+        }
+#endif
     }
   }
+#if !defined(ALTERNATE_RECURSIVE)
   if (_parent != 0)
     _parent->fireChildRemoved(parent, child);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -2482,6 +2527,11 @@ SGPropertyNode::eraseChild(simgear::PropertyList::iterator child)
 // Implementation of SGPropertyChangeListener.
 ////////////////////////////////////////////////////////////////////////
 
+SGPropertyChangeListener::SGPropertyChangeListener(bool recursive) :
+    _recursive(recursive)
+{
+}
+
 SGPropertyChangeListener::~SGPropertyChangeListener ()
 {
   for (int i = static_cast<int>(_properties.size() - 1); i >= 0; i--)
@@ -2498,7 +2548,16 @@ void
 SGPropertyChangeListener::childAdded (SGPropertyNode * node,
 				      SGPropertyNode * child)
 {
-  // NO-OP
+}
+
+void SGPropertyChangeListener::doChildAdded(SGPropertyNode * parent, SGPropertyNode * child)
+{
+    childAdded(parent, child);
+}
+
+void SGPropertyChangeListener::doValueChanged(SGPropertyNode * node)
+{
+    valueChanged(node);
 }
 
 void
@@ -2511,7 +2570,11 @@ SGPropertyChangeListener::childRemoved (SGPropertyNode * parent,
 void
 SGPropertyChangeListener::register_property (SGPropertyNode * node)
 {
-  _properties.push_back(node);
+    auto it = std::find(_properties.begin(), _properties.end(), node);
+    if (it != _properties.end()) {
+        return; // duplicate listen
+    }
+   _properties.push_back(node);
 }
 
 void
@@ -2519,8 +2582,9 @@ SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
 {
   vector<SGPropertyNode *>::iterator it =
     find(_properties.begin(), _properties.end(), node);
-  if (it != _properties.end())
-    _properties.erase(it);
+    if (it != _properties.end()) {
+        _properties.erase(it);
+    }
 }
 
 #if !PROPS_STANDALONE

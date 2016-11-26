@@ -9,6 +9,7 @@
 
 #include <simgear/compiler.h>
 
+#include <memory>               // std::unique_ptr
 #include <iostream>
 #include <map>
 

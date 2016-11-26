@@ -29,6 +29,7 @@
         <description>A plane made by Cessna</description>
         <revision type="int">42</revision>
         <file-size-bytes type="int">860</file-size-bytes>
+        <author>Standard author</author>
 
         <tag>cessna</tag>
         <tag>ga</tag>
@@ -73,6 +74,8 @@
         <variant>
             <id>c172p-floats</id>
             <name>C172 with floats</name>
+            <description>A plane with floats</description>
+            <author>Floats variant author</author>
 
             <thumbnail>
               <type>exterior</type>
@@ -90,6 +93,7 @@
         <variant>
             <id>c172p-skis</id>
             <name>C172 with skis</name>
+            <description>A plane with skis</description>
 
             <thumbnail>
               <type>exterior</type>

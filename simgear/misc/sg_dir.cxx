@@ -341,6 +341,10 @@ bool Dir::create(mode_t mode)
 
 bool Dir::removeChildren() const
 {
+    if (!exists()) {
+        return true;
+    }
+
     bool ok;
     PathList cs = children(NO_DOT_OR_DOTDOT | INCLUDE_HIDDEN | TYPE_FILE | TYPE_DIR);
     BOOST_FOREACH(SGPath path, cs) {

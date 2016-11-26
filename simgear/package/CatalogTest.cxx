@@ -178,6 +178,16 @@ int parseTest()
     unsigned int skisVariant = p2->indexOfVariant("c172p-skis");
     VERIFY(skisVariant > 0);
 
+
+    COMPARE(p2->getLocalisedProp("description", skisVariant), "A plane with skis");
+    COMPARE(p2->getLocalisedProp("author", skisVariant), "Standard author");
+
+    unsigned int floatsVariant = p2->indexOfVariant("c172p-floats");
+    VERIFY(floatsVariant > 0);
+
+    COMPARE(p2->getLocalisedProp("description", floatsVariant), "A plane with floats");
+    COMPARE(p2->getLocalisedProp("author", floatsVariant), "Floats variant author");
+
     pkg::Package::ThumbnailVec thumbs2 = p2->thumbnailsForVariant(skisVariant);
     COMPARE(thumbs2.size(), 2);
 

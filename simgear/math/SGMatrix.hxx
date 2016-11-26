@@ -46,7 +46,7 @@ public:
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 16 elements
   explicit SGMatrix(const T* data)
-  { for (unsigned i = 0; i < nEnts; ++i) _data[i] = data[i]; }
+  { simd4x4_t<T,4> x(data); _data = x; }
 
   /// Constructor, build up a SGMatrix from given elements
   SGMatrix(T m00, T m01, T m02, T m03,
@@ -82,14 +82,13 @@ public:
   template<typename S>
   void set(const SGVec3<S>& trans)
   {
-    _data[0] = 1; _data[4] = 0;
-    _data[8] = 0; _data[12] = T(trans(0));
-    _data[1] = 0; _data[5] = 1;
-    _data[9] = 0; _data[13] = T(trans(1));
-    _data[2] = 0; _data[6] = 0;
+    simd4x4::zeros(_data);
+    _data[0] = 1;
+    _data[12] = T(trans(0));
+    _data[5] = 1;
+    _data[13] = T(trans(1));
     _data[10] = 1; _data[14] = T(trans(2));
-    _data[3] = 0; _data[7] = 0;
-    _data[11] = 0; _data[15] = 1;
+    _data[15] = 1;
   }
 
   /// Set from a scale/rotation and tranlation
@@ -132,9 +131,10 @@ public:
     // Well, this one is ugly here, as that xform method on the current
     // object needs the above data to be already set ...
     SGVec3<T> t = xformVec(SGVec3<T>(m(0,3), m(1,3), m(2,3)));
-    _data[12] = -t(0);
-    _data[13] = -t(1);
-    _data[14] = -t(2);
+    t = -t;
+    _data[12] = t(0);
+    _data[13] = t(1);
+    _data[14] = t(2);
     _data[15] = m(3,3);
   }
 
@@ -175,14 +175,14 @@ public:
 
   /// Inplace addition
   SGMatrix& operator+=(const SGMatrix& m)
-  { for (unsigned i = 0; i < nEnts; ++i) _data[i] += m._data[i]; return *this; }
+  { _data += m.simd4x4(); return *this; }
   /// Inplace subtraction
   SGMatrix& operator-=(const SGMatrix& m)
-  { for (unsigned i = 0; i < nEnts; ++i) _data[i] -= m._data[i]; return *this; }
+  { _data -= m.simd4x4(); return *this; }
   /// Inplace scalar multiplication
   template<typename S>
   SGMatrix& operator*=(S s)
-  { for (unsigned i = 0; i < nEnts; ++i) _data[i] *= s; return *this; }
+  { _data *= s; return *this; }
   /// Inplace scalar multiplication by 1/s
   template<typename S>
   SGMatrix& operator/=(S s)
@@ -193,14 +193,11 @@ public:
   template<typename S>
   SGMatrix& preMultTranslate(const SGVec3<S>& t)
   {
+    SGVec4<T> row3((*this)(3,0), (*this)(3,1), (*this)(3,2), (*this)(3,3));
     for (unsigned i = 0; i < 3; ++i) {
-      T tmp = T(t(i));
-      if (tmp == 0)
-        continue;
-      (*this)(i,0) += tmp*(*this)(3,0);
-      (*this)(i,1) += tmp*(*this)(3,1);
-      (*this)(i,2) += tmp*(*this)(3,2);
-      (*this)(i,3) += tmp*(*this)(3,3);
+      SGVec4<T> trow3 = T(t(i))*row3;
+      (*this)(i,0) += trow3(0); (*this)(i,1) += trow3(1);
+      (*this)(i,2) += trow3(2); (*this)(i,3) += trow3(3);
     }
     return *this;
   }
@@ -238,30 +235,20 @@ public:
 
   SGVec3<T> xformPt(const SGVec3<T>& pt) const
   {
-    SGVec3<T> tpt;
-    tpt(0) = (*this)(0,3);
-    tpt(1) = (*this)(1,3);
-    tpt(2) = (*this)(2,3);
+    SGVec3<T> tpt((*this)(0,3), (*this)(1,3), (*this)(2,3));
     for (unsigned i = 0; i < SGMatrix<T>::nCols-1; ++i) {
-      T tmp = pt(i);
-      tpt(0) += tmp*(*this)(0,i);
-      tpt(1) += tmp*(*this)(1,i);
-      tpt(2) += tmp*(*this)(2,i);
+      SGVec3<T> coli((*this)(0,i), (*this)(1,i), (*this)(2,i));
+      tpt += pt(i)*coli;
     }
     return tpt;
   }
   SGVec3<T> xformVec(const SGVec3<T>& v) const
   {
-    SGVec3<T> tv;
-    T tmp = v(0);
-    tv(0) = tmp*(*this)(0,0);
-    tv(1) = tmp*(*this)(1,0);
-    tv(2) = tmp*(*this)(2,0);
+    SGVec3<T> tv((*this)(0,0), (*this)(1,0), (*this)(2,0));
+    tv *= v(0);
     for (unsigned i = 1; i < SGMatrix<T>::nCols-1; ++i) {
-      T tmp = v(i);
-      tv(0) += tmp*(*this)(0,i);
-      tv(1) += tmp*(*this)(1,i);
-      tv(2) += tmp*(*this)(2,i);
+      SGVec3<T> coli((*this)(0,i), (*this)(1,i), (*this)(2,i));
+      tv += v(i)*coli;
     }
     return tv;
   }
@@ -300,8 +287,7 @@ inline
 SGMatrix<T>
 operator-(SGMatrix<T> m)
 {
-  for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    m[i] = -m[i];
+  m.simd4x4() = -m.simd4x4();
   return m;
 }
 
@@ -311,8 +297,7 @@ inline
 SGMatrix<T>
 operator+(SGMatrix<T> m1, const SGMatrix<T>& m2)
 {
-  for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    m1[i] += m2[i];
+  m1.simd4x4() += m2.simd4x4();
   return m1;
 }
 
@@ -322,8 +307,7 @@ inline
 SGMatrix<T>
 operator-(SGMatrix<T> m1, const SGMatrix<T>& m2)
 {
-  for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    m1[i] -= m2[i];
+  m1.simd4x4() -= m2.simd4x4();
   return m1;
 }
 
@@ -332,22 +316,14 @@ template<typename S, typename T>
 inline
 SGMatrix<T>
 operator*(S s, SGMatrix<T> m)
-{
-  for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    m[i] *= s;
-  return m;
-}
+{ m.simd4x4() *= s; return m; }
 
 /// Scalar multiplication
 template<typename S, typename T>
 inline
 SGMatrix<T>
 operator*(SGMatrix<T> m, S s)
-{
-  for (unsigned i = 0; i < SGMatrix<T>::nEnts; ++i)
-    m[i] *= s;
-  return m;
-}
+{ m.simd4x4() *= s; return m; }
 
 /// Vector multiplication
 template<typename T>
@@ -356,18 +332,7 @@ SGVec4<T>
 operator*(const SGMatrix<T>& m, const SGVec4<T>& v)
 {
   SGVec4<T> mv;
-  T tmp = v(0);
-  mv(0) = tmp*m(0,0);
-  mv(1) = tmp*m(1,0);
-  mv(2) = tmp*m(2,0);
-  mv(3) = tmp*m(3,0);
-  for (unsigned i = 1; i < SGMatrix<T>::nCols; ++i) {
-    T tmp = v(i);
-    mv(0) += tmp*m(0,i);
-    mv(1) += tmp*m(1,i);
-    mv(2) += tmp*m(2,i);
-    mv(3) += tmp*m(3,i);
-  }
+  mv.v4() = m.m4x4() * v.v4();
   return mv;
 }
 
@@ -402,20 +367,7 @@ SGMatrix<T>
 operator*(const SGMatrix<T>& m1, const SGMatrix<T>& m2)
 {
   SGMatrix<T> m;
-  for (unsigned j = 0; j < SGMatrix<T>::nCols; ++j) {
-    T tmp = m2(0,j);
-    m(0,j) = tmp*m1(0,0);
-    m(1,j) = tmp*m1(1,0);
-    m(2,j) = tmp*m1(2,0);
-    m(3,j) = tmp*m1(3,0);
-    for (unsigned i = 1; i < SGMatrix<T>::nCols; ++i) {
-      T tmp = m2(i,j);
-      m(0,j) += tmp*m1(0,i);
-      m(1,j) += tmp*m1(1,i);
-      m(2,j) += tmp*m1(2,i);
-      m(3,j) += tmp*m1(3,i);
-    }
-  }
+  m.simd4x4() = m1.simd4x4() * m2.simd4x4();
   return m;
 }
 

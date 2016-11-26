@@ -336,9 +336,11 @@ private:
 public:
     simd4x4_t(void) {}
     explicit simd4x4_t(const double m[4*4]) {
+        const double *p = m;
         for (int i=0; i<4; i++) {
-            simd4x4[i][0] = simd4_t<double,4>((const double*)&m[4*i]).v4()[0];
-            simd4x4[i][1] = simd4_t<double,4>((const double*)&m[4*i+2]).v4()[1];
+            simd4_t<double,4> vec4(p);
+            simd4x4[i][0] = vec4.v4()[0]; p += 4;
+            simd4x4[i][1] = vec4.v4()[1];
         }
     }
 
@@ -378,6 +380,16 @@ public:
 
     inline operator double*(void) {
         return array;
+    }
+
+    inline simd4x4_t<double,4>& operator=(const double m[4*4]) {
+        const double *p = m;
+        for (int i=0; i<4; i++) {
+            simd4_t<double,4> vec4(p);
+            simd4x4[i][0] = vec4.v4()[0]; p += 4;
+            simd4x4[i][1] = vec4.v4()[1];
+        }
+        return *this;
     }
 
     inline simd4x4_t<double,4>& operator=(const __mtx4d_t m) {
@@ -422,22 +434,19 @@ public:
 };
 
 
-#if 0
 template<>
 inline simd4_t<double,4> operator*(const simd4x4_t<double,4>& m, const simd4_t<double,4>& vi)
 {
-    simd4_t<double,4> mv(m.m4x4()[0]);
-    mv.v4()[0] *= vi.ptr()[0];
-    mv.v4()[1] *= vi.ptr()[2];
+    simd4_t<double,4> mv(m);
+    mv *= vi.ptr()[0];
     for (int i=1; i<4; i+=2) {
         simd4_t<double,4> row = m.m4x4()[i];
-        row.v4()[0] *= vi.ptr()[i];
-        row.v4()[1] *= vi.ptr()[i+2];
-        mv += row;
+        row *= vi.ptr()[i];
+        mv.v4()[0] += row.v4()[0];
+        mv.v4()[1] += row.v4()[1];
     }
     return mv;
 }
-#endif
 
 template<>
 inline simd4x4_t<double,4> operator*(const simd4x4_t<double,4>& m1, const simd4x4_t<double,4>& m2)

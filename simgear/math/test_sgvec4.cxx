@@ -12,7 +12,12 @@
 #if TEST_ACCURACY
 # define TEST(a, p,q,r,s) \
  if (a[0] != (p) || a[1] != (q) || a[2] != (r) || a[3] != (s)) \
-  printf("line: %i, diff: %5.4e, %5.4e, %5.4e, %5.4e\n", __LINE__, fabsf(a[0]-(p)), fabsf(a[1]-(q)), fabsf(a[2]-(r)), fabsf(a[3]-(s)));
+  printf("line: %i, diff: %5.4e, %5.4e, %5.4e, %5.4e\n", __LINE__, \
+        std::fabs(a[0]-(p)), \
+        std::fabs(a[1]-(q)), \
+        std::fabs(a[2]-(r)), \
+        std::fabs(a[3]-(s))); 
+
 # define MAX     1
 
 #else

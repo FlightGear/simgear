@@ -332,7 +332,7 @@ SGVec4<T>
 operator*(const SGMatrix<T>& m, const SGVec4<T>& v)
 {
   SGVec4<T> mv;
-  mv.v4() = m.m4x4() * v.v4();
+  mv.simd4() = m.simd4x4() * v.simd4();
   return mv;
 }
 

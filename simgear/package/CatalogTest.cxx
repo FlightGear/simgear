@@ -175,8 +175,13 @@ int parseTest()
       // expected
     }
 
+    unsigned int skisVariantFull = p2->indexOfVariant("org.flightgear.test.catalog1.c172p-skis");
+    VERIFY(skisVariantFull > 0);
+
     unsigned int skisVariant = p2->indexOfVariant("c172p-skis");
     VERIFY(skisVariant > 0);
+
+    COMPARE(skisVariant, skisVariantFull);
 
     pkg::Package::ThumbnailVec thumbs2 = p2->thumbnailsForVariant(skisVariant);
     COMPARE(thumbs2.size(), 2);

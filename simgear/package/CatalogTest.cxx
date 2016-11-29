@@ -175,10 +175,14 @@ int parseTest()
       // expected
     }
 
+    unsigned int skisVariantFull = p2->indexOfVariant("org.flightgear.test.catalog1.c172p-skis");
+    VERIFY(skisVariantFull > 0);
+
     unsigned int skisVariant = p2->indexOfVariant("c172p-skis");
     VERIFY(skisVariant > 0);
 
-
+    COMPARE(skisVariant, skisVariantFull);
+    
     COMPARE(p2->getLocalisedProp("description", skisVariant), "A plane with skis");
     COMPARE(p2->getLocalisedProp("author", skisVariant), "Standard author");
 

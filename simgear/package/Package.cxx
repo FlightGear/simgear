@@ -340,13 +340,25 @@ std::string Package::nameForVariant(const std::string& vid) const
 
 unsigned int Package::indexOfVariant(const std::string& vid) const
 {
-    if (vid == id()) {
+    // accept fully-qualified IDs here
+    std::string actualId = vid;
+    size_t lastDot = vid.rfind('.');
+    if (lastDot != std::string::npos) {
+        std::string catalogId = vid.substr(0, lastDot);
+        if (catalogId != catalog()->id()) {
+            throw sg_exception("Bad fully-qualified ID:" + vid + ", package mismatch" );
+        }
+        actualId = vid.substr(lastDot + 1);
+    }
+
+
+    if (actualId == id()) {
         return 0;
     }
 
     unsigned int result = 1;
     for (SGPropertyNode* var : m_props->getChildren("variant")) {
-        if (var->getStringValue("id") == vid) {
+        if (var->getStringValue("id") == actualId) {
             return result;
         }
 

@@ -148,7 +148,7 @@ int parseTest()
     pkg::PackageRef p2 = cat->getPackageById("c172p");
     VERIFY(p2.valid());
     COMPARE(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
-    COMPARE(p2->description(), "A plane made by Cessna");
+    COMPARE(p2->description(), "A plane made by Cessna on Jupiter");
 
     pkg::Package::ThumbnailVec thumbs = p2->thumbnailsForVariant(0);
     COMPARE(thumbs.size(), 3);
@@ -232,7 +232,25 @@ int parseTest()
     queryE->setStringValue("description", "cessna");
     VERIFY(p2->matches(queryE.ptr()));
 
+    {
+        SGPropertyNode_ptr queryText(new SGPropertyNode);
+        queryText->setStringValue("any-of/text", "jupiter");
+        VERIFY(p2->matches(queryText.ptr()));
+    }
 
+    {
+        SGPropertyNode_ptr queryText(new SGPropertyNode);
+        queryText->setStringValue("any-of/tag", "twin-engine");
+        queryText->setStringValue("any-of/tag", "ga");
+        VERIFY(p2->matches(queryText.ptr()));
+    }
+
+    // match variant descriptions
+    {
+        SGPropertyNode_ptr queryText(new SGPropertyNode);
+        queryText->setStringValue("any-of/description", "float");
+        VERIFY(p2->matches(queryText.ptr()));
+    }
     delete root;
     return EXIT_SUCCESS;
 }

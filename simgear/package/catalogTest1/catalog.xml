@@ -26,7 +26,7 @@
         <id>c172p</id>
         <name>Cessna 172-P</name>
         <dir>c172p</dir>
-        <description>A plane made by Cessna</description>
+        <description>A plane made by Cessna on Jupiter</description>
         <revision type="int">42</revision>
         <file-size-bytes type="int">860</file-size-bytes>
         <author>Standard author</author>

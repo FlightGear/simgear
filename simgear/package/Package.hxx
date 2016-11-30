@@ -202,7 +202,8 @@ private:
     std::string m_id;
     string_set m_tags;
     CatalogRef m_catalog;
-
+    string_list m_variants;
+    
     mutable function_list<InstallCallback> _install_cb;
 };
 

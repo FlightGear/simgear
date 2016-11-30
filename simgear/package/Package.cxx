@@ -48,6 +48,11 @@ void Package::initWithProps(const SGPropertyNode* aProps)
     }
 
     m_id = m_props->getStringValue("id");
+
+    m_variants.push_back(m_id);
+    for (auto var : m_props->getChildren("variant")) {
+        m_variants.push_back(var->getStringValue("id"));
+    }
 }
 
 void Package::updateFromProps(const SGPropertyNode* aProps)
@@ -58,53 +63,97 @@ void Package::updateFromProps(const SGPropertyNode* aProps)
 
 bool Package::matches(const SGPropertyNode* aFilter) const
 {
-    int nChildren = aFilter->nChildren();
-    for (int i = 0; i < nChildren; i++) {
-        const SGPropertyNode* c = aFilter->getChild(i);
-        const std::string& filter_name = c->getNameString();
+    const std::string& filter_name = aFilter->getNameString();
 
-        if (strutils::starts_with(filter_name, "rating-")) {
-            int minRating = c->getIntValue();
-            std::string rname = c->getName() + 7;
-            int ourRating = m_props->getChild("rating")->getIntValue(rname, 0);
-            if (ourRating < minRating) {
+    if (filter_name == "any-of") {
+        const int anyChildren = aFilter->nChildren();
+        for (int j = 0; j < anyChildren; j++) {
+            const SGPropertyNode* anyChild = aFilter->getChild(j);
+            if (matches(anyChild)) {
+                return true;
+            }
+        }
+
+        return false; // none of our children matched
+    } else if (filter_name.empty() || (filter_name == "all-of")) {
+        const int allChildren = aFilter->nChildren();
+        for (int j = 0; j < allChildren; j++) {
+            const SGPropertyNode* allChild = aFilter->getChild(j);
+            if (!matches(allChild)) {
                 return false;
             }
         }
-        else if (filter_name == "tag") {
-            std::string tag(c->getStringValue());
-            boost::to_lower(tag);
-            if (m_tags.find(tag) == m_tags.end()) {
-                return false;
+
+        return true; // all of our children matched
+    }
+
+    if (strutils::starts_with(filter_name, "rating-")) {
+        int minRating = aFilter->getIntValue();
+        std::string rname = aFilter->getName() + 7;
+        int ourRating = m_props->getChild("rating")->getIntValue(rname, 0);
+        return (ourRating >= minRating);
+    }
+
+    if (filter_name == "tag") {
+        std::string tag(aFilter->getStringValue());
+        boost::to_lower(tag);
+        return (m_tags.find(tag) != m_tags.end());
+    }
+
+    if (filter_name == "installed") {
+        return (isInstalled() == aFilter->getBoolValue());
+    }
+
+    bool handled = false;
+    // substring search of name, description, across variants too
+    if ((filter_name == "text") || (filter_name == "name")) {
+        handled = true;
+      std::string n(aFilter->getStringValue());
+      boost::to_lower(n);
+
+      size_t pos = boost::to_lower_copy(name()).find(n);
+      if (pos != std::string::npos) {
+        return true;
+      }
+
+      for (auto var : m_props->getChildren("variant")) {
+          if (var->hasChild("name")) {
+              std::string variantName(var->getStringValue("name"));
+              boost::to_lower(variantName);
+              size_t pos = variantName.find(n);
+              if (pos != std::string::npos) {
+                  return true;
+              }
+          }
+      }
+    }
+
+    if ((filter_name == "text") || (filter_name == "description")) {
+        handled = true;
+      std::string n(aFilter->getStringValue());
+      boost::to_lower(n);
+      size_t pos = boost::to_lower_copy(description()).find(n);
+      if (pos != std::string::npos) {
+        return true;
+      }
+
+        for (auto var : m_props->getChildren("variant")) {
+            if (var->hasChild("description")) {
+                std::string variantDesc(var->getStringValue("description"));
+                boost::to_lower(variantDesc);
+                size_t pos = variantDesc.find(n);
+                if (pos != std::string::npos) {
+                    return true;
+                }
             }
         }
-        // substring search of name, description
-        else if (filter_name == "name") {
-          std::string n(c->getStringValue());
-          boost::to_lower(n);
-          size_t pos = boost::to_lower_copy(name()).find(n);
-          if (pos == std::string::npos) {
-            return false;
-          }
-        }
-        else if (filter_name == "description") {
-          std::string n(c->getStringValue());
-          boost::to_lower(n);
-          size_t pos = boost::to_lower_copy(description()).find(n);
-          if (pos == std::string::npos) {
-            return false;
-          }
-        }
-        else if (filter_name == "installed") {
-          if (isInstalled() != c->getBoolValue()) {
-            return false;
-          }
-        }
-        else
-          SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << filter_name);
-    } // of filter props iteration
+    }
 
-    return true;
+    if (!handled) {
+      SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << filter_name);
+    }
+
+    return false;
 }
 
 bool Package::isInstalled() const
@@ -169,7 +218,10 @@ std::string Package::qualifiedId() const
 
 std::string Package::qualifiedVariantId(const unsigned int variantIndex) const
 {
-    return m_catalog->id() + "." + variants()[variantIndex];
+    if (variantIndex >= m_variants.size()) {
+        throw sg_range_exception("invalid variant index " + std::to_string(variantIndex));
+    }
+    return m_catalog->id() + "." + m_variants[variantIndex];
 }
 
 std::string Package::md5() const
@@ -312,14 +364,7 @@ PackageList Package::dependencies() const
 
 string_list Package::variants() const
 {
-    string_list result;
-    result.push_back(id());
-
-    BOOST_FOREACH(SGPropertyNode* var, m_props->getChildren("variant")) {
-        result.push_back(var->getStringValue("id"));
-    }
-
-    return result;
+    return m_variants;
 }
 
 std::string Package::nameForVariant(const std::string& vid) const
@@ -351,21 +396,12 @@ unsigned int Package::indexOfVariant(const std::string& vid) const
         actualId = vid.substr(lastDot + 1);
     }
 
-
-    if (actualId == id()) {
-        return 0;
+    string_list::const_iterator it = std::find(m_variants.begin(), m_variants.end(), actualId);
+    if (it == m_variants.end()) {
+        throw sg_exception("Unknow variant " + vid + " in package " + id());
     }
 
-    unsigned int result = 1;
-    for (SGPropertyNode* var : m_props->getChildren("variant")) {
-        if (var->getStringValue("id") == actualId) {
-            return result;
-        }
-
-        result++;
-    }
-
-    throw sg_exception("Unknow variant " + vid + " in package " + id());
+    return std::distance(m_variants.begin(), it);
 }
 
 std::string Package::nameForVariant(const unsigned int vIndex) const

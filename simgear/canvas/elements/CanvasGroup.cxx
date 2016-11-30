@@ -373,7 +373,7 @@ namespace canvas
     SG_LOG
     (
       SG_GENERAL,
-      SG_INFO,
+      SG_DEBUG,
       "canvas::Group: Moved element " << index << " to position " << index_new
     );
   }

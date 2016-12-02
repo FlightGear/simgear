@@ -672,6 +672,27 @@ void testListener()
 
 }
 
+void testAliasedListeners()
+{
+    SGPropertyNode_ptr tree(new SGPropertyNode);
+    defineSamplePropertyTree(tree);
+    TestListener l(tree.get());
+
+    tree->getNode("position/world/x", true)->alias(tree->getNode("position/body/a"));
+    tree->getNode("position/earth", true)->alias(tree->getNode("position/body"));
+
+    tree->getNode("position/world/x")->addChangeListener(&l);
+    tree->getNode("position/earth")->addChangeListener(&l);
+
+    tree->setIntValue("position/body/a", 99);
+    COMPARE(tree->getIntValue("position/world/x"), 99);
+    COMPARE(l.checkValueChangeCount("position/world/x"), 1);
+
+    tree->setIntValue("position/world/x", 101);
+    COMPARE(tree->getIntValue("position/body/a"), 101);
+    COMPARE(l.checkValueChangeCount("position/world/x"), 2);
+}
+
 class TiedPropertyDonor
 {
 
@@ -841,6 +862,8 @@ int main (int ac, char ** av)
     testListener();
     tiedPropertiesTest();
     tiedPropertiesListeners();
+    // disable test for the moment
+   // testAliasedListeners();
 
   return 0;
 }

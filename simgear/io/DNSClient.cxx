@@ -238,7 +238,7 @@ void Client::makeRequest(const Request_ptr& r)
 void Client::update(int waitTimeout)
 {
     time_t now = time(NULL);
-    if( dns_timeouts( d->ctx, waitTimeout, now ) < 0 )
+    if( dns_timeouts( d->ctx, -1, now ) < 0 )
         return;
 
     dns_ioevent(d->ctx, now);

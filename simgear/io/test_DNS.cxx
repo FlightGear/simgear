@@ -4,6 +4,8 @@
 #include <map>
 #include <sstream>
 #include <errno.h>
+#include <thread>
+#include <atomic>
 
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -30,16 +32,79 @@ using namespace simgear;
         exit(1); \
     }
 
+class Watchdog
+{
+public:
+    Watchdog() : _interval(0), _timer(0), _running(false) {}
+    ~Watchdog() {
+      stop();
+    }
+
+    void start(unsigned int milliseconds)
+    {
+        _interval = milliseconds;
+        _timer = 0;
+        _running = true;
+        _thread = std::thread(&Watchdog::loop, this);
+    }
+
+    void stop()
+    {
+        _running = false;
+        _thread.join();
+    }
+
+private:
+    unsigned int _interval;
+    std::atomic<unsigned int> _timer;
+    std::atomic<bool> _running;
+    std::thread _thread;
+
+    void loop()
+    {
+        while (_running)
+        {
+            _timer++;
+
+            if (_timer >= _interval)
+            {
+                _running = false;
+                std::cerr << "Failure: timeout." << endl;
+                exit(EXIT_FAILURE);
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+};
+
 
 int main(int argc, char* argv[])
 {
     sglog().setLogLevels( SG_ALL, SG_DEBUG );
 
-    DNS::Client cl;
-#define EXISTING_RECORD "terrasync.flightgear.org"
+    Watchdog watchdog;
+    watchdog.start(100);
 
-    // test existing NAPTR
-    // fgtest.t3r.de.                600        IN        NAPTR        999 99 "U" "test" "!^.*$!http://dnstest.flightgear.org/!" .
+    simgear::Socket::initSockets();
+
+
+    DNS::Client cl;
+
+    cout << "test update without prior pending request" << endl;
+    {
+        cout << "polling.";
+        for( int i = 0; i < 20; i++ ) {
+            SGTimeStamp::sleepForMSec(200);
+            cl.update(0);
+            cout << ".";
+            cout.flush();
+        }
+        cout << "done" << endl;
+    }
+
+#define EXISTING_RECORD "terrasync.flightgear.org"
+    cout << "test existing NAPTR: " EXISTING_RECORD << endl;
     {
         DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(EXISTING_RECORD);
         DNS::Request_ptr r(naptrRequest);
@@ -58,7 +123,7 @@ int main(int argc, char* argv[])
             return EXIT_FAILURE;
         }
 
-        // test for ascending preference/order
+        cout << "test for ascending preference/order" << endl;
         int order = -1, preference = -1;
         for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin(); it != naptrRequest->entries.end(); ++it ) {
             // currently only support "U" which implies empty replacement
@@ -95,7 +160,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    // test non-existing NAPTR
+    cout << "test non-existing NAPTR" << endl;
     {
         DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest("jurkxkqdiufqzpfvzqok.prozhqrlcaavbxifkkhf");
         DNS::Request_ptr r(naptrRequest);

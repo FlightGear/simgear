@@ -260,7 +260,7 @@ public:
      * SGPropertyNode::untie doesn't need to know the type of an
      * extended property.
      */
-    virtual SGRaw* makeContainer() const = 0;
+    virtual SGRawExtended* makeContainer() const = 0;
 };
 
 // Choose between different base classes based on whether the value is

@@ -1,108 +1,130 @@
-/// Unit tests for function inside strutils package
-#define BOOST_TEST_MODULE misc
-#include <BoostTestTargetConfig.h>
+// Unit tests for functions inside the strutils package
 
 #include <errno.h>
 #include <stdlib.h>             // _set_errno() on Windows
 #include <string>
 #include <fstream>              // std::ifstream
+
+#include <simgear/misc/test_macros.hxx>
 #include <simgear/compiler.h>
-#include "strutils.hxx"
+#include <simgear/misc/strutils.hxx>
+
+using std::string;
 
 namespace strutils = simgear::strutils;
 
-BOOST_AUTO_TEST_CASE( strutils_functions )
+void test_strip()
 {
-  std::string a("abcd");
-  BOOST_CHECK_EQUAL(strutils::strip(a), a);
-  BOOST_CHECK_EQUAL(strutils::strip(" a "), "a");
-  BOOST_CHECK_EQUAL(strutils::lstrip(" a  "), "a  ");
-  BOOST_CHECK_EQUAL(strutils::rstrip("\ta "), "\ta");
+  string a("abcd");
+  SG_CHECK_EQUAL(strutils::strip(a), a);
+  SG_CHECK_EQUAL(strutils::strip(" a "), "a");
+  SG_CHECK_EQUAL(strutils::lstrip(" a  "), "a  ");
+  SG_CHECK_EQUAL(strutils::rstrip("\ta "), "\ta");
 
-  // check internal spacing is preserved
-  BOOST_CHECK_EQUAL(strutils::strip("\t \na \t b\r \n "), "a \t b");
+  // Check internal spacing is preserved
+  SG_CHECK_EQUAL(strutils::strip("\t \na \t b\r \n "), "a \t b");
+}
 
+void test_starts_with()
+{
+  SG_VERIFY(strutils::starts_with("banana", "ban"));
+  SG_VERIFY(!strutils::starts_with("abanana", "ban"));
+  // Pass - string starts with itself
+  SG_VERIFY(strutils::starts_with("banana", "banana"));
+  // Fail - original string is prefix of
+  SG_VERIFY(!strutils::starts_with("ban", "banana"));
+}
 
-  BOOST_CHECK(strutils::starts_with("banana", "ban"));
-  BOOST_CHECK(!strutils::starts_with("abanana", "ban"));
-  BOOST_CHECK(strutils::starts_with("banana", "banana")); // pass - string starts with itself
-  BOOST_CHECK(!strutils::starts_with("ban", "banana")); // fail - original string is prefix of
+void test_ends_with()
+{
+  SG_VERIFY(strutils::ends_with("banana", "ana"));
+  SG_VERIFY(strutils::ends_with("foo.text", ".text"));
+  SG_VERIFY(!strutils::ends_with("foo.text", ".html"));
+}
 
-  BOOST_CHECK(strutils::ends_with("banana", "ana"));
-  BOOST_CHECK(strutils::ends_with("foo.text", ".text"));
-  BOOST_CHECK(!strutils::ends_with("foo.text", ".html"));
+void test_simplify()
+{
+  SG_CHECK_EQUAL(strutils::simplify("\ta\t b  \nc\n\r \r\n"), "a b c");
+  SG_CHECK_EQUAL(strutils::simplify("The quick  - brown dog!"),
+                 "The quick - brown dog!");
+  SG_CHECK_EQUAL(strutils::simplify("\r\n  \r\n   \t  \r"), "");
+}
 
-  BOOST_CHECK_EQUAL(strutils::simplify("\ta\t b  \nc\n\r \r\n"), "a b c");
-  BOOST_CHECK_EQUAL(strutils::simplify("The quick  - brown dog!"), "The quick - brown dog!");
-  BOOST_CHECK_EQUAL(strutils::simplify("\r\n  \r\n   \t  \r"), "");
+void test_to_int()
+{
+  SG_CHECK_EQUAL(strutils::to_int("999"), 999);
+  SG_CHECK_EQUAL(strutils::to_int("0000000"), 0);
+  SG_CHECK_EQUAL(strutils::to_int("-10000"), -10000);
+}
 
-  BOOST_CHECK_EQUAL(strutils::to_int("999"), 999);
-  BOOST_CHECK_EQUAL(strutils::to_int("0000000"), 0);
-  BOOST_CHECK_EQUAL(strutils::to_int("-10000"), -10000);
-
+void test_split()
+{
   string_list l = strutils::split("zero one two three four five");
-  BOOST_CHECK_EQUAL(l[2], "two");
-  BOOST_CHECK_EQUAL(l[5], "five");
-  BOOST_CHECK_EQUAL(l.size(), 6);
+  SG_CHECK_EQUAL(l[2], "two");
+  SG_CHECK_EQUAL(l[5], "five");
+  SG_CHECK_EQUAL(l.size(), 6);
 
-  std::string j = strutils::join(l, "&");
-  BOOST_CHECK_EQUAL(j, "zero&one&two&three&four&five");
+  string j = strutils::join(l, "&");
+  SG_CHECK_EQUAL(j, "zero&one&two&three&four&five");
 
   l = strutils::split("alpha:beta:gamma:delta", ":", 2);
-  BOOST_CHECK_EQUAL(l.size(), 3);
-  BOOST_CHECK_EQUAL(l[0], "alpha");
-  BOOST_CHECK_EQUAL(l[1], "beta");
-  BOOST_CHECK_EQUAL(l[2], "gamma:delta");
+  SG_CHECK_EQUAL(l.size(), 3);
+  SG_CHECK_EQUAL(l[0], "alpha");
+  SG_CHECK_EQUAL(l[1], "beta");
+  SG_CHECK_EQUAL(l[2], "gamma:delta");
 
   l = strutils::split("", ",");
-  BOOST_CHECK_EQUAL(l.size(), 1);
-  BOOST_CHECK_EQUAL(l[0], "");
+  SG_CHECK_EQUAL(l.size(), 1);
+  SG_CHECK_EQUAL(l[0], "");
 
   l = strutils::split(",", ",");
-  BOOST_CHECK_EQUAL(l.size(), 2);
-  BOOST_CHECK_EQUAL(l[0], "");
-  BOOST_CHECK_EQUAL(l[1], "");
+  SG_CHECK_EQUAL(l.size(), 2);
+  SG_CHECK_EQUAL(l[0], "");
+  SG_CHECK_EQUAL(l[1], "");
 
   l = strutils::split(",,", ",");
-  BOOST_CHECK_EQUAL(l.size(), 3);
-  BOOST_CHECK_EQUAL(l[0], "");
-  BOOST_CHECK_EQUAL(l[1], "");
-  BOOST_CHECK_EQUAL(l[2], "");
+  SG_CHECK_EQUAL(l.size(), 3);
+  SG_CHECK_EQUAL(l[0], "");
+  SG_CHECK_EQUAL(l[1], "");
+  SG_CHECK_EQUAL(l[2], "");
 
   l = strutils::split("  ", ",");
-  BOOST_CHECK_EQUAL(l.size(), 1);
-  BOOST_CHECK_EQUAL(l[0], "  ");
-
-  BOOST_CHECK_EQUAL(strutils::unescape("\\ \\n\\t\\x41\\117a"), " \n\tAOa");
+  SG_CHECK_EQUAL(l.size(), 1);
+  SG_CHECK_EQUAL(l[0], "  ");
 }
 
-BOOST_AUTO_TEST_CASE( compare_versions )
+void test_unescape()
 {
-  BOOST_CHECK_LT(strutils::compare_versions("1.0.12", "1.1"), 0);
-  BOOST_CHECK_GT(strutils::compare_versions("1.1", "1.0.12"), 0);
-  BOOST_CHECK_EQUAL(strutils::compare_versions("10.6.7", "10.6.7"), 0);
-  BOOST_CHECK_LT(strutils::compare_versions("2.0", "2.0.99"), 0);
-  BOOST_CHECK_EQUAL(strutils::compare_versions("99", "99"), 0);
-  BOOST_CHECK_GT(strutils::compare_versions("99", "98"), 0);
-
-  // since we compare numerically, leasing zeros shouldn't matter
-  BOOST_CHECK_EQUAL(strutils::compare_versions("0.06.7", "0.6.07"), 0);
+  SG_CHECK_EQUAL(strutils::unescape("\\ \\n\\t\\x41\\117a"), " \n\tAOa");
 }
 
-BOOST_AUTO_TEST_CASE( md5_hex )
+void test_compare_versions()
+{
+  SG_CHECK_LT(strutils::compare_versions("1.0.12", "1.1"), 0);
+  SG_CHECK_GT(strutils::compare_versions("1.1", "1.0.12"), 0);
+  SG_CHECK_EQUAL(strutils::compare_versions("10.6.7", "10.6.7"), 0);
+  SG_CHECK_LT(strutils::compare_versions("2.0", "2.0.99"), 0);
+  SG_CHECK_EQUAL(strutils::compare_versions("99", "99"), 0);
+  SG_CHECK_GT(strutils::compare_versions("99", "98"), 0);
+
+  // Since we compare numerically, leading zeros shouldn't matter
+  SG_CHECK_EQUAL(strutils::compare_versions("0.06.7", "0.6.07"), 0);
+}
+
+void test_md5_hex()
 {
   // hex encoding
   unsigned char raw_data[] = {0x0f, 0x1a, 0xbc, 0xd2, 0xe3, 0x45, 0x67, 0x89};
-  const std::string& hex_data =
+  const string& hex_data =
     strutils::encodeHex(raw_data, sizeof(raw_data)/sizeof(raw_data[0]));
-  BOOST_REQUIRE_EQUAL(hex_data, "0f1abcd2e3456789");
-  BOOST_REQUIRE_EQUAL(strutils::encodeHex("abcde"), "6162636465");
+  SG_CHECK_EQUAL(hex_data, "0f1abcd2e3456789");
+  SG_CHECK_EQUAL(strutils::encodeHex("abcde"), "6162636465");
 
   // md5
-  BOOST_CHECK_EQUAL(strutils::md5("test"), "098f6bcd4621d373cade4e832627b4f6");
+  SG_CHECK_EQUAL(strutils::md5("test"), "098f6bcd4621d373cade4e832627b4f6");
 }
 
-BOOST_AUTO_TEST_CASE( error_string )
+void test_error_string()
 {
 #if defined(_WIN32)
   _set_errno(0);
@@ -118,7 +140,23 @@ BOOST_AUTO_TEST_CASE( error_string )
   int saved_errno = errno;
 #endif
 
-  BOOST_CHECK(!f.is_open());
-  BOOST_CHECK_NE(saved_errno, 0);
-  BOOST_CHECK_GT(strutils::error_string(saved_errno).size(), 0);
+  SG_VERIFY(!f.is_open());
+  SG_CHECK_NE(saved_errno, 0);
+  SG_CHECK_GT(strutils::error_string(saved_errno).size(), 0);
+}
+
+int main(int argc, char* argv[])
+{
+    test_strip();
+    test_starts_with();
+    test_ends_with();
+    test_simplify();
+    test_to_int();
+    test_split();
+    test_unescape();
+    test_compare_versions();
+    test_md5_hex();
+    test_error_string();
+
+    return EXIT_SUCCESS;
 }

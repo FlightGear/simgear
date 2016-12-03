@@ -63,6 +63,10 @@ add_executable(test_streams sgstream_test.cxx )
 add_test(streams ${EXECUTABLE_OUTPUT_PATH}/test_streams)
 target_link_libraries(test_streams ${TEST_LIBS})
 
+add_executable(test_strutils strutils_test.cxx)
+target_link_libraries(test_strutils ${TEST_LIBS})
+add_test(strutils ${EXECUTABLE_OUTPUT_PATH}/test_strutils)
+
 add_executable(test_path path_test.cxx )
 add_test(path ${EXECUTABLE_OUTPUT_PATH}/test_path)
 target_link_libraries(test_path ${TEST_LIBS})
@@ -76,11 +80,6 @@ add_boost_test(SimpleMarkdown
 
 add_boost_test(SVGpreserveAspectRatio
   SOURCES SVGpreserveAspectRatio_test.cxx
-  LIBRARIES ${TEST_LIBS}
-)
-
-add_boost_test(strutils
-  SOURCES strutils_test.cxx
   LIBRARIES ${TEST_LIBS}
 )
 

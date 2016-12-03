@@ -2361,8 +2361,14 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
 {
   if (_listeners == 0)
     _listeners = new vector<SGPropertyChangeListener*>;
-  _listeners->push_back(listener);
-  listener->register_property(this);
+
+    auto it = std::find(_listeners->begin(), _listeners->end(), listener);
+    if (it != _listeners->end()) {
+        return;
+    }
+
+    _listeners->push_back(listener);
+    listener->register_property(this);
 
 #ifdef ALTERNATE_RECURSIVE
     if (listener->isRecursive()) {
@@ -2570,21 +2576,27 @@ SGPropertyChangeListener::childRemoved (SGPropertyNode * parent,
 void
 SGPropertyChangeListener::register_property (SGPropertyNode * node)
 {
-    auto it = std::find(_properties.begin(), _properties.end(), node);
+    auto it = std::lower_bound(_properties.begin(), _properties.end(), node);
     if (it != _properties.end()) {
-        return; // duplicate listen
+        if (*it == node) {
+            // already exists, duplicate listent
+            return;
+        }
     }
-   _properties.push_back(node);
+
+    _properties.insert(it, node);
 }
 
 void
 SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
 {
-  vector<SGPropertyNode *>::iterator it =
-    find(_properties.begin(), _properties.end(), node);
-    if (it != _properties.end()) {
-        _properties.erase(it);
+    auto it = std::lower_bound(_properties.begin(), _properties.end(), node);
+    if (it == _properties.end()) {
+        // not found, warn?
+        return;
     }
+
+    _properties.erase(it);
 }
 
 #if !PROPS_STANDALONE

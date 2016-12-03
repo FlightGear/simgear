@@ -390,6 +390,22 @@ void test_addChild()
   dump_node(&root);
 }
 
+
+bool ensureNListeners(SGPropertyNode* node, unsigned int n)
+{
+    if (node->nListeners() != n) {
+        return false;
+    }
+
+    for (int c=0; c < node->nChildren(); ++c) {
+        if (!ensureNListeners(node->getChild(c), n)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void defineSamplePropertyTree(SGPropertyNode_ptr root)
 {
     root->setIntValue("position/body/a", 42);
@@ -668,6 +684,13 @@ void testListener()
         COMPARE(l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
         COMPARE(l.checkValueChangeCount("controls/engines[9]/fuel-cutoff"), 0);
 
+        // ensure additional calls to fireChildrenRecursive don't cause multiple adds
+
+        VERIFY(ensureNListeners(tree->getNode("position/body"), 1));
+        VERIFY(ensureNListeners(tree->getNode("controls"), 0));
+
+        tree->getNode("position/body")->fireCreatedRecursive();
+        VERIFY(ensureNListeners(tree->getNode("position/body"), 1));
     }
 
 }
@@ -840,6 +863,39 @@ void tiedPropertiesListeners()
 
 }
 
+
+void testDeleterListener()
+{
+    SGPropertyNode_ptr tree = new SGPropertyNode;
+    defineSamplePropertyTree(tree);
+
+
+    // recursive listen
+    {
+        TestListener* l = new TestListener(tree.get(), true /* recursive */);
+        tree->getNode("position/body")->addChangeListener(l);
+        tree->getNode("controls/")->addChangeListener(l);
+
+        COMPARE(l->checkValueChangeCount("position/body/a"), 0);
+
+        // create additional children
+        tree->setFloatValue("position/body/sub/theta", 0.1234);
+
+        VERIFY(l->checkAdded("position/body/sub", tree->getNode("position/body/sub/theta")));
+
+        COMPARE(l->checkValueChangeCount("position/body/sub/theta"), 1);
+
+        delete l;
+
+        tree->setFloatValue("position/body/sub/theta", 99.123);
+        tree->setIntValue("position/body/a", 33);
+
+        // verify no listeners at all
+        VERIFY(ensureNListeners(tree, 0));
+    }
+
+}
+
 int main (int ac, char ** av)
 {
   test_value();
@@ -862,6 +918,8 @@ int main (int ac, char ** av)
     testListener();
     tiedPropertiesTest();
     tiedPropertiesListeners();
+    testDeleterListener();
+    
     // disable test for the moment
    // testAliasedListeners();
 

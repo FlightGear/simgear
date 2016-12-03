@@ -70,6 +70,24 @@ namespace simgear {
 	std::string rstrip( const std::string& s );
 	std::string strip( const std::string& s );
 
+	/**
+         * Return a new string with any trailing \r and \n characters removed.
+         * Typically useful to clean a CR-terminated line obtained from
+         * std::getline() which, upon reading CRLF (\r\n), discards the Line
+         * Feed character (\n) but leaves the Carriage Return (\r) in the
+         * string.
+         * @param s Input string
+         * @return The cleaned string
+         */
+        std::string stripTrailingNewlines(const std::string& s);
+
+	/**
+         * Strip any trailing \r and \n characters from a string.
+         * Should have slightly less overhead than stripTrailingNewlines().
+         * @param s Input string (modified in-place)
+         */
+        void stripTrailingNewlines_inplace(std::string& s);
+
         /**
          * Right-padding of a string to a given length
          * @param s String to pad

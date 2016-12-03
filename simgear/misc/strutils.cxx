@@ -238,6 +238,35 @@ namespace simgear {
 	    return do_strip( s, BOTHSTRIP );
 	}
 
+        void
+        stripTrailingNewlines_inplace(string& s)
+        {
+          // The following (harder to read) implementation is much slower on
+          // my system (g++ 6.2.1 on Debian): 11.4 vs. 3.9 seconds on
+          // 50,000,000 iterations performed on a short CRLF-terminated
+          // string---and it is even a bit slower (12.9 seconds) with
+          // std::next(it) instead of (it+1).
+          //
+          // for (string::reverse_iterator it = s.rbegin();
+          //      it != s.rend() && (*it == '\r' || *it == '\n'); /* empty */) {
+          //   it = string::reverse_iterator(s.erase( (it+1).base() ));
+          // }
+
+          // Simple and fast
+          while (!s.empty() && (s.back() == '\r' || s.back() == '\n')) {
+            s.pop_back();
+          }
+        }
+
+        string
+        stripTrailingNewlines(const string& s)
+        {
+          string res = s;
+          stripTrailingNewlines_inplace(res);
+
+          return res;
+        }
+
 	string
 	rpad( const string & s, string::size_type length, char c )
 	{

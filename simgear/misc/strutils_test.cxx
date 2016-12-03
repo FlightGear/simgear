@@ -25,6 +25,34 @@ void test_strip()
   SG_CHECK_EQUAL(strutils::strip("\t \na \t b\r \n "), "a \t b");
 }
 
+void test_stripTrailingNewlines()
+{
+  SG_CHECK_EQUAL(strutils::stripTrailingNewlines("\rfoobar\n\r\n\n\r\r"),
+                 "\rfoobar");
+  SG_CHECK_EQUAL(strutils::stripTrailingNewlines("\rfoobar\r"), "\rfoobar");
+  SG_CHECK_EQUAL(strutils::stripTrailingNewlines("\rfoobar"), "\rfoobar");
+  SG_CHECK_EQUAL(strutils::stripTrailingNewlines(""), "");
+}
+
+void test_stripTrailingNewlines_inplace()
+{
+  string s = "\r\n\r\rfoo\n\r\rbar\n\r\n\r\r\n\r\r";
+  strutils::stripTrailingNewlines_inplace(s);
+  SG_CHECK_EQUAL(s, "\r\n\r\rfoo\n\r\rbar");
+
+  s = "\rfoobar\r";
+  strutils::stripTrailingNewlines_inplace(s);
+  SG_CHECK_EQUAL(s, "\rfoobar");
+
+  s = "\rfoobar";
+  strutils::stripTrailingNewlines_inplace(s);
+  SG_CHECK_EQUAL(s, "\rfoobar");
+
+  s = "";
+  strutils::stripTrailingNewlines_inplace(s);
+  SG_CHECK_EQUAL(s, "");
+}
+
 void test_starts_with()
 {
   SG_VERIFY(strutils::starts_with("banana", "ban"));
@@ -148,6 +176,8 @@ void test_error_string()
 int main(int argc, char* argv[])
 {
     test_strip();
+    test_stripTrailingNewlines();
+    test_stripTrailingNewlines_inplace();
     test_starts_with();
     test_ends_with();
     test_simplify();

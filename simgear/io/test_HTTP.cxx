@@ -3,7 +3,7 @@
 #include <iostream>
 #include <map>
 #include <sstream>
-#include <errno.h>
+#include <cerrno>
 
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -17,6 +17,7 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/test_macros.hxx>
 
 #include <curl/multi.h>
 
@@ -41,18 +42,6 @@ const char* BODY3 = "Cras ut neque nulla. Duis ut velit neque, sit amet "
 const unsigned int body2Size = 8 * 1024;
 char body2[body2Size];
 
-#define COMPARE(a, b) \
-    if ((a) != (b))  { \
-        cerr << "failed:" << #a << " != " << #b << endl; \
-        cerr << "\tgot:'" << a << "'" << endl; \
-        exit(1); \
-    }
-
-#define VERIFY(a) \
-    if (!(a))  { \
-        cerr << "failed:" << #a << endl; \
-        exit(1); \
-    }
 
 class TestRequest : public HTTP::Request
 {
@@ -126,8 +115,9 @@ public:
             d << contentStr;
             push(d.str().c_str());
         } else if (path == "/test_headers") {
-            COMPARE(requestHeaders["X-Foo"], string("Bar"));
-            COMPARE(requestHeaders["X-AnotherHeader"], string("A longer value"));
+            SG_CHECK_EQUAL(requestHeaders["X-Foo"], string("Bar"));
+            SG_CHECK_EQUAL(requestHeaders["X-AnotherHeader"],
+                           string("A longer value"));
 
             string contentStr(BODY1);
             stringstream d;
@@ -304,7 +294,7 @@ public:
         } else if (path == "/test_put") {
           std::cerr << "sending PUT response" << std::endl;
 
-          COMPARE(buffer, BODY3);
+          SG_CHECK_EQUAL(buffer, BODY3);
           stringstream d;
           d << "HTTP/1.1 " << 204 << " " << reasonForCode(204) << "\r\n";
           d << "\r\n"; // final CRLF to terminate the headers
@@ -314,7 +304,7 @@ public:
 
           std::string entityStr = "http://localhost:2000/something.txt";
 
-          COMPARE(buffer, BODY3);
+          SG_CHECK_EQUAL(buffer, BODY3);
           stringstream d;
           d << "HTTP/1.1 " << 201 << " " << reasonForCode(201) << "\r\n";
           d << "Location:" << entityStr << "\r\n";
@@ -385,18 +375,18 @@ int main(int argc, char* argv[])
 
 // test URL parsing
     TestRequest* tr1 = new TestRequest("http://localhost.woo.zar:2000/test1?foo=bar");
-    COMPARE(tr1->scheme(), "http");
-    COMPARE(tr1->hostAndPort(), "localhost.woo.zar:2000");
-    COMPARE(tr1->host(), "localhost.woo.zar");
-    COMPARE(tr1->port(), 2000);
-    COMPARE(tr1->path(), "/test1");
+    SG_CHECK_EQUAL(tr1->scheme(), "http");
+    SG_CHECK_EQUAL(tr1->hostAndPort(), "localhost.woo.zar:2000");
+    SG_CHECK_EQUAL(tr1->host(), "localhost.woo.zar");
+    SG_CHECK_EQUAL(tr1->port(), 2000);
+    SG_CHECK_EQUAL(tr1->path(), "/test1");
 
     TestRequest* tr2 = new TestRequest("http://192.168.1.1/test1/dir/thing/file.png");
-    COMPARE(tr2->scheme(), "http");
-    COMPARE(tr2->hostAndPort(), "192.168.1.1");
-    COMPARE(tr2->host(), "192.168.1.1");
-    COMPARE(tr2->port(), 80);
-    COMPARE(tr2->path(), "/test1/dir/thing/file.png");
+    SG_CHECK_EQUAL(tr2->scheme(), "http");
+    SG_CHECK_EQUAL(tr2->hostAndPort(), "192.168.1.1");
+    SG_CHECK_EQUAL(tr2->host(), "192.168.1.1");
+    SG_CHECK_EQUAL(tr2->port(), 80);
+    SG_CHECK_EQUAL(tr2->path(), "/test1/dir/thing/file.png");
 
 // basic get request
     {
@@ -405,11 +395,11 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
 
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseReason(), string("OK"));
-        COMPARE(tr->responseLength(), strlen(BODY1));
-        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
-        COMPARE(tr->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
     }
 
     {
@@ -418,11 +408,11 @@ int main(int argc, char* argv[])
       cl.makeRequest(tr);
 
       waitForComplete(&cl, tr);
-      COMPARE(tr->responseCode(), 200);
-      COMPARE(tr->responseReason(), string("OK"));
-      COMPARE(tr->responseLength(), strlen(BODY3));
-      COMPARE(tr->responseBytesReceived(), strlen(BODY3));
-      COMPARE(tr->bodyData, string(BODY3));
+      SG_CHECK_EQUAL(tr->responseCode(), 200);
+      SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
+      SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY3));
+      SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY3));
+      SG_CHECK_EQUAL(tr->bodyData, string(BODY3));
     }
 
     {
@@ -430,7 +420,7 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
     }
 
     {
@@ -441,11 +431,11 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
 
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseReason(), string("OK"));
-        COMPARE(tr->responseLength(), strlen(BODY1));
-        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
-        COMPARE(tr->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
     }
 
 // larger get request
@@ -458,9 +448,9 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseBytesReceived(), body2Size);
-        COMPARE(tr->bodyData, string(body2, body2Size));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), body2Size);
+        SG_CHECK_EQUAL(tr->bodyData, string(body2, body2Size));
     }
 
     cerr << "testing chunked transfer encoding" << endl;
@@ -470,12 +460,12 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
 
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseReason(), string("OK"));
-        COMPARE(tr->responseBytesReceived(), 30);
-        COMPARE(tr->bodyData, "ABCDEFGHABCDEFABCDSTUVABCDSTUV");
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), 30);
+        SG_CHECK_EQUAL(tr->bodyData, "ABCDEFGHABCDEFABCDSTUVABCDSTUV");
     // check trailers made it too
-        COMPARE(tr->headers["x-foobar"], string("wibble"));
+        SG_CHECK_EQUAL(tr->headers["x-foobar"], string("wibble"));
     }
 
 // test 404
@@ -484,9 +474,9 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 404);
-        COMPARE(tr->responseReason(), string("not found"));
-        COMPARE(tr->responseLength(), 0);
+        SG_CHECK_EQUAL(tr->responseCode(), 404);
+        SG_CHECK_EQUAL(tr->responseReason(), string("not found"));
+        SG_CHECK_EQUAL(tr->responseLength(), 0);
     }
 
     cout << "done 404 test" << endl;
@@ -496,7 +486,7 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
     }
 
     cout << "done1" << endl;
@@ -506,9 +496,9 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseLength(), strlen(BODY1));
-        COMPARE(tr->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
     }
 
     cout << "done2" << endl;
@@ -518,9 +508,9 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseLength(), strlen(BODY1));
-        COMPARE(tr->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
     }
     cout << "done3" << endl;
 // test connectToHost failure
@@ -534,7 +524,7 @@ int main(int argc, char* argv[])
 
 
         const int HOST_NOT_FOUND_CODE = CURLE_COULDNT_RESOLVE_HOST;
-        COMPARE(tr->responseCode(), HOST_NOT_FOUND_CODE);
+        SG_CHECK_EQUAL(tr->responseCode(), HOST_NOT_FOUND_CODE);
     }
 
   cout << "testing abrupt close" << endl;
@@ -546,7 +536,7 @@ int main(int argc, char* argv[])
         waitForFailed(&cl, tr);
 
         const int SERVER_NO_DATA_CODE = CURLE_GOT_NOTHING;
-        COMPARE(tr->responseCode(), SERVER_NO_DATA_CODE);
+        SG_CHECK_EQUAL(tr->responseCode(), SERVER_NO_DATA_CODE);
     }
 
 cout << "testing proxy close" << endl;
@@ -557,9 +547,9 @@ cout << "testing proxy close" << endl;
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseLength(), body2Size);
-        COMPARE(tr->bodyData, string(body2, body2Size));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseLength(), body2Size);
+        SG_CHECK_EQUAL(tr->bodyData, string(body2, body2Size));
     }
 
     {
@@ -568,9 +558,9 @@ cout << "testing proxy close" << endl;
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseBytesReceived(), body2Size);
-        COMPARE(tr->bodyData, string(body2, body2Size));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), body2Size);
+        SG_CHECK_EQUAL(tr->bodyData, string(body2, body2Size));
     }
 
 // pipelining
@@ -595,17 +585,17 @@ cout << "testing proxy close" << endl;
         cl.makeRequest(tr3);
 
         waitForComplete(&cl, tr3);
-        VERIFY(tr->complete);
-        VERIFY(tr2->complete);
-        COMPARE(tr->bodyData, string(BODY1));
+        SG_VERIFY(tr->complete);
+        SG_VERIFY(tr2->complete);
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
 
-        COMPARE(tr2->responseLength(), strlen(BODY3));
-        COMPARE(tr2->responseBytesReceived(), strlen(BODY3));
-        COMPARE(tr2->bodyData, string(BODY3));
+        SG_CHECK_EQUAL(tr2->responseLength(), strlen(BODY3));
+        SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY3));
+        SG_CHECK_EQUAL(tr2->bodyData, string(BODY3));
 
-        COMPARE(tr3->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
 
-        COMPARE(testServer.connectCount(), 1);
+        SG_CHECK_EQUAL(testServer.connectCount(), 1);
     }
 
 // multiple requests with an HTTP 1.0 server
@@ -626,17 +616,17 @@ cout << "testing proxy close" << endl;
         cl.makeRequest(tr3);
 
         waitForComplete(&cl, tr3);
-        VERIFY(tr->complete);
-        VERIFY(tr2->complete);
+        SG_VERIFY(tr->complete);
+        SG_VERIFY(tr2->complete);
 
-        COMPARE(tr->responseLength(), strlen(BODY1));
-        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
-        COMPARE(tr->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
 
-        COMPARE(tr2->responseLength(), strlen(BODY3));
-        COMPARE(tr2->responseBytesReceived(), strlen(BODY3));
-        COMPARE(tr2->bodyData, string(BODY3));
-        COMPARE(tr3->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr2->responseLength(), strlen(BODY3));
+        SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY3));
+        SG_CHECK_EQUAL(tr2->bodyData, string(BODY3));
+        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
     }
 
 // POST
@@ -648,7 +638,7 @@ cout << "testing proxy close" << endl;
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 204);
+        SG_CHECK_EQUAL(tr->responseCode(), 204);
     }
 
     // PUT
@@ -660,7 +650,7 @@ cout << "testing proxy close" << endl;
             HTTP::Request_ptr own(tr);
             cl.makeRequest(tr);
             waitForComplete(&cl, tr);
-            COMPARE(tr->responseCode(), 204);
+            SG_CHECK_EQUAL(tr->responseCode(), 204);
         }
 
         {
@@ -671,7 +661,7 @@ cout << "testing proxy close" << endl;
             HTTP::Request_ptr own(tr);
             cl.makeRequest(tr);
             waitForComplete(&cl, tr);
-            COMPARE(tr->responseCode(), 201);
+            SG_CHECK_EQUAL(tr->responseCode(), 201);
         }
 
     // test_zero_length_content
@@ -681,9 +671,9 @@ cout << "testing proxy close" << endl;
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->bodyData, string());
-        COMPARE(tr->responseBytesReceived(), 0);
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->bodyData, string());
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), 0);
     }
 
     // test cancel
@@ -711,12 +701,12 @@ cout << "testing proxy close" << endl;
 
         waitForComplete(&cl, tr3);
 
-        COMPARE(tr->responseCode(), -1);
-        COMPARE(tr2->responseReason(), "my reason 2");
+        SG_CHECK_EQUAL(tr->responseCode(), -1);
+        SG_CHECK_EQUAL(tr2->responseReason(), "my reason 2");
 
-        COMPARE(tr3->responseLength(), strlen(BODY1));
-        COMPARE(tr3->responseBytesReceived(), strlen(BODY1));
-        COMPARE(tr3->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr3->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr3->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
     }
 
     // test cancel
@@ -742,16 +732,16 @@ cout << "testing proxy close" << endl;
 
         waitForComplete(&cl, tr3);
 
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->responseLength(), strlen(BODY1));
-        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
-        COMPARE(tr->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
 
-        COMPARE(tr2->responseCode(), -1);
+        SG_CHECK_EQUAL(tr2->responseCode(), -1);
 
-        COMPARE(tr3->responseLength(), strlen(BODY1));
-        COMPARE(tr3->responseBytesReceived(), strlen(BODY1));
-        COMPARE(tr3->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr3->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr3->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
     }
 
     {
@@ -776,12 +766,12 @@ cout << "testing proxy close" << endl;
         cl.makeRequest(tr2);
 
         waitForComplete(&cl, tr2);
-        COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->bodyData, string(BODY3));
-        COMPARE(tr->responseBytesReceived(), strlen(BODY3));
-        COMPARE(tr2->responseCode(), 200);
-        COMPARE(tr2->bodyData, string(BODY1));
-        COMPARE(tr2->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY3));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY3));
+        SG_CHECK_EQUAL(tr2->responseCode(), 200);
+        SG_CHECK_EQUAL(tr2->bodyData, string(BODY1));
+        SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY1));
     }
 
     cout << "all tests passed ok" << endl;

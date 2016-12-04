@@ -3,21 +3,10 @@
 #include <cstring>
 #include <iostream>
 
-#define VERIFY_CLOSE(a, b) \
-  if( norm((a) - (b)) > 1e-5 ) \
-  { \
-    std::cerr << "line " << __LINE__ << ": failed: "\
-              << #a << " != " << #b\
-              << " [" << (a) << " != " << (b) << "]" << std::endl; \
-    return 1; \
-  }
+#include <simgear/misc/test_macros.hxx>
 
-#define VERIFY(a) \
-  if( !(a) ) \
-  { \
-    std::cerr << "failed: line " << __LINE__ << ": " << #a << std::endl; \
-    return 1; \
-  }
+#define VERIFY_CLOSE(a, b) SG_VERIFY( norm((a) - (b)) <= 1e-5 )
+
 
 struct AnimationTest:
   public SGAnimation

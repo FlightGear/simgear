@@ -18,6 +18,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
+#include <simgear/misc/test_macros.hxx>
 
 using std::cout;
 using std::cerr;
@@ -25,12 +26,6 @@ using std::endl;
 
 using namespace simgear;
 
-#define COMPARE(a, b) \
-    if ((a) != (b))  { \
-        cerr << "failed:" << #a << " != " << #b << endl; \
-        cerr << "\tgot:'" << a << "'" << endl; \
-        exit(1); \
-    }
 
 class Watchdog
 {
@@ -127,11 +122,11 @@ int main(int argc, char* argv[])
         int order = -1, preference = -1;
         for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin(); it != naptrRequest->entries.end(); ++it ) {
             // currently only support "U" which implies empty replacement
-            COMPARE((*it)->flags, "U" );
-            COMPARE(naptrRequest->entries[0]->replacement, "" );
+            SG_CHECK_EQUAL((*it)->flags, "U" );
+            SG_CHECK_EQUAL(naptrRequest->entries[0]->replacement, "" );
 
             // currently only support ws20
-            COMPARE((*it)->service, "ws20" );
+            SG_CHECK_EQUAL((*it)->service, "ws20" );
 
             if( (*it)->order < order ) {
                 cerr << "NAPTR entries not ascending for field 'order'" << endl;
@@ -174,7 +169,7 @@ int main(int argc, char* argv[])
             cerr << "timeout testing non-existing record." << endl;
             return EXIT_FAILURE;
         }
-        COMPARE(naptrRequest->entries.size(), 0 );
+        SG_CHECK_EQUAL(naptrRequest->entries.size(), 0 );
     }
 
     cout << "all tests passed ok" << endl;

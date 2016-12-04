@@ -4,30 +4,18 @@
 
 #include <cmath>
 #include <iostream>
+#include <simgear/misc/test_macros.hxx>
 
-#define COMPARE(a, b) \
-  if( std::fabs((a) - (b)) > 1e-4 ) \
-  { \
-    std::cerr << "line " << __LINE__ << ": failed: "\
-              << #a << " != " << #b << " d = " << ((a) - (b)) << std::endl; \
-    return 1; \
-  }
+#define COMPARE(a, b) SG_CHECK_EQUAL_EP2((a), (b), 1e-4)
 
-#define VERIFY(a) \
-  if( !(a) ) \
-  { \
-    std::cerr << "line " << __LINE__ << ": failed: "\
-              << #a << std::endl; \
-    return 1; \
-  }
 
 using namespace simgear;
 
 int main (int ac, char ** av)
 {
   CSSBorder b = CSSBorder::parse("5");
-  VERIFY(b.isValid());
-  VERIFY(!b.isNone());
+  SG_VERIFY(b.isValid());
+  SG_VERIFY(!b.isNone());
   CSSBorder::Offsets o = b.getAbsOffsets(SGRect<int>());
   COMPARE(o.t, 5);
   COMPARE(o.r, 5);
@@ -81,8 +69,8 @@ int main (int ac, char ** av)
   COMPARE(o.r, 0);
   COMPARE(o.b, 0);
   COMPARE(o.l, 0);
-  VERIFY(b.getKeyword().empty());
-  VERIFY(b.isNone());
+  SG_VERIFY(b.getKeyword().empty());
+  SG_VERIFY(b.isNone());
 
   b = CSSBorder::parse("none");
   o = b.getRelOffsets(SGRect<int>(0,0,200,200));
@@ -90,11 +78,11 @@ int main (int ac, char ** av)
   COMPARE(o.r, 0);
   COMPARE(o.b, 0);
   COMPARE(o.l, 0);
-  VERIFY(b.getKeyword().empty());
-  VERIFY(b.isNone());
+  SG_VERIFY(b.getKeyword().empty());
+  SG_VERIFY(b.isNone());
 
   CSSBorder b2;
-  VERIFY(!b2.isValid());
+  SG_VERIFY(!b2.isValid());
   o = b.getAbsOffsets(SGRect<int>(0,0,200,200));
   COMPARE(o.t, 0);
   COMPARE(o.r, 0);

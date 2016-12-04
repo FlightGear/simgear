@@ -11,14 +11,10 @@
 #include <cmath>
 #include <iostream>
 
-#define VERIFY_CLOSE(a, b) \
-  if( std::fabs(a - b) > 1e-5 ) \
-  { \
-    std::cerr << "failed: line " << __LINE__ << ": "\
-              << a << " != " << b\
-              << std::endl; \
-    return 1; \
-  }
+#include <simgear/misc/test_macros.hxx>
+
+#define VERIFY_CLOSE(a, b) SG_CHECK_EQUAL_EP2((a), (b), 1e-5)
+
 
 int main(int argc, char* argv[])
 {

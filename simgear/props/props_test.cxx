@@ -535,19 +535,19 @@ void testListener()
         tree->getNode("controls/engine[2]/starter")->addChangeListener(&l);
 
         tree->setBoolValue("controls/engine[2]/starter", true);
-        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
-        COMPARE(l.checkValueChangeCount("position/body/c"), 0);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/c"), 0);
 
         tree->setIntValue("position/body/c", 123);
-        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
-        COMPARE(l.checkValueChangeCount("position/body/c"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/c"), 1);
 
         // verify that changing non-listened props doesn't affect anything
         tree->setIntValue("position/body/a", 19);
         tree->setBoolValue("controls/engine[1]/starter", true);
 
-        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
-        COMPARE(l.checkValueChangeCount("position/body/c"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/c"), 1);
 
     }
 
@@ -556,8 +556,8 @@ void testListener()
         TestListener l(tree.get());
         tree->getNode("velocity/body/y")->addChangeListener(&l, true);
         tree->getNode("controls/engine[2]/starter")->addChangeListener(&l, true);
-        COMPARE(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
-        COMPARE(l.checkValueChangeCount("velocity/body/y"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("controls/engine[2]/starter"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("velocity/body/y"), 1);
     }
 
     // delete listener while listening, should be fine
@@ -567,13 +567,15 @@ void testListener()
         tree->getNode("velocity/body/z")->addChangeListener(l.get());
         tree->getNode("controls/engine[2]/starter")->addChangeListener(l.get());
 
-        COMPARE(tree->getNode("position/body/c")->nListeners(), 1);
-        COMPARE(tree->getNode("controls/engine[2]/starter")->nListeners(), 1);
+        SG_CHECK_EQUAL(tree->getNode("position/body/c")->nListeners(), 1);
+        SG_CHECK_EQUAL(
+          tree->getNode("controls/engine[2]/starter")->nListeners(), 1);
 
         l.reset();
 
-        COMPARE(tree->getNode("position/body/c")->nListeners(), 0);
-        COMPARE(tree->getNode("controls/engine[2]/starter")->nListeners(), 0);
+        SG_CHECK_EQUAL(tree->getNode("position/body/c")->nListeners(), 0);
+        SG_CHECK_EQUAL(
+          tree->getNode("controls/engine[2]/starter")->nListeners(), 0);
 
         tree->getNode("position/body/c")->setIntValue(49.0);
         tree->getNode("controls/engine[2]/starter")->setBoolValue(true);
@@ -587,21 +589,23 @@ void testListener()
         tree->getNode("velocity/body")->addChangeListener(&l);
 
         tree->setDoubleValue("controls/pitch", 0.5);
-        VERIFY(l.checkAdded("controls", tree->getNode("controls/pitch")));
+        SG_VERIFY(l.checkAdded("controls", tree->getNode("controls/pitch")));
 
         tree->setIntValue("controls/yaw", 12);
 
-        VERIFY(l.checkAdded("controls", tree->getNode("controls/yaw")));
+        SG_VERIFY(l.checkAdded("controls", tree->getNode("controls/yaw")));
 
         // branch as well as leaf nodes should work the same
         tree->setBoolValue("controls/gears/gear[1]/locked", true);
-        VERIFY(l.checkAdded("controls", tree->getNode("controls/gears")));
+        SG_VERIFY(l.checkAdded("controls", tree->getNode("controls/gears")));
 
         SGPropertyNode_ptr rm = tree->getNode("velocity/body/z");
         tree->getNode("velocity/body")->removeChild("z");
-        VERIFY(l.checkRemoved("velocity/body", rm.get()));
+        SG_VERIFY(l.checkRemoved("velocity/body", rm.get()));
 
-        COMPARE(l.checkRemoved("velocity/body", tree->getNode("velocity/body/x")), false);
+        SG_CHECK_EQUAL(
+          l.checkRemoved("velocity/body", tree->getNode("velocity/body/x")),
+          false);
     }
 
     tree = new SGPropertyNode;
@@ -613,16 +617,17 @@ void testListener()
         tree->getNode("position/body")->addChangeListener(&l);
         tree->getNode("controls/")->addChangeListener(&l);
 
-        COMPARE(l.checkValueChangeCount("position/body/a"), 0);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 0);
 
         tree->setIntValue("position/body/a", 111);
         tree->setIntValue("position/body/z", 43);
 
-        COMPARE(l.checkValueChangeCount("position/body/a"), 0);
-        COMPARE(l.checkValueChangeCount("position/body/z"), 0);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 0);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/z"), 0);
 
         tree->getNode("position/body/new", true);
-        VERIFY(l.checkAdded("position/body", tree->getNode("position/body/new")));
+        SG_VERIFY(l.checkAdded("position/body",
+                               tree->getNode("position/body/new")));
     }
 
     tree = new SGPropertyNode;
@@ -633,64 +638,75 @@ void testListener()
         tree->getNode("position/body")->addChangeListener(&l);
         tree->getNode("controls/")->addChangeListener(&l);
 
-        COMPARE(l.checkValueChangeCount("position/body/a"), 0);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 0);
 
         tree->setIntValue("position/body/a", 111);
         tree->setIntValue("position/body/z", 43);
 
-        COMPARE(l.checkValueChangeCount("position/body/a"), 1);
-        COMPARE(l.checkValueChangeCount("position/body/z"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/z"), 1);
 
-        VERIFY(l.checkAdded("position/body", tree->getNode("position/body/z")));
+        SG_VERIFY(l.checkAdded("position/body",
+                               tree->getNode("position/body/z")));
 
 
         tree->setBoolValue("controls/engine[3]/starter", true);
-        COMPARE(l.checkValueChangeCount("controls/engine[3]/starter"), 1);
+        SG_CHECK_EQUAL(l.checkValueChangeCount("controls/engine[3]/starter"), 1);
 
         tree->setBoolValue("controls/engines[1]/fuel-cutoff", true);
-        VERIFY(l.checkAdded("controls/engines[1]", tree->getNode("controls/engines[1]/fuel-cutoff")));
+        SG_VERIFY(
+          l.checkAdded("controls/engines[1]",
+                       tree->getNode("controls/engines[1]/fuel-cutoff")));
 
-        COMPARE(l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
+        SG_CHECK_EQUAL(
+          l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
 
         tree->setDoubleValue("controls/doors/door[2]/position-norm", 0.5);
-        COMPARE(l.checkValueChangeCount("controls/doors/door[2]/position-norm"), 1);
+        SG_CHECK_EQUAL(
+          l.checkValueChangeCount("controls/doors/door[2]/position-norm"), 1);
 
         SGPropertyNode_ptr door2Node = tree->getNode("controls/doors/door[2]");
         SGPropertyNode_ptr door2PosNode = tree->getNode("controls/doors/door[2]/position-norm");
 
         tree->getNode("controls/doors")->removeChild(door2Node);
 
-        VERIFY(l.checkRemoved("controls/doors", door2Node));
+        SG_VERIFY(l.checkRemoved("controls/doors", door2Node));
 
         // default is not recurse for children
-        COMPARE(l.checkRemoved(door2Node, door2PosNode), false);
+        SG_CHECK_EQUAL(l.checkRemoved(door2Node, door2PosNode), false);
 
         // adds *are* seen recursively
         tree->setStringValue("controls/lights/light[3]/foo/state", "dim");
-        VERIFY(l.checkAdded("controls/lights/light[3]/foo", tree->getNode("controls/lights/light[3]/foo/state")));
+        SG_VERIFY(
+          l.checkAdded("controls/lights/light[3]/foo",
+                       tree->getNode("controls/lights/light[3]/foo/state")));
 
 
         // remove a listener
         tree->getNode("controls")->removeChangeListener(&l);
 
         // removing listener does not trigger remove notifications
-        VERIFY(!l.checkRemoved("controls", tree->getNode("controls/engine[3]")));
-        VERIFY(!l.checkRemoved("controls/engine[3]", tree->getNode("controls/engine[3]/starter")));
+        SG_VERIFY(!l.checkRemoved("controls",
+                                  tree->getNode("controls/engine[3]")));
+        SG_VERIFY(!l.checkRemoved("controls/engine[3]",
+                                  tree->getNode("controls/engine[3]/starter")));
 
         tree->setBoolValue("controls/engines[1]/fuel-cutoff", false);
         tree->setBoolValue("controls/engines[9]/fuel-cutoff", true);
 
         // values should be unchanged
-        COMPARE(l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
-        COMPARE(l.checkValueChangeCount("controls/engines[9]/fuel-cutoff"), 0);
+        SG_CHECK_EQUAL(
+          l.checkValueChangeCount("controls/engines[1]/fuel-cutoff"), 1);
+        SG_CHECK_EQUAL(
+          l.checkValueChangeCount("controls/engines[9]/fuel-cutoff"), 0);
 
         // ensure additional calls to fireChildrenRecursive don't cause multiple adds
 
-        VERIFY(ensureNListeners(tree->getNode("position/body"), 1));
-        VERIFY(ensureNListeners(tree->getNode("controls"), 0));
+        SG_VERIFY(ensureNListeners(tree->getNode("position/body"), 1));
+        SG_VERIFY(ensureNListeners(tree->getNode("controls"), 0));
 
         tree->getNode("position/body")->fireCreatedRecursive();
-        VERIFY(ensureNListeners(tree->getNode("position/body"), 1));
+        SG_VERIFY(ensureNListeners(tree->getNode("position/body"), 1));
     }
 
 }
@@ -708,12 +724,12 @@ void testAliasedListeners()
     tree->getNode("position/earth")->addChangeListener(&l);
 
     tree->setIntValue("position/body/a", 99);
-    COMPARE(tree->getIntValue("position/world/x"), 99);
-    COMPARE(l.checkValueChangeCount("position/world/x"), 1);
+    SG_CHECK_EQUAL(tree->getIntValue("position/world/x"), 99);
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/world/x"), 1);
 
     tree->setIntValue("position/world/x", 101);
-    COMPARE(tree->getIntValue("position/body/a"), 101);
-    COMPARE(l.checkValueChangeCount("position/world/x"), 2);
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 101);
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/world/x"), 2);
 }
 
 class TiedPropertyDonor
@@ -746,44 +762,47 @@ void tiedPropertiesTest()
     tree->tie("position/body/mass", SGRawValueMethods<TiedPropertyDonor, double>(donor, &TiedPropertyDonor::getWrappedB, nullptr));
 
     // tie sets current values of the property onto the setter
-    COMPARE(tree->getStringValue("settings/render/foo"), std::string("flightgear"));
-    COMPARE(tree->getIntValue("position/body/a"), 42);
+    SG_CHECK_EQUAL(tree->getStringValue("settings/render/foo"),
+                   std::string("flightgear"));
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 42);
 
     // but can't write to this one!
-    COMPARE(tree->getDoubleValue("position/body/mass"), 1.23);
+    SG_CHECK_EQUAL(tree->getDoubleValue("position/body/mass"), 1.23);
 
     donor.setWrappedA("hello world");
     donor.someMember = 13;
-    COMPARE(tree->getIntValue("position/body/a"), 13);
-    COMPARE(tree->getStringValue("settings/render/foo"), std::string("hello world"));
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 13);
+    SG_CHECK_EQUAL(tree->getStringValue("settings/render/foo"),
+                   std::string("hello world"));
 
     donor.someMember = 45;
     donor.wrappedMember = "apples";
     donor.wrappedB =  5000.0;
 
-    COMPARE(tree->getIntValue("position/body/a"), 45);
-    COMPARE(tree->getStringValue("settings/render/foo"), std::string("apples"));
-    COMPARE(tree->getDoubleValue("position/body/mass"), 5000.0);
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 45);
+    SG_CHECK_EQUAL(tree->getStringValue("settings/render/foo"),
+                   std::string("apples"));
+    SG_CHECK_EQUAL(tree->getDoubleValue("position/body/mass"), 5000.0);
 
     // set value externally
     tree->setIntValue("position/body/a", 99);
-    COMPARE(donor.someMember, 99);
+    SG_CHECK_EQUAL(donor.someMember, 99);
 
     tree->setStringValue("settings/render/foo", "lemons");
-    COMPARE(donor.wrappedMember, "lemons");
+    SG_CHECK_EQUAL(donor.wrappedMember, "lemons");
 
     // set read-only
     bool success = tree->setDoubleValue("position/body/mass", 10000.0);
-    VERIFY(!success);
-    COMPARE(donor.wrappedB, 5000.0); // must not have changed
+    SG_VERIFY(!success);
+    SG_CHECK_EQUAL(donor.wrappedB, 5000.0); // must not have changed
 
     // un-tieing
 
     tree->untie("position/body/a");
     tree->untie("position/body/mass");
 
-    COMPARE(tree->getIntValue("position/body/a"), 99);
-    COMPARE(tree->getDoubleValue("position/body/mass"), 5000.0);
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 99);
+    SG_CHECK_EQUAL(tree->getDoubleValue("position/body/mass"), 5000.0);
 }
 
 void tiedPropertiesListeners()
@@ -799,8 +818,9 @@ void tiedPropertiesListeners()
     tree->tie("position/body/mass", SGRawValueMethods<TiedPropertyDonor, double>(donor, &TiedPropertyDonor::getWrappedB, nullptr));
 
     // tie sets current values of the property onto the setter
-    COMPARE(tree->getStringValue("settings/render/foo"), std::string("flightgear"));
-    COMPARE(tree->getIntValue("position/body/a"), 42);
+    SG_CHECK_EQUAL(tree->getStringValue("settings/render/foo"),
+                   std::string("flightgear"));
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 42);
 
     TestListener l(tree.get());
 
@@ -810,28 +830,29 @@ void tiedPropertiesListeners()
 
     // firstly test changes via setXXX API and verify they work
     tree->setIntValue("position/body/a", 99);
-    COMPARE(donor.someMember, 99);
-    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+    SG_CHECK_EQUAL(donor.someMember, 99);
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 1);
 
     tree->setDoubleValue("position/body/mass", -123.0);
-    COMPARE(donor.wrappedB, 1.23); // read-only!
-    COMPARE(l.checkValueChangeCount("position/body/mass"), 0);
+    SG_CHECK_EQUAL(donor.wrappedB, 1.23); // read-only!
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/mass"), 0);
 
     tree->setStringValue("settings/render/foo", "thingA");
     tree->setStringValue("settings/render/foo", "thingB");
-    COMPARE(donor.wrappedMember, std::string("thingB"));
-    COMPARE(l.checkValueChangeCount("settings/render/foo"), 2);
+    SG_CHECK_EQUAL(donor.wrappedMember, std::string("thingB"));
+    SG_CHECK_EQUAL(l.checkValueChangeCount("settings/render/foo"), 2);
 
     // now change values from inside the donor and verify it doesn't fire
     // the listener
 
     donor.wrappedMember = "pineapples";
-    COMPARE(tree->getStringValue("settings/render/foo"), std::string("pineapples"));
-    COMPARE(l.checkValueChangeCount("settings/render/foo"), 2);
+    SG_CHECK_EQUAL(tree->getStringValue("settings/render/foo"),
+                   std::string("pineapples"));
+    SG_CHECK_EQUAL(l.checkValueChangeCount("settings/render/foo"), 2);
 
     donor.someMember = 256;
-    COMPARE(tree->getIntValue("position/body/a"), 256);
-    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 256);
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 1);
 
     // now fire value changed
     l.resetChangeCounts();
@@ -839,27 +860,30 @@ void tiedPropertiesListeners()
 
 
     tree->getNode("position/body/a")->fireValueChanged();
-    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
-    COMPARE(tree->getIntValue("position/body/a"), 256);
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 1);
+    SG_CHECK_EQUAL(tree->getIntValue("position/body/a"), 256);
 
     l.resetChangeCounts();
 
     tree->getNode("position/body/a")->fireValueChanged();
-    COMPARE(l.checkValueChangeCount("position/body/a"), 1);
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 1);
 
     tree->setDoubleValue("position/body/mass", 4.000000001);
-    COMPARE(l.checkValueChangeCount("position/body/mass"), 0); // not changed
-    
+    // Not changed
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/mass"), 0);
+
     donor.someMember = 970;
-    COMPARE(l.checkValueChangeCount("position/body/a"), 1); // not changed
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 1); // not changed
     tree->getNode("position/body/a")->fireValueChanged();
-    COMPARE(l.checkValueChangeCount("position/body/a"), 2); // changed
+    SG_CHECK_EQUAL(l.checkValueChangeCount("position/body/a"), 2); // changed
 
 
     donor.wrappedMember = "pears";
-    COMPARE(l.checkValueChangeCount("settings/render/foo"), 0); // not changed
+    // Not changed
+    SG_CHECK_EQUAL(l.checkValueChangeCount("settings/render/foo"), 0);
     tree->getNode("settings/render/foo")->fireValueChanged();
-    COMPARE(l.checkValueChangeCount("settings/render/foo"), 1); // changed
+    // Changed
+    SG_CHECK_EQUAL(l.checkValueChangeCount("settings/render/foo"), 1);
 
 }
 
@@ -876,14 +900,15 @@ void testDeleterListener()
         tree->getNode("position/body")->addChangeListener(l);
         tree->getNode("controls/")->addChangeListener(l);
 
-        COMPARE(l->checkValueChangeCount("position/body/a"), 0);
+        SG_CHECK_EQUAL(l->checkValueChangeCount("position/body/a"), 0);
 
         // create additional children
         tree->setFloatValue("position/body/sub/theta", 0.1234);
 
-        VERIFY(l->checkAdded("position/body/sub", tree->getNode("position/body/sub/theta")));
+        SG_VERIFY(l->checkAdded("position/body/sub",
+                                tree->getNode("position/body/sub/theta")));
 
-        COMPARE(l->checkValueChangeCount("position/body/sub/theta"), 1);
+        SG_CHECK_EQUAL(l->checkValueChangeCount("position/body/sub/theta"), 1);
 
         delete l;
 
@@ -891,7 +916,7 @@ void testDeleterListener()
         tree->setIntValue("position/body/a", 33);
 
         // verify no listeners at all
-        VERIFY(ensureNListeners(tree, 0));
+        SG_VERIFY(ensureNListeners(tree, 0));
     }
 
 }

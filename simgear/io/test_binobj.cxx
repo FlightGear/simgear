@@ -14,6 +14,7 @@
 #endif
 
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/test_macros.hxx>
 
 #include "sg_binobj.hxx"
 
@@ -22,19 +23,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-#define COMPARE(a, b) \
-    if ((a) != (b))  { \
-        cerr << "failed:" << #a << " != " << #b << endl; \
-        cerr << "\tgot:" << a << endl; \
-        exit(1); \
-    }
 
-#define VERIFY(a) \
-    if (!(a))  { \
-        cerr << "failed:" << #a << endl; \
-        exit(1); \
-    }
-    
 void generate_points(int count, std::vector<SGVec3d>& vec)
 {
     for (int i=0; i<count; ++i) {
@@ -61,15 +50,15 @@ void test_empty()
     SGBinObject empty;
     SGPath path(simgear::Dir::current().file("empty.btg.gz"));
     bool ok = empty.write_bin_file(path);
-    VERIFY( ok );
+    SG_VERIFY(ok);
     SGBinObject rd;
-   ok = rd.read_bin(path) ;
-   VERIFY( ok);
+    ok = rd.read_bin(path) ;
+    SG_VERIFY(ok);
 
-   COMPARE(rd.get_wgs84_nodes().size(), 0);
-   VERIFY(rd.get_pt_materials().empty());
-}   
- 
+    SG_CHECK_EQUAL(rd.get_wgs84_nodes().size(), 0);
+    SG_VERIFY(rd.get_pt_materials().empty());
+}
+
 void comparePoints(const SGBinObject& rd, const std::vector<SGVec3d>& b)
 {
     for (unsigned int i=1; i<b.size(); i += 10) {
@@ -82,7 +71,7 @@ void comparePoints(const SGBinObject& rd, const std::vector<SGVec3d>& b)
             cout << pos << endl;
         }
         
-        VERIFY(equivalent(pos, b[i], 0.1));        
+        SG_VERIFY(equivalent(pos, b[i], 0.1));        
     }
 }
 
@@ -90,7 +79,7 @@ void compareTexCoords(const SGBinObject& rd, const std::vector<SGVec2f>& b)
 {
     for (unsigned int i=1; i<b.size(); i += 10) {
         SGVec2f pos = rd.get_texcoords()[i];
-        VERIFY(equivalent(pos, b[i], 0.001f));        
+        SG_VERIFY(equivalent(pos, b[i], 0.001f));        
     }
 }
 
@@ -137,13 +126,13 @@ void compareTris(const SGBinObject& a, const SGBinObject& b)
     for (unsigned int i=0; i<count; i += 39) {
         const int_list& vA(a.get_tris_v()[i]);
         const int_list& vB(b.get_tris_v()[i]);
-        VERIFY(vA == vB);
+        SG_VERIFY(vA == vB);
 
-        COMPARE(a.get_tri_materials()[i], b.get_tri_materials()[i]);
-        
+        SG_CHECK_EQUAL(a.get_tri_materials()[i], b.get_tri_materials()[i]);
+
         const int_list& tA(a.get_tris_tcs()[i][0]);
         const int_list& tB(b.get_tris_tcs()[i][0]);
-        VERIFY(tA == tB);
+        SG_VERIFY(tA == tB);
     }
 }
 
@@ -189,16 +178,17 @@ void test_basic()
     basic.set_texcoords(texCoords);
     
     bool ok = basic.write_bin_file(path);
-    VERIFY( ok );
+    SG_VERIFY( ok );
     
     SGBinObject rd;
    ok = rd.read_bin(path) ;
-   VERIFY( ok);
-   COMPARE(rd.get_version(), 7); // should be version 7 since indices are < 2^16
-   COMPARE(rd.get_gbs_center(), center);
-   COMPARE(rd.get_gbs_radius(), 12345);
-   COMPARE(rd.get_wgs84_nodes().size(), points.size());
-   
+   SG_VERIFY( ok);
+   // Should be version 7 since indices are < 2^16
+   SG_CHECK_EQUAL(rd.get_version(), 7);
+   SG_CHECK_EQUAL(rd.get_gbs_center(), center);
+   SG_CHECK_EQUAL(rd.get_gbs_radius(), 12345);
+   SG_CHECK_EQUAL(rd.get_wgs84_nodes().size(), points.size());
+
    comparePoints(rd, points);
    compareTexCoords(rd, texCoords);
 }
@@ -226,15 +216,16 @@ void test_many_tcs()
     generate_tris(basic, 20000);
     
     bool ok = basic.write_bin_file(path);
-    VERIFY( ok );
+    SG_VERIFY( ok );
     
     SGBinObject rd;
    ok = rd.read_bin(path) ;
-   VERIFY( ok);
-   COMPARE(rd.get_version(), 10); // should be version 10 since indices are > 2^16
-   COMPARE(rd.get_wgs84_nodes().size(), points.size());
-   COMPARE(rd.get_texcoords().size(), texCoords.size());
-   
+   SG_VERIFY( ok);
+   // Should be version 10 since indices are > 2^16
+   SG_CHECK_EQUAL(rd.get_version(), 10);
+   SG_CHECK_EQUAL(rd.get_wgs84_nodes().size(), points.size());
+   SG_CHECK_EQUAL(rd.get_texcoords().size(), texCoords.size());
+
    comparePoints(rd, points);
    compareTexCoords(rd, texCoords);
    compareTris(basic, rd);
@@ -263,15 +254,16 @@ void test_big()
     generate_tris(basic, 200000);
     
     bool ok = basic.write_bin_file(path);
-    VERIFY( ok );
+    SG_VERIFY( ok );
     
     SGBinObject rd;
    ok = rd.read_bin(path) ;
-   VERIFY( ok);
-   COMPARE(rd.get_version(), 10); // should be version 10 since indices are > 2^16
-   COMPARE(rd.get_wgs84_nodes().size(), points.size());
-   COMPARE(rd.get_texcoords().size(), texCoords.size());
-   
+   SG_VERIFY( ok);
+   // Should be version 10 since indices are > 2^16
+   SG_CHECK_EQUAL(rd.get_version(), 10);
+   SG_CHECK_EQUAL(rd.get_wgs84_nodes().size(), points.size());
+   SG_CHECK_EQUAL(rd.get_texcoords().size(), texCoords.size());
+
    comparePoints(rd, points);
    compareTexCoords(rd, texCoords);
    compareTris(basic, rd);
@@ -300,15 +292,15 @@ void test_some_objects()
     generate_tris(basic, 30000); // a number smaller than 2^15!
     
     bool ok = basic.write_bin_file(path);
-    VERIFY( ok );
+    SG_VERIFY( ok );
     
     SGBinObject rd;
     ok = rd.read_bin(path) ;
-    VERIFY( ok);
-    COMPARE(rd.get_version(), 7); // since we have less than 2^15 tris
-    COMPARE(rd.get_wgs84_nodes().size(), points.size());
-    COMPARE(rd.get_texcoords().size(), texCoords.size());
-   
+    SG_VERIFY( ok);
+    SG_CHECK_EQUAL(rd.get_version(), 7); // since we have less than 2^15 tris
+    SG_CHECK_EQUAL(rd.get_wgs84_nodes().size(), points.size());
+    SG_CHECK_EQUAL(rd.get_texcoords().size(), texCoords.size());
+
     comparePoints(rd, points);
     compareTexCoords(rd, texCoords);
     compareTris(basic, rd);
@@ -337,15 +329,16 @@ void test_many_objects()
     generate_tris(basic, 200000);
     
     bool ok = basic.write_bin_file(path);
-    VERIFY( ok );
+    SG_VERIFY( ok );
     
     SGBinObject rd;
     ok = rd.read_bin(path) ;
-    VERIFY( ok);
-    COMPARE(rd.get_version(), 10); // should be version 10 since indices are > 2^16
-    COMPARE(rd.get_wgs84_nodes().size(), points.size());
-    COMPARE(rd.get_texcoords().size(), texCoords.size());
-   
+    SG_VERIFY( ok);
+    // Should be version 10 since indices are > 2^16
+    SG_CHECK_EQUAL(rd.get_version(), 10);
+    SG_CHECK_EQUAL(rd.get_wgs84_nodes().size(), points.size());
+    SG_CHECK_EQUAL(rd.get_texcoords().size(), texCoords.size());
+
     comparePoints(rd, points);
     compareTexCoords(rd, texCoords);
     compareTris(basic, rd);

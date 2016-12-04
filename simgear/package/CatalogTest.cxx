@@ -126,46 +126,46 @@ int parseTest()
     pkg::Root* root = new pkg::Root(rootPath, "8.1.12");
     pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath(SRC_DIR "/catalogTest1"));
 
-    VERIFY(cat.valid());
+    SG_VERIFY(cat.valid());
 
-    COMPARE(cat->id(), "org.flightgear.test.catalog1");
-    COMPARE(cat->url(), "http://localhost:2000/catalogTest1/catalog.xml");
-    COMPARE(cat->description(), "First test catalog");
+    SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
+    SG_CHECK_EQUAL(cat->url(), "http://localhost:2000/catalogTest1/catalog.xml");
+    SG_CHECK_EQUAL(cat->description(), "First test catalog");
 
 // check the packages too
-    COMPARE(cat->packages().size(), 4);
+    SG_CHECK_EQUAL(cat->packages().size(), 4);
 
     pkg::PackageRef p1 = cat->packages().front();
-    COMPARE(p1->catalog(), cat.ptr());
+    SG_CHECK_EQUAL(p1->catalog(), cat.ptr());
 
-    COMPARE(p1->id(), "alpha");
-    COMPARE(p1->qualifiedId(), "org.flightgear.test.catalog1.alpha");
-    COMPARE(p1->name(), "Alpha package");
-    COMPARE(p1->revision(), 8);
-    COMPARE(p1->fileSizeBytes(), 593);
+    SG_CHECK_EQUAL(p1->id(), "alpha");
+    SG_CHECK_EQUAL(p1->qualifiedId(), "org.flightgear.test.catalog1.alpha");
+    SG_CHECK_EQUAL(p1->name(), "Alpha package");
+    SG_CHECK_EQUAL(p1->revision(), 8);
+    SG_CHECK_EQUAL(p1->fileSizeBytes(), 593);
 
 
     pkg::PackageRef p2 = cat->getPackageById("c172p");
-    VERIFY(p2.valid());
-    COMPARE(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
-    COMPARE(p2->description(), "A plane made by Cessna on Jupiter");
+    SG_VERIFY(p2.valid());
+    SG_CHECK_EQUAL(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
+    SG_CHECK_EQUAL(p2->description(), "A plane made by Cessna on Jupiter");
 
     pkg::Package::ThumbnailVec thumbs = p2->thumbnailsForVariant(0);
-    COMPARE(thumbs.size(), 3);
+    SG_CHECK_EQUAL(thumbs.size(), 3);
 
     auto index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Thumbnail& t)
                              { return (t.type == pkg::Package::Thumbnail::Type::EXTERIOR); });
-    VERIFY(index != thumbs.end());
-    COMPARE(index->path, "thumb-exterior.png");
-    COMPARE(index->url, "http://foo.bar.com/thumb-exterior.png");
-    VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
+    SG_VERIFY(index != thumbs.end());
+    SG_CHECK_EQUAL(index->path, "thumb-exterior.png");
+    SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-exterior.png");
+    SG_VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
 
     index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Thumbnail& t)
                         { return (t.type == pkg::Package::Thumbnail::Type::PANEL); });
-    VERIFY(index != thumbs.end());
-    COMPARE(index->path, "thumb-panel.png");
-    COMPARE(index->url, "http://foo.bar.com/thumb-panel.png");
-    VERIFY(index->type == pkg::Package::Thumbnail::Type::PANEL);
+    SG_VERIFY(index != thumbs.end());
+    SG_CHECK_EQUAL(index->path, "thumb-panel.png");
+    SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-panel.png");
+    SG_VERIFY(index->type == pkg::Package::Thumbnail::Type::PANEL);
 
 // test variants
     try {
@@ -176,80 +176,84 @@ int parseTest()
     }
 
     unsigned int skisVariantFull = p2->indexOfVariant("org.flightgear.test.catalog1.c172p-skis");
-    VERIFY(skisVariantFull > 0);
+    SG_VERIFY(skisVariantFull > 0);
 
     unsigned int skisVariant = p2->indexOfVariant("c172p-skis");
-    VERIFY(skisVariant > 0);
+    SG_VERIFY(skisVariant > 0);
 
-    COMPARE(skisVariant, skisVariantFull);
-    
-    COMPARE(p2->getLocalisedProp("description", skisVariant), "A plane with skis");
-    COMPARE(p2->getLocalisedProp("author", skisVariant), "Standard author");
+    SG_CHECK_EQUAL(skisVariant, skisVariantFull);
+
+    SG_CHECK_EQUAL(p2->getLocalisedProp("description", skisVariant),
+                   "A plane with skis");
+    SG_CHECK_EQUAL(p2->getLocalisedProp("author", skisVariant),
+                   "Standard author");
 
     unsigned int floatsVariant = p2->indexOfVariant("c172p-floats");
-    VERIFY(floatsVariant > 0);
+    SG_VERIFY(floatsVariant > 0);
 
-    COMPARE(p2->getLocalisedProp("description", floatsVariant), "A plane with floats");
-    COMPARE(p2->getLocalisedProp("author", floatsVariant), "Floats variant author");
+    SG_CHECK_EQUAL(p2->getLocalisedProp("description", floatsVariant),
+                   "A plane with floats");
+    SG_CHECK_EQUAL(p2->getLocalisedProp("author", floatsVariant),
+                   "Floats variant author");
 
     pkg::Package::ThumbnailVec thumbs2 = p2->thumbnailsForVariant(skisVariant);
-    COMPARE(thumbs2.size(), 2);
+    SG_CHECK_EQUAL(thumbs2.size(), 2);
 
     index = std::find_if(thumbs2.begin(), thumbs2.end(), [](const pkg::Package::Thumbnail& t)
                               { return (t.type == pkg::Package::Thumbnail::Type::EXTERIOR); });
-    VERIFY(index != thumbs2.end());
-    COMPARE(index->path, "thumb-exterior-skis.png");
-    COMPARE(index->url, "http://foo.bar.com/thumb-exterior-skis.png");
-    VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
+    SG_VERIFY(index != thumbs2.end());
+    SG_CHECK_EQUAL(index->path, "thumb-exterior-skis.png");
+    SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-exterior-skis.png");
+    SG_VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
 
 
 // test filtering / searching too
     string_set tags(p2->tags());
-    COMPARE(tags.size(), 4);
-    VERIFY(tags.find("ifr") != tags.end());
-    VERIFY(tags.find("cessna") != tags.end());
-    VERIFY(tags.find("jet") == tags.end());
+    SG_CHECK_EQUAL(tags.size(), 4);
+    SG_VERIFY(tags.find("ifr") != tags.end());
+    SG_VERIFY(tags.find("cessna") != tags.end());
+    SG_VERIFY(tags.find("jet") == tags.end());
 
 
     SGPropertyNode_ptr queryA(new SGPropertyNode);
     queryA->setStringValue("tag", "ifr");
-    VERIFY(p2->matches(queryA.ptr()));
+    SG_VERIFY(p2->matches(queryA.ptr()));
 
     SGPropertyNode_ptr queryB(new SGPropertyNode);
     queryB->setStringValue("name", "ces");
-    VERIFY(p2->matches(queryB.ptr()));
+    SG_VERIFY(p2->matches(queryB.ptr()));
 
     SGPropertyNode_ptr queryC(new SGPropertyNode);
     queryC->setStringValue("name", "foo");
-    VERIFY(!p2->matches(queryC.ptr()));
+    SG_VERIFY(!p2->matches(queryC.ptr()));
 
     SGPropertyNode_ptr queryD(new SGPropertyNode);
     queryD->setIntValue("rating-FDM", 3);
-    VERIFY(p2->matches(queryD.ptr()));
+    SG_VERIFY(p2->matches(queryD.ptr()));
 
     SGPropertyNode_ptr queryE(new SGPropertyNode);
     queryE->setIntValue("rating-model", 5);
     queryE->setStringValue("description", "cessna");
-    VERIFY(p2->matches(queryE.ptr()));
+    SG_VERIFY(p2->matches(queryE.ptr()));
 
     {
         SGPropertyNode_ptr queryText(new SGPropertyNode);
         queryText->setStringValue("any-of/text", "jupiter");
-        VERIFY(p2->matches(queryText.ptr()));
+        SG_VERIFY(p2->matches(queryText.ptr()));
     }
 
     {
         SGPropertyNode_ptr queryText(new SGPropertyNode);
         queryText->setStringValue("any-of/tag", "twin-engine");
         queryText->setStringValue("any-of/tag", "ga");
-        VERIFY(p2->matches(queryText.ptr()));
+        SG_VERIFY(p2->matches(queryText.ptr()));
     }
 
     // match variant descriptions
     {
         SGPropertyNode_ptr queryText(new SGPropertyNode);
         queryText->setStringValue("any-of/description", "float");
-        VERIFY(p2->matches(queryText.ptr()));
+        SG_VERIFY(p2->matches(queryText.ptr()));
     }
     delete root;
     return EXIT_SUCCESS;
@@ -276,16 +280,16 @@ void testAddCatalog(HTTP::Client* cl)
     SGPath p(rootPath);
     p.append("org.flightgear.test.catalog1");
     p.append("catalog.xml");
-    VERIFY(p.exists());
-    COMPARE(root->allPackages().size(), 4);
-    COMPARE(root->catalogs().size(), 1);
+    SG_VERIFY(p.exists());
+    SG_CHECK_EQUAL(root->allPackages().size(), 4);
+    SG_CHECK_EQUAL(root->catalogs().size(), 1);
 
     pkg::PackageRef p1 = root->getPackageById("alpha");
-    COMPARE(p1->id(), "alpha");
+    SG_CHECK_EQUAL(p1->id(), "alpha");
 
     pkg::PackageRef p2 = root->getPackageById("org.flightgear.test.catalog1.c172p");
-    COMPARE(p2->id(), "c172p");
-    COMPARE(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
+    SG_CHECK_EQUAL(p2->id(), "c172p");
+    SG_CHECK_EQUAL(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
 
 }
 
@@ -306,14 +310,14 @@ void testInstallPackage(HTTP::Client* cl)
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.c172p");
     pkg::InstallRef ins = p1->install();
 
-    VERIFY(ins->isQueued());
+    SG_VERIFY(ins->isQueued());
 
     waitForUpdateComplete(cl, root);
-    VERIFY(p1->isInstalled());
-    VERIFY(p1->existingInstall() == ins);
+    SG_VERIFY(p1->isInstalled());
+    SG_VERIFY(p1->existingInstall() == ins);
 
     pkg::PackageRef commonDeps = root->getPackageById("common-sounds");
-    VERIFY(commonDeps->existingInstall());
+    SG_VERIFY(commonDeps->existingInstall());
 
     // verify on disk state
     SGPath p(rootPath);
@@ -321,17 +325,17 @@ void testInstallPackage(HTTP::Client* cl)
     p.append("Aircraft");
     p.append("c172p");
 
-    COMPARE(p, ins->path());
+    SG_CHECK_EQUAL(p, ins->path());
 
     p.append("c172p-floats-set.xml");
-    VERIFY(p.exists());
+    SG_VERIFY(p.exists());
 
     SGPath p2(rootPath);
     p2.append("org.flightgear.test.catalog1");
     p2.append("Aircraft");
     p2.append("sounds");
     p2.append("sharedfile.txt");
-    VERIFY(p2.exists());
+    SG_VERIFY(p2.exists());
 }
 
 void testUninstall(HTTP::Client* cl)
@@ -352,11 +356,11 @@ void testUninstall(HTTP::Client* cl)
 
     waitForUpdateComplete(cl, root);
 
-    VERIFY(p1->isInstalled());
+    SG_VERIFY(p1->isInstalled());
 
     ins->uninstall();
 
-    VERIFY(!ins->path().exists());
+    SG_VERIFY(!ins->path().exists());
 }
 
 void testRemoveCatalog(HTTP::Client* cl)
@@ -380,7 +384,7 @@ void testRemoveCatalog(HTTP::Client* cl)
 
         waitForUpdateComplete(cl, root);
 
-        VERIFY(p1->isInstalled());
+        SG_VERIFY(p1->isInstalled());
     }
 
     root->removeCatalogById("org.flightgear.test.catalog1");
@@ -388,13 +392,13 @@ void testRemoveCatalog(HTTP::Client* cl)
 
     SGPath p2(rootPath);
     p2.append("org.flightgear.test.catalog1");
-    VERIFY(!p2.exists());
+    SG_VERIFY(!p2.exists());
 
-    VERIFY(root->allPackages().empty());
-    VERIFY(root->catalogs().empty());
+    SG_VERIFY(root->allPackages().empty());
+    SG_VERIFY(root->catalogs().empty());
 
     pkg::CatalogRef c = root->getCatalogById("org.flightgear.test.catalog1");
-    COMPARE(c, pkg::CatalogRef());
+    SG_CHECK_EQUAL(c, pkg::CatalogRef());
 }
 
 template <class T>
@@ -428,37 +432,39 @@ void testRefreshCatalog(HTTP::Client* cl)
 
         waitForUpdateComplete(cl, root);
 
-        VERIFY(p1->isInstalled());
-        VERIFY(p2->isInstalled());
+        SG_VERIFY(p1->isInstalled());
+        SG_VERIFY(p2->isInstalled());
     }
 
-    VERIFY(root->packagesNeedingUpdate().empty());
+    SG_VERIFY(root->packagesNeedingUpdate().empty());
 
     global_catalogVersion = 2;
 
-    VERIFY(!cl->hasActiveRequests());
+    SG_VERIFY(!cl->hasActiveRequests());
     root->refresh();
 
     // should be a no-op due to catalog age testing
-    VERIFY(!cl->hasActiveRequests());
+    SG_VERIFY(!cl->hasActiveRequests());
 
     // force it this time
     root->refresh(true);
-    VERIFY(cl->hasActiveRequests());
+    SG_VERIFY(cl->hasActiveRequests());
     waitForUpdateComplete(cl, root);
 
     pkg::CatalogRef c = root->getCatalogById("org.flightgear.test.catalog1");
-    COMPARE(c->ageInSeconds(), 0);
+    SG_CHECK_EQUAL(c->ageInSeconds(), 0);
 
-    VERIFY(root->getPackageById("dc3") != pkg::PackageRef());
-    COMPARE(root->packagesNeedingUpdate().size(), 2);
+    SG_VERIFY(root->getPackageById("dc3") != pkg::PackageRef());
+    SG_CHECK_EQUAL(root->packagesNeedingUpdate().size(), 2);
 
     pkg::PackageList needingUpdate = root->packagesNeedingUpdate();
-    VERIFY(contains(needingUpdate, root->getPackageById("common-sounds")));
-    VERIFY(contains(needingUpdate, root->getPackageById("org.flightgear.test.catalog1.alpha")));
+    SG_VERIFY(contains(needingUpdate, root->getPackageById("common-sounds")));
+    SG_VERIFY(
+      contains(needingUpdate,
+               root->getPackageById("org.flightgear.test.catalog1.alpha")));
 
     pkg::InstallRef ins = root->getPackageById("alpha")->existingInstall();
-    VERIFY(ins->hasUpdate());
+    SG_VERIFY(ins->hasUpdate());
 
     for (pkg::PackageList::const_iterator it = needingUpdate.begin();
          it != needingUpdate.end(); ++it)
@@ -468,8 +474,8 @@ void testRefreshCatalog(HTTP::Client* cl)
 
     waitForUpdateComplete(cl, root);
 
-    VERIFY(root->packagesNeedingUpdate().empty());
-    COMPARE(root->getPackageById("common-sounds")->revision(), 11);
+    SG_VERIFY(root->packagesNeedingUpdate().empty());
+    SG_CHECK_EQUAL(root->getPackageById("common-sounds")->revision(), 11);
 }
 
 void testInstallTarPackage(HTTP::Client* cl)
@@ -487,14 +493,14 @@ void testInstallTarPackage(HTTP::Client* cl)
     waitForUpdateComplete(cl, root);
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
-    COMPARE(p1->id(), "b737-NG");
+    SG_CHECK_EQUAL(p1->id(), "b737-NG");
     pkg::InstallRef ins = p1->install();
 
-    VERIFY(ins->isQueued());
+    SG_VERIFY(ins->isQueued());
 
     waitForUpdateComplete(cl, root);
-    VERIFY(p1->isInstalled());
-    VERIFY(p1->existingInstall() == ins);
+    SG_VERIFY(p1->isInstalled());
+    SG_VERIFY(p1->existingInstall() == ins);
 
     // verify on disk state
     SGPath p(rootPath);
@@ -502,10 +508,10 @@ void testInstallTarPackage(HTTP::Client* cl)
     p.append("Aircraft");
     p.append("b737NG");
 
-    COMPARE(p, ins->path());
+    SG_CHECK_EQUAL(p, ins->path());
 
     p.append("b737-900-set.xml");
-    VERIFY(p.exists());
+    SG_VERIFY(p.exists());
 }
 
 

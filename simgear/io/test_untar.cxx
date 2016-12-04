@@ -30,7 +30,7 @@ void testTarGz()
     uint8_t* buf = (uint8_t*) alloca(8192);
     size_t bufSize = f.read((char*) buf, 8192);
 
-    VERIFY(TarExtractor::isTarData(buf, bufSize));
+    SG_VERIFY(TarExtractor::isTarData(buf, bufSize));
 
 }
 
@@ -45,7 +45,7 @@ void testPlainTar()
     uint8_t* buf = (uint8_t*) alloca(8192);
     size_t bufSize = f.read((char*) buf, 8192);
 
-    VERIFY(TarExtractor::isTarData(buf, bufSize));
+    SG_VERIFY(TarExtractor::isTarData(buf, bufSize));
 
 }
 

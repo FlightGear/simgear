@@ -87,55 +87,55 @@ void testBasic()
 {
     BUILD_MACHINE_1();
 ////////////////////////////////////////////
-    COMPARE(sm->state()->name(), "a");
+    SG_CHECK_EQUAL(sm->state()->name(), "a");
     
-    COMPARE(sm->indexOfState(stateA), 0);
-    COMPARE(sm->findStateByName("c"), stateC);
+    SG_CHECK_EQUAL(sm->indexOfState(stateA), 0);
+    SG_CHECK_EQUAL(sm->findStateByName("c"), stateC);
     
     sm->changeToState(stateC);
-    COMPARE(sm->state(), stateC);
+    SG_CHECK_EQUAL(sm->state(), stateC);
     
     trigger3->_state = true;
     sm->update(1.0);
-    COMPARE(sm->state()->name(), "a");
+    SG_CHECK_EQUAL(sm->state()->name(), "a");
     trigger3->_state = false;
     
     trigger1->_state = true;
     sm->update(1.0);
     trigger1->_state = false;
-    COMPARE(sm->state()->name(), "b");
+    SG_CHECK_EQUAL(sm->state()->name(), "b");
     
     trigger3->_state = true;
     sm->update(1.0);
-    COMPARE(sm->state()->name(), "a");
+    SG_CHECK_EQUAL(sm->state()->name(), "a");
     trigger3->_state = false;
     
     trigger1->_state = true;
     sm->update(1.0);
     trigger1->_state = false;
-    COMPARE(sm->state()->name(), "b");
+    SG_CHECK_EQUAL(sm->state()->name(), "b");
     
     trigger2->_state = true;
     sm->update(1.0);
     trigger2->_state = false;
-    COMPARE(sm->state()->name(), "c");
+    SG_CHECK_EQUAL(sm->state()->name(), "c");
     
 //////////////////////////////////////////
-    COMPARE(sm->root()->getIntValue("current-index"), 2);
-    COMPARE(sm->root()->getStringValue("current-name"), string("c"));
+    SG_CHECK_EQUAL(sm->root()->getIntValue("current-index"), 2);
+    SG_CHECK_EQUAL(sm->root()->getStringValue("current-name"), string("c"));
     
     sm->root()->setStringValue("current-name", "b");
-    COMPARE(sm->state()->name(), "b");
+    SG_CHECK_EQUAL(sm->state()->name(), "b");
 
 ////////////////////////////////////////
-    COMPARE(sm->findStateByName("foo"), NULL);
-    COMPARE(sm->indexOfState(StateMachine::State_ptr()), -1);
+    SG_CHECK_EQUAL(sm->findStateByName("foo"), NULL);
+    SG_CHECK_EQUAL(sm->indexOfState(StateMachine::State_ptr()), -1);
     
-    COMPARE(sm->stateByIndex(1), stateB);
+    SG_CHECK_EQUAL(sm->stateByIndex(1), stateB);
     
     try {
         sm->stateByIndex(44);
-        VERIFY(false && "should have raised an exception");
+        SG_VERIFY(false && "should have raised an exception");
     } catch (sg_exception& e){
         // expected!
     }
@@ -150,16 +150,16 @@ void testNoSourcesTransition()
     t4->setTriggerCondition(trigger4); \
     sm->init();
     
-    COMPARE(sm->state()->name(), "a");
+    SG_CHECK_EQUAL(sm->state()->name(), "a");
     trigger1->_state = true;
     sm->update(1.0);
     trigger1->_state = false;
-    COMPARE(sm->state()->name(), "b");
+    SG_CHECK_EQUAL(sm->state()->name(), "b");
     
     trigger4->_state = true;
     sm->update(1.0);
     trigger4->_state = false;
-    COMPARE(sm->state()->name(), "a");
+    SG_CHECK_EQUAL(sm->state()->name(), "a");
 }
 
 void testBindings()
@@ -176,25 +176,25 @@ void testBindings()
     stateC->addEntryBinding(new SGBinding("dummy"));
     
 ////////////////////////
-    COMPARE(sm->state()->name(), "a");
+    SG_CHECK_EQUAL(sm->state()->name(), "a");
     trigger1->_state = true;
     sm->update(1.0);
     trigger1->_state = false;
-    COMPARE(sm->state()->name(), "b");
-    COMPARE(thing.dummy_cmd_state, 1); // exit state A
+    SG_CHECK_EQUAL(sm->state()->name(), "b");
+    SG_CHECK_EQUAL(thing.dummy_cmd_state, 1); // exit state A
     
     trigger2->_state = true;
     sm->update(1.0);
     trigger2->_state = false;
-    COMPARE(thing.dummy_cmd_state, 3); // fire transition 2, enter state C
+    SG_CHECK_EQUAL(thing.dummy_cmd_state, 3); // fire transition 2, enter state C
     
     thing.dummy_cmd_state = 0;
     sm->changeToState(stateA);
-    COMPARE(thing.dummy_cmd_state, 1); // enter state A
+    SG_CHECK_EQUAL(thing.dummy_cmd_state, 1); // enter state A
     trigger1->_state = true;
     sm->update(1.0);
     trigger1->_state = false;
-    COMPARE(thing.dummy_cmd_state, 2); // exit state A
+    SG_CHECK_EQUAL(thing.dummy_cmd_state, 2); // exit state A
     
 ////////////////////////
     t3->addBinding(new SGBinding("dummy"));
@@ -206,7 +206,8 @@ void testBindings()
     trigger3->_state = true;
     sm->update(1.0);
     trigger3->_state = false;
-    COMPARE(thing.dummy_cmd_state, 4); // three transition bindings, enter A
+    // Three transition bindings, enter A
+    SG_CHECK_EQUAL(thing.dummy_cmd_state, 4);
 }
 
 void testParse()
@@ -227,8 +228,8 @@ void testParse()
     SGPropertyNode_ptr root(new SGPropertyNode);
     StateMachine_ptr sm = StateMachine::createFromPlist(desc, root);
     
-    VERIFY(sm->findStateByName("one") != NULL);
-    VERIFY(sm->findStateByName("two") != NULL);
+    SG_VERIFY(sm->findStateByName("one") != NULL);
+    SG_VERIFY(sm->findStateByName("two") != NULL);
 }
 
 int main(int argc, char* argv[])

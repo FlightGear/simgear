@@ -3,32 +3,18 @@
 #include "parse_color.hxx"
 #include "ColorInterpolator.hxx"
 #include <simgear/props/props.hxx>
+#include <simgear/misc/test_macros.hxx>
 
 #include <iostream>
 
-#define COMPARE(a, b) \
-  if( (a) != (b) ) \
-  { \
-    std::cerr << "line " << __LINE__ << ": failed: "\
-              << #a << " != " << #b << std::endl; \
-    return 1; \
-  }
-
-#define VERIFY(a) \
-  if( !(a) ) \
-  { \
-    std::cerr << "line " << __LINE__ << ": failed: "\
-              << #a << std::endl; \
-    return 1; \
-  }
 
 #define VERIFY_COLOR(str, r, g, b, a) \
-  VERIFY(simgear::parseColor(str, color)) \
-  COMPARE(color, osg::Vec4(r, g, b, a))
+  SG_VERIFY(simgear::parseColor(str, color)) \
+  SG_CHECK_EQUAL(color, osg::Vec4(r, g, b, a))
 
 #define VERIFY_NODE_STR(node, str) \
-  COMPARE(node.getStringValue(), std::string(str))
-    
+  SG_CHECK_EQUAL(node.getStringValue(), std::string(str))
+
 int main (int ac, char ** av)
 {
   osg::Vec4 color;

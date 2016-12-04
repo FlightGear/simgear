@@ -89,12 +89,12 @@ void testParse()
     std::set<const SGPropertyNode*> deps;
     expr->collectDependentProperties(deps);
     
-    COMPARE(deps.size(), 3);
+    SG_CHECK_EQUAL(deps.size(), 3);
     SGPropertyNode* barProp = propertyTree->getNode("group-a/bar");
-    VERIFY(deps.find(barProp) != deps.end());
+    SG_VERIFY(deps.find(barProp) != deps.end());
 
-    VERIFY(deps.find(propertyTree->getNode("group-a/zot")) != deps.end());
-    VERIFY(deps.find(propertyTree->getNode("group-b/thing-1")) != deps.end());
+    SG_VERIFY(deps.find(propertyTree->getNode("group-a/zot")) != deps.end());
+    SG_VERIFY(deps.find(propertyTree->getNode("group-b/thing-1")) != deps.end());
 }
 
 int main(int argc, char* argv[])

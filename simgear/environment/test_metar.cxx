@@ -4,6 +4,7 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/misc/test_macros.hxx>
 
 #include <iostream>
 #include <cstdlib>
@@ -23,75 +24,56 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-#define COMPARE(a, b) \
-    if ((a) != (b))  { \
-        cerr << "failed:" << #a << " != " << #b << endl; \
-        cerr << "\tgot:" << a << endl; \
-        exit(1); \
-    }
-
-#define FUZZY_COMPARE(a, b, epsilon) \
-    if (fabs(a - b) > epsilon) { \
-        cerr << "failed:" << #a << " != " << #b << endl; \
-        cerr << "\tgot:" << a << endl; \
-        cerr << "\tepsilon:" << epsilon << endl; \
-    }
-
-#define VERIFY(a) \
-    if (!(a))  { \
-        cerr << "failed:" << #a << endl; \
-        exit(1); \
-    }
 
 const double TEST_EPSILON = 1e-9;
 
 void test_basic()
 {
     SGMetar m1("2011/10/20 11:25 EHAM 201125Z 27012KT 240V300 9999 VCSH FEW025CB SCT048 10/05 Q1025 TEMPO VRB03KT");
-    COMPARE(m1.getYear(), 2011);
-    COMPARE(m1.getMonth(), 10);
-    COMPARE(m1.getDay(), 20);
-    COMPARE(m1.getHour(), 11);
-    COMPARE(m1.getMinute(), 25);
-    COMPARE(m1.getReportType(), -1); // should default to NIL?
-    
-    COMPARE(m1.getWindDir(), 270);
-    FUZZY_COMPARE(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
-    
-    COMPARE(m1.getWeather().size(), 1);
-    COMPARE(m1.getClouds().size(), 2);
+    SG_CHECK_EQUAL(m1.getYear(), 2011);
+    SG_CHECK_EQUAL(m1.getMonth(), 10);
+    SG_CHECK_EQUAL(m1.getDay(), 20);
+    SG_CHECK_EQUAL(m1.getHour(), 11);
+    SG_CHECK_EQUAL(m1.getMinute(), 25);
+    SG_CHECK_EQUAL(m1.getReportType(), -1); // should default to NIL?
 
-    FUZZY_COMPARE(m1.getTemperature_C(), 10, TEST_EPSILON);
-    FUZZY_COMPARE(m1.getDewpoint_C(), 5, TEST_EPSILON);
-    FUZZY_COMPARE(m1.getPressure_hPa(), 1025, TEST_EPSILON);
+    SG_CHECK_EQUAL(m1.getWindDir(), 270);
+    SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
+
+    SG_CHECK_EQUAL(m1.getWeather().size(), 1);
+    SG_CHECK_EQUAL(m1.getClouds().size(), 2);
+
+    SG_CHECK_EQUAL_EP2(m1.getTemperature_C(), 10, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getDewpoint_C(), 5, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1025, TEST_EPSILON);
 }
 
 void test_sensor_failure_weather()
 {
     SGMetar m1("2011/10/20 11:25 EHAM 201125Z 27012KT 240V300 9999 // FEW025CB SCT048 10/05 Q1025");
-    COMPARE(m1.getWindDir(), 270);
-    FUZZY_COMPARE(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
+    SG_CHECK_EQUAL(m1.getWindDir(), 270);
+    SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
 
-    COMPARE(m1.getWeather().size(), 0);
-    COMPARE(m1.getClouds().size(), 2);
+    SG_CHECK_EQUAL(m1.getWeather().size(), 0);
+    SG_CHECK_EQUAL(m1.getClouds().size(), 2);
 
-    FUZZY_COMPARE(m1.getTemperature_C(), 10, TEST_EPSILON);
-    FUZZY_COMPARE(m1.getDewpoint_C(), 5, TEST_EPSILON);
-    FUZZY_COMPARE(m1.getPressure_hPa(), 1025, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getTemperature_C(), 10, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getDewpoint_C(), 5, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1025, TEST_EPSILON);
 }
 
 void test_sensor_failure_cloud()
 {
     SGMetar m1("2011/10/20 11:25 EHAM 201125Z 27012KT 240V300 9999 FEW025CB/// SCT048/// 10/05 Q1025");
-    COMPARE(m1.getWindDir(), 270);
-    FUZZY_COMPARE(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
+    SG_CHECK_EQUAL(m1.getWindDir(), 270);
+    SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
 
-    COMPARE(m1.getWeather().size(), 0);
-    COMPARE(m1.getClouds().size(), 2);
+    SG_CHECK_EQUAL(m1.getWeather().size(), 0);
+    SG_CHECK_EQUAL(m1.getClouds().size(), 2);
 
-    FUZZY_COMPARE(m1.getTemperature_C(), 10, TEST_EPSILON);
-    FUZZY_COMPARE(m1.getDewpoint_C(), 5, TEST_EPSILON);
-    FUZZY_COMPARE(m1.getPressure_hPa(), 1025, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getTemperature_C(), 10, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getDewpoint_C(), 5, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1025, TEST_EPSILON);
 }
 
 int main(int argc, char* argv[])

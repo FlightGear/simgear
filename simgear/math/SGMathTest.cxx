@@ -276,26 +276,26 @@ void doRectTest()
 {
   SGRect<T> rect(10, 15, 20, 25);
 
-  COMPARE(rect.x(), 10)
-  COMPARE(rect.y(), 15)
-  COMPARE(rect.width(), 20)
-  COMPARE(rect.height(), 25)
+  SG_CHECK_EQUAL(rect.x(), 10)
+  SG_CHECK_EQUAL(rect.y(), 15)
+  SG_CHECK_EQUAL(rect.width(), 20)
+  SG_CHECK_EQUAL(rect.height(), 25)
 
-  COMPARE(rect.pos(), SGVec2<T>(10, 15))
-  COMPARE(rect.size(), SGVec2<T>(20, 25))
+  SG_CHECK_EQUAL(rect.pos(), SGVec2<T>(10, 15))
+  SG_CHECK_EQUAL(rect.size(), SGVec2<T>(20, 25))
 
-  COMPARE(rect.l(), 10)
-  COMPARE(rect.t(), 15)
-  COMPARE(rect.r(), 30)
-  COMPARE(rect.b(), 40)
+  SG_CHECK_EQUAL(rect.l(), 10)
+  SG_CHECK_EQUAL(rect.t(), 15)
+  SG_CHECK_EQUAL(rect.r(), 30)
+  SG_CHECK_EQUAL(rect.b(), 40)
 
-  VERIFY(rect == rect)
-  VERIFY(rect == SGRect<T>(10, 15, 20, 25))
-  VERIFY(rect != SGRect<T>(11, 15, 20, 25))
+  SG_VERIFY(rect == rect)
+  SG_VERIFY(rect == SGRect<T>(10, 15, 20, 25))
+  SG_VERIFY(rect != SGRect<T>(11, 15, 20, 25))
 
-  VERIFY(rect.contains(10, 15))
-  VERIFY(!rect.contains(9, 15))
-  VERIFY(rect.contains(9, 15, 1))
+  SG_VERIFY(rect.contains(10, 15))
+  SG_VERIFY(!rect.contains(9, 15))
+  SG_VERIFY(rect.contains(9, 15, 1))
 }
 
 bool

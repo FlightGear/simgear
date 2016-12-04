@@ -128,7 +128,7 @@ void testBasic()
     SG_CHECK_EQUAL(sm->state()->name(), "b");
 
 ////////////////////////////////////////
-    SG_CHECK_EQUAL(sm->findStateByName("foo"), NULL);
+    SG_CHECK_IS_NULL(sm->findStateByName("foo"));
     SG_CHECK_EQUAL(sm->indexOfState(StateMachine::State_ptr()), -1);
     
     SG_CHECK_EQUAL(sm->stateByIndex(1), stateB);

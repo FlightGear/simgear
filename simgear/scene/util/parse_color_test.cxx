@@ -10,7 +10,7 @@
 
 #define VERIFY_COLOR(str, r, g, b, a) \
   SG_VERIFY(simgear::parseColor(str, color)) \
-  SG_CHECK_EQUAL(color, osg::Vec4(r, g, b, a))
+  SG_CHECK_EQUAL_NOSTREAM(color, osg::Vec4(r, g, b, a))
 
 #define VERIFY_NODE_STR(node, str) \
   SG_CHECK_EQUAL(node.getStringValue(), std::string(str))

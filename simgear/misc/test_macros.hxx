@@ -2,7 +2,7 @@
 #ifndef SG_MISC_TEST_MACROS_HXX
 #define SG_MISC_TEST_MACROS_HXX
 
-#include <cmath> // for fabs()
+#include <cmath>                // for std::fabs()
 
 #define SG_CHECK_EQUAL(a, b) \
     if ((a) != (b))  { \
@@ -20,7 +20,7 @@
     }
 
 #define SG_CHECK_EQUAL_EP(a, b) \
-    if (fabs(a - b) > SG_EPSILON)  { \
+    if (std::fabs((a) - (b)) > SG_EPSILON)  { \
         std::cerr << "failed with epsilon:" << #a << " != " << #b << std::endl; \
         std::cerr << "\tgot:'" << a << "'" << std::endl; \
         std::cerr << "\tat:" << __FILE__ << ":" << __LINE__ << std::endl; \
@@ -28,7 +28,7 @@
     }
 
 #define SG_CHECK_EQUAL_EP2(a, b, ep) \
-    if (fabs(a - b) > ep)  { \
+    if (std::fabs((a) - (b)) > ep)  { \
         std::cerr << "failed with epsilon:" << #a << " != " << #b << std::endl; \
         std::cerr << "\tgot:'" << a << "'" << std::endl; \
         std::cerr << "\tat:" << __FILE__ << ":" << __LINE__ << std::endl; \

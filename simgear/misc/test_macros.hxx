@@ -13,8 +13,8 @@
     }
 
 #define SG_CHECK_EQUAL(a, b) \
-    if ((a) != (b))  { \
-        std::cerr << "failed: " << #a << " != " << #b << std::endl; \
+    if ( !((a) == (b)) )  { \
+        std::cerr << "failed: " << #a << " == " << #b << std::endl; \
         std::cerr << "\tgot '" << a << "' and '" << b << "'" << std::endl; \
         std::cerr << "\tat " << __FILE__ << ":" << __LINE__ << std::endl; \
         exit(1); \
@@ -22,7 +22,7 @@
 
 #define SG_CHECK_EQUAL_EP(a, b) \
     if (std::fabs((a) - (b)) > SG_EPSILON)  { \
-        std::cerr << "failed with epsilon: " << #a << " != " << #b << std::endl; \
+        std::cerr << "failed: " << #a << " ~= " << #b << std::endl; \
         std::cerr << "\tgot '" << a << "' and '" << b << "'" << std::endl; \
         std::cerr << "\tat " << __FILE__ << ":" << __LINE__ << std::endl; \
         exit(1); \
@@ -30,7 +30,7 @@
 
 #define SG_CHECK_EQUAL_EP2(a, b, ep) \
     if (std::fabs((a) - (b)) > ep)  { \
-        std::cerr << "failed with epsilon: " << #a << " != " << #b << std::endl; \
+        std::cerr << "failed: " << #a << " ~= " << #b << std::endl; \
         std::cerr << "\tgot '" << a << "' and '" << b << "'" << std::endl; \
         std::cerr << "\tat " << __FILE__ << ":" << __LINE__ << std::endl; \
         exit(1); \

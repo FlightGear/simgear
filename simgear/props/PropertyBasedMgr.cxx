@@ -30,6 +30,7 @@ namespace simgear
   void PropertyBasedMgr::init()
   {
     _props->addChangeListener(this);
+    _props->fireCreatedRecursive();
   }
 
   //----------------------------------------------------------------------------
@@ -91,7 +92,6 @@ namespace simgear
   PropertyBasedMgr::PropertyBasedMgr( SGPropertyNode_ptr props,
                                       const std::string& name_elements,
                                       ElementFactory element_factory ):
-    SGPropertyChangeListener(true /* recursive*/),
     _props( props ),
     _name_elements( name_elements ),
     _element_factory( element_factory )

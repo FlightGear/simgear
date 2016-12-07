@@ -117,7 +117,7 @@ public:
     // bool unconditionalAttributeOwnershipDivestiture(const RTIHandle& objectHandle, const RTIHandleSet& attributeHandles)
     // {
     //     try {
-    //         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
+    //         std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
     //         for (RTIHandleSet::const_iterator i = attributeHandles.begin(); i != attributeHandles.end(); ++i)
     //             attributeHandleSet->add(*i);
     //         _rtiAmbassador.unconditionalAttributeOwnershipDivestiture(objectHandle, *attributeHandleSet);
@@ -136,7 +136,7 @@ public:
     // bool negotiatedAttributeOwnershipDivestiture(const RTIHandle& objectHandle, const RTIHandleSet& attributeHandles, const RTIData& tag)
     // {
     //     try {
-    //         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
+    //         std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
     //         for (RTIHandleSet::const_iterator i = attributeHandles.begin(); i != attributeHandles.end(); ++i)
     //             attributeHandleSet->add(*i);
     //         _rtiAmbassador.negotiatedAttributeOwnershipDivestiture(objectHandle, *attributeHandleSet, tag.data());
@@ -156,7 +156,7 @@ public:
     // bool attributeOwnershipAcquisition(const RTIHandle& objectHandle, const RTIHandleSet& attributeHandles, const RTIData& tag)
     // {
     //     try {
-    //         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
+    //         std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
     //         for (RTIHandleSet::const_iterator i = attributeHandles.begin(); i != attributeHandles.end(); ++i)
     //             attributeHandleSet->add(*i);
     //         _rtiAmbassador.attributeOwnershipAcquisition(objectHandle, *attributeHandleSet, tag.data());
@@ -177,7 +177,7 @@ public:
     // bool attributeOwnershipAcquisitionIfAvailable(const RTIHandle& objectHandle, const RTIHandleSet& attributeHandles)
     // {
     //     try {
-    //         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
+    //         std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
     //         for (RTIHandleSet::const_iterator i = attributeHandles.begin(); i != attributeHandles.end(); ++i)
     //             attributeHandleSet->add(*i);
     //         _rtiAmbassador.attributeOwnershipAcquisitionIfAvailable(objectHandle, *attributeHandleSet);
@@ -199,7 +199,7 @@ public:
     // RTIHandleSet attributeOwnershipReleaseResponse(const RTIHandle& objectHandle, const RTIHandleSet& attributeHandles)
     // {
     //     try {
-    //         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
+    //         std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
     //         for (RTIHandleSet::const_iterator i = attributeHandles.begin(); i != attributeHandles.end(); ++i)
     //             attributeHandleSet->add(*i);
     //         attributeHandleSet.reset(_rtiAmbassador.attributeOwnershipReleaseResponse(objectHandle, *attributeHandleSet));
@@ -223,7 +223,7 @@ public:
     // bool cancelNegotiatedAttributeOwnershipDivestiture(const RTIHandle& objectHandle, const RTIHandleSet& attributeHandles)
     // {
     //     try {
-    //         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
+    //         std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
     //         for (RTIHandleSet::const_iterator i = attributeHandles.begin(); i != attributeHandles.end(); ++i)
     //             attributeHandleSet->add(*i);
     //         _rtiAmbassador.cancelNegotiatedAttributeOwnershipDivestiture(objectHandle, *attributeHandleSet);
@@ -243,7 +243,7 @@ public:
     // bool cancelAttributeOwnershipAcquisition(const RTIHandle& objectHandle, const RTIHandleSet& attributeHandles)
     // {
     //     try {
-    //         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
+    //         std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(attributeHandles.size()));
     //         for (RTIHandleSet::const_iterator i = attributeHandles.begin(); i != attributeHandles.end(); ++i)
     //             attributeHandleSet->add(*i);
     //         _rtiAmbassador.cancelAttributeOwnershipAcquisition(objectHandle, *attributeHandleSet);

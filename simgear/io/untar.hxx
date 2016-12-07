@@ -44,7 +44,7 @@ public:
     bool hasError() const;
 
 private:
-    std::auto_ptr<TarExtractorPrivate> d;
+    std::unique_ptr<TarExtractorPrivate> d;
 };
 
 } // of namespace simgear

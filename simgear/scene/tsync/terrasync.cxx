@@ -165,7 +165,7 @@ public:
     SyncItem currentItem;
     bool isNewDirectory;
     std::queue<SyncItem> queue;
-    std::auto_ptr<HTTPRepository> repository;
+    std::unique_ptr<HTTPRepository> repository;
     SGTimeStamp stamp;
     bool busy; ///< is the slot working or idle
     unsigned int pendingKBytes;

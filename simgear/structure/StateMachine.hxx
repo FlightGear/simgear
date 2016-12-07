@@ -64,7 +64,7 @@ public:
         void update();
         
         class StatePrivate;
-        std::auto_ptr<StatePrivate> d;
+        std::unique_ptr<StatePrivate> d;
     };
     
     class Transition : public SGReferenced
@@ -118,7 +118,7 @@ public:
         void fireBindings();
     
         class TransitionPrivate;
-        std::auto_ptr<TransitionPrivate> d;
+        std::unique_ptr<TransitionPrivate> d;
     };
     
     typedef SGSharedPtr<State> State_ptr;
@@ -167,7 +167,7 @@ private:
     void innerChangeState(State_ptr aState, Transition_ptr aTrans);
     
     class StateMachinePrivate;
-    std::auto_ptr<StateMachinePrivate> d;
+    std::unique_ptr<StateMachinePrivate> d;
 };
 
 typedef SGSharedPtr<StateMachine> StateMachine_ptr;

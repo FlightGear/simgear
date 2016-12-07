@@ -36,7 +36,7 @@
 #include <simgear/compiler.h>
 
 #include <ctime>
-#include <memory> // for std::auto_ptr
+#include <memory> // for std::unique_ptr
 #include <string>
 
 // forward decls

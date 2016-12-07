@@ -51,7 +51,7 @@ public:
     osg::Node* getSignsGroup();
 private:
     class AirportSignBuilderPrivate;
-    std::auto_ptr<AirportSignBuilderPrivate> d;
+    std::unique_ptr<AirportSignBuilderPrivate> d;
 };
 
 } // of namespace simgear

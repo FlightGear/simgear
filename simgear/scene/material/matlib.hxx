@@ -69,7 +69,7 @@ class SGMaterialLib : public SGReferenced
 
 private:
     class MatLibPrivate;
-    std::auto_ptr<MatLibPrivate> d;
+    std::unique_ptr<MatLibPrivate> d;
     
     // associative array of materials
     typedef std::vector< SGSharedPtr<SGMaterial> > material_list;    

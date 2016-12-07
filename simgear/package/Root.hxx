@@ -19,7 +19,7 @@
 #define SG_PACKAGE_ROOT_HXX
 
 #include <vector>
-#include <memory> // for auto_ptr
+#include <memory> // for unique_ptr
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/package/Delegate.hxx>
@@ -161,7 +161,7 @@ private:
     
     class ThumbnailDownloader;
     class RootPrivate;
-    std::auto_ptr<RootPrivate> d;
+    std::unique_ptr<RootPrivate> d;
 };
   
 typedef SGSharedPtr<Root> RootRef;

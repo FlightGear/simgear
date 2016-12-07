@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <memory> // for std::auto_ptr
+#include <memory> // for std::unique_ptr
 
 #include <simgear/compiler.h>
 #include <simgear/structure/subsystem_mgr.hxx>
@@ -328,7 +328,7 @@ public:
 private:
     class SoundManagerPrivate;
     /// private implementation object
-    std::auto_ptr<SoundManagerPrivate> d;
+    std::unique_ptr<SoundManagerPrivate> d;
 
     bool _block_support;
     bool _active;

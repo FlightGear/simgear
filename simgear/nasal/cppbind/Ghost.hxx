@@ -1200,7 +1200,7 @@ namespace nasal
         return ctx;
       };
 
-      typedef std::auto_ptr<Ghost> GhostPtr;
+      typedef std::unique_ptr<Ghost> GhostPtr;
       MemberMap         _members;
       fallback_getter_t _fallback_getter;
       fallback_setter_t _fallback_setter;

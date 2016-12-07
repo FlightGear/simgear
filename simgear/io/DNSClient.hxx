@@ -24,7 +24,7 @@
 #ifndef SG_DNS_CLIENT_HXX
 #define SG_DNS_CLIENT_HXX
 
-#include <memory> // for std::auto_ptr
+#include <memory> // for std::unique_ptr
 #include <string>
 #include <vector>
 #include <ctime> // for time_t
@@ -133,7 +133,7 @@ public:
 //    void cancelRequest(const Request_ptr& r, std::string reason = std::string());
 
     class ClientPrivate;
-    std::auto_ptr<ClientPrivate> d;
+    std::unique_ptr<ClientPrivate> d;
 };
 
 } // of namespace DNS

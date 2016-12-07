@@ -725,7 +725,7 @@ HTTPRepository::failure() const
         std::string fileName; // if empty, we're getting the directory itself
         SGPath pathInRepo;
         simgear::sha1nfo hashContext;
-        std::auto_ptr<SGBinaryFile> file;
+        std::unique_ptr<SGBinaryFile> file;
     };
 
     class DirGetRequest : public HTTPRepoGetRequest

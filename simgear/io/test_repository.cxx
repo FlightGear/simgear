@@ -71,7 +71,7 @@ public:
     int requestCount;
     bool getWillFail;
     bool returnCorruptData;
-    std::auto_ptr<SGCallback> accessCallback;
+    std::unique_ptr<SGCallback> accessCallback;
 
     void clearRequestCounts();
 
@@ -400,7 +400,7 @@ void waitForUpdateComplete(HTTP::Client* cl, HTTPRepository* repo)
 
 void testBasicClone(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_basic");
     simgear::Dir pd(p);
@@ -435,7 +435,7 @@ void testBasicClone(HTTP::Client* cl)
 
 void testModifyLocalFiles(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_modify_local_2");
     simgear::Dir pd(p);
@@ -476,7 +476,7 @@ void testNoChangesUpdate()
 
 void testMergeExistingFileWithoutDownload(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_merge_existing");
     simgear::Dir pd(p);
@@ -518,7 +518,7 @@ void testMergeExistingFileWithoutDownload(HTTP::Client* cl)
 
 void testLossOfLocalFiles(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_lose_local");
     simgear::Dir pd(p);
@@ -552,7 +552,7 @@ void testLossOfLocalFiles(HTTP::Client* cl)
 
 void testAbandonMissingFiles(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_missing_files");
     simgear::Dir pd(p);
@@ -576,7 +576,7 @@ void testAbandonMissingFiles(HTTP::Client* cl)
 
 void testAbandonCorruptFiles(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_corrupt_files");
     simgear::Dir pd(p);
@@ -616,7 +616,7 @@ void modifyBTree()
 
 void testServerModifyDuringSync(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_server_modify_during_sync");
     simgear::Dir pd(p);
@@ -647,7 +647,7 @@ void testServerModifyDuringSync(HTTP::Client* cl)
 
 void testDestroyDuringSync(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_destory_during_sync");
     simgear::Dir pd(p);
@@ -676,7 +676,7 @@ void testDestroyDuringSync(HTTP::Client* cl)
 
 void testCopyInstalledChildren(HTTP::Client* cl)
 {
-    std::auto_ptr<HTTPRepository> repo;
+    std::unique_ptr<HTTPRepository> repo;
     SGPath p(simgear::Dir::current().path());
     p.append("http_repo_copy_installed_children");
     simgear::Dir pd(p);

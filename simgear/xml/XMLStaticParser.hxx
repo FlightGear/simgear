@@ -7,7 +7,7 @@
 #include <string>
 #include <map>
 #include <stack>
-#include <auto_ptr>
+#include <memory>
 
 #include <osg/ref_ptr>
 #include <osg/Referenced>

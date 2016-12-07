@@ -101,7 +101,7 @@ private:
     SGSharedPtr<RTI13Ambassador> _ambassador;
 
     // cached storage for updates
-    std::auto_ptr<RTI::AttributeHandleValuePairSet> _attributeValuePairSet;
+    std::unique_ptr<RTI::AttributeHandleValuePairSet> _attributeValuePairSet;
 };
 
 }

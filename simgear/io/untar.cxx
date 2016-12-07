@@ -101,7 +101,7 @@ public:
     };
 
     size_t bytesRemaining;
-    std::auto_ptr<SGFile> currentFile;
+    std::unique_ptr<SGFile> currentFile;
     size_t currentFileSize;
     z_stream zlibStream;
     uint8_t* zlibOutput;

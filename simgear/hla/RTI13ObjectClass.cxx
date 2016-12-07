@@ -101,7 +101,7 @@ RTI13ObjectClass::publish(const HLAIndexList& indexList)
 
     try {
         unsigned numAttributes = getNumAttributes();
-        std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(numAttributes));
+        std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(numAttributes));
         for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
             if (_attributeHandleVector.size() <= *i) {
                 SG_LOG(SG_NETWORK, SG_WARN, "RTI13ObjectClass::publish(): Invalid attribute index!");
@@ -195,7 +195,7 @@ RTI13ObjectClass::subscribe(const HLAIndexList& indexList, bool active)
 
     try {
         unsigned numAttributes = getNumAttributes();
-        std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(numAttributes));
+        std::unique_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(numAttributes));
         for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
             if (_attributeHandleVector.size() <= *i) {
                 SG_LOG(SG_NETWORK, SG_WARN, "RTI13ObjectClass::subscribe(): Invalid attribute index!");

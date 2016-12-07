@@ -24,7 +24,7 @@
 #ifndef SG_HTTP_CLIENT_HXX
 #define SG_HTTP_CLIENT_HXX
 
-#include <memory> // for std::auto_ptr
+#include <memory> // for std::unique_ptr
 #include <stdint.h> // for uint_64t
 
 #include <simgear/io/HTTPFileRequest.hxx>
@@ -125,7 +125,7 @@ private:
     friend class Request;
 
     class ClientPrivate;
-    std::auto_ptr<ClientPrivate> d;
+    std::unique_ptr<ClientPrivate> d;
 };
 
 } // of namespace HTTP

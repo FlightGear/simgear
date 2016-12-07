@@ -60,7 +60,7 @@ static const double J2000   = 2451545.0 - MJD0;
 static const double SIDRATE = 0.9972695677;
 
 // tzContainer stores all the current Timezone control points/
-std::auto_ptr<SGTimeZoneContainer> static_tzContainer;
+std::unique_ptr<SGTimeZoneContainer> static_tzContainer;
 
 void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time )
 {

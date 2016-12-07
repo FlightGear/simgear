@@ -24,7 +24,7 @@
 #define SG_DEBUG_BUFFEREDLOGCALLBACK_HXX
 
 #include <vector>
-#include <memory> // for std::auto_ptr
+#include <memory> // for std::unique_ptr
 
 #include <simgear/debug/logstream.hxx>
 
@@ -70,7 +70,7 @@ public:
     unsigned int threadsafeCopy(vector_cstring& aOutput);
 private:
     class BufferedLogCallbackPrivate;
-    std::auto_ptr<BufferedLogCallbackPrivate> d;
+    std::unique_ptr<BufferedLogCallbackPrivate> d;
 };
      
 

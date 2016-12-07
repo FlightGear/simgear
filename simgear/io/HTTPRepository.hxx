@@ -73,7 +73,7 @@ public:
 private:
     bool isBare() const;
 
-    std::auto_ptr<HTTPRepoPrivate> _d;
+    std::unique_ptr<HTTPRepoPrivate> _d;
 };
 
 } // of namespace simgear

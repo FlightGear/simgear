@@ -85,7 +85,7 @@ private:
 
 public:
     simd4_t(void) {}
-    explicit simd4_t(T s) {
+    simd4_t(T s) {
         for (int i=0; i<N; i++) vec[i] = s;
         for (int i=N; i<4; i++) _v4[i] = 0;
     }

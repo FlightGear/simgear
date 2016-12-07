@@ -269,22 +269,22 @@ SGVec4<T> addClipOverflow(SGVec4<T> const& lhs, SGVec4<T> const& rhs)
 template<typename T>
 inline
 T
-dot(SGVec4<T> v1, const SGVec4<T>& v2)
-{ v1.simd4() *= v2.simd4(); return (v1(0)+v1(1)+v1(2)+v1(3)); }
+dot(const SGVec4<T>& v1, const SGVec4<T>& v2)
+{ return simd4::dot(v1.simd4(), v2.simd4()); }
 
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>
 inline
 T
 norm(const SGVec4<T>& v)
-{ return sqrt(dot(v, v)); }
+{ return simd4::magnitude(v.simd4()); }
 
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>
 inline
 T
 length(const SGVec4<T>& v)
-{ return sqrt(dot(v, v)); }
+{ return simd4::magnitude(v.simd4()); }
 
 /// The 1-norm of the vector, this one is the fastest length function we
 /// can implement on modern cpu's

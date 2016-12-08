@@ -211,8 +211,9 @@ public:
         *this += r.v4();
         return *this;
     }
-    inline simd4_t<T,N>& operator+=(const simd4_t<T,N>& v) {
-        for (int i=0; i<N; i++) {
+    template<int M>
+    inline simd4_t<T,N>& operator+=(const simd4_t<T,M>& v) {
+        for (int i=0; i<M; i++) {
            vec[i] += v[i];
         }
         return *this;

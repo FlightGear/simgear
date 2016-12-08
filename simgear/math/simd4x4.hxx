@@ -158,8 +158,7 @@ public:
         m -= *this; return m;
     }
 
-    template<typename S>
-    inline simd4x4_t<T,N> operator*(S s) {
+    inline simd4x4_t<T,N> operator*(T s) {
         simd4x4_t<T,N> r(*this);
         r *= s;
         return r;
@@ -168,8 +167,7 @@ public:
         m *= *this; return m;
     }
 
-    template<typename S>
-    inline simd4x4_t<T,N> operator/(S s) {
+    inline simd4x4_t<T,N> operator/(T s) {
         simd4x4_t<T,N> r(*this);
         r *= (1/T(s));
         return r;
@@ -219,8 +217,7 @@ public:
         return *this;
     }
 
-    template<typename S>
-    inline simd4x4_t<T,N>& operator/=(S s) {
+    inline simd4x4_t<T,N>& operator/=(T s) {
         return operator*=(1/T(s));
     }
 };

@@ -94,8 +94,8 @@ public:
     }
     template<int M>
     simd4_t(const simd4_t<T,M>& v) {
-        if (M<4) std::memset(_v4+M, 0, sizeof(T[4-M]));
         std::memcpy(vec, v.ptr(), sizeof(T[M]));
+        for (int i=N; i<4; i++) _v4[i] = 0;
     }
     ~simd4_t(void) {}
 

@@ -391,7 +391,7 @@ void test_addChild()
 }
 
 
-bool ensureNListeners(SGPropertyNode* node, unsigned int n)
+bool ensureNListeners(SGPropertyNode* node, int n)
 {
     if (node->nListeners() != n) {
         return false;
@@ -948,7 +948,7 @@ int main (int ac, char ** av)
     tiedPropertiesTest();
     tiedPropertiesListeners();
     testDeleterListener();
-    
+
     // disable test for the moment
    // testAliasedListeners();
 

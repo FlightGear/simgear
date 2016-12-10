@@ -49,7 +49,7 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr,
                                const std::string &refname ):
     _smgr(smgr),
     _refname(refname),
-    _active(false), 
+    _active(false),
     _changed(false),
     _pause(false),
     _volume(1.0),
@@ -75,10 +75,10 @@ void SGSampleGroup::cleanup_removed_samples()
     unsigned int size = _removed_samples.size();
     for (unsigned int i=0; i<size; ) {
         SGSoundSample *sample = _removed_samples[i];
-        
+
         _smgr->sample_stop(sample);
         bool stopped = _smgr->is_sample_stopped(sample);
-        
+
         if ( stopped ) {
             sample->stop();
             if (( !sample->is_queue() )&&
@@ -130,7 +130,7 @@ void SGSampleGroup::update( double dt ) {
     testForMgrError("start of update!!\n");
 
     cleanup_removed_samples();
-    
+
     // Update the position and orientation information for all samples.
     if ( _changed || _smgr->has_changed() ) {
         update_pos_and_orientation();
@@ -139,7 +139,6 @@ void SGSampleGroup::update( double dt ) {
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
-    size_t i = 0;
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
 
@@ -395,4 +394,3 @@ bool SGSampleGroup::testForMgrError(std::string s)
     _smgr->testForError(s+" (sample group)", _refname);
     return false;
 }
-

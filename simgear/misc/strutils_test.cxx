@@ -119,6 +119,24 @@ void test_split()
   l = strutils::split("  ", ",");
   SG_CHECK_EQUAL(l.size(), 1);
   SG_CHECK_EQUAL(l[0], "  ");
+
+
+    const char* testCases[] = {
+        "alpha,bravo, charlie\tdelta\n\recho,    \t\r\nfoxtrot golf,\n\t\n \n",
+        "  alpha  bravo \t charlie,,,delta    echo\nfoxtrot\rgolf"
+    };
+
+    for (const char* data: testCases) {
+        l = strutils::split_on_any_of(data, "\n\t\r ,");
+        SG_CHECK_EQUAL(l.size(), 7);
+        SG_CHECK_EQUAL(l[0], "alpha");
+        SG_CHECK_EQUAL(l[1], "bravo");
+        SG_CHECK_EQUAL(l[2], "charlie");
+        SG_CHECK_EQUAL(l[3], "delta");
+        SG_CHECK_EQUAL(l[4], "echo");
+        SG_CHECK_EQUAL(l[5], "foxtrot");
+        SG_CHECK_EQUAL(l[6], "golf");
+    }
 }
 
 void test_unescape()

@@ -175,6 +175,33 @@ namespace simgear {
 	    return result;
 	}
 
+
+        string_list split_on_any_of(const std::string& str, const char* seperators)
+        {
+            if (seperators == nullptr || (strlen(seperators) == 0)) {
+                throw sg_exception("illegal/missing seperator string");
+            }
+
+            string_list result;
+            size_t pos = 0;
+            size_t startPos = str.find_first_not_of(seperators, 0);
+            for(;;)
+            {
+                pos = str.find_first_of(seperators, startPos);
+                if (pos == string::npos) {
+                    result.push_back(str.substr(startPos));
+                    break;
+                }
+                result.push_back(str.substr(startPos, pos - startPos));
+                startPos = str.find_first_not_of(seperators, pos);
+                if (startPos == string::npos) {
+                    break;
+                }
+            }
+            return result;
+
+        }
+
 	/**
 	 * The lstrip(), rstrip() and strip() functions are implemented
 	 * in do_strip() which uses an additional parameter to indicate what

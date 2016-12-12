@@ -122,6 +122,17 @@ namespace simgear {
 	       const char* sep = 0,
 	       int maxsplit = 0 );
 
+      /**
+       * split a string on any of several characters. Commonly used to deal
+       * with strings containing whitespace, newlines. To parse CSS style
+       * string, use with '\n\t ,' as the seperator list.
+       *
+       * Note consecutive seperators will not produce empty entries in the
+       * the result, i.e splitting 'a,b,,c,d' with a ',' will produce a result
+       * with four entries, not five.
+       */
+      string_list split_on_any_of(const std::string&, const char* seperators);
+
        /**
         * create a single string by joining the elements of a list with
         * another string.

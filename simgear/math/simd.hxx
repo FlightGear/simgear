@@ -21,11 +21,29 @@
 #include <cstring>
 #include <cmath>
 
+#include <simgear/math/SGLimits.hxx>
+#include <simgear/math/SGMisc.hxx>
 
 template<typename T, int N> class simd4_t;
 
 namespace simd4
 {
+
+template<typename T, int N>
+inline simd4_t<T,N> min(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+    for (int i=0; i<N; i++) {
+        v1[i] = SGMisc<T>::min(v1[i], v2[i]);
+    }
+    return v1;
+}
+
+template<typename T, int N>
+inline simd4_t<T,N> max(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+    for (int i=0; i<N; i++) {
+        v1[i] = SGMisc<T>::max(v1[i], v2[i]);
+    }
+    return v1;
+}
 
 template<typename T, int N>
 inline simd4_t<T,N> abs(simd4_t<T,N> v) {
@@ -88,6 +106,15 @@ public:
     simd4_t(T s) {
         for (int i=0; i<N; i++) vec[i] = s;
         for (int i=N; i<4; i++) _v4[i] = 0;
+    }
+    simd4_t(T x, T y) {
+        _v4[0] = x; _v4[1] = y; _v4[2] = 0; _v4[3] = 0;
+    }
+    simd4_t(T x, T y, T z) {
+        _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = 0;
+    }
+    simd4_t(T x, T y, T z, T w) {
+        _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
     }
     explicit simd4_t(const T v[N]) {
         std::memcpy(vec, v, sizeof(T[N]));
@@ -304,10 +331,20 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
 
 # ifdef __MMX__
 #  include <mmintrin.h>
+# if defined(_MSC_VER)
+#  define ALIGN16  __declspec(align(16))
+#  define ALIGN16C
+# elif defined(__GNUC__)
+#  define ALIGN16
+#  define ALIGN16C __attribute__((aligned(16)))
+# endif
 # endif
 
 # ifdef __SSE__
 #  include <xmmintrin.h>
+# ifdef __SSE3__
+#  include <pmmintrin.h>
+# endif
 
 template<int N>
 class simd4_t<float,N>
@@ -315,17 +352,26 @@ class simd4_t<float,N>
 private:
    typedef float  __vec4f_t[N];
 
-    union {
+    union ALIGN16 {
         __m128 simd4;
         __vec4f_t vec;
         float _v4[4];
-    };
+    } ALIGN16C;
 
 public:
     simd4_t(void) {}
     simd4_t(float f) {
         simd4 = _mm_set1_ps(f);
         for (int i=N; i<4; i++) _v4[i] = 0.0f;
+    }
+    simd4_t(float x, float y) {
+        simd4 = _mm_setr_ps(x,y,0,0);
+    }
+    simd4_t(float x, float y, float z) {
+        simd4 = _mm_setr_ps(x,y,z,0);
+    }
+    simd4_t(float x, float y, float z, float w) {
+        simd4 = _mm_setr_ps(x,y,z,w);
     }
     explicit simd4_t(const __vec4f_t v) {
         simd4 = _mm_loadu_ps(v);
@@ -424,6 +470,47 @@ public:
 
 namespace simd4
 {
+// http://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-float-vector-sum-on-x86
+# ifdef __SSE3__
+  inline float hsum_ps_sse(__m128 v) {
+    __m128 shuf = _mm_movehdup_ps(v);
+    __m128 sums = _mm_add_ps(v, shuf);
+    shuf        = _mm_movehl_ps(shuf, sums);
+    sums        = _mm_add_ss(sums, shuf);
+    return        _mm_cvtss_f32(sums);
+  }
+# else
+  inline float hsum_ps_sse(__m128 v) {
+    __m128 shuf   = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 1));
+    __m128 sums   = _mm_add_ps(v, shuf);
+    shuf          = _mm_movehl_ps(shuf, sums);
+    sums          = _mm_add_ss(sums, shuf);
+    return    _mm_cvtss_f32(sums);
+  }
+# endif
+
+template<>
+inline float magnitude2(simd4_t<float,4> v) {
+    return hsum_ps_sse(v.v4()*v.v4());
+}
+
+template<>
+inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
+    return hsum_ps_sse(v1.v4()*v2.v4());
+}
+
+template<int N>
+inline simd4_t<float,N> min(simd4_t<float,N> v1, const simd4_t<float,N>& v2) {
+    v1.v4() = _mm_min_ps(v1.v4(), v2.v4());
+    return v1;
+}
+
+template<int N>
+inline simd4_t<float,N> max(simd4_t<float,N> v1, const simd4_t<float,N>& v2) {
+    v1.v4() = _mm_max_ps(v1.v4(), v2.v4());
+    return v1;
+}
+
 template<int N>
 inline simd4_t<float,N>abs(simd4_t<float,N> v) {
     static const __m128 sign_mask = _mm_set1_ps(-0.f); // -0.f = 1 << 31
@@ -443,17 +530,26 @@ class simd4_t<double,N>
 private:
    typedef double  __vec4d_t[N];
 
-    union {
+    union ALIGN16 {
         __m128d simd4[2];
         __vec4d_t vec;
         double _v4[4];
-    };
+    } ALIGN16C;
 
 public:
     simd4_t(void) {}
     simd4_t(double d) {
         simd4[0] = simd4[1] = _mm_set1_pd(d);
         for (int i=N; i<4; i++) _v4[i] = 0.0;
+    }
+    simd4_t(double x, double y) {
+        simd4[0] = _mm_setr_pd(x,y); simd4[1] = _mm_setzero_pd();
+    }
+    simd4_t(double x, double y, double z) {
+        simd4[0] = _mm_setr_pd(x,y); simd4[1] = _mm_setr_pd(z,0);
+    }
+    simd4_t(double x, double y, double z, double w) {
+        simd4[0] = _mm_setr_pd(x,y); simd4[1] = _mm_setr_pd(z,w);
     }
     explicit simd4_t(const __vec4d_t v) {
         simd4[0] = _mm_loadu_pd(v);
@@ -570,6 +666,38 @@ public:
 
 namespace simd4
 {
+// http://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-float-vector-sum-on-x86
+inline double hsum_pd_sse(__m128d vd) {
+    __m128 undef  = _mm_undefined_ps();
+    __m128 shuftmp= _mm_movehl_ps(undef, _mm_castpd_ps(vd));
+    __m128d shuf  = _mm_castps_pd(shuftmp);
+    return  _mm_cvtsd_f64(_mm_add_sd(vd, shuf));
+}
+
+template<>
+inline double magnitude2(simd4_t<double,4> v) {
+    return hsum_pd_sse(v.v4()[0]*v.v4()[0]) + hsum_pd_sse(v.v4()[1]*v.v4()[1]);
+}
+
+template<>
+inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
+    return hsum_pd_sse(v1.v4()[0]*v2.v4()[0])+hsum_pd_sse(v1.v4()[1]*v2.v4()[1]);
+}
+
+template<int N>
+inline simd4_t<double,N> min(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
+    v1.v4()[0] = _mm_min_pd(v1.v4()[0], v2.v4()[0]);
+    v1.v4()[1] = _mm_min_pd(v1.v4()[1], v2.v4()[1]);
+    return v1;
+}
+
+template<int N>
+inline simd4_t<double,N> max(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
+    v1.v4()[0] = _mm_max_pd(v1.v4()[0], v2.v4()[0]);
+    v1.v4()[1] = _mm_max_pd(v1.v4()[1], v2.v4()[1]);
+    return v1;
+}
+
 template<int N>
 inline simd4_t<double,N>abs(simd4_t<double,N> v) {
     static const __m128d sign_mask = _mm_set1_pd(-0.); // -0. = 1 << 63
@@ -590,17 +718,26 @@ class simd4_t<int,N>
 private:
    typedef int  __vec4i_t[N];
 
-    union {
+    union ALIGN16 {
         __m128i simd4;
         __vec4i_t vec;
         int _v4[4];
-    };
+    } ALIGN16C;
 
 public:
     simd4_t(void) {}
     simd4_t(int i) {
         simd4 = _mm_set1_epi32(i);
         for (int i=N; i<4; i++) _v4[i] = 0;
+    }
+    simd4_t(float x, float y) {
+        simd4 = _mm_setr_epi32(x,y,0,0);
+    }
+    simd4_t(float x, float y, float z) {
+        simd4 = _mm_setr_epi32(x,y,z,0);
+    }
+    simd4_t(float x, float y, float z, float w) {
+        simd4 = _mm_setr_epi32(x,y,z,w);
     }
     explicit simd4_t(const __vec4i_t v) {
         simd4 = _mm_loadu_si128((__m128i*)v);

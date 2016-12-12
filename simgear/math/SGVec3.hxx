@@ -56,7 +56,7 @@ public:
 
   /// Constructor. Initialize by the given values
   SGVec3(T x, T y, T z)
-  { data()[0] = x; data()[1] = y; data()[2] = z; }
+  { _data = simd4_t<T,3>(x, y, z); }
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 3 elements
   explicit SGVec3(const T* d)
@@ -65,7 +65,7 @@ public:
   explicit SGVec3(const SGVec3<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
   explicit SGVec3(const SGVec2<T>& v2, const T& v3 = 0)
-  { data()[0] = v2[0]; data()[1] = v2[1]; data()[2] = v3; }
+  { _data = v2.simd2(); data()[2] = v3; }
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
@@ -246,59 +246,35 @@ mult(SGVec3<T> v1, const SGVec3<T>& v2)
 template<typename T>
 inline
 SGVec3<T>
-min(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{
-  return SGVec3<T>(SGMisc<T>::min(v1(0), v2(0)),
-                   SGMisc<T>::min(v1(1), v2(1)),
-                   SGMisc<T>::min(v1(2), v2(2)));
-}
+min(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1.simd3() = simd4::min(v1.simd3(), v2.simd3()); return v1; }
 template<typename S, typename T>
 inline
 SGVec3<T>
-min(const SGVec3<T>& v, S s)
-{
-  return SGVec3<T>(SGMisc<T>::min(s, v(0)),
-                   SGMisc<T>::min(s, v(1)),
-                   SGMisc<T>::min(s, v(2)));
-}
+min(SGVec3<T> v, S s)
+{ v.simd3() = simd4::min(v.simd3(), simd4_t<T,3>(s)); return v; }
 template<typename S, typename T>
 inline
 SGVec3<T>
-min(S s, const SGVec3<T>& v)
-{
-  return SGVec3<T>(SGMisc<T>::min(s, v(0)),
-                   SGMisc<T>::min(s, v(1)),
-                   SGMisc<T>::min(s, v(2)));
-}
+min(S s, SGVec3<T> v)
+{ v.simd3() = simd4::min(v.simd3(), simd4_t<T,3>(s)); return v; }
 
 /// component wise max
 template<typename T>
 inline
 SGVec3<T>
-max(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{
-  return SGVec3<T>(SGMisc<T>::max(v1(0), v2(0)),
-                   SGMisc<T>::max(v1(1), v2(1)),
-                   SGMisc<T>::max(v1(2), v2(2)));
-}
+max(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1.simd3() = simd4::max(v1.simd3(), v2.simd3()); return v1; }
 template<typename S, typename T>
 inline
 SGVec3<T>
-max(const SGVec3<T>& v, S s)
-{
-  return SGVec3<T>(SGMisc<T>::max(s, v(0)),
-                   SGMisc<T>::max(s, v(1)),
-                   SGMisc<T>::max(s, v(2)));
-}
+max(SGVec3<T> v, S s)
+{ v.simd3() = simd4::max(v.simd3(), simd4_t<T,3>(s)); return v; }
 template<typename S, typename T>
 inline
 SGVec3<T>
-max(S s, const SGVec3<T>& v)
-{
-  return SGVec3<T>(SGMisc<T>::max(s, v(0)),
-                   SGMisc<T>::max(s, v(1)),
-                   SGMisc<T>::max(s, v(2)));
-}
+max(S s, SGVec3<T> v)
+{ v.simd3() = simd4::max(v.simd3(), simd4_t<T,3>(s)); return v; }
 
 /// Add two vectors taking care of (integer) overflows. The values are limited
 /// to the respective minimum and maximum values.

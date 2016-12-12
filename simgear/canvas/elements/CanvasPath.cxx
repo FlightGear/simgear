@@ -18,6 +18,7 @@
 
 #include "CanvasPath.hxx"
 #include <simgear/scene/util/parse_color.hxx>
+#include <simgear/misc/strutils.hxx>
 
 #include <osg/Drawable>
 #include <osg/Version>
@@ -56,6 +57,121 @@ namespace canvas
    * values
    */
   std::vector<float> splitAndConvert(const char del[], const std::string& str);
+
+    static float parseCSSNumber(const std::string& s)
+    {
+        if (strutils::ends_with(s, "px")) {
+            return std::stof(s.substr(0, s.length() - 2));
+        } else if (s.back() == '%') {
+            float f = std::stof(s.substr(0, s.length() - 1));
+            return f / 100.0f;
+        }
+        return std::stof(s);
+    }
+
+    //----------------------------------------------------------------------------
+    static bool parseSVGPathToVGPath(const std::string& svgPath, CmdList& commands, CoordList& coords)
+    {
+        const string_list& tokens = simgear::strutils::split_on_any_of(svgPath, "\t \n\r,");
+        char activeSVGCommand = 0;
+        bool isRelative = false;
+        int tokensNeeded = 0;
+
+        for (auto it = tokens.begin(); it != tokens.end(); ) {
+            // set up the new command data
+            if ((it->size() == 1) && std::isalpha(it->at(0))) {
+                const char svgCommand = std::toupper(it->at(0));
+                isRelative = std::islower(it->at(0));
+                switch (svgCommand) {
+                case 'Z':
+                        tokensNeeded = 0;
+                        break;
+                case 'M':
+                case 'L':
+                case 'T':
+                        tokensNeeded = 2;
+                        break;
+                case 'H':
+                case 'V':
+                        tokensNeeded = 1;
+                        break;
+                case 'C':
+                        tokensNeeded = 6;
+                        break;
+                case 'S':
+                case 'Q':
+                        tokensNeeded = 4;
+                        break;
+                case 'A':
+                        tokensNeeded = 7;
+                        break;
+                default:
+                    SG_LOG(SG_GENERAL, SG_WARN, "unrecognized SVG path command: "
+                           << *it << " at token " <<  std::distance(tokens.begin(), it));
+                    return false;
+                }
+
+                activeSVGCommand = svgCommand;
+                ++it; // advance to first coordinate token
+            }
+
+            const int numTokensRemaining = std::distance(it, tokens.end());
+            if (numTokensRemaining < tokensNeeded) {
+                SG_LOG(SG_GENERAL, SG_WARN, "insufficent SVG path tokens");
+                return false;
+            }
+
+            bool pushTokensDirectly = true;
+            if (activeSVGCommand == 'Z') {
+                commands.push_back(VG_CLOSE_PATH);
+                activeSVGCommand = 0;
+            } else if (activeSVGCommand == 'M') {
+                commands.push_back(VG_MOVE_TO | isRelative);
+                activeSVGCommand = 'L';
+            } else if (activeSVGCommand == 'L') {
+                commands.push_back(VG_LINE_TO | isRelative);
+            } else if (activeSVGCommand == 'H') {
+                commands.push_back(VG_HLINE_TO | isRelative);
+            } else if (activeSVGCommand == 'V') {
+                commands.push_back(VG_HLINE_TO | isRelative);
+            } else if (activeSVGCommand == 'C') {
+                commands.push_back(VG_CUBIC_TO | isRelative);
+            } else if (activeSVGCommand == 'S') {
+                commands.push_back(VG_SCUBIC_TO | isRelative);
+            } else if (activeSVGCommand == 'Q') {
+                commands.push_back(VG_SCUBIC_TO | isRelative);
+            } else if (activeSVGCommand == 'T') {
+                commands.push_back(VG_SCUBIC_TO | isRelative);
+            } else if (activeSVGCommand == 'A') {
+                pushTokensDirectly = false; // deal with tokens manually
+                coords.push_back(parseCSSNumber(*it++)); // rx
+                coords.push_back(parseCSSNumber(*it++)); // ry
+                coords.push_back(parseCSSNumber(*it++)); // x-axis rotation
+
+                const bool isLargeArc = std::stoi(*it++); // large-angle
+                const bool isCCW = std::stoi(*it++); // sweep-flag
+
+                int vgCmd = isLargeArc ? (isCCW ? VG_LCCWARC_TO : VG_LCWARC_TO) :
+                    (isCCW ? VG_SCCWARC_TO : VG_SCWARC_TO);
+
+                coords.push_back(parseCSSNumber(*it++));
+                coords.push_back(parseCSSNumber(*it++));
+                commands.push_back(vgCmd | isRelative);
+            } else {
+                SG_LOG(SG_GENERAL, SG_WARN, "malformed SVG path string: expected a command at token:"
+                       << std::distance(tokens.begin(), it) << " :" << *it);
+                return false;
+            }
+
+            if (pushTokensDirectly) {
+                for (int i=0; i<tokensNeeded;++i) {
+                    coords.push_back(parseCSSNumber(*it++));
+                }
+            }
+        } // of tokens iteration
+
+        return true;
+    }
 
   class Path::PathDrawable:
     public osg::Drawable
@@ -561,6 +677,16 @@ namespace canvas
       _attributes_dirty &= ~(CMDS | COORDS);
     }
 
+    // SVG path overrides manual cmd/coord specification
+    if ( _attributes_dirty & SVG)
+    {
+        CmdList cmds;
+        CoordList coords;
+        parseSVGPathToVGPath(_node->getStringValue("svg"), cmds, coords);
+        _path->setSegments(cmds, coords);
+        _attributes_dirty &= ~SVG;
+    }
+
     Element::update(dt);
   }
 
@@ -631,6 +757,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Path::setSVGPath(const std::string& svgPath)
+  {
+    _node->setStringValue("svg", svgPath);
+    _attributes_dirty |= SVG;
+  }
+
+  //----------------------------------------------------------------------------
   void Path::childChanged(SGPropertyNode* child)
   {
     if( child->getParent() != _node )
@@ -640,6 +773,8 @@ namespace canvas
       _attributes_dirty |= CMDS;
     else if( child->getNameString() == "coord" )
       _attributes_dirty |= COORDS;
+    else if ( child->getNameString() == "svg")
+      _attributes_dirty |= SVG;
   }
 
   //----------------------------------------------------------------------------

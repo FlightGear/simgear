@@ -67,12 +67,15 @@ namespace canvas
       /** Close the path (implicit lineTo to first point of path) */
       Path& close();
 
+      void setSVGPath(const std::string& svgPath);
+
     protected:
 
       enum PathAttributes
       {
         CMDS       = LAST_ATTRIBUTE << 1,
-        COORDS     = CMDS << 1
+        COORDS     = CMDS << 1,
+        SVG        = COORDS << 1
       };
 
       class PathDrawable;

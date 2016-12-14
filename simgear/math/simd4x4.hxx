@@ -381,6 +381,38 @@ namespace simd4x4
 {
 
 template<>
+inline simd4x4_t<float,4> rotation_matrix<float>(float angle, const simd4_t<float,3>& axis)
+{
+    float s = std::sin(angle), c = std::cos(angle), t = 1.0-c;
+    simd4_t<float,4> axt, at = axis*t, as = axis*s;
+    simd4x4_t<float,4> m;
+
+    simd4x4::unit(m);
+    axt = axis.ptr()[0]*at;
+    m.m4x4()[0] = axt.v4();
+
+    axt = axis.ptr()[1]*at;
+    m.ptr()[0][0] += c;
+    m.ptr()[0][1] += as.ptr()[2];
+    m.ptr()[0][2] -= as.ptr()[1];
+
+    m.m4x4()[1] = axt.v4();
+
+    axt = axis.ptr()[2]*at;
+    m.ptr()[1][0] -= as.ptr()[2];
+    m.ptr()[1][1] += c;
+    m.ptr()[1][2] += as.ptr()[0];
+
+    m.m4x4()[2] = axt.v4();
+
+    m.ptr()[2][0] += as.ptr()[1];
+    m.ptr()[2][1] -= as.ptr()[0];
+    m.ptr()[2][2] += c;
+
+    return m;
+}
+
+template<>
 inline simd4x4_t<float,4> transpose<float>(simd4x4_t<float,4> m) {
     _MM_TRANSPOSE4_PS(m.m4x4()[0], m.m4x4()[1], m.m4x4()[2], m.m4x4()[3]);
     return m;
@@ -546,7 +578,7 @@ template<>
 inline simd4x4_t<double,4> rotation_matrix<double>(double angle, const simd4_t<double,3>& axis)
 {
     double s = std::sin(angle), c = std::cos(angle), t = 1.0-c;
-    simd4_t<double,3> axt, at = axis*t, as = axis*s;
+    simd4_t<double,4> axt, at = axis*t, as = axis*s;
     simd4x4_t<double,4> m;
 
     simd4x4::unit(m);

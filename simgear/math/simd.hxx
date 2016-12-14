@@ -364,14 +364,10 @@ public:
         simd4 = _mm_set1_ps(f);
         for (int i=N; i<4; i++) _v4[i] = 0.0f;
     }
-    simd4_t(float x, float y) {
-        simd4 = _mm_setr_ps(x,y,0,0);
-    }
-    simd4_t(float x, float y, float z) {
-        simd4 = _mm_setr_ps(x,y,z,0);
-    }
+    simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
+    simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
     simd4_t(float x, float y, float z, float w) {
-        simd4 = _mm_setr_ps(x,y,z,w);
+        simd4 = _mm_set_ps(w,z,y,x);
     }
     explicit simd4_t(const __vec4f_t v) {
         simd4 = _mm_loadu_ps(v);
@@ -428,42 +424,38 @@ public:
     }
 
     inline simd4_t<float,N>& operator+=(float f) {
-        simd4_t<float,N> r(f);
-        simd4 += r.v4();
+        *this += simd4_t<float,N>(f);
         return *this;
     }
     inline simd4_t<float,N>& operator+=(const simd4_t<float,N>& v) {
-        simd4 += v.v4();
+        simd4 = _mm_add_ps(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<float,N>& operator-=(float f) {
-        simd4_t<float,N> r(f);
-        simd4 -= r.v4();
+        *this -= simd4_t<float,N>(f);
         return *this;
     }
     inline simd4_t<float,N>& operator-=(const simd4_t<float,N>& v) {
-        simd4 -= v.v4();
+        simd4 = _mm_sub_ps(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<float,N>& operator*=(float f) {
-        simd4_t<float,N> r(f);
-        simd4 *= r.v4();
+        *this *= simd4_t<float,N>(f);
         return *this;
     }
     inline simd4_t<float,N>& operator*=(const simd4_t<float,N>& v) {
-        simd4 *= v.v4();
+        simd4 = _mm_mul_ps(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<float,N>& operator/=(float f) {
-        simd4_t<float,N> r(1.0f/f);
-        simd4 *= r.v4();
+        *this /= simd4_t<float,N>(f);
         return *this;
     }
     inline simd4_t<float,N>& operator/=(const simd4_t<float,N>& v) {
-        simd4 /= v.v4();
+        simd4 = _mm_div_ps(simd4, v.v4());
         return *this;
     }
 };
@@ -479,23 +471,23 @@ namespace simd4
     sums        = _mm_add_ss(sums, shuf);
     return        _mm_cvtss_f32(sums);
   }
-# else
+# else /* SSE */
   inline float hsum_ps_sse(__m128 v) {
-    __m128 shuf   = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 1));
-    __m128 sums   = _mm_add_ps(v, shuf);
-    shuf          = _mm_movehl_ps(shuf, sums);
-    sums          = _mm_add_ss(sums, shuf);
-    return    _mm_cvtss_f32(sums);
+    __m128 shuf = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 1));
+    __m128 sums = _mm_add_ps(v, shuf);
+    shuf        = _mm_movehl_ps(shuf, sums);
+    sums        = _mm_add_ss(sums, shuf);
+    return      _mm_cvtss_f32(sums);
   }
 # endif
 
-template<>
-inline float magnitude2(simd4_t<float,4> v) {
+template<int N>
+inline float magnitude2(simd4_t<float,N> v) {
     return hsum_ps_sse(v.v4()*v.v4());
 }
 
-template<>
-inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
+template<int N>
+inline float dot(simd4_t<float,N> v1, const simd4_t<float,N>& v2) {
     return hsum_ps_sse(v1.v4()*v2.v4());
 }
 
@@ -516,8 +508,10 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
     static const __m128 sign_mask = _mm_set1_ps(-0.f); // -0.f = 1 << 31
     v.v4() = _mm_andnot_ps(sign_mask, v.v4());
     return v;
-  }
-};
+}
+
+} /* namsepace simd4 */
+
 # endif
 
 
@@ -542,14 +536,10 @@ public:
         simd4[0] = simd4[1] = _mm_set1_pd(d);
         for (int i=N; i<4; i++) _v4[i] = 0.0;
     }
-    simd4_t(double x, double y) {
-        simd4[0] = _mm_setr_pd(x,y); simd4[1] = _mm_setzero_pd();
-    }
-    simd4_t(double x, double y, double z) {
-        simd4[0] = _mm_setr_pd(x,y); simd4[1] = _mm_setr_pd(z,0);
-    }
+    simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
+    simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
     simd4_t(double x, double y, double z, double w) {
-        simd4[0] = _mm_setr_pd(x,y); simd4[1] = _mm_setr_pd(z,w);
+        simd4[0] = _mm_set_pd(y,x); simd4[1] = _mm_set_pd(w,z);
     }
     explicit simd4_t(const __vec4d_t v) {
         simd4[0] = _mm_loadu_pd(v);
@@ -616,50 +606,42 @@ public:
     }
 
     inline simd4_t<double,N>& operator+=(double d) {
-        simd4_t<double,N> r(d);
-        simd4[0] += r.v4()[0];
-        simd4[1] += r.v4()[1];
+        *this += simd4_t<double,N>(d);
         return *this;
     }
     inline simd4_t<double,N>& operator+=(const simd4_t<double,N>& v) {
-        simd4[0] += v.v4()[0];
-        simd4[1] += v.v4()[1];
+        simd4[0] = _mm_add_pd(simd4[0], v.v4()[0]);
+        simd4[1] = _mm_add_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 
     inline simd4_t<double,N>& operator-=(double d) {
-        simd4_t<double,N> r(d);
-        simd4[0] -= r.v4()[0];
-        simd4[1] -= r.v4()[1];
+        *this -= simd4_t<double,N>(d);
         return *this;
     }
     inline simd4_t<double,N>& operator-=(const simd4_t<double,N>& v) {
-        simd4[0] -= v.v4()[0];
-        simd4[1] -= v.v4()[1];
+        simd4[0] = _mm_sub_pd(simd4[0], v.v4()[0]);
+        simd4[1] = _mm_sub_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 
     inline simd4_t<double,N>& operator*=(double d) {
-        simd4_t<double,N> r(d);
-        simd4[0] *= r.v4()[0];
-        simd4[1] *= r.v4()[1];
+        *this *= simd4_t<double,N>(d);
         return *this;
     }
     inline simd4_t<double,N>& operator*=(const simd4_t<double,N>& v) {
-        simd4[0] *= v.v4()[0];
-        simd4[1] *= v.v4()[1];
+        simd4[0] = _mm_mul_pd(simd4[0], v.v4()[0]);
+        simd4[1] = _mm_mul_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 
     inline simd4_t<double,N>& operator/=(double d) {
-        simd4_t<double,N> r(1.0/d);
-        simd4[0] *= r.v4()[0];
-        simd4[1] *= r.v4()[1];
+        *this /= simd4_t<double,N>(d);
         return *this;
     }
     inline simd4_t<double,N>& operator/=(const simd4_t<double,N>& v) {
-        simd4[0] /= v.v4()[0];
-        simd4[1] /= v.v4()[1];
+        simd4[0] = _mm_div_pd(simd4[0], v.v4()[0]);
+        simd4[1] = _mm_div_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 };
@@ -674,13 +656,13 @@ inline double hsum_pd_sse(__m128d vd) {
     return  _mm_cvtsd_f64(_mm_add_sd(vd, shuf));
 }
 
-template<>
-inline double magnitude2(simd4_t<double,4> v) {
+template<int N>
+inline double magnitude2(simd4_t<double,N> v) {
     return hsum_pd_sse(v.v4()[0]*v.v4()[0]) + hsum_pd_sse(v.v4()[1]*v.v4()[1]);
 }
 
-template<>
-inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
+template<int N>
+inline double dot(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
     return hsum_pd_sse(v1.v4()[0]*v2.v4()[0])+hsum_pd_sse(v1.v4()[1]*v2.v4()[1]);
 }
 
@@ -704,13 +686,18 @@ inline simd4_t<double,N>abs(simd4_t<double,N> v) {
     v.v4()[0] = _mm_andnot_pd(sign_mask, v.v4()[0]);
     v.v4()[1] = _mm_andnot_pd(sign_mask, v.v4()[1]);
     return v;
-  }
-};
+}
+
+} /* namespace simd4 */
+
 # endif
 
 
 # ifdef __SSE2__
 #  include <emmintrin.h>
+#  ifdef __SSE4_1__
+#   include <smmintrin.h>
+#  endif
 
 template<int N>
 class simd4_t<int,N>
@@ -730,14 +717,10 @@ public:
         simd4 = _mm_set1_epi32(i);
         for (int i=N; i<4; i++) _v4[i] = 0;
     }
-    simd4_t(float x, float y) {
-        simd4 = _mm_setr_epi32(x,y,0,0);
-    }
-    simd4_t(float x, float y, float z) {
-        simd4 = _mm_setr_epi32(x,y,z,0);
-    }
-    simd4_t(float x, float y, float z, float w) {
-        simd4 = _mm_setr_epi32(x,y,z,w);
+    simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
+    simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}
+    simd4_t(int x, int y, int z, int w) {
+        simd4 = _mm_set_epi32(w,z,y,x);
     }
     explicit simd4_t(const __vec4i_t v) {
         simd4 = _mm_loadu_si128((__m128i*)v);
@@ -794,45 +777,61 @@ public:
     }
 
     inline simd4_t<int,N>& operator+=(int i) {
-        simd4_t<int,N> r(i);
-        simd4 += r.v4();
+        *this += simd4_t<int,N>(i);
         return *this;
     }
     inline simd4_t<int,N>& operator+=(const simd4_t<int,N>& v) {
-        simd4 += v.v4();
+        simd4 = _mm_add_epi32(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<int,N>& operator-=(int i) {
-        simd4_t<int,N> r(i);
-        simd4 -= r.v4();
+        *this -= simd4_t<int,N>(i);
         return *this;
     }
     inline simd4_t<int,N>& operator-=(const simd4_t<int,N>& v) {
-        simd4 -= v.v4();
+        simd4 = _mm_sub_epi32(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<int,N>& operator*=(int i) {
-        simd4_t<int,N> r(i);
-        simd4 *= r.v4();
+        *this *= simd4_t<int,N>(i);
         return *this;
     }
+    // https://software.intel.com/en-us/forums/intel-c-compiler/topic/288768
     inline simd4_t<int,N>& operator*=(const simd4_t<int,N>& v) {
-        simd4 *= v.v4();
-        return *this;
-    }
-
-    inline simd4_t<int,N>& operator/=(int i) {
-        simd4_t<int,N> r(i);
-        simd4 /= r.v4();
-        return *this;
-    }
-    inline simd4_t<int,N>& operator/=(const simd4_t<int,N>& v) {
-        simd4 /= v.v4();
+#ifdef __SSE4_1__
+        simd4 = _mm_mullo_epi32(simd4, v.v4());
+#else
+        __m128i tmp1 = _mm_mul_epu32(simd4, v.v4());
+        __m128i tmp2 = _mm_mul_epu32(_mm_srli_si128(simd4,4),
+                       _mm_srli_si128(v.v4(),4));
+        simd4 =_mm_unpacklo_epi32(_mm_shuffle_epi32(tmp1,_MM_SHUFFLE (0,0,2,0)),
+                                  _mm_shuffle_epi32(tmp2, _MM_SHUFFLE (0,0,2,0)));
+#endif
         return *this;
     }
 };
+
+namespace simd4
+{
+
+#  ifdef __SSE4_1__
+template<int N>
+inline simd4_t<int,N> min(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
+    v1.v4() = _mm_min_epi32(v1.v4(), v2.v4());
+    return v1;
+}
+
+template<int N>
+inline simd4_t<int,N> max(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
+    v1.v4() = _mm_max_epi32(v1.v4(), v2.v4());
+    return v1;
+}
+#  endif /* __SSE4_1__ */
+
+} /* namespace simd4 */
+
 # endif
 
 

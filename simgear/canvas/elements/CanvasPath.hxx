@@ -21,6 +21,7 @@
 
 #include "CanvasElement.hxx"
 #include <boost/preprocessor/iteration/iterate.hpp>
+#include <simgear/math/SGRect.hxx>
 
 namespace simgear
 {
@@ -69,19 +70,28 @@ namespace canvas
 
       void setSVGPath(const std::string& svgPath);
 
+      void setRect(const SGRect<float>& r);
+      void setRoundRect(const SGRect<float>& r, float radiusX, float radiusY = -1.0);
     protected:
 
       enum PathAttributes
       {
         CMDS       = LAST_ATTRIBUTE << 1,
         COORDS     = CMDS << 1,
-        SVG        = COORDS << 1
+        SVG        = COORDS << 1,
+        RECT       = SVG << 1
       };
 
       class PathDrawable;
       typedef osg::ref_ptr<PathDrawable> PathDrawableRef;
       PathDrawableRef _path;
 
+      bool _hasSVG : 1;
+      bool _hasRect : 1;
+      SGRect<float> _rect;
+
+      void parseRectToVGPath();
+      
       virtual void childRemoved(SGPropertyNode * child);
       virtual void childChanged(SGPropertyNode * child);
   };

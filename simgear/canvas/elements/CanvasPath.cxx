@@ -173,6 +173,38 @@ namespace canvas
         return true;
     }
 
+
+    //---------------------------------------------------------------------------
+
+    static SGVec2f parseRectCornerRadius(SGPropertyNode* node, const std::string& xDir, const std::string& yDir, bool& haveCorner)
+    {
+        haveCorner = false;
+        std::string propName = "border-" + yDir + "-" + xDir + "-radius";
+        if (!node->hasChild(propName)) {
+            propName = "border-" + yDir + "-radius";
+            if (!node->hasChild(propName)) {
+                propName = "border-radius";
+            }
+        }
+
+        PropertyList props = node->getChildren(propName);
+        if (props.size() == 1) {
+            double r = props.at(0)->getDoubleValue(propName);
+            haveCorner = true;
+            return SGVec2f(r, r);
+        }
+
+        if (props.size() >= 2 ) {
+            haveCorner = true;
+            return SGVec2f(props.at(0)->getDoubleValue(),
+                           props.at(1)->getDoubleValue());
+        }
+
+        return SGVec2f(-1.0f, -1.0f);
+    }
+
+    //----------------------------------------------------------------------------
+
   class Path::PathDrawable:
     public osg::Drawable
   {
@@ -649,7 +681,9 @@ namespace canvas
               const Style& parent_style,
               ElementWeakPtr parent ):
     Element(canvas, node, parent_style, parent),
-    _path( new PathDrawable(this) )
+    _path( new PathDrawable(this) ),
+    _hasSVG(false),
+    _hasRect(false)
   {
     staticInit();
 
@@ -678,13 +712,20 @@ namespace canvas
     }
 
     // SVG path overrides manual cmd/coord specification
-    if ( _attributes_dirty & SVG)
+    if ( _hasSVG && (_attributes_dirty & SVG))
     {
         CmdList cmds;
         CoordList coords;
         parseSVGPathToVGPath(_node->getStringValue("svg"), cmds, coords);
         _path->setSegments(cmds, coords);
         _attributes_dirty &= ~SVG;
+    }
+
+    if ( _hasRect &&(_attributes_dirty & RECT))
+    {
+        parseRectToVGPath();
+        _attributes_dirty &= ~RECT;
+
     }
 
     Element::update(dt);
@@ -760,20 +801,70 @@ namespace canvas
   void Path::setSVGPath(const std::string& svgPath)
   {
     _node->setStringValue("svg", svgPath);
+    _hasSVG = true;
     _attributes_dirty |= SVG;
+  }
+
+  //----------------------------------------------------------------------------
+  void Path::setRect(const SGRect<float> &r)
+  {
+    _rect = r;
+    _hasRect = true;
+    _attributes_dirty |= RECT;
+  }
+
+  //----------------------------------------------------------------------------
+  void Path::setRoundRect(const SGRect<float> &r, float radiusX, float radiusY)
+  {
+    if (radiusY < 0.0) {
+        radiusY = radiusX;
+    }
+
+    setRect(r);
+    _node->getChild("border-radius", 0, true)->setDoubleValue(radiusX);
+    _node->getChild("border-radius", 1, true)->setDoubleValue(radiusY);
   }
 
   //----------------------------------------------------------------------------
   void Path::childChanged(SGPropertyNode* child)
   {
+      const std::string& name = child->getNameString();
+      const std::string &prName = child->getParent()->getNameString();
+
+      if (simgear::strutils::starts_with(name, "border-"))
+      {
+          _attributes_dirty |= RECT;
+          return;
+      }
+
+      if (prName == "rect") {
+          _hasRect = true;
+          if (name == "left") {
+              _rect.setLeft(child->getDoubleValue());
+          } else if (name == "top") {
+              _rect.setTop(child->getDoubleValue());
+          } else if (name == "right") {
+              _rect.setRight(child->getDoubleValue());
+          } else if (name == "bottom") {
+              _rect.setBottom(child->getDoubleValue());
+          } else if (name == "width") {
+              _rect.setWidth(child->getDoubleValue());
+          } else if (name == "height") {
+              _rect.setHeight(child->getDoubleValue());
+          }
+          _attributes_dirty |= RECT;
+          return;
+      }
+
     if( child->getParent() != _node )
       return;
 
-    if( child->getNameString() == "cmd" )
+    if( name == "cmd" )
       _attributes_dirty |= CMDS;
-    else if( child->getNameString() == "coord" )
+    else if( name == "coord" )
       _attributes_dirty |= COORDS;
-    else if ( child->getNameString() == "svg")
+    else if ( name == "svg")
+      _hasSVG = true;
       _attributes_dirty |= SVG;
   }
 
@@ -799,5 +890,67 @@ namespace canvas
     return values;
   }
 
+    //----------------------------------------------------------------------------
+
+    void operator+=(CoordList& base, const std::initializer_list<VGfloat>& other)
+    {
+        base.insert(base.end(), other.begin(), other.end());
+    }
+
+    void Path::parseRectToVGPath()
+    {
+        CmdList commands;
+        CoordList coords;
+        commands.reserve(4);
+        coords.reserve(8);
+
+        bool haveCorner = false;
+        SGVec2f topLeft = parseRectCornerRadius(_node, "left", "top", haveCorner);
+        if (haveCorner) {
+            commands.push_back(VG_MOVE_TO_ABS);
+            coords += {_rect.l(), _rect.t() + topLeft.y()};
+            commands.push_back(VG_SCCWARC_TO_REL);
+            coords += {topLeft.x(), topLeft.y(), 0.0, topLeft.x(), -topLeft.y()};
+        } else {
+            commands.push_back(VG_MOVE_TO_ABS);
+            coords += {_rect.l(), _rect.t()};
+        }
+
+        SGVec2f topRight = parseRectCornerRadius(_node, "right", "top", haveCorner);
+        if (haveCorner) {
+            commands.push_back(VG_HLINE_TO_ABS);
+            coords += {_rect.r() - topRight.x()};
+            commands.push_back(VG_SCCWARC_TO_REL);
+            coords += {topRight.x(), topRight.y(), 0.0, topRight.x(), topRight.y()};
+        } else {
+            commands.push_back(VG_HLINE_TO_ABS);
+            coords += {_rect.r()};
+        }
+
+        SGVec2f bottomRight = parseRectCornerRadius(_node, "right", "bottom", haveCorner);
+        if (haveCorner) {
+            commands.push_back(VG_VLINE_TO_ABS);
+            coords += {_rect.b() - bottomRight.y()};
+            commands.push_back(VG_SCCWARC_TO_REL);
+            coords += {bottomRight.x(), bottomRight.y(), 0.0, -bottomRight.x(), bottomRight.y()};
+        } else {
+            commands.push_back(VG_VLINE_TO_ABS);
+            coords += {_rect.b()};
+        }
+
+        SGVec2f bottomLeft = parseRectCornerRadius(_node, "left", "bottom", haveCorner);
+        if (haveCorner) {
+            commands.push_back(VG_HLINE_TO_ABS);
+            coords += {_rect.l() + bottomLeft.x()};
+            commands.push_back(VG_SCCWARC_TO_REL);
+            coords += {bottomLeft.x(), bottomLeft.y(), 0.0, -bottomLeft.x(), -bottomLeft.y()};
+        } else {
+            commands.push_back(VG_HLINE_TO_ABS);
+            coords += {_rect.l()};
+        }
+
+        commands.push_back(VG_CLOSE_PATH);
+        _path->setSegments(commands, coords);
+    }
 } // namespace canvas
 } // namespace simgear

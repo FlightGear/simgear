@@ -20,7 +20,7 @@
 
 #include <iosfwd>
 
-#include "SGVec2.hxx"
+#include <simgear/math/SGVec2.hxx>
 #include <simgear/math/SGGeodesy.hxx>
 
 #include "simd.hxx"
@@ -60,7 +60,7 @@ public:
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 3 elements
   explicit SGVec3(const T* d)
-  { simd4_t<T,3> r(d); _data = r; }
+  { _data = simd4_t<T,3>(d); }
   template<typename S>
   explicit SGVec3(const SGVec3<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }

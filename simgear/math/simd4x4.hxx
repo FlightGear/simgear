@@ -35,7 +35,7 @@ inline void zeros(simd4x4_t<T,N>& r) {
 template<typename T, int N>
 inline void unit(simd4x4_t<T,N>& r) {
     zeros(r);
-    for (int i=0; i<N; i++) {
+    for (int i=0; i<N; ++i) {
         r.ptr()[i][i] = T(1);
     }
 }
@@ -48,9 +48,9 @@ inline simd4x4_t<T,4> rotation_matrix(T angle, const simd4_t<T,3>& axis)
     simd4x4_t<T,4> m;
 
     simd4x4::unit(m);
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<3; ++i) {
         simd4_t<T,4> r = axis.ptr()[i]*at;
-        for (int j=0; j<4; j++) {
+        for (int j=0; j<4; ++j) {
             m.m4x4()[0][j] = r.v4()[j];
         }
     }
@@ -80,8 +80,8 @@ inline void rotate(simd4x4_t<T,N>& mtx, T angle, const simd4_t<T,3>& axis) {
 template<typename T, int N>
 inline simd4x4_t<T,N> transpose(simd4x4_t<T,N> mtx) {
     simd4x4_t<T,N> m;
-    for (int i=0; i<N; i++) {
-        for(int j=0; j<N; j++) {
+    for (int i=0; i<N; ++i) {
+        for(int j=0; j<N; ++j) {
             m.ptr()[j][i] = mtx.ptr()[i][j];
         }
     }
@@ -150,45 +150,22 @@ public:
         return *this;
     }
 
-    inline simd4x4_t<T,N> operator+(simd4x4_t<T,N> m) {
-        m += *this; return m;
-    }
-
-    inline simd4x4_t<T,N> operator-(simd4x4_t<T,N> m) {
-        m -= *this; return m;
-    }
-
-    inline simd4x4_t<T,N> operator*(T s) {
-        simd4x4_t<T,N> r(*this);
-        r *= s;
-        return r;
-    }
-    inline simd4x4_t<T,N> operator*(simd4x4_t<T,N> m) {
-        m *= *this; return m;
-    }
-
-    inline simd4x4_t<T,N> operator/(T s) {
-        simd4x4_t<T,N> r(*this);
-        r *= (1/T(s));
-        return r;
-    }
-
     inline simd4x4_t<T,N>& operator+=(const simd4x4_t<T,N>& m) {
-        for (int i=0; i<N*N; i++) {
+        for (int i=0; i<N*N; ++i) {
            array[i] += m[i];
         }
         return *this;
     }
 
     inline simd4x4_t<T,N>& operator-=(const simd4x4_t<T,N>& m) {
-        for (int i=0; i<N*N; i++) {
+        for (int i=0; i<N*N; ++i) {
            array[i] -= m[i];
         }
         return *this;
     }
 
     inline simd4x4_t<T,N>& operator*=(T s) {
-        for (int i=0; i<N*N; i++) {
+        for (int i=0; i<N*N; ++i) {
            array[i] *= s;
         }
         return *this;
@@ -196,7 +173,7 @@ public:
     simd4x4_t<T,N>& operator*=(const simd4x4_t<T,N>& m1) {
         simd4x4_t<T,N> m2 = *this;
         simd4_t<T,N> row;
-        for (int j=0; j<N; j++) {
+        for (int j=0; j<N; ++j) {
             for (int r=0; r<N; r++) {
                 row[r] = m2.ptr()[r][0];
             }
@@ -204,7 +181,7 @@ public:
             for (int r=0; r<N; r++) {
                 mtx[r][j] = row[r];
             }
-            for (int i=1; i<N; i++) {
+            for (int i=1; i<N; ++i) {
                 for (int r=0; r<N; r++) {
                     row[r] = m2.ptr()[r][i];
                 }
@@ -237,7 +214,7 @@ inline simd4_t<T,N> operator*(const simd4x4_t<T,N>& m, const simd4_t<T,N>& vi)
     simd4_t<T,N> mv;
     simd4_t<T,N> row(m);
     mv = vi.ptr()[0] * row;
-    for (int j=1; j<N; j++) {
+    for (int j=1; j<N; ++j) {
         simd4_t<T,N> row(m[j*N]);
         mv += vi.ptr()[j] * row;
     }
@@ -271,18 +248,18 @@ private:
 public:
     simd4x4_t(void) {}
     simd4x4_t(const float m[4*4]) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = simd4_t<float,4>((const float*)&m[4*i]).v4();
         }
     }
 
     explicit simd4x4_t(const __mtx4f_t m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = simd4_t<float,4>(m[i]).v4();
         }
     }
     simd4x4_t(const simd4x4_t<float,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = m.m4x4()[i];
         }
     }
@@ -313,27 +290,27 @@ public:
     }
 
     inline simd4x4_t<float,4>& operator=(const __mtx4f_t m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = simd4_t<float,4>(m[i]).v4();
         }
         return *this;
     }
     inline simd4x4_t<float,4>& operator=(const simd4x4_t<float,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = m.m4x4()[i];
         }
         return *this;
     }
 
     inline simd4x4_t<float,4>& operator+=(const simd4x4_t<float,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i] += m.m4x4()[i];
         }
         return *this;
     }
 
     inline simd4x4_t<float,4>& operator-=(const simd4x4_t<float,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i] -= m.m4x4()[i];
         }
         return *this;
@@ -341,7 +318,7 @@ public:
 
     inline simd4x4_t<float,4>& operator*=(float f) {
         simd4_t<float,4> f4(f);
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i] *= f4.v4();
         }
         return *this;
@@ -351,10 +328,10 @@ public:
         simd4x4_t<float,4> m1 = *this;
         simd4_t<float,4> row, col;
 
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4_t<float,4> col(m2.ptr()[i][0]);
             row.v4() = m1.m4x4()[0] * col.v4();
-            for (int j=1; j<4; j++) {
+            for (int j=1; j<4; ++j) {
                 simd4_t<float,4> col(m2.ptr()[i][j]);
                 row.v4() += m1.m4x4()[j] * col.v4();
             }
@@ -369,7 +346,7 @@ inline simd4_t<float,4> operator*(const simd4x4_t<float,4>& m, const simd4_t<flo
 {
     simd4_t<float,4> mv(m);
     mv *= vi.ptr()[0];
-    for (int i=1; i<4; i++) {
+    for (int i=1; i<4; ++i) {
         simd4_t<float,4> row(m.m4x4()[i]);
         row *= vi.ptr()[i];
         mv.v4() += row.v4();
@@ -442,7 +419,7 @@ public:
     simd4x4_t(void) {}
     explicit simd4x4_t(const double m[4*4]) {
         const double *p = m;
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4_t<double,4> vec4(p);
             simd4x4[i][0] = vec4.v4()[0]; p += 4;
             simd4x4[i][1] = vec4.v4()[1];
@@ -450,13 +427,13 @@ public:
     }
 
     explicit simd4x4_t(const __mtx4d_t m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i][0] = simd4_t<double,4>(m[i]).v4()[0];
             simd4x4[i][1] = simd4_t<double,4>(m[i]).v4()[1];
         }
     }
     simd4x4_t(const simd4x4_t<double,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i][0] = m.m4x4()[i][0];
             simd4x4[i][1] = m.m4x4()[i][1];
         }
@@ -489,7 +466,7 @@ public:
 
     inline simd4x4_t<double,4>& operator=(const double m[4*4]) {
         const double *p = m;
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4_t<double,4> vec4(p);
             simd4x4[i][0] = vec4.v4()[0]; p += 4;
             simd4x4[i][1] = vec4.v4()[1];
@@ -498,14 +475,14 @@ public:
     }
 
     inline simd4x4_t<double,4>& operator=(const __mtx4d_t m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i][0] = simd4_t<double,4>(m[i]).v4()[0];
             simd4x4[i][1] = simd4_t<double,4>(m[i]).v4()[1];
         }
         return *this;
     }
     inline simd4x4_t<double,4>& operator=(const simd4x4_t<double,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i][0] = m.m4x4()[i][0];
             simd4x4[i][1] = m.m4x4()[i][1];
         }
@@ -513,7 +490,7 @@ public:
     }
 
     inline simd4x4_t<double,4>& operator+=(const simd4x4_t<double,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i][0] += m.m4x4()[i][0];
            simd4x4[i][1] += m.m4x4()[i][1];
         }
@@ -521,7 +498,7 @@ public:
     }
 
     inline simd4x4_t<double,4>& operator-=(const simd4x4_t<double,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i][0] -= m.m4x4()[i][0];
            simd4x4[i][1] -= m.m4x4()[i][1];
         }
@@ -530,7 +507,7 @@ public:
 
     inline simd4x4_t<double,4>& operator*=(double f) {
         simd4_t<double,4> f4(f);
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i][0] *= f4.v4()[0];
            simd4x4[i][1] *= f4.v4()[0];
         }
@@ -541,10 +518,10 @@ public:
         simd4x4_t<double,4> m1 = *this;
         simd4_t<double,4> row, col;
 
-        for (int i=0; i<4; i++ ) {
+        for (int i=0; i<4; ++i ) {
             simd4_t<double,4> col = m1.m4x4()[0];
             row = col * m2.ptr()[i][0];
-            for (int j=1; j<4; j++) {
+            for (int j=1; j<4; ++j) {
                 col = m1.m4x4()[j];
                 row += col * m2.ptr()[i][j];
             }
@@ -656,18 +633,18 @@ private:
 public:
     simd4x4_t(void) {}
     simd4x4_t(const int m[4*4]) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = simd4_t<int,4>((const int*)&m[4*i]).v4();
         }
     }
 
     explicit simd4x4_t(const __mtx4i_t m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = simd4_t<int,4>(m[i]).v4();
         }
     }
     simd4x4_t(const simd4x4_t<int,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = m.m4x4()[i];
         }
     }
@@ -698,27 +675,27 @@ public:
     }
 
     inline simd4x4_t<int,4>& operator=(const __mtx4i_t m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = simd4_t<int,4>(m[i]).v4();
         }
         return *this;
     }
     inline simd4x4_t<int,4>& operator=(const simd4x4_t<int,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4x4[i] = m.m4x4()[i];
         }
         return *this;
     }
 
     inline simd4x4_t<int,4>& operator+=(const simd4x4_t<int,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i] += m.m4x4()[i];
         }
         return *this;
     }
 
     inline simd4x4_t<int,4>& operator-=(const simd4x4_t<int,4>& m) {
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i] -= m.m4x4()[i];
         }
         return *this;
@@ -726,7 +703,7 @@ public:
 
     inline simd4x4_t<int,4>& operator*=(int f) {
         simd4_t<int,4> f4(f);
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
            simd4x4[i] *= f4.v4();
         }
         return *this;
@@ -736,10 +713,10 @@ public:
         simd4x4_t<int,4> m1 = *this;
         simd4_t<int,4> row, col;
 
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<4; ++i) {
             simd4_t<int,4> col(m2.ptr()[i][0]);
             row.v4() = m1.m4x4()[0] * col.v4();
-            for (int j=1; j<4; j++) {
+            for (int j=1; j<4; ++j) {
                 simd4_t<int,4> col(m2.ptr()[i][j]);
                 row.v4() += m1.m4x4()[j] * col.v4();
             }
@@ -754,7 +731,7 @@ inline simd4_t<int,4> operator*(const simd4x4_t<int,4>& m, const simd4_t<int,4>&
 {
     simd4_t<int,4> mv(m);
     mv *= vi.ptr()[0];
-    for (int i=1; i<4; i++) {
+    for (int i=1; i<4; ++i) {
         simd4_t<int,4> row(m.m4x4()[i]);
         row *= vi.ptr()[i];
         mv.v4() += row.v4();
@@ -768,10 +745,10 @@ inline simd4x4_t<int,4> operator*(const simd4x4_t<int,4>& m1, const simd4x4_t<in
     simd4_t<int,4> row, col;
     simd4x4_t<int,4> m;
 
-    for (int i=0; i<4; i++) {
+    for (int i=0; i<4; ++i) {
         simd4_t<int,4> col(m2.ptr()[i][0]);
         row.v4() = m1.m4x4()[0] * col.v4();
-        for (int j=1; j<4; j++) {
+        for (int j=1; j<4; ++j) {
             simd4_t<int,4> col(m2.ptr()[i][j]);
             row.v4() += m1.m4x4()[j] * col.v4();
         }

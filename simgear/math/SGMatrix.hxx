@@ -46,7 +46,7 @@ public:
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 16 elements
   explicit SGMatrix(const T* data)
-  { simd4x4_t<T,4> x(data); _data = x; }
+  { _data = simd4x4_t<T,4>(data); }
 
   /// Constructor, build up a SGMatrix from given elements
   SGMatrix(T m00, T m01, T m02, T m03,

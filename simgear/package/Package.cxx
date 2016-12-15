@@ -58,6 +58,7 @@ void Package::initWithProps(const SGPropertyNode* aProps)
 void Package::updateFromProps(const SGPropertyNode* aProps)
 {
     m_tags.clear();
+    m_variants.clear();
     initWithProps(aProps);
 }
 

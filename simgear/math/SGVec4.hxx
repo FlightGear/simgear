@@ -42,11 +42,11 @@ public:
   }
   /// Constructor. Initialize by the given values
   SGVec4(T x, T y, T z, T w)
-  { _data = simd4_t<T,4>(z, y, z, w); }
+  { _data = simd4_t<T,4>(x, y, z, w); }
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 3 elements
   explicit SGVec4(const T* d)
-  { simd4_t<T,4> r(d); _data = r; }
+  { _data = simd4_t<T,4>(d); }
   template<typename S>
   explicit SGVec4(const SGVec4<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }

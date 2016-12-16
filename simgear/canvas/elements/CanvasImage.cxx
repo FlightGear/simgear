@@ -487,10 +487,16 @@ namespace canvas
     if(    !fill.empty() // If no color is given default to white
         && !parseColor(fill, color) )
       return;
-
-    _colors->front() = color;
-    _colors->dirty();
+    setFill(color);
   }
+
+    //----------------------------------------------------------------------------
+    void Image::setFill(const osg::Vec4& color)
+    {
+        _colors->front() = color;
+        _colors->dirty();
+    }
+
 
   //----------------------------------------------------------------------------
   void Image::setOutset(const std::string& outset)
@@ -504,6 +510,13 @@ namespace canvas
   {
     _preserve_aspect_ratio = SVGpreserveAspectRatio::parse(scale);
     _attributes_dirty |= SRC_RECT;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setSourceRect(const SGRect<float>& sourceRect)
+  {
+      _attributes_dirty |= SRC_RECT;
+      _src_rect = sourceRect;
   }
 
   //----------------------------------------------------------------------------

@@ -61,6 +61,7 @@ namespace canvas
 
       void setImage(osg::ref_ptr<osg::Image> img);
       void setFill(const std::string& fill);
+      void setFill(const osg::Vec4& color);
 
       /**
        * @see http://www.w3.org/TR/css3-background/#border-image-outset
@@ -95,6 +96,10 @@ namespace canvas
 
       bool handleEvent(const EventPtr& event);
 
+      /**
+       *
+       */
+      void setSourceRect(const SGRect<float>& sourceRect);
     protected:
 
       enum ImageAttributes

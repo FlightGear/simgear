@@ -40,7 +40,14 @@ void SHVector2_dtor(SHVector2 *v);
 
 typedef struct
 {
+#ifdef __SSE__
+  union ALIGN16 {
+    __m128 vec;
+    struct { SHfloat x,y,z,w; };
+  } ALIGN16C;
+#else
   SHfloat x,y,z;
+#endif
 } SHVector3;
 
 void SHVector3_ctor(SHVector3 *v);
@@ -130,18 +137,20 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define SET2(v,xs,ys) { v.x=xs; v.y=ys; }
-#define SET3(v,xs,ys,zs) { v.x=xs; v.y=ys; v.z=zs; }
 #ifdef __SSE__
+# define SET4(v,xs,ys,zs,ws) { v.vec=_mm_set_ps(0,zs,ys,xs); }
 # define SET4(v,xs,ys,zs,ws) { v.vec=_mm_set_ps(ws,zs,ys,xs); }
 #else
+# define SET3(v,xs,ys,zs) { v.x=xs; v.y=ys; v.z=zs; }
 # define SET4(v,xs,ys,zs,ws) { v.x=xs; v.y=ys; v.z=zs; v.w=ws; }
 #endif
 
 #define SET2V(v1,v2) { v1.x=v2.x; v1.y=v2.y; }
-#define SET3V(v1,v2) { v1.x=v2.x; v1.y=v2.y; v1.z=v2.z; }
 #ifdef __SSE__
+# define SET3V(v1,v2) { v1.vec=v2.vec; }
 # define SET4V(v1,v2) { v1.vec=v2.vec; }
 #else
+# define SET3V(v1,v2) { v1.x=v2.x; v1.y=v2.y; v1.z=v2.z; }
 # define SET4V(v1,v2) { v1.x=v2.x; v1.y=v2.y; v1.z=v2.z; v1.w=v2.w; }
 #endif
 
@@ -158,59 +167,66 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #define EQ4V(v1,v2) ( v1.x==v2.x && v1.y==v2.y && v1.z==v2.z && v1.w==v2.w )
 
 #define ADD2(v,xx,yy)       { v.x+=xx; v.y+=yy; }
-#define ADD3(v,xx,yy,zz)    { v.x+=xx; v.y+=yy; v.z+=zz; }
 #ifdef __SSE__
+# define ADD4(v,xx,yy,zz,ww) { v.vec=_mm_add_ps(v.vec,_mm_set_ps(0,zz,yy,xx)); }
 # define ADD4(v,xx,yy,zz,ww) { v.vec=_mm_add_ps(v.vec,_mm_set_ps(ww,zz,yy,xx)); }
 #else
+# define ADD3(v,xx,yy,zz)    { v.x+=xx; v.y+=yy; v.z+=zz; }
 # define ADD4(v,xx,yy,zz,ww) { v.x+=xx; v.y+=yy; v.z+=zz; v.w+=ww; }
 #endif
 
 #define ADD2V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; }
-#define ADD3V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; v1.z+=v2.z; }
 #ifdef __SSE__
 # define ADD4V(v1,v2) { v1.vec=_mm_add_ps(v1.vec,v2.vec); }
+# define ADD4V(v1,v2) { v1.vec=_mm_add_ps(v1.vec,v2.vec); }
 #else
+# define ADD3V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; v1.z+=v2.z; }
 # define ADD4V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; v1.z+=v2.z; v1.w+=v2.w; }
 #endif
 
 #define SUB2(v,xx,yy)       { v.x-=xx; v.y-=yy; }
-#define SUB3(v,xx,yy,zz)    { v.x-=xx; v.y-=yy; v.z-=zz; }
 #ifdef __SSE__
+# define SUB4(v,xx,yy,zz,ww) { v.vec=_mm_sub_ps(v.vec,_mm_set_ps(0,zz,yy,xx)); }
 # define SUB4(v,xx,yy,zz,ww) { v.vec=_mm_sub_ps(v.vec,_mm_set_ps(ww,zz,yy,xx)); }
 #else
+# define SUB3(v,xx,yy,zz)    { v.x-=xx; v.y-=yy; v.z-=zz; }
 # define SUB4(v,xx,yy,zz,ww) { v.x-=xx; v.y-=yy; v.z-=zz; v.w-=v2.w; }
 #endif
 
 #define SUB2V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; }
-#define SUB3V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; v1.z-=v2.z; }
 #ifdef __SSE__
 # define SUB4V(v1,v2) { v1.vec=_mm_sub_ps(v1.vec,v2.vec); }
+# define SUB4V(v1,v2) { v1.vec=_mm_sub_ps(v1.vec,v2.vec); }
 #else
+# define SUB3V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; v1.z-=v2.z; }
 # define SUB4V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; v1.z-=v2.z; v1.w-=v2.w; }
 #endif
 
 #define MUL2(v,f) { v.x*=f; v.y*=f; }
-#define MUL3(v,f) { v.x*=f; v.y*=f; v.z*=z; }
 #ifdef __SSE__
 # define MUL4(v,f) { v.vec=_mm_mul_ps(v.vec,_mm_set1_ps(f)); }
+# define MUL4(v,f) { v.vec=_mm_mul_ps(v.vec,_mm_set1_ps(f)); }
 #else
+# define MUL3(v,f) { v.x*=f; v.y*=f; v.z*=z; }
 # define MUL4(v,f) { v.x*=f; v.y*=f; v.z*=z; v.w*=w; }
 #endif
 
 #define DIV2(v,f) { v.x/=f; v.y/=f; }
-#define DIV3(v,f) { v.x/=f; v.y/=f; v.z/=z; }
 #ifdef __SSE__
 # define DIV4(v,f) { v.vec=_mm_div_ps(v.vec,_mm_set1_ps(f)); }
+# define DIV4(v,f) { v.vec=_mm_div_ps(v.vec,_mm_set1_ps(f)); }
 #else
+# define DIV3(v,f) { v.x/=f; v.y/=f; v.z/=z; }
 # define DIV4(v,f) { v.x/=f; v.y/=f; v.z/=z; v.w/=w; }
 #endif
 
 #define ABS2(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); }
-#define ABS3(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); v.z=SH_ABS(v.z); }
 #ifdef __SSE__
 # define ABS_MASK _mm_set1_ps(-0.f)
 # define ABS4(v) { v.vec=_mm_andnot_ps(ABS_MASK, v.vec); }
+# define ABS4(v) { v.vec=_mm_andnot_ps(ABS_MASK, v.vec); }
 #else
+# define ABS3(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); v.z=SH_ABS(v.z); }
 # define ABS4(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); v.z=SH_ABS(v.z); v.w=SH_ABS(v.w); }
 #endif
 
@@ -227,10 +243,11 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #define NORMALIZE4(v) { SHfloat n=NORM4(v); DIV4(v,n); }
 
 #define DOT2(v1,v2) (v1.x*v2.x + v1.y*v2.y)
-#define DOT3(v1,v2) (v1.x*v2.x + v1.y*v2.y + v1.z*v2.z)
 #ifdef __SSE__
 # define DOT4(v1,v2) hsum_ps_sse(_mm_mul_ps(v1.vec,v2.vec))
+# define DOT4(v1,v2) hsum_ps_sse(_mm_mul_ps(v1.vec,v2.vec))
 #else
+# define DOT3(v1,v2) (v1.x*v2.x + v1.y*v2.y + v1.z*v2.z)
 # define DOT4(v1,v2) (v1.x*v2.x + v1.y*v2.y + v1.z*v2.z + v1.w*v2.w)
 #endif
 
@@ -240,10 +257,11 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #define ANGLE2N(v1,v2) (SH_ACOS( DOT2(v1,v2) ))
 
 #define OFFSET2V(v, o, s) { v.x += o.x*s; v.y += o.y*s; }
-#define OFFSET3V(v, o, s) { v.x += o.x*s; v.y += o.y*s; v.z += o.z*s; }
 #ifdef __SSE__
 # define OFFSET4V(v, o, s) { v.vec=_mm_add_ps(v.vec,_mm_mul_ps(o.vec,_mm_set1_ps(s))); }
+# define OFFSET4V(v, o, s) { v.vec=_mm_add_ps(v.vec,_mm_mul_ps(o.vec,_mm_set1_ps(s))); }
 #else
+# define OFFSET3V(v, o, s) { v.x += o.x*s; v.y += o.y*s; v.z += o.z*s; }
 # define OFFSET4V(v, o, s) { v.x += o.x*s; v.y += o.y*s; v.z += o.z*s; v.w += o.w*s; }
 #endif
 

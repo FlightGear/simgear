@@ -35,7 +35,11 @@ void SHVector2_dtor(SHVector2 *v) {
 }
 
 void SHVector3_ctor(SHVector3 *v) {
+#ifdef __SSE__
+  v->vec = _mm_setzero_ps();
+#else
   v->x=0.0f; v->y=0.0f; v->z=0.0f;
+#endif
 }
 
 void SHVector3_dtor(SHVector3 *v) {

@@ -349,7 +349,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         GCC_ATOMIC_BUILTINS_FOUND)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+if (CLANG)
     # Boost redeclares class members
     set(WARNING_FLAGS_CXX "-Wall -Wno-overloaded-virtual -Wno-redeclared-class-member")
     set(WARNING_FLAGS_C   "-Wall")
@@ -359,6 +359,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
 
     if (CMAKE_VERSION VERSION_LESS 3.1)
        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif()
+
+    if(ENABLE_SIMD)
+      if (X86 OR X86_64)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -mfpmath=sse")
+      endif()
     endif()
 endif()
 

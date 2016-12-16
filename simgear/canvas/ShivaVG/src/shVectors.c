@@ -147,3 +147,24 @@ int shLineLineXsection(SHVector2 *o1, SHVector2 *v1,
   xsection->y = o1->y + t1*v1->y;
   return 1;
 }
+
+#ifdef __SSE__
+# ifdef __SSE3__
+# include <pmmintrin.h>
+inline float hsum_ps_sse(__m128 v) {
+  __m128 shuf = _mm_movehdup_ps(v);
+  __m128 sums = _mm_add_ps(v, shuf);
+  shuf        = _mm_movehl_ps(shuf, sums);
+  sums        = _mm_add_ss(sums, shuf);
+  return        _mm_cvtss_f32(sums);
+}
+# else
+inline float hsum_ps_sse(__m128 v) {
+  __m128 shuf   = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 1));
+  __m128 sums   = _mm_add_ps(v, shuf);
+  shuf          = _mm_movehl_ps(shuf, sums);
+  sums          = _mm_add_ss(sums, shuf);
+  return          _mm_cvtss_f32(sums);
+}
+# endif
+#endif

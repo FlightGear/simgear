@@ -114,6 +114,9 @@ option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support"
 option(USE_AEONWAVE     "Set to ON to use AeonWave instead of OpenAL" OFF)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
 option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" ON)
+option(ENABLE_SIMD      "Enable SSE/SSE2 support for x86 compilers" ON)
+
+include (DetectArch)
 
 # until the fstream fix is applied and generally available in OSG,
 # keep the compatability link option as the default
@@ -332,6 +335,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
       message(WARNING "GCC 4.4 will be required soon, please upgrade")
     endif()
 
+    if(ENABLE_SIMD)
+      if (X86 OR X86_64)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -mfpmath=sse")
+      endif()
+    endif()
+
     # certain GCC versions don't provide the atomic builds, and hence
     # require is to provide them in SGAtomic.cxx
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})
@@ -369,6 +378,11 @@ if(WIN32)
 
     if(MSVC)
         set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP")
+        if(ENABLE_SIMD)
+          if (X86 OR X86_64)
+            set(MSVC_FLAGS "${MSVC_FLAGS} /arch:SSE /arch:SSE2 /Ox")
+          endif()
+        endif()
 
         if (NOT OSG_FSTREAM_EXPORT_FIXED)
           message(STATUS "For better linking performance, use OSG with patched fstream header")

@@ -42,14 +42,22 @@ void SHVector3_dtor(SHVector3 *v) {
 }
 
 void SHVector4_ctor(SHVector4 *v) {
+#ifdef __SSE__
+  v->vec = _mm_setzero_ps();
+#else
   v->x=0.0f; v->y=0.0f; v->z=0.0f; v->w=0.0f;
+#endif
 }
 
 void SHVector4_dtor(SHVector4 *v) {
 }
 
 void SHRectangle_ctor(SHRectangle *r) {
+#ifdef __SSE__
+  r->vec = _mm_setzero_ps();
+#else
   r->x=0.0f; r->y=0.0f; r->w=0.0f; r->h=0.0f;
+#endif
 }
 
 void SHRectangle_dtor(SHRectangle *r) {

@@ -21,6 +21,10 @@
 #ifndef __SHVECTORS_H
 #define __SHVECTORS_H
 
+#ifdef __SSE__
+# include <xmmintrin.h>
+#endif
+
 #include "shDefs.h"
 
 /* Vector structures
@@ -33,6 +37,7 @@ typedef struct
 void SHVector2_ctor(SHVector2 *v);
 void SHVector2_dtor(SHVector2 *v);
 
+
 typedef struct
 {
   SHfloat x,y,z;
@@ -43,7 +48,14 @@ void SHVector3_dtor(SHVector3 *v);
 
 typedef struct
 {
+#ifdef __SSE__
+  union ALIGN16 {
+    __m128 vec;
+    struct { SHfloat x,y,z,w; };
+  } ALIGN16C;
+#else
   SHfloat x,y,z,w;
+#endif
 } SHVector4;
 
 void SHVector4_ctor(SHVector4 *v);
@@ -51,7 +63,14 @@ void SHVector4_dtor(SHVector4 *v);
 
 typedef struct
 {
+#ifdef __SSE__
+  union ALIGN16 {
+    __m128 vec;
+    struct { SHfloat x,y,w,h; };
+  } ALIGN16C;
+#else
   SHfloat x,y,w,h;
+#endif
 } SHRectangle;
 
 void SHRectangle_ctor(SHRectangle *r);
@@ -61,7 +80,14 @@ void shRectangleSet(SHRectangle *r, SHfloat x,
 
 typedef struct
 {
+#ifdef __SSE__
+  union ALIGN16 {
+    __m128 mtx[4];
+    SHfloat m[4][4];
+  } ALIGN16C;
+#else
   SHfloat m[3][3];
+#endif
 } SHMatrix3x3;
 
 void SHMatrix3x3_ctor(SHMatrix3x3 *m);
@@ -82,13 +108,42 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
  * inline in C is to actually write a macro
  *--------------------------------------------------------- */
 
+#ifdef __SSE__
+# ifdef __SSE3__
+# include <pmmintrin.h>
+  inline float hsum_ps_sse(__m128 v) {
+    __m128 shuf = _mm_movehdup_ps(v);
+    __m128 sums = _mm_add_ps(v, shuf);
+    shuf        = _mm_movehl_ps(shuf, sums);
+    sums        = _mm_add_ss(sums, shuf);
+    return        _mm_cvtss_f32(sums);
+  }
+# else
+  inline float hsum_ps_sse(__m128 v) {
+    __m128 shuf   = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 1));
+    __m128 sums   = _mm_add_ps(v, shuf);
+    shuf          = _mm_movehl_ps(shuf, sums);
+    sums          = _mm_add_ss(sums, shuf);
+    return          _mm_cvtss_f32(sums);
+  }
+# endif
+#endif
+
 #define SET2(v,xs,ys) { v.x=xs; v.y=ys; }
 #define SET3(v,xs,ys,zs) { v.x=xs; v.y=ys; v.z=zs; }
-#define SET4(v,xs,ys,zs,ws) { v.x=xs; v.y=ys; v.z=zs; v.w=ws; }
+#ifdef __SSE__
+# define SET4(v,xs,ys,zs,ws) { v.vec=_mm_set_ps(ws,zs,ys,xs); }
+#else
+# define SET4(v,xs,ys,zs,ws) { v.x=xs; v.y=ys; v.z=zs; v.w=ws; }
+#endif
 
 #define SET2V(v1,v2) { v1.x=v2.x; v1.y=v2.y; }
 #define SET3V(v1,v2) { v1.x=v2.x; v1.y=v2.y; v1.z=v2.z; }
-#define SET4V(v1,v2) { v1.x=v2.x; v1.y=v2.y; v1.z=v2.z; v1.w=v2.w; }
+#ifdef __SSE__
+# define SET4V(v1,v2) { v1.vec=v2.vec; }
+#else
+# define SET4V(v1,v2) { v1.x=v2.x; v1.y=v2.y; v1.z=v2.z; v1.w=v2.w; }
+#endif
 
 #define EQ2(v,xx,yy)       ( v.x==xx && v.y==yy )
 #define EQ3(v,xx,yy,zz)    ( v.x==xx && v.y==yy && v.z==zz )
@@ -104,47 +159,80 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 
 #define ADD2(v,xx,yy)       { v.x+=xx; v.y+=yy; }
 #define ADD3(v,xx,yy,zz)    { v.x+=xx; v.y+=yy; v.z+=zz; }
-#define ADD4(v,xx,yy,zz,ww) { v.x+=xx; v.y+=yy; v.z+=zz; v.w+=ww; }
+#ifdef __SSE__
+# define ADD4(v,xx,yy,zz,ww) { v.vec=_mm_add_ps(v.vec,_mm_set_ps(ww,zz,yy,xx)); }
+#else
+# define ADD4(v,xx,yy,zz,ww) { v.x+=xx; v.y+=yy; v.z+=zz; v.w+=ww; }
+#endif
 
 #define ADD2V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; }
 #define ADD3V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; v1.z+=v2.z; }
-#define ADD4V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; v1.z+=v2.z; v1.w+=v2.w; }
+#ifdef __SSE__
+# define ADD4V(v1,v2) { v1.vec=_mm_add_ps(v1.vec,v2.vec); }
+#else
+# define ADD4V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; v1.z+=v2.z; v1.w+=v2.w; }
+#endif
 
 #define SUB2(v,xx,yy)       { v.x-=xx; v.y-=yy; }
 #define SUB3(v,xx,yy,zz)    { v.x-=xx; v.y-=yy; v.z-=zz; }
-#define SUB4(v,xx,yy,zz,ww) { v.x-=xx; v.y-=yy; v.z-=zz; v.w-=v2.w; }
+#ifdef __SSE__
+# define SUB4(v,xx,yy,zz,ww) { v.vec=_mm_sub_ps(v.vec,_mm_set_ps(ww,zz,yy,xx)); }
+#else
+# define SUB4(v,xx,yy,zz,ww) { v.x-=xx; v.y-=yy; v.z-=zz; v.w-=v2.w; }
+#endif
 
 #define SUB2V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; }
 #define SUB3V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; v1.z-=v2.z; }
-#define SUB4V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; v1.z-=v2.z; v1.w-=v2.w; }
+#ifdef __SSE__
+# define SUB4V(v1,v2) { v1.vec=_mm_sub_ps(v1.vec,v2.vec); }
+#else
+# define SUB4V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; v1.z-=v2.z; v1.w-=v2.w; }
+#endif
 
 #define MUL2(v,f) { v.x*=f; v.y*=f; }
 #define MUL3(v,f) { v.x*=f; v.y*=f; v.z*=z; }
-#define MUL4(v,f) { v.x*=f; v.y*=f; v.z*=z; v.w*=w; }
+#ifdef __SSE__
+# define MUL4(v,f) { v.vec=_mm_mul_ps(v.vec,_mm_set1_ps(f)); }
+#else
+# define MUL4(v,f) { v.x*=f; v.y*=f; v.z*=z; v.w*=w; }
+#endif
 
 #define DIV2(v,f) { v.x/=f; v.y/=f; }
 #define DIV3(v,f) { v.x/=f; v.y/=f; v.z/=z; }
-#define DIV4(v,f) { v.x/=f; v.y/=f; v.z/=z; v.w/=w; }
+#ifdef __SSE__
+# define DIV4(v,f) { v.vec=_mm_div_ps(v.vec,_mm_set1_ps(f)); }
+#else
+# define DIV4(v,f) { v.x/=f; v.y/=f; v.z/=z; v.w/=w; }
+#endif
 
 #define ABS2(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); }
 #define ABS3(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); v.z=SH_ABS(v.z); }
-#define ABS4(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); v.z=SH_ABS(v.z); v.w=SH_ABS(v.w); }
+#ifdef __SSE__
+# define ABS_MASK _mm_set1_ps(-0.f)
+# define ABS4(v) { v.vec=_mm_andnot_ps(ABS_MASK, v.vec); }
+#else
+# define ABS4(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); v.z=SH_ABS(v.z); v.w=SH_ABS(v.w); }
+#endif
 
-#define NORMSQ2(v) (v.x*v.x + v.y*v.y)
-#define NORMSQ3(v) (v.x*v.x + v.y*v.y + v.z*v.z)
-#define NORMSQ4(v) (v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w)
+#define NORMSQ2(v) DOT2(v,v)
+#define NORMSQ3(v) DOT3(v,v)
+#define NORMSQ4(v) DOT4(v,v)
 
 #define NORM2(v) SH_SQRT(NORMSQ2(v))
 #define NORM3(v) SH_SQRT(NORMSQ3(v))
 #define NORM4(v) SH_SQRT(NORMSQ4(v))
 
-#define NORMALIZE2(v) { SHfloat n=NORM2(v); v.x/=n; v.y/=n; }
-#define NORMALIZE3(v) { SHfloat n=NORM3(v); v.x/=n; v.y/=n; v.z/=n; }
-#define NORMALIZE4(v) { SHfloat n=NORM4(v); v.x/=n; v.y/=n; v.z/=n; v.w/=w; }
+#define NORMALIZE2(v) { SHfloat n=NORM2(v); DIV2(v,n); }
+#define NORMALIZE3(v) { SHfloat n=NORM3(v); DIV3(v,n); }
+#define NORMALIZE4(v) { SHfloat n=NORM4(v); DIV4(v,n); }
 
 #define DOT2(v1,v2) (v1.x*v2.x + v1.y*v2.y)
 #define DOT3(v1,v2) (v1.x*v2.x + v1.y*v2.y + v1.z*v2.z)
-#define DOT4(v1,v2) (v1.x*v2.x + v1.y*v2.y + v1.z*v2.z + v1.w*v2.w)
+#ifdef __SSE__
+# define DOT4(v1,v2) hsum_ps_sse(_mm_mul_ps(v1.vec,v2.vec))
+#else
+# define DOT4(v1,v2) (v1.x*v2.x + v1.y*v2.y + v1.z*v2.z + v1.w*v2.w)
+#endif
 
 #define CROSS2(v1,v2) (v1.x*v2.y - v2.x*v1.y)
 
@@ -153,36 +241,82 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 
 #define OFFSET2V(v, o, s) { v.x += o.x*s; v.y += o.y*s; }
 #define OFFSET3V(v, o, s) { v.x += o.x*s; v.y += o.y*s; v.z += o.z*s; }
-#define OFFSET4V(v, o, s) { v.x += o.x*s; v.y += o.y*s; v.z += o.z*s; v.w += o.w*s; }
+#ifdef __SSE__
+# define OFFSET4V(v, o, s) { v.vec=_mm_add_ps(v.vec,_mm_mul_ps(o.vec,_mm_set1_ps(s))); }
+#else
+# define OFFSET4V(v, o, s) { v.x += o.x*s; v.y += o.y*s; v.z += o.z*s; v.w += o.w*s; }
+#endif
 
 /*-----------------------------------------------------
  * Macros for matrix operations
  *-----------------------------------------------------*/
 
-#define SETMAT(mat, m00, m01, m02, m10, m11, m12, m20, m21, m22) { \
-mat.m[0][0] = m00; mat.m[0][1] = m01; mat.m[0][2] = m02; \
+#ifdef __SSE__
+# define SETMAT(mat, m00, m01, m02, m10, m11, m12, m20, m21, m22) { \
+  mat.mtx[0] = _mm_set_ps(0,m02,m01,m00); \
+  mat.mtx[1] = _mm_set_ps(0,m12,m11,m10); \
+  mat.mtx[2] = _mm_set_ps(0,m22,m21,m20); \
+  mat.mtx[3] = _mm_setzero_ps(); }
+#else
+# define SETMAT(mat, m00, m01, m02, m10, m11, m12, m20, m21, m22) { \
+  mat.m[0][0] = m00; mat.m[0][1] = m01; mat.m[0][2] = m02; \
   mat.m[1][0] = m10; mat.m[1][1] = m11; mat.m[1][2] = m12; \
   mat.m[2][0] = m20; mat.m[2][1] = m21; mat.m[2][2] = m22; }
+#endif
 
-#define SETMATMAT(m1, m2) { \
+#ifdef __SSE__
+# define SETMATMAT(m1, m2) { \
+  m1.mtx[0] = m2.mtx[0]; \
+  m1.mtx[1] = m2.mtx[1]; \
+  m1.mtx[2] = m2.mtx[2]; }
+#else
+# define SETMATMAT(m1, m2) { \
 int i,j; \
   for(i=0;i<3;i++) \
   for(j=0;j<3;j++) \
     m1.m[i][j] = m2.m[i][j]; }
+#endif
 
-#define MULMATS(mat, s) { \
+#ifdef __SSE__
+# define MULMATS(mat, s) { \
+  mat.mtx[0] = _mm_mul_ps(mat.mtx[0],_mm_set1_ps(s)); \
+  mat.mtx[1] = _mm_mul_ps(mat.mtx[1],_mm_set1_ps(s)); \
+  mat.mtx[2] = _mm_mul_ps(mat.mtx[2],_mm_set1_ps(s)); }
+#else
+# define MULMATS(mat, s) { \
 int i,j; \
   for(i=0;i<3;i++) \
   for(j=0;j<3;j++) \
     mat.m[i][j] *= s; }
+#endif
 
-#define DIVMATS(mat, s) { \
+#ifdef __SSE__
+# define DIVMATS(mat, s) { \
+  mat.mtx[0] = _mm_mul_ps(mat.mtx[0],_mm_set1_ps(1/s)); \
+  mat.mtx[1] = _mm_mul_ps(mat.mtx[1],_mm_set1_ps(1/s)); \
+  mat.mtx[2] = _mm_mul_ps(mat.mtx[2],_mm_set1_ps(1/s)); }
+#else
+# define DIVMATS(mat, s) { \
 int i,j; \
   for(i=0;i<3;i++) \
   for(j=0;j<3;j++) \
     mat.m[i][j] /= s; }
+#endif
 
-#define MULMATMAT(m1, m2, mout) { \
+#ifdef __SSE__
+# define MULMATMAT(m2, m1, mout) { \
+  int i,j; \
+  for (i=0;i<4;i++) { \
+    __m128 a = m1.mtx[0]; \
+    __m128 b = _mm_set1_ps(m2.m[i][0]); \
+    mout.mtx[i] = a*b; \
+    for (j=1;j<4;j++) { \
+      a = m1.mtx[j]; \
+      b = _mm_set1_ps(m2.m[i][j]); \
+      mout.mtx[i] += a*b; } } }
+
+#else
+# define MULMATMAT(m1, m2, mout) { \
 int i,j; \
   for(i=0;i<3;i++) \
   for(j=0;j<3;j++) \
@@ -190,6 +324,7 @@ int i,j; \
       m1.m[i][0] * m2.m[0][j] + \
       m1.m[i][1] * m2.m[1][j] + \
       m1.m[i][2] * m2.m[2][j]; }
+#endif
 
 #define IDMAT(mat) SETMAT(mat, 1,0,0, 0,1,0, 0,0,1)
 

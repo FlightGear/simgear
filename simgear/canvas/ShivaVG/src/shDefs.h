@@ -44,6 +44,11 @@
 #if defined(_MSC_VER)
 #  pragma warning(disable:4311)
 #  pragma warning(disable:4312)
+#  define ALIGN16 __declspec(align(16))
+#  define ALIGN16C
+#elif defined(__GNUC__)
+#  define ALIGN16
+#  define ALIGN16C __attribute__((aligned(16)))
 #endif
 
 /* Type definitions */

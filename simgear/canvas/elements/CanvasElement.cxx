@@ -640,6 +640,27 @@ namespace canvas
       _scissor->_coord_reference = rf;
   }
 
+    //----------------------------------------------------------------------------
+    void Element::setRotation(unsigned int index, double r)
+    {
+        _node->getChild(NAME_TRANSFORM, index, true)->setDoubleValue("rot", r);
+    }
+
+    //----------------------------------------------------------------------------
+    void Element::setTranslation(unsigned int index, double x, double y)
+    {
+        SGPropertyNode* tf = _node->getChild(NAME_TRANSFORM, index, true);
+        tf->getChild("t", 0, true)->setDoubleValue(x);
+        tf->getChild("t", 1, true)->setDoubleValue(y);
+    }
+
+    //----------------------------------------------------------------------------
+    void Element::setTransformEnabled(unsigned int index, bool enabled)
+    {
+        SGPropertyNode* tf = _node->getChild(NAME_TRANSFORM, index, true);
+        tf->setBoolValue("enabled", enabled);
+    }
+
   //----------------------------------------------------------------------------
   osg::BoundingBox Element::getBoundingBox() const
   {
@@ -701,6 +722,9 @@ namespace canvas
         continue;
 
       SGPropertyNode* tf_node = _node->getChild("tf", i, true);
+      if (!tf_node->getBoolValue("enabled", true)) {
+        continue; // skip disabled transforms
+      }
 
       // Build up the matrix representation of the current transform node
       osg::Matrix tf;

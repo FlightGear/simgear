@@ -173,6 +173,22 @@ namespace canvas
       void setClipFrame(ReferenceFrame rf);
 
       /**
+       *
+       */
+      void setRotation(unsigned int index, double r);
+
+      /**
+       *
+       */
+      void setTranslation(unsigned int index, double x, double y);
+
+      /**
+       *
+       *
+       */
+      void setTransformEnabled(unsigned int index, bool enabled);
+
+      /**
        * Get bounding box (may not be as tight as bounding box returned by
        * #getTightBoundingBox)
        */

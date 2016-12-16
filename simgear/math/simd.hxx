@@ -583,7 +583,7 @@ namespace simd4
 {
 // http://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-float-vector-sum-on-x86
 inline double hsum_pd_sse(const __m128d vd[2]) {
-    __m128 undef    = undef; // Max doesn't have _mm_undefined_ps();
+    __m128 undef    = _mm_setzero_ps();
     __m128 shuftmp1 = _mm_movehl_ps(undef, _mm_castpd_ps(vd[0]));
     __m128 shuftmp2 = _mm_movehl_ps(undef, _mm_castpd_ps(vd[1]));
     __m128d shuf1   = _mm_castps_pd(shuftmp1);

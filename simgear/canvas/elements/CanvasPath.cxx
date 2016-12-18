@@ -25,6 +25,7 @@
 
 #include <vg/openvg.h>
 #include <cassert>
+#include <cctype>
 
 namespace simgear
 {

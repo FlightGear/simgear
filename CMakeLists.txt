@@ -337,7 +337,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
     if(ENABLE_SIMD)
       if (X86 OR X86_64)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -mfpmath=sse")
+        set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -O3 -msse3 -mfpmath=sse")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -msse3 -mfpmath=sse")
       endif()
     endif()
 
@@ -383,7 +384,7 @@ if(WIN32)
     endif()
 
     if(MSVC)
-        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP /Ox")
+        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP /O2")
         if(ENABLE_SIMD)
           if (X86)
             set(MSVC_FLAGS "${MSVC_FLAGS} /arch:SSE /arch:SSE2")

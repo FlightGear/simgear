@@ -112,8 +112,7 @@ inline void post_translate(simd4x4_t<T,4>& m, const simd4_t<S,3>& dist)
 {
     simd4_t<T,3> col3(m.ptr()[3]);
     for (int i=0; i<3; ++i) {
-        simd4_t<T,3> trow3(T(dist[i]));
-        trow3 *= m.ptr()[i];
+        simd4_t<T,3> trow3 = T(dist[i])*m.ptr()[i];
         col3 += trow3;
     }
     for (int i=0; i<3; ++i) {

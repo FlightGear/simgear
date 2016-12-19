@@ -239,6 +239,13 @@ public:
 };
 
 template<typename T, int N>
+inline simd4_t<T,N> operator-(const simd4_t<T,N>& v) {
+    simd4_t<T,N> r = T(0);
+    r -= v;
+    return r;
+}
+
+template<typename T, int N>
 inline simd4_t<T,N> operator+(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
     v1 += v2;
     return v1;
@@ -733,18 +740,25 @@ public:
     inline simd4_t<int,N>& operator*=(int i) {
         return operator*=(simd4_t<int,N>(i));
     }
-    // https://software.intel.com/en-us/forums/intel-c-compiler/topic/288768
     inline simd4_t<int,N>& operator*=(const simd4_t<int,N>& v) {
+         return operator*=(v.v4());
+    }
+    // https://software.intel.com/en-us/forums/intel-c-compiler/topic/288768
+    inline simd4_t<int,N>& operator*=(const __m128i& v) {
 #ifdef __SSE4_1__
-        simd4 = _mm_mullo_epi32(simd4, v.v4());
+        simd4 = _mm_mullo_epi32(simd4, v);
 #else
-        __m128i tmp1 = _mm_mul_epu32(simd4, v.v4());
+        __m128i tmp1 = _mm_mul_epu32(simd4, v);
         __m128i tmp2 = _mm_mul_epu32(_mm_srli_si128(simd4,4),
-                       _mm_srli_si128(v.v4(),4));
+                       _mm_srli_si128(v,4));
         simd4 =_mm_unpacklo_epi32(_mm_shuffle_epi32(tmp1,_MM_SHUFFLE (0,0,2,0)),
                                   _mm_shuffle_epi32(tmp2, _MM_SHUFFLE (0,0,2,0)));
 #endif
         return *this;
+    }
+
+    inline simd4_t<int,N>& operator/=(int s) {
+        return operator*=(1/s);
     }
 };
 

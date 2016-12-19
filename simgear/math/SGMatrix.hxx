@@ -54,14 +54,8 @@ public:
            T m20, T m21, T m22, T m23,
            T m30, T m31, T m32, T m33)
   {
-    _data[0] = m00; _data[1] = m10;
-    _data[2] = m20; _data[3] = m30;
-    _data[4] = m01; _data[5] = m11;
-    _data[6] = m21; _data[7] = m31;
-    _data[8] = m02; _data[9] = m12;
-    _data[10] = m22; _data[11] = m32;
-    _data[12] = m03; _data[13] = m13;
-    _data[14] = m23; _data[15] = m33;
+    _data = simd4x4_t<T,4>(m00,m01,m02,m03,m10,m11,m12,m13,
+                           m20,m21,m22,m23,m30,m31,m32,m33);
   }
 
   /// Constructor, build up a SGMatrix from a translation
@@ -82,13 +76,8 @@ public:
   template<typename S>
   void set(const SGVec3<S>& trans)
   {
-    simd4x4::zeros(_data);
-    _data[0] = 1;
-    _data[12] = T(trans(0));
-    _data[5] = 1;
-    _data[13] = T(trans(1));
-    _data[10] = 1; _data[14] = T(trans(2));
-    _data[15] = 1;
+    simd4x4::unit(_data);
+    simd4x4::translate(_data, trans.simd3());
   }
 
   /// Set from a scale/rotation and tranlation
@@ -113,28 +102,15 @@ public:
   void set(const TransNegRef<T>& tm)
   {
     const SGMatrix& m = tm.m;
-    _data[0] = m(0,0);
-    _data[1] = m(0,1);
-    _data[2] = m(0,2);
+    _data = simd4x4::transpose(m.simd4x4());
     _data[3] = m(3,0);
-
-    _data[4] = m(1,0);
-    _data[5] = m(1,1);
-    _data[6] = m(1,2);
     _data[7] = m(3,1);
-
-    _data[8] = m(2,0);
-    _data[9] = m(2,1);
-    _data[10] = m(2,2);
     _data[11] = m(3,2);
 
     // Well, this one is ugly here, as that xform method on the current
     // object needs the above data to be already set ...
     SGVec3<T> t = xformVec(SGVec3<T>(m(0,3), m(1,3), m(2,3)));
-    t = -t;
-    _data[12] = t(0);
-    _data[13] = t(1);
-    _data[14] = t(2);
+    _data.set(3, -t.simd3());
     _data[15] = m(3,3);
   }
 
@@ -193,24 +169,13 @@ public:
   template<typename S>
   SGMatrix& preMultTranslate(const SGVec3<S>& t)
   {
-    SGVec4<T> row3((*this)(3,0), (*this)(3,1), (*this)(3,2), (*this)(3,3));
-    for (unsigned i = 0; i < 3; ++i) {
-      SGVec4<T> trow3 = T(t(i))*row3;
-      (*this)(i,0) += trow3(0); (*this)(i,1) += trow3(1);
-      (*this)(i,2) += trow3(2); (*this)(i,3) += trow3(3);
-    }
+    simd4x4::pre_translate(_data,t.simd3());
     return *this;
   }
   template<typename S>
   SGMatrix& postMultTranslate(const SGVec3<S>& t)
   {
-    SGVec4<T> col3((*this)(0,3), (*this)(1,3), (*this)(2,3), (*this)(3,3));
-    for (unsigned i = 0; i < SGMatrix<T>::nCols-1; ++i) {
-      SGVec4<T> tmp((*this)(0,i), (*this)(1,i), (*this)(2,i), (*this)(3,i));
-      col3 += T(t(i))*tmp;
-    }
-    (*this)(0,3) = col3(0); (*this)(1,3) = col3(1);
-    (*this)(2,3) = col3(2); (*this)(3,3) = col3(3);
+    simd4x4::post_translate(_data,t.simd3());
     return *this;
   }
 
@@ -235,21 +200,14 @@ public:
 
   SGVec3<T> xformPt(const SGVec3<T>& pt) const
   {
-    SGVec3<T> tpt((*this)(0,3), (*this)(1,3), (*this)(2,3));
-    for (unsigned i = 0; i < SGMatrix<T>::nCols-1; ++i) {
-      SGVec3<T> coli((*this)(0,i), (*this)(1,i), (*this)(2,i));
-      tpt += pt(i)*coli;
-    }
+    SGVec3<T> tpt;
+    tpt.simd3() = simd4x4::transform(_data,pt.simd3());
     return tpt;
   }
   SGVec3<T> xformVec(const SGVec3<T>& v) const
   {
-    SGVec3<T> tv((*this)(0,0), (*this)(1,0), (*this)(2,0));
-    tv *= v(0);
-    for (unsigned i = 1; i < SGMatrix<T>::nCols-1; ++i) {
-      SGVec3<T> coli((*this)(0,i), (*this)(1,i), (*this)(2,i));
-      tv += v(i)*coli;
-    }
+    SGVec3<T> tv;
+    tv.simd3() = _data * v.simd3();
     return tv;
   }
 

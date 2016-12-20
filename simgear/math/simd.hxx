@@ -21,8 +21,8 @@
 #include <cstring>
 #include <cmath>
 
-#include <simgear/math/SGLimits.hxx>
-#include <simgear/math/SGMisc.hxx>
+#include "SGLimits.hxx"
+#include "SGMisc.hxx"
 
 template<typename T, int N> class simd4_t;
 

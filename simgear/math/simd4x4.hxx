@@ -112,7 +112,8 @@ inline void post_translate(simd4x4_t<T,4>& m, const simd4_t<S,3>& dist)
 {
     simd4_t<T,3> col3(m.ptr()[3]);
     for (int i=0; i<3; ++i) {
-        simd4_t<T,3> trow3 = T(dist[i])*m.ptr()[i];
+        simd4_t<T,3> trow3 = T(dist[i]);
+        trow3 *= m.ptr()[i];
         col3 += trow3;
     }
     for (int i=0; i<3; ++i) {
@@ -421,14 +422,11 @@ public:
 template<int M>
 inline simd4_t<float,M> operator*(const simd4x4_t<float,4>& m, const simd4_t<float,M>& vi)
 {
-    simd4_t<float,M> mv(m.m4x4()[0]);
-    mv *= vi.ptr()[0];
+    __m128 mv = _mm_mul_ps(m.m4x4()[0], _mm_set1_ps(vi.ptr()[0]));
     for (int i=1; i<M; ++i) {
-        simd4_t<float,M> row(m.m4x4()[i]);
-        row *= vi.ptr()[i];
-        mv.v4() += row.v4();
+        __m128 row = _mm_mul_ps(m.m4x4()[i], _mm_set1_ps(vi.ptr()[i]));
+        mv = _mm_add_ps(mv, row);
     }
-    for (int i=M; i<4; ++i) mv[i] = 0;
     return mv;
 }
 
@@ -502,11 +500,10 @@ inline void post_translate(simd4x4_t<float,4>& m, const simd4_t<S,3>& dist)
 
 template<>
 inline simd4_t<float,3> transform<float>(const simd4x4_t<float,4>& m, const simd4_t<float,3>& pt) {
-    simd4_t<float,3> tpt;
-    tpt.v4() = m.m4x4()[3];
+    __m128 tpt = m.m4x4()[3];
     for (int i=0; i<3; ++i) {
         __m128 ptd = _mm_set1_ps(pt[i]);
-        tpt.v4() = _mm_add_ps(tpt.v4(), _mm_mul_ps(ptd, m.m4x4()[i]));
+        tpt = _mm_add_ps(tpt, _mm_mul_ps(ptd, m.m4x4()[i]));
     }
     tpt[3] = 0.0;
     return tpt;
@@ -672,15 +669,17 @@ public:
 template<int M>
 inline simd4_t<double,M> operator*(const simd4x4_t<double,4>& m, const simd4_t<double,M>& vi)
 {
-    simd4_t<double,M> mv(m.m4x4()[0]);
-    mv *= vi.ptr()[0];
+    __m128d mv[2];
+
+    mv[0] = _mm_mul_pd(m.m4x4()[0][0], _mm_set1_pd(vi.ptr()[0]));
+    mv[1] = _mm_mul_pd(m.m4x4()[0][1], _mm_set1_pd(vi.ptr()[0]));
     for (int i=1; i<M; ++i) {
-        simd4_t<double,M> row = m.m4x4()[i];
-        row *= vi.ptr()[i];
-        mv.v4()[0] += row.v4()[0];
-        mv.v4()[1] += row.v4()[1];
+        __m128d row[2];
+        row[0] = _mm_mul_pd(m.m4x4()[i][0], _mm_set1_pd(vi.ptr()[i]));
+        row[1] = _mm_mul_pd(m.m4x4()[i][1], _mm_set1_pd(vi.ptr()[i]));
+        mv[0] = _mm_add_pd(mv[0], row[0]);
+        mv[1] = _mm_add_pd(mv[1], row[1]);
     }
-    for (int i=M; i<4; ++i) mv[i] = 0;
     return mv;
 }
 
@@ -753,6 +752,14 @@ inline void translate(simd4x4_t<double,4>& m, const simd4_t<double,3>& dist) {
 template<typename S>
 inline void pre_translate(simd4x4_t<double,4>& m, const simd4_t<S,3>& dist)
 {
+    simd4_t<double,4> row3(m.ptr()[0][3],m.ptr()[1][3],m.ptr()[2][3],m.ptr()[3][3]);
+    for (int i=0; i<3; ++i) {
+        for (int j=0; j<4; ++j) {
+            m.ptr()[j][i] += row3[j]*double(dist[i]);
+        }
+    }
+#if 0
+    // twice as slow
     simd4x4_t<double,4> mt = simd4x4::transpose(m);
     __m128d row3[2];
     row3[0] = mt.m4x4()[3][0];
@@ -763,6 +770,7 @@ inline void pre_translate(simd4x4_t<double,4>& m, const simd4_t<S,3>& dist)
         mt.m4x4()[i][1] = _mm_add_pd(mt.m4x4()[i][1], _mm_mul_pd(t, row3[1]));
     }
     m = simd4x4::transpose(mt);
+#endif
 }
 
 template<typename S>

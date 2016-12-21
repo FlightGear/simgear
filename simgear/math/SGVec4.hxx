@@ -20,7 +20,7 @@
 
 #include <iosfwd>
 
-#include "simd.hxx"
+#include <simgear/math/simd.hxx>
 
 /// 4D Vector Class
 template<typename T>

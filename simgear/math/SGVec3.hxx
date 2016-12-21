@@ -22,8 +22,7 @@
 
 #include <simgear/math/SGVec2.hxx>
 #include <simgear/math/SGGeodesy.hxx>
-
-#include "simd.hxx"
+#include <simgear/math/simd.hxx>
 
 /// 3D Vector Class
 template<typename T>

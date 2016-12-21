@@ -18,7 +18,7 @@
 #ifndef SGMatrix_H
 #define SGMatrix_H
 
-#include "simd4x4.hxx"
+#include <simgear/math/simd4x4.hxx>
 
 /// Expression templates for poor programmers ... :)
 template<typename T>

@@ -23,8 +23,7 @@
 #include <simgear/math/SGLimits.hxx>
 #include <simgear/math/SGMisc.hxx>
 #include <simgear/math/SGMathFwd.hxx>
-
-#include "simd.hxx"
+#include <simgear/math/simd.hxx>
 
 /// 2D Vector Class
 template<typename T>

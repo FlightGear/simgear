@@ -21,8 +21,8 @@
 #include <cstring>
 #include <cmath>
 
-#include "SGLimits.hxx"
-#include "SGMisc.hxx"
+#include <simgear/math/SGLimits.hxx>
+#include <simgear/math/SGMisc.hxx>
 
 template<typename T, int N> class simd4_t;
 
@@ -286,10 +286,14 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
 #  include <mmintrin.h>
 # if defined(_MSC_VER)
 #  define ALIGN16  __declspec(align(16))
+#  define ALIGN32  __declspec(align(32))
 #  define ALIGN16C
+#  define ALIGN32C
 # elif defined(__GNUC__)
 #  define ALIGN16
+#  define ALIGN32
 #  define ALIGN16C __attribute__((aligned(16)))
+#  define ALIGN32C __attribute__((aligned(32)))
 # endif
 # endif
 
@@ -461,7 +465,167 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 # endif
 
 
-# ifdef __SSE2__
+# ifdef __AVX__
+#  include <pmmintrin.h>
+#  include <avxintrin.h>
+
+template<int N>
+class simd4_t<double,N>
+{
+private:
+   typedef double  __vec4d_t[N];
+
+    union ALIGN32 {
+        __m256d simd4;
+        __vec4d_t vec;
+        double _v4[4];
+    } ALIGN32C;
+
+public:
+    simd4_t(void) {}
+    simd4_t(double d) {
+        simd4 = _mm256_set1_pd(d);
+        for (int i=N; i<4; ++i) _v4[i] = 0.0;
+    }
+    simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
+    simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
+    simd4_t(double x, double y, double z, double w) {
+        simd4 = _mm256_set_pd(w,z,y,x);
+    }
+    explicit simd4_t(const __vec4d_t v) {
+        simd4 = _mm256_loadu_pd(v);
+        for (int i=N; i<4; ++i) _v4[i] = 0.0;
+    }
+    template<int M>
+    simd4_t(const simd4_t<double,M>& v) {
+        simd4 = v.v4();
+        for (int i=M; i<4; ++i) _v4[i] = 0.0;
+    }
+    simd4_t(const __m256d v) {
+        simd4 = v;
+    }
+
+    inline const __m256d (&v4(void) const) {
+        return simd4;
+    }
+    inline __m256d (&v4(void)) {
+        return simd4;
+    }
+
+    inline const double (&ptr(void) const)[N] {
+        return vec;
+    }
+    inline double (&ptr(void))[N] {
+        return vec;
+    }
+
+    inline operator const double*(void) const {
+        return vec;
+    }
+    inline operator double*(void) {
+        return vec;
+    }
+
+    inline simd4_t<double,N>& operator=(double d) {
+        simd4 = _mm256_set1_pd(d);
+        for (int i=N; i<4; ++i) _v4[i] = 0.0;
+        return *this;
+    }
+    inline simd4_t<double,N>& operator=(const __vec4d_t v) {
+        simd4 = _mm256_loadu_pd(v);
+        for (int i=N; i<4; ++i) _v4[i] = 0.0;
+        return *this;
+    }
+    template<int M>
+    inline simd4_t<double,N>& operator=(const simd4_t<double,M>& v) {
+        simd4 = v.v4();
+        for (int i=M; i<4; ++i) _v4[i] = 0.0;
+        return *this;
+    }
+    inline simd4_t<double,N>& operator=(const __m256d v) {
+        simd4 = v;
+        return *this;
+    }
+
+    inline simd4_t<double,N>& operator+=(double d) {
+        return operator+=(simd4_t<double,N>(d));
+    }
+    inline simd4_t<double,N>& operator+=(const simd4_t<double,N>& v) {
+        simd4 = _mm256_add_pd(simd4, v.v4());
+        return *this;
+    }
+
+    inline simd4_t<double,N>& operator-=(double d) {
+        return operator-=(simd4_t<double,N>(d));
+    }
+    inline simd4_t<double,N>& operator-=(const simd4_t<double,N>& v) {
+        simd4 = _mm256_sub_pd(simd4, v.v4());
+        return *this;
+    }
+
+    inline simd4_t<double,N>& operator*=(double d) {
+        return operator*=(simd4_t<double,N>(d));
+    }
+    inline simd4_t<double,N>& operator*=(const simd4_t<double,N>& v) {
+        simd4 = _mm256_mul_pd(simd4, v.v4());
+        return *this;
+    }
+
+    inline simd4_t<double,N>& operator/=(double d) {
+        return operator/=(simd4_t<double,N>(d));
+    }
+    inline simd4_t<double,N>& operator/=(const simd4_t<double,N>& v) {
+        simd4 = _mm256_div_pd(simd4, v.v4());
+        return *this;
+    }
+};
+
+namespace simd4
+{
+// http://berenger.eu/blog/sseavxsimd-horizontal-sum-sum-simd-vector-intrinsic/
+inline float hsum_pd_avx(__m256d v) {
+    const __m128d valupper = _mm256_extractf128_pd(v, 1);
+    const __m128d vallower = _mm256_castpd256_pd128(v);
+    _mm256_zeroupper();
+    const __m128d valval = _mm_add_pd(valupper, vallower);
+    const __m128d sums =   _mm_add_pd(_mm_permute_pd(valval,1), valval);
+    return                 _mm_cvtsd_f64(sums);
+}
+
+template<>
+inline double magnitude2(simd4_t<double,4> v) {
+    v *= v;
+    return hsum_pd_avx(v.v4());
+}
+
+template<>
+inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
+    v1 *= v2;
+    return hsum_pd_avx(v1.v4());
+}
+
+template<int N>
+inline simd4_t<double,N> min(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
+    v1.v4() = _mm256_min_pd(v1.v4(), v2.v4());
+    return v1;
+}
+
+template<int N>
+inline simd4_t<double,N> max(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
+    v1.v4() = _mm256_max_pd(v1.v4(), v2.v4());
+    return v1;
+}
+
+template<int N>
+inline simd4_t<double,N>abs(simd4_t<double,N> v) {
+    static const __m256d sign_mask = _mm256_set1_pd(-0.); // -0. = 1 << 63
+    v.v4() = _mm256_andnot_pd(sign_mask, v.v4());
+    return v;
+}
+
+} /* namespace simd4 */
+
+# elif defined __SSE2__
 #  include <emmintrin.h>
 
 template<int N>

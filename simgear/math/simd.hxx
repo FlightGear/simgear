@@ -89,6 +89,16 @@ inline T dot(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
     return dp;
 }
 
+template<typename T>
+inline simd4_t<T,3> cross(const simd4_t<T,3>& v1, const simd4_t<T,3>& v2)
+{
+   simd4_t<T,3> d;
+   d[0] = v1[1]*v2[2] - v1[2]*v2[1];
+   d[1] = v1[2]*v2[0] - v1[0]*v2[2];
+   d[2] = v1[0]*v2[1] - v1[1]*v2[0];
+   return d;
+}
+
 } /* namespace simd4 */
 
 
@@ -245,26 +255,26 @@ inline simd4_t<T,N> operator-(const simd4_t<T,N>& v) {
     return r;
 }
 
-template<typename T, int N>
-inline simd4_t<T,N> operator+(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+template<typename T, int N, int M>
+inline simd4_t<T,N> operator+(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
     v1 += v2;
     return v1;
 }
 
-template<typename T, int N>
-inline simd4_t<T,N> operator-(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+template<typename T, int N, int M>
+inline simd4_t<T,N> operator-(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
     v1 -= v2;
     return v1;
 }
 
-template<typename T, int N>
-inline simd4_t<T,N> operator*(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+template<typename T, int N, int M>
+inline simd4_t<T,N> operator*(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
     v1 *= v2;
     return v1;
 }
 
-template<typename T, int N>
-inline simd4_t<T,N> operator/(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
+template<typename T, int N, int M>
+inline simd4_t<T,N> operator/(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
     v1 /= v2;
     return v1;
 }
@@ -441,6 +451,26 @@ inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
     return hsum_ps_sse(v1.v4()*v2.v4());
 }
 
+template<>
+inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>& v2)
+{
+#if 1
+    // http://threadlocalmutex.com/?p=8
+    __m128 a = _mm_shuffle_ps(v1.v4(), v1.v4(), _MM_SHUFFLE(3, 0, 2, 1));
+    __m128 b = _mm_shuffle_ps(v2.v4(), v2.v4(), _MM_SHUFFLE(3, 0, 2, 1));
+    __m128 c = _mm_sub_ps(_mm_mul_ps(v1.v4(), b), _mm_mul_ps(a, v2.v4()));
+    return _mm_shuffle_ps(c, c, _MM_SHUFFLE(3, 0, 2, 1));
+#else
+    v1.v4() = _mm_sub_ps(
+            _mm_mul_ps(_mm_shuffle_ps(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 0, 2, 1)),
+                       _mm_shuffle_ps(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 1, 0, 2))),
+            _mm_mul_ps(_mm_shuffle_ps(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 1, 0, 2)),
+                       _mm_shuffle_ps(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 0, 2, 1)))
+   );
+   return v1;
+#endif
+}
+
 template<int N>
 inline simd4_t<float,N> min(simd4_t<float,N> v1, const simd4_t<float,N>& v2) {
     v1.v4() = _mm_min_ps(v1.v4(), v2.v4());
@@ -602,6 +632,29 @@ template<>
 inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
     v1 *= v2;
     return hsum_pd_avx(v1.v4());
+}
+
+template<>
+inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double,3>& v2)
+{
+#if 1
+    // http://threadlocalmutex.com/?p=8
+    __m256d a = _mm256_shuffle_pd(v1.v4(), v1.v4(), _MM_SHUFFLE(3, 0, 2, 1));
+    __m256d b = _mm256_shuffle_pd(v2.v4(), v2.v4(), _MM_SHUFFLE(3, 0, 2, 1));
+    __m256d c = _mm256_sub_pd(_mm256_mul_pd(v1.v4(), b),
+                              _mm256_mul_pd(a, v2.v4()));
+    return _mm256_shuffle_pd(c, c, _MM_SHUFFLE(3, 0, 2, 1));
+#else
+   v1.v4() = _mm256_sub_pd(
+                 _mm256_mul_pd(
+                    _mm256_shuffle_pd(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 0, 2, 1)),
+                    _mm256_shuffle_pd(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 1, 0, 2))),
+                 _mm256_mul_pd(
+                    _mm256_shuffle_pd(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 1, 0, 2)),
+                    _mm256_shuffle_pd(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 0, 2, 1)))
+   );
+   return v1;
+#endif
 }
 
 template<int N>
@@ -774,6 +827,29 @@ inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
     v1 *= v2;
     return hsum_pd_sse(v1.v4());
 }
+
+#if 1
+template<>
+inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double,3>& v2)
+{
+    __m128d a[2], b[2], c[2];
+    simd4_t<double,3> r;
+
+    a[0] = _mm_shuffle_pd(v1.v4()[0], v1.v4()[1], _MM_SHUFFLE2(0, 1));
+    a[1] = _mm_shuffle_pd(v1.v4()[0], v1.v4()[1], _MM_SHUFFLE2(1, 0));
+
+    b[0] = _mm_shuffle_pd(v2.v4()[0], v2.v4()[1], _MM_SHUFFLE2(0, 1));
+    b[1] = _mm_shuffle_pd(v2.v4()[0], v2.v4()[1], _MM_SHUFFLE2(1, 0));
+
+    c[0] = _mm_sub_pd(_mm_mul_pd(v1.v4()[0], b[0]), _mm_mul_pd(a[0], v2.v4()[0]));
+    c[1] = _mm_sub_pd(_mm_mul_pd(v1.v4()[1], b[1]), _mm_mul_pd(a[1], v2.v4()[1]));
+
+    r.v4()[0] = _mm_shuffle_pd(c[0], c[1], _MM_SHUFFLE2(0, 1));
+    r.v4()[1] = _mm_shuffle_pd(c[0], c[1], _MM_SHUFFLE2(1, 0));
+
+    return r;
+}
+#endif
 
 template<int N>
 inline simd4_t<double,N> min(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {

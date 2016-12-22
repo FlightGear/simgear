@@ -330,12 +330,8 @@ normI(SGVec3<T> v)
 template<typename T>
 inline
 SGVec3<T>
-cross(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{
-  return SGVec3<T>(v1(1)*v2(2) - v1(2)*v2(1),
-                   v1(2)*v2(0) - v1(0)*v2(2),
-                   v1(0)*v2(1) - v1(1)*v2(0));
-}
+cross(SGVec3<T> v1, const SGVec3<T>& v2)
+{ v1.simd3() = simd4::cross(v1.simd3(), v2.simd3()); return v1; }
 
 /// return any normalized vector perpendicular to v
 template<typename T>

@@ -134,11 +134,11 @@ public:
     }
     ~simd4_t(void) {}
 
-    inline T (&v4(void))[4] {
+    inline T (&v4(void))[N] {
         return vec;
     }
 
-    inline const T (&v4(void) const)[4] {
+    inline const T (&v4(void) const)[N] {
         return vec;
     }
 

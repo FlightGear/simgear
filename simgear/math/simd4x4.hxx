@@ -49,8 +49,8 @@ inline simd4x4_t<T,4> rotation_matrix(T angle, const simd4_t<T,3>& axis)
 
     simd4x4::unit(m);
     for (int i=0; i<3; ++i) {
-        simd4_t<T,4> r = axis.ptr()[i]*at;
-        for (int j=0; j<4; ++j) {
+        simd4_t<T,3> r = axis.ptr()[i]*at;
+        for (int j=0; j<3; ++j) {
             m.m4x4()[0][j] = r.v4()[j];
         }
     }
@@ -363,7 +363,8 @@ public:
         return array;
     }
 
-    inline void set(int i, const simd4_t<float,4>& v) {
+    template<int M>
+    inline void set(int i, const simd4_t<float,M>& v) {
         simd4x4[i] = v.v4();
     }
 
@@ -437,7 +438,7 @@ template<>
 inline simd4x4_t<float,4> rotation_matrix<float>(float angle, const simd4_t<float,3>& axis)
 {
     float s = std::sin(angle), c = std::cos(angle), t = 1.0-c;
-    simd4_t<float,4> axt, at = axis*t, as = axis*s;
+    simd4_t<float,3> axt, at = axis*t, as = axis*s;
     simd4x4_t<float,4> m;
 
     simd4x4::unit(m);
@@ -584,7 +585,8 @@ public:
         return array;
     }
 
-    inline void set(int i, const simd4_t<double,4>& v) {
+    template<int M>
+    inline void set(int i, const simd4_t<double,M>& v) {
         simd4x4[i] = v.v4();
     }
 
@@ -666,7 +668,7 @@ template<>
 inline simd4x4_t<double,4> rotation_matrix<double>(double angle, const simd4_t<double,3>& axis)
 {
     double s = std::sin(angle), c = std::cos(angle), t = 1.0-c;
-    simd4_t<double,4> axt, at = axis*t, as = axis*s;
+    simd4_t<double,3> axt, at = axis*t, as = axis*s;
     simd4x4_t<double,4> m;
 
     simd4x4::unit(m);
@@ -844,7 +846,8 @@ public:
         return array;
     }
 
-    inline void set(int i, const simd4_t<double,4>& v) {
+    template<int M>
+    inline void set(int i, const simd4_t<double,M>& v) {
         simd4x4[i][0] = v.v4()[0];
         simd4x4[i][1] = v.v4()[1];
     }
@@ -942,7 +945,7 @@ template<>
 inline simd4x4_t<double,4> rotation_matrix<double>(double angle, const simd4_t<double,3>& axis)
 {
     double s = std::sin(angle), c = std::cos(angle), t = 1.0-c;
-    simd4_t<double,4> axt, at = axis*t, as = axis*s;
+    simd4_t<double,3> axt, at = axis*t, as = axis*s;
     simd4x4_t<double,4> m;
 
     simd4x4::unit(m);
@@ -1128,7 +1131,8 @@ public:
         return array;
     }
 
-    inline void set(int i, const simd4_t<int,4>& v) {
+    template<int M>
+    inline void set(int i, const simd4_t<int,M>& v) {
         simd4x4[i] = v.v4();
     }
 

@@ -96,6 +96,7 @@ inline simd4_t<T,3> cross(const simd4_t<T,3>& v1, const simd4_t<T,3>& v2)
    d[0] = v1[1]*v2[2] - v1[2]*v2[1];
    d[1] = v1[2]*v2[0] - v1[0]*v2[2];
    d[2] = v1[0]*v2[1] - v1[1]*v2[0];
+   d[3] = T(0);
    return d;
 }
 
@@ -128,7 +129,7 @@ public:
     }
     template<int M>
     simd4_t(const simd4_t<T,M>& v) {
-        std::memcpy(vec, v.ptr(), sizeof(T[M]));
+        std::memcpy(_v4, v.ptr(), sizeof(T[M]));
         for (int i=M; i<4; ++i) _v4[i] = 0;
     }
     ~simd4_t(void) {}
@@ -169,7 +170,7 @@ public:
     }
     template<int M>
     inline simd4_t<T,N>& operator=(const simd4_t<T,M>& v) {
-        std::memcpy(vec, v.ptr(), sizeof(T[M]));
+        std::memcpy(_v4, v.ptr(), sizeof(T[M]));
         for (int i=M; i<4; ++i) _v4[i] = 0;
         return *this;
     }
@@ -186,9 +187,10 @@ public:
         }
         return *this;
     }
-    inline simd4_t<T,N>& operator+=(const simd4_t<T,N>& v) {
-        for (int i=0; i<N; ++i) {
-           vec[i] += v[i];
+    template<int M>
+    inline simd4_t<T,N>& operator+=(const simd4_t<T,M>& v) {
+        for (int i=0; i<M; ++i) {
+           _v4[i] += v[i];
         }
         return *this;
     }
@@ -199,16 +201,16 @@ public:
         }
         return *this;
     }
- 
     inline simd4_t<T,N>& operator-=(const T v[N]) {
         for (int i=0; i<N; ++i) {
             vec[i] -= v[i];
         }
         return *this;
     }
-    inline simd4_t<T,N>& operator-=(const simd4_t<T,N>& v) {
+    template<int M>
+    inline simd4_t<T,N>& operator-=(const simd4_t<T,M>& v) {
         for (int i=0; i<N; ++i) {
-            vec[i] -= v[i];
+            _v4[i] -= v[i];
         }
         return *this;
     }
@@ -224,9 +226,10 @@ public:
         }
         return *this;
     }
-    inline simd4_t<T,N>& operator*=(const simd4_t<T,N>& v) {
+    template<int M>
+    inline simd4_t<T,N>& operator*=(const simd4_t<T,M>& v) {
         for (int i=0; i<N; ++i) {
-           vec[i] *= v[i];
+           _v4[i] *= v[i];
         }
         return *this;
     }
@@ -240,9 +243,10 @@ public:
         }
         return *this;
     }
-    inline simd4_t<T,N>& operator/=(const simd4_t<T,N>& v) {
+    template<int M>
+    inline simd4_t<T,N>& operator/=(const simd4_t<T,M>& v) {
         for (int i=0; i<N; ++i) {
-           vec[i] /= v[i];
+           _v4[i] /= v[i];
         }
         return *this;
     }
@@ -340,10 +344,8 @@ public:
         simd4 = _mm_loadu_ps(v);
         for (int i=N; i<4; ++i) _v4[i] = 0.0f;
     }
-    template<int M>
-    simd4_t(const simd4_t<float,M>& v) {
+    simd4_t(const simd4_t<float,N>& v) {
         simd4 = v.v4();
-        for (int i=M; i<4; ++i) _v4[i] = 0.0f;
     }
     simd4_t(const __m128& v) {
         simd4 = v;
@@ -380,17 +382,20 @@ public:
         for (int i=N; i<4; ++i) _v4[i] = 0.0f;
         return *this;
     }
-    template<int M>
-    inline simd4_t<float,N>& operator=(const simd4_t<float,M>& v) {
+    inline simd4_t<float,N>& operator=(const simd4_t<float,N>& v) {
         simd4 = v.v4();
-        for (int i=M; i<4; ++i) _v4[i] = 0.0f;
+        return *this;
+    }
+    inline simd4_t<float,N>& operator=(const __m128& v) {
+        simd4 = v;
         return *this;
     }
 
     inline simd4_t<float,N>& operator+=(float f) {
         return operator+=(simd4_t<float,N>(f));
     }
-    inline simd4_t<float,N>& operator+=(const simd4_t<float,N>& v) {
+    template<int M>
+    inline simd4_t<float,N>& operator+=(const simd4_t<float,M>& v) {
         simd4 = _mm_add_ps(simd4, v.v4());
         return *this;
     }
@@ -398,7 +403,8 @@ public:
     inline simd4_t<float,N>& operator-=(float f) {
         return operator-=(simd4_t<float,N>(f));
     }
-    inline simd4_t<float,N>& operator-=(const simd4_t<float,N>& v) {
+    template<int M>
+    inline simd4_t<float,N>& operator-=(const simd4_t<float,M>& v) {
         simd4 = _mm_sub_ps(simd4, v.v4());
         return *this;
     }
@@ -406,15 +412,17 @@ public:
     inline simd4_t<float,N>& operator*=(float f) {
         return operator*=(simd4_t<float,N>(f));
     }
-    inline simd4_t<float,N>& operator*=(const simd4_t<float,N>& v) {
+    template<int M>
+    inline simd4_t<float,N>& operator*=(const simd4_t<float,M>& v) {
         simd4 = _mm_mul_ps(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<float,N>& operator/=(float f) {
-        return operator/=(simd4_t<float,N>(f));
+        return operator/=(simd4_t<float,4>(f));
     }
-    inline simd4_t<float,N>& operator/=(const simd4_t<float,N>& v) {
+    template<int M>
+    inline simd4_t<float,N>& operator/=(const simd4_t<float,M>& v) {
         simd4 = _mm_div_ps(simd4, v.v4());
         return *this;
     }
@@ -456,12 +464,13 @@ inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>
 {
 #if 1
     // http://threadlocalmutex.com/?p=8
-    __m128 a = _mm_shuffle_ps(v1.v4(), v1.v4(), _MM_SHUFFLE(3, 0, 2, 1));
-    __m128 b = _mm_shuffle_ps(v2.v4(), v2.v4(), _MM_SHUFFLE(3, 0, 2, 1));
-    __m128 c = _mm_sub_ps(_mm_mul_ps(v1.v4(), b), _mm_mul_ps(a, v2.v4()));
-    return _mm_shuffle_ps(c, c, _MM_SHUFFLE(3, 0, 2, 1));
+    __m128 v41 = v1.v4(), v42 = v2.v4();
+    __m128 a = _mm_shuffle_ps(v41, v41, _MM_SHUFFLE(3, 0, 2, 1));
+    __m128 b = _mm_shuffle_ps(v42, v42, _MM_SHUFFLE(3, 0, 2, 1));
+    __m128 c = _mm_sub_ps(_mm_mul_ps(v41, b), _mm_mul_ps(a, v42));
+    return  _mm_shuffle_ps(c, c, _MM_SHUFFLE(3, 0, 2, 1));
 #else
-    v1.v4() = _mm_sub_ps(
+    v1 = _mm_sub_ps(
             _mm_mul_ps(_mm_shuffle_ps(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 0, 2, 1)),
                        _mm_shuffle_ps(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 1, 0, 2))),
             _mm_mul_ps(_mm_shuffle_ps(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 1, 0, 2)),
@@ -473,20 +482,20 @@ inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>
 
 template<int N>
 inline simd4_t<float,N> min(simd4_t<float,N> v1, const simd4_t<float,N>& v2) {
-    v1.v4() = _mm_min_ps(v1.v4(), v2.v4());
+    v1 = _mm_min_ps(v1.v4(), v2.v4());
     return v1;
 }
 
 template<int N>
 inline simd4_t<float,N> max(simd4_t<float,N> v1, const simd4_t<float,N>& v2) {
-    v1.v4() = _mm_max_ps(v1.v4(), v2.v4());
+    v1 = _mm_max_ps(v1.v4(), v2.v4());
     return v1;
 }
 
 template<int N>
 inline simd4_t<float,N>abs(simd4_t<float,N> v) {
     static const __m128 sign_mask = _mm_set1_ps(-0.f); // -0.f = 1 << 31
-    v.v4() = _mm_andnot_ps(sign_mask, v.v4());
+    v = _mm_andnot_ps(sign_mask, v.v4());
     return v;
 }
 
@@ -497,7 +506,7 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 
 # ifdef __AVX__
 #  include <pmmintrin.h>
-#  include <avxintrin.h>
+#  include >avxintrin.h>
 
 template<int N>
 class simd4_t<double,N>
@@ -526,12 +535,10 @@ public:
         simd4 = _mm256_loadu_pd(v);
         for (int i=N; i<4; ++i) _v4[i] = 0.0;
     }
-    template<int M>
-    simd4_t(const simd4_t<double,M>& v) {
+    simd4_t(const simd4_t<double,N>& v) {
         simd4 = v.v4();
-        for (int i=M; i<4; ++i) _v4[i] = 0.0;
     }
-    simd4_t(const __m256d v) {
+    simd4_t(const __m256d& v) {
         simd4 = v;
     }
 
@@ -566,13 +573,11 @@ public:
         for (int i=N; i<4; ++i) _v4[i] = 0.0;
         return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator=(const simd4_t<double,N>& v) {
         simd4 = v.v4();
-        for (int i=M; i<4; ++i) _v4[i] = 0.0;
         return *this;
     }
-    inline simd4_t<double,N>& operator=(const __m256d v) {
+    inline simd4_t<double,N>& operator=(const __m256d& v) {
         simd4 = v;
         return *this;
     }
@@ -580,7 +585,8 @@ public:
     inline simd4_t<double,N>& operator+=(double d) {
         return operator+=(simd4_t<double,N>(d));
     }
-    inline simd4_t<double,N>& operator+=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator+=(const simd4_t<double,M>& v) {
         simd4 = _mm256_add_pd(simd4, v.v4());
         return *this;
     }
@@ -588,7 +594,8 @@ public:
     inline simd4_t<double,N>& operator-=(double d) {
         return operator-=(simd4_t<double,N>(d));
     }
-    inline simd4_t<double,N>& operator-=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator-=(const simd4_t<double,M>& v) {
         simd4 = _mm256_sub_pd(simd4, v.v4());
         return *this;
     }
@@ -596,15 +603,17 @@ public:
     inline simd4_t<double,N>& operator*=(double d) {
         return operator*=(simd4_t<double,N>(d));
     }
-    inline simd4_t<double,N>& operator*=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator*=(const simd4_t<double,M>& v) {
         simd4 = _mm256_mul_pd(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<double,N>& operator/=(double d) {
-        return operator/=(simd4_t<double,N>(d));
+        return operator/=(simd4_t<double,4>(d));
     }
-    inline simd4_t<double,N>& operator/=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator/=(const simd4_t<double,M>& v) {
         simd4 = _mm256_div_pd(simd4, v.v4());
         return *this;
     }
@@ -639,13 +648,13 @@ inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double
 {
 #if 1
     // http://threadlocalmutex.com/?p=8
-    __m256d a = _mm256_shuffle_pd(v1.v4(), v1.v4(), _MM_SHUFFLE(3, 0, 2, 1));
-    __m256d b = _mm256_shuffle_pd(v2.v4(), v2.v4(), _MM_SHUFFLE(3, 0, 2, 1));
-    __m256d c = _mm256_sub_pd(_mm256_mul_pd(v1.v4(), b),
-                              _mm256_mul_pd(a, v2.v4()));
+    __m256d v41 = v1.v4(), v42 = v2.v4();
+    __m256d a = _mm256_shuffle_pd(v41, v41, _MM_SHUFFLE(3, 0, 2, 1));
+    __m256d b = _mm256_shuffle_pd(v42, v42, _MM_SHUFFLE(3, 0, 2, 1));
+    __m256d c = _mm256_sub_pd(_mm256_mul_pd(v41, b), _mm256_mul_pd(a, v42));
     return _mm256_shuffle_pd(c, c, _MM_SHUFFLE(3, 0, 2, 1));
 #else
-   v1.v4() = _mm256_sub_pd(
+   v1 = _mm256_sub_pd(
                  _mm256_mul_pd(
                     _mm256_shuffle_pd(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 0, 2, 1)),
                     _mm256_shuffle_pd(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 1, 0, 2))),
@@ -659,20 +668,20 @@ inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double
 
 template<int N>
 inline simd4_t<double,N> min(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
-    v1.v4() = _mm256_min_pd(v1.v4(), v2.v4());
+    v1 = _mm256_min_pd(v1.v4(), v2.v4());
     return v1;
 }
 
 template<int N>
 inline simd4_t<double,N> max(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
-    v1.v4() = _mm256_max_pd(v1.v4(), v2.v4());
+    v1 = _mm256_max_pd(v1.v4(), v2.v4());
     return v1;
 }
 
 template<int N>
 inline simd4_t<double,N>abs(simd4_t<double,N> v) {
     static const __m256d sign_mask = _mm256_set1_pd(-0.); // -0. = 1 << 63
-    v.v4() = _mm256_andnot_pd(sign_mask, v.v4());
+    v = _mm256_andnot_pd(sign_mask, v.v4());
     return v;
 }
 
@@ -710,11 +719,9 @@ public:
         simd4[1] = _mm_loadu_pd(v+2);
         for (int i=N; i<4; ++i) _v4[i] = 0.0;
     }
-    template<int M>
-    simd4_t(const simd4_t<double,M>& v) {
+    simd4_t(const simd4_t<double,N>& v) {
         simd4[0] = v.v4()[0];
         simd4[1] = v.v4()[1];
-        for (int i=M; i<4; ++i) _v4[i] = 0.0;
     }
     simd4_t(const __m128d v[2]) {
         simd4[0] = v[0];
@@ -753,11 +760,9 @@ public:
         for (int i=N; i<4; ++i) _v4[i] = 0.0;
         return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator=(const simd4_t<double,N>& v) {
         simd4[0] = v.v4()[0];
         simd4[1] = v.v4()[1];
-        for (int i=M; i<4; ++i) _v4[i] = 0.0;
         return *this;
     }
     inline simd4_t<double,N>& operator=(const __m128d v[2]) {
@@ -769,7 +774,8 @@ public:
     inline simd4_t<double,N>& operator+=(double d) {
         return operator+=(simd4_t<double,N>(d));
     }
-    inline simd4_t<double,N>& operator+=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator+=(const simd4_t<double,M>& v) {
         simd4[0] = _mm_add_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_add_pd(simd4[1], v.v4()[1]);
         return *this;
@@ -778,7 +784,8 @@ public:
     inline simd4_t<double,N>& operator-=(double d) {
         return operator-=(simd4_t<double,N>(d));
     }
-    inline simd4_t<double,N>& operator-=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator-=(const simd4_t<double,M>& v) {
         simd4[0] = _mm_sub_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_sub_pd(simd4[1], v.v4()[1]);
         return *this;
@@ -787,16 +794,18 @@ public:
     inline simd4_t<double,N>& operator*=(double d) {
         return operator*=(simd4_t<double,N>(d));
     }
-    inline simd4_t<double,N>& operator*=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator*=(const simd4_t<double,M>& v) {
         simd4[0] = _mm_mul_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_mul_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 
     inline simd4_t<double,N>& operator/=(double d) {
-        return operator/=(simd4_t<double,N>(d));
+        return operator/=(simd4_t<double,4>(d));
     }
-    inline simd4_t<double,N>& operator/=(const simd4_t<double,N>& v) {
+    template<int M>
+    inline simd4_t<double,N>& operator/=(const simd4_t<double,M>& v) {
         simd4[0] = _mm_div_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_div_pd(simd4[1], v.v4()[1]);
         return *this;
@@ -911,10 +920,8 @@ public:
         simd4 = _mm_loadu_si128((__m128i*)v);
         for (int i=N; i<4; ++i) _v4[i] = 0;
     }
-    template<int M>
-    simd4_t(const simd4_t<int,M>& v) {
+    simd4_t(const simd4_t<int,N>& v) {
         simd4 = v.v4();
-        for (int i=M; i<4; ++i) _v4[i] = 0;
     }
     simd4_t(const __m128i& v) {
         simd4 = v;
@@ -954,17 +961,20 @@ public:
         for (int i=N; i<4; ++i) _v4[i] = 0;
         return *this;
     }
-    template<int M>
-    inline simd4_t<int,N>& operator=(const simd4_t<int,M>& v) {
+    inline simd4_t<int,N>& operator=(const simd4_t<int,N>& v) {
         simd4 = v.v4();
-        for (int i=M; i<4; ++i) _v4[i] = 0;
+        return *this;
+    }
+    inline simd4_t<int,N>& operator=(const __m128i& v) {
+        simd4 = v;
         return *this;
     }
 
     inline simd4_t<int,N>& operator+=(int i) {
         return operator+=(simd4_t<int,N>(i));
     }
-    inline simd4_t<int,N>& operator+=(const simd4_t<int,N>& v) {
+    template<int M>
+    inline simd4_t<int,N>& operator+=(const simd4_t<int,M>& v) {
         simd4 = _mm_add_epi32(simd4, v.v4());
         return *this;
     }
@@ -972,7 +982,8 @@ public:
     inline simd4_t<int,N>& operator-=(int i) {
         return operator-=(simd4_t<int,N>(i));
     }
-    inline simd4_t<int,N>& operator-=(const simd4_t<int,N>& v) {
+    template<int M>
+    inline simd4_t<int,N>& operator-=(const simd4_t<int,M>& v) {
         simd4 = _mm_sub_epi32(simd4, v.v4());
         return *this;
     }
@@ -980,7 +991,8 @@ public:
     inline simd4_t<int,N>& operator*=(int i) {
         return operator*=(simd4_t<int,N>(i));
     }
-    inline simd4_t<int,N>& operator*=(const simd4_t<int,N>& v) {
+    template<int M>
+    inline simd4_t<int,N>& operator*=(const simd4_t<int,M>& v) {
          return operator*=(v.v4());
     }
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/288768
@@ -998,7 +1010,14 @@ public:
     }
 
     inline simd4_t<int,N>& operator/=(int s) {
-        return operator*=(1/s);
+        return operator/=(simd4_t<int,4>(s));
+    }
+    template<int M>
+    inline simd4_t<int,N>& operator/=(const simd4_t<int,M>& v) {
+        for (int i=0; i<N; ++i) {
+           _v4[i] /= v[i];
+        }
+        return *this;
     }
 };
 
@@ -1008,13 +1027,13 @@ namespace simd4
 #  ifdef __SSE4_1__
 template<int N>
 inline simd4_t<int,N> min(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
-    v1.v4() = _mm_min_epi32(v1.v4(), v2.v4());
+    v1 = _mm_min_epi32(v1.v4(), v2.v4());
     return v1;
 }
 
 template<int N>
 inline simd4_t<int,N> max(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
-    v1.v4() = _mm_max_epi32(v1.v4(), v2.v4());
+    v1 = _mm_max_epi32(v1.v4(), v2.v4());
     return v1;
 }
 #  endif /* __SSE4_1__ */

@@ -403,7 +403,7 @@ SGLightFactory::getOdal(const SGLightBin& lights, const SGReaderWriterOptions* o
   Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
                                   6.0, 10.0, false, options);
   // centerline lights
-  for (int i = lights.getNumLights(); i > 1; --i) {
+  for (int i = lights.getNumLights() - 1; i >= 2; i--) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
     egeode->addDrawable(getLightDrawable(lights.getLight(i)));

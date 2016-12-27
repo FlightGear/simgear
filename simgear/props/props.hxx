@@ -848,6 +848,10 @@ public:
    */
   const SGPropertyNode * getParent () const { return _parent; }
 
+    /**
+     * Get node's position in parent (*NOT* index)
+     */
+    unsigned int getPosition() const;
 
   //
   // Children.

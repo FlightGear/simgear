@@ -1100,7 +1100,7 @@ SGPropertyNode::addChildren( const std::string& name,
 }
 
 /**
- * Get a non-const child by index.
+ * Get a non-const child by position.
  */
 SGPropertyNode *
 SGPropertyNode::getChild (int position)
@@ -1113,7 +1113,7 @@ SGPropertyNode::getChild (int position)
 
 
 /**
- * Get a const child by index.
+ * Get a const child by position.
  */
 const SGPropertyNode *
 SGPropertyNode::getChild (int position) const
@@ -1124,6 +1124,16 @@ SGPropertyNode::getChild (int position) const
     return 0;
 }
 
+unsigned int SGPropertyNode::getPosition() const
+{
+    if (_parent == nullptr) {
+        return 0;
+    }
+
+    auto it = std::find(_parent->_children.begin(), _parent->_children.end(), this);
+    assert(it != _parent->_children.end());
+    return std::distance(_parent->_children.begin(), it);
+}
 
 /**
  * Get a non-const child by name and index, creating if necessary.

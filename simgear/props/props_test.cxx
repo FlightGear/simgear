@@ -310,11 +310,18 @@ test_property_nodes ()
   grandchild->setDoubleValue(100);
   grandchild = child->getChild("bar", 3, true);
   grandchild->setDoubleValue(200);
+
+    SG_CHECK_EQUAL(grandchild->getPosition(), 1);
+
+
   grandchild = child->getChild("bar", 1, true);
   grandchild->setDoubleValue(300);
   grandchild = child->getChild("bar", 2, true);
   grandchild->setDoubleValue(400);
   dump_node(&root);
+
+    SG_CHECK_EQUAL(child->getPosition(), 1);
+    SG_CHECK_EQUAL(grandchild->getPosition(), 3);
 
   cout << "Trying path (expect /foo[0]/bar[0])" << endl;
   grandchild = root.getNode("/hack/../foo/./bar[0]");
@@ -333,6 +340,8 @@ test_property_nodes ()
     cerr << "** FAILED to create /a/b/c" << endl;
   dump_node(&root);
   cout << endl;
+
+
 }
 
 void test_addChild()

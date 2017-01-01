@@ -506,7 +506,7 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 
 # ifdef __AVX__
 #  include <pmmintrin.h>
-#  include >avxintrin.h>
+#  include <avxintrin.h>
 
 template<int N>
 class simd4_t<double,N>

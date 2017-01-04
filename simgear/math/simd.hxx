@@ -634,14 +634,12 @@ inline float hsum_pd_avx(__m256d v) {
 
 template<>
 inline double magnitude2(simd4_t<double,4> v) {
-    v *= v;
-    return hsum_pd_avx(v.v4());
+    return hsum_pd_avx(v.v4()*v.v4());
 }
 
 template<>
 inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
-    v1 *= v2;
-    return hsum_pd_avx(v1.v4());
+    return hsum_pd_avx(v1.v4()*v2.v4());
 }
 
 template<>

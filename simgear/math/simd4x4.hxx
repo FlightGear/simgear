@@ -630,13 +630,12 @@ public:
         __m256d row, col;
         for (int i=0; i<4; ++i ) {
             col = _mm256_set1_pd(m2.ptr()[i][0]);
-            row = _mm256_mul_pd(m1.m4x4()[0], col.v4());
+            row = _mm256_mul_pd(m1.m4x4()[0], col);
             for (int j=1; j<4; ++j) {
                 col = _mm256_set1_pd(m2.ptr()[i][j]);
-                row = _mm256_add_pd(row.v4(),
-                                    _mm256_mul_pd(m1.m4x4()[j], col.v4()));
+                row = _mm256_add_pd(row, _mm256_mul_pd(m1.m4x4()[j], col));
             }
-            simd4x4[i] = row.v4();
+            simd4x4[i] = row;
         }
         return *this;
     }

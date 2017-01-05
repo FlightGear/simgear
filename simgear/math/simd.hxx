@@ -504,7 +504,7 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 # endif
 
 
-# ifdef __AVX__
+# ifdef __AVX_unsupported__
 #  include <pmmintrin.h>
 #  include <immintrin.h>
 //#  include <avxintrin-emu.h>

@@ -174,8 +174,10 @@ namespace simgear {
      * any number of terms are supported.
      * @return 0 if versions match, -ve number if v1 is lower, +ve if v1
      * is greater
+     * @param maxComponents is the maximum number of components to look at.
+     * This can be used to ignore (say) the patch level by setting it to 2
      */
-    int compare_versions(const std::string& v1, const std::string& v2);
+    int compare_versions(const std::string& v1, const std::string& v2, int maxComponents = 0);
 
     /**
      * Convert a string to upper case.

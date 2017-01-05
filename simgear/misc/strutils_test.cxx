@@ -155,6 +155,11 @@ void test_compare_versions()
 
   // Since we compare numerically, leading zeros shouldn't matter
   SG_CHECK_EQUAL(strutils::compare_versions("0.06.7", "0.6.07"), 0);
+
+
+  SG_CHECK_EQUAL(strutils::compare_versions("10.6.7", "10.6.8", 2), 0);
+  SG_CHECK_GT(strutils::compare_versions("10.7.7", "10.6.8", 2), 0);
+  SG_CHECK_EQUAL(strutils::compare_versions("10.8.7", "10.6.8", 1), 0);
 }
 
 void test_md5_hex()

@@ -372,12 +372,16 @@ namespace simgear {
         return result;
     }
 
-    int compare_versions(const string& v1, const string& v2)
+    int compare_versions(const string& v1, const string& v2, int maxComponents)
     {
         vector<string> v1parts(split(v1, "."));
         vector<string> v2parts(split(v2, "."));
 
         int lastPart = std::min(v1parts.size(), v2parts.size());
+        if (maxComponents > 0) {
+            lastPart = std::min(lastPart, maxComponents);
+        }
+
         for (int part=0; part < lastPart; ++part) {
             int part1 = to_int(v1parts[part]);
             int part2 = to_int(v2parts[part]);

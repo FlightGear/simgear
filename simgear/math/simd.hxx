@@ -504,10 +504,10 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 # endif
 
 
-# ifdef __AVX_unsupported__
+# ifdef __AVX__
 #  include <pmmintrin.h>
 #  include <immintrin.h>
-//#  include <avxintrin-emu.h>
+// #  include "avxintrin-emu.h"
 
 template<int N>
 class simd4_t<double,N>
@@ -634,36 +634,29 @@ inline float hsum_pd_avx(__m256d v) {
 
 template<>
 inline double magnitude2(simd4_t<double,4> v) {
-    return hsum_pd_avx(v.v4()*v.v4());
+    return hsum_pd_avx(_mm256_mul_pd(v.v4(),v.v4()));
 }
 
 template<>
 inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
-    return hsum_pd_avx(v1.v4()*v2.v4());
+    return hsum_pd_avx(_mm256_mul_pd(v1.v4(),v2.v4()));
 }
 
+#ifdef __AVX2__
 template<>
 inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double,3>& v2)
 {
-#if 1
-    // http://threadlocalmutex.com/?p=8
+    // https://gist.github.com/L2Program/219e07581e69110e7942
     __m256d v41 = v1.v4(), v42 = v2.v4();
-    __m256d a = _mm256_shuffle_pd(v41, v41, _MM_SHUFFLE(3, 0, 2, 1));
-    __m256d b = _mm256_shuffle_pd(v42, v42, _MM_SHUFFLE(3, 0, 2, 1));
-    __m256d c = _mm256_sub_pd(_mm256_mul_pd(v41, b), _mm256_mul_pd(a, v42));
-    return _mm256_shuffle_pd(c, c, _MM_SHUFFLE(3, 0, 2, 1));
-#else
-   v1 = _mm256_sub_pd(
-                 _mm256_mul_pd(
-                    _mm256_shuffle_pd(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 0, 2, 1)),
-                    _mm256_shuffle_pd(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 1, 0, 2))),
-                 _mm256_mul_pd(
-                    _mm256_shuffle_pd(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 1, 0, 2)),
-                    _mm256_shuffle_pd(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 0, 2, 1)))
-   );
-   return v1;
-#endif
+    return _mm256_sub_pd(
+               _mm256_mul_pd(
+                     _mm256_permute4x64_pd(v41,_MM_SHUFFLE(3, 0, 2, 1)),
+                     _mm256_permute4x64_pd(v42,_MM_SHUFFLE(3, 1, 0, 2))),
+               _mm256_mul_pd(
+                     _mm256_permute4x64_pd(v41,_MM_SHUFFLE(3, 1, 0, 2)),
+                     _mm256_permute4x64_pd(v42,_MM_SHUFFLE(3, 0, 2, 1))));
 }
+#endif
 
 template<int N>
 inline simd4_t<double,N> min(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {

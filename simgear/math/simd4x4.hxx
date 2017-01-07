@@ -514,10 +514,10 @@ inline simd4_t<float,3> transform<float>(const simd4x4_t<float,4>& m, const simd
 # endif
 
 
-# ifdef __AVX_unsupported__
+# ifdef __AVX__
 #  include <pmmintrin.h>
 #  include <immintrin.h>
-//#  include <avxintrin-emu.h>
+// #  include "avxintrin-emu.h"
 
 template<>
 class simd4x4_t<double,4>
@@ -690,25 +690,18 @@ inline simd4x4_t<double,4> rotation_matrix<double>(double angle, const simd4_t<d
 
 template<>
 inline simd4x4_t<double,4> transpose<double>(simd4x4_t<double,4> m) {
-    simd4x4_t<double,4> mtx;
-#if 1
-    for (int i=0; i<4; ++i) {
-        for(int j=0; j<4; ++j) {
-            mtx.ptr()[j][i] = m.ptr()[i][j];
-        }
-    }
-#else
-    __m256d T0 = _mm256_unpacklo_pd(m.m4x4()[0], m.m4x4()[1]);
-    __m256d T1 = _mm256_unpacklo_pd(m.m4x4()[2], m.m4x4()[3]);
-    __m256d T2 = _mm256_unpackhi_pd(m.m4x4()[0], m.m4x4()[1]);
-    __m256d T3 = _mm256_unpackhi_pd(m.m4x4()[2], m.m4x4()[3]);
+// http://stackoverflow.com/questions/36167517/m256d-transpose4-equivalent
+    __m256d tmp0 = _mm256_shuffle_pd(m.m4x4()[0], m.m4x4()[1], 0x0);
+    __m256d tmp2 = _mm256_shuffle_pd(m.m4x4()[0], m.m4x4()[1], 0xF);
+    __m256d tmp1 = _mm256_shuffle_pd(m.m4x4()[2], m.m4x4()[3], 0x0);
+    __m256d tmp3 = _mm256_shuffle_pd(m.m4x4()[2], m.m4x4()[3], 0xF);
 
-    mtx.m4x4()[0] = _mm256_unpacklo_pd(T0, T1);
-    mtx.m4x4()[1] = _mm256_unpackhi_pd(T0, T1);
-    mtx.m4x4()[2] = _mm256_unpacklo_pd(T2, T3);
-    mtx.m4x4()[3] = _mm256_unpackhi_pd(T2, T3);
-#endif
-    return mtx;
+    m.m4x4()[0] = _mm256_permute2f128_pd(tmp0, tmp1, 0x20);
+    m.m4x4()[1] = _mm256_permute2f128_pd(tmp2, tmp3, 0x20);
+    m.m4x4()[2] = _mm256_permute2f128_pd(tmp0, tmp1, 0x31);
+    m.m4x4()[3] = _mm256_permute2f128_pd(tmp2, tmp3, 0x31);
+
+    return m;
 }
 
 inline void translate(simd4x4_t<double,4>& m, const simd4_t<double,3>& dist) {

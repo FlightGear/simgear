@@ -429,35 +429,35 @@ SGPropertyNode_ptr Package::propsForVariant(const unsigned int vIndex, const cha
     throw sg_exception("Unknow variant in package " + id());
 }
 
-Package::ThumbnailVec Package::thumbnailsForVariant(unsigned int vIndex) const
+Package::PreviewVec Package::previewsForVariant(unsigned int vIndex) const
 {
     SGPropertyNode_ptr var = propsForVariant(vIndex);
-    return thumbnailsFromProps(var);
+    return previewsFromProps(var);
 }
 
-Package::Thumbnail::Type thumbnailTypeFromString(const std::string& s)
+Package::Preview::Type previewTypeFromString(const std::string& s)
 {
-    if (s == "exterior") return Package::Thumbnail::Type::EXTERIOR;
-    if (s == "interior") return Package::Thumbnail::Type::INTERIOR;
-    if (s == "panel") return Package::Thumbnail::Type::PANEL;
-    return Package::Thumbnail::Type::UNKNOWN;
+    if (s == "exterior") return Package::Preview::Type::EXTERIOR;
+    if (s == "interior") return Package::Preview::Type::INTERIOR;
+    if (s == "panel") return Package::Preview::Type::PANEL;
+    return Package::Preview::Type::UNKNOWN;
 }
 
-Package::Thumbnail::Thumbnail(const std::string& aUrl, const std::string& aPath, Type aType) :
+Package::Preview::Preview(const std::string& aUrl, const std::string& aPath, Type aType) :
     url(aUrl),
     path(aPath),
     type(aType)
 {
 }
 
-Package::ThumbnailVec Package::thumbnailsFromProps(const SGPropertyNode_ptr& ptr) const
+Package::PreviewVec Package::previewsFromProps(const SGPropertyNode_ptr& ptr) const
 {
-    ThumbnailVec result;
+    PreviewVec result;
 
-    for (auto thumbNode : ptr->getChildren("thumbnail")) {
-        Thumbnail t(thumbNode->getStringValue("url"),
+    for (auto thumbNode : ptr->getChildren("preview")) {
+        Preview t(thumbNode->getStringValue("url"),
                     thumbNode->getStringValue("path"),
-                    thumbnailTypeFromString(thumbNode->getStringValue("type")));
+                    previewTypeFromString(thumbNode->getStringValue("type")));
         result.push_back(t);
     }
 

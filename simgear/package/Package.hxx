@@ -140,9 +140,9 @@ public:
     string_list thumbnails() const;
 
     /**
-     * information about a thumbnail
+     * information about a preview image
      */
-    struct Thumbnail {
+    struct Preview {
         enum class Type
         {
             UNKNOWN,
@@ -154,19 +154,19 @@ public:
             // actual value for GUIs?
         };
 
-        Thumbnail(const std::string& url, const std::string& path, Type ty = Type::UNKNOWN);
+        Preview(const std::string& url, const std::string& path, Type ty = Type::UNKNOWN);
 
         std::string url;
         std::string path;
         Type type = Type::UNKNOWN;
     };
 
-    typedef std::vector<Thumbnail> ThumbnailVec;
+    typedef std::vector<Preview> PreviewVec;
 
     /**
      * retrieve all the thumbnails for a variant
      */
-    ThumbnailVec thumbnailsForVariant(unsigned int vIndex) const;
+    PreviewVec previewsForVariant(unsigned int vIndex) const;
     
     /**
      * Packages we depend upon.
@@ -194,7 +194,7 @@ private:
 
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
 
-    ThumbnailVec thumbnailsFromProps(const SGPropertyNode_ptr& ptr) const;
+    PreviewVec previewsFromProps(const SGPropertyNode_ptr& ptr) const;
 
     SGPropertyNode_ptr propsForVariant(const unsigned int vIndex, const char* propName = nullptr) const;
 

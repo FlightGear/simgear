@@ -20,6 +20,7 @@
         <url>http://localhost:2000/catalogTest1/alpha.zip</url>
 
         <dir>alpha</dir>
+
     </package>
 
     <package>
@@ -49,22 +50,22 @@
             <revision>10</revision>
         </depends>
 
-        <thumbnail>
+        <preview>
           <type>exterior</type>
           <path>thumb-exterior.png</path>
           <url>http://foo.bar.com/thumb-exterior.png</url>
-        </thumbnail>
+        </preview>
 
-        <thumbnail>
+        <preview>
           <type>panel</type>
           <path>thumb-panel.png</path>
           <url>http://foo.bar.com/thumb-panel.png</url>
-        </thumbnail>
+        </preview>
 
-        <thumbnail>
+        <preview>
           <path>thumb-something.png</path>
           <url>http://foo.bar.com/thumb-something.png</url>
-        </thumbnail>
+        </preview>
 
         <variant>
             <id>c172p-2d-panel</id>
@@ -77,17 +78,17 @@
             <description>A plane with floats</description>
             <author>Floats variant author</author>
 
-            <thumbnail>
+            <preview>
               <type>exterior</type>
               <path>thumb-exterior-floats.png</path>
               <url>http://foo.bar.com/thumb-exterior-floats.png</url>
-            </thumbnail>
+            </preview>
 
-            <thumbnail>
+            <preview>
               <type>panel</type>
               <path>thumb-panel.png</path>
               <url>http://foo.bar.com/thumb-panel.png</url>
-            </thumbnail>
+            </preview>
         </variant>
 
         <variant>
@@ -95,22 +96,25 @@
             <name>C172 with skis</name>
             <description>A plane with skis</description>
 
-            <thumbnail>
+            <preview>
               <type>exterior</type>
               <path>thumb-exterior-skis.png</path>
               <url>http://foo.bar.com/thumb-exterior-skis.png</url>
-            </thumbnail>
+            </preview>
 
-            <thumbnail>
+            <preview>
               <type>panel</type>
               <path>thumb-panel.png</path>
               <url>http://foo.bar.com/thumb-panel.png</url>
-            </thumbnail>
+            </preview>
         </variant>
 
         <md5>ec0e2ffdf98d6a5c05c77445e5447ff5</md5>
         <url>http://localhost:2000/catalogTest1/c172p.zip</url>
 
+        <!-- legacy thumbnails also supported -->
+        <thumbnail>http://foo.bar.com/thumb-exterior.png</thumbnail>
+        <thumbnail-path>exterior.png</thumbnail-path>
     </package>
 
     <package>

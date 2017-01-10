@@ -150,22 +150,31 @@ int parseTest()
     SG_CHECK_EQUAL(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
     SG_CHECK_EQUAL(p2->description(), "A plane made by Cessna on Jupiter");
 
-    pkg::Package::ThumbnailVec thumbs = p2->thumbnailsForVariant(0);
+    pkg::Package::PreviewVec thumbs = p2->previewsForVariant(0);
     SG_CHECK_EQUAL(thumbs.size(), 3);
 
-    auto index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Thumbnail& t)
-                             { return (t.type == pkg::Package::Thumbnail::Type::EXTERIOR); });
+    auto index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Preview& t)
+                             { return (t.type == pkg::Package::Preview::Type::EXTERIOR); });
     SG_VERIFY(index != thumbs.end());
     SG_CHECK_EQUAL(index->path, "thumb-exterior.png");
     SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-exterior.png");
-    SG_VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
+    SG_VERIFY(index->type == pkg::Package::Preview::Type::EXTERIOR);
 
-    index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Thumbnail& t)
-                        { return (t.type == pkg::Package::Thumbnail::Type::PANEL); });
+    index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Preview& t)
+                        { return (t.type == pkg::Package::Preview::Type::PANEL); });
     SG_VERIFY(index != thumbs.end());
     SG_CHECK_EQUAL(index->path, "thumb-panel.png");
     SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-panel.png");
-    SG_VERIFY(index->type == pkg::Package::Thumbnail::Type::PANEL);
+    SG_VERIFY(index->type == pkg::Package::Preview::Type::PANEL);
+
+// old-style thumbnails
+    string_list oldThumbUrls = p2->thumbnailUrls();
+    SG_CHECK_EQUAL(oldThumbUrls.size(), 1);
+    SG_CHECK_EQUAL(oldThumbUrls.at(0), "http://foo.bar.com/thumb-exterior.png");
+
+    string_list oldThumbPaths = p2->thumbnails();
+    SG_CHECK_EQUAL(oldThumbPaths.size(), 1);
+    SG_CHECK_EQUAL(oldThumbPaths.at(0), "exterior.png");
 
 // test variants
     try {
@@ -196,15 +205,15 @@ int parseTest()
     SG_CHECK_EQUAL(p2->getLocalisedProp("author", floatsVariant),
                    "Floats variant author");
 
-    pkg::Package::ThumbnailVec thumbs2 = p2->thumbnailsForVariant(skisVariant);
+    pkg::Package::PreviewVec thumbs2 = p2->previewsForVariant(skisVariant);
     SG_CHECK_EQUAL(thumbs2.size(), 2);
 
-    index = std::find_if(thumbs2.begin(), thumbs2.end(), [](const pkg::Package::Thumbnail& t)
-                              { return (t.type == pkg::Package::Thumbnail::Type::EXTERIOR); });
+    index = std::find_if(thumbs2.begin(), thumbs2.end(), [](const pkg::Package::Preview& t)
+                              { return (t.type == pkg::Package::Preview::Type::EXTERIOR); });
     SG_VERIFY(index != thumbs2.end());
     SG_CHECK_EQUAL(index->path, "thumb-exterior-skis.png");
     SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-exterior-skis.png");
-    SG_VERIFY(index->type == pkg::Package::Thumbnail::Type::EXTERIOR);
+    SG_VERIFY(index->type == pkg::Package::Preview::Type::EXTERIOR);
 
 
 // test filtering / searching too

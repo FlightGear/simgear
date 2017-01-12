@@ -117,6 +117,14 @@ public:
   virtual void update (double dt);
 
   /**
+   * Start taking action on the pre-defined events.
+   */
+  void start() {
+    if (_property) _prev_value  = _property->getDoubleValue();
+    _active = false;
+  }
+
+  /**
    * Stop taking action on the pre-defined events.
    */
   void stop();
@@ -158,7 +166,6 @@ private:
   double _delay;        // time after which the sound should be started (default: 0)
   double _stopping;     // time after the sound should have stopped.
                         // This is useful for lost packets in in-transit mode.
-  bool _initialized;
 
   // sound system version 1.0
   std::vector<_snd_prop> _volume;

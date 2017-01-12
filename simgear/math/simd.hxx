@@ -330,7 +330,7 @@ public:
     void operator delete (void *p) {
         _mm_free(p);
     }
-};
+} ALIGN16C;
 
 template<int N>
 class simd4_t<float,N> : public simd_aligned16
@@ -537,7 +537,7 @@ public:
     void operator delete (void *p) {
         _mm_free(p);
     }
-};
+} ALIGN32C;
 
 template<int N>
 class simd4_t<double,N> : public simd_aligned32

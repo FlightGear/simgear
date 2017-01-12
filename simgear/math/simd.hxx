@@ -317,8 +317,23 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
 #  include <pmmintrin.h>
 # endif
 
+ALIGN16
+class simd_aligned16
+{
+public:
+    simd_aligned16() {}
+    ~simd_aligned16() {}
+
+    void *operator new (size_t size) {
+        return _mm_malloc(size, 16);
+    }
+    void operator delete (void *p) {
+        _mm_free(p);
+    }
+};
+
 template<int N>
-class simd4_t<float,N>
+class simd4_t<float,N> : public simd_aligned16
 {
 private:
    typedef float  __vec4f_t[N];
@@ -509,8 +524,23 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 #  include <immintrin.h>
 // #  include "avxintrin-emu.h"
 
+ALIGN32
+class simd_aligned32
+{
+public:
+    simd_aligned32() {}
+    ~simd_aligned32() {}
+
+    void *operator new (size_t size) {
+        return _mm_malloc(size, 32);
+    }
+    void operator delete (void *p) {
+        _mm_free(p);
+    }
+};
+
 template<int N>
-class simd4_t<double,N>
+class simd4_t<double,N> : public simd_aligned32
 {
 private:
    typedef double  __vec4d_t[N];
@@ -683,7 +713,7 @@ inline simd4_t<double,N>abs(simd4_t<double,N> v) {
 #  include <emmintrin.h>
 
 template<int N>
-class simd4_t<double,N>
+class simd4_t<double,N> : public simd_aligned16
 {
 private:
    typedef double  __vec4d_t[N];
@@ -886,7 +916,7 @@ inline simd4_t<double,N>abs(simd4_t<double,N> v) {
 #  endif
 
 template<int N>
-class simd4_t<int,N>
+class simd4_t<int,N>  : public simd_aligned16
 {
 private:
    typedef int  __vec4i_t[N];

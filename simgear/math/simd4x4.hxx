@@ -298,7 +298,7 @@ inline simd4x4_t<T,N> operator*(const simd4x4_t<T,N>& m1, const simd4x4_t<T,N>& 
 #  include <xmmintrin.h>
 
 template<>
-class simd4x4_t<float,4>
+class simd4x4_t<float,4>  : public simd_aligned16
 {
 private:
     typedef float  __mtx4f_t[4][4];
@@ -520,7 +520,7 @@ inline simd4_t<float,3> transform<float>(const simd4x4_t<float,4>& m, const simd
 // #  include "avxintrin-emu.h"
 
 template<>
-class simd4x4_t<double,4>
+class simd4x4_t<double,4> : public simd_aligned32
 {
 private:
     typedef double  __mtx4d_t[4][4];
@@ -758,7 +758,7 @@ inline simd4_t<double,3> transform<double>(const simd4x4_t<double,4>& m, const s
 #  include <emmintrin.h>
 
 template<>
-class simd4x4_t<double,4>
+class simd4x4_t<double,4> : public simd_aligned16
 {
 private:
     typedef double  __mtx4d_t[4][4];
@@ -1052,7 +1052,7 @@ inline simd4_t<double,3> transform<double>(const simd4x4_t<double,4>& m, const s
 #  include <xmmintrin.h>
 
 template<>
-class simd4x4_t<int,4>
+class simd4x4_t<int,4> : public simd_aligned16
 {
 private:
     typedef int  __mtx4i_t[4][4];

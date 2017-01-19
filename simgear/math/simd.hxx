@@ -355,7 +355,7 @@ public:
     simd4_t(float x, float y, float z, float w) {
         simd4 = _mm_set_ps(w,z,y,x);
     }
-    explicit simd4_t(const __vec4f_t v) {
+    simd4_t(const __vec4f_t v) {
         simd4 = _mm_loadu_ps(v);
         for (int i=N; i<4; ++i) _v4[i] = 0.0f;
     }
@@ -1062,6 +1062,10 @@ inline simd4_t<int,N> max(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
 
 } /* namespace simd4 */
 
+# endif
+
+# ifdef __ARM_NEON__
+#  include <simgear/math/simd_neon.hxx>
 # endif
 
 #endif /* __SIMD_H__ */

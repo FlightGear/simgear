@@ -40,23 +40,22 @@ class simd4_t<float,N>
 private:
    typedef float  __vec4f_t[N];
 
-    union {
+    union ALIGN16 {
         float32x4_t simd4;
         __vec4f_t vec;
         float _v4[4];
-    };
+    } ALIGN16C;
 
 public:
     simd4_t(void) {}
     simd4_t(float f) {
-        simd4 = vdupq_n_f3(f);
+        simd4 = vdupq_n_f32(f);
         for (int i=N; i<4; ++i) _v4[i] = 0.0f;
     }
     simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
     simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
     simd4_t(float x, float y, float z, float w) {
-        ALIGN16 float ALIGN16C data[4] = { x, y, z, w };
-        simd4 = vld1q_f32(data);
+        _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
     }
     simd4_t(const __vec4f_t v) {
         simd4 = vld1q_f32(v);
@@ -91,7 +90,7 @@ public:
     }
 
     inline simd4_t<float,N>& operator=(float f) {
-        simd4 = vdupq_n_f3(f);
+        simd4 = vdupq_n_f32(f);
         for (int i=N; i<4; ++i) _v4[i] = 0.0f;
         return *this;
     }
@@ -142,7 +141,7 @@ public:
     template<int M>
     inline simd4_t<float,N>& operator/=(const simd4_t<float,M>& v) {
 // http://stackoverflow.com/questions/6759897/how-to-divide-in-neon-intrinsics-by-a-float-number
-        float32x2_t recip = vrecpeq_f32(v.v4());
+        float32x4_t recip = vrecpeq_f32(v.v4());
         recip = vmulq_f32(vrecpsq_f32(v.v4(), recip), recip);
         recip = vmulq_f32(vrecpsq_f32(v.v4(), recip), recip);
         simd4 = vmulq_f32(simd4, recip);
@@ -168,12 +167,12 @@ inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
     return hsum_float32x4_neon(v1.v4()*v2.v4());
 }
 
-// https://github.com/scoopr/vectorial/blob/master/include/vectorial/float32x4_t_neon.h
+// https://github.com/scoopr/vectorial/blob/master/include/vectorial/simd4f_neon.h
 template<>
 inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>& v2)
 {
-    static const uint32_t mask[] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0};
-    static const int32x4_t mask = vld1q_s32((const int32_t*)mask);
+    static const uint32_t mask_a[] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0};
+    static const int32x4_t mask = vld1q_s32((const int32_t*)mask_a);
 
     // Compute v1 and v2 in order yzx
     float32x2_t v1_low = vget_low_f32(v1.v4());
@@ -181,12 +180,13 @@ inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>
     float32x4_t v1_yzx = vcombine_f32(vext_f32(v1_low, vget_high_f32(v1.v4()),1), v1_low);
     float32x4_t v2_yzx = vcombine_f32(vext_f32(v2_low, vget_high_f32(v2.v4()),1), v2_low);
     // Compute cross in order zxy
-    float32x4_t s3 = float32x4_t_sub(float32x4_t_mul(v2_yzx, v1.v4()), float32x4_t_mul(v1_yzx, v2.v4()));
+    float32x4_t s3 = vsubq_f32(vmulq_f32(v2_yzx, v1.v4()), vmulq_f32(v1_yzx, v2.v4()));
     // Permute cross to order xyz and zero out the fourth value
     float32x2_t low = vget_low_f32(s3);
     s3 = vcombine_f32(vext_f32(low, vget_high_f32(s3), 1), low);
     return (float32x4_t)vandq_s32((int32x4_t)s3,mask);
 }
+
 
 template<int N>
 inline simd4_t<float,N> min(simd4_t<float,N> v1, const simd4_t<float,N>& v2) {
@@ -386,11 +386,11 @@ class simd4_t<int,N>
 private:
    typedef int  __vec4i_t[N];
 
-    union {
+    union ALIGN16 {
         int32x4_t simd4;
         __vec4i_t vec;
         int _v4[4];
-    };
+    } ALIGN16C;
 
 public:
     simd4_t(void) {}
@@ -401,11 +401,10 @@ public:
     simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
     simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}
     simd4_t(int x, int y, int z, int w) {
-        ALIGN16 int32_t ALIGN16C data[4] = { x, y, z, w };
-        simd4 = vld1q_s32(data);
+        _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
     }
     simd4_t(const __vec4i_t v) {
-        simd4 = vld1q_s32((int32x4_t*)v);
+        simd4 = vld1q_s32(v);
         for (int i=N; i<4; ++i) _v4[i] = 0;
     }
     simd4_t(const simd4_t<int,N>& v) {
@@ -445,7 +444,7 @@ public:
         return *this;
     }
     inline simd4_t<int,N>& operator=(const __vec4i_t v) {
-        simd4 = vld1q_s32((int32x4_t*)v);
+        simd4 = vld1q_s32(v);
         for (int i=N; i<4; ++i) _v4[i] = 0;
         return *this;
     }
@@ -484,7 +483,7 @@ public:
          return operator*=(v.v4());
     }
     inline simd4_t<int,N>& operator*=(const int32x4_t& v) {
-        simd4 = vmulq_s32(simd4, v.v4());
+        simd4 = vmulq_s32(simd4, v);
         return *this;
     }
 

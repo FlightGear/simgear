@@ -48,20 +48,15 @@ private:
 
 public:
     simd4_t(void) {}
-    simd4_t(float f) {
-        simd4 = vdupq_n_f32(f);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0f;
-    }
+    simd4_t(float f) {}
     simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
     simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
     simd4_t(float x, float y, float z, float w) {
         _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
     }
-    simd4_t(const __vec4f_t v) {
-        simd4 = vld1q_f32(v);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0f;
-    }
-    simd4_t(const simd4_t<float,N>& v) {
+    simd4_t(const __vec4f_t v) {}
+    template<int M>
+    simd4_t(const simd4_t<float,M>& v) {
         simd4 = v.v4();
     }
     simd4_t(const float32x4_t& v) {
@@ -87,25 +82,6 @@ public:
     }
     inline operator float*(void) {
         return vec;
-    }
-
-    inline simd4_t<float,N>& operator=(float f) {
-        simd4 = vdupq_n_f32(f);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0f;
-        return *this;
-    }
-    inline simd4_t<float,N>& operator=(const __vec4f_t v) {
-        simd4 = vld1q_f32(v);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0f;
-        return *this;
-    }
-    inline simd4_t<float,N>& operator=(const simd4_t<float,N>& v) {
-        simd4 = v.v4();
-        return *this;
-    }
-    inline simd4_t<float,N>& operator=(const float32x4_t& v) {
-        simd4 = v;
-        return *this;
     }
 
     inline simd4_t<float,N>& operator+=(float f) {
@@ -148,6 +124,9 @@ public:
         return *this;
     }
 };
+
+simd4 = vdupq_n_f32(f);
+simd4 = vld1q_f32(v);
 
 namespace simd4
 {

@@ -1085,7 +1085,7 @@ inline simd4_t<int,N> max(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
 # endif
 
 # ifdef __ARM_NEON__
-#  include "simd_neon.hxx"
+#  include <simgear/math/simd_neon.hxx>
 # endif
 
 #endif /* __SIMD_H__ */

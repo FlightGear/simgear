@@ -59,7 +59,7 @@ public:
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 3 elements
   explicit SGVec3(const T* d)
-  { _data = simd4_t<T,3>(d); }
+  { _data = d ? simd4_t<T,3>(d) : simd4_t<T,3>(T(0)); }
   template<typename S>
   explicit SGVec3(const SGVec3<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }

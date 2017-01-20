@@ -450,7 +450,8 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
         stateSet->setTextureAttribute(0, texture2D,
 				      osg::StateAttribute::OVERRIDE);
         stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
-        if (texture2D->getImage()->isImageTranslucent()) {
+		osg::ref_ptr<osg::Image> textureImage = texture2D->getImage();
+        if (textureImage && textureImage->isImageTranslucent()) {
           stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
           stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
         }

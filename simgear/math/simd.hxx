@@ -457,7 +457,7 @@ namespace simd4
 {
 // http://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-float-vector-sum-on-x86
 # ifdef __SSE3__
-  inline float hsum_ps_sse(__m128 v) {
+  inline static float hsum_ps_sse(__m128 v) {
     __m128 shuf = _mm_movehdup_ps(v);
     __m128 sums = _mm_add_ps(v, shuf);
     shuf        = _mm_movehl_ps(shuf, sums);
@@ -465,7 +465,7 @@ namespace simd4
     return        _mm_cvtss_f32(sums);
   }
 # else /* SSE */
-  inline float hsum_ps_sse(__m128 v) {
+  inline static float hsum_ps_sse(__m128 v) {
     __m128 shuf = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 3, 0, 1));
     __m128 sums = _mm_add_ps(v, shuf);
     shuf        = _mm_movehl_ps(shuf, sums);
@@ -568,7 +568,7 @@ public:
     simd4_t(double x, double y, double z, double w) {
         simd4 = _mm256_set_pd(w,z,y,x);
     }
-    explicit simd4_t(const __vec4d_t v) {}
+    simd4_t(const __vec4d_t v) {}
     template<int M>
     simd4_t(const simd4_t<double,M>& v) {
         simd4 = v.v4();
@@ -666,7 +666,7 @@ inline simd4_t<double,2>::simd4_t(double d) {
 namespace simd4
 {
 // http://berenger.eu/blog/sseavxsimd-horizontal-sum-sum-simd-vector-intrinsic/
-inline float hsum_pd_avx(__m256d v) {
+inline static float hsum_pd_avx(__m256d v) {
     const __m128d valupper = _mm256_extractf128_pd(v, 1);
     const __m128d vallower = _mm256_castpd256_pd128(v);
     _mm256_zeroupper();
@@ -745,7 +745,7 @@ public:
         simd4[0] = _mm_set_pd(y,x);
         simd4[1] = _mm_set_pd(w,z);
     }
-    explicit simd4_t(const __vec4d_t v) {}
+    simd4_t(const __vec4d_t v) {}
     template<int M>
     simd4_t(const simd4_t<double,M>& v) {
         simd4[0] = v.v4()[0];
@@ -853,7 +853,7 @@ inline simd4_t<double,2>::simd4_t(double d) {
 namespace simd4
 {
 // http://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-float-vector-sum-on-x86
-inline double hsum_pd_sse(const __m128d vd[2]) {
+inline static double hsum_pd_sse(const __m128d vd[2]) {
     __m128 undef    = _mm_setzero_ps();
     __m128 shuftmp1 = _mm_movehl_ps(undef, _mm_castpd_ps(vd[0]));
     __m128 shuftmp2 = _mm_movehl_ps(undef, _mm_castpd_ps(vd[1]));

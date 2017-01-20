@@ -33,6 +33,10 @@
 #  define ALIGN32C __attribute__((aligned(32)))
 # endif
 
+static const uint32_t m2a32[] = { 0xffffffff,0xffffffff,0,0 };
+static const uint32_t m3a32[] = { 0xffffffff,0xffffffff,0xffffffff,0 };
+
+#define vandq_f32(a,b) vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(b)))
 
 template<int N>
 class simd4_t<float,N>
@@ -125,13 +129,40 @@ public:
     }
 };
 
-simd4 = vdupq_n_f32(f);
-simd4 = vld1q_f32(v);
+static const float32x4_t fmask2 = vld1q_f32((const float*)m2a32);
+static const float32x4_t fmask3 = vld1q_f32((const float*)m3a32);
+
+template<>
+inline simd4_t<float,4>::simd4_t(const __vec4f_t v) {
+    simd4 = vld1q_f32(v);
+}
+template<>
+inline simd4_t<float,3>::simd4_t(const __vec4f_t v) {
+    simd4 = vandq_f32(vld1q_f32(v), fmask3);
+}
+template<>
+inline simd4_t<float,2>::simd4_t(const __vec4f_t v) {
+    simd4 = vandq_f32(vld1q_f32(v), fmask2);
+}
+template<>
+inline simd4_t<float,4>::simd4_t(float f) {
+    simd4 = vdupq_n_f32(f);
+}
+template<>
+inline simd4_t<float,3>::simd4_t(float f) {
+    simd4 = vandq_f32(vdupq_n_f32(f), fmask3);
+}
+
+template<>
+inline simd4_t<float,2>::simd4_t(float f) {
+    simd4 = vandq_f32(vdupq_n_f32(f), fmask2);
+}
+
 
 namespace simd4
 {
 // http://stackoverflow.com/questions/6931217/sum-all-elements-in-a-quadword-vector-in-arm-assembly-with-neon
-inline float hsum_float32x4_neon(float32x4_t v) {
+inline static float hsum_float32x4_neon(float32x4_t v) {
     float32x2_t r = vadd_f32(vget_high_f32(v), vget_low_f32(v));
     return vget_lane_f32(vpadd_f32(r, r), 0);
 }
@@ -150,20 +181,32 @@ inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
 template<>
 inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>& v2)
 {
-    static const uint32_t mask_a[] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0};
-    static const int32x4_t mask = vld1q_s32((const int32_t*)mask_a);
+    float32x2x2_t v1lh_2013 = vld2_f32(v1);	// 0213
+    float32x2x2_t v2lh_2013 = vld2_f32(v2);
 
-    // Compute v1 and v2 in order yzx
-    float32x2_t v1_low = vget_low_f32(v1.v4());
-    float32x2_t v2_low = vget_low_f32(v2.v4());
-    float32x4_t v1_yzx = vcombine_f32(vext_f32(v1_low, vget_high_f32(v1.v4()),1), v1_low);
-    float32x4_t v2_yzx = vcombine_f32(vext_f32(v2_low, vget_high_f32(v2.v4()),1), v2_low);
-    // Compute cross in order zxy
-    float32x4_t s3 = vsubq_f32(vmulq_f32(v2_yzx, v1.v4()), vmulq_f32(v1_yzx, v2.v4()));
-    // Permute cross to order xyz and zero out the fourth value
-    float32x2_t low = vget_low_f32(s3);
-    s3 = vcombine_f32(vext_f32(low, vget_high_f32(s3), 1), low);
-    return (float32x4_t)vandq_s32((int32x4_t)s3,mask);
+    // from 0213 to 2013
+    v1lh_2013.val[0] = vrev64_f32(v1lh_2013.val[0]);
+    v2lh_2013.val[0] = vrev64_f32(v2lh_2013.val[0]);
+
+    float32x4_t v1_2013 = vcombine_f32(v1lh_2013.val[0], v1lh_2013.val[1]);
+    float32x4_t v2_2013 = vcombine_f32(v2lh_2013.val[0], v2lh_2013.val[1]);
+
+    // from 2013 to 2103
+    float32x2x2_t v1lh_1203 = vzip_f32(v1lh_2013.val[0], v1lh_2013.val[1]);
+    float32x2x2_t v2lh_1203 = vzip_f32(v2lh_2013.val[0], v2lh_2013.val[1]);
+
+    // from 2103 to 1203
+    v1lh_1203.val[0] = vrev64_f32(v1lh_1203.val[0]);
+    v2lh_1203.val[0] = vrev64_f32(v2lh_1203.val[0]);
+
+    float32x4_t v1_1203 = vcombine_f32(v1lh_1203.val[0], v1lh_1203.val[1]);
+    float32x4_t v2_1203 = vcombine_f32(v2lh_1203.val[0], v2lh_1203.val[1]);
+
+    float32x4_t cp;	// calculate the cross product
+    cp = vsubq_f32(vmulq_f32(v1_1203,v2_2013),vmulq_f32(v1_2013,v2_1203));
+
+    // zero lane 3 and return
+    return vandq_f32(cp, fmask3);
 }
 
 
@@ -203,20 +246,15 @@ private:
 
 public:
     simd4_t(void) {}
-    simd4_t(double d) {
-        simd4 = _mm256_set1_pd(d);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0;
-    }
+    simd4_t(double d) {}
     simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
     simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
     simd4_t(double x, double y, double z, double w) {
         simd4 = _mm256_set_pd(w,z,y,x);
     }
-    simd4_t(const __vec4d_t v) {
-        simd4 = _mm256_loadu_pd(v);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0;
-    }
-    simd4_t(const simd4_t<double,N>& v) {
+    simd4_t(const __vec4d_t v) { {}
+    template<int M>
+    simd4_t(const simd4_t<double,M>& v) {
         simd4 = v.v4();
     }
     simd4_t(const __m256d& v) {
@@ -242,25 +280,6 @@ public:
     }
     inline operator double*(void) {
         return vec;
-    }
-
-    inline simd4_t<double,N>& operator=(double d) {
-        simd4 = _mm256_set1_pd(d);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0;
-        return *this;
-    }
-    inline simd4_t<double,N>& operator=(const __vec4d_t v) {
-        simd4 = _mm256_loadu_pd(v);
-        for (int i=N; i<4; ++i) _v4[i] = 0.0;
-        return *this;
-    }
-    inline simd4_t<double,N>& operator=(const simd4_t<double,N>& v) {
-        simd4 = v.v4();
-        return *this;
-    }
-    inline simd4_t<double,N>& operator=(const __m256d& v) {
-        simd4 = v;
-        return *this;
     }
 
     inline simd4_t<double,N>& operator+=(double d) {
@@ -300,10 +319,38 @@ public:
     }
 };
 
+static const __m256d dmask2 = _mm256_load_pd((const double*)m2a64);
+static const __m256d dmask3 = _mm256_load_pd((const double*)m3a64);
+
+template<>
+inline simd4_t<double,4>::simd4_t(const __vec4d_t v) {
+    simd4 = _mm256_loadu_pd(v);
+}
+template<>
+inline simd4_t<double,3>::simd4_t(const __vec4d_t v) {
+    simd4 = _mm256_and_pd(_mm256_loadu_pd(v), dmask3);
+}
+template<>
+inline simd4_t<double,2>::simd4_t(const __vec4d_t v) {
+    simd4 = _mm256_and_pd(_mm256_loadu_pd(v), dmask2);
+}
+template<>
+inline simd4_t<double,4>::simd4_t(double d) {
+    simd4 = _mm256_set1_pd(d);
+}
+template<>
+inline simd4_t<double,3>::simd4_t(double d) {
+    simd4 = _mm256_and_pd(_mm256_set1_pd(d), dmask3);
+}
+template<>
+inline simd4_t<double,2>::simd4_t(double d) {
+    simd4 = _mm256_and_pd(_mm256_set1_pd(d), dmask2);
+}
+
 namespace simd4
 {
 // http://berenger.eu/blog/sseavxsimd-horizontal-sum-sum-simd-vector-intrinsic/
-inline float hsum_pd_avx(__m256d v) {
+inline static float hsum_pd_avx(__m256d v) {
     const float64x4_t valupper = _mm256_extractf128_pd(v, 1);
     const float64x4_t vallower = _mm256_castpd256_pd128(v);
     _mm256_zeroupper();
@@ -373,20 +420,15 @@ private:
 
 public:
     simd4_t(void) {}
-    simd4_t(int i) {
-        simd4 = vdupq_n_s32(i);
-        for (int i=N; i<4; ++i) _v4[i] = 0;
-    }
+    simd4_t(int i) {}
     simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
     simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}
     simd4_t(int x, int y, int z, int w) {
         _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
     }
-    simd4_t(const __vec4i_t v) {
-        simd4 = vld1q_s32(v);
-        for (int i=N; i<4; ++i) _v4[i] = 0;
-    }
-    simd4_t(const simd4_t<int,N>& v) {
+    simd4_t(const __vec4i_t v) {}
+    template<int M>
+    simd4_t(const simd4_t<int,M>& v) {
         simd4 = v.v4();
     }
     simd4_t(const int32x4_t& v) {
@@ -415,25 +457,6 @@ public:
 
     inline operator int*(void) {
         return vec;
-    }
-
-    inline simd4_t<int,N>& operator=(int i) {
-        simd4 = vdupq_n_s32(i);
-        for (int i=N; i<4; ++i) _v4[i] = 0;
-        return *this;
-    }
-    inline simd4_t<int,N>& operator=(const __vec4i_t v) {
-        simd4 = vld1q_s32(v);
-        for (int i=N; i<4; ++i) _v4[i] = 0;
-        return *this;
-    }
-    inline simd4_t<int,N>& operator=(const simd4_t<int,N>& v) {
-        simd4 = v.v4();
-        return *this;
-    }
-    inline simd4_t<int,N>& operator=(const int32x4_t& v) {
-        simd4 = v;
-        return *this;
     }
 
     inline simd4_t<int,N>& operator+=(int i) {
@@ -477,6 +500,35 @@ public:
         return *this;
     }
 };
+
+static const int32x4_t imask2 = vld1q_s32((int32_t*)m2a32);
+static const int32x4_t imask3 = vld1q_s32((int32_t*)m3a32);
+
+template<>
+inline simd4_t<int,4>::simd4_t(const __vec4i_t v) {
+    simd4 = vld1q_s32(v);
+}
+template<>
+inline simd4_t<int,3>::simd4_t(const __vec4i_t v) {
+    simd4 = vandq_s32(vld1q_s32(v), imask3);
+}
+template<>
+inline simd4_t<int,2>::simd4_t(const __vec4i_t v) {
+    simd4 = vandq_s32(vld1q_s32(v), imask2);
+}
+template<>
+inline simd4_t<int,4>::simd4_t(int i) {
+    simd4 = vdupq_n_s32(i);
+}
+template<>
+inline simd4_t<int,3>::simd4_t(int i) {
+    simd4 = vandq_s32(vdupq_n_s32(i), imask3);
+}
+template<>
+inline simd4_t<int,2>::simd4_t(int i) {
+    simd4 = vandq_s32(vdupq_n_s32(i), imask2);
+}
+
 
 namespace simd4
 {

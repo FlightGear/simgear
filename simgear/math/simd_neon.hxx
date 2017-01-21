@@ -36,8 +36,6 @@
 static const uint32_t m2a32[] = { 0xffffffff,0xffffffff,0,0 };
 static const uint32_t m3a32[] = { 0xffffffff,0xffffffff,0xffffffff,0 };
 
-#define vandq_f32(a,b) vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(b)))
-
 template<int N>
 class simd4_t<float,N>
 {
@@ -46,8 +44,8 @@ private:
 
     union ALIGN16 {
         float32x4_t simd4;
+        float32x2x2_t simd2x2;
         __vec4f_t vec;
-        float _v4[4];
     } ALIGN16C;
 
 public:
@@ -56,7 +54,8 @@ public:
     simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
     simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
     simd4_t(float x, float y, float z, float w) {
-        _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
+        ALIGN16 float ALIGN16C data[4] = { x, y, z, w };
+        simd4 = vld1q_f32(data);
     }
     simd4_t(const __vec4f_t v) {}
     template<int M>
@@ -65,6 +64,13 @@ public:
     }
     simd4_t(const float32x4_t& v) {
         simd4 = v;
+    }
+
+    inline const float32x2x2_t (&v2x2(void) const) {
+        return simd2x2;
+    }
+    inline float32x2x2_t (&v2x2(void)) {
+        return simd2x2;
     }
 
     inline const float32x4_t (&v4(void) const) {
@@ -124,10 +130,13 @@ public:
         float32x4_t recip = vrecpeq_f32(v.v4());
         recip = vmulq_f32(vrecpsq_f32(v.v4(), recip), recip);
         recip = vmulq_f32(vrecpsq_f32(v.v4(), recip), recip);
+        recip = vmulq_f32(vrecpsq_f32(v.v4(), recip), recip);
         simd4 = vmulq_f32(simd4, recip);
         return *this;
     }
 };
+ 
+# define vandq_f32(a,b) vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(b)))
 
 static const float32x4_t fmask2 = vld1q_f32((const float*)m2a32);
 static const float32x4_t fmask3 = vld1q_f32((const float*)m3a32);
@@ -177,12 +186,12 @@ inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
     return hsum_float32x4_neon(v1.v4()*v2.v4());
 }
 
-// https://github.com/scoopr/vectorial/blob/master/include/vectorial/simd4f_neon.h
 template<>
 inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>& v2)
 {
-    float32x2x2_t v1lh_2013 = vld2_f32(v1);	// 0213
-    float32x2x2_t v2lh_2013 = vld2_f32(v2);
+    // from 0123 to 0213
+    float32x2x2_t v1lh_2013 = vzip_f32(v1.v2x2().val[0], v1.v2x2().val[1]);
+    float32x2x2_t v2lh_2013 = vzip_f32(v2.v2x2().val[0], v2.v2x2().val[1]);
 
     // from 0213 to 2013
     v1lh_2013.val[0] = vrev64_f32(v1lh_2013.val[0]);
@@ -202,11 +211,8 @@ inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>
     float32x4_t v1_1203 = vcombine_f32(v1lh_1203.val[0], v1lh_1203.val[1]);
     float32x4_t v2_1203 = vcombine_f32(v2lh_1203.val[0], v2lh_1203.val[1]);
 
-    float32x4_t cp;	// calculate the cross product
-    cp = vsubq_f32(vmulq_f32(v1_1203,v2_2013),vmulq_f32(v1_2013,v2_1203));
-
-    // zero lane 3 and return
-    return vandq_f32(cp, fmask3);
+    // calculate the cross product
+    return vsubq_f32(vmulq_f32(v1_1203,v2_2013),vmulq_f32(v1_2013,v2_1203));
 }
 
 
@@ -241,7 +247,6 @@ private:
     union ALIGN32 {
         __m256d simd4;
         __vec4d_t vec;
-        double _v4[4];
     } ALIGN32C;
 
 public:
@@ -415,7 +420,6 @@ private:
     union ALIGN16 {
         int32x4_t simd4;
         __vec4i_t vec;
-        int _v4[4];
     } ALIGN16C;
 
 public:
@@ -424,7 +428,8 @@ public:
     simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
     simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}
     simd4_t(int x, int y, int z, int w) {
-        _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
+        ALIGN16 int32_t ALIGN16C data[4] = { x, y, z, w };
+        simd4 = vld1q_s32(data);
     }
     simd4_t(const __vec4i_t v) {}
     template<int M>
@@ -495,7 +500,7 @@ public:
     template<int M>
     inline simd4_t<int,N>& operator/=(const simd4_t<int,M>& v) {
         for (int i=0; i<N; ++i) {
-           _v4[i] /= v[i];
+           vec[i] /= v[i];
         }
         return *this;
     }

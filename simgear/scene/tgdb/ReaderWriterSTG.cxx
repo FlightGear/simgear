@@ -212,7 +212,6 @@ struct ReaderWriterSTG::_ModelBin {
         _object_range_bare(SG_OBJECT_RANGE_BARE),
         _object_range_rough(SG_OBJECT_RANGE_ROUGH),
         _object_range_detailed(SG_OBJECT_RANGE_DETAILED),
-        _building_mesh_enabled(false),
         _foundBase(false)
     { }
 
@@ -284,6 +283,21 @@ struct ReaderWriterSTG::_ModelBin {
         return SGGeod::fromCart(cart).getElevationM();
     }
 
+    void checkInsideBucket(const SGPath& absoluteFileName, float lon, float lat) {
+        SGBucket bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
+
+        if ((lon > bucket.get_center_lon() + bucket.get_width()/2.0)  ||
+            (lon < bucket.get_center_lon() - bucket.get_width()/2.0)  ||
+            (lat > bucket.get_center_lat() + bucket.get_height()/2.0) ||
+            (lat < bucket.get_center_lat() - bucket.get_height()/2.0)    )
+        {
+          SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
+                  << ": Object outside tile bounds " << lon << ", " << lat <<
+                  "Center of tile: " << bucket.get_center_lon() << ", " <<
+                  bucket.get_center_lat());
+        }
+    }
+
     bool read(const SGPath& absoluteFileName, const osgDB::Options* options)
     {
         if (!absoluteFileName.exists()) {
@@ -299,8 +313,6 @@ struct ReaderWriterSTG::_ModelBin {
         _object_range_bare = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
         _object_range_rough = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
         _object_range_detailed = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
-        _building_mesh_enabled = (options->getPluginStringData("SimGear::RENDER_BUILDING_MESH") == "true");
-
 
         SG_LOG(SG_TERRAIN, SG_INFO, "Loading stg file " << absoluteFileName);
 
@@ -392,7 +404,8 @@ struct ReaderWriterSTG::_ModelBin {
 										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
 										obj._range = range;
 										obj._options = opt;
-										_objectStaticList.push_back(obj);
+                    checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
+                    _objectStaticList.push_back(obj);
                 } else if (token == "OBJECT_SHARED" || token == "OBJECT_SHARED_AGL") {
 										osg::ref_ptr<SGReaderWriterOptions> opt;
 										opt = sharedOptions(filePath, options);
@@ -409,7 +422,8 @@ struct ReaderWriterSTG::_ModelBin {
 										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
 										obj._range = range;
 										obj._options = opt;
-										_objectStaticList.push_back(obj);
+                    checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
+                    _objectStaticList.push_back(obj);
                 } else if (token == "OBJECT_SIGN" || token == "OBJECT_SIGN_AGL") {
 										_Sign sign;
 										sign._token = token;
@@ -418,35 +432,32 @@ struct ReaderWriterSTG::_ModelBin {
 										in >> sign._lon >> sign._lat >> sign._elev >> sign._hdg >> sign._size;
 										_signList.push_back(sign);
                 } else if (token == "OBJECT_BUILDING_MESH_ROUGH" || token == "OBJECT_BUILDING_MESH_DETAILED") {
+										osg::ref_ptr<SGReaderWriterOptions> opt;
+										opt = staticOptions(filePath, options);
+										if (SGPath(name).lower_extension() == "ac")
+												opt->setInstantiateEffects(true);
+										else
+												opt->setInstantiateEffects(false);
+										_ObjectStatic obj;
+										obj._errorLocation = absoluteFileName;
+										obj._token = token;
+										obj._name = name;
+										obj._agl = false;
+										obj._proxy = true;
+										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
 
-										// Only load if building mesh enabled to avoid impacting low-powered systems
-										if (_building_mesh_enabled) {
-											osg::ref_ptr<SGReaderWriterOptions> opt;
-											opt = staticOptions(filePath, options);
-											if (SGPath(name).lower_extension() == "ac")
-													opt->setInstantiateEffects(true);
-											else
-													opt->setInstantiateEffects(false);
-											_ObjectStatic obj;
-											obj._errorLocation = absoluteFileName;
-											obj._token = token;
-											obj._name = name;
-											obj._agl = false;
-											obj._proxy = true;
-											in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+										if (token == "OBJECT_BUILDING_MESH_DETAILED") {
+											// Apply a lower LOD range if this is a detailed building
+											range = _object_range_detailed;
+											double lrand = mt_rand(&seed);
+											if      (lrand < 0.1) range = range * 2.0;
+											else if (lrand < 0.4) range = range * 1.5;
+										}
 
-											if (token == "OBJECT_BUILDING_MESH_DETAILED") {
-												// Apply a lower LOD range if this is a detailed building
-												range = _object_range_detailed;
-												double lrand = mt_rand(&seed);
-												if      (lrand < 0.1) range = range * 2.0;
-												else if (lrand < 0.4) range = range * 1.5;
-											}
-
-											obj._range = range;
-											obj._options = opt;
-											_objectStaticList.push_back(obj);
-                    }
+										obj._range = range;
+										obj._options = opt;
+                    checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
+                    _objectStaticList.push_back(obj);
                 } else {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                             << ": Unknown token '" << token << "'" );
@@ -531,7 +542,8 @@ struct ReaderWriterSTG::_ModelBin {
 
             // Objects may end up displayed up to 2x the object range.
             pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough + SG_TILE_RADIUS);
-
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Center: " << pagedLOD->getCenter().x() << "," << pagedLOD->getCenter().y() << "," << pagedLOD->getCenter().z() );
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Range: " << (2.0 * _object_range_rough + SG_TILE_RADIUS));
             return pagedLOD;
         }
     }
@@ -539,7 +551,6 @@ struct ReaderWriterSTG::_ModelBin {
     double _object_range_bare;
     double _object_range_rough;
     double _object_range_detailed;
-    bool _building_mesh_enabled;
     bool _foundBase;
     std::list<_Object> _objectList;
     std::list<_ObjectStatic> _objectStaticList;

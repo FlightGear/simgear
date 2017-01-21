@@ -815,6 +815,7 @@ SGTerraSync::~SGTerraSync()
 void SGTerraSync::setRoot(SGPropertyNode_ptr root)
 {
     _terraRoot = root->getNode("/sim/terrasync",true);
+    _renderingRoot = root->getNode("/sim/rendering", true);
 }
 
 void SGTerraSync::init()
@@ -953,12 +954,33 @@ void SGTerraSync::syncAirportsModels()
     _workerThread->request( w );
 }
 
+string_list SGTerraSync::getSceneryPathSuffixes() const
+{
+    string_list scenerySuffixes;
+
+    for (auto node : _renderingRoot->getChildren("scenery-path-suffix")) {
+        if (node->getBoolValue("enabled", true)) {
+            scenerySuffixes.push_back(node->getStringValue("name"));
+        }
+    }
+
+    if (scenerySuffixes.empty()) {
+        // if preferences didn't load, use some default
+        scenerySuffixes = {"Objects", "Terrain"}; // defaut values
+    }
+
+    return scenerySuffixes;
+}
+
+
 void SGTerraSync::syncAreaByPath(const std::string& aPath)
 {
-    const char* terrainobjects[3] = { "Terrain/", "Objects/",  0 };
-    for (const char** tree = &terrainobjects[0]; *tree; tree++)
+    string_list scenerySuffixes = getSceneryPathSuffixes();
+    string_list::const_iterator it = scenerySuffixes.begin();
+
+    for (; it != scenerySuffixes.end(); ++it)
     {
-        std::string dir = string(*tree) + aPath;
+        std::string dir = *it + "/" + aPath;
         if (_activeTileDirs.find(dir) != _activeTileDirs.end()) {
             continue;
         }
@@ -982,9 +1004,12 @@ bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
         return false;
     }
 
-    const char* terrainobjects[3] = { "Terrain/", "Objects/",  0 };
-    for (const char** tree = &terrainobjects[0]; *tree; tree++) {
-        string s = *tree + sceneryDir;
+    string_list scenerySuffixes = getSceneryPathSuffixes();
+    string_list::const_iterator it = scenerySuffixes.begin();
+
+    for (; it != scenerySuffixes.end(); ++it)
+    {
+        string s = *it + "/" + sceneryDir;
         if (_activeTileDirs.find(s) != _activeTileDirs.end()) {
             return true;
         }

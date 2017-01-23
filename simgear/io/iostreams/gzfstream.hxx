@@ -1,5 +1,5 @@
 /**
- * \file zfstream.hxx
+ * \file gzfstream.hxx
  * A C++ I/O streams interface to the zlib gz* functions.
  */
 
@@ -24,8 +24,8 @@
 //
 // $Id$
 
-#ifndef _zfstream_hxx
-#define _zfstream_hxx
+#ifndef _gzfstream_hxx
+#define _gzfstream_hxx
 
 #include <simgear/compiler.h>
 
@@ -164,4 +164,4 @@ struct gzofstream_base
     gzfilebuf gzbuf;
 };
 
-#endif // _zfstream_hxx
+#endif // _gzfstream_hxx

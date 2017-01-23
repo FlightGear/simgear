@@ -1,4 +1,4 @@
-// materialmgr.cxx -- class to handle material properties
+// matlib.cxx -- class to handle material properties
 //
 // Written by Curtis Olson, started May 1998.
 //
@@ -36,7 +36,7 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>

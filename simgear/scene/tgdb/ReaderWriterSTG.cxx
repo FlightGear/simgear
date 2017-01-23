@@ -1,4 +1,4 @@
-// tileentry.cxx -- routines to handle a scenery tile
+// ReaderWriterSTG.cxx -- routines to handle a scenery tile
 //
 // Written by Curtis Olson, started May 1998.
 //
@@ -42,7 +42,7 @@
 #include <simgear/math/SGGeometry.hxx>
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/scene/util/OptionsReadFileCallback.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/QuadTreeBuilder.hxx>

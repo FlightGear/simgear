@@ -6,7 +6,7 @@ using std::cout;
 using std::endl;
 
 #include <simgear/misc/test_macros.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sg_dir.hxx>
 

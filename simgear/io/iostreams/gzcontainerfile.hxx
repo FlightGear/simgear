@@ -22,7 +22,7 @@
 #define GZ_CONTAINER_FILE_HXX
 
 #include <string>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 
 class SGPropertyNode;
 

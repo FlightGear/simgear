@@ -37,7 +37,7 @@
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/io/sg_file.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/timing/timestamp.hxx>
 

@@ -1,4 +1,4 @@
-
+add_subdirectory(iostreams)
 
 include (SimGearComponent)
 

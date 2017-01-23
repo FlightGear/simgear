@@ -27,7 +27,7 @@
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_dir.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/package/Package.hxx>
 #include <simgear/package/Root.hxx>

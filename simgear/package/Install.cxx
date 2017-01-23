@@ -33,7 +33,7 @@
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/misc/strutils.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 
 extern "C" {
     void fill_memory_filefunc (zlib_filefunc_def*);

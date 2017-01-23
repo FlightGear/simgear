@@ -36,7 +36,7 @@
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/threads/SGGuard.hxx>
 
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #if defined (SG_WINDOWS)

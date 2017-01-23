@@ -23,7 +23,7 @@
 
 #include "HTTPRequest.hxx"
 
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 
 namespace simgear
 {

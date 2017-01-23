@@ -49,7 +49,7 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/threads/SGGuard.hxx>
 
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>

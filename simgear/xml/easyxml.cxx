@@ -23,7 +23,7 @@
 #include <fstream>
 #include <iostream>
 
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 using std::ifstream;

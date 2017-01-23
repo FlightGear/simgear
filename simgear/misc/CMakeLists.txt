@@ -12,14 +12,11 @@ set(HEADERS
     sg_dir.hxx
     sg_hash.hxx
     sg_path.hxx
-    sgstream.hxx
     stdint.hxx
     stopwatch.hxx
     strutils.hxx
     tabbed_values.hxx
     texcoord.hxx
-    zfstream.hxx
-    gzcontainerfile.hxx
     )
 
 set(SOURCES
@@ -31,12 +28,9 @@ set(SOURCES
     sg_dir.cxx
     sg_path.cxx
     sg_hash.cxx
-    sgstream.cxx
     strutils.cxx
     tabbed_values.cxx
     texcoord.cxx
-    zfstream.cxx
-    gzcontainerfile.cxx
     )
 
 if (WINDOWS)
@@ -58,10 +52,6 @@ target_link_libraries(test_CSSBorder ${TEST_LIBS})
 add_executable(test_tabbed_values tabbed_values_test.cxx)
 add_test(tabbed_values ${EXECUTABLE_OUTPUT_PATH}/test_tabbed_values)
 target_link_libraries(test_tabbed_values ${TEST_LIBS})
-
-add_executable(test_streams sgstream_test.cxx )
-add_test(streams ${EXECUTABLE_OUTPUT_PATH}/test_streams)
-target_link_libraries(test_streams ${TEST_LIBS})
 
 add_executable(test_strutils strutils_test.cxx)
 target_link_libraries(test_strutils ${TEST_LIBS})

@@ -34,7 +34,7 @@
 #include <simgear/structure/exception.hxx>
 
 #include <zlib.h>
-#include "zfstream.hxx"
+#include "gzfstream.hxx"
 
 //
 // Construct a gzfilebuf object.

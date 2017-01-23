@@ -18,7 +18,7 @@
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_dir.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/callback.hxx>
 

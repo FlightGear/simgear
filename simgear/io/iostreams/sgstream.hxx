@@ -40,7 +40,7 @@
 #include <string>
 
 #include <zlib.h>
-#include <simgear/misc/zfstream.hxx>
+#include <simgear/io/iostreams/gzfstream.hxx>
 
 class SGPath;
 

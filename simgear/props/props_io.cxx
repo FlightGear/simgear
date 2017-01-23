@@ -21,7 +21,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/xml/easyxml.hxx>
 #include <simgear/misc/ResourceManager.hxx>
-#include <simgear/misc/sgstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 
 #include "props.hxx"
 #include "props_io.hxx"

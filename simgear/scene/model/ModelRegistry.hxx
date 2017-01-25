@@ -92,8 +92,13 @@ public:
                     return res;
                 ref_ptr<osg::Node> processedNode
                     = _processPolicy.process(res.getNode(), fileName, opt);
-                optimizedNode = _optimizePolicy.optimize(processedNode.get(),
-                                                         fileName, opt);
+
+                if (opt->getPluginStringData("SimGear::OPTIMIZER") == "OFF") {
+                    optimizedNode = processedNode;
+                } else {
+                    // default behaviour, run the optimizer
+                    optimizedNode = _optimizePolicy.optimize(processedNode.get(), fileName, opt);
+                }
             }
             if (opt->getPluginStringData("SimGear::BOUNDINGVOLUMES") != "OFF")
                 _bvhPolicy.buildBVH(fileName, optimizedNode.get());

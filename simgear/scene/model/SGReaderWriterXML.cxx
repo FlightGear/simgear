@@ -418,15 +418,21 @@ sgLoad3DModel_internal(const SGPath& path,
             }
         }
 
+        // determine if we should run the ModelRegistry optimizer or not, on the
+        // loaded model. Default behaviour is yes for backwards compatability.
+        const bool optimize = sub_props->getBoolValue("enable-optimizer", true);
+        osg::ref_ptr<SGReaderWriterOptions> subModelOptions(SGReaderWriterOptions::copyOrCreate(options));
+        subModelOptions->setPluginStringData("SimGear::OPTIMIZER", optimize ? "ON" : "OFF");
+
         try {
-            submodel = sgLoad3DModel_internal(submodelPath, options.get(),
+            submodel = sgLoad3DModel_internal(submodelPath, subModelOptions.get(),
                                               sub_props->getNode("overlay"));
         } catch (const sg_exception &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage()
               << "\n\tfrom:" << t.getOrigin());
             continue;
         }
-        
+
         if (!submodel)
             continue;
 

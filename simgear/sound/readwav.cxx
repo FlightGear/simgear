@@ -380,17 +380,22 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   if (!path.exists()) {
     throw sg_io_exception("loadWAVFromFile: file not found", path);
   }
-  
+
   Buffer b;
   b.path = path;
-    
+
   gzFile fd;
-  std::string ps = path.local8BitStr();
+#if defined(SG_WINDOWS)
+	std::wstring ws = path.wstr();
+	fd = gzopen_w(ws.c_str(), "rb");
+#else
+  std::string ps = path.utf8Str();
   fd = gzopen(ps.c_str(), "rb");
+#endif
   if (!fd) {
     throw sg_io_exception("loadWAVFromFile: unable to open file", path);
   }
-  
+
   try {
       loadWavFile(fd, &b);
   } catch (sg_exception& e) {

@@ -21,6 +21,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/xml/easyxml.hxx>
 #include <simgear/misc/ResourceManager.hxx>
+#include <simgear/misc/sgstream.hxx>
 
 #include "props.hxx"
 #include "props_io.hxx"
@@ -696,7 +697,7 @@ writeProperties (const SGPath &path, const SGPropertyNode * start_node,
   SGPath dpath(path);
   dpath.create_dir(0755);
 
-  ofstream output(path.local8BitStr().c_str());
+  sg_ofstream output(path);
   if (output.good()) {
     writeProperties(output, start_node, write_all, archive_flag);
   } else {

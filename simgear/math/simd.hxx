@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cmath>
+#include <new>
 
 #include <simgear/math/SGLimits.hxx>
 #include <simgear/math/SGMisc.hxx>
@@ -330,10 +331,12 @@ public:
     simd_aligned16() {}
     ~simd_aligned16() {}
 
-    void *operator new (size_t size) {
-        return _mm_malloc(size, 16);
+    static void *operator new (size_t size) throw (std::bad_alloc) {
+        void *p = _mm_malloc(size, 16);
+        if (!p) throw std::bad_alloc();
+        return p;
     }
-    void operator delete (void *p) {
+    static void operator delete (void *p) {
         _mm_free(p);
     }
 } ALIGN16C;
@@ -487,22 +490,12 @@ inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
 template<>
 inline simd4_t<float,3> cross(const simd4_t<float,3>& v1, const simd4_t<float,3>& v2)
 {
-#if 1
     // http://threadlocalmutex.com/?p=8
     __m128 v41 = v1.v4(), v42 = v2.v4();
     __m128 a = _mm_shuffle_ps(v41, v41, _MM_SHUFFLE(3, 0, 2, 1));
     __m128 b = _mm_shuffle_ps(v42, v42, _MM_SHUFFLE(3, 0, 2, 1));
     __m128 c = _mm_sub_ps(_mm_mul_ps(v41, b), _mm_mul_ps(a, v42));
     return  _mm_shuffle_ps(c, c, _MM_SHUFFLE(3, 0, 2, 1));
-#else
-    v1 = _mm_sub_ps(
-            _mm_mul_ps(_mm_shuffle_ps(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 0, 2, 1)),
-                       _mm_shuffle_ps(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 1, 0, 2))),
-            _mm_mul_ps(_mm_shuffle_ps(v1.v4(),v1.v4(),_MM_SHUFFLE(3, 1, 0, 2)),
-                       _mm_shuffle_ps(v2.v4(),v2.v4(),_MM_SHUFFLE(3, 0, 2, 1)))
-   );
-   return v1;
-#endif
 }
 
 template<int N>
@@ -529,10 +522,8 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 # endif
 
 
-# ifdef __AVX__
-#  include <pmmintrin.h>
+# ifdef __AVX_unsupported__
 #  include <immintrin.h>
-// #  include "avxintrin-emu.h"
 
 ALIGN32
 class simd_aligned32
@@ -541,10 +532,12 @@ public:
     simd_aligned32() {}
     ~simd_aligned32() {}
 
-    void *operator new (size_t size) {
-        return _mm_malloc(size, 32);
+    static void *operator new (size_t size) throw (std::bad_alloc) {
+        void *p = _mm_malloc(size, 32);
+        if (!p) throw std::bad_alloc();
+        return p;
     }
-    void operator delete (void *p) {
+    static void operator delete (void *p) {
         _mm_free(p);
     }
 } ALIGN32C;
@@ -666,7 +659,7 @@ inline simd4_t<double,2>::simd4_t(double d) {
 namespace simd4
 {
 // http://berenger.eu/blog/sseavxsimd-horizontal-sum-sum-simd-vector-intrinsic/
-inline static float hsum_pd_avx(__m256d v) {
+inline static double hsum_pd_avx(__m256d v) {
     const __m128d valupper = _mm256_extractf128_pd(v, 1);
     const __m128d vallower = _mm256_castpd256_pd128(v);
     _mm256_zeroupper();
@@ -685,7 +678,8 @@ inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
     return hsum_pd_avx(_mm256_mul_pd(v1.v4(),v2.v4()));
 }
 
-#ifdef __AVX2__
+#  ifdef __AVX2__
+#   include <pmmintrin.h>
 template<>
 inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double,3>& v2)
 {
@@ -699,7 +693,7 @@ inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double
                      _mm256_permute4x64_pd(v41,_MM_SHUFFLE(3, 1, 0, 2)),
                      _mm256_permute4x64_pd(v42,_MM_SHUFFLE(3, 0, 2, 1))));
 }
-#endif
+#  endif
 
 template<int N>
 inline simd4_t<double,N> min(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {

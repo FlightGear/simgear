@@ -9,7 +9,16 @@ if(COMMAND cmake_policy)
    endif()
 endif()
 
-message("CMAKE Build type: ${CMAKE_BUILD_TYPE}")
+
+message(STATUS "CMAKE Build type: ${CMAKE_BUILD_TYPE}")
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Debug' as none was specified.")
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+    "MinSizeRel" "RelWithDebInfo")
+endif()
 
 include (CheckFunctionExists)
 include (CheckIncludeFile)
@@ -366,7 +375,8 @@ if (CLANG)
 
     if(ENABLE_SIMD)
       if (X86 OR X86_64)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -mfpmath=sse")
+        set(CMAKE_C_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse")
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse")
       endif()
     endif()
 endif()

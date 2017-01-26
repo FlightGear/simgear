@@ -69,16 +69,27 @@ SGFile::~SGFile() {
 bool SGFile::open( const SGProtocolDir d ) {
     set_dir( d );
 
-    std::string n = file_name.local8BitStr();
+#if defined(SG_WINDOWS)
+    std::wstring n = file_name.wstr();
+#else
+    std::string n = file_name.utf8Str();
+#endif
+
+
     if ( get_dir() == SG_IO_OUT ) {
-#ifdef _WIN32
+#if defined(SG_WINDOWS)
         int mode = _S_IREAD | _S_IWRITE;
+        fp ==::_wopen(n.c_str(), O_WRONLY | O_CREAT | O_TRUNC | extraoflags, mode;
 #else
         mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-#endif
         fp = ::open( n.c_str(), O_WRONLY | O_CREAT | O_TRUNC | extraoflags, mode );
+#endif
     } else if ( get_dir() == SG_IO_IN ) {
+#if defined(SG_WINDOWS)
+        fp = ::_wopen( n.c_str(), O_RDONLY | extraoflags );
+#else
         fp = ::open( n.c_str(), O_RDONLY | extraoflags );
+#endif
     } else {
         SG_LOG( SG_IO, SG_ALERT,
             "Error:  bidirection mode not available for files." );
@@ -145,7 +156,7 @@ int SGFile::readline( char *buf, int length ) {
 	result = i;
     }
     lseek( fp, pos + result, SEEK_SET );
-    
+
     // just in case ...
     buf[ result ] = '\0';
 

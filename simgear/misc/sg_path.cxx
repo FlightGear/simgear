@@ -460,10 +460,11 @@ void SGPath::validate() const
 
   if (path.empty()) {
 	  _exists = false;
+      _canWrite = _canRead = false;
 	  return;
   }
 
-#ifdef _WIN32
+#if defined(SG_WINDOWS)
   struct _stat buf ;
   bool remove_trailing = false;
   std::wstring statPath(wstr());
@@ -473,12 +474,24 @@ void SGPath::validate() const
 
   if (_wstat(statPath.c_str(), &buf ) < 0) {
     _exists = false;
+    _canRead = false;
+
+      // check parent directory for write-ability
+      std::wstring parentPath = simgear::strutils::convertUtf8ToWString(dir());
+      struct _stat parentBuf;
+      if (_wstat(parentPath.c_str(), &parentBuf) >= 0) {
+          _canWrite = parentBuf.st_mode & _S_IWRITE;
+      } else {
+          _canWrite = false;
+      }
   } else {
     _exists = true;
     _isFile = ((S_IFREG & buf.st_mode ) !=0);
     _isDir = ((S_IFDIR & buf.st_mode ) !=0);
     _modTime = buf.st_mtime;
     _size = buf.st_size;
+	_canRead = _S_IREAD & buf.st_mode;
+	_canWrite = _S_IWRITE & buf.st_mode;
   }
 
 #else
@@ -486,15 +499,35 @@ void SGPath::validate() const
 
   if (stat(path.c_str(), &buf ) < 0) {
     _exists = false;
+    _canRead = false;
+
+      // check parent directory for write-ability
+      std::string parentPath = dir();
+      struct stat parentBuf;
+      if (stat(parentPath.c_str(), &parentBuf) >= 0) {
+          _canWrite = parentBuf.st_mode & S_IWUSR;
+      } else {
+          _canWrite = false;
+      }
   } else {
     _exists = true;
     _isFile = ((S_ISREG(buf.st_mode )) != 0);
     _isDir = ((S_ISDIR(buf.st_mode )) != 0);
     _modTime = buf.st_mtime;
     _size = buf.st_size;
+    _canRead = S_IRUSR & buf.st_mode;
+    _canWrite = S_IWUSR & buf.st_mode;
   }
 
 #endif
+    // ensure permissions are no less restrictive than what the
+    // permissions checker offers
+    if ( _permission_checker ) {
+        Permissions p = _permission_checker(*this);
+        _canRead &= p.read;
+        _canWrite &= p.write;
+    }
+
   _cached = true;
 }
 
@@ -504,18 +537,7 @@ void SGPath::checkAccess() const
   if( _rwCached && _cacheEnabled )
     return;
 
-  if( _permission_checker )
-  {
-    Permissions p = _permission_checker(*this);
-    _canRead = p.read;
-    _canWrite = p.write;
-  }
-  else
-  {
-    _canRead = true;
-    _canWrite = true;
-  }
-
+    validate();
   _rwCached = true;
 }
 
@@ -555,7 +577,7 @@ bool SGPath::isFile() const
 
 int SGPath::create_dir(mode_t mode)
 {
-  if( !canWrite() )
+  if ( !permissionsAllowsWrite() )
   {
     SG_LOG( SG_IO,
             SG_WARN, "Error creating directory for '" << *this << "'"
@@ -703,7 +725,7 @@ std::string SGPath::str_native() const
 //------------------------------------------------------------------------------
 bool SGPath::remove()
 {
-  if( !canWrite() )
+  if( !permissionsAllowsWrite() )
   {
     SG_LOG( SG_IO, SG_WARN, "file remove failed: (" << *this << ")"
                                                " reason: access denied" );
@@ -712,7 +734,15 @@ bool SGPath::remove()
 
 #if defined(SG_WINDOWS)
   std::wstring ps = wstr();
-  int err = _wunlink(ps.c_str());
+
+  // windows forbids removing a read-only file, let's try to deal
+  // with that case
+  int err = _wchmod(ps.c_str(), _S_IWRITE | _S_IREAD);
+  if (err != 0) {
+	  SG_LOG(SG_IO, SG_WARN, "failed to make file writeable prior to remove:" << *this);
+  } else {
+	  err = _wunlink(ps.c_str());
+  }
 #else
   std::string ps = local8BitStr();
   int err = ::unlink(ps.c_str());
@@ -1018,3 +1048,10 @@ std::wstring SGPath::wstr() const
 {
 	return simgear::strutils::convertUtf8ToWString(path);
 }
+
+//------------------------------------------------------------------------------
+bool SGPath::permissionsAllowsWrite() const
+{
+    return _permission_checker ? _permission_checker(*this).write : true;
+}
+

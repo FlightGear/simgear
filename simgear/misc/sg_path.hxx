@@ -335,6 +335,8 @@ private:
     void validate() const;
     void checkAccess() const;
 
+    bool permissionsAllowsWrite() const;
+
     std::string path;
     PermissionChecker _permission_checker;
 

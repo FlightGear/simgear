@@ -1,0 +1,695 @@
+// -*- coding: utf-8 -*-
+//
+// zlibstream.cxx --- IOStreams classes for working with RFC 1950 and RFC 1952
+//                    compression formats (respectively known as the zlib and
+//                    gzip formats)
+//
+// Copyright (C) 2017  Florent Rougon
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#include <string>
+#include <ios>                  // std::streamsize
+#include <istream>
+#include <algorithm>
+#include <stdexcept>
+#include <unordered_map>
+#include <limits>               // std::numeric_limits
+#include <cstddef>              // std::size_t, std::ptrdiff_t
+#include <cassert>
+
+#include <zlib.h>
+
+#include <simgear/io/iostreams/zlibstream.hxx>
+#include <simgear/misc/strutils.hxx>
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/structure/exception.hxx>
+#include <simgear/debug/logstream.hxx>
+
+using std::string;
+using traits = std::char_traits<char>;
+
+
+// Private utility function
+static string zlibErrorMessage(const z_stream& zstream, int errorCode)
+{
+  string res;
+  std::unordered_map<int, string> errorCodeToMessageMap = {
+    {Z_OK,            "zlib: no error (code Z_OK)"},
+    {Z_STREAM_END,    "zlib stream end"},
+    {Z_NEED_DICT,     "zlib: Z_NEED_DICT"},
+    {Z_STREAM_ERROR,  "zlib stream error"},
+    {Z_DATA_ERROR,    "zlib data error"},
+    {Z_MEM_ERROR,     "zlib memory error"},
+    {Z_BUF_ERROR,     "zlib buffer error"},
+    {Z_VERSION_ERROR, "zlib version error"}
+  };
+
+  if (errorCode == Z_ERRNO) {
+    res = simgear::strutils::error_string(errno);
+  } else if (zstream.msg != nullptr) {
+    // Caution: this only works if the zstream structure hasn't been
+    // deallocated!
+    res = "zlib: " + string(zstream.msg);
+  } else {
+    try {
+      res = errorCodeToMessageMap.at(errorCode);
+    } catch (const std::out_of_range&) {
+      res = string("unknown zlib error (code " + std::to_string(errorCode) +
+                   ")");
+    }
+  }
+
+  return res;
+}
+
+// Return the largest value that can be represented with zlib's uInt type,
+// which is the type of z_stream.avail_in and z_stream.avail_out, hence the
+// function name.
+static std::size_t zlibMaxChunkSize()
+{
+  uLong flags = ::zlibCompileFlags();
+  std::size_t res;
+
+  switch (flags & 0x3) {
+  case 0x3:
+    SG_LOG(SG_IO, SG_WARN,
+           "Unknown size for zlib's uInt type (code 3). Will assume 64 bits, "
+           "but the actual value is probably higher.");
+    // No 'break' here, this is intentional.
+  case 0x2:
+    res = 0xFFFFFFFFFFFFFFFF;   // 2^64 - 1
+    break;
+  case 0x1:
+    res = 0xFFFFFFFF;             // 2^32 - 1
+    break;
+  case 0x0:
+    res = 0xFFFF;                 // 2^16 - 1
+    break;
+  default:
+    throw std::logic_error("It should be impossible to get here.");
+  }
+
+  return res;
+}
+
+static const std::size_t zlibMaxChunk = ::zlibMaxChunkSize();
+
+
+namespace simgear
+{
+
+// ***************************************************************************
+// *                      ZlibAbstractIStreambuf class                       *
+// ***************************************************************************
+
+// Common initialization. Subclasses must complete the z_stream struct
+// initialization with a call to deflateInit2() or inflateInit2(), typically.
+ZlibAbstractIStreambuf::ZlibAbstractIStreambuf(std::istream& iStream,
+                                               const SGPath& path,
+                                               char* inBuf,
+                                               std::size_t inBufSize,
+                                               char *outBuf,
+                                               std::size_t outBufSize,
+                                               std::size_t putbackSize)
+  : _iStream(iStream),
+    _path(path),
+    _inBuf(inBuf),
+    _inBufSize(inBufSize),
+    _outBuf(outBuf),
+    _outBufSize(outBufSize),
+    _putbackSize(putbackSize)
+
+{
+  assert(_inBufSize > 0);
+  assert(_putbackSize >= 0);    // guaranteed unless the type is changed...
+  assert(_putbackSize < _outBufSize);
+
+  if (_inBuf == nullptr) {
+    _inBuf = new char[_inBufSize];
+    _inBufMustBeFreed = true;
+  }
+
+  if (_outBuf == nullptr) {
+    _outBuf = new char[_outBufSize];
+    _outBufMustBeFreed = true;
+  }
+
+  _inBufEndPtr = _inBuf;
+  // The input buffer is empty.
+  _zstream.next_in = reinterpret_cast<unsigned char *>(_inBuf);
+  _zstream.avail_in = 0;
+  // ZLib's documentation says its init functions such as inflateInit2() might
+  // consume stream input, therefore let's fill the input buffer now. This
+  // way, constructors of derived classes just have to call the appropriate
+  // ZLib init function: the data will already be in place.
+  getInputData();
+
+  // Force underflow() of the stream buffer on the first read. We could use
+  // some other value, but I avoid nullptr in order to be sure we can always
+  // reliably compare the three pointers with < and >, as well as compute the
+  // difference between any two of them.
+  setg(_outBuf, _outBuf, _outBuf);
+}
+
+ZlibAbstractIStreambuf::~ZlibAbstractIStreambuf()
+{
+  if (_inBufMustBeFreed) {
+    delete[] _inBuf;
+  }
+
+  if (_outBufMustBeFreed) {
+    delete[] _outBuf;
+  }
+}
+
+// Fill or refill the output buffer, and update the three pointers
+// corresponding to eback(), gptr() and egptr().
+int ZlibAbstractIStreambuf::underflow()
+{
+  if (_allFinished) {
+    return traits::eof();
+  }
+
+  // According to the C++11 standard: “The public members of basic_streambuf
+  // call this virtual function only if gptr() is null or gptr() >= egptr()”.
+  // Still, it seems some people do the following or similar (maybe in case
+  // underflow() is called “incorrectly”?). See for instance N. Josuttis, The
+  // C++ Standard Library (1st edition), p. 584. One sure thing is that it
+  // can't hurt (except performance, marginally), so let's do it.
+  if (gptr() < egptr()) {
+    return traits::to_int_type(*gptr());
+  }
+
+  assert(gptr() == egptr());
+  assert(egptr() - eback() >= 0);
+  std::size_t nbPutbackChars = std::min(
+    static_cast<std::size_t>(egptr() - eback()), // OK because egptr() >= eback()
+    _putbackSize);
+  std::copy(egptr() - nbPutbackChars, egptr(),
+            _outBuf + _putbackSize - nbPutbackChars);
+
+  setg(_outBuf + _putbackSize - nbPutbackChars, // start of putback area
+       _outBuf + _putbackSize,                  // start of obtained data
+       fillOutputBuffer());                     // one-past-end of obtained data
+
+  return (gptr() == egptr()) ? traits::eof() : traits::to_int_type(*gptr());
+}
+
+// Simple utility method for fillOutputBuffer(), used to improve readability.
+// Return the remaining space available in the output buffer, where zlib can
+// write.
+std::size_t
+ZlibAbstractIStreambuf::fOB_remainingSpace(unsigned char* nextOutPtr) const
+{
+  std::ptrdiff_t remainingSpaceInOutBuf = _outBuf + _outBufSize -
+    reinterpret_cast<char*>(nextOutPtr);
+  assert(remainingSpaceInOutBuf >= 0);
+
+  return static_cast<std::size_t>(remainingSpaceInOutBuf);
+}
+
+// Simple method for dealing with the Z_BUF_ERROR code that may be returned
+// by zlib's deflate() and inflate() methods.
+[[ noreturn ]] void ZlibAbstractIStreambuf::handleZ_BUF_ERROR() const
+{
+  switch (operationType()) {
+  case OPERATION_TYPE_DECOMPRESSION:
+  {
+    string message = (_path.isNull()) ?
+      "Got Z_BUF_ERROR from zlib while decompressing a stream. The stream "
+      "was probably incomplete."
+      :
+      "Got Z_BUF_ERROR from zlib during decompression. The compressed stream "
+      "was probably incomplete.";
+    // When _path.isNull(), sg_location(_path) is equivalent to sg_location()
+    throw sg_io_exception(message, sg_location(_path));
+  }
+  case OPERATION_TYPE_COMPRESSION:
+    throw std::logic_error(
+      "Called ZlibAbstractIStreambuf::handleZ_BUF_ERROR() with "
+      "operationType() == OPERATION_TYPE_DECOMPRESSION");
+  default:
+    throw std::logic_error(
+      "Unexpected operationType() in "
+      "ZlibAbstractIStreambuf::handleZ_BUF_ERROR(): " +
+      std::to_string(operationType()));
+  }
+}
+
+// Fill or refill the output buffer. Return a pointer to the first unused char
+// in _outBuf (i.e., right after the data written by this method, if any;
+// otherwise: _outBuf + _putbackSize).
+char* ZlibAbstractIStreambuf::fillOutputBuffer()
+{
+  bool allInputRead = false;
+  std::size_t remainingSpaceInOutBuf;
+  int retCode;
+
+  // We have to do these unpleasant casts, because zlib uses pointers to
+  // unsigned char for its input and output buffers, while the IOStreams
+  // library in the C++ standard uses plain char pointers...
+  _zstream.next_out = reinterpret_cast<unsigned char*>(_outBuf + _putbackSize);
+  remainingSpaceInOutBuf = fOB_remainingSpace(_zstream.next_out);
+
+  while (remainingSpaceInOutBuf > 0) {
+    // This does fit in a zlib uInt: that's the whole point of zlibMaxChunk.
+    _zstream.avail_out = static_cast<uInt>(
+      std::min(remainingSpaceInOutBuf, zlibMaxChunk));
+
+    if (_zstream.avail_in == 0 && !allInputRead) {
+      // Get data from _iStream, store it in _inBuf
+      allInputRead = getInputData();
+    }
+
+    // Make zlib process some data (compress or decompress it). This updates
+    // _zstream.{avail,next}_{in,out} (4 fields of the z_stream struct).
+    retCode = zlibProcessData();
+
+    if (retCode == Z_BUF_ERROR) {
+      handleZ_BUF_ERROR();            // doesn't return
+    } else if (retCode == Z_STREAM_END) {
+      assert(_zstream.avail_in == 0); // all of _inBuf must have been used
+      _allFinished = true;
+      break;
+    } else if (retCode < 0) {         // negative codes are errors
+      throw sg_io_exception(::zlibErrorMessage(_zstream, retCode),
+                            sg_location(_path));
+    }
+
+    remainingSpaceInOutBuf = fOB_remainingSpace(_zstream.next_out);
+  }
+
+  return reinterpret_cast<char*>(_zstream.next_out);
+}
+
+// This method provides input data to zlib:
+//   - if data is already available in _inBuf, it updates _zstream.avail_in
+//     accordingly (using the largest possible amount given _zstream.avail_in's
+//     type, i.e., uInt);
+//   - otherwise, it reads() as much data as possible into _inBuf from
+//     _iStream and updates _zstream.avail_in to tell zlib about this new
+//     available data (again: largest possible amount given the uInt type).
+//
+// This method must be called only when _zstream.avail_in == 0, which means
+// zlib has read everything we fed it (and does *not* mean, by the way, that
+// the input buffer starting at _inBuf is empty; this is because the buffer
+// size might exceed what can be represented by an uInt).
+//
+// On return:
+//   - either EOF has been reached for _iStream, and the return value is true;
+//   - or _zstream.avail_in > 0, and the return value is false.
+//
+// Note: don't read more in the previous paragraph concerning the state on
+//       return. In the first case, there is *no guarantee* about
+//       _zstream.avail_in's value; in the second case, there is *no guarantee*
+//       about whether EOF has been reached for _iStream.
+bool ZlibAbstractIStreambuf::getInputData()
+{
+  bool allInputRead = false;
+
+  assert(_zstream.avail_in == 0);
+  std::ptrdiff_t alreadyAvailable =
+    _inBufEndPtr - reinterpret_cast<char*>(_zstream.next_in);
+  assert(alreadyAvailable >= 0);
+
+  // Data already available?
+  if (alreadyAvailable > 0) {
+    _zstream.avail_in = static_cast<uInt>(
+      std::min(static_cast<std::size_t>(alreadyAvailable),
+               zlibMaxChunk));
+    return allInputRead;
+  }
+
+  if (_inBufEndPtr == _inBuf + _inBufSize) { // buffer full, rewind
+    _inBufEndPtr = _inBuf;
+    _zstream.next_in = reinterpret_cast<unsigned char*>(_inBuf);
+  }
+
+  // Fill the input buffer (as much as possible)
+  while (_inBufEndPtr < _inBuf + _inBufSize && !_iStream.eof()) {
+    std::streamsize nbCharsToRead = std::min(
+      _inBuf + _inBufSize - _inBufEndPtr,
+      std::numeric_limits<std::streamsize>::max()); // max we can pass to read()
+    _iStream.read(_inBufEndPtr, nbCharsToRead);
+
+    if (_iStream.bad()) {
+      string errMsg = simgear::strutils::error_string(errno);
+      string msgStart = (_path.isNull()) ?
+        "Error while reading from a stream" : "Read error";
+      throw sg_io_exception(msgStart + ": " + errMsg, sg_location(_path));
+    }
+
+    // Could be zero if at EOF
+    std::streamsize nbCharsRead = _iStream.gcount();
+    // std::streamsize is a signed integral type!
+    assert(0 <= nbCharsRead);
+    _inBufEndPtr += nbCharsRead;
+  }
+
+  std::ptrdiff_t availableChars =
+    _inBufEndPtr - reinterpret_cast<char*>(_zstream.next_in);
+  assert(availableChars >= 0);
+  _zstream.avail_in = static_cast<uInt>(
+    std::min(static_cast<std::size_t>(availableChars),
+             zlibMaxChunk));
+
+  if (_iStream.eof()) {
+    allInputRead = true;
+  } else {
+    // Trying to rewind a fully read std::istringstream with seekg() can lead
+    // to a weird state, where the stream doesn't return any character but
+    // doesn't report EOF either. Make sure we are not in this situation.
+    assert(_zstream.avail_in > 0);
+  }
+
+  return allInputRead;
+}
+
+// Implementing this method is optional, but should provide better
+// performance. It makes zlib write the data directly in the buffer starting
+// at 'dest'. Without it, the data would go through an intermediate buffer
+// (_outBuf) before being copied to its (hopefully) final destination.
+std::streamsize ZlibAbstractIStreambuf::xsgetn(char* dest, std::streamsize n)
+{
+  std::size_t remaining = static_cast<std::size_t>(n);
+  std::size_t chunkSize;
+  std::ptrdiff_t avail;
+  const char* origGptr = gptr();
+  char* writePtr = dest;        // we'll need dest later -> work with a copy
+
+  // First, let's take data present in our internal buffer (_outBuf)
+  while (remaining > 0) {
+    avail = egptr() - gptr();   // number of available chars in _outBuf
+    if (avail == 0) {           // our internal buffer is empty
+      break;
+    }
+
+    chunkSize = std::min(remaining, static_cast<std::size_t>(avail));
+    std::copy(gptr(), gptr() + chunkSize, writePtr);
+    gbump(chunkSize);
+    writePtr += chunkSize;
+    remaining -= chunkSize;
+  }
+
+  if (remaining == 0) {
+    // Everything we needed was already in _outBuf. The putback area is set up
+    // as it should between eback() and the current gptr(), so we are fine to
+    // return.
+    return n;
+  }
+
+  // Now, let's make it so that the remaining data we need is directly written
+  // to the destination area, without going through _outBuf.
+  _zstream.next_out = reinterpret_cast<unsigned char*>(writePtr);
+  bool allInputRead = false;
+  int retCode;
+
+  while (remaining > 0) {
+    chunkSize = std::min(remaining, zlibMaxChunk);
+    // It does fit in a zlib uInt: that's the whole point of zlibMaxChunk.
+    _zstream.avail_out = static_cast<uInt>(chunkSize);
+
+    if (_zstream.avail_in == 0 && !allInputRead) {
+      allInputRead = getInputData();
+    }
+
+    // Make zlib process some data (compress or decompress). This updates
+    // _zstream.{avail,next}_{in,out} (4 fields of the z_stream struct).
+    retCode = zlibProcessData();
+    // chunkSize - _zstream.avail_out is the nb of chars written by zlib
+    remaining -= chunkSize - _zstream.avail_out;
+
+    if (retCode == Z_BUF_ERROR) {
+      handleZ_BUF_ERROR();            // doesn't return
+    } else if (retCode == Z_STREAM_END) {
+      assert(_zstream.avail_in == 0); // all of _inBuf must have been used
+      _allFinished = true;
+      break;
+    } else if (retCode < 0) {   // negative codes are errors
+      throw sg_io_exception(::zlibErrorMessage(_zstream, retCode),
+                            sg_location(_path));
+    }
+  }
+
+  // Finally, prepare the putback area.
+  //
+  // We could use reinterpret_cast<char*>(_zstream.next_out) everywhere below,
+  // except it is hardly readable. This points after the latest data we wrote.
+  writePtr = reinterpret_cast<char*>(_zstream.next_out);
+
+  // There are two buffers containing characters we potentially have to copy
+  // to the putback area: the one starting at _outBuf and the one starting at
+  // dest. In the following diagram, ***** represents those from _outBuf,
+  // which are right-aligned at origGptr[1], and the series of # represents
+  // those in the [dest, writePtr) address range:
+  //
+  // |_outBuf  |eback() *****|origGptr      |_outBuf + _outBufSize
+  //
+  // |dest #################|writePtr
+  //
+  // Together, these two memory blocks logically form a contiguous stream of
+  // chars we gave to the “client”: *****#################. All we have to do
+  // now is copy the appropriate amount of chars from this logical stream to
+  // the putback area, according to _putbackSize. These chars are the last
+  // ones in said stream (i.e., right portion of *****#################), but
+  // we have to copy them in order of increasing address to avoid possible
+  // overlapping problems in _outBuf. This is because some of the chars to
+  // copy may be located before _outBuf + _putbackSize (i.e., already be in
+  // the putback area).
+  //
+  //   [1] This means that the last char represented by a star is at address
+  //       origGptr-1.
+  assert(writePtr - dest >= 0);
+  std::size_t inDestBuffer = static_cast<std::size_t>(writePtr - dest);
+  assert(origGptr - eback() >= 0);
+  std::size_t nbPutbackChars = std::min(
+    static_cast<std::size_t>(origGptr - eback()) + inDestBuffer,
+    _putbackSize);
+  std::size_t nbPutbackCharsToGo = nbPutbackChars;
+
+  // chunkSize has an unsigned type; precomputing it before the following test
+  // wouldn't work.
+  // Are there chars in _outBuf that need to be copied to the putback area?
+  if (nbPutbackChars > inDestBuffer) {
+    chunkSize = nbPutbackChars - inDestBuffer; // yes, this number
+    std::copy(origGptr - chunkSize, origGptr,
+              _outBuf + _putbackSize - nbPutbackChars);
+    nbPutbackCharsToGo -= chunkSize;
+  }
+
+  std::copy(writePtr - nbPutbackCharsToGo, writePtr,
+            _outBuf + _putbackSize - nbPutbackCharsToGo);
+  setg(_outBuf + _putbackSize - nbPutbackChars, // start of putback area
+       _outBuf + _putbackSize,                  // the buffer for pending,
+       _outBuf + _putbackSize);                 // available data is empty
+
+  std::streamsize rem = static_cast<std::streamsize>(remaining);
+  // This is guaranteed because n is of type std::streamsize and the whole
+  // algorithm ensures that 0 <= remaining <= n.
+  assert(rem >= 0);
+  assert(static_cast<std::size_t>(rem) == remaining);
+  assert(n - rem >= 0);
+  // Total number of chars copied.
+  return n - rem;
+}
+
+// ***************************************************************************
+// *                     ZlibCompressorIStreambuf class                      *
+// ***************************************************************************
+
+ZlibCompressorIStreambuf::ZlibCompressorIStreambuf(
+  std::istream& iStream,
+  const SGPath& path,
+  int compressionLevel,
+  ZLibCompressionFormat format,
+  ZLibMemoryStrategy memStrategy,
+  char* inBuf,
+  std::size_t inBufSize,
+  char *outBuf,
+  std::size_t outBufSize,
+  std::size_t putbackSize)
+  : ZlibAbstractIStreambuf(iStream, path, inBuf, inBufSize, outBuf, outBufSize,
+                           putbackSize)
+{
+  zStreamInit(compressionLevel, format, memStrategy);
+}
+
+ZlibCompressorIStreambuf::~ZlibCompressorIStreambuf()
+{
+  int retCode = deflateEnd(&_zstream); // deallocate the z_stream struct
+  if (retCode != Z_OK) {
+    // In C++11, we can't throw exceptions from a destructor.
+    SG_LOG(SG_IO, SG_ALERT, "ZlibCompressorIStreambuf: " <<
+           ::zlibErrorMessage(_zstream, retCode));
+  }
+}
+
+ZlibAbstractIStreambuf::OperationType
+ZlibCompressorIStreambuf::operationType() const
+{
+  return OPERATION_TYPE_COMPRESSION;
+}
+
+void ZlibCompressorIStreambuf::zStreamInit(int compressionLevel,
+                                          ZLibCompressionFormat format,
+                                          ZLibMemoryStrategy memStrategy)
+{
+  // Intentionally not listing ZLIB_COMPRESSION_FORMAT_AUTODETECT here
+  std::unordered_map<ZLibCompressionFormat, int> compressionFormatMap = {
+    {ZLIB_COMPRESSION_FORMAT_ZLIB, 15},
+    {ZLIB_COMPRESSION_FORMAT_GZIP, 31}
+  };
+  std::unordered_map<ZLibMemoryStrategy, int> memoryStrategyMap = {
+    {ZLIB_FAVOR_MEMORY_OVER_SPEED, 8},
+    {ZLIB_FAVOR_SPEED_OVER_MEMORY, 9}
+  };
+
+  // ZLIB_COMPRESSION_FORMAT_AUTODETECT is only for decompression!
+  assert(format != ZLIB_COMPRESSION_FORMAT_AUTODETECT);
+  int windowBits = compressionFormatMap.at(format);
+  int memLevel = memoryStrategyMap.at(memStrategy);
+
+  _zstream.zalloc = Z_NULL;     // No custom memory allocation routines
+  _zstream.zfree = Z_NULL;      // Ditto. Therefore, the 'opaque' field won't
+  _zstream.opaque = Z_NULL;     // be used, actually.
+
+  int retCode = deflateInit2(&_zstream, compressionLevel, Z_DEFLATED,
+                             windowBits, memLevel, Z_DEFAULT_STRATEGY);
+  if (retCode != Z_OK) {
+    throw sg_io_exception(::zlibErrorMessage(_zstream, retCode),
+                          sg_location(_path));
+  }
+}
+
+int ZlibCompressorIStreambuf::zlibProcessData()
+{
+  // Compress as much data as possible given _zstream.avail_in and
+  // _zstream.avail_out. The input data starts at _zstream.next_in, the output
+  // at _zstream.next_out, and these four fields are all updated by this call
+  // to reflect exactly the amount of data zlib has consumed and produced.
+  return deflate(&_zstream, _zstream.avail_in ? Z_NO_FLUSH : Z_FINISH);
+}
+
+// ***************************************************************************
+// *                    ZlibDecompressorIStreambuf class                     *
+// ***************************************************************************
+
+ZlibDecompressorIStreambuf::ZlibDecompressorIStreambuf(
+  std::istream& iStream,
+  const SGPath& path,
+  ZLibCompressionFormat format,
+  char* inBuf,
+  std::size_t inBufSize,
+  char *outBuf,
+  std::size_t outBufSize,
+  std::size_t putbackSize)
+  : ZlibAbstractIStreambuf(iStream, path, inBuf, inBufSize, outBuf, outBufSize,
+                           putbackSize)
+{
+  zStreamInit(format);
+}
+
+ZlibDecompressorIStreambuf::~ZlibDecompressorIStreambuf()
+{
+  int retCode = inflateEnd(&_zstream); // deallocate the z_stream struct
+  if (retCode != Z_OK) {
+    // In C++11, we can't throw exceptions from a destructor.
+    SG_LOG(SG_IO, SG_ALERT, "ZlibDecompressorIStreambuf: " <<
+           ::zlibErrorMessage(_zstream, retCode));
+  }
+}
+
+ZlibAbstractIStreambuf::OperationType
+ZlibDecompressorIStreambuf::operationType() const
+{
+  return OPERATION_TYPE_DECOMPRESSION;
+}
+
+void ZlibDecompressorIStreambuf::zStreamInit(ZLibCompressionFormat format)
+{
+  std::unordered_map<ZLibCompressionFormat, int> compressionFormatMap = {
+    {ZLIB_COMPRESSION_FORMAT_ZLIB, 15},
+    {ZLIB_COMPRESSION_FORMAT_GZIP, 31},
+    {ZLIB_COMPRESSION_FORMAT_AUTODETECT, 47} // 47 = 32 + 15
+  };
+
+  int windowBits = compressionFormatMap.at(format);
+
+  _zstream.zalloc = Z_NULL;     // No custom memory allocation routines
+  _zstream.zfree = Z_NULL;      // Ditto. Therefore, the 'opaque' field won't
+  _zstream.opaque = Z_NULL;     // be used, actually.
+
+  int retCode = inflateInit2(&_zstream, windowBits);
+  if (retCode != Z_OK) {
+    throw sg_io_exception(::zlibErrorMessage(_zstream, retCode),
+                          sg_location(_path));
+  }
+}
+
+int ZlibDecompressorIStreambuf::zlibProcessData()
+{
+  // Decompress as much data as possible given _zstream.avail_in and
+  // _zstream.avail_out. The input data starts at _zstream.next_in, the output
+  // at _zstream.next_out, and these four fields are all updated by this call
+  // to reflect exactly the amount of data zlib has consumed and produced.
+  return inflate(&_zstream, _zstream.avail_in ? Z_NO_FLUSH : Z_FINISH);
+}
+
+// ***************************************************************************
+// *                       ZlibCompressorIStream class                       *
+// ***************************************************************************
+
+ZlibCompressorIStream::ZlibCompressorIStream(std::istream& iStream,
+                                             const SGPath& path,
+                                             int compressionLevel,
+                                             ZLibCompressionFormat format,
+                                             ZLibMemoryStrategy memStrategy,
+                                             char* inBuf,
+                                             std::size_t inBufSize,
+                                             char *outBuf,
+                                             std::size_t outBufSize,
+                                             std::size_t putbackSize)
+  : _streamBuf(iStream, path, compressionLevel, format, memStrategy, inBuf,
+               inBufSize, outBuf, outBufSize, putbackSize)
+{
+  rdbuf(&_streamBuf);            // Associate _streamBuf to 'this'
+}
+
+ZlibCompressorIStream::~ZlibCompressorIStream()
+{ }
+
+// ***************************************************************************
+// *                      ZlibDecompressorIStream class                      *
+// ***************************************************************************
+
+ZlibDecompressorIStream::ZlibDecompressorIStream(std::istream& iStream,
+                                                 const SGPath& path,
+                                                 ZLibCompressionFormat format,
+                                                 char* inBuf,
+                                                 std::size_t inBufSize,
+                                                 char *outBuf,
+                                                 std::size_t outBufSize,
+                                                 std::size_t putbackSize)
+  : _streamBuf(iStream, path, format, inBuf, inBufSize, outBuf, outBufSize,
+               putbackSize)
+{
+  rdbuf(&_streamBuf);            // Associate _streamBuf to 'this'
+}
+
+ZlibDecompressorIStream::~ZlibDecompressorIStream()
+{ }
+
+} // of namespace simgear

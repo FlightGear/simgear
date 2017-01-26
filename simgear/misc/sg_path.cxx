@@ -480,7 +480,7 @@ void SGPath::validate() const
       std::wstring parentPath = simgear::strutils::convertUtf8ToWString(dir());
       struct _stat parentBuf;
       if (_wstat(parentPath.c_str(), &parentBuf) >= 0) {
-          _canWrite = parentBuf.st_mode & S_IWUSR;
+          _canWrite = parentBuf.st_mode & _S_IWRITE;
       } else {
           _canWrite = false;
       }
@@ -490,6 +490,8 @@ void SGPath::validate() const
     _isDir = ((S_IFDIR & buf.st_mode ) !=0);
     _modTime = buf.st_mtime;
     _size = buf.st_size;
+	_canRead = _S_IREAD & buf.st_mode;
+	_canWrite = _S_IWRITE & buf.st_mode;
   }
 
 #else
@@ -732,7 +734,15 @@ bool SGPath::remove()
 
 #if defined(SG_WINDOWS)
   std::wstring ps = wstr();
-  int err = _wunlink(ps.c_str());
+
+  // windows forbids removing a read-only file, let's try to deal
+  // with that case
+  int err = _wchmod(ps.c_str(), _S_IWRITE | _S_IREAD);
+  if (err != 0) {
+	  SG_LOG(SG_IO, SG_WARN, "failed to make file writeable prior to remove:" << *this);
+  } else {
+	  err = _wunlink(ps.c_str());
+  }
 #else
   std::string ps = local8BitStr();
   int err = ::unlink(ps.c_str());

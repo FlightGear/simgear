@@ -223,7 +223,7 @@ struct ReaderWriterSTG::_ModelBin {
 
         SGPath path = filePath;
         path.append(".."); path.append(".."); path.append("..");
-        sharedOptions->getDatabasePathList().push_back(path.local8BitStr());
+        sharedOptions->getDatabasePathList().push_back(path.utf8Str());
 
         // ensure Models directory synced via TerraSync is searched before the copy in
         // FG_ROOT, so that updated models can be used.
@@ -316,7 +316,7 @@ struct ReaderWriterSTG::_ModelBin {
 
         SG_LOG(SG_TERRAIN, SG_INFO, "Loading stg file " << absoluteFileName);
 
-        std::string filePath = osgDB::getFilePath(absoluteFileName.local8BitStr());
+        std::string filePath = osgDB::getFilePath(absoluteFileName.utf8Str());
 
         // Bucket provides a consistent seed
         // so we have consistent set of pseudo-random numbers for each STG file
@@ -364,7 +364,7 @@ struct ReaderWriterSTG::_ModelBin {
                     _Object obj;
                     obj._errorLocation = absoluteFileName;
                     obj._token = token;
-                    obj._name = path.local8BitStr();
+                    obj._name = path.utf8Str();
                     obj._options = staticOptions(filePath, options);
                     _objectList.push_back(obj);
                 }
@@ -374,7 +374,7 @@ struct ReaderWriterSTG::_ModelBin {
                     _Object obj;
                     obj._errorLocation = absoluteFileName;
                     obj._token = token;
-                    obj._name = path.local8BitStr();
+                    obj._name = path.utf8Str();
                     obj._options = staticOptions(filePath, options);
                     _objectList.push_back(obj);
                 }

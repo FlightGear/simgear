@@ -63,7 +63,7 @@ private:
   string format;
 };
 
-void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv ) 
+void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
 {
   // FIXME:
   // hopefully the users never specifies bad formats here
@@ -78,7 +78,7 @@ void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
   }
   if( text->getText().createUTF8EncodedString().compare( buf )  ) {
     // be lazy and set the text only if the property has changed.
-    // update() computes the glyph representation which looks 
+    // update() computes the glyph representation which looks
     // more expensive than a the above string compare.
     text->setText( buf );
     text->update();
@@ -86,7 +86,7 @@ void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
   traverse( node, nv );
 }
 
-osg::Node * SGText::appendText(const SGPropertyNode* configNode, 
+osg::Node * SGText::appendText(const SGPropertyNode* configNode,
   SGPropertyNode* modelRoot, const osgDB::Options* options)
 {
   SGConstPropertyNode_ptr p;
@@ -97,11 +97,11 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
 
   SGPath path("Fonts" );
   path.append( configNode->getStringValue( "font", "Helvetica" ));
-  text->setFont( path.local8BitStr() );
+  text->setFont( path.utf8Str() );
 
-  text->setCharacterSize(configNode->getDoubleValue("character-size", 1.0 ), 
+  text->setCharacterSize(configNode->getDoubleValue("character-size", 1.0 ),
                          configNode->getDoubleValue("character-aspect-ratio", 1.0 ));
-  
+
   if( (p = configNode->getNode( "font-resolution" )) != NULL )
     text->setFontResolution( p->getIntValue( "width", 32 ), p->getIntValue( "height", 32 ) );
 
@@ -196,7 +196,7 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
       SG_LOG(SG_GENERAL, SG_ALERT, "ignoring unknown layout '" << layout <<"'." );
     }
   }
-  
+
   if( (p = configNode->getNode( "max-width" )) != NULL )
     text->setMaximumWidth( p->getDoubleValue() );
 

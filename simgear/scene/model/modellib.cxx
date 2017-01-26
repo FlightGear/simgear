@@ -76,7 +76,7 @@ std::string SGModelLib::findDataFile(const std::string& file,
     return file;
   SGPath p = ResourceManager::instance()->findPath(file, currentPath);
   if (p.exists()) {
-    return p.local8BitStr();
+    return p.utf8Str();
   }
 
   // finally hand on to standard OSG behaviour

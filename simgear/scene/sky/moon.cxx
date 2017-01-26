@@ -1,9 +1,9 @@
 // moon.hxx -- model earth's moon
 //
-// Written by Durk Talsma. Originally started October 1997, for distribution  
-// with the FlightGear project. Version 2 was written in August and 
-// September 1998. This code is based upon algorithms and data kindly 
-// provided by Mr. Paul Schlyter. (pausch@saaf.se). 
+// Written by Durk Talsma. Originally started October 1997, for distribution
+// with the FlightGear project. Version 2 was written in August and
+// September 1998. This code is based upon algorithms and data kindly
+// provided by Mr. Paul Schlyter. (pausch@saaf.se).
 //
 // Separated out rendering pieces and converted to ssg by Curt Olson,
 // March 2000
@@ -76,7 +76,7 @@ SGMoon::build( SGPath path, double moon_size ) {
 
     // set up the orb state
     osg::ref_ptr<SGReaderWriterOptions> options;
-    options = SGReaderWriterOptions::fromPath(path.local8BitStr());
+    options = SGReaderWriterOptions::fromPath(path.utf8Str());
 
     osg::Texture2D* texture = SGLoadTexture2D("moon.png", options.get());
     stateSet->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
@@ -142,18 +142,18 @@ bool SGMoon::repaint( double moon_angle ) {
     prev_moon_angle = moon_angle;
 
     float moon_factor = 4*cos(moon_angle);
-    
+
     if (moon_factor > 1) moon_factor = 1.0;
     if (moon_factor < -1) moon_factor = -1.0;
     moon_factor = moon_factor/2 + 0.5;
-    
+
     osg::Vec4 color;
     color[1] = sqrt(moon_factor);
     color[0] = sqrt(color[1]);
     color[2] = moon_factor * moon_factor;
     color[2] *= color[2];
     color[3] = 1.0;
-    
+
     gamma_correct_rgb( color._v );
 
     orb_material->setDiffuse(osg::Material::FRONT_AND_BACK, color);
@@ -182,4 +182,3 @@ bool SGMoon::reposition( double rightAscension, double declination,
 
     return true;
 }
-

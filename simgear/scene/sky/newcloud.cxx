@@ -75,7 +75,7 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
     // Set up the RNG with the passed in seed. This allows us to make the RNG repeatable
     // if required.
     seed = s;
-  
+
     min_width = cld_def->getFloatValue("min-cloud-width-m", 500.0);
     max_width = cld_def->getFloatValue("max-cloud-width-m", min_width*2);
     min_height = cld_def->getFloatValue("min-cloud-height-m", 400.0);
@@ -88,10 +88,10 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
     num_textures_x = cld_def->getIntValue("num-textures-x", 4);
     num_textures_y = cld_def->getIntValue("num-textures-y", 4);
     height_map_texture = cld_def->getBoolValue("height-map-texture", false);
-    
+
     min_bottom_lighting_factor = cld_def->getFloatValue("min-bottom-lighting-factor", 1.0);
     max_bottom_lighting_factor = cld_def->getFloatValue("max-bottom-lighting-factor", min(min_bottom_lighting_factor  + 0.1, 1.0));
-    
+
     min_middle_lighting_factor = cld_def->getFloatValue("min-middle-lighting-factor", 1.0);
     max_middle_lighting_factor = cld_def->getFloatValue("max-middle-lighting-factor", min(min_middle_lighting_factor  + 0.1, 1.0));
 
@@ -100,7 +100,7 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
 
     min_shade_lighting_factor = cld_def->getFloatValue("min-shade-lighting-factor", 0.5);
     max_shade_lighting_factor = cld_def->getFloatValue("max-shade-lighting-factor", min(min_shade_lighting_factor  + 0.1, 1.0));
-    
+
     zscale = cld_def->getFloatValue("z-scale", 1.0);
     alpha_factor = cld_def->getFloatValue("alpha-factor",1.0);
     texture = cld_def->getStringValue("texture", "cl_cumulus.png");
@@ -118,7 +118,7 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
                            "image"),
                  texture);
         ref_ptr<SGReaderWriterOptions> options;
-        options = SGReaderWriterOptions::fromPath(texture_root.local8BitStr());
+        options = SGReaderWriterOptions::fromPath(texture_root.utf8Str());
         effect = makeEffect(pcloudEffect, true, options.get());
         if (effect.valid())
         {
@@ -141,17 +141,17 @@ static float Rnd(float n) {
 #endif
 
 osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
-    
+
     osg::ref_ptr<EffectGeode> geode = new EffectGeode;
-        
+
     // Determine how big this specific cloud instance is. Note that we subtract
     // the sprite size because the width/height is used to define the limits of
     // the center of the sprites, not their edges.
     float width = min_width + mt_rand(seed) * (max_width - min_width) - min_sprite_width;
     float height = min_height + mt_rand(seed) * (max_height - min_height) - min_sprite_height;
-    
+
     if (width  < 0.0) { width  = 0.0; }
-    
+
     // Protect against divide by 0 issues later when assigning index_y
     if (height <= 0.0) { height = 0.01; }
 
@@ -160,13 +160,13 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     float middle_factor = min_middle_lighting_factor + mt_rand(seed) * (max_middle_lighting_factor - min_middle_lighting_factor);
     float bottom_factor = min_bottom_lighting_factor + mt_rand(seed) * (max_bottom_lighting_factor - min_bottom_lighting_factor);
     float shade_factor = min_shade_lighting_factor + mt_rand(seed) * (max_shade_lighting_factor - min_shade_lighting_factor);
-    
-    //printf("Cloud: %2f, %2f, %2f, %2f\n", top_factor, middle_factor, bottom_factor, shade_factor); 
-    
-    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, 
-                                                      num_textures_y, 
-                                                      max_width + max_sprite_width, 
-                                                      max_height + max_sprite_height, 
+
+    //printf("Cloud: %2f, %2f, %2f, %2f\n", top_factor, middle_factor, bottom_factor, shade_factor);
+
+    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x,
+                                                      num_textures_y,
+                                                      max_width + max_sprite_width,
+                                                      max_height + max_sprite_height,
                                                       top_factor,
                                                       middle_factor,
                                                       bottom_factor,
@@ -174,14 +174,14 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
                                                       height,
                                                       zscale,
                                                       alpha_factor);
-        
+
     // Determine the cull distance. This is used to remove sprites that are too close together.
     // The value is squared as we use vector calculations.
     float cull_distance_squared = min_sprite_height * min_sprite_height * 0.1f;
-    
+
     // The number of sprites we actually use is a function of the (user-controlled) density
     int n_sprites = num_sprites * sprite_density * (0.5f + mt_rand(seed));
-    
+
     for (int i = 0; i < n_sprites; i++)
     {
         // Determine the position of the sprite. Rather than being completely random,
@@ -189,7 +189,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
         // the first sprite in the center of the sphere (and at maximum size) to
 	      // ensure good coverage and reduce the chance of there being "holes" in the
 	      // middle of our cloud. Also note that (0,0,0) defines the _bottom_ of the
-	      // cloud, not the middle. 
+	      // cloud, not the middle.
 
         float x, y, z;
 
@@ -204,11 +204,11 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
             y = width * sin(theta) * 0.5f * sin(elev);
             z = height * cos(elev) * 0.5f + height * 0.5f;
         }
-        
+
         // Determine the height and width
         float sprite_width = min_sprite_width + mt_rand(seed) * (max_sprite_width - min_sprite_width);
         float sprite_height = min_sprite_height + mt_rand(seed) * (max_sprite_height - min_sprite_height);
-        
+
         // Sprites are never taller than square.
         if (sprite_height > sprite_width )
         {
@@ -220,44 +220,43 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
             sprite_width = max_sprite_width;
             sprite_height = max_sprite_height;
         }
-        
-        // If the center of the sprite is less than half the sprite heightthe sprite will extend 
-        // below the bottom of the cloud and must be shifted upwards. This is particularly important 
+
+        // If the center of the sprite is less than half the sprite heightthe sprite will extend
+        // below the bottom of the cloud and must be shifted upwards. This is particularly important
         // for cumulus clouds which have a very well defined base.
         if (z < 0.5f * sprite_height)
         {
             z = 0.5f * sprite_height;
-        }        
+        }
 
         // Determine the sprite texture indexes.
         int index_x = (int) floor(mt_rand(seed) * num_textures_x);
         if (index_x >= num_textures_x) { index_x = num_textures_x - 1; }
-                
+
         int index_y = (int) floor(mt_rand(seed) * num_textures_y);
-        
+
         if (height_map_texture) {
           // The y index depends on the position of the sprite within the cloud.
           // This allows cloud designers to have particular sprites for the base
           // and tops of the cloud.
           index_y = (int) floor((z / height) * num_textures_y);
         }
-        
+
         if (index_y >= num_textures_y) { index_y = num_textures_y - 1; }
-        
-        sg->addSprite(SGVec3f(x, y, z), 
-                      index_x, 
-                      index_y, 
-                      sprite_width, 
-                      sprite_height, 
+
+        sg->addSprite(SGVec3f(x, y, z),
+                      index_x,
+                      index_y,
+                      sprite_width,
+                      sprite_height,
                       cull_distance_squared);
     }
-    
+
     sg->generateGeometry();
     geode->addDrawable(sg);
     geode->setName("3D cloud");
     geode->setEffect(effect.get());
     geode->setNodeMask( ~simgear::MODELLIGHT_BIT );
-    
+
     return geode;
 }
-

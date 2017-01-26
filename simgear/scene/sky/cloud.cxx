@@ -78,7 +78,7 @@ SGMakeState(const SGPath &path, const char* colorTexture,
     osg::StateSet *stateSet = new osg::StateSet;
 
     osg::ref_ptr<SGReaderWriterOptions> options;
-    options = SGReaderWriterOptions::fromPath(path.local8BitStr());
+    options = SGReaderWriterOptions::fromPath(path.utf8Str());
     stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture,
                                                      options.get()));
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);

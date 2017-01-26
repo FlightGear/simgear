@@ -108,7 +108,7 @@ SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
 }
 
 SGMaterial::SGMaterial( const osgDB::Options* options,
-                        const SGPropertyNode *props, 
+                        const SGPropertyNode *props,
                         SGPropertyNode *prop_root,
                         AreaList *a,
                         SGSharedPtr<const SGCondition> c)
@@ -149,7 +149,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
         SGPath tpath("Textures");
         tpath.append(tname);
-        std::string fullTexPath = SGModelLib::findDataFile(tpath.local8BitStr(), options);
+        std::string fullTexPath = SGModelLib::findDataFile(tpath.utf8Str(), options);
         if (fullTexPath.empty()) {
             SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
                     << tname << "\" in Textures folders.");
@@ -181,7 +181,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
             SGPath tpath("Textures");
             tpath.append(tname);
-            std::string fullTexPath = SGModelLib::findDataFile(tpath.local8BitStr(), options);
+            std::string fullTexPath = SGModelLib::findDataFile(tpath.utf8Str(), options);
             if (fullTexPath.empty()) {
                 SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
                         << tname << "\" in Textures folders.");
@@ -207,10 +207,10 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         SGPath tpath("Textures");
         tpath.append("Terrain");
         tpath.append("unknown.rgb");
-        _internal_state st( NULL, tpath.local8BitStr(), true, options );
+        _internal_state st( NULL, tpath.utf8Str(), true, options );
         _status.push_back( st );
     }
-    
+
     std::vector<SGPropertyNode_ptr> masks = props->getChildren("object-mask");
     for (unsigned int i = 0; i < masks.size(); i++)
     {
@@ -219,7 +219,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         if (! omname.empty()) {
             SGPath ompath("Textures");
             ompath.append(omname);
-            std::string fullMaskPath = SGModelLib::findDataFile(ompath.local8BitStr(), options);
+            std::string fullMaskPath = SGModelLib::findDataFile(ompath.utf8Str(), options);
 
             if (fullMaskPath.empty()) {
                 SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
@@ -239,8 +239,8 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                         // the object mask, as DDS textures have an origin at the bottom
                         // left rather than top left. Therefore we flip a copy of the image
                         // (otherwise a second reference to the object mask would flip it
-                        // back!).                
-                        SG_LOG(SG_GENERAL, SG_DEBUG, "Flipping object mask" << omname);  
+                        // back!).
+                        SG_LOG(SG_GENERAL, SG_DEBUG, "Flipping object mask" << omname);
                         image = (osg::Image* ) image->clone(osg::CopyOp::SHALLOW_COPY);
                         image->flipVertical();
                     }
@@ -267,30 +267,30 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     wrapv = props->getBoolValue("wrapv", true);
     mipmap = props->getBoolValue("mipmap", true);
     light_coverage = props->getDoubleValue("light-coverage", 0.0);
-    
+
     // Building properties
     building_coverage = props->getDoubleValue("building-coverage", 0.0);
     building_spacing = props->getDoubleValue("building-spacing-m", 5.0);
-    
+
     std::string bt = props->getStringValue( "building-texture",
                                             "Textures/buildings.png" );
-    building_texture = SGModelLib::findDataFile(bt, options);    
-    
+    building_texture = SGModelLib::findDataFile(bt, options);
+
     if (building_texture.empty()) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
     }
-    
+
     bt = props->getStringValue("building-lightmap", "Textures/buildings-lightmap.png");
-    building_lightmap = SGModelLib::findDataFile(bt, options);    
-    
+    building_lightmap = SGModelLib::findDataFile(bt, options);
+
     if (building_lightmap.empty()) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
-    }    
-            
+    }
+
     building_small_ratio = props->getDoubleValue("building-small-ratio", 0.8);
     building_medium_ratio = props->getDoubleValue("building-medium-ratio", 0.15);
     building_large_ratio =  props->getDoubleValue("building-large-ratio", 0.05);
-    
+
     building_small_pitch =  props->getDoubleValue("building-small-pitch", 0.8);
     building_medium_pitch =  props->getDoubleValue("building-medium-pitch", 0.2);
     building_large_pitch =  props->getDoubleValue("building-large-pitch", 0.1);
@@ -301,27 +301,27 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_medium_max_floors = props->getIntValue("building-medium-max-floors", 8);
     building_large_min_floors = props->getIntValue("building-large-min-floors", 5);
     building_large_max_floors = props->getIntValue("building-large-max-floors", 20);
-    
+
     building_small_min_width = props->getFloatValue("building-small-min-width-m", 15.0);
     building_small_max_width = props->getFloatValue("building-small-max-width-m", 60.0);
     building_small_min_depth = props->getFloatValue("building-small-min-depth-m", 10.0);
     building_small_max_depth = props->getFloatValue("building-small-max-depth-m", 20.0);
-    
+
     building_medium_min_width = props->getFloatValue("building-medium-min-width-m", 25.0);
     building_medium_max_width = props->getFloatValue("building-medium-max-width-m", 50.0);
     building_medium_min_depth = props->getFloatValue("building-medium-min-depth-m", 20.0);
     building_medium_max_depth = props->getFloatValue("building-medium-max-depth-m", 50.0);
-    
+
     building_large_min_width = props->getFloatValue("building-large-min-width-m", 50.0);
     building_large_max_width = props->getFloatValue("building-large-max-width-m", 75.0);
     building_large_min_depth = props->getFloatValue("building-large-min-depth-m", 50.0);
     building_large_max_depth = props->getFloatValue("building-large-max-depth-m", 75.0);
 
     building_range = props->getDoubleValue("building-range-m", default_object_range);
-    
+
     cos_object_max_density_slope_angle  = cos(props->getFloatValue("object-max-density-angle-deg", 20.0) * osg::PI/180.0);
     cos_object_zero_density_slope_angle = cos(props->getFloatValue("object-zero-density-angle-deg", 30.0) * osg::PI/180.0);
-        
+
     // Random vegetation properties
     wood_coverage = props->getDoubleValue("wood-coverage", 0.0);
     tree_effect = props->getStringValue("tree-effect", "Effects/tree");
@@ -333,14 +333,14 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     cos_tree_zero_density_slope_angle = cos(props->getFloatValue("tree-zero-density-angle-deg", 45.0) * osg::PI/180.0);
 
     const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
-    
+
     if (treeTexNode) {
         std::string treeTexPath = props->getStringValue("tree-texture");
 
         if (! treeTexPath.empty()) {
             SGPath treePath("Textures");
             treePath.append(treeTexPath);
-            tree_texture = SGModelLib::findDataFile(treePath.local8BitStr(), options);
+            tree_texture = SGModelLib::findDataFile(treePath.utf8Str(), options);
 
             if (tree_texture.empty()) {
                 SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
@@ -394,7 +394,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         if (name)
             glyphs[name] = new SGMaterialGlyph(glyph_nodes[i]);
     }
-    
+
     // Read parameters entry, which is passed into the effect
     if (props->hasChild("parameters")) {
         parameters = props->getChild("parameters");
@@ -409,7 +409,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 // Private methods.
 ////////////////////////////////////////////////////////////////////////
 
-void 
+void
 SGMaterial::init ()
 {
     _status.clear();
@@ -433,7 +433,7 @@ SGMaterial::init ()
 }
 
 Effect* SGMaterial::get_effect(int i)
-{    
+{
     if(!_status[i].effect_realized) {
         if (!_status[i].effect.valid())
             return 0;
@@ -450,7 +450,7 @@ Effect* SGMaterial::get_one_effect(int texIndex)
         SG_LOG( SG_GENERAL, SG_WARN, "No effect available.");
         return 0;
     }
-    
+
     int i = texIndex % _status.size();
     return get_effect(i);
 }
@@ -468,9 +468,9 @@ osg::Texture2D* SGMaterial::get_one_object_mask(int texIndex)
         SG_LOG( SG_GENERAL, SG_WARN, "No mask available.");
         return 0;
     }
-    
+
     // Note that the object mask is closely linked to the texture/effect
-    // so we index based on the texture index, 
+    // so we index based on the texture index,
     unsigned int i = texIndex % _status.size();
     if (i < _masks.size()) {
         return _masks[i].get();
@@ -485,10 +485,10 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
     ref_ptr<SGMaterialUserData> user = new SGMaterialUserData(this);
     SGPropertyNode_ptr propRoot = new SGPropertyNode();
     makeChild(propRoot, "inherits-from")->setStringValue(effect);
-    
+
     SGPropertyNode* paramProp = makeChild(propRoot, "parameters");
     copyProperties(parameters, paramProp);
-    
+
     SGPropertyNode* materialProp = makeChild(paramProp, "material");
     makeChild(materialProp, "ambient")->setValue(SGVec4d(ambient));
     makeChild(materialProp, "diffuse")->setValue(SGVec4d(diffuse));

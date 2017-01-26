@@ -70,7 +70,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     env_node = property_tree_Node;
 
     osg::ref_ptr<SGReaderWriterOptions> options;
-    options = SGReaderWriterOptions::fromPath(path.local8BitStr());
+    options = SGReaderWriterOptions::fromPath(path.utf8Str());
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
     sun_transform = new osg::MatrixTransform;
@@ -384,7 +384,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 
 	brilliance_color[3] = pow(norm, 6.0);
 	if (brilliance_color[3] < 0.0) {brilliance_color[3] = 0.0;}
-	
+
 
 
         gamma_correct_rgb( i_halo_color._v );

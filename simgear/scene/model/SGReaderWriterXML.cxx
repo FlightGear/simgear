@@ -88,7 +88,7 @@ SGReaderWriterXML::readNode(const std::string& name,
         if (!p.exists()) {
           return ReadResult::FILE_NOT_FOUND;
         }
-        
+
         result=sgLoad3DModel_internal(p, options);
     } catch (const sg_exception &t) {
         SG_LOG(SG_INPUT, SG_ALERT, "Failed to load model: " << t.getFormattedMessage()
@@ -160,13 +160,13 @@ void makeEffectAnimations(PropertyList& animation_nodes,
         SGPropertyNode* typeProp = animProp->getChild("type");
         if (!typeProp)
             continue;
-        
+
         const char* typeString = typeProp->getStringValue();
         if (!strcmp(typeString, "material")) {
             effectProp
                 = SGMaterialAnimation::makeEffectProperties(animProp);
         } else if (!strcmp(typeString, "shader")) {
-            
+
             SGPropertyNode* shaderProp = animProp->getChild("shader");
             if (!shaderProp || strcmp(shaderProp->getStringValue(), "chrome"))
                 continue;
@@ -215,7 +215,7 @@ private:
     osg::Node::NodeMask nodeMaskSet;
     osg::Node::NodeMask nodeMaskClear;
 };
-    
+
 }
 
 namespace {
@@ -229,7 +229,7 @@ namespace {
             return (typeString == "pick") || (typeString == "knob") || (typeString == "slider");
         }
     };
-    
+
     bool removeNamedNode(osg::Group* aGroup, const std::string& aName)
     {
         int nKids = aGroup->getNumChildren();
@@ -240,16 +240,16 @@ namespace {
                 return true;
             }
         }
-        
+
         for (int i = 0; i < nKids; i++) {
             osg::Group* childGroup = aGroup->getChild(i)->asGroup();
             if (!childGroup)
                 continue;
-            
+
             if (removeNamedNode(childGroup, aName))
                 return true;
         } // of child groups traversal
-        
+
         return false;
     }
 }
@@ -266,23 +266,23 @@ sgLoad3DModel_internal(const SGPath& path,
 
     osg::ref_ptr<SGReaderWriterOptions> options;
     options = SGReaderWriterOptions::copyOrCreate(dbOptions);
-    
+
     SGPath modelpath(path);
     SGPath texturepath(path);
     SGPath modelDir(modelpath.dir());
-    
+
     SGSharedPtr<SGPropertyNode> prop_root = options->getPropertyNode();
     if (!prop_root.valid())
         prop_root = new SGPropertyNode;
     // The model data appear to be only used in the topmost model
     osg::ref_ptr<SGModelData> data = options->getModelData();
     options->setModelData(0);
-    
+
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;
     SGPropertyNode_ptr props = new SGPropertyNode;
     bool previewMode = (dbOptions->getPluginStringData("SimGear::PREVIEW") == "ON");
-    
+
     // Check for an XML wrapper
     if (modelpath.extension() == "xml") {
        try {
@@ -298,7 +298,7 @@ sgLoad3DModel_internal(const SGPath& path,
         if (previewMode && props->hasChild("nopreview")) {
             return NULL;
         }
-        
+
         if (props->hasValue("/path")) {
             string modelPathStr = props->getStringValue("/path");
             modelpath = SGModelLib::findDataFile(modelPathStr, NULL, modelDir);
@@ -333,9 +333,9 @@ sgLoad3DModel_internal(const SGPath& path,
         if (!texturepath.extension().empty())
             texturepath = texturepath.dir();
 
-        options->setDatabasePath(texturepath.local8BitStr());
+        options->setDatabasePath(texturepath.utf8Str());
         osgDB::ReaderWriter::ReadResult modelResult;
-        modelResult = osgDB::readNodeFile(modelpath.local8BitStr(), options.get());
+        modelResult = osgDB::readNodeFile(modelpath.utf8Str(), options.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
                                   modelpath);
@@ -399,9 +399,9 @@ sgLoad3DModel_internal(const SGPath& path,
 
         SGPath submodelpath;
         osg::ref_ptr<osg::Node> submodel;
-        
+
         string subPathStr = sub_props->getStringValue("path");
-        SGPath submodelPath = SGModelLib::findDataFile(subPathStr, 
+        SGPath submodelPath = SGModelLib::findDataFile(subPathStr,
           NULL, modelDir);
 
         if (submodelPath.isNull()) {
@@ -426,7 +426,7 @@ sgLoad3DModel_internal(const SGPath& path,
               << "\n\tfrom:" << t.getOrigin());
             continue;
         }
-        
+
         if (!submodel)
             continue;
 
@@ -491,8 +491,8 @@ sgLoad3DModel_internal(const SGPath& path,
             if (i==0) {
                 if (!texturepath.extension().empty())
                     texturepath = texturepath.dir();
-                
-                options2->setDatabasePath(texturepath.local8BitStr());
+
+                options2->setDatabasePath(texturepath.utf8Str());
             }
             group->addChild(Particles::appendParticles(particle_nodes[i],
                                                        prop_root,
@@ -510,13 +510,13 @@ sgLoad3DModel_internal(const SGPath& path,
 
     PropertyList effect_nodes = props->getChildren("effect");
     PropertyList animation_nodes = props->getChildren("animation");
-    
+
     if (previewMode) {
         PropertyList::iterator it;
         it = std::remove_if(animation_nodes.begin(), animation_nodes.end(), ExcludeInPreview());
         animation_nodes.erase(it, animation_nodes.end());
     }
-    
+
     // Some material animations (eventually all) are actually effects.
     makeEffectAnimations(animation_nodes, effect_nodes);
     {
@@ -533,12 +533,12 @@ sgLoad3DModel_internal(const SGPath& path,
             } // of object-names in the animation
             continue;
         }
-        
+
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,
-                             options.get(), path.local8BitStr(), i);
+                             options.get(), path.utf8Str(), i);
     }
-    
+
     if (!needTransform && group->getNumChildren() < 2) {
         model = group->getChild(0);
         group->removeChild(model.get());
@@ -556,4 +556,3 @@ sgLoad3DModel_internal(const SGPath& path,
 
     return group.release();
 }
-

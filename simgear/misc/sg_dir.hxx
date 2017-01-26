@@ -55,7 +55,8 @@ namespace simgear
     static Dir current();
     
     /**
-     * create a temporary directory, using the supplied name
+     * Create a temporary directory, using the supplied name.
+     * The return value 'd' is such that d.isNull() in case this failed.
      */
     static Dir tempDir(const std::string& templ);
       
@@ -71,7 +72,14 @@ namespace simgear
     };
     
     PathList children(int types = 0, const std::string& nameGlob = "") const;
-    
+
+    /**
+     * Check if the underlying SGPath is null.
+     *
+     * Note: this is the case for a default-constructed Dir instance.
+     */
+    bool isNull() const;
+
     /**
      * test if the directory contains no children (except '.' and '..')
      */

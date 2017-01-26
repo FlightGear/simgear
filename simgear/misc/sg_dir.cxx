@@ -37,7 +37,6 @@
 #  include <dirent.h>
 #  include <sys/stat.h>
 #  include <unistd.h>
-#  include <errno.h>
 #endif
 
 #include <simgear/misc/strutils.hxx>
@@ -46,6 +45,7 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <cerrno>
 #include <iostream>
 #include <algorithm> // for std::sort
 
@@ -94,7 +94,7 @@ Dir Dir::current()
 #endif
     if (!buf) {
         if  (errno == 2) throw sg_exception("The current directory is invalid");
-        else throw sg_exception(strerror(errno));
+        else throw sg_exception(simgear::strutils::error_string(errno));
     }
 
     SGPath p(buf);
@@ -118,7 +118,8 @@ Dir Dir::tempDir(const std::string& templ)
     std::string s = p.local8BitStr();
     ::snprintf(buf, 1024, "%s", s.c_str());
     if (!mkdtemp(buf)) {
-        SG_LOG(SG_IO, SG_WARN, "mkdtemp failed:" << strerror(errno));
+        SG_LOG(SG_IO, SG_WARN,
+               "mkdtemp failed: " << simgear::strutils::error_string(errno));
         return Dir();
     }
     
@@ -135,6 +136,7 @@ Dir Dir::tempDir(const std::string& templ)
     Dir t(p);
     if (!t.create(0700)) {
         SG_LOG(SG_IO, SG_WARN, "failed to create temporary directory at " << p);
+        return Dir();
     }
     
     return t;
@@ -277,6 +279,11 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   return result;
 }
 
+bool Dir::isNull() const
+{
+  return _path.isNull();
+}
+
 bool Dir::isEmpty() const
 {
 #if defined(SG_WINDOWS)
@@ -333,7 +340,9 @@ bool Dir::create(mode_t mode)
     int err = mkdir(ps.c_str(), mode);
 #endif
     if (err) {
-        SG_LOG(SG_IO, SG_WARN,  "directory creation failed: (" << _path << ") " << strerror(errno) );
+        SG_LOG(SG_IO, SG_WARN,
+               "directory creation failed for '" << _path.utf8Str() << "': " <<
+               simgear::strutils::error_string(errno));
     }
     
     return (err == 0);
@@ -386,7 +395,9 @@ bool Dir::remove(bool recursive)
     int err = rmdir(ps.c_str());
 #endif
     if (err) {
-        SG_LOG(SG_IO, SG_WARN, "rmdir failed:" << _path << ":" << strerror(errno));
+        SG_LOG(SG_IO, SG_WARN,
+               "rmdir failed for '" << _path.utf8Str() << "': " <<
+               simgear::strutils::error_string(errno));
     }
     return (err == 0);
 }

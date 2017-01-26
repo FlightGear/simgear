@@ -71,6 +71,10 @@ add_executable(test_path path_test.cxx )
 add_test(path ${EXECUTABLE_OUTPUT_PATH}/test_path)
 target_link_libraries(test_path ${TEST_LIBS})
 
+add_executable(test_sg_dir sg_dir_test.cxx)
+target_link_libraries(test_sg_dir ${TEST_LIBS})
+add_test(sg_dir ${EXECUTABLE_OUTPUT_PATH}/test_sg_dir)
+
 endif(ENABLE_TESTS)
 
 add_boost_test(SimpleMarkdown

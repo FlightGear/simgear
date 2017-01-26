@@ -94,6 +94,17 @@ enum sgVertexAttributeTypes {
     SG_VA_FLOAT_3 =   0x00000800,
 };
 
+static gzFile gzFileFromSGPath(const SGPath& path, const char* mode)
+{
+  #if defined(SG_WINDOWS)
+  	std::wstring ws = path.wstr();
+  	return gzopen_w(ws.c_str(), mode);
+  #else
+    std::string ps = path.utf8Str();
+    return gzopen(ps.c_str(), mode);
+  #endif
+}
+
 enum sgPropertyTypes {
     SG_MATERIAL = 0,
     SG_INDEX_TYPES = 1,
@@ -534,15 +545,16 @@ bool SGBinObject::read_bin( const SGPath& file ) {
     fans_vas.clear();
     fan_materials.clear();
 
-    gzFile fp;
-    string f = file.local8BitStr();
-    if ( (fp = gzopen( f.c_str(), "rb" )) == NULL ) {
-        string filegz = f + ".gz";
-        if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
+    gzFile fp = gzFileFromSGPath(file, "rb");
+    if ( fp == NULL ) {
+        SGPath withGZ = file;
+        withGZ.concat(".gz");
+        fp = gzFileFromSGPath(withGZ, "rb");
+        if (fp == nullptr) {
             SG_LOG( SG_EVENT, SG_ALERT,
-               "ERROR: opening " << file << " or " << filegz << " for reading!");
+               "ERROR: opening " << file << " or " << withGZ << " for reading!");
 
-            throw sg_io_exception("Error opening for reading (and .gz)", sg_location(f));
+            throw sg_io_exception("Error opening for reading (and .gz)", sg_location(file));
         }
     }
 
@@ -957,9 +969,8 @@ bool SGBinObject::write_bin_file(const SGPath& file)
     SGPath file2(file);
     file2.create_dir( 0755 );
 
-    gzFile fp;
-    std::string localPath = file.local8BitStr();
-    if ( (fp = gzopen( localPath.c_str(), "wb9" )) == NULL ) {
+    gzFile fp = gzFileFromSGPath(file, "wb9");
+    if ( fp == nullptr ) {
         cout << "ERROR: opening " << file << " for writing!" << endl;
         return false;
     }

@@ -14,6 +14,11 @@ using std::endl;
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/misc/sgstream.hxx>
 
+#if defined(SG_WINDOWS)
+#else
+    #include <sys/stat.h>
+#endif
+
 void test_dir()
 {
     simgear::Dir temp = simgear::Dir::tempDir("foo");
@@ -134,6 +139,99 @@ void test_path_dir()
 
 }
 
+void test_permissions()
+{
+    // start with an empty dir
+    SGPath p = simgear::Dir::current().path() / "path_test_permissions";
+    simgear::Dir pd(p);
+    if (pd.exists()) {
+        pd.removeChildren();
+    } else {
+        pd.create(0700);
+    }
+    
+    SGPath fileInRO = p / "read-only" / "fileA";
+    SG_CHECK_EQUAL(fileInRO.create_dir(0500), 0);
+
+    SG_VERIFY(!fileInRO.exists());
+    SG_VERIFY(!fileInRO.canWrite());
+
+    fileInRO.setPermissionChecker(&validateRead);
+    SG_CHECK_EQUAL(fileInRO.canRead(), false);
+    SG_CHECK_EQUAL(fileInRO.canWrite(), false);
+
+    fileInRO.setPermissionChecker(&validateWrite);
+    SG_CHECK_EQUAL(fileInRO.canRead(), false);
+    SG_CHECK_EQUAL(fileInRO.canWrite(), false);
+
+    /////////
+    SGPath fileInRW = p / "read-write" / "fileA";
+
+    fileInRW.setPermissionChecker(&validateRead);
+    SG_CHECK_EQUAL(fileInRW.canRead(), false);
+    SG_CHECK_EQUAL(fileInRW.canWrite(), false);
+    SG_CHECK_EQUAL(fileInRW.create_dir(0700), -3); // not permitted
+
+    fileInRW.setPermissionChecker(nullptr);
+    SG_CHECK_EQUAL(fileInRW.create_dir(0700), 0);
+
+    SG_VERIFY(!fileInRW.exists());
+    SG_VERIFY(fileInRW.canWrite());
+
+    fileInRW.setPermissionChecker(&validateRead);
+    SG_CHECK_EQUAL(fileInRW.canRead(), false);
+    SG_CHECK_EQUAL(fileInRW.canWrite(), false);
+
+    fileInRW.setPermissionChecker(&validateWrite);
+    SG_CHECK_EQUAL(fileInRW.canRead(), false);
+    SG_CHECK_EQUAL(fileInRW.canWrite(), true);
+
+
+    // create the file
+    {
+        sg_ofstream os(fileInRW);
+        SG_VERIFY(os.is_open());
+        os << "nonense" << endl;
+    }
+
+    // should now be readable + writeable
+    fileInRW.set_cached(false);
+    fileInRW.setPermissionChecker(nullptr);
+    SG_VERIFY(fileInRW.exists());
+    SG_VERIFY(fileInRW.canWrite());
+    SG_VERIFY(fileInRW.canRead());
+
+    fileInRW.setPermissionChecker(&validateRead);
+    SG_CHECK_EQUAL(fileInRW.canRead(), true);
+    SG_CHECK_EQUAL(fileInRW.canWrite(), false);
+
+    fileInRW.setPermissionChecker(&validateWrite);
+    SG_CHECK_EQUAL(fileInRW.canRead(), false);
+    SG_CHECK_EQUAL(fileInRW.canWrite(), true);
+
+    // mark the file as read-only
+#if defined(SG_WINDOWS)
+
+#else
+    ::chmod(fileInRW.c_str(), 0400);
+#endif
+
+    fileInRW.set_cached(false);
+    fileInRW.setPermissionChecker(nullptr);
+
+    SG_VERIFY(fileInRW.exists());
+    SG_CHECK_EQUAL(fileInRW.canWrite(), false);
+    SG_VERIFY(fileInRW.canRead());
+
+    fileInRW.setPermissionChecker(&validateRead);
+    SG_CHECK_EQUAL(fileInRW.canRead(), true);
+    SG_CHECK_EQUAL(fileInRW.canWrite(), false);
+
+    fileInRW.setPermissionChecker(&validateWrite);
+    SG_CHECK_EQUAL(fileInRW.canRead(), false);
+    SG_CHECK_EQUAL(fileInRW.canWrite(), false);
+}
+
 int main(int argc, char* argv[])
 {
     SGPath pa;
@@ -229,28 +327,18 @@ int main(int argc, char* argv[])
     SG_CHECK_EQUAL(pf.lower_extension(), "gz");
     SG_CHECK_EQUAL(pf.complete_lower_extension(), "txt.gz");
 
-    SG_CHECK_EQUAL(pf.canRead(), true);
-    SG_CHECK_EQUAL(pf.canWrite(), true);
+    SG_CHECK_EQUAL(pf.canRead(), false);
+    SG_CHECK_EQUAL(pf.canWrite(), false);
 
     SGPath pp(&validateNone);
     SG_CHECK_EQUAL(pp.canRead(), false);
     SG_CHECK_EQUAL(pp.canWrite(), false);
 
-    pp.append("./test-dir/file.txt");
-    SG_CHECK_EQUAL(pp.create_dir(0700), -3);
-
-    pp.setPermissionChecker(&validateRead);
-    SG_CHECK_EQUAL(pp.canRead(), true);
-    SG_CHECK_EQUAL(pp.canWrite(), false);
-    SG_CHECK_EQUAL(pp.create_dir(0700), -3);
-
-    pp.setPermissionChecker(&validateWrite);
-    SG_CHECK_EQUAL(pp.canRead(), false);
-    SG_CHECK_EQUAL(pp.canWrite(), true);
-
     test_dir();
     
 	test_path_dir();
+
+    test_permissions();
 
     cout << "all tests passed OK" << endl;
     return 0; // passed

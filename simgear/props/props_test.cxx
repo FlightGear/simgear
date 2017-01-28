@@ -304,7 +304,12 @@ test_property_nodes ()
   grandchild = child->getChild("bar", 3, true);
   grandchild->setDoubleValue(400);
 
+    SG_CHECK_EQUAL(grandchild->getPosition(), 3);
+
   child = root.getChild("hack", 0, true);
+
+    SG_CHECK_EQUAL(child->getPosition(), 1);
+
 
   grandchild = child->getChild("bar", 0, true);
   grandchild->setDoubleValue(100);
@@ -318,6 +323,10 @@ test_property_nodes ()
   grandchild->setDoubleValue(300);
   grandchild = child->getChild("bar", 2, true);
   grandchild->setDoubleValue(400);
+
+    SG_CHECK_EQUAL(grandchild->getPosition(), 3);
+
+
   dump_node(&root);
 
     SG_CHECK_EQUAL(child->getPosition(), 1);

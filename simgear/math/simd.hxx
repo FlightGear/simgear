@@ -679,7 +679,7 @@ inline simd4_t<double,4>::simd4_t(const simd4_t<double,2>& v) {
 }
 template<>
 inline simd4_t<double,3>::simd4_t(const simd4_t<double,4>& v) {
-    simd4 = _mm_and_pd(v.v4(), dmask3);
+    simd4 = _mm256_and_pd(v.v4(), dmask3);
 }
 template<>
 inline simd4_t<double,3>::simd4_t(const simd4_t<double,3>& v) {
@@ -691,11 +691,11 @@ inline simd4_t<double,3>::simd4_t(const simd4_t<double,2>& v) {
 }
 template<>
 inline simd4_t<double,2>::simd4_t(const simd4_t<double,4>& v) {
-    simd4 = _mm_and_pd(v.v4(), dmask2);
+    simd4 = _mm256_and_pd(v.v4(), dmask2);
 }
 template<>
 inline simd4_t<double,2>::simd4_t(const simd4_t<double,3>& v) {
-    simd4 = _mm_and_pd(v.v4(), dmask2);
+    simd4 = _mm256_and_pd(v.v4(), dmask2);
 }
 template<>
 inline simd4_t<double,2>::simd4_t(const simd4_t<double,2>& v) {

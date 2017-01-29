@@ -1062,23 +1062,25 @@ public:
     }
 
     inline simd4x4_t<int,4>& operator*=(int v) {
-        __m128i v4 = _mm_set1_epi32(v);
+        simd4_t<int,4> v4(v);
         for (int i=0; i<4; ++i) {
-           simd4x4[i] = _mm_mul_epi32(simd4x4[i], v4);
+           simd4x4[i] *= v4.v4();
         }
         return *this;
     }
 
     simd4x4_t<int,4>& operator*=(const simd4x4_t<int,4>& m2) {
-        __m128i row, col;
-        for (int i=0; i<4; ++i ) {
-            col = _mm_set1_epi32(m2.ptr()[i][0]);
-            row = _mm_mul_epi32(simd4x4[0], col);
+        simd4x4_t<int,4> m1 = *this;
+        simd4_t<int,4> row, col;
+
+        for (int i=0; i<4; ++i) {
+            simd4_t<int,4> col(m2.ptr()[i][0]);
+            row.v4() = m1.m4x4()[0] * col.v4();
             for (int j=1; j<4; ++j) {
-                col = _mm_set1_epi32(m2.ptr()[i][j]);
-                row = _mm_add_epi32(row, _mm_mul_epi32(simd4x4[j], col));
+                simd4_t<int,4> col(m2.ptr()[i][j]);
+                row.v4() += m1.m4x4()[j] * col.v4();
             }
-            simd4x4[i] = row;
+            simd4x4[i] = row.v4();
         }
         return *this;
     }

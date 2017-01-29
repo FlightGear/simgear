@@ -370,14 +370,14 @@ template<typename T>
 inline
 T
 dist(const SGVec4<T>& v1, const SGVec4<T>& v2)
-{ return norm(v1 - v2); }
+{ return simd4::magnitude(v1.simd4() - v2.simd4()); }
 
 /// The squared euclidean distance of the two vectors
 template<typename T>
 inline
 T
 distSqr(SGVec4<T> v1, const SGVec4<T>& v2)
-{ v1 -= v2; return dot(v1, v1); }
+{ return simd4::magnitude2(v1.simd4() - v2.simd4()); }
 
 // calculate the projection of u along the direction of d.
 template<typename T>
@@ -385,7 +385,7 @@ inline
 SGVec4<T>
 projection(const SGVec4<T>& u, const SGVec4<T>& d)
 {
-  T denom = dot(d, d);
+  T denom = simd4::magnitude2(d.simd4());
   T ud = dot(u, d);
   if (SGLimits<T>::min() < denom) return u;
   else return d * (dot(u, d) / denom);

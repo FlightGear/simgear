@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <cassert>
 #include <cmath>
 #include <new>
 
@@ -132,7 +133,7 @@ public:
     template<int M>
     simd4_t(const simd4_t<T,M>& v) {
         std::memcpy(_v4, v.ptr(), sizeof(T[M]));
-        for (int i=M; i<4; ++i) _v4[i] = 0;
+        for (int i=(M<N)?M:N; i<4; ++i) _v4[i] = 0;
     }
     ~simd4_t(void) {}
 
@@ -152,29 +153,14 @@ public:
         return vec;
     }
 
-    inline operator const T*(void) const {
-        return vec;
+    inline  const T& operator[](unsigned n) const {
+        assert(n<N);
+        return vec[n];
     }
 
-    inline operator T*(void) {
-        return vec;
-    }
-
-    inline simd4_t<T,N>& operator=(T s) {
-        for (int i=0; i<N; ++i) vec[i] = s;
-        for (int i=N; i<4; ++i) _v4[i] = 0;
-        return *this;
-    }
-    inline simd4_t<T,N>& operator=(const T v[N]) {
-        std::memcpy(vec, v, sizeof(T[N]));
-        for (int i=N; i<4; ++i) _v4[i] = 0;
-        return *this;
-    }
-    template<int M>
-    inline simd4_t<T,N>& operator=(const simd4_t<T,M>& v) {
-        std::memcpy(_v4, v.ptr(), sizeof(T[M]));
-        for (int i=M; i<4; ++i) _v4[i] = 0;
-        return *this;
+    inline T& operator[](unsigned n) {
+        assert(n<N);
+        return vec[n];
     }
 
     inline simd4_t<T,N>& operator+=(T s) {
@@ -189,9 +175,8 @@ public:
         }
         return *this;
     }
-    template<int M>
-    inline simd4_t<T,N>& operator+=(const simd4_t<T,M>& v) {
-        for (int i=0; i<M; ++i) {
+    inline simd4_t<T,N>& operator+=(const simd4_t<T,N>& v) {
+        for (int i=0; i<N; ++i) {
            _v4[i] += v[i];
         }
         return *this;
@@ -209,8 +194,7 @@ public:
         }
         return *this;
     }
-    template<int M>
-    inline simd4_t<T,N>& operator-=(const simd4_t<T,M>& v) {
+    inline simd4_t<T,N>& operator-=(const simd4_t<T,N>& v) {
         for (int i=0; i<N; ++i) {
             _v4[i] -= v[i];
         }
@@ -228,8 +212,7 @@ public:
         }
         return *this;
     }
-    template<int M>
-    inline simd4_t<T,N>& operator*=(const simd4_t<T,M>& v) {
+    inline simd4_t<T,N>& operator*=(const simd4_t<T,N>& v) {
         for (int i=0; i<N; ++i) {
            _v4[i] *= v[i];
         }
@@ -245,8 +228,7 @@ public:
         }
         return *this;
     }
-    template<int M>
-    inline simd4_t<T,N>& operator/=(const simd4_t<T,M>& v) {
+    inline simd4_t<T,N>& operator/=(const simd4_t<T,N>& v) {
         for (int i=0; i<N; ++i) {
            _v4[i] /= v[i];
         }
@@ -261,26 +243,26 @@ inline simd4_t<T,N> operator-(const simd4_t<T,N>& v) {
     return r;
 }
 
-template<typename T, int N, int M>
-inline simd4_t<T,N> operator+(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
+template<typename T, int N>
+inline simd4_t<T,N> operator+(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
     v1 += v2;
     return v1;
 }
 
-template<typename T, int N, int M>
-inline simd4_t<T,N> operator-(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
+template<typename T, int N>
+inline simd4_t<T,N> operator-(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
     v1 -= v2;
     return v1;
 }
 
-template<typename T, int N, int M>
-inline simd4_t<T,N> operator*(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
+template<typename T, int N>
+inline simd4_t<T,N> operator*(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
     v1 *= v2;
     return v1;
 }
 
-template<typename T, int N, int M>
-inline simd4_t<T,N> operator/(simd4_t<T,N> v1, const simd4_t<T,M>& v2) {
+template<typename T, int N>
+inline simd4_t<T,N> operator/(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
     v1 /= v2;
     return v1;
 }
@@ -312,10 +294,21 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
 #  define ALIGN32C __attribute__((aligned(32)))
 # endif
 
-static const uint32_t m2a32[] = { 0xffffffff,0xffffffff,0,0 };
-static const uint32_t m3a32[] = { 0xffffffff,0xffffffff,0xffffffff,0 };
-static const uint64_t m2a64[] = { 0xffffffffffffffff,0xffffffffffffffff,0,0 };
-static const uint64_t m3a64[] = { 0xffffffffffffffff,0xffffffffffffffff,0xffffffffffffffff,0 };
+namespace simd4
+{
+static ALIGN16 const uint32_t m2a32[] ALIGN16C = {
+    0xffffffff,0xffffffff,0,0
+};
+static ALIGN16 const uint32_t m3a32[] ALIGN16C = {
+    0xffffffff,0xffffffff,0xffffffff,0
+};
+static ALIGN32 const uint64_t m2a64[] ALIGN32C = {
+    0xffffffffffffffff,0xffffffffffffffff,0,0
+};
+static ALIGN32 const uint64_t m3a64[] ALIGN32C = {
+    0xffffffffffffffff,0xffffffffffffffff,0xffffffffffffffff,0
+};
+}; /* namespace simd4 */
 # endif
 
 # ifdef __SSE__
@@ -361,10 +354,9 @@ public:
         simd4 = _mm_set_ps(w,z,y,x);
     }
     simd4_t(const __vec4f_t v) {}
-    template<int M>
-    simd4_t(const simd4_t<float,M>& v) {
-        simd4 = v.v4();
-    }
+    simd4_t(const simd4_t<float,4>& v) {}
+    simd4_t(const simd4_t<float,3>& v) {}
+    simd4_t(const simd4_t<float,2>& v) {}
     simd4_t(const __m128& v) {
         simd4 = v;
     }
@@ -383,52 +375,92 @@ public:
         return vec;
     }
 
-    inline operator const float*(void) const {
-        return vec;
+    inline  const float& operator[](unsigned n) const {
+        assert(n<N);
+        return vec[n];
     }
-    inline operator float*(void) {
-        return vec;
+
+    inline float& operator[](unsigned n) {
+        assert(n<N);
+        return vec[n];
     }
 
     inline simd4_t<float,N>& operator+=(float f) {
-        return operator+=(simd4_t<float,N>(f));
+        simd4 = _mm_add_ps(simd4, _mm_set1_ps(f));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<float,N>& operator+=(const simd4_t<float,M>& v) {
+    inline simd4_t<float,N>& operator+=(const simd4_t<float,N>& v) {
         simd4 = _mm_add_ps(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<float,N>& operator-=(float f) {
-        return operator-=(simd4_t<float,N>(f));
+        simd4 = _mm_sub_ps(simd4, _mm_set1_ps(f));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<float,N>& operator-=(const simd4_t<float,M>& v) {
+    inline simd4_t<float,N>& operator-=(const simd4_t<float,N>& v) {
         simd4 = _mm_sub_ps(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<float,N>& operator*=(float f) {
-        return operator*=(simd4_t<float,N>(f));
+        simd4 = _mm_mul_ps(simd4, _mm_set1_ps(f));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<float,N>& operator*=(const simd4_t<float,M>& v) {
+    inline simd4_t<float,N>& operator*=(const simd4_t<float,N>& v) {
         simd4 = _mm_mul_ps(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<float,N>& operator/=(float f) {
-        return operator/=(simd4_t<float,4>(f));
+        simd4 = _mm_div_ps(simd4, _mm_set1_ps(f));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<float,N>& operator/=(const simd4_t<float,M>& v) {
+    inline simd4_t<float,N>& operator/=(const simd4_t<float,N>& v) {
         simd4 = _mm_div_ps(simd4, v.v4());
         return *this;
     }
 };
 
-static const __m128 fmask2 = _mm_load_ps((const float*)m2a32);
-static const __m128 fmask3 = _mm_load_ps((const float*)m3a32);
+static const __m128 fmask2 = _mm_load_ps((const float*)simd4::m2a32);
+static const __m128 fmask3 = _mm_load_ps((const float*)simd4::m3a32);
+
+template<>
+inline simd4_t<float,4>::simd4_t(const simd4_t<float,4>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<float,4>::simd4_t(const simd4_t<float,3>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<float,4>::simd4_t(const simd4_t<float,2>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<float,3>::simd4_t(const simd4_t<float,4>& v) {
+    simd4 = _mm_and_ps(v.v4(), fmask3);
+}
+template<>
+inline simd4_t<float,3>::simd4_t(const simd4_t<float,3>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<float,3>::simd4_t(const simd4_t<float,2>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<float,2>::simd4_t(const simd4_t<float,4>& v) {
+    simd4 = _mm_and_ps(v.v4(), fmask2);
+}
+template<>
+inline simd4_t<float,2>::simd4_t(const simd4_t<float,3>& v) {
+    simd4 = _mm_and_ps(v.v4(), fmask2);
+}
+template<>
+inline simd4_t<float,2>::simd4_t(const simd4_t<float,2>& v) {
+    simd4 = v.v4();
+}
 
 template<>
 inline simd4_t<float,4>::simd4_t(const __vec4f_t v) {
@@ -562,10 +594,9 @@ public:
         simd4 = _mm256_set_pd(w,z,y,x);
     }
     simd4_t(const __vec4d_t v) {}
-    template<int M>
-    simd4_t(const simd4_t<double,M>& v) {
-        simd4 = v.v4();
-    }
+    simd4_t(const simd4_t<double,4>& v) {}
+    simd4_t(const simd4_t<double,3>& v) {}
+    simd4_t(const simd4_t<double,2>& v) {}
     simd4_t(const __m256d& v) {
         simd4 = v;
     }
@@ -584,52 +615,92 @@ public:
         return vec;
     }
 
-    inline operator const double*(void) const {
-        return vec;
+    inline  const double& operator[](unsigned n) const {
+        assert(n<N);
+        return vec[n];
     }
-    inline operator double*(void) {
-        return vec;
+
+    inline double& operator[](unsigned n) {
+        assert(n<N);
+        return vec[n];
     }
 
     inline simd4_t<double,N>& operator+=(double d) {
-        return operator+=(simd4_t<double,N>(d));
+        simd4 = _mm256_add_pd(simd4, _mm256_set1_pd(d));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator+=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator+=(const simd4_t<double,N>& v) {
         simd4 = _mm256_add_pd(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<double,N>& operator-=(double d) {
-        return operator-=(simd4_t<double,N>(d));
+        simd4 = _mm256_sub_pd(simd4, _mm256_set1_pd(d));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator-=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator-=(const simd4_t<double,N>& v) {
         simd4 = _mm256_sub_pd(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<double,N>& operator*=(double d) {
-        return operator*=(simd4_t<double,N>(d));
+        simd4 = _mm256_mul_pd(simd4, _mm256_set1_pd(d));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator*=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator*=(const simd4_t<double,N>& v) {
         simd4 = _mm256_mul_pd(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<double,N>& operator/=(double d) {
-        return operator/=(simd4_t<double,4>(d));
+        simd4 = _mm256_div_pd(simd4, _mm256_set1_pd(d));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator/=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator/=(const simd4_t<double,N>& v) {
         simd4 = _mm256_div_pd(simd4, v.v4());
         return *this;
     }
 };
 
-static const __m256d dmask2 = _mm256_load_pd((const double*)m2a64);
-static const __m256d dmask3 = _mm256_load_pd((const double*)m3a64);
+static const __m256d dmask2 = _mm256_load_pd((const double*)simd4::m2a64);
+static const __m256d dmask3 = _mm256_load_pd((const double*)simd4::m3a64);
+
+template<>
+inline simd4_t<double,4>::simd4_t(const simd4_t<double,4>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<double,4>::simd4_t(const simd4_t<double,3>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<double,4>::simd4_t(const simd4_t<double,2>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<double,3>::simd4_t(const simd4_t<double,4>& v) {
+    simd4 = _mm_and_pd(v.v4(), dmask3);
+}
+template<>
+inline simd4_t<double,3>::simd4_t(const simd4_t<double,3>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<double,3>::simd4_t(const simd4_t<double,2>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<double,2>::simd4_t(const simd4_t<double,4>& v) {
+    simd4 = _mm_and_pd(v.v4(), dmask2);
+}
+template<>
+inline simd4_t<double,2>::simd4_t(const simd4_t<double,3>& v) {
+    simd4 = _mm_and_pd(v.v4(), dmask2);
+}
+template<>
+inline simd4_t<double,2>::simd4_t(const simd4_t<double,2>& v) {
+    simd4 = v.v4();
+}
 
 template<>
 inline simd4_t<double,4>::simd4_t(const __vec4d_t v) {
@@ -740,11 +811,9 @@ public:
         simd4[1] = _mm_set_pd(w,z);
     }
     simd4_t(const __vec4d_t v) {}
-    template<int M>
-    simd4_t(const simd4_t<double,M>& v) {
-        simd4[0] = v.v4()[0];
-        simd4[1] = v.v4()[1];
-    }
+    simd4_t(const simd4_t<double,4>& v) {}
+    simd4_t(const simd4_t<double,3>& v) {}
+    simd4_t(const simd4_t<double,2>& v) {}
     simd4_t(const __m128d v[2]) {
         simd4[0] = v[0];
         simd4[1] = v[1];
@@ -764,55 +833,110 @@ public:
         return vec;
     }
 
-    inline operator const double*(void) const {
-        return vec;
+    inline  const double& operator[](unsigned n) const {
+        assert(n<N);
+        return vec[n];
     }
-    inline operator double*(void) {
-        return vec;
+
+    inline double& operator[](unsigned n) {
+        assert(n<N);
+        return vec[n];
     }
 
     inline simd4_t<double,N>& operator+=(double d) {
-        return operator+=(simd4_t<double,N>(d));
+        __m128d d4 = _mm_set1_pd(d);
+        simd4[0] = _mm_add_pd(simd4[0], d4);
+        simd4[1] = _mm_add_pd(simd4[1], d4);
+        return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator+=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator+=(const simd4_t<double,N>& v) {
         simd4[0] = _mm_add_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_add_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 
     inline simd4_t<double,N>& operator-=(double d) {
-        return operator-=(simd4_t<double,N>(d));
+        __m128d d4 = _mm_set1_pd(d);
+        simd4[0] = _mm_sub_pd(simd4[0], d4);
+        simd4[1] = _mm_sub_pd(simd4[1], d4);
     }
-    template<int M>
-    inline simd4_t<double,N>& operator-=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator-=(const simd4_t<double,N>& v) {
         simd4[0] = _mm_sub_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_sub_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 
     inline simd4_t<double,N>& operator*=(double d) {
-        return operator*=(simd4_t<double,N>(d));
+        __m128d d4 = _mm_set1_pd(d);
+        simd4[0] = _mm_mul_pd(simd4[0], d4);
+        simd4[1] = _mm_mul_pd(simd4[1], d4);
+        return *this;
     }
-    template<int M>
-    inline simd4_t<double,N>& operator*=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator*=(const simd4_t<double,N>& v) {
         simd4[0] = _mm_mul_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_mul_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 
     inline simd4_t<double,N>& operator/=(double d) {
-        return operator/=(simd4_t<double,4>(d));
+        __m128d d4 = _mm_set1_pd(d);
+        simd4[0] = _mm_div_pd(simd4[0], d4);
+        simd4[1] = _mm_div_pd(simd4[1], d4);
     }
-    template<int M>
-    inline simd4_t<double,N>& operator/=(const simd4_t<double,M>& v) {
+    inline simd4_t<double,N>& operator/=(const simd4_t<double,N>& v) {
         simd4[0] = _mm_div_pd(simd4[0], v.v4()[0]);
         simd4[1] = _mm_div_pd(simd4[1], v.v4()[1]);
         return *this;
     }
 };
 
-static const __m128d dmask3 = _mm_load_pd((const double*)(m3a64+2));
+static const __m128d dmask3 = _mm_load_pd((const double*)(simd4::m3a64+2));
+
+template<>
+inline simd4_t<double,4>::simd4_t(const simd4_t<double,4>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = v.v4()[1];
+}
+template<>
+inline simd4_t<double,4>::simd4_t(const simd4_t<double,3>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = v.v4()[1];
+}
+template<>
+inline simd4_t<double,4>::simd4_t(const simd4_t<double,2>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = v.v4()[1];
+}
+template<>
+inline simd4_t<double,3>::simd4_t(const simd4_t<double,4>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = _mm_and_pd(v.v4()[1], dmask3);
+}
+template<>
+inline simd4_t<double,3>::simd4_t(const simd4_t<double,3>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = v.v4()[1];
+}
+template<>
+inline simd4_t<double,3>::simd4_t(const simd4_t<double,2>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = _mm_setzero_pd();
+}
+template<>
+inline simd4_t<double,2>::simd4_t(const simd4_t<double,4>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = _mm_setzero_pd();
+}
+template<>
+inline simd4_t<double,2>::simd4_t(const simd4_t<double,3>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = _mm_setzero_pd();
+}
+template<>
+inline simd4_t<double,2>::simd4_t(const simd4_t<double,2>& v) {
+    simd4[0] = v.v4()[0];
+    simd4[1] = _mm_setzero_pd();
+}
 
 template<>
 inline simd4_t<double,4>::simd4_t(const __vec4d_t v) {
@@ -945,10 +1069,9 @@ public:
         simd4 = _mm_set_epi32(w,z,y,x);
     }
     simd4_t(const __vec4i_t v) {}
-    template<int M>
-    simd4_t(const simd4_t<int,M>& v) {
-        simd4 = v.v4();
-    }
+    simd4_t(const simd4_t<int,4>& v) {}
+    simd4_t(const simd4_t<int,3>& v) {}
+    simd4_t(const simd4_t<int,2>& v) {}
     simd4_t(const __m128i& v) {
         simd4 = v;
     }
@@ -969,37 +1092,38 @@ public:
         return vec;
     }
 
-    inline operator const int*(void) const {
-        return vec;
+    inline  const int& operator[](unsigned n) const {
+        assert(n<N);
+        return vec[n];
     }
 
-    inline operator int*(void) {
-        return vec;
+    inline int& operator[](unsigned n) {
+        assert(n<N);
+        return vec[n];
     }
 
     inline simd4_t<int,N>& operator+=(int i) {
-        return operator+=(simd4_t<int,N>(i));
+        simd4 = _mm_add_epi32(simd4, _mm_set1_epi32(i));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<int,N>& operator+=(const simd4_t<int,M>& v) {
+    inline simd4_t<int,N>& operator+=(const simd4_t<int,N>& v) {
         simd4 = _mm_add_epi32(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<int,N>& operator-=(int i) {
-        return operator-=(simd4_t<int,N>(i));
+        simd4 = _mm_sub_epi32(simd4, _mm_set1_epi32(i));
+        return *this;
     }
-    template<int M>
-    inline simd4_t<int,N>& operator-=(const simd4_t<int,M>& v) {
+    inline simd4_t<int,N>& operator-=(const simd4_t<int,N>& v) {
         simd4 = _mm_sub_epi32(simd4, v.v4());
         return *this;
     }
 
     inline simd4_t<int,N>& operator*=(int i) {
-        return operator*=(simd4_t<int,N>(i));
+        return operator*=(_mm_set1_epi32(i));
     }
-    template<int M>
-    inline simd4_t<int,N>& operator*=(const simd4_t<int,M>& v) {
+    inline simd4_t<int,N>& operator*=(const simd4_t<int,N>& v) {
          return operator*=(v.v4());
     }
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/288768
@@ -1019,8 +1143,7 @@ public:
     inline simd4_t<int,N>& operator/=(int s) {
         return operator/=(simd4_t<int,4>(s));
     }
-    template<int M>
-    inline simd4_t<int,N>& operator/=(const simd4_t<int,M>& v) {
+    inline simd4_t<int,N>& operator/=(const simd4_t<int,N>& v) {
         for (int i=0; i<N; ++i) {
            vec[i] /= v[i];
         }
@@ -1028,8 +1151,45 @@ public:
     }
 };
 
-static const __m128i imask2 = _mm_loadu_si128((__m128i*)m2a32);
-static const __m128i imask3 = _mm_loadu_si128((__m128i*)m3a32);
+static const __m128i imask2 = _mm_load_si128((__m128i*)simd4::m2a32);
+static const __m128i imask3 = _mm_load_si128((__m128i*)simd4::m3a32);
+
+template<>
+inline simd4_t<int,4>::simd4_t(const simd4_t<int,4>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<int,4>::simd4_t(const simd4_t<int,3>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<int,4>::simd4_t(const simd4_t<int,2>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<int,3>::simd4_t(const simd4_t<int,4>& v) {
+    simd4 = _mm_and_si128(v.v4(), imask3);
+}
+template<>
+inline simd4_t<int,3>::simd4_t(const simd4_t<int,3>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<int,3>::simd4_t(const simd4_t<int,2>& v) {
+    simd4 = v.v4();
+}
+template<>
+inline simd4_t<int,2>::simd4_t(const simd4_t<int,4>& v) {
+    simd4 = _mm_and_si128(v.v4(), imask2);
+}
+template<>
+inline simd4_t<int,2>::simd4_t(const simd4_t<int,3>& v) {
+    simd4 = _mm_and_si128(v.v4(), imask2);
+}
+template<>
+inline simd4_t<int,2>::simd4_t(const simd4_t<int,2>& v) {
+    simd4 = v.v4();
+}
 
 template<>
 inline simd4_t<int,4>::simd4_t(const __vec4i_t v) {

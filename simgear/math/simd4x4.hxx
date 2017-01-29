@@ -201,19 +201,6 @@ public:
         std::memcpy(mtx[i], v.v4(), sizeof(T[N]));
     }
 
-    inline simd4x4_t<T,N>& operator=(const T m[N*N]) {
-        std::memcpy(array, m, sizeof(T[N*N]));
-        return *this;
-    }
-    inline simd4x4_t<T,N>& operator=(const T m[N][N]) {
-        std::memcpy(array, m, sizeof(T[N*N]));
-        return *this;
-    }
-    inline simd4x4_t<T,N>& operator=(const simd4x4_t<T,N>& m) {
-        std::memcpy(array, m, sizeof(T[N*N]));
-        return *this;
-    }
-
     inline simd4x4_t<T,N>& operator+=(const simd4x4_t<T,N>& m) {
         for (int i=0; i<N*N; ++i) {
            array[i] += m[i];
@@ -323,13 +310,13 @@ public:
     }
     simd4x4_t(const float m[4*4]) {
         for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<float,4>((const float*)&m[4*i]).v4();
+            simd4x4[i] = _mm_loadu_ps((const float*)&m[4*i]);
         }
     }
 
-    explicit simd4x4_t(const __mtx4f_t m) {
+    simd4x4_t(const __mtx4f_t m) {
         for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<float,4>(m[i]).v4();
+            simd4x4[i] = _mm_loadu_ps(m[i]);
         }
     }
     simd4x4_t(const simd4x4_t<float,4>& m) {
@@ -368,19 +355,6 @@ public:
         simd4x4[i] = v.v4();
     }
 
-    inline simd4x4_t<float,4>& operator=(const __mtx4f_t m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<float,4>(m[i]).v4();
-        }
-        return *this;
-    }
-    inline simd4x4_t<float,4>& operator=(const simd4x4_t<float,4>& m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i] = m.m4x4()[i];
-        }
-        return *this;
-    }
-
     inline simd4x4_t<float,4>& operator+=(const simd4x4_t<float,4>& m) {
         for (int i=0; i<4; ++i) {
            simd4x4[i] = _mm_add_ps(simd4x4[i], m.m4x4()[i]);
@@ -396,22 +370,21 @@ public:
     }
 
     inline simd4x4_t<float,4>& operator*=(float f) {
-        simd4_t<float,4> f4(f);
+        __m128 f4 = _mm_set1_ps(f);
         for (int i=0; i<4; ++i) {
-           simd4x4[i] = _mm_mul_ps(simd4x4[i], f4.v4());
+           simd4x4[i] = _mm_mul_ps(simd4x4[i], f4);
         }
         return *this;
     }
 
     simd4x4_t<float,4>& operator*=(const simd4x4_t<float,4>& m2) {
-        simd4x4_t<float,4> m1 = *this;
         __m128 row, col;
-        for (int i=0; i<4; ++i) {
+        for (int i=0; i<4; ++i ) {
             col = _mm_set1_ps(m2.ptr()[i][0]);
-            row = _mm_mul_ps(m1.m4x4()[0], col);
+            row = _mm_mul_ps(simd4x4[0], col);
             for (int j=1; j<4; ++j) {
                 col = _mm_set1_ps(m2.ptr()[i][j]);
-                row = _mm_add_ps(row, _mm_mul_ps(m1.m4x4()[j], col));
+                row = _mm_add_ps(row, _mm_mul_ps(simd4x4[j], col));
             }
             simd4x4[i] = row;
         }
@@ -505,7 +478,6 @@ inline simd4_t<float,3> transform<float>(const simd4x4_t<float,4>& m, const simd
         __m128 ptd = _mm_set1_ps(pt[i]);
         tpt = _mm_add_ps(tpt, _mm_mul_ps(ptd, m.m4x4()[i]));
     }
-    tpt[3] = 0.0;
     return tpt;
 }
 
@@ -515,7 +487,6 @@ inline simd4_t<float,3> transform<float>(const simd4x4_t<float,4>& m, const simd
 
 
 # ifdef __AVX_unsupported__
-#  include <pmmintrin.h>
 #  include <immintrin.h>
 
 template<>
@@ -542,15 +513,15 @@ public:
         simd4x4[2] = _mm256_set_pd(m32,m22,m12,m02);
         simd4x4[3] = _mm256_set_pd(m33,m23,m13,m03);
     }
-    explicit simd4x4_t(const double m[4*4]) {
+    simd4x4_t(const double m[4*4]) {
         for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<double,4>((const double*)&m[4*i]).v4();
+            simd4x4[i] = _mm256_loadu_pd((const double*)&m[4*i]);
         }
     }
 
-    explicit simd4x4_t(const __mtx4d_t m) {
+    simd4x4_t(const __mtx4d_t m) {
         for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<double,4>(m[i]).v4();
+            simd4x4[i] = _mm256_loadu_pd(m[i]);
         }
     }
     simd4x4_t(const simd4x4_t<double,4>& m) {
@@ -589,19 +560,6 @@ public:
         simd4x4[i] = v.v4();
     }
 
-    inline simd4x4_t<double,4>& operator=(const __mtx4d_t m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<double,4>(m[i]).v4();
-        }
-        return *this;
-    }
-    inline simd4x4_t<double,4>& operator=(const simd4x4_t<double,4>& m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i] = m.m4x4()[i];
-        }
-        return *this;
-    }
-
     inline simd4x4_t<double,4>& operator+=(const simd4x4_t<double,4>& m) {
         for (int i=0; i<4; ++i) {
            simd4x4[i] = _mm256_add_pd(simd4x4[i], m.m4x4()[i]);
@@ -617,28 +575,26 @@ public:
     }
 
     inline simd4x4_t<double,4>& operator*=(double f) {
-        simd4_t<double,4> f4(f);
+        __m256d f4 = _mm256_set1_pd(f);
         for (int i=0; i<4; ++i) {
-           simd4x4[i] = _mm256_mul_pd(simd4x4[i], f4.v4());
+           simd4x4[i] = _mm256_mul_pd(simd4x4[i], f4);
         }
         return *this;
     }
 
     simd4x4_t<double,4>& operator*=(const simd4x4_t<double,4>& m2) {
-        simd4x4_t<double,4> m1 = *this;
         __m256d row, col;
         for (int i=0; i<4; ++i ) {
             col = _mm256_set1_pd(m2.ptr()[i][0]);
-            row = _mm256_mul_pd(m1.m4x4()[0], col);
+            row = _mm256_mul_pd(simd4x4[0], col);
             for (int j=1; j<4; ++j) {
                 col = _mm256_set1_pd(m2.ptr()[i][j]);
-                row = _mm256_add_pd(row, _mm256_mul_pd(m1.m4x4()[j], col));
+                row = _mm256_add_pd(row, _mm256_mul_pd(simd4x4[j], col));
             }
             simd4x4[i] = row;
         }
         return *this;
     }
-
 };
 
 template<int M>
@@ -654,7 +610,6 @@ inline simd4_t<double,M> operator*(const simd4x4_t<double,4>& m, const simd4_t<d
 
 namespace simd4x4
 {
-
 template<>
 inline simd4x4_t<double,4> rotation_matrix<double>(double angle, const simd4_t<double,3>& axis)
 {
@@ -719,9 +674,9 @@ inline void pre_translate(simd4x4_t<double,4>& m, const simd4_t<S,3>& dist)
 #if 0
     // this is slower
     simd4x4_t<double,4> mt = simd4x4::transpose(m);
-    __mm256d row3 = mt.m4x4()[3];
+    __m256d row3 = mt.m4x4()[3];
     for (int i=0; i<3; ++i) {
-        __mm256d _mm256_set1_pd(float(dist[i]));
+        __m256d _mm256_set1_pd(float(dist[i]));
         mt.m4x4()[i] = _mm256_add_pd(mt.m4x4()[i], _mm256_mul_pd(t, row3));
     }
     m = simd4x4::transpose(mt);
@@ -747,7 +702,6 @@ inline simd4_t<double,3> transform<double>(const simd4x4_t<double,4>& m, const s
         tpt = _mm256_add_pd(tpt, _mm256_mul_pd(ptd, m.m4x4()[i]));
     }
     res = tpt;
-    res[3] = 0.0;
     return res;
 }
 
@@ -784,19 +738,17 @@ public:
         simd4x4[3][0] = _mm_set_pd(m13,m03);
         simd4x4[3][1] = _mm_set_pd(m33,m23);
     }
-    explicit simd4x4_t(const double m[4*4]) {
-        const double *p = m;
+    simd4x4_t(const double m[4*4]) {
         for (int i=0; i<4; ++i) {
-            simd4_t<double,4> vec4(p);
-            simd4x4[i][0] = vec4.v4()[0]; p += 4;
-            simd4x4[i][1] = vec4.v4()[1];
+            simd4x4[i][0] = _mm_loadu_pd((const double*)&m[4*i]);
+            simd4x4[i][1] = _mm_loadu_pd((const double*)&m[4*i+2]);
         }
     }
 
-    explicit simd4x4_t(const __mtx4d_t m) {
+    simd4x4_t(const __mtx4d_t m) {
         for (int i=0; i<4; ++i) {
-            simd4x4[i][0] = simd4_t<double,4>(m[i]).v4()[0];
-            simd4x4[i][1] = simd4_t<double,4>(m[i]).v4()[1];
+            simd4x4[i][0] = _mm_loadu_pd(m[i]);
+            simd4x4[i][1] = _mm_loadu_pd(m[i+2]);
         }
     }
     simd4x4_t(const simd4x4_t<double,4>& m) {
@@ -837,31 +789,6 @@ public:
         simd4x4[i][1] = v.v4()[1];
     }
 
-    inline simd4x4_t<double,4>& operator=(const double m[4*4]) {
-        const double *p = m;
-        for (int i=0; i<4; ++i) {
-            simd4_t<double,4> vec4(p);
-            simd4x4[i][0] = vec4.v4()[0]; p += 4;
-            simd4x4[i][1] = vec4.v4()[1];
-        }
-        return *this;
-    }
-
-    inline simd4x4_t<double,4>& operator=(const __mtx4d_t m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i][0] = simd4_t<double,4>(m[i]).v4()[0];
-            simd4x4[i][1] = simd4_t<double,4>(m[i]).v4()[1];
-        }
-        return *this;
-    }
-    inline simd4x4_t<double,4>& operator=(const simd4x4_t<double,4>& m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i][0] = m.m4x4()[i][0];
-            simd4x4[i][1] = m.m4x4()[i][1];
-        }
-        return *this;
-    }
-
     inline simd4x4_t<double,4>& operator+=(const simd4x4_t<double,4>& m) {
         for (int i=0; i<4; ++i) {
            simd4x4[i][0] = _mm_add_pd(simd4x4[i][0], m.m4x4()[i][0]);
@@ -879,26 +806,27 @@ public:
     }
 
     inline simd4x4_t<double,4>& operator*=(double f) {
-        simd4_t<double,4> f4(f);
+        __m128d f4 = _mm_set1_pd(f);
         for (int i=0; i<4; ++i) {
-           simd4x4[i][0] = _mm_mul_pd(simd4x4[i][0], f4.v4()[0]);
-           simd4x4[i][1] = _mm_mul_pd(simd4x4[i][1], f4.v4()[0]);
+           simd4x4[i][0] = _mm_mul_pd(simd4x4[i][0], f4);
+           simd4x4[i][1] = _mm_mul_pd(simd4x4[i][1], f4);
         }
         return *this;
     }
 
     simd4x4_t<double,4>& operator*=(const simd4x4_t<double,4>& m2) {
-        simd4x4_t<double,4> m1 = *this;
-        simd4_t<double,4> row, col;
+        __m128d row[2], col;
         for (int i=0; i<4; ++i ) {
-            simd4_t<double,4> col = m1.m4x4()[0];
-            row = col * m2.ptr()[i][0];
+            col = _mm_set1_pd(m2.ptr()[i][0]);
+            row[0] = _mm_mul_pd(simd4x4[0][0], col);
+            row[1] = _mm_mul_pd(simd4x4[0][1], col);
             for (int j=1; j<4; ++j) {
-                col = m1.m4x4()[j];
-                row += col * m2.ptr()[i][j];
+                col = _mm_set1_pd(m2.ptr()[i][j]);
+                row[0] = _mm_add_pd(row[0], _mm_mul_pd(simd4x4[j][0], col));
+                row[1] = _mm_add_pd(row[1], _mm_mul_pd(simd4x4[j][1], col));
             }
-            simd4x4[i][0] = row.v4()[0];
-            simd4x4[i][1] = row.v4()[1];
+            simd4x4[i][0] = row[0];
+            simd4x4[i][1] = row[1];
         }
         return *this;
     }
@@ -1038,7 +966,6 @@ inline simd4_t<double,3> transform<double>(const simd4x4_t<double,4>& m, const s
         tpt.v4()[0] = _mm_add_pd(tpt.v4()[0], _mm_mul_pd(ptd, m.m4x4()[i][0]));
         tpt.v4()[1] = _mm_add_pd(tpt.v4()[1], _mm_mul_pd(ptd, m.m4x4()[i][1]));
     }
-    tpt[3] = 0.0;
     return tpt;
 }
 
@@ -1076,12 +1003,12 @@ public:
     }
     simd4x4_t(const int m[4*4]) {
         for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<int,4>((const int*)&m[4*i]).v4();
+            simd4x4[i] = _mm_loadu_si128((const __m128i*)&m[4*i]);
         }
     }
-    explicit simd4x4_t(const __mtx4i_t m) {
+    simd4x4_t(const __mtx4i_t m) {
         for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<int,4>(m[i]).v4();
+            simd4x4[i] = _mm_loadu_si128((const __m128i*)&m[i]);
         }
     }
     simd4x4_t(const simd4x4_t<int,4>& m) {
@@ -1120,53 +1047,38 @@ public:
         simd4x4[i] = v.v4();
     }
 
-    inline simd4x4_t<int,4>& operator=(const __mtx4i_t m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i] = simd4_t<int,4>(m[i]).v4();
-        }
-        return *this;
-    }
-    inline simd4x4_t<int,4>& operator=(const simd4x4_t<int,4>& m) {
-        for (int i=0; i<4; ++i) {
-            simd4x4[i] = m.m4x4()[i];
-        }
-        return *this;
-    }
-
     inline simd4x4_t<int,4>& operator+=(const simd4x4_t<int,4>& m) {
         for (int i=0; i<4; ++i) {
-           simd4x4[i] += m.m4x4()[i];
+           simd4x4[i] = _mm_add_epi32(simd4x4[i], m.m4x4()[i]);
         }
         return *this;
     }
 
     inline simd4x4_t<int,4>& operator-=(const simd4x4_t<int,4>& m) {
         for (int i=0; i<4; ++i) {
-           simd4x4[i] -= m.m4x4()[i];
+           simd4x4[i] = _mm_sub_epi32(simd4x4[i], m.m4x4()[i]);
         }
         return *this;
     }
 
-    inline simd4x4_t<int,4>& operator*=(int f) {
-        simd4_t<int,4> f4(f);
+    inline simd4x4_t<int,4>& operator*=(int v) {
+        __m128i v4 = _mm_set1_epi32(v);
         for (int i=0; i<4; ++i) {
-           simd4x4[i] *= f4.v4();
+           simd4x4[i] = _mm_mul_epi32(simd4x4[i], v4);
         }
         return *this;
     }
 
     simd4x4_t<int,4>& operator*=(const simd4x4_t<int,4>& m2) {
-        simd4x4_t<int,4> m1 = *this;
-        simd4_t<int,4> row, col;
-
-        for (int i=0; i<4; ++i) {
-            simd4_t<int,4> col(m2.ptr()[i][0]);
-            row.v4() = m1.m4x4()[0] * col.v4();
+        __m128i row, col;
+        for (int i=0; i<4; ++i ) {
+            col = _mm_set1_epi32(m2.ptr()[i][0]);
+            row = _mm_mul_epi32(simd4x4[0], col);
             for (int j=1; j<4; ++j) {
-                simd4_t<int,4> col(m2.ptr()[i][j]);
-                row.v4() += m1.m4x4()[j] * col.v4();
+                col = _mm_set1_epi32(m2.ptr()[i][j]);
+                row = _mm_add_epi32(row, _mm_mul_epi32(simd4x4[j], col));
             }
-            simd4x4[i] = row.v4();
+            simd4x4[i] = row;
         }
         return *this;
     }
@@ -1260,7 +1172,6 @@ inline simd4_t<int,3> transform<int>(const simd4x4_t<int,4>& m, const simd4_t<in
         ptd *= pt[i];
         tpt.v4() = _mm_add_epi32(tpt.v4(), ptd.v4());
     }
-    tpt[3] = 0.0;
     return tpt;
 }
 

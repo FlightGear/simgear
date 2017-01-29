@@ -466,7 +466,7 @@ inline
 SGVec3<T>
 projection(const SGVec3<T>& u, const SGVec3<T>& d)
 {
-  T denom = simd4::magnitude2(d);
+  T denom = simd4::magnitude2(d.simd3());
   T ud = dot(u, d);
   if (SGLimits<T>::min() < denom) return u;
   else return d * (dot(u, d) / denom);

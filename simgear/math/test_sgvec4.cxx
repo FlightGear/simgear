@@ -123,6 +123,5 @@ int main()
   }
 
   printf("res: %f\n", res);
-
   return 0;
 }

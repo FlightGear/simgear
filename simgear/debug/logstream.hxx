@@ -134,6 +134,12 @@ public:
      
     void removeCallback(simgear::LogCallback* cb);
 
+    /**
+     * optionally record all entries and submit them to new log callbacks that
+     * are added. This allows simplified logging configuration, but still including
+     * early startup information in all logs.
+     */
+    void setStartupLoggingEnabled(bool enabled);
 private:
     // constructor
     logstream();

@@ -181,9 +181,9 @@ class LogStreamPrivate : public SGThread
 {
 private:
     /**
-     * storage of a single log entry. Note this is not used for a persistent
-     * store, but rather for short term buffering between the submitting
-     * and output threads.
+     * storage of a single log entry. This is used to pass log entries from
+     * the various threads to the logging thread, and also to store the startup
+     * entries
      */
     class LogEntry
     {
@@ -195,19 +195,24 @@ private:
         {
         }
 
-        sgDebugClass debugClass;
-        sgDebugPriority debugPriority;
+        const sgDebugClass debugClass;
+        const sgDebugPriority debugPriority;
         const char* file;
-        int line;
-        std::string message;
+        const int line;
+        const std::string message;
     };
 
+    /**
+     * RAII object to pause the logging thread if it's running, and restart it.
+     * used to safely make configuration changes.
+     */
     class PauseThread
     {
     public:
-        PauseThread(LogStreamPrivate* parent) : m_parent(parent)
+        PauseThread(LogStreamPrivate* parent)
+            : m_parent(parent)
+            , m_wasRunning(m_parent->stop())
         {
-            m_wasRunning = m_parent->stop();
         }
 
         ~PauseThread()
@@ -218,17 +223,13 @@ private:
         }
     private:
         LogStreamPrivate* m_parent;
-        bool m_wasRunning;
+        const bool m_wasRunning;
     };
+
 public:
     LogStreamPrivate() :
         m_logClass(SG_ALL),
-        m_logPriority(SG_ALERT),
-#if defined (SG_WINDOWS)
-        m_stdout_isRedirectedAlready(false),
-        m_stderr_isRedirectedAlready(false),
-#endif
-        m_isRunning(false)
+        m_logPriority(SG_ALERT)
     {
 #if defined (SG_WINDOWS)
         /*
@@ -332,13 +333,17 @@ public:
 
     ~LogStreamPrivate()
     {
-        BOOST_FOREACH(simgear::LogCallback* cb, m_callbacks) {
+        for (simgear::LogCallback* cb : m_callbacks) {
             delete cb;
         }
     }
 
     SGMutex m_lock;
     SGBlockingQueue<LogEntry> m_entries;
+
+    // log entries posted during startup
+    std::vector<LogEntry> m_startupEntries;
+    bool m_startupLogging = false;
 
     typedef std::vector<simgear::LogCallback*> CallbackVec;
     CallbackVec m_callbacks;
@@ -348,11 +353,11 @@ public:
 
     sgDebugClass m_logClass;
     sgDebugPriority m_logPriority;
-    bool m_isRunning;
+    bool m_isRunning = false;
 #if defined (SG_WINDOWS)
     // track whether the console was redirected on launch (in the constructor, which is called early on)
-    bool m_stderr_isRedirectedAlready;
-    bool m_stdout_isRedirectedAlready;
+    bool m_stderr_isRedirectedAlready = false;
+    bool m_stdout_isRedirectedAlready = false;
 #endif
 
     void startLog()
@@ -361,6 +366,16 @@ public:
         if (m_isRunning) return;
         m_isRunning = true;
         start();
+    }
+
+    void setStartupLoggingEnabled(bool on)
+    {
+        if (m_startupLogging == on) {
+            return;
+        }
+
+        m_startupLogging = on;
+        m_startupEntries.clear();
     }
 
     virtual void run()
@@ -373,8 +388,14 @@ public:
                 return;
             }
 
+            if (m_startupLogging) {
+                // save to the startup list for not-yet-added callbacks to
+                // pull down on startup
+                m_startupEntries.push_back(entry);
+            }
+
             // submit to each installed callback in turn
-            BOOST_FOREACH(simgear::LogCallback* cb, m_callbacks) {
+            for (simgear::LogCallback* cb : m_callbacks) {
                 (*cb)(entry.debugClass, entry.debugPriority,
                     entry.file, entry.line, entry.message);
             }
@@ -401,6 +422,13 @@ public:
     {
         PauseThread pause(this);
         m_callbacks.push_back(cb);
+
+        // we clear startup entries not using this, so always safe to run
+        // this code, container will simply be empty
+        for (auto entry : m_startupEntries) {
+            (*cb)(entry.debugClass, entry.debugPriority,
+               entry.file, entry.line, entry.message);
+        }
     }
 
     void removeCallback(simgear::LogCallback* cb)
@@ -555,6 +583,11 @@ void
 logstream::logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p )
 {
     global_privateLogstream->addCallback(new FileLogCallback(aPath, c, p));
+}
+
+void logstream::setStartupLoggingEnabled(bool enabled)
+{
+    global_privateLogstream->setStartupLoggingEnabled(enabled);
 }
 
 namespace simgear

@@ -20,6 +20,10 @@
 
 #include <cstring>
 
+#if defined(__GNUC__) && defined(__ARM_NEON__)
+# include <simgear/math/simd4x4_neon.hxx>
+#endif
+
 #include <simgear/math/simd.hxx>
 
 template<typename T, int N> class simd4x4_t;
@@ -1173,11 +1177,6 @@ inline simd4_t<int,3> transform<int>(const simd4x4_t<int,4>& m, const simd4_t<in
 
 } /* namespace simd4x */
 # endif
-
-# ifdef __ARM_NEON__
-#  include <simgear/math/simd4x4_neon.hxx>
-# endif
-
 
 #endif /* __SIMD4X4_H__ */
 

@@ -30,6 +30,7 @@
 # include <x86intrin.h>
 #elif defined(__GNUC__) && defined(__ARM_NEON__)
 # include <arm_neon.h>
+# include <simgear/math/simd_neon.hxx>
 #endif
 
 #include <simgear/math/SGLimits.hxx>
@@ -65,7 +66,8 @@ inline simd4_t<T,N> abs(simd4_t<T,N> v) {
 }
 
 template<typename T, int N>
-inline T magnitude2(simd4_t<T,N> v) {
+inline T magnitude2(const simd4_t<T,N>& vi) {
+    simd4_t<T,N> v(vi);
     T mag2 = 0;
     v = v*v;
     for (int i=0; i<N; ++i) {
@@ -91,11 +93,11 @@ inline T normalize(simd4_t<T,N>& v) {
 }
 
 template<typename T, int N>
-inline T dot(simd4_t<T,N> v1, const simd4_t<T,N>& v2) {
-    T dp = 0;
-    v1 *= v2;
+inline T dot(const simd4_t<T,N>& v1, const simd4_t<T,N>& v2) {
+    simd4_t<T,N> v(v1*v2);
+    T dp = T(0);
     for (int i=0; i<N; ++i) {
-       dp += v1[i];
+       dp += v[i];
     }
     return dp;
 }
@@ -132,6 +134,7 @@ public:
     simd4_t(T x, T y, T z) : simd4_t(x,y,z,0) {}
     simd4_t(T x, T y, T z, T w) {
         _v4[0] = x; _v4[1] = y; _v4[2] = z; _v4[3] = w;
+        for (int i=N; i<4; ++i) _v4[i] = 0;
     }
     explicit simd4_t(const T v[N]) {
         std::memcpy(vec, v, sizeof(T[N]));
@@ -171,10 +174,8 @@ public:
     }
 
     template<int M>
-    inline simd4_t<T,N>& operator=(simd4_t<T,M> v) {
-        for (int i=0; i<N; ++i) {
-           vec[i] += v[i];
-        }
+    inline simd4_t<T,N>& operator=(const simd4_t<T,M>& v) {
+        *this = simd4_t<T,N>(v);
         return *this;
     }
 
@@ -192,7 +193,7 @@ public:
     }
     inline simd4_t<T,N>& operator+=(const simd4_t<T,N>& v) {
         for (int i=0; i<N; ++i) {
-           _v4[i] += v[i];
+           vec[i] += v[i];
         }
         return *this;
     }
@@ -211,7 +212,7 @@ public:
     }
     inline simd4_t<T,N>& operator-=(const simd4_t<T,N>& v) {
         for (int i=0; i<N; ++i) {
-            _v4[i] -= v[i];
+            vec[i] -= v[i];
         }
         return *this;
     }
@@ -229,13 +230,16 @@ public:
     }
     inline simd4_t<T,N>& operator*=(const simd4_t<T,N>& v) {
         for (int i=0; i<N; ++i) {
-           _v4[i] *= v[i];
+           vec[i] *= v[i];
         }
         return *this;
     }
 
     inline simd4_t<T,N>& operator/=(T s) {
-        return operator*=(1/s);
+        for (int i=0; i<N; ++i) {
+           vec[i] /= s;
+        }
+        return *this;
     }
     inline simd4_t<T,N>& operator/=(const T v[N]) {
         for (int i=0; i<N; ++i) {
@@ -245,7 +249,7 @@ public:
     }
     inline simd4_t<T,N>& operator/=(const simd4_t<T,N>& v) {
         for (int i=0; i<N; ++i) {
-           _v4[i] /= v[i];
+           vec[i] /= v[i];
         }
         return *this;
     }
@@ -253,7 +257,7 @@ public:
 
 template<typename T, int N>
 inline simd4_t<T,N> operator-(const simd4_t<T,N>& v) {
-    simd4_t<T,N> r = T(0);
+    simd4_t<T,N> r(T(0));
     r -= v;
     return r;
 }
@@ -300,16 +304,16 @@ namespace simd4
 {
 static const uint32_t m2a32[] alignas(16) = {
     0xffffffff,0xffffffff,0,0
-};
+  };
 static const uint32_t m3a32[] alignas(16) = {
     0xffffffff,0xffffffff,0xffffffff,0
-};
+  };
 static const uint64_t m2a64[] alignas(32) = {
     0xffffffffffffffff,0xffffffffffffffff,0,0
-};
+  };
 static const uint64_t m3a64[] alignas(32) = {
     0xffffffffffffffff,0xffffffffffffffff,0xffffffffffffffff,0
-};
+  };
 }; /* namespace simd4 */
 
 
@@ -329,9 +333,7 @@ public:
     simd4_t(float f) {}
     simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
     simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
-    simd4_t(float x, float y, float z, float w) {
-        simd4 = _mm_set_ps(w,z,y,x);
-    }
+    simd4_t(float x, float y, float z, float w) {}
     simd4_t(const __vec4f_t v) {}
     simd4_t(const simd4_t<float,4>& v) {}
     simd4_t(const simd4_t<float,3>& v) {}
@@ -413,6 +415,19 @@ public:
 
 static const __m128 fmask2 = _mm_load_ps((const float*)simd4::m2a32);
 static const __m128 fmask3 = _mm_load_ps((const float*)simd4::m3a32);
+
+template<>
+inline simd4_t<float,4>::simd4_t(float x, float y, float z, float w) {
+    simd4 = _mm_set_ps(w,z,y,x);
+}
+template<>
+inline simd4_t<float,3>::simd4_t(float x, float y, float z, float w) {
+    simd4 = _mm_and_ps(_mm_set_ps(w,z,y,x), fmask3);
+}
+template<>
+inline simd4_t<float,2>::simd4_t(float x, float y, float z, float w) {
+    simd4 = _mm_and_ps(_mm_set_ps(w,z,y,x), fmask2);
+}
 
 template<>
 inline simd4_t<float,4>::simd4_t(const simd4_t<float,4>& v) {
@@ -499,13 +514,13 @@ namespace simd4
 # endif
 
 template<>
-inline float magnitude2(simd4_t<float,4> v) {
-    return hsum_ps_sse(v.v4()*v.v4());
+inline float magnitude2(const simd4_t<float,4>& v) {
+    return hsum_ps_sse(_mm_mul_ps(v.v4(),v.v4()));
 }
 
 template<>
-inline float dot(simd4_t<float,4> v1, const simd4_t<float,4>& v2) {
-    return hsum_ps_sse(v1.v4()*v2.v4());
+inline float dot(const simd4_t<float,4>& v1, const simd4_t<float,4>& v2) {
+    return hsum_ps_sse(_mm_mul_ps(v1.v4(),v2.v4()));
 }
 
 template<>
@@ -560,9 +575,7 @@ public:
     simd4_t(double d) {}
     simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
     simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
-    simd4_t(double x, double y, double z, double w) {
-        simd4 = _mm256_set_pd(w,z,y,x);
-    }
+    simd4_t(double x, double y, double z, double w) {}
     simd4_t(const __vec4d_t v) {}
     simd4_t(const simd4_t<double,4>& v) {}
     simd4_t(const simd4_t<double,3>& v) {}
@@ -646,6 +659,19 @@ static const __m256d dmask2 = _mm256_load_pd((const double*)simd4::m2a64);
 static const __m256d dmask3 = _mm256_load_pd((const double*)simd4::m3a64);
 
 template<>
+inline simd4_t<double,4>::simd4_t(double x, double y, double z, double w) {
+    simd4 = _mm256_set_pd(w,z,y,x);
+}
+template<>
+inline simd4_t<double,3>::simd4_t(double x, double y, double z, double w) {
+    simd4 = _mm256_and_pd(_mm256_set_pd(w,z,y,x), dmask3);
+}
+template<>
+inline simd4_t<double,2>::simd4_t(double x, double y, double z, double w) {
+    simd4 = _mm256_and_pd(_mm256_set_pd(w,z,y,x), dmask2);
+}
+
+template<>
 inline simd4_t<double,4>::simd4_t(const simd4_t<double,4>& v) {
     simd4 = v.v4();
 }
@@ -720,12 +746,12 @@ inline static double hsum_pd_avx(__m256d v) {
 }
 
 template<>
-inline double magnitude2(simd4_t<double,4> v) {
+inline double magnitude2(const simd4_t<double,4>& v) {
     return hsum_pd_avx(_mm256_mul_pd(v.v4(),v.v4()));
 }
 
 template<>
-inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
+inline double dot(const simd4_t<double,4>& v1, const simd4_t<double,4>& v2) {
     return hsum_pd_avx(_mm256_mul_pd(v1.v4(),v2.v4()));
 }
 
@@ -784,10 +810,7 @@ public:
     simd4_t(double d) {}
     simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
     simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
-    simd4_t(double x, double y, double z, double w) {
-        simd4[0] = _mm_set_pd(y,x);
-        simd4[1] = _mm_set_pd(w,z);
-    }
+    simd4_t(double x, double y, double z, double w) {}
     simd4_t(const __vec4d_t v) {}
     simd4_t(const simd4_t<double,4>& v) {}
     simd4_t(const simd4_t<double,3>& v) {}
@@ -884,6 +907,22 @@ public:
 static const __m128d dmask3 = _mm_load_pd((const double*)(simd4::m3a64+2));
 
 template<>
+inline simd4_t<double,4>::simd4_t(double x, double y, double z, double w) {
+    simd4[0] = _mm_set_pd(y,x);
+    simd4[1] = _mm_set_pd(w,z);
+}
+template<>
+inline simd4_t<double,3>::simd4_t(double x, double y, double z, double w) {
+    simd4[0] = _mm_set_pd(y,x);
+    simd4[1] = _mm_and_pd(_mm_set_pd(w,z), dmask3);
+}
+template<>
+inline simd4_t<double,2>::simd4_t(double x, double y, double z, double w) {
+    simd4[0] = _mm_set_pd(y,x);
+    simd4[1] = _mm_setzero_pd();
+}
+
+template<>
 inline simd4_t<double,4>::simd4_t(const simd4_t<double,4>& v) {
     simd4[0] = v.v4()[0];
     simd4[1] = v.v4()[1];
@@ -973,15 +1012,19 @@ inline static double hsum_pd_sse(const __m128d vd[2]) {
 }
 
 template<>
-inline double magnitude2(simd4_t<double,4> v) {
-    v *= v;
-    return hsum_pd_sse(v.v4());
+inline double magnitude2(const simd4_t<double,4>& v) {
+    __m128d v2[2];
+    v2[0] = _mm_mul_pd(v.v4()[0],v.v4()[0]);
+    v2[1] = _mm_mul_pd(v.v4()[1],v.v4()[1]);
+    return hsum_pd_sse(v2);
 }
 
 template<>
-inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
-    v1 *= v2;
-    return hsum_pd_sse(v1.v4());
+inline double dot(const simd4_t<double,4>& v1, const simd4_t<double,4>& v2) {
+    __m128d mv[2];
+    mv[0] = _mm_mul_pd(v1.v4()[0],v2.v4()[0]);
+    mv[1] = _mm_mul_pd(v1.v4()[1],v2.v4()[1]);
+    return hsum_pd_sse(mv);
 }
 
 template<>
@@ -1050,9 +1093,7 @@ public:
     simd4_t(int i) {}
     simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
     simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}
-    simd4_t(int x, int y, int z, int w) {
-        simd4 = _mm_set_epi32(w,z,y,x);
-    }
+    simd4_t(int x, int y, int z, int w) {}
     simd4_t(const __vec4i_t v) {}
     simd4_t(const simd4_t<int,4>& v) {}
     simd4_t(const simd4_t<int,3>& v) {}
@@ -1150,6 +1191,19 @@ static const __m128i imask2 = _mm_load_si128((__m128i*)simd4::m2a32);
 static const __m128i imask3 = _mm_load_si128((__m128i*)simd4::m3a32);
 
 template<>
+inline simd4_t<int,4>::simd4_t(int x, int y, int z, int w) {
+    simd4 = _mm_set_epi32(w,z,y,x);
+}
+template<>
+inline simd4_t<int,3>::simd4_t(int x, int y, int z, int w) {
+    simd4 = _mm_and_si128(_mm_set_epi32(w,z,y,x), imask3);
+}
+template<>
+inline simd4_t<int,2>::simd4_t(int x, int y, int z, int w) {
+    simd4 = _mm_and_si128(_mm_set_epi32(w,z,y,x), imask2);
+}
+
+template<>
 inline simd4_t<int,4>::simd4_t(const simd4_t<int,4>& v) {
     simd4 = v.v4();
 }
@@ -1231,10 +1285,6 @@ inline simd4_t<int,N> max(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
 
 } /* namespace simd4 */
 
-# endif
-
-# ifdef __ARM_NEON__
-#  include <simgear/math/simd_neon.hxx>
 # endif
 
 #endif /* __SIMD_H__ */

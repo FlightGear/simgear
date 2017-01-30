@@ -282,19 +282,17 @@ inline simd4x4_t<T,N> operator*(const simd4x4_t<T,N>& m1, const simd4x4_t<T,N>& 
 
 
 # ifdef __SSE__
-#  include <xmmintrin.h>
-
 template<>
-class simd4x4_t<float,4>  : public simd_aligned16
+class alignas(16) simd4x4_t<float,4>
 {
 private:
     typedef float  __mtx4f_t[4][4];
 
-    union ALIGN16 {
+    union alignas(16) {
         __m128 simd4x4[4];
-        __mtx4f_t mtx;
-        float array[4*4];
-    } ALIGN16C;
+        alignas(16) __mtx4f_t mtx;
+        alignas(16) float array[4*4];
+    };
 
 public:
     simd4x4_t(void) {}
@@ -487,19 +485,17 @@ inline simd4_t<float,3> transform<float>(const simd4x4_t<float,4>& m, const simd
 
 
 # ifdef __AVX__
-#  include <immintrin.h>
-
 template<>
-class simd4x4_t<double,4> : public simd_aligned32
+class alignas(32) simd4x4_t<double,4>
 {
 private:
     typedef double  __mtx4d_t[4][4];
 
-    union ALIGN32 {
+    union alignas(32) {
         __m256d simd4x4[4];
-        __mtx4d_t mtx;
-        double array[4*4];
-    } ALIGN32C;
+        alignas(32) __mtx4d_t mtx;
+        alignas(32) double array[4*4];
+    };
 
 public:
     simd4x4_t(void) {}
@@ -708,19 +704,18 @@ inline simd4_t<double,3> transform<double>(const simd4x4_t<double,4>& m, const s
 } /* namespace simd4x4 */
 
 # elif defined __SSE2__
-#  include <emmintrin.h>
 
 template<>
-class simd4x4_t<double,4> : public simd_aligned16
+class alignas(16) simd4x4_t<double,4>
 {
 private:
     typedef double  __mtx4d_t[4][4];
 
-    union ALIGN16 {
+    union alignas(16) {
         __m128d simd4x4[4][2];
-        __mtx4d_t mtx;
-        double array[4*4];
-    } ALIGN16C;
+        alignas(16) __mtx4d_t mtx;
+        alignas(16) double array[4*4];
+    };
 
 public:
     simd4x4_t(void) {}
@@ -975,19 +970,17 @@ inline simd4_t<double,3> transform<double>(const simd4x4_t<double,4>& m, const s
 
 
 # ifdef __SSE2__
-#  include <xmmintrin.h>
-
 template<>
-class simd4x4_t<int,4> : public simd_aligned16
+class alignas(16) simd4x4_t<int,4>
 {
 private:
     typedef int  __mtx4i_t[4][4];
 
-    union ALIGN16 {
+    union alignas(16) {
         __m128i simd4x4[4];
-        __mtx4i_t mtx;
-        int array[4*4];
-    } ALIGN16C;
+        alignas(16) __mtx4i_t mtx;
+        alignas(16) int array[4*4];
+    };
 
 public:
     simd4x4_t(void) {}

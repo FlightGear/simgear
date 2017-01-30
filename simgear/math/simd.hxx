@@ -24,6 +24,14 @@
 #include <cmath>
 #include <new>
 
+#if defined(_MSC_VER)
+# include <intrin.h>
+#elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+# include <x86intrin.h>
+#elif defined(__GNUC__) && defined(__ARM_NEON__)
+# include <arm_neon.h>
+#endif
+
 #include <simgear/math/SGLimits.hxx>
 #include <simgear/math/SGMisc.hxx>
 
@@ -287,70 +295,34 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
 }
 
 
-# ifdef __MMX__
-#  include <mmintrin.h>
-# if defined(_MSC_VER)
-#  define ALIGN16  __declspec(align(16))
-#  define ALIGN32  __declspec(align(32))
-#  define ALIGN16C
-#  define ALIGN32C
-# elif defined(__GNUC__)
-#  define ALIGN16
-#  define ALIGN32
-#  define ALIGN16C __attribute__((aligned(16)))
-#  define ALIGN32C __attribute__((aligned(32)))
-# endif
-
+# ifdef __SSE__
 namespace simd4
 {
-static ALIGN16 const uint32_t m2a32[] ALIGN16C = {
+static const uint32_t m2a32[] alignas(16) = {
     0xffffffff,0xffffffff,0,0
 };
-static ALIGN16 const uint32_t m3a32[] ALIGN16C = {
+static const uint32_t m3a32[] alignas(16) = {
     0xffffffff,0xffffffff,0xffffffff,0
 };
-static ALIGN32 const uint64_t m2a64[] ALIGN32C = {
+static const uint64_t m2a64[] alignas(32) = {
     0xffffffffffffffff,0xffffffffffffffff,0,0
 };
-static ALIGN32 const uint64_t m3a64[] ALIGN32C = {
+static const uint64_t m3a64[] alignas(32) = {
     0xffffffffffffffff,0xffffffffffffffff,0xffffffffffffffff,0
 };
 }; /* namespace simd4 */
-# endif
 
-# ifdef __SSE__
-#  include <xmmintrin.h>
-# ifdef __SSE3__
-#  include <pmmintrin.h>
-# endif
-
-ALIGN16
-class simd_aligned16
-{
-public:
-    simd_aligned16() {}
-    ~simd_aligned16() {}
-
-    static void *operator new (size_t size) throw (std::bad_alloc) {
-        void *p = _mm_malloc(size, 16);
-        if (!p) throw std::bad_alloc();
-        return p;
-    }
-    static void operator delete (void *p) {
-        _mm_free(p);
-    }
-} ALIGN16C;
 
 template<int N>
-class simd4_t<float,N> : public simd_aligned16
+class alignas(16) simd4_t<float,N>
 {
 private:
    typedef float  __vec4f_t[N];
 
-    union ALIGN16 {
+    union alignas(16) {
         __m128 simd4;
-        __vec4f_t vec;
-    } ALIGN16C;
+        alignas(16) __vec4f_t vec;
+    };
 
 public:
     simd4_t(void) {}
@@ -393,8 +365,8 @@ public:
     }
 
     template<int M>
-    inline simd4_t<float,N>& operator=(const simd4_t<float,M> v) {
-        simd4 = v.v4();
+    inline simd4_t<float,N>& operator=(const simd4_t<float,M>& v) {
+        simd4 = simd4_t<float,N>(v).v4();
         return *this;
     }
     inline simd4_t<float,N>& operator=(const __m128& v) {
@@ -572,35 +544,16 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 
 
 # ifdef __AVX__
-#  include <immintrin.h>
-
-ALIGN32
-class simd_aligned32
-{
-public:
-    simd_aligned32() {}
-    ~simd_aligned32() {}
-
-    static void *operator new (size_t size) throw (std::bad_alloc) {
-        void *p = _mm_malloc(size, 32);
-        if (!p) throw std::bad_alloc();
-        return p;
-    }
-    static void operator delete (void *p) {
-        _mm_free(p);
-    }
-} ALIGN32C;
-
 template<int N>
-class simd4_t<double,N> : public simd_aligned32
+class alignas(32) simd4_t<double,N>
 {
 private:
    typedef double  __vec4d_t[N];
 
-    union ALIGN32 {
+    union alignas(32) {
         __m256d simd4;
-        __vec4d_t vec;
-    } ALIGN32C;
+        alignas(32) __vec4d_t vec;
+    };
 
 public:
     simd4_t(void) {}
@@ -643,8 +596,8 @@ public:
     }
 
     template<int M>
-    inline simd4_t<double,N>& operator=(const simd4_t<double,M> v) {
-        simd4 = v.v4();
+    inline simd4_t<double,N>& operator=(const simd4_t<double,M>& v) {
+        simd4 = simd4_t<double,N>(v).v4();
         return *this;
     }
     inline simd4_t<double,N>& operator=(const __m256d& v) {
@@ -777,7 +730,6 @@ inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
 }
 
 #  ifdef __AVX2__
-#   include <pmmintrin.h>
 template<>
 inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double,3>& v2)
 {
@@ -815,18 +767,17 @@ inline simd4_t<double,N>abs(simd4_t<double,N> v) {
 } /* namespace simd4 */
 
 # elif defined __SSE2__
-#  include <emmintrin.h>
 
 template<int N>
-class simd4_t<double,N> : public simd_aligned16
+class alignas(16) simd4_t<double,N>
 {
 private:
    typedef double  __vec4d_t[N];
 
-    union ALIGN16 {
+    union alignas(16) {
         __m128d simd4[2];
-        __vec4d_t vec;
-    } ALIGN16C;
+        alignas(16) __vec4d_t vec;
+    };
 
 public:
     simd4_t(void) {}
@@ -846,7 +797,7 @@ public:
         simd4[1] = v[1];
     }
 
-        inline const __m128d (&v4(void) const)[2] {
+    inline const __m128d (&v4(void) const)[2] {
         return simd4;
     }
     inline __m128d (&v4(void))[2] {
@@ -871,9 +822,10 @@ public:
     }
 
     template<int M>
-    inline simd4_t<double,N>& operator=(const simd4_t<double,M> v) {
-        simd4[0] = v.v4()[0];
-        simd4[1] = v.v4()[1];
+    inline simd4_t<double,N>& operator=(const simd4_t<double,M>& v) {
+        simd4_t<double,N> n(v);
+        simd4[0] = n.v4()[0];
+        simd4[1] = n.v4()[1];
         return *this;
     }
     inline simd4_t<double,N>& operator=(const __m128d v[2]) {
@@ -1032,7 +984,6 @@ inline double dot(simd4_t<double,4> v1, const simd4_t<double,4>& v2) {
     return hsum_pd_sse(v1.v4());
 }
 
-#if 1
 template<>
 inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double,3>& v2)
 {
@@ -1053,7 +1004,6 @@ inline simd4_t<double,3> cross(const simd4_t<double,3>& v1, const simd4_t<double
 
     return r;
 }
-#endif
 
 template<int N>
 inline simd4_t<double,N> min(simd4_t<double,N> v1, const simd4_t<double,N>& v2) {
@@ -1083,21 +1033,17 @@ inline simd4_t<double,N>abs(simd4_t<double,N> v) {
 
 
 # ifdef __SSE2__
-#  include <emmintrin.h>
-#  ifdef __SSE4_1__
-#   include <smmintrin.h>
-#  endif
 
 template<int N>
-class simd4_t<int,N>  : public simd_aligned16
+class alignas(16) simd4_t<int,N>
 {
 private:
    typedef int  __vec4i_t[N];
 
-    union ALIGN16 {
+    union alignas(16) {
         __m128i simd4;
-        __vec4i_t vec;
-    } ALIGN16C;
+        alignas(16) __vec4i_t vec;
+    };
 
 public:
     simd4_t(void) {}
@@ -1142,8 +1088,8 @@ public:
     }
 
     template<int M>
-    inline simd4_t<int,N>& operator=(const simd4_t<int,M> v) {
-        simd4 = v.v4();
+    inline simd4_t<int,N>& operator=(const simd4_t<int,M>& v) {
+        simd4 = simd4_t<int,N>(v).v4();
         return *this;
     }
     inline simd4_t<int,N>& operator=(const __m128& v) {

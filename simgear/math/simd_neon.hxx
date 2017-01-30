@@ -19,22 +19,9 @@
 #define __SIMD_NEON_H__	1
 
 #ifdef __ARM_NEON__
-# include <arm_neon.h>
 
-# if defined(_MSC_VER)
-#  define ALIGN16  __declspec(align(16))
-#  define ALIGN32  __declspec(align(32))
-#  define ALIGN16C
-#  define ALIGN32C
-# elif defined(__GNUC__)
-#  define ALIGN16
-#  define ALIGN32
-#  define ALIGN16C __attribute__((aligned(16)))
-#  define ALIGN32C __attribute__((aligned(32)))
-# endif
-
-static const uint32_t m2a32[] = { 0xffffffff,0xffffffff,0,0 };
-static const uint32_t m3a32[] = { 0xffffffff,0xffffffff,0xffffffff,0 };
+static const uint32_t m2a32[] alignas(16) = { 0xffffffff,0xffffffff,0,0 };
+static const uint32_t m3a32[] alignas(16) = { 0xffffffff,0xffffffff,0xffffffff,0 };
 
 template<int N>
 class simd4_t<float,N>
@@ -42,11 +29,11 @@ class simd4_t<float,N>
 private:
    typedef float  __vec4f_t[N];
 
-    union ALIGN16 {
+    union alignas(16) {
         float32x4_t simd4;
         float32x2x2_t simd2x2;
         __vec4f_t vec;
-    } ALIGN16C;
+    };
 
 public:
     simd4_t(void) {}
@@ -54,7 +41,7 @@ public:
     simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
     simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
     simd4_t(float x, float y, float z, float w) {
-        ALIGN16 float ALIGN16C data[4] = { x, y, z, w };
+        alignas(16) float data[4] = { x, y, z, w };
         simd4 = vld1q_f32(data);
     }
     simd4_t(const __vec4f_t v) {}
@@ -244,10 +231,10 @@ class simd4_t<double,N>
 private:
    typedef double  __vec4d_t[N];
 
-    union ALIGN32 {
+    union alignas(32) {
         __m256d simd4;
         __vec4d_t vec;
-    } ALIGN32C;
+    };
 
 public:
     simd4_t(void) {}
@@ -417,10 +404,10 @@ class simd4_t<int,N>
 private:
    typedef int  __vec4i_t[N];
 
-    union ALIGN16 {
+    union alignas(16) {
         int32x4_t simd4;
         __vec4i_t vec;
-    } ALIGN16C;
+    };
 
 public:
     simd4_t(void) {}
@@ -428,7 +415,7 @@ public:
     simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
     simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}
     simd4_t(int x, int y, int z, int w) {
-        ALIGN16 int32_t ALIGN16C data[4] = { x, y, z, w };
+        alignas(16) int32_t data[4] = { x, y, z, w };
         simd4 = vld1q_s32(data);
     }
     simd4_t(const __vec4i_t v) {}

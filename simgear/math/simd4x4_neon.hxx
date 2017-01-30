@@ -27,11 +27,11 @@ class simd4x4_t<float,4>
 private:
     typedef float  __mtx4f_t[4][4];
 
-    union ALIGN16 {
+    union alignas(16) {
         float32x4_t simd4x4[4];
         __mtx4f_t mtx;
         float array[4*4];
-    } ALIGN16C;
+    }g;
 
 public:
     simd4x4_t(void) {}
@@ -254,11 +254,11 @@ class simd4x4_t<double,4>
 private:
     typedef double  __mtx4d_t[4][4];
 
-    union ALIGN32 {
+    union alignas(32) {
         __m256d simd4x4[4];
         __mtx4d_t mtx;
         double array[4*4];
-    } ALIGN32C;
+    };
 
 public:
     simd4x4_t(void) {}
@@ -491,11 +491,11 @@ class simd4x4_t<int,4>
 private:
     typedef int  __mtx4i_t[4][4];
 
-    union ALIGN16 {
+    union alignas(16) {
         int32x4_t simd4x4[4];
         __mtx4i_t mtx;
         int array[4*4];
-    } ALIGN16C;
+    }g;
 
 public:
     simd4x4_t(void) {}

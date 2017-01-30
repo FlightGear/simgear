@@ -99,7 +99,6 @@ inline simd4_t<T,3> cross(const simd4_t<T,3>& v1, const simd4_t<T,3>& v2)
    d[0] = v1[1]*v2[2] - v1[2]*v2[1];
    d[1] = v1[2]*v2[0] - v1[0]*v2[2];
    d[2] = v1[0]*v2[1] - v1[1]*v2[0];
-   d[3] = T(0);
    return d;
 }
 
@@ -161,6 +160,14 @@ public:
     inline T& operator[](unsigned n) {
         assert(n<N);
         return vec[n];
+    }
+
+    template<int M>
+    inline simd4_t<T,N>& operator=(simd4_t<T,M> v) {
+        for (int i=0; i<N; ++i) {
+           vec[i] += v[i];
+        }
+        return *this;
     }
 
     inline simd4_t<T,N>& operator+=(T s) {
@@ -385,6 +392,16 @@ public:
         return vec[n];
     }
 
+    template<int M>
+    inline simd4_t<float,N>& operator=(const simd4_t<float,M> v) {
+        simd4 = v.v4();
+        return *this;
+    }
+    inline simd4_t<float,N>& operator=(const __m128& v) {
+        simd4 = v;
+        return *this;
+    }
+
     inline simd4_t<float,N>& operator+=(float f) {
         simd4 = _mm_add_ps(simd4, _mm_set1_ps(f));
         return *this;
@@ -554,7 +571,7 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 # endif
 
 
-# ifdef __AVX_unsupported__
+# ifdef __AVX__
 #  include <immintrin.h>
 
 ALIGN32
@@ -623,6 +640,16 @@ public:
     inline double& operator[](unsigned n) {
         assert(n<N);
         return vec[n];
+    }
+
+    template<int M>
+    inline simd4_t<double,N>& operator=(const simd4_t<double,M> v) {
+        simd4 = v.v4();
+        return *this;
+    }
+    inline simd4_t<double,N>& operator=(const __m256d& v) {
+        simd4 = v;
+        return *this;
     }
 
     inline simd4_t<double,N>& operator+=(double d) {
@@ -841,6 +868,18 @@ public:
     inline double& operator[](unsigned n) {
         assert(n<N);
         return vec[n];
+    }
+
+    template<int M>
+    inline simd4_t<double,N>& operator=(const simd4_t<double,M> v) {
+        simd4[0] = v.v4()[0];
+        simd4[1] = v.v4()[1];
+        return *this;
+    }
+    inline simd4_t<double,N>& operator=(const __m128d v[2]) {
+        simd4[0] = v[0];
+        simd4[1] = v[1];
+        return *this;
     }
 
     inline simd4_t<double,N>& operator+=(double d) {
@@ -1100,6 +1139,16 @@ public:
     inline int& operator[](unsigned n) {
         assert(n<N);
         return vec[n];
+    }
+
+    template<int M>
+    inline simd4_t<int,N>& operator=(const simd4_t<int,M> v) {
+        simd4 = v.v4();
+        return *this;
+    }
+    inline simd4_t<int,N>& operator=(const __m128& v) {
+        simd4 = v;
+        return *this;
     }
 
     inline simd4_t<int,N>& operator+=(int i) {

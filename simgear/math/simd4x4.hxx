@@ -488,7 +488,7 @@ inline simd4_t<float,3> transform<float>(const simd4x4_t<float,4>& m, const simd
 # endif
 
 
-# ifdef __AVX__
+# ifdef __AVX_unsupported__
 template<>
 class alignas(32) simd4x4_t<double,4>
 {

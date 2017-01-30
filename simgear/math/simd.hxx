@@ -125,7 +125,9 @@ private:
     };
 
 public:
-    simd4_t(void) {}
+    simd4_t(void) {
+        for (int i=0; i<4; ++i) _v4[i] = 0;
+    }
     simd4_t(T s) {
         for (int i=0; i<N; ++i) vec[i] = s;
         for (int i=N; i<4; ++i) _v4[i] = 0;
@@ -302,16 +304,16 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
 # ifdef __SSE__
 namespace simd4
 {
-static const uint32_t m2a32[] alignas(16) = {
+alignas(16) static const uint32_t m2a32[] = {
     0xffffffff,0xffffffff,0,0
   };
-static const uint32_t m3a32[] alignas(16) = {
+alignas(16) static const uint32_t m3a32[] = {
     0xffffffff,0xffffffff,0xffffffff,0
   };
-static const uint64_t m2a64[] alignas(32) = {
+alignas(32) static const uint64_t m2a64[] = {
     0xffffffffffffffff,0xffffffffffffffff,0,0
   };
-static const uint64_t m3a64[] alignas(32) = {
+alignas(32) static const uint64_t m3a64[] = {
     0xffffffffffffffff,0xffffffffffffffff,0xffffffffffffffff,0
   };
 }; /* namespace simd4 */
@@ -323,13 +325,13 @@ class alignas(16) simd4_t<float,N>
 private:
    typedef float  __vec4f_t[N];
 
-    union alignas(16) {
+    union {
         __m128 simd4;
-        alignas(16) __vec4f_t vec;
+        __vec4f_t vec;
     };
 
 public:
-    simd4_t(void) {}
+    simd4_t(void) : simd4(_mm_setzero_ps()) {}
     simd4_t(float f) {}
     simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
     simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
@@ -558,20 +560,20 @@ inline simd4_t<float,N>abs(simd4_t<float,N> v) {
 # endif
 
 
-# ifdef __AVX__
+# ifdef __AVX_unsupported__
 template<int N>
 class alignas(32) simd4_t<double,N>
 {
 private:
    typedef double  __vec4d_t[N];
 
-    union alignas(32) {
+    union {
         __m256d simd4;
-        alignas(32) __vec4d_t vec;
+        __vec4d_t vec;
     };
 
 public:
-    simd4_t(void) {}
+    simd4_t(void) : simd4(_mm256_setzero_pd()) {}
     simd4_t(double d) {}
     simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
     simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
@@ -800,13 +802,13 @@ class alignas(16) simd4_t<double,N>
 private:
    typedef double  __vec4d_t[N];
 
-    union alignas(16) {
+    union {
         __m128d simd4[2];
-        alignas(16) __vec4d_t vec;
+        __vec4d_t vec;
     };
 
 public:
-    simd4_t(void) {}
+    simd4_t(void) { simd4[0] = simd4[1] = _mm_setzero_pd(); }
     simd4_t(double d) {}
     simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
     simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
@@ -1083,13 +1085,13 @@ class alignas(16) simd4_t<int,N>
 private:
    typedef int  __vec4i_t[N];
 
-    union alignas(16) {
+    union {
         __m128i simd4;
-        alignas(16) __vec4i_t vec;
+        __vec4i_t vec;
     };
 
 public:
-    simd4_t(void) {}
+    simd4_t(void) : simd4(_mm_setzero_si128()) {}
     simd4_t(int i) {}
     simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
     simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}

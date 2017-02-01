@@ -132,15 +132,15 @@ Request::HTTPVersion decodeHTTPVersion(const std::string& v)
 //------------------------------------------------------------------------------
 void Request::responseStart(const std::string& r)
 {
-    const int maxSplit = 2; // HTTP/1.1 nnn reason-string
+    const int maxSplit = 2; // HTTP/1.1 nnn reason-string?
     string_list parts = strutils::split(r, NULL, maxSplit);
-    if (parts.size() != 3) {
+    if (parts.size() < 2) {
         throw sg_io_exception("bad HTTP response:" + r);
     }
 
     _responseVersion = decodeHTTPVersion(parts[0]);
     _responseStatus = strutils::to_int(parts[1]);
-    _responseReason = parts[2];
+    _responseReason = parts.size() > 2 ? parts[2] : "";
 
     setReadyState(STATUS_RECEIVED);
 }

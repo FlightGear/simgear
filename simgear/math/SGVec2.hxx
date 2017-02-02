@@ -365,6 +365,16 @@ projection(const SGVec2<T>& u, const SGVec2<T>& d)
   else return d * (dot(u, d) / denom);
 }
 
+template<typename T>
+inline
+SGVec2<T>
+interpolate(T tau, const SGVec2<T>& v1, const SGVec2<T>& v2)
+{
+  SGVec2<T> r;
+  r.simd2() = simd4::interpolate(tau, v1.simd2(), v2.simd2());
+  return r;
+}
+
 #ifndef NDEBUG
 template<typename T>
 inline

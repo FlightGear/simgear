@@ -77,6 +77,11 @@ inline T magnitude2(const simd4_t<T,N>& vi) {
 }
 
 template<typename T, int N>
+inline simd4_t<T,N> interpolate(T tau, const simd4_t<T,N>& v1, const simd4_t<T,N>& v2) {
+    return (T(1)-tau)*v1 + tau*v2;
+}
+
+template<typename T, int N>
 inline T magnitude(const simd4_t<T,N>& v) {
     return std::sqrt(magnitude2(v));
 }
@@ -105,11 +110,11 @@ inline T dot(const simd4_t<T,N>& v1, const simd4_t<T,N>& v2) {
 template<typename T>
 inline simd4_t<T,3> cross(const simd4_t<T,3>& v1, const simd4_t<T,3>& v2)
 {
-   simd4_t<T,3> d;
-   d[0] = v1[1]*v2[2] - v1[2]*v2[1];
-   d[1] = v1[2]*v2[0] - v1[0]*v2[2];
-   d[2] = v1[0]*v2[1] - v1[1]*v2[0];
-   return d;
+    simd4_t<T,3> d;
+    d[0] = v1[1]*v2[2] - v1[2]*v2[1];
+    d[1] = v1[2]*v2[0] - v1[0]*v2[2];
+    d[2] = v1[0]*v2[1] - v1[1]*v2[0];
+    return d;
 }
 
 } /* namespace simd4 */

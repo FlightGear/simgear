@@ -20,6 +20,10 @@
 
 #include <cstring>
 
+#ifdef HAVE_CONFIG_H
+# include <simgear/simgear_config.h>
+#endif
+
 #if defined(__GNUC__) && defined(__ARM_NEON__)
 # include <simgear/math/simd4x4_neon.hxx>
 #endif
@@ -285,6 +289,8 @@ inline simd4x4_t<T,N> operator*(const simd4x4_t<T,N>& m1, const simd4x4_t<T,N>& 
 }
 
 
+#ifdef ENABLE_SIMD
+
 # ifdef __SSE__
 template<>
 class alignas(16) simd4x4_t<float,4>
@@ -380,13 +386,14 @@ public:
     }
 
     simd4x4_t<float,4>& operator*=(const simd4x4_t<float,4>& m2) {
+        simd4x4_t<float,4> m1 = *this;
         __m128 row, col;
-        for (int i=0; i<4; ++i ) {
+        for (int i=0; i<4; ++i) {
             col = _mm_set1_ps(m2.ptr()[i][0]);
-            row = _mm_mul_ps(simd4x4[0], col);
+            row = _mm_mul_ps(m1.m4x4()[0], col);
             for (int j=1; j<4; ++j) {
                 col = _mm_set1_ps(m2.ptr()[i][j]);
-                row = _mm_add_ps(row, _mm_mul_ps(simd4x4[j], col));
+                row = _mm_add_ps(row, _mm_mul_ps(m1.m4x4()[j], col));
             }
             simd4x4[i] = row;
         }
@@ -583,13 +590,14 @@ public:
     }
 
     simd4x4_t<double,4>& operator*=(const simd4x4_t<double,4>& m2) {
+        simd4x4_t<double,4> m1 = *this;
         __m256d row, col;
-        for (int i=0; i<4; ++i ) {
+        for (int i=0; i<4; ++i) {
             col = _mm256_set1_pd(m2.ptr()[i][0]);
-            row = _mm256_mul_pd(simd4x4[0], col);
+            row = _mm256_mul_pd(m1.m4x4()[0], col);
             for (int j=1; j<4; ++j) {
                 col = _mm256_set1_pd(m2.ptr()[i][j]);
-                row = _mm256_add_pd(row, _mm256_mul_pd(simd4x4[j], col));
+                row = _mm256_add_pd(row, _mm256_mul_pd(m1.m4x4()[j], col));
             }
             simd4x4[i] = row;
         }
@@ -738,7 +746,11 @@ public:
         simd4x4[3][1] = _mm_set_pd(m33,m23);
     }
     simd4x4_t(const double m[4*4]) {
+        const double *p = m;
         for (int i=0; i<4; ++i) {
+            simd4_t<double,4> vec4(p);
+            simd4x4[i][0] = vec4.v4()[0]; p += 4;
+            simd4x4[i][1] = vec4.v4()[1];
             simd4x4[i][0] = _mm_loadu_pd((const double*)&m[4*i]);
             simd4x4[i][1] = _mm_loadu_pd((const double*)&m[4*i+2]);
         }
@@ -746,6 +758,8 @@ public:
 
     simd4x4_t(const __mtx4d_t m) {
         for (int i=0; i<4; ++i) {
+            simd4x4[i][0] = simd4_t<double,4>(m[i]).v4()[0];
+            simd4x4[i][1] = simd4_t<double,4>(m[i]).v4()[1];
             simd4x4[i][0] = _mm_loadu_pd(m[i]);
             simd4x4[i][1] = _mm_loadu_pd(m[i+2]);
         }
@@ -814,18 +828,17 @@ public:
     }
 
     simd4x4_t<double,4>& operator*=(const simd4x4_t<double,4>& m2) {
-        __m128d row[2], col;
+        simd4x4_t<double,4> m1 = *this;
+        simd4_t<double,4> row, col;
         for (int i=0; i<4; ++i ) {
-            col = _mm_set1_pd(m2.ptr()[i][0]);
-            row[0] = _mm_mul_pd(simd4x4[0][0], col);
-            row[1] = _mm_mul_pd(simd4x4[0][1], col);
+            simd4_t<double,4> col = m1.m4x4()[0];
+            row = col * m2.ptr()[i][0];
             for (int j=1; j<4; ++j) {
-                col = _mm_set1_pd(m2.ptr()[i][j]);
-                row[0] = _mm_add_pd(row[0], _mm_mul_pd(simd4x4[j][0], col));
-                row[1] = _mm_add_pd(row[1], _mm_mul_pd(simd4x4[j][1], col));
+                col = m1.m4x4()[j];
+                row += col * m2.ptr()[i][j];
             }
-            simd4x4[i][0] = row[0];
-            simd4x4[i][1] = row[1];
+            simd4x4[i][0] = row.v4()[0];
+            simd4x4[i][1] = row.v4()[1];
         }
         return *this;
     }
@@ -1177,6 +1190,8 @@ inline simd4_t<int,3> transform<int>(const simd4x4_t<int,4>& m, const simd4_t<in
 
 } /* namespace simd4x */
 # endif
+
+#endif /* ENABLE_SIMD */
 
 #endif /* __SIMD4X4_H__ */
 

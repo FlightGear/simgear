@@ -28,6 +28,9 @@
 #include "SGRect.hxx"
 #include "sg_random.h"
 
+int lineno = 0;
+
+
 template<typename T>
 bool
 Vec3Test(void)
@@ -38,45 +41,45 @@ Vec3Test(void)
   v1 = SGVec3<T>(1, 2, 3);
   v2 = SGVec3<T>(3, 2, 1);
   if (equivalent(v1, v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the unary minus operator
   v3 = SGVec3<T>(-1, -2, -3);
   if (!equivalent(-v1, v3))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the unary plus operator
   v3 = SGVec3<T>(1, 2, 3);
   if (!equivalent(+v1, v3))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the addition operator
   v3 = SGVec3<T>(4, 4, 4);
   if (!equivalent(v1 + v2, v3))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the subtraction operator
   v3 = SGVec3<T>(-2, 0, 2);
   if (!equivalent(v1 - v2, v3))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the scaler multiplication operator
   v3 = SGVec3<T>(2, 4, 6);
   if (!equivalent(2*v1, v3))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the dot product
   if (fabs(dot(v1, v2) - 10) > 10*SGLimits<T>::epsilon())
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the cross product
   v3 = SGVec3<T>(-4, 8, -4);
   if (!equivalent(cross(v1, v2), v3))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check the euclidean length
   if (fabs(14 - length(v1)*length(v1)) > 14*SGLimits<T>::epsilon())
-    return false;
+    { lineno = __LINE__; return false; }
 
   return true;
 }
@@ -89,11 +92,11 @@ isSameRotation(const SGQuat<T>& q1, const SGQuat<T>& q2)
   const SGVec3<T> e2(0, 1, 0);
   const SGVec3<T> e3(0, 0, 1);
   if (!equivalent(q1.transform(e1), q2.transform(e1)))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(q1.transform(e2), q2.transform(e2)))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(q1.transform(e3), q2.transform(e3)))
-    return false;
+    { lineno = __LINE__; return false; }
   return true;
 }
 
@@ -111,37 +114,37 @@ QuatTest(void)
   v1 = SGVec3<T>(1, 2, 3);
   v2 = SGVec3<T>(1, -2, -3);
   if (!equivalent(q1.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check a rotation around the x axis
   q1 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e1);
   v2 = SGVec3<T>(1, 3, -2);
   if (!equivalent(q1.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check a rotation around the y axis
   q1 = SGQuat<T>::fromAngleAxis(SGMisc<T>::pi(), e2);
   v2 = SGVec3<T>(-1, 2, -3);
   if (!equivalent(q1.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check a rotation around the y axis
   q1 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e2);
   v2 = SGVec3<T>(-3, 2, 1);
   if (!equivalent(q1.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check a rotation around the z axis
   q1 = SGQuat<T>::fromAngleAxis(SGMisc<T>::pi(), e3);
   v2 = SGVec3<T>(-1, -2, 3);
   if (!equivalent(q1.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check a rotation around the z axis
   q1 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e3);
   v2 = SGVec3<T>(2, -1, 3);
   if (!equivalent(q1.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Now check some successive transforms
   // We can reuse the prevously tested stuff
@@ -150,7 +153,7 @@ QuatTest(void)
   q3 = q1*q2;
   v2 = q2.transform(q1.transform(v1));
   if (!equivalent(q3.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   /// Test from Euler angles
   float x = 0.2*SGMisc<T>::pi();
@@ -162,7 +165,7 @@ QuatTest(void)
   v2 = q3.transform(q2.transform(q1.transform(v1)));
   q4 = SGQuat<T>::fromEulerRad(z, y, x);
   if (!equivalent(q4.transform(v1), v2))
-    return false;
+    { lineno = __LINE__; return false; }
 
   /// Test angle axis forward and back transform
   q1 = SGQuat<T>::fromAngleAxis(0.2*SGMisc<T>::pi(), e1);
@@ -172,15 +175,15 @@ QuatTest(void)
   q1.getAngleAxis(angleAxis);
   q4 = SGQuat<T>::fromAngleAxis(angleAxis);
   if (!isSameRotation(q1, q4))
-    return false;
+    { lineno = __LINE__; return false; }
   q2.getAngleAxis(angleAxis);
   q4 = SGQuat<T>::fromAngleAxis(angleAxis);
   if (!isSameRotation(q2, q4))
-    return false;
+    { lineno = __LINE__; return false; }
   q3.getAngleAxis(angleAxis);
   q4 = SGQuat<T>::fromAngleAxis(angleAxis);
   if (!isSameRotation(q3, q4))
-    return false;
+    { lineno = __LINE__; return false; }
 
   /// Test angle axis forward and back transform
   q1 = SGQuat<T>::fromAngleAxis(0.2*SGMisc<T>::pi(), e1);
@@ -189,15 +192,15 @@ QuatTest(void)
   SGVec3<T> positiveAngleAxis = q1.getPositiveRealImag();
   q4 = SGQuat<T>::fromPositiveRealImag(positiveAngleAxis);
   if (!isSameRotation(q1, q4))
-    return false;
+    { lineno = __LINE__; return false; }
   positiveAngleAxis = q2.getPositiveRealImag();
   q4 = SGQuat<T>::fromPositiveRealImag(positiveAngleAxis);
   if (!isSameRotation(q2, q4))
-    return false;
+    { lineno = __LINE__; return false; }
   positiveAngleAxis = q3.getPositiveRealImag();
   q4 = SGQuat<T>::fromPositiveRealImag(positiveAngleAxis);
   if (!isSameRotation(q3, q4))
-    return false;
+    { lineno = __LINE__; return false; }
 
   return true;
 }
@@ -219,13 +222,13 @@ QuatDerivativeTest(void)
     // Check if we can restore the angular velocity
     SGVec3<T> av2 = SGQuat<T>::forwardDifferenceVelocity(o0, o1, dt);
     if (!equivalent(av, av2))
-      return false;
+      { lineno = __LINE__; return false; }
 
     // Test with the equivalent orientation
     o1 = -o1;
     av2 = SGQuat<T>::forwardDifferenceVelocity(o0, o1, dt);
     if (!equivalent(av, av2))
-      return false;
+      { lineno = __LINE__; return false; }
   }
   return true;
 }
@@ -250,23 +253,23 @@ MatrixTest(void)
   invert(m2, m0);
   m3 = transNeg(m0);
   if (!equivalent(m1, m2))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(m2, m3))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Check matrix multiplication and inversion
   if (!equivalent(m0*m1, SGMatrix<T>::unit()))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(m1*m0, SGMatrix<T>::unit()))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(m0*m2, SGMatrix<T>::unit()))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(m2*m0, SGMatrix<T>::unit()))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(m0*m3, SGMatrix<T>::unit()))
-    return false;
+    { lineno = __LINE__; return false; }
   if (!equivalent(m3*m0, SGMatrix<T>::unit()))
-    return false;
+    { lineno = __LINE__; return false; }
 
   return true;
 }
@@ -320,13 +323,13 @@ GeodesyTest(void)
   if (epsDeg < fabs(geod0.getLongitudeDeg() - geod1.getLongitudeDeg()) ||
       epsDeg < fabs(geod0.getLatitudeDeg() - geod1.getLatitudeDeg()) ||
       epsM < fabs(geod0.getElevationM() - geod1.getElevationM()))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // Test the conversion routines to radial coordinates
   geoc0 = SGGeoc::fromCart(cart0);
   cart1 = SGVec3<double>::fromGeoc(geoc0);
   if (!equivalent(cart0, cart1))
-    return false;
+    { lineno = __LINE__; return false; }
 
   // test course / advance routines
   // uses examples from Williams aviation formulary
@@ -336,12 +339,12 @@ GeodesyTest(void)
   double distNm = SGGeodesy::distanceRad(lax, jfk) * SG_RAD_TO_NM;
   std::cout << "distance is " << distNm << std::endl;
   if (0.5 < fabs(distNm - 2144)) // 2144 nm
-	return false;
+	{ lineno = __LINE__; return false; }
 
   double crsDeg = SGGeodesy::courseRad(lax, jfk) * SG_RADIANS_TO_DEGREES;
   std::cout << "course is " << crsDeg << std::endl;
   if (0.5 < fabs(crsDeg - 66)) // 66 degrees
-	return false;
+	{ lineno = __LINE__; return false; }
 
   SGGeoc adv;
   SGGeodesy::advanceRadM(lax, crsDeg * SG_DEGREES_TO_RADIANS, 100 * SG_NM_TO_METER, adv);
@@ -349,7 +352,7 @@ GeodesyTest(void)
 
   if (0.01 < fabs(adv.getLongitudeRad() - (-2.034206)) ||
 	  0.01 < fabs(adv.getLatitudeRad() - 0.604180))
-	return false;
+	{ lineno = __LINE__; return false; }
 
   return true;
 }
@@ -361,25 +364,25 @@ main(void)
 
   // Do vector tests
   if (!Vec3Test<float>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
   if (!Vec3Test<double>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
 
   // Do quaternion tests
   if (!QuatTest<float>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
   if (!QuatTest<double>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
   if (!QuatDerivativeTest<float>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
   if (!QuatDerivativeTest<double>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
 
   // Do matrix tests
   if (!MatrixTest<float>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
   if (!MatrixTest<double>())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
 
   // Do rect tests
   doRectTest<int>();
@@ -387,7 +390,7 @@ main(void)
 
   // Check geodetic/geocentric/cartesian conversions
   if (!GeodesyTest())
-    return EXIT_FAILURE;
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
 
   std::cout << "Successfully passed all tests!" << std::endl;
   return EXIT_SUCCESS;

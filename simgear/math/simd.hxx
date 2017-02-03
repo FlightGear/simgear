@@ -1,4 +1,4 @@
-// Copyright (C) 2016 Erik Hofman - erik@ehofman.com
+// Copyright (C) 2016-2017 Erik Hofman - erik@ehofman.com
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -17,6 +17,10 @@
 
 #ifndef __SIMD_H__
 #define __SIMD_H__	1
+
+#ifdef HAVE_CONFIG_H
+# include <simgear/simgear_config.h>
+#endif
 
 #include <cstdint>
 #include <cstring>
@@ -305,6 +309,7 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
     return v;
 }
 
+#ifdef ENABLE_SIMD
 
 # ifdef __SSE__
 namespace simd4
@@ -1293,6 +1298,8 @@ inline simd4_t<int,N> max(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
 } /* namespace simd4 */
 
 # endif
+
+#endif /* ENABLE_SIMD */
 
 #endif /* __SIMD_H__ */
 

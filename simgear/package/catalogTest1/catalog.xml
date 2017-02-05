@@ -89,6 +89,9 @@
               <path>thumb-panel.png</path>
               <url>http://foo.bar.com/thumb-panel.png</url>
             </preview>
+
+            <thumbnail>http://foo.bar.com/thumb-floats.png</thumbnail>
+            <thumbnail-path>thumb-floats.png</thumbnail-path>
         </variant>
 
         <variant>
@@ -112,7 +115,6 @@
         <md5>ec0e2ffdf98d6a5c05c77445e5447ff5</md5>
         <url>http://localhost:2000/catalogTest1/c172p.zip</url>
 
-        <!-- legacy thumbnails also supported -->
         <thumbnail>http://foo.bar.com/thumb-exterior.png</thumbnail>
         <thumbnail-path>exterior.png</thumbnail-path>
     </package>

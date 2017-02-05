@@ -131,13 +131,15 @@ public:
      * download URLs for the package
      */
     string_list downloadUrls() const;
-    
     string_list thumbnailUrls() const;
-    
-    /**
-     * thumbnail file paths within the package on disk
-     */
-    string_list thumbnails() const;
+
+    struct Thumbnail
+    {
+        std::string url;
+        std::string path;
+    };
+
+    Thumbnail thumbnailForVariant(unsigned int vIndex) const;
 
     /**
      * information about a preview image

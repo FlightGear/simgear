@@ -99,13 +99,6 @@ public:
     void cancelDownload();
     
     /**
-     * return the thumbnails associated with this install, but as locations
-     * on the file system, not URLs. It is assumed the order of thumbnails
-     * is consistent with the URLs returned from Package::thumbnailUrls()
-     */
-    PathList thumbnailPaths() const;
-    
-    /**
      * Set the handler to be called when the installation successfully
      * completes.
      *

@@ -167,14 +167,10 @@ int parseTest()
     SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-panel.png");
     SG_VERIFY(index->type == pkg::Package::Preview::Type::PANEL);
 
-// old-style thumbnails
-    string_list oldThumbUrls = p2->thumbnailUrls();
-    SG_CHECK_EQUAL(oldThumbUrls.size(), 1);
-    SG_CHECK_EQUAL(oldThumbUrls.at(0), "http://foo.bar.com/thumb-exterior.png");
-
-    string_list oldThumbPaths = p2->thumbnails();
-    SG_CHECK_EQUAL(oldThumbPaths.size(), 1);
-    SG_CHECK_EQUAL(oldThumbPaths.at(0), "exterior.png");
+// thumbnails
+    const pkg::Package::Thumbnail& thumb = p2->thumbnailForVariant(0);
+    SG_CHECK_EQUAL(thumb.url, "http://foo.bar.com/thumb-exterior.png");
+    SG_CHECK_EQUAL(thumb.path, "exterior.png");
 
 // test variants
     try {
@@ -215,6 +211,9 @@ int parseTest()
     SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-exterior-skis.png");
     SG_VERIFY(index->type == pkg::Package::Preview::Type::EXTERIOR);
 
+    const pkg::Package::Thumbnail& thumb2 = p2->thumbnailForVariant(floatsVariant);
+    SG_CHECK_EQUAL(thumb2.url, "http://foo.bar.com/thumb-floats.png");
+    SG_CHECK_EQUAL(thumb2.path, "thumb-floats.png");
 
 // test filtering / searching too
     string_set tags(p2->tags());

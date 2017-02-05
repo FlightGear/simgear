@@ -455,33 +455,6 @@ void Install::cancelDownload()
     m_package->catalog()->root()->cancelDownload(this);
 }
 
-struct PathAppender
-{
-    PathAppender(const SGPath& p) : m_path(p) {}
-
-    SGPath operator()(const std::string& s) const
-    {
-        SGPath p(m_path);
-        p.append(s);
-        return p;
-    }
-
-    SGPath m_path;
-};
-
-PathList Install::thumbnailPaths() const
-{
-    const string_list& thumbs(m_package->thumbnails());
-    PathList result;
-    if (thumbs.empty())
-        return result;
-
-    std::transform(thumbs.begin(), thumbs.end(),
-                   std::back_inserter(result),
-                   PathAppender(m_path));
-    return result;
-}
-
 SGPath Install::primarySetPath() const
 {
     SGPath setPath(m_path);

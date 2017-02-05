@@ -274,28 +274,12 @@ SGPropertyNode* Package::properties() const
 
 string_list Package::thumbnailUrls() const
 {
-    string_list r;
-    if (!m_props) {
-        return r;
+    string_list urls;
+    const Thumbnail& thumb(thumbnailForVariant(0));
+    if (!thumb.url.empty()) {
+        urls.push_back(thumb.url);
     }
-
-    BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("thumbnail")) {
-        r.push_back(dl->getStringValue());
-    }
-    return r;
-}
-
-string_list Package::thumbnails() const
-{
-    string_list r;
-    if (!m_props) {
-        return r;
-    }
-
-    BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("thumbnail-path")) {
-        r.push_back(dl->getStringValue());
-    }
-    return r;
+    return urls;
 }
 
 string_list Package::downloadUrls() const
@@ -427,6 +411,17 @@ SGPropertyNode_ptr Package::propsForVariant(const unsigned int vIndex, const cha
     }
 
     throw sg_exception("Unknow variant in package " + id());
+}
+
+Package::Thumbnail Package::thumbnailForVariant(unsigned int vIndex) const
+{
+    SGPropertyNode_ptr var = propsForVariant(vIndex);
+    // allow for variants without distinct thumbnails
+    if (!var->hasChild("thumbnail") || !var->hasChild("thumbnail-path")) {
+        var = m_props;
+    }
+
+    return {var->getStringValue("thumbnail"), var->getStringValue("thumbnail-path")};
 }
 
 Package::PreviewVec Package::previewsForVariant(unsigned int vIndex) const

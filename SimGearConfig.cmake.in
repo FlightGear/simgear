@@ -13,4 +13,8 @@ set(SIMGEAR_SOUND @ENABLE_SOUND@)
 #  find_dependency(OpenAL)
 #endif()
 
+# SSE/SSE2 support
+
+set(ENABLE_SIMD @ENABLE_SIMD@)
+
 include("${CMAKE_CURRENT_LIST_DIR}/SimGearTargets.cmake")

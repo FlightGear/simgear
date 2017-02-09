@@ -13,6 +13,7 @@ using std::endl;
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/misc/sgstream.hxx>
+#include <simgear/debug/logstream.hxx>
 
 #if defined(SG_WINDOWS)
 	#include <io.h> // for _wchmod
@@ -51,6 +52,52 @@ void test_dir()
     SG_VERIFY( !SGPath::standardLocation(SGPath::DOWNLOADS).isNull() );
     SG_VERIFY( !SGPath::standardLocation(SGPath::DOCUMENTS).isNull() );
     SG_VERIFY( !SGPath::standardLocation(SGPath::PICTURES ).isNull() );
+}
+
+// exercise the remove + rename that occurs when upgrading an
+// aircraft package
+void test_update_dir()
+{
+	SGPath p(simgear::Dir::current().path());
+	p.append("test_update_dir");
+	simgear::Dir pd(p);
+	pd.removeChildren();
+
+	{
+		SGPath existingFile = p / "Cessna172P" / "somefile.txt";
+		existingFile.create_dir(0755);
+
+		sg_ofstream of(existingFile, std::ios::out);
+		of << "Foobar";
+		of.close();
+
+		SG_VERIFY(existingFile.exists());
+	}
+
+	{
+		SGPath replacementFile = p / "NewDir" / "someotherfile.txt";
+		replacementFile.create_dir(0755);
+
+		sg_ofstream of(replacementFile, std::ios::out);
+		of << "Foobar";
+		of.close();
+
+		SG_VERIFY(replacementFile.exists());
+	}
+
+	{
+		simgear::Dir od(p / "Cessna172P");
+		SG_VERIFY(od.remove(true));
+	}
+
+	SGPath replacementDir = p / "NewDir";
+	SG_VERIFY(replacementDir.rename(p / "Cessna172P"));
+
+	SG_VERIFY((p / "Cessna172P" / "someotherfile.txt").exists());
+	SG_VERIFY(!(p / "Cessna172P" / "somefile.txt").exists());
+	SG_VERIFY(!(p / "NewDir").exists());
+
+	SG_LOG(SG_GENERAL, SG_INFO, "passed update test");
 }
 
 SGPath::Permissions validateNone(const SGPath&)
@@ -345,6 +392,8 @@ int main(int argc, char* argv[])
 	test_path_dir();
 
     test_permissions();
+
+	test_update_dir();
 
     cout << "all tests passed OK" << endl;
     return 0; // passed

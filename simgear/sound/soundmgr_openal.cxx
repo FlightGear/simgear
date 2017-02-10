@@ -555,7 +555,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
               bool res = load(sample_name, &sample_data, &format, &size, &freq, &block);
               if (res == false) return NO_BUFFER;
             } catch (sg_exception& e) {
-              SG_LOG(SG_SOUND, SG_POPUP,
+              SG_LOG(SG_SOUND, SG_ALERT,
                     "failed to load sound buffer:\n" << e.getFormattedMessage());
               sample->set_buffer( SGSoundMgr::FAILED_BUFFER );
               return FAILED_BUFFER;

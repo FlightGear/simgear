@@ -547,20 +547,33 @@ void ZlibCompressorIStreambuf::zStreamInit(int compressionLevel,
                                           ZLibCompressionFormat format,
                                           ZLibMemoryStrategy memStrategy)
 {
-  // Intentionally not listing ZLIB_COMPRESSION_FORMAT_AUTODETECT here
-  std::unordered_map<ZLibCompressionFormat, int> compressionFormatMap = {
-    {ZLIB_COMPRESSION_FORMAT_ZLIB, 15},
-    {ZLIB_COMPRESSION_FORMAT_GZIP, 31}
-  };
-  std::unordered_map<ZLibMemoryStrategy, int> memoryStrategyMap = {
-    {ZLIB_FAVOR_MEMORY_OVER_SPEED, 8},
-    {ZLIB_FAVOR_SPEED_OVER_MEMORY, 9}
-  };
+  int windowBits, memLevel;
 
-  // ZLIB_COMPRESSION_FORMAT_AUTODETECT is only for decompression!
-  assert(format != ZLIB_COMPRESSION_FORMAT_AUTODETECT);
-  int windowBits = compressionFormatMap.at(format);
-  int memLevel = memoryStrategyMap.at(memStrategy);
+  // Intentionally not listing ZLIB_COMPRESSION_FORMAT_AUTODETECT here (it is
+  // only for decompression!)
+  switch (format) {
+  case ZLIB_COMPRESSION_FORMAT_ZLIB:
+    windowBits = 15;
+    break;
+  case ZLIB_COMPRESSION_FORMAT_GZIP:
+    windowBits = 31;
+    break;
+  default:
+    throw std::logic_error("Unexpected compression format: " +
+                           std::to_string(format));
+  }
+
+  switch (memStrategy) {
+  case ZLIB_FAVOR_MEMORY_OVER_SPEED:
+    memLevel = 8;
+    break;
+  case ZLIB_FAVOR_SPEED_OVER_MEMORY:
+    memLevel = 9;
+    break;
+  default:
+    throw std::logic_error("Unexpected memory strategy: " +
+                           std::to_string(memStrategy));
+  }
 
   _zstream.zalloc = Z_NULL;     // No custom memory allocation routines
   _zstream.zfree = Z_NULL;      // Ditto. Therefore, the 'opaque' field won't
@@ -620,13 +633,22 @@ ZlibDecompressorIStreambuf::operationType() const
 
 void ZlibDecompressorIStreambuf::zStreamInit(ZLibCompressionFormat format)
 {
-  std::unordered_map<ZLibCompressionFormat, int> compressionFormatMap = {
-    {ZLIB_COMPRESSION_FORMAT_ZLIB, 15},
-    {ZLIB_COMPRESSION_FORMAT_GZIP, 31},
-    {ZLIB_COMPRESSION_FORMAT_AUTODETECT, 47} // 47 = 32 + 15
-  };
+  int windowBits;
 
-  int windowBits = compressionFormatMap.at(format);
+  switch (format) {
+  case ZLIB_COMPRESSION_FORMAT_ZLIB:
+    windowBits = 15;
+    break;
+  case ZLIB_COMPRESSION_FORMAT_GZIP:
+    windowBits = 31;
+    break;
+  case ZLIB_COMPRESSION_FORMAT_AUTODETECT:
+    windowBits = 47;            // 47 = 32 + 15
+    break;
+  default:
+    throw std::logic_error("Unexpected compression format: " +
+                           std::to_string(format));
+  }
 
   _zstream.zalloc = Z_NULL;     // No custom memory allocation routines
   _zstream.zfree = Z_NULL;      // Ditto. Therefore, the 'opaque' field won't

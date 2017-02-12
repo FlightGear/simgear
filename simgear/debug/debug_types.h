@@ -42,6 +42,10 @@ typedef enum {
 
 /**
  * Define the possible logging priorities (and their order).
+ *
+ * Caution - unfortunately, this enum is exposed to Nasal via the logprint()
+ * function as an integer parameter. Therefore, new values should only be
+ * appended, or the priority Nasal reports to compiled code will change.
  */
 typedef enum {
     SG_BULK = 1,       // For frequent messages
@@ -49,8 +53,11 @@ typedef enum {
     SG_INFO,           // Informatory messages
     SG_WARN,           // Possible impending problem
     SG_ALERT,          // Very possible impending problem
-    SG_POPUP           // Severe enough to alert using a pop-up window
+    SG_POPUP,          // Severe enough to alert using a pop-up window
     // SG_EXIT,        // Problem (no core)
     // SG_ABORT        // Abandon ship (core)
+
+    SG_DEV_WARN,       // Warning for developers, translated to other priority
+    SG_DEV_ALERT       // Alert for developers, translated
 } sgDebugPriority;
 

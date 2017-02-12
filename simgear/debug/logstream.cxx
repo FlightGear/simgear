@@ -359,6 +359,7 @@ public:
     bool m_stderr_isRedirectedAlready = false;
     bool m_stdout_isRedirectedAlready = false;
 #endif
+    bool m_developerMode = false;
 
     void startLog()
     {
@@ -452,6 +453,7 @@ public:
 
     bool would_log( sgDebugClass c, sgDebugPriority p ) const
     {
+        p = translatePriority(p);
         if (p >= SG_INFO) return true;
         return ((c & m_logClass) != 0 && p >= m_logPriority);
     }
@@ -459,8 +461,22 @@ public:
     void log( sgDebugClass c, sgDebugPriority p,
             const char* fileName, int line, const std::string& msg)
     {
+        p = translatePriority(p);
         LogEntry entry(c, p, fileName, line, msg);
         m_entries.push(entry);
+    }
+
+    sgDebugPriority translatePriority(sgDebugPriority in) const
+    {
+        if (in == SG_DEV_WARN) {
+            return m_developerMode ? SG_WARN : SG_DEBUG;
+        }
+
+        if (in == SG_DEV_ALERT) {
+            return m_developerMode ? SG_POPUP : SG_WARN;
+        }
+
+        return in;
     }
 };
 
@@ -488,6 +504,12 @@ logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
 {
     global_privateLogstream->setLogLevels(c, p);
 }
+
+void logstream::setDeveloperMode(bool devMode)
+{
+    global_privateLogstream->m_developerMode = devMode;
+}
+
 
 void
 logstream::addCallback(simgear::LogCallback* cb)

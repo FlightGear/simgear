@@ -94,6 +94,13 @@ public:
     sgDebugPriority get_log_priority() const;
 
     /**
+     * set developer mode on/off. In developer mode, SG_DEV_WARN messags
+     * are treated as warnings. In normal (non-developer) mode they are
+     * treated as SG_DEBUG.
+     */
+    void setDeveloperMode(bool devMode);
+
+    /**
      * the core logging method
      */
     void log( sgDebugClass c, sgDebugPriority p,

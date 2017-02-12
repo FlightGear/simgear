@@ -494,6 +494,11 @@ private:
                 continue; // ignore path, next line
             }
 
+            if( typeData == "time" && tokens.size() > 1 ) {
+                SG_LOG(SG_TERRASYNC, SG_INFO, ".dirindex at '" << p.str() << "' timestamp: " << tokens[1] );
+                continue;
+            }
+
             if( tokens.size() < 3 ) {
                 SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: not enough tokens in line '" << line << "' (ignoring line)" );
                 continue;

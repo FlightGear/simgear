@@ -24,22 +24,36 @@
 #include <array>
 #include <random>
 #include <limits>               // std::numeric_limits
+#include <type_traits>          // std::make_unsigned()
 #include <functional>           // std::bind()
 #include <cassert>
 #include <cstdlib>              // EXIT_SUCCESS
 #include <cstddef>              // std::size_t
 #include <cstring>              // strcmp()
 
-using std::string;
-using std::cout;
-using std::cerr;
-using traits = std::char_traits<char>;
-
 #include <simgear/misc/test_macros.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/io/iostreams/zlibstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sg_dir.hxx>
+
+using std::string;
+using std::cout;
+using std::cerr;
+using traits = std::char_traits<char>;
+
+typedef typename std::make_unsigned<std::streamsize>::type uStreamSize;
+
+// Safely convert a non-negative std::streamsize into an std::size_t. If
+// impossible, bail out.
+static std::size_t streamsizeToSize_t(std::streamsize n)
+{
+  SG_CHECK_GE(n, 0);
+  SG_CHECK_LE(static_cast<uStreamSize>(n),
+              std::numeric_limits<std::size_t>::max());
+
+  return static_cast<std::size_t>(n);
+}
 
 // In many tests below, I use very small buffer sizes. Of course, this is bad
 // for performance. The reason I do it this way is simply because it better
@@ -214,7 +228,9 @@ void test_StreambufBasicOperations()
   // Most efficient way (with the underlying xsgetn()) to read several chars
   // at once.
   std::streamsize n = decompSBuf.sgetn(buf, bufSize);
-  SG_VERIFY(n == bufSize && string(buf, bufSize) == "3456789abc");
+  SG_CHECK_EQUAL(n, bufSize);
+  SG_CHECK_EQUAL(string(buf, static_cast<std::size_t>(bufSize)),
+                 "3456789abc");
 
   ch = decompSBuf.sungetc(); // same as sputbackc(), except no value to check
   SG_VERIFY(ch != EOF && traits::to_char_type(ch) == 'c');
@@ -226,15 +242,17 @@ void test_StreambufBasicOperations()
   SG_VERIFY(ch != EOF && traits::to_char_type(ch) == 'b');
 
   n = decompSBuf.sgetn(buf, bufSize);
-  SG_VERIFY(n == bufSize && string(buf, bufSize) == "bcdefghijk");
+  SG_CHECK_EQUAL(n, bufSize);
+  SG_CHECK_EQUAL(string(buf, static_cast<std::size_t>(bufSize)),
+                 "bcdefghijk");
 
   ch = decompSBuf.sungetc();
   SG_VERIFY(ch != EOF && traits::to_char_type(ch) == 'k');
 
   static char buf2[64];
   n = decompSBuf.sgetn(buf2, sizeof(buf2));
-  SG_VERIFY(n == 36 && string(buf2, n) == "klmnopqrstuvwxyz\nABCDEF\nGHIJK "
-            "LMNOPQ");
+  SG_CHECK_EQUAL(n, 36);
+  SG_CHECK_EQUAL(string(buf2, 36), "klmnopqrstuvwxyz\nABCDEF\nGHIJK LMNOPQ");
 
   ch = decompSBuf.sbumpc();
   SG_CHECK_EQUAL(ch, EOF);
@@ -404,7 +422,10 @@ void test_ZlibDecompressorIStream_readPutbackEtc()
     string rest(buf2, nbCharsRead);
     do {
       decompressor.read(buf2, sizeof(buf2));
-      rest += string(buf2, decompressor.gcount());
+      // The conversion to std::size_t is safe because decompressor.read()
+      // returns a non-negative value which, in this case, can't exceed
+      // sizeof(buf2).
+      rest += string(buf2, streamsizeToSize_t(decompressor.gcount()));
     } while (decompressor);
 
     SG_CHECK_EQUAL(rest, " LMNOPQ");

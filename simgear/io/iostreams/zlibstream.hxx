@@ -180,6 +180,9 @@ private:
   // output buffer, data is written by zlib directly to the destination
   // buffer).
   std::streamsize xsgetn(char* dest, std::streamsize n) override;
+  // Utility method for xsgetn()
+  std::size_t xsgetn_preparePutbackArea(char* origGptr, char* dest,
+                                        char* writePtr);
   // Make sure there is data to read in the input buffer, or signal EOF.
   bool getInputData();
   // Utility method for fillOutputBuffer()

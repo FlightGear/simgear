@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <limits>               // std::numeric_limits
+#include <type_traits>          // std::make_unsigned()
 #include <cstddef>              // std::size_t, std::ptrdiff_t
 #include <cassert>
 
@@ -75,38 +76,53 @@ static string zlibErrorMessage(const z_stream& zstream, int errorCode)
   return res;
 }
 
-// Return the largest value that can be represented with zlib's uInt type,
-// which is the type of z_stream.avail_in and z_stream.avail_out, hence the
-// function name.
-static std::size_t zlibMaxChunkSize()
+// Requirement: 'val' must be non-negative.
+//
+// Return:
+//   - 'val' cast as BoundType if it's lower than the largest value BoundType
+//     can represent;
+//   - this largest value otherwise.
+template<class BoundType, class T>
+static BoundType clipCast(T val)
 {
-  uLong flags = ::zlibCompileFlags();
-  std::size_t res;
+  typedef typename std::make_unsigned<T>::type uT;
+  typedef typename std::make_unsigned<BoundType>::type uBoundType;
+  assert(val >= 0); // otherwise, the comparison and cast to uT would be unsafe
 
-  switch (flags & 0x3) {
-  case 0x3:
-    SG_LOG(SG_IO, SG_WARN,
-           "Unknown size for zlib's uInt type (code 3). Will assume 64 bits, "
-           "but the actual value is probably higher.");
-    // No 'break' here, this is intentional.
-  case 0x2:
-    res = 0xFFFFFFFFFFFFFFFF;   // 2^64 - 1
-    break;
-  case 0x1:
-    res = 0xFFFFFFFF;             // 2^32 - 1
-    break;
-  case 0x0:
-    res = 0xFFFF;                 // 2^16 - 1
-    break;
-  default:
-    throw std::logic_error("It should be impossible to get here.");
+  // Casts to avoid the signed-compare warning; they don't affect the values,
+  // since both are non-negative.
+  if (static_cast<uT>(val) <
+      static_cast<uBoundType>( std::numeric_limits<BoundType>::max() )) {
+    return static_cast<BoundType>(val);
+  } else {
+    return std::numeric_limits<BoundType>::max();
   }
-
-  return res;
 }
 
-static const std::size_t zlibMaxChunk = ::zlibMaxChunkSize();
+// Requirement: 'size' must be non-negative.
+//
+// Return:
+//   - 'size' if it is lower than or equal to std::numeric_limits<uInt>::max();
+//   - std::numeric_limits<uInt>::max() cast as a T otherwise (this is always
+//     possible in a lossless way, since in this case, one has
+//     0 <= std::numeric_limits<uInt>::max() < size, and 'size' is of type T).
+//
+// Note: uInt is the type of z_stream.avail_in and z_stream.avail_out, hence
+//       the function name.
+template<class T>
+static T zlibChunk(T size)
+{
+  typedef typename std::make_unsigned<T>::type uT;
+  assert(size >= 0); // otherwise, the comparison and cast to uT would be unsafe
 
+  if (static_cast<uT>(size) <= std::numeric_limits<uInt>::max()) {
+    return size;
+  } else {
+    // In this case, we are sure that T can represent
+    // std::numeric_limits<uInt>::max(), thus the cast is safe.
+    return static_cast<T>(std::numeric_limits<uInt>::max());
+  }
+}
 
 namespace simgear
 {
@@ -214,8 +230,8 @@ int ZlibAbstractIStreambuf::underflow()
 std::size_t
 ZlibAbstractIStreambuf::fOB_remainingSpace(unsigned char* nextOutPtr) const
 {
-  std::ptrdiff_t remainingSpaceInOutBuf = _outBuf + _outBufSize -
-    reinterpret_cast<char*>(nextOutPtr);
+  std::ptrdiff_t remainingSpaceInOutBuf = (
+    _outBuf + _outBufSize - reinterpret_cast<char*>(nextOutPtr));
   assert(remainingSpaceInOutBuf >= 0);
 
   return static_cast<std::size_t>(remainingSpaceInOutBuf);
@@ -265,9 +281,7 @@ char* ZlibAbstractIStreambuf::fillOutputBuffer()
   remainingSpaceInOutBuf = fOB_remainingSpace(_zstream.next_out);
 
   while (remainingSpaceInOutBuf > 0) {
-    // This does fit in a zlib uInt: that's the whole point of zlibMaxChunk.
-    _zstream.avail_out = static_cast<uInt>(
-      std::min(remainingSpaceInOutBuf, zlibMaxChunk));
+    _zstream.avail_out = clipCast<uInt>(remainingSpaceInOutBuf);
 
     if (_zstream.avail_in == 0 && !allInputRead) {
       // Get data from _iStream, store it in _inBuf
@@ -327,9 +341,7 @@ bool ZlibAbstractIStreambuf::getInputData()
 
   // Data already available?
   if (alreadyAvailable > 0) {
-    _zstream.avail_in = static_cast<uInt>(
-      std::min(static_cast<std::size_t>(alreadyAvailable),
-               zlibMaxChunk));
+    _zstream.avail_in = clipCast<uInt>(alreadyAvailable);
     return allInputRead;
   }
 
@@ -340,9 +352,8 @@ bool ZlibAbstractIStreambuf::getInputData()
 
   // Fill the input buffer (as much as possible)
   while (_inBufEndPtr < _inBuf + _inBufSize && !_iStream.eof()) {
-    std::streamsize nbCharsToRead = std::min(
-      _inBuf + _inBufSize - _inBufEndPtr,
-      std::numeric_limits<std::streamsize>::max()); // max we can pass to read()
+    std::streamsize nbCharsToRead = clipCast<std::streamsize>(
+      _inBuf + _inBufSize - _inBufEndPtr);
     _iStream.read(_inBufEndPtr, nbCharsToRead);
 
     if (_iStream.bad()) {
@@ -361,10 +372,8 @@ bool ZlibAbstractIStreambuf::getInputData()
 
   std::ptrdiff_t availableChars =
     _inBufEndPtr - reinterpret_cast<char*>(_zstream.next_in);
-  assert(availableChars >= 0);
-  _zstream.avail_in = static_cast<uInt>(
-    std::min(static_cast<std::size_t>(availableChars),
-             zlibMaxChunk));
+  // assert(availableChars >= 0);    <-- already done in clipCast<uInt>()
+  _zstream.avail_in = clipCast<uInt>(availableChars);
 
   if (_iStream.eof()) {
     allInputRead = true;
@@ -384,24 +393,34 @@ bool ZlibAbstractIStreambuf::getInputData()
 // (_outBuf) before being copied to its (hopefully) final destination.
 std::streamsize ZlibAbstractIStreambuf::xsgetn(char* dest, std::streamsize n)
 {
-  std::size_t remaining = static_cast<std::size_t>(n);
-  std::size_t chunkSize;
-  std::ptrdiff_t avail;
-  const char* origGptr = gptr();
+  // Despite the somewhat misleading footnote 296 of §27.5.3 of the C++11
+  // standard, one can't assume std::size_t to be at least as large as
+  // std::streamsize (64 bits std::streamsize in a 32 bits Windows program).
+  std::streamsize remaining = n;
+  char* origGptr = gptr();
   char* writePtr = dest;        // we'll need dest later -> work with a copy
 
   // First, let's take data present in our internal buffer (_outBuf)
   while (remaining > 0) {
-    avail = egptr() - gptr();   // number of available chars in _outBuf
+    // Number of available chars in _outBuf
+    std::ptrdiff_t avail = egptr() - gptr();
     if (avail == 0) {           // our internal buffer is empty
       break;
     }
 
-    chunkSize = std::min(remaining, static_cast<std::size_t>(avail));
-    std::copy(gptr(), gptr() + chunkSize, writePtr);
-    gbump(chunkSize);
-    writePtr += chunkSize;
-    remaining -= chunkSize;
+    // We need an int for gbump(), at least in C++11.
+    int chunkSize_i = clipCast<int>(avail);
+    if (chunkSize_i > remaining) {
+      chunkSize_i = static_cast<int>(remaining);
+    }
+    assert(chunkSize_i >= 0);
+
+    std::copy(gptr(), gptr() + chunkSize_i, writePtr);
+    gbump(chunkSize_i);
+    writePtr += chunkSize_i;
+    // This cast is okay because 0 <= chunkSize_i <= remaining, which is an
+    // std::streamsize
+    remaining -= static_cast<std::streamsize>(chunkSize_i);
   }
 
   if (remaining == 0) {
@@ -418,9 +437,10 @@ std::streamsize ZlibAbstractIStreambuf::xsgetn(char* dest, std::streamsize n)
   int retCode;
 
   while (remaining > 0) {
-    chunkSize = std::min(remaining, zlibMaxChunk);
-    // It does fit in a zlib uInt: that's the whole point of zlibMaxChunk.
-    _zstream.avail_out = static_cast<uInt>(chunkSize);
+    std::streamsize chunkSize_s = zlibChunk(remaining);
+    // chunkSize_s > 0 and does fit in a zlib uInt: that's the whole point of
+    // zlibChunk.
+    _zstream.avail_out = static_cast<uInt>(chunkSize_s);
 
     if (_zstream.avail_in == 0 && !allInputRead) {
       allInputRead = getInputData();
@@ -429,8 +449,9 @@ std::streamsize ZlibAbstractIStreambuf::xsgetn(char* dest, std::streamsize n)
     // Make zlib process some data (compress or decompress). This updates
     // _zstream.{avail,next}_{in,out} (4 fields of the z_stream struct).
     retCode = zlibProcessData();
-    // chunkSize - _zstream.avail_out is the nb of chars written by zlib
-    remaining -= chunkSize - _zstream.avail_out;
+    // chunkSize_s - _zstream.avail_out is the number of chars written by zlib.
+    // 0 <= _zstream.avail_out <= chunkSize_s, which is an std::streamsize.
+    remaining -= chunkSize_s - static_cast<std::streamsize>(_zstream.avail_out);
 
     if (retCode == Z_BUF_ERROR) {
       handleZ_BUF_ERROR();            // doesn't return
@@ -444,12 +465,23 @@ std::streamsize ZlibAbstractIStreambuf::xsgetn(char* dest, std::streamsize n)
     }
   }
 
-  // Finally, prepare the putback area.
-  //
-  // We could use reinterpret_cast<char*>(_zstream.next_out) everywhere below,
-  // except it is hardly readable. This points after the latest data we wrote.
-  writePtr = reinterpret_cast<char*>(_zstream.next_out);
+  // Finally, copy chars to the putback area.
+  std::size_t nbPutbackChars = xsgetn_preparePutbackArea(
+    origGptr, dest, reinterpret_cast<char*>(_zstream.next_out));
+  setg(_outBuf + _putbackSize - nbPutbackChars, // start of putback area
+       _outBuf + _putbackSize,                  // the buffer for pending,
+       _outBuf + _putbackSize);                 // available data is empty
 
+  assert(remaining >= 0);
+  assert(n - remaining >= 0);
+  // Total number of chars copied.
+  return n - remaining;
+}
+
+// Utility method for xsgetn(): copy some chars to the putback area
+std::size_t ZlibAbstractIStreambuf::xsgetn_preparePutbackArea(
+  char* origGptr, char* dest, char* writePtr)
+{
   // There are two buffers containing characters we potentially have to copy
   // to the putback area: the one starting at _outBuf and the one starting at
   // dest. In the following diagram, ***** represents those from _outBuf,
@@ -472,38 +504,33 @@ std::streamsize ZlibAbstractIStreambuf::xsgetn(char* dest, std::streamsize n)
   //
   //   [1] This means that the last char represented by a star is at address
   //       origGptr-1.
+
+  // It seems std::ptrdiff_t is the signed counterpart of std::size_t,
+  // therefore this should always hold (even with equality).
+  static_assert(sizeof(std::size_t) >= sizeof(std::ptrdiff_t),
+                "Unexpected: sizeof(std::size_t) < sizeof(std::ptrdiff_t)");
   assert(writePtr - dest >= 0);
   std::size_t inDestBuffer = static_cast<std::size_t>(writePtr - dest);
+
   assert(origGptr - eback() >= 0);
   std::size_t nbPutbackChars = std::min(
     static_cast<std::size_t>(origGptr - eback()) + inDestBuffer,
     _putbackSize);
   std::size_t nbPutbackCharsToGo = nbPutbackChars;
 
-  // chunkSize has an unsigned type; precomputing it before the following test
-  // wouldn't work.
   // Are there chars in _outBuf that need to be copied to the putback area?
   if (nbPutbackChars > inDestBuffer) {
-    chunkSize = nbPutbackChars - inDestBuffer; // yes, this number
+    std::size_t chunkSize = nbPutbackChars - inDestBuffer; // yes, this number
     std::copy(origGptr - chunkSize, origGptr,
               _outBuf + _putbackSize - nbPutbackChars);
     nbPutbackCharsToGo -= chunkSize;
   }
 
+  // Finally, copy those that are not in _outBuf
   std::copy(writePtr - nbPutbackCharsToGo, writePtr,
             _outBuf + _putbackSize - nbPutbackCharsToGo);
-  setg(_outBuf + _putbackSize - nbPutbackChars, // start of putback area
-       _outBuf + _putbackSize,                  // the buffer for pending,
-       _outBuf + _putbackSize);                 // available data is empty
 
-  std::streamsize rem = static_cast<std::streamsize>(remaining);
-  // This is guaranteed because n is of type std::streamsize and the whole
-  // algorithm ensures that 0 <= remaining <= n.
-  assert(rem >= 0);
-  assert(static_cast<std::size_t>(rem) == remaining);
-  assert(n - rem >= 0);
-  // Total number of chars copied.
-  return n - rem;
+  return nbPutbackChars;
 }
 
 // ***************************************************************************
@@ -684,10 +711,12 @@ ZlibCompressorIStream::ZlibCompressorIStream(std::istream& iStream,
                                              char *outBuf,
                                              std::size_t outBufSize,
                                              std::size_t putbackSize)
-  : _streamBuf(iStream, path, compressionLevel, format, memStrategy, inBuf,
+  : std::istream(nullptr),
+    _streamBuf(iStream, path, compressionLevel, format, memStrategy, inBuf,
                inBufSize, outBuf, outBufSize, putbackSize)
 {
-  rdbuf(&_streamBuf);            // Associate _streamBuf to 'this'
+  // Associate _streamBuf to 'this' and clear the error state flags
+  rdbuf(&_streamBuf);
 }
 
 ZlibCompressorIStream::~ZlibCompressorIStream()
@@ -705,10 +734,12 @@ ZlibDecompressorIStream::ZlibDecompressorIStream(std::istream& iStream,
                                                  char *outBuf,
                                                  std::size_t outBufSize,
                                                  std::size_t putbackSize)
-  : _streamBuf(iStream, path, format, inBuf, inBufSize, outBuf, outBufSize,
+  : std::istream(nullptr),
+    _streamBuf(iStream, path, format, inBuf, inBufSize, outBuf, outBufSize,
                putbackSize)
 {
-  rdbuf(&_streamBuf);            // Associate _streamBuf to 'this'
+  // Associate _streamBuf to 'this' and clear the error state flags
+  rdbuf(&_streamBuf);
 }
 
 ZlibDecompressorIStream::~ZlibDecompressorIStream()

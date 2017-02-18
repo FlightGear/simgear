@@ -23,6 +23,7 @@
 #include <sstream>
 #include <array>
 #include <random>
+#include <memory>               // std::unique_ptr
 #include <limits>               // std::numeric_limits
 #include <type_traits>          // std::make_unsigned()
 #include <functional>           // std::bind()
@@ -284,6 +285,60 @@ string compress(const string& dataToCompress,
   compressor >> compressedData_ss.rdbuf();
 
   return compressedData_ss.str();
+}
+
+// Test simgear::ZlibDecompressorIStreambuf::[x]sgetn(), asking the largest
+// possible amount of chars every time it is called (i.e., the largest value
+// that can be represented by std::streamsize).
+void test_ZlibDecompressorIStreambuf_readLargestPossibleAmount()
+{
+  // Nothing special with these values
+  constexpr std::size_t maxDataSize = 8192;
+  std::istringstream input_ss(randomString(4096, maxDataSize));
+
+  simgear::ZlibCompressorIStream compIStream(
+    input_ss,                   // input stream
+    SGPath(),                   // this stream is not associated to a file
+    9,                          // compression level
+    simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
+    simgear::ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    nullptr,                    // dynamically allocate the input buffer
+    230,                        // input buffer size
+    nullptr,                    // dynamically allocate the output buffer
+    120,                        // output buffer size
+    1                           // putback size
+    );
+
+  // Decompressor stream buffer (std::streambuf subclass) that gets input data
+  // from our compressor 'compIStream' (std::istream subclass)
+  simgear::ZlibDecompressorIStreambuf decompSBuf(
+    compIStream, SGPath(), simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
+    nullptr, 150, nullptr, 175, 2);
+
+  std::unique_ptr<char[]> buf(new char[maxDataSize]);
+  std::ostringstream roundTripResult_ss;
+  std::streamsize totalCharsToRead = input_ss.str().size();
+
+  while (totalCharsToRead > 0) {
+    // Ask sgetn() the largest possible amount of chars. Of course, we know we
+    // can't get more than maxDataSize, but this does exercise the code in
+    // interesting ways due to the various types involved (zlib's uInt,
+    // std::size_t and std::streamsize, which have various sizes depending on
+    // the platform).
+    std::streamsize nbCharsRead = decompSBuf.sgetn(
+      &buf[0], std::numeric_limits<std::streamsize>::max());
+    if (nbCharsRead == 0) {
+      break;                    // no more data
+    }
+
+    // The conversion to std::size_t is safe because decompSBuf.sgetn()
+    // returned a non-negative value which, in this case, can't exceed
+    // maxDataSize.
+    roundTripResult_ss << string(&buf[0], streamsizeToSize_t((nbCharsRead)));
+  }
+
+  SG_CHECK_EQUAL(decompSBuf.sgetc(), EOF);
+  SG_CHECK_EQUAL(roundTripResult_ss.str(), input_ss.str());
 }
 
 void test_formattedInputFromDecompressor()
@@ -575,6 +630,7 @@ int main(int argc, char** argv)
 {
   test_pipeCompOrDecompIStreambufIntoOStream();
   test_StreambufBasicOperations();
+  test_ZlibDecompressorIStreambuf_readLargestPossibleAmount();
   test_RoundTripMultiWithIStreams();
   test_formattedInputFromDecompressor();
   test_ZlibDecompressorIStream_readPutbackEtc();

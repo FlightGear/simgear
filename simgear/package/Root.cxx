@@ -477,7 +477,7 @@ void Root::installProgress(InstallRef aInstall, unsigned int aBytes, unsigned in
 
 void Root::startNext(InstallRef aCurrent)
 {
-    if (d->updateDeque.front() != aCurrent) {
+	if (d->updateDeque.empty() || (d->updateDeque.front() != aCurrent)) {
         SG_LOG(SG_GENERAL, SG_ALERT, "current install of package not head of the deque");
     } else {
         d->updateDeque.pop_front();

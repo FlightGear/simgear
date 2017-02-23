@@ -276,6 +276,11 @@ public:
      _dnsdn = simgear::strutils::strip(dn);
    }
 
+   void setProtocol( const std::string & protocol )
+   {
+     _protocol = simgear::strutils::strip(protocol);
+   }
+
    void setSceneryVersion( const std::string & sceneryVersion )
    {
      _sceneryVersion = simgear::strutils::strip(sceneryVersion);
@@ -343,8 +348,9 @@ private:
    string _local_dir;
    SGPath _persistentCachePath;
    string _httpServer;
-    SGPath _installRoot;
+   SGPath _installRoot;
    string _sceneryVersion;
+   string _protocol;
    string _dnsdn;
 
     TerrasyncThreadState _state;
@@ -429,6 +435,12 @@ bool SGTerraSync::WorkerThread::start()
     return true;
 }
 
+static inline string MakeQService(string & protocol, string & version )
+{
+  if( protocol.empty() ) return version;
+  return protocol + "+" + version;
+}
+
 void SGTerraSync::WorkerThread::run()
 {
     {
@@ -441,7 +453,7 @@ void SGTerraSync::WorkerThread::run()
     if (_httpServer == "automatic" ) {
 
         DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(_dnsdn);
-        naptrRequest->qservice = _sceneryVersion;
+        naptrRequest->qservice = MakeQService(_protocol, _sceneryVersion);
 
         naptrRequest->qflags = "U";
         DNS::Request_ptr r(naptrRequest);
@@ -851,6 +863,7 @@ void SGTerraSync::reinit()
     {
         _workerThread->setHTTPServer( _terraRoot->getStringValue("http-server","") );
         _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
+        _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
 #if 1
         // leave it hardcoded for now, not sure about the security implications for now
         _workerThread->setDNSDN( "terrasync.flightgear.org");

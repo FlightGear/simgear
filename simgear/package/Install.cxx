@@ -152,6 +152,11 @@ protected:
             return;
         }
 
+		// disable caching on the owner's path, otherwise the upcoming
+		// delete & rename confuse everything
+		m_owner->m_path.set_cached(false);
+		m_extractPath.set_cached(false);
+
         if (m_owner->path().exists()) {
             Dir destDir(m_owner->path());
             destDir.remove(true /* recursive */);

@@ -25,6 +25,7 @@
 
 #include <iosfwd>
 #include <ios>                  // std::streamsize
+#include <memory>               // std::unique_ptr
 #include <zlib.h>               // struct z_stream
 
 #include <simgear/misc/sg_path.hxx>
@@ -144,6 +145,19 @@ public:
                                   char* outBuf = nullptr,
                                   std::size_t outBufSize = 262144,
                                   std::size_t putbackSize = 0);
+
+  // Alternate constructor with sink semantics for the “source” std::istream.
+  // When used, the class takes ownership of the std::istream instance pointed
+  // to by the first constructor argument, and keeps it alive as long as the
+  // object this constructor is for is itself alive.
+  explicit ZlibAbstractIStreambuf(std::unique_ptr<std::istream> iStream_p,
+                                  const SGPath& path = SGPath(),
+                                  char* inBuf = nullptr,
+                                  std::size_t inBufSize = 262144,
+                                  char* outBuf = nullptr,
+                                  std::size_t outBufSize = 262144,
+                                  std::size_t putbackSize = 0);
+
   ZlibAbstractIStreambuf(const ZlibAbstractIStreambuf&) = delete;
   ZlibAbstractIStreambuf& operator=(const ZlibAbstractIStreambuf&) = delete;
   ~ZlibAbstractIStreambuf();
@@ -166,6 +180,11 @@ protected:
 
   // The input stream, from which data is read before being processed by zlib
   std::istream& _iStream;
+  // Pointer to the same, used when calling the constructor that takes an
+  // std::unique_ptr<std::istream> as its first argument; empty
+  // std::unique_ptr object otherwise.
+  std::unique_ptr<std::istream> _iStream_p;
+
   // Corresponding path, if any (default-constructed SGPath instance otherwise)
   const SGPath _path;
   // Structure used to communicate with zlib
@@ -285,6 +304,20 @@ public:
     char* outBuf = nullptr,
     std::size_t outBufSize = 262144,
     std::size_t putbackSize = 0);
+
+  // Alternate constructor with sink semantics for the “source” std::istream.
+  explicit ZlibCompressorIStreambuf(
+    std::unique_ptr<std::istream> _iStream_p,
+    const SGPath& path = SGPath(),
+    int compressionLevel = Z_DEFAULT_COMPRESSION,
+    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    ZLibMemoryStrategy memStrategy = ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    char* inBuf = nullptr,
+    std::size_t inBufSize = 262144,
+    char* outBuf = nullptr,
+    std::size_t outBufSize = 262144,
+    std::size_t putbackSize = 0);
+
   ZlibCompressorIStreambuf(const ZlibCompressorIStreambuf&) = delete;
   ZlibCompressorIStreambuf& operator=(const ZlibCompressorIStreambuf&) = delete;
   ~ZlibCompressorIStreambuf();
@@ -322,6 +355,18 @@ public:
     char* outBuf = nullptr,
     std::size_t outBufSize = 262144,
     std::size_t putbackSize = 0); // default optimized for speed
+
+  // Alternate constructor with sink semantics for the “source” std::istream.
+  explicit ZlibDecompressorIStreambuf(
+    std::unique_ptr<std::istream> _iStream_p,
+    const SGPath& path = SGPath(),
+    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    char* inBuf = nullptr,
+    std::size_t inBufSize = 262144,
+    char* outBuf = nullptr,
+    std::size_t outBufSize = 262144,
+    std::size_t putbackSize = 0); // default optimized for speed
+
   ZlibDecompressorIStreambuf(const ZlibDecompressorIStreambuf&) = delete;
   ZlibDecompressorIStreambuf& operator=(const ZlibDecompressorIStreambuf&)
                                                                       = delete;
@@ -359,6 +404,20 @@ public:
     char* outBuf = nullptr,
     std::size_t outBufSize = 262144,
     std::size_t putbackSize = 0); // default optimized for speed
+
+  // Alternate constructor with sink semantics for the “source” std::istream.
+  explicit ZlibCompressorIStream(
+    std::unique_ptr<std::istream> _iStream_p,
+    const SGPath& path = SGPath(),
+    int compressionLevel = Z_DEFAULT_COMPRESSION,
+    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    ZLibMemoryStrategy memStrategy = ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    char* inBuf = nullptr,
+    std::size_t inBufSize = 262144,
+    char* outBuf = nullptr,
+    std::size_t outBufSize = 262144,
+    std::size_t putbackSize = 0); // default optimized for speed
+
   ZlibCompressorIStream(const ZlibCompressorIStream&) = delete;
   ZlibCompressorIStream& operator=(const ZlibCompressorIStream&) = delete;
   ~ZlibCompressorIStream();
@@ -391,6 +450,18 @@ public:
     char* outBuf = nullptr,
     std::size_t outBufSize = 262144,
     std::size_t putbackSize = 0); // default optimized for speed
+
+  // Alternate constructor with sink semantics for the “source” std::istream.
+  explicit ZlibDecompressorIStream(
+    std::unique_ptr<std::istream> _iStream_p,
+    const SGPath& path = SGPath(),
+    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    char* inBuf = nullptr,
+    std::size_t inBufSize = 262144,
+    char* outBuf = nullptr,
+    std::size_t outBufSize = 262144,
+    std::size_t putbackSize = 0); // default optimized for speed
+
   ZlibDecompressorIStream(const ZlibDecompressorIStream&) = delete;
   ZlibDecompressorIStream& operator=(const ZlibDecompressorIStream&) = delete;
   ~ZlibDecompressorIStream();

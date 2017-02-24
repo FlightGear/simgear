@@ -23,6 +23,8 @@
 #include <string>
 #include <ios>                  // std::streamsize
 #include <istream>
+#include <memory>               // std::unique_ptr
+#include <utility>              // std::move()
 #include <algorithm>
 #include <stdexcept>
 #include <unordered_map>
@@ -141,13 +143,13 @@ ZlibAbstractIStreambuf::ZlibAbstractIStreambuf(std::istream& iStream,
                                                std::size_t outBufSize,
                                                std::size_t putbackSize)
   : _iStream(iStream),
+    _iStream_p(nullptr),
     _path(path),
     _inBuf(inBuf),
     _inBufSize(inBufSize),
     _outBuf(outBuf),
     _outBufSize(outBufSize),
     _putbackSize(putbackSize)
-
 {
   assert(_inBufSize > 0);
   assert(_putbackSize >= 0);    // guaranteed unless the type is changed...
@@ -178,6 +180,24 @@ ZlibAbstractIStreambuf::ZlibAbstractIStreambuf(std::istream& iStream,
   // reliably compare the three pointers with < and >, as well as compute the
   // difference between any two of them.
   setg(_outBuf, _outBuf, _outBuf);
+}
+
+ZlibAbstractIStreambuf::ZlibAbstractIStreambuf(
+  std::unique_ptr<std::istream> iStream_p,
+  const SGPath& path,
+  char* inBuf,
+  std::size_t inBufSize,
+  char *outBuf,
+  std::size_t outBufSize,
+  std::size_t putbackSize)
+  : ZlibAbstractIStreambuf(*iStream_p, path, inBuf, inBufSize,
+                           outBuf, outBufSize, putbackSize)
+{
+  // Take ownership of the object. This is a way to ensure that the _iStream
+  // reference stays valid as long as our instance is alive, and that the
+  // corresponding std::istream object is automatically destroyed as soon as
+  // our instance is itself destroyed.
+  _iStream_p = std::move(iStream_p);
 }
 
 ZlibAbstractIStreambuf::~ZlibAbstractIStreambuf()
@@ -554,6 +574,24 @@ ZlibCompressorIStreambuf::ZlibCompressorIStreambuf(
   zStreamInit(compressionLevel, format, memStrategy);
 }
 
+ZlibCompressorIStreambuf::ZlibCompressorIStreambuf(
+  std::unique_ptr<std::istream> iStream_p,
+  const SGPath& path,
+  int compressionLevel,
+  ZLibCompressionFormat format,
+  ZLibMemoryStrategy memStrategy,
+  char* inBuf,
+  std::size_t inBufSize,
+  char *outBuf,
+  std::size_t outBufSize,
+  std::size_t putbackSize)
+  : ZlibCompressorIStreambuf(*iStream_p, path, compressionLevel, format,
+                             memStrategy, inBuf, inBufSize, outBuf, outBufSize,
+                             putbackSize)
+{
+  _iStream_p = std::move(iStream_p); // take ownership of the object
+}
+
 ZlibCompressorIStreambuf::~ZlibCompressorIStreambuf()
 {
   int retCode = deflateEnd(&_zstream); // deallocate the z_stream struct
@@ -642,6 +680,21 @@ ZlibDecompressorIStreambuf::ZlibDecompressorIStreambuf(
   zStreamInit(format);
 }
 
+ZlibDecompressorIStreambuf::ZlibDecompressorIStreambuf(
+  std::unique_ptr<std::istream> iStream_p,
+  const SGPath& path,
+  ZLibCompressionFormat format,
+  char* inBuf,
+  std::size_t inBufSize,
+  char *outBuf,
+  std::size_t outBufSize,
+  std::size_t putbackSize)
+  : ZlibDecompressorIStreambuf(*iStream_p, path, format, inBuf, inBufSize,
+                               outBuf, outBufSize, putbackSize)
+{
+  _iStream_p = std::move(iStream_p); // take ownership of the object
+}
+
 ZlibDecompressorIStreambuf::~ZlibDecompressorIStreambuf()
 {
   int retCode = inflateEnd(&_zstream); // deallocate the z_stream struct
@@ -719,6 +772,25 @@ ZlibCompressorIStream::ZlibCompressorIStream(std::istream& iStream,
   rdbuf(&_streamBuf);
 }
 
+ZlibCompressorIStream::ZlibCompressorIStream(
+  std::unique_ptr<std::istream> iStream_p,
+  const SGPath& path,
+  int compressionLevel,
+  ZLibCompressionFormat format,
+  ZLibMemoryStrategy memStrategy,
+  char* inBuf,
+  std::size_t inBufSize,
+  char *outBuf,
+  std::size_t outBufSize,
+  std::size_t putbackSize)
+  : std::istream(nullptr),
+    _streamBuf(std::move(iStream_p), path, compressionLevel, format,
+               memStrategy, inBuf, inBufSize, outBuf, outBufSize, putbackSize)
+{
+  // Associate _streamBuf to 'this' and clear the error state flags
+  rdbuf(&_streamBuf);
+}
+
 ZlibCompressorIStream::~ZlibCompressorIStream()
 { }
 
@@ -737,6 +809,23 @@ ZlibDecompressorIStream::ZlibDecompressorIStream(std::istream& iStream,
   : std::istream(nullptr),
     _streamBuf(iStream, path, format, inBuf, inBufSize, outBuf, outBufSize,
                putbackSize)
+{
+  // Associate _streamBuf to 'this' and clear the error state flags
+  rdbuf(&_streamBuf);
+}
+
+ZlibDecompressorIStream::ZlibDecompressorIStream(
+  std::unique_ptr<std::istream> iStream_p,
+  const SGPath& path,
+  ZLibCompressionFormat format,
+  char* inBuf,
+  std::size_t inBufSize,
+  char *outBuf,
+  std::size_t outBufSize,
+  std::size_t putbackSize)
+  : std::istream(nullptr),
+    _streamBuf(std::move(iStream_p), path, format, inBuf, inBufSize,
+               outBuf, outBufSize, putbackSize)
 {
   // Associate _streamBuf to 'this' and clear the error state flags
   rdbuf(&_streamBuf);

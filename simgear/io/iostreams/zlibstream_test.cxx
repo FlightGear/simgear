@@ -24,6 +24,7 @@
 #include <array>
 #include <random>
 #include <memory>               // std::unique_ptr
+#include <utility>              // std::move()
 #include <limits>               // std::numeric_limits
 #include <type_traits>          // std::make_unsigned()
 #include <functional>           // std::bind()
@@ -63,8 +64,8 @@ static std::size_t streamsizeToSize_t(std::streamsize n)
 // you don't need the putback feature in non-test code, best performance is
 // achieved with putback size = 0.
 //
-// I suggest you read roundTripWithIStreams() below to see how to use the
-// classes most efficiently (especially the comments!).
+// I suggest reading test_IStreamConstructorWithSinkSemantics() below to see
+// how to use the classes efficiently.
 
 static std::default_random_engine randomNumbersGenerator;
 
@@ -493,7 +494,6 @@ void test_ZlibDecompressorIStream_readPutbackEtc()
 // Utility function: parametrized round-trip test with a compressor +
 // decompressor pipeline.
 //
-//
 // Note: this is nice conceptually, allows to keep memory use constant even in
 //       case an arbitrary amount of data is passed through, and exercises the
 //       stream buffer classes well, however this technique is more than twice
@@ -626,6 +626,82 @@ void test_RoundTripMultiWithIStreams()
   }
 }
 
+// Utility function showing how to return a (unique_ptr to a)
+// ZlibCompressorIStream instance, that keeps a reference to its data source
+// as long as the ZlibCompressorIStream instance is alive. Thus, calling code
+// doesn't have to worry about the lifetime of said data source (here, an
+// std::istringstream instance).
+std::unique_ptr<simgear::ZlibCompressorIStream>
+IStreamConstructorWithSinkSemantics_compressorFactory(string str)
+{
+  std::unique_ptr<std::istringstream> iss(new std::istringstream(str));
+
+  // The returned compressor object retains a “reference” (of unique_ptr type)
+  // to the std::istringstream object pointed to by 'iss' as long as it is
+  // alive. When the returned compressor object (wrapped in a unique_ptr) is
+  // destroyed, this std::istringstream object will be automatically
+  // destroyed too.
+  //
+  // Note: it's an implementation detail, but this test also indirectly
+  //       exercises the ZlibCompressorIStreambuf constructor taking an
+  //       argument of type std::unique_ptr<std::istream>.
+  return std::unique_ptr<simgear::ZlibCompressorIStream>(
+    new simgear::ZlibCompressorIStream(std::move(iss)));
+}
+
+void test_IStreamConstructorWithSinkSemantics()
+{
+  cerr << "Testing the unique_ptr-based ZlibCompressorIStream constructor\n";
+
+  string someString = randomString(4096, 8192); // arbitrary values
+  // This shows how to get a new compressor or decompressor object from a
+  // factory function. Of course, we could create the object directly on the
+  // stack without using a separate function!
+  std::unique_ptr<simgear::ZlibCompressorIStream> compressor =
+    IStreamConstructorWithSinkSemantics_compressorFactory(someString);
+  compressor->exceptions(std::ios_base::badbit); // throw if badbit is set
+
+  // Use the compressor as input to the decompressor (pipeline). The
+  // decompressor uses read() with chunks that are as large as possible given
+  // the available space in its input buffer. These read() calls are served by
+  // ZlibCompressorIStreambuf::xsgetn(), which is efficient. We won't need the
+  // compressor afterwards, so let's just std::move() its unique_ptr.
+  simgear::ZlibDecompressorIStream decompressor(std::move(compressor));
+  decompressor.exceptions(std::ios_base::badbit);
+
+  std::ostringstream roundTripResult;
+  // Of course, you may want to adjust bufSize depending on the application.
+  static constexpr std::size_t bufSize = 1024;
+  std::unique_ptr<char[]> buf(new char[bufSize]);
+
+  // Relatively efficient way of reading from the decompressor (modulo
+  // possible adjustments to 'bufSize', of course). The decompressed data is
+  // first written to 'buf', then copied to 'roundTripResult'. There is no
+  // other useless copy via, for instance, an intermediate std::string object,
+  // as would be the case if we used std::string(buf.get(), bufSize).
+  //
+  // Of course, ideally 'roundTripResult' would directly pull from
+  // 'decompressor' without going through 'buf', but I don't think this is
+  // possible with std::stringstream and friends. Such an optimized data flow
+  // is however straightforward to implement if you replace 'roundTripResult'
+  // with a custom data sink that calls decompressor.read().
+  do {
+    decompressor.read(buf.get(), bufSize);
+    if (decompressor.gcount() > 0) { // at least one char could be read
+      roundTripResult.write(buf.get(), decompressor.gcount());
+    }
+  } while (decompressor && roundTripResult);
+
+  // 1) If set, badbit would have caused an exception to be raised (see above).
+  // 2) failbit doesn't necessarily indicate an error here: it is set as soon
+  //    as the read() call can't provide the requested number of characters.
+  SG_VERIFY(decompressor.eof() && !decompressor.bad());
+  // Because of std::ostringstream::write(), 'roundTripResult' might have its
+  // failbit or badbit set, either of which would indicate a real problem.
+  SG_VERIFY(roundTripResult);
+  SG_CHECK_EQUAL(roundTripResult.str(), someString);
+}
+
 int main(int argc, char** argv)
 {
   test_pipeCompOrDecompIStreambufIntoOStream();
@@ -634,6 +710,7 @@ int main(int argc, char** argv)
   test_RoundTripMultiWithIStreams();
   test_formattedInputFromDecompressor();
   test_ZlibDecompressorIStream_readPutbackEtc();
+  test_IStreamConstructorWithSinkSemantics();
 
   return EXIT_SUCCESS;
 }

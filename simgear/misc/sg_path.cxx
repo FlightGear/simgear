@@ -278,7 +278,6 @@ SGPath& SGPath::operator=(const SGPath& p)
 SGPath::~SGPath() {
 }
 
-#if defined(ENABLE_OLD_PATH_API)
 // set path
 void SGPath::set( const string& p ) {
     path = p;
@@ -286,7 +285,6 @@ void SGPath::set( const string& p ) {
     _cached = false;
     _rwCached = false;
 }
-#endif
 
 //------------------------------------------------------------------------------
 void SGPath::setPermissionChecker(PermissionChecker validator)

@@ -632,7 +632,7 @@ void test_RoundTripMultiWithIStreams()
 // doesn't have to worry about the lifetime of said data source (here, an
 // std::istringstream instance).
 std::unique_ptr<simgear::ZlibCompressorIStream>
-IStreamConstructorWithSinkSemantics_compressorFactory(string str)
+IStreamConstructorWithSinkSemantics_compressorFactory(const string& str)
 {
   std::unique_ptr<std::istringstream> iss(new std::istringstream(str));
 

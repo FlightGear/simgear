@@ -603,6 +603,45 @@ private:
 
 
 /**
+ * A string value managed through an object and access methods.
+ *
+ * This class stores the std::string returned by the getter, so that
+ * the value returned by c_str() is still valid.
+ *
+ * A read-only value will not have a setter; a write-only value will
+ * not have a getter.
+ */
+template <class C>
+class SGStringValueMethods : public SGRawValue<const char*>
+{
+public:
+  typedef std::string (C::*getter_t)() const;
+  typedef void (C::*setter_t)(const std::string&);
+  SGStringValueMethods (C &obj, getter_t getter = 0, setter_t setter = 0)
+  : _obj(obj), _getter(getter), _setter(setter) {}
+  virtual ~SGStringValueMethods () {}
+  virtual const char* getValue () const {
+    SGStringValueMethods* pthis = const_cast<SGStringValueMethods*>(this);
+    if (_getter) { pthis->_value = (_obj.*_getter)();
+                   return pthis->_value.c_str(); }
+    else { return SGRawValue<const char*>::DefaultValue(); }
+  }
+  virtual bool setValue (const char* value) {
+    if (_setter) { (_obj.*_setter)(value ? value : ""); return true; }
+    else return false;
+  }
+  virtual SGRaw* clone () const {
+    return new SGStringValueMethods(_obj, _getter, _setter);
+  }
+private:
+  C &_obj;
+  getter_t _getter;
+  setter_t _setter;
+  std::string _value;
+};
+
+
+/**
  * An indexed value managed through an object and access methods.
  *
  * A read-only value will not have a setter; a write-only value will

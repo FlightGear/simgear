@@ -291,7 +291,7 @@ struct ReaderWriterSTG::_ModelBin {
             (lat > bucket.get_center_lat() + bucket.get_height()/2.0) ||
             (lat < bucket.get_center_lat() - bucket.get_height()/2.0)    )
         {
-          SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
+          SG_LOG( SG_TERRAIN, SG_DEV_ALERT, absoluteFileName
                   << ": Object outside tile bounds " << lon << ", " << lat <<
                   "Center of tile: " << bucket.get_center_lon() << ", " <<
                   bucket.get_center_lat());

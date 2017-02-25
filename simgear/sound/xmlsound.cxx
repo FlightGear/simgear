@@ -127,7 +127,7 @@ SGXmlSound::init( SGPropertyNode *root,
       _condition = sgReadCondition(root, condition);
 
    if (!_property && !_condition)
-      SG_LOG(SG_SOUND, SG_WARN,
+      SG_LOG(SG_SOUND, SG_DEV_WARN,
              "  Neither a condition nor a property specified");
 
    _delay = node->getDoubleValue("delay-sec", 0.0);
@@ -228,7 +228,7 @@ SGXmlSound::init( SGPropertyNode *root,
       string type_str = kids[i]->getStringValue("type", "");
       if ( type_str != "" ) {
 
-         for (int j=0; __sound_fn[j].fn; j++) 
+         for (int j=0; __sound_fn[j].fn; j++)
             if ( type_str == __sound_fn[j].name ) {
                pitch.fn = __sound_fn[j].fn;
                break;
@@ -238,7 +238,7 @@ SGXmlSound::init( SGPropertyNode *root,
             SG_LOG(SG_SOUND,SG_INFO,
                    "  Unknown pitch type, default to 'lin'");
       }
-     
+
       pitch.offset = kids[i]->getDoubleValue("offset", 1.0);
 
       if ((pitch.min = kids[i]->getDoubleValue("min", 0.0)) < 0.0)
@@ -313,7 +313,7 @@ SGXmlSound::init( SGPropertyNode *root,
       throw sg_io_exception("XML sound: couldn't find file: '" + soundFileStr + "'");
       return;
    }
-   
+
    _sample->set_relative_position( offset_pos );
    _sample->set_position_properties( pos_prop );
    _sample->set_direction( dir );

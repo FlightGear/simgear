@@ -428,6 +428,14 @@ void test_ZlibDecompressorIStream_readPutbackEtc()
       decompressor.putback('Z');
     } catch (std::ios_base::failure) {
       gotException = true;
+    } catch (const std::exception& e) {
+      // gcc fails to catch std::ios_base::failure due to an inconsistent C++11
+      // ABI between headers and libraries. See bug#66145 for more details.
+      // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66145
+      if (!strcmp(e.what(), "basic_ios::clear"))
+        gotException = true;
+      else
+        throw e;
     }
     SG_VERIFY(gotException && decompressor.bad());
   }

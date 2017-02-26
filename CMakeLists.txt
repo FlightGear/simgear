@@ -120,14 +120,14 @@ endif()
 
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
-option(ENABLE_GDAL      "Set to ON to build SimGear with GDAL support" ON)
+option(ENABLE_GDAL      "Set to ON to build SimGear with GDAL support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
 option(USE_AEONWAVE     "Set to ON to use AeonWave instead of OpenAL" OFF)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
 option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" ON)
 option(ENABLE_SIMD      "Enable SSE/SSE2 support for x86 compilers" ON)
-option(ENABLE_OPENMP    "Enable OpenMP compiler support" ON)
+option(ENABLE_OPENMP    "Enable OpenMP compiler support" OFF)
 
 include (DetectArch)
 

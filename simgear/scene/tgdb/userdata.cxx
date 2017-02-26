@@ -64,8 +64,10 @@ simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_stgCallbackProx
 osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterSPT> g_readerWriterSPTProxy;
 simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_sptCallbackProxy("spt");
 
+#ifdef ENABLE_GDAL
 osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterPGT> g_readerWriterPGTProxy;
 simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_pgtCallbackProxy("pgt");
+#endif
 }
 
 void sgUserDataInit( SGPropertyNode *p ) {

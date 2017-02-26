@@ -17,4 +17,9 @@ set(SIMGEAR_SOUND @ENABLE_SOUND@)
 
 set(ENABLE_SIMD @ENABLE_SIMD@)
 
+# Alternative terrain engine based on pagedLOD
+
+set(ENABLE_GDAL @ENABLE_GDAL@)
+set(ENABLE_OPENMP @ENABLE_OPENMP@)
+
 include("${CMAKE_CURRENT_LIST_DIR}/SimGearTargets.cmake")

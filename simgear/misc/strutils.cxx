@@ -739,6 +739,19 @@ std::string error_string(int errnum)
 #endif  // !defined(_GNU_SOURCE)
 }
 
+bool to_bool(const std::string& s)
+{
+    if (!strcasecmp(s.c_str(), "yes")) return true;
+    if (!strcasecmp(s.c_str(), "no")) return false;
+    if (!strcasecmp(s.c_str(), "true")) return true;
+    if (!strcasecmp(s.c_str(), "false")) return false;
+    if (s == "1") return true;
+    if (s == "0") return false;
+
+    SG_LOG(SG_GENERAL, SG_WARN, "Unable to parse string as boolean:" << s);
+    return false;
+}
+
 } // end namespace strutils
 
 } // end namespace simgear

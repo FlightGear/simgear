@@ -168,7 +168,14 @@ namespace simgear {
      * convert a string representing a decimal number, to an int
      */
     int to_int(const std::string& s, int base = 10);
-    
+
+
+    /**
+     * Convert a string representing a boolean, to a bool.
+     * Accepted values include YES, true, 0, 1, false, no, True,
+     */
+    bool to_bool(const std::string& s);
+
     /**
      * Like strcmp(), but for dotted versions strings NN.NN.NN
      * any number of terms are supported.

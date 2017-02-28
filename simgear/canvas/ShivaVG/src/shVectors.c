@@ -35,7 +35,7 @@ void SHVector2_dtor(SHVector2 *v) {
 }
 
 void SHVector3_ctor(SHVector3 *v) {
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
   v->vec = _mm_setzero_ps();
 #else
   v->x=0.0f; v->y=0.0f; v->z=0.0f;
@@ -46,7 +46,7 @@ void SHVector3_dtor(SHVector3 *v) {
 }
 
 void SHVector4_ctor(SHVector4 *v) {
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
   v->vec = _mm_setzero_ps();
 #else
   v->x=0.0f; v->y=0.0f; v->z=0.0f; v->w=0.0f;
@@ -57,7 +57,7 @@ void SHVector4_dtor(SHVector4 *v) {
 }
 
 void SHRectangle_ctor(SHRectangle *r) {
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
   r->vec = _mm_setzero_ps();
 #else
   r->x=0.0f; r->y=0.0f; r->w=0.0f; r->h=0.0f;
@@ -148,7 +148,7 @@ int shLineLineXsection(SHVector2 *o1, SHVector2 *v1,
   return 1;
 }
 
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # ifdef __SSE3__
 # include <pmmintrin.h>
 inline float hsum_ps_sse(__m128 v) {

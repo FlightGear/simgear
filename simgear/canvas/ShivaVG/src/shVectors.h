@@ -21,7 +21,17 @@
 #ifndef __SHVECTORS_H
 #define __SHVECTORS_H
 
-#ifdef __SSE__
+#ifdef HAVE_CONFIG_H
+# include <simgear/simgear_config.h>
+#endif
+
+#ifdef ENABLE_SIMD
+# ifdef __SSE__
+// #  define SHIVA_USE_SIMD
+# endif
+# endif
+
+#ifdef SHIVA_USE_SIMD
 # include <xmmintrin.h>
 float hsum_ps_sse(__m128 v);
 #endif
@@ -41,7 +51,7 @@ void SHVector2_dtor(SHVector2 *v);
 
 typedef struct
 {
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
   union ALIGN16 {
     __m128 vec;
     struct { SHfloat x,y,z,w; };
@@ -56,7 +66,7 @@ void SHVector3_dtor(SHVector3 *v);
 
 typedef struct
 {
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
   union ALIGN16 {
     __m128 vec;
     struct { SHfloat x,y,z,w; };
@@ -71,7 +81,7 @@ void SHVector4_dtor(SHVector4 *v);
 
 typedef struct
 {
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
   union ALIGN16 {
     __m128 vec;
     struct { SHfloat x,y,w,h; };
@@ -88,7 +98,7 @@ void shRectangleSet(SHRectangle *r, SHfloat x,
 
 typedef struct
 {
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
   union ALIGN16 {
     __m128 mtx[4];
     SHfloat m[4][4];
@@ -117,7 +127,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
  *--------------------------------------------------------- */
 
 #define SET2(v,xs,ys) { v.x=xs; v.y=ys; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define SET3(v,xs,ys,zs,ws) { v.vec=_mm_set_ps(0,zs,ys,xs); }
 # define SET4(v,xs,ys,zs,ws) { v.vec=_mm_set_ps(ws,zs,ys,xs); }
 #else
@@ -126,7 +136,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define SET2V(v1,v2) { v1.x=v2.x; v1.y=v2.y; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define SET3V(v1,v2) { v1.vec=v2.vec; }
 # define SET4V(v1,v2) { v1.vec=v2.vec; }
 #else
@@ -147,7 +157,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #define EQ4V(v1,v2) ( v1.x==v2.x && v1.y==v2.y && v1.z==v2.z && v1.w==v2.w )
 
 #define ADD2(v,xx,yy)       { v.x+=xx; v.y+=yy; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define ADD3(v,xx,yy,zz,ww) { v.vec=_mm_add_ps(v.vec,_mm_set_ps(0,zz,yy,xx)); }
 # define ADD4(v,xx,yy,zz,ww) { v.vec=_mm_add_ps(v.vec,_mm_set_ps(ww,zz,yy,xx)); }
 #else
@@ -156,7 +166,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define ADD2V(v1,v2) { v1.x+=v2.x; v1.y+=v2.y; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define ADD3V(v1,v2) { v1.vec=_mm_add_ps(v1.vec,v2.vec); }
 # define ADD4V(v1,v2) { v1.vec=_mm_add_ps(v1.vec,v2.vec); }
 #else
@@ -165,7 +175,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define SUB2(v,xx,yy)       { v.x-=xx; v.y-=yy; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define SUB3(v,xx,yy,zz,ww) { v.vec=_mm_sub_ps(v.vec,_mm_set_ps(0,zz,yy,xx)); }
 # define SUB4(v,xx,yy,zz,ww) { v.vec=_mm_sub_ps(v.vec,_mm_set_ps(ww,zz,yy,xx)); }
 #else
@@ -174,7 +184,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define SUB2V(v1,v2) { v1.x-=v2.x; v1.y-=v2.y; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define SUB3V(v1,v2) { v1.vec=_mm_sub_ps(v1.vec,v2.vec); }
 # define SUB4V(v1,v2) { v1.vec=_mm_sub_ps(v1.vec,v2.vec); }
 #else
@@ -183,7 +193,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define MUL2(v,f) { v.x*=f; v.y*=f; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define MUL3(v,f) { v.vec=_mm_mul_ps(v.vec,_mm_set1_ps(f)); }
 # define MUL4(v,f) { v.vec=_mm_mul_ps(v.vec,_mm_set1_ps(f)); }
 #else
@@ -192,7 +202,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define DIV2(v,f) { v.x/=f; v.y/=f; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define DIV3(v,f) { v.vec=_mm_div_ps(v.vec,_mm_set1_ps(f)); }
 # define DIV4(v,f) { v.vec=_mm_div_ps(v.vec,_mm_set1_ps(f)); }
 #else
@@ -201,7 +211,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #endif
 
 #define ABS2(v) { v.x=SH_ABS(v.x); v.y=SH_ABS(v.y); }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define ABS_MASK _mm_set1_ps(-0.f)
 # define ABS3(v) { v.vec=_mm_andnot_ps(ABS_MASK, v.vec); }
 # define ABS4(v) { v.vec=_mm_andnot_ps(ABS_MASK, v.vec); }
@@ -223,7 +233,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #define NORMALIZE4(v) { SHfloat n=NORM4(v); DIV4(v,n); }
 
 #define DOT2(v1,v2) (v1.x*v2.x + v1.y*v2.y)
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define DOT4(v1,v2) hsum_ps_sse(_mm_mul_ps(v1.vec,v2.vec))
 # define DOT4(v1,v2) hsum_ps_sse(_mm_mul_ps(v1.vec,v2.vec))
 #else
@@ -237,7 +247,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
 #define ANGLE2N(v1,v2) (SH_ACOS( DOT2(v1,v2) ))
 
 #define OFFSET2V(v, o, s) { v.x += o.x*s; v.y += o.y*s; }
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define OFFSET4V(v, o, s) { v.vec=_mm_add_ps(v.vec,_mm_mul_ps(o.vec,_mm_set1_ps(s))); }
 # define OFFSET4V(v, o, s) { v.vec=_mm_add_ps(v.vec,_mm_mul_ps(o.vec,_mm_set1_ps(s))); }
 #else
@@ -249,7 +259,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
  * Macros for matrix operations
  *-----------------------------------------------------*/
 
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define SETMAT(mat, m00, m01, m02, m10, m11, m12, m20, m21, m22) { \
   mat.mtx[0] = _mm_set_ps(0,m02,m01,m00); \
   mat.mtx[1] = _mm_set_ps(0,m12,m11,m10); \
@@ -262,7 +272,7 @@ void SHMatrix3x3_dtor(SHMatrix3x3 *m);
   mat.m[2][0] = m20; mat.m[2][1] = m21; mat.m[2][2] = m22; }
 #endif
 
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define SETMATMAT(m1, m2) { \
   m1.mtx[0] = m2.mtx[0]; \
   m1.mtx[1] = m2.mtx[1]; \
@@ -275,7 +285,7 @@ int i,j; \
     m1.m[i][j] = m2.m[i][j]; }
 #endif
 
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define MULMATS(mat, s) { \
   mat.mtx[0] = _mm_mul_ps(mat.mtx[0],_mm_set1_ps(s)); \
   mat.mtx[1] = _mm_mul_ps(mat.mtx[1],_mm_set1_ps(s)); \
@@ -288,7 +298,7 @@ int i,j; \
     mat.m[i][j] *= s; }
 #endif
 
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define DIVMATS(mat, s) { \
   mat.mtx[0] = _mm_mul_ps(mat.mtx[0],_mm_set1_ps(1/s)); \
   mat.mtx[1] = _mm_mul_ps(mat.mtx[1],_mm_set1_ps(1/s)); \
@@ -301,7 +311,7 @@ int i,j; \
     mat.m[i][j] /= s; }
 #endif
 
-#ifdef __SSE__
+#ifdef SHIVA_USE_SIMD
 # define MULMATMAT(m2, m1, mout) { \
   int i,j; \
   for (i=0;i<4;i++) { \

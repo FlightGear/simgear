@@ -201,6 +201,7 @@ struct TerrasyncThreadState
     TerrasyncThreadState() :
         _busy(false),
         _stalled(false),
+        _hasServer(false),
         _fail_count(0),
         _updated_tile_count(0),
         _success_count(0),
@@ -214,6 +215,7 @@ struct TerrasyncThreadState
 
     bool _busy;
     bool _stalled;
+    bool _hasServer;
     int  _fail_count;
     int  _updated_tile_count;
     int  _success_count;
@@ -224,7 +226,6 @@ struct TerrasyncThreadState
     // kbytes, not bytes, because bytes might overflow 2^31
     int _total_kb_downloaded;
     unsigned int _totalKbPending;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -257,7 +258,21 @@ public:
         return _state._stalled;
     }
 
-   void request(const SyncItem& dir) {waitingTiles.push_front(dir);}
+    bool hasServer()
+    {
+        SGGuard<SGMutex> g(_stateLock);
+        return _state._hasServer;
+    }
+
+    bool hasServer( bool flag )
+    {
+        SGGuard<SGMutex> g(_stateLock);
+        return (_state._hasServer = flag);
+    }
+
+    bool findServer();
+
+    void request(const SyncItem& dir) {waitingTiles.push_front(dir);}
 
     bool hasNewTiles()
     {
@@ -269,6 +284,7 @@ public:
    void   setHTTPServer(const std::string& server)
    {
       _httpServer = stripPath(server);
+      _isAutomaticServer = (server == "automatic");
    }
 
    void setDNSDN( const std::string & dn )
@@ -348,6 +364,7 @@ private:
     string _local_dir;
     SGPath _persistentCachePath;
     string _httpServer;
+    bool _isAutomaticServer;
     SGPath _installRoot;
     string _sceneryVersion;
     string _protocol;
@@ -359,7 +376,8 @@ private:
 
 SGTerraSync::WorkerThread::WorkerThread() :
     _stop(false),
-    _running(false)
+    _running(false),
+    _isAutomaticServer(true)
 {
     _http.setUserAgent("terrascenery-" SG_STRINGIZE(SIMGEAR_VERSION));
 }
@@ -422,14 +440,10 @@ bool SGTerraSync::WorkerThread::start()
     _stop = false;
     _state = TerrasyncThreadState(); // clean state
 
-    string status = "Using built-in HTTP support.";
-
     // not really an alert - but we want to (always) see this message, so user is
     // aware we're downloading scenery (and using bandwidth).
     SG_LOG(SG_TERRASYNC,SG_ALERT,
-           "Starting automatic scenery download/synchronization. "
-           << status
-           << "Directory: '" << _local_dir << "'.");
+           "Starting automatic scenery download/synchronization to '"<< _local_dir << "'.");
 
     SGThread::start();
     return true;
@@ -437,8 +451,70 @@ bool SGTerraSync::WorkerThread::start()
 
 static inline string MakeQService(string & protocol, string & version )
 {
-  if( protocol.empty() ) return version;
-  return protocol + "+" + version;
+    if( protocol.empty() ) return version;
+    return protocol + "+" + version;
+}
+
+bool SGTerraSync::WorkerThread::findServer()
+{
+    if ( false == _isAutomaticServer ) return true;
+
+    DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(_dnsdn);
+    naptrRequest->qservice = MakeQService(_protocol, _sceneryVersion);
+
+    naptrRequest->qflags = "U";
+    DNS::Request_ptr r(naptrRequest);
+
+    DNS::Client dnsClient;
+    dnsClient.makeRequest(r);
+    SG_LOG(SG_TERRASYNC,SG_DEBUG,"DNS NAPTR query for '" << _dnsdn << "' '" << naptrRequest->qservice << "'" );
+    while( !r->isComplete() && !r->isTimeout() )
+      dnsClient.update(0);
+
+    if( naptrRequest->entries.empty() ) {
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "Warning: no DNS entry found for '" << _dnsdn << "' '" << naptrRequest->qservice << "'" );
+        _httpServer = "";
+        return false;
+    }
+    // walk through responses, they are ordered by 1. order and 2. preference
+    // For now, only take entries with lowest order
+    // TODO: try all available servers in the order given by preferenc and order
+    int order = naptrRequest->entries[0]->order;
+
+    // get all servers with this order and the same (for now only lowest preference)
+    DNS::NAPTRRequest::NAPTR_list availableServers;
+    for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin();
+         it != naptrRequest->entries.end();
+         ++it ) {
+
+        if( (*it)->order != order )
+            continue;
+
+        string regex = (*it)->regexp;
+        if( false == simgear::strutils::starts_with( (*it)->regexp, "!^.*$!" ) ) {
+            SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
+            continue;
+        }
+
+        if( false == simgear::strutils::ends_with( (*it)->regexp, "!" ) ) {
+            SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
+            continue;
+        }
+
+        // always use first entry
+        if( availableServers.empty() || (*it)->preference == availableServers[0]->preference) {
+            SG_LOG(SG_TERRASYNC,SG_DEBUG, "available server regexp: " << (*it)->regexp );
+            availableServers.push_back( *it );
+        }
+    }
+
+    // now pick a random entry from the available servers
+    DNS::NAPTRRequest::NAPTR_list::size_type idx = sg_random() * availableServers.size();
+    _httpServer = availableServers[idx]->regexp;
+    _httpServer = _httpServer.substr( 6, _httpServer.length()-7 ); // strip search pattern and separators
+
+    SG_LOG(SG_TERRASYNC,SG_INFO, "picking entry # " << idx << ", server is " << _httpServer );
+    return true;
 }
 
 void SGTerraSync::WorkerThread::run()
@@ -450,78 +526,12 @@ void SGTerraSync::WorkerThread::run()
 
     initCompletedTilesPersistentCache();
 
-    if (_httpServer == "automatic" ) {
-
-        DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(_dnsdn);
-        naptrRequest->qservice = MakeQService(_protocol, _sceneryVersion);
-
-        naptrRequest->qflags = "U";
-        DNS::Request_ptr r(naptrRequest);
-
-        DNS::Client dnsClient;
-        dnsClient.makeRequest(r);
-        while( !r->isComplete() && !r->isTimeout() )
-          dnsClient.update(0);
-
-        if( naptrRequest->entries.empty() ) {
-            SG_LOG(SG_TERRASYNC, SG_ALERT, "ERROR: automatic terrasync http-server requested, but no DNS entry found.");
-            _httpServer = "";
-        } else {
-            // walk through responses, they are ordered by 1. order and 2. preference
-            // For now, only take entries with lowest order
-            // TODO: try all available servers in the order given by preferenc and order
-            int order = naptrRequest->entries[0]->order;
-
-            // get all servers with this order and the same (for now only lowest preference)
-            DNS::NAPTRRequest::NAPTR_list availableServers;
-                for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin();
-                  it != naptrRequest->entries.end();
-                  ++it ) {
-
-                if( (*it)->order != order )
-                    continue;
-
-                string regex = (*it)->regexp;
-                if( false == simgear::strutils::starts_with( (*it)->regexp, "!^.*$!" ) ) {
-                    SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
-                    continue;
-                }
-
-                if( false == simgear::strutils::ends_with( (*it)->regexp, "!" ) ) {
-                    SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
-                    continue;
-                }
-
-                // always use first entry
-                if( availableServers.empty() || (*it)->preference == availableServers[0]->preference) {
-                    SG_LOG(SG_TERRASYNC,SG_DEBUG, "available server regexp: " << (*it)->regexp );
-                    availableServers.push_back( *it );
-                }
-          }
-
-          // now pick a random entry from the available servers
-          DNS::NAPTRRequest::NAPTR_list::size_type idx = sg_random() * availableServers.size();
-          _httpServer = availableServers[idx]->regexp;
-          _httpServer = _httpServer.substr( 6, _httpServer.length()-7 ); // strip search pattern and separators
-
-          SG_LOG(SG_TERRASYNC,SG_INFO, "picking entry # " << idx << ", server is " << _httpServer );
-        }
-    }
-
-    if (_httpServer.empty()) {
-        SG_LOG(SG_TERRASYNC, SG_ALERT, "ERROR: no http-server found, terrasync will be disabled");
-        SGGuard<SGMutex> g(_stateLock);
-        _running = false;
-        return;
-    }
-
     runInternal();
 
     {
         SGGuard<SGMutex> g(_stateLock);
         _running = false;
     }
-
 }
 
 void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
@@ -607,7 +617,22 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 
 void SGTerraSync::WorkerThread::runInternal()
 {
+    unsigned dnsRetryCount = 0;
+
     while (!_stop) {
+        // try to find a terrasync server
+        if( !hasServer() ) {
+          if( ++dnsRetryCount > 5 ) {
+            SG_LOG(SG_TERRASYNC, SG_WARN, "Can't find a terrasync server. TS disabled.");
+            break;
+          }
+          if( hasServer( findServer() ) ) {
+            SG_LOG(SG_TERRASYNC, SG_INFO, "terrasync scenery provider of the day is '" << _httpServer << "'");
+          }
+          continue;
+        }
+        dnsRetryCount = 0;
+
         try {
             _http.update(10);
         } catch (sg_exception& e) {
@@ -861,7 +886,7 @@ void SGTerraSync::reinit()
 
     if (_terraRoot->getBoolValue("enabled",false))
     {
-        _workerThread->setHTTPServer( _terraRoot->getStringValue("http-server","") );
+        _workerThread->setHTTPServer( _terraRoot->getStringValue("http-server","automatic") );
         _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
         _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
 #if 1

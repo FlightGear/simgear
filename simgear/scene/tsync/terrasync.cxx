@@ -339,19 +339,19 @@ private:
     SyncSlot _syncSlots[NUM_SYNC_SLOTS];
 
     bool _stop, _running;
-   SGBlockingDeque <SyncItem> waitingTiles;
+    SGBlockingDeque <SyncItem> waitingTiles;
 
-   TileAgeCache _completedTiles;
-   TileAgeCache _notFoundItems;
+    TileAgeCache _completedTiles;
+    TileAgeCache _notFoundItems;
 
-   SGBlockingDeque <SyncItem> _freshTiles;
-   string _local_dir;
-   SGPath _persistentCachePath;
-   string _httpServer;
-   SGPath _installRoot;
-   string _sceneryVersion;
-   string _protocol;
-   string _dnsdn;
+    SGBlockingDeque <SyncItem> _freshTiles;
+    string _local_dir;
+    SGPath _persistentCachePath;
+    string _httpServer;
+    SGPath _installRoot;
+    string _sceneryVersion;
+    string _protocol;
+    string _dnsdn;
 
     TerrasyncThreadState _state;
     SGMutex _stateLock;

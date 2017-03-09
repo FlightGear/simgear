@@ -168,10 +168,10 @@ logstream& sglog();
     do { if(sglog().would_log(C,P)) {                         \
         std::ostringstream os; os << M;                  \
         sglog().log(C, P, __FILE__, __LINE__, os.str()); \
-        if (P == SG_POPUP) sglog().popup(os.str());      \
+        if ((P) == SG_POPUP) sglog().popup(os.str());    \
     } } while(0)
 #ifdef FG_NDEBUG
-# define SG_LOG(C,P,M)	do { if(P == SG_POPUP) SG_LOGX(C,P,M) } while(0)
+# define SG_LOG(C,P,M)	do { if((P) == SG_POPUP) SG_LOGX(C,P,M) } while(0)
 #else
 # define SG_LOG(C,P,M)	SG_LOGX(C,P,M)
 #endif

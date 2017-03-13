@@ -482,13 +482,13 @@ public:
 
 /////////////////////////////////////////////////////////////////////////////
 
-static logstream* global_logstream = NULL;
-static LogStreamPrivate* global_privateLogstream = NULL;
+static std::unique_ptr<logstream> global_logstream;
+static std::unique_ptr<LogStreamPrivate> global_privateLogstream;
 static SGMutex global_logStreamLock;
 
 logstream::logstream()
 {
-    global_privateLogstream = new LogStreamPrivate;
+    global_privateLogstream.reset(new LogStreamPrivate);
     global_privateLogstream->startLog();
 }
 
@@ -496,7 +496,7 @@ logstream::~logstream()
 {
     popup_msgs.clear();
     global_privateLogstream->stop();
-    delete global_privateLogstream;
+    global_privateLogstream.reset();
 }
 
 void
@@ -597,8 +597,8 @@ sglog()
     SGGuard<SGMutex> g(global_logStreamLock);
 
     if( !global_logstream )
-        global_logstream = new logstream();
-    return *global_logstream;
+        global_logstream.reset(new logstream);
+    return *(global_logstream.get());
 }
 
 void
@@ -660,8 +660,7 @@ void requestConsole()
 void shutdownLogging()
 {
     SGGuard<SGMutex> g(global_logStreamLock);
-    delete global_logstream;
-    global_logstream = 0;
+    global_logstream.reset();
 }
 
 } // of namespace simgear

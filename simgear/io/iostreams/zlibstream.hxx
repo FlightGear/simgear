@@ -23,8 +23,9 @@
 #ifndef SG_ZLIBSTREAM_HXX
 #define SG_ZLIBSTREAM_HXX
 
-#include <iosfwd>
 #include <ios>                  // std::streamsize
+#include <istream>
+#include <streambuf>
 #include <memory>               // std::unique_ptr
 #include <zlib.h>               // struct z_stream
 

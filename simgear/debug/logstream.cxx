@@ -46,39 +46,7 @@
     #include <io.h>
 #endif
 
-const char* debugClassToString(sgDebugClass c)
-{
-    switch (c) {
-    case SG_NONE:       return "none";
-    case SG_TERRAIN:    return "terrain";
-    case SG_ASTRO:      return "astro";
-    case SG_FLIGHT:     return "flight";
-    case SG_INPUT:      return "input";
-    case SG_GL:         return "opengl";
-    case SG_VIEW:       return "view";
-    case SG_COCKPIT:    return "cockpit";
-    case SG_GENERAL:    return "general";
-    case SG_MATH:       return "math";
-    case SG_EVENT:      return "event";
-    case SG_AIRCRAFT:   return "aircraft";
-    case SG_AUTOPILOT:  return "autopilot";
-    case SG_IO:         return "io";
-    case SG_CLIPPER:    return "clipper";
-    case SG_NETWORK:    return "network";
-    case SG_ATC:        return "atc";
-    case SG_NASAL:      return "nasal";
-    case SG_INSTR:      return "instruments";
-    case SG_SYSTEMS:    return "systems";
-    case SG_AI:         return "ai";
-    case SG_ENVIRONMENT:return "environment";
-    case SG_SOUND:      return "sound";
-    case SG_NAVAID:     return "navaid";
-    case SG_GUI:        return "gui";
-    case SG_TERRASYNC:  return "terrasync";
-    case SG_PARTICLES:  return "particles";
-    default:            return "unknown";
-    }
-}
+
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -100,6 +68,40 @@ void LogCallback::setLogLevels( sgDebugClass c, sgDebugPriority p )
 {
 	m_priority = p;
 	m_class = c;
+}
+
+const char* LogCallback::debugClassToString(sgDebugClass c)
+{
+    switch (c) {
+        case SG_NONE:       return "none";
+        case SG_TERRAIN:    return "terrain";
+        case SG_ASTRO:      return "astro";
+        case SG_FLIGHT:     return "flight";
+        case SG_INPUT:      return "input";
+        case SG_GL:         return "opengl";
+        case SG_VIEW:       return "view";
+        case SG_COCKPIT:    return "cockpit";
+        case SG_GENERAL:    return "general";
+        case SG_MATH:       return "math";
+        case SG_EVENT:      return "event";
+        case SG_AIRCRAFT:   return "aircraft";
+        case SG_AUTOPILOT:  return "autopilot";
+        case SG_IO:         return "io";
+        case SG_CLIPPER:    return "clipper";
+        case SG_NETWORK:    return "network";
+        case SG_ATC:        return "atc";
+        case SG_NASAL:      return "nasal";
+        case SG_INSTR:      return "instruments";
+        case SG_SYSTEMS:    return "systems";
+        case SG_AI:         return "ai";
+        case SG_ENVIRONMENT:return "environment";
+        case SG_SOUND:      return "sound";
+        case SG_NAVAID:     return "navaid";
+        case SG_GUI:        return "gui";
+        case SG_TERRASYNC:  return "terrasync";
+        case SG_PARTICLES:  return "particles";
+        default:            return "unknown";
+    }
 }
 
 } // of namespace simgear

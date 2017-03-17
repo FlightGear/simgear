@@ -49,6 +49,8 @@ protected:
 	LogCallback(sgDebugClass c, sgDebugPriority p);
 
 	bool shouldLog(sgDebugClass c, sgDebugPriority p) const;
+
+    static const char* debugClassToString(sgDebugClass c);
 private:
 	sgDebugClass m_class;
 	sgDebugPriority m_priority;

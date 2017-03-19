@@ -179,7 +179,7 @@ public:
 
 #endif
 
-class LogStreamPrivate : public SGThread
+class logstream::LogStreamPrivate : public SGThread
 {
 private:
     /**
@@ -485,51 +485,49 @@ public:
 /////////////////////////////////////////////////////////////////////////////
 
 static std::unique_ptr<logstream> global_logstream;
-static std::unique_ptr<LogStreamPrivate> global_privateLogstream;
 static SGMutex global_logStreamLock;
 
 logstream::logstream()
 {
-    global_privateLogstream.reset(new LogStreamPrivate);
-    global_privateLogstream->startLog();
+    d.reset(new LogStreamPrivate);
+    d->startLog();
 }
 
 logstream::~logstream()
 {
     popup_msgs.clear();
-    global_privateLogstream->stop();
-    global_privateLogstream.reset();
+    d->stop();
 }
 
 void
 logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
 {
-    global_privateLogstream->setLogLevels(c, p);
+    d->setLogLevels(c, p);
 }
 
 void logstream::setDeveloperMode(bool devMode)
 {
-    global_privateLogstream->m_developerMode = devMode;
+    d->m_developerMode = devMode;
 }
 
 
 void
 logstream::addCallback(simgear::LogCallback* cb)
 {
-    global_privateLogstream->addCallback(cb);
+    d->addCallback(cb);
 }
 
 void
 logstream::removeCallback(simgear::LogCallback* cb)
 {
-    global_privateLogstream->removeCallback(cb);
+    d->removeCallback(cb);
 }
 
 void
 logstream::log( sgDebugClass c, sgDebugPriority p,
         const char* fileName, int line, const std::string& msg)
 {
-    global_privateLogstream->log(c, p, fileName, line, msg);
+    d->log(c, p, fileName, line, msg);
 }
 
 void
@@ -559,31 +557,31 @@ logstream::has_popup()
 bool
 logstream::would_log( sgDebugClass c, sgDebugPriority p ) const
 {
-    return global_privateLogstream->would_log(c,p);
+    return d->would_log(c,p);
 }
 
 sgDebugClass
 logstream::get_log_classes() const
 {
-    return global_privateLogstream->m_logClass;
+    return d->m_logClass;
 }
 
 sgDebugPriority
 logstream::get_log_priority() const
 {
-    return global_privateLogstream->m_logPriority;
+    return d->m_logPriority;
 }
 
 void
 logstream::set_log_priority( sgDebugPriority p)
 {
-    global_privateLogstream->setLogLevels(global_privateLogstream->m_logClass, p);
+    d->setLogLevels(d->m_logClass, p);
 }
 
 void
 logstream::set_log_classes( sgDebugClass c)
 {
-    global_privateLogstream->setLogLevels(c, global_privateLogstream->m_logPriority);
+    d->setLogLevels(c, d->m_logPriority);
 }
 
 
@@ -606,12 +604,12 @@ sglog()
 void
 logstream::logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p )
 {
-    global_privateLogstream->addCallback(new FileLogCallback(aPath, c, p));
+    d->addCallback(new FileLogCallback(aPath, c, p));
 }
 
 void logstream::setStartupLoggingEnabled(bool enabled)
 {
-    global_privateLogstream->setStartupLoggingEnabled(enabled);
+    d->setStartupLoggingEnabled(enabled);
 }
 
 namespace simgear
@@ -636,13 +634,13 @@ void requestConsole()
     * This is called after the Private Log Stream constructor so we need to undo any console that it has attached to.
     */
 
-    if (!global_privateLogstream->m_stderr_isRedirectedAlready && !global_privateLogstream->m_stdout_isRedirectedAlready) {
+    if (!d->m_stderr_isRedirectedAlready && !d->m_stdout_isRedirectedAlready) {
         FreeConsole();
         if (AllocConsole()) {
-            if (!global_privateLogstream->m_stdout_isRedirectedAlready)
+            if (!d->m_stdout_isRedirectedAlready)
                 freopen("conout$", "w", stdout);
 
-            if (!global_privateLogstream->m_stderr_isRedirectedAlready)
+            if (!d->m_stderr_isRedirectedAlready)
                 freopen("conout$", "w", stderr);
 
             //http://stackoverflow.com/a/25927081

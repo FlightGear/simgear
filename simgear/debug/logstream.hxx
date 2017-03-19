@@ -30,7 +30,8 @@
 
 #include <sstream>
 #include <vector>
- 
+#include <memory>
+
 // forward decls
 class SGPath;
       
@@ -154,6 +155,10 @@ private:
     logstream();
 
     std::vector<std::string> popup_msgs;
+
+    class LogStreamPrivate;
+
+    std::unique_ptr<LogStreamPrivate> d;
 };
 
 logstream& sglog();

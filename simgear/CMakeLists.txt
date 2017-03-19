@@ -5,6 +5,7 @@ foreach( mylibfolder
         bucket
         bvh
         debug
+        embedded_resources
         ephemeris
         io
         magvar

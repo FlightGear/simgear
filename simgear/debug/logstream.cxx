@@ -612,39 +612,39 @@ void logstream::setStartupLoggingEnabled(bool enabled)
     d->setStartupLoggingEnabled(enabled);
 }
 
-namespace simgear
+void logstream::requestConsole()
 {
-
-void requestConsole()
-{ 
 #if defined (SG_WINDOWS)
-   /*
-    * 2016-09-20(RJH) - Reworked console handling
-    * This is part of the reworked console handling for Win32. This is for building as a Win32 GUI Subsystem where no
-    * console is allocated on launch. If building as a console app then the startup will ensure that a console is created - but
-    * we don't need to handle that.
-    * The new handling is quite simple:
-    *              1. The constructor will ensure that these streams exists. It will attach to the
-    *                 parent command prompt if started from the command prompt, otherwise the
-    *                 stdout/stderr will be bound to the NUL device.
-    *              2. with --console a window will always appear regardless of where the process was
-    *                 started from. Any non redirected streams will be redirected 
-    *              3. You cannot use --console and either redirected stream.
-    *
-    * This is called after the Private Log Stream constructor so we need to undo any console that it has attached to.
-    */
+    const bool stderrAlreadyRedirected = d->m_stderr_isRedirectedAlready;
+    const bool stdoutAlreadyRedirected = d->m_stdout_isRedirectedAlready;
 
-    if (!d->m_stderr_isRedirectedAlready && !d->m_stdout_isRedirectedAlready) {
+    /*
+     * 2016-09-20(RJH) - Reworked console handling
+     * This is part of the reworked console handling for Win32. This is for building as a Win32 GUI Subsystem where no
+     * console is allocated on launch. If building as a console app then the startup will ensure that a console is created - but
+     * we don't need to handle that.
+     * The new handling is quite simple:
+     *              1. The constructor will ensure that these streams exists. It will attach to the
+     *                 parent command prompt if started from the command prompt, otherwise the
+     *                 stdout/stderr will be bound to the NUL device.
+     *              2. with --console a window will always appear regardless of where the process was
+     *                 started from. Any non redirected streams will be redirected
+     *              3. You cannot use --console and either redirected stream.
+     *
+     * This is called after the Private Log Stream constructor so we need to undo any console that it has attached to.
+     */
+
+    if (!stderrAlreadyRedirected && !stdoutAlreadyRedirected) {
         FreeConsole();
         if (AllocConsole()) {
-            if (!d->m_stdout_isRedirectedAlready)
+            if (!stdoutAlreadyRedirected)
                 freopen("conout$", "w", stdout);
 
-            if (!d->m_stderr_isRedirectedAlready)
+            if (!stderrAlreadyRedirected)
                 freopen("conout$", "w", stderr);
 
             //http://stackoverflow.com/a/25927081
-            //Clear the error state for each of the C++ standard stream objects. 
+            //Clear the error state for each of the C++ standard stream objects.
             std::wcout.clear();
             std::cout.clear();
             std::wcerr.clear();
@@ -654,6 +654,15 @@ void requestConsole()
         MessageBox(0, "--console ignored because stdout or stderr redirected with > or 2>", "Simgear Error", MB_OK | MB_ICONERROR);
     }
 #endif
+}
+
+
+namespace simgear
+{
+
+void requestConsole()
+{ 
+    sglog().requestConsole();
 }
 
 

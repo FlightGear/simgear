@@ -77,6 +77,14 @@ public:
     ~logstream();
     
     static void initGlobalLogstream();
+
+    /**
+     * Helper force a console on platforms where it might optional, when
+     * we need to show a console. This basically means Windows at the
+     * moment - on other plaforms it's a no-op
+     */
+    void requestConsole();
+
     /**
      * Set the global log class and priority level.
      * @param c debug class

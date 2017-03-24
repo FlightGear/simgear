@@ -17,6 +17,7 @@ set(HEADERS
     strutils.hxx
     tabbed_values.hxx
     texcoord.hxx
+    test_macros.hxx
     )
 
 set(SOURCES

@@ -344,8 +344,8 @@ if (NOT ${HAVE_STD_ISNAN})
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(WARNING_FLAGS_CXX "-Wall")
-    set(WARNING_FLAGS_C   "-Wall")
+    set(WARNING_FLAGS_CXX "-Wall -fPIC")
+    set(WARNING_FLAGS_C   "-Wall -fPIC")
 
     if (CMAKE_VERSION VERSION_LESS 3.1)
        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -372,8 +372,8 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if (CLANG)
     # Boost redeclares class members
-    set(WARNING_FLAGS_CXX "-Wall -Wno-overloaded-virtual -Wno-redeclared-class-member")
-    set(WARNING_FLAGS_C   "-Wall")
+    set(WARNING_FLAGS_CXX "-Wall -fPIC -Wno-overloaded-virtual -Wno-redeclared-class-member")
+    set(WARNING_FLAGS_C   "-Wall -fPIC")
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
     # fix Boost compilation :(
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")

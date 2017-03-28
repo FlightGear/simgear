@@ -19,7 +19,8 @@
  *
  */
      
-     
+ #include <simgear_config.h>
+
 #include <simgear/scene/model/SGPickAnimation.hxx>
 
 #include <algorithm>

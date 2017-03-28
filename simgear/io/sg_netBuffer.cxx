@@ -23,6 +23,7 @@
      $Id: netBuffer.cxx 1568 2002-09-02 06:05:49Z sjbaker $
 */
 
+#include <simgear_config.h>
 #include "sg_netBuffer.hxx"
 
 #include <cassert>

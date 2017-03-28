@@ -1,3 +1,5 @@
+#include <simgear_config.h>
+
 #include <cstdlib>
 
 #include <simgear/misc/sg_path.hxx>

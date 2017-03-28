@@ -20,6 +20,7 @@
 //
 // $Id$
 
+#include <simgear_config.h>
 #include <simgear/compiler.h>
 #include <string>
 #include <ctype.h> // isspace()

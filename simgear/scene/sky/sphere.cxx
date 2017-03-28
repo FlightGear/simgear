@@ -21,6 +21,7 @@
 //
 // $Id$
 
+#include <simgear_config.h>
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>

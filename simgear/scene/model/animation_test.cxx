@@ -1,3 +1,4 @@
+#include <simgear_config.h>
 #include "animation.hxx"
 
 #include <cstring>

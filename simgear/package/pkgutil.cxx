@@ -15,6 +15,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#include <simgear_config.h>
+
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/package/Catalog.hxx>
 #include <simgear/package/Package.hxx>

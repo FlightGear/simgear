@@ -18,6 +18,8 @@
 // adapted from the freealut sources, especially alutBufferData.c, alutLoader.c
 // and alutCodec.c (freealut is also LGPL licensed)
 
+#include <simgear_config.h>
+
 #include "readwav.hxx"
 
 #include <cassert>

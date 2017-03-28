@@ -18,6 +18,7 @@
  * MA 02110-1301, USA.
  *
  */
+#include <simgear_config.h>
 #include "StateAttributeFactory.hxx"
 
 #include <osg/AlphaFunc>

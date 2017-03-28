@@ -2,6 +2,7 @@
 // Test harness.
 ////////////////////////////////////////////////////////////////////////
 
+#include <simgear_config.h>
 #include <simgear/compiler.h>
 
 #include <iostream>

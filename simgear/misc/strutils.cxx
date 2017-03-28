@@ -20,6 +20,8 @@
 //
 // $Id$
 
+#include <simgear_config.h>
+
 #include <ctype.h>
 #include <cstring>
 #include <sstream>

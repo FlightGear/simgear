@@ -1,3 +1,5 @@
+#include <simgear_config.h>
+
 #include <iostream>
 #include <cstdlib> // for EXIT_SUCCESS
 

@@ -1,3 +1,4 @@
+#include <simgear_config.h>
 
 #include <cstdio>
 #include <cstring>

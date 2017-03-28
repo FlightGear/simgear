@@ -1,3 +1,4 @@
+#include <simgear_config.h>
 #include <simgear/compiler.h>
 
 #include "parse_color.hxx"

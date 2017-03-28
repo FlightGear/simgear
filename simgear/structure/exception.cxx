@@ -4,7 +4,7 @@
 //
 // $Id$
 
-
+#include <simgear_config.h>
 #include "exception.hxx"
 
 #include <stdio.h>

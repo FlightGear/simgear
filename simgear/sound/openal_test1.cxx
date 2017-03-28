@@ -1,5 +1,8 @@
+#include <simgear_config.h>
+
 #include <stdio.h>
 #include <cstdlib> // EXIT_FAILURE
+#include <cassert>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -26,6 +29,7 @@
 #include <simgear/sound/readwav.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/structure/exception.hxx>
 
 static void print_openal_error( ALuint error ) {
     if ( error == AL_INVALID_NAME ) {
@@ -51,7 +55,7 @@ ALuint createBufferFromFile(const SGPath& path)
   unsigned int block_align;
   ALsizei size;
   ALfloat sampleFrequency;
-  ALvoid* data = loadWAVFromFile(path, format, size, sampleFrequency, block_align);
+  ALvoid* data = simgear::loadWAVFromFile(path, format, size, sampleFrequency, block_align);
   assert(data);
 
   alGenBuffers(1, &buffer);

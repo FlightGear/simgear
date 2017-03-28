@@ -22,7 +22,7 @@
  * $Id$
  **************************************************************************/
 
-
+#include <simgear_config.h>
 #include <string.h>
 
 #include <simgear/debug/logstream.hxx>

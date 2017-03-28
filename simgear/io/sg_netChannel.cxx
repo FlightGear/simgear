@@ -29,6 +29,7 @@
 // to write or something...]
 // Maybe assert valid handle, too?
 
+#include <simgear_config.h>
 #include "sg_netChannel.hxx"
 
 #include <memory>

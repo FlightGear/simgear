@@ -415,7 +415,12 @@ public:
   {
     // XXX I understand why we want this, but this seems like a weird
     // place to set this option.
+#if OSG_VERSION_LESS_THAN(3,5,4)
+      //RJH - see OSG 11ddd53eb46d15903d036b594bfa3826d9e89393 - 
+      //      Removed redundent Referenced::s/getThreadSafeReferenceCounting() and associated static and env vars 
+      //      as there are now inapprorpiate and no longer supported
     Referenced::setThreadSafeReferenceCounting(true);
+#endif
 
     Registry* registry = Registry::instance();
     Options* options = new Options;

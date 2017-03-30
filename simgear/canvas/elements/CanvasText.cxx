@@ -497,18 +497,31 @@ namespace canvas
               {
                 case LEFT_TO_RIGHT:
                 {
-                  osg::Vec2 delta( activefont->getKerning( previous_charcode,
-                                                           charcode,
-                                                           _kerningType ) );
+#if OSG_VERSION_LESS_THAN(3,5,2)
+                    osg::Vec2 delta(activefont->getKerning(previous_charcode,
+                        charcode,
+                        _kerningType));
+#else
+                    osg::Vec2 delta(activefont->getKerning(_fontSize,
+                        previous_charcode,
+                        charcode,
+                        _kerningType));
+#endif
                   cursor.x() += delta.x() * wr;
                   cursor.y() += delta.y() * hr;
                   break;
                 }
                 case RIGHT_TO_LEFT:
                 {
-                  osg::Vec2 delta( activefont->getKerning( charcode,
-                                                           previous_charcode,
-                                                           _kerningType ) );
+#if OSG_VERSION_LESS_THAN(3,5,2)
+                    osg::Vec2 delta(activefont->getKerning(charcode,
+                        previous_charcode,
+                        _kerningType));
+#else
+                    osg::Vec2 delta(activefont->getKerning(_fontSize, charcode,
+                        previous_charcode,
+                        _kerningType));
+#endif
                   cursor.x() -= delta.x() * wr;
                   cursor.y() -= delta.y() * hr;
                   break;

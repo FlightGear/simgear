@@ -1,4 +1,4 @@
-// ModelRegistry.hxx -- interface to the OSG model registry
+// ModelRegistry.cxx -- interface to the OSG model registry
 //
 // Copyright (C) 2005-2007 Mathias Froehlich
 // Copyright (C) 2007  Tim Moore <timoore@redhat.com>
@@ -35,6 +35,7 @@
 #include <osg/Switch>
 #include <osg/Material>
 #include <osg/MatrixTransform>
+#include <osg/Version>
 #include <osgDB/Archive>
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>

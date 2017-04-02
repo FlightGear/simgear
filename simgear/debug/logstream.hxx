@@ -118,6 +118,12 @@ public:
             const char* fileName, int line, const std::string& msg);
 
     /**
+    * output formatted hex dump of memory block
+    */
+    void hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, int columns = 16);
+
+
+    /**
      * support for the SG_POPUP logging class
      * set the content of the popup message
      */
@@ -187,8 +193,10 @@ logstream& sglog();
     } } while(0)
 #ifdef FG_NDEBUG
 # define SG_LOG(C,P,M)	do { if((P) == SG_POPUP) SG_LOGX(C,P,M) } while(0)
+# define SG_HEXDUMP(C,P,MEM,LEN)
 #else
 # define SG_LOG(C,P,M)	SG_LOGX(C,P,M)
+# define SG_LOG_HEXDUMP(C,P,MEM,LEN) if(sglog().would_log(C,P)) sglog().hexdump(C, P, __FILE__, __LINE__, MEM, LEN)
 #endif
 
 #define SG_ORIGIN __FILE__ ":" SG_STRINGIZE(__LINE__)

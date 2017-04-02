@@ -530,6 +530,61 @@ logstream::log( sgDebugClass c, sgDebugPriority p,
     d->log(c, p, fileName, line, msg);
 }
 
+
+void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, int columns)
+{
+    unsigned int i, j;
+    char temp[3000], temp1[3000];
+    *temp = 0;
+
+    for (i = 0; i < len + ((len % columns) ? (columns - len % columns) : 0); i++)
+    {
+        if (strlen(temp) > 500) return;
+        /* print offset */
+        if (i % columns == 0)
+        {
+            sprintf(temp1, "0x%06x: ", i);
+            strcat(temp, temp1);
+        }
+
+        /* print hex data */
+        if (i < len)
+        {
+            sprintf(temp1, "%02x ", 0xFF & ((char*)mem)[i]);
+            strcat(temp, temp1);
+        }
+        else /* end of block, just aligning for ASCII dump */
+        {
+            strcat(temp, "   ");
+        }
+
+        /* print ASCII dump */
+        if (i % columns == (columns - 1))
+        {
+            for (j = i - (columns - 1); j <= i; j++)
+            {
+                if (j >= len) /* end of block, not really printing */
+                {
+                    strcat(temp, " ");
+                }
+                else if (((((char*)mem)[j]) & (char)0x7f) > 32) /* printable char */
+                {
+                    char t2[2];
+                    t2[0] = 0xFF & ((char*)mem)[j];
+                    t2[1] = 0;
+                    strcat(temp, t2);
+                }
+                else /* other char */
+                {
+                    strcat(temp, ".");
+                }
+            }
+            log(c, p, fileName, line, temp );
+            *temp = 0;
+        }
+    }
+}
+
 void
 logstream::popup( const std::string& msg)
 {

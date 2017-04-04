@@ -99,12 +99,38 @@
             <name>C172 with skis</name>
             <description>A plane with skis</description>
 
+            <variant-of>c172p</variant-of>
+
             <preview>
               <type>exterior</type>
               <path>thumb-exterior-skis.png</path>
               <url>http://foo.bar.com/thumb-exterior-skis.png</url>
             </preview>
 
+            <preview>
+              <type>panel</type>
+              <path>thumb-panel.png</path>
+              <url>http://foo.bar.com/thumb-panel.png</url>
+            </preview>
+        </variant>
+
+        <variant>
+            <id>c172r</id>
+            <name>C172R</name>
+            <description>Equally good version of the C172</description>
+            <variant-of>_package_</variant-of>
+            <preview>
+              <type>panel</type>
+              <path>thumb-panel.png</path>
+              <url>http://foo.bar.com/thumb-panel.png</url>
+            </preview>
+        </variant>
+
+        <variant>
+            <id>c172r-floats</id>
+            <name>C172R-floats</name>
+            <description>Equally good version of the C172 with floats</description>
+            <variant-of>c172r</variant-of>
             <preview>
               <type>panel</type>
               <path>thumb-panel.png</path>

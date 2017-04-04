@@ -173,6 +173,8 @@ int parseTest()
     SG_CHECK_EQUAL(thumb.path, "exterior.png");
 
 // test variants
+    SG_CHECK_EQUAL(p2->parentIdForVariant(0), std::string());
+
     try {
         p2->indexOfVariant("fofofo");
         SG_TEST_FAIL("lookup of non-existant variant did not throw");
@@ -186,6 +188,8 @@ int parseTest()
     unsigned int skisVariant = p2->indexOfVariant("c172p-skis");
     SG_VERIFY(skisVariant > 0);
 
+    SG_CHECK_EQUAL(p2->parentIdForVariant(skisVariantFull), "c172p");
+
     SG_CHECK_EQUAL(skisVariant, skisVariantFull);
 
     SG_CHECK_EQUAL(p2->getLocalisedProp("description", skisVariant),
@@ -195,6 +199,7 @@ int parseTest()
 
     unsigned int floatsVariant = p2->indexOfVariant("c172p-floats");
     SG_VERIFY(floatsVariant > 0);
+    SG_CHECK_EQUAL(p2->parentIdForVariant(floatsVariant), "c172p");
 
     SG_CHECK_EQUAL(p2->getLocalisedProp("description", floatsVariant),
                    "A plane with floats");
@@ -214,6 +219,19 @@ int parseTest()
     const pkg::Package::Thumbnail& thumb2 = p2->thumbnailForVariant(floatsVariant);
     SG_CHECK_EQUAL(thumb2.url, "http://foo.bar.com/thumb-floats.png");
     SG_CHECK_EQUAL(thumb2.path, "thumb-floats.png");
+
+// test multiple primary
+    unsigned int rVariant = p2->indexOfVariant("c172r");
+    SG_VERIFY(rVariant > 0);
+
+    SG_CHECK_EQUAL(p2->parentIdForVariant(rVariant), std::string());
+
+    unsigned int rFloatVariant = p2->indexOfVariant("c172r-floats");
+    SG_VERIFY(rFloatVariant > 0);
+    SG_CHECK_EQUAL(p2->parentIdForVariant(rFloatVariant), std::string("c172r"));
+
+    string_list primaries = {"c172p", "c172r"};
+    SG_VERIFY(p2->primaryVariants() == primaries);
 
 // test filtering / searching too
     string_set tags(p2->tags());

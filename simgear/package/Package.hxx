@@ -62,14 +62,24 @@ public:
     existingInstall(const InstallCallback& cb = InstallCallback()) const;
 
     bool isInstalled() const;
-    
+
+    /**
+     * package ID
+     */
     std::string id() const;
 
     /**
-     * Variant IDs. Note the primary ID will always be included as 
-     * variants()[0], to simplify enumerating all variants
+     * Variant IDs
      */
     string_list variants() const;
+
+    /**
+     * All variants without a parent, i.e top-level variants in this package.
+     * Often this is a single-element list matching id() above, but when
+     * packages contain multiple primary aircraft, this will have multiple
+     * elements.
+     */
+    string_list primaryVariants() const;
 
     /**
      * Fully-qualified ID, including our catalog'd ID
@@ -89,6 +99,8 @@ public:
     /**
      * human-readable name - note this is probably not localised,
      * although this is not ruled out for the future.
+     * 
+     * Deprecated - please use nameForVariant
      */
     std::string name() const;
 
@@ -101,6 +113,9 @@ public:
 
     /**
      * syntactic sugar to get the localised description
+     *
+     * Deprecated - please use getLocalisedProp to get the variant-specific
+     * description.
      */
     std::string description() const;
     
@@ -182,6 +197,15 @@ public:
      * same as the primary ID, depending on the aircraft author
      */
     std::string dirName() const;
+
+    /**
+     * Return the parent variant of a variant. This will be the emtpy string if
+     * the variant is primary (top-level), otherwise the local (non-qualified)
+     * ID. This allows establishing a heirarchy of variants within the package.
+     * Note at present most code assumes a maxiumum two-level deep heirarchy
+     * (parents and children)
+     */
+    std::string parentIdForVariant(unsigned int variantIndex) const;
 private:
     SGPath pathOnDisk() const;
 

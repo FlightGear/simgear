@@ -291,7 +291,7 @@ string_list Package::downloadUrls() const
         return r;
     }
 
-    BOOST_FOREACH(SGPropertyNode* dl, m_props->getChildren("url")) {
+    for (auto dl : m_props->getChildren("url")) {
         r.push_back(dl->getStringValue());
     }
     return r;
@@ -412,7 +412,38 @@ SGPropertyNode_ptr Package::propsForVariant(const unsigned int vIndex, const cha
         return m_props;
     }
 
-    throw sg_exception("Unknow variant in package " + id());
+    throw sg_exception("Unknown variant in package " + id());
+}
+
+std::string Package::parentIdForVariant(unsigned int variantIndex) const
+{
+    const std::string parentId = propsForVariant(variantIndex)->getStringValue("variant-of");
+    if ((variantIndex == 0) || (parentId == "_package_")) {
+        return std::string();
+    }
+
+    if (parentId.empty()) {
+        // this is a variant without a variant-of, so assume its parent is
+        // the first primary
+        return m_variants.front();
+    }
+
+    assert(indexOfVariant(parentId) >= 0);
+    return parentId;
+}
+
+string_list Package::primaryVariants() const
+{
+    string_list result;
+    for (unsigned int v = 0; v < m_variants.size(); ++v) {
+        const auto pr = parentIdForVariant(v);
+        if (pr.empty()) {
+            result.push_back(m_variants.at(v));
+        }
+    }
+    assert(!result.empty());
+    assert(result.front() == id());
+    return result;
 }
 
 Package::Thumbnail Package::thumbnailForVariant(unsigned int vIndex) const

@@ -109,10 +109,13 @@
 #  define SG_UNIX
 #endif
 
-#if defined( __GNUC__ )
-#  define DEPRECATED __attribute__ ((deprecated))
+#ifdef __GNUC__
+#define SG_DEPRECATED(func) func __attribute__ ((deprecated))
+#elif defined(_MSC_VER)
+#define SG_DEPRECATED(func) __declspec(deprecated) func
 #else
-#  define DEPRECATED
+#pragma message("WARNING: You need to implement SG_DEPRECATED for this compiler")
+#define SG_DEPRECATED(func) func
 #endif
 
 #if defined(__clang__)

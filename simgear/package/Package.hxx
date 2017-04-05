@@ -32,7 +32,7 @@ typedef std::set<std::string> string_set;
 
 namespace simgear
 {
-    
+
 namespace pkg
 {
 
@@ -40,13 +40,13 @@ namespace pkg
 class Install;
 class Catalog;
 class Package;
-  
+
 typedef SGSharedPtr<Package> PackageRef;
 typedef SGSharedPtr<Catalog> CatalogRef;
 typedef SGSharedPtr<Install> InstallRef;
 
 typedef std::vector<PackageRef> PackageList;
-    
+
   class Package : public SGReferenced
 {
 public:
@@ -99,10 +99,10 @@ public:
     /**
      * human-readable name - note this is probably not localised,
      * although this is not ruled out for the future.
-     * 
+     *
      * Deprecated - please use nameForVariant
      */
-    std::string name() const;
+    SG_DEPRECATED(std::string name() const);
 
     /**
      * Human readable name of a variant
@@ -117,27 +117,27 @@ public:
      * Deprecated - please use getLocalisedProp to get the variant-specific
      * description.
      */
-    std::string description() const;
-    
+    SG_DEPRECATED(std::string description() const);
+
     /**
      * access the raw property data in the package
      */
     SGPropertyNode* properties() const;
-    
+
     /**
      * hex-encoded MD5 sum of the download files
      */
     std::string md5() const;
-    
+
     std::string getLocalisedProp(const std::string& aName, const unsigned int vIndex = 0) const;
 
     unsigned int revision() const;
-  
+
     size_t fileSizeBytes() const;
-  
+
     CatalogRef catalog() const
         { return m_catalog; }
-    
+
     bool matches(const SGPropertyNode* aFilter) const;
 
     string_set tags() const;
@@ -184,7 +184,7 @@ public:
      * retrieve all the thumbnails for a variant
      */
     PreviewVec previewsForVariant(unsigned int vIndex) const;
-    
+
     /**
      * Packages we depend upon.
      * If the dependency list cannot be satisifed for some reason,
@@ -211,9 +211,9 @@ private:
 
     friend class Catalog;
     friend class Root;
-    
+
     Package(const SGPropertyNode* aProps, CatalogRef aCatalog);
-    
+
     void initWithProps(const SGPropertyNode* aProps);
 
     void updateFromProps(const SGPropertyNode* aProps);
@@ -229,7 +229,7 @@ private:
     string_set m_tags;
     CatalogRef m_catalog;
     string_list m_variants;
-    
+
     mutable function_list<InstallCallback> _install_cb;
 };
 
@@ -241,4 +241,3 @@ private:
 } // of namespace simgear
 
 #endif // of SG_PACKAGE_PACKAGE_HXX
-

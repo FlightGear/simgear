@@ -285,16 +285,13 @@ struct ReaderWriterSTG::_ModelBin {
 
     void checkInsideBucket(const SGPath& absoluteFileName, float lon, float lat) {
         SGBucket bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
+        SGBucket correctBucket = SGBucket( SGGeod::fromDeg(lon, lat));
 
-        if ((lon > bucket.get_center_lon() + bucket.get_width()/2.0)  ||
-            (lon < bucket.get_center_lon() - bucket.get_width()/2.0)  ||
-            (lat > bucket.get_center_lat() + bucket.get_height()/2.0) ||
-            (lat < bucket.get_center_lat() - bucket.get_height()/2.0)    )
-        {
-          SG_LOG( SG_TERRAIN, SG_DEV_ALERT, absoluteFileName
-                  << ": Object outside tile bounds " << lon << ", " << lat <<
-                  "Center of tile: " << bucket.get_center_lon() << ", " <<
-                  bucket.get_center_lat());
+        if (bucket != correctBucket) {
+          SG_LOG( SG_TERRAIN, SG_DEV_WARN, absoluteFileName
+                  << ": Object at " << lon << ", " << lat <<
+                  " in incorrect bucket (" << bucket << ") - should be in " <<
+                  correctBucket.gen_index_str() << " (" << correctBucket << ")");
         }
     }
 
@@ -462,9 +459,6 @@ struct ReaderWriterSTG::_ModelBin {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                             << ": Unknown token '" << token << "'" );
                 }
-            } else {
-                SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
-                        << ": Unknown token '" << token << "'" );
             }
         }
 

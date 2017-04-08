@@ -7,6 +7,7 @@ set(HEADERS
     ResourceManager.hxx
     SimpleMarkdown.hxx
     SVGpreserveAspectRatio.hxx
+    argparse.hxx
     interpolator.hxx
     make_new.hxx
     sg_dir.hxx
@@ -25,6 +26,7 @@ set(SOURCES
     ResourceManager.cxx
     SimpleMarkdown.cxx
     SVGpreserveAspectRatio.cxx
+    argparse.cxx
     interpolator.cxx
     sg_dir.cxx
     sg_path.cxx
@@ -45,6 +47,10 @@ endif()
 simgear_component(misc misc "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
+
+add_executable(test_argparse argparse_test.cxx)
+target_link_libraries(test_argparse ${TEST_LIBS})
+add_test(argparse ${EXECUTABLE_OUTPUT_PATH}/test_argparse)
 
 add_executable(test_CSSBorder CSSBorder_test.cxx)
 add_test(CSSBorder ${EXECUTABLE_OUTPUT_PATH}/test_CSSBorder)

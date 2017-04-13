@@ -175,6 +175,32 @@ void test_md5_hex()
   SG_CHECK_EQUAL(strutils::md5("test"), "098f6bcd4621d373cade4e832627b4f6");
 }
 
+void test_propPathMatch()
+{
+    const char* testTemplate1 = "/sim[*]/views[*]/render";
+    SG_VERIFY(strutils::matchPropPathToTemplate("/sim[0]/views[50]/render-buildings[0]", testTemplate1));
+    SG_VERIFY(strutils::matchPropPathToTemplate("/sim[1]/views[0]/rendering-enabled", testTemplate1));
+
+    SG_VERIFY(!strutils::matchPropPathToTemplate("/sim[0]/views[50]/something-else", testTemplate1));
+    SG_VERIFY(!strutils::matchPropPathToTemplate("/sim[0]/gui[0]/wibble", testTemplate1));
+
+    // test explicit index matching
+    const char* testTemplate2 = "/view[5]/*";
+    SG_VERIFY(!strutils::matchPropPathToTemplate("/view[2]/render-buildings[0]", testTemplate2));
+    SG_VERIFY(!strutils::matchPropPathToTemplate("/sim[1]/foo", testTemplate2));
+    SG_VERIFY(!strutils::matchPropPathToTemplate("/view[50]/foo", testTemplate2));
+    SG_VERIFY(!strutils::matchPropPathToTemplate("/view[55]/foo", testTemplate2));
+
+    SG_VERIFY(strutils::matchPropPathToTemplate("/view[5]/foo", testTemplate2));
+    SG_VERIFY(strutils::matchPropPathToTemplate("/view[5]/child[3]/bar", testTemplate2));
+
+
+    const char* testTemplate3 = "/*[*]/fdm*[*]/aero*";
+
+    SG_VERIFY(strutils::matchPropPathToTemplate("/position[2]/fdm-jsb[0]/aerodynamic", testTemplate3));
+    SG_VERIFY(!strutils::matchPropPathToTemplate("/position[2]/foo[0]/aerodynamic", testTemplate3));
+}
+
 void test_error_string()
 {
 #if defined(_WIN32)
@@ -210,6 +236,7 @@ int main(int argc, char* argv[])
     test_compare_versions();
     test_md5_hex();
     test_error_string();
+    test_propPathMatch();
 
     return EXIT_SUCCESS;
 }

@@ -754,6 +754,81 @@ bool to_bool(const std::string& s)
     return false;
 }
 
+enum PropMatchState
+{
+    MATCH_LITERAL = 0,
+    MATCH_WILD_INDEX,
+    MATCH_WILD_NAME
+};
+
+bool matchPropPathToTemplate(const std::string& path, const std::string& templatePath)
+{
+    if (path.empty()) {
+        return false;
+    }
+
+    const char* pathPtr = path.c_str();
+    const char* tPtr = templatePath.c_str();
+    PropMatchState state = MATCH_LITERAL;
+
+    while (true) {
+        bool advanceInTemplate = true;
+        const char p = *pathPtr;
+        if (p == 0) {
+            // ran out of chars in the path. If we are matching a trailing
+            // wildcard, this is a match, otherwise it's a fail
+            if (state == MATCH_WILD_NAME) {
+                // check this is the last * in the template string
+                if (*(tPtr + 1) == 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        switch (state) {
+        case MATCH_LITERAL:
+            if (*tPtr != p) {
+                // literal mismatch
+                return false;
+            }
+            ++pathPtr;
+            break;
+        case MATCH_WILD_NAME:
+            if ((p == '-') || isalpha(p)) {
+                advanceInTemplate = false;
+                ++pathPtr;
+            } else {
+                // something else, we will advance in the template
+            }
+            break;
+        case MATCH_WILD_INDEX:
+            if (isdigit(p)) {
+                advanceInTemplate = false;
+                ++pathPtr;
+            } else {
+                // something else, we will advance in the template
+            }
+            break;
+        } // of state switch
+
+        if (advanceInTemplate) {
+            const char nextTemplate = *(++tPtr);
+            if (nextTemplate == 0) {
+                // end of template, successful match
+                return true;
+            } else if (nextTemplate == '*') {
+                state = (*(tPtr - 1) == '[') ? MATCH_WILD_INDEX : MATCH_WILD_NAME;
+            } else {
+                state = MATCH_LITERAL;
+            }
+        }
+    }
+
+    // unreachable
+}
+
 } // end namespace strutils
 
 } // end namespace simgear

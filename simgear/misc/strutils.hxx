@@ -265,6 +265,20 @@ namespace simgear {
      */
     std::string error_string(int errnum);
 
+
+      /**
+       * Match a property path, obtained from prop->getPath(), against a
+       * template string. Templates are allowed to contain widlcards denoted by
+       * an asterix in certain places - at the end of names, or inside indices.
+       * Note that paths returned by getPath() always include an index on every
+       * path component, so template strings should be structured accordingly.
+       *
+       * Examples: 
+       *   /foo[*]/bar* will match /foo/barber, /foo[2]/bargain
+       *   /views[0]/view[*]/f* will match /views[0]/view[99]/foo,
+       *      /views[0]/view[4]/fig, /views[0]/view[1000]/flight
+       */
+      bool matchPropPathToTemplate(const std::string& path, const std::string& templatePath);
   } // end namespace strutils
 } // end namespace simgear
 

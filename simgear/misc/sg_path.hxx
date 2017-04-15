@@ -52,8 +52,8 @@ class SGPath {
 
 public:
 
-    // OS-dependent separator used in paths lists
-    static const char pathListSep;
+    // OS-dependent separator used in paths lists (C-style string of length 1)
+    static const char pathListSep[2];
 
     struct Permissions
     {

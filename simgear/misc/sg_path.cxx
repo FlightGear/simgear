@@ -532,10 +532,11 @@ void SGPath::validate() const
 //------------------------------------------------------------------------------
 void SGPath::checkAccess() const
 {
-  if( _rwCached && _cacheEnabled )
+  if ( _rwCached && _cacheEnabled ) {
     return;
+  }
 
-    validate();
+  validate();
   _rwCached = true;
 }
 

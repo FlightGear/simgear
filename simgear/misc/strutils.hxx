@@ -31,6 +31,7 @@
 
 #include <string>
 #include <vector>
+#include <type_traits>
 #include <cstdlib>
 
 typedef std::vector < std::string > string_list;
@@ -169,6 +170,44 @@ namespace simgear {
      */
     int to_int(const std::string& s, int base = 10);
 
+   /** Convert a char to the integer it represents in the specified BASE.
+     *
+     * Contrary to std::isdigit() and std::isxdigit(), only the standard ASCII
+     * digits for BASE are accepted (with both uppercase and lowercase 'a'-'f'
+     * letters for base 16). Throw sg_range_exception if the char is not a
+     * valid digit for this base.
+     *
+     * See template specializations in strutils.cxx.
+     */
+    template<int BASE>
+    int digitValue(char c);
+
+    /** Return:
+     *   - std::string("decimal") if BASE is 10;
+     *   - std::string("hexadecimal") if BASE is 16.
+     *
+     * Template specializations in strutils.cxx.
+     */
+    template<int BASE>
+    std::string numerationBaseAdjective();
+
+    /** Convert a string representing an integer to an integral type.
+     *
+     * The input string must be non-empty and contain only digits of the
+     * specified BASE (template parameter). Throw:
+     *   - sg_format_exception if the input string doesn't respect these
+     *     constraints;
+     *   - sg_range_exception if the value can't be represented by type T
+     *     (i.e., if it is too large).
+     *
+     * Explicit template instantiations are added as needed in strutils.cxx.
+     * Have a look there and enable the ones you need!
+     */
+    template<
+        class T,
+        int BASE = 10,
+        typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
+    T readNonNegativeInt(const std::string& s);
 
     /**
      * Convert a string representing a boolean, to a bool.

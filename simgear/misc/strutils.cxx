@@ -22,12 +22,13 @@
 
 #include <simgear_config.h>
 
-#include <ctype.h>
-#include <cstring>
+#include <string>
 #include <sstream>
 #include <algorithm>
-#include <string.h>             // strerror_r() and strerror_s()
-#include <errno.h>
+#include <type_traits>
+#include <cstring>              // strerror_r() and strerror_s()
+#include <cctype>
+#include <cerrno>
 
 #if defined(HAVE_CPP11_CODECVT)
     #include <codecvt> // new in C++11
@@ -373,6 +374,173 @@ namespace simgear {
         ss >> result;
         return result;
     }
+
+    template<>
+    int digitValue<10>(char c)
+    {
+        if ('0' <= c && c <= '9') {
+            return static_cast<int>(c - '0');
+        } else {
+            throw sg_range_exception("invalid as a decimal digit: '" +
+                                     std::string(1, c) + "'");
+        }
+    }
+
+    template<>
+    int digitValue<16>(char c)
+    {
+        if ('0' <= c && c <= '9') {
+            return static_cast<int>(c - '0');
+        } else if ('a' <= c && c <= 'f') {
+            return 10 + static_cast<int>(c - 'a');
+        } else if ('A' <= c && c <= 'F') {
+            return 10 + static_cast<int>(c - 'A');
+        } else {
+            throw sg_range_exception("invalid as an hexadecimal digit: '" +
+                                     std::string(1, c) + "'");
+        }
+    }
+
+    template<>
+    std::string numerationBaseAdjective<10>()
+    { return std::string("decimal"); }
+
+    template<>
+    std::string numerationBaseAdjective<16>()
+    { return std::string("hexadecimal"); }
+
+    template<
+        class T,
+        int BASE = 10,
+        typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
+    T readNonNegativeInt(const std::string& s)
+    {
+        static_assert(0 < BASE,
+                      "template value BASE must be a positive integer");
+        static_assert(BASE <= std::numeric_limits<T>::max(),
+                      "template type T too small: it cannot represent BASE");
+        T res(0);
+        T multiplier(1);
+        T increment;
+        int digit;
+
+        if (s.empty()) {
+            throw sg_format_exception("expected a non-empty string", s);
+        }
+
+        for (auto it = s.crbegin(); it != s.crend(); it++) {
+            if (it != s.crbegin()) {
+                // Check if 'multiplier *= BASE' is going to overflow. This is
+                // reliable because 'multiplier' and 'BASE' are positive.
+                if (multiplier > std::numeric_limits<T>::max() / BASE) {
+                    // If all remaining digits are '0', it doesn't matter that
+                    // the multiplier overflows.
+                    if (std::all_of(it, s.crend(),
+                                    [](char c){ return (c == '0'); })) {
+                        return res;
+                    } else {
+                        throw sg_range_exception(
+                            "doesn't fit in the specified type: '" + s + "'");
+                    }
+                }
+                multiplier *= BASE;
+            }
+
+            try {
+                digit = digitValue<BASE>(*it);
+            } catch (const sg_range_exception&) {
+                throw sg_format_exception(
+                    "expected a string containing " +
+                    numerationBaseAdjective<BASE>() +
+                    " digits only, but got '" + s + "'", s);
+            }
+
+            // Reliable because 'multiplier' is positive
+            if (digit > 0 &&
+                multiplier > std::numeric_limits<T>::max() / digit) {
+                throw sg_range_exception(
+                    "doesn't fit in the specified type: '" + s + "'");
+            }
+            increment = multiplier*digit;
+
+            if (res > std::numeric_limits<T>::max() - increment) {
+                throw sg_range_exception(
+                    "doesn't fit in the specified type: '" + s + "'");
+            }
+            res += increment;
+        }
+
+        return res;
+    }
+
+    // Explicit template instantiations.
+    //
+    // In order to save some bytes for the SimGearCore library[*], we only
+    // instantiate a small number of variants of readNonNegativeInt() below.
+    // Just enable the ones you need if they are disabled.
+    //
+    // [*] The exact amount depends a lot on what you measure and in which
+    //     circumstances. On Linux amd64 with g++, I measured a cost ranging
+    //     from 2 KB per template in a Release build to 19 KB per template in
+    //     a RelWithDebInfo build for the in-memory code size of the resulting
+    //     fgfs binary (CODE column in 'top', after selecting a suitable
+    //     unit). If I look at the fgfs binary size (statically-linked with
+    //     SimGear), I measure from 2 KB per template (Release) to 30 KB per
+    //     template (RelWithDebInfo). Finally, a Debug build compiled with
+    //     '-fno-omit-frame-pointer -O0 -fno-inline' lies between the Release
+    //     and the RelWithDebInfo builds.
+
+#if 0
+    template
+    signed char readNonNegativeInt<signed char, 10>(const std::string& s);
+    template
+    signed char readNonNegativeInt<signed char, 16>(const std::string& s);
+    template
+    unsigned char readNonNegativeInt<unsigned char, 10>(const std::string& s);
+    template
+    unsigned char readNonNegativeInt<unsigned char, 16>(const std::string& s);
+
+    template
+    short readNonNegativeInt<short, 10>(const std::string& s);
+    template
+    short readNonNegativeInt<short, 16>(const std::string& s);
+    template
+    unsigned short readNonNegativeInt<unsigned short, 10>(const std::string& s);
+    template
+    unsigned short readNonNegativeInt<unsigned short, 16>(const std::string& s);
+#endif
+
+    template
+    int readNonNegativeInt<int, 10>(const std::string& s);
+    template
+    unsigned int readNonNegativeInt<unsigned int, 10>(const std::string& s);
+
+#if 0
+    template
+    int readNonNegativeInt<int, 16>(const std::string& s);
+    template
+    unsigned int readNonNegativeInt<unsigned int, 16>(const std::string& s);
+
+    template
+    long readNonNegativeInt<long, 10>(const std::string& s);
+    template
+    long readNonNegativeInt<long, 16>(const std::string& s);
+    template
+    unsigned long readNonNegativeInt<unsigned long, 10>(const std::string& s);
+    template
+    unsigned long readNonNegativeInt<unsigned long, 16>(const std::string& s);
+
+    template
+    long long readNonNegativeInt<long long, 10>(const std::string& s);
+    template
+    long long readNonNegativeInt<long long, 16>(const std::string& s);
+    template
+    unsigned long long readNonNegativeInt<unsigned long long, 10>(
+        const std::string& s);
+    template
+    unsigned long long readNonNegativeInt<unsigned long long, 16>(
+        const std::string& s);
+#endif
 
     int compare_versions(const string& v1, const string& v2, int maxComponents)
     {

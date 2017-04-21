@@ -212,8 +212,9 @@ public:
   // hyphens, can be used to cause all subsequent arguments to be treated as
   // non-option arguments, regardless of whether they start with a hyphen or
   // not. In the absence of this special argument, the first argument that is
-  // not the value of an option and does not start with a hyphen marks the end
-  // of options. All subsequent arguments are read as non-option arguments.
+  // not the value of an option and is either a single hyphen, or doesn't
+  // start with a hyphen, marks the end of options. This and all subsequent
+  // arguments are read as non-option arguments.
   //
   // Return a pair containing:
   //  - the list of supplied options (with their respective values, when

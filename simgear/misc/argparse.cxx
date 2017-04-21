@@ -24,6 +24,7 @@
 #include <memory>
 #include <utility>              // std::pair, std::move()
 #include <cstddef>              // std::size_t
+#include <cstring>              // std::strcmp()
 #include <cassert>
 
 #include <simgear/misc/strutils.hxx>
@@ -223,13 +224,14 @@ ArgumentParser::parseArgs(int argc, const char *const *argv) const
     }
 
     if (inOptions) {
-      if (currentArg[0] == '-') {
+      if (currentArg.size() >= 2 && currentArg[0] == '-') {
         if (currentArg[1] == '-') {
           i += readLongOption(argc, argv, currentArg, i+1, optsWithValues);
         } else {
           i += readShortOptions(argc, argv, currentArg, i+1, optsWithValues);
         }
-      } else {                  // the argument doesn't start with a '-'
+      } else {
+        // The argument is neither an option, nor a cluster of short options.
         inOptions = false;
         nonOptionArgs.push_back(currentArg);
       }
@@ -284,13 +286,15 @@ int ArgumentParser::readLongOption(int argc, const char *const *argv,
     case OptionArgType::OPTIONAL_ARGUMENT: // pass through
     case OptionArgType::MANDATORY_ARGUMENT:
       if (optEnd != string::npos) {
-        // The optional value is present as in the same command line
+        // The optional value is present in the same command line
         // argument as the option name (syntax '--option=value').
         optVal.setHasValue(true);
         optVal.setValue(s.substr(optEnd + 1));
         optsWithValues.push_back(std::move(optVal));
         return 0;
-      } else if (nextArgIdx < argc && argv[nextArgIdx][0] != '-') {
+      } else if (nextArgIdx < argc &&
+                 (argv[nextArgIdx][0] != '-' ||
+                  !std::strcmp(argv[nextArgIdx], "-"))) {
         // The optional value is present as a separate command line argument
         // (syntax '--option value').
         optVal.setHasValue(true);
@@ -358,7 +362,9 @@ int ArgumentParser::readShortOptions(int argc, const char *const *argv,
     optsWithValues.emplace_back(optDesc, string("-") + s[i], s.substr(i+1),
                                 true /* hasValue */);
     return 0;
-  } else if (nextArgIdx < argc && argv[nextArgIdx][0] != '-') {
+  } else if (nextArgIdx < argc &&
+             (argv[nextArgIdx][0] != '-' ||
+              !std::strcmp(argv[nextArgIdx], "-"))) {
     assert(i + 1 == s.size());
     // The option is at the end of 'currentArg' and has a value:
     // argv[nextArgIdx].

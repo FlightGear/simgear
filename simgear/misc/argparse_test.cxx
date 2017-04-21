@@ -202,6 +202,107 @@ void test_mixOfShortAndLongOptions()
                     "<-- came too late, treated as an arg"}));
 }
 
+void test_whenOptionValueIsASingleHyphen()
+{
+  cout << "Testing cases where a single hyphen is used as an option value" <<
+    endl;
+
+  using namespace simgear::argparse;
+  ArgumentParser parser;
+
+  parser.addOption("option -T", OptionArgType::NO_ARGUMENT, "-T", "--test");
+  parser.addOption("option -o", OptionArgType::OPTIONAL_ARGUMENT,
+                   "-o", "--with-opt-arg");
+  parser.addOption("option -m", OptionArgType::MANDATORY_ARGUMENT, "-m",
+                   "--with-mandatory-arg");
+
+  const vector<const char*> v({
+      "FoobarProg", "-To", "-", "-o-", "-oT", "-o", "-T", "-o", "-",
+        "--with-opt-arg=-", "--with-opt-arg", "-", "--with-opt-arg",
+        "-m-", "--with-mandatory-arg=-", "--with-mandatory-arg", "-", "-m", "-",
+        "non option 1", "non option 2", "non option 3"});
+  const auto res = parser.parseArgs(v.size(), &v[0]);
+  const auto& opts = res.first;
+  const auto& otherArgs = res.second;
+
+  SG_CHECK_EQUAL(opts.size(), 14);     // number of passed options
+  SG_CHECK_EQUAL(otherArgs.size(), 3); // number of non-option arguments
+
+  SG_CHECK_EQUAL(opts[0].passedAs(), "-T");
+  SG_CHECK_EQUAL(opts[0].value(), "");
+  SG_CHECK_EQUAL(opts[0].hasValue(), false);
+  SG_CHECK_EQUAL(opts[0].id(), "option -T");
+
+  SG_CHECK_EQUAL(opts[1].passedAs(), "-o");
+  SG_CHECK_EQUAL(opts[1].value(), "-");
+  SG_CHECK_EQUAL(opts[1].hasValue(), true);
+  SG_CHECK_EQUAL(opts[1].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[2].passedAs(), "-o");
+  SG_CHECK_EQUAL(opts[2].value(), "-");
+  SG_CHECK_EQUAL(opts[2].hasValue(), true);
+  SG_CHECK_EQUAL(opts[2].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[3].passedAs(), "-o");
+  SG_CHECK_EQUAL(opts[3].value(), "T");
+  SG_CHECK_EQUAL(opts[3].hasValue(), true);
+  SG_CHECK_EQUAL(opts[3].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[4].passedAs(), "-o");
+  SG_CHECK_EQUAL(opts[4].value(), "");
+  SG_CHECK_EQUAL(opts[4].hasValue(), false);
+  SG_CHECK_EQUAL(opts[4].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[5].passedAs(), "-T");
+  SG_CHECK_EQUAL(opts[5].value(), "");
+  SG_CHECK_EQUAL(opts[5].hasValue(), false);
+  SG_CHECK_EQUAL(opts[5].id(), "option -T");
+
+  SG_CHECK_EQUAL(opts[6].passedAs(), "-o");
+  SG_CHECK_EQUAL(opts[6].value(), "-");
+  SG_CHECK_EQUAL(opts[6].hasValue(), true);
+  SG_CHECK_EQUAL(opts[6].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[7].passedAs(), "--with-opt-arg");
+  SG_CHECK_EQUAL(opts[7].value(), "-");
+  SG_CHECK_EQUAL(opts[7].hasValue(), true);
+  SG_CHECK_EQUAL(opts[7].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[8].passedAs(), "--with-opt-arg");
+  SG_CHECK_EQUAL(opts[8].value(), "-");
+  SG_CHECK_EQUAL(opts[8].hasValue(), true);
+  SG_CHECK_EQUAL(opts[8].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[9].passedAs(), "--with-opt-arg");
+  SG_CHECK_EQUAL(opts[9].value(), "");
+  SG_CHECK_EQUAL(opts[9].hasValue(), false);
+  SG_CHECK_EQUAL(opts[9].id(), "option -o");
+
+  SG_CHECK_EQUAL(opts[10].passedAs(), "-m");
+  SG_CHECK_EQUAL(opts[10].value(), "-");
+  SG_CHECK_EQUAL(opts[10].hasValue(), true);
+  SG_CHECK_EQUAL(opts[10].id(), "option -m");
+
+  SG_CHECK_EQUAL(opts[11].passedAs(), "--with-mandatory-arg");
+  SG_CHECK_EQUAL(opts[11].value(), "-");
+  SG_CHECK_EQUAL(opts[11].hasValue(), true);
+  SG_CHECK_EQUAL(opts[11].id(), "option -m");
+
+  SG_CHECK_EQUAL(opts[12].passedAs(), "--with-mandatory-arg");
+  SG_CHECK_EQUAL(opts[12].value(), "-");
+  SG_CHECK_EQUAL(opts[12].hasValue(), true);
+  SG_CHECK_EQUAL(opts[12].id(), "option -m");
+
+  SG_CHECK_EQUAL(opts[13].passedAs(), "-m");
+  SG_CHECK_EQUAL(opts[13].value(), "-");
+  SG_CHECK_EQUAL(opts[13].hasValue(), true);
+  SG_CHECK_EQUAL(opts[13].id(), "option -m");
+
+  SG_CHECK_EQUAL_NOSTREAM(
+    otherArgs,
+    vector<string>({"non option 1", "non option 2", "non option 3"}));
+}
+
 void test_frontierBetweenOptionsAndNonOptions()
 {
   cout << "Testing around the frontier between options and non-options" << endl;
@@ -321,14 +422,44 @@ void test_frontierBetweenOptionsAndNonOptions()
     vector<string>({"doesn't look like an option", "non option 1",
                     "non option 2", "--", "non option 3"}));
 
-  // Test 8: no other argument than the program name in argv
-  const vector<const char*> v8({"FoobarProg"});
+  // Test 8: the argument marking the end of options is the empty string
+  const vector<const char*> v8({
+      "FoobarProg", "--long-option-without-arg", "-aval",
+      "", "non option 1", "non option 2", "-", "non option 3"});
   const auto res8 = parser.parseArgs(v8.size(), &v8[0]);
   const auto& opts8 = res8.first;
   const auto& otherArgs8 = res8.second;
 
-  SG_VERIFY(opts8.empty());
-  SG_VERIFY(otherArgs8.empty());
+  SG_CHECK_EQUAL(opts8.size(), 2);
+  SG_CHECK_EQUAL(otherArgs8.size(), 5);
+
+  SG_CHECK_EQUAL_NOSTREAM(
+    otherArgs8,
+    vector<string>({"", "non option 1", "non option 2", "-", "non option 3"}));
+
+  // Test 9: the argument marking the end of options is a single hyphen
+  const vector<const char*> v9({
+      "FoobarProg", "--long-option-without-arg", "-aval",
+        "-", "non option 1", "non option 2", "-", "non option 3"});
+  const auto res9 = parser.parseArgs(v9.size(), &v9[0]);
+  const auto& opts9 = res9.first;
+  const auto& otherArgs9 = res9.second;
+
+  SG_CHECK_EQUAL(opts9.size(), 2);
+  SG_CHECK_EQUAL(otherArgs9.size(), 5);
+
+  SG_CHECK_EQUAL_NOSTREAM(
+    otherArgs9,
+    vector<string>({"-", "non option 1", "non option 2", "-", "non option 3"}));
+
+  // Test 10: no other argument than the program name in argv
+  const vector<const char*> v10({"FoobarProg"});
+  const auto res10 = parser.parseArgs(v10.size(), &v10[0]);
+  const auto& opts10 = res10.first;
+  const auto& otherArgs10 = res10.second;
+
+  SG_VERIFY(opts10.empty());
+  SG_VERIFY(otherArgs10.empty());
 }
 
 void test_optionsWithMultipleAliases()
@@ -480,6 +611,7 @@ void test_invalidOptionOrMissingArgument()
 int main(int argc, const char *const *argv)
 {
   test_mixOfShortAndLongOptions();
+  test_whenOptionValueIsASingleHyphen();
   test_frontierBetweenOptionsAndNonOptions();
   test_optionsWithMultipleAliases();
   test_invalidOptionOrMissingArgument();

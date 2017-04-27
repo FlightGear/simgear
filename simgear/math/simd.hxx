@@ -341,18 +341,16 @@ private:
     };
 
 public:
-    simd4_t(void) : simd4(_mm_setzero_ps()) {}
-    simd4_t(float f) {}
+    simd4_t(void) { simd4 = _mm_setzero_ps(); }
+    simd4_t(float f) { simd4 = _mm_set1_ps(f); }
     simd4_t(float x, float y) : simd4_t(x,y,0,0) {}
     simd4_t(float x, float y, float z) : simd4_t(x,y,z,0) {}
-    simd4_t(float x, float y, float z, float w) {}
-    simd4_t(const __vec4f_t v) {}
-    simd4_t(const simd4_t<float,4>& v) {}
-    simd4_t(const simd4_t<float,3>& v) {}
-    simd4_t(const simd4_t<float,2>& v) {}
-    simd4_t(const __m128& v) {
-        simd4 = v;
-    }
+    simd4_t(float x, float y, float z, float w) { simd4 = _mm_set_ps(w,z,y,x); }
+    simd4_t(const __vec4f_t v) { simd4 = _mm_loadu_ps(v); }
+    simd4_t(const simd4_t<float,4>& v) { simd4 = v.v4(); }
+    simd4_t(const simd4_t<float,3>& v) { simd4 = v.v4(); }
+    simd4_t(const simd4_t<float,2>& v) { simd4 = v.v4(); }
+    simd4_t(const __m128& v) { simd4 = v; }
 
     inline const __m128 (&v4(void) const) {
         return simd4;
@@ -583,18 +581,18 @@ private:
     };
 
 public:
-    simd4_t(void) : simd4(_mm256_setzero_pd()) {}
-    simd4_t(double d) {}
+    simd4_t(void) { simd4 = _mm256_setzero_pd(); }
+    simd4_t(double d) { simd4 = _mm256_set1_pd(d); }
     simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
     simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
-    simd4_t(double x, double y, double z, double w) {}
-    simd4_t(const __vec4d_t v) {}
-    simd4_t(const simd4_t<double,4>& v) {}
-    simd4_t(const simd4_t<double,3>& v) {}
-    simd4_t(const simd4_t<double,2>& v) {}
-    simd4_t(const __m256d& v) {
-        simd4 = v;
+    simd4_t(double x, double y, double z, double w) {
+        simd4 = _mm256_set_pd(w,z,y,x);
     }
+    simd4_t(const __vec4d_t v) { simd4 = _mm256_loadu_pd(v); }
+    simd4_t(const simd4_t<double,4>& v) { simd4 = v.v4(); }
+    simd4_t(const simd4_t<double,3>& v) { simd4 = v.v4(); }
+    simd4_t(const simd4_t<double,2>& v) { simd4 = v.v4(); }
+    simd4_t(const __m256d& v) { simd4 = v; }
 
     inline const __m256d (&v4(void) const) {
         return simd4;
@@ -819,14 +817,24 @@ private:
 
 public:
     simd4_t(void) { simd4[0] = simd4[1] = _mm_setzero_pd(); }
-    simd4_t(double d) {}
+    simd4_t(double d) { simd4[0] = simd4[1] = _mm_set1_pd(d); }
     simd4_t(double x, double y) : simd4_t(x,y,0,0) {}
     simd4_t(double x, double y, double z) : simd4_t(x,y,z,0) {}
-    simd4_t(double x, double y, double z, double w) {}
-    simd4_t(const __vec4d_t v) {}
-    simd4_t(const simd4_t<double,4>& v) {}
-    simd4_t(const simd4_t<double,3>& v) {}
-    simd4_t(const simd4_t<double,2>& v) {}
+    simd4_t(double x, double y, double z, double w) {
+        simd4[0] = _mm_set_pd(y,x); simd4[1] = _mm_set_pd(w,z);
+    }
+    simd4_t(const __vec4d_t v) {
+        simd4[0] = _mm_loadu_pd(v); simd4[1] = _mm_loadu_pd(v+2);
+    }
+    simd4_t(const simd4_t<double,4>& v) {
+        simd4[0] = v.v4()[0]; simd4[1] = v.v4()[1];
+    }
+    simd4_t(const simd4_t<double,3>& v) {
+        simd4[0] = v.v4()[0]; simd4[1] = v.v4()[1];
+    }
+    simd4_t(const simd4_t<double,2>& v) {
+        simd4[0] = v.v4()[0]; simd4[1] = _mm_setzero_pd();
+    }
     simd4_t(const __m128d v[2]) {
         simd4[0] = v[0];
         simd4[1] = v[1];
@@ -1101,18 +1109,16 @@ private:
     };
 
 public:
-    simd4_t(void) : simd4(_mm_setzero_si128()) {}
-    simd4_t(int i) {}
+    simd4_t(void) { simd4 = _mm_setzero_si128(); }
+    simd4_t(int i) { simd4 = _mm_set1_epi32(i); }
     simd4_t(int x, int y) : simd4_t(x,y,0,0) {}
     simd4_t(int x, int y, int z) : simd4_t(x,y,z,0) {}
-    simd4_t(int x, int y, int z, int w) {}
-    simd4_t(const __vec4i_t v) {}
-    simd4_t(const simd4_t<int,4>& v) {}
-    simd4_t(const simd4_t<int,3>& v) {}
-    simd4_t(const simd4_t<int,2>& v) {}
-    simd4_t(const __m128i& v) {
-        simd4 = v;
-    }
+    simd4_t(int x, int y, int z, int w) { simd4 = _mm_set_epi32(w,z,y,x); }
+    simd4_t(const __vec4i_t v) { simd4 = _mm_loadu_si128((const __m128i*)v); }
+    simd4_t(const simd4_t<int,4>& v) { simd4 = v.v4(); }
+    simd4_t(const simd4_t<int,3>& v) { simd4 = v.v4(); }
+    simd4_t(const simd4_t<int,2>& v) { simd4 = v.v4(); }
+    simd4_t(const __m128i& v) { simd4 = v; }
 
     inline __m128i (&v4(void)) {
         return simd4;

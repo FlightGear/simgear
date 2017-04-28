@@ -230,13 +230,27 @@ namespace simgear {
      * malformed
      */
       void decodeBase64(const std::string& a, std::vector<unsigned char>& output);
-    
+
     /**
      * convert bytes to hexadecimal equivalent
      */
     std::string encodeHex(const std::string& bytes);
-    
+
     std::string encodeHex(const unsigned char* rawBytes, unsigned int length);
+
+    /**
+     * Backslash-escape a string for C/C++ string literal syntax.
+     *
+     * @param s Input string.
+     * @return a copy of the input string with proper escaping, so that if the
+     *         result is part of a C or C++ file and enclosed in double
+     *         quotes, it can be used to represent a string literal that is
+     *         equal to the input string.
+     *
+     * @note For every std::string s: unescape(escape(s)) == s
+     * @see unescape()
+     */
+    std::string escape(const std::string& s);
 
     /**
      * Unescape string.
@@ -244,12 +258,15 @@ namespace simgear {
      * @param str String possibly containing escaped characters.
      * @return string with escaped characters replaced by single character
      *         values.
+     *
+     * @note For every std::string s: unescape(escape(s)) == s
+     * @see escape()
      */
     std::string unescape(const char* str);
 
     inline std::string unescape(const std::string& str)
     { return unescape(str.c_str()); }
-      
+
       /**
        * Check a printf-style format string for dangerous (buffer-overflowing,
        * memory re-writing) format tokens. If a problematic token is

@@ -1,15 +1,20 @@
+// -*- coding: utf-8 -*-
+//
 // Unit tests for functions inside the strutils package
 
-#include <errno.h>
-#include <stdlib.h>             // _set_errno() on Windows
 #include <string>
+#include <vector>
+#include <utility>              // std::move()
 #include <fstream>              // std::ifstream
+#include <cerrno>
+#include <cstdlib>              // _set_errno() on Windows
 
 #include <simgear/misc/test_macros.hxx>
 #include <simgear/compiler.h>
 #include <simgear/misc/strutils.hxx>
 
 using std::string;
+using std::vector;
 
 namespace strutils = simgear::strutils;
 
@@ -139,6 +144,40 @@ void test_split()
     }
 }
 
+void test_escape()
+{
+  SG_CHECK_EQUAL(strutils::escape(""), "");
+  SG_CHECK_EQUAL(strutils::escape("\\"), "\\\\");
+  SG_CHECK_EQUAL(strutils::escape("\""), "\\\"");
+  SG_CHECK_EQUAL(strutils::escape("\\n"), "\\\\n");
+  SG_CHECK_EQUAL(strutils::escape("n\\"), "n\\\\");
+  SG_CHECK_EQUAL(strutils::escape(" ab\nc \\def\t\r \\ ghi\\"),
+                 " ab\\nc \\\\def\\t\\r \\\\ ghi\\\\");
+  // U+0152 is LATIN CAPITAL LIGATURE OE. The last word is Egg translated in
+  // French and encoded in UTF-8 ('Œuf' if you can read UTF-8).
+  SG_CHECK_EQUAL(strutils::escape("Un \"Bel\" '\u0152uf'"),
+                 "Un \\\"Bel\\\" '\\305\\222uf'");
+  SG_CHECK_EQUAL(strutils::escape("\a\b\f\n\r\t\v"),
+                 "\\a\\b\\f\\n\\r\\t\\v");
+
+  // Test with non-printable characters
+  //
+  // - 'prefix' is an std::string that *contains* a NUL character.
+  // - \012 is \n (LINE FEED).
+  // - \037 (\x1F) is the last non-printable ASCII character before \040 (\x20),
+  //   which is the space.
+  // - \176 (\x7E) is '~', the last printable ASCII character.
+  // - \377 is \xFF. Higher char values (> 255) are not faithfully encoded by
+  //   strutils::escape(): only the lowest 8 bits are used; higher-order bits
+  //   are ignored (for people who use chars with more than 8 bits...).
+  const string prefix = string("abc") + '\000';
+  SG_CHECK_EQUAL(strutils::escape(prefix +
+                                  "\003def\012\037\040\176\177\376\377"),
+                 "abc\\000\\003def\\n\\037 ~\\177\\376\\377");
+
+  SG_CHECK_EQUAL(strutils::escape(" \n\tAOa"), " \\n\\tAOa");
+}
+
 void test_unescape()
 {
   SG_CHECK_EQUAL(strutils::unescape("\\ \\n\\t\\x41\\117a"), " \n\tAOa");
@@ -149,6 +188,28 @@ void test_unescape()
   SG_CHECK_EQUAL(strutils::unescape("\\x00020|"), " |");
   SG_CHECK_EQUAL(strutils::unescape("\\xA"), "\n");
   SG_CHECK_EQUAL(strutils::unescape("\\xA-"), "\n-");
+}
+
+void aux_escapeAndUnescapeRoundTripTest(const string& testString)
+{
+  SG_CHECK_EQUAL(strutils::unescape(strutils::escape(testString)), testString);
+}
+
+void test_escapeAndUnescapeRoundTrips()
+{
+  // "\0332" contains two chars: '\033' (ESC) followed by '2'.
+  // Ditto for "\0402": it's a space ('\040') followed by a '2'.
+  vector<string> stringsToTest(
+    {"", "\\", "\n", "\\\\", "\"\'\?\t\rAG\v\a \b\f\\", "\x23\xf8",
+     "\0332", "\0402", "\uab42", "\U12345678"});
+
+  const string withBinary = (string("abc") + '\000' +
+                             "\003def\012\037\040\176\177\376\377");
+  stringsToTest.push_back(std::move(withBinary));
+
+  for (const string& s: stringsToTest) {
+    aux_escapeAndUnescapeRoundTripTest(s);
+  }
 }
 
 void test_compare_versions()
@@ -239,7 +300,9 @@ int main(int argc, char* argv[])
     test_simplify();
     test_to_int();
     test_split();
+    test_escape();
     test_unescape();
+    test_escapeAndUnescapeRoundTrips();
     test_compare_versions();
     test_md5_hex();
     test_error_string();

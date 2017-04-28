@@ -632,6 +632,59 @@ std::string encodeHex(const unsigned char* rawBytes, unsigned int length)
   return hex;
 }
 
+// Write an octal backslash-escaped respresentation of 'val' to 'buf'.
+//
+// At least 4 write positions must be available at 'buf'. The result is *not*
+// null-terminated. Only the 8 least significant bits of 'val' are used;
+// higher-order bits have no influence on the chars written to 'buf'.
+static void writeOctalBackslashEscapedRepr(char *buf, unsigned char val)
+{
+  buf[0] = '\\';
+  buf[1] = '0' + ((val >> 6) & 3); // 2 bits
+  buf[2] = '0' + ((val >> 3) & 7); // 3 bits
+  buf[3] = '0' + (val & 7);        // 3 bits
+}
+
+// Backslash-escape a string for C/C++ string literal syntax.
+std::string escape(const std::string& s) {
+  string res;
+  char buf[4];
+
+  for (const char c: s) {
+    // We don't really *need* to special-case \a, \b, \f, \n, \r, \t and \v,
+    // because they could be handled like the other non-ASCII or non-printable
+    // characters. However, doing so will make the output string both shorter
+    // and more readable.
+    if (c == '\a') {
+      res += "\\a";
+    } else if (c == '\b') {
+      res += "\\b";
+    } else if (c == '\f') {
+      res += "\\f";
+    } else if (c == '\n') {
+      res += "\\n";
+    } else if (c == '\r') {
+      res += "\\r";
+    } else if (c == '\t') {
+      res += "\\t";
+    } else if (c == '\v') {
+      res += "\\v";
+    } else if (c < 0x20 || c > 0x7e) { // non-ASCII or non-printable character
+      // This is fast (no memory allocation nor IOStreams needed)
+      writeOctalBackslashEscapedRepr(buf, static_cast<unsigned char>(c));
+      res.append(buf, 4);
+    } else if (c == '\\') {
+      res += "\\\\";
+    } else if (c == '"') {
+      res += "\\\"";
+    } else {
+      res += c;
+    }
+  }
+
+  return res;
+}
+
 //------------------------------------------------------------------------------
 std::string unescape(const char* s)
 {

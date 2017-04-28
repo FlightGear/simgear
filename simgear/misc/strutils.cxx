@@ -667,8 +667,9 @@ std::string unescape(const char* s)
         if (!*++s)
             break;
         int v = 0;
-        for (int i = 0; i < 2 && isxdigit(*s); i++, s++)
+        for (/* empty */; isxdigit(*s); s++) {
             v = v * 16 + (isdigit(*s) ? *s - '0' : 10 + tolower(*s) - 'a');
+        }
         r += v;
         continue;
 

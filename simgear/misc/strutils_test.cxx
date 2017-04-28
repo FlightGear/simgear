@@ -144,6 +144,11 @@ void test_unescape()
   SG_CHECK_EQUAL(strutils::unescape("\\ \\n\\t\\x41\\117a"), " \n\tAOa");
   // Two chars: '\033' (ESC) followed by '2'
   SG_CHECK_EQUAL(strutils::unescape("\\0332"), "\0332");
+  // Hex escapes have no length limit and terminate at the first character
+  // that is not a valid hexadecimal digit.
+  SG_CHECK_EQUAL(strutils::unescape("\\x00020|"), " |");
+  SG_CHECK_EQUAL(strutils::unescape("\\xA"), "\n");
+  SG_CHECK_EQUAL(strutils::unescape("\\xA-"), "\n-");
 }
 
 void test_compare_versions()

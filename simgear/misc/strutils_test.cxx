@@ -142,6 +142,8 @@ void test_split()
 void test_unescape()
 {
   SG_CHECK_EQUAL(strutils::unescape("\\ \\n\\t\\x41\\117a"), " \n\tAOa");
+  // Two chars: '\033' (ESC) followed by '2'
+  SG_CHECK_EQUAL(strutils::unescape("\\0332"), "\0332");
 }
 
 void test_compare_versions()

@@ -674,7 +674,7 @@ std::string unescape(const char* s)
 
     } else if (*s >= '0' && *s <= '7') {
         int v = *s++ - '0';
-        for (int i = 0; i < 3 && *s >= '0' && *s <= '7'; i++, s++)
+        for (int i = 0; i < 2 && *s >= '0' && *s <= '7'; i++, s++)
             v = v * 8 + *s - '0';
         r += v;
         continue;

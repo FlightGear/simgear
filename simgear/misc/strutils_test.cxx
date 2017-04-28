@@ -201,7 +201,7 @@ void test_escapeAndUnescapeRoundTrips()
   // Ditto for "\0402": it's a space ('\040') followed by a '2'.
   vector<string> stringsToTest(
     {"", "\\", "\n", "\\\\", "\"\'\?\t\rAG\v\a \b\f\\", "\x23\xf8",
-     "\0332", "\0402", "\uab42", "\U12345678"});
+     "\0332", "\0402", "\u00e0", "\U000000E9"});
 
   const string withBinary = (string("abc") + '\000' +
                              "\003def\012\037\040\176\177\376\377");

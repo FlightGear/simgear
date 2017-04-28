@@ -670,14 +670,14 @@ std::string unescape(const char* s)
         for (/* empty */; isxdigit(*s); s++) {
             v = v * 16 + (isdigit(*s) ? *s - '0' : 10 + tolower(*s) - 'a');
         }
-        r += v;
+        r += static_cast<char>(v);
         continue;
 
     } else if (*s >= '0' && *s <= '7') {
         int v = *s++ - '0';
         for (int i = 0; i < 2 && *s >= '0' && *s <= '7'; i++, s++)
             v = v * 8 + *s - '0';
-        r += v;
+        r += static_cast<char>(v);
         continue;
 
     } else {

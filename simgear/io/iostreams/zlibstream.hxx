@@ -161,7 +161,7 @@ public:
 
   ZlibAbstractIStreambuf(const ZlibAbstractIStreambuf&) = delete;
   ZlibAbstractIStreambuf& operator=(const ZlibAbstractIStreambuf&) = delete;
-  ~ZlibAbstractIStreambuf();
+  virtual ~ZlibAbstractIStreambuf();
 
 protected:
   enum class OperationType {
@@ -194,12 +194,12 @@ protected:
 private:
   // Callback whose role is to refill the output buffer when it's empty and
   // the “client” tries to read more.
-  int underflow() override;
+  virtual int underflow() override;
   // Optional override when subclassing std::streambuf. This is the most
   // efficient way of reading several characters (as soon as we've emptied the
   // output buffer, data is written by zlib directly to the destination
   // buffer).
-  std::streamsize xsgetn(char* dest, std::streamsize n) override;
+  virtual std::streamsize xsgetn(char* dest, std::streamsize n) override;
   // Utility method for xsgetn()
   std::size_t xsgetn_preparePutbackArea(char* origGptr, char* dest,
                                         char* writePtr);
@@ -321,15 +321,15 @@ public:
 
   ZlibCompressorIStreambuf(const ZlibCompressorIStreambuf&) = delete;
   ZlibCompressorIStreambuf& operator=(const ZlibCompressorIStreambuf&) = delete;
-  ~ZlibCompressorIStreambuf();
+  virtual ~ZlibCompressorIStreambuf();
 
 protected:
-  OperationType operationType() const override;
+  virtual OperationType operationType() const override;
   // Initialize the z_stream struct used by zlib
   void zStreamInit(int compressionLevel, ZLibCompressionFormat format,
                    ZLibMemoryStrategy memStrategy);
   // Call zlib's deflate() function to compress data.
-  int zlibProcessData() override;
+  virtual int zlibProcessData() override;
 };
 
 
@@ -371,12 +371,12 @@ public:
   ZlibDecompressorIStreambuf(const ZlibDecompressorIStreambuf&) = delete;
   ZlibDecompressorIStreambuf& operator=(const ZlibDecompressorIStreambuf&)
                                                                       = delete;
-  ~ZlibDecompressorIStreambuf();
+  virtual ~ZlibDecompressorIStreambuf();
 
 protected:
-  OperationType operationType() const override;
+  virtual OperationType operationType() const override;
   void zStreamInit(ZLibCompressionFormat format);
-  int zlibProcessData() override;
+  virtual int zlibProcessData() override;
 };
 
 // std::istream subclass for compressing data. Input data is obtained from an
@@ -421,7 +421,7 @@ public:
 
   ZlibCompressorIStream(const ZlibCompressorIStream&) = delete;
   ZlibCompressorIStream& operator=(const ZlibCompressorIStream&) = delete;
-  ~ZlibCompressorIStream();
+  virtual ~ZlibCompressorIStream();
 
 private:
   ZlibCompressorIStreambuf _streamBuf;
@@ -465,7 +465,7 @@ public:
 
   ZlibDecompressorIStream(const ZlibDecompressorIStream&) = delete;
   ZlibDecompressorIStream& operator=(const ZlibDecompressorIStream&) = delete;
-  ~ZlibDecompressorIStream();
+  virtual ~ZlibDecompressorIStream();
 
 private:
   ZlibDecompressorIStreambuf _streamBuf;

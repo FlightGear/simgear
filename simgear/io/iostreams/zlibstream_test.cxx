@@ -35,6 +35,8 @@
 #include <cstddef>              // std::size_t
 #include <cstring>              // strcmp()
 
+#include <zlib.h>               // Z_BEST_COMPRESSION
+
 #include <simgear/misc/test_macros.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/io/iostreams/zlibstream.hxx>
@@ -195,9 +197,9 @@ void test_StreambufBasicOperations()
   static constexpr std::size_t compOutBufSize = 4;
   static constexpr std::size_t compPutbackSize = 0;
   simgear::ZlibCompressorIStreambuf compSBuf(
-    text_ss, SGPath(), 8, simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
-    simgear::ZLIB_FAVOR_SPEED_OVER_MEMORY, nullptr, compInBufSize, nullptr,
-    compOutBufSize, compPutbackSize);
+    text_ss, SGPath(), 8, simgear::ZLibCompressionFormat::ZLIB,
+    simgear::ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY,
+    nullptr, compInBufSize, nullptr, compOutBufSize, compPutbackSize);
   std::stringstream compressedOutput_ss;
   compressedOutput_ss << &compSBuf;
 
@@ -205,7 +207,7 @@ void test_StreambufBasicOperations()
   static constexpr std::size_t decompOutBufSize = 4;
   static constexpr std::size_t decompPutbackSize = 2;
   simgear::ZlibDecompressorIStreambuf decompSBuf(
-    compressedOutput_ss, SGPath(), simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
+    compressedOutput_ss, SGPath(), simgear::ZLibCompressionFormat::ZLIB,
     nullptr, decompInBufSize, nullptr, decompOutBufSize, decompPutbackSize);
 
   int ch = decompSBuf.sgetc();
@@ -303,8 +305,8 @@ void test_ZlibDecompressorIStreambuf_readLargestPossibleAmount()
     input_ss,                   // input stream
     SGPath(),                   // this stream is not associated to a file
     9,                          // compression level
-    simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
-    simgear::ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    simgear::ZLibCompressionFormat::ZLIB,
+    simgear::ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY,
     nullptr,                    // dynamically allocate the input buffer
     230,                        // input buffer size
     nullptr,                    // dynamically allocate the output buffer
@@ -315,7 +317,7 @@ void test_ZlibDecompressorIStreambuf_readLargestPossibleAmount()
   // Decompressor stream buffer (std::streambuf subclass) that gets input data
   // from our compressor 'compIStream' (std::istream subclass)
   simgear::ZlibDecompressorIStreambuf decompSBuf(
-    compIStream, SGPath(), simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
+    compIStream, SGPath(), simgear::ZLibCompressionFormat::ZLIB,
     nullptr, 150, nullptr, 175, 2);
 
   std::unique_ptr<char[]> buf(new char[maxDataSize]);
@@ -351,12 +353,12 @@ void test_formattedInputFromDecompressor()
   static char inBuf[6];
   static char outBuf[15];
   string compressed = compress(
-    lipsum, simgear::ZLIB_COMPRESSION_FORMAT_ZLIB, Z_BEST_COMPRESSION,
-    simgear::ZLIB_FAVOR_MEMORY_OVER_SPEED, /* putback size */ 0);
+    lipsum, simgear::ZLibCompressionFormat::ZLIB, Z_BEST_COMPRESSION,
+    simgear::ZLibMemoryStrategy::FAVOR_MEMORY_OVER_SPEED, /* putback size */ 0);
   std::istringstream compressed_ss(compressed);
 
   simgear::ZlibDecompressorIStream decompressor(
-    compressed_ss, SGPath(), simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
+    compressed_ss, SGPath(), simgear::ZLibCompressionFormat::ZLIB,
     inBuf, sizeof(inBuf), outBuf, sizeof(outBuf), /* putback size */ 1);
   decompressor.exceptions(std::ios_base::badbit); // throw if badbit is set
 
@@ -395,15 +397,15 @@ void test_ZlibDecompressorIStream_readPutbackEtc()
 
   simgear::ZlibCompressorIStream compressor(
     text_ss, SGPath(), Z_BEST_COMPRESSION,
-    simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
-    simgear::ZLIB_FAVOR_MEMORY_OVER_SPEED,
+    simgear::ZLibCompressionFormat::ZLIB,
+    simgear::ZLibMemoryStrategy::FAVOR_MEMORY_OVER_SPEED,
     compInBuf, sizeof(compInBuf), compOutBuf, sizeof(compOutBuf),
     /* putback size */ 0);
   compressor.exceptions(std::ios_base::badbit); // throw if badbit is set
 
   // Use the compressor (subclass of std::istream) as input to the decompressor
   simgear::ZlibDecompressorIStream decompressor(
-    compressor, SGPath(), simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
+    compressor, SGPath(), simgear::ZLibCompressionFormat::ZLIB,
     decompInBuf, sizeof(decompInBuf), decompOutBuf, sizeof(decompOutBuf),
     /* putback size */ 3);
   decompressor.exceptions(std::ios_base::badbit);
@@ -528,7 +530,7 @@ void roundTripWithIStreams(
 {
   const simgear::ZLibCompressionFormat decompFormat =
     (useAutoFormatForDecompression) ?
-    simgear::ZLIB_COMPRESSION_FORMAT_AUTODETECT : compressionFormat;
+    simgear::ZLibCompressionFormat::AUTODETECT : compressionFormat;
 
   std::istringstream lipsum_ss(lipsum);
   // This tests the optional dynamic buffer allocation in ZlibAbstractIStreambuf
@@ -568,11 +570,12 @@ void test_RoundTripMultiWithIStreams()
     const std::size_t compPutbackSize = 1;
     const std::size_t decompPutbackSize = 1;
 
-    for (auto format: {simgear::ZLIB_COMPRESSION_FORMAT_ZLIB,
-          simgear::ZLIB_COMPRESSION_FORMAT_GZIP}) {
+    for (auto format: {simgear::ZLibCompressionFormat::ZLIB,
+                       simgear::ZLibCompressionFormat::GZIP}) {
       for (int compressionLevel: {1, 4, 7, 9}) {
-        for (auto memStrategy: {simgear::ZLIB_FAVOR_MEMORY_OVER_SPEED,
-              simgear::ZLIB_FAVOR_SPEED_OVER_MEMORY}) {
+        for (auto memStrategy: {
+            simgear::ZLibMemoryStrategy::FAVOR_MEMORY_OVER_SPEED,
+            simgear::ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY}) {
           for (std::size_t compInBufSize: {3, 4}) {
             for (std::size_t compOutBufSize: {3, 5}) {
               for (std::size_t decompInBufSize: {3, 4}) {
@@ -591,9 +594,10 @@ void test_RoundTripMultiWithIStreams()
   }
 
   {
-    const auto format = simgear::ZLIB_COMPRESSION_FORMAT_ZLIB;
+    const auto format = simgear::ZLibCompressionFormat::ZLIB;
     const int compressionLevel = Z_DEFAULT_COMPRESSION;
-    const auto memStrategy = simgear::ZLIB_FAVOR_SPEED_OVER_MEMORY;
+    const auto memStrategy =
+      simgear::ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY;
 
     for (std::size_t compInBufSize: {3, 4, 31, 256, 19475}) {
       for (std::size_t compOutBufSize: {3, 5, 9, 74, 4568}) {
@@ -623,11 +627,12 @@ void test_RoundTripMultiWithIStreams()
     for (std::size_t compPutbackSize: {25, 40, 105}) {
       for (std::size_t decompPutbackSize: {30, 60, 81}) {
         const simgear::ZLibCompressionFormat compFormat = (i++ % 2) ?
-          simgear::ZLIB_COMPRESSION_FORMAT_ZLIB :
-          simgear::ZLIB_COMPRESSION_FORMAT_GZIP;
+          simgear::ZLibCompressionFormat::ZLIB :
+          simgear::ZLibCompressionFormat::GZIP;
 
         roundTripWithIStreams(
-          compFormat, Z_BEST_COMPRESSION, simgear::ZLIB_FAVOR_MEMORY_OVER_SPEED,
+          compFormat, Z_BEST_COMPRESSION,
+          simgear::ZLibMemoryStrategy::FAVOR_MEMORY_OVER_SPEED,
           compInBufSize, compOutBufSize, decompInBufSize, decompOutBufSize,
           compPutbackSize, decompPutbackSize,
           /* automatic format detection for decompression */ true);

@@ -31,7 +31,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <limits>               // std::numeric_limits
-#include <type_traits>          // std::make_unsigned()
+#include <type_traits>          // std::make_unsigned(), std::underlying_type
 #include <cstddef>              // std::size_t, std::ptrdiff_t
 #include <cassert>
 
@@ -46,6 +46,11 @@
 using std::string;
 using traits = std::char_traits<char>;
 
+// Cast an enum value to its underlying type
+template <typename T>
+static constexpr typename std::underlying_type<T>::type enumValue(T e) {
+    return static_cast<typename std::underlying_type<T>::type>(e);
+}
 
 // Private utility function
 static string zlibErrorMessage(const z_stream& zstream, int errorCode)
@@ -264,7 +269,7 @@ ZlibAbstractIStreambuf::fOB_remainingSpace(unsigned char* nextOutPtr) const
 [[ noreturn ]] void ZlibAbstractIStreambuf::handleZ_BUF_ERROR() const
 {
   switch (operationType()) {
-  case OPERATION_TYPE_DECOMPRESSION:
+  case OperationType::DECOMPRESSION:
   {
     string message = (_path.isNull()) ?
       "Got Z_BUF_ERROR from zlib while decompressing a stream. The stream "
@@ -275,15 +280,15 @@ ZlibAbstractIStreambuf::fOB_remainingSpace(unsigned char* nextOutPtr) const
     // When _path.isNull(), sg_location(_path) is equivalent to sg_location()
     throw sg_io_exception(message, sg_location(_path));
   }
-  case OPERATION_TYPE_COMPRESSION:
+  case OperationType::COMPRESSION:
     throw std::logic_error(
       "Called ZlibAbstractIStreambuf::handleZ_BUF_ERROR() with "
-      "operationType() == OPERATION_TYPE_DECOMPRESSION");
+      "operationType() == ZlibAbstractIStreambuf::OperationType::COMPRESSION");
   default:
     throw std::logic_error(
       "Unexpected operationType() in "
       "ZlibAbstractIStreambuf::handleZ_BUF_ERROR(): " +
-      std::to_string(operationType()));
+      std::to_string(enumValue(operationType())));
   }
 }
 
@@ -607,7 +612,7 @@ ZlibCompressorIStreambuf::~ZlibCompressorIStreambuf()
 ZlibAbstractIStreambuf::OperationType
 ZlibCompressorIStreambuf::operationType() const
 {
-  return OPERATION_TYPE_COMPRESSION;
+  return OperationType::COMPRESSION;
 }
 
 void ZlibCompressorIStreambuf::zStreamInit(int compressionLevel,
@@ -616,30 +621,30 @@ void ZlibCompressorIStreambuf::zStreamInit(int compressionLevel,
 {
   int windowBits, memLevel;
 
-  // Intentionally not listing ZLIB_COMPRESSION_FORMAT_AUTODETECT here (it is
+  // Intentionally not listing ZLibCompressionFormat::AUTODETECT here (it is
   // only for decompression!)
   switch (format) {
-  case ZLIB_COMPRESSION_FORMAT_ZLIB:
+  case ZLibCompressionFormat::ZLIB:
     windowBits = 15;
     break;
-  case ZLIB_COMPRESSION_FORMAT_GZIP:
+  case ZLibCompressionFormat::GZIP:
     windowBits = 31;
     break;
   default:
     throw std::logic_error("Unexpected compression format: " +
-                           std::to_string(format));
+                           std::to_string(enumValue(format)));
   }
 
   switch (memStrategy) {
-  case ZLIB_FAVOR_MEMORY_OVER_SPEED:
+  case ZLibMemoryStrategy::FAVOR_MEMORY_OVER_SPEED:
     memLevel = 8;
     break;
-  case ZLIB_FAVOR_SPEED_OVER_MEMORY:
+  case ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY:
     memLevel = 9;
     break;
   default:
     throw std::logic_error("Unexpected memory strategy: " +
-                           std::to_string(memStrategy));
+                           std::to_string(enumValue(memStrategy)));
   }
 
   _zstream.zalloc = Z_NULL;     // No custom memory allocation routines
@@ -710,7 +715,7 @@ ZlibDecompressorIStreambuf::~ZlibDecompressorIStreambuf()
 ZlibAbstractIStreambuf::OperationType
 ZlibDecompressorIStreambuf::operationType() const
 {
-  return OPERATION_TYPE_DECOMPRESSION;
+  return OperationType::DECOMPRESSION;
 }
 
 void ZlibDecompressorIStreambuf::zStreamInit(ZLibCompressionFormat format)
@@ -718,18 +723,18 @@ void ZlibDecompressorIStreambuf::zStreamInit(ZLibCompressionFormat format)
   int windowBits;
 
   switch (format) {
-  case ZLIB_COMPRESSION_FORMAT_ZLIB:
+  case ZLibCompressionFormat::ZLIB:
     windowBits = 15;
     break;
-  case ZLIB_COMPRESSION_FORMAT_GZIP:
+  case ZLibCompressionFormat::GZIP:
     windowBits = 31;
     break;
-  case ZLIB_COMPRESSION_FORMAT_AUTODETECT:
+  case ZLibCompressionFormat::AUTODETECT:
     windowBits = 47;            // 47 = 32 + 15
     break;
   default:
     throw std::logic_error("Unexpected compression format: " +
-                           std::to_string(format));
+                           std::to_string(enumValue(format)));
   }
 
   _zstream.zalloc = Z_NULL;     // No custom memory allocation routines

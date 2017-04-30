@@ -99,15 +99,15 @@
 namespace simgear
 {
 
-enum ZLibCompressionFormat {
-  ZLIB_COMPRESSION_FORMAT_ZLIB = 0,
-  ZLIB_COMPRESSION_FORMAT_GZIP,
-  ZLIB_COMPRESSION_FORMAT_AUTODETECT
+enum class ZLibCompressionFormat {
+  ZLIB = 0,
+  GZIP,
+  AUTODETECT
 };
 
-enum ZLibMemoryStrategy {
-  ZLIB_FAVOR_MEMORY_OVER_SPEED = 0,
-  ZLIB_FAVOR_SPEED_OVER_MEMORY
+enum class ZLibMemoryStrategy {
+  FAVOR_MEMORY_OVER_SPEED = 0,
+  FAVOR_SPEED_OVER_MEMORY
 };
 
 // Abstract base class for both the compressor and decompressor stream buffers.
@@ -164,9 +164,9 @@ public:
   ~ZlibAbstractIStreambuf();
 
 protected:
-  enum OperationType {
-    OPERATION_TYPE_COMPRESSION = 0,
-    OPERATION_TYPE_DECOMPRESSION
+  enum class OperationType {
+    COMPRESSION = 0,
+    DECOMPRESSION
   };
 
   virtual OperationType operationType() const = 0;
@@ -290,16 +290,16 @@ public:
   //                     the highest compression speed but worst compression
   //                     ratio, and 9 the highest compression ratio but lowest
   //                     compression speed.
-  //   format            either ZLIB_COMPRESSION_FORMAT_ZLIB or
-  //                     ZLIB_COMPRESSION_FORMAT_GZIP
-  //   memStrategy       either ZLIB_FAVOR_MEMORY_OVER_SPEED or
-  //                     ZLIB_FAVOR_SPEED_OVER_MEMORY
+  //   format            either ZLibCompressionFormat::ZLIB or
+  //                     ZLibCompressionFormat::GZIP
+  //   memStrategy       either ZLibMemoryStrategy::FAVOR_MEMORY_OVER_SPEED or
+  //                     ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY
   explicit ZlibCompressorIStreambuf(
     std::istream& iStream,
     const SGPath& path = SGPath(),
     int compressionLevel = Z_DEFAULT_COMPRESSION,
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
-    ZLibMemoryStrategy memStrategy = ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
+    ZLibMemoryStrategy memStrategy = ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,
@@ -311,8 +311,8 @@ public:
     std::unique_ptr<std::istream> _iStream_p,
     const SGPath& path = SGPath(),
     int compressionLevel = Z_DEFAULT_COMPRESSION,
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
-    ZLibMemoryStrategy memStrategy = ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
+    ZLibMemoryStrategy memStrategy = ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,
@@ -344,13 +344,13 @@ class ZlibDecompressorIStreambuf: public ZlibAbstractIStreambuf
 public:
   // Same parameters as for ZlibAbstractIStreambuf, except:
   //
-  //   format            ZLIB_COMPRESSION_FORMAT_ZLIB,
-  //                     ZLIB_COMPRESSION_FORMAT_GZIP or
-  //                     ZLIB_COMPRESSION_FORMAT_AUTODETECT
+  //   format            ZLibCompressionFormat::ZLIB,
+  //                     ZLibCompressionFormat::GZIP or
+  //                     ZLibCompressionFormat::AUTODETECT
   explicit ZlibDecompressorIStreambuf(
     std::istream& iStream,
     const SGPath& path = SGPath(),
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,
@@ -361,7 +361,7 @@ public:
   explicit ZlibDecompressorIStreambuf(
     std::unique_ptr<std::istream> _iStream_p,
     const SGPath& path = SGPath(),
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,
@@ -398,8 +398,8 @@ public:
     std::istream& iStream,
     const SGPath& path = SGPath(),
     int compressionLevel = Z_DEFAULT_COMPRESSION,
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
-    ZLibMemoryStrategy memStrategy = ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
+    ZLibMemoryStrategy memStrategy = ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,
@@ -411,8 +411,8 @@ public:
     std::unique_ptr<std::istream> _iStream_p,
     const SGPath& path = SGPath(),
     int compressionLevel = Z_DEFAULT_COMPRESSION,
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
-    ZLibMemoryStrategy memStrategy = ZLIB_FAVOR_SPEED_OVER_MEMORY,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
+    ZLibMemoryStrategy memStrategy = ZLibMemoryStrategy::FAVOR_SPEED_OVER_MEMORY,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,
@@ -445,7 +445,7 @@ public:
   explicit ZlibDecompressorIStream(
     std::istream& iStream,
     const SGPath& path = SGPath(),
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,
@@ -456,7 +456,7 @@ public:
   explicit ZlibDecompressorIStream(
     std::unique_ptr<std::istream> _iStream_p,
     const SGPath& path = SGPath(),
-    ZLibCompressionFormat format = ZLIB_COMPRESSION_FORMAT_ZLIB,
+    ZLibCompressionFormat format = ZLibCompressionFormat::ZLIB,
     char* inBuf = nullptr,
     std::size_t inBufSize = 262144,
     char* outBuf = nullptr,

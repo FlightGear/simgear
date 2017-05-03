@@ -409,10 +409,7 @@ namespace simgear {
     std::string numerationBaseAdjective<16>()
     { return std::string("hexadecimal"); }
 
-    template<
-        class T,
-        int BASE = 10,
-        typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
+    template<class T, int BASE, typename>
     T readNonNegativeInt(const std::string& s)
     {
         static_assert(0 < BASE,

@@ -78,6 +78,9 @@ int main(int argc, char* argv[])
 {
     sglog().setLogLevels( SG_ALL, SG_DEBUG );
 
+    const char * EXISTING_RECORD = argc > 1 ? argv[1] : "terrasync.flightgear.org";
+    const char * QSERVICE = argc > 2 ? argv[2] : "https+ws20";
+
     Watchdog watchdog;
     watchdog.start(100);
 
@@ -98,8 +101,7 @@ int main(int argc, char* argv[])
         cout << "done" << endl;
     }
 
-#define EXISTING_RECORD "terrasync.flightgear.org"
-    cout << "test existing NAPTR: " EXISTING_RECORD << endl;
+    cout << "test existing NAPTR: " << EXISTING_RECORD << endl;
     {
         DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(EXISTING_RECORD);
         DNS::Request_ptr r(naptrRequest);
@@ -110,17 +112,18 @@ int main(int argc, char* argv[])
         }
 
         if( r->isTimeout() ) {
-            cerr << "timeout testing existing record " EXISTING_RECORD << endl;
+            cerr << "timeout testing existing record " << EXISTING_RECORD << endl;
             return EXIT_FAILURE;
         }
         if(naptrRequest->entries.empty()) {
-            cerr << "no results for " EXISTING_RECORD << endl;
+            cerr << "no results for " << EXISTING_RECORD << endl;
             return EXIT_FAILURE;
         }
 
         cout << "test for ascending preference/order" << endl;
         int order = -1, preference = -1;
         for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin(); it != naptrRequest->entries.end(); ++it ) {
+            cout << "NAPTR " << (*it)->order << " " << (*it)->preference << " '" << (*it)->service << "' '" << (*it)->regexp << "' '" << (*it)->replacement << "'" << endl;
             // currently only support "U" which implies empty replacement
             SG_CHECK_EQUAL((*it)->flags, "U" );
             SG_CHECK_EQUAL(naptrRequest->entries[0]->replacement, "" );
@@ -152,6 +155,29 @@ int main(int argc, char* argv[])
                 return EXIT_FAILURE;
             }
 
+        }
+    }
+    cout << "test existing NAPTR with explicit qservice: " << QSERVICE << endl;
+    {
+        DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(EXISTING_RECORD);
+        naptrRequest->qservice = QSERVICE;
+        DNS::Request_ptr r(naptrRequest);
+        cl.makeRequest(r);
+        while( !r->isComplete() && !r->isTimeout()) {
+            SGTimeStamp::sleepForMSec(200);
+            cl.update(0);
+        }
+
+        if( r->isTimeout() ) {
+            cerr << "timeout testing existing record " << EXISTING_RECORD << endl;
+            return EXIT_FAILURE;
+        }
+        if(naptrRequest->entries.empty()) {
+            cerr << "no results for " << EXISTING_RECORD << endl;
+            //return EXIT_FAILURE; // not yet a failure - probably add this for 2017.4 and create DNS entries
+        }
+        for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin(); it != naptrRequest->entries.end(); ++it ) {
+            cout << "NAPTR " << (*it)->order << " " << (*it)->preference << " '" << (*it)->service << "' '" << (*it)->regexp << "' '" << (*it)->replacement << "'" << endl;
         }
     }
 

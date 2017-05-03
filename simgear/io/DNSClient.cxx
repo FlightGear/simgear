@@ -191,11 +191,11 @@ static void dnscbNAPTR(struct dns_ctx *ctx, struct dns_rr_naptr *result, void *d
         r->ttl = result->dnsnaptr_ttl;
         for (int i = 0; i < result->dnsnaptr_nrr; i++) {
             if( !r->qservice.empty() && r->qservice != result->dnsnaptr_naptr[i].service )
-                return;
+                continue;
 
             //TODO: case ignore and result flags may have more than one flag
             if( !r->qflags.empty() && r->qflags != result->dnsnaptr_naptr[i].flags )
-                return;
+                continue;
 
             NAPTRRequest::NAPTR_ptr naptr(new NAPTRRequest::NAPTR);
             r->entries.push_back(naptr);

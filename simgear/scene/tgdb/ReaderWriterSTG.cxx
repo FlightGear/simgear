@@ -53,6 +53,13 @@
 
 #include "SGOceanTile.hxx"
 
+#define BUILDING_ROUGH "OBJECT_BUILDING_MESH_ROUGH"
+#define BUILDING_DETAILED "OBJECT_BUILDING_MESH_DETAILED"
+#define ROAD_ROUGH "OBJECT_ROAD_ROUGH"
+#define ROAD_DETAILED "OBJECT_ROAD_DETAILED"
+#define RAILWAY_ROUGH "OBJECT_RAILWAY_ROUGH"
+#define RAILWAY_DETAILED "OBJECT_RAILWAY_DETAILED"
+
 namespace simgear {
 
 /// Ok, this is a hack - we do not exactly know if it's an airport or not.
@@ -393,6 +400,7 @@ struct ReaderWriterSTG::_ModelBin {
 										else
 												opt->setInstantiateEffects(false);
 										_ObjectStatic obj;
+
 										obj._errorLocation = absoluteFileName;
 										obj._token = token;
 										obj._name = name;
@@ -428,31 +436,51 @@ struct ReaderWriterSTG::_ModelBin {
 										sign._agl = (token == "OBJECT_SIGN_AGL");
 										in >> sign._lon >> sign._lat >> sign._elev >> sign._hdg >> sign._size;
 										_signList.push_back(sign);
-                } else if (token == "OBJECT_BUILDING_MESH_ROUGH" || token == "OBJECT_BUILDING_MESH_DETAILED") {
-										osg::ref_ptr<SGReaderWriterOptions> opt;
-										opt = staticOptions(filePath, options);
-										if (SGPath(name).lower_extension() == "ac")
-												opt->setInstantiateEffects(true);
-										else
-												opt->setInstantiateEffects(false);
-										_ObjectStatic obj;
-										obj._errorLocation = absoluteFileName;
-										obj._token = token;
-										obj._name = name;
-										obj._agl = false;
-										obj._proxy = true;
-										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+                } else if (token == BUILDING_ROUGH || token == BUILDING_DETAILED ||
+                           token == ROAD_ROUGH     || token == ROAD_DETAILED     ||
+                           token == RAILWAY_ROUGH  || token == RAILWAY_DETAILED)   {
+                    osg::ref_ptr<SGReaderWriterOptions> opt;
+                    opt = staticOptions(filePath, options);
+                    _ObjectStatic obj;
 
-										if (token == "OBJECT_BUILDING_MESH_DETAILED") {
-											// Apply a lower LOD range if this is a detailed building
+                    opt->setInstantiateEffects(false);
+                    if (SGPath(name).lower_extension() == "ac") {
+                      // Generate material/Effects lookups for raw models, i.e.
+                      // those not wrapped in an XML while will include Effects
+                      opt->setInstantiateMaterialEffects(true);
+
+                      if (token == BUILDING_ROUGH || token == BUILDING_DETAILED) {
+                        opt->setMaterialName("OSM_Building");
+                      } else if (token == ROAD_ROUGH || token == ROAD_DETAILED) {
+                        opt->setMaterialName("OSM_Road");
+                      } else if (token == RAILWAY_ROUGH || token == RAILWAY_DETAILED) {
+                        opt->setMaterialName("OSM_Railway");
+                      } else {
+                        // Programming error.  If we get here then someone has added a verb to the list of
+                        // tokens above but not in this set of if-else statements.
+                        SG_LOG(SG_TERRAIN, SG_ALERT, "Programming Error - STG token without material branch");
+                      }
+                    }
+
+                    obj._errorLocation = absoluteFileName;
+                    obj._token = token;
+                    obj._name = name;
+                    obj._agl = false;
+                    obj._proxy = true;
+                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+
+                    opt->setLocation(obj._lon, obj._lat);
+                    if (token == BUILDING_DETAILED || token == ROAD_DETAILED || token == RAILWAY_DETAILED ) {
+											// Apply a lower LOD range if this is a detailed mesh
 											range = _object_range_detailed;
 											double lrand = mt_rand(&seed);
 											if      (lrand < 0.1) range = range * 2.0;
 											else if (lrand < 0.4) range = range * 1.5;
 										}
 
-										obj._range = range;
-										obj._options = opt;
+                    obj._range = range;
+
+                    obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
                     _objectStaticList.push_back(obj);
                 } else {

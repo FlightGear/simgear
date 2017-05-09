@@ -417,8 +417,8 @@ public:
     // XXX I understand why we want this, but this seems like a weird
     // place to set this option.
 #if OSG_VERSION_LESS_THAN(3,5,4)
-      //RJH - see OSG 11ddd53eb46d15903d036b594bfa3826d9e89393 - 
-      //      Removed redundent Referenced::s/getThreadSafeReferenceCounting() and associated static and env vars 
+      //RJH - see OSG 11ddd53eb46d15903d036b594bfa3826d9e89393 -
+      //      Removed redundent Referenced::s/getThreadSafeReferenceCounting() and associated static and env vars
       //      as there are now inapprorpiate and no longer supported
     Referenced::setThreadSafeReferenceCounting(true);
 #endif
@@ -463,8 +463,13 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
         }
         const SGReaderWriterOptions* sgopt
             = dynamic_cast<const SGReaderWriterOptions*>(opt);
-        if (sgopt && sgopt->getInstantiateEffects())
+
+        if (sgopt && sgopt->getInstantiateMaterialEffects()) {
+            optimized = instantiateMaterialEffects(optimized.get(), sgopt);
+        } else if (sgopt && sgopt->getInstantiateEffects()) {
             optimized = instantiateEffects(optimized.get(), sgopt);
+        }
+
         return optimized.release();
     }
 };

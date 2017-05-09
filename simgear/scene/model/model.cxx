@@ -336,5 +336,35 @@ ref_ptr<Node> instantiateEffects(osg::Node* modelGroup,
     osg::NodeList& result = visitor.getResults();
     return ref_ptr<Node>(result[0].get());
 }
+
+ref_ptr<Node> instantiateMaterialEffects(osg::Node* modelGroup,
+                                        const SGReaderWriterOptions* options)
+{
+
+    SGPropertyNode_ptr effect;
+    PropertyList effectProps;
+
+    if (options->getMaterialLib()) {
+      const SGGeod loc = SGGeod(options->getLocation());
+      SGMaterialCache* matcache = options->getMaterialLib()->generateMatCache(loc);
+      SGMaterial* mat = matcache->find(options->getMaterialName());
+      delete matcache;
+
+      if (mat) {
+        effect = new SGPropertyNode();
+        makeChild(effect, "inherits-from")->setStringValue(mat->get_effect_name());
+      } else {
+        effect = DefaultEffect::instance()->getEffect();
+        SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get effect for " << options->getMaterialName());
+      }
+    } else {
+      effect = DefaultEffect::instance()->getEffect();
+    }
+
+    effect->addChild("default")->setBoolValue(true);
+    effectProps.push_back(effect);
+    return instantiateEffects(modelGroup, effectProps, options);
+}
+
 }
 // end of model.cxx

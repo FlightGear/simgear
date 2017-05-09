@@ -105,6 +105,18 @@ instantiateEffects(osg::Node* model,
                    const SGReaderWriterOptions* options);
 
 /**
+ * Apply a set of material-defined effects to a model
+ * Transform an OSG subgraph by substituting Effects and EffectGeodes
+ * for osg::Geodes with osg::StateSets. This is only guaranteed to
+ * work for models prouced by the .ac loader.
+ *
+ * returns a copy if any nodes are changed
+ */
+ osg::ref_ptr<osg::Node>
+ instantiateMaterialEffects(osg::Node* model,
+                    const SGReaderWriterOptions* options);
+
+/**
  * Transform an OSG subgraph by substituting the Effects and
  * EffectGeodes for osg::Geodes with osg::StateSets, inheriting from
  * the default model effect. This is only guaranteed to work for

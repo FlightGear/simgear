@@ -123,6 +123,11 @@ public:
   simgear::Effect* get_effect();
 
   /**
+   * Get the Effect Name.
+   */
+  std::string get_effect_name() const { return effect; }
+
+  /**
    * Get the textured state.
    */
   osg::Texture2D* get_one_object_mask(int texIndex);
@@ -154,7 +159,7 @@ public:
    * @return The area (m^2) covered by each light.
    */
   inline double get_light_coverage () const { return light_coverage; }
-  
+
   /**
    * Get the building coverage.
    *
@@ -190,12 +195,12 @@ public:
    * @return The lightmap for auto-generated buildings.
    */
   inline std::string get_building_lightmap () const { return building_lightmap; }
-  
+
   // Ratio of the 3 random building sizes
   inline double get_building_small_fraction () const { return building_small_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
   inline double get_building_medium_fraction () const { return building_medium_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
   inline double get_building_large_fraction () const { return building_large_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
-  
+
   // Proportion of buildings with pitched roofs
   inline double get_building_small_pitch () const { return building_small_pitch; }
   inline double get_building_medium_pitch () const { return building_medium_pitch; }
@@ -208,25 +213,25 @@ public:
   inline int get_building_medium_max_floors () const { return building_medium_max_floors; }
   inline int get_building_large_min_floors () const { return building_large_min_floors; }
   inline int get_building_large_max_floors () const { return building_large_max_floors; }
-  
+
   // Minimum width and depth for each size
   inline double get_building_small_min_width () const { return building_small_min_width; }
   inline double get_building_small_max_width () const { return building_small_max_width; }
   inline double get_building_small_min_depth () const { return building_small_min_depth; }
   inline double get_building_small_max_depth () const { return building_small_max_depth; }
-  
+
   inline double get_building_medium_min_width () const { return building_medium_min_width; }
   inline double get_building_medium_max_width () const { return building_medium_max_width; }
   inline double get_building_medium_min_depth () const { return building_medium_min_depth; }
   inline double get_building_medium_max_depth () const { return building_medium_max_depth; }
-  
+
   inline double get_building_large_min_width () const { return building_large_min_width; }
   inline double get_building_large_max_width () const { return building_large_max_width; }
   inline double get_building_large_min_depth () const { return building_large_min_depth; }
   inline double get_building_large_max_depth () const { return building_large_max_depth; }
-  
+
   inline double get_building_range () const { return building_range; }
-  
+
   inline double get_cos_object_max_density_slope_angle () const { return cos_object_max_density_slope_angle; }
   inline double get_cos_object_zero_density_slope_angle () const { return cos_object_zero_density_slope_angle; }
 
@@ -238,7 +243,7 @@ public:
    * @return The area (m^2) covered by each wood.
    */
   inline double get_wood_coverage () const { return wood_coverage; }
-  
+
   /**
    * Get the tree height.
    *
@@ -259,14 +264,14 @@ public:
    * @return The LoD range for the trees.
    */
   inline double get_tree_range () const { return tree_range; }
-  
+
   /**
    * Get the number of tree varieties available
    *
    * @return the number of different trees defined in the texture strip
    */
   inline int get_tree_varieties () const { return tree_varieties; }
-  
+
   /**
    * Get the texture strip to use for trees
    *
@@ -281,25 +286,25 @@ public:
    * @return the effect to use for this set of trees.
    */
   inline std::string get_tree_effect () const { return  tree_effect; }
-  
+
   /**
    * Get the cosine of the maximum tree density slope angle. We
    * use the cosine as it can be compared directly to the z component
    * of a triangle normal.
-   * 
+   *
    * @return the cosine of the maximum tree density slope angle.
    */
   inline double get_cos_tree_max_density_slope_angle () const { return cos_tree_max_density_slope_angle; }
-  
+
   /**
    * Get the cosine of the maximum tree density slope angle. We
    * use the cosine as it can be compared directly to the z component
    * of a triangle normal.
-   * 
+   *
    * @return the cosine of the maximum tree density slope angle.
    */
   inline double get_cos_tree_zero_density_slope_angle () const { return cos_tree_zero_density_slope_angle; }
-  
+
   /**
    * Get the list of names for this material
    */
@@ -321,7 +326,7 @@ public:
   SGMatModelGroup * get_object_group (int index) const {
     return object_groups[index];
   }
-  
+
   /**
    * Evaluate whether this material is valid given the current global
    * property state and the tile location.
@@ -346,7 +351,7 @@ public:
     return SGVec2f((0 < tex_width) ? 1000.0f/tex_width : 1.0f,
                    (0 < tex_height) ? 1000.0f/tex_height : 1.0f);
   }
-  
+
 protected:
 
 
@@ -394,13 +399,13 @@ private:
 
   // coverage of night lighting.
   double light_coverage;
-  
+
   // coverage of buildings
   double building_coverage;
-  
+
   // building spacing
   double building_spacing;
-  
+
   // building texture & lightmap
   std::string building_texture;
   std::string building_lightmap;
@@ -409,44 +414,44 @@ private:
   double building_small_ratio;
   double building_medium_ratio;
   double building_large_ratio;
-  
+
   // Proportion of buildings with pitched roofs
   double building_small_pitch;
   double building_medium_pitch;
   double building_large_pitch;
 
   // Min/Max number of floors for each size
-  int building_small_min_floors; 
+  int building_small_min_floors;
   int building_small_max_floors;
   int building_medium_min_floors;
   int building_medium_max_floors;
   int building_large_min_floors;
   int building_large_max_floors;
-  
+
   // Minimum width and depth for each size
   double building_small_min_width;
   double building_small_max_width;
   double building_small_min_depth;
   double building_small_max_depth;
-  
+
   double building_medium_min_width;
   double building_medium_max_width;
   double building_medium_min_depth;
   double building_medium_max_depth;
-  
+
   double building_large_min_width;
   double building_large_max_width;
   double building_large_min_depth;
   double building_large_max_depth;
-  
+
   double building_range;
-  
-  // Cosine of the angle of maximum and zero density, 
-  // used to stop buildings and random objects from being 
+
+  // Cosine of the angle of maximum and zero density,
+  // used to stop buildings and random objects from being
   // created on too steep a slope.
   double cos_object_max_density_slope_angle;
   double cos_object_zero_density_slope_angle;
-  
+
   // coverage of woods
   double wood_coverage;
 
@@ -461,7 +466,7 @@ private:
 
   // Number of varieties of tree texture
   int tree_varieties;
-  
+
   // cosine of the tile angle of maximum and zero density,
   // used to stop trees from being created on too steep a slope.
   double cos_tree_max_density_slope_angle;
@@ -481,20 +486,20 @@ private:
 
   // taxiway-/runway-sign texture elements
   std::map<std::string, SGSharedPtr<SGMaterialGlyph> > glyphs;
-  
+
   // Tree texture, typically a strip of applicable tree textures
   std::string tree_texture;
 
   // Tree effect to be used for a particular material
   std::string tree_effect;
-  
+
   // Object mask, a simple RGB texture used as a mask when placing
   // random vegetation, objects and buildings
   std::vector<Texture2DRef> _masks;
-  
+
   // Condition, indicating when this material is active
   SGSharedPtr<const SGCondition> condition;
-  
+
   // List of geographical rectangles for this material
   AreaList* areas;
 
@@ -547,4 +552,4 @@ SGSetTextureFilter( int max);
 int
 SGGetTextureFilter();
 
-#endif // _SG_MAT_HXX 
+#endif // _SG_MAT_HXX

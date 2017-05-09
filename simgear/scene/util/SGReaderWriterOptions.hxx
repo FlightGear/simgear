@@ -42,14 +42,16 @@ public:
         _materialLib(0),
         _load_panel(0),
         _model_data(0),
-        _instantiateEffects(false)
+        _instantiateEffects(false),
+        _instantiateMaterialEffects(false)
     { }
     SGReaderWriterOptions(const std::string& str) :
         osgDB::Options(str),
         _materialLib(0),
         _load_panel(0),
         _model_data(0),
-        _instantiateEffects(false)
+        _instantiateEffects(false),
+        _instantiateMaterialEffects(false)
     { }
     SGReaderWriterOptions(const osgDB::Options& options,
                           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
@@ -57,7 +59,8 @@ public:
         _materialLib(0),
         _load_panel(0),
         _model_data(0),
-        _instantiateEffects(false)
+        _instantiateEffects(false),
+        _instantiateMaterialEffects(false)
     { }
     SGReaderWriterOptions(const SGReaderWriterOptions& options,
                           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
@@ -70,6 +73,8 @@ public:
         _load_panel(options._load_panel),
         _model_data(options._model_data),
         _instantiateEffects(options._instantiateEffects),
+        _instantiateMaterialEffects(options._instantiateMaterialEffects),
+        _materialName(options._materialName),
         _sceneryPathSuffixes(options._sceneryPathSuffixes)
     { }
 
@@ -109,6 +114,16 @@ public:
     void setInstantiateEffects(bool instantiateEffects)
     { _instantiateEffects = instantiateEffects; }
 
+    bool getInstantiateMaterialEffects() const
+    { return _instantiateMaterialEffects; }
+    void setInstantiateMaterialEffects(bool instantiateMaterialEffects)
+    { _instantiateMaterialEffects = instantiateMaterialEffects; }
+
+    string getMaterialName() const
+    { return _materialName; }
+    void setMaterialName(string materialName)
+    { _materialName = materialName; }
+
     const string_list& getSceneryPathSuffixes() const
     { return _sceneryPathSuffixes; }
 
@@ -117,6 +132,12 @@ public:
 
     static SGReaderWriterOptions* copyOrCreate(const osgDB::Options* options);
     static SGReaderWriterOptions* fromPath(const std::string& path);
+
+    void setLocation(double lon, double lat)
+    { _geod = SGGeod::fromDeg(lon, lat); }
+
+    const SGGeod& getLocation() const
+    { return _geod; }
 
 protected:
     virtual ~SGReaderWriterOptions();
@@ -131,7 +152,10 @@ private:
     osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
     bool _instantiateEffects;
+    bool _instantiateMaterialEffects;
+    string _materialName;
     string_list _sceneryPathSuffixes;
+    SGGeod _geod;
 };
 
 }

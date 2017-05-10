@@ -185,15 +185,12 @@ static void create_specular_highlights(osg::Node *node)
 #endif
 
 
-SGShaderAnimation::SGShaderAnimation(const SGPropertyNode* configNode,
-                                     SGPropertyNode* modelRoot,
-                                     const osgDB::Options*
-                                     options) :
-  SGAnimation(configNode, modelRoot)
+SGShaderAnimation::SGShaderAnimation(simgear::SGTransientModelData &modelData) :
+  SGAnimation(modelData)
 {
-  const SGPropertyNode* node = configNode->getChild("texture");
+  const SGPropertyNode* node = modelData.getConfigNode()->getChild("texture");
   if (node)
-    _effect_texture = SGLoadTexture2D(node->getStringValue(), options);
+    _effect_texture = SGLoadTexture2D(node->getStringValue(), modelData.getOptions());
 }
 
 namespace {

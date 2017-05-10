@@ -34,6 +34,10 @@
 #include <osgDB/Registry>
 #include <osgDB/Input>
 #include <osgDB/ParameterOutput>
+#include <osg/TemplatePrimitiveFunctor>
+
+#include <simgear/bvh/BVHGroup.hxx>
+#include <simgear/bvh/BVHLineGeometry.hxx>
 
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
@@ -46,6 +50,8 @@
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/scene/util/SGTransientModelData.hxx>
 
 #include "vg/vgu.h"
 
@@ -70,6 +76,99 @@ using namespace simgear;
 ////////////////////////////////////////////////////////////////////////
 // Static utility functions.
 ////////////////////////////////////////////////////////////////////////
+
+
+/*
+ * collect line segments from nodes within the hierarchy.
+*/
+class LineCollector : public osg::NodeVisitor {
+    struct LineCollector_LinePrimitiveFunctor {
+        LineCollector_LinePrimitiveFunctor() : _lineCollector(0) { }
+        void operator() (const osg::Vec3&, bool) { }
+        void operator() (const osg::Vec3& v1, const osg::Vec3& v2, bool)
+        {
+            if (_lineCollector) _lineCollector->addLine(v1, v2);
+        }
+        void operator() (const osg::Vec3&, const osg::Vec3&, const osg::Vec3&, bool) { }
+        void operator() (const osg::Vec3&, const osg::Vec3&, const osg::Vec3&, const osg::Vec3&, bool) { }
+        LineCollector* _lineCollector;
+    };
+
+public:
+    LineCollector() : osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR, osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) { }
+
+    virtual void apply(osg::Geode& geode)
+    {
+        osg::TemplatePrimitiveFunctor<LineCollector_LinePrimitiveFunctor> pf;
+        pf._lineCollector = this;
+        for (unsigned i = 0; i < geode.getNumDrawables(); ++i) {
+            geode.getDrawable(i)->accept(pf);
+        }
+    }
+
+    virtual void apply(osg::Node& node)
+    {
+        traverse(node);
+    }
+
+    virtual void apply(osg::Transform& transform)
+    {
+        osg::Matrix matrix = _matrix;
+        if (transform.computeLocalToWorldMatrix(_matrix, this))
+            traverse(transform);
+        _matrix = matrix;
+    }
+
+    const std::vector<SGLineSegmentf>& getLineSegments() const
+    {
+        return _lineSegments;
+    }
+
+    void addLine(const osg::Vec3& v1, const osg::Vec3& v2)
+    {
+        // Trick to get the ends in the right order.
+        // Use the x axis in the original coordinate system. Choose the
+        // most negative x-axis as the one pointing forward
+        SGVec3f tv1(toSG(_matrix.preMult(v1)));
+        SGVec3f tv2(toSG(_matrix.preMult(v2)));
+        if (tv1[0] > tv2[0])
+            _lineSegments.push_back(SGLineSegmentf(tv1, tv2));
+        else
+            _lineSegments.push_back(SGLineSegmentf(tv2, tv1));
+    }
+
+    void addBVHElements(osg::Node& node, simgear::BVHLineGeometry::Type type)
+    {
+        if (_lineSegments.empty())
+            return;
+
+        SGSceneUserData* userData;
+        userData = SGSceneUserData::getOrCreateSceneUserData(&node);
+
+        simgear::BVHNode* bvNode = userData->getBVHNode();
+        if (!bvNode && _lineSegments.size() == 1) {
+            simgear::BVHLineGeometry* bvLine;
+            bvLine = new simgear::BVHLineGeometry(_lineSegments.front(), type);
+            userData->setBVHNode(bvLine);
+            return;
+        }
+
+        simgear::BVHGroup* group = new simgear::BVHGroup;
+        if (bvNode)
+            group->addChild(bvNode);
+
+        for (unsigned i = 0; i < _lineSegments.size(); ++i) {
+            simgear::BVHLineGeometry* bvLine;
+            bvLine = new simgear::BVHLineGeometry(_lineSegments[i], type);
+            group->addChild(bvLine);
+        }
+        userData->setBVHNode(group);
+    }
+
+private:
+    osg::Matrix _matrix;
+    std::vector<SGLineSegmentf> _lineSegments;
+};
 
 /**
  * Set up the transform matrix for a translation.
@@ -325,17 +424,16 @@ struct DoDrawArraysVisitor : public osg::NodeVisitor {
 };
 }
 
-SGAnimation::SGAnimation(const SGPropertyNode* configNode,
-                                           SGPropertyNode* modelRoot) :
+SGAnimation::SGAnimation(simgear::SGTransientModelData &modelData) :
   osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
   _found(false),
-  _configNode(configNode),
-  _modelRoot(modelRoot)
+  _configNode(modelData.getConfigNode()),
+  _modelRoot(modelData.getModelRoot())
 {
-  _name = configNode->getStringValue("name", "");
-  _enableHOT = configNode->getBoolValue("enable-hot", true);
+  _name = modelData.getConfigNode()->getStringValue("name", "");
+  _enableHOT = modelData.getConfigNode()->getBoolValue("enable-hot", true);
   std::vector<SGPropertyNode_ptr> objectNames =
-    configNode->getChildren("object-name");
+    modelData.getConfigNode()->getChildren("object-name");
   for (unsigned i = 0; i < objectNames.size(); ++i)
     _objectNames.push_back(objectNames[i]->getStringValue());
 }
@@ -363,79 +461,76 @@ SGAnimation::~SGAnimation()
 }
 
 bool
-SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
-                     SGPropertyNode* modelRoot,
-                     const osgDB::Options* options,
-                     const std::string &path, int i)
+SGAnimation::animate(simgear::SGTransientModelData &modelData)
 {
-  std::string type = configNode->getStringValue("type", "none");
+  std::string type = modelData.getConfigNode()->getStringValue("type", "none");
   if (type == "alpha-test") {
-    SGAlphaTestAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGAlphaTestAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "billboard") {
-    SGBillboardAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGBillboardAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "blend") {
-    SGBlendAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGBlendAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "dist-scale") {
-    SGDistScaleAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGDistScaleAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "flash") {
-    SGFlashAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGFlashAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "interaction") {
-    SGInteractionAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGInteractionAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "material") {
-    SGMaterialAnimation animInst(configNode, modelRoot, options, path);
-    animInst.apply(node);
+    SGMaterialAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "noshadow") {
-    SGShadowAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGShadowAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "pick") {
-    SGPickAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGPickAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "knob") {
-    SGKnobAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGKnobAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "slider") {
-    SGSliderAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGSliderAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "range") {
-    SGRangeAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGRangeAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "rotate" || type == "spin") {
-    SGRotateAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGRotateAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "scale") {
-    SGScaleAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGScaleAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "select") {
-    SGSelectAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGSelectAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "shader") {
-    SGShaderAnimation animInst(configNode, modelRoot, options);
-    animInst.apply(node);
+    SGShaderAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "textranslate" || type == "texrotate" ||
              type == "textrapezoid" || type == "texmultiple") {
-    SGTexTransformAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGTexTransformAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "timed") {
-    SGTimedAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGTimedAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "locked-track") {
-    SGTrackToAnimation animInst(node, configNode, modelRoot);
-    animInst.apply(node);
+    SGTrackToAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "translate") {
-    SGTranslateAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGTranslateAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "light") {
-    SGLightAnimation animInst(configNode, modelRoot, options, path, i);
-    animInst.apply(node);
+    SGLightAnimation anim(modelData);
+    anim.apply(modelData);
   } else if (type == "null" || type == "none" || type.empty()) {
-    SGGroupAnimation animInst(configNode, modelRoot);
-    animInst.apply(node);
+    SGGroupAnimation anim(modelData);
+    anim.apply(modelData);
   } else
     return false;
 
@@ -479,19 +574,25 @@ SGAnimation::createAnimationGroup(osg::Group& parent)
 void
 SGAnimation::apply(osg::Group& group)
 {
-  // the trick is to first traverse the children and then
-  // possibly splice in a new group node if required.
-  // Else we end up in a recursive loop where we infinitly insert new
-  // groups in between
-  traverse(group);
+    // the trick is to first traverse the children and then
+    // possibly splice in a new group node if required.
+    // Else we end up in a recursive loop where we infinitly insert new
+    // groups in between
+    traverse(group);
 
-  // Note that this algorithm preserves the order of the child objects
-  // like they appear in the object-name tags.
-  // The timed animations require this
-  osg::ref_ptr<osg::Group> animationGroup;
-  std::list<std::string>::const_iterator nameIt;
-  for (nameIt = _objectNames.begin(); nameIt != _objectNames.end(); ++nameIt)
-    installInGroup(*nameIt, group, animationGroup);
+    // Note that this algorithm preserves the order of the child objects
+    // like they appear in the object-name tags.
+    // The timed animations require this
+    osg::ref_ptr<osg::Group> animationGroup;
+    std::list<std::string>::const_iterator nameIt;
+    for (nameIt = _objectNames.begin(); nameIt != _objectNames.end(); ++nameIt)
+        installInGroup(*nameIt, group, animationGroup);
+}
+
+void
+SGAnimation::apply(simgear::SGTransientModelData &modelData)
+{
+    apply(modelData.getNode());
 }
 
 void
@@ -553,13 +654,138 @@ SGVec3d SGAnimation::readVec3( const std::string& name,
 {
   return readVec3(*_configNode, name, suffix, def);
 }
+/**
+* Visitor to find a group by its name.
+*/
+class FindGroupVisitor :
+    public osg::NodeVisitor
+{
+public:
 
+    FindGroupVisitor(const std::string& name) :
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _name(name),
+        _group(0)
+    {
+        if (name.empty())
+            SG_LOG(SG_IO, SG_WARN, "FindGroupVisitor: empty name provided");
+    }
+
+    osg::Group* getGroup() const
+    {
+        return _group;
+    }
+
+    virtual void apply(osg::Group& group)
+    {
+        if (_name != group.getName())
+            return traverse(group);
+
+        if (!_group)
+            _group = &group;
+
+        // Different paths can exists for example with a picking animation (pick
+        // render group)
+        else if (_group != &group)
+            SG_LOG
+            (
+                SG_IO,
+                SG_WARN,
+                "FindGroupVisitor: name not unique '" << _name << "'"
+            );
+    }
+
+protected:
+
+    std::string _name;
+    osg::Group *_group;
+};
+
+/*
+ * If an object is specified in the axis tag it is assumed to be a single line segment with two vertices.
+ * This function will take action when axis has an object-name tag and the corresponding object
+ * can be found within the hierarchy.
+ */
+bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& center, SGVec3d &axis, simgear::SGTransientModelData &modelData) const
+{
+    if (_configNode->hasValue("axis/object-name"))
+    {
+        std::string axis_object_name = _configNode->getStringValue("axis/object-name");
+        
+        if (!axis_object_name.empty())
+        {
+            /*
+            * First search the currently loaded cache map to see if this axis object has already been located.
+            * If we find it, we use it.
+            */
+            const SGLineSegment<double> *axisSegment = modelData.getAxisDefinition(axis_object_name);
+            if (!axisSegment)
+            {
+                /*
+                 * Find the object by name
+                 */
+                FindGroupVisitor axis_object_name_finder(axis_object_name);
+                rootNode->accept(axis_object_name_finder);
+                osg::Group *object_group = axis_object_name_finder.getGroup();
+
+                if (object_group)
+                {
+                    /*
+                     * we have found the object group (for the axis). This should be two vertices
+                     * Now process this (with the line collector) to get the vertices.
+                     * Once we have that we can then calculate the center and the affected axes.
+                     */
+                    object_group->setNodeMask(0xffffffff);
+                    LineCollector lineCollector;
+                    object_group->accept(lineCollector);
+                    std::vector<SGLineSegmentf> segs = lineCollector.getLineSegments();
+
+                    if (!segs.empty())
+                    {
+                        /*
+                         * Store the axis definition in the map; as once hidden it will not be possible
+                         * to locate it again (and in any case it will be quicker to do it this way)
+                         * This makes the axis/center static; there could be a use case for making this
+                         * dynamic (and rebuilding the transforms), in which case this would need to
+                         * do something different with the object; possibly storing a reference to the node
+                         * so it can be extracted for dynamic processing.
+                         */
+                        SGLineSegmentd segd(*(segs.begin()));
+                        axisSegment = modelData.addAxisDefinition(axis_object_name,segd);
+                        /*
+                         * Hide the axis object. This also helps the modeller to know which axis animations are unassigned.
+                         */
+                        object_group->setNodeMask(0);
+                    }
+                    else
+                        SG_LOG(SG_INPUT, SG_ALERT, "Could find a valid line segment for animation:  " << axis_object_name);
+                }
+                else
+                    SG_LOG(SG_INPUT, SG_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
+            }
+            if (axisSegment)
+            {
+                center = 0.5*(axisSegment->getStart() + axisSegment->getEnd());
+                axis = axisSegment->getEnd() - axisSegment->getStart();
+                return true;
+            }
+        }
+    }
+    return false;
+}
 //------------------------------------------------------------------------------
 // factored out to share with SGKnobAnimation
-void SGAnimation::readRotationCenterAndAxis( SGVec3d& center,
-                                             SGVec3d& axis ) const
+void SGAnimation::readRotationCenterAndAxis(osg::Node *_rootNode, SGVec3d& center,
+                                             SGVec3d& axis, simgear::SGTransientModelData &modelData) const
 {
   center = SGVec3d::zeros();
+  if (setCenterAndAxisFromObject(_rootNode, center, axis, modelData))
+  {
+      if (8 * SGLimitsd::min() < norm(axis))
+          axis = normalize(axis);
+      return;
+  }
+
   if( _configNode->hasValue("axis/x1-m") )
   {
     SGVec3d v1 = readVec3("axis", "1-m"), // axis/[xyz]1-m
@@ -663,9 +889,8 @@ SGAnimation::getCondition() const
 // Ok, that is to build a subgraph from different other
 // graph nodes. I guess that this stems from the time where modellers
 // could not build hierarchical trees ...
-SGGroupAnimation::SGGroupAnimation(const SGPropertyNode* configNode,
-                                   SGPropertyNode* modelRoot):
-  SGAnimation(configNode, modelRoot)
+SGGroupAnimation::SGGroupAnimation(simgear::SGTransientModelData &modelData):
+  SGAnimation(modelData)
 {
 }
 
@@ -705,13 +930,12 @@ public:
   SGSharedPtr<SGExpressiond const> _animationValue;
 };
 
-SGTranslateAnimation::SGTranslateAnimation(const SGPropertyNode* configNode,
-                                           SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGTranslateAnimation::SGTranslateAnimation(simgear::SGTransientModelData &modelData) :
+  SGAnimation(modelData)
 {
   _condition = getCondition();
   SGSharedPtr<SGExpressiond> value;
-  value = read_value(configNode, modelRoot, "-m",
+  value = read_value(modelData.getConfigNode(), modelData.getModelRoot(), "-m",
                      -SGLimitsd::max(), SGLimitsd::max());
   _animationValue = value->simplify();
   if (_animationValue)
@@ -719,7 +943,9 @@ SGTranslateAnimation::SGTranslateAnimation(const SGPropertyNode* configNode,
   else
     _initialValue = 0;
 
-  _axis = readTranslateAxis(configNode);
+      SGVec3d _center;
+  if (modelData.getNode() && !setCenterAndAxisFromObject(modelData.getNode(), _center, _axis, modelData))
+    _axis = readTranslateAxis(modelData.getConfigNode());
 }
 
 osg::Group*
@@ -932,16 +1158,15 @@ SGVec3d readTranslateAxis(const SGPropertyNode* configNode)
     return axis;
 }
 
-SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
-                                     SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGRotateAnimation::SGRotateAnimation(simgear::SGTransientModelData &modelData) :
+  SGAnimation(modelData)
 {
-  std::string type = configNode->getStringValue("type", "");
+  std::string type = modelData.getConfigNode()->getStringValue("type", "");
   _isSpin = (type == "spin");
 
   _condition = getCondition();
   SGSharedPtr<SGExpressiond> value;
-  value = read_value(configNode, modelRoot, "-deg",
+  value = read_value(modelData.getConfigNode(), modelData.getModelRoot(), "-deg",
                      -SGLimitsd::max(), SGLimitsd::max());
   _animationValue = value->simplify();
   if (_animationValue)
@@ -949,7 +1174,7 @@ SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
   else
     _initialValue = 0;
   
-  readRotationCenterAndAxis(_center, _axis);
+  readRotationCenterAndAxis(modelData.getNode(), _center, _axis, modelData);
 }
 
 osg::Group*
@@ -1012,92 +1237,91 @@ public:
   SGSharedPtr<SGExpressiond const> _animationValue[3];
 };
 
-SGScaleAnimation::SGScaleAnimation(const SGPropertyNode* configNode,
-                                   SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGScaleAnimation::SGScaleAnimation(simgear::SGTransientModelData &modelData) :
+  SGAnimation(modelData)
 {
   _condition = getCondition();
 
   // default offset/factor for all directions
-  double offset = configNode->getDoubleValue("offset", 0);
-  double factor = configNode->getDoubleValue("factor", 1);
+  double offset = modelData.getConfigNode()->getDoubleValue("offset", 0);
+  double factor = modelData.getConfigNode()->getDoubleValue("factor", 1);
 
   SGSharedPtr<SGExpressiond> inPropExpr;
 
   std::string inputPropertyName;
-  inputPropertyName = configNode->getStringValue("property", "");
+  inputPropertyName = modelData.getConfigNode()->getStringValue("property", "");
   if (inputPropertyName.empty()) {
     inPropExpr = new SGConstExpression<double>(0);
   } else {
     SGPropertyNode* inputProperty;
-    inputProperty = modelRoot->getNode(inputPropertyName, true);
+    inputProperty = modelData.getModelRoot()->getNode(inputPropertyName, true);
     inPropExpr = new SGPropertyExpression<double>(inputProperty);
   }
 
-  SGInterpTable* interpTable = read_interpolation_table(configNode);
+  SGInterpTable* interpTable = read_interpolation_table(modelData.getConfigNode());
   if (interpTable) {
     SGSharedPtr<SGExpressiond> value;
     value = new SGInterpTableExpression<double>(inPropExpr, interpTable);
     _animationValue[0] = value->simplify();
     _animationValue[1] = value->simplify();
     _animationValue[2] = value->simplify();
-  } else if (configNode->getBoolValue("use-personality", false)) {
+  } else if (modelData.getConfigNode()->getBoolValue("use-personality", false)) {
     SGSharedPtr<SGExpressiond> value;
-    value = new SGPersonalityScaleOffsetExpression(inPropExpr, configNode,
+    value = new SGPersonalityScaleOffsetExpression(inPropExpr, modelData.getConfigNode(),
                                                    "x-factor", "x-offset",
                                                    factor, offset);
-    double minClip = configNode->getDoubleValue("x-min", 0);
-    double maxClip = configNode->getDoubleValue("x-max", SGLimitsd::max());
+    double minClip = modelData.getConfigNode()->getDoubleValue("x-min", 0);
+    double maxClip = modelData.getConfigNode()->getDoubleValue("x-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[0] = value->simplify();
     
-    value = new SGPersonalityScaleOffsetExpression(inPropExpr, configNode,
+    value = new SGPersonalityScaleOffsetExpression(inPropExpr, modelData.getConfigNode(),
                                                    "y-factor", "y-offset",
                                                    factor, offset);
-    minClip = configNode->getDoubleValue("y-min", 0);
-    maxClip = configNode->getDoubleValue("y-max", SGLimitsd::max());
+    minClip = modelData.getConfigNode()->getDoubleValue("y-min", 0);
+    maxClip = modelData.getConfigNode()->getDoubleValue("y-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[1] = value->simplify();
     
-    value = new SGPersonalityScaleOffsetExpression(inPropExpr, configNode,
+    value = new SGPersonalityScaleOffsetExpression(inPropExpr, modelData.getConfigNode(),
                                                    "z-factor", "z-offset",
                                                    factor, offset);
-    minClip = configNode->getDoubleValue("z-min", 0);
-    maxClip = configNode->getDoubleValue("z-max", SGLimitsd::max());
+    minClip = modelData.getConfigNode()->getDoubleValue("z-min", 0);
+    maxClip = modelData.getConfigNode()->getDoubleValue("z-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[2] = value->simplify();
   } else {
     SGSharedPtr<SGExpressiond> value;
-    value = read_factor_offset(configNode, inPropExpr, "x-factor", "x-offset");
-    double minClip = configNode->getDoubleValue("x-min", 0);
-    double maxClip = configNode->getDoubleValue("x-max", SGLimitsd::max());
+    value = read_factor_offset(modelData.getConfigNode(), inPropExpr, "x-factor", "x-offset");
+    double minClip = modelData.getConfigNode()->getDoubleValue("x-min", 0);
+    double maxClip = modelData.getConfigNode()->getDoubleValue("x-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[0] = value->simplify();
 
-    value = read_factor_offset(configNode, inPropExpr, "y-factor", "y-offset");
-    minClip = configNode->getDoubleValue("y-min", 0);
-    maxClip = configNode->getDoubleValue("y-max", SGLimitsd::max());
+    value = read_factor_offset(modelData.getConfigNode(), inPropExpr, "y-factor", "y-offset");
+    minClip = modelData.getConfigNode()->getDoubleValue("y-min", 0);
+    maxClip = modelData.getConfigNode()->getDoubleValue("y-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[1] = value->simplify();
 
-    value = read_factor_offset(configNode, inPropExpr, "z-factor", "z-offset");
-    minClip = configNode->getDoubleValue("z-min", 0);
-    maxClip = configNode->getDoubleValue("z-max", SGLimitsd::max());
+    value = read_factor_offset(modelData.getConfigNode(), inPropExpr, "z-factor", "z-offset");
+    minClip = modelData.getConfigNode()->getDoubleValue("z-min", 0);
+    maxClip = modelData.getConfigNode()->getDoubleValue("z-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[2] = value->simplify();
   }
-  _initialValue[0] = configNode->getDoubleValue("x-starting-scale", 1);
-  _initialValue[0] *= configNode->getDoubleValue("x-factor", factor);
-  _initialValue[0] += configNode->getDoubleValue("x-offset", offset);
-  _initialValue[1] = configNode->getDoubleValue("y-starting-scale", 1);
-  _initialValue[1] *= configNode->getDoubleValue("y-factor", factor);
-  _initialValue[1] += configNode->getDoubleValue("y-offset", offset);
-  _initialValue[2] = configNode->getDoubleValue("z-starting-scale", 1);
-  _initialValue[2] *= configNode->getDoubleValue("z-factor", factor);
-  _initialValue[2] += configNode->getDoubleValue("z-offset", offset);
-  _center[0] = configNode->getDoubleValue("center/x-m", 0);
-  _center[1] = configNode->getDoubleValue("center/y-m", 0);
-  _center[2] = configNode->getDoubleValue("center/z-m", 0);
+  _initialValue[0] = modelData.getConfigNode()->getDoubleValue("x-starting-scale", 1);
+  _initialValue[0] *= modelData.getConfigNode()->getDoubleValue("x-factor", factor);
+  _initialValue[0] += modelData.getConfigNode()->getDoubleValue("x-offset", offset);
+  _initialValue[1] = modelData.getConfigNode()->getDoubleValue("y-starting-scale", 1);
+  _initialValue[1] *= modelData.getConfigNode()->getDoubleValue("y-factor", factor);
+  _initialValue[1] += modelData.getConfigNode()->getDoubleValue("y-offset", offset);
+  _initialValue[2] = modelData.getConfigNode()->getDoubleValue("z-starting-scale", 1);
+  _initialValue[2] *= modelData.getConfigNode()->getDoubleValue("z-factor", factor);
+  _initialValue[2] += modelData.getConfigNode()->getDoubleValue("z-offset", offset);
+  _center[0] = modelData.getConfigNode()->getDoubleValue("center/x-m", 0);
+  _center[1] = modelData.getConfigNode()->getDoubleValue("center/y-m", 0);
+  _center[2] = modelData.getConfigNode()->getDoubleValue("center/z-m", 0);
 }
 
 osg::Group*
@@ -1234,9 +1458,8 @@ private:
 };
 
 
-SGDistScaleAnimation::SGDistScaleAnimation(const SGPropertyNode* configNode,
-                                           SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGDistScaleAnimation::SGDistScaleAnimation(simgear::SGTransientModelData &modelData) :
+  SGAnimation(modelData)
 {
 }
 
@@ -1390,9 +1613,8 @@ private:
 };
 
 
-SGFlashAnimation::SGFlashAnimation(const SGPropertyNode* configNode,
-                                   SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGFlashAnimation::SGFlashAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
 }
 
@@ -1475,9 +1697,8 @@ private:
 };
 
 
-SGBillboardAnimation::SGBillboardAnimation(const SGPropertyNode* configNode,
-                                           SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGBillboardAnimation::SGBillboardAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
 }
 
@@ -1548,39 +1769,38 @@ private:
   double _maxStaticValue;
 };
 
-SGRangeAnimation::SGRangeAnimation(const SGPropertyNode* configNode,
-                                   SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGRangeAnimation::SGRangeAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
   _condition = getCondition();
 
   std::string inputPropertyName;
-  inputPropertyName = configNode->getStringValue("min-property", "");
+  inputPropertyName = modelData.getConfigNode()->getStringValue("min-property", "");
   if (!inputPropertyName.empty()) {
     SGPropertyNode* inputProperty;
-    inputProperty = modelRoot->getNode(inputPropertyName, true);
+    inputProperty = modelData.getModelRoot()->getNode(inputPropertyName, true);
     SGSharedPtr<SGExpressiond> value;
     value = new SGPropertyExpression<double>(inputProperty);
 
-    value = read_factor_offset(configNode, value, "min-factor", "min-offset");
+    value = read_factor_offset(modelData.getConfigNode(), value, "min-factor", "min-offset");
     _minAnimationValue = value->simplify();
   }
-  inputPropertyName = configNode->getStringValue("max-property", "");
+  inputPropertyName = modelData.getConfigNode()->getStringValue("max-property", "");
   if (!inputPropertyName.empty()) {
     SGPropertyNode* inputProperty;
-    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
+    inputProperty = modelData.getModelRoot()->getNode(inputPropertyName.c_str(), true);
 
     SGSharedPtr<SGExpressiond> value;
     value = new SGPropertyExpression<double>(inputProperty);
 
-    value = read_factor_offset(configNode, value, "max-factor", "max-offset");
+    value = read_factor_offset(modelData.getConfigNode(), value, "max-factor", "max-offset");
     _maxAnimationValue = value->simplify();
   }
 
-  _initialValue[0] = configNode->getDoubleValue("min-m", 0);
-  _initialValue[0] *= configNode->getDoubleValue("min-factor", 1);
-  _initialValue[1] = configNode->getDoubleValue("max-m", SGLimitsf::max());
-  _initialValue[1] *= configNode->getDoubleValue("max-factor", 1);
+  _initialValue[0] = modelData.getConfigNode()->getDoubleValue("min-m", 0);
+  _initialValue[0] *= modelData.getConfigNode()->getDoubleValue("min-factor", 1);
+  _initialValue[1] = modelData.getConfigNode()->getDoubleValue("max-m", SGLimitsf::max());
+  _initialValue[1] *= modelData.getConfigNode()->getDoubleValue("max-factor", 1);
 }
 
 osg::Group*
@@ -1610,9 +1830,8 @@ SGRangeAnimation::createAnimationGroup(osg::Group& parent)
 // Implementation of a select animation
 ////////////////////////////////////////////////////////////////////////
 
-SGSelectAnimation::SGSelectAnimation(const SGPropertyNode* configNode,
-                                     SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGSelectAnimation::SGSelectAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
 }
 
@@ -1640,9 +1859,8 @@ SGSelectAnimation::createAnimationGroup(osg::Group& parent)
 // Implementation of alpha test animation
 ////////////////////////////////////////////////////////////////////////
 
-SGAlphaTestAnimation::SGAlphaTestAnimation(const SGPropertyNode* configNode,
-                                           SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGAlphaTestAnimation::SGAlphaTestAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
 }
 
@@ -1793,10 +2011,8 @@ public:
 };
 
 
-SGBlendAnimation::SGBlendAnimation(const SGPropertyNode* configNode,
-                                   SGPropertyNode* modelRoot)
-  : SGAnimation(configNode, modelRoot),
-    _animationValue(read_value(configNode, modelRoot, "", 0, 1))
+SGBlendAnimation::SGBlendAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData), _animationValue(read_value(modelData.getConfigNode(), modelData.getModelRoot(), "", 0, 1))
 {
 }
 
@@ -1919,9 +2135,8 @@ private:
 };
 
 
-SGTimedAnimation::SGTimedAnimation(const SGPropertyNode* configNode,
-                                   SGPropertyNode* modelRoot)
-  : SGAnimation(configNode, modelRoot)
+SGTimedAnimation::SGTimedAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
 }
 
@@ -1960,9 +2175,8 @@ private:
   SGSharedPtr<const SGCondition> _condition;
 };
 
-SGShadowAnimation::SGShadowAnimation(const SGPropertyNode* configNode,
-                                     SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGShadowAnimation::SGShadowAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
 }
 
@@ -2130,9 +2344,8 @@ private:
   osg::Matrix _matrix;
 };
 
-SGTexTransformAnimation::SGTexTransformAnimation(const SGPropertyNode* configNode,
-                                                 SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGTexTransformAnimation::SGTexTransformAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
 }
 

@@ -266,7 +266,7 @@ sgLoad3DModel_internal(const SGPath& path,
 
     osg::ref_ptr<SGReaderWriterOptions> options;
     options = SGReaderWriterOptions::copyOrCreate(dbOptions);
-    
+
     SGPath modelpath(path);
     SGPath texturepath(path);
     SGPath modelDir(modelpath.dir());
@@ -525,6 +525,8 @@ sgLoad3DModel_internal(const SGPath& path,
         group = static_cast<Group*>(modelWithEffects.get());
     }
 
+    simgear::SGTransientModelData modelData(group.get(), prop_root, options.get(), path.local8BitStr());
+
     for (unsigned i = 0; i < animation_nodes.size(); ++i) {
         if (previewMode && animation_nodes[i]->hasChild("nopreview")) {
             PropertyList names(animation_nodes[i]->getChildren("object-name"));
@@ -533,10 +535,13 @@ sgLoad3DModel_internal(const SGPath& path,
             } // of object-names in the animation
             continue;
         }
-        
+        /*
+         * Setup the model data for the node currently being animated.
+         */
+        modelData.LoadAnimationValuesForElement(animation_nodes[i], i);
+
         /// OSGFIXME: duh, why not only model?????
-        SGAnimation::animate(group.get(), animation_nodes[i], prop_root,
-                             options.get(), path.local8BitStr(), i);
+        SGAnimation::animate(modelData);
     }
     
     if (!needTransform && group->getNumChildren() < 2) {

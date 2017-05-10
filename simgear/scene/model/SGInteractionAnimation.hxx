@@ -22,8 +22,7 @@
 
 class SGInteractionAnimation : public SGAnimation {
 public:
-  SGInteractionAnimation(const SGPropertyNode* configNode,
-                         SGPropertyNode* modelRoot);
+  SGInteractionAnimation(simgear::SGTransientModelData &modelData);
   virtual void install(osg::Node& node);
 private:
   class LineCollector;

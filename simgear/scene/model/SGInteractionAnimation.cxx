@@ -122,9 +122,8 @@ private:
     std::vector<SGLineSegmentf> _lineSegments;
 };
 
-SGInteractionAnimation::SGInteractionAnimation(const SGPropertyNode* configNode,
-                                               SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGInteractionAnimation::SGInteractionAnimation(simgear::SGTransientModelData &modelData) :
+  SGAnimation(modelData)
 {
 }
 

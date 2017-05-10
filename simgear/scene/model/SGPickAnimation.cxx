@@ -301,12 +301,10 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SGPickAnimation::SGPickAnimation(const SGPropertyNode* configNode,
-                                SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+SGPickAnimation::SGPickAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData)
 {
-  std::vector<SGPropertyNode_ptr> names =
-    configNode->getChildren("proxy-name");
+  std::vector<SGPropertyNode_ptr> names = modelData.getConfigNode()->getChildren("proxy-name");
   for (unsigned i = 0; i < names.size(); ++i) {
     _proxyNames.push_back(names[i]->getStringValue());
   }
@@ -373,12 +371,12 @@ osg::StateSet* sharedHighlightStateSet()
 }
 
 void
-SGPickAnimation::apply(osg::Group& group)
+SGPickAnimation::apply(simgear::SGTransientModelData &modelData)
 {
   if (_objectNames.empty() && _proxyNames.empty()) {
     return;
   }
-  
+  osg::Group& group = *modelData.getNode()->asGroup();
   group.traverse(*this);
   
   // iterate over all group children
@@ -738,16 +736,15 @@ private:
 };
 
 
-SGKnobAnimation::SGKnobAnimation(const SGPropertyNode* configNode,
-                                 SGPropertyNode* modelRoot) :
-    SGPickAnimation(configNode, modelRoot)
+SGKnobAnimation::SGKnobAnimation(simgear::SGTransientModelData &modelData) :
+    SGPickAnimation(modelData)
 {
-    SGSharedPtr<SGExpressiond> value = read_value(configNode, modelRoot, "-deg",
+    SGSharedPtr<SGExpressiond> value = read_value(modelData.getConfigNode(), modelData.getModelRoot(), "-deg",
                                                   -SGLimitsd::max(), SGLimitsd::max());
     _animationValue = value->simplify();
     
     
-    readRotationCenterAndAxis(_center, _axis);
+    readRotationCenterAndAxis(modelData.getNode(), _center, _axis, modelData);
 }
 
 osg::Group*
@@ -807,15 +804,14 @@ private:
 };
 
 
-SGSliderAnimation::SGSliderAnimation(const SGPropertyNode* configNode,
-                                 SGPropertyNode* modelRoot) :
-    SGPickAnimation(configNode, modelRoot)
+SGSliderAnimation::SGSliderAnimation(simgear::SGTransientModelData &modelData) :
+    SGPickAnimation(modelData)
 {
-    SGSharedPtr<SGExpressiond> value = read_value(configNode, modelRoot, "-m",
+    SGSharedPtr<SGExpressiond> value = read_value(modelData.getConfigNode(), modelData.getModelRoot(), "-m",
                                                   -SGLimitsd::max(), SGLimitsd::max());
     _animationValue = value->simplify();
     
-    _axis = readTranslateAxis(configNode);
+    _axis = readTranslateAxis(modelData.getConfigNode());
 }
 
 osg::Group*

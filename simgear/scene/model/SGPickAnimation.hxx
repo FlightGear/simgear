@@ -35,11 +35,10 @@ class SGSceneUserData;
 
 class SGPickAnimation : public SGAnimation {
 public:
-  SGPickAnimation(const SGPropertyNode* configNode,
-                  SGPropertyNode* modelRoot);
+  SGPickAnimation(simgear::SGTransientModelData &modelData);
     
   // override so we can treat object-name specially
-  virtual void apply(osg::Group& group);
+  virtual void apply(simgear::SGTransientModelData &modelData);
     
   void apply(osg::Node* node);
 protected:
@@ -59,8 +58,7 @@ private:
 class SGKnobAnimation : public SGPickAnimation
 {
 public:
-    SGKnobAnimation(const SGPropertyNode* configNode,
-                    SGPropertyNode* modelRoot);
+    SGKnobAnimation(simgear::SGTransientModelData &modelData);
 
     /**
      * by default mouse wheel up corresponds to increment (CW)
@@ -101,8 +99,7 @@ private:
 class SGSliderAnimation : public SGPickAnimation
 {
 public:
-    SGSliderAnimation(const SGPropertyNode* configNode,
-                    SGPropertyNode* modelRoot);
+    SGSliderAnimation(simgear::SGTransientModelData &modelData);
     
     
 protected:

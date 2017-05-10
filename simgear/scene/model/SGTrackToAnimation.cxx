@@ -373,25 +373,23 @@ class SGTrackToAnimation::UpdateCallback:
 };
 
 //------------------------------------------------------------------------------
-SGTrackToAnimation::SGTrackToAnimation( osg::Node* node,
-                                        const SGPropertyNode* configNode,
-                                        SGPropertyNode* modelRoot ):
-  SGAnimation(configNode, modelRoot),
+SGTrackToAnimation::SGTrackToAnimation(simgear::SGTransientModelData &modelData):
+  SGAnimation(modelData),
   _target_group(0),
   _slave_group(0)
 {
-  std::string target = configNode->getStringValue("target-name");
+  std::string target = modelData.getConfigNode()->getStringValue("target-name");
   FindGroupVisitor target_finder(target);
-  node->accept(target_finder);
+  modelData.getNode()->accept(target_finder);
 
   if( !(_target_group = target_finder.getGroup()) )
     log(SG_ALERT, "target not found: '" + target + '\'');
 
-  std::string slave = configNode->getStringValue("slave-name");
+  std::string slave = modelData.getConfigNode()->getStringValue("slave-name");
   if( !slave.empty() )
   {
     FindGroupVisitor slave_finder(slave);
-    node->accept(slave_finder);
+    modelData.getNode()->accept(slave_finder);
     _slave_group = slave_finder.getGroup();
   }
 }

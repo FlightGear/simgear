@@ -22,6 +22,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/structure/SGExpression.hxx>
+#include <simgear/scene/util/SGTransientModelData.hxx>
 
 // Has anyone done anything *really* stupid, like making min and max macros?
 #ifdef min
@@ -42,21 +43,19 @@ SGVec3d readTranslateAxis(const SGPropertyNode* configNode);
  */
 class SGAnimation : protected osg::NodeVisitor {
 public:
-  SGAnimation(const SGPropertyNode* configNode, SGPropertyNode* modelRoot);
+  SGAnimation(simgear::SGTransientModelData &modelData);
   virtual ~SGAnimation();
 
-  static bool animate(osg::Node* node, const SGPropertyNode* configNode,
-                      SGPropertyNode* modelRoot,
-                      const osgDB::Options* options,
-                      const std::string &path, int i);
+  static bool animate(simgear::SGTransientModelData &modelData);
 
 protected:
   void apply(osg::Node* node);
+  virtual void apply(osg::Group& group);
 
   virtual void install(osg::Node& node);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 
-  virtual void apply(osg::Group& group);
+  virtual void apply(simgear::SGTransientModelData &modelData);
 
   /**
    * Read a 3d vector from the configuration property node.
@@ -77,7 +76,8 @@ protected:
                     const std::string& suffix = "",
                     const SGVec3d& def = SGVec3d::zeros() ) const;
 
-  void readRotationCenterAndAxis(SGVec3d& center, SGVec3d& axis) const;
+  void readRotationCenterAndAxis(osg::Node *rootNode, SGVec3d& center, SGVec3d& axis, simgear::SGTransientModelData &modelData) const;
+  bool setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& center, SGVec3d &axis, simgear::SGTransientModelData &modelData) const;
 
   SGExpressiond* readOffsetValue(const char* tag_name) const;
 
@@ -128,7 +128,7 @@ private:
 
 class SGGroupAnimation : public SGAnimation {
 public:
-  SGGroupAnimation(const SGPropertyNode*, SGPropertyNode*);
+  SGGroupAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 };
 
@@ -139,8 +139,7 @@ public:
 
 class SGTranslateAnimation : public SGAnimation {
 public:
-  SGTranslateAnimation(const SGPropertyNode* configNode,
-                       SGPropertyNode* modelRoot);
+  SGTranslateAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
@@ -157,8 +156,7 @@ private:
 
 class SGRotateAnimation : public SGAnimation {
 public:
-  SGRotateAnimation(const SGPropertyNode* configNode,
-                    SGPropertyNode* modelRoot);
+  SGRotateAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   SGSharedPtr<const SGCondition> _condition;
@@ -176,8 +174,7 @@ private:
 
 class SGScaleAnimation : public SGAnimation {
 public:
-  SGScaleAnimation(const SGPropertyNode* configNode,
-                   SGPropertyNode* modelRoot);
+  SGScaleAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
@@ -194,8 +191,7 @@ private:
 
 class SGDistScaleAnimation : public SGAnimation {
 public:
-  SGDistScaleAnimation(const SGPropertyNode* configNode,
-                       SGPropertyNode* modelRoot);
+  SGDistScaleAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   class Transform;
 };
@@ -207,8 +203,7 @@ public:
 
 class SGFlashAnimation : public SGAnimation {
 public:
-  SGFlashAnimation(const SGPropertyNode* configNode,
-                   SGPropertyNode* modelRoot);
+  SGFlashAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 public:
   class Transform;
@@ -221,8 +216,7 @@ public:
 
 class SGBillboardAnimation : public SGAnimation {
 public:
-  SGBillboardAnimation(const SGPropertyNode* configNode,
-                       SGPropertyNode* modelRoot);
+  SGBillboardAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   class Transform;
 };
@@ -234,8 +228,7 @@ public:
 
 class SGRangeAnimation : public SGAnimation {
 public:
-  SGRangeAnimation(const SGPropertyNode* configNode,
-                   SGPropertyNode* modelRoot);
+  SGRangeAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
@@ -252,8 +245,7 @@ private:
 
 class SGSelectAnimation : public SGAnimation {
 public:
-  SGSelectAnimation(const SGPropertyNode* configNode,
-                    SGPropertyNode* modelRoot);
+  SGSelectAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 };
 
@@ -264,8 +256,7 @@ public:
 
 class SGAlphaTestAnimation : public SGAnimation {
 public:
-  SGAlphaTestAnimation(const SGPropertyNode* configNode,
-                       SGPropertyNode* modelRoot);
+  SGAlphaTestAnimation(simgear::SGTransientModelData &modelData);
   virtual void install(osg::Node& node);
 };
 
@@ -276,8 +267,7 @@ public:
 
 class SGBlendAnimation : public SGAnimation {
 public:
-  SGBlendAnimation(const SGPropertyNode* configNode,
-                   SGPropertyNode* modelRoot);
+  SGBlendAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
@@ -293,8 +283,7 @@ private:
 
 class SGTimedAnimation : public SGAnimation {
 public:
-  SGTimedAnimation(const SGPropertyNode* configNode,
-                   SGPropertyNode* modelRoot);
+  SGTimedAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
@@ -307,8 +296,7 @@ private:
 
 class SGShadowAnimation : public SGAnimation {
 public:
-  SGShadowAnimation(const SGPropertyNode* configNode,
-                    SGPropertyNode* modelRoot);
+  SGShadowAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
@@ -321,8 +309,7 @@ private:
 
 class SGTexTransformAnimation : public SGAnimation {
 public:
-  SGTexTransformAnimation(const SGPropertyNode* configNode,
-                          SGPropertyNode* modelRoot);
+  SGTexTransformAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class Transform;
@@ -349,9 +336,7 @@ private:
 
 class SGShaderAnimation : public SGAnimation {
 public:
-  SGShaderAnimation(const SGPropertyNode* configNode,
-                    SGPropertyNode* modelRoot,
-                    const osgDB::Options* options);
+  SGShaderAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
@@ -364,10 +349,7 @@ private:
 
 class SGLightAnimation : public SGAnimation {
 public:
-  SGLightAnimation(const SGPropertyNode* configNode,
-                   SGPropertyNode* modelRoot,
-                   const osgDB::Options* options,
-                   const std::string &path, int i);
+  SGLightAnimation(simgear::SGTransientModelData &modelData);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:

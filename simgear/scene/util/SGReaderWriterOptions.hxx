@@ -151,6 +151,7 @@ private:
 
     osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
+    
     bool _instantiateEffects;
     bool _instantiateMaterialEffects;
     string _materialName;

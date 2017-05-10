@@ -416,15 +416,11 @@ private:
 } // namespace
 
 
-SGMaterialAnimation::SGMaterialAnimation(const SGPropertyNode* configNode,
-                                         SGPropertyNode* modelRoot,
-                                         const osgDB::Options*
-                                         options, const string &path) :
-  SGAnimation(configNode, modelRoot),
-  texturePathList(options->getDatabasePathList())
+SGMaterialAnimation::SGMaterialAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData), texturePathList(modelData.getOptions()->getDatabasePathList())
 {
-  if (configNode->hasChild("global"))
-    SG_LOG(SG_IO, SG_ALERT, path <<
+  if (modelData.getConfigNode()->hasChild("global"))
+    SG_LOG(SG_IO, SG_ALERT, modelData.getPath() <<
            ": Use of <global> in material animation is "
            "no longer supported.");
 }

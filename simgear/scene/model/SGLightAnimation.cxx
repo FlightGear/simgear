@@ -93,12 +93,8 @@ public:
     double _prev_value;
 };
 
-SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
-                                   SGPropertyNode* modelRoot,
-                                   const osgDB::Options* options,
-                                   const std::string &path, int i) :
-    SGAnimation(configNode, modelRoot),
-    _options(options)
+SGLightAnimation::SGLightAnimation(simgear::SGTransientModelData &modelData) :
+    SGAnimation(modelData), _options(modelData.getOptions())
 {
     _light_type = getConfig()->getStringValue("light-type");
     _position = SGVec3d( getConfig()->getDoubleValue("position/x"), getConfig()->getDoubleValue("position/y"), getConfig()->getDoubleValue("position/z") );
@@ -113,11 +109,11 @@ SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
     _cutoff = getConfig()->getDoubleValue("cutoff");
     _near = getConfig()->getDoubleValue("near-m");
     _far = getConfig()->getDoubleValue("far-m");
-    _key = path + ";" + boost::lexical_cast<std::string>( i );
+    _key = modelData.getPath() + ";" + boost::lexical_cast<std::string>(modelData.getIndex() );
 
-    SGConstPropertyNode_ptr dim_factor = configNode->getChild("dim-factor");
+    SGConstPropertyNode_ptr dim_factor = modelData.getConfigNode()->getChild("dim-factor");
     if (dim_factor.valid()) {
-        _animationValue = read_value(dim_factor, modelRoot, "", 0, 1);
+        _animationValue = read_value(dim_factor, modelData.getModelRoot(), "", 0, 1);
     }
 }
 

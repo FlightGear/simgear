@@ -34,9 +34,7 @@ class SGTrackToAnimation:
   public SGAnimation
 {
   public:
-    SGTrackToAnimation( osg::Node* node,
-                        const SGPropertyNode* configNode,
-                        SGPropertyNode* modelRoot );
+    SGTrackToAnimation(simgear::SGTransientModelData &modelData);
 
     virtual osg::Group* createAnimationGroup(osg::Group& parent);
 

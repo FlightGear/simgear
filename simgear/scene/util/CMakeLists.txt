@@ -23,6 +23,7 @@ set(HEADERS
     SGSceneUserData.hxx
     SGStateAttributeVisitor.hxx
     SGTextureStateAttributeVisitor.hxx
+    SGTransientModelData.hxx
     SGUpdateVisitor.hxx
     SplicingVisitor.hxx
     StateAttributeFactory.hxx

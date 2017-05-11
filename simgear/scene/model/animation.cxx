@@ -490,13 +490,13 @@ SGAnimation::animate(simgear::SGTransientModelData &modelData)
     anim.apply(modelData);
   } else if (type == "pick") {
     SGPickAnimation anim(modelData);
-    anim.apply(modelData);
+    anim.apply(modelData.getNode());
   } else if (type == "knob") {
     SGKnobAnimation anim(modelData);
-    anim.apply(modelData);
+    anim.apply(modelData.getNode());
   } else if (type == "slider") {
     SGSliderAnimation anim(modelData);
-    anim.apply(modelData);
+    anim.apply(modelData.getNode());
   } else if (type == "range") {
     SGRangeAnimation anim(modelData);
     anim.apply(modelData);

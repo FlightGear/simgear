@@ -371,12 +371,12 @@ osg::StateSet* sharedHighlightStateSet()
 }
 
 void
-SGPickAnimation::apply(simgear::SGTransientModelData &modelData)
+SGPickAnimation::apply(osg::Group& group)
 {
   if (_objectNames.empty() && _proxyNames.empty()) {
     return;
   }
-  osg::Group& group = *modelData.getNode()->asGroup();
+
   group.traverse(*this);
   
   // iterate over all group children

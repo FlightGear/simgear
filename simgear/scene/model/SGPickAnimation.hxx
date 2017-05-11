@@ -38,8 +38,8 @@ public:
   SGPickAnimation(simgear::SGTransientModelData &modelData);
     
   // override so we can treat object-name specially
-  virtual void apply(simgear::SGTransientModelData &modelData);
-    
+  virtual void apply(osg::Group& group);
+
   void apply(osg::Node* node);
 protected:
 

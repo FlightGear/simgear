@@ -5,6 +5,8 @@
 #include <iostream>
 
 #include <simgear/misc/test_macros.hxx>
+#include <simgear/scene/util/SGTransientModelData.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #define VERIFY_CLOSE(a, b) SG_VERIFY( norm((a) - (b)) <= 1e-5 )
 
@@ -12,15 +14,16 @@
 struct AnimationTest:
   public SGAnimation
 {
-  AnimationTest(const SGPropertyNode* n):
-    SGAnimation(n, 0)
+  AnimationTest(simgear::SGTransientModelData transientModelData):
+    SGAnimation(transientModelData), modelData(transientModelData)
   {}
 
   void readConfig()
   {
-    readRotationCenterAndAxis(center, axis);
+    readRotationCenterAndAxis(0, center, axis, modelData);
   }
 
+  simgear::SGTransientModelData &modelData;
   SGVec3d center,
           axis;
 };
@@ -28,7 +31,9 @@ struct AnimationTest:
 int main(int argc, char* argv[])
 {
   SGPropertyNode_ptr config = new SGPropertyNode;
-  AnimationTest anim(config);
+
+  simgear::SGTransientModelData transientModelData(nullptr, config, config, nullptr, "", 0);
+  AnimationTest anim(transientModelData);
 
   SGVec3d v1(1, 2, 3),
           v2(-1, 4, 0);

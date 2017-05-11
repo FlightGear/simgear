@@ -167,9 +167,9 @@ SGSoundSample::~SGSoundSample() {
 void SGSoundSample::update_pos_and_orientation() {
 
     if (_use_pos_props) {
-        if (_pos_prop[0]) _relative_pos[0] = _pos_prop[0]->getDoubleValue();
-        if (_pos_prop[1]) _relative_pos[1] = _pos_prop[1]->getDoubleValue();
-        if (_pos_prop[2]) _relative_pos[2] = _pos_prop[2]->getDoubleValue();
+        if (_pos_prop[0]) _relative_pos[0] = -_pos_prop[0]->getDoubleValue();
+        if (_pos_prop[1]) _relative_pos[1] = -_pos_prop[1]->getDoubleValue();
+        if (_pos_prop[2]) _relative_pos[2] = -_pos_prop[2]->getDoubleValue();
     }
     _absolute_pos = _base_pos;
     if (_relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {

@@ -276,7 +276,7 @@ SGXmlSound::init( SGPropertyNode *root,
            pos_prop[1] = root->getNode(pos_prop[1]->getStringValue(), true);
        }
        pos_prop[2] = prop->getChild("z");
-       if (pos_prop[2]) pos_prop[2] = pos_prop[1]->getNode("property");
+       if (pos_prop[2]) pos_prop[2] = pos_prop[2]->getNode("property");
        if (pos_prop[2]) {
            pos_prop[2] = root->getNode(pos_prop[2]->getStringValue(), true);
        }

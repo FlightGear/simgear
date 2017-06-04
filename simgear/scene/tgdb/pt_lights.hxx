@@ -55,7 +55,6 @@ class Effect;
 // appropriate extensions are available.)
 
 inline void SGConfigureDirectionalLights( bool use_point_sprites,
-                                   bool enhanced_lighting,
                                    bool distance_attenuation ) {
   static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
   sceneFeatures->setEnablePointSpriteLights(use_point_sprites);

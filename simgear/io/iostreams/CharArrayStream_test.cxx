@@ -403,9 +403,14 @@ void test_CharArrayIOStream_readWriteSeekPutbackEtc()
   SG_VERIFY(caStream.seekp(-9, std::ios_base::cur)); // put pointer = 10 - 9 = 1
   SG_VERIFY(caStream.write(&text[1], 4)); // buf[1:5] = text[1:5]
 
+  SG_VERIFY(caStream.seekp(10)); // put pointer = 10
+  // buf[10:] = text[10:]
+  SG_VERIFY(caStream.write(&text[10], text.size() - 10));
+
+  std::unique_ptr<char[]> buf2(new char[caStream.size() - 10]);
   SG_VERIFY(caStream.seekg(10)); // get pointer = 10
   // std::iostream::operator bool() will return false due to EOF being reached
-  SG_VERIFY(!caStream.read(&buf[10],
+  SG_VERIFY(!caStream.read(&buf2[0],
                            std::numeric_limits<std::streamsize>::max()));
   // If badbit had been set, it would have caused an exception to be raised
   SG_VERIFY(caStream.eof() && caStream.fail() && !caStream.bad());
@@ -415,10 +420,11 @@ void test_CharArrayIOStream_readWriteSeekPutbackEtc()
   // buffer managed by caStream's associated stream buffer, i.e. text.size().
   n = streamsizeToSize_t(caStream.gcount());
   SG_CHECK_EQUAL(n, caStream.size() - 10);
-  SG_CHECK_EQUAL(string(caStream.data(), caStream.size()), text);
-
   SG_CHECK_EQUAL(caStream.get(), EOF);
-  SG_VERIFY(caStream.eof() && caStream.fail() && !caStream.bad());
+
+  SG_CHECK_EQUAL(string(&buf2[0], caStream.size() - 10),
+                 string(&text[10], text.size() - 10));
+  SG_CHECK_EQUAL(string(caStream.data(), caStream.size()), text);
 }
 
 int main(int argc, char** argv)

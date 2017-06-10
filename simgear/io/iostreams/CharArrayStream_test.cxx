@@ -91,16 +91,17 @@ void test_CharArrayStreambuf_basicOperations()
 
   // Indirect test of seekpos(): position the write stream pointer a bit further
   pos = arraySBuf.pubseekpos(43, std::ios_base::out);
-  SG_CHECK_EQUAL(pos, 43);
+  SG_CHECK_EQUAL(pos, std::streampos(43));
   // Write 7 more chars with sputn()
   n = arraySBuf.sputn(&text[43], 7);
   SG_CHECK_EQUAL(n, 7);
   SG_CHECK_EQUAL(string(&buf[43], 7), "\nGHIJK ");
   // Indirect test of seekoff(): seek backwards relatively to the current write
   // pointer position
-  pos = arraySBuf.pubseekoff(-std::strlen("\nABCDEF\nGHIJK "),
+  pos = arraySBuf.pubseekoff(-std::streamoff(std::strlen("\nABCDEF\nGHIJK ")),
                              std::ios_base::cur, std::ios_base::out);
-  SG_CHECK_EQUAL(pos, 36);         // 10 + 26, i.e., after the lowercase alphabet
+  // 10 + 26, i.e., after the lowercase alphabet
+  SG_CHECK_EQUAL(pos, std::streampos(36));
   // Write "\nABCD" to buf in one sputn() call
   n = arraySBuf.sputn(&text[36], 5);
   // Now write "EF" in two sputc() calls
@@ -189,9 +190,9 @@ void test_CharArrayStreambuf_basicOperations()
 
   // Check we can independently set the read and write pointers for arraySBuf
   pos = arraySBuf.pubseekpos(10, std::ios_base::in);
-  SG_CHECK_EQUAL(pos, 10);
+  SG_CHECK_EQUAL(pos, std::streampos(10));
   pos = arraySBuf.pubseekpos(13, std::ios_base::out);
-  SG_CHECK_EQUAL(pos, 13);
+  SG_CHECK_EQUAL(pos, std::streampos(13));
 
   // Write "DEF" where there is currently "def" in 'buf'.
   for (int i = 0; i < 3; i++) {
@@ -206,7 +207,7 @@ void test_CharArrayStreambuf_basicOperations()
 
   // Set both stream pointers at once (read and write)
   pos = arraySBuf.pubseekpos(10, std::ios_base::in | std::ios_base::out);
-  SG_VERIFY(pos == 10);
+  SG_VERIFY(pos == std::streampos(10));
 
   // Write "ABC" to buf in one sputn() call
   n = arraySBuf.sputn("ABC", 3);
@@ -216,7 +217,7 @@ void test_CharArrayStreambuf_basicOperations()
   // Indirect test of seekoff(): seek backwards relatively to the current read
   // pointer position
   pos = arraySBuf.pubseekoff(-3, std::ios_base::cur, std::ios_base::in);
-  SG_CHECK_EQUAL(pos, 7);
+  SG_CHECK_EQUAL(pos, std::streampos(7));
 
   n = arraySBuf.sgetn(buf3, 12);
   SG_CHECK_EQUAL(n, 12);

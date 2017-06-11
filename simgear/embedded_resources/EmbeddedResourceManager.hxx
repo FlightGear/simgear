@@ -163,43 +163,43 @@ private:
 };
 
 // Explicit template instantiations
-//
-// MSVC doesn't recognize these as template instantiations of what we defined
-// above (this seems to be with “Visual Studio 14 2015”), therefore I'm not
-// including them on Windows.
-#ifndef _WIN32
-template
-std::shared_ptr<const AbstractEmbeddedResource>
-EmbeddedResourceManager::getResource(const std::string& virtualPath,
-                                     const std::string& locale) const;
 template
 std::shared_ptr<const AbstractEmbeddedResource>
 EmbeddedResourceManager::getResource(const std::string& virtualPath) const;
 
 template
 std::string
-EmbeddedResourceManager::getString(const std::string& virtualPath,
-                                   const std::string& locale) const;
-template
-std::string
 EmbeddedResourceManager::getString(const std::string& virtualPath) const;
 
-template
-std::unique_ptr<std::streambuf>
-EmbeddedResourceManager::getStreambuf(const std::string& virtualPath,
-                                      const std::string& locale) const;
 template
 std::unique_ptr<std::streambuf>
 EmbeddedResourceManager::getStreambuf(const std::string& virtualPath) const;
 
 template
 std::unique_ptr<std::istream>
-EmbeddedResourceManager::getIStream(const std::string& virtualPath,
-                                    const std::string& locale) const;
+EmbeddedResourceManager::getIStream(const std::string& virtualPath) const;
+
+// MSVC doesn't recognize these as template instantiations of what we defined
+// above (this seems to be with “Visual Studio 14 2015”), therefore only
+// include them with other compilers.
+#ifndef _MSC_VER
+template
+std::shared_ptr<const AbstractEmbeddedResource>
+EmbeddedResourceManager::getResource(const std::string& virtualPath,
+                                     const std::string& locale) const;
+template
+std::string
+EmbeddedResourceManager::getString(const std::string& virtualPath,
+                                   const std::string& locale) const;
+template
+std::unique_ptr<std::streambuf>
+EmbeddedResourceManager::getStreambuf(const std::string& virtualPath,
+                                      const std::string& locale) const;
 template
 std::unique_ptr<std::istream>
-EmbeddedResourceManager::getIStream(const std::string& virtualPath) const;
-#endif  // ifndef _WIN32
+EmbeddedResourceManager::getIStream(const std::string& virtualPath,
+                                    const std::string& locale) const;
+#endif  // #ifndef _MSC_VER
 
 } // of namespace simgear
 

@@ -163,6 +163,11 @@ private:
 };
 
 // Explicit template instantiations
+//
+// MSVC doesn't recognize these as template instantiations of what we defined
+// above (this seems to be with “Visual Studio 14 2015”), therefore I'm not
+// including them on Windows.
+#ifndef _WIN32
 template
 std::shared_ptr<const AbstractEmbeddedResource>
 EmbeddedResourceManager::getResource(const std::string& virtualPath,
@@ -194,6 +199,7 @@ EmbeddedResourceManager::getIStream(const std::string& virtualPath,
 template
 std::unique_ptr<std::istream>
 EmbeddedResourceManager::getIStream(const std::string& virtualPath) const;
+#endif  // ifndef _WIN32
 
 } // of namespace simgear
 

@@ -330,6 +330,11 @@ public:
 	 */
     string_list member_names() const;
 
+    template<class T>
+    T* get_subsystem()
+    {
+        return dynamic_cast<T*>(get_subsystem(T::subsystemName()));
+    }
 private:
 
     class Member;

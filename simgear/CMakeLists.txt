@@ -173,6 +173,11 @@ if(NOT SIMGEAR_HEADLESS)
         ${OPENGL_LIBRARY}
         ${JPEG_LIBRARY})
 
+    if(ENABLE_GDAL)
+        target_link_libraries(SimGearScene
+            ${GDAL_LIBRARIES})
+    endif()
+
     # only actually needed by canvas/KeyboardEvent.cxx
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/utf8/source)
 endif()

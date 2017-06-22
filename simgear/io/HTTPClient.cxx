@@ -169,8 +169,32 @@ void Client::update(int waitTimeout)
         return;
     }
 
-    int remainingActive, messagesInQueue, numFds;
+    int remainingActive, messagesInQueue;
+#if defined(SG_MAC)
+    // Mac 10.8 libCurl lacks this, let's keep compat for now
+    fd_set curlReadFDs, curlWriteFDs, curlErrorFDs;
+    int maxFD;
+    curl_multi_fdset(d->curlMulti,
+                     &curlReadFDs,
+                     &curlWriteFDs,
+                     &curlErrorFDs,
+                     &maxFD);
+    
+    struct timeval timeout;
+    long t;
+    
+    curl_multi_timeout(d->curlMulti, &t);
+    if ((t < 0) || (t > waitTimeout)) {
+        t = waitTimeout;
+    }
+    
+    timeout.tv_sec = t / 1000;
+    timeout.tv_usec = (t % 1000) * 1000;
+    ::select(maxFD, &curlReadFDs, &curlWriteFDs, &curlErrorFDs, &timeout);
+#else
+    int numFds;
     curl_multi_wait(d->curlMulti, NULL, 0, waitTimeout, &numFds);
+#endif
     curl_multi_perform(d->curlMulti, &remainingActive);
 
     CURLMsg* msg;

@@ -708,67 +708,70 @@ protected:
  */
 bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& center, SGVec3d &axis, simgear::SGTransientModelData &modelData) const
 {
+    std::string axis_object_name = std::string();
     if (_configNode->hasValue("axis/object-name"))
     {
-        std::string axis_object_name = _configNode->getStringValue("axis/object-name");
-        
-        if (!axis_object_name.empty())
+        axis_object_name = _configNode->getStringValue("axis/object-name");
+    }
+    else if (!_configNode->getNode("axis"))
+        axis_object_name = _configNode->getStringValue("object-name") + std::string("-axis");
+
+    if (!axis_object_name.empty())
+    {
+        /*
+        * First search the currently loaded cache map to see if this axis object has already been located.
+        * If we find it, we use it.
+        */
+        const SGLineSegment<double> *axisSegment = modelData.getAxisDefinition(axis_object_name);
+        if (!axisSegment)
         {
             /*
-            * First search the currently loaded cache map to see if this axis object has already been located.
-            * If we find it, we use it.
-            */
-            const SGLineSegment<double> *axisSegment = modelData.getAxisDefinition(axis_object_name);
-            if (!axisSegment)
+             * Find the object by name
+             */
+            FindGroupVisitor axis_object_name_finder(axis_object_name);
+            rootNode->accept(axis_object_name_finder);
+            osg::Group *object_group = axis_object_name_finder.getGroup();
+
+            if (object_group)
             {
                 /*
-                 * Find the object by name
+                 * we have found the object group (for the axis). This should be two vertices
+                 * Now process this (with the line collector) to get the vertices.
+                 * Once we have that we can then calculate the center and the affected axes.
                  */
-                FindGroupVisitor axis_object_name_finder(axis_object_name);
-                rootNode->accept(axis_object_name_finder);
-                osg::Group *object_group = axis_object_name_finder.getGroup();
+                object_group->setNodeMask(0xffffffff);
+                LineCollector lineCollector;
+                object_group->accept(lineCollector);
+                std::vector<SGLineSegmentf> segs = lineCollector.getLineSegments();
 
-                if (object_group)
+                if (!segs.empty())
                 {
                     /*
-                     * we have found the object group (for the axis). This should be two vertices
-                     * Now process this (with the line collector) to get the vertices.
-                     * Once we have that we can then calculate the center and the affected axes.
+                     * Store the axis definition in the map; as once hidden it will not be possible
+                     * to locate it again (and in any case it will be quicker to do it this way)
+                     * This makes the axis/center static; there could be a use case for making this
+                     * dynamic (and rebuilding the transforms), in which case this would need to
+                     * do something different with the object; possibly storing a reference to the node
+                     * so it can be extracted for dynamic processing.
                      */
-                    object_group->setNodeMask(0xffffffff);
-                    LineCollector lineCollector;
-                    object_group->accept(lineCollector);
-                    std::vector<SGLineSegmentf> segs = lineCollector.getLineSegments();
-
-                    if (!segs.empty())
-                    {
-                        /*
-                         * Store the axis definition in the map; as once hidden it will not be possible
-                         * to locate it again (and in any case it will be quicker to do it this way)
-                         * This makes the axis/center static; there could be a use case for making this
-                         * dynamic (and rebuilding the transforms), in which case this would need to
-                         * do something different with the object; possibly storing a reference to the node
-                         * so it can be extracted for dynamic processing.
-                         */
-                        SGLineSegmentd segd(*(segs.begin()));
-                        axisSegment = modelData.addAxisDefinition(axis_object_name,segd);
-                        /*
-                         * Hide the axis object. This also helps the modeller to know which axis animations are unassigned.
-                         */
-                        object_group->setNodeMask(0);
-                    }
-                    else
-                        SG_LOG(SG_INPUT, SG_ALERT, "Could find a valid line segment for animation:  " << axis_object_name);
+                    SGLineSegmentd segd(*(segs.begin()));
+                    axisSegment = modelData.addAxisDefinition(axis_object_name, segd);
+                    /*
+                     * Hide the axis object. This also helps the modeller to know which axis animations are unassigned.
+                     */
+                    object_group->setNodeMask(0);
                 }
                 else
-                    SG_LOG(SG_INPUT, SG_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
+                    SG_LOG(SG_INPUT, SG_ALERT, "Could find a valid line segment for animation:  " << axis_object_name);
             }
-            if (axisSegment)
-            {
-                center = 0.5*(axisSegment->getStart() + axisSegment->getEnd());
-                axis = axisSegment->getEnd() - axisSegment->getStart();
-                return true;
-            }
+            else
+                SG_LOG(SG_INPUT, SG_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
+        }
+        if (axisSegment)
+        {
+            center = 0.5*(axisSegment->getStart() + axisSegment->getEnd());
+            axis = axisSegment->getEnd() - axisSegment->getStart();
+            return true;
         }
     }
     return false;

@@ -76,6 +76,12 @@ public:
      * Notification when catalogs/packages are added or removed
      */
     virtual void availablePackagesChanged() {}
+    
+    /**
+     * More general purpose notification when install is queued / cancelled / started
+     * stopped. Reason value is only in certain cases.
+     */
+    virtual void installStatusChanged(InstallRef aInstall, StatusCode aReason) {};
 
     virtual void dataForThumbnail(const std::string& aThumbnailUrl,
                                   size_t lenth, const uint8_t* bytes) {}

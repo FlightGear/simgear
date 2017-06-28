@@ -75,45 +75,49 @@ public:
     {
     }
 
+    void fireStatusChange(InstallRef install, Delegate::StatusCode status)
+    {
+        for (auto d : delegates) {
+            d->installStatusChanged(install, status);
+        }
+    }
+    
     void fireStartInstall(InstallRef install)
     {
-        DelegateVec::const_iterator it;
-        for (it = delegates.begin(); it != delegates.end(); ++it) {
-            (*it)->startInstall(install);
+        for (auto d : delegates) {
+            d->startInstall(install);
+            d->installStatusChanged(install, Delegate::STATUS_IN_PROGRESS);
         }
     }
 
     void fireInstallProgress(InstallRef install,
                              unsigned int aBytes, unsigned int aTotal)
     {
-        DelegateVec::const_iterator it;
-        for (it = delegates.begin(); it != delegates.end(); ++it) {
-            (*it)->installProgress(install, aBytes, aTotal);
+        for (auto d : delegates) {
+            d->installProgress(install, aBytes, aTotal);
         }
     }
 
     void fireFinishInstall(InstallRef install, Delegate::StatusCode status)
     {
-        DelegateVec::const_iterator it;
-        for (it = delegates.begin(); it != delegates.end(); ++it) {
-            (*it)->finishInstall(install, status);
+        for (auto d : delegates) {
+            d->finishInstall(install, status);
+            d->installStatusChanged(install, status);
         }
     }
 
     void fireRefreshStatus(CatalogRef catalog, Delegate::StatusCode status)
     {
-        DelegateVec::const_iterator it;
-        for (it = delegates.begin(); it != delegates.end(); ++it) {
-            (*it)->catalogRefreshed(catalog, status);
+        for (auto d : delegates) {
+            d->catalogRefreshed(catalog, status);
         }
     }
 
     void firePackagesChanged()
     {
-      DelegateVec::const_iterator it;
-      for (it = delegates.begin(); it != delegates.end(); ++it) {
-          (*it)->availablePackagesChanged();
-      }
+        for (auto d : delegates) {
+            d->availablePackagesChanged();
+        }
     }
 
     void thumbnailDownloadComplete(HTTP::Request_ptr request,
@@ -130,10 +134,9 @@ public:
 
     void fireDataForThumbnail(const std::string& aUrl, const std::string& bytes)
     {
-        DelegateVec::const_iterator it;
         const uint8_t* data = reinterpret_cast<const uint8_t*>(bytes.data());
-        for (it = delegates.begin(); it != delegates.end(); ++it) {
-            (*it)->dataForThumbnail(aUrl, bytes.size(), data);
+        for (auto d : delegates) {
+            d->dataForThumbnail(aUrl, bytes.size(), data);
         }
     }
 
@@ -157,10 +160,11 @@ public:
 
     void fireFinishUninstall(PackageRef pkg)
     {
-        std::for_each(delegates.begin(), delegates.end(),
-                      [pkg](Delegate* d) {d->finishUninstall(pkg);});
+        for (auto d : delegates) {
+            d->finishUninstall(pkg);
+        }
     }
-
+    
     DelegateVec delegates;
 
     SGPath path;
@@ -446,7 +450,7 @@ void Root::scheduleToUpdate(InstallRef aInstall)
     }
 
     PackageList deps = aInstall->package()->dependencies();
-    BOOST_FOREACH(Package* dep, deps) {
+    for (Package* dep : deps) {
         // will internally schedule for update if required
         // hence be careful, this method is re-entered in here!
         dep->install();
@@ -455,6 +459,7 @@ void Root::scheduleToUpdate(InstallRef aInstall)
     bool wasEmpty = d->updateDeque.empty();
     d->updateDeque.push_back(aInstall);
 
+    d->fireStatusChange(aInstall, Delegate::STATUS_IN_PROGRESS);
     if (wasEmpty) {
         aInstall->startUpdate();
     }
@@ -462,8 +467,7 @@ void Root::scheduleToUpdate(InstallRef aInstall)
 
 bool Root::isInstallQueued(InstallRef aInstall) const
 {
-    RootPrivate::UpdateDeque::const_iterator it =
-        std::find(d->updateDeque.begin(), d->updateDeque.end(), aInstall);
+    auto it = std::find(d->updateDeque.begin(), d->updateDeque.end(), aInstall);
     return (it != d->updateDeque.end());
 }
 
@@ -505,11 +509,12 @@ void Root::finishInstall(InstallRef aInstall, Delegate::StatusCode aReason)
 
 void Root::cancelDownload(InstallRef aInstall)
 {
-    RootPrivate::UpdateDeque::iterator it =
-        std::find(d->updateDeque.begin(), d->updateDeque.end(), aInstall);
+    auto it = std::find(d->updateDeque.begin(), d->updateDeque.end(), aInstall);
     if (it != d->updateDeque.end()) {
         bool startNext = (aInstall == d->updateDeque.front());
         d->updateDeque.erase(it);
+        d->fireStatusChange(aInstall, Delegate::USER_CANCELLED);
+
         if (startNext) {
             if (!d->updateDeque.empty()) {
                 d->updateDeque.front()->startUpdate();

@@ -142,6 +142,7 @@ private:
   mutable SGCommandMgr::Command* _command;
   mutable SGPropertyNode_ptr _arg;
   mutable SGPropertyNode_ptr _setting;
+  mutable SGPropertyNode_ptr _root;
 };
 
 typedef SGSharedPtr<SGBinding> SGBinding_ptr;

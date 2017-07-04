@@ -69,7 +69,9 @@ SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
   }
 
   _arg = const_cast<SGPropertyNode*>(node);
+  _root = const_cast<SGPropertyNode*>(root);
   _setting = 0;
+
 }
 
 void
@@ -89,7 +91,7 @@ SGBinding::innerFire () const
     SG_LOG(SG_INPUT, SG_WARN, "No command attached to binding:" << _command_name);
   } else {
       try {
-          if (!(*_command)(_arg)) {
+          if (!(*_command)(_arg, _root)) {
                 SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command "
                        << _command_name);
           }

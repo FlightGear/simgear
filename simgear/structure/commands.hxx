@@ -41,11 +41,11 @@ public:
     {
     public:
         virtual ~Command() { }
-        virtual bool operator()(const SGPropertyNode * arg) = 0;
+        virtual bool operator()(const SGPropertyNode * arg, SGPropertyNode *root) = 0;
     };
 
     
-	  typedef bool (*command_t) (const SGPropertyNode * arg);
+	  typedef bool (*command_t) (const SGPropertyNode * arg, SGPropertyNode *root);
 
 private:
     class FunctionCommand : public Command
@@ -54,7 +54,7 @@ private:
         FunctionCommand( command_t fun )
     	: f_(fun) {}
 
-        virtual bool operator()(const SGPropertyNode * arg) { return (*f_)(arg); }
+        virtual bool operator()(const SGPropertyNode * arg, SGPropertyNode *root) { return (*f_)(arg, root); }
     private:
         command_t f_;
     };
@@ -66,9 +66,9 @@ private:
         MethodCommand( const ObjPtr& pObj, MemFn pMemFn ) :
     	  pObj_(pObj), pMemFn_(pMemFn) {}
 
-        virtual bool operator()(const SGPropertyNode * arg)
+        virtual bool operator()(const SGPropertyNode * arg, SGPropertyNode *root)
         {
-    	     return ((*pObj_).*pMemFn_)(arg);
+    	     return ((*pObj_).*pMemFn_)(arg,root);
         }
     private:
         ObjPtr pObj_;
@@ -147,7 +147,7 @@ public:
    * @return true if the command is present and executes successfully,
    * false otherwise.
    */
-  virtual bool execute (const std::string &name, const SGPropertyNode * arg) const;
+  virtual bool execute (const std::string &name, const SGPropertyNode * arg, SGPropertyNode *root) const;
 
   /**
    * Remove a command registration

@@ -75,7 +75,7 @@ SGCommandMgr::getCommandNames () const
 }
 
 bool
-SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg) const
+SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg, SGPropertyNode *root) const
 {
   Command* command = getCommand(name);
   if (command == 0)
@@ -86,7 +86,7 @@ SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg) cons
 
   try
   {
-    return (*command)(arg);
+    return (*command)(arg, root);
   }
   catch(sg_exception& e)
   {

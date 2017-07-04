@@ -149,7 +149,7 @@ Geometry* makeSharedTreeGeometry(int numQuads)
     result->setVertexArray(v);
     result->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
     result->setComputeBoundingBoxCallback(new TreesBoundingBoxCallback);
-    result->setUseDisplayList(false);
+    //result->setUseDisplayList(false);
     return result;
 }
 

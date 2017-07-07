@@ -49,7 +49,7 @@ class DummyThing
 public:
     DummyThing() : dummy_cmd_state(0) { }
     
-    bool someCommand(const SGPropertyNode* arg)
+    bool someCommand(const SGPropertyNode* arg, SGPropertyNode * )
     {
         dummy_cmd_state++;
         return true;

@@ -53,6 +53,7 @@ public:
         FAIL_FILESYSTEM,    ///< unknown filesystem error occurred
         FAIL_VERSION,       ///< version check mismatch
         FAIL_NOT_FOUND,     ///< package URL returned a 404
+        FAIL_HTTP_FORBIDDEN, ///< URL returned a 403. Marked specially to catch rate-limiting
         STATUS_REFRESHED,
         USER_CANCELLED
     } StatusCode;

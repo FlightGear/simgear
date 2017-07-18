@@ -281,6 +281,11 @@ public:
 	 */
 	SGPath dirPath() const;
 
+    /*
+     * return path as a file:// URI
+     */
+    std::string fileUrl() const;
+    
     enum StandardLocation
     {
       HOME,

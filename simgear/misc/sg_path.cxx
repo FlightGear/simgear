@@ -1054,3 +1054,23 @@ bool SGPath::permissionsAllowsWrite() const
     return _permission_checker ? _permission_checker(*this).write : true;
 }
 
+//------------------------------------------------------------------------------
+std::string SGPath::fileUrl() const
+{
+    // we should really URL encode the names here?
+    if (isAbsolute()) {
+        // check for a windows drive letter
+#if defined(SG_WINDOWS)
+        if (isalpha(path.front())) {
+            // file URLs on Windows must look like file:///C:/Foo/Bar
+            return "file:///" + utf8Str();
+        }
+#endif
+        // the leading directory seperator of the path becomes the required
+        // third slash in this case.
+        return "file://" + utf8Str();
+    } else {
+        SG_LOG(SG_GENERAL, SG_WARN, "Cannot convert relative path to a URL:" << path);
+        return {};
+    }
+}

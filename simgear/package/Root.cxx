@@ -30,27 +30,50 @@
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/sg_hash.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/package/Package.hxx>
 #include <simgear/package/Install.hxx>
 #include <simgear/package/Catalog.hxx>
 
+const int SECONDS_PER_DAY = 24 * 60 * 60;
+
 namespace simgear {
 
+namespace {
+    std::string hashForUrl(const std::string& d)
+    {
+        sha1nfo info;
+        sha1_init(&info);
+        sha1_write(&info, d.data(), d.size());
+        return strutils::encodeHex(sha1_result(&info), HASH_LENGTH);
+    }
+} // of anonymous namespace
+    
 namespace pkg {
 
 typedef std::map<std::string, CatalogRef> CatalogDict;
 typedef std::vector<Delegate*> DelegateVec;
-typedef std::map<std::string, std::string> MemThumbnailCache;
 typedef std::deque<std::string> StringDeque;
 
 class Root::ThumbnailDownloader : public HTTP::Request
 {
 public:
-    ThumbnailDownloader(Root::RootPrivate* aOwner, const std::string& aUrl) :
-    HTTP::Request(aUrl),
-    m_owner(aOwner)
+    ThumbnailDownloader(Root::RootPrivate* aOwner,
+                        const std::string& aUrl, const std::string& aRealUrl = std::string()) :
+        HTTP::Request(aUrl),
+        m_owner(aOwner),
+        m_realUrl(aRealUrl)
     {
+        if (m_realUrl.empty()) {
+            m_realUrl = aUrl;
+        }
+    }
+    
+    std::string realUrl() const
+    {
+        return m_realUrl;
     }
 
 protected:
@@ -64,6 +87,7 @@ protected:
 private:
     Root::RootPrivate* m_owner;
     std::string m_buffer;
+    std::string m_realUrl;
 };
 
 class Root::RootPrivate
@@ -71,7 +95,7 @@ class Root::RootPrivate
 public:
     RootPrivate() :
         http(NULL),
-        maxAgeSeconds(60 * 60 * 24)
+        maxAgeSeconds(SECONDS_PER_DAY)
     {
     }
 
@@ -123,20 +147,38 @@ public:
     void thumbnailDownloadComplete(HTTP::Request_ptr request,
                                    Delegate::StatusCode status, const std::string& bytes)
     {
-        std::string u(request->url());
+        auto dl = static_cast<Root::ThumbnailDownloader*>(request.get());
+        std::string u = dl->realUrl();
         if (status == Delegate::STATUS_SUCCESS) {
-            thumbnailCache[u] = bytes;
-            fireDataForThumbnail(u, bytes);
+            thumbnailCache[u].requestPending = false;
+            fireDataForThumbnail(u, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
+            
+            // if this was a network load, rather than a re-load from the disk cache,
+            // then persist to disk now.
+            if (strutils::starts_with(request->url(), "http")) {
+                addToPersistentCache(u, bytes);
+            }
+        } else if (status == Delegate::FAIL_HTTP_FORBIDDEN) {
+            // treat this as rate-limiting failure, at least from some mirrors
+            // (eg Ibiblio) and retry up to the max count
+            const int retries = (thumbnailCache[u].retryCount++);
+            if (retries < 3) {
+                SG_LOG(SG_IO, SG_INFO, "Download failed for: " << u << ", will retry");
+                thumbnailCache[u].requestPending = true;
+                pendingThumbnails.push_back(u);
+            }
+        } else {
+            // any other failure.
+            thumbnailCache[u].requestPending = false;
         }
 
         downloadNextPendingThumbnail();
     }
 
-    void fireDataForThumbnail(const std::string& aUrl, const std::string& bytes)
+    void fireDataForThumbnail(const std::string& aUrl, const uint8_t* bytes, size_t size)
     {
-        const uint8_t* data = reinterpret_cast<const uint8_t*>(bytes.data());
         for (auto d : delegates) {
-            d->dataForThumbnail(aUrl, bytes.size(), data);
+            d->dataForThumbnail(aUrl, size, bytes);
         }
     }
 
@@ -165,6 +207,73 @@ public:
         }
     }
     
+    void addToPersistentCache(const std::string& url, const std::string& imageBytes)
+    {
+        std::string hash = hashForUrl(url);
+        // append the correct file suffix
+        auto pos = url.rfind('.');
+        if (pos == std::string::npos) {
+            return;
+        }
+        
+        SGPath cachePath = path / "ThumbnailCache" / (hash + url.substr(pos));
+        sg_ofstream fstream(cachePath, std::ios::out | std::ios::trunc);
+        fstream.write(imageBytes.data(), imageBytes.size());
+        fstream.close();
+    }
+    
+    bool checkPersistentCache(const std::string& url)
+    {
+        std::string hash = hashForUrl(url);
+        // append the correct file suffix
+        auto pos = url.rfind('.');
+        if (pos == std::string::npos) {
+            return false;
+        }
+        
+        SGPath cachePath = path / "ThumbnailCache" / (hash + url.substr(pos));
+        if (!cachePath.exists()) {
+            return false;
+        }
+        
+        // check age, if it's too old, expire and download again
+        int age = time(nullptr) - cachePath.modTime();
+        if (age > SECONDS_PER_DAY * 7) { // cache for seven days
+            SG_LOG(SG_IO, SG_INFO, "expiring old cached thumbnail " << url);
+            cachePath.remove();
+            return false;
+        }
+        
+        queueLoadFromPersistentCache(url, cachePath);
+        return true;
+    }
+    
+    void queueLoadFromPersistentCache(const std::string& url, const SGPath& path)
+    {
+        assert(path.exists());
+        
+        auto it = thumbnailCache.find(url);
+        if (it == thumbnailCache.end()) {
+            ThumbnailCacheEntry entry;
+            entry.pathOnDisk = path;
+            it = thumbnailCache.insert(it, std::make_pair(url, entry));
+        } else {
+            assert(it->second.pathOnDisk == path);
+        }
+        
+        if (it->second.requestPending) {
+            return; // all done
+        }
+        
+        it->second.requestPending = true;
+        auto dl = new Root::ThumbnailDownloader(this, path.fileUrl(), url);
+        if (http) {
+            http->makeRequest(dl);
+        } else {
+            httpPendingRequests.push_back(dl);
+        }
+    }
+    
     DelegateVec delegates;
 
     SGPath path;
@@ -182,7 +291,15 @@ public:
 
     HTTP::Request_ptr thumbnailDownloadRequest;
     StringDeque pendingThumbnails;
-    MemThumbnailCache thumbnailCache;
+    
+    struct ThumbnailCacheEntry
+    {
+        int retryCount = 0;
+        bool requestPending = false;
+        SGPath pathOnDisk;
+    };
+    
+    std::map<std::string, ThumbnailCacheEntry> thumbnailCache;
 
     typedef std::map<PackageRef, InstallRef> InstallCache;
     InstallCache m_installs;
@@ -191,16 +308,19 @@ public:
 
 void Root::ThumbnailDownloader::onDone()
 {
+    if (simgear::strutils::starts_with(url(), "file://")) {
+        m_owner->thumbnailDownloadComplete(this, Delegate::STATUS_SUCCESS, m_buffer);
+        return;
+    }
+    
     if (responseCode() != 200) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "thumbnail download failure:" << url());
-        m_owner->thumbnailDownloadComplete(this, Delegate::FAIL_DOWNLOAD, std::string());
+        auto status = (responseCode() == 403) ? Delegate::FAIL_HTTP_FORBIDDEN : Delegate::FAIL_DOWNLOAD;
+        SG_LOG(SG_NETWORK, SG_INFO, "thumbnail download failure: " << url() << " with reason " << responseCode());
+        m_owner->thumbnailDownloadComplete(this, status, std::string());
         return;
     }
 
     m_owner->thumbnailDownloadComplete(this, Delegate::STATUS_SUCCESS, m_buffer);
-    //time(&m_owner->m_retrievedTime);
-    //m_owner->writeTimestamp();
-    //m_owner->refreshComplete(Delegate::STATUS_REFRESHED);
 }
 
 SGPath Root::path() const
@@ -264,10 +384,14 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
     Dir dir(aPath);
     if (!dir.exists()) {
         dir.create(0755);
-        return;
     }
 
-    BOOST_FOREACH(SGPath c, dir.children(Dir::TYPE_DIR | Dir::NO_DOT_OR_DOTDOT)) {
+    Dir thumbsCacheDir(aPath / "ThumbnailCache");
+    if (!thumbsCacheDir.exists()) {
+        thumbsCacheDir.create(0755);
+    }
+    
+    for (SGPath c : dir.children(Dir::TYPE_DIR | Dir::NO_DOT_OR_DOTDOT)) {
         CatalogRef cat = Catalog::createFromPath(this, c);
         if (cat) {
             if (cat->status() == Delegate::STATUS_SUCCESS) {
@@ -614,17 +738,21 @@ bool Root::removeCatalogById(const std::string& aId)
 
 void Root::requestThumbnailData(const std::string& aUrl)
 {
-    MemThumbnailCache::iterator it = d->thumbnailCache.find(aUrl);
+    auto it = d->thumbnailCache.find(aUrl);
     if (it == d->thumbnailCache.end()) {
-        // insert into cache to mark as pending
-        d->pendingThumbnails.push_front(aUrl);
-        d->thumbnailCache[aUrl] = std::string();
-        d->downloadNextPendingThumbnail();
-    } else if (!it->second.empty()) {
-        // already loaded, fire data synchronously
-        d->fireDataForThumbnail(aUrl, it->second);
+        bool cachedOnDisk = d->checkPersistentCache(aUrl);
+        if (cachedOnDisk) {
+            // checkPersistentCache will insert the entry and schedule
+        } else {
+            d->pendingThumbnails.push_front(aUrl);
+            d->thumbnailCache[aUrl] = RootPrivate::ThumbnailCacheEntry();
+            d->thumbnailCache[aUrl].requestPending = true;
+            d->downloadNextPendingThumbnail();
+        }
     } else {
-        // in cache but empty data, still fetching
+        if (!it->second.requestPending && it->second.pathOnDisk.exists()) {
+            d->queueLoadFromPersistentCache(aUrl, it->second.pathOnDisk);
+        }
     }
 }
 

@@ -268,6 +268,11 @@ string_set Package::tags() const
 {
     return m_tags;
 }
+    
+bool Package::hasTag(const std::string& tag) const
+{
+    return m_tags.find(tag) != m_tags.end();
+}
 
 SGPropertyNode* Package::properties() const
 {

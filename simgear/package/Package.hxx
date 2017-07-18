@@ -143,6 +143,13 @@ public:
     string_set tags() const;
 
     /**
+     * @brief hasTag - efficently check if a tag is defined or not
+     * @param tag
+     * @return
+     */
+    bool hasTag(const std::string& tag) const;
+    
+    /**
      * download URLs for the package
      */
     string_list downloadUrls() const;

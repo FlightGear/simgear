@@ -14,6 +14,7 @@ set(SOURCES
     Package.cxx
     Install.cxx
     Root.cxx
+	Delegate.cxx
 # internal helpers
     md5.h md5.c
     ioapi.c ioapi_mem.c ioapi.h

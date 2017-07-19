@@ -18,6 +18,7 @@
 #ifndef SG_PACKAGE_DELEGATE_HXX
 #define SG_PACKAGE_DELEGATE_HXX
 
+#include <string>
 #include <simgear/misc/stdint.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
@@ -81,10 +82,10 @@ public:
      * More general purpose notification when install is queued / cancelled / started
      * stopped. Reason value is only in certain cases.
      */
-    virtual void installStatusChanged(InstallRef aInstall, StatusCode aReason) {};
+    virtual void installStatusChanged(InstallRef aInstall, StatusCode aReason);
 
-    virtual void dataForThumbnail(const std::string& aThumbnailUrl,
-                                  size_t lenth, const uint8_t* bytes) {}
+	virtual void dataForThumbnail(const std::string& aThumbnailUrl,
+		size_t lenth, const uint8_t* bytes);
 };
 
 } // of namespace pkg

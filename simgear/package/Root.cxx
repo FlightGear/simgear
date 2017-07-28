@@ -217,7 +217,7 @@ public:
         }
         
         SGPath cachePath = path / "ThumbnailCache" / (hash + url.substr(pos));
-        sg_ofstream fstream(cachePath, std::ios::out | std::ios::trunc);
+        sg_ofstream fstream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
         fstream.write(imageBytes.data(), imageBytes.size());
         fstream.close();
     }

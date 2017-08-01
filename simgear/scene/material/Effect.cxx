@@ -89,36 +89,17 @@ using namespace osgUtil;
 
 using namespace effect;
 
-class UniformFactoryImpl {
-public:
-    ref_ptr<Uniform> getUniform( Effect * effect, 
-                                 const string & name, 
-                                 Uniform::Type uniformType, 
-                                 SGConstPropertyNode_ptr valProp, 
-                                 const SGReaderWriterOptions* options );
-    void updateListeners( SGPropertyNode* propRoot );
-    void addListener(DeferredPropertyListener* listener);
-private:
-    // Default names for vector property components
-    static const char* vec3Names[];
-    static const char* vec4Names[];
-
-    SGMutex _mutex;
-
-    typedef boost::tuple<std::string, Uniform::Type, std::string, std::string> UniformCacheKey;
-    typedef boost::tuple<ref_ptr<Uniform>, SGPropertyChangeListener*> UniformCacheValue;
-    std::map<UniformCacheKey,ref_ptr<Uniform> > uniformCache;
-
-    typedef std::queue<DeferredPropertyListener*> DeferredListenerList;
-    DeferredListenerList deferredListenerList;
-};
-
 const char* UniformFactoryImpl::vec3Names[] = {"x", "y", "z"};
 const char* UniformFactoryImpl::vec4Names[] = {"x", "y", "z", "w"};
 
-ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect, 
-                                 const string & name, 
-                                 Uniform::Type uniformType, 
+void UniformFactoryImpl::reset()
+{
+  uniformCache.clear();
+}
+
+ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
+                                 const string & name,
+                                 Uniform::Type uniformType,
                                  SGConstPropertyNode_ptr valProp,
                                  const SGReaderWriterOptions* options )
 {
@@ -222,8 +203,6 @@ void UniformFactoryImpl::updateListeners( SGPropertyNode* propRoot )
 		deferredListenerList.pop();
 	}
 }
-
-typedef Singleton<UniformFactoryImpl> UniformFactory;
 
 
 Effect::Effect()

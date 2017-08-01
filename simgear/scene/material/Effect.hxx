@@ -20,8 +20,10 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <queue>
 
 #include <boost/functional/hash.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <osg/Object>
 #include <osg/observer_ptr>
@@ -29,6 +31,9 @@
 
 #include <simgear/props/props.hxx>
 #include <simgear/scene/util/UpdateOnceCallback.hxx>
+#include <simgear/threads/SGThread.hxx>
+#include <simgear/threads/SGGuard.hxx>
+#include <simgear/structure/Singleton.hxx>
 
 namespace osg
 {
@@ -47,6 +52,9 @@ namespace simgear
 class Technique;
 class Effect;
 class SGReaderWriterOptions;
+
+using namespace osg;
+using namespace std;
 
 /**
  * Object to be initialized at some point after an effect -- and its
@@ -168,5 +176,33 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
                         const SGPropertyNode* left,
                         const SGPropertyNode* right);
 }
+
+class UniformFactoryImpl {
+public:
+    ref_ptr<Uniform> getUniform( Effect * effect,
+                                 const string & name,
+                                 Uniform::Type uniformType,
+                                 SGConstPropertyNode_ptr valProp,
+                                 const SGReaderWriterOptions* options );
+    void updateListeners( SGPropertyNode* propRoot );
+    void addListener(DeferredPropertyListener* listener);
+    void reset();
+private:
+    // Default names for vector property components
+    static const char* vec3Names[];
+    static const char* vec4Names[];
+
+    SGMutex _mutex;
+
+    typedef boost::tuple<std::string, Uniform::Type, std::string, std::string> UniformCacheKey;
+    typedef boost::tuple<ref_ptr<Uniform>, SGPropertyChangeListener*> UniformCacheValue;
+    std::map<UniformCacheKey,ref_ptr<Uniform> > uniformCache;
+
+    typedef std::queue<DeferredPropertyListener*> DeferredListenerList;
+    DeferredListenerList deferredListenerList;
+};
+
+typedef Singleton<UniformFactoryImpl> UniformFactory;
+
 }
 #endif

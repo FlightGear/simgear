@@ -278,8 +278,10 @@ Effect* makeEffect(SGPropertyNode* prop,
 
 void clearEffectCache()
 {
+    SG_LOG(SG_INPUT, SG_DEBUG, "clearEffectCache called");
     OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
     effectMap.clear();
+    UniformFactory::instance()->reset();
 }
 
 }

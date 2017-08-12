@@ -33,11 +33,14 @@
 #include <cstddef>              // std::size_t
 
 #include <simgear/misc/test_macros.hxx>
+#include <simgear/misc/sg_dir.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/io/iostreams/CharArrayStream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/io/iostreams/zlibstream.hxx>
 #include "EmbeddedResource.hxx"
 #include "EmbeddedResourceManager.hxx"
+#include "ResourceProxy.hxx"
 
 using std::cout;
 using std::cerr;
@@ -395,6 +398,102 @@ void test_getLocaleAndSelectLocale()
   }
 }
 
+// Auxiliary function for test_ResourceProxy()
+void auxTest_ResourceProxy_getIStream(unique_ptr<std::istream> iStream,
+                                      const string& contents)
+{
+  cout << "Testing ResourceProxy::getIStream()" << endl;
+
+  iStream->exceptions(std::ios_base::badbit);
+  static constexpr std::size_t bufSize = 65536;
+  unique_ptr<char[]> buf(new char[bufSize]); // intermediate buffer
+  string result;
+
+  do {
+    iStream->read(buf.get(), bufSize);
+    result.append(buf.get(), iStream->gcount());
+  } while (*iStream);           // iStream *points* to an std::istream
+
+  // 1) If set, badbit would have caused an exception to be raised (see above).
+  // 2) failbit doesn't necessarily indicate an error here: it is set as soon
+  //    as the read() call can't provide the requested number of characters.
+  SG_VERIFY(iStream->eof() && !iStream->bad());
+  SG_CHECK_EQUAL(result, contents);
+}
+
+void test_ResourceProxy()
+{
+  cout << "Testing the ResourceProxy class" << endl;
+
+  // Initialize stuff we need and create two files containing the contents of
+  // the default-locale version of two embedded resources: those with virtual
+  // paths '/path/to/resource1' and '/path/to/resource2'.
+  const auto& resMgr = EmbeddedResourceManager::instance();
+  simgear::Dir tmpDir = simgear::Dir::tempDir("FlightGear");
+  tmpDir.setRemoveOnDestroy();
+
+  const SGPath path1 = tmpDir.path() / "resource1";
+  const SGPath path2 = tmpDir.path() / "resource2";
+
+  sg_ofstream out1(path1);
+  sg_ofstream out2(path2);
+  const string s1 = resMgr->getString("/path/to/resource1", "");
+  // To make sure in these tests that we can tell whether something came from
+  // a real file or from an embedded resource.
+  const string rs1 = s1 + " from real file";
+  const string rlipsum = lipsum + " from real file";
+
+  out1 << rs1;
+  out1.close();
+  if (!out1) {
+    throw sg_io_exception("Error writing to file", sg_location(path1));
+  }
+
+  out2 << rlipsum;
+  out2.close();
+  if (!out2) {
+    throw sg_io_exception("Error writing to file", sg_location(path2));
+  }
+
+  // 'proxy' defaults to using embedded resources
+  const simgear::ResourceProxy proxy(tmpDir.path(),
+                                     "/path/to",
+                                     true /* useEmbeddedResourcesByDefault */);
+  simgear::ResourceProxy rproxy(tmpDir.path(), "/path/to");
+  // 'rproxy' defaults to using real files
+  rproxy.setUseEmbeddedResources(false); // could be done from the ctor too
+
+  // Test ResourceProxy::getString()
+  SG_CHECK_EQUAL(proxy.getStringDecideOnPrefix("/resource1"), rs1);
+  SG_CHECK_EQUAL(proxy.getStringDecideOnPrefix(":/resource1"), s1);
+  SG_CHECK_EQUAL(proxy.getString("/resource1", false), rs1);
+  SG_CHECK_EQUAL(proxy.getString("/resource1", true), s1);
+  SG_CHECK_EQUAL(proxy.getString("/resource1"), s1);
+  SG_CHECK_EQUAL(rproxy.getString("/resource1"), rs1);
+
+  SG_CHECK_EQUAL(proxy.getStringDecideOnPrefix("/resource2"), rlipsum);
+  SG_CHECK_EQUAL(proxy.getStringDecideOnPrefix(":/resource2"), lipsum);
+  SG_CHECK_EQUAL(proxy.getString("/resource2", false), rlipsum);
+  SG_CHECK_EQUAL(proxy.getString("/resource2", true), lipsum);
+  SG_CHECK_EQUAL(proxy.getString("/resource2"), lipsum);
+  SG_CHECK_EQUAL(rproxy.getString("/resource2"), rlipsum);
+
+  // Test ResourceProxy::getIStream()
+  auxTest_ResourceProxy_getIStream(proxy.getIStreamDecideOnPrefix("/resource1"),
+                                   rs1);
+  auxTest_ResourceProxy_getIStream(proxy.getIStreamDecideOnPrefix(":/resource1"),
+                                   s1);
+  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource1"), s1);
+  auxTest_ResourceProxy_getIStream(rproxy.getIStream("/resource1"), rs1);
+
+  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource2", false),
+                                   rlipsum);
+  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource2", true),
+                                   lipsum);
+  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource2"), lipsum);
+  auxTest_ResourceProxy_getIStream(rproxy.getIStream("/resource2"), rlipsum);
+}
+
 int main(int argc, char **argv)
 {
   // Initialize the EmbeddedResourceManager instance, add a few resources
@@ -407,6 +506,7 @@ int main(int argc, char **argv)
   test_addAlreadyExistingResource();
   test_localeDependencyOfResourceFetching();
   test_getLocaleAndSelectLocale();
+  test_ResourceProxy();
 
   return EXIT_SUCCESS;
 }

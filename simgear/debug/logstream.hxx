@@ -120,7 +120,7 @@ public:
     /**
     * output formatted hex dump of memory block
     */
-    void hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, int columns = 16);
+    void hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, unsigned int columns = 16);
 
 
     /**

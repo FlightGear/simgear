@@ -531,7 +531,7 @@ logstream::log( sgDebugClass c, sgDebugPriority p,
 }
 
 
-void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, int columns)
+void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, unsigned int columns)
 {
     unsigned int i, j;
     char temp[3000], temp1[3000];

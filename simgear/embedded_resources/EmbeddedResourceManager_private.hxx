@@ -68,6 +68,10 @@ public:
     const std::string& virtualPath,
     const std::vector< std::shared_ptr<ResourcePool> >& poolSearchList);
 
+  // Recompute p->poolSearchList. This method is automatically called whenever
+  // needed (lazily), so it doesn't need to be part of the public interface.
+  void rehash();
+
   // Implement the corresponding EmbeddedResourceManager public methods
   std::string getLocale() const;
   std::string selectLocale(const std::string& locale);
@@ -78,11 +82,15 @@ public:
                    const std::string& locale);
 
   std::string selectedLocale;
-  // After each call to selectLocale(), we update this member to contain
-  // precisely the (ordered) list of pools to search for a resource in the
-  // selected “locale”. This allows relatively cheap resource lookups,
-  // assuming the desired “locale” doesn't change all the time.
+  // Each call to rehash() updates this member to contain precisely the
+  // (ordered) list of pools to search for a resource in the selected
+  // “locale”. This allows relatively cheap resource lookups, assuming the
+  // desired “locale” doesn't change all the time.
   std::vector< std::shared_ptr<ResourcePool> > poolSearchList;
+  // Indicate whether 'poolSearchList' must be updated (i.e., resources have
+  // been added or the selected locale was changed without rehash() being
+  // called afterwards).
+  bool dirty;
 
   // Maps each “locale name” to the corresponding resource pool.
   std::unordered_map< std::string,

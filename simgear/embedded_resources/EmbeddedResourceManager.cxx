@@ -46,7 +46,19 @@ static unique_ptr<EmbeddedResourceManager> staticInstance;
 // *                      EmbeddedResourceManager::Impl                      *
 // ***************************************************************************
 EmbeddedResourceManager::Impl::Impl()
+  : dirty(true)
 { }
+
+void
+EmbeddedResourceManager::Impl::rehash()
+{
+  // Update the list of resource pools to search when looking up a resource.
+  // This allows to optimize resource lookup: no need to parse, split and hash
+  // the same locale string every time to find the corresponding resource
+  // pools.
+  poolSearchList = listOfResourcePoolsToSearch(selectedLocale);
+  dirty = false;
+}
 
 string
 EmbeddedResourceManager::Impl::getLocale() const
@@ -59,11 +71,7 @@ EmbeddedResourceManager::Impl::selectLocale(const std::string& locale)
 {
   string previousLocale = std::move(selectedLocale);
   selectedLocale = locale;
-  // Update the list of resource pools to search when looking up a resource.
-  // This allows to optimize resource lookup: no need to parse, split and hash
-  // the same locale string every time to find the corresponding resource
-  // pools.
-  poolSearchList = listOfResourcePoolsToSearch(selectedLocale);
+  dirty = true;
 
   return previousLocale;
 }
@@ -157,6 +165,8 @@ EmbeddedResourceManager::Impl::addResource(
       "Virtual path already in use for " + localeDescr +
       " in the EmbeddedResourceManager: '" + virtualPath + "'");
   }
+
+  dirty = true;
 }
 
 // ***************************************************************************
@@ -203,10 +213,10 @@ EmbeddedResourceManager::addResource(
 shared_ptr<const AbstractEmbeddedResource>
 EmbeddedResourceManager::getResourceOrNullPtr(const string& virtualPath) const
 {
-  // Failure would indicate that either no resource has been added, or
-  // selectLocale() hasn't been called. Remember that selectLocale() must be
-  // called after all resources have been added.
-  assert(!p->poolSearchList.empty());
+  if (p->dirty) {
+    p->rehash();                // update p->poolSearchList
+  }
+
   // Use the selected locale
   return p->lookupResourceInPools(virtualPath, p->poolSearchList);
 }
@@ -216,8 +226,8 @@ EmbeddedResourceManager::getResourceOrNullPtr(const string& virtualPath,
                                               const string& locale) const
 {
   // In this overload, we don't use the cached list of pools
-  // (p->poolSearchList), therefore this can be used to find a resource for
-  // any locale without any need to call selectLocale().
+  // (p->poolSearchList), therefore there is no need to check the 'dirty' flag
+  // or to rehash().
   return p->lookupResourceInPools(virtualPath,
                                   p->listOfResourcePoolsToSearch(locale));
 }

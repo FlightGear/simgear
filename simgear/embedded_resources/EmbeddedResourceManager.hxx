@@ -61,14 +61,12 @@ public:
   // Select the locale for which resources will be returned in the future, for
   // the getResourceOrNullPtr(), getResource(), getString(), getStreambuf()
   // and getIStream() overloads that don't have a 'locale' parameter.
-  // Return the previously-selected locale.
+  // May be called several times. Return the previously-selected locale.
   //
-  // This method *must* be called after all resources have been added. It can
-  // be called several times (typically, when the user changes the language
-  // for the whole application). If you just want to fetch one or two
-  // resources in a particular “locale” (language), it is simpler to use an
-  // overload of one of the getResourceOrNullPtr(), getResource(), ...,
-  // getIStream() methods that has a 'locale' parameter.
+  // If you just want to fetch one or two resources in a particular “locale”
+  // (language), it is simpler to use an overload of one of the
+  // getResourceOrNullPtr(), getResource(), ..., getIStream() methods that has
+  // a 'locale' parameter.
   std::string selectLocale(const std::string& locale);
 
   // Add a resource for the specified locale to the embedded resource manager.

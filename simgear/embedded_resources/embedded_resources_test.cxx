@@ -158,8 +158,8 @@ void initResources()
     new RawEmbeddedResource(res2frArray, sizeof(res2frArray) - 1));
   resMgr->addResource("/path/to/resource2", std::move(res2fr), "fr");
 
-  // This method must be called after all resources have been added. Here, we
-  // select the default locale (typically, English).
+  // Explicitly select the default locale (typically, English). This is for
+  // clarity, but isn't required.
   resMgr->selectLocale("");
 }
 

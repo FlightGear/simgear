@@ -709,12 +709,19 @@ protected:
 bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& center, SGVec3d &axis, simgear::SGTransientModelData &modelData) const
 {
     std::string axis_object_name = std::string();
+    bool can_warn = true;
+
     if (_configNode->hasValue("axis/object-name"))
     {
         axis_object_name = _configNode->getStringValue("axis/object-name");
     }
-    else if (!_configNode->getNode("axis"))
+    else if (!_configNode->getNode("axis")) {
         axis_object_name = _configNode->getStringValue("object-name") + std::string("-axis");
+        // for compatibility we will not warn if no axis object can be found when there was nothing 
+        // specified - as the axis could just be the default at the origin
+        // so if there is a [objectname]-axis use it, otherwise fallback to the previous behaviour
+        can_warn = false; 
+    }
 
     if (!axis_object_name.empty())
     {
@@ -764,7 +771,7 @@ bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& cente
                 else
                     SG_LOG(SG_INPUT, SG_ALERT, "Could find a valid line segment for animation:  " << axis_object_name);
             }
-            else
+            else if (can_warn)
                 SG_LOG(SG_INPUT, SG_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
         }
         if (axisSegment)
@@ -2358,7 +2365,7 @@ SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
   osg::Group* group = new osg::Group;
   group->setName("texture transform group");
   osg::StateSet* stateSet = group->getOrCreateStateSet();
-  stateSet->setDataVariance(osg::Object::DYNAMIC);  
+  stateSet->setDataVariance(osg::Object::STATIC/*osg::Object::DYNAMIC*/);  
   osg::TexMat* texMat = new osg::TexMat;
   UpdateCallback* updateCallback = new UpdateCallback(getCondition());
   // interpret the configs ...

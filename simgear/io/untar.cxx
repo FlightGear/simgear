@@ -28,6 +28,7 @@
 
 #include <zlib.h>
 
+#include <simgear/sg_inlines.h>
 #include <simgear/io/sg_file.hxx>
 #include <simgear/misc/sg_dir.hxx>
 
@@ -92,7 +93,8 @@ public:
         END_OF_ARCHIVE,
         ERROR_STATE, ///< states above this are error conditions
         BAD_ARCHIVE,
-        BAD_DATA
+        BAD_DATA,
+        FILTER_STOPPED
     } State;
 
     SGPath path;
@@ -110,10 +112,13 @@ public:
     bool haveInitedZLib;
     bool uncompressedData; // set if reading a plain .tar (not tar.gz)
     uint8_t* headerPtr;
-
-    TarExtractorPrivate() :
+    TarExtractor* outer;
+    bool skipCurrentEntry = false;
+    
+    TarExtractorPrivate(TarExtractor* o) :
         haveInitedZLib(false),
-        uncompressedData(false)
+        uncompressedData(false),
+        outer(o)
     {
     }
 
@@ -129,7 +134,10 @@ public:
         }
 
         if (state == READING_FILE) {
-            currentFile->close();
+            if (currentFile) {
+                currentFile->close();
+                currentFile.reset();
+            }
             size_t pad = currentFileSize % TAR_HEADER_BLOCK_SIZE;
             if (pad) {
                 bytesRemaining = TAR_HEADER_BLOCK_SIZE - pad;
@@ -177,26 +185,36 @@ public:
             return;
         }
 
+        skipCurrentEntry = false;
         std::string tarPath = std::string(header.prefix) + std::string(header.fileName);
 
         if (!isSafePath(tarPath)) {
-            //state = BAD_ARCHIVE;
             SG_LOG(SG_IO, SG_WARN, "bad tar path:" << tarPath);
-            //return;
+            skipCurrentEntry = true;
         }
 
-        SGPath p = path;
-        p.append(tarPath);
-
+        auto result = outer->filterPath(tarPath);
+        if (result == TarExtractor::Stop) {
+            setState(FILTER_STOPPED);
+            return;
+        } else if (result == TarExtractor::Skipped) {
+            skipCurrentEntry = true;
+        }
+        
+        SGPath p = path / tarPath;
         if (header.typeflag == DIRTYPE) {
-            Dir dir(p);
-            dir.create(0755);
+            if (!skipCurrentEntry) {
+                Dir dir(p);
+                dir.create(0755);
+            }
             setState(READING_HEADER);
         } else if ((header.typeflag == REGTYPE) || (header.typeflag == AREGTYPE)) {
             currentFileSize = ::strtol(header.size, NULL, 8);
             bytesRemaining = currentFileSize;
-            currentFile.reset(new SGBinaryFile(p));
-            currentFile->open(SG_IO_OUT);
+            if (!skipCurrentEntry) {
+                currentFile.reset(new SGBinaryFile(p));
+                currentFile->open(SG_IO_OUT);
+            }
             setState(READING_FILE);
         } else {
             SG_LOG(SG_IO, SG_WARN, "Unsupported tar file type:" << header.typeflag);
@@ -212,7 +230,9 @@ public:
 
         size_t curBytes = std::min(bytesRemaining, count);
         if (state == READING_FILE) {
-            currentFile->write(bytes, curBytes);
+            if (currentFile) {
+                currentFile->write(bytes, curBytes);
+            }
             bytesRemaining -= curBytes;
         } else if ((state == READING_HEADER) || (state == PRE_END_OF_ARCHVE) || (state == END_OF_ARCHIVE)) {
             memcpy(headerPtr, bytes, curBytes);
@@ -264,7 +284,7 @@ public:
 };
 
 TarExtractor::TarExtractor(const SGPath& rootPath) :
-    d(new TarExtractorPrivate)
+    d(new TarExtractorPrivate(this))
 {
 
     d->path = rootPath;
@@ -397,7 +417,7 @@ bool TarExtractor::isTarData(const uint8_t* bytes, size_t count)
             SG_LOG(SG_IO, SG_WARN, "insufficient data for header");
             return false;
         }
-        
+
         header = reinterpret_cast<UstarHeaderBlock*>(zlibOutput);
     } else {
         // uncompressed tar
@@ -415,6 +435,13 @@ bool TarExtractor::isTarData(const uint8_t* bytes, size_t count)
     }
 
     return true;
+}
+
+auto TarExtractor::filterPath(std::string& pathToExtract)
+  -> PathResult
+{
+    SG_UNUSED(pathToExtract);
+    return Accepted;
 }
 
 } // of simgear

@@ -275,7 +275,7 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
   //stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
   osg::DrawArrays* drawArrays;
-  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
+  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
   return geometry;

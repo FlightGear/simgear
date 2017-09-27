@@ -538,6 +538,33 @@ namespace simgear {
     unsigned long long readNonNegativeInt<unsigned long long, 16>(
         const std::string& s);
 #endif
+        
+        // parse a time string ([+/-]%f[:%f[:%f]]) into hours
+        double readTime(const string& time_in)
+        {
+            if (time_in.empty()) {
+                return 0.0;
+            }
+            
+            const bool negativeSign = time_in.front() == '-';
+            const string_list pieces = split(time_in, ":");
+            if (pieces.size() > 3) {
+                throw sg_format_exception("Unable to parse time string, too many pieces", time_in);
+            }
+            
+            const int hours = std::abs(to_int(pieces.front()));
+            int minutes = 0, seconds = 0;
+            if (pieces.size() > 1) {
+                minutes = to_int(pieces.at(1));
+                if (pieces.size() > 2) {
+                    seconds = to_int(pieces.at(2));
+                }
+            }
+        
+            double result = hours + (minutes / 60.0) + (seconds / 3600.0);
+            return negativeSign ? -result : result;
+        }
+
 
     int compare_versions(const string& v1, const string& v2, int maxComponents)
     {

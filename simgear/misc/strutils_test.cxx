@@ -19,6 +19,7 @@
 #include <simgear/compiler.h>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/constants.h>
 
 using std::string;
 using std::vector;
@@ -581,6 +582,29 @@ void test_error_string()
   SG_CHECK_GT(strutils::error_string(saved_errno).size(), 0);
 }
 
+void test_readTime()
+{
+    SG_CHECK_EQUAL_EP(strutils::readTime(""), 0.0);
+
+    SG_CHECK_EQUAL_EP(strutils::readTime("11"), 11.0);
+    SG_CHECK_EQUAL_EP(strutils::readTime("+11"), 11.0);
+    SG_CHECK_EQUAL_EP(strutils::readTime("-11"), -11.0);
+    
+    SG_CHECK_EQUAL_EP(strutils::readTime("11:30"), 11.5);
+    SG_CHECK_EQUAL_EP(strutils::readTime("+11:15"), 11.25);
+    SG_CHECK_EQUAL_EP(strutils::readTime("-11:45"), -11.75);
+    
+    const double seconds = 1 / 3600.0;
+    SG_CHECK_EQUAL_EP(strutils::readTime("11:30:00"), 11.5);
+    SG_CHECK_EQUAL_EP(strutils::readTime("+11:15:05"), 11.25 + 5 * seconds);
+    SG_CHECK_EQUAL_EP(strutils::readTime("-11:45:15"), -(11.75 + 15 * seconds));
+
+    SG_CHECK_EQUAL_EP(strutils::readTime("0:0:0"), 0);
+    
+    SG_CHECK_EQUAL_EP(strutils::readTime("0:0:28"), 28 * seconds);
+    SG_CHECK_EQUAL_EP(strutils::readTime("-0:0:28"), -28 * seconds);
+}
+
 int main(int argc, char* argv[])
 {
     test_strip();
@@ -599,6 +623,7 @@ int main(int argc, char* argv[])
     test_md5_hex();
     test_error_string();
     test_propPathMatch();
-
+    test_readTime();
+    
     return EXIT_SUCCESS;
 }

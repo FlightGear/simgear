@@ -209,6 +209,16 @@ namespace simgear {
         typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
     T readNonNegativeInt(const std::string& s);
 
+      
+      /**
+       * Read a time value, seperated by colons, as a value in hours.
+       * Allowable input is ([+/-]%f[:%f[:%f]]) 
+       * i.e 15:04:35 is parsed as 15 + (04 / 60) + (35 / 2600)
+       * This code is moved from flightgear's options.cxx where it was called
+       * parse_time(),
+       */
+      double readTime(const std::string& s);
+      
     /**
      * Convert a string representing a boolean, to a bool.
      * Accepted values include YES, true, 0, 1, false, no, True,

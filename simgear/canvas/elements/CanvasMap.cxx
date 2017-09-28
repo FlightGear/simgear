@@ -47,6 +47,12 @@ namespace canvas
   const std::string GEO = "-geo";
   const std::string HDG = "hdg";
   const std::string Map::TYPE_NAME = "map";
+  const std::string WEB_MERCATOR = "webmercator";
+  const std::string REF_LAT = "ref-lat";
+  const std::string REF_LON = "ref-lon";
+  const std::string SCREEN_RANGE = "screen-range";
+  const std::string RANGE = "range";
+  const std::string PROJECTION = "projection";
 
   //----------------------------------------------------------------------------
   void Map::staticInit()
@@ -64,12 +70,16 @@ namespace canvas
             const SGPropertyNode_ptr& node,
             const Style& parent_style,
             ElementWeakPtr parent ):
-    Group(canvas, node, parent_style, parent),
-    // TODO make projection configurable
-    _projection(new SansonFlamsteedProjection),
-    _projection_dirty(true)
+    Group(canvas, node, parent_style, parent)
   {
     staticInit();
+    if (node->getChild(PROJECTION) &&
+        (node->getChild(PROJECTION)->getStringValue() == WEB_MERCATOR)) {
+      _projection = (boost::shared_ptr<HorizontalProjection>) new WebMercatorProjection();
+    } else {
+      _projection = (boost::shared_ptr<HorizontalProjection>) new SansonFlamsteedProjection();
+    }
+    _projection_dirty = true;
   }
 
   //----------------------------------------------------------------------------
@@ -162,10 +172,10 @@ namespace canvas
     if( child->getParent() != _node )
       return Group::childChanged(child);
 
-    if(    child->getNameString() == "ref-lat"
-        || child->getNameString() == "ref-lon" )
-      _projection->setWorldPosition( _node->getDoubleValue("ref-lat"),
-                                     _node->getDoubleValue("ref-lon") );
+    if(    child->getNameString() == REF_LAT
+        || child->getNameString() == REF_LON )
+      _projection->setWorldPosition( _node->getDoubleValue(REF_LAT),
+                                     _node->getDoubleValue(REF_LON) );
     else if( child->getNameString() == HDG )
     {
       _projection->setOrientation(child->getFloatValue());
@@ -174,11 +184,23 @@ namespace canvas
                            ++it )
         hdgNodeChanged(*it);
     }
-    else if( child->getNameString() == "range" )
+    else if( child->getNameString() == RANGE )
       _projection->setRange(child->getDoubleValue());
-    else if( child->getNameString() == "screen-range" )
+    else if( child->getNameString() == SCREEN_RANGE )
       _projection->setScreenRange(child->getDoubleValue());
-    else
+    else if( child->getNameString() == PROJECTION ) {
+      if (child->getStringValue() == WEB_MERCATOR) {
+        _projection = (boost::shared_ptr<HorizontalProjection>) new WebMercatorProjection();
+      } else {
+        _projection = (boost::shared_ptr<HorizontalProjection>) new SansonFlamsteedProjection();
+      }
+      _projection->setWorldPosition(_node->getDoubleValue(REF_LAT),
+                                    _node->getDoubleValue(REF_LON) );
+      _projection->setOrientation(_node->getFloatValue(HDG));
+      _projection->setScreenRange(_node->getDoubleValue(SCREEN_RANGE));
+      _projection->setRange(_node->getDoubleValue(RANGE));
+      _projection_dirty = true;
+    } else
       return Group::childChanged(child);
 
     _projection_dirty = true;

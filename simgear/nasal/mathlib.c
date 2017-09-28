@@ -109,7 +109,7 @@ static naRef f_fmod(naContext c, naRef me, int argc, naRef* args)
     naRef b = naNumValue(argc > 1 ? args[1] : naNil());
     if(naIsNil(a) || naIsNil(b))
         naRuntimeError(c, "non numeric arguments to fmod()");
-    
+
     a.num = fmod(a.num, b.num);
     return VALIDATE(a);
 }
@@ -119,7 +119,7 @@ static naRef f_clamp(naContext c, naRef me, int argc, naRef* args)
     naRef a = naNumValue(argc > 0 ? args[0] : naNil());
     naRef min = naNumValue(argc > 1 ? args[1] : naNil());
     naRef max = naNumValue(argc > 2 ? args[2] : naNil());
-    
+
     if(naIsNil(a) || naIsNil(min) || naIsNil(max))
         naRuntimeError(c, "non numeric arguments to clamp()");
 
@@ -133,10 +133,10 @@ static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)
     naRef a = naNumValue(argc > 0 ? args[0] : naNil());
     naRef b = naNumValue(argc > 1 ? args[1] : naNil());
     naRef x = naNumValue(argc > 2 ? args[2] : naNil());
-    
+
     if(naIsNil(a) || naIsNil(b) || naIsNil(x))
         naRuntimeError(c, "non numeric arguments to periodic()");
-  
+
     range = b.num - a.num;
     x.num = x.num - range*floor((x.num - a.num)/range);
     // two security checks that can only happen due to roundoff
@@ -145,7 +145,7 @@ static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)
     if (b.num <= x.num)
         x.num = b.num;
     return VALIDATE(x);
-      
+
 //    x.num = SGMiscd::normalizePeriodic(a, b, x);
     return VALIDATE(x);
 }
@@ -156,7 +156,7 @@ static naRef f_round(naContext c, naRef me, int argc, naRef* args)
     naRef b = naNumValue(argc > 1 ? args[1] : naNil());
 #ifdef _MSC_VER
     double x,y;
-#endif    
+#endif
     if(naIsNil(a))
         naRuntimeError(c, "non numeric arguments to round()");
     if (naIsNil(b))
@@ -169,18 +169,28 @@ static naRef f_round(naContext c, naRef me, int argc, naRef* args)
     double x = round(a.num / b.num);
 #endif
     a.num = x * b.num;
-    
+
     return VALIDATE(a);
 }
 
 
 static naRef f_tan(naContext c, naRef me, int argc, naRef* args)
 {
-    naRef a = naNumValue(argc > 0 ? args[0] : naNil());    
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
     if(naIsNil(a))
         naRuntimeError(c, "non numeric arguments to tan()");
-    
+
    a.num = tan(a.num);
+   return VALIDATE(a);
+}
+
+static naRef f_atan(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    if(naIsNil(a))
+        naRuntimeError(c, "non numeric arguments to tan()");
+
+   a.num = atan(a.num);
    return VALIDATE(a);
 }
 
@@ -210,15 +220,16 @@ static naCFuncItem funcs[] = {
     { "pow", f_pow },
     { "sqrt", f_sqrt },
     { "atan2", f_atan2 },
+    { "atan", f_atan },
     { "floor", f_floor },
     { "ceil", f_ceil },
     { "fmod", f_fmod },
     { "clamp", f_clamp },
-    { "periodic", f_periodic },    
-    { "round", f_round }, 
-    { "tan", f_tan },   
+    { "periodic", f_periodic },
+    { "round", f_round },
+    { "tan", f_tan },
     { "acos", f_acos },
-    { "asin", f_asin },   
+    { "asin", f_asin },
     { 0 }
 };
 

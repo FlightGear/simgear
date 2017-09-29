@@ -142,7 +142,7 @@ public:
     void finishedRequest(const RepoRequestPtr& req);
 
     HTTPDirectory* getOrCreateDirectory(const std::string& path);
-    bool deleteDirectory(const std::string& path);
+    bool deleteDirectory(const std::string& relPath, const SGPath& absPath);
 
     typedef std::vector<HTTPDirectory*> DirectoryVector;
     DirectoryVector directories;
@@ -317,7 +317,8 @@ public:
             ChildInfoList::iterator c = findIndexChild(it->file());
             if (c == children.end()) {
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "is orphan '" << it->file() << "'" );
-                orphans.push_back(it->file());
+
+				orphans.push_back(it->file());
             } else if (c->hash != hash) {
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << it->file() );
                 // file exists, but hash mismatch, schedule update
@@ -534,7 +535,7 @@ private:
 
         std::string fpath = _relativePath + "/" + name;
         if (p.isDir()) {
-            ok = _repository->deleteDirectory(fpath);
+            ok = _repository->deleteDirectory(fpath, p);
         } else {
             // remove the hash cache entry
             _repository->updatedFileContents(p, std::string());
@@ -1044,25 +1045,26 @@ HTTPRepository::failure() const
         return d;
     }
 
-    bool HTTPRepoPrivate::deleteDirectory(const std::string& path)
+    bool HTTPRepoPrivate::deleteDirectory(const std::string& relPath, const SGPath& absPath)
     {
-        DirectoryWithPath p(path);
-        DirectoryVector::iterator it = std::find_if(directories.begin(), directories.end(), p);
+        DirectoryWithPath p(relPath);
+        auto it = std::find_if(directories.begin(), directories.end(), p);
         if (it != directories.end()) {
             HTTPDirectory* d = *it;
+			assert(d->absolutePath() == absPath);
             directories.erase(it);
-            Dir dir(d->absolutePath());
-            bool result = dir.remove(true);
-
-            // update the hash cache too
-            updatedFileContents(d->absolutePath(), std::string());
-
             delete d;
+		} else {
+			// we encounter this code path when deleting an orphaned directory
+		}
+		
+		Dir dir(absPath);
+		bool result = dir.remove(true);
 
-            return result;
-        }
+		// update the hash cache too
+		updatedFileContents(absPath, std::string());
 
-        return false;
+        return result;
     }
 
     void HTTPRepoPrivate::makeRequest(RepoRequestPtr req)

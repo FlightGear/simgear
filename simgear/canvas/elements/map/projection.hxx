@@ -190,6 +190,32 @@ namespace canvas
       }
   };
 
+  /**
+   * WebMercator projection, relative to the projection center.
+   * Required for Slippy Maps - i.e. openstreetmap
+   */
+  class WebMercatorProjection:
+    public HorizontalProjection
+  {
+    protected:
+
+      virtual ScreenPosition project(double lat, double lon) const
+      {
+        double d_lat = lat - _ref_lat,
+               d_lon = lon - _ref_lon;
+        double r = 6378137.f / 1852; // Equatorial radius divided by ?
+
+        ScreenPosition pos;
+
+        pos.x = r * d_lon;
+        pos.y = r * (log(tan(d_lat) + 1.0 / cos(d_lat)));
+        //pos.x = lon;
+        //pos.y = log(tan(lat) + 1.0 / cos(lat));
+        return pos;
+      }
+  };
+
+
 } // namespace canvas
 } // namespace simgear
 

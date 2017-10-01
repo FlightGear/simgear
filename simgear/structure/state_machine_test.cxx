@@ -212,15 +212,23 @@ void testBindings()
 
 void testParse()
 {
-    const char* xml = "<?xml version=\"1.0\"?>"
-        "<PropertyList>"
-            "<state>"
-                "<name>one</name>"
-            "</state>"
-            "<state>"
-                "<name>two</name>"
-            "</state>"
-        "</PropertyList>";
+    const char* xml = R"(<?xml version="1.0"?>
+    <PropertyList>
+        <state>
+        <name>one</name>
+        <enter>
+            <command>nasal</command>
+            <script>print('Foo');</script>
+        </enter>
+        <exit>
+            <command>nasal</command>
+            <script>print('bar');</script>
+        </exit>
+        </state>
+        <state>
+             <name>two</name>
+        </state>
+    </PropertyList>)";
     
     SGPropertyNode* desc = new SGPropertyNode;
     readProperties(xml, strlen(xml), desc);

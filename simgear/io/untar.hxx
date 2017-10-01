@@ -43,7 +43,17 @@ public:
 
     bool hasError() const;
 
+protected:
+    enum PathResult {
+      Accepted,
+      Skipped,
+      Modified,
+      Stop
+    };
+
+    virtual PathResult filterPath(std::string& pathToExtract);
 private:
+    friend class TarExtractorPrivate;
     std::unique_ptr<TarExtractorPrivate> d;
 };
 

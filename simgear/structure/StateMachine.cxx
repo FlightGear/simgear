@@ -19,16 +19,13 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
      
 #include "StateMachine.hxx"
 
 #include <algorithm>
 #include <cassert>
 #include <set>
-#include <boost/foreach.hpp>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/SGBinding.hxx>
@@ -44,7 +41,7 @@ typedef std::vector<StateMachine::State_ptr> StatePtrVec;
 static void readBindingList(SGPropertyNode* desc, const std::string& name, 
     SGPropertyNode* root, SGBindingList& result)
 {
-    BOOST_FOREACH(SGPropertyNode* b, desc->getChildren(name)) {
+    for (auto b : desc->getChildren(name)) {
         SGBinding* bind = new SGBinding;
         bind->read(b, root);
         result.push_back(bind);
@@ -85,7 +82,7 @@ public:
     void computeEligibleTransitions()
     {
         _eligible.clear();
-        BOOST_FOREACH(Transition_ptr t, _transitions) {
+        for (Transition_ptr t : _transitions) {
             if (t->applicableForState(_currentState)) {
                 _eligible.push_back(t.ptr());
             }
@@ -358,7 +355,7 @@ void StateMachine::update(double aDt)
     
     Transition_ptr trigger;
     
-    BOOST_FOREACH(Transition* trans, d->_eligible) {
+    for (auto trans : d->_eligible) {
         if (trans->evaluate()) {
             if (trigger != Transition_ptr()) {
                 SG_LOG(SG_GENERAL, SG_WARN, "ambiguous transitions! " 
@@ -379,7 +376,7 @@ void StateMachine::update(double aDt)
 
 StateMachine::State_ptr StateMachine::findStateByName(const std::string& aName) const
 {
-    BOOST_FOREACH(State_ptr sp, d->_states) {
+    for (auto sp : d->_states) {
         if (sp->name() == aName) {
             return sp;
         }
@@ -435,7 +432,7 @@ void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
         assert(d->_root);
     }
     
-    BOOST_FOREACH(SGPropertyNode* stateDesc, desc->getChildren("state")) {
+    for (auto stateDesc : desc->getChildren("state")) {
         std::string nm = stateDesc->getStringValue("name");
         State_ptr st(new State(nm));
         
@@ -446,7 +443,7 @@ void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
         addState(st);
     } // of states iteration
     
-    BOOST_FOREACH(SGPropertyNode* tDesc, desc->getChildren("transition")) {
+    for (auto tDesc : desc->getChildren("transition")) {
         std::string nm = tDesc->getStringValue("name");
         State_ptr target = findStateByName(tDesc->getStringValue("target"));
         
@@ -456,7 +453,7 @@ void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
         t->setTriggerCondition(cond);
         
         t->setExcludeTarget(tDesc->getBoolValue("exclude-target", true));
-        BOOST_FOREACH(SGPropertyNode* src, tDesc->getChildren("source")) {
+        for (auto src : tDesc->getChildren("source")) {
             State_ptr srcState = findStateByName(src->getStringValue());
             t->addSourceState(srcState);
         }

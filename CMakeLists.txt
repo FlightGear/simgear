@@ -49,7 +49,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
 # add a dependency on the versino file
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS version)
 
-set(FIND_LIBRARY_USE_LIB64_PATHS ON)
+set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 
 # use simgear version also as the SO version (if building SOs)
 SET(SIMGEAR_SOVERSION ${SIMGEAR_VERSION})

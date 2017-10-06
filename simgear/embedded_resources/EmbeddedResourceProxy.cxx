@@ -1,6 +1,7 @@
 // -*- coding: utf-8 -*-
 //
-// ResourceProxy.cxx --- Unified access to real files or embedded resources
+// EmbeddedResourceProxy.cxx --- Unified access to real files or embedded
+//                               resources
 // Copyright (C) 2017  Florent Rougon
 //
 // This library is free software; you can redistribute it and/or
@@ -35,7 +36,7 @@
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include "EmbeddedResourceManager.hxx"
-#include "ResourceProxy.hxx"
+#include "EmbeddedResourceProxy.hxx"
 
 using std::string;
 using std::vector;
@@ -46,35 +47,36 @@ using std::unique_ptr;
 namespace simgear
 {
 
-ResourceProxy::ResourceProxy(const SGPath& realRoot, const string& virtualRoot,
-                             bool useEmbeddedResourcesByDefault)
+EmbeddedResourceProxy::EmbeddedResourceProxy(const SGPath& realRoot,
+                                             const string& virtualRoot,
+                                             bool useEmbeddedResourcesByDefault)
   : _realRoot(realRoot),
     _virtualRoot(normalizeVirtualRoot(virtualRoot)),
     _useEmbeddedResourcesByDefault(useEmbeddedResourcesByDefault)
 { }
 
 SGPath
-ResourceProxy::getRealRoot() const
+EmbeddedResourceProxy::getRealRoot() const
 { return _realRoot; }
 
 void
-ResourceProxy::setRealRoot(const SGPath& realRoot)
+EmbeddedResourceProxy::setRealRoot(const SGPath& realRoot)
 { _realRoot = realRoot; }
 
 string
-ResourceProxy::getVirtualRoot() const
+EmbeddedResourceProxy::getVirtualRoot() const
 { return _virtualRoot; }
 
 void
-ResourceProxy::setVirtualRoot(const string& virtualRoot)
+EmbeddedResourceProxy::setVirtualRoot(const string& virtualRoot)
 { _virtualRoot = normalizeVirtualRoot(virtualRoot); }
 
 bool
-ResourceProxy::getUseEmbeddedResources() const
+EmbeddedResourceProxy::getUseEmbeddedResources() const
 { return _useEmbeddedResourcesByDefault; }
 
 void
-ResourceProxy::setUseEmbeddedResources(bool useEmbeddedResources)
+EmbeddedResourceProxy::setUseEmbeddedResources(bool useEmbeddedResources)
 { _useEmbeddedResourcesByDefault = useEmbeddedResources; }
 
 // Static method: normalize the 'virtualRoot' argument of the constructor
@@ -82,9 +84,10 @@ ResourceProxy::setUseEmbeddedResources(bool useEmbeddedResources)
 // The argument must start with a slash and mustn't contain any '.' or '..'
 // component. The return value never ends with a slash.
 string
-ResourceProxy::normalizeVirtualRoot(const string& path)
+EmbeddedResourceProxy::normalizeVirtualRoot(const string& path)
 {
-  ResourceProxy::checkPath(__func__, path, false /* allowStartWithColon */);
+  EmbeddedResourceProxy::checkPath(__func__, path,
+                                   false /* allowStartWithColon */);
   string res = path;
 
   // Make sure 'res' doesn't end with a '/'.
@@ -97,21 +100,22 @@ ResourceProxy::normalizeVirtualRoot(const string& path)
 
 // Static method
 void
-ResourceProxy::checkPath(const string& callerMethod, const string& path,
-                         bool allowStartWithColon) {
+EmbeddedResourceProxy::checkPath(const string& callerMethod, const string& path,
+                                 bool allowStartWithColon)
+{
   if (path.empty()) {
     throw sg_format_exception(
-      "Invalid empty path for ResourceProxy::" + callerMethod + "(): '" +
-      path + "'", path);
+      "Invalid empty path for EmbeddedResourceProxy::" +
+      callerMethod + "(): '" + path + "'", path);
   } else if (allowStartWithColon &&
              !simgear::strutils::starts_with(path, ":/") && path[0] != '/') {
     throw sg_format_exception(
-      "Invalid path for ResourceProxy::" + callerMethod + "(): it should "
-      "start with either ':/' or '/'", path);
+      "Invalid path for EmbeddedResourceProxy::" + callerMethod + "(): "
+      "it should start with either ':/' or '/'", path);
   } else if (!allowStartWithColon && path[0] != '/') {
     throw sg_format_exception(
-      "Invalid path for ResourceProxy::" + callerMethod + "(): it should "
-      "start with a slash ('/')", path);
+      "Invalid path for EmbeddedResourceProxy::" + callerMethod + "(): "
+      "it should start with a slash ('/')", path);
   } else {
     const vector<string> components = simgear::strutils::split(path, "/");
     auto find = [&components](const string& s) -> bool {
@@ -121,16 +125,18 @@ ResourceProxy::checkPath(const string& callerMethod, const string& path,
 
     if (find(".") || find("..")) {
       throw sg_format_exception(
-        "Invalid path for ResourceProxy::" + callerMethod + "(): "
+        "Invalid path for EmbeddedResourceProxy::" + callerMethod + "(): "
         "'.' and '..' components are not allowed", path);
     }
   }
 }
 
 unique_ptr<std::istream>
-ResourceProxy::getIStream(const string& path, bool fromEmbeddedResource) const
+EmbeddedResourceProxy::getIStream(const string& path, bool fromEmbeddedResource)
+  const
 {
-  ResourceProxy::checkPath(__func__, path, false /* allowStartWithColon */);
+  EmbeddedResourceProxy::checkPath(__func__, path,
+                                   false /* allowStartWithColon */);
   assert(!path.empty() && path.front() == '/');
 
   if (fromEmbeddedResource) {
@@ -145,15 +151,16 @@ ResourceProxy::getIStream(const string& path, bool fromEmbeddedResource) const
 }
 
 unique_ptr<std::istream>
-ResourceProxy::getIStream(const string& path) const
+EmbeddedResourceProxy::getIStream(const string& path) const
 {
   return getIStream(path, _useEmbeddedResourcesByDefault);
 }
 
 unique_ptr<std::istream>
-ResourceProxy::getIStreamDecideOnPrefix(const string& path) const
+EmbeddedResourceProxy::getIStreamDecideOnPrefix(const string& path) const
 {
-  ResourceProxy::checkPath(__func__, path, true /* allowStartWithColon */);
+  EmbeddedResourceProxy::checkPath(__func__, path,
+                                   true /* allowStartWithColon */);
 
   // 'path' is non-empty
   if (path.front() == '/') {
@@ -170,11 +177,13 @@ ResourceProxy::getIStreamDecideOnPrefix(const string& path) const
 }
 
 string
-ResourceProxy::getString(const string& path, bool fromEmbeddedResource) const
+EmbeddedResourceProxy::getString(const string& path, bool fromEmbeddedResource)
+  const
 {
   string result;
 
-  ResourceProxy::checkPath(__func__, path, false /* allowStartWithColon */);
+  EmbeddedResourceProxy::checkPath(__func__, path,
+                                   false /* allowStartWithColon */);
   assert(!path.empty() && path.front() == '/');
 
   if (fromEmbeddedResource) {
@@ -216,17 +225,18 @@ ResourceProxy::getString(const string& path, bool fromEmbeddedResource) const
 }
 
 string
-ResourceProxy::getString(const string& path) const
+EmbeddedResourceProxy::getString(const string& path) const
 {
   return getString(path, _useEmbeddedResourcesByDefault);
 }
 
 string
-ResourceProxy::getStringDecideOnPrefix(const string& path) const
+EmbeddedResourceProxy::getStringDecideOnPrefix(const string& path) const
 {
   string result;
 
-  ResourceProxy::checkPath(__func__, path, true /* allowStartWithColon */);
+  EmbeddedResourceProxy::checkPath(__func__, path,
+                                   true /* allowStartWithColon */);
 
   // 'path' is non-empty
   if (path.front() == '/') {

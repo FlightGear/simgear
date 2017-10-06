@@ -1,7 +1,11 @@
 include (SimGearComponent)
 
-set(HEADERS EmbeddedResource.hxx EmbeddedResourceManager.hxx ResourceProxy.hxx)
-set(SOURCES EmbeddedResource.cxx EmbeddedResourceManager.cxx ResourceProxy.cxx)
+set(HEADERS EmbeddedResource.hxx
+            EmbeddedResourceManager.hxx
+            EmbeddedResourceProxy.hxx)
+set(SOURCES EmbeddedResource.cxx
+            EmbeddedResourceManager.cxx
+            EmbeddedResourceProxy.cxx)
 
 simgear_component(embedded_resources embedded_resources
                   "${SOURCES}" "${HEADERS}")

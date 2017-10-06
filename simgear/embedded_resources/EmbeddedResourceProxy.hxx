@@ -1,6 +1,7 @@
 // -*- coding: utf-8 -*-
 //
-// ResourceProxy.hxx --- Unified access to real files or embedded resources
+// EmbeddedResourceProxy.hxx --- Unified access to real files or embedded
+//                               resources
 // Copyright (C) 2017  Florent Rougon
 //
 // This library is free software; you can redistribute it and/or
@@ -18,8 +19,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 // MA  02110-1301  USA.
 
-#ifndef FG_RESOURCEPROXY_HXX
-#define FG_RESOURCEPROXY_HXX
+#ifndef FG_EMBEDDEDRESOURCEPROXY_HXX
+#define FG_EMBEDDEDRESOURCEPROXY_HXX
 
 #include <istream>
 #include <memory>
@@ -27,26 +28,27 @@
 
 #include <simgear/misc/sg_path.hxx>
 
-// The ResourceProxy class allows one to access real files or embedded
+// The EmbeddedResourceProxy class allows one to access real files or embedded
 // resources in a unified way. When using it, one can switch from one data
 // source to the other with minimal code changes, possibly even at runtime (in
 // which case there is obviously no code change at all).
 //
-// Sample usage of the ResourceProxy class (from FlightGear):
+// Sample usage of the EmbeddedResourceProxy class (from FlightGear):
 //
-//   simgear::ResourceProxy proxy(globals->get_fg_root(), "/FGData");
+//   simgear::EmbeddedResourceProxy proxy(globals->get_fg_root(), "/FGData");
 //   std::string s = proxy.getString("/some/path");
 //   std::unique_ptr<std::istream> streamp = proxy.getIStream("/some/path");
 //
-// The methods ResourceProxy::getString(const std::string& path) and
-// ResourceProxy::getIStream(const std::string& path) decide whether to use
-// embedded resources or real files depending on the boolean value passed to
-// ResourceProxy::setUseEmbeddedResources() (also available as an optional
-// parameter to the ResourceProxy constructor, defaulting to true). It is
-// often most convenient to set this boolean once and then don't worry about
-// it anymore (it is stored inside ResourceProxy). Otherwise, if you want to
-// fetch resources some times from real files, other times from embedded
-// resources, you may use the following methods:
+// The methods getString(const std::string& path) and
+// getIStream(const std::string& path) of EmbeddedResourceProxy decide whether
+// to use embedded resources or real files depending on the boolean value
+// passed to EmbeddedResourceProxy::setUseEmbeddedResources() (also available
+// as an optional parameter to the EmbeddedResourceProxy constructor,
+// defaulting to true). It is often most convenient to set this boolean once
+// and then don't worry about it anymore (it is stored as a data member of
+// EmbeddedResourceProxy). Otherwise, if you want to fetch resources some
+// times from real files, other times from embedded resources, you may use the
+// following methods:
 //
 //   // Retrieve contents using embedded resources
 //   std:string s = proxy.getString("/some/path", true);
@@ -56,8 +58,8 @@
 //   std:string s = proxy.getString("/some/path", false);
 //   std:string s = proxy.getStringDecideOnPrefix("/some/path");
 //
-// You can do exactly the same with ResourceProxy::getIStream() and
-// ResourceProxy::getIStreamDecideOnPrefix(), except they return an
+// You can do exactly the same with EmbeddedResourceProxy::getIStream() and
+// EmbeddedResourceProxy::getIStreamDecideOnPrefix(), except they return an
 // std::unique_ptr<std::istream> instead of an std::string.
 //
 // Given how the 'proxy' object was constructed above, each of these calls
@@ -65,8 +67,9 @@
 // embedded resource whose virtual path is '/FGData/some/path' (more
 // precisely: the default-locale version of this resource).
 //
-// The 'path' argument of ResourceProxy's methods getString(), getIStream(),
-// getStringDecideOnPrefix() and getIStreamDecideOnPrefix() must:
+// The 'path' argument of EmbeddedResourceProxy's methods getString(),
+// getIStream(), getStringDecideOnPrefix() and getIStreamDecideOnPrefix()
+// must:
 //
 //   - use UTF-8 encoding;
 //
@@ -82,21 +85,21 @@
 //
 //   - if the path starts with a slash ('/'), a real file access is done;
 //
-//   - if, on the other hand, it starts with ':/', ResourceProxy uses the
-//     embedded resource whose virtual path is the specified path without its
-//     leading ':' (more precisely: the default-locale version of this
+//   - if, on the other hand, it starts with ':/', EmbeddedResourceProxy uses
+//     the embedded resource whose virtual path is the specified path without
+//     its leading ':' (more precisely: the default-locale version of this
 //     resource).
 namespace simgear
 {
 
-class ResourceProxy
+class EmbeddedResourceProxy
 {
 public:
   // 'virtualRoot' must start with a '/', e.g: '/FGData'. Whether it ends
   // with a '/' doesn't make a difference.
-  explicit ResourceProxy(const SGPath& realRoot,
-                         const std::string& virtualRoot,
-                         bool useEmbeddedResourcesByDefault = true);
+  explicit EmbeddedResourceProxy(const SGPath& realRoot,
+                                 const std::string& virtualRoot,
+                                 bool useEmbeddedResourcesByDefault = true);
 
   // Getters and setters for the corresponding data members
   SGPath getRealRoot() const;
@@ -149,4 +152,4 @@ private:
 
 } // of namespace simgear
 
-#endif  // of FG_RESOURCEPROXY_HXX
+#endif  // of FG_EMBEDDEDRESOURCEPROXY_HXX

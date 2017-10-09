@@ -40,7 +40,7 @@
 #include <simgear/io/iostreams/zlibstream.hxx>
 #include "EmbeddedResource.hxx"
 #include "EmbeddedResourceManager.hxx"
-#include "ResourceProxy.hxx"
+#include "EmbeddedResourceProxy.hxx"
 
 using std::cout;
 using std::cerr;
@@ -398,11 +398,11 @@ void test_getLocaleAndSelectLocale()
   }
 }
 
-// Auxiliary function for test_ResourceProxy()
-void auxTest_ResourceProxy_getIStream(unique_ptr<std::istream> iStream,
-                                      const string& contents)
+// Auxiliary function for test_EmbeddedResourceProxy()
+void auxTest_EmbeddedResourceProxy_getIStream(unique_ptr<std::istream> iStream,
+                                              const string& contents)
 {
-  cout << "Testing ResourceProxy::getIStream()" << endl;
+  cout << "Testing EmbeddedResourceProxy::getIStream()" << endl;
 
   iStream->exceptions(std::ios_base::badbit);
   static constexpr std::size_t bufSize = 65536;
@@ -421,9 +421,9 @@ void auxTest_ResourceProxy_getIStream(unique_ptr<std::istream> iStream,
   SG_CHECK_EQUAL(result, contents);
 }
 
-void test_ResourceProxy()
+void test_EmbeddedResourceProxy()
 {
-  cout << "Testing the ResourceProxy class" << endl;
+  cout << "Testing the EmbeddedResourceProxy class" << endl;
 
   // Initialize stuff we need and create two files containing the contents of
   // the default-locale version of two embedded resources: those with virtual
@@ -456,14 +456,14 @@ void test_ResourceProxy()
   }
 
   // 'proxy' defaults to using embedded resources
-  const simgear::ResourceProxy proxy(tmpDir.path(),
-                                     "/path/to",
-                                     true /* useEmbeddedResourcesByDefault */);
-  simgear::ResourceProxy rproxy(tmpDir.path(), "/path/to");
+  const simgear::EmbeddedResourceProxy proxy(tmpDir.path(), "/path/to",
+                                             /* useEmbeddedResourcesByDefault */
+                                             true);
+  simgear::EmbeddedResourceProxy rproxy(tmpDir.path(), "/path/to");
   // 'rproxy' defaults to using real files
   rproxy.setUseEmbeddedResources(false); // could be done from the ctor too
 
-  // Test ResourceProxy::getString()
+  // Test EmbeddedResourceProxy::getString()
   SG_CHECK_EQUAL(proxy.getStringDecideOnPrefix("/resource1"), rs1);
   SG_CHECK_EQUAL(proxy.getStringDecideOnPrefix(":/resource1"), s1);
   SG_CHECK_EQUAL(proxy.getString("/resource1", false), rs1);
@@ -478,20 +478,24 @@ void test_ResourceProxy()
   SG_CHECK_EQUAL(proxy.getString("/resource2"), lipsum);
   SG_CHECK_EQUAL(rproxy.getString("/resource2"), rlipsum);
 
-  // Test ResourceProxy::getIStream()
-  auxTest_ResourceProxy_getIStream(proxy.getIStreamDecideOnPrefix("/resource1"),
-                                   rs1);
-  auxTest_ResourceProxy_getIStream(proxy.getIStreamDecideOnPrefix(":/resource1"),
-                                   s1);
-  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource1"), s1);
-  auxTest_ResourceProxy_getIStream(rproxy.getIStream("/resource1"), rs1);
+  // Test EmbeddedResourceProxy::getIStream()
+  auxTest_EmbeddedResourceProxy_getIStream(
+    proxy.getIStreamDecideOnPrefix("/resource1"),
+    rs1);
+  auxTest_EmbeddedResourceProxy_getIStream(
+    proxy.getIStreamDecideOnPrefix(":/resource1"),
+    s1);
+  auxTest_EmbeddedResourceProxy_getIStream(proxy.getIStream("/resource1"), s1);
+  auxTest_EmbeddedResourceProxy_getIStream(rproxy.getIStream("/resource1"), rs1);
 
-  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource2", false),
-                                   rlipsum);
-  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource2", true),
-                                   lipsum);
-  auxTest_ResourceProxy_getIStream(proxy.getIStream("/resource2"), lipsum);
-  auxTest_ResourceProxy_getIStream(rproxy.getIStream("/resource2"), rlipsum);
+  auxTest_EmbeddedResourceProxy_getIStream(proxy.getIStream("/resource2", false),
+                                           rlipsum);
+  auxTest_EmbeddedResourceProxy_getIStream(proxy.getIStream("/resource2", true),
+                                           lipsum);
+  auxTest_EmbeddedResourceProxy_getIStream(proxy.getIStream("/resource2"),
+                                           lipsum);
+  auxTest_EmbeddedResourceProxy_getIStream(rproxy.getIStream("/resource2"),
+                                           rlipsum);
 }
 
 int main(int argc, char **argv)
@@ -506,7 +510,7 @@ int main(int argc, char **argv)
   test_addAlreadyExistingResource();
   test_localeDependencyOfResourceFetching();
   test_getLocaleAndSelectLocale();
-  test_ResourceProxy();
+  test_EmbeddedResourceProxy();
 
   return EXIT_SUCCESS;
 }

@@ -433,6 +433,7 @@ namespace canvas
   osg::Vec2f Element::posToLocal(const osg::Vec2f& pos) const
   {
     getMatrix();
+    if (! _transform) return osg::Vec2f(pos[0], pos[1]);
     const osg::Matrix& m = _transform->getInverseMatrix();
     return osg::Vec2f
     (

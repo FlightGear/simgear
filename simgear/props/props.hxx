@@ -1106,6 +1106,11 @@ public:
   SGPropertyNode * getNode (const char * relative_path, bool create = false);
 
   /**
+  * deep copy one node to another.
+  */
+  void copy(SGPropertyNode *to);
+
+  /**
    * Get a pointer to another node by relative path.
    */
   SGPropertyNode * getNode (const std::string& relative_path, bool create = false)

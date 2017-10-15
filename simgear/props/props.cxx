@@ -2443,7 +2443,8 @@ SGPropertyNode::fireValueChanged (SGPropertyNode * node)
 {
   if (_listeners != 0) {
     for (unsigned int i = 0; i < _listeners->size(); i++) {
-      (*_listeners)[i]->valueChanged(node);
+        if ((*_listeners)[i])
+            (*_listeners)[i]->valueChanged(node);
     }
   }
   if (_parent != 0)
@@ -2581,53 +2582,77 @@ std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const
 namespace simgear
 {
 #if !PROPS_STANDALONE
-template<>
-std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
-{
-    for (int i = 0; i < 4; ++i) {
-        stream >> result[i];
+    template<>
+    std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
+    {
+        for (int i = 0; i < 4; ++i) {
+            stream >> result[i];
+        }
+        return stream;
     }
-    return stream;
-}
 #endif
 
-namespace
-{
-bool compareNodeValue(const SGPropertyNode& lhs, const SGPropertyNode& rhs)
-{
-    props::Type ltype = lhs.getType();
-    props::Type rtype = rhs.getType();
-    if (ltype != rtype)
-        return false;
-    switch (ltype) {
-    case props::NONE:
-        return true;
-    case props::ALIAS:
-        return false;           // XXX Should we look in aliases?
-    case props::BOOL:
-        return lhs.getValue<bool>() == rhs.getValue<bool>();
-    case props::INT:
-        return lhs.getValue<int>() == rhs.getValue<int>();
-    case props::LONG:
-        return lhs.getValue<long>() == rhs.getValue<long>();
-    case props::FLOAT:
-        return lhs.getValue<float>() == rhs.getValue<float>();
-    case props::DOUBLE:
-        return lhs.getValue<double>() == rhs.getValue<double>();
-    case props::STRING:
-    case props::UNSPECIFIED:
-        return !strcmp(lhs.getStringValue(), rhs.getStringValue());
+    namespace
+    {
+        bool compareNodeValue(const SGPropertyNode& lhs, const SGPropertyNode& rhs)
+        {
+            props::Type ltype = lhs.getType();
+            props::Type rtype = rhs.getType();
+            if (ltype != rtype)
+                return false;
+            switch (ltype) {
+            case props::NONE:
+                return true;
+            case props::ALIAS:
+                return false;           // XXX Should we look in aliases?
+            case props::BOOL:
+                return lhs.getValue<bool>() == rhs.getValue<bool>();
+            case props::INT:
+                return lhs.getValue<int>() == rhs.getValue<int>();
+            case props::LONG:
+                return lhs.getValue<long>() == rhs.getValue<long>();
+            case props::FLOAT:
+                return lhs.getValue<float>() == rhs.getValue<float>();
+            case props::DOUBLE:
+                return lhs.getValue<double>() == rhs.getValue<double>();
+            case props::STRING:
+            case props::UNSPECIFIED:
+                return !strcmp(lhs.getStringValue(), rhs.getStringValue());
 #if !PROPS_STANDALONE
-    case props::VEC3D:
-        return lhs.getValue<SGVec3d>() == rhs.getValue<SGVec3d>();
-    case props::VEC4D:
-        return lhs.getValue<SGVec4d>() == rhs.getValue<SGVec4d>();
+            case props::VEC3D:
+                return lhs.getValue<SGVec3d>() == rhs.getValue<SGVec3d>();
+            case props::VEC4D:
+                return lhs.getValue<SGVec4d>() == rhs.getValue<SGVec4d>();
 #endif
-    default:
-        return false;
+            default:
+                return false;
+            }
+        }
     }
 }
-}
+
+
+void SGPropertyNode::copy(SGPropertyNode *to)
+{
+    if (nChildren())
+    {
+        for (int i = 0; i < nChildren(); i++) {
+            SGPropertyNode *child = getChild(i);
+            SGPropertyNode *to_child = to->getChild(child->getName());
+            if (!to_child)
+                to_child = to->addChild(child->getName());
+            if (child->nChildren())
+            {
+                child->copy(to_child);
+            }
+            else
+            {
+                to_child->setValue(child->getStringValue());
+            }
+        }
+    }
+    else
+        to->setValue(getStringValue());
 }
 
 bool SGPropertyNode::compare(const SGPropertyNode& lhs,

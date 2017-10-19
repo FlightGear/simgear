@@ -343,7 +343,7 @@ SET(CMAKE_MINSIZEREL_POSTFIX "" CACHE STRING "add a postfix, usually empty on wi
 
 # isnan might not be real symbol, so can't check using function_exists
 check_cxx_source_compiles(
-    "#include <cstdlib>
+    "#include <cmath>
     int main() { return std::isnan(0.0);} "
     HAVE_STD_ISNAN)
 

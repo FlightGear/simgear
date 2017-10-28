@@ -832,3 +832,157 @@ SGSliderAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
 {
   ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot()));
 }
+
+/*
+ * touch screen is a 2d surface that will pass parameters to the callbacks indicating the 
+ * normalized coordinates of hover or touch. Touch is defined as a button click. 
+ * For compatibility with touchscreen operations this class does not differentiate between
+ * which buttons are touched, simply because this isn't how touchscreens work.
+ * Some touchscreens (e.g. SAW) can have a Z-axis indicating the pressure. This is not
+ * simulated.
+ */
+
+
+/**
+* Handle picking events on object with a canvas placed onto
+*/
+class TouchPickCallback : public SGPickCallback {
+    public:
+        TouchPickCallback(const SGPropertyNode* configNode,
+            SGPropertyNode* modelRoot) :
+            _repeatable(configNode->getBoolValue("repeatable", false)),
+            _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
+            SGPickCallback(PriorityPanel)
+        {
+            std::vector<SGPropertyNode_ptr> bindings;
+
+            bindings = configNode->getChildren("touch");
+            for (unsigned int i = 0; i < bindings.size(); ++i) {
+                _touches.insert(bindings[i]->getIntValue());
+            }
+
+            _bindingsTouched = readBindingList(configNode->getChildren("binding"), modelRoot);
+            readOptionalBindingList(configNode, modelRoot, "mod-up", _bindingsReleased);
+
+            if (configNode->hasChild("cursor")) {
+                _cursorName = configNode->getStringValue("cursor");
+            }
+        }
+
+        void addHoverBindings(const SGPropertyNode* hoverNode,
+            SGPropertyNode* modelRoot)
+        {
+            _hover = readBindingList(hoverNode->getChildren("binding"), modelRoot);
+        }
+
+        virtual bool buttonPressed(int touchIdx,
+            const osgGA::GUIEventAdapter& event,
+            const Info& info)
+        {
+            if (_touches.find(touchIdx) == _touches.end()) {
+                return false;
+            }
+
+            if (!anyBindingEnabled(_bindingsTouched)) {
+                return false;
+            }
+            SGPropertyNode_ptr params(new SGPropertyNode); 
+            params->setDoubleValue("x", info.uv[0]);
+            params->setDoubleValue("y", info.uv[1]);
+
+            _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
+            fireBindingList(_bindingsTouched, params.ptr());
+            return true;
+        }
+        virtual void buttonReleased(int keyModState,
+            const osgGA::GUIEventAdapter&,
+            const Info* info)
+        {
+            SG_UNUSED(keyModState);
+            SGPropertyNode_ptr params(new SGPropertyNode);
+            params->setDoubleValue("x", info->uv[0]);
+            params->setDoubleValue("y", info->uv[1]);
+            fireBindingList(_bindingsReleased, params.ptr());
+        }
+
+        virtual void update(double dt, int keyModState)
+        {
+            SG_UNUSED(keyModState);
+            if (!_repeatable)
+                return;
+
+            _repeatTime += dt;
+            while (_repeatInterval < _repeatTime) {
+                _repeatTime -= _repeatInterval;
+                fireBindingList(_bindingsTouched);
+            }
+        }
+
+        virtual bool hover(const osg::Vec2d& windowPos,
+            const Info& info)
+        {
+            if (!anyBindingEnabled(_hover)) {
+                return false;
+            }
+
+            SGPropertyNode_ptr params(new SGPropertyNode);
+            params->setDoubleValue("x", info.uv[0]);
+            params->setDoubleValue("y", info.uv[1]);
+            fireBindingList(_hover, params.ptr());
+            return true;
+        }
+
+        std::string getCursor() const
+        {
+            return _cursorName;
+        }
+        
+        virtual bool needsUV() const { return true; }
+
+    private:
+        SGBindingList _bindingsTouched;
+        SGBindingList _bindingsReleased;
+        SGBindingList _hover;
+        std::set<int> _touches;
+        std::string _cursorName;
+        bool _repeatable;
+        double _repeatInterval;
+        double _repeatTime;
+};
+
+SGTouchAnimation::SGTouchAnimation(simgear::SGTransientModelData &modelData) :
+    SGPickAnimation(modelData)
+{
+}
+
+osg::Group* SGTouchAnimation::createMainGroup(osg::Group* pr)
+{
+    SGRotateTransform* transform = new SGRotateTransform();
+    pr->addChild(transform);
+    return transform;
+}
+
+void SGTouchAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
+{
+    TouchPickCallback* touchCb = NULL;
+
+    // add actions that become macro and command invocations
+    std::vector<SGPropertyNode_ptr> actions;
+    actions = getConfig()->getChildren("action");
+    for (unsigned int i = 0; i < actions.size(); ++i) {
+        touchCb = new TouchPickCallback(actions[i], getModelRoot());
+        ud->addPickCallback(touchCb);
+    }
+
+    if (getConfig()->hasChild("hovered")) {
+        if (!touchCb) {
+            // make a trivial PickCallback to hang the hovered off of
+            SGPropertyNode_ptr dummyNode(new SGPropertyNode);
+            touchCb = new TouchPickCallback(dummyNode.ptr(), getModelRoot());
+            ud->addPickCallback(touchCb);
+        }
+
+        touchCb->addHoverBindings(getConfig()->getNode("hovered"), getModelRoot());
+    }
+//    ud->setPickCallback(new TouchPickCallback(getConfig(), getModelRoot()));
+}

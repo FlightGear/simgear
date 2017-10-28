@@ -497,6 +497,9 @@ SGAnimation::animate(simgear::SGTransientModelData &modelData)
   } else if (type == "slider") {
     SGSliderAnimation anim(modelData);
     anim.apply(modelData.getNode());
+  } else if (type == "touch") {
+      SGTouchAnimation anim(modelData);
+      anim.apply(modelData.getNode());
   } else if (type == "range") {
     SGRangeAnimation anim(modelData);
     anim.apply(modelData);

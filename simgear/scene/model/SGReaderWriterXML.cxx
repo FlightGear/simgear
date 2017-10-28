@@ -226,7 +226,7 @@ namespace {
         {
             string typeString(aNode->getStringValue("type"));
             // exclude these so we don't show yellow outlines in preview mode
-            return (typeString == "pick") || (typeString == "knob") || (typeString == "slider");
+            return (typeString == "pick") || (typeString == "knob") || (typeString == "slider") || (typeString == "touch");
         }
     };
     

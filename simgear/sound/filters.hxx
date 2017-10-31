@@ -23,6 +23,8 @@
 #ifndef _SIMGEAR_FREQUENCY_FILTER_HXX
 #define _SIMGEAR_FREQUENCY_FILTER_HXX
 
+#include <cstdint>
+
 namespace simgear {
 
 // Every stage is a 2nd order filter

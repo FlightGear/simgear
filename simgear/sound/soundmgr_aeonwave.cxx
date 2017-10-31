@@ -92,14 +92,14 @@ public:
     }
 
     void init() {
-        _mtx = aax::Matrix();
+        _mtx = aax::Matrix64();
     }
     
     void update_pos_and_orientation()
     {
         SGVec3d sgv_at = _orientation.backTransform(-SGVec3d::e3());
         SGVec3d sgv_up = _orientation.backTransform(SGVec3d::e2());
-        SGVec3f pos = SGVec3f::zeros();
+        SGVec3d pos = SGVec3d::zeros();
 
         _mtx.set(pos.data(), toVec3f(sgv_at).data(), toVec3f(sgv_up).data());
 
@@ -107,7 +107,7 @@ public:
     }
         
     aax::AeonWave _aax;
-    aax::Matrix _mtx;
+    aax::Matrix64 _mtx;
 
     SGVec3d _absolute_pos;
     SGVec3d _base_pos;
@@ -338,7 +338,7 @@ void SGSoundMgr::update( double dt )
             TRY( dsp.set(AAX_SOUND_VELOCITY, 340.3f) );
             TRY( d->_aax.set(dsp) );
 #endif
-            aax::Matrix mtx = d->_mtx;
+            aax::Matrix64 mtx = d->_mtx;
             mtx.inverse();
             TRY( d->_aax.sensor_matrix(mtx) );
 
@@ -465,7 +465,7 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
         }
 
         bufid = d->_buffer_id++;
-        d->_buffers.insert( std::make_pair<unsigned int,aax::Buffer&>(bufid,buf) );
+        d->_buffers.insert( {bufid, buf} );
 
         if ( !sample->is_file() ) {
             enum aaxFormat format = AAX_FORMAT_NONE;
@@ -493,7 +493,7 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
             unsigned int no_samples = sample->get_no_samples();
             unsigned int no_tracks = sample->get_no_tracks();
             unsigned int frequency = sample->get_frequency();
-            TRY( buf.set(d->_aax, no_samples, no_tracks, format) );
+            buf.set(d->_aax, no_samples, no_tracks, format);
             TRY( buf.set(AAX_FREQUENCY, frequency) );
             TRY( buf.fill(sample->get_data()) );
 
@@ -659,11 +659,11 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
     aax::Emitter& emitter = d->get_emitter(sample->get_source());
     aax::dsp dsp;
 
-    aax::Vector pos = toVec3f(position).data();
+    aax::Vector64 pos = position.data();
     aax::Vector ori = orientation.data();
     aax::Vector vel = velocity.data();
 
-    aax::Matrix mtx(pos, ori);
+    aax::Matrix64 mtx(pos, ori);
     TRY( emitter.matrix(mtx) );
     TRY( emitter.velocity(vel) );
 
@@ -763,7 +763,8 @@ void SGSoundMgr::set_position( const SGVec3d& pos, const SGGeod& pos_geod )
 
 SGVec3f SGSoundMgr::get_direction() const
 {
-    aaxVec3f pos, at, up;
+    aaxVec3f at, up;
+    aaxVec3d pos;
     d->_mtx.get(pos, at, up);
     return SGVec3f( at );
 }

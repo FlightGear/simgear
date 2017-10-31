@@ -4,16 +4,15 @@ set(HEADERS
     sample.hxx
     sample_group.hxx
     xmlsound.hxx
-    readwav.hxx
     soundmgr.hxx
+    filters.hxx
     )
     
 set(SOURCES 
     sample.cxx
     sample_group.cxx
     xmlsound.cxx
-    readwav.cxx
-    soundmgr_openal_private.hxx
+    filters.cxx
     )
 
 if (USE_AEONWAVE)
@@ -21,8 +20,13 @@ if (USE_AEONWAVE)
         soundmgr_aeonwave.cxx
         )
 else()
+    set(HEADERS ${HEADERS}
+        readwav.hxx
+        )
     set(SOURCES ${SOURCES}
         soundmgr_openal.cxx
+        soundmgr_openal_private.hxx
+        readwav.cxx
         )
 endif()
 

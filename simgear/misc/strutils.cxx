@@ -30,6 +30,7 @@
 #include <cctype>
 #include <cerrno>
 #include <codecvt>
+#include <locale>
  
 #include "strutils.hxx"
 

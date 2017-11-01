@@ -605,6 +605,20 @@ void test_readTime()
     SG_CHECK_EQUAL_EP(strutils::readTime("-0:0:28"), -28 * seconds);
 }
 
+void test_utf8Convert()
+{
+    // F, smiley emoticon, Maths summation symbol, section sign
+    std::wstring a(L"\u0046\U0001F600\u2211\u00A7");
+    
+    
+    std::string utf8A = strutils::convertWStringToUtf8(a);
+    SG_VERIFY(utf8A == std::string("F\xF0\x9F\x98\x80\xE2\x88\x91\xC2\xA7"));
+    
+    
+    std::wstring aRoundTrip = strutils::convertUtf8ToWString(utf8A);
+    SG_VERIFY(a == aRoundTrip);
+}
+
 int main(int argc, char* argv[])
 {
     test_strip();
@@ -624,6 +638,7 @@ int main(int argc, char* argv[])
     test_error_string();
     test_propPathMatch();
     test_readTime();
+    test_utf8Convert();
     
     return EXIT_SUCCESS;
 }

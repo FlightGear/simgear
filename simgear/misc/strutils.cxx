@@ -29,9 +29,8 @@
 #include <cstring>              // strerror_r() and strerror_s()
 #include <cctype>
 #include <cerrno>
-#include <codecvt>
-#include <locale>
- 
+#include <cassert>
+
 #include "strutils.hxx"
 
 #include <simgear/debug/logstream.hxx>
@@ -42,6 +41,8 @@
 
 #if defined(SG_WINDOWS)
 	#include <windows.h>
+    #include <codecvt>
+    #include <locale>    
 #endif
 
 using std::string;
@@ -654,14 +655,86 @@ static std::string convertWStringToMultiByte(DWORD encoding, const std::wstring&
 
 std::wstring convertUtf8ToWString(const std::string& a)
 {
+#if defined(SG_WINDOWS)
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> ucs2conv;
     return ucs2conv.from_bytes(a);
+#else
+    assert(sizeof(wchar_t) == 4);
+    std::wstring result;
+    int expectedContinuationCount = 0;
+    wchar_t wc = 0;
+    
+    for (uint8_t utf8CodePoint : a) {
+        // ASCII 7-bit range
+        if (utf8CodePoint <= 0x7f) {
+            if (expectedContinuationCount != 0) {
+                throw sg_format_exception();
+            }
+            
+            result.push_back(static_cast<wchar_t>(utf8CodePoint));
+        } else if (expectedContinuationCount > 0) {
+            if ((utf8CodePoint & 0xC0) != 0x80) {
+                throw sg_format_exception();
+            }
+            
+            wc = (wc << 6) | (utf8CodePoint & 0x3F);
+            if (--expectedContinuationCount == 0) {
+                result.push_back(wc);
+            }
+        } else {
+            if ((utf8CodePoint & 0xE0) == 0xC0) {
+                expectedContinuationCount = 1;
+                wc = utf8CodePoint & 0x1f;
+            } else if ((utf8CodePoint & 0xF0) == 0xE0) {
+                expectedContinuationCount = 2;
+                wc = utf8CodePoint & 0x0f;
+            } else if ((utf8CodePoint & 0xF8) == 0xF0) {
+                expectedContinuationCount = 3;
+                wc =utf8CodePoint & 0x07;
+            } else {
+                // illegal UTF-8 encoding
+                throw sg_format_exception();
+            }
+        }
+    } // of UTF-8 code point iteration
+    
+    return result;
+    
+#endif
+
 }
 
 std::string convertWStringToUtf8(const std::wstring& w)
 {
+#if defined(SG_WINDOWS)
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> ucs2conv;
     return ucs2conv.to_bytes(w);
+#else
+    assert(sizeof(wchar_t) == 4);
+    std::string result;
+    
+    for (wchar_t cp : w) {
+        if (cp <= 0x7f) {
+            result.push_back(static_cast<uint8_t>(cp));
+        } else if (cp <= 0x07ff) {
+            result.push_back(0xC0 | ((cp >> 6) & 0x1f));
+            result.push_back(0x80 | (cp & 0x3f));
+        } else if (cp <= 0xffff) {
+            result.push_back(0xE0 | ((cp >> 12) & 0x0f));
+            result.push_back(0x80 | ((cp >> 6) & 0x3f));
+            result.push_back(0x80 | (cp & 0x3f));
+        } else if (cp < 0x10ffff) {
+            result.push_back(0xF0 | ((cp >> 18) & 0x07));
+            result.push_back(0x80 | ((cp >> 12) & 0x3f));
+            result.push_back(0x80 | ((cp >> 6) & 0x3f));
+            result.push_back(0x80 | (cp & 0x3f));
+        } else {
+            throw sg_format_exception();
+        }
+    }
+    
+    return result;
+#endif
 }
 
 std::string convertWindowsLocal8BitToUtf8(const std::string& a)

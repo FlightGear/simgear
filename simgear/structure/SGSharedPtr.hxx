@@ -56,6 +56,8 @@ public:
   { get(_ptr); }
   SGSharedPtr(const SGSharedPtr& p) : _ptr(p.get())
   { get(_ptr); }
+  SGSharedPtr(SGSharedPtr&& other) : SGSharedPtr()
+  { swap(other); }
   template<typename U>
   SGSharedPtr(const SGSharedPtr<U>& p) : _ptr(p.get())
   { get(_ptr); }
@@ -64,9 +66,11 @@ public:
   { reset(p.lock().get()); }
   ~SGSharedPtr(void)
   { reset(); }
-  
-  SGSharedPtr& operator=(const SGSharedPtr& p)
-  { reset(p.get()); return *this; }
+
+  // This handles copy assignment using the copy-and-swap idiom, and also move
+  // assignment thanks to the move construtor.
+  SGSharedPtr& operator=(SGSharedPtr p)
+  { swap(p); return *this; }
   template<typename U>
   SGSharedPtr& operator=(const SGSharedPtr<U>& p)
   { reset(p.get()); return *this; }

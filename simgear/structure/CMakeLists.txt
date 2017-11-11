@@ -60,14 +60,13 @@ add_executable(test_expressions expression_test.cxx)
 target_link_libraries(test_expressions ${TEST_LIBS})
 add_test(expressions ${EXECUTABLE_OUTPUT_PATH}/test_expressions)
 
+add_executable(test_shared_ptr shared_ptr_test.cpp)
+target_link_libraries(test_shared_ptr ${TEST_LIBS})
+add_test(shared_ptr ${EXECUTABLE_OUTPUT_PATH}/test_shared_ptr)
+
 endif(ENABLE_TESTS)
 
 add_boost_test(function_list
   SOURCES function_list_test.cxx
-  LIBRARIES ${TEST_LIBS}
-)
-
-add_boost_test(shared_ptr
-  SOURCES shared_ptr_test.cpp
   LIBRARIES ${TEST_LIBS}
 )

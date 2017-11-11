@@ -1,6 +1,11 @@
-/// Unit tests for reference counting and smart pointer classes
-#define BOOST_TEST_MODULE structure
-#include <BoostTestTargetConfig.h>
+// -*- coding: utf-8 -*-
+//
+// Unit tests for reference counting and smart pointer classes
+
+#include <iostream>
+#include <cstdlib>              // EXIT_SUCCESS
+
+#include <simgear/misc/test_macros.hxx>
 
 #include "SGSharedPtr.hxx"
 #include "SGWeakPtr.hxx"
@@ -21,33 +26,35 @@ struct ReferenceCounted:
 };
 typedef SGSharedPtr<ReferenceCounted> RefPtr;
 
-BOOST_AUTO_TEST_CASE( shared_ptr )
+void test_SGSharedPtr()
 {
-  BOOST_REQUIRE_EQUAL( ReferenceCounted::count(0), 0 );
+  std::cout << "Testing SGSharedPtr and SGReferenced" << std::endl;
+
+  SG_CHECK_EQUAL( ReferenceCounted::count(0), 0 );
 
   RefPtr ptr( new ReferenceCounted() );
-  BOOST_REQUIRE_EQUAL( instance_count, 1 );
-  BOOST_REQUIRE_EQUAL( ReferenceCounted::count(ptr.get()), 1 );
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 1 );
+  SG_CHECK_EQUAL( instance_count, 1 );
+  SG_CHECK_EQUAL( ReferenceCounted::count(ptr.get()), 1 );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 1 );
 
   RefPtr ptr2 = ptr;
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 2 );
-  BOOST_REQUIRE_EQUAL( ptr2.getNumRefs(), 2 );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 2 );
+  SG_CHECK_EQUAL( ptr2.getNumRefs(), 2 );
 
-  BOOST_REQUIRE_EQUAL( ptr, ptr2 );
-  BOOST_REQUIRE_EQUAL( ptr.get(), ptr2.get() );
+  SG_CHECK_EQUAL( ptr, ptr2 );
+  SG_CHECK_EQUAL( ptr.get(), ptr2.get() );
 
   ptr.reset();
-  BOOST_REQUIRE( !ptr.get() );
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 0 );
-  BOOST_REQUIRE_EQUAL( ReferenceCounted::count(ptr2.get()), 1 );
-  BOOST_REQUIRE_EQUAL( ptr2.getNumRefs(), 1 );
+  SG_CHECK_IS_NULL( ptr.get() );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 0 );
+  SG_CHECK_EQUAL( ReferenceCounted::count(ptr2.get()), 1 );
+  SG_CHECK_EQUAL( ptr2.getNumRefs(), 1 );
 
   ptr2.reset();
-  BOOST_REQUIRE( !ptr2.get() );
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 0 );
-  BOOST_REQUIRE_EQUAL( ptr2.getNumRefs(), 0 );
-  BOOST_REQUIRE_EQUAL( instance_count, 0) ;
+  SG_CHECK_IS_NULL( ptr2.get() );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 0 );
+  SG_CHECK_EQUAL( ptr2.getNumRefs(), 0 );
+  SG_CHECK_EQUAL( instance_count, 0) ;
 }
 
 class Base1:
@@ -63,31 +70,41 @@ class VirtualDerived:
   public Base2
 {};
 
-BOOST_AUTO_TEST_CASE( virtual_weak_ptr )
+void test_SGWeakPtr()
 {
+  std::cout << "Testing SGWeakPtr and SGVirtualWeakReferenced" << std::endl;
+
   SGSharedPtr<VirtualDerived> ptr( new VirtualDerived() );
   SGWeakPtr<VirtualDerived> weak_ptr( ptr );
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 1 );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 1 );
 
   SGSharedPtr<Base1> ptr1( weak_ptr.lock() );
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 2 );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 2 );
 
   // converting constructor
-  BOOST_REQUIRE_EQUAL( SGSharedPtr<Base1>(weak_ptr), ptr1 );
+  SG_CHECK_EQUAL( SGSharedPtr<Base1>(weak_ptr), ptr1 );
 
   SGSharedPtr<Base2> ptr2( weak_ptr.lock() );
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 3 );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 3 );
 
-  BOOST_REQUIRE( ptr != NULL );
-  BOOST_REQUIRE_EQUAL( ptr.get(), ptr1.get() );
-  BOOST_REQUIRE_EQUAL( ptr.get(), ptr2.get() );
+  SG_CHECK_IS_NOT_NULL( ptr );
+  SG_CHECK_EQUAL( ptr.get(), ptr1.get() );
+  SG_CHECK_EQUAL( ptr.get(), ptr2.get() );
 
   SGWeakPtr<Base1> weak_base1( ptr );
   SGWeakPtr<Base2> weak_base2( ptr );
   ptr1 = dynamic_cast<VirtualDerived*>(weak_base1.lock().get());
   ptr2 = dynamic_cast<VirtualDerived*>(weak_base2.lock().get());
 
-  BOOST_REQUIRE_EQUAL( ptr.get(), ptr1.get() );
-  BOOST_REQUIRE_EQUAL( ptr.get(), ptr2.get() );
-  BOOST_REQUIRE_EQUAL( ptr.getNumRefs(), 3 );
+  SG_CHECK_EQUAL( ptr.get(), ptr1.get() );
+  SG_CHECK_EQUAL( ptr.get(), ptr2.get() );
+  SG_CHECK_EQUAL( ptr.getNumRefs(), 3 );
+}
+
+int main(int argc, char* argv[])
+{
+  test_SGSharedPtr();
+  test_SGWeakPtr();
+
+  return EXIT_SUCCESS;
 }

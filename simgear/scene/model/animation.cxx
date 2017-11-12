@@ -772,7 +772,7 @@ bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& cente
                     object_group->setNodeMask(0);
                 }
                 else
-                    SG_LOG(SG_INPUT, SG_ALERT, "Could find a valid line segment for animation:  " << axis_object_name);
+                    SG_LOG(SG_INPUT, SG_ALERT, "Could not find a valid line segment for animation:  " << axis_object_name);
             }
             else if (can_warn)
                 SG_LOG(SG_INPUT, SG_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);

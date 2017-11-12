@@ -67,10 +67,19 @@ public:
   ~SGSharedPtr(void)
   { reset(); }
 
-  // This handles copy assignment using the copy-and-swap idiom, and also move
-  // assignment thanks to the move construtor.
-  SGSharedPtr& operator=(SGSharedPtr p)
-  { swap(p); return *this; }
+  SGSharedPtr& operator=(const SGSharedPtr& p)
+  { reset(p.get()); return *this; }
+
+  SGSharedPtr& operator=(SGSharedPtr&& p)
+  { // Whether self-move is to be supported at all is controversial, let's
+    // take the conservative approach for now
+    if (this != &p) {
+      swap(p);
+      p.reset();
+    }
+    return *this;
+  }
+
   template<typename U>
   SGSharedPtr& operator=(const SGSharedPtr<U>& p)
   { reset(p.get()); return *this; }

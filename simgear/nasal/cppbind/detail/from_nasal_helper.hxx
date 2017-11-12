@@ -70,7 +70,7 @@ namespace nasal
        */
       explicit bad_nasal_cast(const std::string& msg);
 
-      virtual ~bad_nasal_cast() throw();
+      virtual ~bad_nasal_cast();
 
     protected:
       std::string _msg;

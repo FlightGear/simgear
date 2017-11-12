@@ -49,7 +49,7 @@ sg_location::sg_location (const char* path, int line, int column)
   setPath(path);
 }
 
-sg_location::~sg_location () throw ()
+sg_location::~sg_location ()
 {
 }
 
@@ -144,7 +144,7 @@ sg_throwable::sg_throwable (const char* message, const char* origin)
   setOrigin(origin);
 }
 
-sg_throwable::~sg_throwable () throw ()
+sg_throwable::~sg_throwable ()
 {
 }
 
@@ -185,7 +185,7 @@ sg_throwable::setOrigin (const char* origin)
   }
 }
 
-const char* sg_throwable::what() const throw()
+const char* sg_throwable::what() const noexcept
 {
   try {
     return getMessage();
@@ -215,7 +215,7 @@ sg_error::sg_error(const std::string& message, const std::string& origin)
 {
 }
 
-sg_error::~sg_error () throw ()
+sg_error::~sg_error ()
 {
 }
 
@@ -239,7 +239,7 @@ sg_exception::sg_exception( const std::string& message,
 {
 }
 
-sg_exception::~sg_exception () throw ()
+sg_exception::~sg_exception ()
 {
 }
 
@@ -279,7 +279,7 @@ sg_io_exception::sg_io_exception( const std::string& message,
 {
 }
 
-sg_io_exception::~sg_io_exception () throw ()
+sg_io_exception::~sg_io_exception ()
 {
 }
 
@@ -335,7 +335,7 @@ sg_format_exception::sg_format_exception( const std::string& message,
   setText(text.c_str());
 }
 
-sg_format_exception::~sg_format_exception () throw ()
+sg_format_exception::~sg_format_exception ()
 {
 }
 
@@ -379,7 +379,7 @@ sg_range_exception::sg_range_exception(const std::string& message,
 {
 }
 
-sg_range_exception::~sg_range_exception () throw ()
+sg_range_exception::~sg_range_exception ()
 {
 }
 // end of exception.cxx

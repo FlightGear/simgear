@@ -85,7 +85,7 @@ BuilderException::BuilderException(const std::string& message,
 {
 }
 
-BuilderException::~BuilderException() throw()
+BuilderException::~BuilderException()
 {
 
 }

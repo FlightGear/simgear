@@ -184,7 +184,7 @@ public:
     BuilderException();
     BuilderException(const char* message, const char* origin = 0);
     BuilderException(const std::string& message, const std::string& = "");
-    virtual ~BuilderException() throw();
+    virtual ~BuilderException();
 };
 }
 

@@ -139,10 +139,9 @@ namespace nasal
   template<class Base>
   ObjectHolder<Base>::ObjectHolder(naRef obj):
     _ref(obj),
-    _gc_key(0)
+    _gc_key(naIsNil(obj) ? 0 : naGCSave(obj))
   {
-    if( !naIsNil(obj) )
-      naGCSave(obj);
+
   }
 
   //----------------------------------------------------------------------------
@@ -159,7 +158,7 @@ namespace nasal
   SGSharedPtr<ObjectHolder<Base> >
   ObjectHolder<Base>::makeShared(naRef obj)
   {
-    return SGSharedPtr<ObjectHolder<Base> >( new ObjectHolder<SGReferenced>(obj) );
+    return SGSharedPtr<ObjectHolder<Base> >( new ObjectHolder<Base>(obj) );
   }
 
 } // namespace nasal

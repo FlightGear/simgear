@@ -787,6 +787,11 @@ void naGCRelease(int key)
   naHash_delete(globals->save_hash, naNum(key));
 }
 
+int naNumSaved()
+{
+  return naHash_size(globals->save_hash) + naVec_size(globals->save_hash);
+}
+
 void naClearSaved()
 {
     naContext c;

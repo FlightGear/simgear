@@ -22,9 +22,13 @@
 //
 
 #include <simgear_config.h>
+
+#include <algorithm>
+
 #include "DNSClient.hxx"
 #include <udns.h>
-#include <time.h>
+#include <ctime>
+
 #include <simgear/debug/logstream.hxx>
 
 namespace simgear {

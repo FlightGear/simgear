@@ -789,7 +789,7 @@ void naGCRelease(int key)
 
 int naNumSaved()
 {
-  return naHash_size(globals->save_hash) + naVec_size(globals->save_hash);
+  return naHash_size(globals->save_hash) + naVec_size(globals->save);
 }
 
 void naClearSaved()

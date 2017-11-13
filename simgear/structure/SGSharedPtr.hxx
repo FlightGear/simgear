@@ -20,8 +20,9 @@
 #ifndef SGSharedPtr_HXX
 #define SGSharedPtr_HXX
 
+#include <simgear/sg_inlines.h>
+
 #include "SGReferenced.hxx"
-#include <algorithm>
 
 template<typename T>
 class SGWeakPtr;
@@ -50,13 +51,15 @@ class SGSharedPtr {
 public:
   typedef T element_type;
 
-  SGSharedPtr(void) : _ptr(0)
+  SGSharedPtr(void) noexcept
+    : _ptr(0)
   {}
   SGSharedPtr(T* ptr) : _ptr(ptr)
   { get(_ptr); }
   SGSharedPtr(const SGSharedPtr& p) : _ptr(p.get())
   { get(_ptr); }
-  SGSharedPtr(SGSharedPtr&& other) : SGSharedPtr()
+  SGSharedPtr(SGSharedPtr&& other) noexcept
+    : SGSharedPtr()
   { swap(other); }
   template<typename U>
   SGSharedPtr(const SGSharedPtr<U>& p) : _ptr(p.get())
@@ -70,7 +73,7 @@ public:
   SGSharedPtr& operator=(const SGSharedPtr& p)
   { reset(p.get()); return *this; }
 
-  SGSharedPtr& operator=(SGSharedPtr&& p)
+  SGSharedPtr& operator=(SGSharedPtr&& p) noexcept
   { // Whether self-move is to be supported at all is controversial, let's
     // take the conservative approach for now
     if (this != &p) {
@@ -99,7 +102,7 @@ public:
   { return _ptr; }
   T* release()
   { T* tmp = _ptr; _ptr = 0; T::put(tmp); return tmp; }
-  void reset()
+  void reset() noexcept
   { if (!T::put(_ptr)) delete _ptr; _ptr = 0; }
   void reset(T* p)
   { SGSharedPtr(p).swap(*this); }
@@ -114,8 +117,8 @@ public:
 
   void clear()
   { reset(); }
-  void swap(SGSharedPtr& other)
-  { std::swap(_ptr, other._ptr); }
+  void swap(SGSharedPtr& other) noexcept
+  { simgear::noexceptSwap(_ptr, other._ptr); }
 
 private:
   void assignNonRef(T* p)

@@ -43,7 +43,7 @@ public:
 
   static unsigned get(const SGReferenced* ref)
   { if (ref) return ++(ref->_refcount); else return 0; }
-  static unsigned put(const SGReferenced* ref)
+  static unsigned put(const SGReferenced* ref) noexcept
   { if (ref) return --(ref->_refcount); else return 0; }
   static unsigned count(const SGReferenced* ref)
   { if (ref) return ref->_refcount; else return 0; }

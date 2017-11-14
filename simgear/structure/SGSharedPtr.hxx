@@ -134,6 +134,12 @@ private:
   friend class SGWeakPtr;
 };
 
+template<class T>
+void swap(SGSharedPtr<T>& a, SGSharedPtr<T>& b) noexcept
+{
+  a.swap(b);
+}
+
 /**
  * Support for boost::mem_fn
  */

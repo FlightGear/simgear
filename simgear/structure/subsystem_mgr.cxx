@@ -22,6 +22,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <algorithm>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/timing/timestamp.hxx>
 

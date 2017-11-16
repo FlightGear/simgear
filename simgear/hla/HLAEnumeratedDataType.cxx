@@ -21,11 +21,11 @@
 
 #include <simgear/compiler.h>
 
-#include "HLAEnumeratedDataType.hxx"
-
+#include <algorithm>
 #include <map>
 #include <sstream>
 #include <vector>
+
 #include "HLAEnumeratedDataType.hxx"
 #include "HLADataTypeVisitor.hxx"
 

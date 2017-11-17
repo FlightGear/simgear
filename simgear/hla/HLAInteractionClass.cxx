@@ -19,12 +19,12 @@
 #  include <simgear_config.h>
 #endif
 
+#include <algorithm>
+
 #include <simgear/compiler.h>
-
-#include "HLAInteractionClass.hxx"
-
 #include <simgear/debug/logstream.hxx>
 
+#include "HLAInteractionClass.hxx"
 #include "HLADataElement.hxx"
 #include "HLAFederate.hxx"
 

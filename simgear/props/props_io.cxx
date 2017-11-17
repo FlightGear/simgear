@@ -161,8 +161,7 @@ setFlag( int& mode,
     string message = "Unrecognized flag value '";
     message += flag;
     message += '\'';
-				// FIXME: add location info
-    throw sg_io_exception(message, location, "SimGear Property Reader");
+    throw sg_io_exception(message, location, SG_ORIGIN);
   }
 }
 
@@ -177,7 +176,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       string message = "Root element name is ";
       message += name;
       message += "; expected PropertyList";
-      throw sg_io_exception(message, location, "SimGear Property Reader");
+      throw sg_io_exception(message, location, SG_ORIGIN);
     }
 
     // Check for an include.
@@ -189,8 +188,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
           {
               string message ="Cannot open file ";
               message += attval;
-              throw sg_io_exception(message, location,
-                                    "SimGear Property Reader");
+              throw sg_io_exception(message, location, SG_ORIGIN);
           }
           readProperties(path, _root, 0, _extended);
       } catch (sg_io_exception &e) {
@@ -277,7 +275,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
           {
             string message ="Cannot open file ";
             message += val;
-            throw sg_io_exception(message, location, "SimGear Property Reader");
+            throw sg_io_exception(message, location, SG_ORIGIN);
           }
           readProperties(path, node, 0, _extended);
         }
@@ -352,8 +350,7 @@ PropsVisitor::endElement (const char * name)
       string message = "Unrecognized data type '";
       message += st.type;
       message += '\'';
-      // FIXME: add location information
-      throw sg_io_exception(message, location, "SimGear Property Reader");
+      throw sg_io_exception(message, location, SG_ORIGIN);
     }
     if( !ret )
       SG_LOG
@@ -770,7 +767,7 @@ copyPropertyValue(const SGPropertyNode *in, SGPropertyNode *out)
                 break;
             string message = "Unknown internal SGPropertyNode type";
             message += in->getType();
-            throw sg_error(message, "SimGear Property Reader");
+            throw sg_error(message, SG_ORIGIN);
     }
     
     return retval;

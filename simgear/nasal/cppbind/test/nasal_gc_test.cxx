@@ -2,6 +2,9 @@
 #include <BoostTestTargetConfig.h>
 
 #include "TestContext.hxx"
+
+#include <simgear/nasal/cppbind/NasalObjectHolder.hxx>
+
 #include <iostream>
 #include <set>
 
@@ -90,4 +93,48 @@ BOOST_AUTO_TEST_CASE( ghost_gc )
   c.runGC();
 
   BOOST_REQUIRE(active_instances.empty());
+}
+
+//------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( object_holder_gc )
+{
+  TestContext c;
+  BOOST_REQUIRE_EQUAL(naNumSaved(), 0);
+  BOOST_REQUIRE(active_instances.empty());
+
+  //-----------------------------------------------
+  // Put some ghosts in ObjectHolder and check if
+  // they are saved from gc
+
+  naRef g1 = createTestGhost(c, 1),
+        g2 = createTestGhost(c, 2);
+
+  nasal::ObjectHolder<> h1(g1);
+  BOOST_CHECK_EQUAL(naNumSaved(), 1);
+  BOOST_CHECK(naIsGhost(h1.get_naRef()));
+
+  nasal::ObjectHolder<> h2(g2);
+  BOOST_CHECK_EQUAL(naNumSaved(), 2);
+  BOOST_CHECK(naIsGhost(h2.get_naRef()));
+
+  c.runGC();
+
+  BOOST_CHECK_EQUAL(active_instances.size(), 2);
+  BOOST_CHECK_EQUAL(naNumSaved(), 2);
+
+  h1.reset(naNum(1));
+  h2.reset(naNum(2));
+  BOOST_CHECK_EQUAL(naNumSaved(), 2);
+
+  //-----------------------------------------------
+  // Check that the saved objects are released
+
+  h1.reset();
+  BOOST_CHECK_EQUAL(naNumSaved(), 1);
+
+  h2.reset();
+  BOOST_CHECK_EQUAL(naNumSaved(), 0);
+
+  c.runGC();
+  BOOST_CHECK_EQUAL(active_instances.size(), 0);
 }

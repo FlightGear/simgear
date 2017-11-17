@@ -58,6 +58,10 @@ int naGCSave(naRef obj);
 // by the garbage collector.
 void naGCRelease(int key);
 
+// Get the number of currently saved and not yet again released objects
+// (saved by naSave or naGCSave)
+int naNumSaved();
+
 // Drop all saved references
 void naClearSaved();
 

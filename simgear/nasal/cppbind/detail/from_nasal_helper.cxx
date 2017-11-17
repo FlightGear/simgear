@@ -39,7 +39,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  bad_nasal_cast::~bad_nasal_cast() throw()
+  bad_nasal_cast::~bad_nasal_cast()
   {
 
   }

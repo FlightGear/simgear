@@ -19,6 +19,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <algorithm>
+
 #include <simgear/compiler.h>
 
 #include "HLAObjectClass.hxx"

@@ -19,10 +19,11 @@
 #  include <simgear_config.h>
 #endif
 
+#include <algorithm>
+
 #include <simgear/compiler.h>
 
 #include "HLAFixedRecordDataType.hxx"
-
 #include "HLADataTypeVisitor.hxx"
 #include "HLAFixedRecordDataElement.hxx"
 

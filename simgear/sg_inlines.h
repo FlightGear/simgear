@@ -23,6 +23,7 @@
 //
 // $Id$
 
+#include <utility>
 
 #ifndef _SG_INLINES_H
 #define _SG_INLINES_H
@@ -108,5 +109,20 @@ inline void SG_NORMALIZE_RANGE( T &val, const T min, const T max ) {
 #define SG_DISABLE_COPY(Class) \
     Class(const Class &); \
     Class &operator=(const Class &);
-   
+
+namespace simgear {
+
+// A swap() that is guaranteed to be 'noexcept' as long as compilation
+// succeeds. Idea and implementation from
+// <https://akrzemi1.wordpress.com/2011/06/10/using-noexcept/>.
+template<typename T>
+void noexceptSwap(T& a, T& b) noexcept
+{
+    using std::swap;
+    static_assert(noexcept(swap(a, b)), "this swap() is not 'noexcept'" );
+    swap(a, b);
+}
+
+} // of namespace simgear
+
 #endif // _SG_INLINES_H

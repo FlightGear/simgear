@@ -7,6 +7,7 @@ find_dependency(Threads)
 
 set(SIMGEAR_HEADLESS @SIMGEAR_HEADLESS@)
 set(SIMGEAR_SOUND @ENABLE_SOUND@)
+set(USE_AEONWAVE @USE_AEONWAVE@)
 
 # OpenAL isn't a public dependency, so maybe not needed
 #if (SIMGEAR_SOUND)

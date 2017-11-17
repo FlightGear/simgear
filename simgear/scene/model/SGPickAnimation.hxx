@@ -114,5 +114,19 @@ private:
     SGSharedPtr<SGExpressiond const> _animationValue;
 };
 
+class SGTouchAnimation : public SGPickAnimation
+{
+public:
+    SGTouchAnimation(simgear::SGTransientModelData &modelData);
+
+
+protected:
+    virtual osg::Group* createMainGroup(osg::Group* pr);
+
+    virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
+
+private:
+};
+
 #endif // of SG_SCENE_PICK_ANIMATION_HXX
 

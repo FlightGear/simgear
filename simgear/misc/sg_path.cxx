@@ -240,44 +240,6 @@ SGPath SGPath::fromUtf8(const std::string& bytes, PermissionChecker p)
     return SGPath(bytes, p);
 }
 
-
-SGPath::SGPath(const SGPath& p) :
-  path(p.path),
-  _permission_checker(p._permission_checker),
-  _cached(p._cached),
-  _rwCached(p._rwCached),
-  _cacheEnabled(p._cacheEnabled),
-  _canRead(p._canRead),
-  _canWrite(p._canWrite),
-  _exists(p._exists),
-  _isDir(p._isDir),
-  _isFile(p._isFile),
-  _modTime(p._modTime),
-  _size(p._size)
-{
-}
-
-SGPath& SGPath::operator=(const SGPath& p)
-{
-  path = p.path;
-  _permission_checker = p._permission_checker,
-  _cached = p._cached;
-  _rwCached = p._rwCached;
-  _cacheEnabled = p._cacheEnabled;
-  _canRead = p._canRead;
-  _canWrite = p._canWrite;
-  _exists = p._exists;
-  _isDir = p._isDir;
-  _isFile = p._isFile;
-  _modTime = p._modTime;
-  _size = p._size;
-  return *this;
-}
-
-// destructor
-SGPath::~SGPath() {
-}
-
 // set path
 void SGPath::set( const string& p ) {
     path = p;

@@ -65,11 +65,6 @@ public:
     /** Default constructor */
     explicit SGPath(PermissionChecker validator = NULL);
 
-    /** Copy contructor */
-    SGPath(const SGPath& p);
-    
-    SGPath& operator=(const SGPath& p);
-
     /**
      * Construct a path based on the starting path provided.
      * @param p initial path
@@ -86,9 +81,6 @@ public:
     SGPath( const SGPath& p,
             const std::string& r,
             PermissionChecker validator = NULL );
-
-    /** Destructor */
-    ~SGPath();
 
     /**
      * Set path to a new value

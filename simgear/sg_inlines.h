@@ -23,6 +23,7 @@
 //
 // $Id$
 
+#include <type_traits>
 #include <utility>
 
 #ifndef _SG_INLINES_H
@@ -121,6 +122,17 @@ void noexceptSwap(T& a, T& b) noexcept
     using std::swap;
     static_assert(noexcept(swap(a, b)), "this swap() is not 'noexcept'" );
     swap(a, b);
+}
+
+// Cast an enum value to its underlying type (useful with scoped enumerations).
+//
+// Example: enum class MyEnum { first = 1, second };
+//          auto e = MyEnum::second;
+//          std::string msg = "MyEnum::second is " +
+//                            std::to_string(simgear::enumValue(e));
+template <typename T>
+constexpr typename std::underlying_type<T>::type enumValue(T e) {
+    return static_cast<typename std::underlying_type<T>::type>(e);
 }
 
 } // of namespace simgear

@@ -182,8 +182,8 @@ public:
      * Get the path string
      * @return path string
      */
-    std::string str() const { return path; }
-    std::string utf8Str() const { return path; }
+    std::string str() const noexcept { return path; }
+    std::string utf8Str() const noexcept { return path; }
 
     std::string local8BitStr() const;
 

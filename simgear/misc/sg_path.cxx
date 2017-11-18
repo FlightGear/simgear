@@ -742,6 +742,18 @@ bool SGPath::operator!=(const SGPath& other) const
     return (path != other.path);
 }
 
+bool operator<(const SGPath& lhs, const SGPath& rhs)
+{ return lhs.path < rhs.path; }
+
+bool operator>(const SGPath& lhs, const SGPath& rhs)
+{ return operator<(rhs, lhs); }
+
+bool operator<=(const SGPath& lhs, const SGPath& rhs)
+{ return !operator>(lhs, rhs); }
+
+bool operator>=(const SGPath& lhs, const SGPath& rhs)
+{ return !operator<(lhs, rhs); }
+
 //------------------------------------------------------------------------------
 bool SGPath::rename(const SGPath& newName)
 {

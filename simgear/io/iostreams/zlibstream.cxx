@@ -38,20 +38,17 @@
 
 #include <zlib.h>
 
+#include <simgear/debug/logstream.hxx>
 #include <simgear/io/iostreams/zlibstream.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/sg_inlines.h>
 #include <simgear/structure/exception.hxx>
-#include <simgear/debug/logstream.hxx>
 
 using std::string;
-using traits = std::char_traits<char>;
+using simgear::enumValue;
 
-// Cast an enum value to its underlying type
-template <typename T>
-static constexpr typename std::underlying_type<T>::type enumValue(T e) {
-    return static_cast<typename std::underlying_type<T>::type>(e);
-}
+using traits = std::char_traits<char>;
 
 // Private utility function
 static string zlibErrorMessage(const z_stream& zstream, int errorCode)

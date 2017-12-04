@@ -20,33 +20,43 @@
 #define SG_FUNCTION_LIST_HXX_
 
 #include <boost/function.hpp>
-#include <boost/preprocessor/iteration/iterate.hpp>
-#include <boost/preprocessor/repetition/enum_binary_params.hpp>
-#include <boost/preprocessor/repetition/enum_trailing_params.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <vector>
 
 namespace simgear
 {
   template<typename Sig> class function_list;
 
-  // Build dependency for CMake, gcc, etc.
-# define SG_DONT_DO_ANYTHING
-#  include <simgear/structure/detail/function_list_template.hxx>
-# undef SG_DONT_DO_ANYTHING
-
-# define BOOST_PP_ITERATION_LIMITS (0, 3)
-# define BOOST_PP_FILENAME_1 <simgear/structure/detail/function_list_template.hxx>
-# include BOOST_PP_ITERATE()
-
   /**
    * Handle a list of callbacks like a single boost::function.
    *
    * @tparam Sig    Function signature.
    */
-  template<typename Sig>
-  class function_list<boost::function<Sig> >:
-    public function_list<Sig>
+  template<class Ret, class ... Args>
+  class function_list<Ret(Args...)>:
+    public std::vector<boost::function<Ret(Args...)>>
+  {
+    public:
+      Ret operator()(Args ... args) const
+      {
+        if( this->empty() )
+          return Ret();
+
+        auto list_end = --this->end();
+        for(auto f = this->begin(); f != list_end; ++f)
+          if( *f )
+            (*f)(args...);
+
+        return (*list_end) ? (*list_end)(args...) : Ret();
+      }
+  };
+
+  /**
+   * Handle a list of callbacks with the same signature as the given
+   * boost::function type.
+   */
+  template<class Ret, class ... Args>
+  class function_list<boost::function<Ret(Args...)>>:
+    public function_list<Ret(Args...)>
   {
 
   };

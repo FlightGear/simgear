@@ -532,11 +532,13 @@ public:
 
     
     KnobSliderPickCallback(const SGPropertyNode* configNode,
-                 SGPropertyNode* modelRoot) :
+                 SGPropertyNode* modelRoot,
+        SGSharedPtr<SGCondition const> condition) :
         SGPickCallback(PriorityPanel),
         _direction(DIRECTION_NONE),
         _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
-        _dragDirection(DRAG_DEFAULT)
+        _dragDirection(DRAG_DEFAULT),
+        _condition(condition)
     {
         readOptionalBindingList(configNode, modelRoot, "action", _action);
         readOptionalBindingList(configNode, modelRoot, "increase", _bindingsIncrease);
@@ -584,41 +586,49 @@ public:
                                 const osgGA::GUIEventAdapter& ea,
                                 const Info& )
     {        
-        // the 'be nice to Mac / laptop' users option; alt-clicking spins the
+        if (!_condition || _condition->test()) {
+            // the 'be nice to Mac / laptop' users option; alt-clicking spins the
         // opposite direction. Should make this configurable
-        if ((button == 0) && (ea.getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_ALT)) {
-            button = 1;
+            if ((button == 0) && (ea.getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_ALT)) {
+                button = 1;
+            }
+
+            int increaseMouseWheel = static_knobMouseWheelAlternateDirection ? 3 : 4;
+            int decreaseMouseWheel = static_knobMouseWheelAlternateDirection ? 4 : 3;
+
+            _direction = DIRECTION_NONE;
+            if ((button == 0) || (button == increaseMouseWheel)) {
+                _direction = DIRECTION_INCREASE;
+            }
+            else if ((button == 1) || (button == decreaseMouseWheel)) {
+                _direction = DIRECTION_DECREASE;
+            }
+            else {
+                return false;
+            }
+
+            _lastFirePos = eventToWindowCoords(ea);
+            // delay start of repeat, makes dragging more usable
+            _repeatTime = -_repeatInterval;
+            _hasDragged = false;
+            return true;
         }
-        
-        int increaseMouseWheel = static_knobMouseWheelAlternateDirection ? 3 : 4;
-        int decreaseMouseWheel = static_knobMouseWheelAlternateDirection ? 4 : 3;
-            
-        _direction = DIRECTION_NONE;
-        if ((button == 0) || (button == increaseMouseWheel)) {
-            _direction = DIRECTION_INCREASE;
-        } else if ((button == 1) || (button == decreaseMouseWheel)) {
-            _direction = DIRECTION_DECREASE;
-        } else {
-            return false;
-        }
-        
-        _lastFirePos = eventToWindowCoords(ea);
-    // delay start of repeat, makes dragging more usable
-        _repeatTime = -_repeatInterval;    
-        _hasDragged = false;
-        return true;
+        return false;
     }
     
     virtual void buttonReleased( int keyModState,
                                  const osgGA::GUIEventAdapter&,
                                  const Info* )
     {
-        // for *clicks*, we only fire on button release
-        if (!_hasDragged) {
-            fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT, _direction);
+        if (!_condition || _condition->test()) {
+
+            // for *clicks*, we only fire on button release
+            if (!_hasDragged) {
+                fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT, _direction);
+            }
+
+            fireBindingList(_releaseAction);
         }
-        
-        fireBindingList(_releaseAction);
     }
   
     DragDirection effectiveDragDirection() const
@@ -635,32 +645,34 @@ public:
     virtual void mouseMoved( const osgGA::GUIEventAdapter& ea,
                              const Info* )
     {
-        _mousePos = eventToWindowCoords(ea);
-        osg::Vec2d deltaMouse = _mousePos - _lastFirePos;
-        
-        if (!_hasDragged) {
-            
-            double manhattanDist = deltaMouse.x() * deltaMouse.x()  + deltaMouse.y() * deltaMouse.y();
-            if (manhattanDist < 5) {
-                // don't do anything, just input noise
-                return;
+        if (!_condition || _condition->test()) {
+            _mousePos = eventToWindowCoords(ea);
+            osg::Vec2d deltaMouse = _mousePos - _lastFirePos;
+
+            if (!_hasDragged) {
+
+                double manhattanDist = deltaMouse.x() * deltaMouse.x() + deltaMouse.y() * deltaMouse.y();
+                if (manhattanDist < 5) {
+                    // don't do anything, just input noise
+                    return;
+                }
+
+                // user is dragging, disable repeat behaviour
+                _hasDragged = true;
             }
-            
-        // user is dragging, disable repeat behaviour
-            _hasDragged = true;
-        }
-      
-        double delta = (effectiveDragDirection() == DRAG_VERTICAL) ? deltaMouse.y() : deltaMouse.x();
-    // per-animation scale factor lets the aircraft author tune for expectations,
-    // eg heading setting vs 5-state switch.
-    // then we scale by a global sensitivity, which the user can set.
-        delta *= static_dragSensitivity / _dragScale;
-        
-        if (fabs(delta) >= 1.0) {
-            // determine direction from sign of delta
-            Direction dir = (delta > 0.0) ? DIRECTION_INCREASE : DIRECTION_DECREASE;
-            fire(ea.getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_SHIFT, dir);
-            _lastFirePos = _mousePos;
+
+            double delta = (effectiveDragDirection() == DRAG_VERTICAL) ? deltaMouse.y() : deltaMouse.x();
+            // per-animation scale factor lets the aircraft author tune for expectations,
+            // eg heading setting vs 5-state switch.
+            // then we scale by a global sensitivity, which the user can set.
+            delta *= static_dragSensitivity / _dragScale;
+
+            if (fabs(delta) >= 1.0) {
+                // determine direction from sign of delta
+                Direction dir = (delta > 0.0) ? DIRECTION_INCREASE : DIRECTION_DECREASE;
+                fire(ea.getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_SHIFT, dir);
+                _lastFirePos = _mousePos;
+            }
         }
     }
     
@@ -680,15 +692,19 @@ public:
     virtual bool hover( const osg::Vec2d& windowPos,
                         const Info& )
     {
-        if (_hover.empty()) {
-            return false;
+        if (!_condition || _condition->test()) {
+
+            if (_hover.empty()) {
+                return false;
+            }
+
+            SGPropertyNode_ptr params(new SGPropertyNode);
+            params->setDoubleValue("x", windowPos.x());
+            params->setDoubleValue("y", windowPos.y());
+            fireBindingList(_hover, params.ptr());
+            return true;
         }
-       
-        SGPropertyNode_ptr params(new SGPropertyNode);
-        params->setDoubleValue("x", windowPos.x());
-        params->setDoubleValue("y", windowPos.y());
-        fireBindingList(_hover, params.ptr());
-        return true;
+        return false;
     }
   
     void setCursor(const std::string& aName)
@@ -702,13 +718,15 @@ public:
 private:
     void fire(bool isShifted, Direction dir)
     {
-        const SGBindingList& act(isShifted ? _shiftedAction : _action);
-        const SGBindingList& incr(isShifted ? _shiftedIncrease : _bindingsIncrease);
-        const SGBindingList& decr(isShifted ? _shiftedDecrease : _bindingsDecrease);
-        
-        switch (dir) {
+        if (!_condition || _condition->test()) {
+
+            const SGBindingList& act(isShifted ? _shiftedAction : _action);
+            const SGBindingList& incr(isShifted ? _shiftedIncrease : _bindingsIncrease);
+            const SGBindingList& decr(isShifted ? _shiftedDecrease : _bindingsDecrease);
+
+            switch (dir) {
             case DIRECTION_INCREASE:
-                fireBindingListWithOffset(act,  1, 1);
+                fireBindingListWithOffset(act, 1, 1);
                 fireBindingList(incr);
                 break;
             case DIRECTION_DECREASE:
@@ -716,6 +734,7 @@ private:
                 fireBindingList(decr);
                 break;
             default: break;
+            }
         }
     }
     
@@ -731,6 +750,8 @@ private:
     double _repeatTime;
     
     DragDirection _dragDirection;
+    SGSharedPtr<SGCondition const> _condition;
+
     bool _hasDragged; ///< has the mouse been dragged since the press?
     osg::Vec2d _mousePos, ///< current window coords location of the mouse
         _lastFirePos; ///< mouse location where we last fired the bindings
@@ -743,19 +764,22 @@ private:
 
 class SGKnobAnimation::UpdateCallback : public osg::NodeCallback {
 public:
-    UpdateCallback(SGExpressiond const* animationValue) :
-        _animationValue(animationValue)
+    UpdateCallback(SGExpressiond const* animationValue, SGSharedPtr<SGCondition const> condition) :
+        _animationValue(animationValue), _condition(condition)
     {
         setName("SGKnobAnimation::UpdateCallback");
     }
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
     {
-        SGRotateTransform* transform = static_cast<SGRotateTransform*>(node);
-        transform->setAngleDeg(_animationValue->getValue());
-        traverse(node, nv);
+        if (!_condition || _condition->test()) {
+            SGRotateTransform* transform = static_cast<SGRotateTransform*>(node);
+            transform->setAngleDeg(_animationValue->getValue());
+            traverse(node, nv);
+        }
     }
     
 private:
+    SGSharedPtr<SGCondition const> _condition;
     SGSharedPtr<SGExpressiond const> _animationValue;
 };
 
@@ -763,6 +787,7 @@ private:
 SGKnobAnimation::SGKnobAnimation(simgear::SGTransientModelData &modelData) :
     SGPickAnimation(modelData)
 {
+    _condition = getCondition();
     SGSharedPtr<SGExpressiond> value = read_value(modelData.getConfigNode(), modelData.getModelRoot(), "-deg",
                                                   -SGLimitsd::max(), SGLimitsd::max());
     _animationValue = value->simplify();
@@ -776,7 +801,7 @@ SGKnobAnimation::createMainGroup(osg::Group* pr)
 {  
   SGRotateTransform* transform = new SGRotateTransform();
   
-  UpdateCallback* uc = new UpdateCallback(_animationValue);
+  UpdateCallback* uc = new UpdateCallback(_animationValue, _condition);
   transform->setUpdateCallback(uc);
   transform->setCenter(_center);
   transform->setAxis(_axis);
@@ -788,7 +813,7 @@ SGKnobAnimation::createMainGroup(osg::Group* pr)
 void
 SGKnobAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
 {
-  ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot()));
+  ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot(), _condition));
 }
 
 void SGKnobAnimation::setAlternateMouseWheelDirection(bool aToggle)
@@ -854,7 +879,7 @@ SGSliderAnimation::createMainGroup(osg::Group* pr)
 void
 SGSliderAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
 {
-  ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot()));
+  ud->setPickCallback(new KnobSliderPickCallback(getConfig(), getModelRoot(), _condition));
 }
 
 /*

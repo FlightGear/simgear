@@ -403,22 +403,26 @@ bool TarExtractor::isTarData(const uint8_t* bytes, size_t count)
         z.avail_in = count;
 
         if (inflateInit2(&z, ZLIB_INFLATE_WINDOW_BITS | ZLIB_DECODE_GZIP_HEADER) != Z_OK) {
+            inflateEnd(&z);
             return false;
         }
 
         int result = inflate(&z, Z_SYNC_FLUSH);
         if (result != Z_OK) {
             SG_LOG(SG_IO, SG_WARN, "inflate failed:" << result);
+            inflateEnd(&z);
             return false; // not tar data
         }
 
         size_t written = 4096 - z.avail_out;
         if (written < TAR_HEADER_BLOCK_SIZE) {
             SG_LOG(SG_IO, SG_WARN, "insufficient data for header");
+            inflateEnd(&z);
             return false;
         }
 
         header = reinterpret_cast<UstarHeaderBlock*>(zlibOutput);
+        inflateEnd(&z);
     } else {
         // uncompressed tar
         if (count < TAR_HEADER_BLOCK_SIZE) {

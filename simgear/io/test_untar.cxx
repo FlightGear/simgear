@@ -33,6 +33,7 @@ void testTarGz()
 
     SG_VERIFY(TarExtractor::isTarData(buf, bufSize));
 
+    f.close();
 }
 
 void testPlainTar()
@@ -48,12 +49,13 @@ void testPlainTar()
 
     SG_VERIFY(TarExtractor::isTarData(buf, bufSize));
 
+    f.close();
 }
 
-int main (int ac, char ** av)
+int main(int ac, char ** av)
 {
     testTarGz();
     testPlainTar();
 
-	return 0;
+    return 0;
 }

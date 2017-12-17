@@ -14,6 +14,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 #include <simgear/misc/test_macros.hxx>
 #include <simgear/structure/exception.hxx>
@@ -81,8 +82,8 @@ void testParse()
               "</sqr>"
         "</PropertyList>";
     
-    SGPropertyNode* desc = new SGPropertyNode;
-    readProperties(xml2, strlen(xml2), desc);
+    auto desc = std::unique_ptr<SGPropertyNode>(new SGPropertyNode);
+    readProperties(xml2, strlen(xml2), desc.get());
     
     SGSharedPtr<SGExpressiond> expr = SGReadDoubleExpression(propertyTree, desc->getChild(0));
     
@@ -107,4 +108,3 @@ int main(int argc, char* argv[])
     cout << __FILE__ << ": All tests passed" << endl;
     return EXIT_SUCCESS;
 }
-

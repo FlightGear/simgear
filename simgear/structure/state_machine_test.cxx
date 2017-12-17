@@ -14,6 +14,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 #include "StateMachine.hxx"
 
@@ -230,11 +231,11 @@ void testParse()
         </state>
     </PropertyList>)";
     
-    SGPropertyNode* desc = new SGPropertyNode;
-    readProperties(xml, strlen(xml), desc);
+    auto desc = std::unique_ptr<SGPropertyNode>(new SGPropertyNode);
+    readProperties(xml, strlen(xml), desc.get());
     
     SGPropertyNode_ptr root(new SGPropertyNode);
-    StateMachine_ptr sm = StateMachine::createFromPlist(desc, root);
+    StateMachine_ptr sm = StateMachine::createFromPlist(desc.get(), root);
     
     SG_VERIFY(sm->findStateByName("one") != NULL);
     SG_VERIFY(sm->findStateByName("two") != NULL);
@@ -250,4 +251,3 @@ int main(int argc, char* argv[])
     cout << __FILE__ << ": All tests passed" << endl;
     return EXIT_SUCCESS;
 }
-

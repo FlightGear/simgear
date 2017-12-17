@@ -7,7 +7,7 @@
 #include <simgear/misc/test_macros.hxx>
 
 #include <iostream>
-
+#include <memory>
 
 #define VERIFY_COLOR(str, r, g, b, a) \
   SG_VERIFY(simgear::parseColor(str, color)) \
@@ -28,7 +28,7 @@ int main (int ac, char ** av)
   SGPropertyNode color_node, color_arg;
   color_arg.setStringValue("#000000");
 
-  simgear::PropertyInterpolator* interp = new simgear::ColorInterpolator;
+  auto interp = std::unique_ptr<simgear::ColorInterpolator>(new simgear::ColorInterpolator);
   interp->reset(color_arg);
 
   interp->update(color_node, 0.5); // with no color it should immediately set to the target

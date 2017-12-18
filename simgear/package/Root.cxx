@@ -151,13 +151,14 @@ public:
         std::string u = dl->realUrl();
         if (status == Delegate::STATUS_SUCCESS) {
             thumbnailCache[u].requestPending = false;
-            fireDataForThumbnail(u, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
             
             // if this was a network load, rather than a re-load from the disk cache,
             // then persist to disk now.
             if (strutils::starts_with(request->url(), "http")) {
                 addToPersistentCache(u, bytes);
             }
+
+            fireDataForThumbnail(u, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
         } else if (status == Delegate::FAIL_HTTP_FORBIDDEN) {
             // treat this as rate-limiting failure, at least from some mirrors
             // (eg Ibiblio) and retry up to the max count
@@ -220,6 +221,10 @@ public:
         sg_ofstream fstream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
         fstream.write(imageBytes.data(), imageBytes.size());
         fstream.close();
+
+        auto it = thumbnailCache.find(url);
+        assert(it != thumbnailCache.end());
+        it->second.pathOnDisk = cachePath;
     }
     
     bool checkPersistentCache(const std::string& url)

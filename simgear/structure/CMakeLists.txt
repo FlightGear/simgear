@@ -28,10 +28,6 @@ set(HEADERS
     StateMachine.hxx
     )
 
-set(DETAIL_HEADERS
-  detail/function_list_template.hxx
-)
-
 set(SOURCES
     SGAtomic.cxx
     SGBinding.cxx
@@ -48,7 +44,6 @@ set(SOURCES
     )
 
 simgear_component(structure structure "${SOURCES}" "${HEADERS}")
-simgear_component(structure/detail structure/detail "" "${DETAIL_HEADERS}")
 
 if(ENABLE_TESTS)
 

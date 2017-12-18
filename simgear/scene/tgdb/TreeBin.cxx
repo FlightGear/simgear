@@ -202,33 +202,41 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p, const SGVec3f& t)
     Vec3 pos = toOsg(p);
     Vec3 ter = toOsg(t);
     unsigned int numDrawables = geode->getNumDrawables();
-    Geometry* geom
-        = static_cast<Geometry*>(geode->getDrawable(numDrawables - 1));
+    Geometry* geom = static_cast<Geometry*>(geode->getDrawable(numDrawables - 1));
     Vec3Array* posArray = static_cast<Vec3Array*>(geom->getColorArray());
     Vec3Array* tnormalArray = NULL;
-    if (use_tree_shadows || use_tree_normals)
-	{tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());}
-    if (posArray->size()
-        >= static_cast<Vec3Array*>(geom->getVertexArray())->size()) {
-        Vec3Array* paramsArray
-            = static_cast<Vec3Array*>(geom->getNormalArray());
+
+    if (use_tree_shadows || use_tree_normals) {
+        tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());
+    }
+
+    if (posArray->size() >= static_cast<Vec3Array*>(geom->getVertexArray())->size()) {
+        Vec3Array* paramsArray = static_cast<Vec3Array*>(geom->getNormalArray());
         Vec3 params = (*paramsArray)[0];
         geom = createTreeGeometry(params.x(), params.y(), params.z());
         posArray = static_cast<Vec3Array*>(geom->getColorArray());
-	if (use_tree_shadows || use_tree_normals)
-		{tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());}
+
+        if (use_tree_shadows || use_tree_normals) {
+            tnormalArray = static_cast<Vec3Array*>(geom->getSecondaryColorArray());
+        }
         geode->addDrawable(geom);
     }
-    posArray->insert(posArray->end(), 4, pos);
-    if (use_tree_shadows || use_tree_normals)
-    	{tnormalArray->insert(tnormalArray->end(),4,ter);}
-    size_t numVerts = posArray->size();
-    int imax = 2;
-    if (use_tree_shadows) {imax = 3;}
-    for (int i = 0; i < imax; ++i) {
-        DrawArrays* primSet
-            = static_cast<DrawArrays*>(geom->getPrimitiveSet(i));
-        primSet->setCount(numVerts);
+
+    if (tnormalArray && (use_tree_shadows || use_tree_normals))
+        tnormalArray->insert(tnormalArray->end(), 4, ter);
+
+    if (posArray)
+    {
+        posArray->insert(posArray->end(), 4, pos);
+
+        size_t numVerts = posArray->size();
+        int imax = 2;
+        if (use_tree_shadows) { imax = 3; }
+        for (int i = 0; i < imax; ++i) {
+            DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(i));
+            if(primSet != nullptr)
+                primSet->setCount(numVerts);
+        }
     }
 }
 

@@ -19,7 +19,6 @@
 #include <simgear_config.h>
 
 #include "KeyboardEvent.hxx"
-#include "utf8.h"
 
 #include <osgGA/GUIEventAdapter>
 
@@ -42,6 +41,7 @@ namespace canvas
 
   // TODO check Win/Mac keycode for altgr/ISO Level3 Shift
   const uint32_t KEY_AltGraph = 0xfe03;
+  
 
   //----------------------------------------------------------------------------
   KeyboardEvent::KeyboardEvent():
@@ -269,10 +269,24 @@ namespace canvas
     // Empty or no mapping -> convert UTF-32 key value to UTF-8
     if( _name.empty() )
     {
-      if( !utf8::internal::is_code_point_valid(_key) )
+      if (( _key >= 0xd800u && _key <= 0xdfffu ) || _key > 0x10ffffu )
         _name = "Unidentified";
       else
-        utf8::unchecked::append(_key, std::back_inserter(_name));
+        if ( _key <= 0x7f ) {
+            _name.push_back(static_cast<uint8_t>(_key));
+        } else if ( _key <= 0x7ff ) {
+            _name.push_back(static_cast<uint8_t>((_key >> 6) | 0xc0));
+            _name.push_back(static_cast<uint8_t>((_key & 0x3f) | 0x80));
+        } else if ( _key <= 0xffff ) {
+            _name.push_back(static_cast<uint8_t>((_key >> 12) | 0xe0));
+            _name.push_back(static_cast<uint8_t>(((_key >> 6) & 0x3f) | 0x80));
+            _name.push_back(static_cast<uint8_t>((_key & 0x3f) | 0x80));
+        } else {
+            _name.push_back(static_cast<uint8_t>((_key >> 18) | 0xf0));
+            _name.push_back(static_cast<uint8_t>(((_key >> 12) & 0x3f) | 0x80));
+            _name.push_back(static_cast<uint8_t>(((_key >> 6) & 0x3f) | 0x80));
+            _name.push_back(static_cast<uint8_t>((_key & 0x3f) | 0x80));
+        }
     }
 
     // Keys on the numpad with NumLock enabled are reported just like their
@@ -307,11 +321,30 @@ namespace canvas
     if( key_name.empty() )
       return false;
 
-    std::string::const_iterator it = key_name.begin();
-    uint32_t cp = utf8::next(it, key_name.end());
+    // Convert the key name to the corresponding code point by checking the
+    // sequence length (the first bits of the first byte) and performing the
+    // conversion accordingly.
+    uint32_t cp = key_name[0] & 0xff;
+    size_t len;
+    if (cp < 0x80) {
+      len = 1;
+    } else if ((cp >> 5) == 0x6) {
+      cp = ((cp << 6) & 0x7ff) + (key_name[1] & 0x3f);
+      len = 2;
+    } else if ((cp >> 4) == 0xe) {
+      cp = ((cp << 12) & 0xffff) + (((key_name[1] & 0xff) << 6) & 0xfff)
+        + (key_name[2] & 0x3f);
+      len = 3;
+    } else if ((cp >> 3) == 0x1e) {
+      cp = ((cp << 18) & 0x1fffff) + (((key_name[1] & 0xff) << 12) & 0x3ffff)
+        + (((key_name[2] & 0xff) << 6) & 0xfff) + (key_name[3] & 0x3f);
+      len = 4;
+    } else {
+      return false;
+    }
 
     // Check if _name contains exactly one (UTF-8 encoded) character.
-    if( it != key_name.end() )
+    if (key_name.length() > len)
       return false;
 
     // C0 and C1 control characters are not printable.

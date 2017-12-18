@@ -387,7 +387,9 @@ namespace canvas
     OSGUserData* ud =
       static_cast<OSGUserData*>(_transform->getChild(index)->getUserData());
     assert(ud);
-    return ud->element;
+    if (ud)
+        return ud->element;
+    return nullptr;
   }
 
   //----------------------------------------------------------------------------

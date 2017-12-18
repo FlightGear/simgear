@@ -2,7 +2,11 @@
 
 #include <simgear/compiler.h>
 
+#include <algorithm>
+#include <functional>
 #include <iostream>
+#include <vector>
+
 #include <cstdlib>
 #include <cstring>
 
@@ -286,6 +290,49 @@ void test_permissions()
     SG_CHECK_EQUAL(fileInRW.canWrite(), false);
 }
 
+void test_comparisons()
+{
+  std::cout << "Testing comparisons\n";
+
+  SG_CHECK_EQUAL(SGPath("/abc/def ghi"), SGPath("/abc/def ghi"));
+  SG_CHECK_NE(SGPath("/abc"), SGPath("abc"));
+  SG_CHECK_LT(SGPath(""), SGPath("/"));
+  SG_CHECK_LT(SGPath("A"), SGPath("a"));
+  SG_CHECK_LE(SGPath(""), SGPath("/"));
+  SG_CHECK_LE(SGPath("/"), SGPath("/"));
+  SG_CHECK_GT(SGPath("a"), SGPath("A"));
+  SG_CHECK_GE(SGPath("a"), SGPath("A"));
+  SG_CHECK_GE(SGPath("a"), SGPath("a"));
+
+  std::vector<SGPath> origVector({
+      std::string("/zer/gh/tr aze"),
+      std::string("/abc/def/ttt"),
+      std::string("/abc/def/ddd"),
+      std::string("/a"),
+      std::string("")});
+  std::vector<SGPath> sortedVector({
+      std::string(""),
+      std::string("/a"),
+      std::string("/abc/def/ddd"),
+      std::string("/abc/def/ttt"),
+      std::string("/zer/gh/tr aze")});
+
+  std::sort(origVector.begin(), origVector.end());
+  SG_CHECK_EQUAL_NOSTREAM(origVector, sortedVector);
+}
+
+void test_hash_function()
+{
+  std::cout << "Testing the std::hash<SGPath> specialization\n";
+
+  const SGPath nullPath{};
+  const SGPath p{"/abc/def"};
+
+  SG_CHECK_EQUAL(std::hash<SGPath>{}(nullPath), std::hash<SGPath>{}(nullPath));
+  SG_CHECK_EQUAL(std::hash<SGPath>{}(p), std::hash<SGPath>{}(p));
+  SG_CHECK_NE(std::hash<SGPath>{}(p), std::hash<SGPath>{}(p / "foobar"));
+}
+
 int main(int argc, char* argv[])
 {
     SGPath pa;
@@ -389,12 +436,11 @@ int main(int argc, char* argv[])
     SG_CHECK_EQUAL(pp.canWrite(), false);
 
     test_dir();
-    
-	test_path_dir();
-
+    test_path_dir();
     test_permissions();
-
-	test_update_dir();
+    test_update_dir();
+    test_comparisons();
+    test_hash_function();
 
     cout << "all tests passed OK" << endl;
     return 0; // passed

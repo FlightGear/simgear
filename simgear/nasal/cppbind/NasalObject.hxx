@@ -23,9 +23,6 @@
 #include "NasalObjectHolder.hxx"
 #include "Ghost.hxx"
 
-#include <boost/preprocessor/iteration/iterate.hpp>
-#include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
-
 namespace nasal
 {
   /**
@@ -48,14 +45,21 @@ namespace nasal
 
       bool valid() const;
 
-      // Build dependency for CMake, gcc, etc.
-#define SG_DONT_DO_ANYTHING
-# include <simgear/nasal/cppbind/detail/NasalObject_callMethod_templates.hxx>
-#undef SG_DONT_DO_ANYTHING
+      template<class Ret, class ... Args>
+      Ret callMethod(const std::string& name, Args ... args)
+      {
+        if( !_nasal_impl.valid() )
+          return Ret();
 
-#define BOOST_PP_ITERATION_LIMITS (0, 9)
-#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/NasalObject_callMethod_templates.hxx>
-#include BOOST_PP_ITERATE()
+        Context ctx;
+        auto func = get_member<boost::function<Ret (nasal::Me, Args...)>>(
+          ctx, _nasal_impl.get_naRef(), name
+        );
+        if( func )
+          return func(nasal::to_nasal(ctx, this), args...);
+
+        return Ret();
+      }
 
       bool _set(naContext c, const std::string& key, naRef val);
       bool _get(naContext c, const std::string& key, naRef& out);

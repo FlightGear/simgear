@@ -28,12 +28,14 @@
 #ifndef _SG_PATH_HXX
 #define _SG_PATH_HXX
 
+#include <functional>
+#include <string>
+
+#include <cstdlib>
+#include <ctime>
 #include <sys/types.h>
 
 #include <simgear/compiler.h>
-#include <string>
-#include <ctime>
-
 #include <simgear/math/sg_types.hxx>
 
 #ifdef _MSC_VER
@@ -65,11 +67,6 @@ public:
     /** Default constructor */
     explicit SGPath(PermissionChecker validator = NULL);
 
-    /** Copy contructor */
-    SGPath(const SGPath& p);
-    
-    SGPath& operator=(const SGPath& p);
-
     /**
      * Construct a path based on the starting path provided.
      * @param p initial path
@@ -87,9 +84,6 @@ public:
             const std::string& r,
             PermissionChecker validator = NULL );
 
-    /** Destructor */
-    ~SGPath();
-
     /**
      * Set path to a new value
      * @param p new path
@@ -99,6 +93,8 @@ public:
 
     bool operator==(const SGPath& other) const;
     bool operator!=(const SGPath& other) const;
+    // Other comparison operators are declared below
+    friend bool operator<(const SGPath& lhs, const SGPath& rhs);
 
     void setPermissionChecker(PermissionChecker validator);
     PermissionChecker getPermissionChecker() const;
@@ -190,8 +186,8 @@ public:
      * Get the path string
      * @return path string
      */
-    std::string str() const { return path; }
-    std::string utf8Str() const { return path; }
+    std::string str() const noexcept { return path; }
+    std::string utf8Str() const noexcept { return path; }
 
     std::string local8BitStr() const;
 
@@ -356,6 +352,24 @@ private:
     mutable time_t _modTime;
     mutable size_t _size;
 };
+
+// Other comparison operators are in the class definition block
+bool operator> (const SGPath& lhs, const SGPath& rhs);
+bool operator<=(const SGPath& lhs, const SGPath& rhs);
+bool operator>=(const SGPath& lhs, const SGPath& rhs);
+
+// Hash function for SGPath
+namespace std
+{
+template<>
+struct hash<SGPath>
+{
+  std::size_t operator()(const SGPath& path) const noexcept
+  {
+    return std::hash<std::string>{}(path.utf8Str());
+  }
+};
+} // of namespace std
 
 /// Output to an ostream
 template<typename char_type, typename traits_type>

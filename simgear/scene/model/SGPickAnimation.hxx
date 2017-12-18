@@ -45,7 +45,8 @@ protected:
 
       
   virtual osg::Group* createMainGroup(osg::Group* pr);
-  
+  SGSharedPtr<SGCondition const> _condition;
+
   virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
 private:
   class PickCallback;
@@ -85,7 +86,8 @@ public:
     
 protected:
     virtual osg::Group* createMainGroup(osg::Group* pr);
-      
+    SGSharedPtr<SGCondition const> _condition;
+
     virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
     
 private:

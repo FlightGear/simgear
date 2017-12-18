@@ -95,7 +95,7 @@ const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
 /** Value of earth radius from LaRCsim (ft) */
 #define SG_EQUATORIAL_RADIUS_FT  20925650.
 
-/** Value of earth radius from LaRCsim (meter) */
+/** Value of equatorial earth radius from LaRCsim (meter) */
 #define SG_EQUATORIAL_RADIUS_M   6378138.12
 
 /** Radius squared (ft) */
@@ -104,6 +104,8 @@ const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
 /** Radius squared (meter) */
 #define SG_EQ_RAD_SQUARE_M   40680645877797.1344
 
+/** Value of WGS84 polar earth radius (meter) */
+#define SG_POLAR_RADIUS_M   6356752.3142451794975639668
 
 // Physical Constants, SI
 

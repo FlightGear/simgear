@@ -15,7 +15,7 @@
 #cmakedefine HAVE_WINDOWS_H
 #cmakedefine HAVE_MKDTEMP
 #cmakedefine HAVE_AL_EXT_H
-
+#cmakedefine HAVE_STD_INDEX_SEQUENCE
 
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
 

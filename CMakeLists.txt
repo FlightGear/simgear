@@ -135,6 +135,16 @@ include (DetectArch)
 # keep the compatability link option as the default
 option(OSG_FSTREAM_EXPORT_FIXED "Set to ON if the osgDB fstream export patch is applied" OFF)
 
+if (CMAKE_COMPILER_IS_GNUCXX OR CLANG)
+  if (CMAKE_VERSION VERSION_LESS 3.1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
+  elseif (CMAKE_VERSION VERSION_LESS 3.8)
+    # policy CMP0067 (try_compile does not honor CMAKE_CXX_STANDARD)
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
+  endif()
+endif()
+
+
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_BINARY_DIR} PATH)
   if (CMAKE_CL_64)
@@ -382,10 +392,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall -fPIC")
     set(WARNING_FLAGS_C   "-Wall -fPIC")
 
-    if (CMAKE_VERSION VERSION_LESS 3.1)
-       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    endif()
-
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.4)
       message(WARNING "GCC 4.4 will be required soon, please upgrade")
     endif()
@@ -412,10 +418,6 @@ if (CLANG)
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
     # fix Boost compilation :(
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-
-    if (CMAKE_VERSION VERSION_LESS 3.1)
-       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    endif()
 
     if(ENABLE_SIMD)
       if (X86 OR X86_64)
@@ -488,6 +490,14 @@ endif(WIN32)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
+
+check_cxx_source_compiles("
+  #include <utility>
+  #include <type_traits>
+  std::make_index_sequence<0> t;
+  int main() { return 0; }"
+  HAVE_STD_INDEX_SEQUENCE
+)
 
 # use BEFORE to ensure local directories are used first,
 # ahead of system-installed libs

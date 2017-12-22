@@ -56,6 +56,10 @@ add_executable(test_CSSBorder CSSBorder_test.cxx)
 add_test(CSSBorder ${EXECUTABLE_OUTPUT_PATH}/test_CSSBorder)
 target_link_libraries(test_CSSBorder ${TEST_LIBS})
 
+add_executable(test_integer_sequence integer_sequence_test.cxx)
+add_test(integer_sequence ${EXECUTABLE_OUTPUT_PATH}/test_integer_sequence)
+target_link_libraries(test_integer_sequence ${TEST_LIBS})
+
 add_executable(test_tabbed_values tabbed_values_test.cxx)
 add_test(tabbed_values ${EXECUTABLE_OUTPUT_PATH}/test_tabbed_values)
 target_link_libraries(test_tabbed_values ${TEST_LIBS})

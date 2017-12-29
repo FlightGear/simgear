@@ -351,6 +351,33 @@ if (NOT ${HAVE_STD_ISNAN})
   message(FATAL_ERROR "Your compiler lacks C++11 std::isnan, please update it")
 endif()
 
+# Check if the <regex> implementation in the C++ standard library is usable.
+# This is necessary because g++ 4.8 lies about its C++11 compliance: its
+# <regex> is utterly unusable, cf. [1].
+# The big preprocessor test essentially comes from [2], and gcc upstream devs
+# appear to back it (see comments following [2], as well as [3]).
+#
+#   [1] https://stackoverflow.com/a/12665408/4756009
+#   [2] https://stackoverflow.com/a/41186162/4756009
+#   [3] https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78905
+check_cxx_source_compiles(
+    "#include <regex>
+     #include <cstdlib>
+
+int main() {
+     #if __cplusplus >= 201103L &&                             \
+         (!defined(__GLIBCXX__)                         ||     \
+          (__cplusplus >= 201402L)                      ||     \
+          defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) ||     \
+          defined(_GLIBCXX_REGEX_STATE_LIMIT)           ||     \
+          (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE > 4))
+       return EXIT_SUCCESS;
+     #else
+       nullptr = void; // intentionally trigger a compilation error
+     #endif
+}"
+    HAVE_WORKING_STD_REGEX)
+
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall -fPIC")
     set(WARNING_FLAGS_C   "-Wall -fPIC")

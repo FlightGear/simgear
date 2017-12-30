@@ -34,7 +34,7 @@
 
 class SGPrecipitation : public osg::Referenced
 {
-private:
+protected:
     bool _freeze;
     bool _enabled;
     bool _droplet_external;
@@ -66,7 +66,7 @@ public:
     void setIllumination(float);
     void setClipDistance(float);
 
-    void setEnabled( bool );
+    void setEnabled(bool);
     bool getEnabled() const;
 };
 

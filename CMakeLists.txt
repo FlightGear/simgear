@@ -372,20 +372,18 @@ endif()
 #   [3] https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78905
 check_cxx_source_compiles(
     "#include <regex>
-     #include <cstdlib>
 
-int main() {
-     #if __cplusplus >= 201103L &&                             \
-         (!defined(__GLIBCXX__)                         ||     \
-          (__cplusplus >= 201402L)                      ||     \
-          defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) ||     \
-          defined(_GLIBCXX_REGEX_STATE_LIMIT)           ||     \
-          (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE > 4))
-       return EXIT_SUCCESS;
-     #else
-       nullptr = void; // intentionally trigger a compilation error
-     #endif
-}"
+     int main() {
+       #if __cplusplus >= 201103L &&                             \
+           (!defined(__GLIBCXX__)                         ||     \
+            (__cplusplus >= 201402L)                      ||     \
+            defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) ||     \
+            defined(_GLIBCXX_REGEX_STATE_LIMIT)           ||     \
+            (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE > 4))
+       #else
+         nullptr = void; // intentionally trigger a compilation error
+       #endif
+     }"
     HAVE_WORKING_STD_REGEX)
 
 if(CMAKE_COMPILER_IS_GNUCXX)

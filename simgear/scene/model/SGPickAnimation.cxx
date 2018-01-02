@@ -77,9 +77,9 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
                 SGPropertyNode* modelRoot,
                 SGSharedPtr<SGCondition const> condition) :
      SGPickCallback(PriorityPanel),
+     _condition(condition),
      _repeatable(configNode->getBoolValue("repeatable", false)),
-     _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
-       _condition(condition)
+     _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
    {
      std::vector<SGPropertyNode_ptr> bindings;
 
@@ -264,7 +264,8 @@ public:
               SGPropertyNode* modelRoot,
               osg::Group *node,
               SGSharedPtr<SGCondition const> condition)
-     : _node(node), _condition(condition)
+     : _condition(condition)
+     , _node(node)
  {
    SG_LOG(SG_INPUT, SG_DEBUG, "Configuring VNC callback");
    const char *cornernames[3] = {"top-left", "top-right", "bottom-left"};
@@ -765,7 +766,8 @@ private:
 class SGKnobAnimation::UpdateCallback : public osg::NodeCallback {
 public:
     UpdateCallback(SGExpressiond const* animationValue, SGSharedPtr<SGCondition const> condition) :
-        _animationValue(animationValue), _condition(condition)
+        _condition(condition),
+        _animationValue(animationValue)
     {
         setName("SGKnobAnimation::UpdateCallback");
     }
@@ -899,9 +901,9 @@ class TouchPickCallback : public SGPickCallback {
     public:
         TouchPickCallback(const SGPropertyNode* configNode,
             SGPropertyNode* modelRoot) :
+            SGPickCallback(PriorityPanel),
             _repeatable(configNode->getBoolValue("repeatable", false)),
-            _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
-            SGPickCallback(PriorityPanel)
+            _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
         {
             std::vector<SGPropertyNode_ptr> bindings;
 

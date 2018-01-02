@@ -20,6 +20,8 @@
 #ifndef SIMGEAR_MISC_INTEGER_SEQUENCE_HXX_
 #define SIMGEAR_MISC_INTEGER_SEQUENCE_HXX_
 
+#include <simgear_config.h>
+
 #include <utility>
 #include <type_traits>
 

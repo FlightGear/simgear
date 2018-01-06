@@ -29,6 +29,7 @@
 
 #include <ctime>
 #include <cerrno>
+#include <chrono>
 
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>    // for gettimeofday() and the _POSIX_TIMERS define
@@ -96,6 +97,21 @@ void SGTimeStamp::stamp()
 #else
 # error Port me
 #endif
+}
+
+void SGTimeStamp::systemClockHoursAndMinutes()
+{
+    using namespace std;
+    using namespace std::chrono;
+
+    typedef duration<int, ratio_multiply<hours::period, ratio<24> >::type> days;
+
+    system_clock::time_point now = system_clock::now();
+    system_clock::duration tp = now.time_since_epoch();
+    tp -= duration_cast<days>(tp);
+
+    _sec = duration_cast<seconds>(tp).count();
+    _nsec = duration_cast<nanoseconds>(tp - seconds(_sec)).count();
 }
 
 // sleep based timing loop.

@@ -183,15 +183,6 @@ public:
     int requestContentLength;
 };
 
-class EraseIfClosed
-{
-public:
-    bool operator()(simgear::NetChannel* chan) const
-    {
-        return chan->isClosed();
-    }
-};
-
 template <class T>
 class TestServer : public NetChannel
 {
@@ -202,7 +193,6 @@ public:
     {
         Socket::initSockets();
 
-
         open();
         bind(NULL, 2000); // localhost, any port
         listen(16);
@@ -212,6 +202,7 @@ public:
 
     virtual ~TestServer()
     {
+        _poller.removeChannel(this);
     }
 
     virtual bool writable (void) { return false ; }
@@ -231,15 +222,16 @@ public:
     {
         _poller.poll();
 
-        typename std::vector<T*>::iterator it;
-        it = std::remove_if(_channels.begin(), _channels.end(), EraseIfClosed());
-
-        for (typename std::vector<T*>::iterator it2 = it; it2 != _channels.end(); ++it2) {
-            delete *it2;
-        }
+        auto it = std::remove_if(_channels.begin(), _channels.end(), [&](T* channel) {
+            if (channel->isClosed()) {
+                _poller.removeChannel(channel);
+                delete channel;
+                return true;
+            }
+            return false;
+        });
 
         _channels.erase(it, _channels.end());
-
     }
 
     int connectCount()

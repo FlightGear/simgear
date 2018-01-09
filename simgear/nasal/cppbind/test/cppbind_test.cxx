@@ -1,6 +1,8 @@
 #define BOOST_TEST_MODULE cppbind
 #include <BoostTestTargetConfig.h>
 
+#include "TestContext.hxx"
+
 #include <simgear/nasal/cppbind/Ghost.hxx>
 #include <simgear/nasal/cppbind/NasalHash.hxx>
 #include <simgear/nasal/cppbind/NasalString.hxx>
@@ -117,42 +119,42 @@ naRef f_freeFunction(nasal::CallContext c) { return c.requireArg<naRef>(0); }
 
 BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
 {
-  naContext c = naNewContext();
+  TestContext c;
   naRef r;
 
   using namespace nasal;
 
-  r = to_nasal(c, ENUM_ANOTHER);
-  BOOST_CHECK_EQUAL(from_nasal<int>(c, r), ENUM_ANOTHER);
+  r = c.to_nasal(ENUM_ANOTHER);
+  BOOST_CHECK_EQUAL(c.from_nasal<int>(r), ENUM_ANOTHER);
 
-  r = to_nasal(c, "Test");
+  r = c.to_nasal("Test");
   BOOST_CHECK( strncmp("Test", naStr_data(r), naStr_len(r)) == 0 );
-  BOOST_CHECK_EQUAL(from_nasal<std::string>(c, r), "Test");
+  BOOST_CHECK_EQUAL(c.from_nasal<std::string>(r), "Test");
 
-  r = to_nasal(c, std::string("Test"));
+  r = c.to_nasal(std::string("Test"));
   BOOST_CHECK( strncmp("Test", naStr_data(r), naStr_len(r)) == 0 );
-  BOOST_CHECK_EQUAL(from_nasal<std::string>(c, r), "Test");
+  BOOST_CHECK_EQUAL(c.from_nasal<std::string>(r), "Test");
 
-  r = to_nasal(c, 42);
+  r = c.to_nasal(42);
   BOOST_CHECK_EQUAL(naNumValue(r).num, 42);
-  BOOST_CHECK_EQUAL(from_nasal<int>(c, r), 42);
+  BOOST_CHECK_EQUAL(c.from_nasal<int>(r), 42);
 
-  r = to_nasal(c, 4.2f);
+  r = c.to_nasal(4.2f);
   BOOST_CHECK_EQUAL(naNumValue(r).num, 4.2f);
-  BOOST_CHECK_EQUAL(from_nasal<float>(c, r), 4.2f);
+  BOOST_CHECK_EQUAL(c.from_nasal<float>(r), 4.2f);
 
   float test_data[3] = {0, 4, 2};
-  r = to_nasal(c, test_data);
+  r = c.to_nasal(test_data);
 
   SGVec2f vec(0,2);
-  r = to_nasal(c, vec);
-  BOOST_CHECK_EQUAL(from_nasal<SGVec2f>(c, r), vec);
+  r = c.to_nasal(vec);
+  BOOST_CHECK_EQUAL(c.from_nasal<SGVec2f>(r), vec);
 
   std::vector<int> std_vec;
-  r = to_nasal(c, std_vec);
+  r = c.to_nasal(std_vec);
 
-  r = to_nasal(c, "string");
-  BOOST_CHECK_THROW(from_nasal<int>(c, r), bad_nasal_cast);
+  r = c.to_nasal("string");
+  BOOST_CHECK_THROW(c.from_nasal<int>(r), bad_nasal_cast);
 
   Hash hash(c);
   hash.set("vec", r);
@@ -171,10 +173,10 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   it1 = it2;
   it3 = it2;
 
-  r = to_nasal(c, hash);
+  r = c.to_nasal(hash);
   BOOST_REQUIRE( naIsHash(r) );
 
-  simgear::StringMap string_map = from_nasal<simgear::StringMap>(c, r);
+  simgear::StringMap string_map = c.from_nasal<simgear::StringMap>(r);
   BOOST_CHECK_EQUAL(string_map.at("vec"), "string");
   BOOST_CHECK_EQUAL(string_map.at("name"), "my-name");
   BOOST_CHECK_EQUAL(string_map.at("string"), "blub");
@@ -260,81 +262,81 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   Ghost<SGWeakRefBasedPtr>::init("SGWeakRefBasedPtr");
 
   SGWeakRefBasedPtr weak_ptr(new SGWeakReferenceBasedClass());
-  naRef nasal_ref = to_nasal(c, weak_ptr),
-        nasal_ptr = to_nasal(c, weak_ptr.get());
+  naRef nasal_ref = c.to_nasal(weak_ptr),
+        nasal_ptr = c.to_nasal(weak_ptr.get());
 
   BOOST_REQUIRE( naIsGhost(nasal_ref) );
   BOOST_REQUIRE( naIsGhost(nasal_ptr) );
 
-  SGWeakRefBasedPtr ptr1 = from_nasal<SGWeakRefBasedPtr>(c, nasal_ref),
-                    ptr2 = from_nasal<SGWeakRefBasedPtr>(c, nasal_ptr);
+  SGWeakRefBasedPtr ptr1 = c.from_nasal<SGWeakRefBasedPtr>(nasal_ref),
+                    ptr2 = c.from_nasal<SGWeakRefBasedPtr>(nasal_ptr);
 
   BOOST_CHECK_EQUAL(weak_ptr, ptr1);
   BOOST_CHECK_EQUAL(weak_ptr, ptr2);
 
 
   BOOST_REQUIRE( Ghost<BasePtr>::isInit() );
-  nasal::to_nasal(c, DoubleDerived2Ptr());
+  c.to_nasal(DoubleDerived2Ptr());
 
   BasePtr d( new Derived );
-  naRef derived = to_nasal(c, d);
+  naRef derived = c.to_nasal(d);
   BOOST_REQUIRE( naIsGhost(derived) );
   BOOST_CHECK_EQUAL( std::string("DerivedPtr"), naGhost_type(derived)->name );
 
   // Get member function from ghost...
   naRef thisGetter = naNil();
-  BOOST_CHECK( naMember_get(c, derived, to_nasal(c, "this"), &thisGetter) );
+  BOOST_CHECK( naMember_get(c, derived, c.to_nasal("this"), &thisGetter) );
   BOOST_CHECK( naIsFunc(thisGetter) );
 
   // ...and check if it really gets passed the correct instance
   typedef boost::function<unsigned long (Me)> MemFunc;
-  MemFunc fGetThis = from_nasal<MemFunc>(c, thisGetter);
+  MemFunc fGetThis = c.from_nasal<MemFunc>(thisGetter);
   BOOST_REQUIRE( fGetThis );
   BOOST_CHECK_EQUAL( fGetThis(derived), (unsigned long)d.get() );
 
   BasePtr d2( new DoubleDerived );
-  derived = to_nasal(c, d2);
+  derived = c.to_nasal(d2);
   BOOST_CHECK( naIsGhost(derived) );
   BOOST_CHECK_EQUAL( std::string("DoubleDerivedPtr"),
                      naGhost_type(derived)->name );
 
   BasePtr d3( new DoubleDerived2 );
-  derived = to_nasal(c, d3);
+  derived = c.to_nasal(d3);
   BOOST_CHECK( naIsGhost(derived) );
   BOOST_CHECK_EQUAL( std::string("DoubleDerived2Ptr"),
                      naGhost_type(derived)->name );
 
   SGRefBasedPtr ref_based( new SGReferenceBasedClass );
-  naRef na_ref_based = to_nasal(c, ref_based.get());
+  naRef na_ref_based = c.to_nasal(ref_based.get());
   BOOST_CHECK( naIsGhost(na_ref_based) );
-  BOOST_CHECK_EQUAL( from_nasal<SGReferenceBasedClass*>(c, na_ref_based),
+  BOOST_CHECK_EQUAL( c.from_nasal<SGReferenceBasedClass*>(na_ref_based),
                      ref_based.get() );
-  BOOST_CHECK_EQUAL( from_nasal<SGRefBasedPtr>(c, na_ref_based), ref_based );
+  BOOST_CHECK_EQUAL( c.from_nasal<SGRefBasedPtr>(na_ref_based), ref_based );
 
-  BOOST_CHECK_EQUAL( from_nasal<BasePtr>(c, derived), d3 );
-  BOOST_CHECK_NE( from_nasal<BasePtr>(c, derived), d2 );
-  BOOST_CHECK_EQUAL( from_nasal<DerivedPtr>(c, derived),
+  BOOST_CHECK_EQUAL( c.from_nasal<BasePtr>(derived), d3 );
+  BOOST_CHECK_NE( c.from_nasal<BasePtr>(derived), d2 );
+  BOOST_CHECK_EQUAL( c.from_nasal<DerivedPtr>(derived),
                      boost::dynamic_pointer_cast<Derived>(d3) );
-  BOOST_CHECK_EQUAL( from_nasal<DoubleDerived2Ptr>(c, derived),
+  BOOST_CHECK_EQUAL( c.from_nasal<DoubleDerived2Ptr>(derived),
                      boost::dynamic_pointer_cast<DoubleDerived2>(d3) );
-  BOOST_CHECK_THROW( from_nasal<DoubleDerivedPtr>(c, derived), bad_nasal_cast );
+  BOOST_CHECK_THROW( c.from_nasal<DoubleDerivedPtr>(derived), bad_nasal_cast );
 
   std::map<std::string, BasePtr> instances;
-  BOOST_CHECK( naIsHash(to_nasal(c, instances)) );
+  BOOST_CHECK( naIsHash(c.to_nasal(instances)) );
 
   std::map<std::string, DerivedPtr> instances_d;
-  BOOST_CHECK( naIsHash(to_nasal(c, instances_d)) );
+  BOOST_CHECK( naIsHash(c.to_nasal(instances_d)) );
 
   std::map<std::string, int> int_map;
-  BOOST_CHECK( naIsHash(to_nasal(c, int_map)) );
+  BOOST_CHECK( naIsHash(c.to_nasal(int_map)) );
 
   std::map<std::string, std::vector<int> > int_vector_map;
-  BOOST_CHECK( naIsHash(to_nasal(c, int_vector_map)) );
+  BOOST_CHECK( naIsHash(c.to_nasal(int_vector_map)) );
 
   simgear::StringMap dict =
     simgear::StringMap("hello", "value")
                       ("key2", "value2");
-  naRef na_dict = to_nasal(c, dict);
+  naRef na_dict = c.to_nasal(dict);
   BOOST_REQUIRE( naIsHash(na_dict) );
   BOOST_CHECK_EQUAL( Hash(na_dict, c).get<std::string>("key2"), "value2" );
 
@@ -346,65 +348,44 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
 
   Hash obj(c);
   obj.set("parents", parents);
-  BOOST_CHECK_EQUAL( from_nasal<BasePtr>(c, obj.get_naRef()), d3 );
+  BOOST_CHECK_EQUAL( c.from_nasal<BasePtr>(obj.get_naRef()), d3 );
 
   // Check recursive parents (aka parent-of-parent)
   std::vector<naRef> parents2;
   parents2.push_back(obj.get_naRef());
   Hash derived_obj(c);
   derived_obj.set("parents", parents2);
-  BOOST_CHECK_EQUAL( from_nasal<BasePtr>(c, derived_obj.get_naRef()), d3 );
+  BOOST_CHECK_EQUAL( c.from_nasal<BasePtr>(derived_obj.get_naRef()), d3 );
 
   std::vector<naRef> nasal_objects;
   nasal_objects.push_back( Ghost<BasePtr>::makeGhost(c, d) );
   nasal_objects.push_back( Ghost<BasePtr>::makeGhost(c, d2) );
   nasal_objects.push_back( Ghost<BasePtr>::makeGhost(c, d3) );
-  naRef obj_vec = to_nasal(c, nasal_objects);
+  naRef obj_vec = c.to_nasal(nasal_objects);
 
-  std::vector<BasePtr> objects = from_nasal<std::vector<BasePtr> >(c, obj_vec);
+  std::vector<BasePtr> objects = c.from_nasal<std::vector<BasePtr> >(obj_vec);
   BOOST_CHECK_EQUAL( objects[0], d );
   BOOST_CHECK_EQUAL( objects[1], d2 );
   BOOST_CHECK_EQUAL( objects[2], d3 );
 
-  {
-    // Calling fallback setter for unset values
-    const char* src_code = "me.test = 3;";
-    int errLine = -1;
-    naRef code = naParseCode( c, to_nasal(c, "source.nas"), 0,
-                              (char*)src_code, strlen(src_code),
-                              &errLine );
-    ret = naCallMethod(code, derived, 0, 0, naNil());
+  // Calling fallback setter for unset values
+  BOOST_CHECK_EQUAL( c.exec<int>("me.test = 3;", derived), 3 );
 
-    BOOST_REQUIRE( !naGetError(c) ); // TODO real error check (this seems to
-                                     //      always return 0...
-    BOOST_CHECK_EQUAL( from_nasal<int>(c, ret), 3 );
-  }
-  {
-    // Calling generic (fallback) getter
-    const char* src_code = "var a = me.get_test;";
-    int errLine = -1;
-    naRef code = naParseCode( c, to_nasal(c, "source.nas"), 0,
-                              (char*)src_code, strlen(src_code),
-                              &errLine );
-    ret = naCallMethod(code, derived, 0, 0, naNil());
-
-    BOOST_REQUIRE( !naGetError(c) ); // TODO real error check (this seems to
-                                     //      always return 0...
-    BOOST_CHECK_EQUAL( from_nasal<std::string>(c, ret), "generic-get" );
-  }
+  // Calling generic (fallback) getter
+  BOOST_CHECK_EQUAL( c.exec<std::string>("var a = me.get_test;", derived),
+                     "generic-get" );
 
   //----------------------------------------------------------------------------
   // Test nasal::CallContext
   //----------------------------------------------------------------------------
 
-
   int int_vec[] = {1,2,3};
   std::map<std::string, std::string> map;
   naRef args[] = {
-    to_nasal(c, std::string("test-arg")),
-    to_nasal(c, 4),
-    to_nasal(c, int_vec),
-    to_nasal(c, map)
+    c.to_nasal(std::string("test-arg")),
+    c.to_nasal(4),
+    c.to_nasal(int_vec),
+    c.to_nasal(map)
   };
   CallContext cc(c, naNil(), sizeof(args)/sizeof(args[0]), args);
   BOOST_CHECK_EQUAL( cc.requireArg<std::string>(0), "test-arg" );
@@ -419,15 +400,15 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   BOOST_CHECK( cc.isVector(2) );
   BOOST_CHECK( cc.isHash(3) );
 
-  naRef args_vec = nasal::to_nasal(c, args);
+  naRef args_vec = c.to_nasal(args);
   BOOST_CHECK( naIsVector(args_vec) );
 
   //----------------------------------------------------------------------------
   // Test nasal::String
   //----------------------------------------------------------------------------
 
-  String string( to_nasal(c, "Test") );
-  BOOST_CHECK_EQUAL( from_nasal<std::string>(c, string.get_naRef()), "Test" );
+  String string( c.to_nasal("Test") );
+  BOOST_CHECK_EQUAL( c.from_nasal<std::string>(string.get_naRef()), "Test" );
   BOOST_CHECK_EQUAL( string.c_str(), std::string("Test") );
   BOOST_CHECK( string.starts_with(string) );
   BOOST_CHECK( string.starts_with(String(c, "T")) );
@@ -453,6 +434,16 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   BOOST_CHECK_EQUAL( string.find_first_not_of(String(c, "Tse"), 2), 3 );
   BOOST_CHECK_EQUAL( string.find_first_not_of(String(c, "abc")), 0 );
   BOOST_CHECK_EQUAL( string.find_first_not_of(String(c, "abc"), 20), String::npos );
+}
 
-  naFreeContext(c);
+BOOST_AUTO_TEST_CASE( cppbind_context )
+{
+  nasal::Context ctx;
+  naRef vec = ctx.newVector(1, 2, 3.4, "test");
+  BOOST_REQUIRE( naIsVector(vec) );
+
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(vec, 0)), 1);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(vec, 1)), 2);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<double>(naVec_get(vec, 2)), 3.4);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<std::string>(naVec_get(vec, 3)), "test");
 }

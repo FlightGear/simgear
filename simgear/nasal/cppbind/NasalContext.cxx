@@ -17,13 +17,59 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "NasalContext.hxx"
+#include "NasalHash.hxx"
+#include "NasalString.hxx"
+
+#include <cassert>
 
 namespace nasal
 {
 
   //----------------------------------------------------------------------------
+  ContextWrapper::ContextWrapper(naContext ctx):
+    _ctx(ctx)
+  {
+    assert(_ctx);
+  }
+
+  //----------------------------------------------------------------------------
+  ContextWrapper::operator naContext()
+  {
+    return _ctx;
+  }
+
+  //----------------------------------------------------------------------------
+  naContext ContextWrapper::c_ctx() const
+  {
+    return const_cast<naContext>(_ctx);
+  }
+
+  //----------------------------------------------------------------------------
+  Hash ContextWrapper::newHash()
+  {
+    return Hash(_ctx);
+  }
+
+  //----------------------------------------------------------------------------
+  String ContextWrapper::newString(const char* str)
+  {
+    return String(_ctx, str);
+  }
+
+  //----------------------------------------------------------------------------
+  naRef ContextWrapper::newVector(std::initializer_list<naRef> vals)
+  {
+    naRef vec = naNewVector(_ctx);
+    naVec_setsize(_ctx, vec, vals.size());
+    int i = 0;
+    for(naRef val: vals)
+      naVec_set(vec, i++, val);
+    return vec;
+  }
+
+  //----------------------------------------------------------------------------
   Context::Context():
-    _ctx(naNewContext())
+    ContextWrapper(naNewContext())
   {
 
   }
@@ -32,18 +78,7 @@ namespace nasal
   Context::~Context()
   {
     naFreeContext(_ctx);
-  }
-
-  //----------------------------------------------------------------------------
-  Context::operator naContext()
-  {
-    return _ctx;
-  }
-
-  //----------------------------------------------------------------------------
-  Hash Context::newHash()
-  {
-    return Hash(_ctx);
+    _ctx = nullptr;
   }
 
 } // namespace nasal

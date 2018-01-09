@@ -20,8 +20,7 @@
 #ifndef SG_NASAL_CALL_CONTEXT_HXX_
 #define SG_NASAL_CALL_CONTEXT_HXX_
 
-#include "from_nasal.hxx"
-#include "to_nasal.hxx"
+#include "NasalContext.hxx"
 
 namespace nasal
 {
@@ -29,11 +28,12 @@ namespace nasal
   /**
    * Context passed to a function/method being called from Nasal
    */
-  class CallContext
+  class CallContext:
+    public ContextWrapper
   {
     public:
       CallContext(naContext c, naRef me, size_t argc, naRef* args):
-        c(c),
+        ContextWrapper(c),
         me(me),
         argc(argc),
         args(args)
@@ -102,28 +102,14 @@ namespace nasal
       requireArg(size_t index) const
       {
         if( index >= argc )
-          naRuntimeError(c, "Missing required arg #%d", index);
+          runtimeError("Missing required arg #%d", index);
 
         return from_nasal<T>(args[index]);
       }
 
-      template<class T>
-      naRef to_nasal(T arg) const
-      {
-        return nasal::to_nasal(c, arg);
-      }
-
-      template<class T>
-      typename from_nasal_ptr<T>::return_type
-      from_nasal(naRef ref) const
-      {
-        return (*from_nasal_ptr<T>::get())(c, ref);
-      }
-
-      naContext   c;
-      naRef       me;
-      size_t      argc;
-      naRef      *args;
+      naRef             me;
+      size_t            argc;
+      naRef            *args;
   };
 
 } // namespace nasal

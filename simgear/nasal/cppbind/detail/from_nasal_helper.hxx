@@ -84,7 +84,7 @@ namespace nasal
   {
     naRef _ref;
 
-    Me(naRef ref):
+    Me(naRef ref = naNil()):
       _ref(ref)
     {}
 

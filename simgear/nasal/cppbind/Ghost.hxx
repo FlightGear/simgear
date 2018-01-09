@@ -770,7 +770,7 @@ namespace nasal
 
       /**
        * Register anything that accepts an object instance and a
-       * nasal::CallContext whith automatic conversion of the return type to
+       * nasal::CallContext with automatic conversion of the return type to
        * Nasal.
        *
        * @code{cpp}
@@ -1148,7 +1148,7 @@ namespace nasal
         const CallContext& ctx
       )
       {
-        return (*to_nasal_ptr<Ret>::get())(ctx.c, func(obj, ctx));
+        return (*to_nasal_ptr<Ret>::get())(ctx.c_ctx(), func(obj, ctx));
       };
 
       /**

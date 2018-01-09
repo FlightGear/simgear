@@ -1,3 +1,6 @@
+///@file
+/// The Nasal scripting language
+///
 #ifndef _NASAL_H
 #define _NASAL_H
 #ifdef __cplusplus
@@ -15,12 +18,14 @@ extern "C" {
 #define GCC_PURE
 #endif
 
+/** Nasal context pointer */
 typedef struct Context* naContext;
 
-// The function signature for an extension function:
+/** Function signature for an extension function */
 typedef naRef (*naCFunction)(naContext ctx, naRef me, int argc, naRef* args);
 
-// The function signature for an extension function with userdata passed back:
+/** Function signature for an extension function with @p user_data passed back
+ */
 typedef naRef (*naCFunctionU)
               (naContext ctx, naRef me, int argc, naRef* args, void* user_data);
 
@@ -258,7 +263,7 @@ void naHash_set(naRef hash, naRef key, naRef val);
 void naHash_cset(naRef hash, char* key, naRef val);
 void naHash_delete(naRef hash, naRef key);
 /**
- * Store the keys in ::hash into the vector at ::dst
+ * Store the keys in @p hash into the vector at @p dst
  *
  * @see ::naNewVector
  */
@@ -273,25 +278,25 @@ typedef struct naGhostType {
 } naGhostType;
 
 /**
- * Create a ghost for an object without any attributes. If ::t contains pointers
- * to get_member or set_member function they will be ignored.
+ * Create a ghost for an object without any attributes. If @p t contains
+ * pointers to get_member or set_member function they will be ignored.
  */
 naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
 /**
  * Create a ghost for an object. This version uses the get_member and set_member
- * function pointers in ::t upon trying to get or set a member respectively from
- * Nasal.
+ * function pointers in @p t upon trying to get or set a member respectively
+ * from Nasal.
  */
 naRef        naNewGhost2(naContext c, naGhostType* t, void* ghost);
 naGhostType* naGhost_type(naRef ghost);
 void*        naGhost_ptr(naRef ghost);
 /**
- * Attach a nasal object to the given ghost. Binds the lifetime of @a data to
- * the lifetime of the @a ghost.
+ * Attach a nasal object to the given ghost. Binds the lifetime of @p data to
+ * the lifetime of the @p ghost.
  */
 void         naGhost_setData(naRef ghost, naRef data);
 /**
- * Retrieve the object attached to the @a ghost, previously set with
+ * Retrieve the object attached to the @p ghost, previously set with
  * naGhost_setData().
  */
 naRef        naGhost_data(naRef ghost);

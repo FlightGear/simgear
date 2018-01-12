@@ -1,9 +1,12 @@
 #define BOOST_TEST_MODULE cppbind
 #include <BoostTestTargetConfig.h>
 
+#include "TestContext.hxx"
+
 #include <simgear/nasal/cppbind/Ghost.hxx>
 #include <simgear/nasal/cppbind/NasalContext.hxx>
 
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -185,4 +188,45 @@ BOOST_AUTO_TEST_CASE( storage_traits )
   BOOST_REQUIRE(d_weak->expired());
 
   nasal::shared_ptr_storage<DerivedWeakPtr>::unref(d_weak);
+}
+
+BOOST_AUTO_TEST_CASE( bind_methods )
+{
+  struct TestClass
+  {
+    int arg1;
+    std::string arg2;
+    std::string arg3;
+    int arg4;
+
+    void set(int a1, const std::string& a2, const std::string& a3, int a4)
+    {
+      arg1 = a1;
+      arg2 = a2;
+      arg3 = a3;
+      arg4 = a4;
+    }
+  };
+  using TestClassPtr = boost::shared_ptr<TestClass>;
+  auto set_func = boost::function<
+    void (TestClass&, int, const std::string&, const std::string&, int)
+  >(&TestClass::set);
+  nasal::Ghost<TestClassPtr>::init("TestClass")
+    .method("set", set_func)
+    .method("setReverse", set_func, std::index_sequence<3,2,1,0>{});
+
+  TestContext ctx;
+  auto test = boost::make_shared<TestClass>();
+
+  ctx.exec("me.set(1, \"s2\", \"s3\", 4);", ctx.to_nasal(test));
+  BOOST_CHECK_EQUAL(test->arg1, 1);
+  BOOST_CHECK_EQUAL(test->arg2, "s2");
+  BOOST_CHECK_EQUAL(test->arg3, "s3");
+  BOOST_CHECK_EQUAL(test->arg4, 4);
+
+  ctx.exec("me.setReverse(1, \"s2\", \"s3\", 4);", ctx.to_nasal(test));
+  BOOST_CHECK_EQUAL(test->arg1, 4);
+  BOOST_CHECK_EQUAL(test->arg2, "s3");
+  BOOST_CHECK_EQUAL(test->arg3, "s2");
+  BOOST_CHECK_EQUAL(test->arg4, 1);
 }

@@ -24,6 +24,7 @@
 #include "NasalObjectHolder.hxx"
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/integer_sequence.hxx>
 #include <simgear/structure/SGWeakReferenced.hxx>
 #include <simgear/structure/SGWeakPtr.hxx>
 
@@ -32,7 +33,6 @@
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/mpl/has_xxx.hpp>
-#include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
 
@@ -258,6 +258,9 @@ namespace nasal
                                     naContext,
                                     const std::string&,
                                     naRef )>               fallback_setter_t;
+
+      template<class Ret, class... Args>
+      using method_variadic_t = boost::function<Ret (raw_type&, Args...)>;
 
       class MethodHolder:
         public internal::MethodHolder
@@ -791,14 +794,73 @@ namespace nasal
         return method(name, boost::bind(method_invoker<Ret>, func, _1, _2));
       }
 
-      // Build dependency for CMake, gcc, etc.
-#define SG_DONT_DO_ANYTHING
-# include <simgear/nasal/cppbind/detail/functor_templates.hxx>
-#undef SG_DONT_DO_ANYTHING
+      /**
+       * Bind any callable entity accepting an instance of raw_type and an
+       * arbitrary number of arguments as method.
+       *
+       * The std::index_sequence specifies the order of the arguments
+       */
+      template<class Ret, class... Args, std::size_t... Indices>
+      Ghost& method( const std::string& name,
+                     const method_variadic_t<Ret, Args...>& func,
+                     std::index_sequence<Indices...> )
+      {
+        return method<Ret>
+        (
+          name,
+          typename boost::function<Ret (raw_type&, const CallContext&)>
+          ( boost::bind(
+            func,
+            _1,
+            boost::bind(&Ghost::arg_from_nasal<Args>, _2, Indices)...
+          ))
+        );
+      }
 
-#define BOOST_PP_ITERATION_LIMITS (0, 9)
-#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/functor_templates.hxx>
-#include BOOST_PP_ITERATE()
+      template<class Ret, class... Args>
+      Ghost& method( const std::string& name,
+                     const method_variadic_t<Ret, Args...>& func )
+      {
+        return method(name, func, std::index_sequence_for<Args...>{});
+      }
+
+      /**\
+       * Bind a member function with an arbitrary number of arguments as method.
+       */
+      template<class Ret, class... Args>
+      Ghost& method( const std::string& name,
+                     Ret (raw_type::*fn)(Args...) )
+      {
+        return method(name, method_variadic_t<Ret,  Args...>(fn));
+      }
+
+      template<class Ret, class... Args>
+      Ghost& method( const std::string& name,
+                     Ret (raw_type::*fn)(Args...) const )
+      {
+        return method(name, method_variadic_t<Ret,  Args...>(fn));
+      }
+
+      /**
+       * Bind free function accepting an instance of raw_type and an arbitrary
+       * number of arguments as method.
+       */
+      template<class Ret, class Type, class... Args>
+      Ghost& method
+      (
+        const std::string& name,
+        Ret (*fn)(Type, Args ... args)
+      )
+      {
+        static_assert(
+          boost::is_convertible<raw_type&, Type>::value,
+        //|| boost::is_convertible<raw_type*, Type>::value
+        // TODO check how to do it with pointer...
+          "First parameter can not be converted from the Ghost raw_type"
+        );
+
+        return method(name, method_variadic_t<Ret, Args...>(fn));
+      }
 
       /**
        * Create a shared pointer on the heap to handle the reference counting

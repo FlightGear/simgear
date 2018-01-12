@@ -45,7 +45,7 @@ namespace nasal
 
       bool valid() const;
 
-      template<class Ret, class ... Args>
+      template<class Ret, class... Args>
       Ret callMethod(const std::string& name, Args ... args)
       {
         if( !_nasal_impl.valid() )

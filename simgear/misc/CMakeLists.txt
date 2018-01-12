@@ -9,6 +9,7 @@ set(HEADERS
     SVGpreserveAspectRatio.hxx
     argparse.hxx
     interpolator.hxx
+    integer_sequence.hxx
     make_new.hxx
     sg_dir.hxx
     sg_hash.hxx

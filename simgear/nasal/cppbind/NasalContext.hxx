@@ -44,14 +44,14 @@ namespace nasal
       String newString(const char* str);
 
       /** Create a new nasal vector and fill it with the given values */
-      template<class ... Vals>
+      template<class... Vals>
       naRef newVector(Vals ... vals)
       {
         return newVector({to_nasal(vals)...});
       }
 
       /** Raise a nasal runtime error */
-      template<class ... Args>
+      template<class... Args>
       void runtimeError(const char* fmt, Args ... args) const
       {
         naRuntimeError(c_ctx(), fmt, args...);

@@ -8,13 +8,13 @@ void print(const T& v, std::size_t i)
   std::cout << "arg #" << i << ": '" << v << "', ";
 }
 
-template<typename ... Args, std::size_t ... Is>
+template<class... Args, std::size_t... Is>
 void doIt_impl(Args ... args, std::index_sequence<Is...>)
 {
   std::initializer_list<char>{(print(args, Is), '0')...};
 }
 
-template<typename ... Args>
+template<class... Args>
 void doIt(Args ... args)
 {
   static_assert(sizeof...(Args) == std::index_sequence_for<Args...>::size(), "");

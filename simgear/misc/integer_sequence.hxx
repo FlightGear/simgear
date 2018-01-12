@@ -20,7 +20,7 @@
 #ifndef SIMGEAR_MISC_INTEGER_SEQUENCE_HXX_
 #define SIMGEAR_MISC_INTEGER_SEQUENCE_HXX_
 
-#include <simgear_config.h>
+#include <simgear/simgear_config.h>
 
 #include <utility>
 #include <type_traits>
@@ -48,7 +48,7 @@ namespace simgear { namespace detail
   template<class T, class Seq, T El>
   struct append;
 
-  template<class T, T ... Ints, T Int>
+  template<class T, T... Ints, T Int>
   struct append<T, std::integer_sequence<T, Ints...>, Int>
   {
     using type = std::integer_sequence<T, Ints..., Int>;

@@ -36,10 +36,9 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/Singleton.hxx>
 
-/// Expression tree implementation.
-
 namespace simgear
 {
+  /// Expression tree implementation.
   namespace expression
   {
     enum Type {

@@ -1,3 +1,6 @@
+///@file
+/// Support classes for parsing effects.
+///
 // Copyright (C) 2009  Tim Moore timoore@redhat.com
 //
 // This library is free software; you can redistribute it and/or
@@ -39,9 +42,6 @@
 #include <simgear/structure/Singleton.hxx>
 
 #include "Effect.hxx"
-/**
- * Support classes for parsing effects.
- */
 
 namespace simgear
 {

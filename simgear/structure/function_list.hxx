@@ -29,7 +29,8 @@ namespace simgear
   /**
    * Handle a list of callbacks like a single boost::function.
    *
-   * @tparam Sig    Function signature.
+   * @tparam Ret    Return type of the callbacks
+   * @tparam Args   Parameter types of the callbacks
    */
   template<class Ret, class... Args>
   class function_list<Ret(Args...)>:

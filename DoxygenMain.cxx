@@ -2,6 +2,10 @@
    documentation.  It has a .cxx extension so that emacs will happily
    autoindent correctly. */
 
+/**
+ * \namespace simgear
+ * \brief \ref index "SimGear" main namespace.
+ */
 /** \mainpage SimGear
  * Simulation, Visualization, and Game development libraries.
 

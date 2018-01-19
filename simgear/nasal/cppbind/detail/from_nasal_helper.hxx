@@ -43,8 +43,6 @@ class SGPath;
 
 namespace nasal
 {
-  class Hash;
-  class String;
 
   /**
    * Thrown when converting a type from/to Nasal has failed

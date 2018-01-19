@@ -27,6 +27,8 @@
 namespace nasal
 {
 
+  class bad_nasal_cast;
+
   class CallContext;
   class Context;
   class ContextWrapper;

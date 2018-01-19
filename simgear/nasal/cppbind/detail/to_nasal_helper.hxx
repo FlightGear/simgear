@@ -24,7 +24,7 @@
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/math/SGRect.hxx>
-#include <simgear/nasal/nasal.h>
+#include <simgear/nasal/cppbind/cppbind_fwd.hxx>
 
 #include <boost/function/function_fwd.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -40,8 +40,6 @@ class SGPath;
 
 namespace nasal
 {
-  class CallContext;
-  class Hash;
 
   typedef boost::function<naRef (CallContext)> free_function_t;
 

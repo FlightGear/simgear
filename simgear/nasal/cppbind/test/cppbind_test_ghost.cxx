@@ -218,13 +218,13 @@ BOOST_AUTO_TEST_CASE( bind_methods )
   TestContext ctx;
   auto test = boost::make_shared<TestClass>();
 
-  ctx.exec("me.set(1, \"s2\", \"s3\", 4);", ctx.to_nasal(test));
+  ctx.exec("me.set(1, \"s2\", \"s3\", 4);", ctx.to_me(test));
   BOOST_CHECK_EQUAL(test->arg1, 1);
   BOOST_CHECK_EQUAL(test->arg2, "s2");
   BOOST_CHECK_EQUAL(test->arg3, "s3");
   BOOST_CHECK_EQUAL(test->arg4, 4);
 
-  ctx.exec("me.setReverse(1, \"s2\", \"s3\", 4);", ctx.to_nasal(test));
+  ctx.exec("me.setReverse(1, \"s2\", \"s3\", 4);", ctx.to_me(test));
   BOOST_CHECK_EQUAL(test->arg1, 4);
   BOOST_CHECK_EQUAL(test->arg2, "s3");
   BOOST_CHECK_EQUAL(test->arg3, "s2");

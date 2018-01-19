@@ -24,20 +24,15 @@
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/math/SGRect.hxx>
-#include <simgear/nasal/nasal.h>
+#include <simgear/nasal/cppbind/NasalContext.hxx>
+#include <simgear/nasal/cppbind/NasalMe.hxx>
+#include <simgear/nasal/cppbind/NasalMethodHolder.hxx>
 #include <simgear/nasal/cppbind/NasalObjectHolder.hxx>
-#include <simgear/nasal/cppbind/to_nasal.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 #include <boost/bind.hpp>
-#include <boost/call_traits.hpp>
 #include <boost/function.hpp>
-#include <boost/preprocessor/control/if.hpp>
-#include <boost/preprocessor/iteration/iterate.hpp>
-#include <boost/preprocessor/repetition/enum_trailing.hpp>
-#include <boost/preprocessor/repetition/enum_trailing_params.hpp>
-#include <boost/preprocessor/repetition/enum_shifted_params.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/utility/enable_if.hpp>
 
@@ -77,25 +72,17 @@ namespace nasal
   };
 
   /**
-   * Wrap a naRef to indicate it references the self/me object in Nasal method
-   * calls.
-   */
-  struct Me
-  {
-    naRef _ref;
-
-    Me(naRef ref = naNil()):
-      _ref(ref)
-    {}
-
-    operator naRef() { return _ref; }
-  };
-
-  /**
    * Simple pass through for unified handling also of naRef.
    */
   inline naRef from_nasal_helper(naContext, naRef ref, const naRef*)
   { return ref; }
+
+  /**
+   * Ignore return value
+   */
+  // TODO show some warning when something is returned but ignored?
+  inline void from_nasal_helper(naContext, naRef, const void*)
+  {}
 
   /**
    * Convert Nasal string to std::string
@@ -125,43 +112,33 @@ namespace nasal
    */
   bool from_nasal_helper(naContext c, naRef ref, const bool*);
 
-  namespace detail
-  {
-#define SG_BOOST_FUNCTION_FROM_NASAL_FWD
-#define BOOST_PP_ITERATION_LIMITS (0, 9)
-#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/from_nasal_function_templates.hxx>
-#include BOOST_PP_ITERATE()
-#undef SG_BOOST_FUNCTION_FROM_NASAL_FWD
-  }
-
   /**
    * Convert a Nasal function to a boost::function with the given signature.
    *
    * @tparam Sig    Signature of returned function (arguments and return value
    *                are automatically converted using from_nasal/to_nasal)
    */
-  template<class Sig>
-  boost::function<Sig>
-  from_nasal_helper(naContext c, naRef ref, boost::function<Sig>*)
+  template<class Ret, class... Args>
+  boost::function<Ret (Args...)>
+  from_nasal_helper(naContext c, naRef ref, const boost::function<Ret (Args...)>*)
   {
     if( naIsNil(ref) )
-      return boost::function<Sig>();
+      return {};
 
     if(    !naIsCode(ref)
         && !naIsCCode(ref)
         && !naIsFunc(ref) )
       throw bad_nasal_cast("not a function");
 
-    return detail::boostFunctionFromNasal(ref, static_cast<Sig*>(0));
+    return NasalMethodHolder<Ret, Args...>(ref);
   }
 
-  template<class Sig>
-  typename boost::enable_if< boost::is_function<Sig>,
-                             boost::function<Sig>
-                           >::type
-  from_nasal_helper(naContext c, naRef ref, Sig*)
+  template<class Ret, class... Args>
+  boost::function<Ret (Args...)>
+  from_nasal_helper(naContext c, naRef ref, Ret (*const)(Args...))
   {
-    return from_nasal_helper(c, ref, static_cast<boost::function<Sig>*>(0));
+    return
+    from_nasal_helper(c, ref, static_cast<boost::function<Ret (Args...)>*>(0));
   }
 
   /**
@@ -225,21 +202,6 @@ namespace nasal
       throw bad_nasal_cast("Expected vector with four elements");
 
     return SGRect<T>(vec[0], vec[1], vec[2], vec[3]);
-  }
-
-  // Helpers for wrapping calls to Nasal functions into boost::function
-  namespace detail
-  {
-    // Dummy include to add a build dependency on this file for gcc/CMake/etc.
-#define SG_DONT_DO_ANYTHING
-# include <simgear/nasal/cppbind/detail/from_nasal_function_templates.hxx>
-#undef SG_DONT_DO_ANYTHING
-
-    // Now the actual include (we are limited to 8 arguments (+me) here because
-    // boost::bind has an upper limit of 9)
-#define BOOST_PP_ITERATION_LIMITS (0, 8)
-#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/from_nasal_function_templates.hxx>
-#include BOOST_PP_ITERATE()
   }
 
 } // namespace nasal

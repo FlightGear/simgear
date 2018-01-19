@@ -57,6 +57,26 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
+  naRef ContextWrapper::callMethod( Me me,
+                                    naRef code,
+                                    std::initializer_list<naRef> args )
+  {
+    naRef ret = naCallMethodCtx(
+      _ctx,
+      code,
+      me,
+      args.size(),
+      const_cast<naRef*>(args.begin()),
+      naNil() // locals
+    );
+
+    if( const char* error = naGetError(_ctx) )
+      throw std::runtime_error(error);
+
+    return ret;
+  }
+
+  //----------------------------------------------------------------------------
   naRef ContextWrapper::newVector(std::initializer_list<naRef> vals)
   {
     naRef vec = naNewVector(_ctx);

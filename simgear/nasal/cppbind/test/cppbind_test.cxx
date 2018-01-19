@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   // passed on to function
   typedef boost::function<int (Me, int)> MeIntFunc;
   MeIntFunc fmeint = hash.get<MeIntFunc>("func");
-  BOOST_CHECK_EQUAL(fmeint(naNil(), 5), 5);
+  BOOST_CHECK_EQUAL(fmeint(Me{}, 5), 5);
 
   //----------------------------------------------------------------------------
   // Test exposing classes to Nasal
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   typedef boost::function<unsigned long (Me)> MemFunc;
   MemFunc fGetThis = c.from_nasal<MemFunc>(thisGetter);
   BOOST_REQUIRE( fGetThis );
-  BOOST_CHECK_EQUAL( fGetThis(derived), (unsigned long)d.get() );
+  BOOST_CHECK_EQUAL( fGetThis(Me{derived}), (unsigned long)d.get() );
 
   BasePtr d2( new DoubleDerived );
   derived = c.to_nasal(d2);
@@ -369,10 +369,10 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   BOOST_CHECK_EQUAL( objects[2], d3 );
 
   // Calling fallback setter for unset values
-  BOOST_CHECK_EQUAL( c.exec<int>("me.test = 3;", derived), 3 );
+  BOOST_CHECK_EQUAL( c.exec<int>("me.test = 3;", Me{derived}), 3 );
 
   // Calling generic (fallback) getter
-  BOOST_CHECK_EQUAL( c.exec<std::string>("var a = me.get_test;", derived),
+  BOOST_CHECK_EQUAL( c.exec<std::string>("var a = me.get_test;", Me{derived}),
                      "generic-get" );
 
   //----------------------------------------------------------------------------

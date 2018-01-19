@@ -21,6 +21,7 @@
 #define SG_FROM_NASAL_HXX_
 
 #include <simgear/nasal/cppbind/detail/from_nasal_helper.hxx>
+#include <type_traits>
 
 namespace nasal
 {
@@ -52,8 +53,8 @@ namespace nasal
   template<class Var>
   struct from_nasal_ptr
   {
-    typedef typename boost::remove_const
-      < typename boost::remove_reference<Var>::type
+    typedef typename std::remove_const
+      < typename std::remove_reference<Var>::type
       >::type return_type;
     typedef return_type(*type)(naContext, naRef);
 

@@ -42,7 +42,7 @@ class TestContext:
     template<class T = naRef>
     T exec(const std::string& code)
     {
-      return from_nasal<T>(execImpl(code, {}));
+      return from_nasal<T>(execImpl(code, nasal::Me{}));
     }
 
     template<class T>

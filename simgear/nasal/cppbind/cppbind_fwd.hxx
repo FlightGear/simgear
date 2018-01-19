@@ -22,6 +22,7 @@
 
 #include <simgear/nasal/nasal.h>
 #include <cstddef>
+#include <string>
 
 namespace nasal
 {
@@ -30,7 +31,7 @@ namespace nasal
   class Context;
   class ContextWrapper;
   class Hash;
-  class Me;
+  struct Me;
   class Object;
   class String;
 
@@ -48,6 +49,9 @@ namespace nasal
 
   template<class Var>
   struct from_nasal_ptr;
+
+  template<class T>
+  T get_member(naContext c, naRef obj, const std::string& name);
 
 } // namespace nasal
 

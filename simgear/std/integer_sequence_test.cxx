@@ -1,5 +1,4 @@
-#include "integer_sequence.hxx"
-
+#include <simgear/std/integer_sequence.hxx>
 #include <iostream>
 
 template<class T>

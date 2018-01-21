@@ -492,13 +492,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 
-check_cxx_source_compiles("
-  #include <utility>
-  #include <type_traits>
-  std::make_index_sequence<0> t;
-  int main() { return 0; }"
-  HAVE_STD_INDEX_SEQUENCE
-)
+include(CheckCXXFeatures)
 
 # use BEFORE to ensure local directories are used first,
 # ahead of system-installed libs

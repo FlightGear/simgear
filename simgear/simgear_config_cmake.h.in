@@ -16,6 +16,10 @@
 #cmakedefine HAVE_MKDTEMP
 #cmakedefine HAVE_AL_EXT_H
 #cmakedefine HAVE_STD_INDEX_SEQUENCE
+#cmakedefine HAVE_STD_REMOVE_CV_T
+#cmakedefine HAVE_STD_REMOVE_CVREF_T
+#cmakedefine HAVE_STD_ENABLE_IF_T
+#cmakedefine HAVE_STD_BOOL_CONSTANT
 
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
 

@@ -20,10 +20,7 @@
 #ifndef SG_NASAL_TRAITS_HXX_
 #define SG_NASAL_TRAITS_HXX_
 
-#include <boost/mpl/logical.hpp>
-#include <boost/type_traits/integral_constant.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <simgear/std/type_traits.hxx>
 
 // Forward declarations
 class SGReferenced;
@@ -56,12 +53,11 @@ namespace osg
 namespace nasal
 {
   template<class T>
-  struct is_vec2: public boost::integral_constant<bool, false> {};
+  struct is_vec2: public std::false_type {};
 
 #define SG_MAKE_TRAIT(templ,type,attr)\
   template templ\
-  struct attr< type >:\
-    public boost::integral_constant<bool, true> {};
+  struct attr< type >: public std::true_type {};
 
 SG_MAKE_TRAIT(<class T>, SGVec2<T>, is_vec2)
 SG_MAKE_TRAIT(<>, osg::Vec2b, is_vec2)
@@ -75,42 +71,34 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
   struct shared_ptr_traits;
 
   template<class T>
-  struct is_strong_ref:
-    public boost::integral_constant<bool, false>
-  {};
+  struct is_strong_ref: public std::false_type {};
 
   template<class T>
-  struct is_weak_ref:
-    public boost::integral_constant<bool, false>
-  {};
+  struct is_weak_ref: public std::false_type {};
 
 #define SG_MAKE_SHARED_PTR_TRAIT(strong, weak, intrusive)\
   template<class T>\
   struct shared_ptr_traits<strong<T> >\
   {\
-    typedef strong<T> strong_ref;\
-    typedef weak<T>   weak_ref;\
-    typedef T         element_type;\
-    typedef boost::integral_constant<bool, true> is_strong;\
-    typedef boost::integral_constant<bool, intrusive> is_intrusive;\
+    using strong_ref    = strong<T>;\
+    using weak_ref      = weak<T>;\
+    using element_type  = T;\
+    using is_strong     = std::true_type;\
+    using is_intrusive  = std::bool_constant<intrusive>;\
   };\
   template<class T>\
   struct shared_ptr_traits<weak<T> >\
   {\
-    typedef strong<T> strong_ref;\
-    typedef weak<T>   weak_ref;\
-    typedef T         element_type;\
-    typedef boost::integral_constant<bool, false> is_strong;\
-    typedef boost::integral_constant<bool, intrusive> is_intrusive;\
+    using strong_ref    = strong<T>;\
+    using weak_ref      = weak<T>;\
+    using element_type  = T;\
+    using is_strong     = std::false_type;\
+    using is_intrusive  = std::bool_constant<intrusive>;\
   };\
   template<class T>\
-  struct is_strong_ref<strong<T> >:\
-    public boost::integral_constant<bool, true>\
-  {};\
+  struct is_strong_ref<strong<T> >: public std::true_type {};\
   template<class T>\
-  struct is_weak_ref<weak<T> >:\
-    public boost::integral_constant<bool, true>\
-  {};
+  struct is_weak_ref<weak<T> >: public std::true_type {};
 
   SG_MAKE_SHARED_PTR_TRAIT(SGSharedPtr, SGWeakPtr, true)
   SG_MAKE_SHARED_PTR_TRAIT(osg::ref_ptr, osg::observer_ptr, true)
@@ -119,25 +107,20 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
 #undef SG_MAKE_SHARED_PTR_TRAIT
 
   template<class T>
-  struct supports_weak_ref:
-    public boost::integral_constant<bool, true>
-  {};
+  struct supports_weak_ref: public std::true_type {};
 
   template<class T>
   struct supports_weak_ref<SGSharedPtr<T> >:
-    public boost::integral_constant<
-      bool,
-      boost::is_base_of<SGWeakReferenced, T>::value
-    >
+    public std::bool_constant<std::is_base_of<SGWeakReferenced, T>::value>
   {};
 
   template<class T>
   struct shared_ptr_storage
   {
-    typedef T                                           storage_type;
-    typedef typename T::element_type                    element_type;
-    typedef typename shared_ptr_traits<T>::strong_ref   strong_ref;
-    typedef typename shared_ptr_traits<T>::weak_ref     weak_ref;
+    using storage_type  = T;
+    using element_type  = typename T::element_type;
+    using strong_ref    = typename shared_ptr_traits<T>::strong_ref;
+    using weak_ref      = typename shared_ptr_traits<T>::weak_ref;
 
     template<class U>
     static storage_type* ref(U ptr)
@@ -151,39 +134,30 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
 
     template<class U>
     static
-    typename boost::enable_if<
-      boost::is_same<U, element_type*>,
-      element_type*
-    >::type
+    std::enable_if_t<std::is_same<U, element_type*>::value, element_type*>
     get(storage_type* ptr)
     {
       return get_pointer(*ptr);
     }
+
     template<class U>
     static
-    typename boost::enable_if<
-      boost::mpl::or_<
-        boost::is_same<U, strong_ref>,
-        boost::mpl::and_<
-          boost::is_same<U, weak_ref>,
-          supports_weak_ref<U>
-        >
-      >,
+    std::enable_if_t<
+          std::is_same<U, strong_ref>::value
+      || (std::is_same<U, weak_ref>::value && supports_weak_ref<U>::value),
       U
-    >::type
+    >
     get(storage_type* ptr)
     {
       return U(*ptr);
     }
+
     template<class U>
     static
-    typename boost::enable_if<
-      boost::mpl::and_<
-        boost::is_same<U, weak_ref>,
-        boost::mpl::not_<supports_weak_ref<U> >
-      >,
+    std::enable_if_t<
+      std::is_same<U, weak_ref>::value && !supports_weak_ref<U>::value,
       U
-    >::type
+    >
     get(storage_type* ptr)
     {
       return U();
@@ -195,46 +169,37 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
     template<class T>
     struct intrusive_ptr_storage
     {
-      typedef typename T::element_type                    storage_type;
-      typedef typename T::element_type                    element_type;
-      typedef typename shared_ptr_traits<T>::strong_ref   strong_ref;
-      typedef typename shared_ptr_traits<T>::weak_ref     weak_ref;
+      using storage_type    = typename T::element_type;
+      using element_type    = typename T::element_type;
+      using strong_ref      = typename shared_ptr_traits<T>::strong_ref;
+      using weak_ref        = typename shared_ptr_traits<T>::weak_ref;
 
       template<class U>
       static
-      typename boost::enable_if<
-        boost::is_same<U, element_type*>,
-        element_type*
-      >::type
+      std::enable_if_t<std::is_same<U, element_type*>::value, element_type*>
       get(storage_type* ptr)
       {
         return ptr;
       }
+
       template<class U>
       static
-      typename boost::enable_if<
-        boost::mpl::or_<
-          boost::is_same<U, strong_ref>,
-          boost::mpl::and_<
-            boost::is_same<U, weak_ref>,
-            supports_weak_ref<U>
-          >
-        >,
+      std::enable_if_t<
+            std::is_same<U, strong_ref>::value
+        || (std::is_same<U, weak_ref>::value && supports_weak_ref<U>::value),
         U
-      >::type
+      >
       get(storage_type* ptr)
       {
         return U(ptr);
       }
+
       template<class U>
       static
-      typename boost::enable_if<
-        boost::mpl::and_<
-          boost::is_same<U, weak_ref>,
-          boost::mpl::not_<supports_weak_ref<U> >
-        >,
+      std::enable_if_t<
+        std::is_same<U, weak_ref>::value && !supports_weak_ref<U>::value,
         U
-      >::type
+      >
       get(storage_type* ptr)
       {
         return U();
@@ -246,8 +211,8 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
   struct shared_ptr_storage<SGSharedPtr<T> >:
     public internal::intrusive_ptr_storage<SGSharedPtr<T> >
   {
-    typedef T storage_type;
-    typedef T element_type;
+    using storage_type  = T;
+    using element_type  = T;
 
     static storage_type* ref(element_type* ptr)
     {
@@ -265,8 +230,8 @@ SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
   struct shared_ptr_storage<osg::ref_ptr<T> >:
     public internal::intrusive_ptr_storage<osg::ref_ptr<T> >
   {
-    typedef T storage_type;
-    typedef T element_type;
+    using storage_type  = T;
+    using element_type  = T;
 
 
     static storage_type* ref(element_type* ptr)

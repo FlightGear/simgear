@@ -17,13 +17,13 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef SIMGEAR_MISC_INTEGER_SEQUENCE_HXX_
-#define SIMGEAR_MISC_INTEGER_SEQUENCE_HXX_
+#ifndef SIMGEAR_STD_INTEGER_SEQUENCE_HXX_
+#define SIMGEAR_STD_INTEGER_SEQUENCE_HXX_
 
 #include <simgear/simgear_config.h>
+#include "type_traits.hxx"
 
 #include <utility>
-#include <type_traits>
 
 #ifndef HAVE_STD_INDEX_SEQUENCE
 # include <cstddef>
@@ -85,4 +85,4 @@ namespace std
 }
 #endif
 
-#endif /* SIMGEAR_MISC_INTEGER_SEQUENCE_HXX_ */
+#endif /* SIMGEAR_STD_INTEGER_SEQUENCE_HXX_ */

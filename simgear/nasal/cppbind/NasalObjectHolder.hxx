@@ -42,6 +42,8 @@ namespace nasal
   {
     public:
 
+      using Ref = SGSharedPtr<ObjectHolder<Base>>;
+
       /**
        * @param obj Object to save
        */
@@ -84,7 +86,7 @@ namespace nasal
        *
        * @param obj Object to save
        */
-      static SGSharedPtr<ObjectHolder<Base> > makeShared(naRef obj);
+      static Ref makeShared(naRef obj);
 
     protected:
       naRef _ref;
@@ -155,10 +157,10 @@ namespace nasal
 
   //----------------------------------------------------------------------------
   template<class Base>
-  SGSharedPtr<ObjectHolder<Base> >
+  typename ObjectHolder<Base>::Ref
   ObjectHolder<Base>::makeShared(naRef obj)
   {
-    return SGSharedPtr<ObjectHolder<Base> >( new ObjectHolder<Base>(obj) );
+    return Ref( new ObjectHolder<Base>(obj) );
   }
 
 } // namespace nasal

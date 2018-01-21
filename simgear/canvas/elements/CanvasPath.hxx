@@ -20,8 +20,8 @@
 #define CANVAS_PATH_HXX_
 
 #include "CanvasElement.hxx"
-#include <boost/preprocessor/iteration/iterate.hpp>
 #include <simgear/math/SGRect.hxx>
+#include <initializer_list>
 
 namespace simgear
 {
@@ -44,10 +44,8 @@ namespace canvas
 
       virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
 
-#define BOOST_PP_ITERATION_LIMITS (0, 6)
-#define BOOST_PP_FILENAME_1 \
-        <simgear/canvas/elements/detail/add_segment_variadic.hxx>
-#include BOOST_PP_ITERATE()
+      /** Add a segment with the given command and coordinates */
+      Path& addSegment(uint8_t cmd, std::initializer_list<float> coords = {});
 
       /** Move path cursor */
       Path& moveTo(float x_abs, float y_abs);

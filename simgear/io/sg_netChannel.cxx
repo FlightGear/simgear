@@ -32,10 +32,12 @@
 #include <simgear_config.h>
 #include "sg_netChannel.hxx"
 
+#include <algorithm>
 #include <memory>
+
 #include <cassert>
+#include <cerrno>
 #include <cstring>
-#include <errno.h>
 
 #include <simgear/debug/logstream.hxx>
 
@@ -258,18 +260,10 @@ NetChannelPoller::removeChannel(NetChannel* channel)
     assert(channel);
     assert(channel->poller == this);
     channel->poller = NULL;
-    
-    // portability: MSVC throws assertion failure when empty
-    if (channels.empty()) {
-        return;
-    }
 
-    ChannelList::iterator it = channels.begin();
-    for (; it != channels.end(); ++it) {
-        if (*it == channel) {
-            channels.erase(it);
-            return;
-        }
+    auto it = std::find(channels.begin(), channels.end(), channel);
+    if (it != channels.end()) {
+        channels.erase(it);
     }
 }
 

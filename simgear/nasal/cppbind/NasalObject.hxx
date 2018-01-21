@@ -45,18 +45,18 @@ namespace nasal
 
       bool valid() const;
 
-      template<class Ret, class ... Args>
+      template<class Ret, class... Args>
       Ret callMethod(const std::string& name, Args ... args)
       {
         if( !_nasal_impl.valid() )
           return Ret();
 
         Context ctx;
-        auto func = get_member<boost::function<Ret (nasal::Me, Args...)>>(
+        auto func = get_member<boost::function<Ret (Me, Args...)>>(
           ctx, _nasal_impl.get_naRef(), name
         );
         if( func )
-          return func(nasal::to_nasal(ctx, this), args...);
+          return func(Me(ctx.to_nasal(this)), args...);
 
         return Ret();
       }

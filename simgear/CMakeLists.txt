@@ -15,6 +15,7 @@ foreach( mylibfolder
         nasal/cppbind
         props
         serial
+        std
         structure
         threads
         timing

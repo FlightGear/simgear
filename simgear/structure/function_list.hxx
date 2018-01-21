@@ -29,9 +29,10 @@ namespace simgear
   /**
    * Handle a list of callbacks like a single boost::function.
    *
-   * @tparam Sig    Function signature.
+   * @tparam Ret    Return type of the callbacks
+   * @tparam Args   Parameter types of the callbacks
    */
-  template<class Ret, class ... Args>
+  template<class Ret, class... Args>
   class function_list<Ret(Args...)>:
     public std::vector<boost::function<Ret(Args...)>>
   {
@@ -54,7 +55,7 @@ namespace simgear
    * Handle a list of callbacks with the same signature as the given
    * boost::function type.
    */
-  template<class Ret, class ... Args>
+  template<class Ret, class... Args>
   class function_list<boost::function<Ret(Args...)>>:
     public function_list<Ret(Args...)>
   {

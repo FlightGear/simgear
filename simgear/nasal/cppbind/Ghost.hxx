@@ -24,17 +24,16 @@
 #include "NasalObjectHolder.hxx"
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/std/integer_sequence.hxx>
+#include <simgear/std/type_traits.hxx>
 #include <simgear/structure/SGWeakReferenced.hxx>
 #include <simgear/structure/SGWeakPtr.hxx>
 
 #include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/mpl/has_xxx.hpp>
-#include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/utility/enable_if.hpp>
 
 #include <map>
 
@@ -62,10 +61,7 @@ namespace osg
 }
 
 template<class T>
-inline typename boost::enable_if<
-  boost::is_pointer<T>,
-  T
->::type
+inline std::enable_if_t<std::is_pointer<T>::value, T>
 get_pointer(T ptr)
 {
   return ptr;
@@ -101,8 +97,8 @@ namespace nasal
     class GhostMetadata
     {
       public:
-        typedef void(*Deleter)(void*);
-        typedef std::vector<std::pair<Deleter, void*> > DestroyList;
+        using Deleter       = void(*)(void*);
+        using DestroyList   = std::vector<std::pair<Deleter, void*>>;
 
         static DestroyList _destroy_list;
 
@@ -154,19 +150,6 @@ namespace nasal
     };
 
     BOOST_MPL_HAS_XXX_TRAIT_DEF(element_type)
-
-    template<class T>
-    struct reduced_type
-    {
-      typedef typename boost::remove_cv<
-        typename boost::remove_reference<T>::type
-      >::type type;
-    };
-
-    template<class T1, class T2>
-    struct reduced_is_same:
-      public boost::is_same<typename reduced_type<T1>::type, T2>
-    {};
   }
 
   /** @brief Destroy all ghost queued for deletion.
@@ -178,8 +161,8 @@ namespace nasal
    */
   void ghostProcessDestroyList();
 
-  typedef SGSharedPtr<internal::MethodHolder> MethodHolderPtr;
-  typedef SGWeakPtr<internal::MethodHolder> MethodHolderWeakPtr;
+  using MethodHolderPtr     = SGSharedPtr<internal::MethodHolder>;
+  using MethodHolderWeakPtr = SGWeakPtr<internal::MethodHolder>;
 
   // Dummy template to create shorter and easy to understand compile errors if
   // trying to wrap the wrong type as a Ghost.
@@ -187,9 +170,10 @@ namespace nasal
   class Ghost
   {
     public:
-      BOOST_STATIC_ASSERT(("Ghost can only wrap shared pointer!"
-        && is_strong_ref<T>::value
-      ));
+      static_assert(
+        is_strong_ref<T>::value,
+        "Ghost can only wrap shared pointer!"
+      );
 
       static Ghost& init(const std::string& name);
       static bool isInit();
@@ -209,7 +193,7 @@ namespace nasal
    *     int myMember();
    *     void doSomethingElse(const nasal::CallContext& ctx);
    * }
-   * typedef boost::shared_ptr<MyClass> MyClassPtr;
+   * using MyClassPtr = boost::shared_ptr<MyClass>;
    *
    * std::string myOtherFreeMember(int num);
    *
@@ -235,29 +219,25 @@ namespace nasal
    * @endcode
    */
   template<class T>
-  class Ghost<T, typename boost::enable_if<is_strong_ref<T> >::type>:
+  class Ghost<T, std::enable_if_t<is_strong_ref<T>::value>>:
     public internal::GhostMetadata
   {
-      // Shared pointer required for Ghost (no weak pointer!)
-      BOOST_STATIC_ASSERT((is_strong_ref<T>::value));
-
     public:
-      typedef typename T::element_type                              raw_type;
-      typedef typename shared_ptr_traits<T>::strong_ref             strong_ref;
-      typedef typename shared_ptr_traits<T>::weak_ref               weak_ref;
-      typedef naRef (raw_type::*member_func_t)(const CallContext&);
-      typedef naRef (*free_func_t)(raw_type&, const CallContext&);
-      typedef boost::function<naRef(raw_type&, naContext)>          getter_t;
-      typedef boost::function<void( raw_type&, naContext, naRef)>   setter_t;
-      typedef boost::function<naRef(raw_type&, const CallContext&)> method_t;
-      typedef boost::function<bool( raw_type&,
-                                    naContext,
-                                    const std::string&,
-                                    naRef& )>              fallback_getter_t;
-      typedef boost::function<bool( raw_type&,
-                                    naContext,
-                                    const std::string&,
-                                    naRef )>               fallback_setter_t;
+      using raw_type    = typename T::element_type;
+      using strong_ref  = typename shared_ptr_traits<T>::strong_ref;
+      using weak_ref    = typename shared_ptr_traits<T>::weak_ref;
+      using member_func_t = naRef (raw_type::*)(const CallContext&);
+      using free_func_t = naRef (*)(raw_type&, const CallContext&);
+      using getter_t    = boost::function<naRef(raw_type&, naContext)>;
+      using setter_t    = boost::function<void( raw_type&, naContext, naRef)>;
+      using method_t    = boost::function<naRef(raw_type&, const CallContext&)>;
+      using fallback_getter_t =
+        boost::function<bool(raw_type&, naContext, const std::string&, naRef&)>;
+      using fallback_setter_t =
+        boost::function<bool(raw_type&, naContext, const std::string&, naRef)>;
+
+      template<class Ret, class... Args>
+      using method_variadic_t = boost::function<Ret (raw_type&, Args...)>;
 
       class MethodHolder:
         public internal::MethodHolder
@@ -269,8 +249,8 @@ namespace nasal
 
         protected:
 
-          typedef SGSharedPtr<MethodHolder> SharedPtr;
-          typedef SGWeakPtr<MethodHolder> WeakPtr;
+          using SharedPtr   = SGSharedPtr<MethodHolder>;
+          using WeakPtr     = SGWeakPtr<MethodHolder>;
 
           method_t  _method;
 
@@ -369,7 +349,7 @@ namespace nasal
         MethodHolderPtr func;
       };
 
-      typedef std::map<std::string, member_t> MemberMap;
+      using MemberMap = std::map<std::string, member_t>;
 
       /**
        * Register a new ghost type.
@@ -406,19 +386,18 @@ namespace nasal
        * @endcode
        */
       template<class BaseGhost>
-      typename boost::enable_if
-        <
-          boost::is_base_of<GhostMetadata, BaseGhost>,
-          Ghost
-        >::type&
+      std::enable_if_t<
+        std::is_base_of<GhostMetadata, BaseGhost>::value,
+        Ghost&
+      >
       bases()
       {
-        BOOST_STATIC_ASSERT
-        ((
-          boost::is_base_of<typename BaseGhost::raw_type, raw_type>::value
-        ));
+        static_assert(
+          std::is_base_of<typename BaseGhost::raw_type, raw_type>::value,
+          "Not a base class!"
+        );
 
-        typedef typename BaseGhost::strong_ref base_ref;
+        using base_ref = typename BaseGhost::strong_ref;
 
         BaseGhost* base = BaseGhost::getSingletonPtr();
         base->addDerived(
@@ -429,17 +408,14 @@ namespace nasal
 
         // Replace any getter that is not available in the current class.
         // TODO check if this is the correct behavior of function overriding
-        for( typename BaseGhost::MemberMap::const_iterator member =
-               base->_members.begin();
-               member != base->_members.end();
-             ++member )
+        for(auto const& base_member: base->_members)
         {
-          if( _members.find(member->first) == _members.end() )
-            _members[member->first] = member_t
+          if( _members.find(base_member.first) == _members.end() )
+            _members[base_member.first] = member_t
             (
-              member->second.getter,
-              member->second.setter,
-              member->second.func
+              base_member.second.getter,
+              base_member.second.setter,
+              base_member.second.func
             );
         }
 
@@ -464,17 +440,16 @@ namespace nasal
        * @endcode
        */
       template<class Base>
-      typename boost::disable_if
-        <
-          boost::is_base_of<GhostMetadata, Base>,
-          Ghost
-        >::type&
+      std::enable_if_t<
+        !std::is_base_of<GhostMetadata, Base>::value,
+        Ghost&
+      >
       bases()
       {
-        BOOST_STATIC_ASSERT
-        ((
-          boost::is_base_of<typename Ghost<Base>::raw_type, raw_type>::value
-        ));
+        static_assert(
+          std::is_base_of<typename Ghost<Base>::raw_type, raw_type>::value,
+          "Not a base class!"
+        );
 
         return bases< Ghost<Base> >();
       }
@@ -770,7 +745,7 @@ namespace nasal
 
       /**
        * Register anything that accepts an object instance and a
-       * nasal::CallContext whith automatic conversion of the return type to
+       * nasal::CallContext with automatic conversion of the return type to
        * Nasal.
        *
        * @code{cpp}
@@ -791,14 +766,73 @@ namespace nasal
         return method(name, boost::bind(method_invoker<Ret>, func, _1, _2));
       }
 
-      // Build dependency for CMake, gcc, etc.
-#define SG_DONT_DO_ANYTHING
-# include <simgear/nasal/cppbind/detail/functor_templates.hxx>
-#undef SG_DONT_DO_ANYTHING
+      /**
+       * Bind any callable entity accepting an instance of raw_type and an
+       * arbitrary number of arguments as method.
+       *
+       * The std::index_sequence specifies the order of the arguments
+       */
+      template<class Ret, class... Args, std::size_t... Indices>
+      Ghost& method( const std::string& name,
+                     const method_variadic_t<Ret, Args...>& func,
+                     std::index_sequence<Indices...> )
+      {
+        return method<Ret>
+        (
+          name,
+          typename boost::function<Ret (raw_type&, const CallContext&)>
+          ( boost::bind(
+            func,
+            _1,
+            boost::bind(&Ghost::arg_from_nasal<Args>, _2, Indices)...
+          ))
+        );
+      }
 
-#define BOOST_PP_ITERATION_LIMITS (0, 9)
-#define BOOST_PP_FILENAME_1 <simgear/nasal/cppbind/detail/functor_templates.hxx>
-#include BOOST_PP_ITERATE()
+      template<class Ret, class... Args>
+      Ghost& method( const std::string& name,
+                     const method_variadic_t<Ret, Args...>& func )
+      {
+        return method(name, func, std::index_sequence_for<Args...>{});
+      }
+
+      /**\
+       * Bind a member function with an arbitrary number of arguments as method.
+       */
+      template<class Ret, class... Args>
+      Ghost& method( const std::string& name,
+                     Ret (raw_type::*fn)(Args...) )
+      {
+        return method(name, method_variadic_t<Ret,  Args...>(fn));
+      }
+
+      template<class Ret, class... Args>
+      Ghost& method( const std::string& name,
+                     Ret (raw_type::*fn)(Args...) const )
+      {
+        return method(name, method_variadic_t<Ret,  Args...>(fn));
+      }
+
+      /**
+       * Bind free function accepting an instance of raw_type and an arbitrary
+       * number of arguments as method.
+       */
+      template<class Ret, class Type, class... Args>
+      Ghost& method
+      (
+        const std::string& name,
+        Ret (*fn)(Type, Args ... args)
+      )
+      {
+        static_assert(
+          std::is_convertible<raw_type&, Type>::value,
+        //|| std::is_convertible<raw_type*, Type>::value
+        // TODO check how to do it with pointer...
+          "First parameter can not be converted from the Ghost raw_type!"
+        );
+
+        return method(name, method_variadic_t<Ret, Args...>(fn));
+      }
 
       /**
        * Create a shared pointer on the heap to handle the reference counting
@@ -806,11 +840,11 @@ namespace nasal
        */
       template<class RefType>
       static
-      typename boost::enable_if_c<
-           boost::is_same<RefType, strong_ref>::value
-        || boost::is_same<RefType, weak_ref>::value,
+      std::enable_if_t<
+           std::is_same<RefType, strong_ref>::value
+        || std::is_same<RefType, weak_ref>::value,
         naRef
-      >::type
+      >
       makeGhost(naContext c, RefType const& ref_ptr)
       {
         strong_ref ref(ref_ptr);
@@ -848,10 +882,9 @@ namespace nasal
           }
 
           // otherwise try the derived classes
-          for( typename DerivedList::reverse_iterator
-                 derived = getSingletonPtr()->_derived_types.rbegin();
-                 derived != getSingletonPtr()->_derived_types.rend();
-               ++derived )
+          for( auto derived = getSingletonPtr()->_derived_types.rbegin();
+                    derived != getSingletonPtr()->_derived_types.rend();
+                  ++derived )
           {
             strong_ref ref = (derived->from_nasal)(c, me);
 
@@ -865,13 +898,10 @@ namespace nasal
           if( !naIsVector(na_parents) )
             return strong_ref();
 
-          typedef std::vector<naRef> naRefs;
-          naRefs parents = from_nasal<naRefs>(c, na_parents);
-          for( naRefs::const_iterator parent = parents.begin();
-                                      parent != parents.end();
-                                    ++parent )
+          auto parents = from_nasal<std::vector<naRef>>(c, na_parents);
+          for(auto parent: parents)
           {
-            strong_ref ref = fromNasal(c, *parent);
+            strong_ref ref = fromNasal(c, parent);
             if( get_pointer(ref) )
               return ref;
           }
@@ -923,8 +953,9 @@ namespace nasal
       static naGhostType _ghost_type_strong, //!< Stored as shared pointer
                          _ghost_type_weak;   //!< Stored as weak shared pointer
 
-      typedef naRef (*to_nasal_t)(naContext, const strong_ref&, bool);
-      typedef strong_ref (*from_nasal_t)(naContext, naRef);
+      using to_nasal_t   = naRef (*)(naContext, const strong_ref&, bool);
+      using from_nasal_t = strong_ref (*)(naContext, naRef);
+
       struct DerivedInfo
       {
         to_nasal_t to_nasal;
@@ -937,7 +968,7 @@ namespace nasal
         {}
       };
 
-      typedef std::vector<DerivedInfo> DerivedList;
+      using DerivedList = std::vector<DerivedInfo>;
       DerivedList _derived_types;
 
       static bool isInstance(naGhostType* ghost_type, bool& is_weak)
@@ -951,13 +982,10 @@ namespace nasal
 
       template<class RefPtr, bool is_weak>
       static
-      typename boost::enable_if_c<
-        !is_weak,
-        RefPtr
-      >::type
+      std::enable_if_t<!is_weak, RefPtr>
       getPtr(void* ptr)
       {
-        typedef shared_ptr_storage<strong_ref> storage_type;
+        using storage_type = shared_ptr_storage<strong_ref>;
         if( ptr )
           return storage_type::template get<RefPtr>(
             static_cast<typename storage_type::storage_type*>(ptr)
@@ -968,13 +996,13 @@ namespace nasal
 
       template<class RefPtr, bool is_weak>
       static
-      typename boost::enable_if_c<
+      std::enable_if_t<
         is_weak && supports_weak_ref<T>::value,
         RefPtr
-      >::type
+      >
       getPtr(void* ptr)
       {
-        typedef shared_ptr_storage<weak_ref> storage_type;
+        using storage_type = shared_ptr_storage<weak_ref>;
         if( ptr )
           return storage_type::template get<RefPtr>(
             static_cast<typename storage_type::storage_type*>(ptr)
@@ -985,10 +1013,10 @@ namespace nasal
 
       template<class RefPtr, bool is_weak>
       static
-      typename boost::enable_if_c<
+      std::enable_if_t<
         is_weak && !supports_weak_ref<T>::value,
         RefPtr
-      >::type
+      >
       getPtr(void* ptr)
       {
         return RefPtr();
@@ -1004,10 +1032,10 @@ namespace nasal
 
       template<class BaseGhost>
       static
-      typename boost::enable_if
-        < boost::is_polymorphic<typename BaseGhost::raw_type>,
-          naRef
-        >::type
+      std::enable_if_t<
+        std::is_polymorphic<typename BaseGhost::raw_type>::value,
+        naRef
+      >
       toNasal( naContext c,
                const typename BaseGhost::strong_ref& base_ref,
                bool strong )
@@ -1016,10 +1044,10 @@ namespace nasal
 
         // Check first if passed pointer can by converted to instance of class
         // this ghost wraps.
-        if(   !boost::is_same
-                 < typename BaseGhost::raw_type,
-                   typename Ghost::raw_type
-                 >::value
+        if(   !std::is_same<
+                 typename BaseGhost::raw_type,
+                 typename Ghost::raw_type
+               >::value
             && dynamic_cast<const typename Ghost::raw_type*>(ptr) != ptr )
           return naNil();
 
@@ -1038,10 +1066,9 @@ namespace nasal
           static_pointer_cast<typename Ghost::raw_type>(base_ref);
 
         // Now check if we can further downcast to one of our derived classes.
-        for( typename DerivedList::reverse_iterator
-               derived = getSingletonPtr()->_derived_types.rbegin();
-               derived != getSingletonPtr()->_derived_types.rend();
-             ++derived )
+        for( auto derived = getSingletonPtr()->_derived_types.rbegin();
+                  derived != getSingletonPtr()->_derived_types.rend();
+                ++derived )
         {
           naRef ghost = (derived->to_nasal)(c, ref, strong);
 
@@ -1058,13 +1085,13 @@ namespace nasal
 
       template<class BaseGhost>
       static
-      typename boost::disable_if
-        < boost::is_polymorphic<typename BaseGhost::raw_type>,
-          naRef
-        >::type
-        toNasal( naContext c,
-                 const typename BaseGhost::strong_ref& ref,
-                 bool strong )
+      std::enable_if_t<
+        !std::is_polymorphic<typename BaseGhost::raw_type>::value,
+        naRef
+      >
+      toNasal( naContext c,
+               const typename BaseGhost::strong_ref& ref,
+               bool strong )
       {
         // For non polymorphic classes there is no possibility to get the actual
         // dynamic type, therefore we can only use its static type.
@@ -1087,7 +1114,7 @@ namespace nasal
       template<class Ret>
       getter_t to_getter(Ret (raw_type::*getter)() const)
       {
-        typedef typename boost::call_traits<Ret>::param_type param_type;
+        using param_type = typename boost::call_traits<Ret>::param_type;
         naRef(*to_nasal_)(naContext, param_type) = &to_nasal;
 
         // Getter signature: naRef(raw_type&, naContext)
@@ -1140,7 +1167,7 @@ namespace nasal
        */
       template<class Ret>
       static
-      typename boost::disable_if<boost::is_void<Ret>, naRef>::type
+      std::enable_if_t<!std::is_void<Ret>::value, naRef>
       method_invoker
       (
         const boost::function<Ret (raw_type&, const CallContext&)>& func,
@@ -1148,7 +1175,7 @@ namespace nasal
         const CallContext& ctx
       )
       {
-        return (*to_nasal_ptr<Ret>::get())(ctx.c, func(obj, ctx));
+        return (*to_nasal_ptr<Ret>::get())(ctx.c_ctx(), func(obj, ctx));
       };
 
       /**
@@ -1156,7 +1183,7 @@ namespace nasal
        */
       template<class Ret>
       static
-      typename boost::enable_if<boost::is_void<Ret>, naRef>::type
+      std::enable_if_t<std::is_void<Ret>::value, naRef>
       method_invoker
       (
         const boost::function<Ret (raw_type&, const CallContext&)>& func,
@@ -1174,10 +1201,10 @@ namespace nasal
        */
       template<class Arg>
       static
-      typename boost::disable_if<
-        internal::reduced_is_same<Arg, CallContext>,
+      std::enable_if_t<
+        !std::is_same<std::remove_cvref_t<Arg>, CallContext>::value,
         typename from_nasal_ptr<Arg>::return_type
-      >::type
+      >
       arg_from_nasal(const CallContext& ctx, size_t index)
       {
         return ctx.requireArg<Arg>(index);
@@ -1188,19 +1215,21 @@ namespace nasal
        */
       template<class Arg>
       static
-      typename boost::enable_if<
-        internal::reduced_is_same<Arg, CallContext>,
+      std::enable_if_t<
+        std::is_same<std::remove_cvref_t<Arg>, CallContext>::value,
         typename from_nasal_ptr<Arg>::return_type
-      >::type
+      >
       arg_from_nasal(const CallContext& ctx, size_t)
       {
         // Either const CallContext& or CallContext, non-const reference
         // does not make sense.
-        BOOST_STATIC_ASSERT( (!boost::is_same<Arg, CallContext&>::value) );
+        static_assert(
+          !boost::is_same<Arg, CallContext&>::value,
+          "Only const reference and value make sense!");
         return ctx;
       };
 
-      typedef std::unique_ptr<Ghost> GhostPtr;
+      using GhostPtr = std::unique_ptr<Ghost>;
       MemberMap         _members;
       fallback_getter_t _fallback_getter;
       fallback_setter_t _fallback_setter;
@@ -1240,13 +1269,10 @@ namespace nasal
 
       template<bool is_weak>
       static
-      typename boost::enable_if_c<
-        !is_weak,
-        naRef
-      >::type
+      std::enable_if_t<!is_weak, naRef>
       create(naContext c, const strong_ref& ref_ptr)
       {
-        typedef shared_ptr_storage<strong_ref> storage_type;
+        using storage_type = shared_ptr_storage<strong_ref>;
         return naNewGhost2( c,
                             &Ghost::_ghost_type_strong,
                             storage_type::ref(ref_ptr) );
@@ -1254,13 +1280,13 @@ namespace nasal
 
       template<bool is_weak>
       static
-      typename boost::enable_if_c<
+      std::enable_if_t<
         is_weak && supports_weak_ref<T>::value,
         naRef
-      >::type
+      >
       create(naContext c, const strong_ref& ref_ptr)
       {
-        typedef shared_ptr_storage<weak_ref> storage_type;
+        using storage_type = shared_ptr_storage<weak_ref>;
         return naNewGhost2( c,
                             &Ghost::_ghost_type_weak,
                             storage_type::ref(ref_ptr) );
@@ -1268,10 +1294,10 @@ namespace nasal
 
       template<bool is_weak>
       static
-      typename boost::enable_if_c<
+      std::enable_if_t<
         is_weak && !supports_weak_ref<T>::value,
         naRef
-      >::type
+      >
       create(naContext, const strong_ref&)
       {
         return naNil();
@@ -1280,7 +1306,7 @@ namespace nasal
       template<class Type>
       static void destroy(void *ptr)
       {
-        typedef shared_ptr_storage<Type> storage_type;
+        using storage_type = shared_ptr_storage<Type>;
         storage_type::unref(
           static_cast<typename storage_type::storage_type*>(ptr)
         );
@@ -1322,9 +1348,7 @@ namespace nasal
 //          return "";
 //        }
 
-        typename MemberMap::iterator member =
-          getSingletonPtr()->_members.find(key_str);
-
+        auto member = getSingletonPtr()->_members.find(key_str);
         if( member == getSingletonPtr()->_members.end() )
         {
           fallback_getter_t fallback_get = getSingletonPtr()->_fallback_getter;
@@ -1374,7 +1398,7 @@ namespace nasal
         const std::string key = nasal::from_nasal<std::string>(c, field);
         const MemberMap& members = getSingletonPtr()->_members;
 
-        typename MemberMap::const_iterator member = members.find(key);
+        auto member = members.find(key);
         if( member == members.end() )
         {
           fallback_setter_t fallback_set = getSingletonPtr()->_fallback_setter;
@@ -1415,13 +1439,11 @@ namespace nasal
 
   template<class T>
   naGhostType
-  Ghost<T, typename boost::enable_if<is_strong_ref<T> >::type>
-  ::_ghost_type_strong;
+  Ghost<T, std::enable_if_t<is_strong_ref<T>::value>>::_ghost_type_strong;
 
   template<class T>
   naGhostType
-  Ghost<T, typename boost::enable_if<is_strong_ref<T> >::type>
-  ::_ghost_type_weak;
+  Ghost<T, std::enable_if_t<is_strong_ref<T>::value>>::_ghost_type_weak;
 
 } // namespace nasal
 
@@ -1430,15 +1452,13 @@ namespace nasal
  * Convert every shared pointer to a ghost.
  */
 template<class T>
-typename boost::enable_if<
-  nasal::internal::has_element_type<
-    typename nasal::internal::reduced_type<T>::type
-  >,
+std::enable_if_t<
+  nasal::internal::has_element_type<std::remove_cvref_t<T>>::value,
   naRef
->::type
+>
 to_nasal_helper(naContext c, T ptr)
 {
-  typedef typename nasal::shared_ptr_traits<T>::strong_ref strong_ref;
+  using strong_ref = typename nasal::shared_ptr_traits<T>::strong_ref;
   return nasal::Ghost<strong_ref>::makeGhost(c, ptr);
 }
 
@@ -1446,15 +1466,13 @@ to_nasal_helper(naContext c, T ptr)
  * Convert nasal ghosts/hashes to shared pointer (of a ghost).
  */
 template<class T>
-typename boost::enable_if<
-  nasal::internal::has_element_type<
-    typename nasal::internal::reduced_type<T>::type
-  >,
+std::enable_if_t<
+  nasal::internal::has_element_type<std::remove_cvref_t<T>>::value,
   T
->::type
+>
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
-  typedef typename nasal::shared_ptr_traits<T>::strong_ref strong_ref;
+  using strong_ref = typename nasal::shared_ptr_traits<T>::strong_ref;
   return T(nasal::Ghost<strong_ref>::fromNasalChecked(c, ref));
 }
 
@@ -1462,11 +1480,11 @@ from_nasal_helper(naContext c, naRef ref, const T*)
  * Convert any pointer to a SGReferenced based object to a ghost.
  */
 template<class T>
-typename boost::enable_if_c<
-     boost::is_base_of<SGReferenced, T>::value
-  || boost::is_base_of<SGWeakReferenced, T>::value,
+std::enable_if_t<
+     std::is_base_of<SGReferenced, T>::value
+  || std::is_base_of<SGWeakReferenced, T>::value,
   naRef
->::type
+>
 to_nasal_helper(naContext c, T* ptr)
 {
   return nasal::Ghost<SGSharedPtr<T> >::makeGhost(c, SGSharedPtr<T>(ptr));
@@ -1476,20 +1494,14 @@ to_nasal_helper(naContext c, T* ptr)
  * Convert nasal ghosts/hashes to pointer (of a SGReferenced based ghost).
  */
 template<class T>
-typename boost::enable_if_c<
-     boost::is_base_of<
-       SGReferenced,
-       typename boost::remove_pointer<T>::type
-     >::value
-  || boost::is_base_of<
-       SGWeakReferenced,
-       typename boost::remove_pointer<T>::type
-     >::value,
+std::enable_if_t<
+     std::is_base_of<SGReferenced, std::remove_pointer_t<T>>::value
+  || std::is_base_of<SGWeakReferenced, std::remove_pointer_t<T>>::value,
   T
->::type
+>
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
-  typedef SGSharedPtr<typename boost::remove_pointer<T>::type> TypeRef;
+  using TypeRef = SGSharedPtr<std::remove_pointer_t<T>>;
   return T(nasal::Ghost<TypeRef>::fromNasalChecked(c, ref));
 }
 
@@ -1497,10 +1509,10 @@ from_nasal_helper(naContext c, naRef ref, const T*)
  * Convert any pointer to a osg::Referenced based object to a ghost.
  */
 template<class T>
-typename boost::enable_if<
-  boost::is_base_of<osg::Referenced, T>,
+std::enable_if_t<
+  std::is_base_of<osg::Referenced, T>::value,
   naRef
->::type
+>
 to_nasal_helper(naContext c, T* ptr)
 {
   return nasal::Ghost<osg::ref_ptr<T> >::makeGhost(c, osg::ref_ptr<T>(ptr));
@@ -1510,13 +1522,13 @@ to_nasal_helper(naContext c, T* ptr)
  * Convert nasal ghosts/hashes to pointer (of a osg::Referenced based ghost).
  */
 template<class T>
-typename boost::enable_if<
-  boost::is_base_of<osg::Referenced, typename boost::remove_pointer<T>::type>,
+std::enable_if_t<
+  std::is_base_of<osg::Referenced, std::remove_pointer_t<T>>::value,
   T
->::type
+>
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
-  typedef osg::ref_ptr<typename boost::remove_pointer<T>::type> TypeRef;
+  using TypeRef = osg::ref_ptr<std::remove_pointer_t<T>>;
   return T(nasal::Ghost<TypeRef>::fromNasalChecked(c, ref));
 }
 

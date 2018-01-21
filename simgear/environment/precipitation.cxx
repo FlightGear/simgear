@@ -7,7 +7,7 @@
  *
  * @brief Precipitation effects to draw rain and snow.
  *
- * @par Licences
+ * @par License
  *   This program is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public License as
  *   published by the Free Software Foundation; either version 2 of the
@@ -25,7 +25,6 @@
  */
 
 #include "precipitation.hxx"
-//#include "visual_enviro.hxx"
 
 #include <simgear/constants.h>
 #include <osg/ClipNode>
@@ -65,7 +64,7 @@ bool SGPrecipitation::getEnabled() const
  */
 osg::Group* SGPrecipitation::build(void)
 {
-    osg::Group* group = new osg::Group;
+    osg::ref_ptr<osg::Group> group = new osg::Group;
 
     _precipitationEffect->snow(0);	
     _precipitationEffect->rain(0);	
@@ -73,8 +72,9 @@ osg::Group* SGPrecipitation::build(void)
     if (_clip_distance!=0.0)
     {
         osg::ref_ptr<osg::ClipNode> clipNode = new osg::ClipNode;
-        clipNode->addClipPlane( new osg::ClipPlane( 0 ) );
-        clipNode->getClipPlane(0)->setClipPlane( 0.0, 0.0, -1.0, -_clip_distance );
+        osg::ref_ptr<osg::ClipPlane> clipPlane = new osg::ClipPlane(0);
+        clipNode->addClipPlane(clipPlane.get());
+        clipNode->getClipPlane(0)->setClipPlane(0.0, 0.0, -1.0, -_clip_distance);
         clipNode->setReferenceFrame(osg::ClipNode::ABSOLUTE_RF);
         clipNode->addChild(_precipitationEffect.get());
 
@@ -87,7 +87,7 @@ osg::Group* SGPrecipitation::build(void)
 
     group->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
-    return group;
+    return group.release();
 }
 
 
@@ -140,8 +140,8 @@ void SGPrecipitation::setRainDropletSize(float size)
 /**
  * @brief Define the illumination multiplier
  *
- * This function permits you to define and change the rain droplet size
- * which is used if external droplet size control is enabled
+ * This function permits you to define and change the brightness
+ * of the precipitation.
  */
 
 void SGPrecipitation::setIllumination(float illumination)
@@ -163,10 +163,9 @@ void SGPrecipitation::setSnowFlakeSize(float size)
 
 
 /**
- * @brief Define the rain droplet size
+ * @brief Define the clip plane distance
  *
- * This function permits you to define and change the rain droplet size
- * which is used if external droplet size control is enabled
+ * This function permits you to define and change the clip plane distance.
  */
 
 void SGPrecipitation::setClipDistance(float distance)
@@ -224,7 +223,7 @@ void SGPrecipitation::setWindProperty(double heading, double speed)
  * Be careful, if snow and rain intensity are greater than '0', snow effect
  * will be first.
  *
- * The settings come from the osgParticule/PrecipitationEffect.cpp exemple.
+ * The settings come from the osgParticle/PrecipitationEffect.cpp example.
  */
 bool SGPrecipitation::update(void)
 {

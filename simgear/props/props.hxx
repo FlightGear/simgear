@@ -99,9 +99,9 @@ inline T parseString(const std::string& str)
     return result;
 }
 
-/**
- * Property value types.
- */
+//
+// Property value types
+//
 
 #ifdef NONE
 #pragma warn A sloppy coder has defined NONE as a macro!
@@ -148,6 +148,7 @@ inline T parseString(const std::string& str)
 #undef STRING
 #endif
 
+/// Property system which associates property names with values.
 namespace props
 {
 /**
@@ -2144,17 +2145,18 @@ inline SGPropertyNode* makeChild(SGPropertyNode* parent, const char* name,
     return parent->getChild(name, index, true);
 }
 
-/**
- * Utility function for creation of a child property node using a
- * relative path.
- */
 namespace simgear
 {
-template<typename StringType>
-inline SGPropertyNode* makeNode(SGPropertyNode* parent, const StringType& name)
-{
-    return parent->getNode(name, true);
-}
+  /**
+   * Utility function for creation of a child property node using a
+   * relative path.
+   */
+  template<typename StringType>
+  inline SGPropertyNode*
+  makeNode(SGPropertyNode* parent, const StringType& name)
+  {
+      return parent->getNode(name, true);
+  }
 }
 
 // For boost::hash

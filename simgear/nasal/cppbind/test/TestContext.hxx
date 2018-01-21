@@ -20,56 +20,55 @@
 #ifndef SG_NASAL_TESTCONTEXT_HXX_
 #define SG_NASAL_TESTCONTEXT_HXX_
 
-#include <simgear/nasal/cppbind/NasalCallContext.hxx>
+#include <simgear/nasal/cppbind/NasalContext.hxx>
 
 class TestContext:
-  public nasal::CallContext
+  public nasal::Context
 {
   public:
-    TestContext():
-      CallContext(naNewContext(), naNil(), 0, 0)
-    {}
-
-    ~TestContext()
-    {
-      naFreeContext(c);
-    }
-
     void runGC()
     {
-      naFreeContext(c);
+      naFreeContext(_ctx);
       naGC();
-      c = naNewContext();
+      _ctx = naNewContext();
     }
 
-    template<class T>
-    T from_str(const std::string& str)
+    template<class T = naRef>
+    T exec(const std::string& code, nasal::Me me)
     {
-      return from_nasal<T>(to_nasal(str));
+      return from_nasal<T>(execImpl(code, me));
     }
 
-    naRef exec(const std::string& code_str, nasal::Me me)
-    {
-      int err_line = -1;
-      naRef code = naParseCode( c, to_nasal("<TextContext::exec>"), 0,
-                                (char*)code_str.c_str(), code_str.length(),
-                                &err_line );
-      if( !naIsCode(code) )
-        throw std::runtime_error("Failed to parse code: " + code_str);
-
-      return naCallMethod(code, me, 0, 0, naNil());
-    }
-
-    template<class T>
+    template<class T = naRef>
     T exec(const std::string& code)
     {
-      return from_nasal<T>(exec(code, naNil()));
+      return from_nasal<T>(execImpl(code, nasal::Me{}));
     }
 
     template<class T>
     T convert(const std::string& str)
     {
       return from_nasal<T>(to_nasal(str));
+    }
+
+  protected:
+    naRef execImpl(const std::string& code_str, nasal::Me me)
+    {
+      int err_line = -1;
+      naRef code = naParseCode( _ctx, to_nasal("<TextContext::exec>"), 0,
+                                (char*)code_str.c_str(), code_str.length(),
+                                &err_line );
+      if( !naIsCode(code) )
+        throw std::runtime_error("Failed to parse code: " + code_str);
+
+      naRef ret = naCallMethod(code, me, 0, 0, naNil());
+
+      if( char* err = naGetError(_ctx) )
+        throw std::runtime_error(
+          "Failed to executed code: " + std::string(err)
+        );
+
+      return ret;
     }
 };
 

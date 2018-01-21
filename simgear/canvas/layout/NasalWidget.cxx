@@ -189,10 +189,10 @@ namespace canvas
     if( hfw.empty() )
       return -1;
 
-    naContext c = naNewContext();
     try
     {
-      return hfw(nasal::to_nasal(c, const_cast<NasalWidget*>(this)), w);
+      nasal::Context ctx;
+      return hfw(ctx.to_me(const_cast<NasalWidget*>(this)), w);
     }
     catch( std::exception const& ex )
     {
@@ -202,7 +202,6 @@ namespace canvas
         "NasalWidget.heightForWidth: callback error: '" << ex.what() << "'"
       );
     }
-    naFreeContext(c);
 
     return -1;
   }
@@ -262,8 +261,8 @@ namespace canvas
 
     try
     {
-      nasal::Context c;
-      _set_geometry(nasal::to_nasal(c, this), rect);
+      nasal::Context ctx;
+      _set_geometry(ctx.to_me(this), rect);
       _flags &= ~LAYOUT_DIRTY;
     }
     catch( std::exception const& ex )

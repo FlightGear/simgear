@@ -554,12 +554,10 @@ void Root::addDelegate(simgear::pkg::Delegate *aDelegate)
 
 void Root::removeDelegate(simgear::pkg::Delegate *aDelegate)
 {
-    DelegateVec::iterator it = std::find(d->delegates.begin(),
-                                         d->delegates.end(), aDelegate);
-    if (it == d->delegates.end()) {
-        throw sg_exception("unknown delegate in removeDelegate");
+    auto it = std::find(d->delegates.begin(), d->delegates.end(), aDelegate);
+    if (it != d->delegates.end()) {
+        d->delegates.erase(it);
     }
-    d->delegates.erase(it);
 }
 
 void Root::setLocale(const std::string& aLocale)

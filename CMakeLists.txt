@@ -7,6 +7,9 @@ if(COMMAND cmake_policy)
    if(POLICY CMP0042)
        cmake_policy(SET CMP0042 NEW)
    endif()
+   if(POLICY CMP0067)
+       cmake_policy(SET CMP0067 NEW)
+   endif()
 endif()
 
 
@@ -134,6 +137,16 @@ include (DetectArch)
 # until the fstream fix is applied and generally available in OSG,
 # keep the compatability link option as the default
 option(OSG_FSTREAM_EXPORT_FIXED "Set to ON if the osgDB fstream export patch is applied" OFF)
+
+if (CMAKE_COMPILER_IS_GNUCXX OR CLANG)
+  if (CMAKE_VERSION VERSION_LESS 3.1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
+  elseif (CMAKE_VERSION VERSION_LESS 3.8)
+    # policy CMP0067 (try_compile does not honor CMAKE_CXX_STANDARD)
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
+  endif()
+endif()
+
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_BINARY_DIR} PATH)
@@ -351,13 +364,34 @@ if (NOT ${HAVE_STD_ISNAN})
   message(FATAL_ERROR "Your compiler lacks C++11 std::isnan, please update it")
 endif()
 
+# Check if the <regex> implementation in the C++ standard library is usable.
+# This is necessary because g++ 4.8 lies about its C++11 compliance: its
+# <regex> is utterly unusable, cf. [1].
+# The big preprocessor test essentially comes from [2], and gcc upstream devs
+# appear to back it (see comments following [2], as well as [3]).
+#
+#   [1] https://stackoverflow.com/a/12665408/4756009
+#   [2] https://stackoverflow.com/a/41186162/4756009
+#   [3] https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78905
+check_cxx_source_compiles(
+    "#include <regex>
+
+     int main() {
+       #if __cplusplus >= 201103L &&                             \
+           (!defined(__GLIBCXX__)                         ||     \
+            (__cplusplus >= 201402L)                      ||     \
+            defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) ||     \
+            defined(_GLIBCXX_REGEX_STATE_LIMIT)           ||     \
+            (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE > 4))
+       #else
+         nullptr = void; // intentionally trigger a compilation error
+       #endif
+     }"
+    HAVE_WORKING_STD_REGEX)
+
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall -fPIC")
     set(WARNING_FLAGS_C   "-Wall -fPIC")
-
-    if (CMAKE_VERSION VERSION_LESS 3.1)
-       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    endif()
 
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.4)
       message(WARNING "GCC 4.4 will be required soon, please upgrade")
@@ -385,10 +419,6 @@ if (CLANG)
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
     # fix Boost compilation :(
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-
-    if (CMAKE_VERSION VERSION_LESS 3.1)
-       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    endif()
 
     if(ENABLE_SIMD)
       if (X86 OR X86_64)
@@ -461,6 +491,8 @@ endif(WIN32)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
+
+include(CheckCXXFeatures)
 
 # use BEFORE to ensure local directories are used first,
 # ahead of system-installed libs

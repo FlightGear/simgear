@@ -1,10 +1,13 @@
 include (SimGearComponent)
 
 set(HEADERS
+  cppbind_fwd.hxx
   Ghost.hxx
   NasalCallContext.hxx
   NasalContext.hxx
   NasalHash.hxx
+  NasalMe.hxx
+  NasalMethodHolder.hxx
   NasalObject.hxx
   NasalObjectHolder.hxx
   NasalString.hxx
@@ -13,9 +16,7 @@ set(HEADERS
 )
 
 set(DETAIL_HEADERS
-  detail/from_nasal_function_templates.hxx
   detail/from_nasal_helper.hxx
-  detail/functor_templates.hxx
   detail/nasal_traits.hxx
   detail/to_nasal_helper.hxx
 )

@@ -25,7 +25,7 @@ static naGhostType ghost_type = {
 static naRef createTestGhost(TestContext& c, intptr_t p)
 {
   active_instances.insert(p);
-  return naNewGhost(c.c, &ghost_type, (void*)p);
+  return naNewGhost(c, &ghost_type, (void*)p);
 }
 
 //------------------------------------------------------------------------------

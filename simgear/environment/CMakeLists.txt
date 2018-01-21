@@ -21,4 +21,9 @@ else()
 endif()
 
 add_test(metar ${EXECUTABLE_OUTPUT_PATH}/test_metar)
+
+add_executable(test_precipitation test_precipitation.cxx)
+target_link_libraries(test_precipitation ${TEST_LIBS})
+add_test(precipitation ${EXECUTABLE_OUTPUT_PATH}/test_precipitation)
+
 endif(ENABLE_TESTS)

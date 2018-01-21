@@ -408,17 +408,14 @@ namespace nasal
 
         // Replace any getter that is not available in the current class.
         // TODO check if this is the correct behavior of function overriding
-        for( typename BaseGhost::MemberMap::const_iterator member =
-               base->_members.begin();
-               member != base->_members.end();
-             ++member )
+        for(auto const& base_member: base->_members)
         {
-          if( _members.find(member->first) == _members.end() )
-            _members[member->first] = member_t
+          if( _members.find(base_member.first) == _members.end() )
+            _members[base_member.first] = member_t
             (
-              member->second.getter,
-              member->second.setter,
-              member->second.func
+              base_member.second.getter,
+              base_member.second.setter,
+              base_member.second.func
             );
         }
 
@@ -885,10 +882,9 @@ namespace nasal
           }
 
           // otherwise try the derived classes
-          for( typename DerivedList::reverse_iterator
-                 derived = getSingletonPtr()->_derived_types.rbegin();
-                 derived != getSingletonPtr()->_derived_types.rend();
-               ++derived )
+          for( auto derived = getSingletonPtr()->_derived_types.rbegin();
+                    derived != getSingletonPtr()->_derived_types.rend();
+                  ++derived )
           {
             strong_ref ref = (derived->from_nasal)(c, me);
 
@@ -1070,10 +1066,9 @@ namespace nasal
           static_pointer_cast<typename Ghost::raw_type>(base_ref);
 
         // Now check if we can further downcast to one of our derived classes.
-        for( typename DerivedList::reverse_iterator
-               derived = getSingletonPtr()->_derived_types.rbegin();
-               derived != getSingletonPtr()->_derived_types.rend();
-             ++derived )
+        for( auto derived = getSingletonPtr()->_derived_types.rbegin();
+                  derived != getSingletonPtr()->_derived_types.rend();
+                ++derived )
         {
           naRef ghost = (derived->to_nasal)(c, ref, strong);
 
@@ -1353,9 +1348,7 @@ namespace nasal
 //          return "";
 //        }
 
-        typename MemberMap::iterator member =
-          getSingletonPtr()->_members.find(key_str);
-
+        auto member = getSingletonPtr()->_members.find(key_str);
         if( member == getSingletonPtr()->_members.end() )
         {
           fallback_getter_t fallback_get = getSingletonPtr()->_fallback_getter;
@@ -1405,7 +1398,7 @@ namespace nasal
         const std::string key = nasal::from_nasal<std::string>(c, field);
         const MemberMap& members = getSingletonPtr()->_members;
 
-        typename MemberMap::const_iterator member = members.find(key);
+        auto member = members.find(key);
         if( member == members.end() )
         {
           fallback_setter_t fallback_set = getSingletonPtr()->_fallback_setter;

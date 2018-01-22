@@ -78,6 +78,13 @@ public:
     /** Update stored time to current time (seconds and nanoseconds) */
     void stamp();
 
+    /** Update stored time to current system clock (seconds and nanoseconds)
+     *  non monotonic, keeping only hours, minutes, seconds and decimals,
+     *  so restart at 0 at midnight.
+     *  using the std::chrono libs
+     */
+    void systemClockHoursAndMinutes();
+
     /** Set the time from a double value */
     void setTime(const double& seconds)
     {

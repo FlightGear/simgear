@@ -117,6 +117,51 @@ naRef f_derivedGetX(const Derived& d, naContext c)
 }
 naRef f_freeFunction(nasal::CallContext c) { return c.requireArg<naRef>(0); }
 
+namespace std
+{
+  template<class T, std::size_t N>
+  ostream& operator<<(ostream& strm, const array<T, N>& vec)
+  {
+    for(auto const& v: vec)
+      strm << "'" << v << "',";
+    return strm;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( cppbind_arrays )
+{
+  TestContext ctx;
+
+  naRef na_vec = ctx.to_nasal({1., 2., 3.42});
+  BOOST_REQUIRE( naIsVector(na_vec) );
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 0)), 1);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 1)), 2);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<double>(naVec_get(na_vec, 2)), 3.42);
+
+  na_vec = ctx.to_nasal(std::initializer_list<double>({1., 2., 3.42}));
+  BOOST_REQUIRE( naIsVector(na_vec) );
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 0)), 1);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 1)), 2);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<double>(naVec_get(na_vec, 2)), 3.42);
+
+  using arr_d3_t = std::array<double, 3>;
+  arr_d3_t std_arr = {1., 2., 3.42};
+  na_vec = ctx.to_nasal(std_arr);
+  BOOST_REQUIRE( naIsVector(na_vec) );
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 0)), 1);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 1)), 2);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<double>(naVec_get(na_vec, 2)), 3.42);
+
+  double d_arr[] = {1., 2., 3.42};
+  na_vec = ctx.to_nasal(d_arr);
+  BOOST_REQUIRE( naIsVector(na_vec) );
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 0)), 1);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 1)), 2);
+  BOOST_CHECK_EQUAL(ctx.from_nasal<double>(naVec_get(na_vec, 2)), 3.42);
+
+  BOOST_CHECK_EQUAL(std_arr, ctx.from_nasal<arr_d3_t>(na_vec));
+}
+
 BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
 {
   TestContext c;

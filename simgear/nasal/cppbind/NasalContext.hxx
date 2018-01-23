@@ -70,6 +70,14 @@ namespace nasal
         return nasal::to_nasal(_ctx, array);
       }
 
+      // Workaround for compilers which can not convert a braced-init-list
+      // to const T(&)[N]
+      template<class T>
+      naRef to_nasal(std::initializer_list<T> list) const
+      {
+        return nasal::to_nasal(_ctx, list);
+      }
+
       template<class T>
       Me to_me(T arg) const
       {

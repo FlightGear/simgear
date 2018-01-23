@@ -44,13 +44,6 @@ namespace nasal
       Hash newHash();
       String newString(const char* str);
 
-      /** Create a new nasal vector and fill it with the given values */
-      template<class... Vals>
-      naRef newVector(Vals ... vals)
-      {
-        return newVector({to_nasal(vals)...});
-      }
-
       /** Raise a nasal runtime error */
       template<class... Args>
       void runtimeError(const char* fmt, Args ... args) const
@@ -70,12 +63,11 @@ namespace nasal
         return nasal::to_nasal(_ctx, array);
       }
 
-      // Workaround for compilers which can not convert a braced-init-list
-      // to const T(&)[N]
-      template<class T>
-      naRef to_nasal(std::initializer_list<T> list) const
+      /** Create a nasal vector filled with the given values */
+      template<class... Vals>
+      naRef to_nasal_vec(Vals ... vals)
       {
-        return nasal::to_nasal(_ctx, list);
+        return newVector({to_nasal(vals)...});
       }
 
       template<class T>

@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( cppbind_arrays )
 {
   TestContext ctx;
 
-  naRef na_vec = ctx.to_nasal({1., 2., 3.42});
+  naRef na_vec = ctx.to_nasal_vec(1., 2., 3.42);
   BOOST_REQUIRE( naIsVector(na_vec) );
   BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 0)), 1);
   BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(na_vec, 1)), 2);
@@ -484,7 +484,7 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
 BOOST_AUTO_TEST_CASE( cppbind_context )
 {
   nasal::Context ctx;
-  naRef vec = ctx.newVector(1, 2, 3.4, "test");
+  naRef vec = ctx.to_nasal_vec(1, 2, 3.4, "test");
   BOOST_REQUIRE( naIsVector(vec) );
 
   BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(vec, 0)), 1);

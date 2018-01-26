@@ -155,6 +155,12 @@ public:
   {
     return std::isnan(v);
   }
+
+  static bool eq(const T& a, const T& b, const T& epsilon = SGLimits<T>::epsilon())
+  { return std::abs(a - b) < epsilon; }
+  
+  static bool neq(const T& a, const T& b, const T& epsilon = SGLimits<T>::epsilon())
+  { return !eq(a, b, epsilon); }
 };
 
 #endif

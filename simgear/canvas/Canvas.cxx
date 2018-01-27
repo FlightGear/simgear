@@ -22,8 +22,10 @@
 #include "CanvasEventManager.hxx"
 #include "CanvasEventVisitor.hxx"
 #include "CanvasPlacement.hxx"
+
 #include <simgear/canvas/events/KeyboardEvent.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 
@@ -31,9 +33,6 @@
 #include <osg/Geode>
 #include <osgText/Text>
 #include <osgViewer/Viewer>
-
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/foreach.hpp>
 
 namespace simgear
 {
@@ -64,18 +63,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   Canvas::Canvas(SGPropertyNode* node):
     PropertyBasedElement(node),
-    _canvas_mgr(0),
     _event_manager(new EventManager),
-    _size_x(-1),
-    _size_y(-1),
-    _view_width(-1),
-    _view_height(-1),
     _status(node, "status"),
-    _status_msg(node, "status-msg"),
-    _sampling_dirty(false),
-    _render_dirty(true),
-    _visible(true),
-    _render_always(false)
+    _status_msg(node, "status-msg")
   {
     _status = 0;
     setStatusFlags(MISSING_SIZE_X | MISSING_SIZE_Y);
@@ -281,7 +271,7 @@ namespace canvas
 
     if( _visible || _render_always )
     {
-      BOOST_FOREACH(CanvasWeakPtr canvas_weak, _child_canvases)
+      for(auto& canvas_weak: _child_canvases)
       {
         // TODO should we check if the image the child canvas is displayed
         //      within is really visible?
@@ -293,7 +283,7 @@ namespace canvas
       if( _render_dirty )
       {
         // Also mark all canvases this canvas is displayed within as dirty
-        BOOST_FOREACH(CanvasWeakPtr canvas_weak, _parent_canvases)
+        for(auto& canvas_weak: _parent_canvases)
         {
           CanvasPtr canvas = canvas_weak.lock();
           if( canvas )
@@ -522,8 +512,8 @@ namespace canvas
   {
     const std::string& name = node->getNameString();
 
-    if(    boost::starts_with(name, "status")
-        || boost::starts_with(name, "data-") )
+    if(    strutils::starts_with(name, "status")
+        || strutils::starts_with(name, "data-") )
       return;
     _render_dirty = true;
 
@@ -538,7 +528,7 @@ namespace canvas
         if( !placements.empty() )
         {
           bool placement_dirty = false;
-          BOOST_FOREACH(PlacementPtr& placement, placements)
+          for(auto& placement: placements)
           {
             // check if change can be directly handled by placement
             if(    placement->getProps() == node->getParent()

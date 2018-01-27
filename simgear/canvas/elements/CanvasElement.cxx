@@ -31,10 +31,6 @@
 #include <osg/StateAttribute>
 #include <osg/Version>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
-
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -219,7 +215,7 @@ namespace canvas
 
     // The transform node keeps a reference on this element, so ensure it is
     // deleted.
-    BOOST_FOREACH(osg::Group* parent, _transform->getParents())
+    for(osg::Group* parent: group->getParents())
     {
       parent->removeChild(_transform.get());
     }
@@ -228,8 +224,8 @@ namespace canvas
     setVisible(false);
     removeListener();
 
-    _parent = 0;
-    _transform = 0;
+    _parent = nullptr;
+    _transform = nullptr;
   }
 
   //----------------------------------------------------------------------------
@@ -341,7 +337,8 @@ namespace canvas
     if( listeners == _listener.end() )
       return false;
 
-    BOOST_FOREACH(EventListener const& listener, listeners->second)
+    for(auto const& listener: listeners->second)
+    {
       try
       {
         listener(event);
@@ -354,6 +351,7 @@ namespace canvas
           "canvas::Element: event handler error: '" << ex.what() << "'"
         );
       }
+    }
 
     return true;
   }
@@ -526,7 +524,7 @@ namespace canvas
     if( parent == _node )
     {
       const std::string& name = child->getNameString();
-      if( boost::starts_with(name, "data-") )
+      if( strutils::starts_with(name, "data-") )
         return;
       else if( StyleInfo const* style_info = getStyleInfo(name) )
       {
@@ -541,7 +539,7 @@ namespace canvas
       }
       else if( name == "update" )
         return update(0);
-      else if( boost::starts_with(name, "blend-") )
+      else if( strutils::starts_with(name, "blend-") )
         return (void)(_attributes_dirty |= BLEND_FUNC);
     }
     else if(   parent
@@ -578,8 +576,8 @@ namespace canvas
 
     // TODO generalize CSS property parsing
     const std::string RECT("rect(");
-    if(    !boost::ends_with(clip, ")")
-        || !boost::starts_with(clip, RECT) )
+    if(    !strutils::ends_with(clip, ")")
+        || !strutils::starts_with(clip, RECT) )
     {
       SG_LOG(SG_GENERAL, SG_WARN, "Canvas: invalid clip: " << clip);
       return;
@@ -791,11 +789,8 @@ namespace canvas
     PropertyBasedElement(node),
     _canvas( canvas ),
     _parent( parent ),
-    _attributes_dirty( 0 ),
     _transform( new osg::MatrixTransform ),
-    _style( parent_style ),
-    _scissor( 0 ),
-    _drawable( 0 )
+    _style( parent_style )
   {
     staticInit();
 
@@ -924,7 +919,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::setupStyle()
   {
-    BOOST_FOREACH( Style::value_type style, _style )
+    for(auto const& style: _style)
       setStyle(style.second);
   }
 

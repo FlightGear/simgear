@@ -68,10 +68,10 @@ namespace canvas
 
       void setSVGPath(const std::string& svgPath);
 
-      void setRect(const SGRect<float>& r);
-      void setRoundRect(const SGRect<float>& r, float radiusX, float radiusY = -1.0);
-    protected:
+      void setRect(const SGRectf& r);
+      void setRoundRect(const SGRectf& r, float radiusX, float radiusY = -1.0);
 
+    protected:
       enum PathAttributes
       {
         CMDS       = LAST_ATTRIBUTE << 1,

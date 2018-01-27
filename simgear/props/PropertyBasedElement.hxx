@@ -20,6 +20,7 @@
 #define SG_PROPERTY_BASED_ELEMENT_HXX_
 
 #include <simgear/props/props.hxx>
+#include <simgear/std/type_traits.hxx>
 #include <simgear/structure/SGWeakReferenced.hxx>
 
 namespace simgear
@@ -120,11 +121,9 @@ namespace simgear
        * @see setDataProp
        */
       template<class T>
-      typename boost::disable_if<
-        boost::is_same<T, SGPropertyNode*>,
-        T
-      >::type getDataProp( const std::string& name,
-                           const T& def = T() ) const
+      std::enable_if_t<!std::is_same<T, SGPropertyNode*>::value, T>
+      getDataProp( const std::string& name,
+                   const T& def = {} ) const
       {
         SGPropertyNode* node = getDataProp<SGPropertyNode*>(name);
         if( node )
@@ -140,11 +139,9 @@ namespace simgear
        * @see setDataProp
        */
       template<class T>
-      typename boost::enable_if<
-        boost::is_same<T, SGPropertyNode*>,
-        T
-      >::type getDataProp( const std::string& name,
-                           SGPropertyNode* = NULL ) const
+      std::enable_if_t<std::is_same<T, SGPropertyNode*>::value, T>
+      getDataProp( const std::string& name,
+                   SGPropertyNode* = nullptr ) const
       {
         const std::string& attr = dataPropToAttrName(name);
         if( attr.empty() )

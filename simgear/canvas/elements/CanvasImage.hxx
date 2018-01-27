@@ -100,8 +100,8 @@ namespace canvas
        *
        */
       void setSourceRect(const SGRect<float>& sourceRect);
-    protected:
 
+    protected:
       enum ImageAttributes
       {
         SRC_RECT       = LAST_ATTRIBUTE << 1, // Source image rectangle
@@ -134,9 +134,9 @@ namespace canvas
       osg::ref_ptr<osg::Vec2Array> _texCoords;
       osg::ref_ptr<osg::Vec4Array> _colors;
 
-      SGPropertyNode *_node_src_rect;
-      SGRect<float>   _src_rect,
-                      _region;
+      SGPropertyNode *_node_src_rect = nullptr;
+      SGRect<float>   _src_rect {0, 0},
+                      _region   {0, 0};
 
       SVGpreserveAspectRatio _preserve_aspect_ratio;
 

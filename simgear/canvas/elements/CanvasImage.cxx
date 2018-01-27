@@ -117,9 +117,7 @@ namespace canvas
                 ElementWeakPtr parent ):
     Element(canvas, node, parent_style, parent),
     _texture(new osg::Texture2D),
-    _node_src_rect( node->getNode("source", 0, true) ),
-    _src_rect(0,0),
-    _region(0,0)
+    _node_src_rect( node->getNode("source", 0, true) )
   {
     staticInit();
 
@@ -634,7 +632,9 @@ namespace canvas
       // Abort pending request
       if( _http_request )
       {
-          Canvas::getSystemAdapter()->getHTTPClient()->cancelRequest(_http_request, "setting new image");
+        Canvas::getSystemAdapter()
+          ->getHTTPClient()
+          ->cancelRequest(_http_request, "setting new image");
         _http_request.reset();
       }
 

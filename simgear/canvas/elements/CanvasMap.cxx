@@ -18,13 +18,14 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include <simgear_config.h>
+
 #include "CanvasMap.hxx"
 #include "map/geo_node_pair.hxx"
 #include "map/projection.hxx"
 
-#include <cmath>
+#include <simgear/misc/strutils.hxx>
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <cmath>
 
 #define LOG_GEO_RET(msg) \
   {\
@@ -73,13 +74,8 @@ namespace canvas
     Group(canvas, node, parent_style, parent)
   {
     staticInit();
-    if (node->getChild(PROJECTION) &&
-        (node->getChild(PROJECTION)->getStringValue() == WEB_MERCATOR)) {
-      _projection = (boost::shared_ptr<HorizontalProjection>) new WebMercatorProjection();
-    } else {
-      _projection = (boost::shared_ptr<HorizontalProjection>) new SansonFlamsteedProjection();
-    }
-    _projection_dirty = true;
+
+    projectionNodeChanged(node->getChild(PROJECTION));
   }
 
   //----------------------------------------------------------------------------
@@ -124,7 +120,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Map::childAdded(SGPropertyNode* parent, SGPropertyNode* child)
   {
-    if( boost::ends_with(child->getNameString(), GEO) )
+    if( strutils::ends_with(child->getNameString(), GEO) )
       _geo_nodes[child].reset(new GeoNodePair());
     else if( parent != _node && child->getNameString() == HDG )
       _hdg_nodes.insert(child);
@@ -135,7 +131,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Map::childRemoved(SGPropertyNode* parent, SGPropertyNode* child)
   {
-    if( boost::ends_with(child->getNameString(), GEO) )
+    if( strutils::ends_with(child->getNameString(), GEO) )
       // TODO remove from other node
       _geo_nodes.erase(child);
     else if( parent != _node && child->getName() == HDG )
@@ -157,7 +153,7 @@ namespace canvas
     {
       const std::string& name = child->getNameString();
 
-      if( boost::ends_with(name, GEO) )
+      if( strutils::ends_with(name, GEO) )
         return geoNodeChanged(child);
       else if( name == HDG )
         return hdgNodeChanged(child);
@@ -188,20 +184,27 @@ namespace canvas
       _projection->setRange(child->getDoubleValue());
     else if( child->getNameString() == SCREEN_RANGE )
       _projection->setScreenRange(child->getDoubleValue());
-    else if( child->getNameString() == PROJECTION ) {
-      if (child->getStringValue() == WEB_MERCATOR) {
-        _projection = (boost::shared_ptr<HorizontalProjection>) new WebMercatorProjection();
-      } else {
-        _projection = (boost::shared_ptr<HorizontalProjection>) new SansonFlamsteedProjection();
-      }
-      _projection->setWorldPosition(_node->getDoubleValue(REF_LAT),
-                                    _node->getDoubleValue(REF_LON) );
-      _projection->setOrientation(_node->getFloatValue(HDG));
-      _projection->setScreenRange(_node->getDoubleValue(SCREEN_RANGE));
-      _projection->setRange(_node->getDoubleValue(RANGE));
-      _projection_dirty = true;
-    } else
+    else if( child->getNameString() == PROJECTION )
+      projectionNodeChanged(child);
+    else
       return Group::childChanged(child);
+
+    _projection_dirty = true;
+  }
+
+  //----------------------------------------------------------------------------
+  void Map::projectionNodeChanged(SGPropertyNode* child)
+  {
+    if(child && child->getStringValue() == WEB_MERCATOR)
+      _projection = std::make_shared<WebMercatorProjection>();
+    else
+      _projection = std::make_shared<SansonFlamsteedProjection>();
+
+    _projection->setWorldPosition(_node->getDoubleValue(REF_LAT),
+                                  _node->getDoubleValue(REF_LON) );
+    _projection->setOrientation(_node->getFloatValue(HDG));
+    _projection->setScreenRange(_node->getDoubleValue(SCREEN_RANGE));
+    _projection->setRange(_node->getDoubleValue(RANGE));
 
     _projection_dirty = true;
   }

@@ -23,12 +23,9 @@
 #include "CanvasMap.hxx"
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
+
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
-
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lambda/core.hpp>
 
 namespace simgear
 {
@@ -138,7 +135,7 @@ namespace canvas
     if( !_transform.valid() )
     {
       warnTransformExpired("getElementById");
-      return ElementPtr();
+      return {};
     }
 
     std::vector<GroupPtr> groups;
@@ -153,14 +150,14 @@ namespace canvas
         groups.push_back(group);
     }
 
-    BOOST_FOREACH( GroupPtr group, groups )
+    for(auto group: groups)
     {
       ElementPtr el = group->getElementById(id);
       if( el )
         return el;
     }
 
-    return ElementPtr();
+    return {};
   }
 
   //----------------------------------------------------------------------------
@@ -323,7 +320,7 @@ namespace canvas
   void Group::childChanged(SGPropertyNode* node)
   {
     SGPropertyNode* parent = node->getParent();
-    SGPropertyNode* grand_parent = parent ? parent->getParent() : NULL;
+    SGPropertyNode* grand_parent = parent ? parent->getParent() : nullptr;
 
     if(    grand_parent == _node
         && node->getNameString() == "z-index" )
@@ -399,7 +396,7 @@ namespace canvas
     if( !_transform.valid() )
     {
       warnTransformExpired("findChild");
-      return ElementPtr();
+      return {};
     }
 
     for(size_t i = 0; i < _transform->getNumChildren(); ++i)
@@ -418,7 +415,7 @@ namespace canvas
       }
     }
 
-    return ElementPtr();
+    return {};
   }
 
 } // namespace canvas

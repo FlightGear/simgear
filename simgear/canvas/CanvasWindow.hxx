@@ -104,7 +104,7 @@ namespace canvas
         DECORATION = 1
       };
 
-      uint32_t  _attributes_dirty;
+      uint32_t  _attributes_dirty {0};
 
       CanvasPtr        _canvas_decoration;
       CanvasWeakPtr    _canvas_content;
@@ -113,8 +113,8 @@ namespace canvas
       ImagePtr _image_content,
                _image_shadow;
 
-      bool _resizable,
-           _capture_events;
+      bool _resizable {false},
+           _capture_events {true};
 
       PropertyObject<int> _resize_top,
                           _resize_right,

@@ -18,7 +18,7 @@
 
 #include <simgear_config.h>
 #include "PropertyBasedElement.hxx"
-#include <boost/algorithm/string/predicate.hpp>
+#include <simgear/misc/strutils.hxx>
 
 namespace simgear
 {
@@ -130,7 +130,7 @@ namespace simgear
     // character that followed it by the same character converted to ASCII
     // uppercase.
 
-    if( !boost::starts_with(name, DATA_PREFIX) )
+    if( !strutils::starts_with(name, DATA_PREFIX) )
       return std::string();
 
     std::string data_name;

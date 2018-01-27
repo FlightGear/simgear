@@ -45,17 +45,17 @@ namespace canvas
            ElementWeakPtr parent = 0 );
       virtual ~Map();
 
-      virtual void update(double dt);
-
-      virtual void childAdded( SGPropertyNode * parent,
-                               SGPropertyNode * child );
-      virtual void childRemoved( SGPropertyNode * parent,
-                                 SGPropertyNode * child );
-      virtual void valueChanged(SGPropertyNode * child);
-
     protected:
+      virtual void updateImpl(double dt);
 
-      virtual void childChanged(SGPropertyNode * child);
+      void updateProjection(SGPropertyNode* type_node);
+
+      virtual void childAdded( SGPropertyNode* parent,
+                               SGPropertyNode* child );
+      virtual void childRemoved( SGPropertyNode* parent,
+                                 SGPropertyNode* child );
+      virtual void valueChanged(SGPropertyNode* child);
+      virtual void childChanged(SGPropertyNode* child);
 
       using GeoNodes =
         std::unordered_map<SGPropertyNode*, std::shared_ptr<GeoNodePair>>;

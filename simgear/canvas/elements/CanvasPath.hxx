@@ -40,8 +40,6 @@ namespace canvas
             ElementWeakPtr parent = 0 );
       virtual ~Path();
 
-      virtual void update(double dt);
-
       virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
 
       /** Add a segment with the given command and coordinates */
@@ -86,12 +84,14 @@ namespace canvas
 
       bool _hasSVG : 1;
       bool _hasRect : 1;
-      SGRect<float> _rect;
+      SGRectf _rect;
 
-      void parseRectToVGPath();
-      
+      virtual void updateImpl(double dt);
+
       virtual void childRemoved(SGPropertyNode * child);
       virtual void childChanged(SGPropertyNode * child);
+
+      void parseRectToVGPath();
   };
 
 } // namespace canvas

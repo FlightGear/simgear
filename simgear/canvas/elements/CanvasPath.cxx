@@ -691,40 +691,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Path::update(double dt)
-  {
-    if( _attributes_dirty & (CMDS | COORDS) )
-    {
-      _path->setSegments
-      (
-        _node->getChildValues<VGubyte, int>("cmd"),
-        _node->getChildValues<VGfloat, float>("coord")
-      );
-
-      _attributes_dirty &= ~(CMDS | COORDS);
-    }
-
-    // SVG path overrides manual cmd/coord specification
-    if ( _hasSVG && (_attributes_dirty & SVG))
-    {
-        CmdList cmds;
-        CoordList coords;
-        parseSVGPathToVGPath(_node->getStringValue("svg"), cmds, coords);
-        _path->setSegments(cmds, coords);
-        _attributes_dirty &= ~SVG;
-    }
-
-    if ( _hasRect &&(_attributes_dirty & RECT))
-    {
-        parseRectToVGPath();
-        _attributes_dirty &= ~RECT;
-
-    }
-
-    Element::update(dt);
-  }
-
-  //----------------------------------------------------------------------------
   osg::BoundingBox Path::getTransformedBounds(const osg::Matrix& m) const
   {
     return _path->getTransformedBounds(m);
@@ -827,6 +793,39 @@ namespace canvas
     setRect(r);
     _node->getChild("border-radius", 0, true)->setDoubleValue(radiusX);
     _node->getChild("border-radius", 1, true)->setDoubleValue(radiusY);
+  }
+
+  //----------------------------------------------------------------------------
+  void Path::updateImpl(double dt)
+  {
+    Element::updateImpl(dt);
+
+    if( _attributes_dirty & (CMDS | COORDS) )
+    {
+      _path->setSegments
+      (
+        _node->getChildValues<VGubyte, int>("cmd"),
+        _node->getChildValues<VGfloat, float>("coord")
+      );
+
+      _attributes_dirty &= ~(CMDS | COORDS);
+    }
+
+    // SVG path overrides manual cmd/coord specification
+    if( _hasSVG && (_attributes_dirty & SVG) )
+    {
+      CmdList cmds;
+      CoordList coords;
+      parseSVGPathToVGPath(_node->getStringValue("svg"), cmds, coords);
+      _path->setSegments(cmds, coords);
+      _attributes_dirty &= ~SVG;
+    }
+
+    if( _hasRect &&(_attributes_dirty & RECT) )
+    {
+      parseRectToVGPath();
+      _attributes_dirty &= ~RECT;
+    }
   }
 
   //----------------------------------------------------------------------------

@@ -70,7 +70,6 @@ namespace canvas
       virtual void update(double delta_time_sec);
       virtual void valueChanged(SGPropertyNode* node);
 
-      osg::Group* getGroup();
       const SGVec2<float> getPosition() const;
       const SGRect<float>  getScreenRegion() const;
 

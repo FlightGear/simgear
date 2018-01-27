@@ -85,13 +85,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Map::update(double dt)
+  void Map::updateImpl(double dt)
   {
-    for( GeoNodes::iterator it = _geo_nodes.begin();
-         it != _geo_nodes.end();
-         ++it )
+    Group::updateImpl(dt);
+
+    for(auto& it: _geo_nodes)
     {
-      GeoNodePair* geo_node = it->second.get();
+      GeoNodePair* geo_node = it.second.get();
       if(    !geo_node->isComplete()
           || (!geo_node->isDirty() && !_projection_dirty) )
         continue;
@@ -113,8 +113,6 @@ namespace canvas
       geo_node->setDirty(false);
     }
     _projection_dirty = false;
-
-    Group::update(dt);
   }
 
   //----------------------------------------------------------------------------

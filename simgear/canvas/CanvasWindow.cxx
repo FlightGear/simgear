@@ -99,15 +99,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  osg::Group* Window::getGroup()
-  {
-    return getMatrixTransform();
-  }
-
-  //----------------------------------------------------------------------------
   const SGVec2<float> Window::getPosition() const
   {
-    const osg::Matrix& m = getMatrixTransform()->getMatrix();
+    auto const& m = getMatrix();
     return SGVec2<float>( m(3, 0), m(3, 1) );
   }
 

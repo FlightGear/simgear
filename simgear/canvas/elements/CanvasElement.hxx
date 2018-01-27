@@ -49,6 +49,7 @@ namespace canvas
     public PropertyBasedElement
   {
     public:
+      using SceneGroupWeakPtr = osg::observer_ptr<osg::MatrixTransform>;
 
       /**
        * Store pointer to window as user data
@@ -142,8 +143,11 @@ namespace canvas
        */
       virtual bool isVisible() const;
 
-      osg::MatrixTransform* getMatrixTransform();
-      osg::MatrixTransform const* getMatrixTransform() const;
+      /**
+       * Get the according group in the OSG scene graph
+       */
+      // TODO ref_ptr
+      osg::MatrixTransform* getSceneGroup() const;
 
       /**
        * Transform position to local coordinages.
@@ -254,8 +258,8 @@ namespace canvas
 
       mutable uint32_t _attributes_dirty = 0;
 
-      osg::observer_ptr<osg::MatrixTransform> _transform;
-      std::vector<TransformType>              _transform_types;
+      SceneGroupWeakPtr             _scene_group;
+      std::vector<TransformType>    _transform_types;
 
       Style             _style;
       RelativeScissor  *_scissor = nullptr;
@@ -584,6 +588,10 @@ namespace canvas
       virtual osg::StateSet* getOrCreateStateSet();
 
       void setupStyle();
+
+      void updateMatrix() const;
+
+      virtual void updateImpl(double dt);
 
     private:
 

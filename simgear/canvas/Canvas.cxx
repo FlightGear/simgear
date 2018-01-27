@@ -226,6 +226,10 @@ namespace canvas
 
     if( _status & STATUS_DIRTY )
     {
+      // Retrieve reference here, to ensure the scene group is not deleted while
+      // creating the new texture and camera
+      osg::ref_ptr<osg::Group> root_scene_group = _root_group->getSceneGroup();
+
       _texture.setSize(_size_x, _size_y);
 
       if( !_texture.serviceable() )
@@ -251,7 +255,7 @@ namespace canvas
       parseColor(_node->getStringValue("background"), clear_color);
       camera->setClearColor(clear_color);
 
-      camera->addChild(_root_group->getMatrixTransform());
+      camera->addChild(root_scene_group);
 
       if( _texture.serviceable() )
       {

@@ -53,7 +53,6 @@ namespace canvas
              ElementWeakPtr parent = 0 );
       virtual ~Image();
 
-      virtual void update(double dt);
       virtual void valueChanged(SGPropertyNode* child);
 
       void setSrcCanvas(CanvasPtr canvas);
@@ -108,6 +107,8 @@ namespace canvas
         DEST_SIZE      = SRC_RECT << 1,       // Element size
         SRC_CANVAS     = DEST_SIZE << 1
       };
+
+      virtual void updateImpl(double dt);
 
       virtual void childChanged(SGPropertyNode * child);
 

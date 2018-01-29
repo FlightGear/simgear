@@ -274,6 +274,16 @@ namespace canvas
       }
 
       /**
+       * Set path fill opacity (Only used if fill is not "none")
+       */
+      void setFillOpacity(float opacity)
+      {
+        _fill_opacity =
+          static_cast<uint8_t>(SGMiscf::clip(opacity, 0.f, 1.f) * 255);
+        _attributes_dirty |= FILL_COLOR;
+      }
+
+      /**
        * Set path fill rule ("pseudo-nonzero" or "evenodd")
        *
        * @warning As the current nonzero implementation causes sever artifacts
@@ -300,7 +310,7 @@ namespace canvas
         else if( parseColor(stroke, _stroke_color) )
         {
           _mode |= VG_STROKE_PATH;
-                    _attributes_dirty |= STROKE_COLOR;
+          _attributes_dirty |= STROKE_COLOR;
         }
         else
         {
@@ -311,6 +321,16 @@ namespace canvas
             "canvas::Path Unknown stroke: " << stroke
           );
         }
+      }
+
+      /**
+       * Set path stroke opacity (only used if stroke is not "none")
+       */
+      void setStrokeOpacity(float opacity)
+      {
+        _stroke_opacity =
+          static_cast<uint8_t>(SGMiscf::clip(opacity, 0.f, 1.f) * 255);
+        _attributes_dirty |= STROKE_COLOR;
       }
 
       /**
@@ -380,31 +400,22 @@ namespace canvas
         osg::StateAttribute const* blend_func =
           state->getLastAppliedAttribute(osg::StateAttribute::BLENDFUNC);
 
-        // Initialize/Update the paint
-        if( _attributes_dirty & STROKE_COLOR )
-        {
-          if( _paint == VG_INVALID_HANDLE )
-            _paint = vgCreatePaint();
-
-          vgSetParameterfv(_paint, VG_PAINT_COLOR, 4, _stroke_color._v);
-
-          _attributes_dirty &= ~STROKE_COLOR;
-        }
-
-        // Initialize/update fill paint
-        if( _attributes_dirty & FILL_COLOR )
-        {
-          if( _paint_fill == VG_INVALID_HANDLE )
-            _paint_fill = vgCreatePaint();
-
-          vgSetParameterfv(_paint_fill, VG_PAINT_COLOR, 4, _fill_color._v);
-
-          _attributes_dirty &= ~FILL_COLOR;
-        }
-
         // Setup paint
         if( _mode & VG_STROKE_PATH )
         {
+          // Initialize/Update the paint
+          if( _attributes_dirty & STROKE_COLOR )
+          {
+            if( _paint == VG_INVALID_HANDLE )
+              _paint = vgCreatePaint();
+
+            auto color = _stroke_color;
+            color.a() *= _stroke_opacity / 255.f;
+            vgSetParameterfv(_paint, VG_PAINT_COLOR, 4, color._v);
+
+            _attributes_dirty &= ~STROKE_COLOR;
+          }
+
           vgSetPaint(_paint, VG_STROKE_PATH);
 
           vgSetf(VG_STROKE_LINE_WIDTH, _stroke_width);
@@ -416,6 +427,19 @@ namespace canvas
         }
         if( _mode & VG_FILL_PATH )
         {
+          // Initialize/update fill paint
+          if( _attributes_dirty & FILL_COLOR )
+          {
+            if( _paint_fill == VG_INVALID_HANDLE )
+              _paint_fill = vgCreatePaint();
+
+            auto color = _fill_color;
+            color.a() *= _fill_opacity / 255.f;
+            vgSetParameterfv(_paint_fill, VG_PAINT_COLOR, 4, color._v);
+
+            _attributes_dirty &= ~FILL_COLOR;
+          }
+
           vgSetPaint(_paint_fill, VG_FILL_PATH);
 
           vgSeti(VG_FILL_RULE, _fill_rule);
@@ -579,8 +603,10 @@ namespace canvas
 
       VGbitfield            _mode {0};
       osg::Vec4f            _fill_color;
+      uint8_t               _fill_opacity {255};
       VGFillRule            _fill_rule {VG_EVEN_ODD};
       osg::Vec4f            _stroke_color;
+      uint8_t               _stroke_opacity {255};
       VGfloat               _stroke_width {1};
       std::vector<VGfloat>  _stroke_dash;
       VGCapStyle            _stroke_linecap {VG_CAP_BUTT};
@@ -660,8 +686,10 @@ namespace canvas
     PathDrawableRef Path::*path = &Path::_path;
 
     addStyle("fill", "color", &PathDrawable::setFill, path);
+    addStyle("fill-opacity", "numeric", &PathDrawable::setFillOpacity, path);
     addStyle("fill-rule", "", &PathDrawable::setFillRule, path);
     addStyle("stroke", "color", &PathDrawable::setStroke, path);
+    addStyle("stroke-opacity", "numeric", &PathDrawable::setStrokeOpacity, path);
     addStyle("stroke-width", "numeric", &PathDrawable::setStrokeWidth, path);
     addStyle("stroke-dasharray", "", &PathDrawable::setStrokeDashArray, path);
     addStyle("stroke-linecap", "", &PathDrawable::setStrokeLinecap, path);

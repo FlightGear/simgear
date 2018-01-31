@@ -164,13 +164,23 @@ public:
             // (eg Ibiblio) and retry up to the max count
             const int retries = (thumbnailCache[u].retryCount++);
             if (retries < 3) {
-                SG_LOG(SG_IO, SG_INFO, "Download failed for: " << u << ", will retry");
+                SG_LOG(SG_IO, SG_DEBUG, "Download failed for: " << u << ", will retry");
                 thumbnailCache[u].requestPending = true;
                 pendingThumbnails.push_back(u);
             }
         } else {
             // any other failure.
             thumbnailCache[u].requestPending = false;
+
+            // if this was a cache refresh, let's report the cached data instead
+            SGPath cachePath = pathInCache(u);
+            if (cachePath.exists()) {
+                SG_LOG(SG_IO, SG_WARN, "Download failed for: " << u << ", will use old cached data");
+                cachePath.touch(); // touch the file so we don't repeat this danxce
+                // kick a load from the cache
+                
+                queueLoadFromPersistentCache(u, cachePath);
+            }
         }
 
         downloadNextPendingThumbnail();
@@ -208,16 +218,23 @@ public:
         }
     }
     
-    void addToPersistentCache(const std::string& url, const std::string& imageBytes)
+    SGPath pathInCache(const std::string& url) const
     {
-        std::string hash = hashForUrl(url);
+        const auto hash = hashForUrl(url);
         // append the correct file suffix
         auto pos = url.rfind('.');
         if (pos == std::string::npos) {
-            return;
+            return SGPath();
         }
         
-        SGPath cachePath = path / "ThumbnailCache" / (hash + url.substr(pos));
+        return path / "ThumbnailCache" / (hash + url.substr(pos));
+    }
+
+    void addToPersistentCache(const std::string& url, const std::string& imageBytes)
+    {
+       // this will over-write the existing file if we are refreshing,
+        // since we use 'truncatr' to open the new file
+        SGPath cachePath = pathInCache(url);
         sg_ofstream fstream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
         fstream.write(imageBytes.data(), imageBytes.size());
         fstream.close();
@@ -229,23 +246,17 @@ public:
     
     bool checkPersistentCache(const std::string& url)
     {
-        std::string hash = hashForUrl(url);
-        // append the correct file suffix
-        auto pos = url.rfind('.');
-        if (pos == std::string::npos) {
-            return false;
-        }
-        
-        SGPath cachePath = path / "ThumbnailCache" / (hash + url.substr(pos));
+        SGPath cachePath = pathInCache(url);
         if (!cachePath.exists()) {
             return false;
         }
         
         // check age, if it's too old, expire and download again
         int age = time(nullptr) - cachePath.modTime();
-        if (age > SECONDS_PER_DAY * 7) { // cache for seven days
-            SG_LOG(SG_IO, SG_INFO, "expiring old cached thumbnail " << url);
-            cachePath.remove();
+        const int cacheMaxAge = SECONDS_PER_DAY * 7;
+        if (age > cacheMaxAge) { // cache for seven days
+            // note we do *not* remove the file data here, since the
+            // cache refresh might fail
             return false;
         }
         
@@ -263,7 +274,7 @@ public:
             entry.pathOnDisk = path;
             it = thumbnailCache.insert(it, std::make_pair(url, entry));
         } else {
-            assert(it->second.pathOnDisk == path);
+            assert(it->second.pathOnDisk.isNull() || (it->second.pathOnDisk == path));
         }
         
         if (it->second.requestPending) {

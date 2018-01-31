@@ -42,6 +42,7 @@
 
 #if defined(SG_WINDOWS)
 #  include <direct.h>
+#  include <sys/utime.h>
 #endif
 
 #include "sg_path.hxx"

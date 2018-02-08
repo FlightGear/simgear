@@ -213,6 +213,19 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool Window::handleEvent(const EventPtr& event)
+  {
+    if( auto mouse_event = dynamic_cast<MouseEvent*>(event.get()) )
+    {
+      mouse_event->local_pos =
+      mouse_event->client_pos =
+        mouse_event->screen_pos - toOsg(getPosition());
+    }
+
+    return Image::handleEvent(event);
+  }
+
+  //----------------------------------------------------------------------------
   void Window::parseDecorationBorder(const std::string& str)
   {
     _decoration_border = simgear::CSSBorder::parse(str);

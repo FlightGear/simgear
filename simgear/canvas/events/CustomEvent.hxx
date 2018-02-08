@@ -58,6 +58,8 @@ namespace canvas
                    bool bubbles = false,
                    StringMap const& data = StringMap() );
 
+      CustomEvent* clone(int type = 0) const override;
+
       /**
        * Set user data
        */

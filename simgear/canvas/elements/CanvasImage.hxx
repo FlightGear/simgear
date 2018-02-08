@@ -93,7 +93,7 @@ namespace canvas
 
       const SGRect<float>& getRegion() const;
 
-      bool handleEvent(const EventPtr& event);
+      bool handleEvent(const EventPtr& event) override;
 
       /**
        *

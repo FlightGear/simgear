@@ -66,6 +66,11 @@ namespace canvas
       virtual ~Event();
 
       /**
+       * Clone event and set to the given type (Same type if not specified)
+       */
+      virtual Event* clone(int type = 0) const = 0;
+
+      /**
        * Get whether this events support bubbling
        */
       virtual bool canBubble() const;

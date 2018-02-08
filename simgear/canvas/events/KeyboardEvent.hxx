@@ -45,6 +45,7 @@ namespace canvas
 
       KeyboardEvent();
       KeyboardEvent(const osgGA::GUIEventAdapter& ea);
+      KeyboardEvent* clone(int type = 0) const override;
 
       void setKey(uint32_t key);
       void setUnmodifiedKey(uint32_t key);

@@ -114,6 +114,8 @@ namespace canvas
         return handled;
       }
       case Event::DRAG:
+      case Event::DRAG_START:
+      case Event::DRAG_END:
         if( !_last_mouse_down.valid() )
           return false;
         else

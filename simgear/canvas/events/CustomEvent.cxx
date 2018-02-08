@@ -47,6 +47,14 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  CustomEvent* CustomEvent::clone(int type) const
+  {
+    auto event = new CustomEvent(*this);
+    event->type = type;
+    return event;
+  }
+
+  //----------------------------------------------------------------------------
   void CustomEvent::setDetail(StringMap const& data)
   {
     detail = data;

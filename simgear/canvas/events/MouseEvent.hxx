@@ -36,6 +36,7 @@ namespace canvas
     public:
       MouseEvent();
       MouseEvent(const osgGA::GUIEventAdapter& ea);
+      MouseEvent* clone(int type = 0) const override;
 
       virtual bool canBubble() const;
 

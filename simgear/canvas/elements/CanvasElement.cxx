@@ -271,8 +271,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::setFocus()
   {
-    CanvasPtr canvas = _canvas.lock();
-    if( canvas )
+    if( auto canvas = _canvas.lock() )
       canvas->setFocusElement(this);
   }
 

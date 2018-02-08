@@ -70,6 +70,14 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  KeyboardEvent* KeyboardEvent::clone(int type) const
+  {
+    auto event = new KeyboardEvent(*this);
+    event->type = type;
+    return event;
+  }
+
+  //----------------------------------------------------------------------------
   void KeyboardEvent::setKey(uint32_t key)
   {
     _name.clear();

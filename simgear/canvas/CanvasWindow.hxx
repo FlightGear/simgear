@@ -96,6 +96,8 @@ namespace canvas
       void handleResize( uint8_t mode,
                          const osg::Vec2f& offset = osg::Vec2f() );
 
+      bool handleEvent(const EventPtr& event) override;
+
     protected:
 
       enum Attributes

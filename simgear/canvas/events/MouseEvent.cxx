@@ -49,6 +49,14 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  MouseEvent* MouseEvent::clone(int type) const
+  {
+    auto event = new MouseEvent(*this);
+    event->type = type;
+    return event;
+  }
+
+  //----------------------------------------------------------------------------
   bool MouseEvent::canBubble() const
   {
     // Check if event supports bubbling

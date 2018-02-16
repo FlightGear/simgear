@@ -137,10 +137,8 @@ void SGSampleGroup::update( double dt ) {
         _changed = false;
     }
 
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
+    for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
+        SGSoundSample *sample = current->second;
 
         if ( !sample->is_valid_source() && sample->is_playing() && !sample->test_out_of_range()) {
             start_playing_sample(sample);
@@ -156,7 +154,7 @@ void SGSampleGroup::update( double dt ) {
 bool SGSampleGroup::add( SGSharedPtr<SGSoundSample> sound,
                          const std::string& refname )
 {
-    sample_map_iterator sample_it = _samples.find( refname );
+    auto sample_it = _samples.find( refname );
     if ( sample_it != _samples.end() ) {
         // sample name already exists
         return false;
@@ -170,7 +168,7 @@ bool SGSampleGroup::add( SGSharedPtr<SGSoundSample> sound,
 // remove a sound effect, return true if successful
 bool SGSampleGroup::remove( const std::string &refname ) {
 
-    sample_map_iterator sample_it = _samples.find( refname );
+    auto sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
         // sample was not found
         return false;
@@ -187,7 +185,7 @@ bool SGSampleGroup::remove( const std::string &refname ) {
 
 // return true of the specified sound exists in the sound manager system
 bool SGSampleGroup::exists( const std::string &refname ) {
-    sample_map_iterator sample_it = _samples.find( refname );
+    auto sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
         // sample was not found
         return false;
@@ -200,7 +198,7 @@ bool SGSampleGroup::exists( const std::string &refname ) {
 // return a pointer to the SGSoundSample if the specified sound exists
 // in the sound manager system, otherwise return NULL
 SGSoundSample *SGSampleGroup::find( const std::string &refname ) {
-    sample_map_iterator sample_it = _samples.find( refname );
+    auto sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
         // sample was not found
         return NULL;
@@ -214,10 +212,8 @@ void
 SGSampleGroup::stop ()
 {
     _pause = true;
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
+    for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
+        SGSoundSample *sample = current->second;
         _smgr->sample_destroy( sample );
     }
 }
@@ -228,11 +224,9 @@ SGSampleGroup::suspend ()
 {
     if (_active && _pause == false) {
         _pause = true;
-        sample_map_iterator sample_current = _samples.begin();
-        sample_map_iterator sample_end = _samples.end();
-        for ( ; sample_current != sample_end; ++sample_current ) {
+        for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
 #ifdef ENABLE_SOUND
-            SGSoundSample *sample = sample_current->second;
+            SGSoundSample *sample = current->second;
             _smgr->sample_suspend( sample );
 #endif
         }
@@ -246,10 +240,8 @@ SGSampleGroup::resume ()
 {
     if (_active && _pause == true) {
 #ifdef ENABLE_SOUND
-        sample_map_iterator sample_current = _samples.begin();
-        sample_map_iterator sample_end = _samples.end();
-        for ( ; sample_current != sample_end; ++sample_current ) {
-            SGSoundSample *sample = sample_current->second;
+        for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
+            SGSoundSample *sample = current->second;
             _smgr->sample_resume( sample );
         }
         testForMgrError("resume");
@@ -319,10 +311,8 @@ void SGSampleGroup::update_pos_and_orientation() {
        velocity = toVec3f( hlOr.backTransform(_velocity*SG_FEET_TO_METER) );
     }
 
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
+    for (auto current =_samples.begin(); current !=_samples.end(); ++current ) {
+        SGSoundSample *sample = current->second;
         sample->set_master_volume( _volume );
         sample->set_orientation( _orientation );
         sample->set_rotation( ec2body );

@@ -36,8 +36,6 @@
 #include <cstring>
 #include <cassert>
 
-#include <boost/foreach.hpp>
-
 #include "soundmgr.hxx"
 #include "readwav.hxx"
 #include "soundmgr_openal_private.hxx"
@@ -283,10 +281,9 @@ void SGSoundMgr::activate()
     if ( is_working() ) {
         _active = true;
                 
-        sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
-        sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
-        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-            SGSampleGroup *sgrp = sample_grp_current->second;
+        for ( auto current = d->_sample_groups.begin();
+                   current != d->_sample_groups.end(); ++current ) {
+            SGSampleGroup *sgrp = current->second;
             sgrp->activate();
         }
     }
@@ -298,25 +295,23 @@ void SGSoundMgr::stop()
 {
 #ifdef ENABLE_SOUND
     // first stop all sample groups
-    sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
-    sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
-    for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-        SGSampleGroup *sgrp = sample_grp_current->second;
+    for ( auto current = d->_sample_groups.begin();
+               current != d->_sample_groups.end(); ++current ) {
+        SGSampleGroup *sgrp = current->second;
         sgrp->stop();
     }
 
     // clear all OpenAL sources
-    BOOST_FOREACH(ALuint source, d->_free_sources) {
+    for(ALuint source : d->_free_sources) {
         alDeleteSources( 1 , &source );
         testForError("SGSoundMgr::stop: delete sources");
     }
     d->_free_sources.clear();
 
     // clear any OpenAL buffers before shutting down
-    buffer_map_iterator buffers_current = d->_buffers.begin();
-    buffer_map_iterator buffers_end = d->_buffers.end();
-    for ( ; buffers_current != buffers_end; ++buffers_current ) {
-        refUint ref = buffers_current->second;
+    for ( auto current = d->_buffers.begin();
+               current != d->_buffers.begin(); ++current ) {
+        refUint ref = current->second;
         ALuint buffer = ref.id;
         alDeleteBuffers(1, &buffer);
         testForError("SGSoundMgr::stop: delete buffers");
@@ -342,10 +337,9 @@ void SGSoundMgr::suspend()
 {
 #ifdef ENABLE_SOUND
     if (is_working()) {
-        sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
-        sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
-        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-            SGSampleGroup *sgrp = sample_grp_current->second;
+        for ( auto current = d->_sample_groups.begin();
+                   current != d->_sample_groups.end(); ++current ) {
+            SGSampleGroup *sgrp = current->second;
             sgrp->stop();
         }
         _active = false;
@@ -357,10 +351,9 @@ void SGSoundMgr::resume()
 {
 #ifdef ENABLE_SOUND
     if (is_working()) {
-        sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
-        sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
-        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-            SGSampleGroup *sgrp = sample_grp_current->second;
+        for ( auto current = d->_sample_groups.begin();
+                   current != d->_sample_groups.end(); ++current ) {
+            SGSampleGroup *sgrp = current->second;
             sgrp->resume();
         }
         _active = true;
@@ -379,10 +372,9 @@ void SGSoundMgr::update( double dt )
             d->update_pos_and_orientation();
         }
 
-        sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
-        sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
-        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-            SGSampleGroup *sgrp = sample_grp_current->second;
+        for ( auto current = d->_sample_groups.begin();
+                   current != d->_sample_groups.end(); ++current ) {
+            SGSampleGroup *sgrp = current->second;
             sgrp->update(dt);
         }
 
@@ -420,7 +412,7 @@ if (isNaN(toVec3f(_velocity).data())) printf("NaN in listener velocity\n");
 // add a sample group, return true if successful
 bool SGSoundMgr::add( SGSampleGroup *sgrp, const std::string& refname )
 {
-    sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
+    auto sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it != d->_sample_groups.end() ) {
         // sample group already exists
         return false;
@@ -436,7 +428,7 @@ bool SGSoundMgr::add( SGSampleGroup *sgrp, const std::string& refname )
 // remove a sound effect, return true if successful
 bool SGSoundMgr::remove( const std::string &refname )
 {
-    sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
+    auto sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it == d->_sample_groups.end() ) {
         // sample group was not found.
         return false;
@@ -450,7 +442,7 @@ bool SGSoundMgr::remove( const std::string &refname )
 
 // return true of the specified sound exists in the sound manager system
 bool SGSoundMgr::exists( const std::string &refname ) {
-    sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
+    auto sample_grp_it = d->_sample_groups.find( refname );
     return ( sample_grp_it != d->_sample_groups.end() );
 }
 
@@ -458,7 +450,7 @@ bool SGSoundMgr::exists( const std::string &refname ) {
 // return a pointer to the SGSampleGroup if the specified sound exists
 // in the sound manager system, otherwise return NULL
 SGSampleGroup *SGSoundMgr::find( const std::string &refname, bool create ) {
-    sample_group_map_iterator sample_grp_it = d->_sample_groups.find( refname );
+    auto sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it == d->_sample_groups.end() ) {
         // sample group was not found.
         if (create) {
@@ -508,9 +500,7 @@ unsigned int SGSoundMgr::request_source()
 // Free up a source id for further use
 void SGSoundMgr::release_source( unsigned int source )
 {
-    vector<ALuint>::iterator it;
-
-    it = std::find(d->_sources_in_use.begin(), d->_sources_in_use.end(), source);
+    auto it = std::find(d->_sources_in_use.begin(), d->_sources_in_use.end(), source);
     if ( it != d->_sources_in_use.end() ) {
   #ifdef ENABLE_SOUND
         ALint result;
@@ -538,7 +528,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
         void *sample_data = NULL;
 
         // see if the sample name is already cached
-        buffer_map_iterator buffer_it = d->_buffers.find( sample_name );
+        auto buffer_it = d->_buffers.find( sample_name );
         if ( buffer_it != d->_buffers.end() ) {
             buffer_it->second.refctr++;
             buffer = buffer_it->second.id;
@@ -632,7 +622,7 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
     if ( !sample->is_queue() )
     {
         std::string sample_name = sample->get_sample_name();
-        buffer_map_iterator buffer_it = d->_buffers.find( sample_name );
+        auto buffer_it = d->_buffers.find( sample_name );
         if ( buffer_it == d->_buffers.end() ) {
             // buffer was not found
             return;

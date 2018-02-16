@@ -40,8 +40,6 @@
 
 
 typedef std::map < std::string, SGSharedPtr<SGSoundSample> > sample_map;
-typedef sample_map::iterator sample_map_iterator;
-typedef sample_map::const_iterator const_sample_map_iterator;
 
 class SGSoundMgr;
 

@@ -140,6 +140,7 @@ SGSoundMgr::SGSoundMgr() :
     _changed(true),
     _volume(0.0),
     _velocity(SGVec3d::zeros()),
+    _bad_doppler(false),
     _renderer("unknown"),
     _vendor("unknown")
 {

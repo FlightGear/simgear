@@ -35,9 +35,16 @@
 #include <fstream>
 #include <cstdlib>
 
-#ifdef _WIN32
-#  include <direct.h>
+#if !defined(SG_WINDOWS)
+#  include <sys/types.h>
+#  include <utime.h>
 #endif
+
+#if defined(SG_WINDOWS)
+#  include <direct.h>
+#  include <sys/utime.h>
+#endif
+
 #include "sg_path.hxx"
 
 #include <boost/algorithm/string/case_conv.hpp>
@@ -52,13 +59,13 @@ using simgear::strutils::starts_with;
 static const char sgDirPathSep = '/';
 static const char sgDirPathSepBad = '\\';
 
-#ifdef _WIN32
+#if defined(SG_WINDOWS)
 const char SGPath::pathListSep[] = ";"; // this is null-terminated
 #else
 const char SGPath::pathListSep[] = ":"; // ditto
 #endif
 
-#ifdef _WIN32
+#if defined(SG_WINDOWS)
 #include <ShlObj.h>         // for CSIDL
 // TODO: replace this include file with the official <versionhelpers.h> header
 // included in the Windows 8.1 SDK
@@ -1047,4 +1054,41 @@ std::string SGPath::fileUrl() const
         SG_LOG(SG_GENERAL, SG_WARN, "Cannot convert relative path to a URL:" << path);
         return {};
     }
+}
+
+//------------------------------------------------------------------------------
+bool SGPath::touch()
+{
+    if (!permissionsAllowsWrite())
+    {
+        SG_LOG(SG_IO, SG_WARN, "file touch failed: (" << *this << ")"
+               " reason: access denied" );
+        return false;
+    }
+    
+    if (!exists()) {
+        SG_LOG(SG_IO, SG_WARN, "file touch failed: (" << *this << ")"
+               " reason: missing file");
+        return false;
+    }
+#if defined(SG_WINDOWS)
+    auto ws = wstr();
+    // set this link for docs on behaviour here, about passing nullptr
+    // https://msdn.microsoft.com/en-us/library/aa273399(v=vs.60).aspx
+    if (_wutime(ws.c_str(), nullptr) != 0) {
+        SG_LOG(SG_IO, SG_WARN, "file touch failed: (" << *this << ")"
+               " reason: _wutime failed with error:" << simgear::strutils::error_string(errno));
+        return false;
+    }
+#else
+    if (::utime(path.c_str(), nullptr) != 0) {
+        SG_LOG(SG_IO, SG_WARN, "file touch failed: (" << *this << ")"
+               " reason: utime failed with error:" << simgear::strutils::error_string(errno));
+        return false;
+    }
+#endif
+    
+    // reset the cache flag so we re-stat() on next request
+    _cached = false;
+    return true;
 }

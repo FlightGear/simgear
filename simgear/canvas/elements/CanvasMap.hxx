@@ -22,9 +22,9 @@
 
 #include "CanvasGroup.hxx"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace simgear
 {
@@ -45,45 +45,41 @@ namespace canvas
            ElementWeakPtr parent = 0 );
       virtual ~Map();
 
-      virtual void update(double dt);
-
-      virtual void childAdded( SGPropertyNode * parent,
-                               SGPropertyNode * child );
-      virtual void childRemoved( SGPropertyNode * parent,
-                                 SGPropertyNode * child );
-      virtual void valueChanged(SGPropertyNode * child);
-
     protected:
+      virtual void updateImpl(double dt);
 
-      virtual void childChanged(SGPropertyNode * child);
+      void updateProjection(SGPropertyNode* type_node);
 
-      typedef boost::unordered_map< SGPropertyNode*,
-                                    boost::shared_ptr<GeoNodePair>
-                                  > GeoNodes;
-      typedef boost::unordered_set<SGPropertyNode*> NodeSet;
+      virtual void childAdded( SGPropertyNode* parent,
+                               SGPropertyNode* child );
+      virtual void childRemoved( SGPropertyNode* parent,
+                                 SGPropertyNode* child );
+      virtual void valueChanged(SGPropertyNode* child);
+      virtual void childChanged(SGPropertyNode* child);
+
+      using GeoNodes =
+        std::unordered_map<SGPropertyNode*, std::shared_ptr<GeoNodePair>>;
+      using NodeSet = std::unordered_set<SGPropertyNode*>;
 
       GeoNodes _geo_nodes;
       NodeSet  _hdg_nodes;
-      boost::shared_ptr<HorizontalProjection> _projection;
-      bool _projection_dirty;
+      std::shared_ptr<HorizontalProjection> _projection;
+      bool _projection_dirty = false;
 
       struct GeoCoord
       {
-        GeoCoord():
-          type(INVALID),
-          value(0)
-        {}
         enum
         {
           INVALID,
           LATITUDE,
           LONGITUDE
-        } type;
-        double value;
+        } type = INVALID;
+        double value = 0;
       };
 
-      void geoNodeChanged(SGPropertyNode * child);
-      void hdgNodeChanged(SGPropertyNode * child);
+      void projectionNodeChanged(SGPropertyNode* child);
+      void geoNodeChanged(SGPropertyNode* child);
+      void hdgNodeChanged(SGPropertyNode* child);
 
       GeoCoord parseGeoCoord(const std::string& val) const;
   };

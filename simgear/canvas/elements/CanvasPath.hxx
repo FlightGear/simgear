@@ -40,8 +40,6 @@ namespace canvas
             ElementWeakPtr parent = 0 );
       virtual ~Path();
 
-      virtual void update(double dt);
-
       virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
 
       /** Add a segment with the given command and coordinates */
@@ -68,10 +66,10 @@ namespace canvas
 
       void setSVGPath(const std::string& svgPath);
 
-      void setRect(const SGRect<float>& r);
-      void setRoundRect(const SGRect<float>& r, float radiusX, float radiusY = -1.0);
-    protected:
+      void setRect(const SGRectf& r);
+      void setRoundRect(const SGRectf& r, float radiusX, float radiusY = -1.0);
 
+    protected:
       enum PathAttributes
       {
         CMDS       = LAST_ATTRIBUTE << 1,
@@ -86,12 +84,14 @@ namespace canvas
 
       bool _hasSVG : 1;
       bool _hasRect : 1;
-      SGRect<float> _rect;
+      SGRectf _rect;
 
-      void parseRectToVGPath();
-      
+      virtual void updateImpl(double dt);
+
       virtual void childRemoved(SGPropertyNode * child);
       virtual void childChanged(SGPropertyNode * child);
+
+      void parseRectToVGPath();
   };
 
 } // namespace canvas

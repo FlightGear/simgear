@@ -25,12 +25,13 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/math/SGRect.hxx>
 #include <simgear/nasal/cppbind/cppbind_fwd.hxx>
+#include <simgear/std/type_traits.hxx>
 
 #include <boost/function/function_fwd.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <boost/call_traits.hpp>
-#include <boost/type_traits.hpp>
 
+#include <array>
+#include <initializer_list>
 #include <map>
 #include <string>
 #include <vector>
@@ -75,11 +76,66 @@ namespace nasal
 
   naRef to_nasal_helper(naContext c, const free_function_t& func);
 
+  namespace detail
+  {
+    template<class T>
+    naRef array_to_nasal(naContext c, const T* arr, size_t size);
+  }
+
+  /**
+   * Convert a fixed size array to a Nasal vector
+   */
+  template<class T, size_t N>
+  naRef to_nasal_helper(naContext c, const T(&array)[N])
+  {
+    return detail::array_to_nasal(c, array, N);
+  }
+
+  /**
+   * Convert a fixed size C++ array to a Nasal vector
+   */
+  template<class T, size_t N>
+  naRef to_nasal_helper(naContext c, const std::array<T, N>& array)
+  {
+    return detail::array_to_nasal(c, array.data(), N);
+  }
+
+  /**
+   * Convert a std::initializer_list to a Nasal vector
+   */
+  template<class T>
+  naRef to_nasal_helper(naContext c, std::initializer_list<T> list)
+  {
+    return detail::array_to_nasal(c, list.begin(), list.size());
+  }
+
+  /**
+   * Convert std::vector to a Nasal vector
+   */
+  template< template<class T, class Alloc> class Vector,
+            class T,
+            class Alloc
+          >
+  std::enable_if_t<
+    std::is_same<Vector<T,Alloc>, std::vector<T,Alloc>>::value,
+    naRef
+  >
+  to_nasal_helper(naContext c, const Vector<T, Alloc>& vec)
+  {
+    return detail::array_to_nasal(c, vec.data(), vec.size());
+  }
+
+  /**
+   * Convert a std::map to a Nasal Hash
+   */
+  template<class Value>
+  naRef to_nasal_helper(naContext c, const std::map<std::string, Value>& map);
+
   /**
    * Convert an enum value to the according numeric value
    */
   template<class T>
-  typename boost::enable_if< boost::is_enum<T>, naRef >::type
+  std::enable_if_t<std::is_enum<T>::value, naRef>
   to_nasal_helper(naContext c, T val)
   {
     return naNum(val);
@@ -89,7 +145,7 @@ namespace nasal
    * Convert a numeric type to Nasal number
    */
   template<class T>
-  typename boost::enable_if< boost::is_arithmetic<T>, naRef >::type
+  std::enable_if_t<std::is_arithmetic<T>::value, naRef>
   to_nasal_helper(naContext c, T num)
   {
     return naNum(num);
@@ -99,67 +155,40 @@ namespace nasal
    * Convert a 2d vector to Nasal vector with 2 elements
    */
   template<class Vec2>
-  typename boost::enable_if<is_vec2<Vec2>, naRef>::type
-  to_nasal_helper(naContext c, const Vec2& vec);
-
-  /**
-   * Convert a std::map to a Nasal Hash
-   */
-  template<class Value>
-  naRef to_nasal_helper(naContext c, const std::map<std::string, Value>& map);
-
-  /**
-   * Convert a fixed size array to a Nasal vector
-   */
-  template<class T, size_t N>
-  naRef to_nasal_helper(naContext c, const T(&array)[N]);
-
-  /**
-   * Convert std::vector to Nasal vector
-   */
-  template< template<class T, class Alloc> class Vector,
-            class T,
-            class Alloc
-          >
-  typename boost::enable_if< boost::is_same< Vector<T,Alloc>,
-                                             std::vector<T,Alloc>
-                                           >,
-                             naRef
-                           >::type
-  to_nasal_helper(naContext c, const Vector<T, Alloc>& vec)
-  {
-    naRef ret = naNewVector(c);
-    naVec_setsize(c, ret, static_cast<int>(vec.size()));
-    for(int i = 0; i < static_cast<int>(vec.size()); ++i)
-      naVec_set(ret, i, to_nasal_helper(c, vec[i]));
-    return ret;
-  }
-
-  //----------------------------------------------------------------------------
-  template<class Vec2>
-  typename boost::enable_if<is_vec2<Vec2>, naRef>::type
+  std::enable_if_t<is_vec2<Vec2>::value, naRef>
   to_nasal_helper(naContext c, const Vec2& vec)
   {
-    // We take just double because in Nasal every number is represented as
-    // double
-    double nasal_vec[2] = {
+    return to_nasal_helper(c, {
+      // We take just double because in Nasal every number is represented as
+      // double
       static_cast<double>(vec[0]),
       static_cast<double>(vec[1])
-    };
-    return to_nasal_helper(c, nasal_vec);
+    });
+  }
+
+  /**
+   * Convert a SGRect to a Nasal vector with position and size of the rect
+   */
+  template<class T>
+  naRef to_nasal_helper(naContext c, const SGRect<T>& rect)
+  {
+    return to_nasal_helper(c, {
+      static_cast<double>(rect.x()),
+      static_cast<double>(rect.y()),
+      static_cast<double>(rect.width()),
+      static_cast<double>(rect.height())
+    });
   }
 
   //----------------------------------------------------------------------------
   template<class T>
-  naRef to_nasal_helper(naContext c, const SGRect<T>& rect)
+  naRef detail::array_to_nasal(naContext c, const T* arr, size_t size)
   {
-    std::vector<double> vec(4);
-    vec[0] = rect.x();
-    vec[1] = rect.y();
-    vec[2] = rect.width();
-    vec[3] = rect.height();
-
-    return to_nasal_helper(c, vec);
+    naRef ret = naNewVector(c);
+    naVec_setsize(c, ret, static_cast<int>(size));
+    for(int i = 0; i < static_cast<int>(size); ++i)
+      naVec_set(ret, i, to_nasal_helper(c, arr[i]));
+    return ret;
   }
 
   //----------------------------------------------------------------------------
@@ -180,17 +209,6 @@ namespace nasal
       );
 
     return hash;
-  }
-
-  //----------------------------------------------------------------------------
-  template<class T, size_t N>
-  naRef to_nasal_helper(naContext c, const T(&array)[N])
-  {
-    naRef ret = naNewVector(c);
-    naVec_setsize(c, ret, static_cast<int>(N));
-    for(int i = 0; i < static_cast<int>(N); ++i)
-      naVec_set(ret, i, to_nasal_helper(c, array[i]));
-    return ret;
   }
 
 } // namespace nasal

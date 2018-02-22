@@ -827,7 +827,7 @@ SGPropertyNode::trace_read () const
  * Last used attribute
  * Update as needed when enum Attribute is changed
  */
-const int SGPropertyNode::LAST_USED_ATTRIBUTE = PRESERVE;
+const int SGPropertyNode::LAST_USED_ATTRIBUTE = PROTECTED;
 
 /**
  * Default constructor: always creates a root node.

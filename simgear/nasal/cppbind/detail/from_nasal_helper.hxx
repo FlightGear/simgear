@@ -28,14 +28,13 @@
 #include <simgear/nasal/cppbind/NasalMe.hxx>
 #include <simgear/nasal/cppbind/NasalMethodHolder.hxx>
 #include <simgear/nasal/cppbind/NasalObjectHolder.hxx>
+#include <simgear/std/type_traits.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include <boost/type_traits.hpp>
-#include <boost/utility/enable_if.hpp>
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -143,9 +142,7 @@ namespace nasal
    * Convert a Nasal number to a C++ numeric type
    */
   template<class T>
-  typename boost::enable_if< boost::is_arithmetic<T>,
-                             T
-                           >::type
+  std::enable_if_t<std::is_arithmetic<T>::value, T>
   from_nasal_helper(naContext c, naRef ref, const T*)
   {
     naRef num = naNumValue(ref);
@@ -175,16 +172,38 @@ namespace nasal
   }
 
   /**
+   * Convert a Nasal vector to a std::array
+   */
+  template<class T, std::size_t N>
+  std::array<T, N>
+  from_nasal_helper(naContext c, naRef ref, const std::array<T, N>*)
+  {
+    if( !naIsVector(ref) )
+      throw bad_nasal_cast("Not a vector");
+
+    if( naVec_size(ref) != N )
+      throw bad_nasal_cast(
+        "Expected vector with " + std::to_string(N) + " elements"
+      );
+
+    std::array<T, N> arr;
+
+    for(std::size_t i = 0; i < N; ++i)
+      arr[i] = from_nasal_helper(c, naVec_get(ref, i), static_cast<T*>(0));
+
+    return arr;
+  }
+
+  /**
    * Convert a Nasal vector of 2 elements to a 2d vector
    */
   template<class Vec2>
-  typename boost::enable_if<is_vec2<Vec2>, Vec2>::type
+  std::enable_if_t<is_vec2<Vec2>::value, Vec2>
   from_nasal_helper(naContext c, naRef ref, const Vec2*)
   {
-    std::vector<double> vec =
-      from_nasal_helper(c, ref, static_cast<std::vector<double>*>(0));
-    if( vec.size() != 2 )
-      throw bad_nasal_cast("Expected vector with two elements");
+    auto vec =
+      from_nasal_helper(c, ref, static_cast<std::array<double, 2>*>(0));
+
     return Vec2(vec[0], vec[1]);
   }
 
@@ -194,10 +213,8 @@ namespace nasal
   template<class T>
   SGRect<T> from_nasal_helper(naContext c, naRef ref, const SGRect<T>*)
   {
-    std::vector<double> vec =
-      from_nasal_helper(c, ref, static_cast<std::vector<double>*>(0));
-    if( vec.size() != 4 )
-      throw bad_nasal_cast("Expected vector with four elements");
+    auto vec =
+      from_nasal_helper(c, ref, static_cast<std::array<double, 4>*>(0));
 
     return SGRect<T>(vec[0], vec[1], vec[2], vec[3]);
   }

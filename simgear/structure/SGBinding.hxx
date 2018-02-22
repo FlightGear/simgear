@@ -58,13 +58,14 @@ public:
   /**
    * Destructor.
    */
-  virtual ~SGBinding ();
+  virtual ~SGBinding () = default;
 
   
   /**
-   * clear internal state of the binding back to empty. This is useful
-   * if you don't want the 'remove on delete' behaviour of the 
-   * destructor.
+   * Clear internal state of the binding back to empty.
+   *
+   * This was particularly useful when SGBinding's destructor had its 'remove
+   * on delete' behaviour, however this is not the case anymore.
    */
   void clear();
 

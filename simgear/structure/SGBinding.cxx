@@ -41,12 +41,6 @@ SGBinding::SGBinding(const SGPropertyNode* node, SGPropertyNode* root)
   read(node, root);
 }
 
-SGBinding::~SGBinding()
-{
-  if(_arg && _arg->getParent())
-    _arg->getParent()->removeChild(_arg->getName(), _arg->getIndex());
-}
-
 void
 SGBinding::clear()
 {

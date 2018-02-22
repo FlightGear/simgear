@@ -23,12 +23,9 @@
 #include "CanvasMap.hxx"
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
+
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
-
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lambda/core.hpp>
 
 namespace simgear
 {
@@ -48,7 +45,7 @@ namespace canvas
   ElementFactories Group::_child_factories;
   const std::string Group::TYPE_NAME = "group";
 
-  void warnTransformExpired(const char* member_name)
+  void warnSceneGroupExpired(const char* member_name)
   {
     SG_LOG( SG_GENERAL,
             SG_WARN,
@@ -135,63 +132,57 @@ namespace canvas
   //----------------------------------------------------------------------------
   ElementPtr Group::getElementById(const std::string& id)
   {
-    if( !_transform.valid() )
+    if( !_scene_group.valid() )
     {
-      warnTransformExpired("getElementById");
-      return ElementPtr();
+      warnSceneGroupExpired("getElementById");
+      return {};
     }
 
-    std::vector<GroupPtr> groups;
-    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+    // TODO check search algorithm. Not completely breadth-first and might be
+    //      possible with using less dynamic memory
+    std::vector<GroupPtr> child_groups;
+    for(size_t i = 0; i < _scene_group->getNumChildren(); ++i)
     {
       const ElementPtr& el = getChildByIndex(i);
       if( el->get<std::string>("id") == id )
         return el;
 
-      Group* group = dynamic_cast<Group*>(el.get());
-      if( group )
-        groups.push_back(group);
+      if( Group* child_group = dynamic_cast<Group*>(el.get()) )
+        child_groups.push_back(child_group);
     }
 
-    BOOST_FOREACH( GroupPtr group, groups )
+    for(auto group: child_groups)
     {
-      ElementPtr el = group->getElementById(id);
-      if( el )
+      if( ElementPtr el = group->getElementById(id) )
         return el;
     }
 
-    return ElementPtr();
+    return {};
   }
 
   //----------------------------------------------------------------------------
   void Group::clearEventListener()
   {
-    if( !_transform.valid() )
-      return warnTransformExpired("clearEventListener");
-
-    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
-      getChildByIndex(i)->clearEventListener();
-
     Element::clearEventListener();
-  }
 
-  //----------------------------------------------------------------------------
-  void Group::update(double dt)
-  {
-    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
-      getChildByIndex(i)->update(dt);
+    if( !_scene_group.valid() )
+      return warnSceneGroupExpired("clearEventListener");
 
-    Element::update(dt);
+    for(size_t i = 0; i < _scene_group->getNumChildren(); ++i)
+      getChildByIndex(i)->clearEventListener();
   }
 
   //----------------------------------------------------------------------------
   bool Group::traverse(EventVisitor& visitor)
   {
-    // Iterate in reverse order as last child is displayed on top
-    for(size_t i = _transform->getNumChildren(); i --> 0;)
+    if( _scene_group.valid() )
     {
-      if( getChildByIndex(i)->accept(visitor) )
-        return true;
+      // Iterate in reverse order as last child is displayed on top
+      for(size_t i = _scene_group->getNumChildren(); i --> 0;)
+      {
+        if( getChildByIndex(i)->accept(visitor) )
+          return true;
+      }
     }
     return false;
   }
@@ -206,13 +197,13 @@ namespace canvas
     bool handled = setStyleImpl(style, style_info);
     if( style_info->inheritable )
     {
-      if( !_transform.valid() )
+      if( !_scene_group.valid() )
       {
-        warnTransformExpired("setStyle");
+        warnSceneGroupExpired("setStyle");
         return false;
       }
 
-      for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+      for(size_t i = 0; i < _scene_group->getNumChildren(); ++i)
         handled |= getChildByIndex(i)->setStyle(style, style_info);
     }
 
@@ -222,26 +213,20 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::BoundingBox Group::getTransformedBounds(const osg::Matrix& m) const
   {
-    osg::BoundingBox bb;
-    if( !_transform.valid() )
+    if( !_scene_group.valid() )
     {
-      warnTransformExpired("getTransformedBounds");
-      return bb;
+      warnSceneGroupExpired("getTransformedBounds");
+      return {};
     }
 
-    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+    osg::BoundingBox bb;
+    for(size_t i = 0; i < _scene_group->getNumChildren(); ++i)
     {
-      const ElementPtr& child = getChildByIndex(i);
-      if( !child->getMatrixTransform()->getNodeMask() )
+      auto child = getChildByIndex(i);
+      if( !child || !child->isVisible() )
         continue;
 
-      bb.expandBy
-      (
-        child->getTransformedBounds
-        (
-          child->getMatrixTransform()->getMatrix() * m
-        )
-      );
+      bb.expandBy( child->getTransformedBounds(child->getMatrix() * m) );
     }
 
     return bb;
@@ -258,6 +243,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Group::updateImpl(double dt)
+  {
+    Element::updateImpl(dt);
+
+    for(size_t i = 0; i < _scene_group->getNumChildren(); ++i)
+      getChildByIndex(i)->update(dt);
+  }
+
+  //----------------------------------------------------------------------------
   void Group::childAdded(SGPropertyNode* child)
   {
     if( child->getParent() != _node )
@@ -266,13 +260,13 @@ namespace canvas
     ElementFactory child_factory = getChildFactory( child->getNameString() );
     if( child_factory )
     {
-      if( !_transform.valid() )
-        return warnTransformExpired("childAdded");
+      if( !_scene_group.valid() )
+        return warnSceneGroupExpired("childAdded");
 
       ElementPtr element = child_factory(_canvas, child, _style, this);
 
       // Add to osg scene graph...
-      _transform->addChild( element->getMatrixTransform() );
+      _scene_group->addChild(element->getSceneGroup());
 
       // ...and ensure correct ordering
       handleZIndexChanged(element);
@@ -293,7 +287,7 @@ namespace canvas
 
     if( getChildFactory(node->getNameString()) )
     {
-      if( !_transform.valid() )
+      if( !_scene_group.valid() )
         // If transform is destroyed also all children are destroyed, so we can
         // not do anything here.
         return;
@@ -323,7 +317,7 @@ namespace canvas
   void Group::childChanged(SGPropertyNode* node)
   {
     SGPropertyNode* parent = node->getParent();
-    SGPropertyNode* grand_parent = parent ? parent->getParent() : NULL;
+    SGPropertyNode* grand_parent = parent ? parent->getParent() : nullptr;
 
     if(    grand_parent == _node
         && node->getNameString() == "z-index" )
@@ -333,16 +327,18 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::handleZIndexChanged(ElementPtr child, int z_index)
   {
-    if( !child || !_transform.valid() )
+    if( !child || !_scene_group.valid() )
       return;
 
-    osg::ref_ptr<osg::MatrixTransform> tf = child->getMatrixTransform();
-    size_t index = _transform->getChildIndex(tf),
+    // Keep reference to prevent deleting while removing and re-inserting later
+    osg::ref_ptr<osg::MatrixTransform> tf = child->getSceneGroup();
+
+    size_t index = _scene_group->getChildIndex(tf),
            index_new = index;
 
     for(;; ++index_new)
     {
-      if( index_new + 1 == _transform->getNumChildren() )
+      if( index_new + 1 == _scene_group->getNumChildren() )
         break;
 
       // Move to end of block with same index (= move upwards until the next
@@ -369,8 +365,8 @@ namespace canvas
         return;
     }
 
-    _transform->removeChild(index);
-    _transform->insertChild(index_new, tf);
+    _scene_group->removeChild(index);
+    _scene_group->insertChild(index_new, tf);
 
     SG_LOG
     (
@@ -383,26 +379,27 @@ namespace canvas
   //----------------------------------------------------------------------------
   ElementPtr Group::getChildByIndex(size_t index) const
   {
-    assert(_transform.valid());
-    OSGUserData* ud =
-      static_cast<OSGUserData*>(_transform->getChild(index)->getUserData());
-    assert(ud);
-    if (ud)
-        return ud->element;
-    return nullptr;
+    assert( _scene_group.valid() );
+
+    auto child = _scene_group->getChild(index);
+    if( !child )
+      return {};
+
+    auto ud = static_cast<OSGUserData*>(child->getUserData());
+    return ud ? ud->element : ElementPtr();
   }
 
   //----------------------------------------------------------------------------
   ElementPtr Group::findChild( const SGPropertyNode* node,
                                const std::string& id ) const
   {
-    if( !_transform.valid() )
+    if( !_scene_group.valid() )
     {
-      warnTransformExpired("findChild");
-      return ElementPtr();
+      warnSceneGroupExpired("findChild");
+      return {};
     }
 
-    for(size_t i = 0; i < _transform->getNumChildren(); ++i)
+    for(size_t i = 0; i < _scene_group->getNumChildren(); ++i)
     {
       ElementPtr el = getChildByIndex(i);
 
@@ -418,7 +415,7 @@ namespace canvas
       }
     }
 
-    return ElementPtr();
+    return {};
   }
 
 } // namespace canvas

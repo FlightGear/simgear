@@ -865,12 +865,12 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::StateSet* Text::getOrCreateStateSet()
   {
-    if( !_transform.valid() )
-      return 0;
+    if( !_scene_group.valid() )
+      return nullptr;
 
     // Only check for StateSet on Transform, as the text stateset is shared
     // between all text instances using the same font (texture).
-    return _transform->getOrCreateStateSet();
+    return _scene_group->getOrCreateStateSet();
   }
 
 } // namespace canvas

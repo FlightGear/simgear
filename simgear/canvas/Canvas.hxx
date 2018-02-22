@@ -33,7 +33,7 @@
 #include <osg/NodeCallback>
 #include <osg/observer_ptr>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <string>
 
 namespace simgear
@@ -211,21 +211,21 @@ namespace canvas
 
     protected:
 
-      CanvasMgr        *_canvas_mgr;
+      CanvasMgr *_canvas_mgr {nullptr};
 
-      boost::scoped_ptr<EventManager> _event_manager;
+      std::unique_ptr<EventManager> _event_manager;
 
-      int _size_x,
-          _size_y,
-          _view_width,
-          _view_height;
+      int _size_x {-1},
+          _size_y {-1},
+          _view_width {-1},
+          _view_height {-1};
 
       PropertyObject<int>           _status;
       PropertyObject<std::string>   _status_msg;
 
-      bool _sampling_dirty,
-           _render_dirty,
-           _visible;
+      bool _sampling_dirty {false},
+           _render_dirty {true},
+           _visible {true};
 
       ODGauge _texture;
 
@@ -235,7 +235,9 @@ namespace canvas
       ElementWeakPtr _focus_element;
 
       CullCallbackPtr _cull_callback;
-      bool _render_always; //!< Used to disable automatic lazy rendering (culling)
+
+      /** Used to disable automatic lazy rendering (culling) */
+      bool _render_always {false};
 
       std::vector<SGPropertyNode*> _dirty_placements;
       std::vector<Placements> _placements;

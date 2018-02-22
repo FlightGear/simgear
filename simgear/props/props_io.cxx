@@ -251,6 +251,9 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
         setFlag(mode, SGPropertyNode::USERARCHIVE, val, location);
       else if( att_name == "preserve" )
         setFlag(mode, SGPropertyNode::PRESERVE, val, location);
+      // note we intentionally don't handle PROTECTED here, it's
+      // designed to be only set from compiled code, not loaded
+      // dynamically.
 
       // Check for an alias.
       else if( att_name == "alias" )

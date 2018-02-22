@@ -31,10 +31,6 @@
 #include <osg/StateAttribute>
 #include <osg/Version>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
-
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -214,22 +210,22 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::onDestroy()
   {
-    if( !_transform.valid() )
+    if( !_scene_group.valid() )
       return;
 
     // The transform node keeps a reference on this element, so ensure it is
     // deleted.
-    BOOST_FOREACH(osg::Group* parent, _transform->getParents())
+    for(osg::Group* parent: _scene_group->getParents())
     {
-      parent->removeChild(_transform.get());
+      parent->removeChild(_scene_group.get());
     }
 
     // Hide in case someone still holds a reference
     setVisible(false);
     removeListener();
 
-    _parent = 0;
-    _transform = 0;
+    _parent = nullptr;
+    _scene_group = nullptr;
   }
 
   //----------------------------------------------------------------------------
@@ -247,29 +243,8 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::update(double dt)
   {
-    if( !isVisible() )
-      return;
-
-    // Trigger matrix update
-    getMatrix();
-
-    // Update bounding box on manual update (manual updates pass zero dt)
-    if( dt == 0 && _drawable )
-      _drawable->getBound();
-
-    if( (_attributes_dirty & BLEND_FUNC) && _transform.valid() )
-    {
-      parseBlendFunc(
-        _transform->getOrCreateStateSet(),
-        _node->getChild("blend-source"),
-        _node->getChild("blend-destination"),
-        _node->getChild("blend-source-rgb"),
-        _node->getChild("blend-destination-rgb"),
-        _node->getChild("blend-source-alpha"),
-        _node->getChild("blend-destination-alpha")
-      );
-      _attributes_dirty &= ~BLEND_FUNC;
-    }
+    if( isVisible() )
+      updateImpl(dt);
   }
 
   //----------------------------------------------------------------------------
@@ -341,7 +316,8 @@ namespace canvas
     if( listeners == _listener.end() )
       return false;
 
-    BOOST_FOREACH(EventListener const& listener, listeners->second)
+    for(auto const& listener: listeners->second)
+    {
       try
       {
         listener(event);
@@ -354,6 +330,7 @@ namespace canvas
           "canvas::Element: event handler error: '" << ex.what() << "'"
         );
       }
+    }
 
     return true;
   }
@@ -395,9 +372,9 @@ namespace canvas
       getBoundingBox()
 #endif
       .contains(osg::Vec3f(local_pos, 0));
-    else if( _transform.valid() )
+    else if( _scene_group.valid() )
       // ... for other elements, i.e. groups only a bounding sphere is available
-      return _transform->getBound().contains(osg::Vec3f(parent_pos, 0));
+      return _scene_group->getBound().contains(osg::Vec3f(parent_pos, 0));
     else
       return false;
   }
@@ -406,35 +383,32 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::setVisible(bool visible)
   {
-    if( _transform.valid() )
+    if( _scene_group.valid() )
       // TODO check if we need another nodemask
-      _transform->setNodeMask(visible ? 0xffffffff : 0);
+      _scene_group->setNodeMask(visible ? 0xffffffff : 0);
   }
 
   //----------------------------------------------------------------------------
   bool Element::isVisible() const
   {
-    return _transform.valid() && _transform->getNodeMask() != 0;
+    return _scene_group.valid() && _scene_group->getNodeMask() != 0;
   }
 
   //----------------------------------------------------------------------------
-  osg::MatrixTransform* Element::getMatrixTransform()
+  osg::MatrixTransform* Element::getSceneGroup() const
   {
-    return _transform.get();
-  }
-
-  //----------------------------------------------------------------------------
-  osg::MatrixTransform const* Element::getMatrixTransform() const
-  {
-    return _transform.get();
+    return _scene_group.get();
   }
 
   //----------------------------------------------------------------------------
   osg::Vec2f Element::posToLocal(const osg::Vec2f& pos) const
   {
-    getMatrix();
-    if (! _transform) return osg::Vec2f(pos[0], pos[1]);
-    const osg::Matrix& m = _transform->getInverseMatrix();
+    if( !_scene_group )
+      // TODO log warning?
+      return pos;
+
+    updateMatrix();
+    const osg::Matrix& m = _scene_group->getInverseMatrix();
     return osg::Vec2f
     (
       m(0, 0) * pos[0] + m(1, 0) * pos[1] + m(3, 0),
@@ -487,9 +461,6 @@ namespace canvas
     {
       if( child->getNameString() == NAME_TRANSFORM )
       {
-        if( !_transform.valid() )
-          return;
-
         if( child->getIndex() >= static_cast<int>(_transform_types.size()) )
         {
           SG_LOG
@@ -526,7 +497,7 @@ namespace canvas
     if( parent == _node )
     {
       const std::string& name = child->getNameString();
-      if( boost::starts_with(name, "data-") )
+      if( strutils::starts_with(name, "data-") )
         return;
       else if( StyleInfo const* style_info = getStyleInfo(name) )
       {
@@ -541,7 +512,7 @@ namespace canvas
       }
       else if( name == "update" )
         return update(0);
-      else if( boost::starts_with(name, "blend-") )
+      else if( strutils::starts_with(name, "blend-") )
         return (void)(_attributes_dirty |= BLEND_FUNC);
     }
     else if(   parent
@@ -565,6 +536,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::setClip(const std::string& clip)
   {
+    if( !_scene_group )
+      // TODO warn?
+      return;
+
     osg::StateSet* ss = getOrCreateStateSet();
     if( !ss )
       return;
@@ -578,8 +553,8 @@ namespace canvas
 
     // TODO generalize CSS property parsing
     const std::string RECT("rect(");
-    if(    !boost::ends_with(clip, ")")
-        || !boost::starts_with(clip, RECT) )
+    if(    !strutils::ends_with(clip, ")")
+        || !strutils::starts_with(clip, RECT) )
     {
       SG_LOG(SG_GENERAL, SG_WARN, "Canvas: invalid clip: " << clip);
       return;
@@ -619,7 +594,7 @@ namespace canvas
     }
 
     if( !_scissor )
-      _scissor = new RelativeScissor(_transform.get());
+      _scissor = new RelativeScissor(_scene_group.get());
 
     // <top>, <right>, <bottom>, <left>
     _scissor->x() = values[3];
@@ -643,26 +618,26 @@ namespace canvas
       _scissor->_coord_reference = rf;
   }
 
-    //----------------------------------------------------------------------------
-    void Element::setRotation(unsigned int index, double r)
-    {
-        _node->getChild(NAME_TRANSFORM, index, true)->setDoubleValue("rot", r);
-    }
+  //----------------------------------------------------------------------------
+  void Element::setRotation(unsigned int index, double r)
+  {
+    _node->getChild(NAME_TRANSFORM, index, true)->setDoubleValue("rot", r);
+  }
 
-    //----------------------------------------------------------------------------
-    void Element::setTranslation(unsigned int index, double x, double y)
-    {
-        SGPropertyNode* tf = _node->getChild(NAME_TRANSFORM, index, true);
-        tf->getChild("t", 0, true)->setDoubleValue(x);
-        tf->getChild("t", 1, true)->setDoubleValue(y);
-    }
+  //----------------------------------------------------------------------------
+  void Element::setTranslation(unsigned int index, double x, double y)
+  {
+    SGPropertyNode* tf = _node->getChild(NAME_TRANSFORM, index, true);
+    tf->getChild("t", 0, true)->setDoubleValue(x);
+    tf->getChild("t", 1, true)->setDoubleValue(y);
+  }
 
-    //----------------------------------------------------------------------------
-    void Element::setTransformEnabled(unsigned int index, bool enabled)
-    {
-        SGPropertyNode* tf = _node->getChild(NAME_TRANSFORM, index, true);
-        tf->setBoolValue("enabled", enabled);
-    }
+  //----------------------------------------------------------------------------
+  void Element::setTransformEnabled(unsigned int index, bool enabled)
+  {
+    SGPropertyNode* tf = _node->getChild(NAME_TRANSFORM, index, true);
+    tf->setBoolValue("enabled", enabled);
+  }
 
   //----------------------------------------------------------------------------
   osg::BoundingBox Element::getBoundingBox() const
@@ -676,8 +651,8 @@ namespace canvas
 
     osg::BoundingBox bb;
 
-    if( _transform.valid() )
-      bb.expandBy(_transform->getBound());
+    if( _scene_group.valid() )
+      bb.expandBy( _scene_group->getBound() );
 
     return bb;
   }
@@ -711,73 +686,11 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::Matrix Element::getMatrix() const
   {
-    if( !_transform )
+    if( !_scene_group )
       return osg::Matrix::identity();
 
-    if( !(_attributes_dirty & TRANSFORM) )
-      return _transform->getMatrix();
-
-    osg::Matrix m;
-    for( size_t i = 0; i < _transform_types.size(); ++i )
-    {
-      // Skip unused indizes...
-      if( _transform_types[i] == TT_NONE )
-        continue;
-
-      SGPropertyNode* tf_node = _node->getChild("tf", i, true);
-      if (!tf_node->getBoolValue("enabled", true)) {
-        continue; // skip disabled transforms
-      }
-
-      // Build up the matrix representation of the current transform node
-      osg::Matrix tf;
-      switch( _transform_types[i] )
-      {
-        case TT_MATRIX:
-          tf = osg::Matrix( tf_node->getDoubleValue("m[0]", 1),
-                            tf_node->getDoubleValue("m[1]", 0),
-                            0,
-                            tf_node->getDoubleValue("m[6]", 0),
-
-                            tf_node->getDoubleValue("m[2]", 0),
-                            tf_node->getDoubleValue("m[3]", 1),
-                            0,
-                            tf_node->getDoubleValue("m[7]", 0),
-
-                            0,
-                            0,
-                            1,
-                            0,
-
-                            tf_node->getDoubleValue("m[4]", 0),
-                            tf_node->getDoubleValue("m[5]", 0),
-                            0,
-                            tf_node->getDoubleValue("m[8]", 1) );
-          break;
-        case TT_TRANSLATE:
-          tf.makeTranslate( osg::Vec3f( tf_node->getDoubleValue("t[0]", 0),
-                                        tf_node->getDoubleValue("t[1]", 0),
-                                        0 ) );
-          break;
-        case TT_ROTATE:
-          tf.makeRotate( tf_node->getDoubleValue("rot", 0), 0, 0, 1 );
-          break;
-        case TT_SCALE:
-        {
-          float sx = tf_node->getDoubleValue("s[0]", 1);
-          // sy defaults to sx...
-          tf.makeScale( sx, tf_node->getDoubleValue("s[1]", sx), 1 );
-          break;
-        }
-        default:
-          break;
-      }
-      m.postMult( tf );
-    }
-    _transform->setMatrix(m);
-    _attributes_dirty &= ~TRANSFORM;
-
-    return m;
+    updateMatrix();
+    return _scene_group->getMatrix();
   }
 
   //----------------------------------------------------------------------------
@@ -791,11 +704,8 @@ namespace canvas
     PropertyBasedElement(node),
     _canvas( canvas ),
     _parent( parent ),
-    _attributes_dirty( 0 ),
-    _transform( new osg::MatrixTransform ),
-    _style( parent_style ),
-    _scissor( 0 ),
-    _drawable( 0 )
+    _scene_group( new osg::MatrixTransform ),
+    _style( parent_style )
   {
     staticInit();
 
@@ -807,15 +717,15 @@ namespace canvas
     );
 
     // Ensure elements are drawn in order they appear in the element tree
-    _transform->getOrCreateStateSet()
-              ->setRenderBinDetails
-              (
-                0,
-                "PreOrderBin",
-                osg::StateSet::OVERRIDE_RENDERBIN_DETAILS
-              );
+    _scene_group
+      ->getOrCreateStateSet()
+      ->setRenderBinDetails(
+        0,
+        "PreOrderBin",
+        osg::StateSet::OVERRIDE_RENDERBIN_DETAILS
+      );
 
-    _transform->setUserData( new OSGUserData(this) );
+    _scene_group->setUserData( new OSGUserData(this) );
   }
 
   //----------------------------------------------------------------------------
@@ -903,11 +813,21 @@ namespace canvas
   void Element::setDrawable( osg::Drawable* drawable )
   {
     _drawable = drawable;
-    assert( _drawable );
 
-    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+    if( !_drawable )
+    {
+      SG_LOG(SG_GL, SG_WARN, "canvas::Element::setDrawable: NULL drawable");
+      return;
+    }
+    if( !_scene_group )
+    {
+      SG_LOG(SG_GL, SG_WARN, "canvas::Element::setDrawable: NULL scenegroup");
+      return;
+    }
+
+    auto geode = new osg::Geode;
     geode->addDrawable(_drawable);
-    _transform->addChild(geode);
+    _scene_group->addChild(geode);
   }
 
   //----------------------------------------------------------------------------
@@ -915,17 +835,108 @@ namespace canvas
   {
     if( _drawable.valid() )
       return _drawable->getOrCreateStateSet();
-    if( _transform.valid() )
-      return _transform->getOrCreateStateSet();
-
-    return 0;
+    else if( _scene_group.valid() )
+      return _scene_group->getOrCreateStateSet();
+    else
+      return nullptr;
   }
 
   //----------------------------------------------------------------------------
   void Element::setupStyle()
   {
-    BOOST_FOREACH( Style::value_type style, _style )
+    for(auto const& style: _style)
       setStyle(style.second);
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::updateMatrix() const
+  {
+    if( !(_attributes_dirty & TRANSFORM) || !_scene_group )
+      return;
+
+    osg::Matrix m;
+    for( size_t i = 0; i < _transform_types.size(); ++i )
+    {
+      // Skip unused indizes...
+      if( _transform_types[i] == TT_NONE )
+        continue;
+
+      SGPropertyNode* tf_node = _node->getChild("tf", i, true);
+      if (!tf_node->getBoolValue("enabled", true)) {
+        continue; // skip disabled transforms
+      }
+
+      // Build up the matrix representation of the current transform node
+      osg::Matrix tf;
+      switch( _transform_types[i] )
+      {
+        case TT_MATRIX:
+          tf = osg::Matrix( tf_node->getDoubleValue("m[0]", 1),
+                            tf_node->getDoubleValue("m[1]", 0),
+                            0,
+                            tf_node->getDoubleValue("m[6]", 0),
+
+                            tf_node->getDoubleValue("m[2]", 0),
+                            tf_node->getDoubleValue("m[3]", 1),
+                            0,
+                            tf_node->getDoubleValue("m[7]", 0),
+
+                            0,
+                            0,
+                            1,
+                            0,
+
+                            tf_node->getDoubleValue("m[4]", 0),
+                            tf_node->getDoubleValue("m[5]", 0),
+                            0,
+                            tf_node->getDoubleValue("m[8]", 1) );
+          break;
+        case TT_TRANSLATE:
+          tf.makeTranslate( osg::Vec3f( tf_node->getDoubleValue("t[0]", 0),
+                                        tf_node->getDoubleValue("t[1]", 0),
+                                        0 ) );
+          break;
+        case TT_ROTATE:
+          tf.makeRotate( tf_node->getDoubleValue("rot", 0), 0, 0, 1 );
+          break;
+        case TT_SCALE:
+        {
+          float sx = tf_node->getDoubleValue("s[0]", 1);
+          // sy defaults to sx...
+          tf.makeScale( sx, tf_node->getDoubleValue("s[1]", sx), 1 );
+          break;
+        }
+        default:
+          break;
+      }
+      m.postMult( tf );
+    }
+    _scene_group->setMatrix(m);
+    _attributes_dirty &= ~TRANSFORM;
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::updateImpl(double dt)
+  {
+    updateMatrix();
+
+    // Update bounding box on manual update (manual updates pass zero dt)
+    if( dt == 0 && _drawable )
+      _drawable->getBound();
+
+    if( (_attributes_dirty & BLEND_FUNC) )
+    {
+      parseBlendFunc(
+        _scene_group->getOrCreateStateSet(),
+        _node->getChild("blend-source"),
+        _node->getChild("blend-destination"),
+        _node->getChild("blend-source-rgb"),
+        _node->getChild("blend-destination-rgb"),
+        _node->getChild("blend-source-alpha"),
+        _node->getChild("blend-destination-alpha")
+      );
+      _attributes_dirty &= ~BLEND_FUNC;
+    }
   }
 
 } // namespace canvas

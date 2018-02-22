@@ -88,8 +88,6 @@ namespace canvas
 
       virtual void clearEventListener();
 
-      virtual void update(double dt);
-
       virtual bool traverse(EventVisitor& visitor);
 
       virtual bool setStyle( const SGPropertyNode* child,
@@ -106,6 +104,8 @@ namespace canvas
        * to be managed.
        */
       virtual ElementFactory getChildFactory(const std::string& type) const;
+
+      virtual void updateImpl(double dt);
 
       virtual void childAdded(SGPropertyNode * child);
       virtual void childRemoved(SGPropertyNode * child);

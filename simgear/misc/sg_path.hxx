@@ -282,6 +282,13 @@ public:
      */
     std::string fileUrl() const;
     
+    /**
+     * Update the file modification timestamp to be 'now'. The contents will
+     * not be changed. (Same as POSIX 'touch' command). Will fail if the file
+     * does not exist or permissions do not allow writing.
+     */
+    bool touch();
+    
     enum StandardLocation
     {
       HOME,

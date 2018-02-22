@@ -814,7 +814,8 @@ public:
     TRACE_READ = 16,
     TRACE_WRITE = 32,
     USERARCHIVE = 64,
-    PRESERVE = 128
+    PRESERVE = 128,
+    PROTECTED   = 1 << 8,
     // beware: if you add another attribute here,
     // also update value of "LAST_USED_ATTRIBUTE".
   };
@@ -1854,7 +1855,7 @@ private:
   mutable std::string _buffer;
   simgear::props::Type _type;
   bool _tied;
-  int _attr;
+  int _attr = NO_ATTR;
 
   // The right kind of pointer...
   union {

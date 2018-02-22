@@ -24,13 +24,13 @@
 #include <simgear/canvas/CanvasEvent.hxx>
 #include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/misc/stdint.hxx> // for uint32_t
+#include <simgear/std/type_traits.hxx>
 
 #include <osg/BoundingBox>
 #include <osg/MatrixTransform>
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include <boost/type_traits/is_base_of.hpp>
 
 namespace osg
 {
@@ -49,6 +49,7 @@ namespace canvas
     public PropertyBasedElement
   {
     public:
+      using SceneGroupWeakPtr = osg::observer_ptr<osg::MatrixTransform>;
 
       /**
        * Store pointer to window as user data
@@ -142,8 +143,11 @@ namespace canvas
        */
       virtual bool isVisible() const;
 
-      osg::MatrixTransform* getMatrixTransform();
-      osg::MatrixTransform const* getMatrixTransform() const;
+      /**
+       * Get the according group in the OSG scene graph
+       */
+      // TODO ref_ptr
+      osg::MatrixTransform* getSceneGroup() const;
 
       /**
        * Transform position to local coordinages.
@@ -217,13 +221,14 @@ namespace canvas
        */
       template<typename Derived>
       static
-      typename boost::enable_if<
-        boost::is_base_of<Element, Derived>,
+      std::enable_if_t<
+        std::is_base_of<Element, Derived>::value,
         ElementPtr
-      >::type create( const CanvasWeakPtr& canvas,
-                      const SGPropertyNode_ptr& node,
-                      const Style& style = Style(),
-                      Element* parent = NULL )
+      >
+      create( const CanvasWeakPtr& canvas,
+              const SGPropertyNode_ptr& node,
+              const Style& style = Style(),
+              Element* parent = NULL )
       {
         return ElementPtr( new Derived(canvas, node, style, parent) );
       }
@@ -251,13 +256,13 @@ namespace canvas
       CanvasWeakPtr   _canvas;
       ElementWeakPtr  _parent;
 
-      mutable uint32_t _attributes_dirty;
+      mutable uint32_t _attributes_dirty = 0;
 
-      osg::observer_ptr<osg::MatrixTransform> _transform;
-      std::vector<TransformType>              _transform_types;
+      SceneGroupWeakPtr             _scene_group;
+      std::vector<TransformType>    _transform_types;
 
       Style             _style;
-      RelativeScissor  *_scissor;
+      RelativeScissor  *_scissor = nullptr;
 
       typedef std::vector<EventListener> Listener;
       typedef std::map<int, Listener> ListenerMap;
@@ -583,6 +588,10 @@ namespace canvas
       virtual osg::StateSet* getOrCreateStateSet();
 
       void setupStyle();
+
+      void updateMatrix() const;
+
+      virtual void updateImpl(double dt);
 
     private:
 

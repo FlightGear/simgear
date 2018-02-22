@@ -44,13 +44,6 @@ namespace nasal
       Hash newHash();
       String newString(const char* str);
 
-      /** Create a new nasal vector and fill it with the given values */
-      template<class... Vals>
-      naRef newVector(Vals ... vals)
-      {
-        return newVector({to_nasal(vals)...});
-      }
-
       /** Raise a nasal runtime error */
       template<class... Args>
       void runtimeError(const char* fmt, Args ... args) const
@@ -68,6 +61,13 @@ namespace nasal
       naRef to_nasal(const T(&array)[N]) const
       {
         return nasal::to_nasal(_ctx, array);
+      }
+
+      /** Create a nasal vector filled with the given values */
+      template<class... Vals>
+      naRef to_nasal_vec(Vals ... vals)
+      {
+        return newVector({to_nasal(vals)...});
       }
 
       template<class T>

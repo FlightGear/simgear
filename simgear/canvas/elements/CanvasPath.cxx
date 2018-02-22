@@ -206,23 +206,13 @@ namespace canvas
         return SGVec2f(-1.0f, -1.0f);
     }
 
-    //----------------------------------------------------------------------------
-
+  //----------------------------------------------------------------------------
   class Path::PathDrawable:
     public osg::Drawable
   {
     public:
       PathDrawable(Path* path):
-        _path_element(path),
-        _path(VG_INVALID_HANDLE),
-        _paint(VG_INVALID_HANDLE),
-        _paint_fill(VG_INVALID_HANDLE),
-        _attributes_dirty(~0),
-        _mode(0),
-        _fill_rule(VG_EVEN_ODD),
-        _stroke_width(1),
-        _stroke_linecap(VG_CAP_BUTT),
-        _stroke_linejoin(VG_JOIN_MITER)
+        _path_element(path)
       {
         setSupportsDisplayList(false);
         setDataVariance(Object::DYNAMIC);
@@ -284,6 +274,16 @@ namespace canvas
       }
 
       /**
+       * Set path fill opacity (Only used if fill is not "none")
+       */
+      void setFillOpacity(float opacity)
+      {
+        _fill_opacity =
+          static_cast<uint8_t>(SGMiscf::clip(opacity, 0.f, 1.f) * 255);
+        _attributes_dirty |= FILL_COLOR;
+      }
+
+      /**
        * Set path fill rule ("pseudo-nonzero" or "evenodd")
        *
        * @warning As the current nonzero implementation causes sever artifacts
@@ -310,7 +310,7 @@ namespace canvas
         else if( parseColor(stroke, _stroke_color) )
         {
           _mode |= VG_STROKE_PATH;
-                    _attributes_dirty |= STROKE_COLOR;
+          _attributes_dirty |= STROKE_COLOR;
         }
         else
         {
@@ -321,6 +321,16 @@ namespace canvas
             "canvas::Path Unknown stroke: " << stroke
           );
         }
+      }
+
+      /**
+       * Set path stroke opacity (only used if stroke is not "none")
+       */
+      void setStrokeOpacity(float opacity)
+      {
+        _stroke_opacity =
+          static_cast<uint8_t>(SGMiscf::clip(opacity, 0.f, 1.f) * 255);
+        _attributes_dirty |= STROKE_COLOR;
       }
 
       /**
@@ -390,31 +400,22 @@ namespace canvas
         osg::StateAttribute const* blend_func =
           state->getLastAppliedAttribute(osg::StateAttribute::BLENDFUNC);
 
-        // Initialize/Update the paint
-        if( _attributes_dirty & STROKE_COLOR )
-        {
-          if( _paint == VG_INVALID_HANDLE )
-            _paint = vgCreatePaint();
-
-          vgSetParameterfv(_paint, VG_PAINT_COLOR, 4, _stroke_color._v);
-
-          _attributes_dirty &= ~STROKE_COLOR;
-        }
-
-        // Initialize/update fill paint
-        if( _attributes_dirty & FILL_COLOR )
-        {
-          if( _paint_fill == VG_INVALID_HANDLE )
-            _paint_fill = vgCreatePaint();
-
-          vgSetParameterfv(_paint_fill, VG_PAINT_COLOR, 4, _fill_color._v);
-
-          _attributes_dirty &= ~FILL_COLOR;
-        }
-
         // Setup paint
         if( _mode & VG_STROKE_PATH )
         {
+          // Initialize/Update the paint
+          if( _attributes_dirty & STROKE_COLOR )
+          {
+            if( _paint == VG_INVALID_HANDLE )
+              _paint = vgCreatePaint();
+
+            auto color = _stroke_color;
+            color.a() *= _stroke_opacity / 255.f;
+            vgSetParameterfv(_paint, VG_PAINT_COLOR, 4, color._v);
+
+            _attributes_dirty &= ~STROKE_COLOR;
+          }
+
           vgSetPaint(_paint, VG_STROKE_PATH);
 
           vgSetf(VG_STROKE_LINE_WIDTH, _stroke_width);
@@ -426,6 +427,19 @@ namespace canvas
         }
         if( _mode & VG_FILL_PATH )
         {
+          // Initialize/update fill paint
+          if( _attributes_dirty & FILL_COLOR )
+          {
+            if( _paint_fill == VG_INVALID_HANDLE )
+              _paint_fill = vgCreatePaint();
+
+            auto color = _fill_color;
+            color.a() *= _fill_opacity / 255.f;
+            vgSetParameterfv(_paint_fill, VG_PAINT_COLOR, 4, color._v);
+
+            _attributes_dirty &= ~FILL_COLOR;
+          }
+
           vgSetPaint(_paint_fill, VG_FILL_PATH);
 
           vgSeti(VG_FILL_RULE, _fill_rule);
@@ -579,22 +593,24 @@ namespace canvas
 
       Path *_path_element;
 
-      mutable VGPath    _path;
-      mutable VGPaint   _paint;
-      mutable VGPaint   _paint_fill;
-      mutable uint32_t  _attributes_dirty;
+      mutable VGPath    _path {VG_INVALID_HANDLE};
+      mutable VGPaint   _paint {VG_INVALID_HANDLE};
+      mutable VGPaint   _paint_fill {VG_INVALID_HANDLE};
+      mutable uint32_t  _attributes_dirty {~0u};
 
       CmdList   _cmds;
       CoordList _coords;
 
-      VGbitfield            _mode;
+      VGbitfield            _mode {0};
       osg::Vec4f            _fill_color;
-      VGFillRule            _fill_rule;
+      uint8_t               _fill_opacity {255};
+      VGFillRule            _fill_rule {VG_EVEN_ODD};
       osg::Vec4f            _stroke_color;
-      VGfloat               _stroke_width;
+      uint8_t               _stroke_opacity {255};
+      VGfloat               _stroke_width {1};
       std::vector<VGfloat>  _stroke_dash;
-      VGCapStyle            _stroke_linecap;
-      VGJoinStyle            _stroke_linejoin;
+      VGCapStyle            _stroke_linecap {VG_CAP_BUTT};
+      VGJoinStyle           _stroke_linejoin {VG_JOIN_MITER};
 
       osg::Vec3f transformPoint( const osg::Matrix& m,
                                  osg::Vec2f pos ) const
@@ -670,8 +686,10 @@ namespace canvas
     PathDrawableRef Path::*path = &Path::_path;
 
     addStyle("fill", "color", &PathDrawable::setFill, path);
+    addStyle("fill-opacity", "numeric", &PathDrawable::setFillOpacity, path);
     addStyle("fill-rule", "", &PathDrawable::setFillRule, path);
     addStyle("stroke", "color", &PathDrawable::setStroke, path);
+    addStyle("stroke-opacity", "numeric", &PathDrawable::setStrokeOpacity, path);
     addStyle("stroke-width", "numeric", &PathDrawable::setStrokeWidth, path);
     addStyle("stroke-dasharray", "", &PathDrawable::setStrokeDashArray, path);
     addStyle("stroke-linecap", "", &PathDrawable::setStrokeLinecap, path);
@@ -698,40 +716,6 @@ namespace canvas
   Path::~Path()
   {
 
-  }
-
-  //----------------------------------------------------------------------------
-  void Path::update(double dt)
-  {
-    if( _attributes_dirty & (CMDS | COORDS) )
-    {
-      _path->setSegments
-      (
-        _node->getChildValues<VGubyte, int>("cmd"),
-        _node->getChildValues<VGfloat, float>("coord")
-      );
-
-      _attributes_dirty &= ~(CMDS | COORDS);
-    }
-
-    // SVG path overrides manual cmd/coord specification
-    if ( _hasSVG && (_attributes_dirty & SVG))
-    {
-        CmdList cmds;
-        CoordList coords;
-        parseSVGPathToVGPath(_node->getStringValue("svg"), cmds, coords);
-        _path->setSegments(cmds, coords);
-        _attributes_dirty &= ~SVG;
-    }
-
-    if ( _hasRect &&(_attributes_dirty & RECT))
-    {
-        parseRectToVGPath();
-        _attributes_dirty &= ~RECT;
-
-    }
-
-    Element::update(dt);
   }
 
   //----------------------------------------------------------------------------
@@ -840,35 +824,69 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Path::updateImpl(double dt)
+  {
+    Element::updateImpl(dt);
+
+    if( _attributes_dirty & (CMDS | COORDS) )
+    {
+      _path->setSegments
+      (
+        _node->getChildValues<VGubyte, int>("cmd"),
+        _node->getChildValues<VGfloat, float>("coord")
+      );
+
+      _attributes_dirty &= ~(CMDS | COORDS);
+    }
+
+    // SVG path overrides manual cmd/coord specification
+    if( _hasSVG && (_attributes_dirty & SVG) )
+    {
+      CmdList cmds;
+      CoordList coords;
+      parseSVGPathToVGPath(_node->getStringValue("svg"), cmds, coords);
+      _path->setSegments(cmds, coords);
+      _attributes_dirty &= ~SVG;
+    }
+
+    if( _hasRect &&(_attributes_dirty & RECT) )
+    {
+      parseRectToVGPath();
+      _attributes_dirty &= ~RECT;
+    }
+  }
+
+  //----------------------------------------------------------------------------
   void Path::childChanged(SGPropertyNode* child)
   {
-      const std::string& name = child->getNameString();
-      const std::string &prName = child->getParent()->getNameString();
+    const std::string& name = child->getNameString();
+    const std::string &prName = child->getParent()->getNameString();
 
-      if (simgear::strutils::starts_with(name, "border-"))
-      {
-          _attributes_dirty |= RECT;
-          return;
-      }
+    if( strutils::starts_with(name, "border-") )
+    {
+      _attributes_dirty |= RECT;
+      return;
+    }
 
-      if (prName == "rect") {
-          _hasRect = true;
-          if (name == "left") {
-              _rect.setLeft(child->getDoubleValue());
-          } else if (name == "top") {
-              _rect.setTop(child->getDoubleValue());
-          } else if (name == "right") {
-              _rect.setRight(child->getDoubleValue());
-          } else if (name == "bottom") {
-              _rect.setBottom(child->getDoubleValue());
-          } else if (name == "width") {
-              _rect.setWidth(child->getDoubleValue());
-          } else if (name == "height") {
-              _rect.setHeight(child->getDoubleValue());
-          }
-          _attributes_dirty |= RECT;
-          return;
+    if (prName == "rect")
+    {
+      _hasRect = true;
+      if (name == "left") {
+          _rect.setLeft(child->getDoubleValue());
+      } else if (name == "top") {
+          _rect.setTop(child->getDoubleValue());
+      } else if (name == "right") {
+          _rect.setRight(child->getDoubleValue());
+      } else if (name == "bottom") {
+          _rect.setBottom(child->getDoubleValue());
+      } else if (name == "width") {
+          _rect.setWidth(child->getDoubleValue());
+      } else if (name == "height") {
+          _rect.setHeight(child->getDoubleValue());
       }
+      _attributes_dirty |= RECT;
+      return;
+    }
 
     if( child->getParent() != _node )
       return;
@@ -904,67 +922,68 @@ namespace canvas
     return values;
   }
 
-    //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  void operator+=(CoordList& base, const std::initializer_list<VGfloat>& other)
+  {
+    base.insert(base.end(), other.begin(), other.end());
+  }
 
-    void operator+=(CoordList& base, const std::initializer_list<VGfloat>& other)
-    {
-        base.insert(base.end(), other.begin(), other.end());
+  //----------------------------------------------------------------------------
+  void Path::parseRectToVGPath()
+  {
+    CmdList commands;
+    CoordList coords;
+    commands.reserve(4);
+    coords.reserve(8);
+
+    bool haveCorner = false;
+    SGVec2f topLeft = parseRectCornerRadius(_node, "left", "top", haveCorner);
+    if (haveCorner) {
+        commands.push_back(VG_MOVE_TO_ABS);
+        coords += {_rect.l(), _rect.t() + topLeft.y()};
+        commands.push_back(VG_SCCWARC_TO_REL);
+        coords += {topLeft.x(), topLeft.y(), 0.0, topLeft.x(), -topLeft.y()};
+    } else {
+        commands.push_back(VG_MOVE_TO_ABS);
+        coords += {_rect.l(), _rect.t()};
     }
 
-    void Path::parseRectToVGPath()
-    {
-        CmdList commands;
-        CoordList coords;
-        commands.reserve(4);
-        coords.reserve(8);
-
-        bool haveCorner = false;
-        SGVec2f topLeft = parseRectCornerRadius(_node, "left", "top", haveCorner);
-        if (haveCorner) {
-            commands.push_back(VG_MOVE_TO_ABS);
-            coords += {_rect.l(), _rect.t() + topLeft.y()};
-            commands.push_back(VG_SCCWARC_TO_REL);
-            coords += {topLeft.x(), topLeft.y(), 0.0, topLeft.x(), -topLeft.y()};
-        } else {
-            commands.push_back(VG_MOVE_TO_ABS);
-            coords += {_rect.l(), _rect.t()};
-        }
-
-        SGVec2f topRight = parseRectCornerRadius(_node, "right", "top", haveCorner);
-        if (haveCorner) {
-            commands.push_back(VG_HLINE_TO_ABS);
-            coords += {_rect.r() - topRight.x()};
-            commands.push_back(VG_SCCWARC_TO_REL);
-            coords += {topRight.x(), topRight.y(), 0.0, topRight.x(), topRight.y()};
-        } else {
-            commands.push_back(VG_HLINE_TO_ABS);
-            coords += {_rect.r()};
-        }
-
-        SGVec2f bottomRight = parseRectCornerRadius(_node, "right", "bottom", haveCorner);
-        if (haveCorner) {
-            commands.push_back(VG_VLINE_TO_ABS);
-            coords += {_rect.b() - bottomRight.y()};
-            commands.push_back(VG_SCCWARC_TO_REL);
-            coords += {bottomRight.x(), bottomRight.y(), 0.0, -bottomRight.x(), bottomRight.y()};
-        } else {
-            commands.push_back(VG_VLINE_TO_ABS);
-            coords += {_rect.b()};
-        }
-
-        SGVec2f bottomLeft = parseRectCornerRadius(_node, "left", "bottom", haveCorner);
-        if (haveCorner) {
-            commands.push_back(VG_HLINE_TO_ABS);
-            coords += {_rect.l() + bottomLeft.x()};
-            commands.push_back(VG_SCCWARC_TO_REL);
-            coords += {bottomLeft.x(), bottomLeft.y(), 0.0, -bottomLeft.x(), -bottomLeft.y()};
-        } else {
-            commands.push_back(VG_HLINE_TO_ABS);
-            coords += {_rect.l()};
-        }
-
-        commands.push_back(VG_CLOSE_PATH);
-        _path->setSegments(commands, coords);
+    SGVec2f topRight = parseRectCornerRadius(_node, "right", "top", haveCorner);
+    if (haveCorner) {
+        commands.push_back(VG_HLINE_TO_ABS);
+        coords += {_rect.r() - topRight.x()};
+        commands.push_back(VG_SCCWARC_TO_REL);
+        coords += {topRight.x(), topRight.y(), 0.0, topRight.x(), topRight.y()};
+    } else {
+        commands.push_back(VG_HLINE_TO_ABS);
+        coords += {_rect.r()};
     }
+
+    SGVec2f bottomRight = parseRectCornerRadius(_node, "right", "bottom", haveCorner);
+    if (haveCorner) {
+        commands.push_back(VG_VLINE_TO_ABS);
+        coords += {_rect.b() - bottomRight.y()};
+        commands.push_back(VG_SCCWARC_TO_REL);
+        coords += {bottomRight.x(), bottomRight.y(), 0.0, -bottomRight.x(), bottomRight.y()};
+    } else {
+        commands.push_back(VG_VLINE_TO_ABS);
+        coords += {_rect.b()};
+    }
+
+    SGVec2f bottomLeft = parseRectCornerRadius(_node, "left", "bottom", haveCorner);
+    if (haveCorner) {
+        commands.push_back(VG_HLINE_TO_ABS);
+        coords += {_rect.l() + bottomLeft.x()};
+        commands.push_back(VG_SCCWARC_TO_REL);
+        coords += {bottomLeft.x(), bottomLeft.y(), 0.0, -bottomLeft.x(), -bottomLeft.y()};
+    } else {
+        commands.push_back(VG_HLINE_TO_ABS);
+        coords += {_rect.l()};
+    }
+
+    commands.push_back(VG_CLOSE_PATH);
+    _path->setSegments(commands, coords);
+  }
+
 } // namespace canvas
 } // namespace simgear

@@ -117,9 +117,7 @@ namespace canvas
                 ElementWeakPtr parent ):
     Element(canvas, node, parent_style, parent),
     _texture(new osg::Texture2D),
-    _node_src_rect( node->getNode("source", 0, true) ),
-    _src_rect(0,0),
-    _region(0,0)
+    _node_src_rect( node->getNode("source", 0, true) )
   {
     staticInit();
 
@@ -157,22 +155,207 @@ namespace canvas
   //----------------------------------------------------------------------------
   Image::~Image()
   {
-      if( _http_request ) {
-          Canvas::getSystemAdapter()->getHTTPClient()->cancelRequest(_http_request, "image destroyed");
-      }
+    if( _http_request )
+    {
+      Canvas::getSystemAdapter()
+        ->getHTTPClient()
+        ->cancelRequest(_http_request, "image destroyed");
+    }
   }
 
   //----------------------------------------------------------------------------
-  void Image::update(double dt)
+  void Image::valueChanged(SGPropertyNode* child)
   {
-    Element::update(dt);
+    // If the image is switched from invisible to visible, and it shows a
+    // canvas, we need to delay showing it by one frame to ensure the canvas is
+    // updated before the image is displayed.
+    //
+    // As canvas::Element handles and filters changes to the "visible" property
+    // we can not check this in Image::childChanged but instead have to override
+    // Element::valueChanged.
+    if(    !isVisible()
+        && child->getParent() == _node
+        && child->getNameString() == "visible"
+        && child->getBoolValue() )
+    {
+      CullCallback* cb =
+#if OSG_VERSION_LESS_THAN(3,3,2)
+        static_cast<CullCallback*>
+#else
+        dynamic_cast<CullCallback*>
+#endif
+        ( _geom->getCullCallback() );
+
+      if( cb )
+        cb->cullNextFrame();
+    }
+
+    Element::valueChanged(child);
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setSrcCanvas(CanvasPtr canvas)
+  {
+    CanvasPtr src_canvas = _src_canvas.lock(),
+              self_canvas = _canvas.lock();
+
+    if( src_canvas )
+      src_canvas->removeParentCanvas(self_canvas);
+    if( self_canvas )
+      self_canvas->removeChildCanvas(src_canvas);
+
+    _src_canvas = src_canvas = canvas;
+    _attributes_dirty |= SRC_CANVAS;
+    _geom->setCullCallback(canvas ? new CullCallback(canvas) : 0);
+
+    if( src_canvas )
+    {
+      setupDefaultDimensions();
+
+      if( self_canvas )
+      {
+        self_canvas->addChildCanvas(src_canvas);
+        src_canvas->addParentCanvas(self_canvas);
+      }
+    }
+  }
+
+  //----------------------------------------------------------------------------
+  CanvasWeakPtr Image::getSrcCanvas() const
+  {
+    return _src_canvas;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setImage(osg::ref_ptr<osg::Image> img)
+  {
+    // remove canvas...
+    setSrcCanvas( CanvasPtr() );
+
+    _texture->setResizeNonPowerOfTwoHint(false);
+    _texture->setImage(img);
+    _texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
+    _texture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
+    _geom->getOrCreateStateSet()
+         ->setTextureAttributeAndModes(0, _texture);
+
+    if( img )
+      setupDefaultDimensions();
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setFill(const std::string& fill)
+  {
+    osg::Vec4 color(1,1,1,1);
+    if(    !fill.empty() // If no color is given default to white
+        && !parseColor(fill, color) )
+      return;
+    setFill(color);
+  }
+
+    //----------------------------------------------------------------------------
+    void Image::setFill(const osg::Vec4& color)
+    {
+        _colors->front() = color;
+        _colors->dirty();
+    }
+
+
+  //----------------------------------------------------------------------------
+  void Image::setOutset(const std::string& outset)
+  {
+    _outset = CSSBorder::parse(outset);
+    _attributes_dirty |= DEST_SIZE;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setPreserveAspectRatio(const std::string& scale)
+  {
+    _preserve_aspect_ratio = SVGpreserveAspectRatio::parse(scale);
+    _attributes_dirty |= SRC_RECT;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setSourceRect(const SGRect<float>& sourceRect)
+  {
+      _attributes_dirty |= SRC_RECT;
+      _src_rect = sourceRect;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setSlice(const std::string& slice)
+  {
+    _slice = CSSBorder::parse(slice);
+    _attributes_dirty |= SRC_RECT | DEST_SIZE;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::setSliceWidth(const std::string& width)
+  {
+    _slice_width = CSSBorder::parse(width);
+    _attributes_dirty |= DEST_SIZE;
+  }
+
+  //----------------------------------------------------------------------------
+  const SGRect<float>& Image::getRegion() const
+  {
+    return _region;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Image::handleEvent(const EventPtr& event)
+  {
+    bool handled = Element::handleEvent(event);
+
+    CanvasPtr src_canvas = _src_canvas.lock();
+    if( !src_canvas )
+      return handled;
+
+    if( MouseEventPtr mouse_event = dynamic_cast<MouseEvent*>(event.get()) )
+    {
+      mouse_event.reset( new MouseEvent(*mouse_event) );
+
+      mouse_event->client_pos = mouse_event->local_pos
+                              - toOsg(_region.getMin());
+
+      osg::Vec2f size(_region.width(), _region.height());
+      if( _outset.isValid() )
+      {
+        CSSBorder::Offsets outset =
+          _outset.getAbsOffsets(getTextureDimensions());
+
+        mouse_event->client_pos += osg::Vec2f(outset.l, outset.t);
+        size.x() += outset.l + outset.r;
+        size.y() += outset.t + outset.b;
+      }
+
+      // Scale event pos according to canvas view size vs. displayed/screen size
+      mouse_event->client_pos.x() *= src_canvas->getViewWidth() / size.x();
+      mouse_event->client_pos.y() *= src_canvas->getViewHeight()/ size.y();
+      mouse_event->local_pos = mouse_event->client_pos;
+
+      handled |= src_canvas->handleMouseEvent(mouse_event);
+    }
+    else if( KeyboardEventPtr keyboard_event =
+               dynamic_cast<KeyboardEvent*>(event.get()) )
+    {
+      handled |= src_canvas->handleKeyboardEvent(keyboard_event);
+    }
+
+    return handled;
+  }
+
+  //----------------------------------------------------------------------------
+  void Image::updateImpl(double dt)
+  {
+    Element::updateImpl(dt);
 
     osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>
     (
       _geom->getOrCreateStateSet()
            ->getTextureAttribute(0, osg::StateAttribute::TEXTURE)
     );
-    simgear::canvas::CanvasPtr canvas = _src_canvas.lock();
+    auto canvas = _src_canvas.lock();
 
     if(    (_attributes_dirty & SRC_CANVAS)
            // check if texture has changed (eg. due to resizing)
@@ -403,188 +586,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  void Image::valueChanged(SGPropertyNode* child)
-  {
-    // If the image is switched from invisible to visible, and it shows a
-    // canvas, we need to delay showing it by one frame to ensure the canvas is
-    // updated before the image is displayed.
-    //
-    // As canvas::Element handles and filters changes to the "visible" property
-    // we can not check this in Image::childChanged but instead have to override
-    // Element::valueChanged.
-    if(    !isVisible()
-        && child->getParent() == _node
-        && child->getNameString() == "visible"
-        && child->getBoolValue() )
-    {
-      CullCallback* cb =
-#if OSG_VERSION_LESS_THAN(3,3,2)
-        static_cast<CullCallback*>
-#else
-        dynamic_cast<CullCallback*>
-#endif
-        ( _geom->getCullCallback() );
-
-      if( cb )
-        cb->cullNextFrame();
-    }
-
-    Element::valueChanged(child);
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setSrcCanvas(CanvasPtr canvas)
-  {
-    CanvasPtr src_canvas = _src_canvas.lock(),
-              self_canvas = _canvas.lock();
-
-    if( src_canvas )
-      src_canvas->removeParentCanvas(self_canvas);
-    if( self_canvas )
-      self_canvas->removeChildCanvas(src_canvas);
-
-    _src_canvas = src_canvas = canvas;
-    _attributes_dirty |= SRC_CANVAS;
-    _geom->setCullCallback(canvas ? new CullCallback(canvas) : 0);
-
-    if( src_canvas )
-    {
-      setupDefaultDimensions();
-
-      if( self_canvas )
-      {
-        self_canvas->addChildCanvas(src_canvas);
-        src_canvas->addParentCanvas(self_canvas);
-      }
-    }
-  }
-
-  //----------------------------------------------------------------------------
-  CanvasWeakPtr Image::getSrcCanvas() const
-  {
-    return _src_canvas;
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setImage(osg::ref_ptr<osg::Image> img)
-  {
-    // remove canvas...
-    setSrcCanvas( CanvasPtr() );
-
-    _texture->setResizeNonPowerOfTwoHint(false);
-    _texture->setImage(img);
-    _texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
-    _texture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
-    _geom->getOrCreateStateSet()
-         ->setTextureAttributeAndModes(0, _texture);
-
-    if( img )
-      setupDefaultDimensions();
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setFill(const std::string& fill)
-  {
-    osg::Vec4 color(1,1,1,1);
-    if(    !fill.empty() // If no color is given default to white
-        && !parseColor(fill, color) )
-      return;
-    setFill(color);
-  }
-
-    //----------------------------------------------------------------------------
-    void Image::setFill(const osg::Vec4& color)
-    {
-        _colors->front() = color;
-        _colors->dirty();
-    }
-
-
-  //----------------------------------------------------------------------------
-  void Image::setOutset(const std::string& outset)
-  {
-    _outset = CSSBorder::parse(outset);
-    _attributes_dirty |= DEST_SIZE;
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setPreserveAspectRatio(const std::string& scale)
-  {
-    _preserve_aspect_ratio = SVGpreserveAspectRatio::parse(scale);
-    _attributes_dirty |= SRC_RECT;
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setSourceRect(const SGRect<float>& sourceRect)
-  {
-      _attributes_dirty |= SRC_RECT;
-      _src_rect = sourceRect;
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setSlice(const std::string& slice)
-  {
-    _slice = CSSBorder::parse(slice);
-    _attributes_dirty |= SRC_RECT | DEST_SIZE;
-  }
-
-  //----------------------------------------------------------------------------
-  void Image::setSliceWidth(const std::string& width)
-  {
-    _slice_width = CSSBorder::parse(width);
-    _attributes_dirty |= DEST_SIZE;
-  }
-
-  //----------------------------------------------------------------------------
-  const SGRect<float>& Image::getRegion() const
-  {
-    return _region;
-  }
-
-  //----------------------------------------------------------------------------
-  bool Image::handleEvent(const EventPtr& event)
-  {
-    bool handled = Element::handleEvent(event);
-
-    CanvasPtr src_canvas = _src_canvas.lock();
-    if( !src_canvas )
-      return handled;
-
-    if( MouseEventPtr mouse_event = dynamic_cast<MouseEvent*>(event.get()) )
-    {
-      mouse_event.reset( new MouseEvent(*mouse_event) );
-
-      mouse_event->client_pos = mouse_event->local_pos
-                              - toOsg(_region.getMin());
-
-      osg::Vec2f size(_region.width(), _region.height());
-      if( _outset.isValid() )
-      {
-        CSSBorder::Offsets outset =
-          _outset.getAbsOffsets(getTextureDimensions());
-
-        mouse_event->client_pos += osg::Vec2f(outset.l, outset.t);
-        size.x() += outset.l + outset.r;
-        size.y() += outset.t + outset.b;
-      }
-
-      // Scale event pos according to canvas view size vs. displayed/screen size
-      mouse_event->client_pos.x() *= src_canvas->getViewWidth() / size.x();
-      mouse_event->client_pos.y() *= src_canvas->getViewHeight()/ size.y();
-      mouse_event->local_pos = mouse_event->client_pos;
-
-      handled |= src_canvas->handleMouseEvent(mouse_event);
-    }
-    else if( KeyboardEventPtr keyboard_event =
-               dynamic_cast<KeyboardEvent*>(event.get()) )
-    {
-      handled |= src_canvas->handleKeyboardEvent(keyboard_event);
-    }
-
-    return handled;
-  }
-
-  //----------------------------------------------------------------------------
   void Image::childChanged(SGPropertyNode* child)
   {
     const std::string& name = child->getNameString();
@@ -634,7 +635,9 @@ namespace canvas
       // Abort pending request
       if( _http_request )
       {
-          Canvas::getSystemAdapter()->getHTTPClient()->cancelRequest(_http_request, "setting new image");
+        Canvas::getSystemAdapter()
+          ->getHTTPClient()
+          ->cancelRequest(_http_request, "setting new image");
         _http_request.reset();
       }
 

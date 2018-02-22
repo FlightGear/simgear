@@ -22,12 +22,10 @@
 #include "CanvasWindow.hxx"
 
 #include <simgear/canvas/Canvas.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 
 #include <osgGA/GUIEventHandler>
-
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/foreach.hpp>
 
 namespace simgear
 {
@@ -43,9 +41,6 @@ namespace canvas
                   const Style& parent_style,
                   Element* parent ):
     Image(canvas, node, parent_style, parent),
-    _attributes_dirty(0),
-    _resizable(false),
-    _capture_events(true),
     _resize_top(node, "resize-top"),
     _resize_right(node, "resize-right"),
     _resize_bottom(node, "resize-bottom"),
@@ -92,7 +87,7 @@ namespace canvas
         _capture_events = node->getBoolValue();
       else if( name == "decoration-border" )
         parseDecorationBorder(node->getStringValue());
-      else if(    boost::starts_with(name, "shadow-")
+      else if(    strutils::starts_with(name, "shadow-")
                || name == "content-size" )
         _attributes_dirty |= DECORATION;
       else
@@ -104,15 +99,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  osg::Group* Window::getGroup()
-  {
-    return getMatrixTransform();
-  }
-
-  //----------------------------------------------------------------------------
   const SGVec2<float> Window::getPosition() const
   {
-    const osg::Matrix& m = getMatrixTransform()->getMatrix();
+    auto const& m = getMatrix();
     return SGVec2<float>( m(3, 0), m(3, 1) );
   }
 

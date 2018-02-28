@@ -134,6 +134,12 @@ public:
     SGPropertyNode* properties() const;
 
     Delegate::StatusCode status() const;
+    
+    /**
+     * is this Catalog usable? This may be false if the catalog is currently
+     * failing a version check or cannot be updated
+     */
+    bool isEnabled() const;
 
     typedef boost::function<void(Catalog*)> Callback;
 

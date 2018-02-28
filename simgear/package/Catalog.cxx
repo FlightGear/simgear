@@ -84,7 +84,7 @@ bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 
 std::string redirectUrlForVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
-    BOOST_FOREACH(SGPropertyNode* v, props->getChildren("alternate-version")) {
+    for (SGPropertyNode* v : props->getChildren("alternate-version")) {
         std::string s(v->getStringValue("version"));
         if (checkVersionString(aVersion, s)) {
             return  v->getStringValue("url");;
@@ -139,7 +139,7 @@ protected:
 
         std::string ver(m_owner->root()->applicationVersion());
         if (!checkVersion(ver, props)) {
-            SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", version required " << ver);
+            SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", but version required " << ver);
 
             // check for a version redirect entry
             std::string url = redirectUrlForVersion(ver, props);
@@ -169,7 +169,13 @@ protected:
         m_owner->writeTimestamp();
         m_owner->refreshComplete(Delegate::STATUS_REFRESHED);
     }
-
+    
+    void onFail() override
+    {
+        // network level failure
+        SG_LOG(SG_GENERAL, SG_WARN, "catalog network failure for:" << m_owner->url());
+        m_owner->refreshComplete(Delegate::FAIL_DOWNLOAD);
+    }
 private:
 
     CatalogRef m_owner;
@@ -215,7 +221,8 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 
     bool versionCheckOk = checkVersion(aRoot->applicationVersion(), props);
     if (!versionCheckOk) {
-        SG_LOG(SG_GENERAL, SG_INFO, "catalog at:" << aPath << " failed version check: need" << aRoot->applicationVersion());
+        SG_LOG(SG_GENERAL, SG_INFO, "catalog at:" << aPath << " failed version check: need version: "
+               << aRoot->applicationVersion());
         // keep the catalog but mark it as needing an update
     } else {
         SG_LOG(SG_GENERAL, SG_DEBUG, "creating catalog from:" << aPath);
@@ -540,6 +547,20 @@ Delegate::StatusCode Catalog::status() const
     return m_status;
 }
 
+bool Catalog::isEnabled() const
+{
+    switch (m_status) {
+    case Delegate::STATUS_SUCCESS:
+    case Delegate::STATUS_REFRESHED:
+    case Delegate::STATUS_IN_PROGRESS:
+    // this is important so we can use Catalog aircraft in offline mode
+    case Delegate::FAIL_DOWNLOAD:
+        return true;
+    default:
+        return false;
+    }
+}
+    
 } // of namespace pkg
 
 } // of namespace simgear

@@ -335,9 +335,7 @@ public:
 
     ~LogStreamPrivate()
     {
-        for (simgear::LogCallback* cb : m_callbacks) {
-            delete cb;
-        }
+        removeCallbacks();
     }
 
     SGMutex m_lock;
@@ -362,6 +360,9 @@ public:
     bool m_stdout_isRedirectedAlready = false;
 #endif
     bool m_developerMode = false;
+
+    // test suite mode.
+    bool m_testMode = false;
 
     void startLog()
     {
@@ -443,6 +444,16 @@ public:
         }
     }
 
+    void removeCallbacks()
+    {
+        PauseThread pause(this);
+        for (simgear::LogCallback* cb : m_callbacks) {
+            delete cb;
+        }
+        m_callbacks.clear();
+        m_consoleCallbacks.clear();
+    }
+
     void setLogLevels( sgDebugClass c, sgDebugPriority p )
     {
         PauseThread pause(this);
@@ -455,6 +466,9 @@ public:
 
     bool would_log( sgDebugClass c, sgDebugPriority p ) const
     {
+        // Testing mode, so always log.
+        if (m_testMode) return true;
+
         p = translatePriority(p);
         if (p >= SG_INFO) return true;
         return ((c & m_logClass) != 0 && p >= m_logPriority);
@@ -709,6 +723,13 @@ void logstream::requestConsole()
         MessageBox(0, "--console ignored because stdout or stderr redirected with > or 2>", "Simgear Error", MB_OK | MB_ICONERROR);
     }
 #endif
+}
+
+void
+logstream::setTestingMode( bool testMode )
+{
+    d->m_testMode = testMode;
+    if (testMode) d->removeCallbacks();
 }
 
 

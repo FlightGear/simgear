@@ -1,4 +1,5 @@
-// A text on the Canvas
+///@file
+/// A text on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

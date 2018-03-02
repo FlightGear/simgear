@@ -1,4 +1,5 @@
-// The canvas for rendering with the 2d API
+///@file
+/// The canvas for rendering with the 2d API
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

@@ -1,4 +1,5 @@
-// Input device event
+///@file
+/// Input device event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

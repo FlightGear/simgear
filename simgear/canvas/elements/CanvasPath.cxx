@@ -1,4 +1,5 @@
-// An OpenVG path on the Canvas
+///@file
+/// An OpenVG path on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -230,9 +231,12 @@ namespace canvas
           vgDestroyPaint(_paint_fill);
       }
 
-      virtual const char* className() const { return "PathDrawable"; }
-      virtual osg::Object* cloneType() const { return new PathDrawable(_path_element); }
-      virtual osg::Object* clone(const osg::CopyOp&) const { return new PathDrawable(_path_element); }
+      const char* className() const override
+      { return "PathDrawable"; }
+      osg::Object* cloneType() const override
+      { return new PathDrawable(_path_element); }
+      osg::Object* clone(const osg::CopyOp&) const override
+      { return new PathDrawable(_path_element); }
 
       /**
        * Replace the current path segments with the new ones
@@ -383,7 +387,7 @@ namespace canvas
       /**
        * Draw callback
        */
-      virtual void drawImplementation(osg::RenderInfo& renderInfo) const
+      void drawImplementation(osg::RenderInfo& renderInfo) const override
       {
         if( _attributes_dirty & PATH )
           return;
@@ -555,13 +559,13 @@ namespace canvas
       /**
        * Compute the bounding box
        */
-      virtual osg::BoundingBox
+      osg::BoundingBox
 #if OSG_VERSION_LESS_THAN(3,3,2)
       computeBound()
 #else
       computeBoundingBox()
 #endif
-      const
+      const override
       {
         if( _path == VG_INVALID_HANDLE || (_attributes_dirty & PATH) )
           return osg::BoundingBox();
@@ -667,7 +671,7 @@ namespace canvas
       struct PathUpdateCallback:
         public osg::Drawable::UpdateCallback
       {
-        virtual void update(osg::NodeVisitor*, osg::Drawable* drawable)
+        void update(osg::NodeVisitor*, osg::Drawable* drawable) override
         {
           static_cast<PathDrawable*>(drawable)->update();
         }

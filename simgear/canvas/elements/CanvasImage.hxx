@@ -1,4 +1,5 @@
-// An image on the Canvas
+///@file
+/// An image on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -53,7 +54,7 @@ namespace canvas
              ElementWeakPtr parent = 0 );
       virtual ~Image();
 
-      virtual void valueChanged(SGPropertyNode* child);
+      void valueChanged(SGPropertyNode* child) override;
 
       void setSrcCanvas(CanvasPtr canvas);
       CanvasWeakPtr getSrcCanvas() const;
@@ -108,9 +109,9 @@ namespace canvas
         SRC_CANVAS     = DEST_SIZE << 1
       };
 
-      virtual void updateImpl(double dt);
+      void updateImpl(double dt) override;
 
-      virtual void childChanged(SGPropertyNode * child);
+      void childChanged(SGPropertyNode * child) override;
 
       void setupDefaultDimensions();
       SGRect<int> getTextureDimensions() const;

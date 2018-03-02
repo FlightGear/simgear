@@ -1,4 +1,5 @@
-// Interface for 2D Canvas element
+///@file
+/// Interface for 2D Canvas element
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

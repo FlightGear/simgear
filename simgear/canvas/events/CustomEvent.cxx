@@ -1,4 +1,5 @@
-// Canvas user defined event
+///@file
+/// Canvas user defined event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

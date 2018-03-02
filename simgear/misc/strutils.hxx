@@ -72,10 +72,10 @@ namespace simgear {
 	std::string strip( const std::string& s );
 
 	/**
-         * Return a new string with any trailing \r and \n characters removed.
+         * Return a new string with any trailing \\r and \\n characters removed.
          * Typically useful to clean a CR-terminated line obtained from
-         * std::getline() which, upon reading CRLF (\r\n), discards the Line
-         * Feed character (\n) but leaves the Carriage Return (\r) in the
+         * std::getline() which, upon reading CRLF (\\r\\n), discards the Line
+         * Feed character (\\n) but leaves the Carriage Return (\\r) in the
          * string.
          * @param s Input string
          * @return The cleaned string
@@ -83,7 +83,7 @@ namespace simgear {
         std::string stripTrailingNewlines(const std::string& s);
 
 	/**
-         * Strip any trailing \r and \n characters from a string.
+         * Strip any trailing \\r and \\n characters from a string.
          * Should have slightly less overhead than stripTrailingNewlines().
          * @param s Input string (modified in-place)
          */
@@ -112,11 +112,12 @@ namespace simgear {
 	 * Produces a result similar to the perl and python functions of the
 	 * same name.
 	 * 
-	 * @param s The string to split into words,
-	 * @param sep Word delimiters.  If not specified then any whitespace is a separator,
-	 * @param maxsplit If given, splits at no more than maxsplit places,
-	 * resulting in at most maxsplit+1 words.
-	 * @return Array of words.
+	 * @param s         The string to split into words
+	 * @param sep       Word delimiters. If not specified then any whitespace is
+	 *                  a separator
+	 * @param maxsplit  If given, splits at no more than maxsplit places,
+	 *                  resulting in at most maxsplit+1 words
+	 * @return Array of words
 	 */
 	string_list
 	split( const std::string& s,
@@ -124,11 +125,11 @@ namespace simgear {
 	       int maxsplit = 0 );
 
       /**
-       * split a string on any of several characters. Commonly used to deal
+       * Split a string on any of several characters. Commonly used to deal
        * with strings containing whitespace, newlines. To parse CSS style
-       * string, use with '\n\t ,' as the seperator list.
+       * string, use with '\\n\\t ,' as the separator list.
        *
-       * Note consecutive seperators will not produce empty entries in the
+       * @note Consecutive separators will not produce empty entries in the
        * the result, i.e splitting 'a,b,,c,d' with a ',' will produce a result
        * with four entries, not five.
        */
@@ -226,14 +227,22 @@ namespace simgear {
     bool to_bool(const std::string& s);
 
     /**
-     * Like strcmp(), but for dotted versions strings NN.NN.NN
-     * any number of terms are supported.
-     * @return 0 if versions match, -ve number if v1 is lower, +ve if v1
-     * is greater
-     * @param maxComponents is the maximum number of components to look at.
-     * This can be used to ignore (say) the patch level by setting it to 2
+     * Compare dotted versions strings NN.NN.NN (analogous to strcmp())
+     *
+     * @note Any number of terms are supported.
+     *
+     * @param v1            First version
+     * @param v2            Second version
+     * @param maxComponents The maximum number of components to look at. This
+     *                      can be used to ignore (say) the patch level by
+     *                      setting it to 2
+     * @return 0 if versions match,
+     *         -ve number if @a v1 is lower,
+     *         +ve if @a v1 is greater
      */
-    int compare_versions(const std::string& v1, const std::string& v2, int maxComponents = 0);
+    int compare_versions( const std::string& v1,
+                          const std::string& v2,
+                          int maxComponents = 0 );
 
     /**
      * Convert a string to upper case.

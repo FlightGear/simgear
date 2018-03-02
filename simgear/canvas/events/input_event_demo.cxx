@@ -1,4 +1,5 @@
-// Keyboard event demo. Press some keys and get some info...
+///@file
+/// Keyboard event demo. Press some keys and get some info...
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

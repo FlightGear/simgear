@@ -38,7 +38,7 @@ namespace canvas
       MouseEvent(const osgGA::GUIEventAdapter& ea);
       MouseEvent* clone(int type = 0) const override;
 
-      virtual bool canBubble() const;
+      bool canBubble() const override;
 
       osg::Vec2f getScreenPos() const { return screen_pos; }
       osg::Vec2f getClientPos() const { return client_pos; }

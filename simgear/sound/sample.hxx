@@ -23,7 +23,7 @@
 // $Id$
 
 /**
- * \file audio sample.hxx
+ * \file
  * Provides a audio sample encapsulation
  */
 

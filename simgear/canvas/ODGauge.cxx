@@ -1,4 +1,5 @@
-// Owner Drawn Gauge helper class
+///@file
+/// Owner Drawn Gauge helper class
 //
 // Written by Harald JOHNSEN, started May 2005.
 //
@@ -6,9 +7,9 @@
 //
 // Ported to OSG by Tim Moore - Jun 2007
 //
-// Heavily modified to be usable for the 2d Canvas by Thomas Geymayer - April 2012
-// Supports now multisampling/mipmapping, usage of the stencil buffer and placing
-// the texture in the scene by certain filter criteria
+// Heavily modified to be usable for the 2d Canvas by Thomas Geymayer - April
+// 2012 Supports now multisampling/mipmapping, usage of the stencil buffer and
+// placing the texture in the scene by certain filter criteria.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public

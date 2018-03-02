@@ -1,4 +1,5 @@
-// Adapter for using the canvas with different applications
+///@file
+/// Adapter for using the canvas with different applications
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -29,6 +30,10 @@ namespace HTTP { class Client; }
 namespace canvas
 {
 
+  /**
+   * Provides access to different required systems of the application to the
+   * Canvas
+   */
   class SystemAdapter
   {
     public:

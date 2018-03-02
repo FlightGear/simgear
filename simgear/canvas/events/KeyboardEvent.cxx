@@ -1,4 +1,5 @@
-// Keyboard event
+///@file
+/// Keyboard event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

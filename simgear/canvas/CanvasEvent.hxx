@@ -115,7 +115,14 @@ namespace canvas
        */
       bool defaultPrevented() const;
 
+      /**
+       * Register a new type string or get the id of an existing type string
+       *
+       * @param type    Type string
+       * @return Id of the given @a type
+       */
       static int getOrRegisterType(const std::string& type);
+
       static int strToType(const std::string& type);
       static std::string typeToStr(int type);
 

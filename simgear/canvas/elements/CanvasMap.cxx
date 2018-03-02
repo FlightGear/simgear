@@ -1,5 +1,6 @@
-// A group of 2D Canvas elements which get automatically transformed according
-// to the map parameters.
+///@file
+/// A group of 2D Canvas elements which get automatically transformed according
+/// to the map parameters.
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

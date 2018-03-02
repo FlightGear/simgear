@@ -1,4 +1,5 @@
-// Mapping between canvas gui Event types and their names
+///@file
+/// Mapping between canvas gui Event types and their names
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

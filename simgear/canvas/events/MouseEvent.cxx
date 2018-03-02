@@ -1,4 +1,5 @@
-// Mouse event
+///@file
+/// Mouse event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //

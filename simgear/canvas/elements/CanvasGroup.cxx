@@ -1,4 +1,5 @@
-// A group of 2D Canvas elements
+///@file
+/// A group of 2D Canvas elements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -168,6 +169,7 @@ namespace canvas
     if( !_scene_group.valid() )
       return warnSceneGroupExpired("clearEventListener");
 
+    // TODO should this be recursive?
     for(size_t i = 0; i < _scene_group->getNumChildren(); ++i)
       getChildByIndex(i)->clearEventListener();
   }

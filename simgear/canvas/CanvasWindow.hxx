@@ -1,4 +1,5 @@
-// Window for placing a Canvas onto it (for dialogs, menus, etc.)
+///@file
+/// Window for placing a Canvas onto it (for dialogs, menus, etc.)
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

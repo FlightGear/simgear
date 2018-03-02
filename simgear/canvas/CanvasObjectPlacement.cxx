@@ -1,4 +1,5 @@
-// Canvas placement for placing a canvas texture onto osg objects.
+///@file
+/// Canvas placement for placing a canvas texture onto osg objects
 //
 // It also provides a SGPickCallback for passing mouse events to the canvas and
 // manages emissive lighting of the placed canvas.

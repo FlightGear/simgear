@@ -1,4 +1,5 @@
-// Canvas Event for event model similar to DOM Level 3 Event Model
+///@file
+/// Canvas Event for event model similar to DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -125,10 +126,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   std::string Event::typeToStr(int type)
   {
-    TypeMap const& type_map = getTypeMap();
+    auto const& map_by_id = getTypeMap().by<id>();
 
-    TypeMap::map_by<id>::const_iterator it = type_map.by<id>().find(type);
-    if( it == type_map.by<id>().end() )
+    auto it = map_by_id.find(type);
+    if( it == map_by_id.end() )
       return "unknown";
     return it->second;
   }

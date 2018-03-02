@@ -1,4 +1,5 @@
-// A text on the Canvas
+///@file
+/// A text on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -17,6 +18,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include <simgear_config.h>
+
 #include "CanvasText.hxx"
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
@@ -56,21 +58,20 @@ namespace canvas
 
       SGVec2i sizeForWidth(int w) const;
 
-      virtual osg::BoundingBox
+      osg::BoundingBox
 #if OSG_VERSION_LESS_THAN(3,3,2)
       computeBound()
 #else
       computeBoundingBox()
 #endif
-      const;
+      const override;
 
     protected:
-
       friend class TextLine;
 
       canvas::Text *_text_element;
 
-      virtual void computePositions(unsigned int contextID) const;
+      void computePositions(unsigned int contextID) const override;
   };
 
   class TextLine

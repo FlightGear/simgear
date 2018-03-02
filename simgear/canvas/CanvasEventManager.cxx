@@ -1,4 +1,5 @@
-// Manage event handling inside a Canvas similar to the DOM Level 3 Event Model
+///@file
+/// Manage event handling inside a Canvas similar to the DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -17,9 +18,11 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include <simgear_config.h>
+
 #include "CanvasEventManager.hxx"
-#include <simgear/canvas/events/MouseEvent.hxx>
-#include <simgear/canvas/elements/CanvasElement.hxx>
+#include "elements/CanvasElement.hxx"
+#include "events/MouseEvent.hxx"
+
 #include <cmath>
 
 namespace simgear

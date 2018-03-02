@@ -1,5 +1,6 @@
-// Visitor for traversing a canvas element hierarchy similar to the traversal
-// of the DOM Level 3 Event Model
+///@file
+/// Visitor for traversing a canvas element hierarchy similar to the traversal
+/// of the DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -18,9 +19,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include <simgear_config.h>
+
 #include "CanvasEvent.hxx"
 #include "CanvasEventVisitor.hxx"
-#include <simgear/canvas/elements/CanvasElement.hxx>
+#include "elements/CanvasElement.hxx"
 
 namespace simgear
 {

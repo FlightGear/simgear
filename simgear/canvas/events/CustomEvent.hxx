@@ -38,6 +38,7 @@ namespace canvas
     public:
 
       /**
+       * @brief Construct a user defined event from a type string
        *
        * @param type_str    Event type name (if name does not exist yet it will
        *                    be registered as new event type)
@@ -49,6 +50,10 @@ namespace canvas
                    StringMap const& data = StringMap() );
 
       /**
+       * @brief Construct a user defined event from a (previously registered)
+       *        type id
+       *
+       * @see getOrRegisterType()
        *
        * @param type_id     Event type id
        * @param bubbles     If this event should take part in the bubbling phase
@@ -76,7 +81,7 @@ namespace canvas
        * @see #bubbles
        * @see CustomEvent()
        */
-      virtual bool canBubble() const { return bubbles; }
+      bool canBubble() const override { return bubbles; }
 
       StringMap detail; //!< User data map
       bool bubbles;     //!< Whether the event supports bubbling

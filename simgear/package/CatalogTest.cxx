@@ -61,6 +61,7 @@ std::string readFileIntoString(const SGPath& path)
 
 SGPath global_serverFilesRoot;
 unsigned int global_catalogVersion = 0;
+bool global_failRequests = false;
 
 class TestPackageChannel : public TestServerChannel
 {
@@ -71,6 +72,10 @@ public:
         state = STATE_IDLE;
         SGPath localPath(global_serverFilesRoot);
 
+        if (global_failRequests) {
+            closeWhenDone();
+            return;
+        }
 
         if (path == "/catalogTest1/catalog.xml") {
             if (global_catalogVersion > 0) {
@@ -540,6 +545,186 @@ void testInstallTarPackage(HTTP::Client* cl)
     SG_VERIFY(p.exists());
 }
 
+void testDisableDueToVersion(HTTP::Client* cl)
+{
+    global_catalogVersion = 0;
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("cat_disable_at_version");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    
+    {
+        pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+        root->setHTTPClient(cl);
+        
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        waitForUpdateComplete(cl, root);
+        SG_VERIFY(c->isEnabled());
+
+        // install a package
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+        SG_CHECK_EQUAL(p1->id(), "b737-NG");
+        pkg::InstallRef ins = p1->install();
+        SG_VERIFY(ins->isQueued());
+        waitForUpdateComplete(cl, root);
+        SG_VERIFY(p1->isInstalled());
+    }
+    
+    // bump version and refresh
+    {
+        pkg::RootRef root(new pkg::Root(rootPath, "9.1.2"));
+        pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
+        SG_CHECK_EQUAL(root->allCatalogs().size(), 1);
+        SG_VERIFY(!cat->isEnabled());
+        SG_CHECK_EQUAL(root->catalogs().size(), 0);
+
+        root->setHTTPClient(cl);
+        root->refresh();
+        waitForUpdateComplete(cl, root);
+        SG_CHECK_EQUAL(root->allCatalogs().size(), 1);
+
+        
+        SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VERSION);
+        SG_VERIFY(!cat->isEnabled());
+        SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
+        
+        auto enabledCats = root->catalogs();
+        auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
+        SG_VERIFY(it == enabledCats.end());
+        SG_CHECK_EQUAL(enabledCats.size(), 0);
+        
+        auto allCats = root->allCatalogs();
+        auto j = std::find(allCats.begin(), allCats.end(), cat);
+        SG_VERIFY(j != allCats.end());
+
+        SG_CHECK_EQUAL(allCats.size(), 1);
+
+        // ensure existing package is still installed but not directly list
+        
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+        SG_VERIFY(p1 !=  pkg::PackageRef());
+        SG_CHECK_EQUAL(p1->id(), "b737-NG");
+
+        auto packs = root->allPackages();
+        auto k = std::find(packs.begin(), packs.end(), p1);
+        SG_VERIFY(k == packs.end());
+    }
+}
+
+void testVersionMigrate(HTTP::Client* cl)
+{
+    global_catalogVersion = 2; // version which has migration info
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("cat_migrate_version");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    
+    {
+        pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+        root->setHTTPClient(cl);
+        
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        waitForUpdateComplete(cl, root);
+        SG_VERIFY(c->isEnabled());
+        
+        // install a package
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+        SG_CHECK_EQUAL(p1->id(), "b737-NG");
+        pkg::InstallRef ins = p1->install();
+        SG_VERIFY(ins->isQueued());
+        waitForUpdateComplete(cl, root);
+        SG_VERIFY(p1->isInstalled());
+    }
+    
+    // bump version and refresh
+    {
+        pkg::RootRef root(new pkg::Root(rootPath, "10.1.2"));
+        root->setHTTPClient(cl);
+        
+        // this should cause auto-migration
+        root->refresh(true);
+        waitForUpdateComplete(cl, root);
+        
+        pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
+        SG_VERIFY(cat->isEnabled());
+        SG_CHECK_EQUAL(cat->status(), pkg::Delegate::STATUS_REFRESHED);
+        SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
+        SG_CHECK_EQUAL(cat->url(), "http://localhost:2000/catalogTest1/catalog-v10.xml");
+
+        auto enabledCats = root->catalogs();
+        auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
+        SG_VERIFY(it != enabledCats.end());
+        
+        // ensure existing package is still installed
+        
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+        SG_VERIFY(p1 !=  pkg::PackageRef());
+        SG_CHECK_EQUAL(p1->id(), "b737-NG");
+        
+        auto packs = root->allPackages();
+        auto k = std::find(packs.begin(), packs.end(), p1);
+        SG_VERIFY(k != packs.end());
+    }
+}
+
+void testOfflineMode(HTTP::Client* cl)
+{
+    global_catalogVersion = 0;
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("cat_offline_mode");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    
+    {
+        pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+        root->setHTTPClient(cl);
+        
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        waitForUpdateComplete(cl, root);
+        SG_VERIFY(c->isEnabled());
+        
+        // install a package
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+        SG_CHECK_EQUAL(p1->id(), "b737-NG");
+        pkg::InstallRef ins = p1->install();
+        SG_VERIFY(ins->isQueued());
+        waitForUpdateComplete(cl, root);
+        SG_VERIFY(p1->isInstalled());
+    }
+    
+    global_failRequests = true;
+    
+    {
+        pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+        SG_CHECK_EQUAL(root->catalogs().size(), 1);
+
+        root->setHTTPClient(cl);
+        root->refresh(true);
+        waitForUpdateComplete(cl, root);
+        SG_CHECK_EQUAL(root->catalogs().size(), 1);
+
+        pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
+        SG_VERIFY(cat->isEnabled());
+        SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_DOWNLOAD);
+        SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
+        
+        auto enabledCats = root->catalogs();
+        auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
+        SG_VERIFY(it != enabledCats.end());
+        
+        // ensure existing package is still installed
+        pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+        SG_VERIFY(p1 !=  pkg::PackageRef());
+        SG_CHECK_EQUAL(p1->id(), "b737-NG");
+        
+        auto packs = root->allPackages();
+        auto k = std::find(packs.begin(), packs.end(), p1);
+        SG_VERIFY(k != packs.end());
+    }
+    
+    global_failRequests = false;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -564,6 +749,12 @@ int main(int argc, char* argv[])
 
     testInstallTarPackage(&cl);
 
+    testDisableDueToVersion(&cl);
+    
+    testOfflineMode(&cl);
+    
+    testVersionMigrate(&cl);
+    
     std::cout << "Successfully passed all tests!" << std::endl;
     return EXIT_SUCCESS;
 }

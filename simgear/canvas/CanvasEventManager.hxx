@@ -1,4 +1,5 @@
-// Manage event handling inside a Canvas similar to the DOM Level 3 Event Model
+///@file
+/// Manage event handling inside a Canvas similar to the DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

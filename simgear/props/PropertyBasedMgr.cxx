@@ -1,4 +1,5 @@
-// Base class for property controlled subsystems
+///@file
+/// Base class for property controlled subsystems
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

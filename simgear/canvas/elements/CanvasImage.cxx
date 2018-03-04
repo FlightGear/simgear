@@ -1,4 +1,5 @@
-// An image on the Canvas
+///@file
+/// An image on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

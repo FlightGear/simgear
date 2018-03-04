@@ -1,4 +1,5 @@
-// Canvas user defined event
+///@file
+/// Canvas user defined event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -44,6 +45,14 @@ namespace canvas
     type = type_id;
 //    TypeMap::map_by<id>::type const& type_map = getTypeMap().by<id>();
 //    assert( type_map.find(type_id) != type_map.end() );
+  }
+
+  //----------------------------------------------------------------------------
+  CustomEvent* CustomEvent::clone(int type) const
+  {
+    auto event = new CustomEvent(*this);
+    event->type = type;
+    return event;
   }
 
   //----------------------------------------------------------------------------

@@ -1,5 +1,6 @@
-// A group of 2D Canvas elements which get automatically transformed according
-// to the map parameters.
+///@file
+/// A group of 2D Canvas elements which get automatically transformed according
+/// to the map parameters.
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -46,16 +47,14 @@ namespace canvas
       virtual ~Map();
 
     protected:
-      virtual void updateImpl(double dt);
+      void updateImpl(double dt) override;
 
       void updateProjection(SGPropertyNode* type_node);
 
-      virtual void childAdded( SGPropertyNode* parent,
-                               SGPropertyNode* child );
-      virtual void childRemoved( SGPropertyNode* parent,
-                                 SGPropertyNode* child );
-      virtual void valueChanged(SGPropertyNode* child);
-      virtual void childChanged(SGPropertyNode* child);
+      void childAdded(SGPropertyNode* parent, SGPropertyNode* child) override;
+      void childRemoved(SGPropertyNode* parent, SGPropertyNode* child) override;
+      void valueChanged(SGPropertyNode* child) override;
+      void childChanged(SGPropertyNode* child) override;
 
       using GeoNodes =
         std::unordered_map<SGPropertyNode*, std::shared_ptr<GeoNodePair>>;

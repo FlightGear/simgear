@@ -1,4 +1,5 @@
-// Geographic projections for Canvas map element
+///@file
+/// Geographic projections for Canvas map element
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

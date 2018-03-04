@@ -1,4 +1,5 @@
-// Base class for canvas placements
+///@file
+/// Base class for canvas placements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

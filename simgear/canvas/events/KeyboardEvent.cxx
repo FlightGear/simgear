@@ -1,4 +1,5 @@
-// Keyboard event
+///@file
+/// Keyboard event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -67,6 +68,14 @@ namespace canvas
       type = KEY_UP;
 //    else
 //      // TODO what to do with wrong event type?
+  }
+
+  //----------------------------------------------------------------------------
+  KeyboardEvent* KeyboardEvent::clone(int type) const
+  {
+    auto event = new KeyboardEvent(*this);
+    event->type = type;
+    return event;
   }
 
   //----------------------------------------------------------------------------

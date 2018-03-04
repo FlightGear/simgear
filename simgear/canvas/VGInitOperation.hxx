@@ -1,4 +1,5 @@
-// osg::Operation to initialize the OpenVG context used for path rendering
+///@file
+/// osg::Operation to initialize the OpenVG context used for path rendering
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

@@ -5,8 +5,6 @@
 #include <signal.h>
 
 #include <iostream>
-#include <boost/foreach.hpp>
-
 
 #include <simgear/io/sg_file.hxx>
 #include <simgear/io/HTTPClient.hxx>

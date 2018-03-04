@@ -1,4 +1,5 @@
-// An OpenVG path on the Canvas
+///@file
+/// An OpenVG path on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -40,7 +41,8 @@ namespace canvas
             ElementWeakPtr parent = 0 );
       virtual ~Path();
 
-      virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
+      osg::BoundingBox
+      getTransformedBounds(const osg::Matrix& m) const override;
 
       /** Add a segment with the given command and coordinates */
       Path& addSegment(uint8_t cmd, std::initializer_list<float> coords = {});
@@ -86,10 +88,10 @@ namespace canvas
       bool _hasRect : 1;
       SGRectf _rect;
 
-      virtual void updateImpl(double dt);
+      void updateImpl(double dt) override;
 
-      virtual void childRemoved(SGPropertyNode * child);
-      virtual void childChanged(SGPropertyNode * child);
+      void childRemoved(SGPropertyNode * child) override;
+      void childChanged(SGPropertyNode * child) override;
 
       void parseRectToVGPath();
   };

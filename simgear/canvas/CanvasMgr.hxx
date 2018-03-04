@@ -1,4 +1,5 @@
-// Canvas with 2D rendering API
+///@file
+/// Canvas with 2D rendering API
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -61,7 +62,7 @@ namespace canvas
 
     protected:
 
-      virtual void elementCreated(PropertyBasedElementPtr element);
+      void elementCreated(PropertyBasedElementPtr element) override;
   };
 
 } // namespace canvas

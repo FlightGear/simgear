@@ -1,4 +1,5 @@
-// A group of 2D Canvas elements
+///@file
+/// A group of 2D Canvas elements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -86,14 +87,15 @@ namespace canvas
        */
       ElementPtr getElementById(const std::string& id);
 
-      virtual void clearEventListener();
+      void clearEventListener() override;
 
-      virtual bool traverse(EventVisitor& visitor);
+      bool traverse(EventVisitor& visitor) override;
 
-      virtual bool setStyle( const SGPropertyNode* child,
-                             const StyleInfo* style_info = 0 );
+      bool setStyle( const SGPropertyNode* child,
+                     const StyleInfo* style_info = 0 ) override;
 
-      virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
+      osg::BoundingBox
+      getTransformedBounds(const osg::Matrix& m) const override;
 
     protected:
 
@@ -105,11 +107,11 @@ namespace canvas
        */
       virtual ElementFactory getChildFactory(const std::string& type) const;
 
-      virtual void updateImpl(double dt);
+      void updateImpl(double dt) override;
 
-      virtual void childAdded(SGPropertyNode * child);
-      virtual void childRemoved(SGPropertyNode * child);
-      virtual void childChanged(SGPropertyNode * child);
+      void childAdded(SGPropertyNode * child) override;
+      void childRemoved(SGPropertyNode * child) override;
+      void childChanged(SGPropertyNode * child) override;
 
       void handleZIndexChanged(ElementPtr child, int z_index = 0);
 

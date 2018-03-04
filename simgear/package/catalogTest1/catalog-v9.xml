@@ -6,34 +6,29 @@
     <url>http://localhost:2000/catalogTest1/catalog.xml</url>
     <catalog-version>4</catalog-version>
 
-    <version>8.1.*</version>
-    <version>8.0.0</version>
-    <version>8.2.0</version>
+    <version>9.1.*</version>
 
-    <alternate-version>
-      <version>10.*.*</version>
-      <url>http://localhost:2000/catalogTest1/catalog-v10.xml</url>
-    </alternate-version>
-    
     <package>
         <id>alpha</id>
         <name>Alpha package</name>
-        <revision type="int">9</revision>
+        <revision type="int">8</revision>
         <file-size-bytes type="int">593</file-size-bytes>
 
         <md5>a469c4b837f0521db48616cfe65ac1ea</md5>
         <url>http://localhost:2000/catalogTest1/alpha.zip</url>
 
         <dir>alpha</dir>
+
     </package>
 
     <package>
         <id>c172p</id>
         <name>Cessna 172-P</name>
         <dir>c172p</dir>
-        <description>A plane made by Cessna</description>
+        <description>A plane made by Cessna on Jupiter</description>
         <revision type="int">42</revision>
         <file-size-bytes type="int">860</file-size-bytes>
+        <author>Standard author</author>
 
         <tag>cessna</tag>
         <tag>ga</tag>
@@ -78,6 +73,8 @@
         <variant>
             <id>c172p-floats</id>
             <name>C172 with floats</name>
+            <description>A plane with floats</description>
+            <author>Floats variant author</author>
 
             <preview>
               <type>exterior</type>
@@ -90,11 +87,17 @@
               <path>thumb-panel.png</path>
               <url>http://foo.bar.com/thumb-panel.png</url>
             </preview>
+
+            <thumbnail>http://foo.bar.com/thumb-floats.png</thumbnail>
+            <thumbnail-path>thumb-floats.png</thumbnail-path>
         </variant>
 
         <variant>
             <id>c172p-skis</id>
             <name>C172 with skis</name>
+            <description>A plane with skis</description>
+
+            <variant-of>c172p</variant-of>
 
             <preview>
               <type>exterior</type>
@@ -109,19 +112,35 @@
             </preview>
         </variant>
 
+        <variant>
+            <id>c172r</id>
+            <name>C172R</name>
+            <description>Equally good version of the C172</description>
+            <variant-of>_package_</variant-of>
+            <preview>
+              <type>panel</type>
+              <path>thumb-panel.png</path>
+              <url>http://foo.bar.com/thumb-panel.png</url>
+            </preview>
+        </variant>
+
+        <variant>
+            <id>c172r-floats</id>
+            <name>C172R-floats</name>
+            <description>Equally good version of the C172 with floats</description>
+            <variant-of>c172r</variant-of>
+            <preview>
+              <type>panel</type>
+              <path>thumb-panel.png</path>
+              <url>http://foo.bar.com/thumb-panel.png</url>
+            </preview>
+        </variant>
+
         <md5>ec0e2ffdf98d6a5c05c77445e5447ff5</md5>
         <url>http://localhost:2000/catalogTest1/c172p.zip</url>
 
-    </package>
-
-    <package>
-        <id>common-sounds</id>
-        <name>Common sound files for test catalog aircraft</name>
-        <revision>11</revision>
-        <dir>sounds</dir>
-        <url>http://localhost:2000/catalogTest1/common-sounds.zip</url>
-        <file-size-bytes>360</file-size-bytes>
-        <md5>acf9eb89cf396eb42f8823d9cdf17584</md5>
+        <thumbnail>http://foo.bar.com/thumb-exterior.png</thumbnail>
+        <thumbnail-path>exterior.png</thumbnail-path>
     </package>
 
     <package>
@@ -129,7 +148,7 @@
         <name>Boeing 737 NG</name>
         <dir>b737NG</dir>
         <description>A popular twin-engined narrow body jet</description>
-        <revision type="int">112</revision>
+        <revision type="int">111</revision>
         <file-size-bytes type="int">860</file-size-bytes>
 
         <tag>boeing</tag>
@@ -145,30 +164,15 @@
 
         <md5>a94ca5704f305b90767f40617d194ed6</md5>
         <url>http://localhost:2000/catalogTest1/b737.tar.gz</url>
-
-        <preview>
-          <type>exterior</type>
-          <path>thumb-exterior.png</path>
-          <url>http://foo.bar.com/thumb-exterior.png</url>
-        </preview>
-
-        <preview>
-          <type>panel</type>
-          <path>thumb-panel.png</path>
-          <url>http://foo.bar.com/thumb-panel.png</url>
-        </preview>
       </package>
 
-
     <package>
-        <id>dc3</id>
-        <name>DC-3</name>
-        <revision type="int">9</revision>
-        <file-size-bytes type="int">593</file-size-bytes>
-
-        <md5>a469c4b837f0521db48616cfe65ac1ea</md5>
-        <url>http://localhost:2000/catalogTest1/alpha.zip</url>
-
-        <dir>dc3</dir>
-    </package>
+        <id>common-sounds</id>
+        <name>Common sound files for test catalog aircraft</name>
+        <revision>10</revision>
+        <dir>sounds</dir>
+        <url>http://localhost:2000/catalogTest1/common-sounds.zip</url>
+        <file-size-bytes>360</file-size-bytes>
+        <md5>acf9eb89cf396eb42f8823d9cdf17584</md5>
+    </package>    
 </PropertyList>

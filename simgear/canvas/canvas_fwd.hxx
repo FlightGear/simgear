@@ -1,4 +1,5 @@
-// Canvas forward declarations
+///@file
+/// Canvas forward declarations
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

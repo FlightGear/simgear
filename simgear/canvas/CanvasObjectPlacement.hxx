@@ -1,5 +1,5 @@
 ///@file
-/// Placement for putting a canvas texture onto OpenSceneGraph objects.
+/// Placement for putting a canvas texture onto OpenSceneGraph objects
 ///
 /// It also provides a SGPickCallback for passing mouse events to the canvas and
 /// manages emissive lighting of the placed canvas.
@@ -60,7 +60,7 @@ namespace canvas
        */
       void setCaptureEvents(bool enable);
 
-      virtual bool childChanged(SGPropertyNode* child);
+      bool childChanged(SGPropertyNode* child) override;
 
     protected:
       typedef SGSharedPtr<SGPickCallback> PickCallbackPtr;

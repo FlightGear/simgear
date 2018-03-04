@@ -1,4 +1,5 @@
-// Mouse event
+///@file
+/// Mouse event
 //
 // Copyright (C) 2014  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -46,6 +47,14 @@ namespace canvas
     int button_mask = ea.getButton();
     while( (button_mask >>= 1) > 0 )
       button += 1;
+  }
+
+  //----------------------------------------------------------------------------
+  MouseEvent* MouseEvent::clone(int type) const
+  {
+    auto event = new MouseEvent(*this);
+    event->type = type;
+    return event;
   }
 
   //----------------------------------------------------------------------------

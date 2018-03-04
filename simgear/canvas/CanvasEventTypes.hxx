@@ -1,4 +1,5 @@
-// Mapping between canvas gui Event types and their names
+///@file
+/// Mapping between canvas gui Event types and their names
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -25,6 +26,8 @@ ENUM_MAPPING(MOUSE_UP,    "mouseup",    MouseEvent)
 ENUM_MAPPING(CLICK,       "click",      MouseEvent)
 ENUM_MAPPING(DBL_CLICK,   "dblclick",   MouseEvent)
 ENUM_MAPPING(DRAG,        "drag",       MouseEvent)
+ENUM_MAPPING(DRAG_START,  "dragstart",  MouseEvent)
+ENUM_MAPPING(DRAG_END,    "dragend",    MouseEvent)
 ENUM_MAPPING(WHEEL,       "wheel",      MouseEvent)
 ENUM_MAPPING(MOUSE_MOVE,  "mousemove",  MouseEvent)
 ENUM_MAPPING(MOUSE_OVER,  "mouseover",  MouseEvent)

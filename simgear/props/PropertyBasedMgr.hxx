@@ -1,4 +1,5 @@
-// Base class for property controlled subsystems
+///@file
+/// Base class for property controlled subsystems
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -33,10 +34,10 @@ namespace simgear
     public SGPropertyChangeListener
   {
     public:
-      virtual void init();
-      virtual void shutdown();
+      void init() override;
+      void shutdown() override;
 
-      virtual void update (double delta_time_sec);
+      void update (double delta_time_sec) override;
 
       /**
        * Create a new PropertyBasedElement
@@ -88,10 +89,10 @@ namespace simgear
                         ElementFactory element_factory );
       virtual ~PropertyBasedMgr() = 0;
 
-      virtual void childAdded( SGPropertyNode * parent,
-                               SGPropertyNode * child );
-      virtual void childRemoved( SGPropertyNode * parent,
-                                 SGPropertyNode * child );
+      void childAdded( SGPropertyNode * parent,
+                       SGPropertyNode * child ) override;
+      void childRemoved( SGPropertyNode * parent,
+                         SGPropertyNode * child ) override;
 
       virtual void elementCreated(PropertyBasedElementPtr element) {}
 

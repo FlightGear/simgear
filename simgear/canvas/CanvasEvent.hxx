@@ -66,6 +66,11 @@ namespace canvas
       virtual ~Event();
 
       /**
+       * Clone event and set to the given type (Same type if not specified)
+       */
+      virtual Event* clone(int type = 0) const = 0;
+
+      /**
        * Get whether this events support bubbling
        */
       virtual bool canBubble() const;
@@ -110,7 +115,14 @@ namespace canvas
        */
       bool defaultPrevented() const;
 
+      /**
+       * Register a new type string or get the id of an existing type string
+       *
+       * @param type    Type string
+       * @return Id of the given @a type
+       */
       static int getOrRegisterType(const std::string& type);
+
       static int strToType(const std::string& type);
       static std::string typeToStr(int type);
 

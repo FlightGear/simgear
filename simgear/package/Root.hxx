@@ -69,7 +69,13 @@ public:
     std::string getLocale() const;
     
     CatalogList catalogs() const;
-        
+    
+    /**
+     * retrive all catalogs, including currently disabled ones
+     */
+    CatalogList allCatalogs() const;
+    
+    
     void setMaxAgeSeconds(unsigned int seconds);
     unsigned int maxAgeSeconds() const;
     

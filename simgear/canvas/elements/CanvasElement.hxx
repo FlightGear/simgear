@@ -95,7 +95,7 @@ namespace canvas
        *
        */
       virtual ~Element() = 0;
-      virtual void onDestroy();
+      void onDestroy() override;
 
       ElementPtr getParent() const;
       CanvasWeakPtr getCanvas() const;
@@ -105,7 +105,7 @@ namespace canvas
        *
        * @param dt  Frame time in seconds
        */
-      virtual void update(double dt);
+      void update(double dt) override;
 
       bool addEventListener(const std::string& type, const EventListener& cb);
       virtual void clearEventListener();
@@ -154,11 +154,9 @@ namespace canvas
        */
       osg::Vec2f posToLocal(const osg::Vec2f& pos) const;
 
-      virtual void childAdded( SGPropertyNode * parent,
-                               SGPropertyNode * child );
-      virtual void childRemoved( SGPropertyNode * parent,
-                                 SGPropertyNode * child );
-      virtual void valueChanged(SGPropertyNode * child);
+      void childAdded(SGPropertyNode* parent, SGPropertyNode* child) override;
+      void childRemoved(SGPropertyNode* parent, SGPropertyNode* child) override;
+      void valueChanged(SGPropertyNode* child) override;
 
       virtual bool setStyle( const SGPropertyNode* child,
                              const StyleInfo* style_info = 0 );
@@ -597,7 +595,7 @@ namespace canvas
 
       osg::ref_ptr<osg::Drawable> _drawable;
 
-      Element(const Element&);// = delete
+      Element(const Element&) = delete;
 
       template<class Derived>
       static Derived& derived_cast(Element& el)

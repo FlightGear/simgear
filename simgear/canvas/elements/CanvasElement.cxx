@@ -1,4 +1,5 @@
-// Interface for 2D Canvas element
+///@file
+/// Interface for 2D Canvas element
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -271,8 +272,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Element::setFocus()
   {
-    CanvasPtr canvas = _canvas.lock();
-    if( canvas )
+    if( auto canvas = _canvas.lock() )
       canvas->setFocusElement(this);
   }
 

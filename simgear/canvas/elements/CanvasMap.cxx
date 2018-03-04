@@ -1,5 +1,6 @@
-// A group of 2D Canvas elements which get automatically transformed according
-// to the map parameters.
+///@file
+/// A group of 2D Canvas elements which get automatically transformed according
+/// to the map parameters.
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -199,10 +200,18 @@ namespace canvas
       _projection = std::make_shared<SansonFlamsteedProjection>();
 
     _projection->setWorldPosition(_node->getDoubleValue(REF_LAT),
-                                  _node->getDoubleValue(REF_LON) );
-    _projection->setOrientation(_node->getFloatValue(HDG));
-    _projection->setScreenRange(_node->getDoubleValue(SCREEN_RANGE));
-    _projection->setRange(_node->getDoubleValue(RANGE));
+                                  _node->getDoubleValue(REF_LON));
+
+    // Only set existing properties to prevent using 0 instead of default values
+
+    if( auto heading = _node->getChild(HDG) )
+      _projection->setOrientation(heading->getFloatValue());
+
+    if( auto screen_range = _node->getChild(SCREEN_RANGE) )
+      _projection->setScreenRange(screen_range->getDoubleValue());
+
+    if( auto range = _node->getChild(RANGE) )
+      _projection->setRange(range->getDoubleValue());
 
     _projection_dirty = true;
   }

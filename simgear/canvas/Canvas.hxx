@@ -71,18 +71,18 @@ namespace canvas
         public osg::NodeCallback
       {
         public:
-          CullCallback(const CanvasWeakPtr& canvas);
+          explicit CullCallback(const CanvasWeakPtr& canvas);
 
         private:
           CanvasWeakPtr _canvas;
 
-          virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+          void operator()(osg::Node* node, osg::NodeVisitor* nv) override;
       };
       typedef osg::ref_ptr<CullCallback> CullCallbackPtr;
 
-      Canvas(SGPropertyNode* node);
+      explicit Canvas(SGPropertyNode* node);
       virtual ~Canvas();
-      virtual void onDestroy();
+      void onDestroy() override;
 
       void setCanvasMgr(CanvasMgr* canvas_mgr);
       CanvasMgr* getCanvasMgr() const;
@@ -184,11 +184,9 @@ namespace canvas
       bool propagateEvent( EventPtr const& event,
                            EventPropagationPath const& path );
 
-      virtual void childAdded( SGPropertyNode * parent,
-                               SGPropertyNode * child );
-      virtual void childRemoved( SGPropertyNode * parent,
-                                 SGPropertyNode * child );
-      virtual void valueChanged (SGPropertyNode * node);
+      void childAdded(SGPropertyNode* parent, SGPropertyNode* child) override;
+      void childRemoved(SGPropertyNode* parent, SGPropertyNode* child) override;
+      void valueChanged(SGPropertyNode * node) override;
 
       osg::Texture2D* getTexture() const;
 
@@ -254,8 +252,8 @@ namespace canvas
 
       static SystemAdapterPtr _system_adapter;
 
-      Canvas(const Canvas&); // = delete;
-      Canvas& operator=(const Canvas&); // = delete;
+      Canvas(const Canvas&) = delete;
+      Canvas& operator=(const Canvas&) = delete;
   };
 
 } // namespace canvas

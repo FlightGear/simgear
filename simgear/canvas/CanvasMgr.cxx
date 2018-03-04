@@ -1,4 +1,5 @@
-// Canvas with 2D rendering API
+///@file
+/// Canvas with 2D rendering API
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -17,11 +18,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include <simgear_config.h>
+
 #include "CanvasMgr.hxx"
 #include "Canvas.hxx"
 #include "CanvasEventManager.hxx"
-
-#include <boost/bind.hpp>
 
 namespace simgear
 {

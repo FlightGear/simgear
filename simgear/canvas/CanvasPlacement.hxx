@@ -1,4 +1,5 @@
-// Base class for canvas placements
+///@file
+/// Base class for canvas placements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -40,9 +41,8 @@ namespace canvas
     protected:
       SGPropertyNode_ptr _node;
 
-    private:
-      Placement(const Placement&) /* = delete */;
-      Placement& operator=(const Placement&) /* = delete */;
+      Placement(const Placement&) = delete;
+      Placement& operator=(const Placement&) = delete;
   };
 
 } // namespace canvas

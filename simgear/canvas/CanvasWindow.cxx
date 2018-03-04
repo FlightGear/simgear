@@ -1,4 +1,5 @@
-// Window for placing a Canvas onto it (for dialogs, menus, etc.)
+///@file
+/// Window for placing a Canvas onto it (for dialogs, menus, etc.)
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -210,6 +211,19 @@ namespace canvas
       _resize_right = getRegion().r() + offset.x();
     else if( mode & canvas::Window::LEFT )
       _resize_left = getRegion().l() + offset.x();
+  }
+
+  //----------------------------------------------------------------------------
+  bool Window::handleEvent(const EventPtr& event)
+  {
+    if( auto mouse_event = dynamic_cast<MouseEvent*>(event.get()) )
+    {
+      mouse_event->local_pos =
+      mouse_event->client_pos =
+        mouse_event->screen_pos - toOsg(getPosition());
+    }
+
+    return Image::handleEvent(event);
   }
 
   //----------------------------------------------------------------------------

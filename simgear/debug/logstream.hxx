@@ -158,12 +158,22 @@ public:
      
     void removeCallback(simgear::LogCallback* cb);
 
+    void removeCallbacks();
+
     /**
      * optionally record all entries and submit them to new log callbacks that
      * are added. This allows simplified logging configuration, but still including
      * early startup information in all logs.
      */
     void setStartupLoggingEnabled(bool enabled);
+
+    /**
+     * Set up the logstream for running in test mode.  For example the callbacks
+     * will be unregistered and the behaviour of the would_log() function
+     * sanitized.
+     */
+    void setTestingMode(bool testMode);
+
 private:
     // constructor
     logstream();

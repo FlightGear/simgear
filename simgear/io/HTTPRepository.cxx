@@ -75,6 +75,23 @@ namespace simgear
 
     typedef SGSharedPtr<HTTPRepoGetRequest> RepoRequestPtr;
 
+    std::string innerResultCodeAsString(HTTPRepository::ResultCode code)
+    {
+        switch (code) {
+        case HTTPRepository::REPO_NO_ERROR:     return "no error";
+        case HTTPRepository::REPO_ERROR_NOT_FOUND:  return "not found";
+        case HTTPRepository::REPO_ERROR_SOCKET:     return "socket error";
+        case HTTPRepository::SVN_ERROR_XML:        return "malformed XML";
+        case HTTPRepository::SVN_ERROR_TXDELTA:        return "malformed XML";
+        case HTTPRepository::REPO_ERROR_IO:         return "I/O error";
+        case HTTPRepository::REPO_ERROR_CHECKSUM:         return "checksum verification error";
+        case HTTPRepository::REPO_ERROR_FILE_NOT_FOUND: return "file not found";
+        case HTTPRepository::REPO_ERROR_HTTP:   return "HTTP-level error";
+        case HTTPRepository::REPO_ERROR_CANCELLED:   return "cancelled";
+        case HTTPRepository::REPO_PARTIAL_UPDATE:   return "partial update (incomplete)";
+        }
+    }
+    
 class HTTPRepoPrivate
 {
 public:
@@ -274,9 +291,7 @@ public:
             if (!cp.exists()) {
                 continue;
             }
-
-            SG_LOG(SG_TERRASYNC, SG_BULK, "new child, copying existing file" << cp << p);
-
+            
             SGBinaryFile src(cp);
             SGBinaryFile dst(p);
             src.open(SG_IO_IN);
@@ -316,22 +331,20 @@ public:
 
             ChildInfoList::iterator c = findIndexChild(it->file());
             if (c == children.end()) {
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "is orphan '" << it->file() << "'" );
-
-				orphans.push_back(it->file());
+                orphans.push_back(it->file());
             } else if (c->hash != hash) {
+#if 0
                 SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << it->file() );
                 // file exists, but hash mismatch, schedule update
                 if (!hash.empty()) {
                     SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists but hash is wrong for:" << it->file() );
                     SG_LOG(SG_TERRASYNC, SG_DEBUG, "on disk:" << hash << " vs in info:" << c->hash);
                 }
-
+#endif
                 toBeUpdated.push_back(it->file() );
             } else {
                 // file exists and hash is valid. If it's a directory,
                 // perform a recursive check.
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists hash is good:" << it->file() );
                 if (c->type == ChildInfo::DirectoryType) {
                     HTTPDirectory* childDir = childDirectory(it->file());
                     childDir->updateChildrenBasedOnHash();
@@ -386,7 +399,6 @@ public:
                 continue;
             }
 
-            SG_LOG(SG_TERRASYNC,SG_DEBUG, "scheduling update for " << *it );
             if (cit->type == ChildInfo::FileType) {
                 _repository->updateFile(this, *it, cit->sizeInBytes);
             } else {
@@ -481,11 +493,13 @@ private:
 
             if( typeData == "version" ) {
                 if( tokens.size() < 2 ) {
-                    SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: missing version number in line '" << line << "'" );
+                    SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: missing version number in line '" << line << "'"
+                           << "\n\tparsing:" << p.utf8Str());
                     break;
                 }
                 if( tokens[1] != "1" ) {
-                    SG_LOG(SG_TERRASYNC, SG_WARN, "invalid .dirindex file: wrong version number '" << tokens[1] << "' (expected 1)" );
+                    SG_LOG(SG_TERRASYNC, SG_WARN, "invalid .dirindex file: wrong version number '" << tokens[1] << "' (expected 1)"
+                           << "\n\tparsing:" << p.utf8Str());
                     break;
                 }
                 continue; // version is good, continue
@@ -496,24 +510,27 @@ private:
             }
 
             if( typeData == "time" && tokens.size() > 1 ) {
-                SG_LOG(SG_TERRASYNC, SG_INFO, ".dirindex at '" << p.str() << "' timestamp: " << tokens[1] );
+               // SG_LOG(SG_TERRASYNC, SG_INFO, ".dirindex at '" << p.str() << "' timestamp: " << tokens[1] );
                 continue;
             }
 
             if( tokens.size() < 3 ) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: not enough tokens in line '" << line << "' (ignoring line)" );
+                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: not enough tokens in line '" << line << "' (ignoring line)"
+                       << "\n\tparsing:" << p.utf8Str());
                 continue;
             }
 
             if (typeData != "f" && typeData != "d" ) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: invalid type in line '" << line << "', expected 'd' or 'f', (ignoring line)" );
+                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: invalid type in line '" << line << "', expected 'd' or 'f', (ignoring line)"
+                       << "\n\tparsing:" << p.utf8Str());
                 continue;
             }
 
             // security: prevent writing outside the repository via ../../.. filenames
             // (valid filenames never contain / - subdirectories have their own .dirindex)
             if ((tokens[1] == "..") || (tokens[1].find_first_of("/\\") != std::string::npos)) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: invalid filename in line '" << line << "', (ignoring line)" );
+                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: invalid filename in line '" << line << "', (ignoring line)"
+                       << "\n\tparsing:" << p.utf8Str());
                 continue;
             }
 
@@ -656,6 +673,11 @@ void HTTPRepository::setInstalledCopyPath(const SGPath& copyPath)
     _d->installedCopyPath = copyPath;
 }
 
+std::string HTTPRepository::resultCodeAsString(ResultCode code)
+{
+    return innerResultCodeAsString(code);
+}
+    
 HTTPRepository::ResultCode
 HTTPRepository::failure() const
 {
@@ -668,7 +690,7 @@ HTTPRepository::failure() const
 
     void HTTPRepoGetRequest::cancel()
     {
-        _directory->repository()->http->cancelRequest(this, "Reposiotry cancelled");
+        _directory->repository()->http->cancelRequest(this, "Repository cancelled");
         _directory = 0;
     }
 
@@ -690,7 +712,7 @@ HTTPRepository::failure() const
                 file.reset(new SGBinaryFile(pathInRepo));
                 if (!file->open(SG_IO_OUT)) {
                   SG_LOG(SG_TERRASYNC, SG_WARN, "unable to create file " << pathInRepo);
-                  _directory->repository()->http->cancelRequest(this, "Unable to create output file");
+                    _directory->repository()->http->cancelRequest(this, "Unable to create output file:" + pathInRepo.utf8Str());
                 }
 
                 sha1_init(&hashContext);
@@ -706,12 +728,12 @@ HTTPRepository::failure() const
             if (responseCode() == 200) {
                 std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
                 _directory->didUpdateFile(fileName, hash, contentSize());
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "got file " << fileName << " in " << _directory->absolutePath());
             } else if (responseCode() == 404) {
                 SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file not found on server: " << fileName << " for " << _directory->absolutePath());
                 _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
             } else {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file download error on server: " << fileName << " for " << _directory->absolutePath() << ": " << responseCode() );
+                SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file download error on server: " << fileName << " for " << _directory->absolutePath() <<
+                       "\n\tserver responded: " << responseCode() << "/" << responseReason());
                 _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_HTTP);
             }
 
@@ -720,13 +742,18 @@ HTTPRepository::failure() const
 
         virtual void onFail()
         {
+            HTTPRepository::ResultCode code = HTTPRepository::REPO_ERROR_SOCKET;
+            if (responseCode() == -1) {
+                code = HTTPRepository::REPO_ERROR_CANCELLED;
+            }
+            
             file.reset();
             if (pathInRepo.exists()) {
                 pathInRepo.remove();
             }
 
             if (_directory) {
-                _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_SOCKET);
+                _directory->didFailToUpdateFile(fileName, code);
                 _directory->repository()->finishedRequest(this);
             }
         }
@@ -1121,13 +1148,15 @@ HTTPRepository::failure() const
             RequestVector copyOfActive(activeRequests);
             RequestVector::iterator rq;
             for (rq = copyOfActive.begin(); rq != copyOfActive.end(); ++rq) {
-                //SG_LOG(SG_TERRASYNC, SG_DEBUG, "cancelling request for:" << (*rq)->url());
-                http->cancelRequest(*rq, "Repository updated failed");
+                http->cancelRequest(*rq, "Repository updated failed due to checksum error");
             }
 
-
             SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update repository:" << baseUrl
-                   << ", possibly modified during sync");
+                   << "\n\tchecksum failure for: " << relativePath 
+                   << "\n\tthis typically indicates the remote repository is corrupt or was being updated during the sync");
+        } else if (fileStatus == HTTPRepository::REPO_ERROR_CANCELLED) {
+            // if we were cancelled, don't report or log
+            return;
         }
 
         Failure f;
@@ -1135,7 +1164,8 @@ HTTPRepository::failure() const
         f.error = fileStatus;
         failures.push_back(f);
 
-        SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update entry:" << relativePath << " code:" << fileStatus);
+        SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update entry:" << relativePath << " status/code: "
+               << innerResultCodeAsString(fileStatus) << "/" << fileStatus);
     }
 
 } // of namespace simgear

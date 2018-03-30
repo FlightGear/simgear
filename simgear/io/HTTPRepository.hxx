@@ -42,6 +42,7 @@ public:
         REPO_ERROR_CHECKSUM,
         REPO_ERROR_FILE_NOT_FOUND,
         REPO_ERROR_HTTP,
+        REPO_ERROR_CANCELLED,
         REPO_PARTIAL_UPDATE
     };
 
@@ -70,6 +71,9 @@ public:
      * repository. When a file is missing it will be copied from this tree.
      */
     void setInstalledCopyPath(const SGPath& copyPath);
+    
+    static std::string resultCodeAsString(ResultCode code);
+
 private:
     bool isBare() const;
 

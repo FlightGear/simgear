@@ -127,6 +127,7 @@ typedef void (*SGSubsystemTimingCb)(void* userData, const std::string& name, Sam
  * subsystems may also override the suspend() and resume() methods to
  * take different actions.</p>
  */
+
 class SGSubsystem : public SGReferenced
 {
 public:
@@ -342,24 +343,24 @@ public:
 protected:
     friend class SGSubsystemMgr;
     friend class SGSubsystemGroup;
-    
+
     void set_name(const std::string& n);
 
     void set_group(SGSubsystemGroup* group);
-    
+
     /// composite name for the subsystem (type name and instance name if this
     /// is an instanced subsystem. (Since this member was originally defined as
     /// protected, not private, we can't rename it easily)
     std::string _name;
-    
-  bool _suspended = false;
 
-  eventTimeVec timingInfo;
+    bool _suspended = false;
 
-  static SGSubsystemTimingCb reportTimingCb;
-  static void* reportTimingUserData;
-  static bool reportTimingStatsRequest;
-  static int maxTimePerFrame_ms;
+    eventTimeVec timingInfo;
+
+    static SGSubsystemTimingCb reportTimingCb;
+    static void* reportTimingUserData;
+    static bool reportTimingStatsRequest;
+    static int maxTimePerFrame_ms;
 
 private:
     SGSubsystemGroup* _group = nullptr;
@@ -416,9 +417,9 @@ public:
      */
     void set_fixed_update_time(double fixed_dt);
 
-	/**
-	 * retrive list of member subsystem names
-	 */
+    /**
+     * retrive list of member subsystem names
+     */
     string_list member_names() const;
 
     template<class T>
@@ -431,6 +432,7 @@ public:
     { return true; }
     
     SGSubsystemMgr* get_manager() const override;
+
 private:
     void forEach(std::function<void(SGSubsystem*)> f);
     void reverseForEach(std::function<void(SGSubsystem*)> f);
@@ -575,11 +577,11 @@ public:
             SOFT,
             PROPERTY
         };
-        
+
         std::string name;
         Type type;
     };
-    
+
     using DependencyVec = std::vector<SGSubsystemMgr::Dependency>;
     using SubsystemFactoryFunctor = std::function<SGSubsystemRef()>;
 

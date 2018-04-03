@@ -30,7 +30,8 @@
 // code can register another one immediately without worrying about
 // timer aliasing.
 
-class SGInterpolator : public SGSubsystem {
+class SGInterpolator : public SGSubsystem
+{
 public:
     SGInterpolator() { _list = 0; }
     virtual void init() {}

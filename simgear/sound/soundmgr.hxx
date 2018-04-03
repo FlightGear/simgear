@@ -49,7 +49,6 @@ class SGSoundSample;
 class SGSoundMgr : public SGSubsystem
 {
 public:
-
     SGSoundMgr();
     ~SGSoundMgr();
 
@@ -310,7 +309,7 @@ public:
                        size_t *size,
                        int *freq,
                        int *block );
- 
+
     /**
      * Get a list of available playback devices.
      */
@@ -325,6 +324,7 @@ public:
     bool testForError(std::string s, std::string name = "sound manager");
 
     static const char* subsystemName() { return "sound"; };
+
 private:
     class SoundManagerPrivate;
     /// private implementation object

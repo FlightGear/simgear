@@ -39,7 +39,6 @@ class BufferedLogCallback;
 class SGTerraSync : public SGSubsystem
 {
 public:
-
     SGTerraSync();
     virtual ~SGTerraSync();
 
@@ -80,6 +79,7 @@ public:
     void scheduleDataDir(const std::string& dataDir);
 
     bool isDataDirPending(const std::string& dataDir) const;
+
 protected:
     void syncAirportsModels();
     string_list getSceneryPathSuffixes() const;

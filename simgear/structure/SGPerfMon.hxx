@@ -34,7 +34,6 @@ class SampleStatistic;
 
 class SGPerformanceMonitor : public SGSubsystem
 {
-
 public:
     SGPerformanceMonitor(SGSubsystemMgr* subSysMgr, SGPropertyNode_ptr root);
 

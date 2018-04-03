@@ -382,17 +382,18 @@ public:
     SGSubsystemGroup (const char *name);
     virtual ~SGSubsystemGroup ();
 
+    // Subsystem API.
+    void bind() override;
+    InitStatus incrementalInit() override;
     void init() override;
-    InitStatus incrementalInit () override;
-    void postinit () override;
-    void reinit () override;
-    void shutdown () override;
-    void bind () override;
-    void unbind () override;
-    void update (double delta_time_sec) override;
-    void suspend () override;
-    void resume () override;
-    bool is_suspended () const override;
+    void postinit() override;
+    void reinit() override;
+    void resume() override;
+    void shutdown() override;
+    void suspend() override;
+    void unbind() override;
+    void update(double delta_time_sec) override;
+    bool is_suspended() const override;
 
     virtual void set_subsystem (const std::string &name,
                                 SGSubsystem * subsystem,
@@ -506,17 +507,18 @@ public:
     SGSubsystemMgr (const char *name);
     virtual ~SGSubsystemMgr ();
 
-    void init () override;
-    InitStatus incrementalInit () override;
-    void postinit () override;
-    void reinit () override;
-    void shutdown () override;
-    void bind () override;
-    void unbind () override;
-    void update (double delta_time_sec) override;
-    void suspend () override;
-    void resume () override;
-    bool is_suspended () const override;
+    // Subsystem API.
+    void bind() override;
+    void init() override;
+    InitStatus incrementalInit() override;
+    void postinit() override;
+    void reinit() override;
+    void resume() override;
+    void shutdown() override;
+    void suspend() override;
+    void unbind() override;
+    void update(double delta_time_sec) override;
+    bool is_suspended() const override;
 
     virtual void add (const char * name,
                       SGSubsystem * subsystem,

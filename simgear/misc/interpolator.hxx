@@ -34,8 +34,9 @@ class SGInterpolator : public SGSubsystem
 {
 public:
     SGInterpolator() { _list = 0; }
-    virtual void init() {}
-    virtual void update(double delta_time_sec);
+
+    // Subsystem API.
+    void update(double delta_time_sec) override;
 
     // Simple method that interpolates a double property value from
     // its current value (default of zero) to the specified target

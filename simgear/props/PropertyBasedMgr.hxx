@@ -33,9 +33,9 @@ class PropertyBasedMgr : public SGSubsystem,
                          public SGPropertyChangeListener
 {
 public:
+    // Subsystem API.
     void init() override;
     void shutdown() override;
-
     void update(double delta_time_sec) override;
 
     /**

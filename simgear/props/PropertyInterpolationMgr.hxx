@@ -51,10 +51,8 @@ public:
 
     PropertyInterpolationMgr();
 
-    /**
-     * Update all active interpolators.
-     */
-    void update(double dt);
+    // Subsystem API.
+    void update(double dt) override;
 
     /**
      * Create a new property interpolator.

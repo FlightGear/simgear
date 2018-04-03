@@ -52,14 +52,17 @@ public:
     SGSoundMgr();
     ~SGSoundMgr();
 
-    void init();
-    void update(double dt);
+    // Subsystem API.
+    void init() override;
+    void reinit() override;
+    void resume() override;
+    void suspend() override;
+    void update(double dt) override;
 
-    void suspend();
-    void resume();
+    // Subsystem identification.
+    static const char* subsystemName() { return "sound"; }
+
     void stop();
-
-    void reinit();
 
     /**
      * Select a specific sound device.
@@ -322,8 +325,6 @@ public:
     const std::string& get_renderer() { return _renderer; }
 
     bool testForError(std::string s, std::string name = "sound manager");
-
-    static const char* subsystemName() { return "sound"; };
 
 private:
     class SoundManagerPrivate;

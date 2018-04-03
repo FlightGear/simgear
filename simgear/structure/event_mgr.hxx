@@ -76,10 +76,11 @@ public:
     SGEventMgr();
     ~SGEventMgr();
 
-    virtual void init();
-    virtual void update(double delta_time_sec);
-    virtual void unbind();
-    virtual void shutdown();
+    // Subsystem API.
+    void init() override;
+    void shutdown() override;
+    void unbind() override;
+    void update(double delta_time_sec) override;
 
     void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
 

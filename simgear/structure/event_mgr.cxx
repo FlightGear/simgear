@@ -10,6 +10,11 @@ void SGEventMgr::add(const std::string& name, SGCallback* cb,
                      double interval, double delay,
                      bool repeat, bool simtime)
 {
+    // Prevent Nasal from attempting to add timers after the subsystem has been
+    // shut down.
+    if (_shutdown)
+        return;
+
     // Clamp the delay value to 1 usec, so that user code can use
     // "zero" as a synonym for "next frame".
     if(delay <= 0) delay = 1e-6;
@@ -39,14 +44,15 @@ void SGTimer::run()
 }
 
 SGEventMgr::SGEventMgr() :
-    _inited(false)
+    _inited(false),
+    _shutdown(false)
 {
     
 }
 
 SGEventMgr::~SGEventMgr()
 {
-    
+    _shutdown = true;
 }
 
 void SGEventMgr::unbind()
@@ -69,7 +75,8 @@ void SGEventMgr::init()
 void SGEventMgr::shutdown()
 {
     _inited = false;
-    
+    _shutdown = true;
+
     _simQueue.clear();
     _rtQueue.clear();
 }

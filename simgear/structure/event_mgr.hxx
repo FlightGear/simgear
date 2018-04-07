@@ -130,7 +130,7 @@ private:
     SGPropertyNode_ptr _rtProp;
     SGTimerQueue _rtQueue; 
     SGTimerQueue _simQueue;
-    bool _inited;
+    bool _inited, _shutdown;
 };
 
 #endif // _SG_EVENT_MGR_HXX

@@ -54,6 +54,7 @@ public:
         FAIL_VERSION,       ///< version check mismatch
         FAIL_NOT_FOUND,     ///< package URL returned a 404
         FAIL_HTTP_FORBIDDEN, ///< URL returned a 403. Marked specially to catch rate-limiting
+        FAIL_VALIDATION,    ///< catalog or package failed to validate
         STATUS_REFRESHED,
         USER_CANCELLED
     } StatusCode;

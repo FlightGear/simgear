@@ -141,6 +141,13 @@ public:
     bool removeCatalogById(const std::string& aId);
     
     /**
+     * remove a catalog by reference (used when abandoning installs, since
+     * there may not be a valid catalog Id)
+     */
+    bool removeCatalog(CatalogRef cat);
+
+    
+    /**
      * request thumbnail data from the cache / network
      */
     void requestThumbnailData(const std::string& aUrl);

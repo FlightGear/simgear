@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+    <id>org.flightgear.test.catalog-invalid</id>
+    <description>Invalid test catalog</description>
+    <url>http://localhost:2000/catalogTestInvalid/catalog.xml</url>
+    <catalog-version>4</catalog-version>
+
+    <version>8.1.*</version>
+    <version>8.0.0</version>
+    <version>8.2.0</version>
+
+    <package>
+        <id>alpha</id>
+        <!-- fixed now -->
+        <name>Alpha aircraft</name>
+        <dir>alpha</dir>
+
+    </package>
+
+   
+</PropertyList>

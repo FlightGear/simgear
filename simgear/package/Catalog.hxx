@@ -155,7 +155,8 @@ private:
 
     class Downloader;
     friend class Downloader;
-
+    friend class Root;
+    
     void parseProps(const SGPropertyNode* aProps);
 
     void refreshComplete(Delegate::StatusCode aReason);
@@ -163,6 +164,17 @@ private:
     void parseTimestamp();
     void writeTimestamp();
 
+    /**
+     * @brief wipe the catalog directory from the disk
+     */
+    bool removeDirectory();
+    
+    /**
+     * @brief Helper to ensure all packages are at least somewhat valid, in terms
+     * of an ID, name and directory.
+     */
+    bool validatePackages() const;
+    
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
 
     void changeStatus(Delegate::StatusCode newStatus);

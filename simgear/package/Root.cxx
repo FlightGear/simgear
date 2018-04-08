@@ -413,6 +413,8 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
         auto cat = Catalog::createFromPath(this, c);
         if (cat && cat->isEnabled()) {
             d->catalogs.insert({cat->id(), cat});
+        } else if (cat) {
+            SG_LOG(SG_GENERAL, SG_WARN, "Package-Root init: catalog is disabled: " << cat->id());
         }
     } // of child directories iteration
 }
@@ -713,6 +715,32 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
         d->firePackagesChanged();
     }
 }
+    
+bool Root::removeCatalog(CatalogRef cat)
+{
+    if (!cat)
+        return false;
+    
+    // normal remove path
+    if (!cat->id().empty()) {
+        return removeCatalogById(cat->id());
+    }
+    
+    if (!cat->removeDirectory()) {
+        SG_LOG(SG_GENERAL, SG_WARN, "removeCatalog: failed to remove directory " << cat->installRoot());
+    }
+    auto it = std::find(d->disabledCatalogs.begin(),
+                       d->disabledCatalogs.end(),
+                       cat);
+    if (it != d->disabledCatalogs.end()) {
+        d->disabledCatalogs.erase(it);
+    }
+    
+    // notify that a catalog is being removed
+    d->firePackagesChanged();
+    
+    return true;
+}
 
 bool Root::removeCatalogById(const std::string& aId)
 {
@@ -736,10 +764,10 @@ bool Root::removeCatalogById(const std::string& aId)
         d->catalogs.erase(catIt);
     }
 
-    bool ok = cat->uninstall();
+    bool ok = cat->removeDirectory();
     if (!ok) {
         SG_LOG(SG_GENERAL, SG_WARN, "removeCatalogById: catalog :" << aId
-            << "failed to uninstall");
+            << "failed to remove directory");
     }
 
     // notify that a catalog is being removed

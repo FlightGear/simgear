@@ -108,12 +108,12 @@ public:
     }
 
 protected:
-    virtual void gotBodyData(const char* s, int n)
+    void gotBodyData(const char* s, int n) override
     {
         m_buffer += std::string(s, n);
     }
 
-    virtual void onDone()
+    void onDone() override
     {
         if (responseCode() != 200) {
             Delegate::StatusCode code = Delegate::FAIL_DOWNLOAD;
@@ -157,6 +157,13 @@ protected:
 
             return;
         } // of version check failed
+        
+        // validate what we downloaded, in case it's now corrupted
+        // (i.e someone uploaded bad XML data)
+        if (!m_owner->validatePackages()) {
+            m_owner->refreshComplete(Delegate::FAIL_VALIDATION);
+            return;
+        }
 
         // cache the catalog data, now we have a valid install root
         Dir d(m_owner->installRoot());
@@ -233,7 +240,9 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     c->parseProps(props);
     c->parseTimestamp();
 
-    if (versionCheckOk) {
+    if (!c->validatePackages()) {
+        c->changeStatus(Delegate::FAIL_VALIDATION);
+    } else if (versionCheckOk) {
         // parsed XML ok, mark status as valid
         c->changeStatus(Delegate::STATUS_SUCCESS);
     } else {
@@ -242,25 +251,44 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 
     return c;
 }
+    
+bool Catalog::validatePackages() const
+{
+    for (auto pack : packages()) {
+        if (!pack->validate()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "Catalog " << id() << " failed validation due to invalid package:" << pack->id());
+            return false;
+        }
+    }
+    
+    return true;
+}
 
 bool Catalog::uninstall()
 {
     bool ok;
     bool atLeastOneFailure = false;
 
-    BOOST_FOREACH(PackageRef p, installedPackages()) {
-        ok = p->existingInstall()->uninstall();
-        if (!ok) {
-            SG_LOG(SG_GENERAL, SG_WARN, "uninstall of package " <<
-                p->id() << " failed");
-            // continue trying other packages, bailing out here
-            // gains us nothing
-            atLeastOneFailure = true;
+    try {
+        // clean uninstall of each airacft / package in turn. This is
+        // slightly overkill since we then nuke the entire catalog
+        // directory anyway
+        for (PackageRef p : installedPackages()) {
+            ok = p->existingInstall()->uninstall();
+            if (!ok) {
+                SG_LOG(SG_GENERAL, SG_WARN, "uninstall of package " <<
+                    p->id() << " failed");
+                // continue trying other packages, bailing out here
+                // gains us nothing
+                atLeastOneFailure = true;
+            }
         }
+    } catch (sg_exception& e) {
+        SG_LOG(SG_GENERAL, SG_WARN, "uninstall of catalog failed " << e.getMessage() << ", will clean-up directory");
+        atLeastOneFailure = true;
     }
 
-    Dir d(m_installRoot);
-    ok = d.remove(true /* recursive */);
+    ok = removeDirectory();
     if (!ok) {
         atLeastOneFailure = true;
     }
@@ -270,6 +298,15 @@ bool Catalog::uninstall()
     return ok;
 }
 
+bool Catalog::removeDirectory()
+{
+    Dir d(m_installRoot);
+    if (!m_installRoot.exists())
+        return true;
+    
+    return d.remove(true /* recursive */);
+}
+    
 PackageList const&
 Catalog::packages() const
 {

@@ -225,6 +225,11 @@ private:
 
     void updateFromProps(const SGPropertyNode* aProps);
 
+    /**
+     * @brief check the Package passes some basic consistence checks
+     */
+    bool validate() const;
+    
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
 
     PreviewVec previewsFromProps(const SGPropertyNode_ptr& ptr) const;

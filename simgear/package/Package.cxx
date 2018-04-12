@@ -497,6 +497,23 @@ Package::PreviewVec Package::previewsFromProps(const SGPropertyNode_ptr& ptr) co
     return result;
 }
 
+bool Package::validate() const
+{
+    if (m_id.empty())
+        return false;
+    
+    std::string nm(m_props->getStringValue("name"));
+    if (nm.empty())
+        return false;
+    
+    std::string dir(m_props->getStringValue("dir"));
+    if (dir.empty())
+        return false;
+    
+    return true;
+}
+
+    
 } // of namespace pkg
 
 } // of namespace simgear

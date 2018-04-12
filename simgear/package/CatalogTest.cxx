@@ -84,6 +84,14 @@ public:
                 path = ss.str();
             }
         }
+        
+        if (path == "/catalogTestInvalid/catalog.xml") {
+            if (global_catalogVersion > 0) {
+                std::stringstream ss;
+                ss << "/catalogTestInvalid/catalog-v" << global_catalogVersion << ".xml";
+                path = ss.str();
+            }
+        }
 
         localPath.append(path);
 
@@ -122,6 +130,12 @@ void waitForUpdateComplete(HTTP::Client* cl, pkg::Root* root)
     }
 
     std::cerr << "timed out" << std::endl;
+}
+
+template<class T>
+bool vectorContains(const std::vector<T>& vec, const T value)
+{
+    return std::find(vec.begin(), vec.end(), value) != vec.end();
 }
 
 int parseTest()
@@ -725,6 +739,127 @@ void testOfflineMode(HTTP::Client* cl)
     global_failRequests = false;
 }
 
+int parseInvalidTest()
+{
+    SGPath rootPath = simgear::Dir::current().path();
+    rootPath.append("testRoot");
+    pkg::Root* root = new pkg::Root(rootPath, "8.1.12");
+    pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath(SRC_DIR "/catalogTestInvalid"));
+    SG_VERIFY(cat.valid());
+
+    SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VALIDATION);
+ 
+    return 0;
+}
+
+void removeInvalidCatalog(HTTP::Client* cl)
+{
+    global_catalogVersion = 0; // fetch the good version
+    
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("cat_remove_invalid");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+    
+    // another catalog so the dicts are non-empty
+    pkg::CatalogRef anotherCat = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(!c->isEnabled());
+    SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
+    SG_VERIFY(!vectorContains(root->catalogs(), c));
+    SG_VERIFY(vectorContains(root->allCatalogs(), c));
+ 
+    // now remove it
+    root->removeCatalog(c);
+    SG_VERIFY(!vectorContains(root->catalogs(), c));
+    SG_VERIFY(!vectorContains(root->allCatalogs(), c));
+    c.clear(); // drop the catalog
+
+    // re-add it again, and remove it again
+    {
+        pkg::CatalogRef c2 = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+        waitForUpdateComplete(cl, root);
+        SG_VERIFY(!c2->isEnabled());
+        SG_VERIFY(c2->status() == pkg::Delegate::FAIL_VALIDATION);
+        SG_VERIFY(!vectorContains(root->catalogs(), c2));
+        SG_VERIFY(vectorContains(root->allCatalogs(), c2));
+        
+        // now remove it
+        root->removeCatalog(c2);
+        SG_VERIFY(!vectorContains(root->catalogs(), c2));
+        SG_VERIFY(!vectorContains(root->allCatalogs(), c2));
+    }
+    
+    // only the other catalog (testCatalog should be left)
+    SG_VERIFY(root->allCatalogs().size() == 1);
+    SG_VERIFY(root->catalogs().size() == 1);
+    
+    SG_LOG(SG_GENERAL, SG_INFO, "Remove invalid catalog test passeed");
+}
+
+void updateInvalidToValid(HTTP::Client* cl)
+{
+    global_catalogVersion = 0;
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("cat_update_invalid_to_valid");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    
+// first, sync the invalid version
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+    
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(!c->isEnabled());
+    
+    SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
+    SG_VERIFY(!vectorContains(root->catalogs(), c));
+    SG_VERIFY(vectorContains(root->allCatalogs(), c));
+
+// now refrsh the good one
+    global_catalogVersion = 2;
+    c->refresh();
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(c->isEnabled());
+    SG_VERIFY(c->status() == pkg::Delegate::STATUS_REFRESHED);
+    SG_VERIFY(vectorContains(root->catalogs(), c));
+
+}
+
+void updateValidToInvalid(HTTP::Client* cl)
+{
+    global_catalogVersion = 2; // fetch the good version
+    
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("cat_update_valid_to_invalid");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    
+    // first, sync the invalid version
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+    
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(c->isEnabled());
+    SG_VERIFY(c->status() == pkg::Delegate::STATUS_REFRESHED);
+    SG_VERIFY(vectorContains(root->catalogs(), c));
+    SG_VERIFY(vectorContains(root->allCatalogs(), c));
+    
+    // now refrsh the bad one
+    global_catalogVersion = 3;
+    c->refresh();
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(!c->isEnabled());
+    SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
+    SG_VERIFY(!vectorContains(root->catalogs(), c));
+}
 
 int main(int argc, char* argv[])
 {
@@ -739,6 +874,8 @@ int main(int argc, char* argv[])
 
     parseTest();
 
+    parseInvalidTest();
+    
     testInstallPackage(&cl);
 
     testUninstall(&cl);
@@ -755,6 +892,11 @@ int main(int argc, char* argv[])
     
     testVersionMigrate(&cl);
     
-    std::cout << "Successfully passed all tests!" << std::endl;
+    updateInvalidToValid(&cl);
+    updateValidToInvalid(&cl);
+    
+    removeInvalidCatalog(&cl);
+    
+    SG_LOG(SG_GENERAL, SG_INFO, "Successfully passed all tests!");
     return EXIT_SUCCESS;
 }

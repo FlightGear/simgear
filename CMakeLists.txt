@@ -397,7 +397,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
       message(WARNING "GCC 4.4 will be required soon, please upgrade")
     endif()
 
-    if(ENABLE_SIMD)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      set(CMAKE_C_FLAGS
+        "${CMAKE_C_FLAGS} -O0 -fno-omit-frame-pointer -fno-inline")
+      set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -O0 -fno-omit-frame-pointer -fno-inline")
+    elseif (ENABLE_SIMD)
       if (X86 OR X86_64)
         set(CMAKE_C_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse")
         set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse")
@@ -420,7 +425,12 @@ if (CLANG)
     # fix Boost compilation :(
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
-    if(ENABLE_SIMD)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      set(CMAKE_C_FLAGS
+        "${CMAKE_C_FLAGS} -O0 -fno-omit-frame-pointer -fno-inline-functions")
+      set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -O0 -fno-omit-frame-pointer -fno-inline-functions")
+    elseif (ENABLE_SIMD)
       if (X86 OR X86_64)
         set(CMAKE_C_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse")
         set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse")

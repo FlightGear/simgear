@@ -47,6 +47,10 @@ simgear_component(structure structure "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
+add_executable(test_subsystems subsystem_test.cxx)
+target_link_libraries(test_subsystems ${TEST_LIBS})
+add_test(subsystems ${EXECUTABLE_OUTPUT_PATH}/test_subsystems)
+
 add_executable(test_state_machine state_machine_test.cxx)
 target_link_libraries(test_state_machine ${TEST_LIBS})
 add_test(state_machine ${EXECUTABLE_OUTPUT_PATH}/test_state_machine)

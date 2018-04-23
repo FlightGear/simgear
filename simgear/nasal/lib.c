@@ -302,15 +302,18 @@ static char* dosprintf(char* f, ...)
     char* buf;
     va_list va;
     int olen, len = 16;
+    va_start(va, f);
     while(1) {
         buf = naAlloc(len);
-        va_start(va, f);
-        olen = vsnprintf(buf, len, f, va);
+        va_list vaCopy;
+        va_copy(vaCopy, va);
+        olen = vsnprintf(buf, len, f, vaCopy);
         if(olen >= 0 && olen < len) {
             va_end(va);
+            va_end(vaCopy);
             return buf;
         }
-        va_end(va);
+        va_end(vaCopy);
         naFree(buf);
         len *= 2;
     }

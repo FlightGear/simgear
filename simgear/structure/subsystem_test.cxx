@@ -30,7 +30,8 @@ public:
     void bind() override
     {
         auto node = get_manager()->root_node();
-        node->setIntValue("mysub/foo", 42);
+        if (node)
+            node->setIntValue("mysub/foo", 42);
     }
     
     void update(double dt) override
@@ -54,7 +55,8 @@ public:
     void bind() override
     {
         auto node = get_manager()->root_node();
-        node->setIntValue("anothersub/bar", 172);
+        if (node)
+            node->setIntValue("anothersub/bar", 172);
     }
     
     void update(double dt) override
@@ -246,6 +248,7 @@ void testSubGrouping()
     // lookup of the group should also work
     SG_CHECK_EQUAL(manager->get_subsystem<InstrumentGroup>(), instruments);
     
+    manager->bind();
     manager->init();
     
     SG_VERIFY(instruments->wasInited);
@@ -304,6 +307,7 @@ void testIncrementalInit()
     instruments->set_subsystem(radio1);
     instruments->set_subsystem(radio2);
     
+    manager->bind();
     for ( ; ; ) {
         auto status = manager->incrementalInit();
         if (status == SGSubsystemMgr::INIT_DONE)
@@ -347,6 +351,7 @@ void testSuspendResume()
     instruments->set_subsystem(radio1);
     instruments->set_subsystem(radio2);
     
+    manager->bind();
     manager->init();
     manager->update(1.0);
     

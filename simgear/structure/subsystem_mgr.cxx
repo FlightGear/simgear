@@ -157,6 +157,7 @@ SGSubsystemMgr* SGSubsystem::get_manager() const
 std::string SGSubsystem::nameForState(State s)
 {
     switch (s) {
+    case State::INVALID: return "invalid";
     case State::INIT: return "init";
     case State::REINIT: return "reinit";
     case State::POSTINIT: return "post-init";
@@ -216,11 +217,13 @@ SGSubsystemGroup::~SGSubsystemGroup ()
 void
 SGSubsystemGroup::init ()
 {
+    assert(_state == State::BIND);
     forEach([this](SGSubsystem* s){
         this->notifyWillChange(s, State::INIT);
         s->init();
         this->notifyDidChange(s, State::INIT);
     });
+    _state = State::INIT;
 }
 
 SGSubsystem::InitStatus
@@ -233,11 +236,13 @@ SGSubsystemGroup::incrementalInit()
 
     // termination test
     if (_initPosition >= static_cast<int>(_members.size())) {
+        _state = State::INIT;
         return INIT_DONE;
     }
   
     if (_initPosition < 0) {
         // first call
+        assert(_state == State::BIND);
         _initPosition = 0;
         notifyWillChange(_members.front()->subsystem, State::INIT);
     }
@@ -279,11 +284,13 @@ void SGSubsystemGroup::reverseForEach(std::function<void(SGSubsystem*)> f)
 void
 SGSubsystemGroup::postinit ()
 {
+    assert(_state == State::INIT);
     forEach([this](SGSubsystem* s){
         this->notifyWillChange(s, State::POSTINIT);
         s->postinit();
         this->notifyDidChange(s, State::POSTINIT);
     });
+    _state = State::POSTINIT;
 }
 
 void
@@ -304,6 +311,7 @@ SGSubsystemGroup::shutdown ()
         s->shutdown();
         this->notifyDidChange(s, State::SHUTDOWN);
     });
+    _state = State::SHUTDOWN;
     _initPosition = -1;
 }
 
@@ -315,6 +323,7 @@ SGSubsystemGroup::bind ()
         s->bind();
         this->notifyDidChange(s, State::BIND);
     });
+    _state = State::BIND;
 }
 
 void
@@ -325,6 +334,7 @@ SGSubsystemGroup::unbind ()
         s->unbind();
         this->notifyDidChange(s, State::UNBIND);
     });
+    _state = State::UNBIND;
 }
 
 void
@@ -420,6 +430,16 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
     member->min_step_sec = min_step_sec;
     subsystem->set_group(this);
     notifyDidChange(subsystem, State::ADD);
+    
+    if (_state != State::INVALID) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "TODO: implement SGSubsystemGroup transition when adding after init");
+        // transition to the correct state
+        // bind
+        
+        // init
+        
+        // post-init
+    }
 }
 
 void
@@ -457,6 +477,16 @@ SGSubsystemGroup::remove_subsystem(const string &name)
     if (it != _members.end()) {
         // found it, great
         const auto sub = (*it)->subsystem;
+        
+        if (_state != State::INVALID) {
+            // transition out correctly
+            SG_LOG(SG_GENERAL, SG_DEV_WARN, "TODO: implement SGSubsystemGroup transition when removing before shutdown");
+
+            // shutdown
+            
+            // unbind
+        }
+        
         notifyWillChange(sub, State::REMOVE);
         delete *it;
         _members.erase(it);

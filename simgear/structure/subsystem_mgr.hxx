@@ -288,7 +288,8 @@ public:
     SGSubsystemGroup* get_group() const;
     
     enum class State {
-        ADD,
+        INVALID = -1,
+        ADD = 0,
         BIND,
         INIT,
         POSTINIT,
@@ -401,6 +402,9 @@ private:
     using MemberVec = std::vector<Member*>;
     MemberVec _members;
 
+    // track the state of this group, so we can transition added/removed
+    // members correctly
+    SGSubsystem::State _state = SGSubsystem::State::INVALID;
     double _fixedUpdateTime;
     double _updateTimeRemainder;
 

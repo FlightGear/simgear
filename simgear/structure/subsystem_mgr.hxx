@@ -28,6 +28,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <functional>
 
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>

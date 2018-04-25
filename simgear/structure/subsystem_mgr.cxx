@@ -167,6 +167,8 @@ std::string SGSubsystem::nameForState(State s)
     case State::SUSPEND: return "suspend";
     case State::RESUME: return "resume";
     }
+
+	return {};
 }
 
 ////////////////////////////////////////////////////////////////////////

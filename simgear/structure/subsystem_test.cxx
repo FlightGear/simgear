@@ -1,6 +1,7 @@
 #include <simgear_config.h>
 
 #include <cstdio>
+#include <algorithm>
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>

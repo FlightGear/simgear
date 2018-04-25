@@ -28,6 +28,7 @@
 #include "exception.hxx"
 #include "subsystem_mgr.hxx"
 
+#include <simgear/props/props.hxx>
 #include <simgear/math/SGMath.hxx>
 #include "SGSmplstat.hxx"
 
@@ -964,6 +965,17 @@ void SGSubsystemMgr::notifyDelegatesDidChange(SGSubsystem* sub, State state)
 {
     std::for_each(_delegates.begin(), _delegates.end(), [sub, state](Delegate* d)
                   { d->didChange(sub, state); });
+}
+
+void SGSubsystemMgr::set_root_node(SGPropertyNode_ptr node)
+{
+    _rootNode = node;
+}
+
+SGPropertyNode_ptr
+SGSubsystemMgr::root_node() const
+{
+    return _rootNode;
 }
 
 

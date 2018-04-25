@@ -7,6 +7,7 @@
 #include <simgear/constants.h>
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/misc/test_macros.hxx>
+#include <simgear/props/props.hxx>
 
 using std::string;
 using std::cout;
@@ -26,6 +27,12 @@ public:
         wasInited = true;
     }
     
+    void bind() override
+    {
+        auto node = get_manager()->root_node();
+        node->setIntValue("mysub/foo", 42);
+    }
+    
     void update(double dt) override
     {
         
@@ -42,6 +49,12 @@ public:
     void init() override
     {
         
+    }
+    
+    void bind() override
+    {
+        auto node = get_manager()->root_node();
+        node->setIntValue("anothersub/bar", 172);
     }
     
     void update(double dt) override
@@ -297,10 +310,6 @@ void testIncrementalInit()
             break;
     }
 
-    for (auto ev : d->events) {
-        std::cerr << "ev:" << ev.nameForEvent() << std::endl;
-    }
-    
     SG_VERIFY(mySub->wasInited);
 
     SG_VERIFY(d->hasEvent("mysub-will-init"));
@@ -392,6 +401,32 @@ void testSuspendResume()
     SG_CHECK_EQUAL_EP(5.0, radio2->lastUpdateTime);
 }
 
+void testPropertyRoot()
+{
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGPropertyNode_ptr props(new SGPropertyNode);
+    manager->set_root_node(props);
+    
+    auto d = new RecorderDelegate;
+    manager->addDelegate(d);
+
+    manager->add<MySub1>();
+    auto anotherSub = manager->add<AnotherSub>();
+    auto instruments = manager->add<InstrumentGroup>();
+    
+    auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
+    auto radio2 = manager->createInstance<FakeRadioSub>("nav2");
+    
+    instruments->set_subsystem(radio1);
+    instruments->set_subsystem(radio2);
+
+    manager->bind();
+    manager->init();
+
+    SG_CHECK_EQUAL(props->getIntValue("mysub/foo"), 42);
+    SG_CHECK_EQUAL(props->getIntValue("anothersub/bar"), 172);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -402,6 +437,7 @@ int main(int argc, char* argv[])
     testSubGrouping();
     testIncrementalInit();
     testSuspendResume();
+    testPropertyRoot();
     
     cout << __FILE__ << ": All tests passed" << endl;
     return EXIT_SUCCESS;

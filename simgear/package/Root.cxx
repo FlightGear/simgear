@@ -671,7 +671,7 @@ void Root::cancelDownload(InstallRef aInstall)
 
 void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
 {
-    CatalogDict::iterator catIt = d->catalogs.find(aCat->id());
+    auto catIt = d->catalogs.find(aCat->id());
     d->fireRefreshStatus(aCat, aReason);
 
     if (aReason == Delegate::STATUS_IN_PROGRESS) {

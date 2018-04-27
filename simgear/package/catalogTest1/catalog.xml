@@ -183,10 +183,11 @@
         <id>movies</id>
         <name>movies files for test catalog aircraft</name>
         <revision>10</revision>
-        <dir>movies_6789</dir>
+        <dir>movies</dir>
         <!-- url has no file extension, instead we set arcive-type -->
         <url>http://localhost:2000/catalogTest1/movies?wierd=foo;bar=thing</url>
         <archive-type>zip</archive-type>
+        <archive-path>movies_6789</archive-path>
         <file-size-bytes>232</file-size-bytes>
         <md5>e5f89c3f1ed1bdda16174c868f3c7b30</md5>
     </package>

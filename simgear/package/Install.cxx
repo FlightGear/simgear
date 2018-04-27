@@ -169,7 +169,12 @@ protected:
 
         // build a path like /path/to/packages/org.some.catalog/Aircraft/extract_xxxx/MyAircraftDir
         SGPath extractedPath = m_extractPath;
-        extractedPath.append(m_owner->package()->dirName());
+        if (m_owner->package()->properties()->hasChild("archive-path")) {
+            extractedPath.append(m_owner->package()->properties()->getStringValue("archive-path"));
+        } else {
+            extractedPath.append(m_owner->package()->dirName());
+        }
+
 
         // rename it to path/to/packages/org.some.catalog/Aircraft/MyAircraftDir
         bool ok = extractedPath.rename(m_owner->path());
@@ -179,6 +184,8 @@ protected:
         }
 
         // extract_xxxx directory is now empty, so remove it
+        // (note it might not be empty if the archive contained some other
+        // files, but we delete those in such a case
         if (m_extractPath.exists()) {
             simgear::Dir(m_extractPath).remove();
         }

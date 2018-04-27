@@ -593,7 +593,7 @@ void testInstallArchiveType(HTTP::Client* cl)
     SGPath p(rootPath);
     p.append("org.flightgear.test.catalog1");
     p.append("Aircraft");
-    p.append("movies_6789"); // FIXME once archive-dir support is decided
+    p.append("movies");
     
     SG_CHECK_EQUAL(p, ins->path());
     

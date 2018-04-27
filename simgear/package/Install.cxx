@@ -57,6 +57,10 @@ public:
             throw sg_exception("no package download URLs");
         }
 
+        if (m_owner->package()->properties()->hasChild("archive-type")) {
+            setArchiveTypeFromExtension(m_owner->package()->properties()->getStringValue("archive-type"));
+        }
+        
         // TODO randomise order of m_urls
 
         m_extractPath = aOwner->path().dir();
@@ -196,7 +200,22 @@ protected:
     }
 
 private:
-
+    void setArchiveTypeFromExtension(const std::string& ext)
+    {
+        if (ext.empty())
+            return;
+        
+        if (ext == "zip") {
+            m_archiveType = ZIP;
+            return;
+        }
+        
+        if ((ext == "tar.gz") || (ext == "tgz")) {
+            m_archiveType = TAR_GZ;
+            return;
+        }
+    }
+    
     void extractCurrentFile(unzFile zip, char* buffer, size_t bufferSize)
     {
         unz_file_info fileInfo;
@@ -262,14 +281,22 @@ private:
     {
         const std::string u(url());
         const size_t ul(u.length());
-        if (u.rfind(".zip") == (ul - 4)) {
-            return extractUnzip();
+        
+        if (m_archiveType == AUTO_DETECT) {
+            if (u.rfind(".zip") == (ul - 4)) {
+                m_archiveType = ZIP;
+            } else if (u.rfind(".tar.gz") == (ul - 7)) {
+                m_archiveType = TAR_GZ;
+            }
+            // we will fall through to the error case now
         }
-
-        if (u.rfind(".tar.gz") == (ul - 7)) {
+        
+        if (m_archiveType == ZIP) {
+            return extractUnzip();
+        } else if (m_archiveType == TAR_GZ) {
             return extractTar();
         }
-
+        
         SG_LOG(SG_IO, SG_WARN, "unsupported archive format:" << u);
         return false;
     }
@@ -330,7 +357,14 @@ private:
         m_owner->installResult(aReason);
     }
 
+    enum ArchiveType {
+        AUTO_DETECT = 0,
+        ZIP,
+        TAR_GZ
+    };
+    
     InstallRef m_owner;
+    ArchiveType m_archiveType = AUTO_DETECT;
     string_list m_urls;
     SG_MD5_CTX m_md5;
     std::string m_buffer;

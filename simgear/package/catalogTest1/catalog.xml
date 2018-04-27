@@ -177,4 +177,17 @@
         <file-size-bytes>360</file-size-bytes>
         <md5>acf9eb89cf396eb42f8823d9cdf17584</md5>
     </package>
+
+
+    <package>
+        <id>movies</id>
+        <name>movies files for test catalog aircraft</name>
+        <revision>10</revision>
+        <dir>movies_6789</dir>
+        <!-- url has no file extension, instead we set arcive-type -->
+        <url>http://localhost:2000/catalogTest1/movies?wierd=foo;bar=thing</url>
+        <archive-type>zip</archive-type>
+        <file-size-bytes>232</file-size-bytes>
+        <md5>e5f89c3f1ed1bdda16174c868f3c7b30</md5>
+    </package>
 </PropertyList>

@@ -92,6 +92,11 @@ public:
                 path = ss.str();
             }
         }
+        
+        // return zip data for this computed URL
+        if (path.find("/catalogTest1/movies") == 0) {
+            path = "/catalogTest1/movies-data.zip";
+        }
 
         localPath.append(path);
 
@@ -152,7 +157,7 @@ int parseTest()
     SG_CHECK_EQUAL(cat->description(), "First test catalog");
 
 // check the packages too
-    SG_CHECK_EQUAL(cat->packages().size(), 4);
+    SG_CHECK_EQUAL(cat->packages().size(), 5);
 
     pkg::PackageRef p1 = cat->packages().front();
     SG_CHECK_EQUAL(p1->catalog(), cat.ptr());
@@ -326,7 +331,7 @@ void testAddCatalog(HTTP::Client* cl)
     p.append("org.flightgear.test.catalog1");
     p.append("catalog.xml");
     SG_VERIFY(p.exists());
-    SG_CHECK_EQUAL(root->allPackages().size(), 4);
+    SG_CHECK_EQUAL(root->allPackages().size(), 5);
     SG_CHECK_EQUAL(root->catalogs().size(), 1);
 
     pkg::PackageRef p1 = root->getPackageById("alpha");
@@ -556,6 +561,43 @@ void testInstallTarPackage(HTTP::Client* cl)
     SG_CHECK_EQUAL(p, ins->path());
 
     p.append("b737-900-set.xml");
+    SG_VERIFY(p.exists());
+}
+
+void testInstallArchiveType(HTTP::Client* cl)
+{
+    global_catalogVersion = 0;
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_install_archive_type");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    // specify a test dir
+    root->setHTTPClient(cl);
+    
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+    
+    pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.movies");
+    SG_CHECK_EQUAL(p1->id(), "movies");
+    pkg::InstallRef ins = p1->install();
+    
+    SG_VERIFY(ins->isQueued());
+    
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(p1->isInstalled());
+    SG_VERIFY(p1->existingInstall() == ins);
+    
+    // verify on disk state
+    SGPath p(rootPath);
+    p.append("org.flightgear.test.catalog1");
+    p.append("Aircraft");
+    p.append("movies_6789"); // FIXME once archive-dir support is decided
+    
+    SG_CHECK_EQUAL(p, ins->path());
+    
+    p.append("movie-list.json");
     SG_VERIFY(p.exists());
 }
 
@@ -915,7 +957,9 @@ int main(int argc, char* argv[])
     testRefreshCatalog(&cl);
 
     testInstallTarPackage(&cl);
-
+    
+    testInstallArchiveType(&cl);
+    
     testDisableDueToVersion(&cl);
     
     testOfflineMode(&cl);

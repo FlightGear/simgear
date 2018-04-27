@@ -33,6 +33,7 @@
 #include "SGSmplstat.hxx"
 
 const int SG_MAX_SUBSYSTEM_EXCEPTIONS = 4;
+const char SUBSYSTEM_NAME_SEPARATOR = '.';
 
 using std::string;
 using State = SGSubsystem::State;
@@ -135,6 +136,26 @@ void SGSubsystem::set_name(const std::string &n)
 {
     assert(_name.empty());
     _name = n;
+}
+
+std::string SGSubsystem::typeName() const
+{
+    auto pos = _name.find(SUBSYSTEM_NAME_SEPARATOR);
+    if (pos == std::string::npos) {
+        return _name;
+    }
+    
+    return _name.substr(0, pos);
+}
+
+std::string SGSubsystem::instanceName() const
+{
+    auto pos = _name.find(SUBSYSTEM_NAME_SEPARATOR);
+    if (pos == std::string::npos) {
+        return {};
+    }
+    
+    return _name.substr(pos+1);
 }
 
 void SGSubsystem::set_group(SGSubsystemGroup* group)
@@ -815,7 +836,7 @@ SGSubsystemMgr::get_subsystem (const string &name) const
 SGSubsystem*
 SGSubsystemMgr::get_subsystem(const std::string &name, const std::string& instanceName) const
 {
-    return get_subsystem(name + "-" + instanceName);
+    return get_subsystem(name + SUBSYSTEM_NAME_SEPARATOR + instanceName);
 }
 
 
@@ -954,7 +975,7 @@ SGSubsystemMgr::createInstance(const std::string& name, const std::string& insta
         throw sg_exception("SGSubsystemMgr::create: functor failed to create an instsance of " + name);
     }
     
-    const auto combinedName = name + "-" + instanceName;
+    const auto combinedName = name + SUBSYSTEM_NAME_SEPARATOR + instanceName;
     ref->set_name(combinedName);
     return ref;
 }

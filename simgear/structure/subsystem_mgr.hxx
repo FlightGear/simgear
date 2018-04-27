@@ -276,9 +276,23 @@ public:
    */
   void stamp(const std::string& name);
 
+    /**
+     * composite name for this subsystem (type name & optional instance name)
+     */
     std::string name() const
     { return _name; }
 
+    /**
+     * @brief the type (class)-specific part of the subsystem name.
+     */
+    std::string typeName() const;
+    
+    /**
+     * @brief the instance part of the subsystem name. Empty if this
+     * subsystem is not instanced
+     */
+    std::string instanceName() const;
+    
     virtual bool is_group() const
     { return false; }
     
@@ -313,7 +327,11 @@ protected:
 
     void set_group(SGSubsystemGroup* group);
     
-  std::string _name;
+    /// composite name for the subsystem (type name and instance name if this
+    /// is an instanced subsystem. (Since this member was originally defined as
+    /// protected, not private, we can't rename it easily)
+    std::string _name;
+    
   bool _suspended = false;
 
   eventTimeVec timingInfo;

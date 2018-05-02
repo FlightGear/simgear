@@ -27,6 +27,7 @@
 
 #include "exception.hxx"
 #include "subsystem_mgr.hxx"
+#include "commands.hxx"
 
 #include <simgear/props/props.hxx>
 #include <simgear/math/SGMath.hxx>
@@ -614,7 +615,6 @@ void SGSubsystemGroup::set_manager(SGSubsystemMgr *manager)
 // Implementation of SGSubsystemGroup::Member
 ////////////////////////////////////////////////////////////////////////
 
-
 SGSubsystemGroup::Member::Member ()
     : name(""),
       subsystem(0),
@@ -666,10 +666,29 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 // Implementation of SGSubsystemMgr.
 ////////////////////////////////////////////////////////////////////////
 
+namespace {
+    SGSubsystemMgr* global_defaultSubsystemManager = nullptr;
+    
+    void registerSubsystemCommands();
+    
+} // end of anonymous namespace
 
 SGSubsystemMgr::SGSubsystemMgr () :
   _groups(MAX_GROUPS)
 {
+    if (global_defaultSubsystemManager == nullptr) {
+        // register ourselves as the default
+        global_defaultSubsystemManager = this;
+    }
+
+    // disabled until subsystemfactory is removed from FlightGear
+#if 0
+    auto commandManager = SGCommandMgr::instance();
+    if (commandManager && !commandManager->getCommand("add-subsystem")) {
+        registerSubsystemCommands();
+    }
+#endif
+    
     for (int i = 0; i < MAX_GROUPS; i++) {
         auto g = new SGSubsystemGroup;
         g->set_manager(this);
@@ -680,7 +699,24 @@ SGSubsystemMgr::SGSubsystemMgr () :
 SGSubsystemMgr::~SGSubsystemMgr ()
 {
     _destructorActive = true;
-  _groups.clear();
+    _groups.clear();
+    
+    // if we were the global one, null out the pointer so it doesn't dangle.
+    // don't do anything clever to track multiple subsystems for now; if we
+    // a smarter scheme, let's wait until it's clearer what that might be.
+    if (global_defaultSubsystemManager == this) {
+        global_defaultSubsystemManager = nullptr;
+    }
+}
+
+SGSubsystemMgr* SGSubsystemMgr::getManager(const std::string& id)
+{
+    if (id.empty()) {
+        return global_defaultSubsystemManager;
+    }
+    
+    // remove me when if/when we supprot multiple subsystem instances
+    throw sg_exception("multiple subsystem instances not supported yet");
 }
 
 void
@@ -1029,5 +1065,207 @@ SGSubsystemMgr::root_node() const
     return _rootNode;
 }
 
+namespace {
+    
+    bool
+    do_check_subsystem_running(const SGPropertyNode * arg, SGPropertyNode * root)
+    {
+        auto manager = SGSubsystemMgr::getManager({});
+        return (manager->get_subsystem(arg->getStringValue("name")) != nullptr);
+    }
+    
+    
+    SGSubsystemMgr::GroupType mapGroupNameToType(const std::string& s)
+    {
+        if (s == "init")        return SGSubsystemMgr::INIT;
+        if (s == "general")     return SGSubsystemMgr::GENERAL;
+        if (s == "fdm")         return SGSubsystemMgr::FDM;
+        if (s == "post-fdm")    return SGSubsystemMgr::POST_FDM;
+        if (s == "display")     return SGSubsystemMgr::DISPLAY;
+        if (s == "sound")       return SGSubsystemMgr::SOUND;
+        
+        SG_LOG(SG_GENERAL, SG_ALERT, "unrecognized subsystem group:" << s);
+        return SGSubsystemMgr::GENERAL;
+    }
+    
+    bool
+    do_add_subsystem (const SGPropertyNode * arg, SGPropertyNode * root)
+    {
+        auto manager = SGSubsystemMgr::getManager({});
+        std::string subsystem = arg->getStringValue("subsystem");
+        
+        // allow override of the name but defaultt o the subsystem name
+        std::string name = arg->getStringValue("name");
+        std::string instanceName = arg->getStringValue("instance");
+
+        if (name.empty()) {
+            // default name to subsystem name, but before we parse any instance name
+            name = subsystem;
+        }
+        
+        auto separatorPos = subsystem.find(SUBSYSTEM_NAME_SEPARATOR);
+        if (separatorPos != std::string::npos) {
+            if (!instanceName.empty()) {
+                SG_LOG(SG_GENERAL, SG_WARN, "Specified a composite subsystem name and an instance name, please do one or the other: "
+                        << instanceName << " and " << subsystem);
+                return false;
+            }
+            
+            instanceName = subsystem.substr(separatorPos + 1);
+            subsystem = subsystem.substr(0, separatorPos);
+        }
+        
+        SGSubsystem* sub = nullptr;
+        if (!instanceName.empty()) {
+            sub = manager->createInstance(subsystem, instanceName);
+        } else {
+            sub = manager->create(subsystem);
+        }
+        
+        if (!sub)
+            return false;
+        
+        std::string groupArg = arg->getStringValue("group");
+        SGSubsystemMgr::GroupType group = SGSubsystemMgr::GENERAL;
+        if (!groupArg.empty()) {
+            group = mapGroupNameToType(groupArg);
+        }
+        
+        double minTime = arg->getDoubleValue("min-time-sec", 0.0);
+        
+        const auto combinedName = subsystem + SUBSYSTEM_NAME_SEPARATOR + instanceName;
+        manager->add(combinedName.c_str(),
+                     sub,
+                     group,
+                     minTime);
+        
+        if (arg->getBoolValue("do-bind-init", false)) {
+            sub->bind();
+            sub->init();
+        }
+
+        return true;
+    }
+    
+    bool do_remove_subsystem(const SGPropertyNode * arg, SGPropertyNode * root)
+    {
+        auto manager = SGSubsystemMgr::getManager({});
+        std::string name = arg->getStringValue("subsystem");
+        
+        SGSubsystem* instance = manager->get_subsystem(name);
+        if (!instance) {
+            SG_LOG(SG_GENERAL, SG_ALERT, "do_remove_subsystem: unknown subsytem:" << name);
+            return false;
+        }
+        
+        // is it safe to always call these? let's assume so!
+        instance->shutdown();
+        instance->unbind();
+        
+        // unplug from the manager (this also deletes the instance!)
+        manager->remove(name.c_str());
+        return true;
+    }
+    
+    /**
+     * Built-in command: reinitialize one or more subsystems.
+     *
+     * subsystem[*]: the name(s) of the subsystem(s) to reinitialize; if
+     * none is specified, reinitialize all of them.
+     */
+    bool do_reinit (const SGPropertyNode * arg, SGPropertyNode * root)
+    {
+        bool result = true;
+        auto manager = SGSubsystemMgr::getManager({});
+
+        auto subsystems = arg->getChildren("subsystem");
+        if (subsystems.empty()) {
+            SG_LOG(SG_GENERAL, SG_INFO, "do_reinit: reinit-ing subsystem manager");
+            manager->reinit();
+        } else {
+            for (auto sub : subsystems) {
+                const char * name = sub->getStringValue();
+                SGSubsystem* subsystem = manager->get_subsystem(name);
+                if (subsystem == nullptr) {
+                    result = false;
+                    SG_LOG( SG_GENERAL, SG_ALERT, "Subsystem " << name << " not found" );
+                } else {
+                    subsystem->reinit();
+                }
+            }
+        }
+
+        return result;
+    }
+    
+    /**
+     * Built-in command: suspend one or more subsystems.
+     *
+     * subsystem[*] - the name(s) of the subsystem(s) to suspend.
+     */
+    bool do_suspend (const SGPropertyNode * arg, SGPropertyNode * root)
+    {
+        bool result = true;
+        auto manager = SGSubsystemMgr::getManager({});
+
+        for (auto subNode : arg->getChildren("subsystem")) {
+            const char * name = subNode->getStringValue();
+            SGSubsystem * subsystem = manager->get_subsystem(name);
+            if (subsystem == nullptr) {
+                result = false;
+                SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem " << name << " not found");
+            } else {
+                subsystem->suspend();
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Built-in command: suspend one or more subsystems.
+     *
+     * subsystem[*] - the name(s) of the subsystem(s) to suspend.
+     */
+    bool do_resume (const SGPropertyNode * arg, SGPropertyNode * root)
+    {
+        bool result = true;
+        auto manager = SGSubsystemMgr::getManager({});
+
+        for (auto subNode : arg->getChildren("subsystem")) {
+            const char * name = subNode->getStringValue();
+            SGSubsystem * subsystem = manager->get_subsystem(name);
+            if (subsystem == nullptr) {
+                result = false;
+                SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem " << name << " not found");
+            } else {
+                subsystem->resume();
+            }
+        }
+        return result;
+    }
+    
+     struct CommandDef {
+        const char * name;
+        SGCommandMgr::command_t command;
+     };
+    
+    CommandDef built_ins[] = {
+        { "add-subsystem", do_add_subsystem },
+        { "remove-subsystem", do_remove_subsystem },
+        { "subsystem-running", do_check_subsystem_running },
+        { "reinit", do_reinit },
+        { "suspend", do_suspend },
+        { "resume", do_resume },
+    };
+
+    void registerSubsystemCommands()
+    {
+        auto commandManager = SGCommandMgr::instance();
+        for (auto b : built_ins) {
+            commandManager->addCommand(b.name, b.command);
+        }
+    }
+    
+} // anonymous namespace implementing subsystem commands
 
 // end of subsystem_mgr.cxx

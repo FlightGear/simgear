@@ -658,6 +658,13 @@ public:
     
     void addDelegate(Delegate * d);
     void removeDelegate(Delegate * d);
+    
+    /**
+     * @brief return a particular subsystem manager by name. Passing an
+     * empty string retrived the default/global subsystem manager, assuming it
+     * has been created.
+     */
+    static SGSubsystemMgr* getManager(const std::string& id);
 private:
     friend class SGSubsystem;
     friend class SGSubsystemGroup;

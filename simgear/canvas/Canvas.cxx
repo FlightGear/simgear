@@ -39,6 +39,75 @@ namespace simgear
 {
 namespace canvas
 {
+  static int globalinstanceid = 1;
+  /**
+   * Camera Callback for moving completed canvas images to subscribed listener.
+   */
+  class CanvasImageCallback : public osg::Camera::DrawCallback {
+    public:
+    osg::Image *_rawImage;
+
+    CanvasImageCallback(osg::Image *rawImage)
+    : _min_delta_tick(1.0 / 8.0) {
+      _previousFrameTick = osg::Timer::instance()->tick();
+      _rawImage = rawImage;
+      SG_LOG(SG_GENERAL,SG_INFO,"CanvasImageCallback created. instance is " << instanceid);
+    }
+
+    virtual void operator()(osg::RenderInfo& renderInfo) const {
+      osg::Timer_t n = osg::Timer::instance()->tick();
+      double dt = osg::Timer::instance()->delta_s(_previousFrameTick, n);
+      if (dt < _min_delta_tick)
+        return;
+      _previousFrameTick = n;
+      SG_LOG(SG_GENERAL,SG_DEBUG,"CanvasImageCallback " << instanceid << ": image available for " << _subscribers.size() << " subscribers. camera is " << renderInfo.getCurrentCamera());
+
+      bool hasSubscribers = false;
+      {
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_lock);
+        hasSubscribers = !_subscribers.empty();
+      }
+      if (hasSubscribers) {
+        //Make sure image can be overwritten by next frame while it is still returned to the client
+        osg::Image* image = new osg::Image(*_rawImage, osg::CopyOp::DEEP_COPY_ALL);
+        {
+          OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_lock);
+          while (!_subscribers.empty()) {
+            try {
+              CanvasImageReadyListener *subs = _subscribers.back();
+              if (subs){
+                subs->imageReady(image);
+              }else{
+                SG_LOG(SG_GENERAL,SG_WARN,"CanvasImageCallback subscriber null");
+              }
+            } catch (...) { }
+            _subscribers.pop_back();
+          }
+        }
+      }
+    }
+
+    void subscribe(CanvasImageReadyListener * subscriber) {
+      OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_lock);
+      _subscribers.push_back(subscriber);
+    }
+
+    void unsubscribe(CanvasImageReadyListener * subscriber) {
+      OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_lock);
+      _subscribers.remove(subscriber);
+    }
+
+    int getSubscriberCount() {
+      return _subscribers.size();
+    }
+
+    private:
+      mutable list<CanvasImageReadyListener*> _subscribers;
+      mutable OpenThreads::Mutex _lock;
+      mutable double _previousFrameTick;
+      double _min_delta_tick;
+      int instanceid = globalinstanceid++;
+  };
 
   //----------------------------------------------------------------------------
   Canvas::CullCallback::CullCallback(const CanvasWeakPtr& canvas):
@@ -248,6 +317,21 @@ namespace canvas
 
       osg::Camera* camera = _texture.getCamera();
 
+      string canvasname = _node->getStringValue("name");
+      int renderToImage = _node->getBoolValue("render-to-image");
+
+      if (renderToImage){
+        CanvasImageCallback *_screenshotCallback = dynamic_cast<CanvasImageCallback*> (camera->getFinalDrawCallback());
+        if (!_screenshotCallback) {
+          // no draw callback yet
+          osg::Image* shot = new osg::Image();
+          shot->allocateImage(getSizeX(), getSizeY(), 24, GL_RGB, GL_UNSIGNED_BYTE);
+          camera->attach(osg::Camera::COLOR_BUFFER, shot);
+          camera->setFinalDrawCallback(new CanvasImageCallback(shot));
+          SG_LOG(SG_GENERAL,SG_INFO,"CanvasImage: attached image and draw callback to camera " << camera << " for canvas " << canvasname << ". Ready for subscriber now.");
+        }
+      }
+
       // TODO Allow custom render order? For now just keep in order with
       //      property tree.
       camera->setRenderOrder(osg::Camera::PRE_RENDER, _node->getIndex());
@@ -345,6 +429,41 @@ namespace canvas
       else
         node->setStringValue("status-msg", "Unknown placement type");
     }
+  }
+
+  int Canvas::subscribe(CanvasImageReadyListener * subscriber) {
+    osg::Camera* camera = _texture.getCamera();
+    const string canvasname = _node->getStringValue("name");
+
+    SG_LOG(SG_GENERAL,SG_DEBUG,"CanvasImage: subscribe to canvas " << canvasname.c_str() << ", camera ="<< camera);
+
+    if (!_node->getBoolValue("render-to-image")) {
+      SG_LOG(SG_GENERAL,SG_INFO,"CanvasImage: Setting render-to-image");
+      _node->addChild("render-to-image", 0)->setBoolValue(1);
+      setStatusFlags(STATUS_DIRTY, true);
+    }
+
+    CanvasImageCallback *_screenshotCallback = dynamic_cast<CanvasImageCallback*> (camera->getFinalDrawCallback());
+    if (_screenshotCallback) {
+      // Camera ready for subscriber. Otherwise, draw callback is created by canvas thread later.
+      SG_LOG(SG_GENERAL,SG_DEBUG,"CanvasImage: adding subscriber to camera draw callback");
+      _screenshotCallback->subscribe(subscriber);
+      // TODO: check: Is this the correct way to ensure the canvas will be available?
+      enableRendering(true);
+      return 1;
+    }
+    return 0;
+  }
+
+  int Canvas::unsubscribe(CanvasImageReadyListener * subscriber) {
+    osg::Camera* camera = _texture.getCamera();
+    SG_LOG(SG_GENERAL,SG_DEBUG,"CanvasImage: unsubscribe");
+    CanvasImageCallback *cb = dynamic_cast<CanvasImageCallback*> (camera->getFinalDrawCallback());
+    if (cb) {
+      SG_LOG(SG_GENERAL,SG_DEBUG,"CanvasImage: unsubscribe from camera " << camera);
+      cb->unsubscribe(subscriber);
+    }
+    return 0;
   }
 
   //----------------------------------------------------------------------------

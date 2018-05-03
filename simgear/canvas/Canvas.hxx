@@ -45,6 +45,17 @@ namespace canvas
   class MouseEvent;
 
   /**
+   * A listener interested in completed canvas drawing.
+   */
+  class CanvasImageReadyListener {
+  public:
+    virtual void imageReady(osg::ref_ptr<osg::Image>) = 0;
+    virtual ~CanvasImageReadyListener()
+    {
+    }
+  };
+
+  /**
    * Canvas to draw onto (to an off-screen render target).
    */
   class Canvas:
@@ -160,7 +171,12 @@ namespace canvas
        */
       void enableRendering(bool force = false);
 
-      void update(double delta_time_sec);
+      void update(double delta_time_sec) override;
+
+      osg::Camera* getCamera();
+      int subscribe(CanvasImageReadyListener * subscriber);
+      int unsubscribe(CanvasImageReadyListener * subscriber);
+      int getSubscriberCount();
 
       bool addEventListener(const std::string& type, const EventListener& cb);
       bool dispatchEvent(const EventPtr& event);

@@ -82,6 +82,9 @@ public:
     void unbind() override;
     void update(double delta_time_sec) override;
 
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "events"; }
+
     void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
 
     /**

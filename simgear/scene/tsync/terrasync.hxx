@@ -50,6 +50,9 @@ public:
     void unbind() override;
     void update(double) override;
 
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "terrasync"; }
+
     /// notify terrasync that the sim was repositioned, as opposed to
     /// us travelling in a direction. Avoid last_lat / last_lon blocking
     /// certain tiles when we reposition.

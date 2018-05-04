@@ -43,6 +43,9 @@ public:
     void unbind() override;
     void update(double dt) override;
 
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "performance-mon"; }
+
 private:
     static void subSystemMgrHook(void* userData, const std::string& name, SampleStatistic* timeStat);
 

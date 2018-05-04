@@ -38,6 +38,9 @@ public:
     // Subsystem API.
     void update(double delta_time_sec) override;
 
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "interpolator"; }
+
     // Simple method that interpolates a double property value from
     // its current value (default of zero) to the specified target
     // over the specified time.

@@ -525,6 +525,9 @@ public:
     void update(double delta_time_sec) override;
     bool is_suspended() const override;
 
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "subsystem-mgr"; }
+
     virtual void add (const char * name,
                       SGSubsystem * subsystem,
                       GroupType group = GENERAL,

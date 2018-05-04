@@ -20,7 +20,7 @@ using std::endl;
 class MySub1 : public SGSubsystem
 {
 public:
-    static const char* subsystemName() { return "mysub"; }
+    static const char* staticSubsystemClassId() { return "mysub"; }
 
     void init() override
     {
@@ -45,7 +45,7 @@ public:
 class AnotherSub : public SGSubsystem
 {
 public:
-    static const char* subsystemName() { return "anothersub"; }
+    static const char* staticSubsystemClassId() { return "anothersub"; }
 
     void init() override
     {
@@ -70,7 +70,7 @@ public:
 class FakeRadioSub : public SGSubsystem
 {
 public:
-    static const char* subsystemName() { return "fake-radio"; }
+    static const char* staticSubsystemClassId() { return "fake-radio"; }
 
     void init() override
     {
@@ -89,8 +89,9 @@ public:
 class InstrumentGroup : public SGSubsystemGroup
 {
 public:
-    static const char* subsystemName() { return "instruments"; }
-    InstrumentGroup() : SGSubsystemGroup(InstrumentGroup::subsystemName()) {}
+    InstrumentGroup() : SGSubsystemGroup(InstrumentGroup::staticSubsystemClassId()) {}
+    static const char* staticSubsystemClassId() { return "instruments"; }
+
     virtual ~InstrumentGroup()
     {
     }
@@ -119,11 +120,11 @@ class RecorderDelegate : public SGSubsystemMgr::Delegate
 public:
     void willChange(SGSubsystem* sub, SGSubsystem::State newState) override
     {
-        events.push_back({sub->name(), false, newState});
+        events.push_back({sub->subsystemId(), false, newState});
     }
     void didChange(SGSubsystem* sub, SGSubsystem::State newState) override
     {
-        events.push_back({sub->name(), true, newState});
+        events.push_back({sub->subsystemId(), true, newState});
     }
 
     struct Event {
@@ -168,10 +169,10 @@ void testRegistrationAndCreation()
     
     auto anotherSub = manager->create<AnotherSub>();
     SG_VERIFY(anotherSub);
-    SG_CHECK_EQUAL(anotherSub->name(), AnotherSub::subsystemName());
-    SG_CHECK_EQUAL(anotherSub->name(), std::string("anothersub"));
-    SG_CHECK_EQUAL(anotherSub->typeName(), std::string("anothersub"));
-    SG_CHECK_EQUAL(anotherSub->instanceName(), std::string());
+    SG_CHECK_EQUAL(anotherSub->subsystemId(), AnotherSub::staticSubsystemClassId());
+    SG_CHECK_EQUAL(anotherSub->subsystemId(), std::string("anothersub"));
+    SG_CHECK_EQUAL(anotherSub->subsystemClassId(), std::string("anothersub"));
+    SG_CHECK_EQUAL(anotherSub->subsystemInstanceId(), std::string());
 
     auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
     auto radio2 = manager->createInstance<FakeRadioSub>("nav2");
@@ -187,8 +188,8 @@ void testAddGetRemove()
     
     auto anotherSub = manager->add<AnotherSub>();
     SG_VERIFY(anotherSub);
-    SG_CHECK_EQUAL(anotherSub->name(), AnotherSub::subsystemName());
-    SG_CHECK_EQUAL(anotherSub->name(), std::string("anothersub"));
+    SG_CHECK_EQUAL(anotherSub->subsystemId(), AnotherSub::staticSubsystemClassId());
+    SG_CHECK_EQUAL(anotherSub->subsystemId(), std::string("anothersub"));
     
     SG_VERIFY(d->hasEvent("anothersub-will-add"));
     SG_VERIFY(d->hasEvent("anothersub-did-add"));
@@ -200,14 +201,14 @@ void testAddGetRemove()
     
     // manual create & add
     auto mySub = manager->create<MySub1>();
-    manager->add(MySub1::subsystemName(), mySub.ptr(), SGSubsystemMgr::DISPLAY, 0.1234);
+    manager->add(MySub1::staticSubsystemClassId(), mySub.ptr(), SGSubsystemMgr::DISPLAY, 0.1234);
     
     SG_VERIFY(d->hasEvent("mysub-will-add"));
     SG_VERIFY(d->hasEvent("mysub-did-add"));
     
     SG_CHECK_EQUAL(manager->get_subsystem<MySub1>(), mySub);
     
-    bool ok = manager->remove(AnotherSub::subsystemName());
+    bool ok = manager->remove(AnotherSub::staticSubsystemClassId());
     SG_VERIFY(ok);
     SG_VERIFY(d->hasEvent("anothersub-will-remove"));
     SG_VERIFY(d->hasEvent("anothersub-did-remove"));
@@ -219,7 +220,7 @@ void testAddGetRemove()
     
     // re-add of removed, and let's test overriding
     auto another2 = manager->add<AnotherSub>(SGSubsystemMgr::SOUND);
-    SG_CHECK_EQUAL(another2->name(), AnotherSub::subsystemName());
+    SG_CHECK_EQUAL(another2->subsystemId(), AnotherSub::staticSubsystemClassId());
     
     auto soundGroup = manager->get_group(SGSubsystemMgr::SOUND);
     SG_CHECK_EQUAL(soundGroup->get_subsystem("anothersub"), another2);
@@ -238,10 +239,10 @@ void testSubGrouping()
     auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
     auto radio2 = manager->createInstance<FakeRadioSub>("nav2");
     
-    SG_CHECK_EQUAL(radio1->name(), std::string("fake-radio.nav1"));
-    SG_CHECK_EQUAL(radio2->name(), std::string("fake-radio.nav2"));
-    SG_CHECK_EQUAL(radio1->typeName(), std::string("fake-radio"));
-    SG_CHECK_EQUAL(radio2->instanceName(), std::string("nav2"));
+    SG_CHECK_EQUAL(radio1->subsystemId(), std::string("fake-radio.nav1"));
+    SG_CHECK_EQUAL(radio2->subsystemId(), std::string("fake-radio.nav2"));
+    SG_CHECK_EQUAL(radio1->subsystemClassId(), std::string("fake-radio"));
+    SG_CHECK_EQUAL(radio2->subsystemInstanceId(), std::string("nav2"));
     
     instruments->set_subsystem(radio1);
     instruments->set_subsystem(radio2);

@@ -60,7 +60,7 @@ public:
     void update(double dt) override;
 
     // Subsystem identification.
-    static const char* subsystemName() { return "sound"; }
+    static const char* staticSubsystemClassId() { return "sound"; }
 
     void stop();
 

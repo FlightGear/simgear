@@ -47,7 +47,6 @@ SGEventMgr::SGEventMgr() :
     _inited(false),
     _shutdown(false)
 {
-_name = "EventMgr";
 }
 
 SGEventMgr::~SGEventMgr()

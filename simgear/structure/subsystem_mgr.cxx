@@ -913,10 +913,15 @@ namespace  {
     
     using SybsystemRegistrationVec = std::vector<RegisteredSubsystemData>;
     
-    SybsystemRegistrationVec global_registrations;
-    
+    SybsystemRegistrationVec &getGlobalRegistrations()
+    {
+        static SybsystemRegistrationVec global_registrations;
+        return global_registrations;
+    }
+
     SybsystemRegistrationVec::const_iterator findRegistration(const std::string& name)
     {
+        auto &global_registrations = getGlobalRegistrations();
         auto it = std::find_if(global_registrations.begin(),
                                global_registrations.end(),
                                [name](const RegisteredSubsystemData& d)
@@ -932,6 +937,7 @@ void SGSubsystemMgr::registerSubsystem(const std::string& name,
                                        double updateInterval,
                                        std::initializer_list<Dependency> deps)
 {
+    auto &global_registrations = getGlobalRegistrations();
     if (findRegistration(name) != global_registrations.end()) {
         throw sg_exception("duplicate subsystem registration for: " + name);
     }
@@ -945,6 +951,7 @@ void SGSubsystemMgr::registerSubsystem(const std::string& name,
 auto SGSubsystemMgr::defaultGroupFor(const char* name) -> GroupType
 {
     auto it = findRegistration(name);
+    auto &global_registrations = getGlobalRegistrations();
     if (it == global_registrations.end()) {
         throw sg_exception("unknown subsystem registration for: " + std::string(name));
     }
@@ -955,6 +962,7 @@ auto SGSubsystemMgr::defaultGroupFor(const char* name) -> GroupType
 double SGSubsystemMgr::defaultUpdateIntervalFor(const char* name)
 {
     auto it = findRegistration(name);
+    auto &global_registrations = getGlobalRegistrations();
     if (it == global_registrations.end()) {
         throw sg_exception("unknown subsystem registration for: " + std::string(name));
     }
@@ -966,6 +974,7 @@ const SGSubsystemMgr::DependencyVec&
 SGSubsystemMgr::dependsFor(const char* name)
 {
     auto it = findRegistration(name);
+    auto &global_registrations = getGlobalRegistrations();
     if (it == global_registrations.end()) {
         throw sg_exception("unknown subsystem registration for: " + std::string(name));
     }
@@ -977,6 +986,7 @@ SGSubsystemRef
 SGSubsystemMgr::create(const std::string& name)
 {
     auto it = findRegistration(name);
+    auto &global_registrations = getGlobalRegistrations();
     if (it == global_registrations.end()) {
         return {}; // or should this throw with a 'not registered'?
     }
@@ -998,6 +1008,7 @@ SGSubsystemRef
 SGSubsystemMgr::createInstance(const std::string& name, const std::string& instanceName)
 {
     auto it = findRegistration(name);
+    auto &global_registrations = getGlobalRegistrations();
     if (it == global_registrations.end()) {
         return {}; // or should this throw with a 'not registered'?
     }

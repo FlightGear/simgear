@@ -668,9 +668,9 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 
 namespace {
     SGSubsystemMgr* global_defaultSubsystemManager = nullptr;
-
+    
     void registerSubsystemCommands();
-
+    
 } // end of anonymous namespace
 
 SGSubsystemMgr::SGSubsystemMgr () :
@@ -912,18 +912,18 @@ namespace  {
     };
     
     using SybsystemRegistrationVec = std::vector<RegisteredSubsystemData>;
+    
+    SybsystemRegistrationVec global_registrations;
+    
+    SybsystemRegistrationVec::const_iterator findRegistration(const std::string& name)
+    {
+        auto it = std::find_if(global_registrations.begin(),
+                               global_registrations.end(),
+                               [name](const RegisteredSubsystemData& d)
+                               { return name == d.name; });
+        return it;
+    }
 } // of anonymous namespace
-
-static SybsystemRegistrationVec global_registrations;
-
-SybsystemRegistrationVec::const_iterator findRegistration(const std::string& name)
-{
-    auto it = std::find_if(global_registrations.begin(),
-                           global_registrations.end(),
-                           [name](const RegisteredSubsystemData& d)
-                           { return name == d.name; });
-    return it;
-}
 
 void SGSubsystemMgr::registerSubsystem(const std::string& name,
                                        SubsystemFactoryFunctor f,

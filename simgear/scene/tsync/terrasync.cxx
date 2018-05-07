@@ -1115,3 +1115,9 @@ void SGTerraSync::reposition()
 {
     // stub, remove
 }
+
+
+// Register the subsystem.
+SGSubsystemMgr::Registrant<SGTerraSync> registrantSGTerraSync(
+    SGSubsystemMgr::GENERAL,
+    {{"FGRenderer", SGSubsystemMgr::Dependency::NONSUBSYSTEM_HARD}});

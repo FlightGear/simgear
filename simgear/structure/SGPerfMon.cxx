@@ -138,3 +138,7 @@ SGPerformanceMonitor::reportTiming(const string& name, SampleStatistic* timeStat
 
     timeStat->reset();
 }
+
+
+// Register the subsystem.
+//SGSubsystemMgr::Registrant<SGPerformanceMonitor> registrantSGPerformanceMonitor;

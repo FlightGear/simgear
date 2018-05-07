@@ -126,6 +126,11 @@ void SGEventMgr::dump()
     _rtQueue.dump();
 }
 
+// Register the subsystem.
+SGSubsystemMgr::Registrant<SGEventMgr> registrantSGEventMgr(
+    SGSubsystemMgr::DISPLAY);
+
+
 ////////////////////////////////////////////////////////////////////////
 // SGTimerQueue
 // This is the priority queue implementation:

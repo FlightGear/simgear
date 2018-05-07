@@ -581,11 +581,17 @@ public:
         return dynamic_cast<T*>(get_subsystem(T::staticSubsystemClassId(), subsystemInstanceId));
     }
 
+    /**
+     * @brief Subsystem dependency structure.
+     */
     struct Dependency {
         enum Type {
-            HARD,
-            SOFT,
-            PROPERTY
+            HARD,               ///< The subsystem cannot run without this subsystem dependency.
+            SOFT,               ///< The subsystem uses this subsystem dependency, but can run without it.
+            SEQUENCE,           ///< Used for ordering subsystem initialisation.
+            NONSUBSYSTEM_HARD,  ///< The subsystem cannot run without this non-subsystem dependency.
+            NONSUBSYSTEM_SOFT,  ///< The subsystem uses this non-subsystem dependency, but can run without it.
+            PROPERTY            ///< The subsystem requires this property to exist to run.
         };
 
         std::string name;

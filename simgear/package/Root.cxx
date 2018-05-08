@@ -778,6 +778,11 @@ bool Root::removeCatalogById(const std::string& aId)
 
 void Root::requestThumbnailData(const std::string& aUrl)
 {
+    if (aUrl.empty()) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "requestThumbnailData: empty URL requested");
+        return;
+    }
+
     auto it = d->thumbnailCache.find(aUrl);
     if (it == d->thumbnailCache.end()) {
         bool cachedOnDisk = d->checkPersistentCache(aUrl);

@@ -242,8 +242,13 @@ void Client::makeRequest(const Request_ptr& r)
     if( r->isComplete() )
       return;
 
+    if (r->url().empty()) {
+        r->setFailure(EINVAL, "no URL specified on request");
+        return;
+    }
+
     if( r->url().find("://") == std::string::npos ) {
-        r->setFailure(EINVAL, "malformed URL");
+        r->setFailure(EINVAL, "malformed URL: '" + r->url() + "'");
         return;
     }
 

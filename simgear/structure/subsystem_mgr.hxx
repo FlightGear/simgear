@@ -616,8 +616,9 @@ public:
     class Registrant 
     {
     public:
-        Registrant(GroupType group = GENERAL, double updateInterval = 0.0,
-                   std::initializer_list<Dependency> deps = {})
+        Registrant(GroupType group = GENERAL,
+                   std::initializer_list<Dependency> deps = {},
+                   double updateInterval = 0.0)
         {
             SubsystemFactoryFunctor factory = [](){ return new T; };
             SGSubsystemMgr::registerSubsystem(T::staticSubsystemClassId(),
@@ -634,8 +635,8 @@ public:
     {
     public:
         InstancedRegistrant(GroupType group = GENERAL,
-                            double updateInterval = 0.0,
-                            std::initializer_list<Dependency> deps = {})
+                            std::initializer_list<Dependency> deps = {},
+                            double updateInterval = 0.0)
         {
             SubsystemFactoryFunctor factory = [](){ return new T; };
             SGSubsystemMgr::registerSubsystem(T::staticSubsystemClassId(),

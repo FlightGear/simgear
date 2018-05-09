@@ -425,8 +425,11 @@ public:
             return;
         }
 
-        m_startupLogging = on;
-        m_startupEntries.clear();
+        {
+            SGGuard<SGMutex> g(m_lock);
+            m_startupLogging = on;
+            m_startupEntries.clear();
+        }
     }
 
     virtual void run()
@@ -438,13 +441,14 @@ public:
             if ((entry.debugClass == SG_NONE) && !strcmp(entry.file, "done")) {
                 return;
             }
-
-            if (m_startupLogging) {
-                // save to the startup list for not-yet-added callbacks to
-                // pull down on startup
-                m_startupEntries.push_back(entry);
+            {
+                SGGuard<SGMutex> g(m_lock);
+                if (m_startupLogging) {
+                    // save to the startup list for not-yet-added callbacks to
+                    // pull down on startup
+                    m_startupEntries.push_back(entry);
+                }
             }
-
             // submit to each installed callback in turn
             for (simgear::LogCallback* cb : m_callbacks) {
                 (*cb)(entry.debugClass, entry.debugPriority,
@@ -455,14 +459,16 @@ public:
 
     bool stop()
     {
-        SGGuard<SGMutex> g(m_lock);
-        if (!m_isRunning) {
-            return false;
-        }
+        {
+            SGGuard<SGMutex> g(m_lock);
+            if (!m_isRunning) {
+                return false;
+            }
 
-        // log a special marker value, which will cause the thread to wakeup,
-        // and then exit
-        log(SG_NONE, SG_ALERT, "done", -1, "");
+            // log a special marker value, which will cause the thread to wakeup,
+            // and then exit
+            log(SG_NONE, SG_ALERT, "done", -1, "");
+        }
         join();
 
         m_isRunning = false;

@@ -69,6 +69,9 @@ void SGEventMgr::init()
 		return;
     }
 	
+    // The event manager dtor and ctor are not called on reset, so reset the flag here.
+    _shutdown = false;
+
     _inited = true;
 }
 

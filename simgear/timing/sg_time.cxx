@@ -72,10 +72,14 @@ void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time 
 	cur_time = time(NULL); 
     }
 
+    char* gmt = asctime(gmtime(&cur_time));
+    char* local = asctime(localtime(&cur_time));
+    gmt[strlen(gmt) - 1] = '\0';
+    local[strlen(local) - 1] = '\0';
     SG_LOG( SG_EVENT, SG_DEBUG,
-                "Current greenwich mean time = " << asctime(gmtime(&cur_time)));
+                "Current greenwich mean time = " << gmt);
     SG_LOG( SG_EVENT, SG_DEBUG,
-             "Current local time          = " << asctime(localtime(&cur_time)));
+             "Current local time          = " << local);
 
     if ( !root.isNull()) {
         if (!static_tzContainer.get()) {

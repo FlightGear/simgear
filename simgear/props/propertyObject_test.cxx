@@ -205,6 +205,14 @@ void testCreate()
   
 }
 
+void testDeclare()
+{
+    PropertyObject<bool>        a;
+    PropertyObject<int>         b;
+    PropertyObject<double>      c;
+    PropertyObject<std::string> d;
+}
+
 int main(int argc, char* argv[])
 {
 	testRoot = new SGPropertyNode();
@@ -227,6 +235,7 @@ int main(int argc, char* argv[])
   testAssignment();
   testSTLContainer();
   testCreate();
+  testDeclare();
 
   return EXIT_SUCCESS;
 }

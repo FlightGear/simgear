@@ -157,6 +157,8 @@ template <>
 class PropertyObject<std::string> : PropertyObjectBase
 {
 public:
+  PropertyObject() = default;
+
   explicit PropertyObject(const char* aChild) :
     PropertyObjectBase(aChild)
   { }

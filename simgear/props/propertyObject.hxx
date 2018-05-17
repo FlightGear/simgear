@@ -92,6 +92,12 @@ public:
     return p;
   }
   
+  static PropertyObject<T> create(SGPropertyNode_ptr aNode)
+  {
+    PropertyObject<T> p(aNode);
+    return p;
+  }
+
   static PropertyObject<T> create(SGPropertyNode* aNode, T aValue)
   {
     PropertyObject<T> p(aNode);
@@ -185,6 +191,12 @@ public:
     return p;
   }
   
+  static PropertyObject<std::string> create(SGPropertyNode_ptr aNode)
+  {
+    PropertyObject<std::string> p(aNode);
+    return p;
+  }
+
   static PropertyObject<std::string> create(SGPropertyNode* aNode, const std::string& aValue)
   {
     PropertyObject<std::string> p(aNode);

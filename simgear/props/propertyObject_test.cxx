@@ -213,6 +213,26 @@ void testDeclare()
     PropertyObject<std::string> d;
 }
 
+void testDeclareThenDefine()
+{
+    // Declare.
+    PropertyObject<bool>        a;
+    PropertyObject<std::string> b;
+
+    // Property nodes.
+    SGPropertyNode_ptr propsA = new SGPropertyNode;
+    SGPropertyNode_ptr propsB = new SGPropertyNode;
+    propsA->setValue(true);
+    propsB->setValue("test");
+
+    // Now define.
+    a = PropertyObject<bool>::create(propsA);
+    b = PropertyObject<std::string>::create(propsB);
+
+    assert(a == true);
+    assert(b == "test");
+}
+
 int main(int argc, char* argv[])
 {
 	testRoot = new SGPropertyNode();
@@ -236,6 +256,7 @@ int main(int argc, char* argv[])
   testSTLContainer();
   testCreate();
   testDeclare();
+  testDeclareThenDefine();
 
   return EXIT_SUCCESS;
 }

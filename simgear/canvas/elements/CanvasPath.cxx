@@ -900,8 +900,10 @@ namespace canvas
     else if( name == "coord" )
       _attributes_dirty |= COORDS;
     else if ( name == "svg")
+    {
       _hasSVG = true;
       _attributes_dirty |= SVG;
+    }
   }
 
   //----------------------------------------------------------------------------

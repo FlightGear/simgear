@@ -33,6 +33,7 @@
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/props/propsfwd.hxx>
 
 class TimingInfo
 {
@@ -275,9 +276,23 @@ public:
    */
   void stamp(const std::string& name);
 
+    /**
+     * composite name for this subsystem (type name & optional instance name)
+     */
     std::string name() const
     { return _name; }
 
+    /**
+     * @brief the type (class)-specific part of the subsystem name.
+     */
+    std::string typeName() const;
+    
+    /**
+     * @brief the instance part of the subsystem name. Empty if this
+     * subsystem is not instanced
+     */
+    std::string instanceName() const;
+    
     virtual bool is_group() const
     { return false; }
     
@@ -287,7 +302,8 @@ public:
     SGSubsystemGroup* get_group() const;
     
     enum class State {
-        ADD,
+        INVALID = -1,
+        ADD = 0,
         BIND,
         INIT,
         POSTINIT,
@@ -311,7 +327,11 @@ protected:
 
     void set_group(SGSubsystemGroup* group);
     
-  std::string _name;
+    /// composite name for the subsystem (type name and instance name if this
+    /// is an instanced subsystem. (Since this member was originally defined as
+    /// protected, not private, we can't rename it easily)
+    std::string _name;
+    
   bool _suspended = false;
 
   eventTimeVec timingInfo;
@@ -400,6 +420,9 @@ private:
     using MemberVec = std::vector<Member*>;
     MemberVec _members;
 
+    // track the state of this group, so we can transition added/removed
+    // members correctly
+    SGSubsystem::State _state = SGSubsystem::State::INVALID;
     double _fixedUpdateTime;
     double _updateTimeRemainder;
 
@@ -433,6 +456,8 @@ typedef SGSharedPtr<SGSubsystemGroup> SGSubsystemGroupRef;
 class SGSubsystemMgr : public SGSubsystem
 {
 public:
+    SGSubsystemMgr(const SGSubsystemMgr&) = delete;
+    SGSubsystemMgr& operator=(const SGSubsystemMgr&) = delete;
 
     /**
      * Types of subsystem groups.
@@ -483,6 +508,18 @@ public:
     void reportTiming();
     void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
 
+    /**
+     * @brief set the root property node for this subsystem manager
+     * subsystems can retrieve this value during init/bind (or at any time)
+     * to base their own properties trees off of.
+     */
+    void set_root_node(SGPropertyNode_ptr node);
+    
+    /**
+     * @brief retrieve the root property node for this subsystem manager
+     */
+    SGPropertyNode_ptr root_node() const;
+    
     template<class T>
     T* get_subsystem() const
     {
@@ -621,6 +658,13 @@ public:
     
     void addDelegate(Delegate * d);
     void removeDelegate(Delegate * d);
+    
+    /**
+     * @brief return a particular subsystem manager by name. Passing an
+     * empty string retrived the default/global subsystem manager, assuming it
+     * has been created.
+     */
+    static SGSubsystemMgr* getManager(const std::string& id);
 private:
     friend class SGSubsystem;
     friend class SGSubsystemGroup;
@@ -631,6 +675,7 @@ private:
     std::vector<SGSubsystemGroupRef> _groups;
     unsigned int _initPosition = 0;
     bool _destructorActive = false;
+    SGPropertyNode_ptr _rootNode;
     
     // non-owning reference, this is to accelerate lookup
     // by name which otherwise needs a full walk of the entire tree

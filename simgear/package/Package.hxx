@@ -99,10 +99,8 @@ public:
     /**
      * human-readable name - note this is probably not localised,
      * although this is not ruled out for the future.
-     *
-     * Deprecated - please use nameForVariant
      */
-    SG_DEPRECATED(std::string name() const);
+    std::string name() const;
 
     /**
      * Human readable name of a variant
@@ -112,12 +110,9 @@ public:
     std::string nameForVariant(const unsigned int vIndex) const;
 
     /**
-     * syntactic sugar to get the localised description
-     *
-     * Deprecated - please use getLocalisedProp to get the variant-specific
-     * description.
+     * syntactic sugar to get the localised description of the main aircraft
      */
-    SG_DEPRECATED(std::string description() const);
+    std::string description() const;
 
     /**
      * access the raw property data in the package

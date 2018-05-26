@@ -7,6 +7,7 @@
 #include <simgear/constants.h>
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/misc/test_macros.hxx>
+#include <simgear/props/props.hxx>
 
 using std::string;
 using std::cout;
@@ -26,6 +27,13 @@ public:
         wasInited = true;
     }
     
+    void bind() override
+    {
+        auto node = get_manager()->root_node();
+        if (node)
+            node->setIntValue("mysub/foo", 42);
+    }
+    
     void update(double dt) override
     {
         
@@ -42,6 +50,13 @@ public:
     void init() override
     {
         
+    }
+    
+    void bind() override
+    {
+        auto node = get_manager()->root_node();
+        if (node)
+            node->setIntValue("anothersub/bar", 172);
     }
     
     void update(double dt) override
@@ -155,7 +170,9 @@ void testRegistrationAndCreation()
     SG_VERIFY(anotherSub);
     SG_CHECK_EQUAL(anotherSub->name(), AnotherSub::subsystemName());
     SG_CHECK_EQUAL(anotherSub->name(), std::string("anothersub"));
-    
+    SG_CHECK_EQUAL(anotherSub->typeName(), std::string("anothersub"));
+    SG_CHECK_EQUAL(anotherSub->instanceName(), std::string());
+
     auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
     auto radio2 = manager->createInstance<FakeRadioSub>("nav2");
 
@@ -221,18 +238,21 @@ void testSubGrouping()
     auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
     auto radio2 = manager->createInstance<FakeRadioSub>("nav2");
     
-    SG_CHECK_EQUAL(radio1->name(), std::string("fake-radio-nav1"));
-    SG_CHECK_EQUAL(radio2->name(), std::string("fake-radio-nav2"));
-
+    SG_CHECK_EQUAL(radio1->name(), std::string("fake-radio.nav1"));
+    SG_CHECK_EQUAL(radio2->name(), std::string("fake-radio.nav2"));
+    SG_CHECK_EQUAL(radio1->typeName(), std::string("fake-radio"));
+    SG_CHECK_EQUAL(radio2->instanceName(), std::string("nav2"));
+    
     instruments->set_subsystem(radio1);
     instruments->set_subsystem(radio2);
     
-    SG_VERIFY(d->hasEvent("fake-radio-nav1-did-add"));
-    SG_VERIFY(d->hasEvent("fake-radio-nav1-will-add"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-did-add"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-add"));
     
     // lookup of the group should also work
     SG_CHECK_EQUAL(manager->get_subsystem<InstrumentGroup>(), instruments);
     
+    manager->bind();
     manager->init();
     
     SG_VERIFY(instruments->wasInited);
@@ -241,24 +261,27 @@ void testSubGrouping()
 
     SG_VERIFY(d->hasEvent("instruments-will-init"));
     SG_VERIFY(d->hasEvent("instruments-did-init"));
-    SG_VERIFY(d->hasEvent("fake-radio-nav1-will-init"));
-    SG_VERIFY(d->hasEvent("fake-radio-nav2-did-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-did-init"));
 
     manager->update(0.5);
     SG_CHECK_EQUAL_EP(0.5, instruments->lastUpdateTime);
     SG_CHECK_EQUAL_EP(0.5, radio1->lastUpdateTime);
     SG_CHECK_EQUAL_EP(0.5, radio2->lastUpdateTime);
 
-    SG_CHECK_EQUAL(radio1, instruments->get_subsystem("fake-radio-nav1"));
-    SG_CHECK_EQUAL(radio2, instruments->get_subsystem("fake-radio-nav2"));
+    SG_CHECK_EQUAL(0, instruments->get_subsystem("fake-radio"));
+
+    
+    SG_CHECK_EQUAL(radio1, instruments->get_subsystem("fake-radio.nav1"));
+    SG_CHECK_EQUAL(radio2, instruments->get_subsystem("fake-radio.nav2"));
 
     // type-safe lookup of instanced
     SG_CHECK_EQUAL(radio1, manager->get_subsystem<FakeRadioSub>("nav1"));
     SG_CHECK_EQUAL(radio2, manager->get_subsystem<FakeRadioSub>("nav2"));
     
-    bool ok = manager->remove("fake-radio-nav2");
+    bool ok = manager->remove("fake-radio.nav2");
     SG_VERIFY(ok);
-    SG_VERIFY(instruments->get_subsystem("fake-radio-nav2") == nullptr);
+    SG_VERIFY(instruments->get_subsystem("fake-radio.nav2") == nullptr);
     
     manager->update(1.0);
     SG_CHECK_EQUAL_EP(1.0, instruments->lastUpdateTime);
@@ -270,7 +293,7 @@ void testSubGrouping()
     manager->unbind();
     SG_VERIFY(d->hasEvent("instruments-will-unbind"));
     SG_VERIFY(d->hasEvent("instruments-did-unbind"));
-    SG_VERIFY(d->hasEvent("fake-radio-nav1-will-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-unbind"));
     
 }
 
@@ -291,16 +314,13 @@ void testIncrementalInit()
     instruments->set_subsystem(radio1);
     instruments->set_subsystem(radio2);
     
+    manager->bind();
     for ( ; ; ) {
         auto status = manager->incrementalInit();
         if (status == SGSubsystemMgr::INIT_DONE)
             break;
     }
 
-    for (auto ev : d->events) {
-        std::cerr << "ev:" << ev.nameForEvent() << std::endl;
-    }
-    
     SG_VERIFY(mySub->wasInited);
 
     SG_VERIFY(d->hasEvent("mysub-will-init"));
@@ -313,11 +333,11 @@ void testIncrementalInit()
    // SG_VERIFY(d->hasEvent("instruments-did-init"));
 
     
-    SG_VERIFY(d->hasEvent("fake-radio-nav1-will-init"));
-    SG_VERIFY(d->hasEvent("fake-radio-nav1-did-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-did-init"));
     
-    SG_VERIFY(d->hasEvent("fake-radio-nav2-will-init"));
-    SG_VERIFY(d->hasEvent("fake-radio-nav2-did-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-will-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-did-init"));
 
 
 
@@ -338,6 +358,7 @@ void testSuspendResume()
     instruments->set_subsystem(radio1);
     instruments->set_subsystem(radio2);
     
+    manager->bind();
     manager->init();
     manager->update(1.0);
     
@@ -350,7 +371,7 @@ void testSuspendResume()
 
     SG_VERIFY(d->hasEvent("anothersub-will-suspend"));
     SG_VERIFY(d->hasEvent("anothersub-did-suspend"));
-    SG_VERIFY(!d->hasEvent("radio1-will-suspend"));
+    SG_VERIFY(!d->hasEvent("fake-radio.nav1-will-suspend"));
 
     manager->update(0.5);
     
@@ -392,6 +413,32 @@ void testSuspendResume()
     SG_CHECK_EQUAL_EP(5.0, radio2->lastUpdateTime);
 }
 
+void testPropertyRoot()
+{
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGPropertyNode_ptr props(new SGPropertyNode);
+    manager->set_root_node(props);
+    
+    auto d = new RecorderDelegate;
+    manager->addDelegate(d);
+
+    manager->add<MySub1>();
+    auto anotherSub = manager->add<AnotherSub>();
+    auto instruments = manager->add<InstrumentGroup>();
+    
+    auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
+    auto radio2 = manager->createInstance<FakeRadioSub>("nav2");
+    
+    instruments->set_subsystem(radio1);
+    instruments->set_subsystem(radio2);
+
+    manager->bind();
+    manager->init();
+
+    SG_CHECK_EQUAL(props->getIntValue("mysub/foo"), 42);
+    SG_CHECK_EQUAL(props->getIntValue("anothersub/bar"), 172);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -402,6 +449,7 @@ int main(int argc, char* argv[])
     testSubGrouping();
     testIncrementalInit();
     testSuspendResume();
+    testPropertyRoot();
     
     cout << __FILE__ << ": All tests passed" << endl;
     return EXIT_SUCCESS;

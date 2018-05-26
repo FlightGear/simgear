@@ -57,6 +57,10 @@ public:
             throw sg_exception("no package download URLs");
         }
 
+        if (m_owner->package()->properties()->hasChild("archive-type")) {
+            setArchiveTypeFromExtension(m_owner->package()->properties()->getStringValue("archive-type"));
+        }
+        
         // TODO randomise order of m_urls
 
         m_extractPath = aOwner->path().dir();
@@ -165,7 +169,12 @@ protected:
 
         // build a path like /path/to/packages/org.some.catalog/Aircraft/extract_xxxx/MyAircraftDir
         SGPath extractedPath = m_extractPath;
-        extractedPath.append(m_owner->package()->dirName());
+        if (m_owner->package()->properties()->hasChild("archive-path")) {
+            extractedPath.append(m_owner->package()->properties()->getStringValue("archive-path"));
+        } else {
+            extractedPath.append(m_owner->package()->dirName());
+        }
+
 
         // rename it to path/to/packages/org.some.catalog/Aircraft/MyAircraftDir
         bool ok = extractedPath.rename(m_owner->path());
@@ -175,6 +184,8 @@ protected:
         }
 
         // extract_xxxx directory is now empty, so remove it
+        // (note it might not be empty if the archive contained some other
+        // files, but we delete those in such a case
         if (m_extractPath.exists()) {
             simgear::Dir(m_extractPath).remove();
         }
@@ -196,7 +207,22 @@ protected:
     }
 
 private:
-
+    void setArchiveTypeFromExtension(const std::string& ext)
+    {
+        if (ext.empty())
+            return;
+        
+        if (ext == "zip") {
+            m_archiveType = ZIP;
+            return;
+        }
+        
+        if ((ext == "tar.gz") || (ext == "tgz")) {
+            m_archiveType = TAR_GZ;
+            return;
+        }
+    }
+    
     void extractCurrentFile(unzFile zip, char* buffer, size_t bufferSize)
     {
         unz_file_info fileInfo;
@@ -262,14 +288,22 @@ private:
     {
         const std::string u(url());
         const size_t ul(u.length());
-        if (u.rfind(".zip") == (ul - 4)) {
-            return extractUnzip();
+        
+        if (m_archiveType == AUTO_DETECT) {
+            if (u.rfind(".zip") == (ul - 4)) {
+                m_archiveType = ZIP;
+            } else if (u.rfind(".tar.gz") == (ul - 7)) {
+                m_archiveType = TAR_GZ;
+            }
+            // we will fall through to the error case now
         }
-
-        if (u.rfind(".tar.gz") == (ul - 7)) {
+        
+        if (m_archiveType == ZIP) {
+            return extractUnzip();
+        } else if (m_archiveType == TAR_GZ) {
             return extractTar();
         }
-
+        
         SG_LOG(SG_IO, SG_WARN, "unsupported archive format:" << u);
         return false;
     }
@@ -330,7 +364,14 @@ private:
         m_owner->installResult(aReason);
     }
 
+    enum ArchiveType {
+        AUTO_DETECT = 0,
+        ZIP,
+        TAR_GZ
+    };
+    
     InstallRef m_owner;
+    ArchiveType m_archiveType = AUTO_DETECT;
     string_list m_urls;
     SG_MD5_CTX m_md5;
     std::string m_buffer;

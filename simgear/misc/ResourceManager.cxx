@@ -20,11 +20,17 @@
 #include <simgear_config.h>
 
 #include <simgear/misc/ResourceManager.hxx>
+#include <simgear/debug/logstream.hxx>
 
 namespace simgear
 {
     
-static ResourceManager* static_manager = NULL;
+static ResourceManager* static_manager = nullptr;
+
+ResourceProvider::~ResourceProvider()
+{
+    // pin to this compilation unit
+}
 
 ResourceManager::ResourceManager()
 {
@@ -40,13 +46,20 @@ ResourceManager* ResourceManager::instance()
     return static_manager;
 }    
 
+ResourceManager::~ResourceManager()
+{
+    assert(this == static_manager);
+    static_manager = nullptr;
+    std::for_each(_providers.begin(), _providers.end(), 
+        [](ResourceProvider* p) { delete p; });
+}
 /**
  * trivial provider using a fixed base path
  */
 class BasePathProvider : public ResourceProvider
 {
 public:
-    BasePathProvider(const SGPath& aBase, int aPriority) :
+    BasePathProvider(const SGPath& aBase, ResourceManager::Priority aPriority) :
         ResourceProvider(aPriority),
         _base(aBase)
     {
@@ -69,6 +82,8 @@ void ResourceManager::addBasePath(const SGPath& aPath, Priority aPriority)
 
 void ResourceManager::addProvider(ResourceProvider* aProvider)
 {
+    assert(aProvider);
+
     ProviderVec::iterator it = _providers.begin();
     for (; it != _providers.end(); ++it) {
       if (aProvider->priority() > (*it)->priority()) {
@@ -81,6 +96,16 @@ void ResourceManager::addProvider(ResourceProvider* aProvider)
     _providers.push_back(aProvider);
 }
 
+void ResourceManager::removeProvider(ResourceProvider* aProvider)
+{
+    assert(aProvider);
+    auto it = std::find(_providers.begin(), _providers.end(), aProvider);
+    if (it == _providers.end()) {
+        SG_LOG(SG_GENERAL, SG_DEV_ALERT, "unknown provider doing remove");
+        return;
+    }
+}
+
 SGPath ResourceManager::findPath(const std::string& aResource, SGPath aContext)
 {
     if (!aContext.isNull()) {
@@ -90,9 +115,8 @@ SGPath ResourceManager::findPath(const std::string& aResource, SGPath aContext)
         }
     }
     
-    ProviderVec::iterator it = _providers.begin();
-    for (; it != _providers.end(); ++it) {
-      SGPath path = (*it)->resolve(aResource, aContext);
+    for (auto provider : _providers) {
+      SGPath path = provider->resolve(aResource, aContext);
       if (!path.isNull()) {
         return path;
       }

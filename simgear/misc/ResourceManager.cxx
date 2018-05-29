@@ -17,6 +17,9 @@
 //
 // $Id$
 
+#include <assert.h>
+#include <algorithm>
+
 #include <simgear_config.h>
 
 #include <simgear/misc/ResourceManager.hxx>

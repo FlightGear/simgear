@@ -314,7 +314,7 @@ public:
     /**
      * Get a list of available playback devices.
      */
-    std::vector<const char*> get_available_devices();
+    std::vector<std::string> get_available_devices();
 
     /**
      * Get the current OpenAL vendor or rendering backend.

@@ -25,5 +25,6 @@
 
 #cmakedefine SYSTEM_EXPAT
 #cmakedefine ENABLE_SOUND
+#cmakedefine USE_AEONWAVE
 #cmakedefine ENABLE_SIMD
 #cmakedefine ENABLE_GDAL

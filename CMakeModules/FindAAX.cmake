@@ -1,14 +1,19 @@
-# Locate AAX
+# Try to find AAX (AeonWave)
 # This module defines
-# AAX_LIBRARIES
-# AAX_FOUND, if false, do not try to link to AAX 
-# AAX_INCLUDE_DIR, where to find the headers
+#
+# AAX_FOUND - if false, do not try to link to AAX
+# AAX_INCLUDE_DIR - where to find the headers
+# AAX_LIBRARIES - Link these to use AAX
+#
+# Copyright (C) 2016-2018 by Erik Hofman.
+# Copyright (C) 2016-2018 by Adalin B.V.
 #
 # $AAXDIR is an environment variable that would
 # correspond to the ./configure --prefix=$AAXDIR
 # used in building AAX.
 #
-# Created by Erik Hofman.
+# This file is Public Domain (www.unlicense.org)
+# This is free and unencumbered software released into the public domain.
 
 FIND_PATH(AAX_INCLUDE_DIR aax/aax.h
   HINTS

@@ -27,14 +27,14 @@ FIND_PATH(AAX_INCLUDE_DIR aax/aax.h
 )
 
 FIND_LIBRARY(AAX_LIBRARY 
-  NAMES AAX aax AAX32
+  NAMES AAX aax libAAX
   HINTS
   $ENV{AAXDIR}
   $ENV{ProgramFiles}/AAX
   $ENV{ProgramFiles}/AeonWave
   $ENV{ProgramFiles}/Adalin/AeonWave
   ${CMAKE_BUILD_DIR}/aax
-  PATH_SUFFIXES bin lib lib/${CMAKE_LIBRARY_ARCHITECTURE} lib64 libs64 libs libs/Win32 libs/Win64
+  PATH_SUFFIXES lib64 lib lib/${CMAKE_LIBRARY_ARCHITECTURE} libs64 libs libs/Win32 libs/Win64 bin
   PATHS
   ~/Library/Frameworks
   /Library/Frameworks
@@ -52,7 +52,7 @@ ELSE(AAX_LIBRARY AND AAX_INCLUDE_DIR)
   ENDIF(NOT AAX_INCLUDE_DIR)
   IF(NOT AAX_LIBRARY)
     IF(SINGLE_PACKAGE)
-      SET(AAX_LIBRARY "${aax_BUILD_DIR}/aax/AAX32.dll")
+      SET(AAX_LIBRARY "${aax_BUILD_DIR}/aax/AAX.lib")
       SET(AAX_FOUND "YES")
     ELSE(SINGLE_PACKAGE)
     ENDIF(SINGLE_PACKAGE)

@@ -226,6 +226,7 @@ else()
         endif()
 
         if(NOT AAX_FOUND)
+            set(USE_AEONWAVE FALSE)
             find_package(OpenAL REQUIRED)
         endif()
 

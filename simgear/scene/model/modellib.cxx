@@ -161,33 +161,68 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     return proxyNode;
 }
 
+
+/*
+ * Load a set of models at different LOD range_nearest
+ *
+ */
 osg::PagedLOD*
-SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
-                           SGModelData *data)
+SGModelLib::loadPagedModel(SGPropertyNode *prop_root, SGModelData *data, SGModelLOD model_lods)
 {
     osg::PagedLOD *plod = new osg::PagedLOD;
-    plod->setName("Paged LOD for \"" + path + "\"");
-    plod->setFileName(0, path);
-    plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
-    plod->setMinimumExpiryTime( 0, prop_root->getDoubleValue("/sim/rendering/plod-minimum-expiry-time-secs", 180.0 ) );
 
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
-    std::string lext = SGPath(path).lower_extension();
-
-    if ((lext == "ac") || (lext == "obj")) {
-        opt->setInstantiateEffects(true);
-    }
-
     if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
         opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     else
         opt->setObjectCacheHint(osgDB::Options::CACHE_NONE);
+
+    for(unsigned int i = 0; i < model_lods.getNumLODs(); i++) {
+      SGModelLOD::ModelLOD lod = model_lods.getModelLOD(i);
+      plod->setName("Paged LOD for \"" + lod.path + "\"");
+      plod->setFileName(i, lod.path);
+      plod->setRange(i, lod.min_range, lod.max_range);
+      plod->setMinimumExpiryTime(i, prop_root->getDoubleValue("/sim/rendering/plod-minimum-expiry-time-secs", 180.0 ) );
+
+      std::string lext = SGPath(lod.path).lower_extension();
+
+      // We can only have one set of ReaderWriterOptions for the PagedLOD, so
+      // we will just have to assume that if one of the defined models can
+      // handle instantiated effects, then the other can as well.
+      if ((lext == "ac") || (lext == "obj")) {
+          opt->setInstantiateEffects(true);
+      }
+    }
+
     plod->setDatabaseOptions(opt.get());
+
     return plod;
+}
+
+osg::PagedLOD*
+SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
+                           SGModelData *data)
+{
+    SGModelLOD model_lods;
+    model_lods.insert(path, 0.0, 50.0*SG_NM_TO_METER);
+    return SGModelLib::loadPagedModel(prop_root, data, model_lods);
+}
+
+osg::PagedLOD*
+SGModelLib::loadPagedModel(std::vector<string> paths, SGPropertyNode *prop_root,
+                           SGModelData *data)
+{
+    SGModelLOD model_lods;
+    for(unsigned int i = 0; i < paths.size(); i++) {
+      // We don't have any range data, so simply set them all up to full range.
+      // Some other code will update the LoD ranges later.  (AIBase::updateLOD)
+      model_lods.insert(paths[i], 0.0, 50.0*SG_NM_TO_METER);
+    }
+    return SGModelLib::loadPagedModel(prop_root, data, model_lods);
 }
 
 // end of modellib.cxx

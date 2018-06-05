@@ -90,8 +90,10 @@ namespace simgear
         case HTTPRepository::REPO_ERROR_CANCELLED:   return "cancelled";
         case HTTPRepository::REPO_PARTIAL_UPDATE:   return "partial update (incomplete)";
         }
+
+        return "Unknown response code";
     }
-    
+
 class HTTPRepoPrivate
 {
 public:
@@ -291,7 +293,7 @@ public:
             if (!cp.exists()) {
                 continue;
             }
-            
+
             SGBinaryFile src(cp);
             SGBinaryFile dst(p);
             src.open(SG_IO_IN);
@@ -677,7 +679,7 @@ std::string HTTPRepository::resultCodeAsString(ResultCode code)
 {
     return innerResultCodeAsString(code);
 }
-    
+
 HTTPRepository::ResultCode
 HTTPRepository::failure() const
 {
@@ -746,7 +748,7 @@ HTTPRepository::failure() const
             if (responseCode() == -1) {
                 code = HTTPRepository::REPO_ERROR_CANCELLED;
             }
-            
+
             file.reset();
             if (pathInRepo.exists()) {
                 pathInRepo.remove();
@@ -1084,7 +1086,7 @@ HTTPRepository::failure() const
 		} else {
 			// we encounter this code path when deleting an orphaned directory
 		}
-		
+
 		Dir dir(absPath);
 		bool result = dir.remove(true);
 
@@ -1152,7 +1154,7 @@ HTTPRepository::failure() const
             }
 
             SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update repository:" << baseUrl
-                   << "\n\tchecksum failure for: " << relativePath 
+                   << "\n\tchecksum failure for: " << relativePath
                    << "\n\tthis typically indicates the remote repository is corrupt or was being updated during the sync");
         } else if (fileStatus == HTTPRepository::REPO_ERROR_CANCELLED) {
             // if we were cancelled, don't report or log

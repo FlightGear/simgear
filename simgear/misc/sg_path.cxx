@@ -107,7 +107,7 @@ static SGPath pathForKnownFolder(REFKNOWNFOLDERID folderId, const SGPath& def)
             // system call will allocate dynamic memory... which we must release when done
             wchar_t* localFolder = 0;
 
-            if (pSHGetKnownFolderPath(folderId, KF_FLAG_DEFAULT_PATH, NULL, &localFolder) == S_OK) {
+			if (pSHGetKnownFolderPath(folderId, KF_FLAG_DONT_VERIFY, NULL, &localFolder) == S_OK) {
                 SGPath folder_path = SGPath(localFolder, def.getPermissionChecker());
                 // release dynamic memory
                 CoTaskMemFree(static_cast<void*>(localFolder));

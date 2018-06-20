@@ -20,6 +20,7 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/constants.h>
+#include <simgear/math/SGGeod.hxx>
 
 using std::string;
 using std::vector;
@@ -619,6 +620,36 @@ void test_utf8Convert()
     SG_VERIFY(a == aRoundTrip);
 }
 
+void test_parseGeod()
+{
+    SGGeod a;
+    SG_VERIFY(strutils::parseStringAsGeod("56.12,-3.0", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.0);
+    SG_CHECK_EQUAL_EP2(a.getLatitudeDeg(), 56.12, 1e-4);
+    
+    // embedded whitepace, DMS notation, NSEW notation
+    SG_VERIFY(strutils::parseStringAsGeod("\t40 30'50\"S,  12 34'56\"W ", &a));
+    SG_CHECK_EQUAL_EP2(a.getLongitudeDeg(), -12.58222222, 1e-4);
+    SG_CHECK_EQUAL_EP2(a.getLatitudeDeg(), -40.5138888, 1e-4);
+    
+    // signed degrees-minutes
+    SG_VERIFY(strutils::parseStringAsGeod("-45 27.89,-12 34.56", &a));
+    SG_CHECK_EQUAL_EP2(a.getLongitudeDeg(), -12.576, 1e-4);
+    SG_CHECK_EQUAL_EP2(a.getLatitudeDeg(), -45.464833, 1e-4);
+    
+    SG_VERIFY(strutils::parseStringAsGeod("") == false);
+    SG_VERIFY(strutils::parseStringAsGeod("aaaaaaaa") == false);
+}
+
+void test_formatGeod()
+{
+    SGGeod a = SGGeod::fromDeg(-3.46, 55.45);
+    SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::SIGNED_DECIMAL_DEGREES), "55.450000,-3.460000");
+    SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::DEGREES_MINUTES_SECONDS),
+                   "55*27'00.0\"N,3*27'36.0\"W");
+
+}
+
 int main(int argc, char* argv[])
 {
     test_strip();
@@ -639,6 +670,8 @@ int main(int argc, char* argv[])
     test_propPathMatch();
     test_readTime();
     test_utf8Convert();
+    test_parseGeod();
+    test_formatGeod();
     
     return EXIT_SUCCESS;
 }

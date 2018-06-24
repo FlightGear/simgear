@@ -385,16 +385,28 @@ namespace simgear {
           ZERO_PAD_DEGREES_MINUTES,
           ZERO_PAD_DEGREES_MINUTES_SECONDS,
           TRINITY_HOUSE,            ///< dd* mm'.mmm X, ddd* mm'.mmm X (Trinity House Navigation standard).
+          DECIMAL_DEGREES_SYMBOL        ///< 88.4*N,4.54*W
       };
       
-      std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c);
+      enum class DegreeSymbol
+      {
+          ASTERISK = 0,
+          SPACE,
+          LATIN1_DEGREE,
+          UTF8_DEGREE
+      };
+      
+      std::string formatLatLonValueAsString(double deg,
+                                            LatLonFormat format, char c,
+                                            DegreeSymbol degreeSymbol = DegreeSymbol::ASTERISK);
 
       /**
        * Format an SGGeod as a string according to the provided rule.
        * if the SGGeod is invalid (default constructed), will return an empty string
        */
       std::string formatGeodAsString(const SGGeod& geod,
-                                     LatLonFormat format = LatLonFormat::DECIMAL_DEGREES);
+                                     LatLonFormat format = LatLonFormat::DECIMAL_DEGREES,
+                                     DegreeSymbol degreeSymbol = DegreeSymbol::ASTERISK);
   } // end namespace strutils
 } // end namespace simgear
 

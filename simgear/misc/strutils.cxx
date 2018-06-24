@@ -1196,12 +1196,24 @@ bool parseStringAsGeod(const std::string& s, SGGeod* result)
     return true;
 }
         
-std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
+namespace {
+    const char* static_degreeSymbols[] = {
+        "*",
+        " ",
+        "\xB0",     // Latin-1 B0 codepoint
+        "\xC2\xB0"  // UTF-8 equivalent
+    };
+} // of anonymous namespace
+        
+std::string formatLatLonValueAsString(double deg, LatLonFormat format,
+                                      char c,
+                                      DegreeSymbol degreeSymbol)
 {
     double min, sec;
     const int sign = deg < 0.0 ? -1 : 1;
     deg = fabs(deg);
     char buf[128];
+    const char* degSym = static_degreeSymbols[static_cast<int>(degreeSymbol)];
     
     switch (format) {
     case LatLonFormat::DECIMAL_DEGREES:
@@ -1217,7 +1229,7 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
             min -= 60.0;
             deg += 1.0;
         }
-        snprintf(buf, sizeof(buf), "%d*%06.3f'%c", int(deg), fabs(min), c);
+        snprintf(buf, sizeof(buf), "%d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
         break;
         
     case LatLonFormat::DEGREES_MINUTES_SECONDS:
@@ -1234,7 +1246,8 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
                 deg += 1.0;
             }
         }
-        ::snprintf(buf, sizeof(buf), "%d*%02d'%04.1f\"%c", int(deg), int(min), fabs(sec), c);
+        ::snprintf(buf, sizeof(buf), "%d%s%02d'%04.1f\"%c", int(deg), degSym,
+                   int(min), fabs(sec), c);
         break;
             
     case LatLonFormat::SIGNED_DECIMAL_DEGREES:
@@ -1250,9 +1263,9 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
             deg += 1.0;
         }
         if (sign == 1) {
-            snprintf(buf, sizeof(buf), "%d*%06.3f'", int(deg), fabs(min));
+            snprintf(buf, sizeof(buf), "%d%s%06.3f'", int(deg), degSym, fabs(min));
         } else {
-            snprintf(buf, sizeof(buf), "-%d*%06.3f'", int(deg), fabs(min));
+            snprintf(buf, sizeof(buf), "-%d%s%06.3f'", int(deg), degSym, fabs(min));
         }
         break;
         
@@ -1270,9 +1283,9 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
             }
         }
         if (sign == 1) {
-            snprintf(buf, sizeof(buf), "%d*%02d'%04.1f\"", int(deg), int(min), fabs(sec));
+            snprintf(buf, sizeof(buf), "%d%s%02d'%04.1f\"", int(deg), degSym, int(min), fabs(sec));
         } else {
-            snprintf(buf, sizeof(buf), "-%d*%02d'%04.1f\"", int(deg), int(min), fabs(sec));
+            snprintf(buf, sizeof(buf), "-%d%s%02d'%04.1f\"", int(deg), degSym, int(min), fabs(sec));
         }
         break;
             
@@ -1293,9 +1306,9 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
             deg += 1.0;
         }
         if (c == 'N' || c == 'S') {
-            snprintf(buf, sizeof(buf), "%02d*%06.3f'%c", int(deg), fabs(min), c);
+            snprintf(buf, sizeof(buf), "%02d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
         } else {
-            snprintf(buf, sizeof(buf), "%03d*%06.3f'%c", int(deg), fabs(min), c);
+            snprintf(buf, sizeof(buf), "%03d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
         }
         break;
             
@@ -1312,9 +1325,9 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
             }
         }
         if (c == 'N' || c == 'S') {
-            snprintf(buf, sizeof(buf), "%02d*%02d'%04.1f\"%c", int(deg), int(min), fabs(sec), c);
+            snprintf(buf, sizeof(buf), "%02d%s%02d'%04.1f\"%c", int(deg), degSym, int(min), fabs(sec), c);
         } else {
-            snprintf(buf, sizeof(buf), "%03d*%02d'%04.1f\"%c", int(deg), int(min), fabs(sec), c);
+            snprintf(buf, sizeof(buf), "%03d%s%02d'%04.1f\"%c", int(deg), degSym, int(min), fabs(sec), c);
         }
         break;
             
@@ -1331,17 +1344,23 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format, char c)
             snprintf(buf, sizeof(buf), "%03d* %02d'.%03d%c", int(deg), int(min), int(SGMisc<double>::round((min-int(min))*1000)), c);
         }
         break;
+            
+    case LatLonFormat::DECIMAL_DEGREES_SYMBOL:
+        ::snprintf(buf, sizeof(buf), "%3.6f%s%c", deg, degSym, c);
+        break;
     }
  
     return std::string(buf);
 }
 
-std::string formatGeodAsString(const SGGeod& geod, LatLonFormat format)
+std::string formatGeodAsString(const SGGeod& geod, LatLonFormat format,
+                               DegreeSymbol degreeSymbol)
 {
     const char ns = (geod.getLatitudeDeg() > 0.0) ? 'N' : 'S';
     const char ew = (geod.getLongitudeDeg() > 0.0) ? 'E' : 'W';
     
-    return formatLatLonValueAsString(geod.getLatitudeDeg(), format, ns) + "," + formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew);
+    return formatLatLonValueAsString(geod.getLatitudeDeg(), format, ns, degreeSymbol) + ","
+        + formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew, degreeSymbol);
 }
 
 } // end namespace strutils

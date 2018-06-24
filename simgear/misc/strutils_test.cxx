@@ -647,7 +647,18 @@ void test_formatGeod()
     SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::SIGNED_DECIMAL_DEGREES), "55.450000,-3.460000");
     SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::DEGREES_MINUTES_SECONDS),
                    "55*27'00.0\"N,3*27'36.0\"W");
-
+    
+    const auto s = strutils::formatGeodAsString(a,
+                                                strutils::LatLonFormat::ZERO_PAD_DEGREES_MINUTES,
+                                                strutils::DegreeSymbol::LATIN1_DEGREE);
+    SG_CHECK_EQUAL(s, "55\xB0" "27.000'N,003\xB0" "27.600'W");
+    
+    // Jakarta, if you care
+    SGGeod b = SGGeod::fromDeg(106.8278, -6.1568);
+    const auto s2 = strutils::formatGeodAsString(b,
+                                                strutils::LatLonFormat::DECIMAL_DEGREES_SYMBOL,
+                                                strutils::DegreeSymbol::UTF8_DEGREE);
+    SG_CHECK_EQUAL(s2, "6.156800\xC2\xB0S,106.827800\xC2\xB0" "E");
 }
 
 int main(int argc, char* argv[])

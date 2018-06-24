@@ -125,7 +125,7 @@ SGMesh::SGMesh( const SGDemPtr dem,
 
     ::std::vector<SGGeod> geodes(grid_width*grid_height);
 
-    // session can't be paralell yet - save alts in geode array
+    // session can't be parallel yet - save alts in geode array
     fprintf( stderr, "SGMesh::SGMesh - create session - num dem roots is %d\n", dem->getNumRoots() );
     SGDemSession s = dem->openSession( wo, so, eo, no, lvl, true );
     s.getGeods( wo, so, eo, no, grid_width, grid_height, skipx, skipy, geodes, Debug1, Debug2 );
@@ -159,10 +159,10 @@ SGMesh::SGMesh( const SGDemPtr dem,
         index.push_back( src_idx );
     }
 
-    // we can convert to cartesian in paralell
-    unsigned int nv = geodes.size();
+    // we can convert to cartesian in parallel
+    long nv = geodes.size();
 #pragma omp parallel for
-    for (unsigned int i = 0; i < nv; i++) {
+    for (long i = 0; i < nv; i++) {
         (*vertices)[i].set( toOsg( SGVec3f::fromGeod( geodes[i] ) ) );
     }
 
@@ -195,7 +195,7 @@ SGMesh::SGMesh( const SGDemPtr dem,
 
     // translate pos after normals computed
 #pragma omp parallel for
-    for ( unsigned int i=0; i < nv; i++ ) {
+    for ( long i=0; i < nv; i++ ) {
         (*vertices)[i].set( transform.preMult( (*vertices)[i]) );
     }
 
@@ -245,7 +245,7 @@ SGMesh::SGMesh( const SGDemPtr dem,
     osg::Geometry* geometry = new osg::Geometry;
 
     char geoName[64];
-    snprintf( geoName, sizeof(geoName), "tilemesh (%u,%u)-(%u,%u):level%d,%d", 
+    snprintf( geoName, sizeof(geoName), "tilemesh (%u,%u)-(%u,%u):level%u,%u", 
                 wo, so, eo, no,
                 widthLevel, heightLevel );
     geometry->setName(geoName);
@@ -364,9 +364,9 @@ void SGMesh::need_normals()
         // need_faces();
         if ( !faces.empty() ) {
             // Compute from faces
-            int nf = faces.size();
+            long nf = faces.size();
 #pragma omp parallel for
-            for (int i = 0; i < nf; i++) {
+            for (long i = 0; i < nf; i++) {
                 const osg::Vec3 &p0 = (*vertices)[faces[i][0]];
                 const osg::Vec3 &p1 = (*vertices)[faces[i][1]];
                 const osg::Vec3 &p2 = (*vertices)[faces[i][2]];
@@ -384,9 +384,9 @@ void SGMesh::need_normals()
         }
 
         // Make them all unit-length
-        unsigned int nn = normals->size();
+        long nn = normals->size();
 #pragma omp parallel for
-        for (unsigned int i = 0; i < nn; i++)
+        for (long i = 0; i < nn; i++)
             (*normals)[i].normalize();
     }
 }

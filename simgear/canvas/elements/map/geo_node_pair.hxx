@@ -67,7 +67,8 @@ namespace canvas
       {
         _node_lat = node;
         _status &= ~LAT_MISSING;
-
+        _xNode.reset();
+          
         if( node == _node_lon )
         {
           _node_lon = 0;
@@ -79,7 +80,8 @@ namespace canvas
       {
         _node_lon = node;
         _status &= ~LON_MISSING;
-
+        _yNode.reset();
+          
         if( node == _node_lat )
         {
           _node_lat = 0;
@@ -100,16 +102,25 @@ namespace canvas
       void setTargetName(const std::string& name)
       {
         _target_name = name;
+        _xNode.reset();
+        _yNode.reset();
       }
 
       void setScreenPos(float x, float y)
       {
         assert( isComplete() );
-        SGPropertyNode *parent = _node_lat->getParent();
-        parent->getChild(_target_name, _node_lat->getIndex(), true)
-              ->setDoubleValue(x);
-        parent->getChild(_target_name, _node_lon->getIndex(), true)
-              ->setDoubleValue(y);
+        if (!_xNode) {
+          SGPropertyNode *parent = _node_lat->getParent();
+          _xNode = parent->getChild(_target_name, _node_lat->getIndex(), true);
+        }
+          
+        if (!_yNode) {
+          SGPropertyNode *parent = _node_lat->getParent();
+          _yNode = parent->getChild(_target_name, _node_lon->getIndex(), true);
+        }
+          
+        _xNode->setDoubleValue(x);
+        _yNode->setDoubleValue(y);
       }
 
       void print()
@@ -125,6 +136,8 @@ namespace canvas
       SGPropertyNode *_node_lat,
                      *_node_lon;
       std::string   _target_name;
+      SGPropertyNode_ptr _xNode,
+          _yNode;
 
   };
 

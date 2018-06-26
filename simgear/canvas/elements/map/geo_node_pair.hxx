@@ -99,6 +99,12 @@ namespace canvas
         return _node_lon ? _node_lon->getStringValue() : "";
       }
 
+      void setCachedLatLon(const std::pair<double, double>& latLon)
+      { _cachedLatLon = latLon; }
+      
+      std::pair<double, double> getCachedLatLon()
+      { return _cachedLatLon; }
+      
       void setTargetName(const std::string& name)
       {
         _target_name = name;
@@ -138,6 +144,7 @@ namespace canvas
       std::string   _target_name;
       SGPropertyNode_ptr _xNode,
           _yNode;
+      std::pair<double, double> _cachedLatLon;
 
   };
 

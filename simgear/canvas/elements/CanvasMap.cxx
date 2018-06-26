@@ -97,17 +97,26 @@ namespace canvas
           || (!geo_node->isDirty() && !_projection_dirty) )
         continue;
 
-      GeoCoord lat = parseGeoCoord(geo_node->getLat());
-      if( lat.type != GeoCoord::LATITUDE )
-        continue;
-
-      GeoCoord lon = parseGeoCoord(geo_node->getLon());
-      if( lon.type != GeoCoord::LONGITUDE )
-        continue;
-
-      Projection::ScreenPosition pos =
-        _projection->worldToScreen(lat.value, lon.value);
-
+      double latD = -9999.0, lonD = -9999.0;
+      if (geo_node->isDirty()) {
+        GeoCoord lat = parseGeoCoord(geo_node->getLat());
+        if( lat.type != GeoCoord::LATITUDE )
+          continue;
+        
+        GeoCoord lon = parseGeoCoord(geo_node->getLon());
+        if( lon.type != GeoCoord::LONGITUDE )
+          continue;
+        
+        // save the parsed values so we can re-use them if only projection
+        // is changed (very common case for moving vehicle)
+        latD = lat.value;
+        lonD = lon.value;
+        geo_node->setCachedLatLon(std::make_pair(latD, lonD));
+      } else {
+        std::tie(latD, lonD) = geo_node->getCachedLatLon();
+      }
+      
+      Projection::ScreenPosition pos = _projection->worldToScreen(latD, lonD);
       geo_node->setScreenPos(pos.x, pos.y);
 
 //      geo_node->print();

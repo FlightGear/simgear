@@ -863,6 +863,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Path::childChanged(SGPropertyNode* child)
   {
+    if( child->getParent() != _node )
+      return;
+      
     const std::string& name = child->getNameString();
     const std::string &prName = child->getParent()->getNameString();
 
@@ -891,9 +894,6 @@ namespace canvas
       _attributes_dirty |= RECT;
       return;
     }
-
-    if( child->getParent() != _node )
-      return;
 
     if( name == "cmd" )
       _attributes_dirty |= CMDS;

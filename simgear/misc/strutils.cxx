@@ -1137,7 +1137,7 @@ bool matchPropPathToTemplate(const std::string& path, const std::string& templat
 bool parseStringAsLatLonValue(const std::string& s, double& degrees)
 {
     string ss = simplify(s);
-    auto spacePos = ss.find(' ');
+    auto spacePos = ss.find_first_of(" *");
     
     if (spacePos == std::string::npos) {
         degrees = std::stof(ss);
@@ -1149,10 +1149,16 @@ bool parseStringAsLatLonValue(const std::string& s, double& degrees)
         // check for minutes marker
         auto quotePos = ss.find('\'');
         if (quotePos == std::string::npos) {
-            minutes = std::stof(ss.substr(spacePos));
+            const auto minutesStr = ss.substr(spacePos+1);
+            if (!minutesStr.empty()) {
+                minutes = std::stof(minutesStr);
+            }
         } else {
-            minutes = std::stof(ss.substr(spacePos, quotePos - spacePos));
-            seconds = std::stof(ss.substr(quotePos+1));
+            minutes = std::stof(ss.substr(spacePos+1, quotePos - spacePos));
+            const auto secondsStr = ss.substr(quotePos+1);
+            if (!secondsStr.empty()) {
+                seconds = std::stof(secondsStr);
+            }
         }
         
         if ((seconds < 0.0) || (minutes < 0.0)) {

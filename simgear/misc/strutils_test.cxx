@@ -627,8 +627,18 @@ void test_parseGeod()
     SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.0);
     SG_CHECK_EQUAL_EP2(a.getLatitudeDeg(), 56.12, 1e-4);
     
+    // trailing degrees
+    SG_VERIFY(strutils::parseStringAsGeod("56.12*,-3.0*", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.0);
+    SG_CHECK_EQUAL_EP2(a.getLatitudeDeg(), 56.12, 1e-4);
+    
     // embedded whitepace, DMS notation, NSEW notation
     SG_VERIFY(strutils::parseStringAsGeod("\t40 30'50\"S,  12 34'56\"W ", &a));
+    SG_CHECK_EQUAL_EP2(a.getLongitudeDeg(), -12.58222222, 1e-4);
+    SG_CHECK_EQUAL_EP2(a.getLatitudeDeg(), -40.5138888, 1e-4);
+
+    // embedded whitepace, DMS notation, NSEW notation, degrees symbol
+    SG_VERIFY(strutils::parseStringAsGeod("\t40*30'50\"S,  12*34'56\"W ", &a));
     SG_CHECK_EQUAL_EP2(a.getLongitudeDeg(), -12.58222222, 1e-4);
     SG_CHECK_EQUAL_EP2(a.getLatitudeDeg(), -40.5138888, 1e-4);
     

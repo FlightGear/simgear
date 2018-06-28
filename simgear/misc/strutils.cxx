@@ -1140,9 +1140,9 @@ bool parseStringAsLatLonValue(const std::string& s, double& degrees)
     auto spacePos = ss.find_first_of(" *");
     
     if (spacePos == std::string::npos) {
-        degrees = std::stof(ss);
+        degrees = std::stod(ss);
     } else {
-        degrees = std::stof(ss.substr(0, spacePos));
+        degrees = std::stod(ss.substr(0, spacePos));
         
         double minutes = 0.0, seconds = 0.0;
         
@@ -1151,13 +1151,13 @@ bool parseStringAsLatLonValue(const std::string& s, double& degrees)
         if (quotePos == std::string::npos) {
             const auto minutesStr = ss.substr(spacePos+1);
             if (!minutesStr.empty()) {
-                minutes = std::stof(minutesStr);
+                minutes = std::stod(minutesStr);
             }
         } else {
-            minutes = std::stof(ss.substr(spacePos+1, quotePos - spacePos));
+            minutes = std::stod(ss.substr(spacePos+1, quotePos - spacePos));
             const auto secondsStr = ss.substr(quotePos+1);
             if (!secondsStr.empty()) {
-                seconds = std::stof(secondsStr);
+                seconds = std::stod(secondsStr);
             }
         }
         
@@ -1171,7 +1171,7 @@ bool parseStringAsLatLonValue(const std::string& s, double& degrees)
     }
     
     // since we simplified, any trailing N/S/E/W must be the last char
-    const char lastChar = ss.back();
+    const char lastChar = ::toupper(ss.back());
     if ((lastChar == 'W') || (lastChar == 'S')) {
         degrees = -degrees;
     }

@@ -1179,7 +1179,21 @@ bool parseStringAsLatLonValue(const std::string& s, double& degrees)
     return true;
 }
         
-bool parseStringAsGeod(const std::string& s, SGGeod* result)
+namespace {
+    bool isLatString(const std::string &s)
+    {
+        const char lastChar = ::toupper(s.back());
+        return (lastChar == 'N') || (lastChar == 'S');
+    }
+    
+    bool isLonString(const std::string &s)
+    {
+        const char lastChar = ::toupper(s.back());
+        return (lastChar == 'E') || (lastChar == 'W');
+    }
+} // of anonymous namespace
+        
+bool parseStringAsGeod(const std::string& s, SGGeod* result, bool assumeLonLatOrder)
 {
     if (s.empty())
         return false;
@@ -1189,16 +1203,27 @@ bool parseStringAsGeod(const std::string& s, SGGeod* result)
         return false;
     }
     
-    double lat, lon;
-    if (!parseStringAsLatLonValue(s.substr(0, commaPos), lat) ||
-        !parseStringAsLatLonValue(s.substr(commaPos+1), lon))
-    {
+    auto termA = simplify(s.substr(0, commaPos)),
+        termB = simplify(s.substr(commaPos+1));
+    double valueA, valueB;
+    if (!parseStringAsLatLonValue(termA, valueA) || !parseStringAsLatLonValue(termB, valueB)) {
         return false;
     }
     
     if (result) {
-        *result = SGGeod::fromDeg(lon, lat);
+        // explicit ordering
+        if (isLatString(termA) && isLonString(termB)) {
+            *result = SGGeod::fromDeg(valueB, valueA);
+        } else if (isLonString(termA) && isLatString(termB)) {
+            *result = SGGeod::fromDeg(valueA, valueB);
+        } else {
+            // implicit ordering
+            // SGGeod wants longitude, latitude
+            *result = assumeLonLatOrder ? SGGeod::fromDeg(valueA, valueB)
+                                        : SGGeod::fromDeg(valueB, valueA);
+        }
     }
+    
     return true;
 }
         

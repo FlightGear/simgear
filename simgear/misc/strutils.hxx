@@ -367,8 +367,19 @@ namespace simgear {
        *
        * Supported formats:
        *   <signed decimal degrees latitude>,<signed decimal degress longitude>
+       *   <unsigned decimal degrees>[NS],<unsigned decimal degrees>[EW]
+       *   <degrees>*<decimal minutes>'[NS],<degrees>*<decimal minutes>'[EW]
+       *
+       * Latitude and longitude are parsed seperately so the formats for each
+       * do not need to agree. Latitude is assumed to precede longitude
+       * unless assumeLonLatOrder = true
+       *
+       * When NSEW characters are used, the order can be swapped and will be
+       * fixed correctly (longitude then latitude).
        */
-      bool parseStringAsGeod(const std::string& string, SGGeod* result = nullptr);
+      bool parseStringAsGeod(const std::string& string,
+                             SGGeod* result = nullptr,
+                             bool assumeLonLatOrder = false);
       
       // enum values here correspond to existing lon-lat format codes inside
       // FlightGear (property: /sim/lon-lat-format )

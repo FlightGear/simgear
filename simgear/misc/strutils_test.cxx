@@ -654,6 +654,28 @@ void test_parseGeod()
     
     SG_VERIFY(strutils::parseStringAsGeod("") == false);
     SG_VERIFY(strutils::parseStringAsGeod("aaaaaaaa") == false);
+    
+    // ordering tests
+    
+    // normal default order, but explicitly pass as lon,lat
+    // (should work)
+    SG_VERIFY(strutils::parseStringAsGeod("3.12345678w, 56.12345678s", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.12345678);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -56.12345678);
+    
+
+    // different default order
+    // also some embedded whitespace for fun
+    SG_VERIFY(strutils::parseStringAsGeod(" -12 34.56,\n-45 27.89 ", &a, true));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.576);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -45.464833333);
+    
+    
+    // differnet default order, but still set explicitly so should
+    // use the lat,lon order
+    SG_VERIFY(strutils::parseStringAsGeod("\t40 30'50\"S,  12 34'56\"W ", &a, true));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.58222222);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -40.5138888);
 }
 
 void test_formatGeod()

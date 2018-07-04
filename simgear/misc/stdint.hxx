@@ -12,48 +12,12 @@
 // $Id$
 
 
-//////////////////////////////////////////////////////////////////////
-//
-//  There are many sick systems out there:
-//
-//  check for sizeof(float) and sizeof(double)
-//  if sizeof(float) != 4 this code must be patched
-//  if sizeof(double) != 8 this code must be patched
-//
-//  Those are comments I fetched out of glibc source:
-//  - s390 is big-endian
-//  - Sparc is big-endian, but v9 supports endian conversion
-//    on loads/stores and GCC supports such a mode.  Be prepared.
-//  - The MIPS architecture has selectable endianness.
-//  - x86_64 is little-endian.
-//  - CRIS is little-endian.
-//  - m68k is big-endian.
-//  - Alpha is little-endian.
-//  - PowerPC can be little or big endian.
-//  - SH is bi-endian but with a big-endian FPU.
-//  - hppa1.1 big-endian.
-//  - ARM is (usually) little-endian but with a big-endian FPU.
-//
-//////////////////////////////////////////////////////////////////////
+#include <cstdint>
+#include <cstdlib> // for _byteswap_foo on Win32
 
-
-#ifdef _MSC_VER
-typedef signed char      int8_t;
-typedef signed short     int16_t;
-typedef signed int       int32_t;
-typedef signed __int64   int64_t;
-typedef unsigned char    uint8_t;
-typedef unsigned short   uint16_t;
-typedef unsigned int     uint32_t;
-typedef unsigned __int64 uint64_t;
-
-typedef int ssize_t;
-#elif defined(sgi) || defined(__sun)
-# include <sys/types.h>
-#else
-# include <stdint.h>
+#if defined(_MSC_VER)
+using ssize_t = int64_t; // this is a POSIX type, not a C one
 #endif
-
 
 inline uint16_t sg_bswap_16(uint16_t x) {
 #if defined(__llvm__) || \

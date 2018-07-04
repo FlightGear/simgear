@@ -53,6 +53,8 @@ namespace simgear
 			READING_HEADER,
 			READING_FILE,
 			READING_PADDING,
+            READING_PAX_GLOBAL_ATTRIBUTES,
+            READING_PAX_FILE_ATTRIBUTES,
 			PRE_END_OF_ARCHVE,
 			END_OF_ARCHIVE,
 			ERROR_STATE, ///< states above this are error conditions
@@ -147,7 +149,7 @@ typedef struct
 #define FIFOTYPE '6'            /* FIFO special */
 #define CONTTYPE '7'            /* reserved */
 
-	const char PAX_GLOBAL_ATTRIBUTES = 'g';
+	const char PAX_GLOBAL_HEADER = 'g';
 	const char PAX_FILE_ATTRIBUTES = 'x';
 
 
@@ -169,6 +171,8 @@ public:
     bool uncompressedData = false; // set if reading a plain .tar (not tar.gz)
     uint8_t* headerPtr;
     bool skipCurrentEntry = false;
+    std::string paxAttributes;
+    std::string paxPathName;
     
     TarExtractorPrivate(ArchiveExtractor* o) :
 		ArchiveExtractorPrivate(o)
@@ -186,6 +190,17 @@ public:
         free(zlibOutput);
     }
 
+    void readPaddingIfRequired()
+    {
+        size_t pad = currentFileSize % TAR_HEADER_BLOCK_SIZE;
+        if (pad) {
+            bytesRemaining = TAR_HEADER_BLOCK_SIZE - pad;
+            setState(READING_PADDING);
+        } else {
+            setState(READING_HEADER);
+        }
+    }
+    
     void checkEndOfState()
     {
         if (bytesRemaining > 0) {
@@ -197,13 +212,7 @@ public:
                 currentFile->close();
                 currentFile.reset();
             }
-            size_t pad = currentFileSize % TAR_HEADER_BLOCK_SIZE;
-            if (pad) {
-                bytesRemaining = TAR_HEADER_BLOCK_SIZE - pad;
-                setState(READING_PADDING);
-            } else {
-                setState(READING_HEADER);
-            }
+            readPaddingIfRequired();
         } else if (state == READING_HEADER) {
             processHeader();
         } else if (state == PRE_END_OF_ARCHVE) {
@@ -212,6 +221,12 @@ public:
             } else {
                 // what does the spec say here?
             }
+        } else if (state == READING_PAX_GLOBAL_ATTRIBUTES) {
+            parsePAXAttributes(true);
+            readPaddingIfRequired();
+        } else if (state == READING_PAX_FILE_ATTRIBUTES) {
+            parsePAXAttributes(false);
+            readPaddingIfRequired();
         } else if (state == READING_PADDING) {
             setState(READING_HEADER);
         }
@@ -317,7 +332,11 @@ public:
 
         skipCurrentEntry = false;
         std::string tarPath = std::string(header.prefix) + std::string(header.fileName);
-
+        if (!paxPathName.empty()) {
+            tarPath = paxPathName;
+            paxPathName.clear(); // clear for next file
+        }
+        
         if (!isSafePath(tarPath)) {
             SG_LOG(SG_IO, SG_WARN, "bad tar path:" << tarPath);
             skipCurrentEntry = true;
@@ -346,6 +365,20 @@ public:
                 currentFile->open(SG_IO_OUT);
             }
             setState(READING_FILE);
+        } else if (header.typeflag == PAX_GLOBAL_HEADER) {
+            setState(READING_PAX_GLOBAL_ATTRIBUTES);
+            currentFileSize = ::strtol(header.size, NULL, 8);
+            bytesRemaining = currentFileSize;
+            paxAttributes.clear();
+        } else if (header.typeflag == PAX_FILE_ATTRIBUTES) {
+            setState(READING_PAX_FILE_ATTRIBUTES);
+            currentFileSize = ::strtol(header.size, NULL, 8);
+            bytesRemaining = currentFileSize;
+            paxAttributes.clear();
+        } else if ((header.typeflag == SYMTYPE) || (header.typeflag == LNKTYPE)) {
+            SG_LOG(SG_IO, SG_WARN, "Tarball contains a link or symlink, will be skipped:" << tarPath);
+            skipCurrentEntry = true;
+            setState(READING_HEADER);
         } else {
             SG_LOG(SG_IO, SG_WARN, "Unsupported tar file type:" << header.typeflag);
             state = BAD_ARCHIVE;
@@ -370,6 +403,9 @@ public:
             headerPtr += curBytes;
         } else if (state == READING_PADDING) {
             bytesRemaining -= curBytes;
+        } else if ((state == READING_PAX_FILE_ATTRIBUTES) || (state == READING_PAX_GLOBAL_ATTRIBUTES)) {
+            bytesRemaining -= curBytes;
+            paxAttributes.append(bytes, curBytes);
         }
 
         checkEndOfState();
@@ -389,6 +425,39 @@ public:
         }
 
         return true;
+    }
+
+    // https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.3.0/com.ibm.zos.v2r3.bpxa500/paxex.htm#paxex
+    void parsePAXAttributes(bool areGlobal)
+    {
+        auto lineStart = 0;
+        for (;;) {
+            auto firstSpace = paxAttributes.find(' ', lineStart);
+            auto firstEq = paxAttributes.find('=', lineStart);
+            if ((firstEq == std::string::npos) || (firstSpace == std::string::npos)) {
+                SG_LOG(SG_IO, SG_WARN, "Malfroemd PAX attributes in tarfile");
+                break;
+            }
+            
+            uint32_t lengthBytes = std::stoul(paxAttributes.substr(lineStart, firstSpace));
+            uint32_t dataBytes = lengthBytes - (firstEq + 1);
+            std::string name = paxAttributes.substr(firstSpace+1, firstEq - (firstSpace + 1));
+            
+            // dataBytes - 1 here to trim off the trailing newline
+            std::string data = paxAttributes.substr(firstEq+1, dataBytes - 1);
+            
+            processPAXAttribute(areGlobal, name, data);
+            
+            lineStart += lengthBytes;
+        }
+    }
+    
+    void processPAXAttribute(bool isGlobalAttr, const std::string& attrName, const std::string& data)
+    {
+        if (!isGlobalAttr && (attrName == "path")) {
+            // data is UTF-8 encoded path name
+            paxPathName = data;
+        }
     }
 };
 
@@ -428,7 +497,11 @@ public:
 		fill_memory_filefunc(&memoryAccessFuncs);
 
 		char bufferName[128];
-		::snprintf(bufferName, 128, "%p+%llx", m_buffer.data(), m_buffer.size());
+#if defined(SG_WINDOWS)
+        ::snprintf(bufferName, 128, "%p+%llx", m_buffer.data(), m_buffer.size());
+#else
+		::snprintf(bufferName, 128, "%p+%lx", m_buffer.data(), m_buffer.size());
+#endif
 		unzFile zip = unzOpen2(bufferName, &memoryAccessFuncs);
 
 		const size_t BUFFER_SIZE = 32 * 1024;

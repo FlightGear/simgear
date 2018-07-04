@@ -86,6 +86,39 @@ void testExtractLocalFile()
 
 }
 
+void testFilterTar()
+{
+    SGPath p = SGPath(SRC_DIR);
+    p.append("badTar.tgz");
+    
+    SGBinaryFile f(p);
+    f.open(SG_IO_IN);
+    
+    SGPath extractDir = simgear::Dir::current().path() / "test_filter_tar";
+    simgear::Dir pd(extractDir);
+    pd.removeChildren();
+    
+    ArchiveExtractor ex(extractDir);
+    
+    uint8_t* buf = (uint8_t*) alloca(128);
+    while (!f.eof()) {
+        size_t bufSize = f.read((char*) buf, 128);
+        ex.extractBytes(buf, bufSize);
+    }
+    
+    ex.flush();
+    SG_VERIFY(ex.isAtEndOfArchive());
+    SG_VERIFY(ex.hasError() == false);
+    
+    SG_VERIFY((extractDir / "tarWithBadContent/regular-file.txt").exists());
+    SG_VERIFY(!(extractDir / "tarWithBadContent/symbolic-linked.png").exists());
+    SG_VERIFY((extractDir / "tarWithBadContent/screenshot.png").exists());
+    SG_VERIFY((extractDir / "tarWithBadContent/dirOne/subDirA").exists());
+    SG_VERIFY(!(extractDir / "tarWithBadContent/dirOne/subDirA/linked.txt").exists());
+
+
+}
+
 void testExtractZip()
 {
 	SGPath p = SGPath(SRC_DIR);
@@ -117,6 +150,27 @@ void testExtractZip()
 
 void testPAXAttributes()
 {
+    SGPath p = SGPath(SRC_DIR);
+    p.append("pax-extended.tar");
+    
+    SGBinaryFile f(p);
+    f.open(SG_IO_IN);
+    
+    SGPath extractDir = simgear::Dir::current().path() / "test_pax_extended";
+    simgear::Dir pd(extractDir);
+    pd.removeChildren();
+    
+    ArchiveExtractor ex(extractDir);
+    
+    uint8_t* buf = (uint8_t*) alloca(128);
+    while (!f.eof()) {
+        size_t bufSize = f.read((char*) buf, 128);
+        ex.extractBytes(buf, bufSize);
+    }
+    
+    ex.flush();
+    SG_VERIFY(ex.isAtEndOfArchive());
+    SG_VERIFY(ex.hasError() == false);
 
 }
 
@@ -124,10 +178,13 @@ int main(int ac, char ** av)
 {
     testTarGz();
     testPlainTar();
-
+    testFilterTar();
 	testExtractStreamed();
 	testExtractZip();
-
+   
+    // disabled to avoiding checking in large PAX archive
+    // testPAXAttributes();
+    
 	std::cout << "all tests passed" << std::endl;
     return 0;
 }

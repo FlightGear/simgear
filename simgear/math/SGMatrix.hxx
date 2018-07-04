@@ -142,10 +142,10 @@ public:
   T (&sg(void))[4][4]
   { return _data.ptr(); }
   /// Readonly raw storage interface
-  const simd4x4_t<T,4> (&simd4x4(void) const)
+  const simd4x4_t<T,4> &simd4x4(void) const
   { return _data; }
   /// Readonly raw storage interface
-  simd4x4_t<T,4> (&simd4x4(void))
+  simd4x4_t<T,4> &simd4x4(void)
   { return _data; }
 
 

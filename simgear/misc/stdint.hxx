@@ -21,7 +21,7 @@ using ssize_t = int64_t; // this is a POSIX type, not a C one
 
 inline uint16_t sg_bswap_16(uint16_t x) {
 #if defined(__llvm__) || \
- (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)) && !defined(__ICC)
+ (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)) && !defined(__ICC)
     return __builtin_bswap16(x);
 #elif defined(_MSC_VER) && !defined(_DEBUG)
    return _byteswap_ushort(x);

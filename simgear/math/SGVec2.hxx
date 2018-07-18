@@ -87,10 +87,10 @@ public:
   /// Access raw data
   T (&data(void))[2]
   { return _data.ptr(); }
-  const simd4_t<T,2> (&simd2(void) const)
+  const simd4_t<T,2> &simd2(void) const
   { return _data; }
   /// Readonly raw storage interface
-  simd4_t<T,2> (&simd2(void))
+  simd4_t<T,2> &simd2(void)
   { return _data; }
 
   /// Inplace addition

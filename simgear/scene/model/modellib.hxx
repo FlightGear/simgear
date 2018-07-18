@@ -39,6 +39,7 @@ namespace osg {
 namespace simgear {
 
 class SGModelData; // defined below
+class SGModelLOD;  // defined below
 
 /**
  * Class for loading and managing models with XML wrappers.
@@ -51,9 +52,9 @@ public:
     static void init(const std::string &root_dir, SGPropertyNode* root);
 
     static void resetPropertyRoot();
-    
+
     static void setPanelFunc(panel_func pf);
-    
+
     // Load a 3D model (any format)
     // data->modelLoaded() will be called after the model is loaded
     static osg::Node* loadModel(const std::string &path,
@@ -72,17 +73,24 @@ public:
     // the model file. Once the viewer steps onto that node the
     // model will be loaded. When the viewer does no longer reference this
     // node for a long time the node is unloaded again.
+    static osg::PagedLOD* loadPagedModel(SGPropertyNode *prop_root,
+                                      SGModelData *data,
+                                      SGModelLOD model_lods);
     static osg::PagedLOD* loadPagedModel(const std::string &path,
                                      SGPropertyNode *prop_root = NULL,
                                      SGModelData *data=0);
 
-    static std::string findDataFile(const std::string& file, 
+   static osg::PagedLOD* loadPagedModel(std::vector<string> paths,
+                                    SGPropertyNode *prop_root = NULL,
+                                    SGModelData *data=0);
+
+    static std::string findDataFile(const std::string& file,
       const osgDB::Options* opts = NULL,
-      SGPath currentDir = SGPath()); 
+      SGPath currentDir = SGPath());
 protected:
     SGModelLib();
     ~SGModelLib ();
-    
+
 private:
   static SGPropertyNode_ptr static_propRoot;
   static panel_func static_panelFunc;
@@ -100,6 +108,39 @@ public:
     virtual void modelLoaded(const std::string& path, SGPropertyNode *prop,
                              osg::Node* branch) = 0;
     virtual SGModelData* clone() const = 0;
+};
+
+/*
+ * Data for a model with multiple LoD versions
+ */
+
+class SGModelLOD {
+public:
+  struct ModelLOD {
+    ModelLOD(const string &p, float minrange, float maxrange) :
+      path(p), min_range(minrange), max_range(maxrange)
+      { }
+    const string &path;
+    float min_range;
+    float max_range;
+  };
+typedef std::vector<ModelLOD> ModelLODList;
+
+void insert(const ModelLOD& model)
+{
+  _models.push_back(model);
+}
+
+void insert(const string &p, float minrange, float maxrange)
+{
+  insert(ModelLOD(p, minrange, maxrange));
+}
+
+unsigned getNumLODs() const { return _models.size(); }
+const ModelLOD& getModelLOD(unsigned i) const { return _models[i]; }
+
+private:
+  ModelLODList _models;
 };
 
 }

@@ -36,10 +36,6 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 
-extern "C" {
-    void fill_memory_filefunc (zlib_filefunc_def*);
-}
-
 namespace simgear {
 
 namespace pkg {
@@ -57,9 +53,9 @@ public:
             throw sg_exception("no package download URLs");
         }
 
-        if (m_owner->package()->properties()->hasChild("archive-type")) {
-            setArchiveTypeFromExtension(m_owner->package()->properties()->getStringValue("archive-type"));
-        }
+       // if (m_owner->package()->properties()->hasChild("archive-type")) {
+       //     setArchiveTypeFromExtension(m_owner->package()->properties()->getStringValue("archive-type"));
+        //}
         
         // TODO randomise order of m_urls
 
@@ -110,17 +106,17 @@ protected:
         Dir d(m_extractPath);
         d.create(0755);
 
+		m_extractor.reset(new ArchiveExtractor(m_extractPath));
         memset(&m_md5, 0, sizeof(SG_MD5_CTX));
         SG_MD5Init(&m_md5);
     }
 
     virtual void gotBodyData(const char* s, int n)
     {
-        m_buffer += std::string(s, n);
-        SG_MD5Update(&m_md5, (unsigned char*) s, n);
-
-        m_downloaded = m_buffer.size();
-        m_owner->installProgress(m_buffer.size(), responseLength());
+		const uint8_t* ubytes = (uint8_t*) s;
+        SG_MD5Update(&m_md5, ubytes, n);
+        m_owner->installProgress(m_downloaded, responseLength());
+		m_extractor->extractBytes(ubytes, n);
     }
 
     virtual void onDone()
@@ -151,7 +147,8 @@ protected:
             return;
         }
 
-        if (!extract()) {
+		m_extractor->flush();
+        if (m_extractor->hasError() || !m_extractor->isAtEndOfArchive()) {
             SG_LOG(SG_GENERAL, SG_WARN, "archive extraction failed");
             doFailure(Delegate::FAIL_EXTRACT);
             return;
@@ -207,151 +204,6 @@ protected:
     }
 
 private:
-    void setArchiveTypeFromExtension(const std::string& ext)
-    {
-        if (ext.empty())
-            return;
-        
-        if (ext == "zip") {
-            m_archiveType = ZIP;
-            return;
-        }
-        
-        if ((ext == "tar.gz") || (ext == "tgz")) {
-            m_archiveType = TAR_GZ;
-            return;
-        }
-    }
-    
-    void extractCurrentFile(unzFile zip, char* buffer, size_t bufferSize)
-    {
-        unz_file_info fileInfo;
-        unzGetCurrentFileInfo(zip, &fileInfo,
-            buffer, bufferSize,
-            NULL, 0,  /* extra field */
-            NULL, 0 /* comment field */);
-
-        std::string name(buffer);
-    // no absolute paths, no 'up' traversals
-    // we could also look for suspicious file extensions here (forbid .dll, .exe, .so)
-        if ((name[0] == '/') || (name.find("../") != std::string::npos) || (name.find("..\\") != std::string::npos)) {
-            throw sg_format_exception("Bad zip path", name);
-        }
-
-        if (fileInfo.uncompressed_size == 0) {
-            // assume it's a directory for now
-            // since we create parent directories when extracting
-            // a path, we're done here
-            return;
-        }
-
-        int result = unzOpenCurrentFile(zip);
-        if (result != UNZ_OK) {
-            throw sg_io_exception("opening current zip file failed", sg_location(name));
-        }
-
-        sg_ofstream outFile;
-        bool eof = false;
-        SGPath path(m_extractPath);
-        path.append(name);
-
-    // create enclosing directory heirarchy as required
-        Dir parentDir(path.dir());
-        if (!parentDir.exists()) {
-            bool ok = parentDir.create(0755);
-            if (!ok) {
-                throw sg_io_exception("failed to create directory heirarchy for extraction", path);
-            }
-        }
-
-        outFile.open(path, std::ios::binary | std::ios::trunc | std::ios::out);
-        if (outFile.fail()) {
-            throw sg_io_exception("failed to open output file for writing", path);
-        }
-
-        while (!eof) {
-            int bytes = unzReadCurrentFile(zip, buffer, bufferSize);
-            if (bytes < 0) {
-                throw sg_io_exception("unzip failure reading curent archive", sg_location(name));
-            } else if (bytes == 0) {
-                eof = true;
-            } else {
-                outFile.write(buffer, bytes);
-            }
-        }
-
-        outFile.close();
-        unzCloseCurrentFile(zip);
-    }
-
-    bool extract()
-    {
-        const std::string u(url());
-        const size_t ul(u.length());
-        
-        if (m_archiveType == AUTO_DETECT) {
-            if (u.rfind(".zip") == (ul - 4)) {
-                m_archiveType = ZIP;
-            } else if (u.rfind(".tar.gz") == (ul - 7)) {
-                m_archiveType = TAR_GZ;
-            }
-            // we will fall through to the error case now
-        }
-        
-        if (m_archiveType == ZIP) {
-            return extractUnzip();
-        } else if (m_archiveType == TAR_GZ) {
-            return extractTar();
-        }
-        
-        SG_LOG(SG_IO, SG_WARN, "unsupported archive format:" << u);
-        return false;
-    }
-
-    bool extractUnzip()
-    {
-        bool result = true;
-        zlib_filefunc_def memoryAccessFuncs;
-        fill_memory_filefunc(&memoryAccessFuncs);
-
-        char bufferName[128];
-        snprintf(bufferName, 128, "%p+%lx", m_buffer.data(), m_buffer.size());
-        unzFile zip = unzOpen2(bufferName, &memoryAccessFuncs);
-
-        const size_t BUFFER_SIZE = 32 * 1024;
-        void* buf = malloc(BUFFER_SIZE);
-
-        try {
-            int result = unzGoToFirstFile(zip);
-            if (result != UNZ_OK) {
-                throw sg_exception("failed to go to first file in archive");
-            }
-
-            while (true) {
-                extractCurrentFile(zip, (char*) buf, BUFFER_SIZE);
-                result = unzGoToNextFile(zip);
-                if (result == UNZ_END_OF_LIST_OF_FILE) {
-                    break;
-                } else if (result != UNZ_OK) {
-                    throw sg_io_exception("failed to go to next file in the archive");
-                }
-            }
-        } catch (sg_exception& ) {
-            result = false;
-        }
-
-        free(buf);
-        unzClose(zip);
-        return result;
-    }
-
-    bool extractTar()
-    {
-        TarExtractor tx(m_extractPath);
-        tx.extractBytes(m_buffer.data(), m_buffer.size());
-        return !tx.hasError() && tx.isAtEndOfArchive();
-    }
-
     void doFailure(Delegate::StatusCode aReason)
     {
         Dir dir(m_extractPath);
@@ -364,19 +216,13 @@ private:
         m_owner->installResult(aReason);
     }
 
-    enum ArchiveType {
-        AUTO_DETECT = 0,
-        ZIP,
-        TAR_GZ
-    };
     
     InstallRef m_owner;
-    ArchiveType m_archiveType = AUTO_DETECT;
     string_list m_urls;
     SG_MD5_CTX m_md5;
-    std::string m_buffer;
     SGPath m_extractPath;
     size_t m_downloaded;
+	std::unique_ptr<ArchiveExtractor> m_extractor;
 };
 
 ////////////////////////////////////////////////////////////////////

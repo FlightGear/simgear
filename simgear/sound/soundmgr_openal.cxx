@@ -821,9 +821,9 @@ bool SGSoundMgr::load( const std::string &samplepath,
     return true;
 }
 
-vector<const char*> SGSoundMgr::get_available_devices()
+vector<std::string> SGSoundMgr::get_available_devices()
 {
-    vector<const char*> devices;
+    vector<std::string> devices;
 #ifdef ENABLE_SOUND
     const ALCchar *s;
 

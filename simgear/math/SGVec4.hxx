@@ -99,10 +99,10 @@ public:
   T (&data(void))[4]
   { return _data.ptr(); }
   /// Readonly raw storage interface
-  const simd4_t<T,4> (&simd4(void) const)
+  const simd4_t<T,4> &simd4(void) const
   { return _data; }
   /// Readonly raw storage interface
-  simd4_t<T,4> (&simd4(void))
+  simd4_t<T,4> &simd4(void)
   { return _data; }
 
   /// Inplace addition

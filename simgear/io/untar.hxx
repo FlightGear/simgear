@@ -21,40 +21,68 @@
 #include <memory>
 
 #include <cstdlib>
-#include <stdint.h> // for uint8_t
+#include <cstdint>
+
 #include <simgear/misc/sg_path.hxx>
 
 namespace simgear
 {
 
-class TarExtractorPrivate;
+class ArchiveExtractorPrivate;
 
-class TarExtractor
+class ArchiveExtractor
 {
 public:
-    TarExtractor(const SGPath& rootPath);
-	~TarExtractor();
+	ArchiveExtractor(const SGPath& rootPath);
+	~ArchiveExtractor();
 
-    static bool isTarData(const uint8_t* bytes, size_t count);
+	enum DetermineResult
+	{
+		Invalid,
+		InsufficientData,
+		TarData,
+		ZipData
+	};
 
-    void extractBytes(const char* bytes, size_t count);
+	static DetermineResult determineType(const uint8_t* bytes, size_t count);
+
+	/**
+	 * @brief API to extract a local zip or tar.gz 
+	 */
+	void extractLocalFile(const SGPath& archiveFile);
+
+	/**
+	 * @brief API to extract from memory - this can be called multiple
+	 * times for streamking from a network socket etc
+	 */
+    void extractBytes(const uint8_t* bytes, size_t count);
+
+	void flush();
 
     bool isAtEndOfArchive() const;
 
     bool hasError() const;
 
+	enum PathResult {
+		Accepted,
+		Skipped,
+		Modified,
+		Stop
+	};
+
 protected:
-    enum PathResult {
-      Accepted,
-      Skipped,
-      Modified,
-      Stop
-    };
+
 
     virtual PathResult filterPath(std::string& pathToExtract);
 private:
-    friend class TarExtractorPrivate;
-    std::unique_ptr<TarExtractorPrivate> d;
+	static DetermineResult isTarData(const uint8_t* bytes, size_t count);
+
+    friend class ArchiveExtractorPrivate;
+    std::unique_ptr<ArchiveExtractorPrivate> d;
+
+	SGPath _rootPath;
+	std::string _prebuffer; // store bytes before type is determined
+	bool _invalidDataType = false;
 };
 
 } // of namespace simgear

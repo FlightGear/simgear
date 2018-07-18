@@ -36,6 +36,9 @@
 
 typedef std::vector < std::string > string_list;
 
+// forward decls
+class SGGeod;
+
 namespace simgear {
   namespace strutils {
 
@@ -354,6 +357,67 @@ namespace simgear {
        *      /views[0]/view[4]/fig, /views[0]/view[1000]/flight
        */
       bool matchPropPathToTemplate(const std::string& path, const std::string& templatePath);
+      
+      bool parseStringAsLatLonValue(const std::string& s, double& result);
+      
+      /**
+       * Attempt to parse a string as a latitude,longitude input. Returns true
+       * or false based on success, and returns the SGGeod by pointer. Leading,
+       * trailing and internal white-space is skipped / ignored.
+       *
+       * Supported formats:
+       *   <signed decimal degrees latitude>,<signed decimal degress longitude>
+       *   <unsigned decimal degrees>[NS],<unsigned decimal degrees>[EW]
+       *   <degrees>*<decimal minutes>'[NS],<degrees>*<decimal minutes>'[EW]
+       *
+       * Latitude and longitude are parsed seperately so the formats for each
+       * do not need to agree. Latitude is assumed to precede longitude
+       * unless assumeLonLatOrder = true
+       *
+       * When NSEW characters are used, the order can be swapped and will be
+       * fixed correctly (longitude then latitude).
+       */
+      bool parseStringAsGeod(const std::string& string,
+                             SGGeod* result = nullptr,
+                             bool assumeLonLatOrder = false);
+      
+      // enum values here correspond to existing lon-lat format codes inside
+      // FlightGear (property: /sim/lon-lat-format )
+      // Don't re-order, just add new ones, or things may break
+      enum class LatLonFormat
+      {
+          DECIMAL_DEGREES = 0,          ///< 88.4N,4.54W,
+          DEGREES_MINUTES,             ///< 88 24.6'N, 4 30.5'W
+          DEGREES_MINUTES_SECONDS,
+          SIGNED_DECIMAL_DEGREES,          ///< 88.4,-4.54
+          SIGNED_DEGREES_MINUTES,
+          SIGNED_DEGREES_MINUTES_SECONDS,
+          ZERO_PAD_DECIMAL_DEGRESS,
+          ZERO_PAD_DEGREES_MINUTES,
+          ZERO_PAD_DEGREES_MINUTES_SECONDS,
+          TRINITY_HOUSE,            ///< dd* mm'.mmm X, ddd* mm'.mmm X (Trinity House Navigation standard).
+          DECIMAL_DEGREES_SYMBOL        ///< 88.4*N,4.54*W
+      };
+      
+      enum class DegreeSymbol
+      {
+          ASTERISK = 0,
+          SPACE,
+          LATIN1_DEGREE,
+          UTF8_DEGREE
+      };
+      
+      std::string formatLatLonValueAsString(double deg,
+                                            LatLonFormat format, char c,
+                                            DegreeSymbol degreeSymbol = DegreeSymbol::ASTERISK);
+
+      /**
+       * Format an SGGeod as a string according to the provided rule.
+       * if the SGGeod is invalid (default constructed), will return an empty string
+       */
+      std::string formatGeodAsString(const SGGeod& geod,
+                                     LatLonFormat format = LatLonFormat::DECIMAL_DEGREES,
+                                     DegreeSymbol degreeSymbol = DegreeSymbol::ASTERISK);
   } // end namespace strutils
 } // end namespace simgear
 

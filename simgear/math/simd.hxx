@@ -352,10 +352,10 @@ public:
     simd4_t(const simd4_t<float,2>& v) { simd4 = v.v4(); }
     simd4_t(const __m128& v) { simd4 = v; }
 
-    inline const __m128 (&v4(void) const) {
+    inline const __m128 &v4(void) const {
         return simd4;
     }
-    inline __m128 (&v4(void)) {
+    inline __m128 &v4(void) {
         return simd4;
     }
 
@@ -1120,11 +1120,11 @@ public:
     simd4_t(const simd4_t<int,2>& v) { simd4 = v.v4(); }
     simd4_t(const __m128i& v) { simd4 = v; }
 
-    inline __m128i (&v4(void)) {
+    inline __m128i &v4(void) {
         return simd4;
     }
 
-    inline const __m128i (&v4(void) const) {
+    inline const __m128i &v4(void) const {
         return simd4;
     }
 

@@ -20,6 +20,7 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/constants.h>
+#include <simgear/math/SGGeod.hxx>
 
 using std::string;
 using std::vector;
@@ -619,6 +620,84 @@ void test_utf8Convert()
     SG_VERIFY(a == aRoundTrip);
 }
 
+void test_parseGeod()
+{
+    SGGeod a;
+    SG_VERIFY(strutils::parseStringAsGeod("56.12,-3.0", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.0);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), 56.12);
+    
+    SG_VERIFY(strutils::parseStringAsGeod("56.12345678s,3.12345678w", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.12345678);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -56.12345678);
+    
+    
+    // trailing degrees
+    SG_VERIFY(strutils::parseStringAsGeod("56.12*,-3.0*", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.0);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), 56.12);
+    
+    // embedded whitepace, DMS notation, NSEW notation
+    SG_VERIFY(strutils::parseStringAsGeod("\t40 30'50\"S,  12 34'56\"W ", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.58222222);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -40.5138888);
+    
+    // embedded whitepace, DMS notation, NSEW notation, degrees symbol
+    SG_VERIFY(strutils::parseStringAsGeod("\t40*30'50\"S,  12*34'56\"W ", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.58222222);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -40.5138888);
+    
+    // signed degrees-minutes
+    SG_VERIFY(strutils::parseStringAsGeod("-45 27.89,-12 34.56", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.576);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -45.464833333);
+    
+    SG_VERIFY(strutils::parseStringAsGeod("") == false);
+    SG_VERIFY(strutils::parseStringAsGeod("aaaaaaaa") == false);
+    
+    // ordering tests
+    
+    // normal default order, but explicitly pass as lon,lat
+    // (should work)
+    SG_VERIFY(strutils::parseStringAsGeod("3.12345678w, 56.12345678s", &a));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -3.12345678);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -56.12345678);
+    
+
+    // different default order
+    // also some embedded whitespace for fun
+    SG_VERIFY(strutils::parseStringAsGeod(" -12 34.56,\n-45 27.89 ", &a, true));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.576);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -45.464833333);
+    
+    
+    // differnet default order, but still set explicitly so should
+    // use the lat,lon order
+    SG_VERIFY(strutils::parseStringAsGeod("\t40 30'50\"S,  12 34'56\"W ", &a, true));
+    SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.58222222);
+    SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -40.5138888);
+}
+
+void test_formatGeod()
+{
+    SGGeod a = SGGeod::fromDeg(-3.46, 55.45);
+    SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::SIGNED_DECIMAL_DEGREES), "55.450000,-3.460000");
+    SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::DEGREES_MINUTES_SECONDS),
+                   "55*27'00.0\"N,3*27'36.0\"W");
+    
+    const auto s = strutils::formatGeodAsString(a,
+                                                strutils::LatLonFormat::ZERO_PAD_DEGREES_MINUTES,
+                                                strutils::DegreeSymbol::LATIN1_DEGREE);
+    SG_CHECK_EQUAL(s, "55\xB0" "27.000'N,003\xB0" "27.600'W");
+    
+    // Jakarta, if you care
+    SGGeod b = SGGeod::fromDeg(106.8278, -6.1568);
+    const auto s2 = strutils::formatGeodAsString(b,
+                                                strutils::LatLonFormat::DECIMAL_DEGREES_SYMBOL,
+                                                strutils::DegreeSymbol::UTF8_DEGREE);
+    SG_CHECK_EQUAL(s2, "6.156800\xC2\xB0S,106.827800\xC2\xB0" "E");
+}
+
 int main(int argc, char* argv[])
 {
     test_strip();
@@ -639,6 +718,8 @@ int main(int argc, char* argv[])
     test_propPathMatch();
     test_readTime();
     test_utf8Convert();
+    test_parseGeod();
+    test_formatGeod();
     
     return EXIT_SUCCESS;
 }

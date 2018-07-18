@@ -75,10 +75,6 @@ public:
 
     ~SoundManagerPrivate()
     {
-        for (auto it = _devices.begin(); it != _devices.end(); ++it) {
-            free((void*)*it);
-        }
-        _devices.clear();
         _sample_groups.clear();
     }
 
@@ -125,8 +121,6 @@ public:
     }
 
     sample_group_map _sample_groups;
-
-    std::vector<const char*> _devices;
 };
 
 
@@ -444,7 +438,7 @@ unsigned int  SGSoundMgr::request_buffer(SGSoundSample *sample)
         std::string sample_name = sample->get_sample_name();
 
         aax::Buffer& buf = d->_aax.buffer(sample_name);
-        if (!buf) {
+        if (sample->is_file() && !buf) {
             SG_LOG(SG_SOUND, SG_ALERT,
                    "Unable to create buffer: " << sample_name);
             sample->set_buffer( SGSoundMgr::FAILED_BUFFER );
@@ -561,6 +555,7 @@ void SGSoundMgr::sample_play( SGSoundSample *sample )
         if (bufid == SGSoundMgr::FAILED_BUFFER ||
             bufid == SGSoundMgr::NO_BUFFER)
         {
+printf("A: release: %i, bufid: %i (%i, %i)\n", sample->get_source(), bufid, SGSoundMgr::FAILED_BUFFER, SGSoundMgr::NO_BUFFER);
             release_source(sample->get_source());
             return;
         }
@@ -646,39 +641,46 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
     aax::Emitter& emitter = d->get_emitter(sample->get_source());
     aax::dsp dsp;
 
-    aax::Vector64 pos = position.data();
-    aax::Vector ori = orientation.data();
-    aax::Vector vel = velocity.data();
+    if (emitter != d->nullEmitter)
+    {
+        aax::Vector64 pos = position.data();
+        aax::Vector ori = orientation.data();
+        aax::Vector vel = velocity.data();
 
-    aax::Matrix64 mtx(pos, ori);
-    TRY( emitter.matrix(mtx) );
-    TRY( emitter.velocity(vel) );
+        aax::Matrix64 mtx(pos, ori);
+        TRY( emitter.matrix(mtx) );
+        TRY( emitter.velocity(vel) );
 
-    dsp = emitter.get(AAX_VOLUME_FILTER);
-    TRY( dsp.set(AAX_GAIN, sample->get_volume()) );
-    TRY( emitter.set(dsp) );
-
-    dsp = emitter.get(AAX_PITCH_EFFECT);
-    TRY( dsp.set(AAX_PITCH, sample->get_pitch()) );
-    TRY( emitter.set(dsp) );
-
-    if ( sample->has_static_data_changed() ) {
-        dsp = emitter.get(AAX_ANGULAR_FILTER);
-        TRY( dsp.set(AAX_INNER_ANGLE, sample->get_innerangle()) );
-        TRY( dsp.set(AAX_OUTER_ANGLE, sample->get_outerangle()) );
-        TRY( dsp.set(AAX_OUTER_GAIN, sample->get_outergain()) );
+        dsp = emitter.get(AAX_VOLUME_FILTER);
+        TRY( dsp.set(AAX_GAIN, sample->get_volume()) );
         TRY( emitter.set(dsp) );
 
-        dsp = emitter.get(AAX_DISTANCE_FILTER);
-        TRY( dsp.set(AAX_REF_DISTANCE, sample->get_reference_dist()) );
-        TRY( dsp.set(AAX_MAX_DISTANCE, sample->get_max_dist()) );
+        dsp = emitter.get(AAX_PITCH_EFFECT);
+        TRY( dsp.set(AAX_PITCH, sample->get_pitch()) );
         TRY( emitter.set(dsp) );
+
+        if ( sample->has_static_data_changed() ) {
+            dsp = emitter.get(AAX_ANGULAR_FILTER);
+            TRY( dsp.set(AAX_INNER_ANGLE, sample->get_innerangle()) );
+            TRY( dsp.set(AAX_OUTER_ANGLE, sample->get_outerangle()) );
+            TRY( dsp.set(AAX_OUTER_GAIN, sample->get_outergain()) );
+            TRY( emitter.set(dsp) );
+
+            dsp = emitter.get(AAX_DISTANCE_FILTER);
+            TRY( dsp.set(AAX_REF_DISTANCE, sample->get_reference_dist()) );
+            TRY( dsp.set(AAX_MAX_DISTANCE, sample->get_max_dist()) );
+            TRY( emitter.set(dsp) );
+       }
+    }
+    else {
+        SG_LOG( SG_SOUND, SG_ALERT, "Error: source: " << sample->get_source() << " not found");
     }
 }
 
 
-vector<const char*> SGSoundMgr::get_available_devices()
+vector<std::string> SGSoundMgr::get_available_devices()
 {
+    vector<std::string> devices;
 #ifdef ENABLE_SOUND
     std::string on = " on ";
     std::string colon = ": ";
@@ -690,12 +692,12 @@ vector<const char*> SGSoundMgr::get_available_devices()
                 else if (*r) name += on + r;
                 else if (*i) name += colon + i;
 
-                d->_devices.push_back( strdup(name.c_str()) );
+                devices.push_back( name );
             }
         }
     }
 #endif
-    return d->_devices;
+    return devices;
 }
 
 

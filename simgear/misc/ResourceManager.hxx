@@ -36,6 +36,8 @@ class ResourceProvider;
 class ResourceManager
 {
 public:
+    ~ResourceManager();
+
     typedef enum {
       PRIORITY_DEFAULT = 0,
       PRIORITY_FALLBACK = -100,
@@ -55,6 +57,8 @@ public:
      */
     void addProvider(ResourceProvider* aProvider);
     
+    void removeProvider(ResourceProvider* aProvider);
+
     /**
      * given a resource name (or path), find the appropriate real resource
      * path.
@@ -75,17 +79,19 @@ class ResourceProvider
 public:
     virtual SGPath resolve(const std::string& aResource, SGPath& aContext) const = 0;
     
-    virtual int priority() const
+    virtual ~ResourceProvider();
+
+    virtual ResourceManager::Priority priority() const
     {
       return _priority;
     }
     
 protected:
-    ResourceProvider(int aPriority) :
+    ResourceProvider(ResourceManager::Priority aPriority) :
       _priority(aPriority)
     {}
     
-    int _priority;
+    ResourceManager::Priority _priority = ResourceManager::PRIORITY_DEFAULT;
 };
     
 } // of simgear namespace

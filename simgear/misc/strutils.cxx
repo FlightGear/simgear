@@ -37,7 +37,7 @@
 #include <simgear/package/md5.h>
 #include <simgear/compiler.h>   // SG_WINDOWS
 #include <simgear/structure/exception.hxx>
-
+#include <simgear/math/SGGeod.hxx>
 
 #if defined(SG_WINDOWS)
 	#include <windows.h>
@@ -1132,6 +1132,266 @@ bool matchPropPathToTemplate(const std::string& path, const std::string& templat
     }
 
     // unreachable
+}
+ 
+bool parseStringAsLatLonValue(const std::string& s, double& degrees)
+{
+    string ss = simplify(s);
+    auto spacePos = ss.find_first_of(" *");
+    
+    if (spacePos == std::string::npos) {
+        degrees = std::stod(ss);
+    } else {
+        degrees = std::stod(ss.substr(0, spacePos));
+        
+        double minutes = 0.0, seconds = 0.0;
+        
+        // check for minutes marker
+        auto quotePos = ss.find('\'');
+        if (quotePos == std::string::npos) {
+            const auto minutesStr = ss.substr(spacePos+1);
+            if (!minutesStr.empty()) {
+                minutes = std::stod(minutesStr);
+            }
+        } else {
+            minutes = std::stod(ss.substr(spacePos+1, quotePos - spacePos));
+            const auto secondsStr = ss.substr(quotePos+1);
+            if (!secondsStr.empty()) {
+                seconds = std::stod(secondsStr);
+            }
+        }
+        
+        if ((seconds < 0.0) || (minutes < 0.0)) {
+            // don't allow sign information in minutes or seconds
+            return false;
+        }
+        
+        double offset = (minutes / 60.0) + (seconds / 3600.0);
+        degrees += (degrees >= 0.0) ? offset : -offset;
+    }
+    
+    // since we simplified, any trailing N/S/E/W must be the last char
+    const char lastChar = ::toupper(ss.back());
+    if ((lastChar == 'W') || (lastChar == 'S')) {
+        degrees = -degrees;
+    }
+    
+    return true;
+}
+        
+namespace {
+    bool isLatString(const std::string &s)
+    {
+        const char lastChar = ::toupper(s.back());
+        return (lastChar == 'N') || (lastChar == 'S');
+    }
+    
+    bool isLonString(const std::string &s)
+    {
+        const char lastChar = ::toupper(s.back());
+        return (lastChar == 'E') || (lastChar == 'W');
+    }
+} // of anonymous namespace
+        
+bool parseStringAsGeod(const std::string& s, SGGeod* result, bool assumeLonLatOrder)
+{
+    if (s.empty())
+        return false;
+    
+    const auto commaPos = s.find(',');
+    if (commaPos == string::npos) {
+        return false;
+    }
+    
+    auto termA = simplify(s.substr(0, commaPos)),
+        termB = simplify(s.substr(commaPos+1));
+    double valueA, valueB;
+    if (!parseStringAsLatLonValue(termA, valueA) || !parseStringAsLatLonValue(termB, valueB)) {
+        return false;
+    }
+    
+    if (result) {
+        // explicit ordering
+        if (isLatString(termA) && isLonString(termB)) {
+            *result = SGGeod::fromDeg(valueB, valueA);
+        } else if (isLonString(termA) && isLatString(termB)) {
+            *result = SGGeod::fromDeg(valueA, valueB);
+        } else {
+            // implicit ordering
+            // SGGeod wants longitude, latitude
+            *result = assumeLonLatOrder ? SGGeod::fromDeg(valueA, valueB)
+                                        : SGGeod::fromDeg(valueB, valueA);
+        }
+    }
+    
+    return true;
+}
+        
+namespace {
+    const char* static_degreeSymbols[] = {
+        "*",
+        " ",
+        "\xB0",     // Latin-1 B0 codepoint
+        "\xC2\xB0"  // UTF-8 equivalent
+    };
+} // of anonymous namespace
+        
+std::string formatLatLonValueAsString(double deg, LatLonFormat format,
+                                      char c,
+                                      DegreeSymbol degreeSymbol)
+{
+    double min, sec;
+    const int sign = deg < 0.0 ? -1 : 1;
+    deg = fabs(deg);
+    char buf[128];
+    const char* degSym = static_degreeSymbols[static_cast<int>(degreeSymbol)];
+    
+    switch (format) {
+    case LatLonFormat::DECIMAL_DEGREES:
+        ::snprintf(buf, sizeof(buf), "%3.6f%c", deg, c);
+        break;
+        
+    case LatLonFormat::DEGREES_MINUTES:
+        // d mm.mmm' (DMM format) -- uses a round-off factor tailored to the
+        // required precision of the minutes field (three decimal places),
+        // preventing minute values of 60.
+        min = (deg - int(deg)) * 60.0;
+        if (min >= 59.9995) {
+            min -= 60.0;
+            deg += 1.0;
+        }
+        snprintf(buf, sizeof(buf), "%d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
+        break;
+        
+    case LatLonFormat::DEGREES_MINUTES_SECONDS:
+        // d mm'ss.s" (DMS format) -- uses a round-off factor tailored to the
+        // required precision of the seconds field (one decimal place),
+        // preventing second values of 60.
+        min = (deg - int(deg)) * 60.0;
+        sec = (min - int(min)) * 60.0;
+        if (sec >= 59.95) {
+            sec -= 60.0;
+            min += 1.0;
+            if (min >= 60.0) {
+                min -= 60.0;
+                deg += 1.0;
+            }
+        }
+        ::snprintf(buf, sizeof(buf), "%d%s%02d'%04.1f\"%c", int(deg), degSym,
+                   int(min), fabs(sec), c);
+        break;
+            
+    case LatLonFormat::SIGNED_DECIMAL_DEGREES:
+        // d.dddddd' (signed DDD format).
+        ::snprintf(buf, sizeof(buf), "%3.6f", sign*deg);
+        break;
+    
+    case LatLonFormat::SIGNED_DEGREES_MINUTES:
+        // d mm.mmm' (signed DMM format).
+        min = (deg - int(deg)) * 60.0;
+        if (min >= 59.9995) {
+            min -= 60.0;
+            deg += 1.0;
+        }
+        if (sign == 1) {
+            snprintf(buf, sizeof(buf), "%d%s%06.3f'", int(deg), degSym, fabs(min));
+        } else {
+            snprintf(buf, sizeof(buf), "-%d%s%06.3f'", int(deg), degSym, fabs(min));
+        }
+        break;
+        
+            
+    case LatLonFormat::SIGNED_DEGREES_MINUTES_SECONDS:
+        // d mm'ss.s" (signed DMS format).
+        min = (deg - int(deg)) * 60.0;
+        sec = (min - int(min)) * 60.0;
+        if (sec >= 59.95) {
+            sec -= 60.0;
+            min += 1.0;
+            if (min >= 60.0) {
+                min -= 60.0;
+                deg += 1.0;
+            }
+        }
+        if (sign == 1) {
+            snprintf(buf, sizeof(buf), "%d%s%02d'%04.1f\"", int(deg), degSym, int(min), fabs(sec));
+        } else {
+            snprintf(buf, sizeof(buf), "-%d%s%02d'%04.1f\"", int(deg), degSym, int(min), fabs(sec));
+        }
+        break;
+            
+    case LatLonFormat::ZERO_PAD_DECIMAL_DEGRESS:
+        // dd.dddddd X, ddd.dddddd X (zero padded DDD format).
+        if (c == 'N' || c == 'S') {
+            snprintf(buf, sizeof(buf), "%09.6f%c", deg, c);
+        } else {
+            snprintf(buf, sizeof(buf), "%010.6f%c", deg, c);
+        }
+        break;
+            
+    case LatLonFormat::ZERO_PAD_DEGREES_MINUTES:
+        // dd mm.mmm' X, ddd mm.mmm' X (zero padded DMM format).
+        min = (deg - int(deg)) * 60.0;
+        if (min >= 59.9995) {
+            min -= 60.0;
+            deg += 1.0;
+        }
+        if (c == 'N' || c == 'S') {
+            snprintf(buf, sizeof(buf), "%02d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
+        } else {
+            snprintf(buf, sizeof(buf), "%03d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
+        }
+        break;
+            
+    case LatLonFormat::ZERO_PAD_DEGREES_MINUTES_SECONDS:
+        // dd mm'ss.s" X, dd mm'ss.s" X (zero padded DMS format).
+        min = (deg - int(deg)) * 60.0;
+        sec = (min - int(min)) * 60.0;
+        if (sec >= 59.95) {
+            sec -= 60.0;
+            min += 1.0;
+            if (min >= 60.0) {
+                min -= 60.0;
+                deg += 1.0;
+            }
+        }
+        if (c == 'N' || c == 'S') {
+            snprintf(buf, sizeof(buf), "%02d%s%02d'%04.1f\"%c", int(deg), degSym, int(min), fabs(sec), c);
+        } else {
+            snprintf(buf, sizeof(buf), "%03d%s%02d'%04.1f\"%c", int(deg), degSym, int(min), fabs(sec), c);
+        }
+        break;
+            
+    case LatLonFormat::TRINITY_HOUSE:
+        // dd* mm'.mmm X, ddd* mm'.mmm X (Trinity House Navigation standard).
+        min = (deg - int(deg)) * 60.0;
+        if (min >= 59.9995) {
+            min -= 60.0;
+            deg += 1.0;
+        }
+        if (c == 'N' || c == 'S') {
+            snprintf(buf, sizeof(buf), "%02d* %02d'.%03d%c", int(deg), int(min), int(SGMisc<double>::round((min-int(min))*1000)), c);
+        } else {
+            snprintf(buf, sizeof(buf), "%03d* %02d'.%03d%c", int(deg), int(min), int(SGMisc<double>::round((min-int(min))*1000)), c);
+        }
+        break;
+            
+    case LatLonFormat::DECIMAL_DEGREES_SYMBOL:
+        ::snprintf(buf, sizeof(buf), "%3.6f%s%c", deg, degSym, c);
+        break;
+    }
+ 
+    return std::string(buf);
+}
+
+std::string formatGeodAsString(const SGGeod& geod, LatLonFormat format,
+                               DegreeSymbol degreeSymbol)
+{
+    const char ns = (geod.getLatitudeDeg() > 0.0) ? 'N' : 'S';
+    const char ew = (geod.getLongitudeDeg() > 0.0) ? 'E' : 'W';
+    
+    return formatLatLonValueAsString(geod.getLatitudeDeg(), format, ns, degreeSymbol) + ","
+        + formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew, degreeSymbol);
 }
 
 } // end namespace strutils

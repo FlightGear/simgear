@@ -321,32 +321,35 @@ public:
             toBeUpdated, orphans;
         simgear::Dir d(absolutePath());
         PathList fsChildren = d.children(0);
-        PathList::const_iterator it = fsChildren.begin();
 
 
-        for (; it != fsChildren.end(); ++it) {
-            ChildInfo info(it->isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType,
-                           it->file(), "");
+        for (const auto& child : fsChildren) {
+			const auto& fileName = child.file();
+			if ((fileName == ".dirindex") || (fileName == ".hashes")) {
+				continue;
+			}
+
+            ChildInfo info(child.isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType, fileName, "");
             std::string hash = hashForChild(info);
 
-            ChildInfoList::iterator c = findIndexChild(it->file());
+            ChildInfoList::iterator c = findIndexChild(fileName);
             if (c == children.end()) {
-                orphans.push_back(it->file());
+                orphans.push_back(fileName);
             } else if (c->hash != hash) {
 #if 0
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << it->file() );
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << fileName);
                 // file exists, but hash mismatch, schedule update
                 if (!hash.empty()) {
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists but hash is wrong for:" << it->file() );
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists but hash is wrong for:" << fileName);
                     SG_LOG(SG_TERRASYNC, SG_DEBUG, "on disk:" << hash << " vs in info:" << c->hash);
                 }
 #endif
-                toBeUpdated.push_back(it->file() );
+                toBeUpdated.push_back(fileName);
             } else {
                 // file exists and hash is valid. If it's a directory,
                 // perform a recursive check.
                 if (c->type == ChildInfo::DirectoryType) {
-                    HTTPDirectory* childDir = childDirectory(it->file());
+                    HTTPDirectory* childDir = childDirectory(fileName);
                     childDir->updateChildrenBasedOnHash();
                 }
             }
@@ -354,7 +357,7 @@ public:
             // remove existing file system children from the index list,
             // so we can detect new children
             // https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Erase-Remove
-            indexNames.erase(std::remove(indexNames.begin(), indexNames.end(), it->file()), indexNames.end());
+            indexNames.erase(std::remove(indexNames.begin(), indexNames.end(), fileName), indexNames.end());
         } // of real children iteration
 
         // all remaining names in indexChilden are new children
@@ -818,7 +821,7 @@ HTTPRepository::failure() const
 
                     // dir index data has changed, so write to disk and update
                     // the hash accordingly
-                    sg_ofstream of(pathInRepo(), std::ios::trunc | std::ios::out);
+                    sg_ofstream of(pathInRepo(), std::ios::trunc | std::ios::out | std::ios::binary);
                     if (!of.is_open()) {
                         throw sg_io_exception("Failed to open directory index file for writing", pathInRepo());
                     }

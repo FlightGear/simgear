@@ -749,6 +749,10 @@ HTTPRepository::failure() const
                 code = HTTPRepository::REPO_ERROR_CANCELLED;
             }
 
+			if (file) {
+				file->close();
+			}
+
             file.reset();
             if (pathInRepo.exists()) {
                 pathInRepo.remove();

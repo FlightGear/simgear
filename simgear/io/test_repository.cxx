@@ -309,7 +309,8 @@ std::string test_computeHashForPath(const SGPath& p)
         return std::string();
     sha1nfo info;
     sha1_init(&info);
-    char* buf = static_cast<char*>(alloca(1024 * 1024));
+    char* buf = static_cast<char*>(malloc(1024 * 1024));
+	assert(buf);
     size_t readLen;
 
     SGBinaryFile f(p);
@@ -318,6 +319,9 @@ std::string test_computeHashForPath(const SGPath& p)
     while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
         sha1_write(&info, buf, readLen);
     }
+
+	f.close();
+	free(buf);
 
     std::string hashBytes((char*) sha1_result(&info), HASH_LENGTH);
     return strutils::encodeHex(hashBytes);
@@ -725,7 +729,7 @@ void testCopyInstalledChildren(HTTP::Client* cl)
     verifyRequestCount("dirJ/fileJC", 1);
     verifyRequestCount("dirJ/fileJD", 1);
 
-    std::cout << "Copy installed children" << std::endl;
+    std::cout << "passed Copy installed children" << std::endl;
 }
 
 int main(int argc, char* argv[])

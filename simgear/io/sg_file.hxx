@@ -62,7 +62,7 @@ public:
     SGFile( int existingFd );
 
     /** Destructor */
-    ~SGFile();
+    virtual ~SGFile();
 
     // open the file based on specified direction
     bool open( const SGProtocolDir dir );

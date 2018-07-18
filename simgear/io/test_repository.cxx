@@ -437,6 +437,34 @@ void testBasicClone(HTTP::Client* cl)
     std::cout << "Passed test: basic clone and update" << std::endl;
 }
 
+void testUpdateNoChanges(HTTP::Client* cl)
+{
+	std::unique_ptr<HTTPRepository> repo;
+	SGPath p(simgear::Dir::current().path());
+	p.append("http_repo_basic"); // same as before
+
+	global_repo->clearRequestCounts();
+
+	repo.reset(new HTTPRepository(p, cl));
+	repo->setBaseUrl("http://localhost:2000/repo");
+	repo->update();
+
+	waitForUpdateComplete(cl, repo.get());
+
+	verifyFileState(p, "fileA");
+	verifyFileState(p, "dirC/subdirA/subsubA/fileCAAA");
+
+	verifyRequestCount("dirA", 0);
+	verifyRequestCount("dirB", 0);
+	verifyRequestCount("dirB/subdirA", 0);
+	verifyRequestCount("dirB/subdirA/fileBAA", 0);
+	verifyRequestCount("dirC", 0);
+	verifyRequestCount("dirC/fileCA", 0);
+
+	std::cout << "Passed test:no changes update" << std::endl;
+
+}
+
 void testModifyLocalFiles(HTTP::Client* cl)
 {
     std::unique_ptr<HTTPRepository> repo;
@@ -473,10 +501,6 @@ void testModifyLocalFiles(HTTP::Client* cl)
     std::cout << "Passed test: identify and fix locally modified files" << std::endl;
 }
 
-void testNoChangesUpdate()
-{
-
-}
 
 void testMergeExistingFileWithoutDownload(HTTP::Client* cl)
 {
@@ -755,6 +779,7 @@ int main(int argc, char* argv[])
     global_repo->defineFile("dirC/subdirA/subsubA/fileCAAA");
 
     testBasicClone(&cl);
+	testUpdateNoChanges(&cl);
 
     testModifyLocalFiles(&cl);
 

@@ -1379,6 +1379,35 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
     case LatLonFormat::DECIMAL_DEGREES_SYMBOL:
         ::snprintf(buf, sizeof(buf), "%3.6f%s%c", deg, degSym, c);
         break;
+            
+    case LatLonFormat::ICAO_ROUTE_DEGREES:
+    {
+        min = (deg - int(deg)) * 60.0;
+        if (min >= 59.9995) {
+            min -= 60.0;
+            deg += 1.0;
+        }
+        
+        if (static_cast<int>(min) == 0) {
+            // 7-digit mode
+            if (c == 'N' || c == 'S') {
+                snprintf(buf, sizeof(buf), "%02d%c", int(deg), c);
+            } else {
+                snprintf(buf, sizeof(buf), "%03d%c", int(deg), c);
+            }
+        } else {
+            // 11-digit mode
+            if (c == 'N' || c == 'S') {
+                snprintf(buf, sizeof(buf), "%02d%02d%c", int(deg), int(min), c);
+            } else {
+                snprintf(buf, sizeof(buf), "%03d%02d%c", int(deg), int(min), c);
+            }
+        }
+        break;
+    }
+            
+    default:
+        break;
     }
  
     return std::string(buf);
@@ -1389,6 +1418,12 @@ std::string formatGeodAsString(const SGGeod& geod, LatLonFormat format,
 {
     const char ns = (geod.getLatitudeDeg() > 0.0) ? 'N' : 'S';
     const char ew = (geod.getLongitudeDeg() > 0.0) ? 'E' : 'W';
+    
+    // no comma seperator
+    if (format == LatLonFormat::ICAO_ROUTE_DEGREES) {
+        return formatLatLonValueAsString(geod.getLatitudeDeg(), format, ns, degreeSymbol) +
+            formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew, degreeSymbol);
+    }
     
     return formatLatLonValueAsString(geod.getLatitudeDeg(), format, ns, degreeSymbol) + ","
         + formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew, degreeSymbol);

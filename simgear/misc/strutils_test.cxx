@@ -684,6 +684,14 @@ void test_formatGeod()
     SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::SIGNED_DECIMAL_DEGREES), "55.450000,-3.460000");
     SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::DEGREES_MINUTES_SECONDS),
                    "55*27'00.0\"N,3*27'36.0\"W");
+
+    
+    SG_CHECK_EQUAL(strutils::formatGeodAsString(a, strutils::LatLonFormat::ICAO_ROUTE_DEGREES),
+                   "5527N00327W");
+    SGGeod shortA = SGGeod::fromDeg(106, -34);
+    SG_CHECK_EQUAL(strutils::formatGeodAsString(shortA, strutils::LatLonFormat::ICAO_ROUTE_DEGREES),
+                   "34S106E");
+    
     
     const auto s = strutils::formatGeodAsString(a,
                                                 strutils::LatLonFormat::ZERO_PAD_DEGREES_MINUTES,
@@ -696,6 +704,8 @@ void test_formatGeod()
                                                 strutils::LatLonFormat::DECIMAL_DEGREES_SYMBOL,
                                                 strutils::DegreeSymbol::UTF8_DEGREE);
     SG_CHECK_EQUAL(s2, "6.156800\xC2\xB0S,106.827800\xC2\xB0" "E");
+    
+    
 }
 
 int main(int argc, char* argv[])

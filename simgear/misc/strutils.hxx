@@ -396,7 +396,8 @@ namespace simgear {
           ZERO_PAD_DEGREES_MINUTES,
           ZERO_PAD_DEGREES_MINUTES_SECONDS,
           TRINITY_HOUSE,            ///< dd* mm'.mmm X, ddd* mm'.mmm X (Trinity House Navigation standard).
-          DECIMAL_DEGREES_SYMBOL        ///< 88.4*N,4.54*W
+          DECIMAL_DEGREES_SYMBOL,        ///< 88.4*N,4.54*W
+          ICAO_ROUTE_DEGREES,              ///< 52N045W or 5212N04512W - precision auto-selected
       };
       
       enum class DegreeSymbol

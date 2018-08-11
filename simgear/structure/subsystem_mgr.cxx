@@ -440,6 +440,8 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
     if (name.empty()) {
         SG_LOG(SG_GENERAL, SG_DEV_WARN, "adding subsystem to group without a name");
         // TODO, make this an exception in the future
+    } else if (subsystem->name().empty()) {
+        subsystem->set_name(name);
     } else if (name != subsystem->name()) {
         SG_LOG(SG_GENERAL, SG_DEV_WARN, "adding subsystem to group with name '" << name
                << "', but name() returns '" << subsystem->name() << "'");

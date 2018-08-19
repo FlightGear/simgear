@@ -451,6 +451,11 @@ void testAddRemoveAfterInit()
     auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
     group->set_subsystem(radio1);
 
+    auto com1 = manager->createInstance<FakeRadioSub>("com1");
+    group->set_subsystem(com1);
+    auto com2 = manager->createInstance<FakeRadioSub>("com2");
+    group->set_subsystem(com2);
+    
     manager->bind();
     manager->init();
     
@@ -473,8 +478,34 @@ void testAddRemoveAfterInit()
     SG_VERIFY(d->hasEvent("fake-radio.nav1-will-remove"));
     SG_VERIFY(d->hasEvent("fake-radio.nav1-did-remove"));
     
-   
+    manager->shutdown();
     
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-will-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-did-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-will-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-did-shutdown"));
+    
+    d->events.clear();
+    
+    ok = manager->remove("fake-radio.com1");
+    SG_VERIFY(d->hasEvent("fake-radio.com1-will-remove"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-did-remove"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-will-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-did-unbind"));
+    SG_VERIFY(!d->hasEvent("fake-radio.com1-will-shutdown"));
+    SG_VERIFY(!d->hasEvent("fake-radio.com1-did-shutdown"));
+    
+    manager->unbind();
+    
+    SG_VERIFY(d->hasEvent("fake-radio.com2-will-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.com2-did-unbind"));
+    
+    d->events.clear();
+    manager->remove("fake-radio.com2");
+    SG_VERIFY(!d->hasEvent("fake-radio.com2-will-unbind"));
+    SG_VERIFY(!d->hasEvent("fake-radio.com2-did-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.com2-will-remove"));
+    SG_VERIFY(d->hasEvent("fake-radio.com2-did-remove"));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -455,7 +455,7 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
     subsystem->set_group(this);
     notifyDidChange(subsystem, State::ADD);
     
-    if (_state != State::INVALID) {
+    if (_state != State::INVALID && (_state <= State::POSTINIT)) {
         // transition to the correct state
         if (_state >= State::BIND) {
             notifyWillChange(subsystem, State::BIND);
@@ -469,7 +469,7 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
             notifyDidChange(subsystem, State::INIT);
         }
         
-        if (_state >= State::POSTINIT) {
+        if (_state == State::POSTINIT) {
             notifyWillChange(subsystem, State::POSTINIT);
             subsystem->postinit();
             notifyDidChange(subsystem, State::POSTINIT);
@@ -515,13 +515,13 @@ SGSubsystemGroup::remove_subsystem(const string &name)
         
         if (_state != State::INVALID) {
             // transition out correctly
-            if (_state >= State::INIT) {
+            if ((_state >= State::INIT) && (_state < State::SHUTDOWN)) {
                 notifyWillChange(sub, State::SHUTDOWN);
                 sub->shutdown();
                 notifyDidChange(sub, State::SHUTDOWN);
             }
             
-            if (_state >= State::BIND) {
+            if ((_state >= State::BIND) && (_state < State::UNBIND)) {
                 notifyWillChange(sub, State::UNBIND);
                 sub->unbind();
                 notifyDidChange(sub, State::UNBIND);

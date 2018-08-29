@@ -440,6 +440,8 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
     if (name.empty()) {
         SG_LOG(SG_GENERAL, SG_DEV_WARN, "adding subsystem to group without a name");
         // TODO, make this an exception in the future
+    } else if (subsystem->name().empty()) {
+        subsystem->set_name(name);
     } else if (name != subsystem->name()) {
         SG_LOG(SG_GENERAL, SG_DEV_WARN, "adding subsystem to group with name '" << name
                << "', but name() returns '" << subsystem->name() << "'");
@@ -453,14 +455,25 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
     subsystem->set_group(this);
     notifyDidChange(subsystem, State::ADD);
     
-    if (_state != State::INVALID) {
-        SG_LOG(SG_GENERAL, SG_DEV_WARN, "TODO: implement SGSubsystemGroup transition when adding after init");
+    if (_state != State::INVALID && (_state <= State::POSTINIT)) {
         // transition to the correct state
-        // bind
+        if (_state >= State::BIND) {
+            notifyWillChange(subsystem, State::BIND);
+            subsystem->bind();
+            notifyDidChange(subsystem, State::BIND);
+        }
         
-        // init
+        if (_state >= State::INIT) {
+            notifyWillChange(subsystem, State::INIT);
+            subsystem->init();
+            notifyDidChange(subsystem, State::INIT);
+        }
         
-        // post-init
+        if (_state == State::POSTINIT) {
+            notifyWillChange(subsystem, State::POSTINIT);
+            subsystem->postinit();
+            notifyDidChange(subsystem, State::POSTINIT);
+        }
     }
 }
 
@@ -502,11 +515,17 @@ SGSubsystemGroup::remove_subsystem(const string &name)
         
         if (_state != State::INVALID) {
             // transition out correctly
-            SG_LOG(SG_GENERAL, SG_DEV_WARN, "TODO: implement SGSubsystemGroup transition when removing before shutdown");
-
-            // shutdown
+            if ((_state >= State::INIT) && (_state < State::SHUTDOWN)) {
+                notifyWillChange(sub, State::SHUTDOWN);
+                sub->shutdown();
+                notifyDidChange(sub, State::SHUTDOWN);
+            }
             
-            // unbind
+            if ((_state >= State::BIND) && (_state < State::UNBIND)) {
+                notifyWillChange(sub, State::UNBIND);
+                sub->unbind();
+                notifyDidChange(sub, State::UNBIND);
+            }
         }
         
         notifyWillChange(sub, State::REMOVE);
@@ -1150,10 +1169,9 @@ namespace {
                      group,
                      minTime);
         
-        if (arg->getBoolValue("do-bind-init", false)) {
-            sub->bind();
-            sub->init();
-        }
+        // we no longer check for the do-bind-init flag here, since set_subsystem
+        // tracks the group state and will transition the added subsystem
+        // automatically
 
         return true;
     }
@@ -1168,11 +1186,7 @@ namespace {
             SG_LOG(SG_GENERAL, SG_ALERT, "do_remove_subsystem: unknown subsytem:" << name);
             return false;
         }
-        
-        // is it safe to always call these? let's assume so!
-        instance->shutdown();
-        instance->unbind();
-        
+                
         // unplug from the manager (this also deletes the instance!)
         manager->remove(name.c_str());
         return true;

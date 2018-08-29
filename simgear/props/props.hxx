@@ -751,7 +751,7 @@ typedef SGSharedPtr<const SGPropertyNode> SGConstPropertyNode_ptr;
 
 namespace simgear
 {
-typedef std::vector<SGPropertyNode_ptr> PropertyList;
+    using PropertyList = std::vector<SGPropertyNode_ptr>;
 }
 
 /**

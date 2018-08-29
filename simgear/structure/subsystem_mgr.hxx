@@ -301,6 +301,10 @@ public:
     /// get the parent group of this subsystem
     SGSubsystemGroup* get_group() const;
     
+    // ordering here is exceptionally important, due to
+    // liveness of ranges. If you're extending this consider
+    // carefully where the new state lies and position it correctly.
+    // Also extend the tests to ensure you handle all cases.
     enum class State {
         INVALID = -1,
         ADD = 0,
@@ -310,8 +314,8 @@ public:
         REINIT,
         SUSPEND,
         RESUME,
-        UNBIND,
         SHUTDOWN,
+        UNBIND,
         REMOVE
     };
     

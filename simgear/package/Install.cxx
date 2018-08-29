@@ -45,8 +45,7 @@ class Install::PackageArchiveDownloader : public HTTP::Request
 public:
     PackageArchiveDownloader(InstallRef aOwner) :
         HTTP::Request("" /* dummy URL */),
-        m_owner(aOwner),
-        m_downloaded(0)
+        m_owner(aOwner)
     {
         m_urls = m_owner->package()->downloadUrls();
         if (m_urls.empty()) {
@@ -115,6 +114,7 @@ protected:
     {
 		const uint8_t* ubytes = (uint8_t*) s;
         SG_MD5Update(&m_md5, ubytes, n);
+        m_downloaded += n;
         m_owner->installProgress(m_downloaded, responseLength());
 		m_extractor->extractBytes(ubytes, n);
     }
@@ -221,7 +221,7 @@ private:
     string_list m_urls;
     SG_MD5_CTX m_md5;
     SGPath m_extractPath;
-    size_t m_downloaded;
+    size_t m_downloaded = 0;
 	std::unique_ptr<ArchiveExtractor> m_extractor;
 };
 

@@ -439,6 +439,75 @@ void testPropertyRoot()
     SG_CHECK_EQUAL(props->getIntValue("anothersub/bar"), 172);
 }
 
+void testAddRemoveAfterInit()
+{
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    auto d = new RecorderDelegate;
+    manager->addDelegate(d);
+    
+    auto group = manager->add<InstrumentGroup>();
+    SG_VERIFY(group);
+
+    auto radio1 = manager->createInstance<FakeRadioSub>("nav1");
+    group->set_subsystem(radio1);
+
+    auto com1 = manager->createInstance<FakeRadioSub>("com1");
+    group->set_subsystem(com1);
+    auto com2 = manager->createInstance<FakeRadioSub>("com2");
+    group->set_subsystem(com2);
+    
+    manager->bind();
+    manager->init();
+    
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-did-bind"));
+
+    auto radio2 = manager->createInstance<FakeRadioSub>("nav2");
+    group->set_subsystem(radio2);
+    
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-will-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-did-init"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-did-bind"));
+    
+    bool ok = manager->remove("fake-radio.nav1");
+    SG_VERIFY(ok);
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-did-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-did-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-will-remove"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav1-did-remove"));
+    
+    manager->shutdown();
+    
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-will-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.nav2-did-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-will-shutdown"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-did-shutdown"));
+    
+    d->events.clear();
+    
+    ok = manager->remove("fake-radio.com1");
+    SG_VERIFY(d->hasEvent("fake-radio.com1-will-remove"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-did-remove"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-will-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.com1-did-unbind"));
+    SG_VERIFY(!d->hasEvent("fake-radio.com1-will-shutdown"));
+    SG_VERIFY(!d->hasEvent("fake-radio.com1-did-shutdown"));
+    
+    manager->unbind();
+    
+    SG_VERIFY(d->hasEvent("fake-radio.com2-will-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.com2-did-unbind"));
+    
+    d->events.clear();
+    manager->remove("fake-radio.com2");
+    SG_VERIFY(!d->hasEvent("fake-radio.com2-will-unbind"));
+    SG_VERIFY(!d->hasEvent("fake-radio.com2-did-unbind"));
+    SG_VERIFY(d->hasEvent("fake-radio.com2-will-remove"));
+    SG_VERIFY(d->hasEvent("fake-radio.com2-did-remove"));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -450,6 +519,7 @@ int main(int argc, char* argv[])
     testIncrementalInit();
     testSuspendResume();
     testPropertyRoot();
+    testAddRemoveAfterInit();
     
     cout << __FILE__ << ": All tests passed" << endl;
     return EXIT_SUCCESS;

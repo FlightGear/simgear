@@ -34,7 +34,8 @@ typedef enum {
     SG_GUI         = 0x00800000,
     SG_TERRASYNC   = 0x01000000,
     SG_PARTICLES   = 0x02000000,
-    SG_UNDEFD      = 0x04000000, // For range checking
+    SG_HEADLESS    = 0x04000000,
+    SG_UNDEFD      = 0x08000000, // For range checking
 
     SG_ALL         = 0xFFFFFFFF
 } sgDebugClass;

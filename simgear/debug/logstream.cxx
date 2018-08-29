@@ -100,6 +100,7 @@ const char* LogCallback::debugClassToString(sgDebugClass c)
         case SG_GUI:        return "gui";
         case SG_TERRASYNC:  return "terrasync";
         case SG_PARTICLES:  return "particles";
+        case SG_HEADLESS:   return "headless";
         default:            return "unknown";
     }
 }

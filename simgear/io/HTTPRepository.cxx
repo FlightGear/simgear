@@ -1006,11 +1006,11 @@ HTTPRepository::failure() const
 
         SGPath cachePath = basePath;
         cachePath.append(".hashes");
-        sg_ofstream stream(cachePath, std::ios::out | std::ios::trunc);
+        sg_ofstream stream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
         HashCache::const_iterator it;
         for (it = hashes.begin(); it != hashes.end(); ++it) {
-            stream << it->filePath << ":" << it->modTime << ":"
-            << it->lengthBytes << ":" << it->hashHex << "\n";
+            stream << it->filePath << "*" << it->modTime << "*"
+            << it->lengthBytes << "*" << it->hashHex << "\n";
         }
         stream.close();
         hashCacheDirty = false;
@@ -1034,7 +1034,7 @@ HTTPRepository::failure() const
             if( line.empty() || line[0] == '#' )
                 continue;
 
-            string_list tokens = simgear::strutils::split( line, ":" );
+			string_list tokens = simgear::strutils::split(line, "*");
             if( tokens.size() < 4 ) {
                 SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath << "': '" << line << "' (ignoring line)");
                 continue;
@@ -1056,6 +1056,9 @@ HTTPRepository::failure() const
             entry.lengthBytes = strtol(sizeData.c_str(), NULL, 10);
             hashes.push_back(entry);
         }
+
+		SG_LOG(SG_TERRASYNC, SG_INFO, "restored hashes:" << hashes.size());
+
     }
 
     class DirectoryWithPath

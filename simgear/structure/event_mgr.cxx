@@ -119,6 +119,14 @@ void SGEventMgr::removeTask(const std::string& name)
   }
 }
 
+void SGEventMgr::dump()
+{
+    SG_LOG(SG_GENERAL, SG_INFO, "EventMgr: sim-time queue:");
+    _simQueue.dump();
+    SG_LOG(SG_GENERAL, SG_INFO, "EventMgr: real-time queue:");
+    _rtQueue.dump();
+}
+
 ////////////////////////////////////////////////////////////////////////
 // SGTimerQueue
 // This is the priority queue implementation:
@@ -269,4 +277,12 @@ SGTimer* SGTimerQueue::findByName(const std::string& name) const
   }
   
   return NULL;
+}
+
+void SGTimerQueue::dump()
+{
+    for (int i=0; i < _numEntries; ++i) {
+        const auto t = _table[i].timer;
+        SG_LOG(SG_GENERAL, SG_INFO, "\ttimer:" << t->name << ", interval=" << t->interval);
+    }
 }

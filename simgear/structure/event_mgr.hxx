@@ -38,6 +38,8 @@ public:
     double   nextTime()  { return -_table[0].pri; }
 
     SGTimer* findByName(const std::string& name) const;
+    
+    void dump();
 private:
     // The "priority" is stored as a negative time.  This allows the
     // implementation to treat the "top" of the heap as the largest
@@ -119,6 +121,8 @@ public:
 
 
     void removeTask(const std::string& name);
+    
+    void dump();
 private:
     friend class SGTimer;
 

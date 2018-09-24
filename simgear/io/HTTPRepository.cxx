@@ -1049,9 +1049,6 @@ HTTPRepository::failure() const
             entry.lengthBytes = strtol(sizeData.c_str(), NULL, 10);
             hashes.push_back(entry);
         }
-
-		SG_LOG(SG_TERRASYNC, SG_INFO, "restored hashes:" << hashes.size());
-
     }
 
     class DirectoryWithPath

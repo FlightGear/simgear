@@ -160,7 +160,7 @@ void test_path_dir()
 	SG_VERIFY(sub2.isFile());
 	SG_CHECK_EQUAL(sub2.sizeInBytes(), 250);
 
-    SGPath sub3 = p / "subß" / "file𝕽";
+    SGPath sub3 = p / "subß" / u8"file𝕽";
     sub3.create_dir(0755);
 
     {
@@ -174,7 +174,7 @@ void test_path_dir()
     sub3.set_cached(false);
     SG_VERIFY(sub3.exists());
     SG_CHECK_EQUAL(sub3.sizeInBytes(), 100);
-    SG_CHECK_EQUAL(sub3.file(), "file𝕽");
+    SG_CHECK_EQUAL(sub3.file(), u8"file𝕽");
 
 	simgear::Dir subD(p / "subA");
 	simgear::PathList dirChildren = subD.children(simgear::Dir::TYPE_DIR | simgear::Dir::NO_DOT_OR_DOTDOT);
@@ -188,7 +188,7 @@ void test_path_dir()
     simgear::Dir subS(sub3.dirPath());
     fileChildren = subS.children(simgear::Dir::TYPE_FILE | simgear::Dir::NO_DOT_OR_DOTDOT);
     SG_CHECK_EQUAL(fileChildren.size(), 1);
-    SG_CHECK_EQUAL(fileChildren[0], subS.path() / "file𝕽");
+    SG_CHECK_EQUAL(fileChildren[0], subS.path() / u8"file𝕽");
 
 }
 

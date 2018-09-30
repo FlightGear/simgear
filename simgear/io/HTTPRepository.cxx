@@ -182,17 +182,11 @@ class HTTPDirectory
         ChildInfo(Type ty, const std::string & nameData, const std::string & hashData) :
             type(ty),
             name(nameData),
-            hash(hashData),
-            sizeInBytes(0)
+            hash(hashData)
         {
         }
 
-        ChildInfo(const ChildInfo& other) :
-            type(other.type),
-            name(other.name),
-            hash(other.hash),
-            sizeInBytes(other.sizeInBytes)
-        { }
+		ChildInfo(const ChildInfo& other) = default;
 
         void setSize(const std::string & sizeData)
         {
@@ -206,7 +200,8 @@ class HTTPDirectory
 
         Type type;
         std::string name, hash;
-        size_t sizeInBytes;
+		size_t sizeInBytes = 0;
+		SGPath path; // absolute path on disk
     };
 
     typedef std::vector<ChildInfo> ChildInfoList;
@@ -273,44 +268,45 @@ public:
             return;
         }
 
-        string_list indexNames = indexChildren();
-        const_string_list_iterator nameIt = indexNames.begin();
-        for (; nameIt != indexNames.end(); ++nameIt) {
-            SGPath p(absolutePath());
-            p.append(*nameIt);
-            if (p.exists()) {
-                continue; // only copy if the file is missing entirely
-            }
+		char* buf = nullptr;
+		size_t bufSize = 0;
 
-            ChildInfoList::iterator c = findIndexChild(*nameIt);
-            if (c->type == ChildInfo::DirectoryType) {
-                continue; // only care about files
-            }
+		for (const auto& child : children) {
+			if (child.type != ChildInfo::FileType)
+				continue;
 
-            SGPath cp = _repository->installedCopyPath;
-            cp.append(relativePath());
-            cp.append(*nameIt);
-            if (!cp.exists()) {
-                continue;
-            }
+			if (child.path.exists())
+				continue;
 
-            SGBinaryFile src(cp);
-            SGBinaryFile dst(p);
-            src.open(SG_IO_IN);
-            dst.open(SG_IO_OUT);
+			SGPath cp = _repository->installedCopyPath;
+			cp.append(relativePath());
+			cp.append(child.name);
+			if (!cp.exists()) {
+				continue;
+			}
 
-            char* buf = (char*) malloc(cp.sizeInBytes());
-            if (!buf) {
-                continue;
-            }
+			SGBinaryFile src(cp);
+			SGBinaryFile dst(child.path);
+			src.open(SG_IO_IN);
+			dst.open(SG_IO_OUT);
 
-            src.read(buf, cp.sizeInBytes());
-            dst.write(buf, cp.sizeInBytes());
-            src.close();
-            dst.close();
+			if (bufSize < cp.sizeInBytes()) {
+				bufSize = cp.sizeInBytes();
+				free(buf);
+				buf = (char*) malloc(bufSize);
+				if (!buf) {
+					continue;
+				}
+			}
 
-            free(buf);
-        }
+			src.read(buf, cp.sizeInBytes());
+			dst.write(buf, cp.sizeInBytes());
+			src.close();
+			dst.close();
+
+		}
+
+		free(buf);
     }
 
     void updateChildrenBasedOnHash()
@@ -319,11 +315,10 @@ public:
 
         copyInstalledChildren();
 
-        string_list indexNames = indexChildren(),
-            toBeUpdated, orphans;
+		string_list toBeUpdated, orphans,
+			indexNames = indexChildren();
         simgear::Dir d(absolutePath());
         PathList fsChildren = d.children(0);
-
 
         for (const auto& child : fsChildren) {
 			const auto& fileName = child.file();
@@ -331,7 +326,9 @@ public:
 				continue;
 			}
 
-            ChildInfo info(child.isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType, fileName, "");
+            ChildInfo info(child.isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType, 
+				fileName, "");
+			info.path = child;
             std::string hash = hashForChild(info);
 
             ChildInfoList::iterator c = findIndexChild(fileName);
@@ -428,19 +425,16 @@ public:
     void didUpdateFile(const std::string& file, const std::string& hash, size_t sz)
     {
         // check hash matches what we expected
-        ChildInfoList::iterator it = findIndexChild(file);
+        auto it = findIndexChild(file);
         if (it == children.end()) {
             SG_LOG(SG_TERRASYNC, SG_WARN, "updated file but not found in dir:" << _relativePath << " " << file);
         } else {
-            SGPath fpath(absolutePath());
-            fpath.append(file);
-
             if (it->hash != hash) {
                 // we don't erase the file on a hash mismatch, becuase if we're syncing during the
                 // middle of a server-side update, the downloaded file may actually become valid.
                 _repository->failedToUpdateChild(_relativePath, HTTPRepository::REPO_ERROR_CHECKSUM);
             } else {
-                _repository->updatedFileContents(fpath, hash);
+                _repository->updatedFileContents(it->path, hash);
                 _repository->totalDownloaded += sz;
             } // of hash matches
         } // of found in child list
@@ -539,8 +533,8 @@ private:
                 continue;
             }
 
-            children.push_back(ChildInfo(typeData == "f" ? ChildInfo::FileType : ChildInfo::DirectoryType, tokens[1], tokens[2]));
-
+            children.emplace_back(ChildInfo(typeData == "f" ? ChildInfo::FileType : ChildInfo::DirectoryType, tokens[1], tokens[2]));
+			children.back().path = absolutePath() / tokens[1];
             if (tokens.size() > 3) {
                 children.back().setSize(tokens[3]);
             }
@@ -572,8 +566,7 @@ private:
 
     std::string hashForChild(const ChildInfo& child) const
     {
-        SGPath p(absolutePath());
-        p.append(child.name);
+		SGPath p(child.path);
         if (child.type == ChildInfo::DirectoryType) {
             p.append(".dirindex");
         }
@@ -1056,9 +1049,6 @@ HTTPRepository::failure() const
             entry.lengthBytes = strtol(sizeData.c_str(), NULL, 10);
             hashes.push_back(entry);
         }
-
-		SG_LOG(SG_TERRASYNC, SG_INFO, "restored hashes:" << hashes.size());
-
     }
 
     class DirectoryWithPath

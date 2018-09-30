@@ -676,6 +676,13 @@ void test_parseGeod()
     SG_VERIFY(strutils::parseStringAsGeod("\t40 30'50\"S,  12 34'56\"W ", &a, true));
     SG_CHECK_EQUAL_EP(a.getLongitudeDeg(), -12.58222222);
     SG_CHECK_EQUAL_EP(a.getLatitudeDeg(), -40.5138888);
+    
+    
+    // malformed inputs
+    
+    SG_VERIFY(strutils::parseStringAsGeod("12.345,", &a, true) == false);
+    double d;
+    SG_VERIFY(strutils::parseStringAsLatLonValue("", d) == false);
 }
 
 void test_formatGeod()

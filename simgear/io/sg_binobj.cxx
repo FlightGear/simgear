@@ -160,7 +160,7 @@ public:
         }
     }
 
-    float readInt()
+    int32_t readInt()
     {
         unsigned int* p = reinterpret_cast<unsigned int*>(ptr + offset);
         if ( sgIsBigEndian() ) {

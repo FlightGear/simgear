@@ -1136,44 +1136,49 @@ bool matchPropPathToTemplate(const std::string& path, const std::string& templat
  
 bool parseStringAsLatLonValue(const std::string& s, double& degrees)
 {
-    string ss = simplify(s);
-    auto spacePos = ss.find_first_of(" *");
-    
-    if (spacePos == std::string::npos) {
-        degrees = std::stod(ss);
-    } else {
-        degrees = std::stod(ss.substr(0, spacePos));
+    try {
+            string ss = simplify(s);
+            auto spacePos = ss.find_first_of(" *");
         
-        double minutes = 0.0, seconds = 0.0;
-        
-        // check for minutes marker
-        auto quotePos = ss.find('\'');
-        if (quotePos == std::string::npos) {
-            const auto minutesStr = ss.substr(spacePos+1);
-            if (!minutesStr.empty()) {
-                minutes = std::stod(minutesStr);
+            if (spacePos == std::string::npos) {
+                degrees = std::stod(ss);
+            } else {
+                degrees = std::stod(ss.substr(0, spacePos));
+                
+                double minutes = 0.0, seconds = 0.0;
+                
+                // check for minutes marker
+                auto quotePos = ss.find('\'');
+                if (quotePos == std::string::npos) {
+                    const auto minutesStr = ss.substr(spacePos+1);
+                    if (!minutesStr.empty()) {
+                        minutes = std::stod(minutesStr);
+                    }
+                } else {
+                    minutes = std::stod(ss.substr(spacePos+1, quotePos - spacePos));
+                    const auto secondsStr = ss.substr(quotePos+1);
+                    if (!secondsStr.empty()) {
+                        seconds = std::stod(secondsStr);
+                    }
+                }
+                
+                if ((seconds < 0.0) || (minutes < 0.0)) {
+                    // don't allow sign information in minutes or seconds
+                    return false;
+                }
+                
+                double offset = (minutes / 60.0) + (seconds / 3600.0);
+                degrees += (degrees >= 0.0) ? offset : -offset;
             }
-        } else {
-            minutes = std::stod(ss.substr(spacePos+1, quotePos - spacePos));
-            const auto secondsStr = ss.substr(quotePos+1);
-            if (!secondsStr.empty()) {
-                seconds = std::stod(secondsStr);
+        
+            // since we simplified, any trailing N/S/E/W must be the last char
+            const char lastChar = ::toupper(ss.back());
+            if ((lastChar == 'W') || (lastChar == 'S')) {
+                degrees = -degrees;
             }
-        }
-        
-        if ((seconds < 0.0) || (minutes < 0.0)) {
-            // don't allow sign information in minutes or seconds
-            return false;
-        }
-        
-        double offset = (minutes / 60.0) + (seconds / 3600.0);
-        degrees += (degrees >= 0.0) ? offset : -offset;
-    }
-    
-    // since we simplified, any trailing N/S/E/W must be the last char
-    const char lastChar = ::toupper(ss.back());
-    if ((lastChar == 'W') || (lastChar == 'S')) {
-        degrees = -degrees;
+    } catch (std::exception&) {
+        // std::stdo can throw
+        return false;
     }
     
     return true;

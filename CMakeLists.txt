@@ -32,6 +32,7 @@ include (GenerateExportHeader)
 
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
 
 # let's use & require C++11 - note these are only functional with CMake 3.1
 # we do manual fallbacks for CMake 3.0 in the compilers section
@@ -44,12 +45,7 @@ string(STRIP ${versionFile} SIMGEAR_VERSION)
 
 project(SimGear VERSION ${SIMGEAR_VERSION} LANGUAGES C CXX)
 
-# using 10.7 because boost requires libc++ and 10.6 doesn't include it
-# Cmake documentation says we must set this before calling project(), but
-# it only seems to be picked up setting it /after/ the call to project()
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
-
-# add a dependency on the versino file
+# add a dependency on the version file
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS version)
 
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)

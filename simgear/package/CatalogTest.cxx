@@ -148,6 +148,7 @@ int parseTest()
     SGPath rootPath = simgear::Dir::current().path();
     rootPath.append("testRoot");
     pkg::Root* root = new pkg::Root(rootPath, "8.1.12");
+    root->setLocale("de");
     pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath(SRC_DIR "/catalogTest1"));
 
     SG_VERIFY(cat.valid());
@@ -172,7 +173,7 @@ int parseTest()
     pkg::PackageRef p2 = cat->getPackageById("c172p");
     SG_VERIFY(p2.valid());
     SG_CHECK_EQUAL(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
-    SG_CHECK_EQUAL(p2->description(), "A plane made by Cessna on Jupiter");
+    SG_CHECK_EQUAL(p2->description(), "German description of C172");
 
     pkg::Package::PreviewVec thumbs = p2->previewsForVariant(0);
     SG_CHECK_EQUAL(thumbs.size(), 3);
@@ -217,7 +218,7 @@ int parseTest()
     SG_CHECK_EQUAL(skisVariant, skisVariantFull);
 
     SG_CHECK_EQUAL(p2->getLocalisedProp("description", skisVariant),
-                   "A plane with skis");
+                   "German description of C172 with skis");
     SG_CHECK_EQUAL(p2->getLocalisedProp("author", skisVariant),
                    "Standard author");
 
@@ -225,6 +226,7 @@ int parseTest()
     SG_VERIFY(floatsVariant > 0);
     SG_CHECK_EQUAL(p2->parentIdForVariant(floatsVariant), "c172p");
 
+    // no DE localisation description provided for the floats variant
     SG_CHECK_EQUAL(p2->getLocalisedProp("description", floatsVariant),
                    "A plane with floats");
     SG_CHECK_EQUAL(p2->getLocalisedProp("author", floatsVariant),
@@ -257,6 +259,12 @@ int parseTest()
     string_list primaries = {"c172p", "c172r"};
     SG_VERIFY(p2->primaryVariants() == primaries);
 
+///////////
+    pkg::PackageRef p3 = cat->getPackageById("b737-NG");
+    SG_VERIFY(p3.valid());
+    SG_CHECK_EQUAL(p3->description(), "German description of B737NG XYZ");
+    
+    
 // test filtering / searching too
     string_set tags(p2->tags());
     SG_CHECK_EQUAL(tags.size(), 4);
@@ -305,6 +313,16 @@ int parseTest()
         queryText->setStringValue("any-of/description", "float");
         SG_VERIFY(p2->matches(queryText.ptr()));
     }
+    
+    // match localized variant descriptions
+    {
+        SGPropertyNode_ptr queryText(new SGPropertyNode);
+        queryText->setStringValue("any-of/description", "XYZ");
+        SG_VERIFY(p3->matches(queryText.ptr()));
+    }
+    
+    
+
     delete root;
     return EXIT_SUCCESS;
 }

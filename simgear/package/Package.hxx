@@ -225,12 +225,14 @@ private:
      */
     bool validate() const;
     
-    std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
+    std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName, bool* isLocalized = nullptr) const;
 
     PreviewVec previewsFromProps(const SGPropertyNode_ptr& ptr) const;
 
     SGPropertyNode_ptr propsForVariant(const unsigned int vIndex, const char* propName = nullptr) const;
 
+    bool matchesDescription(const std::string &search) const;
+    
     SGPropertyNode_ptr m_props;
     std::string m_id;
     string_set m_tags;

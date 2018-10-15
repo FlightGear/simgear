@@ -32,6 +32,15 @@
         <file-size-bytes type="int">860</file-size-bytes>
         <author>Standard author</author>
 
+        <localized>
+          <de>
+            <description>German description of C172</description>
+          </de>
+          <fr>
+            <description>French description of C172</description>
+          </fr>
+        </localized>
+
         <tag>cessna</tag>
         <tag>ga</tag>
         <tag>piston</tag>
@@ -99,6 +108,15 @@
             <name>C172 with skis</name>
             <description>A plane with skis</description>
 
+            <localized>
+            <de>
+              <description>German description of C172 with skis</description>
+            </de>
+            <fr>
+              <description>French description of C172 with skis</description>
+            </fr>
+          </localized>
+
             <variant-of>c172p</variant-of>
 
             <preview>
@@ -156,6 +174,14 @@
         <tag>boeing</tag>
         <tag>jet</tag>
         <tag>ifr</tag>
+
+      <!-- not within a localized element -->
+          <de>
+            <description>German description of B737NG XYZ</description>
+          </de>
+          <fr>
+            <description>French description of B737NG</description>
+          </fr>
 
         <rating>
           <FDM type="int">5</FDM>

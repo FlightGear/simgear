@@ -44,7 +44,7 @@ void Package::initWithProps(const SGPropertyNode* aProps)
 {
     m_props = const_cast<SGPropertyNode*>(aProps);
 // cache tag values
-    BOOST_FOREACH(const SGPropertyNode* c, aProps->getChildren("tag")) {
+    for (auto c : aProps->getChildren("tag")) {
       std::string t(c->getStringValue());
       m_tags.insert(boost::to_lower_copy(t));
     }
@@ -133,22 +133,8 @@ bool Package::matches(const SGPropertyNode* aFilter) const
 
     if ((filter_name == "text") || (filter_name == "description")) {
         handled = true;
-      std::string n(aFilter->getStringValue());
-      boost::to_lower(n);
-      size_t pos = boost::to_lower_copy(description()).find(n);
-      if (pos != std::string::npos) {
-        return true;
-      }
-
-        for (auto var : m_props->getChildren("variant")) {
-            if (var->hasChild("description")) {
-                std::string variantDesc(var->getStringValue("description"));
-                boost::to_lower(variantDesc);
-                size_t pos = variantDesc.find(n);
-                if (pos != std::string::npos) {
-                    return true;
-                }
-            }
+        if (matchesDescription(aFilter->getStringValue())) {
+            return true;
         }
     }
 
@@ -156,6 +142,50 @@ bool Package::matches(const SGPropertyNode* aFilter) const
       SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << filter_name);
     }
 
+    return false;
+}
+    
+bool Package::matchesDescription(const std::string &search) const
+{
+    std::string n(search);
+    boost::to_lower(n);
+    
+    bool localized;
+    auto d = getLocalisedString(m_props, "description", &localized);
+    boost::to_lower(d);
+    if (d.find(n) != std::string::npos) {
+        return true;
+    }
+    
+    // try non-localized description too, if the abovce was a localized one
+    if (localized) {
+        const std::string baseDesc = m_props->getStringValue("description");
+        auto pos = boost::to_lower_copy(baseDesc).find(n);
+        if (pos != std::string::npos) {
+            return true;
+        }
+    }
+    
+    // try each variant's description
+    for (auto var : m_props->getChildren("variant")) {
+        auto vd = getLocalisedString(var, "description", &localized);
+        if (!vd.empty()) {
+            boost::to_lower(vd);
+            if (vd.find(n) != std::string::npos) {
+                return true;
+            }
+        }
+        
+        if (localized) {
+            // try non-localized variant description
+            std::string vd = var->getStringValue("description");
+            boost::to_lower(vd);
+            if (vd.find(n) != std::string::npos) {
+                return true;
+            }
+        }
+    } // of variant iteration
+    
     return false;
 }
 
@@ -307,14 +337,29 @@ std::string Package::getLocalisedProp(const std::string& aName, const unsigned i
     return getLocalisedString(propsForVariant(vIndex, aName.c_str()), aName.c_str());
 }
 
-std::string Package::getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const
+std::string Package::getLocalisedString(const SGPropertyNode* aRoot, const char* aName, bool* isLocalized) const
 {
-    std::string locale = m_catalog->root()->getLocale();
-    if (aRoot->hasChild(locale)) {
-        const SGPropertyNode* localeRoot = aRoot->getChild(locale.c_str());
-        if (localeRoot->hasChild(aName)) {
-            return localeRoot->getStringValue(aName);
-        }
+    // we used to place localised strings under /sim/<locale>/name - but this
+    // potentially pollutes the /sim namespace
+    // we now check first in /sim/localized/<locale>/name first
+    const auto& locale = m_catalog->root()->getLocale();
+    if (isLocalized) *isLocalized = false;
+    
+    if (locale.empty()) {
+        return aRoot->getStringValue(aName);
+    }
+    
+    const SGPropertyNode* localeRoot;
+    if (aRoot->hasChild("localized")) {
+        localeRoot = aRoot->getChild("localized")->getChild(locale);
+    } else {
+        // old behaviour where locale nodes are directly beneath /sim
+        localeRoot = aRoot->getChild(locale);
+    }
+
+    if (localeRoot && localeRoot->hasChild(aName)) {
+        if (isLocalized) *isLocalized = true;
+        return localeRoot->getStringValue(aName);
     }
 
     return aRoot->getStringValue(aName);

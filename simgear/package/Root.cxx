@@ -594,6 +594,12 @@ void Root::scheduleToUpdate(InstallRef aInstall)
     if (!aInstall) {
         throw sg_exception("missing argument to scheduleToUpdate");
     }
+    
+    auto it = std::find(d->updateDeque.begin(), d->updateDeque.end(), aInstall);
+    if (it != d->updateDeque.end()) {
+        // already scheduled to update
+        return;
+    }
 
     PackageList deps = aInstall->package()->dependencies();
     for (Package* dep : deps) {

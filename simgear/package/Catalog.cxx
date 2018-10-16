@@ -81,17 +81,27 @@ bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
     }
     return false;
 }
+    
+SGPropertyNode_ptr alternateForVersion(const std::string& aVersion, SGPropertyNode_ptr props)
+{
+    for (auto v : props->getChildren("alternate-version")) {
+        for (auto versionSpec : v->getChildren("version")) {
+            if (checkVersionString(aVersion, versionSpec->getStringValue())) {
+                return v;
+            }
+        }
+    }
+    
+    return {};
+}
 
 std::string redirectUrlForVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
-    for (SGPropertyNode* v : props->getChildren("alternate-version")) {
-        std::string s(v->getStringValue("version"));
-        if (checkVersionString(aVersion, s)) {
-            return  v->getStringValue("url");;
-        }
-    }
+    auto node = alternateForVersion(aVersion, props);
+    if (node)
+        return node->getStringValue("url");;
 
-    return std::string();
+    return {};
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -139,19 +149,15 @@ protected:
 
         std::string ver(m_owner->root()->applicationVersion());
         if (!checkVersion(ver, props)) {
-            SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url() << ", but version required " << ver);
-
             // check for a version redirect entry
-            std::string url = redirectUrlForVersion(ver, props);
-            if (!url.empty()) {
-                SG_LOG(SG_GENERAL, SG_WARN, "redirecting from " << m_owner->url() <<
-                       " to \n\t" << url);
-
-                // update the URL and kick off a new request
-                m_owner->setUrl(url);
-                Downloader* dl = new Downloader(m_owner, url);
-                m_owner->root()->makeHTTPRequest(dl);
+            auto alt = alternateForVersion(ver, props);
+            if (alt) {
+                SG_LOG(SG_GENERAL, SG_WARN, "have alternate version of package at:"
+                       << alt->getStringValue("url"));
+                m_owner->processAlternate(alt);
             } else {
+                SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url()
+                       << ", but app version " << ver << " is not comaptible");
                 m_owner->refreshComplete(Delegate::FAIL_VERSION);
             }
 
@@ -228,7 +234,7 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 
     bool versionCheckOk = checkVersion(aRoot->applicationVersion(), props);
     if (!versionCheckOk) {
-        SG_LOG(SG_GENERAL, SG_INFO, "catalog at:" << aPath << " failed version check: need version: "
+        SG_LOG(SG_GENERAL, SG_INFO, "catalog at:" << aPath << " failed version check: app version: "
                << aRoot->applicationVersion());
         // keep the catalog but mark it as needing an update
     } else {
@@ -596,6 +602,50 @@ bool Catalog::isEnabled() const
     default:
         return false;
     }
+}
+    
+void Catalog::processAlternate(SGPropertyNode_ptr alt)
+{
+    std::string altId;
+    const auto idPtr = alt->getStringValue("id");
+    if (idPtr) {
+        altId = std::string(idPtr);
+    }
+    
+    std::string altUrl;
+    if (alt->getStringValue("url")) {
+        altUrl = std::string(alt->getStringValue("url"));
+    }
+    
+    CatalogRef existing;
+    if (!altId.empty()) {
+        existing = root()->getCatalogById(altId);
+    } else {
+        existing = root()->getCatalogByUrl(altUrl);
+    }
+    
+    if (existing && (existing != this)) {
+        // we already have the alternate, so just go quiet here
+        changeStatus(Delegate::FAIL_VERSION);
+        return;
+    }
+
+    // we have an alternate ID, and it's differnt from our ID, so let's
+    // define a new catalog
+    if (!altId.empty()) {
+        SG_LOG(SG_GENERAL, SG_INFO, "Adding new catalog:" << altId << " as version alternate for " << id());
+        // new catalog being added
+        createFromUrl(root(), altUrl);
+
+        // and we can go idle now
+        changeStatus(Delegate::FAIL_VERSION);
+        return;
+    }
+    
+    SG_LOG(SG_GENERAL, SG_INFO, "Migrating catalog " << id() << " to new URL:" << altUrl);
+    setUrl(altUrl);
+    Downloader* dl = new Downloader(this, altUrl);
+    root()->makeHTTPRequest(dl);
 }
     
 } // of namespace pkg

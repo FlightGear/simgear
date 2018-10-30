@@ -233,9 +233,11 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p, const SGVec3f& t)
         int imax = 2;
         if (use_tree_shadows) { imax = 3; }
         for (int i = 0; i < imax; ++i) {
-            DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(i));
-            if(primSet != nullptr)
-                primSet->setCount(numVerts);
+            if (i < geom->getNumPrimitiveSets()) {
+                DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(i));
+                if (primSet != nullptr)
+                    primSet->setCount(numVerts);
+            }
         }
     }
 }

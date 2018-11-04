@@ -313,10 +313,17 @@ struct ReaderWriterSTG::_ModelBin {
             return false;
         }
 
+        // starting with 2018.3 we will use deltas rather than absolutes as it is more intuitive for the user
+        // and somewhat easier to visualise
+
+        double detailedRange = atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
+        double bareRangeDelta = atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
+        double roughRangeDelta = atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
+
         // Determine object ranges.  Mesh size of 2000mx2000m needs to be accounted for.
-        _object_range_bare = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
-        _object_range_rough = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
-        _object_range_detailed = 1414.0f + atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
+        _object_range_detailed = 1414.0f + detailedRange;
+        _object_range_bare = _object_range_detailed + bareRangeDelta;
+        _object_range_rough = _object_range_detailed + roughRangeDelta;
 
         SG_LOG(SG_TERRAIN, SG_INFO, "Loading stg file " << absoluteFileName);
 

@@ -1,25 +1,13 @@
 <?xml version="1.0"?>
 
 <PropertyList>
-    <id>org.flightgear.test.catalog1</id>
-    <description>First test catalog</description>
-    <url>http://localhost:2000/catalogTest1/catalog.xml</url>
+    <id>org.flightgear.test.catalog-alt</id>
+    <description>Alternate test catalog</description>
+    <url>http://localhost:2000/catalogTest1/catalog-alt.xml</url>
     <catalog-version>4</catalog-version>
 
-    <version>8.1.*</version>
-    <version>8.0.0</version>
-    <version>8.2.0</version>
+    <version>7.*</version>
 
-    <alternate-version>
-      <version>10.*.*</version>
-      <url>http://localhost:2000/catalogTest1/catalog-v10.xml</url>
-    </alternate-version>
-    
-      <alternate-version>
-        <version>7.*</version>
-        <id>org.flightgear.test.catalog-alt</id>
-        <url>http://localhost:2000/catalogTest1/catalog-alt.xml</url>
-      </alternate-version>
 
     <package>
         <id>alpha</id>
@@ -53,11 +41,6 @@
           <cockpit type="int">4</cockpit>
         </rating>
 
-        <!-- local dependency -->
-        <depends>
-            <id>org.flightgear.test.catalog1.common-sounds</id>
-            <revision>10</revision>
-        </depends>
 
         <preview>
           <type>exterior</type>
@@ -121,16 +104,6 @@
     </package>
 
     <package>
-        <id>common-sounds</id>
-        <name>Common sound files for test catalog aircraft</name>
-        <revision>11</revision>
-        <dir>sounds</dir>
-        <url>http://localhost:2000/catalogTest1/common-sounds.zip</url>
-        <file-size-bytes>360</file-size-bytes>
-        <md5>acf9eb89cf396eb42f8823d9cdf17584</md5>
-    </package>
-
-    <package>
         <id>b737-NG</id>
         <name>Boeing 737 NG</name>
         <dir>b737NG</dir>
@@ -152,19 +125,7 @@
         <md5>a94ca5704f305b90767f40617d194ed6</md5>
         <url>http://localhost:2000/catalogTest1/b737.tar.gz</url>
 
-        <preview>
-          <type>exterior</type>
-          <path>thumb-exterior.png</path>
-          <url>http://foo.bar.com/thumb-exterior.png</url>
-        </preview>
-
-        <preview>
-          <type>panel</type>
-          <path>thumb-panel.png</path>
-          <url>http://foo.bar.com/thumb-panel.png</url>
-        </preview>
       </package>
-
 
     <package>
         <id>dc3</id>

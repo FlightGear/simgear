@@ -414,7 +414,7 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
         if (cat && cat->isEnabled()) {
             d->catalogs.insert({cat->id(), cat});
         } else if (cat) {
-            SG_LOG(SG_GENERAL, SG_WARN, "Package-Root init: catalog is disabled: " << cat->id());
+            SG_LOG(SG_GENERAL, SG_DEBUG, "Package-Root init: catalog is disabled: " << cat->id());
         }
     } // of child directories iteration
 }
@@ -450,6 +450,17 @@ CatalogRef Root::getCatalogById(const std::string& aId) const
     return it->second;
 }
 
+CatalogRef Root::getCatalogByUrl(const std::string& aUrl) const
+{
+    auto it = std::find_if(d->catalogs.begin(), d->catalogs.end(),
+                           [aUrl](const CatalogDict::value_type& v)
+                           { return (v.second->url() == aUrl); });
+    if (it == d->catalogs.end())
+        return {};
+    
+    return it->second;
+}
+    
 PackageRef Root::getPackageById(const std::string& aName) const
 {
     size_t lastDot = aName.rfind('.');

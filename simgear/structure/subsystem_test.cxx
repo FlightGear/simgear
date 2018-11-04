@@ -314,6 +314,7 @@ void testIncrementalInit()
     instruments->set_subsystem(radio1);
     instruments->set_subsystem(radio2);
     
+    
     manager->bind();
     for ( ; ; ) {
         auto status = manager->incrementalInit();
@@ -338,9 +339,34 @@ void testIncrementalInit()
     
     SG_VERIFY(d->hasEvent("fake-radio.nav2-will-init"));
     SG_VERIFY(d->hasEvent("fake-radio.nav2-did-init"));
+}
 
+void testEmptyGroup()
+{
+    // testing the assert described here:
+    // https://sourceforge.net/p/flightgear/codetickets/2043/
+    // when an empty group is inited, we skipped setting the state
+    
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    auto d = new RecorderDelegate;
+    manager->addDelegate(d);
+    
+    auto mySub = manager->add<MySub1>(SGSubsystemMgr::POST_FDM);
+    auto anotherSub = manager->add<AnotherSub>(SGSubsystemMgr::POST_FDM);
+    auto instruments = manager->add<InstrumentGroup>(SGSubsystemMgr::POST_FDM);
+    
+    manager->bind();
+    for ( ; ; ) {
+        auto status = manager->incrementalInit();
+        if (status == SGSubsystemMgr::INIT_DONE)
+            break;
+    }
+    manager->postinit();
+    
+    SG_VERIFY(mySub->wasInited);
 
-
+    SG_VERIFY(d->hasEvent("instruments-will-init"));
+    SG_VERIFY(d->hasEvent("instruments-did-init"));
 }
 
 void testSuspendResume()
@@ -520,6 +546,7 @@ int main(int argc, char* argv[])
     testSuspendResume();
     testPropertyRoot();
     testAddRemoveAfterInit();
+    testEmptyGroup();
     
     cout << __FILE__ << ": All tests passed" << endl;
     return EXIT_SUCCESS;

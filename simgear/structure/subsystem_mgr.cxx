@@ -253,6 +253,7 @@ SGSubsystemGroup::incrementalInit()
 {
     // special case this, simplifies the logic below
     if (_members.empty()) {
+        _state = State::INIT;
         return INIT_DONE;
     }
 

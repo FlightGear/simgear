@@ -132,6 +132,8 @@ public:
     
     CatalogRef getCatalogById(const std::string& aId) const;
     
+    CatalogRef getCatalogByUrl(const std::string& aUrl) const;
+    
     void scheduleToUpdate(InstallRef aInstall);
     
     /**

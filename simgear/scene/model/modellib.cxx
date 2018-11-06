@@ -169,6 +169,7 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
 osg::PagedLOD*
 SGModelLib::loadPagedModel(SGPropertyNode *prop_root, SGModelData *data, SGModelLOD model_lods)
 {
+    unsigned int simple_models = 0;
     osg::PagedLOD *plod = new osg::PagedLOD;
 
     osg::ref_ptr<SGReaderWriterOptions> opt;
@@ -189,14 +190,14 @@ SGModelLib::loadPagedModel(SGPropertyNode *prop_root, SGModelData *data, SGModel
       plod->setMinimumExpiryTime(i, prop_root->getDoubleValue("/sim/rendering/plod-minimum-expiry-time-secs", 180.0 ) );
 
       std::string lext = SGPath(lod.path).lower_extension();
-
-      // We can only have one set of ReaderWriterOptions for the PagedLOD, so
-      // we will just have to assume that if one of the defined models can
-      // handle instantiated effects, then the other can as well.
       if ((lext == "ac") || (lext == "obj")) {
-          opt->setInstantiateEffects(true);
+        simple_models++;
       }
     }
+
+    // If all we have are simple models, then we can instantiate effects in
+    // the loader.
+    if (simple_models == model_lods.getNumLODs()) opt->setInstantiateEffects(true);
 
     plod->setDatabaseOptions(opt.get());
 

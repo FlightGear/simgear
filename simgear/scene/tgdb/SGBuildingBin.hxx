@@ -36,9 +36,11 @@
 #include <osg/Material>
 #include <osg/CullFace>
 
-
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/material/mat.hxx>
+
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 
 #include <simgear/scene/util/QuadTreeBuilder.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
@@ -169,6 +171,7 @@ private:
 public:
 
   SGBuildingBin(const SGMaterial *mat, bool useVBOs);
+  SGBuildingBin(const SGPath& absoluteFileName, const SGMaterial *mat, bool useVBOs);
 
   ~SGBuildingBin() {
     smallBuildings.clear();

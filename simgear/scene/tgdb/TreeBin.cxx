@@ -230,9 +230,9 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p, const SGVec3f& t)
         posArray->insert(posArray->end(), 4, pos);
 
         size_t numVerts = posArray->size();
-        int imax = 2;
+        unsigned int imax = 2;
         if (use_tree_shadows) { imax = 3; }
-        for (int i = 0; i < imax; ++i) {
+        for (unsigned int i = 0; i < imax; ++i) {
             if (i < geom->getNumPrimitiveSets()) {
                 DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(i));
                 if (primSet != nullptr)

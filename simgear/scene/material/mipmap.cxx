@@ -392,6 +392,8 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
             image->getInternalTextureFormat(), image->getPixelFormat(),
             image->getDataType(), data, osg::Image::USE_NEW_DELETE, image->getPacking() );
         mipmaps->setMipmapLevels( mipmapOffsets );
+        mipmaps->setName(image->getName());
+        mipmaps->setFileName(image->getFileName());
 
         return mipmaps.release();
     }

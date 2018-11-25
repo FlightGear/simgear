@@ -221,7 +221,6 @@ ModelRegistry::readImage(const string& fileName,
         init = true;
     }
 
-    bool persist = true;
     bool cache_active = SGSceneFeatures::instance()->getTextureCacheActive();
     bool compress_solid = SGSceneFeatures::instance()->getTextureCacheCompressionActive();
     bool compress_transparent = SGSceneFeatures::instance()->getTextureCacheCompressionActiveTransparent();
@@ -339,14 +338,7 @@ ModelRegistry::readImage(const string& fileName,
                             srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
                         }
                     }
-                    if (persist) {
-                        registry->writeImage(*srcImage, newName, nopt);
-                        //printf(" ->> written to %s\n", newName.c_str());
-
-                    }
-                    else {
-                        return srcImage;
-                    }
+                    registry->writeImage(*srcImage, newName, nopt);
                     absFileName = newName;
                 }
             }

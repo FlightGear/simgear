@@ -38,6 +38,7 @@
 
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/timing/timestamp.hxx>
 
 #if defined (SG_WINDOWS)
 // for AllocConsole, OutputDebugString
@@ -61,13 +62,30 @@ LogCallback::LogCallback(sgDebugClass c, sgDebugPriority p) :
 
 bool LogCallback::shouldLog(sgDebugClass c, sgDebugPriority p) const
 {
-	 return ((c & m_class) != 0 && p >= m_priority);
+    
+    if ((c & m_class) != 0 && p >= m_priority)
+        return true;
+    if (c == SG_OSG) // always have OSG logging as it OSG logging is configured separately.
+        return true;
+    return false;
 }
 
 void LogCallback::setLogLevels( sgDebugClass c, sgDebugPriority p )
 {
 	m_priority = p;
 	m_class = c;
+}
+const char* LogCallback::debugPriorityToString(sgDebugPriority p)
+{
+    switch (p) {
+    case SG_ALERT: return "ALRT";
+    case SG_BULK:  return "BULK";
+    case SG_DEBUG: return "DBUG";
+    case SG_INFO:  return "INFO";
+    case SG_POPUP: return "POPU";
+    case SG_WARN:  return "WARN";
+    default: return "UNKN";
+    }
 }
 
 const char* LogCallback::debugClassToString(sgDebugClass c)
@@ -101,6 +119,7 @@ const char* LogCallback::debugClassToString(sgDebugClass c)
         case SG_TERRASYNC:  return "terrasync";
         case SG_PARTICLES:  return "particles";
         case SG_HEADLESS:   return "headless";
+        case SG_OSG:        return "OSG";
         default:            return "unknown";
     }
 }
@@ -112,18 +131,41 @@ const char* LogCallback::debugClassToString(sgDebugClass c)
 class FileLogCallback : public simgear::LogCallback
 {
 public:
+    SGTimeStamp logTimer;
     FileLogCallback(const SGPath& aPath, sgDebugClass c, sgDebugPriority p) :
 	    simgear::LogCallback(c, p)
     {
         m_file.open(aPath, std::ios_base::out | std::ios_base::trunc);
+        logTimer.stamp();
     }
 
     virtual void operator()(sgDebugClass c, sgDebugPriority p,
         const char* file, int line, const std::string& message)
     {
         if (!shouldLog(c, p)) return;
-        m_file << debugClassToString(c) << ":" << (int) p
-            << ":" << file << ":" << line << ":" << message << std::endl;
+
+
+//        fprintf(stderr, "%7.2f [%.8s]:%-10s %s\n", logTimer.elapsedMSec() / 1000.0, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
+        m_file
+            << std::fixed
+            << std::setprecision(2)
+            << std::setw(8)
+            << std::right
+            << (logTimer.elapsedMSec() / 1000.0)
+            << std::setw(8)
+            << std::left
+            << " ["+std::string(debugPriorityToString(p))+"]:"
+            << std::setw(10)
+            << std::left
+            << debugClassToString(c)
+            << " " 
+            << file 
+            << ":" 
+            << line 
+            << ":" 
+            << message << std::endl;
+        //m_file << debugClassToString(c) << ":" << (int)p
+        //    << ":" << file << ":" << line << ":" << message << std::endl;
     }
 private:
     sg_ofstream m_file;
@@ -132,9 +174,12 @@ private:
 class StderrLogCallback : public simgear::LogCallback
 {
 public:
+    SGTimeStamp logTimer;
+
     StderrLogCallback(sgDebugClass c, sgDebugPriority p) :
 		simgear::LogCallback(c, p)
     {
+        logTimer.stamp();
     }
 
 #if defined (SG_WINDOWS)
@@ -148,8 +193,9 @@ public:
         const char* file, int line, const std::string& aMessage)
     {
         if (!shouldLog(c, p)) return;
-
-        fprintf(stderr, "%s\n", aMessage.c_str());
+        //fprintf(stderr, "%s\n", aMessage.c_str());
+        fprintf(stderr, "%8.2f [%.8s]:%-10s %s\n", logTimer.elapsedMSec()/1000.0, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
+        //    file, line, aMessage.c_str());
         //fprintf(stderr, "%s:%d:%s:%d:%s\n", debugClassToString(c), p,
         //    file, line, aMessage.c_str());
         fflush(stderr);
@@ -469,6 +515,10 @@ public:
     {
         // Testing mode, so always log.
         if (m_testMode) return true;
+
+        // SG_OSG (OSG notify) - will always be displayed regardless of FG log settings as OSG log level is configured 
+        // separately and thus it makes more sense to allow these message through.
+        if (p == SG_OSG) return true;
 
         p = translatePriority(p);
         if (p >= SG_INFO) return true;

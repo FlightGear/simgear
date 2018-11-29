@@ -52,6 +52,7 @@ protected:
 	bool shouldLog(sgDebugClass c, sgDebugPriority p) const;
 
     static const char* debugClassToString(sgDebugClass c);
+    static const char* debugPriorityToString(sgDebugPriority p);
 private:
 	sgDebugClass m_class;
 	sgDebugPriority m_priority;

@@ -50,6 +50,8 @@
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
 #include <simgear/scene/tgdb/obj.hxx>
+#include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/tgdb/SGBuildingBin.hxx>
 
 #include "SGOceanTile.hxx"
 
@@ -59,6 +61,7 @@
 #define ROAD_DETAILED "OBJECT_ROAD_DETAILED"
 #define RAILWAY_ROUGH "OBJECT_RAILWAY_ROUGH"
 #define RAILWAY_DETAILED "OBJECT_RAILWAY_DETAILED"
+#define BUILDING_LIST "BUILDING_LIST"
 
 namespace simgear {
 
@@ -120,6 +123,12 @@ struct ReaderWriterSTG::_ModelBin {
         double _lon, _lat, _elev;
         double _hdg;
         int _size;
+    };
+    struct _BuildingList {
+      _BuildingList() : _lon(0), _lat(0), _elev(0) { }
+      std::string _filename;
+      std::string _material_name;
+      double _lon, _lat, _elev;
     };
 
     class DelayLoadReadFileCallback : public OptionsReadFileCallback {
@@ -185,8 +194,6 @@ struct ReaderWriterSTG::_ModelBin {
       };
       typedef QuadTreeBuilder<osg::LOD*, _ObjectStatic, MakeQuadLeaf, AddModelLOD,
                               GetModelLODCoord>  STGObjectsQuadtree;
-
-
     public:
         virtual osgDB::ReaderWriter::ReadResult
         readNode(const std::string&, const osgDB::Options*)
@@ -203,12 +210,40 @@ struct ReaderWriterSTG::_ModelBin {
             if (signBuilder.getSignsGroup())
                 group->addChild(signBuilder.getSignsGroup());
 
+            if (_buildingList.size() > 0) {
+                SGMaterialLibPtr matlib = _options->getMaterialLib();
+                bool useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
+
+                if (!matlib) {
+                    SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get materials definition for buildings");
+                } else {
+                    for (std::list<_BuildingList>::iterator i = _buildingList.begin(); i != _buildingList.end(); ++i) {
+                        // Build buildings for each list of buildings
+                        SGGeod geodPos = SGGeod::fromDegM(i->_lon, i->_lat, 0.0);
+                        SGMaterial* mat = matlib->find(i->_material_name, geodPos);
+                        SGPath path = SGPath(i->_filename);
+                        SGBuildingBin* buildingBin = new SGBuildingBin(path, mat, useVBOs);
+
+                        SGBuildingBinList buildingBinList;
+                        buildingBinList.push_back(buildingBin);
+
+                        osg::MatrixTransform* matrixTransform;
+                        matrixTransform = new osg::MatrixTransform(makeZUpFrame(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev)));
+                        matrixTransform->setName("rotateBuildings");
+                        matrixTransform->setDataVariance(osg::Object::STATIC);
+                        matrixTransform->addChild(createRandomBuildings(buildingBinList, osg::Matrix::identity(), _options));
+                        group->addChild(matrixTransform);
+                    }
+                }
+            }
+
             return group.release();
         }
 
         mt _seed;
         std::list<_ObjectStatic> _objectStaticList;
         std::list<_Sign> _signList;
+        std::list<_BuildingList> _buildingList;
 
         /// The original options to use for this bunch of models
         osg::ref_ptr<SGReaderWriterOptions> _options;
@@ -315,7 +350,6 @@ struct ReaderWriterSTG::_ModelBin {
 
         // starting with 2018.3 we will use deltas rather than absolutes as it is more intuitive for the user
         // and somewhat easier to visualise
-
         double detailedRange = atof(options->getPluginStringData("SimGear::LOD_RANGE_DETAILED").c_str());
         double bareRangeDelta = atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
         double roughRangeDelta = atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
@@ -490,6 +524,13 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
                     _objectStaticList.push_back(obj);
+                } else if (token == BUILDING_LIST) {
+                  _BuildingList buildinglist;
+                  buildinglist._filename = path.local8BitStr();
+                  in >> buildinglist._material_name >> buildinglist._lon >> buildinglist._lat >> buildinglist._elev;
+                  checkInsideBucket(absoluteFileName, buildinglist._lon, buildinglist._lat);
+                  _buildingListList.push_back(buildinglist);
+                  //SG_LOG(SG_TERRAIN, SG_ALERT, "Building list: " << buildinglist._filename << " " << buildinglist._material_name << " " << buildinglist._lon << " " << buildinglist._lat);
                 } else {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                             << ": Unknown token '" << token << "'" );
@@ -560,6 +601,7 @@ struct ReaderWriterSTG::_ModelBin {
             // we just need to know about the read file callback that itself holds the data
             osg::ref_ptr<DelayLoadReadFileCallback> readFileCallback = new DelayLoadReadFileCallback;
             readFileCallback->_objectStaticList = _objectStaticList;
+            readFileCallback->_buildingList = _buildingListList;
             readFileCallback->_signList = _signList;
             readFileCallback->_options = options;
             readFileCallback->_bucket = bucket;
@@ -584,6 +626,7 @@ struct ReaderWriterSTG::_ModelBin {
     std::list<_Object> _objectList;
     std::list<_ObjectStatic> _objectStaticList;
     std::list<_Sign> _signList;
+    std::list<_BuildingList> _buildingListList;
 };
 
 ReaderWriterSTG::ReaderWriterSTG()

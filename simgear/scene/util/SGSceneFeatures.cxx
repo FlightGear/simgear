@@ -43,7 +43,11 @@ SGSceneFeatures::SGSceneFeatures() :
   _shaderLights(true),
   _pointSpriteLights(true),
   _distanceAttenuationLights(true),
-  _textureFilter(1)
+  _textureFilter(1),
+  _MaxTextureSize(4096),
+  _TextureCacheCompressionActive(true),
+  _TextureCacheCompressionActiveTransparent(true),
+  _TextureCacheActive(false)
 {
 }
 

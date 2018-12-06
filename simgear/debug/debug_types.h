@@ -35,7 +35,10 @@ typedef enum {
     SG_TERRASYNC   = 0x01000000,
     SG_PARTICLES   = 0x02000000,
     SG_HEADLESS    = 0x04000000,
-    SG_UNDEFD      = 0x08000000, // For range checking
+    // SG_OSG (OSG notify) - will always be displayed regardless of FG log settings as OSG log level is configured 
+    // separately and thus it makes more sense to allow these message through.
+    SG_OSG         = 0x08000000,
+    SG_UNDEFD      = 0x10000000, // For range checking
 
     SG_ALL         = 0xFFFFFFFF
 } sgDebugClass;

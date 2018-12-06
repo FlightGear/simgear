@@ -44,12 +44,11 @@
 #include <osgDB/FileUtils>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/math/SGLimits.hxx>
 #include <simgear/math/SGMisc.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/scene/material/Effect.hxx>
-#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/props/props.hxx>
 
@@ -106,6 +105,59 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
     }
     return bb;
 }
+
+  // Set up a BuildingBin from a file containing a list of individual building
+  // positions.
+  SGBuildingBin::SGBuildingBin(const SGPath& absoluteFileName, const SGMaterial *mat, bool useVBOs) :
+    SGBuildingBin::SGBuildingBin(mat, useVBOs)
+  {
+    if (!absoluteFileName.exists()) {
+      SG_LOG(SG_TERRAIN, SG_ALERT, "Building list file " << absoluteFileName << " does not exist.");
+      return;
+    }
+
+    sg_gzifstream stream(absoluteFileName);
+    if (!stream.is_open()) {
+      SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to open " << absoluteFileName << " does not exist.");
+      return;
+    }
+
+    while (!stream.eof()) {
+      // read a line.  Each line defines a single builing position, and may have
+      // a comment, starting with #
+      std::string line;
+      std::getline(stream, line);
+
+      // strip comments
+      std::string::size_type hash_pos = line.find('#');
+      if (hash_pos != std::string::npos)
+          line.resize(hash_pos);
+
+      // and process further
+      std::stringstream in(line);
+
+      // Line format is X Y Z R T
+      // where:
+      // X,Y,Z are the cartesian coordinates of the bottom SW corner of the building.  +X is East, +Y is North
+      // R is the building rotation in degrees centered on the SW corner
+      // T is the building type [0, 1, 2] for SMALL, MEDIUM, LARGE
+      float x, y, z, r;
+      int t;
+      in >> x >> y >> z >> r >> t;
+
+      //SG_LOG(SG_TERRAIN, SG_ALERT, "Building entry " << x << " " << y << " " << z << " " << t );
+      SGVec3f p = SGVec3f(x,y,z);
+      BuildingType type = BuildingType::SMALL;
+      if (t == 1)  type = BuildingType::MEDIUM;
+      if (t == 2)  type = BuildingType::LARGE;
+
+      // Rotation is in the file as degrees, but in the datastructure normalized
+      // to 0.0 - 1.0
+      insert(p, (float) (r / 360.0f), type);
+    }
+
+    stream.close();
+  };
 
   // Set up the building set based on the material definitions
   SGBuildingBin::SGBuildingBin(const SGMaterial *mat, bool useVBOs) {
@@ -165,7 +217,7 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
       if (useVBOs) {
           sharedGeometry->setUseVertexBufferObjects(true);
       }
-      
+
       for (unsigned int j = 0; j < BUILDING_SET_SIZE; j++) {
         float width;
         float depth;
@@ -820,8 +872,8 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
   };
 
   // This actually returns a MatrixTransform node. If we rotate the whole
-  // forest into the local Z-up coordinate system we can reuse the
-  // primitive building geometry for all the forests of the same type.
+  // set of buildings into the local Z-up coordinate system we can reuse the
+  // primitive building geometry for all the buildings of the same type.
   osg::Group* createRandomBuildings(SGBuildingBinList& buildings, const osg::Matrix& transform,
                            const SGReaderWriterOptions* options)
   {

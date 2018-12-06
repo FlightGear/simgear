@@ -16,6 +16,7 @@ set(HEADERS
     RenderConstants.hxx
     SGDebugDrawCallback.hxx
     SGEnlargeBoundingBox.hxx
+    SGImageUtils.hxx
     SGNodeMasks.hxx
     SGPickCallback.hxx
     SGReaderWriterOptions.hxx
@@ -44,6 +45,7 @@ set(SOURCES
     PrimitiveUtils.cxx
     QuadTreeBuilder.cxx
     SGEnlargeBoundingBox.cxx
+    SGImageUtils.cxx
     SGReaderWriterOptions.cxx
     SGSceneFeatures.cxx
     SGSceneUserData.cxx

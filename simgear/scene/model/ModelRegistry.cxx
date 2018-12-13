@@ -262,85 +262,87 @@ ModelRegistry::readImage(const string& fileName,
             if (!fileExists(newName)) {
                 res = registry->readImageImplementation(absFileName, opt);
 
-                osg::ref_ptr<osg::Image> srcImage = res.getImage();
-                int width = srcImage->s();
-                bool transparent = srcImage->isImageTranslucent();
-                int height = srcImage->t();
+                if (res.validImage()) {
+                  osg::ref_ptr<osg::Image> srcImage = res.getImage();
+                  int width = srcImage->s();
+                  bool transparent = srcImage->isImageTranslucent();
+                  int height = srcImage->t();
 
-                if (height >= max_texture_size)
-                {
-                    SG_LOG(SG_IO, SG_WARN, "Image texture too high " << width << "," << height << absFileName);
-                    osg::ref_ptr<osg::Image> resizedImage;
-                    int factor = height / max_texture_size;
-                    if (ImageUtils::resizeImage(srcImage, width / factor, height / factor, resizedImage))
-                        srcImage = resizedImage;
-                    width = srcImage->s();
-                    height = srcImage->t();
-                }
-                if (width >= max_texture_size)
-                {
-                    SG_LOG(SG_IO, SG_WARN, "Image texture too wide " << width << "," << height << absFileName);
-                    osg::ref_ptr<osg::Image> resizedImage;
-                    int factor = width / max_texture_size;
-                    if (ImageUtils::resizeImage(srcImage, width / factor, height / factor, resizedImage))
-                        srcImage = resizedImage;
-                    width = srcImage->s();
-                    height = srcImage->t();
-                }
+                  if (height >= max_texture_size)
+                  {
+                      SG_LOG(SG_IO, SG_WARN, "Image texture too high " << width << "," << height << absFileName);
+                      osg::ref_ptr<osg::Image> resizedImage;
+                      int factor = height / max_texture_size;
+                      if (ImageUtils::resizeImage(srcImage, width / factor, height / factor, resizedImage))
+                          srcImage = resizedImage;
+                      width = srcImage->s();
+                      height = srcImage->t();
+                  }
+                  if (width >= max_texture_size)
+                  {
+                      SG_LOG(SG_IO, SG_WARN, "Image texture too wide " << width << "," << height << absFileName);
+                      osg::ref_ptr<osg::Image> resizedImage;
+                      int factor = width / max_texture_size;
+                      if (ImageUtils::resizeImage(srcImage, width / factor, height / factor, resizedImage))
+                          srcImage = resizedImage;
+                      width = srcImage->s();
+                      height = srcImage->t();
+                  }
 
-                //
-                // only cache power of two textures that are of a reasonable size
-                if (width >= 64 && height >= 64 && isPowerOfTwo(width, height)) {
-                    simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
+                  //
+                  // only cache power of two textures that are of a reasonable size
+                  if (width >= 64 && height >= 64 && isPowerOfTwo(width, height)) {
+                      simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
 
-                    SGPath filePath(newName);
-                    filePath.create_dir();
+                      SGPath filePath(newName);
+                      filePath.create_dir();
 
-                    // setup the options string for saving the texture as we don't want OSG to auto flip the texture
-                    // as this complicates loading as it requires a flag to flip it back which will preclude the
-                    // image from being cached because we will have to clone the options to set the flag and thus lose
-                    // the link to the cache in the options from the caller.
-                    osg::ref_ptr<Options> nopt;
-                    nopt = opt->cloneOptions();
-                    std::string optionstring = nopt->getOptionString();
+                      // setup the options string for saving the texture as we don't want OSG to auto flip the texture
+                      // as this complicates loading as it requires a flag to flip it back which will preclude the
+                      // image from being cached because we will have to clone the options to set the flag and thus lose
+                      // the link to the cache in the options from the caller.
+                      osg::ref_ptr<Options> nopt;
+                      nopt = opt->cloneOptions();
+                      std::string optionstring = nopt->getOptionString();
 
-                    if (!optionstring.empty())
-                        optionstring += " ";
+                      if (!optionstring.empty())
+                          optionstring += " ";
 
-                    nopt->setOptionString(optionstring + "ddsNoAutoFlipWrite");
+                      nopt->setOptionString(optionstring + "ddsNoAutoFlipWrite");
 
-                    /*
-                     * decide if we need to compress this.
-                     */
-                    bool compress = (transparent && compress_transparent) || (!transparent && compress_solid);
+                      /*
+                       * decide if we need to compress this.
+                       */
+                      bool compress = (transparent && compress_transparent) || (!transparent && compress_solid);
 
-                    if (compress) {
-                        if (processor)
-                        {
-                            if (transparent)
-                                processor->compress(*srcImage, osg::Texture::USE_S3TC_DXT5_COMPRESSION, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
-                            else
-                                processor->compress(*srcImage, osg::Texture::USE_S3TC_DXT1_COMPRESSION, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
-                            //processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
-                        }
-                        else {
-                            simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
-                            SG_LOG(SG_IO, SG_WARN, "Texture compression plugin (osg_nvtt) not available; storing uncompressed image: " << newName);
-                            srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
-                        }
-                    }
-                    else {
-                        if (processor) {
-                            processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
-                        }
-                        else {
-                            simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
-                            srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
-                        }
-                    }
-                    registry->writeImage(*srcImage, newName, nopt);
-                    absFileName = newName;
-                }
+                      if (compress) {
+                          if (processor)
+                          {
+                              if (transparent)
+                                  processor->compress(*srcImage, osg::Texture::USE_S3TC_DXT5_COMPRESSION, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
+                              else
+                                  processor->compress(*srcImage, osg::Texture::USE_S3TC_DXT1_COMPRESSION, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
+                              //processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
+                          }
+                          else {
+                              simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
+                              SG_LOG(SG_IO, SG_WARN, "Texture compression plugin (osg_nvtt) not available; storing uncompressed image: " << newName);
+                              srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
+                          }
+                      }
+                      else {
+                          if (processor) {
+                              processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
+                          }
+                          else {
+                              simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
+                              srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
+                          }
+                      }
+                      registry->writeImage(*srcImage, newName, nopt);
+                      absFileName = newName;
+                  }
+              }
             }
             else
                 absFileName = newName;

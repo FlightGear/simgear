@@ -689,10 +689,13 @@ public:
                 triangleBuildingList.clear();
             }
             
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "Random Buildings: " << ((bin) ? bin->getNumBuildings() : 0));
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to mask: " << mask_dropped);
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to random object: " << random_dropped);
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to other buildings: " << building_dropped);
+            const int numBuildings = (bin) ? bin->getNumBuildings() : 0;
+            if (numBuildings > 0) {
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "computed Random Buildings: " << numBuildings);
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to mask: " << mask_dropped);
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to random object: " << random_dropped);
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to other buildings: " << building_dropped);
+            }
         }
     }
     

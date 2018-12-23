@@ -398,8 +398,6 @@ public:
 	/// and hence should dynamically reflect console logging settings
 	CallbackVec m_consoleCallbacks;
 
-    std::vector<std::string> m_popupMessages;
-
     sgDebugClass m_logClass;
     sgDebugPriority m_logPriority;
     bool m_isRunning = false;
@@ -508,9 +506,23 @@ public:
         PauseThread pause(this);
         m_logPriority = p;
         m_logClass = c;
-        for (auto cb : m_consoleCallbacks) {
+		BOOST_FOREACH(simgear::LogCallback* cb, m_consoleCallbacks) {
 	        cb->setLogLevels(c, p);
 		}
+    }
+
+    bool would_log( sgDebugClass c, sgDebugPriority p ) const
+    {
+        // Testing mode, so always log.
+        if (m_testMode) return true;
+
+        // SG_OSG (OSG notify) - will always be displayed regardless of FG log settings as OSG log level is configured 
+        // separately and thus it makes more sense to allow these message through.
+        if (p == SG_OSG) return true;
+
+        p = translatePriority(p);
+        if (p >= SG_INFO) return true;
+        return ((c & m_logClass) != 0 && p >= m_logPriority);
     }
 
     void log( sgDebugClass c, sgDebugPriority p,
@@ -548,6 +560,7 @@ logstream::logstream()
 
 logstream::~logstream()
 {
+    popup_msgs.clear();
     d->stop();
 }
 
@@ -585,10 +598,6 @@ logstream::log( sgDebugClass c, sgDebugPriority p,
 
 void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, unsigned int columns)
 {
-    if (((c & d->m_logClass) == 0) || (p < d->m_logPriority)) {
-        return;
-    }
-    
     unsigned int i, j;
     char temp[3000], temp1[3000];
     *temp = 0;
@@ -644,17 +653,17 @@ void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName,
 void
 logstream::popup( const std::string& msg)
 {
-    d->m_popupMessages.push_back(msg);
+    popup_msgs.push_back(msg);
 }
 
 std::string
 logstream::get_popup()
 {
     std::string rv = "";
-    if (!d->m_popupMessages.empty())
+    if (!popup_msgs.empty())
     {
-        rv = d->m_popupMessages.front();
-        d->m_popupMessages.erase(d->m_popupMessages.begin());
+        rv = popup_msgs.front();
+        popup_msgs.erase(popup_msgs.begin());
     }
     return rv;
 }
@@ -662,7 +671,13 @@ logstream::get_popup()
 bool
 logstream::has_popup()
 {
-    return !d->m_popupMessages.empty();
+    return (popup_msgs.size() > 0) ? true : false;
+}
+
+bool
+logstream::would_log( sgDebugClass c, sgDebugPriority p ) const
+{
+    return d->would_log(c,p);
 }
 
 sgDebugClass

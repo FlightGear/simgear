@@ -41,8 +41,8 @@ public:
     /// for broken PUI behaviour, it can be removed once PUI is gone.
     void truncateAt(unsigned int);
     
-    void operator()(sgDebugClass c, sgDebugPriority p,
-        const char* file, int line, const std::string& aMessage) override;
+    virtual void operator()(sgDebugClass c, sgDebugPriority p, 
+        const char* file, int line, const std::string& aMessage);
     
     /**
      * read the stamp value associated with the log buffer. This is

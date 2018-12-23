@@ -29,6 +29,7 @@
 #include <simgear/debug/debug_types.h>
 
 #include <sstream>
+#include <vector>
 #include <memory>
 
 // forward decls
@@ -91,6 +92,8 @@ public:
      * @param p priority
      */
     void setLogLevels( sgDebugClass c, sgDebugPriority p );
+
+    bool would_log(  sgDebugClass c, sgDebugPriority p ) const;
 
     void logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p );
 
@@ -176,6 +179,8 @@ private:
     // constructor
     logstream();
 
+    std::vector<std::string> popup_msgs;
+
     class LogStreamPrivate;
 
     std::unique_ptr<LogStreamPrivate> d;
@@ -192,17 +197,17 @@ logstream& sglog();
  * @param M message
  */
 # define SG_LOGX(C,P,M) \
-    do {                                                 \
+    do { if(sglog().would_log(C,P)) {                         \
         std::ostringstream os; os << M;                  \
         sglog().log(C, P, __FILE__, __LINE__, os.str()); \
         if ((P) == SG_POPUP) sglog().popup(os.str());    \
-    } while(0)
+    } } while(0)
 #ifdef FG_NDEBUG
 # define SG_LOG(C,P,M)	do { if((P) == SG_POPUP) SG_LOGX(C,P,M) } while(0)
 # define SG_HEXDUMP(C,P,MEM,LEN)
 #else
 # define SG_LOG(C,P,M)	SG_LOGX(C,P,M)
-# define SG_LOG_HEXDUMP(C,P,MEM,LEN) sglog().hexdump(C, P, __FILE__, __LINE__, MEM, LEN)
+# define SG_LOG_HEXDUMP(C,P,MEM,LEN) if(sglog().would_log(C,P)) sglog().hexdump(C, P, __FILE__, __LINE__, MEM, LEN)
 #endif
 
 #define SG_ORIGIN __FILE__ ":" SG_STRINGIZE(__LINE__)

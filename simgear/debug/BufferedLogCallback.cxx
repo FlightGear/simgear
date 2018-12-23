@@ -52,11 +52,11 @@ BufferedLogCallback::BufferedLogCallback(sgDebugClass c, sgDebugPriority p) :
 
 BufferedLogCallback::~BufferedLogCallback()
 {
-    for (unsigned char* msg : d->m_buffer) {
+    BOOST_FOREACH(unsigned char* msg, d->m_buffer) {
         free(msg);
     }
 }
-    
+ 
 void BufferedLogCallback::operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& aMessage)
 {

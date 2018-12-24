@@ -281,7 +281,7 @@ SGSubsystemGroup::incrementalInit()
         notifyDidChange(m->subsystem, State::INIT);
         ++_initPosition;
         
-        if (_initPosition < _members.size()) {
+        if (_initPosition < static_cast<int>(_members.size())) {
             // start init of the next one
             notifyWillChange( _members[_initPosition]->subsystem, State::INIT);
         }

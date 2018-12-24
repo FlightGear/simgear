@@ -65,16 +65,16 @@ namespace
       else if (numChannels == 2 && bitsPerSample == 16) rv = SG_SAMPLE_STEREO16;
       else if (numChannels == 2 && bitsPerSample == 8) rv = SG_SAMPLE_STEREO8;
       else {
-        char msg[65];
-        snprintf(msg, 64, "Unsupported audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
+        char msg[81];
+        snprintf(msg, 80, "Unsupported audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
         throw sg_exception(msg);
       }
     } else {
       if (numChannels == 1 && bitsPerSample == 4) rv = SG_SAMPLE_ADPCM; 
       else if (numChannels == 1 && bitsPerSample == 8) rv = SG_SAMPLE_MULAW;
       else {
-        char msg[65];
-        snprintf(msg, 64, "Unsupported compressed audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
+        char msg[81];
+        snprintf(msg, 80, "Unsupported compressed audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
         throw sg_exception(msg);
       }
     }

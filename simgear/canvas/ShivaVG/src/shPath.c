@@ -1193,7 +1193,7 @@ VG_API_CALL VGboolean vgInterpolatePath(VGPath dstPath, VGPath startPath,
   SHfloat *procData1, *procData2;
   SHint procSegCount1=0, procSegCount2=0;
   SHint procDataCount1=0, procDataCount2=0;
-  SHuint8 *newSegs, *newData;
+  SHuint8 *newSegs, *newData=0;
   void *userData[4];
   SHint segment1, segment2;
   SHint segindex, s,d,i;

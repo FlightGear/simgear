@@ -289,7 +289,7 @@ inline simd4x4_t<T,N> operator*(const simd4x4_t<T,N>& m1, const simd4x4_t<T,N>& 
 }
 
 
-#ifdef ENABLE_SIMD
+#ifdef ENABLE_SIMD_CODE
 
 # ifdef __SSE__
 template<>
@@ -1191,7 +1191,7 @@ inline simd4_t<int,3> transform<int>(const simd4x4_t<int,4>& m, const simd4_t<in
 } /* namespace simd4x */
 # endif
 
-#endif /* ENABLE_SIMD */
+#endif /* ENABLE_SIMD_CODE */
 
 #endif /* __SIMD4X4_H__ */
 

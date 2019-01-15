@@ -27,4 +27,5 @@
 #cmakedefine ENABLE_SOUND
 #cmakedefine USE_AEONWAVE
 #cmakedefine ENABLE_SIMD
+#cmakedefine ENABLE_SIMD_CODE
 #cmakedefine ENABLE_GDAL

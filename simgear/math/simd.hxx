@@ -309,7 +309,7 @@ inline simd4_t<T,N> operator*(simd4_t<T,N> v, T f) {
     return v;
 }
 
-#ifdef ENABLE_SIMD
+#ifdef ENABLE_SIMD_CODE
 
 # ifdef __SSE__
 namespace simd4
@@ -1305,7 +1305,7 @@ inline simd4_t<int,N> max(simd4_t<int,N> v1, const simd4_t<int,N>& v2) {
 
 # endif
 
-#endif /* ENABLE_SIMD */
+#endif /* ENABLE_SIMD_CODE */
 
 #endif /* __SIMD_H__ */
 

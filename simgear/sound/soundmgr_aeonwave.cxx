@@ -418,7 +418,7 @@ void SGSoundMgr::release_source( unsigned int source )
     {
         aax::Emitter& emitter = source_it->second;
         enum aaxState state = emitter.state();
-        if (state == AAX_PLAYING || state == AAX_SUSPENDED) {
+        if (state != AAX_PROCESSED) {
            TRY( emitter.set(AAX_PROCESSED) );
            TRY( d->_aax.remove(emitter) );
         }
@@ -590,7 +590,6 @@ void SGSoundMgr::sample_stop( SGSoundSample *sample )
 #ifdef ENABLE_SOUND
             aax::Emitter& emitter = d->get_emitter(source);
             TRY( emitter.set(AAX_PROCESSED) );
-            TRY( d->_aax.remove(emitter) );
 #endif          
             stopped = is_sample_stopped(sample);
         }
@@ -610,7 +609,6 @@ void SGSoundMgr::sample_destroy( SGSoundSample *sample )
         if ( sample->is_playing() ) {
             aax::Emitter& emitter = d->get_emitter(source);
             TRY( emitter.set(AAX_PROCESSED) );
-            TRY( d->_aax.remove(emitter) );
         }
         release_source( source );
 #endif

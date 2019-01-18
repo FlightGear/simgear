@@ -64,6 +64,31 @@ SGFile::SGFile( int existingFd ) :
 SGFile::~SGFile() {
 }
 
+#include <simgear/misc/sg_hash.hxx>
+#include <simgear/structure/exception.hxx>
+#include "simgear/misc/strutils.hxx"
+
+std::string SGFile::computeHash()
+{
+    if (!file_name.exists())
+        return std::string();
+    simgear::sha1nfo info;
+    sha1_init(&info);
+    char* buf = static_cast<char*>(malloc(1024 * 1024));
+    size_t readLen;
+    SGBinaryFile f(file_name);
+    if (!f.open(SG_IO_IN)) {
+        throw sg_io_exception("Couldn't open file for compute hash", file_name);
+    }
+    while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
+        sha1_write(&info, buf, readLen);
+    }
+
+    f.close();
+    free(buf);
+    std::string hashBytes((char*)sha1_result(&info), HASH_LENGTH);
+    return simgear::strutils::encodeHex(hashBytes);
+}
 
 // open the file based on specified direction
 bool SGFile::open( const SGProtocolDir d ) {

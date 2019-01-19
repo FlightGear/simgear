@@ -111,6 +111,11 @@ public:
         if (transform->getNumChildren())
             _group->addChild(transform.get());
     }
+    virtual void apply(BVHPageNode& leaf)
+    {
+        leaf.traverse(*this);
+    }
+
     virtual void apply(BVHLineGeometry&)
     {
     }

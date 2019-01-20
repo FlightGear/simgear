@@ -486,7 +486,7 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     }
 
-    if (dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
+    if (GlobalParticleCallback::getEnabled()){//dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
         std::vector<SGPropertyNode_ptr> particle_nodes;
         particle_nodes = props->getChildren("particlesystem");
         for (unsigned i = 0; i < particle_nodes.size(); ++i) {

@@ -338,7 +338,7 @@ sgLoad3DModel_internal(const SGPath& path,
 
         options->setDatabasePath(texturepath.local8BitStr());
         osgDB::ReaderWriter::ReadResult modelResult;
-        modelResult = osgDB::readNodeFile(modelpath.local8BitStr(), options.get());
+        modelResult = osgDB::readRefNodeFile(modelpath.local8BitStr(), options.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
                                   modelpath);

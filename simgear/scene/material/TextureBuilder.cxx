@@ -257,7 +257,8 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         return false;
 
     osgDB::ReaderWriter::ReadResult result;
-    result = osgDB::readImageFile(imageName, options);
+
+    result = osgDB::readRefImageFile(imageName, options);
     osg::ref_ptr<osg::Image> image;
     if (result.success())
         image = result.getImage();
@@ -590,27 +591,27 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
-        result = osgDB::readImageFile(_tuple.get<1>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<1>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
-        result = osgDB::readImageFile(_tuple.get<2>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<2>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
-        result = osgDB::readImageFile(_tuple.get<3>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<3>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
-        result = osgDB::readImageFile(_tuple.get<4>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<4>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
-        result = osgDB::readImageFile(_tuple.get<5>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<5>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
@@ -634,7 +635,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             return cubeTexture.release();
 
         osgDB::ReaderWriter::ReadResult result;
-        result = osgDB::readImageFile(texname, options);
+        result = osgDB::readRefImageFile(texname, options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones

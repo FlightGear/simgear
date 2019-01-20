@@ -208,7 +208,7 @@ ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* o
         imageFileName = osgDB::concatPaths(imageFileName, "Globe");
         imageFileName = osgDB::concatPaths(imageFileName, "world.topo.bathy.200407.3x4096x2048.png");
     }
-    if (osg::Image* image = osgDB::readImageFile(imageFileName, options)) {
+    if (osg::Image* image = osgDB::readRefImageFile(imageFileName, options)) {
         osg::Texture2D* texture = new osg::Texture2D;
         texture->setImage(image);
         texture->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);

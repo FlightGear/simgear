@@ -71,9 +71,12 @@ static clockid_t getClockId()
 }
 
 #endif
+
+#ifdef _WIN32
 static bool qpc_init = false;
 static LARGE_INTEGER s_frequency;
 static BOOL s_use_qpc;
+#endif
 
 void SGTimeStamp::stamp()
 {

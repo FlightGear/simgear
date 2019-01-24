@@ -44,6 +44,10 @@ SGPrecipitation::SGPrecipitation() :
 void SGPrecipitation::setEnabled( bool value )
 {
     _enabled = value;
+    if (!_enabled) {
+        _precipitationEffect->snow(0);
+        _precipitationEffect->rain(0);
+    }
 }
 
 void SGPrecipitation::setDropletExternal( bool value )
@@ -64,6 +68,9 @@ bool SGPrecipitation::getEnabled() const
  */
 osg::Group* SGPrecipitation::build(void)
 {
+    if (!_enabled) 
+        return nullptr;
+
     osg::ref_ptr<osg::Group> group = new osg::Group;
 
     _precipitationEffect->snow(0);	
@@ -227,6 +234,9 @@ void SGPrecipitation::setWindProperty(double heading, double speed)
  */
 bool SGPrecipitation::update(void)
 {
+    if (!_enabled)
+        return false;
+
     if (this->_freeze) {
         if (this->_rain_intensity > 0) {
 		this->_snow_intensity = this->_rain_intensity;

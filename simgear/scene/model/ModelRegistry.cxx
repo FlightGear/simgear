@@ -617,7 +617,7 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
                                 //    printf("--- no compress or mipmap of format %s\n", newName.c_str());
                                 registry->writeImage(*srcImage, newName, nopt);
                                 {
-                                    std::string mdlDirectory = cache_root + "/cache-i   ndex.txt";
+                                    std::string mdlDirectory = cache_root + "/cache-index.txt";
                                     FILE *f = ::fopen(mdlDirectory.c_str(), "a");
                                     if (f)
                                     {

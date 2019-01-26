@@ -338,7 +338,7 @@ sgLoad3DModel_internal(const SGPath& path,
 
         options->setDatabasePath(texturepath.local8BitStr());
         osgDB::ReaderWriter::ReadResult modelResult;
-        modelResult = osgDB::readNodeFile(modelpath.local8BitStr(), options.get());
+        modelResult = osgDB::readRefNodeFile(modelpath.local8BitStr(), options.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
                                   modelpath);
@@ -486,7 +486,7 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     }
 
-    if (dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
+    if (GlobalParticleCallback::getEnabled()){//dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
         std::vector<SGPropertyNode_ptr> particle_nodes;
         particle_nodes = props->getChildren("particlesystem");
         for (unsigned i = 0; i < particle_nodes.size(); ++i) {

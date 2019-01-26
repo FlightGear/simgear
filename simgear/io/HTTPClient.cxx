@@ -273,6 +273,10 @@ void Client::makeRequest(const Request_ptr& r)
     curl_easy_setopt(curlRequest, CURLOPT_USERAGENT, d->userAgent.c_str());
     curl_easy_setopt(curlRequest, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 
+    if (sglog().would_log(SG_TERRASYNC, SG_DEBUG)) {
+        curl_easy_setopt(curlRequest, CURLOPT_VERBOSE, 1);
+    }
+
     curl_easy_setopt(curlRequest, CURLOPT_FOLLOWLOCATION, 1);
 
     if (!d->proxy.empty()) {

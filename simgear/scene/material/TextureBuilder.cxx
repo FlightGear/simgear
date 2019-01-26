@@ -76,7 +76,7 @@ osg::Texture* TextureBuilder::buildFromType(Effect* effect, Pass* pass, const st
 
 typedef boost::tuple<string, Texture::FilterMode, Texture::FilterMode,
                      Texture::WrapMode, Texture::WrapMode, Texture::WrapMode,
-                     string, MipMapTuple> TexTuple;
+                     string, MipMapTuple, ImageInternalFormat> TexTuple;
 
 EffectNameValue<TexEnv::Mode> texEnvModesInit[] =
 {
@@ -239,6 +239,17 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
         }
     }
 
+    const SGPropertyNode* pInternalFormat = getEffectPropertyChild(effect, props, "internal-format");
+    pInternalFormat = props->getChild("internal-format");
+    ImageInternalFormat iformat = ImageInternalFormat::Unspecified;
+    if (pInternalFormat) {
+        std::string internalFormat = pInternalFormat->getStringValue();
+        if (internalFormat == "normalized") {
+            iformat = ImageInternalFormat::Normalized;
+            SG_LOG(SG_INPUT, SG_ALERT, "internal-format normalized '" << imageName << "'");
+        }
+    }
+
     const SGPropertyNode* pMipmapControl
         = getEffectPropertyChild(effect, props, "mipmap-control");
     MipMapTuple mipmapFunctions( AUTOMATIC, AUTOMATIC, AUTOMATIC, AUTOMATIC );
@@ -246,7 +257,7 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
         mipmapFunctions = makeMipMapTuple(effect, pMipmapControl, options);
 
     return TexTuple(absFileName, minFilter, magFilter, sWrap, tWrap, rWrap,
-                    texType, mipmapFunctions);
+                    texType, mipmapFunctions, iformat);
 }
 
 bool setAttrs(const TexTuple& attrs, Texture* tex,
@@ -257,7 +268,15 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         return false;
 
     osgDB::ReaderWriter::ReadResult result;
-    result = osgDB::readImageFile(imageName, options);
+
+    // load texture for effect
+    SGReaderWriterOptions::LoadOriginHint origLOH = options->getLoadOriginHint();
+    if(attrs.get<8>() == ImageInternalFormat::Normalized)
+        options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED);
+    else
+        options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
+    result = osgDB::readRefImageFile(imageName, options);
+    options->setLoadOriginHint(origLOH);
     osg::ref_ptr<osg::Image> image;
     if (result.success())
         image = result.getImage();
@@ -585,36 +604,40 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
         cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 
         osgDB::ReaderWriter::ReadResult result;
-        result = osgDB::readImageFile(_tuple.get<0>(), options);
+        SGReaderWriterOptions* wOpts = (SGReaderWriterOptions*)options;
+        SGReaderWriterOptions::LoadOriginHint origLOH = wOpts->getLoadOriginHint();
+        wOpts->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
+        result = osgDB::readRefImageFile(_tuple.get<0>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
-        result = osgDB::readImageFile(_tuple.get<1>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<1>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
-        result = osgDB::readImageFile(_tuple.get<2>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<2>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
-        result = osgDB::readImageFile(_tuple.get<3>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<3>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
-        result = osgDB::readImageFile(_tuple.get<4>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<4>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
-        result = osgDB::readImageFile(_tuple.get<5>(), options);
+        result = osgDB::readRefImageFile(_tuple.get<5>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
         }
+        wOpts->setLoadOriginHint(origLOH);
 
         if (itr == _cubemaps.end())
             _cubemaps[_tuple] = cubeTexture;
@@ -634,7 +657,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             return cubeTexture.release();
 
         osgDB::ReaderWriter::ReadResult result;
-        result = osgDB::readImageFile(texname, options);
+        result = osgDB::readRefImageFile(texname, options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones

@@ -156,7 +156,11 @@ struct ReaderWriterSTG::_ModelBin {
                 proxy->setCenterMode(osg::ProxyNode::UNION_OF_BOUNDING_SPHERE_AND_USER_DEFINED);
                 node = proxy;
             } else {
+#if OSG_VERSION_LESS_THAN(3,4,0)
+                node = osgDB::readNodeFile(o._name, o._options.get());
+#else
                 node = osgDB::readRefNodeFile(o._name, o._options.get());
+#endif
                 if (!node.valid()) {
                     SG_LOG(SG_TERRAIN, SG_ALERT, o._errorLocation << ": Failed to load "
                            << o._token << " '" << o._name << "'");
@@ -553,7 +557,11 @@ struct ReaderWriterSTG::_ModelBin {
         if (_foundBase) {
             for (auto stgObject : _objectList) {
                 osg::ref_ptr<osg::Node> node;
+#if OSG_VERSION_LESS_THAN(3,4,0)
+                node = osgDB::readNodeFile(stgObject._name, stgObject._options.get());
+#else
                 node = osgDB::readRefNodeFile(stgObject._name, stgObject._options.get());
+#endif
                 if (!node.valid()) {
                     SG_LOG(SG_TERRAIN, SG_ALERT, stgObject._errorLocation << ": Failed to load "
                            << stgObject._token << " '" << stgObject._name << "'");
@@ -586,7 +594,7 @@ struct ReaderWriterSTG::_ModelBin {
             i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
 
-        if (_objectStaticList.empty() && _signList.empty()) {
+        if (_objectStaticList.empty() && _signList.empty() && (_buildingListList.size() == 0)) {
             // The simple case, just return the terrain group
             return terrainGroup.release();
         } else {

@@ -963,6 +963,11 @@ SGPropertyNode::alias (SGPropertyNode * target)
 {
   if (target && (_type != props::ALIAS) && (!_tied))
   {
+   /* loop protection: check alias chain; must not contain self */
+    for (auto p = target; p; p = ((p->_type == props::ALIAS) ? p->_value.alias : nullptr)) {
+      if (p == this) return false;
+    }
+      
     clearValue();
     get(target);
     _value.alias = target;
@@ -973,7 +978,7 @@ SGPropertyNode::alias (SGPropertyNode * target)
   if (!target)
   {
     SG_LOG(SG_GENERAL, SG_ALERT,
-           "Failed to create alias for " << getPath() << ". "
+           "Failed to set alias " << getPath() << ". "
            "The target property does not exist.");
   }
   else
@@ -981,15 +986,15 @@ SGPropertyNode::alias (SGPropertyNode * target)
   {
     if (_value.alias == target)
         return true; // ok, identical alias requested
-    SG_LOG(SG_GENERAL, SG_ALERT,
-           "Failed to create alias at " << target->getPath() << ". "
-           "Source "<< getPath() << " is already aliasing another property.");
+    SG_LOG(SG_GENERAL, SG_ALERT, "alias(): "<< getPath() <<
+        " is already pointing to " << _value.alias->getPath() <<
+        " so it cannot alias '" << target->getPath() << ". Use unalias() first.");
   }
   else
   if (_tied)
   {
-    SG_LOG(SG_GENERAL, SG_ALERT, "Failed to create alias at " << target->getPath() << ". "
-           "Source " << getPath() << " is a tied property.");
+    SG_LOG(SG_GENERAL, SG_ALERT, "alias(): " << getPath() << 
+        " is a tied property. It cannot alias " << target->getPath() << ".");
   }
 
   return false;

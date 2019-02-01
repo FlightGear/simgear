@@ -87,6 +87,9 @@ public:
 
     /** @return true of eof conditions exists */
     virtual bool eof() const { return eof_flag; };
+
+    std::string computeHash();
+
 };
 
 class SGBinaryFile : public SGFile {

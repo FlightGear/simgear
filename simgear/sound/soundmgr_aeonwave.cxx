@@ -8,7 +8,7 @@
 // Modified for the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
-// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
+// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -418,8 +418,8 @@ void SGSoundMgr::release_source( unsigned int source )
     {
         aax::Emitter& emitter = source_it->second;
         enum aaxState state = emitter.state();
-        if (state == AAX_PLAYING || state == AAX_SUSPENDED) {
-           TRY( emitter.set(AAX_STOPPED) );
+        if (state != AAX_PROCESSED) {
+           TRY( emitter.set(AAX_PROCESSED) );
            TRY( d->_aax.remove(emitter) );
         }
         TRY( emitter.remove_buffer() );
@@ -555,7 +555,6 @@ void SGSoundMgr::sample_play( SGSoundSample *sample )
         if (bufid == SGSoundMgr::FAILED_BUFFER ||
             bufid == SGSoundMgr::NO_BUFFER)
         {
-printf("A: release: %i, bufid: %i (%i, %i)\n", sample->get_source(), bufid, SGSoundMgr::FAILED_BUFFER, SGSoundMgr::NO_BUFFER);
             release_source(sample->get_source());
             return;
         }
@@ -590,8 +589,7 @@ void SGSoundMgr::sample_stop( SGSoundSample *sample )
         if ( sample->is_looping() && !stopped) {
 #ifdef ENABLE_SOUND
             aax::Emitter& emitter = d->get_emitter(source);
-            TRY( emitter.set(AAX_STOPPED) );
-            TRY( d->_aax.remove(emitter) );
+            TRY( emitter.set(AAX_PROCESSED) );
 #endif          
             stopped = is_sample_stopped(sample);
         }
@@ -610,8 +608,7 @@ void SGSoundMgr::sample_destroy( SGSoundSample *sample )
         unsigned int source = sample->get_source();
         if ( sample->is_playing() ) {
             aax::Emitter& emitter = d->get_emitter(source);
-            TRY( emitter.set(AAX_STOPPED) );
-            TRY( d->_aax.remove(emitter) );
+            TRY( emitter.set(AAX_PROCESSED) );
         }
         release_source( source );
 #endif

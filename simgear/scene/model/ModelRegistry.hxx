@@ -132,7 +132,7 @@ struct DefaultProcessPolicy {
 
 struct DefaultCachePolicy {
     DefaultCachePolicy(const std::string& extension) {}
-    osg::Node* find(const std::string& fileName,
+    osg::ref_ptr<osg::Node> find(const std::string& fileName,
                     const osgDB::Options* opt);
     void addToCache(const std::string& filename, osg::Node* node);
 };

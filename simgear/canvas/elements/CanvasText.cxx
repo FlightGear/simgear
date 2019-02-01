@@ -71,8 +71,12 @@ namespace canvas
 
       canvas::Text *_text_element;
 
-      void computePositions(unsigned int contextID) const override;
-  };
+#if OSG_VERSION_LESS_THAN(3,5,6)
+     void computePositions(unsigned int contextID) const override;
+#else
+     void computePositionsImplementation() override;
+#endif
+};
 
   class TextLine
   {
@@ -122,6 +126,8 @@ namespace canvas
 
     _quads = &text->_textureGlyphQuadMap.begin()->second;
 
+
+#if OSG_VERSION_LESS_THAN(3,5,6)
     GlyphQuads::LineNumbers const& line_numbers = _quads->_lineNumbers;
     GlyphQuads::LineNumbers::const_iterator begin_it =
       std::lower_bound(line_numbers.begin(), line_numbers.end(), _line);
@@ -133,6 +139,10 @@ namespace canvas
     _begin = begin_it - line_numbers.begin();
     _end = std::upper_bound(begin_it, line_numbers.end(), _line)
          - line_numbers.begin();
+#else
+//OSG:TODO: Need 3.5.6 version of this
+
+#endif
   }
 
   //----------------------------------------------------------------------------
@@ -162,33 +172,35 @@ namespace canvas
     if( empty() )
       return pos;
 #if OSG_VERSION_LESS_THAN(3,3,5)
-    GlyphQuads::Coords2 const& coords = _quads->_coords;
-#else
-    GlyphQuads::Coords2 refCoords = _quads->_coords;
-    GlyphQuads::Coords2::element_type &coords = *refCoords.get();
-#endif
-    size_t global_i = _begin + i;
+      GlyphQuads::Coords2 const& coords = _quads->_coords;
+#elif OSG_VERSION_LESS_THAN(3,5,6)
+      GlyphQuads::Coords2 refCoords = _quads->_coords;
+      GlyphQuads::Coords2::element_type &coords = *refCoords.get();
+      size_t global_i = _begin + i;
 
-    if( global_i == _begin )
-      // before first character of line
-      pos.x() = coords[_begin * 4].x();
-    else if( global_i == _end )
-      // After Last character of line
-      pos.x() = coords[(_end - 1) * 4 + 2].x();
-    else
-    {
-      float prev_l = coords[(global_i - 1) * 4].x(),
-            prev_r = coords[(global_i - 1) * 4 + 2].x(),
-            cur_l = coords[global_i * 4].x();
-
-      if( prev_l == prev_r )
-        // If previous character width is zero set to begin of next character
-        // (Happens eg. with spaces)
-        pos.x() = cur_l;
+      if (global_i == _begin)
+          // before first character of line
+          pos.x() = coords[_begin * 4].x();
+      else if (global_i == _end)
+          // After Last character of line
+          pos.x() = coords[(_end - 1) * 4 + 2].x();
       else
-        // position at center between characters
-        pos.x() = 0.5 * (prev_r + cur_l);
-    }
+      {
+          float prev_l = coords[(global_i - 1) * 4].x(),
+              prev_r = coords[(global_i - 1) * 4 + 2].x(),
+              cur_l = coords[global_i * 4].x();
+
+          if (prev_l == prev_r)
+              // If previous character width is zero set to begin of next character
+              // (Happens eg. with spaces)
+              pos.x() = cur_l;
+          else
+              // position at center between characters
+              pos.x() = 0.5 * (prev_r + cur_l);
+      }
+#else
+//OSG:TODO: need 3.5.7 version of this.
+#endif
 
     return pos;
   }
@@ -200,12 +212,12 @@ namespace canvas
       return cursorPos(0);
 
     GlyphQuads::Glyphs const& glyphs = _quads->_glyphs;
-    #if OSG_VERSION_LESS_THAN(3,3,5)
+#if OSG_VERSION_LESS_THAN(3,3,5)
     GlyphQuads::Coords2 const& coords = _quads->_coords;
-#else
+#elif OSG_VERSION_LESS_THAN(3,5,6)
+
     GlyphQuads::Coords2 refCoords = _quads->_coords;
     GlyphQuads::Coords2::element_type &coords = *refCoords.get();
-#endif
 
     float const HIT_FRACTION = 0.6;
     float const character_width = _text->getCharacterHeight()
@@ -225,6 +237,10 @@ namespace canvas
     }
 
     return cursorPos(i - _begin);
+#else
+//OSG:TODO: need 3.5.7 version of this.
+	return cursorPos(0);
+#endif
   }
 
   //----------------------------------------------------------------------------
@@ -640,7 +656,7 @@ namespace canvas
     return bb;
   }
 
-  //----------------------------------------------------------------------------
+#if OSG_VERSION_LESS_THAN(3,5,6)
   void Text::TextOSG::computePositions(unsigned int contextID) const
   {
     if( _textureGlyphQuadMap.empty() || _layout == VERTICAL )
@@ -709,6 +725,14 @@ namespace canvas
 
     return osgText::Text::computePositions(contextID);
   }
+
+#else
+  void Text::TextOSG::computePositionsImplementation() 
+  {
+          TextBase::computePositionsImplementation();
+  }
+#endif
+ //----------------------------------------------------------------------------
 
   //----------------------------------------------------------------------------
   const std::string Text::TYPE_NAME = "text";

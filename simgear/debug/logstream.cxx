@@ -518,7 +518,7 @@ public:
 
         // SG_OSG (OSG notify) - will always be displayed regardless of FG log settings as OSG log level is configured 
         // separately and thus it makes more sense to allow these message through.
-        if (p == SG_OSG) return true;
+        if (static_cast<unsigned>(p) == static_cast<unsigned>(SG_OSG)) return true;
 
         p = translatePriority(p);
         if (p >= SG_INFO) return true;

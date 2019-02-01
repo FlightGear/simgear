@@ -830,6 +830,9 @@ void reload_shaders()
         if (!fileName.empty()) {
             shader->loadShaderSourceFromFile(fileName);
         }
+        else
+            SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader: " << fileName);
+
     }
 }
 
@@ -917,8 +920,13 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         Shader::Type stype = (Shader::Type)shaderKey.second;
         string fileName = SGModelLib::findDataFile(shaderName, options);
         if (fileName.empty())
+        {
+            SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader" << shaderName);
+
+
             throw BuilderException(string("couldn't find shader ") +
-                                   shaderName);
+                shaderName);
+        }
         resolvedKey.shaders.push_back(ShaderKey(fileName, stype));
     }
     ProgramMap::iterator resitr = resolvedProgramMap.find(resolvedKey);
@@ -1405,8 +1413,11 @@ bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
 
 // Walk the techniques property tree, building techniques and
 // passes.
+static SGMutex  realizeTechniques_lock;
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
+    SGGuard<SGMutex> g(realizeTechniques_lock);
+
     if (_isRealized)
         return true;
     PropertyList tniqList = root->getChildren("technique");

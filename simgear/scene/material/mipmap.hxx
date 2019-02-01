@@ -31,14 +31,18 @@ class Effect;
 class SGReaderWriterOptions;
 
 namespace effect {
-enum MipMapFunction {
-    AUTOMATIC,
-    AVERAGE,
-    SUM,
-    PRODUCT,
-    MIN,
-    MAX
-};
+    enum MipMapFunction {
+        AUTOMATIC,
+        AVERAGE,
+        SUM,
+        PRODUCT,
+        MIN,
+        MAX
+    };
+    enum ImageInternalFormat {
+        Unspecified,
+        Normalized,
+    };
 
 typedef boost::tuple<MipMapFunction, MipMapFunction, MipMapFunction, MipMapFunction> MipMapTuple;
 

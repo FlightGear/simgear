@@ -72,13 +72,33 @@ static clockid_t getClockId()
 
 #endif
 
+#ifdef _WIN32
+static bool qpc_init = false;
+static LARGE_INTEGER s_frequency;
+static BOOL s_use_qpc;
+#endif
+
 void SGTimeStamp::stamp()
 {
 #ifdef _WIN32
-    unsigned int t;
-    t = timeGetTime();
-    _sec = t / 1000;
-    _nsec = ( t - ( _sec * 1000 ) ) * 1000 * 1000;
+    if (!qpc_init) {
+        s_use_qpc = QueryPerformanceFrequency(&s_frequency);
+        qpc_init = true;
+    }
+    if (qpc_init && s_use_qpc) {
+        LARGE_INTEGER now;
+        QueryPerformanceCounter(&now);
+        _sec = now.QuadPart / s_frequency.QuadPart;
+        _nsec = (1000000000LL * (now.QuadPart - _sec * s_frequency.QuadPart)) / s_frequency.QuadPart;
+    }
+    else {
+        unsigned int t;
+
+        t = timeGetTime();
+        _sec = t / 1000;
+        _nsec = (t - (_sec * 1000)) * 1000 * 1000;
+    }
+
 #elif defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
     struct timespec ts;
     clock_gettime(getClockId(), &ts);

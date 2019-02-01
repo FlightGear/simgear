@@ -43,9 +43,18 @@ SGLoadTexture2D(bool staticTexture, const std::string& path,
 {
   osg::Image* image;
   if (options)
-    image = osgDB::readImageFile(path, options);
+#if OSG_VERSION_LESS_THAN(3,4,0)
+      image = osgDB::readImageFile(path, options);
+#else
+      image = osgDB::readRefImageFile(path, options);
+#endif
   else
-    image = osgDB::readImageFile(path);
+#if OSG_VERSION_LESS_THAN(3,4,0)
+      image = osgDB::readImageFile(path);
+#else
+      image = osgDB::readRefImageFile(path);
+#endif
+
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image);
   if (staticTexture)
@@ -141,7 +150,11 @@ Texture2D* TextureUpdateVisitor::textureReplace(int unit, const StateAttribute* 
     // If it is empty or they are identical then there is nothing to do
     if (fullLiveryFile.empty() || fullLiveryFile == *fullFilePath)
         return 0;
+#if OSG_VERSION_LESS_THAN(3,4,0)
     Image* newImage = readImageFile(fullLiveryFile);
+#else
+    Image* newImage = readRefImageFile(fullLiveryFile);
+#endif
     if (!newImage)
         return 0;
     CopyOp copyOp(CopyOp::DEEP_COPY_ALL & ~CopyOp::DEEP_COPY_IMAGES);

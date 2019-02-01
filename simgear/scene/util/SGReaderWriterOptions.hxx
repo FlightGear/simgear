@@ -38,12 +38,22 @@ namespace simgear
 
 class SGReaderWriterOptions : public osgDB::Options {
 public:
+    enum LoadOriginHint
+    {
+        ORIGIN_MODEL,
+        ORIGIN_EFFECTS,
+        ORIGIN_EFFECTS_NORMALIZED,
+    };
+
+    //SGReaderWriterOptions* cloneOptions(const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) const { return static_cast<SGReaderWriterOptions*>(clone(copyop)); }
+
     SGReaderWriterOptions() :
         _materialLib(0),
         _load_panel(0),
         _model_data(0),
         _instantiateEffects(false),
-        _instantiateMaterialEffects(false)
+        _instantiateMaterialEffects(false),
+        _LoadOriginHint(ORIGIN_MODEL)
     { }
     SGReaderWriterOptions(const std::string& str) :
         osgDB::Options(str),
@@ -51,7 +61,8 @@ public:
         _load_panel(0),
         _model_data(0),
         _instantiateEffects(false),
-        _instantiateMaterialEffects(false)
+        _instantiateMaterialEffects(false),
+        _LoadOriginHint(ORIGIN_MODEL)
     { }
     SGReaderWriterOptions(const osgDB::Options& options,
                           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
@@ -60,7 +71,8 @@ public:
         _load_panel(0),
         _model_data(0),
         _instantiateEffects(false),
-        _instantiateMaterialEffects(false)
+        _instantiateMaterialEffects(false),
+        _LoadOriginHint(ORIGIN_MODEL)
     { }
     SGReaderWriterOptions(const SGReaderWriterOptions& options,
                           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
@@ -75,7 +87,8 @@ public:
         _instantiateEffects(options._instantiateEffects),
         _instantiateMaterialEffects(options._instantiateMaterialEffects),
         _materialName(options._materialName),
-        _sceneryPathSuffixes(options._sceneryPathSuffixes)
+        _sceneryPathSuffixes(options._sceneryPathSuffixes),
+        _LoadOriginHint(ORIGIN_MODEL)
     { }
 
     META_Object(simgear, SGReaderWriterOptions);
@@ -139,6 +152,13 @@ public:
     const SGGeod& getLocation() const
     { return _geod; }
 
+    // the load origin defines where the load request has come from.
+    // example usage; to allow the DDS Texture Cache (DTC) to ignore 
+    // any texture that is used in a shader, as these often have special values
+    // encoded into the channels that aren't suitable for conversion.
+    void setLoadOriginHint(LoadOriginHint _v) const { _LoadOriginHint = _v; } 
+    LoadOriginHint getLoadOriginHint() const { return _LoadOriginHint; } 
+
 protected:
     virtual ~SGReaderWriterOptions();
 
@@ -157,6 +177,7 @@ private:
     string _materialName;
     string_list _sceneryPathSuffixes;
     SGGeod _geod;
+    mutable LoadOriginHint _LoadOriginHint;
 };
 
 }

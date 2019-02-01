@@ -485,9 +485,11 @@ SGCloudLayer::rebuild()
 // repaint the cloud layer colors
 bool SGCloudLayer::repaint( const SGVec3f& fog_color ) {
     osg::Vec4f combineColor(toOsg(fog_color), cloud_alpha);
-    osg::TexEnvCombine* combiner
-        = dynamic_cast<osg::TexEnvCombine*>(layer_root->getStateSet()
-                                            ->getTextureAttribute(1, osg::StateAttribute::TEXENV));
+    osg::StateAttribute* textureAtt = layer_root->getStateSet()->getTextureAttribute(1, osg::StateAttribute::TEXENV);
+    osg::TexEnvCombine* combiner = dynamic_cast<osg::TexEnvCombine*>(textureAtt);
+
+    if (combiner == nullptr)
+        return false;
     combiner->setConstantColor(combineColor);
 
     // Set the fog color for the 3D clouds too.

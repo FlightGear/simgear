@@ -55,13 +55,14 @@ namespace boost {
   struct disable_if : public disable_if_c<Cond::value, T> {};
 }
 #else
-# include <boost/utility.hpp>
 # include <boost/type_traits/is_enum.hpp>
+# include <boost/core/enable_if.hpp>
 
 # include <simgear/debug/logstream.hxx>
 # include <simgear/math/SGMathFwd.hxx>
 # include <simgear/math/sg_types.hxx>
 #endif
+
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 

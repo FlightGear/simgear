@@ -24,6 +24,7 @@
 
 #include <simgear/structure/map.hxx>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/core/enable_if.hpp>
 
 namespace nasal
 {

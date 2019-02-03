@@ -22,7 +22,7 @@
 #include "SGSharedPtr.hxx"
 
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <boost/core/enable_if.hpp>
 
 #ifdef _MSC_VER
 # pragma warning(push)

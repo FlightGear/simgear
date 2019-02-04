@@ -34,8 +34,9 @@ namespace simgear
 
 using osgUtil::CullVisitor;
 
-EffectCullVisitor::EffectCullVisitor(bool collectLights) :
-    _collectLights(collectLights)
+EffectCullVisitor::EffectCullVisitor(bool collectLights, Effect *effectOverride) :
+    _collectLights(collectLights),
+    _effectOverride(effectOverride)
 {
 }
 
@@ -61,12 +62,18 @@ void EffectCullVisitor::apply(osg::Geode& node)
     if (_collectLights && ( eg->getNodeMask() & MODELLIGHT_BIT ) ) {
         _lightList.push_back( eg );
     }
-    Effect* effect = eg->getEffect();
+    Effect *effect;
+    if (_effectOverride) {
+        effect = _effectOverride;
+    } else {
+        effect = eg->getEffect();
+        if (!effect) {
+            CullVisitor::apply(node);
+            return;
+        }
+    }
     Technique* technique = 0;
-    if (!effect) {
-        CullVisitor::apply(node);
-        return;
-    } else if (!(technique = effect->chooseTechnique(&getRenderInfo()))) {
+    if (!(technique = effect->chooseTechnique(&getRenderInfo()))) {
         return;
     }
     // push the node's state.

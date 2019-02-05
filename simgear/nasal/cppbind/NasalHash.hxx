@@ -24,7 +24,11 @@
 
 #include <simgear/structure/map.hxx>
 #include <boost/iterator/iterator_facade.hpp>
+#if BOOST_VERSION >= 105600
 #include <boost/core/enable_if.hpp>
+#else
+#include <boost/utility/enable_if.hpp>
+#endif
 
 namespace nasal
 {

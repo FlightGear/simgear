@@ -56,7 +56,11 @@ namespace boost {
 }
 #else
 # include <boost/type_traits/is_enum.hpp>
-# include <boost/core/enable_if.hpp>
+#if BOOST_VERSION >= 105600
+#include <boost/core/enable_if.hpp>
+#else
+#include <boost/utility/enable_if.hpp>
+#endif
 
 # include <simgear/debug/logstream.hxx>
 # include <simgear/math/SGMathFwd.hxx>

@@ -264,6 +264,11 @@ namespace simgear {
    */
   void lowercase(std::string &s);
   
+      /**
+       * case-insensitive string comparisom
+       */
+      bool iequals(const std::string& a, const std::string& b);
+      
 	/**
      * convert a string in the local Windows 8-bit encoding to UTF-8
      * (no-op on other platforms)

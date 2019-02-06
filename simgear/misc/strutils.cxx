@@ -623,6 +623,22 @@ namespace simgear {
         *p = tolower(*p);
       }
     }
+        
+        
+bool iequals(const std::string& a, const std::string& b)
+{
+    const auto lenA = a.length();
+    const auto lenB = b.length();
+    if (lenA != lenB) return false;
+    
+    const char* aPtr = a.data();
+    const char* bPtr = b.data();
+    for (size_t i = 0; i < lenA; ++i) {
+        if (tolower(*aPtr++) != tolower(*bPtr++)) return false;
+    }
+    
+    return true;
+}
 
 #if defined(SG_WINDOWS)
 static std::wstring convertMultiByteToWString(DWORD encoding, const std::string& a)

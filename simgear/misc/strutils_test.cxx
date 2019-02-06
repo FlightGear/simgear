@@ -99,6 +99,16 @@ void test_to_int()
   SG_CHECK_EQUAL(strutils::to_int("-10000"), -10000);
 }
 
+void test_iequals()
+{
+    SG_VERIFY(strutils::iequals("abcdef", "AbCDeF"));
+    SG_VERIFY(strutils::iequals("", ""));
+    SG_VERIFY(!strutils::iequals("abcdE", "ABCD"));
+    SG_VERIFY(strutils::iequals("%$abcdef12", "%$AbCDeF12"));
+    SG_VERIFY(strutils::iequals("VOR-DME", "vor-dme"));
+    SG_VERIFY(!strutils::iequals("VOR-DME", "vor_dme"));
+}
+
 // Auxiliary function for test_readNonNegativeInt()
 void aux_readNonNegativeInt_setUpOStringStream(std::ostringstream& oss, int base)
 {
@@ -737,6 +747,7 @@ int main(int argc, char* argv[])
     test_utf8Convert();
     test_parseGeod();
     test_formatGeod();
+    test_iequals();
     
     return EXIT_SUCCESS;
 }

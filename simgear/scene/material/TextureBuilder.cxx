@@ -23,6 +23,7 @@
 
 #include "Pass.hxx"
 
+#include <osg/Version>
 #include <osg/PointSprite>
 #include <osg/TexEnv>
 #include <osg/TexEnvCombine>

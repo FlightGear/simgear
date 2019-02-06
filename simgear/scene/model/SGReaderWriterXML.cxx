@@ -27,6 +27,7 @@
 
 #include <boost/bind.hpp>
 
+#include <osg/Version>
 #include <osg/Geode>
 #include <osg/MatrixTransform>
 #include <osgDB/ReadFile>

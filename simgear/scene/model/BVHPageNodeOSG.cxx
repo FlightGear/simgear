@@ -24,6 +24,7 @@
 #include "../../bvh/BVHPageRequest.hxx"
 #include "../../bvh/BVHPager.hxx"
 
+#include <osg/Version>
 #include <osg/io_utils>
 #include <osg/Camera>
 #include <osg/Drawable>

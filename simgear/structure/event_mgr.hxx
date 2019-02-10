@@ -24,9 +24,8 @@ class SGTimerQueue {
 public:
     SGTimerQueue(int preSize=1);
     ~SGTimerQueue();
-
     void clear();
-    void update(double deltaSecs);
+    void update(double deltaSecs, std::map<std::string, double> &timingStats);
 
     double now() { return _now; }
 
@@ -78,7 +77,6 @@ public:
     virtual void update(double delta_time_sec);
     virtual void unbind();
     virtual void shutdown();
-    
     void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
 
     /**

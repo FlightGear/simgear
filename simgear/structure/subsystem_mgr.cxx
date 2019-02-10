@@ -45,8 +45,10 @@ using State = SGSubsystem::State;
 
 SGSubsystemTimingCb SGSubsystem::reportTimingCb = NULL;
 void* SGSubsystem::reportTimingUserData = NULL;
+bool SGSubsystem::reportTimingStatsRequest = false;
+int SGSubsystem::maxTimePerFrame_ms = 7;
 
-SGSubsystem::SGSubsystem ()
+SGSubsystem::SGSubsystem () : _executionTime(0), _lastExecutionTime(0)
 {
 }
 
@@ -202,16 +204,20 @@ std::string SGSubsystem::nameForState(State s)
 class SGSubsystemGroup::Member
 {    
 private:
-    Member (const Member &member);
+    Member(const Member &member);
 public:
-    Member ();
+    Member();
     ~Member ();
     
     void update (double delta_time_sec);
 
     void reportTiming(void) { if (reportTimingCb) reportTimingCb(reportTimingUserData, name, &timeStat); }
-    void updateExecutionTime(double time) { timeStat += time;}
+    void reportTimingStats(TimerStats *_lastValues) {
+        if (subsystem)
+            subsystem->reportTimingStats(_lastValues);
+    }
 
+    void updateExecutionTime(double time) { timeStat += time;}
     SampleStatistic timeStat;
     std::string name;
     SGSubsystemRef subsystem;
@@ -220,15 +226,18 @@ public:
     bool collectTimeStats;
     int exceptionCount;
     int initTime;
+
+    void mergeTimerStats(SGSubsystem::TimerStats &stats);
 };
 
 
 
-SGSubsystemGroup::SGSubsystemGroup () :
-  _fixedUpdateTime(-1.0),
-  _updateTimeRemainder(0.0),
-  _initPosition(-1)
+SGSubsystemGroup::SGSubsystemGroup(const std::string &name) :
+    _fixedUpdateTime(-1.0),
+    _updateTimeRemainder(0.0),
+    _initPosition(-1)
 {
+    _name = name;
 }
 
 SGSubsystemGroup::~SGSubsystemGroup ()
@@ -377,21 +386,145 @@ SGSubsystemGroup::update (double delta_time_sec)
 
     const bool recordTime = (reportTimingCb != nullptr);
     SGTimeStamp timeStamp;
+    TimerStats lvTimerStats(_timerStats);
+    TimerStats overrunItems;
+    bool overrun = false;
+
+    SGTimeStamp outerTimeStamp;
+    outerTimeStamp.stamp();
     while (loopCount-- > 0) {
         for (auto member : _members) {
-          if (recordTime)
-              timeStamp = SGTimeStamp::now();
 
+          timeStamp.stamp();
+          if (member->subsystem->_timerStats.size()) {
+              member->subsystem->_lastTimerStats.clear();
+              member->subsystem->_lastTimerStats.insert(member->subsystem->_timerStats.begin(), member->subsystem->_timerStats.end());
+          }
           member->update(delta_time_sec); // indirect call
+          if (member->name.size())
+              _timerStats[member->name] += timeStamp.elapsedMSec() / 1000.0;
 
           if (recordTime && reportTimingCb) {
-              timeStamp = SGTimeStamp::now() - timeStamp;
-              member->updateExecutionTime(timeStamp.toUSecs());
+              member->updateExecutionTime(timeStamp.elapsedMSec()*1000);
+              if (timeStamp.elapsedMSec() > SGSubsystemMgr::maxTimePerFrame_ms) {
+                  overrunItems[member->name] += timeStamp.elapsedMSec();
+                  overrun = true;
+              }
           }
       }
     } // of multiple update loop
+    _lastExecutionTime = _executionTime;
+    _executionTime += outerTimeStamp.elapsedMSec();
+    if (overrun) {
+        for (auto overrunItem : overrunItems) {
+            SG_LOG(SG_EVENT, SG_ALERT, "Subsystem "
+                << overrunItem.first
+                << " total "
+                << std::setw(6) << std::fixed << std::setprecision(2) << std::right << _timerStats[overrunItem.first]
+                << "s overrun "
+                << std::setw(6) << std::fixed << std::setprecision(2) << std::right << overrunItem.second
+                << "ms");
+            auto m = std::find_if(_members.begin(), _members.end(), [overrunItem](const Member* m) {
+                if (m->name == overrunItem.first)
+                    return true;
+                return false;
+            });
+            if (m != _members.end()) {
+                auto member = *m;
+                if (overrunItems[member->name]) {
+                    TimerStats sst;
+                    member->reportTimingStats(&_lastTimerStats);
+                    //if (lvTimerStats[member->name] != _timerStats[member->name]) {
+                    //    SG_LOG(SG_EVENT, SG_ALERT,
+                    //        " +" << std::setw(6) << std::left << (_timerStats[member->name] - lvTimerStats[member->name])
+                    //        << " total " << std::setw(6) << std::left << _timerStats[member->name]
+                    //        << " " << member->name
+                    //    );
+                    //}
+                }
+            }
+        }
+    }
+
+    if (reportTimingStatsRequest) {
+        reportTimingStats(nullptr);
+        //for (auto member : _members) {
+        //    member->mergeTimerStats(_timerStats);
+        //    if (_timerStats.size()) {
+        //        SG_LOG(SG_EVENT, SG_ALERT, "" << std::setw(6) << std::fixed << std::setprecision(2) << std::left << _timerStats[member->name]
+        //            << ": " << member->name);
+        //        for (auto item : _timerStats) {
+        //            if (item.second > 0)
+        //                SG_LOG(SG_EVENT, SG_ALERT, "  " << std::setw(6) << std::left << item.second << " " << item.first);
+        //        }
+        //    }
+        //}
+    }
+    _lastTimerStats.clear();
+    _lastTimerStats.insert(_timerStats.begin(), _timerStats.end());
+
+}
+void SGSubsystem::reportTimingStats(TimerStats *__lastValues) {
+    std::string _name = "";
+
+    bool reportDeltas = __lastValues != nullptr;
+    __lastValues = &_lastTimerStats;
+    std::ostringstream t;
+    if (reportDeltas) {
+        auto deltaT = _executionTime - _lastExecutionTime;
+        if (deltaT != 0) {
+            t << name() << "(+" << std::setprecision(2) << std::right << deltaT << "ms).";
+            _name = t.str();
+        }
+    }
+    else {
+        SG_LOG(SG_EVENT, SG_ALERT, "SubSystem: " << _name << " " << std::setw(6) << std::setprecision(4) << std::right << _executionTime / 1000.0 << "s");
+    }
+    for (auto item : _timerStats) {
+        std::ostringstream output;
+        if (item.second > 0) {
+            if (reportDeltas)
+            {
+                auto delta = item.second - (*__lastValues)[item.first];
+                if (delta != 0) {
+                    output 
+                        << "  +" << std::setw(6) << std::setprecision(4) << std::left << (delta * 1000.0)
+                        << _name << item.first
+                        << "  total " << std::setw(6) << std::setprecision(4) << std::right << item.second << "s " 
+                        ;
+                }
+            }
+            else
+                output << "  " << std::setw(6) << std::setprecision(4) << std::right << item.second << "s " << item.first;
+            if (output.str().size())
+                SG_LOG(SG_EVENT, SG_ALERT, output.str());
+        }
+    }
 }
 
+void SGSubsystemGroup::reportTimingStats(TimerStats *_lastValues) {
+    SGSubsystem::reportTimingStats(_lastValues);
+
+    std::string _name = name();
+    if (!_name.size())
+        _name = typeid(this).name();
+    if (_lastValues) {
+        auto deltaT = _executionTime - _lastExecutionTime;
+        if (deltaT != 0) {
+            SG_LOG(SG_EVENT, SG_ALERT, 
+                " +" << std::setw(6) << std::setprecision(4) << std::right << deltaT << "ms "
+                << name() );
+        }
+    }
+    else
+        SG_LOG(SG_EVENT, SG_ALERT, "SubSystemGroup: " << name() << " " << std::setw(6) << std::setprecision(4) << std::right << _executionTime / 1000.0 << "s");
+    for (auto member : _members) {
+        member->reportTimingStats(_lastValues);
+    }
+    _lastTimerStats.clear();
+    _lastTimerStats.insert(_timerStats.begin(), _timerStats.end());
+
+}
 void
 SGSubsystemGroup::reportTiming(void)
 {
@@ -609,6 +742,7 @@ auto SGSubsystemGroup::get_member(const string &name, bool create) -> Member*
 
         Member* m = new Member;
         m->name = name;
+        _timerStats[name] = 0;
         _members.push_back(m);
         return _members.back();
     }
@@ -653,6 +787,11 @@ SGSubsystemGroup::Member::Member (const Member &)
 SGSubsystemGroup::Member::~Member ()
 {
 }
+void SGSubsystemGroup::Member::mergeTimerStats(SGSubsystem::TimerStats &stats) {
+    stats.insert(subsystem->_timerStats.begin(), subsystem->_timerStats.end());
+    //for (auto ts : subsystem->_timerStats)
+    //    ts.second = 0;
+}
 
 void
 SGSubsystemGroup::Member::update (double delta_time_sec)
@@ -666,10 +805,15 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
         return;
     }
     
+    SGTimeStamp oTimer;
     try {
-      subsystem->update(elapsed_sec);
-      elapsed_sec = 0;
-    } catch (sg_exception& e) {
+        oTimer.stamp();
+        subsystem->update(elapsed_sec);
+        subsystem->_lastExecutionTime = subsystem->_executionTime;
+        subsystem->_executionTime += oTimer.elapsedMSec();
+        elapsed_sec = 0;
+    }
+    catch (sg_exception& e) {
       SG_LOG(SG_GENERAL, SG_ALERT, "caught exception processing subsystem:" << name
         << "\nmessage:" << e.getMessage());
       
@@ -693,7 +837,7 @@ namespace {
     
 } // end of anonymous namespace
 
-SGSubsystemMgr::SGSubsystemMgr () :
+SGSubsystemMgr::SGSubsystemMgr (const std::string &name) :
   _groups(MAX_GROUPS)
 {
     if (global_defaultSubsystemManager == nullptr) {
@@ -710,7 +854,7 @@ SGSubsystemMgr::SGSubsystemMgr () :
 #endif
     
     for (int i = 0; i < MAX_GROUPS; i++) {
-        auto g = new SGSubsystemGroup;
+        auto g = new SGSubsystemGroup(name);
         g->set_manager(this);
         _groups[i].reset(g);
     }
@@ -745,6 +889,7 @@ SGSubsystemMgr::init ()
     for (int i = 0; i < MAX_GROUPS; i++)
             _groups[i]->init();
 }
+
 
 SGSubsystem::InitStatus
 SGSubsystemMgr::incrementalInit()
@@ -802,9 +947,12 @@ SGSubsystemMgr::unbind ()
 void
 SGSubsystemMgr::update (double delta_time_sec)
 {
+    SGTimeStamp timeStamp;
+
     for (int i = 0; i < MAX_GROUPS; i++) {
         _groups[i]->update(delta_time_sec);
     }
+    reportTimingStatsRequest = false;
 }
 
 void

@@ -329,6 +329,16 @@ unsigned int Request::responseLength() const
 }
 
 //------------------------------------------------------------------------------
+void Request::setSuccess(int code)
+{
+    _responseStatus = code;
+    _responseReason.clear();
+    if( !isComplete() ) {
+        setReadyState(DONE);
+    }
+}
+    
+//------------------------------------------------------------------------------
 void Request::setFailure(int code, const std::string& reason)
 {
     SG_LOG(SG_IO, SG_WARN, "HTTP request: set failure:" << code << " reason " << reason);

@@ -273,7 +273,23 @@ public:
             d << "\r\n"; // final CRLF to terminate the headers
             d << contentStr;
             push(d.str().c_str());
-
+        } else if (path == "/test_redirect") {
+            string contentStr("<html>See <a href=\"wibble\">Here</a></html>");
+            stringstream d;
+            d << "HTTP/1.1 " << 302 << " " << "Found" << "\r\n";
+            d << "Location:" << " http://localhost:2000/was_redirected" << "\r\n";
+            d << "Content-Length:" << contentStr.size() << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
+        } else if (path == "/was_redirected") {
+            string contentStr(BODY1);
+            stringstream d;
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Content-Length:" << contentStr.size() << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
         } else {
           TestServerChannel::processRequestHeaders();
         }
@@ -772,6 +788,24 @@ cout << "testing proxy close" << endl;
         SG_CHECK_EQUAL(tr2->responseCode(), 200);
         SG_CHECK_EQUAL(tr2->bodyData, string(BODY1));
         SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY1));
+    }
+    
+    {
+        cout << "redirect test" << endl;
+        // redirect test
+        testServer.disconnectAll();
+        cl.clearAllConnections();
+        
+        TestRequest* tr = new TestRequest("http://localhost:2000/test_redirect");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        
+        waitForComplete(&cl, tr);
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
     }
 
     cout << "all tests passed ok" << endl;

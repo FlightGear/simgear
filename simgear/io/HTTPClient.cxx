@@ -472,12 +472,26 @@ size_t Client::requestReadCallback(char *ptr, size_t size, size_t nmemb, void *u
   return actualBytes;
 }
 
+bool isRedirectStatus(int code)
+{
+    return ((code >= 300) && (code < 400));
+}
+    
 size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems, void *userdata)
 {
   size_t byteSize = size * nitems;
   Request* req = static_cast<Request*>(userdata);
   std::string h = strutils::simplify(std::string(rawBuffer, byteSize));
 
+  if (req->readyState() >= HTTP::Request::HEADERS_RECEIVED) {
+      // this can happen with chunked transfers (secondary chunks)
+      // or redirects
+      if (isRedirectStatus(req->responseCode())) {
+          req->responseStart(h);
+          return byteSize;
+      }
+  }
+    
   if (req->readyState() == HTTP::Request::OPENED) {
     req->responseStart(h);
     return byteSize;

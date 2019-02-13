@@ -30,7 +30,6 @@ public:
 
     virtual ~TestServerChannel()
     {
-        std::cerr << "dtor test server channel" << std::endl;
     }
 
     virtual void collectIncomingData(const char* s, int n)
@@ -139,8 +138,8 @@ public:
 
     void sendErrorResponse(int code, bool close, std::string content)
     {
-        std::cerr << "sending error " << code << " for " << path << std::endl;
-        std::cerr << "\tcontent:" << content << std::endl;
+     //   std::cerr << "sending error " << code << " for " << path << std::endl;
+       // std::cerr << "\tcontent:" << content << std::endl;
 
         std::stringstream headerData;
         headerData << "HTTP/1.1 " << code << " " << reasonForCode(code) << "\r\n";
@@ -168,7 +167,6 @@ public:
 
     virtual void handleClose (void)
     {
-        std::cerr << "channel close" << std::endl;
         NetBufferChannel::handleClose();
     }
 

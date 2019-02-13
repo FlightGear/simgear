@@ -48,6 +48,8 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/threads/SGThread.hxx>
+#include <simgear/threads/SGGuard.hxx>
 
 #if defined( HAVE_VERSION_H ) && HAVE_VERSION_H
 #include "version.h"
@@ -123,6 +125,9 @@ Client::Client() :
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
 
     static bool didInitCurlGlobal = false;
+    static SGMutex initMutex;
+    
+    SGGuard<SGMutex> g(initMutex);
     if (!didInitCurlGlobal) {
       curl_global_init(CURL_GLOBAL_ALL);
       didInitCurlGlobal = true;

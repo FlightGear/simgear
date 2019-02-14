@@ -118,7 +118,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
       } else {
         std::string err = "'";
         err.push_back(*i);
-        err.append("' found in propertyname after '"+node->getNameString()+"'");
+        err.append("' found in propertyname after '"+node->getPath()+"'");
         err.append("\nname may contain only ._- and alphanumeric characters");
 	throw err;
       }
@@ -130,7 +130,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
     if (path.begin() == i) {
       std::string err = "'";
       err.push_back(*i);
-      err.append("' found in propertyname after '"+node->getNameString()+"'");
+      err.append("' found in propertyname after '"+node->getPath()+"'");
       err.append("\nname must begin with alpha or '_'");
       throw err;
     }
@@ -536,7 +536,7 @@ find_node (SGPropertyNode * current,
   using namespace boost;
   typedef split_iterator<typename range_result_iterator<Range>::type>
     PathSplitIterator;
-  
+
   PathSplitIterator itr
     = make_split_iterator(path, first_finder("/", is_equal()));
   if (*path.begin() == '/')
@@ -874,7 +874,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   }
   switch (_type) {
   case props::BOOL:
-    set_bool(node.get_bool());    
+    set_bool(node.get_bool());
     break;
   case props::INT:
     set_int(node.get_int());
@@ -967,7 +967,7 @@ SGPropertyNode::alias (SGPropertyNode * target)
     for (auto p = target; p; p = ((p->_type == props::ALIAS) ? p->_value.alias : nullptr)) {
       if (p == this) return false;
     }
-      
+
     clearValue();
     get(target);
     _value.alias = target;
@@ -993,7 +993,7 @@ SGPropertyNode::alias (SGPropertyNode * target)
   else
   if (_tied)
   {
-    SG_LOG(SG_GENERAL, SG_ALERT, "alias(): " << getPath() << 
+    SG_LOG(SG_GENERAL, SG_ALERT, "alias(): " << getPath() <<
         " is a tied property. It cannot alias " << target->getPath() << ".");
   }
 
@@ -1316,7 +1316,7 @@ SGPropertyNode::getType () const
 }
 
 
-bool 
+bool
 SGPropertyNode::getBoolValue () const
 {
 				// Shortcut for common case
@@ -1349,7 +1349,7 @@ SGPropertyNode::getBoolValue () const
   }
 }
 
-int 
+int
 SGPropertyNode::getIntValue () const
 {
 				// Shortcut for common case
@@ -1382,7 +1382,7 @@ SGPropertyNode::getIntValue () const
   }
 }
 
-long 
+long
 SGPropertyNode::getLongValue () const
 {
 				// Shortcut for common case
@@ -1415,7 +1415,7 @@ SGPropertyNode::getLongValue () const
   }
 }
 
-float 
+float
 SGPropertyNode::getFloatValue () const
 {
 				// Shortcut for common case
@@ -1448,7 +1448,7 @@ SGPropertyNode::getFloatValue () const
   }
 }
 
-double 
+double
 SGPropertyNode::getDoubleValue () const
 {
 				// Shortcut for common case
@@ -2574,7 +2574,7 @@ template<>
 std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const
 {
     const SGVec4d vec
-        = static_cast<const SGRawValue<SGVec4d>*>(this)->getValue();    
+        = static_cast<const SGRawValue<SGVec4d>*>(this)->getValue();
     for (int i = 0; i < 4; ++i) {
         stream << vec[i];
         if (i < 3)

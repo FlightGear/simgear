@@ -72,8 +72,8 @@ ClusteredForwardDrawCallback::operator()(osg::RenderInfo &renderInfo) const
     if (!_initialized) {
         // Create and associate the light grid 3D texture
         _light_grid->allocateImage(n_htiles, n_vtiles, 1,
-                                   GL_RGB_INTEGER, GL_UNSIGNED_SHORT);
-        _light_grid->setInternalTextureFormat(GL_RGB16UI);
+                                   GL_RGB_INTEGER_EXT, GL_UNSIGNED_SHORT);
+        _light_grid->setInternalTextureFormat(GL_RGB16UI_EXT);
 
         osg::ref_ptr<osg::Texture3D> light_grid_tex = new osg::Texture3D;
         light_grid_tex->setResizeNonPowerOfTwoHint(false);
@@ -88,7 +88,7 @@ ClusteredForwardDrawCallback::operator()(osg::RenderInfo &renderInfo) const
             10, light_grid_tex.get(), osg::StateAttribute::ON);
 
         // Create and associate the light indices TBO
-        _light_indices->allocateImage(4096, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
+        _light_indices->allocateImage(4096, 1, 1, GL_RED_INTEGER_EXT, GL_UNSIGNED_SHORT);
 
         osg::ref_ptr<osg::TextureBuffer> light_indices_tbo =
             new osg::TextureBuffer;
@@ -103,10 +103,16 @@ ClusteredForwardDrawCallback::operator()(osg::RenderInfo &renderInfo) const
             new osg::UniformBufferObject;
         _light_data->setBufferObject(light_data_ubo.get());
 
-        osg::ref_ptr<osg::UniformBufferBinding> light_data_ubb =
+#if OSG_VERSION_LESS_THAN(3,6,0)
+         osg::ref_ptr<osg::UniformBufferBinding> light_data_ubb =
             new osg::UniformBufferBinding(0, light_data_ubo.get(),
                                           0, MAX_POINT_LIGHTS * 8 * sizeof(GLfloat));
-        light_data_ubb->setDataVariance(osg::Object::DYNAMIC);
+#else
+         osg::ref_ptr<osg::UniformBufferBinding> light_data_ubb =
+            new osg::UniformBufferBinding(0, _light_data.get(),
+                                          0, MAX_POINT_LIGHTS * 8 * sizeof(GLfloat));
+#endif
+light_data_ubb->setDataVariance(osg::Object::DYNAMIC);
 
         camera->getOrCreateStateSet()->setAttribute(
             light_data_ubb.get(), osg::StateAttribute::ON);

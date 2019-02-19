@@ -23,6 +23,7 @@
 #include <osg/Texture3D>
 #include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
+#include <osg/FrameBufferObject>
 
 #include <simgear/props/props.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
@@ -43,17 +44,17 @@ struct BufferFormat {
 PropStringMap<BufferFormat> buffer_format_map {
     {"rgb8", {GL_RGB8, GL_RGBA, GL_UNSIGNED_BYTE}},
     {"rgba8", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}},
-    {"rgb16f", {GL_RGB16F, GL_RGBA, GL_FLOAT}},
-    {"rgb32f", {GL_RGB32F, GL_RGBA, GL_FLOAT}},
-    {"rgba16f", {GL_RGBA16F, GL_RGBA, GL_FLOAT}},
-    {"rgba32f", {GL_RGBA32F, GL_RGBA, GL_FLOAT}},
+    {"rgb16f", {GL_RGB16F_ARB, GL_RGBA, GL_FLOAT}},
+    {"rgb32f", {GL_RGB32F_ARB, GL_RGBA, GL_FLOAT}},
+    {"rgba16f", {GL_RGBA16F_ARB, GL_RGBA, GL_FLOAT}},
+    {"rgba32f", {GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT}},
     {"r32f", {GL_R32F, GL_RED, GL_FLOAT}},
     {"rg32f", {GL_RG32F, GL_RG, GL_FLOAT}},
     {"depth16", {GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT}},
     {"depth24", {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT}},
     {"depth32", {GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT}},
     {"depth32f", {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}},
-    {"depth-stencil", {GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_FLOAT}}
+    {"depth-stencil", { GL_DEPTH24_STENCIL8_EXT, GL_DEPTH_STENCIL_EXT, GL_FLOAT}}
 };
 
 PropStringMap<osg::Texture::WrapMode> wrap_mode_map = {

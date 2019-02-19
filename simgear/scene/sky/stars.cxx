@@ -30,9 +30,11 @@
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/props/props.hxx>
 
 #include <stdio.h>
 #include <iostream>
+#include <algorithm>
 
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
@@ -47,9 +49,14 @@
 #include "stars.hxx"
 
 // Constructor
-SGStars::SGStars( void ) :
-old_phase(-1)
+SGStars::SGStars( SGPropertyNode* props ) :
+    old_phase(-1)
 {
+    if (props) {
+        // don't create here - if it's not defined, we won't use the cutoff
+        // from a property
+        _cutoffProperty = props->getNode("star-magnitude-cutoff");
+    }
 }
 
 
@@ -161,10 +168,17 @@ bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] ) {
         cutoff = 0.0;
         phase = 7;
     }
-
-    if( phase != old_phase ) {
+    
+    if (_cutoffProperty) {
+        double propCutoff = _cutoffProperty->getDoubleValue();
+        cutoff = std::min(propCutoff, cutoff);
+    }
+    
+    if ((phase != old_phase) || (cutoff != _cachedCutoff)) {
 	// cout << "  phase change, repainting stars, num = " << num << endl;
         old_phase = phase;
+        _cachedCutoff = cutoff;
+
         for ( int i = 0; i < num; ++i ) {
             // if ( star_data[i][2] < min ) { min = star_data[i][2]; }
             // if ( star_data[i][2] > max ) { max = star_data[i][2]; }
@@ -190,11 +204,8 @@ bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] ) {
             if (alpha < 0.0) { alpha = 0.0; }
 
             (*cl)[i] = osg::Vec4(1, 1, 1, alpha);
-            // cout << "alpha[" << i << "] = " << alpha << endl;
         }
         cl->dirty();
-    } else {
-	// cout << "  no phase change, skipping" << endl;
     }
 
     // cout << "min = " << min << " max = " << max << " count = " << num 

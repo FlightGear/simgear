@@ -33,18 +33,20 @@
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGReferenced.hxx>
-
+#include <simgear/props/propsfwd.hxx>
 
 class SGStars : public SGReferenced {
 
     osg::ref_ptr<osg::Vec4Array> cl;
 
     int old_phase;		// data for optimization
-
+    
+    double _cachedCutoff = 0.0;
+    SGPropertyNode_ptr _cutoffProperty;
 public:
 
     // Constructor
-    SGStars( void );
+    SGStars( SGPropertyNode* props = nullptr);
 
     // Destructor
     ~SGStars( void );

@@ -21,6 +21,7 @@
 #include <osg/RenderInfo>
 #include <osg/Texture3D>
 #include <osg/TextureBuffer>
+#include <osg/Version>
 
 namespace simgear {
 namespace compositor {

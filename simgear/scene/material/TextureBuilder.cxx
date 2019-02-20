@@ -296,11 +296,9 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         } else if (t < s && 32 <= t) {
             SGSceneFeatures::instance()->setTextureCompression(tex);
         }
-        tex->setMaxAnisotropy(SGSceneFeatures::instance()
-                              ->getTextureFilter());
+        tex->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
     } else {
-        SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file "
-               << imageName);
+        SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file " << imageName);
         return false;
     }
 
@@ -612,7 +610,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
         SGReaderWriterOptions* wOpts = (SGReaderWriterOptions*)options;
         SGReaderWriterOptions::LoadOriginHint origLOH = wOpts->getLoadOriginHint();
         wOpts->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         result = osgDB::readImageFile(_tuple.get<0>(), options);
 #else
         result = osgDB::readRefImageFile(_tuple.get<0>(), options);
@@ -621,7 +619,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         result = osgDB::readImageFile(_tuple.get<1>(), options);
 #else
         result = osgDB::readRefImageFile(_tuple.get<1>(), options);
@@ -630,7 +628,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         result = osgDB::readImageFile(_tuple.get<2>(), options);
 #else
         result = osgDB::readRefImageFile(_tuple.get<2>(), options);
@@ -639,7 +637,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         result = osgDB::readImageFile(_tuple.get<3>(), options);
 #else
         result = osgDB::readRefImageFile(_tuple.get<3>(), options);
@@ -648,7 +646,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         result = osgDB::readImageFile(_tuple.get<4>(), options);
 #else
         result = osgDB::readRefImageFile(_tuple.get<4>(), options);
@@ -657,7 +655,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         result = osgDB::readImageFile(_tuple.get<5>(), options);
 #else
         result = osgDB::readRefImageFile(_tuple.get<5>(), options);
@@ -686,7 +684,7 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             return cubeTexture.release();
 
         osgDB::ReaderWriter::ReadResult result;
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         result = osgDB::readImageFile(texname, options);
 #else
         result = osgDB::readRefImageFile(texname, options);

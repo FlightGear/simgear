@@ -41,7 +41,7 @@ SGLoadTexture2D(bool staticTexture, const std::string& path,
                 const osgDB::Options* options,
                 bool wrapu, bool wrapv, int)
 {
-  osg::Image* image;
+  osg::ref_ptr<osg::Image> image;
   if (options)
 #if OSG_VERSION_LESS_THAN(3,4,0)
       image = osgDB::readImageFile(path, options);
@@ -57,6 +57,8 @@ SGLoadTexture2D(bool staticTexture, const std::string& path,
 
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image);
+  texture->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
+
   if (staticTexture)
     texture->setDataVariance(osg::Object::STATIC);
   if (wrapu)
@@ -153,7 +155,7 @@ Texture2D* TextureUpdateVisitor::textureReplace(int unit, const StateAttribute* 
 #if OSG_VERSION_LESS_THAN(3,4,0)
     Image* newImage = readImageFile(fullLiveryFile);
 #else
-    Image* newImage = readRefImageFile(fullLiveryFile);
+    osg::ref_ptr<Image> newImage = readRefImageFile(fullLiveryFile);
 #endif
     if (!newImage)
         return 0;
@@ -163,6 +165,10 @@ Texture2D* TextureUpdateVisitor::textureReplace(int unit, const StateAttribute* 
         return 0;
     } else {
         newTexture->setImage(newImage);
+        if (newImage.valid())
+        {
+            newTexture->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
+        }
         return newTexture;
     }
 }

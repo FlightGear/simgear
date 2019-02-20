@@ -27,8 +27,10 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/material/EffectCullVisitor.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
-#include <simgear/structure/exception.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/structure/exception.hxx>
+
+#include "CompositorUtil.hxx"
 
 namespace simgear {
 namespace compositor {
@@ -45,6 +47,8 @@ Compositor::create(osg::View *view,
     // Read all buffers first so passes can use them
     PropertyList p_buffers = property_list->getChildren("buffer");
     for (auto const &p_buffer : p_buffers) {
+        if (!checkConditional(p_buffer))
+            continue;
         const std::string &buffer_name = p_buffer->getStringValue("name");
         if (buffer_name.empty()) {
             SG_LOG(SG_INPUT, SG_ALERT, "Compositor::build: Buffer requires "
@@ -58,6 +62,8 @@ Compositor::create(osg::View *view,
     // Read passes
     PropertyList p_passes = property_list->getChildren("pass");
     for (auto const &p_pass : p_passes) {
+        if (!checkConditional(p_pass))
+            continue;
         Pass *pass = buildPass(compositor.get(), p_pass);
         if (pass)
             compositor->addPass(pass);
@@ -189,11 +195,7 @@ Compositor::setCameraCullMasks(osg::Node::NodeMask nm)
     for (const auto &pass : _passes) {
         osg::Camera *camera = pass->camera;
         osg::Node::NodeMask pass_cm = nm;
-        // Disable traversal of the scene graph if the pass isn't enabled
-        if (!pass->isEnabled())
-            pass_cm &= 0x0;
-        else
-            pass_cm &= pass->cull_mask;
+        pass_cm &= pass->cull_mask;
 
         camera->setCullMask(pass_cm);
         camera->setCullMaskLeft(pass_cm);

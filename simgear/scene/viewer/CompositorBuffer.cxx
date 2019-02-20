@@ -30,7 +30,7 @@
 #include <simgear/scene/util/OsgMath.hxx>
 
 #include "Compositor.hxx"
-#include "CompositorCommon.hxx"
+#include "CompositorUtil.hxx"
 
 namespace simgear {
 namespace compositor {
@@ -103,23 +103,37 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node)
     osg::ref_ptr<Buffer> buffer = new Buffer;
     osg::Texture *texture;
 
-    int width;
-    if (node->getStringValue("width") == std::string("screen")) {
-        float w_scale = node->getFloatValue("screen-width-scale", 1.0f);
-        buffer->width_scale = w_scale;
-        width = w_scale * compositor->getViewport()->width();
-    } else {
-        width = node->getIntValue("width");
+    int width = 0;
+    const SGPropertyNode *p_width = getPropertyChild(node, "width");
+    if (p_width) {
+        if (p_width->getStringValue() == std::string("screen")) {
+            buffer->width_scale = 1.0f;
+            const SGPropertyNode *p_w_scale = getPropertyChild(node, "screen-width-scale");
+            if (p_w_scale)
+                buffer->width_scale = p_w_scale->getFloatValue();
+            width = buffer->width_scale * compositor->getViewport()->width();
+        } else {
+            width = p_width->getIntValue();
+        }
     }
-    int height;
-    if (node->getStringValue("height") == std::string("screen")) {
-        float h_scale = node->getFloatValue("screen-height-scale", 1.0f);
-        buffer->height_scale = h_scale;
-        height = h_scale * compositor->getViewport()->height();
-    } else {
-        height = node->getIntValue("height");
+    int height = 0;
+    const SGPropertyNode *p_height = getPropertyChild(node, "height");
+    if (p_height) {
+        if (p_height->getStringValue() == std::string("screen")) {
+            buffer->height_scale = 1.0f;
+            const SGPropertyNode *p_h_scale = getPropertyChild(node, "screen-height-scale");
+            if (p_h_scale)
+                buffer->height_scale = p_h_scale->getFloatValue();
+            height = buffer->height_scale * compositor->getViewport()->height();
+        } else {
+            height = p_height->getIntValue();
+        }
     }
-    int depth  = node->getIntValue("depth");
+    int depth = 0;
+    const SGPropertyNode *p_depth = getPropertyChild(node, "depth");
+    if (p_depth)
+        depth = p_depth->getIntValue();
+
     if (type == "1d") {
         osg::Texture1D *tex1D = new osg::Texture1D;
         tex1D->setTextureWidth(width);

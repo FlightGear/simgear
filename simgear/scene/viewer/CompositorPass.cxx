@@ -24,14 +24,13 @@
 
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
-#include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/structure/exception.hxx>
 
 #include "ClusteredForward.hxx"
 #include "Compositor.hxx"
-#include "CompositorCommon.hxx"
+#include "CompositorUtil.hxx"
 
 namespace simgear {
 namespace compositor {
@@ -64,10 +63,6 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
                << " has no name. It won't be addressable by name!");
     }
     pass->type = root->getStringValue("type");
-
-    const SGPropertyNode *condition = root->getChild("condition");
-    if (condition)
-        pass->condition = sgReadCondition(getPropertyRoot(), condition);
 
     std::string eff_override_file = root->getStringValue("effect-override");
     if (!eff_override_file.empty())
@@ -115,6 +110,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
 
     PropertyList p_bindings = root->getChildren("binding");
     for (auto const &p_binding : p_bindings) {
+        if (!checkConditional(p_binding))
+            continue;
         try {
             std::string buffer_name = p_binding->getStringValue("buffer");
             if (buffer_name.empty())
@@ -190,6 +187,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
         }
 
         for (auto const &p_attachment : p_attachments) {
+            if (!checkConditional(p_attachment))
+                continue;
             try {
                 std::string buffer_name = p_attachment->getStringValue("buffer");
                 if (buffer_name.empty())

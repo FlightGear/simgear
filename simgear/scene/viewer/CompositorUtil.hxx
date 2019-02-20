@@ -14,8 +14,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef SG_COMPOSITOR_COMMON_HXX
-#define SG_COMPOSITOR_COMMON_HXX
+#ifndef SG_COMPOSITOR_UTIL_HXX
+#define SG_COMPOSITOR_UTIL_HXX
 
 #include <unordered_map>
 
@@ -56,7 +56,17 @@ bool findPropString(const SGPropertyNode *parent,
     return false;
 }
 
+/**
+ * Check if node should be enabled based on a condition tag.
+ * If no condition tag is found inside or it is malformed, it will be enabled.
+ */
+bool checkConditional(const SGPropertyNode *node);
+
+const SGPropertyNode *getPropertyNode(const SGPropertyNode *prop);
+const SGPropertyNode *getPropertyChild(const SGPropertyNode *prop,
+                                       const char *name);
+
 } // namespace compositor
 } // namespace simgear
 
-#endif /* SG_COMPOSITOR_COMMON_HXX */
+#endif /* SG_COMPOSITOR_UTIL_HXX */

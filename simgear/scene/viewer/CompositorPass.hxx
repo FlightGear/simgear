@@ -24,7 +24,6 @@
 
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/structure/Singleton.hxx>
-#include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 
 namespace simgear {
@@ -51,12 +50,9 @@ struct Pass : public osg::Referenced {
         viewport_width_scale(0.0f),
         viewport_height_scale(0.0f) {}
 
-    bool isEnabled() const { return (condition == 0) || condition->test(); }
-
     std::string                      name;
     std::string                      type;
     osg::ref_ptr<osg::Camera>        camera;
-    SGSharedPtr<SGCondition>         condition;
     /** If null, there is no effect override for this pass. */
     osg::ref_ptr<Effect>             effect_override;
     bool                             useMastersSceneData;

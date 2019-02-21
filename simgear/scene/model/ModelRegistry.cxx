@@ -426,7 +426,7 @@ ModelRegistry::readImage(const string& fileName,
                 boost::optional<std::string> cachehash = filename_hash_cache.get(absFileName);
                 if (cachehash) {
                     hash = *cachehash;
-//                    SG_LOG(SG_IO, SG_ALERT, "Hash for " + absFileName + " in cache " + hash);
+                    //                    SG_LOG(SG_IO, SG_ALERT, "Hash for " + absFileName + " in cache " + hash);
                 }
                 else {
                     //                  SG_LOG(SG_IO, SG_ALERT, "Creating hash for " + absFileName);
@@ -437,18 +437,18 @@ ModelRegistry::readImage(const string& fileName,
                         SG_LOG(SG_INPUT, SG_ALERT, "Modelregistry::failed to compute filehash '" << absFileName << "' " << e.getFormattedMessage());
                         hash = std::string();
                     }
-                    if (hash != std::string()) {
-                        filename_hash_cache.insert(absFileName, hash);
-                        boost::optional<std::string> cacheFilename = filename_hash_cache.findValue(hash);
-
-                        // possibly a shared texture - but warn the user to allow investigation.
-                        if (cacheFilename && *cacheFilename != absFileName) {
-                            SG_LOG(SG_IO, SG_ALERT, " Already have " + hash + " : " + *cacheFilename + " not " + absFileName);
-                        }
-                        //                    SG_LOG(SG_IO, SG_ALERT, " >>>> " + hash + " :: " + newName);
-                    }
-                    newName = cache_root + "/" + hash.substr(0, 2) + "/" + hash + ".cache.dds";
                 }
+                if (hash != std::string()) {
+                    filename_hash_cache.insert(absFileName, hash);
+                    boost::optional<std::string> cacheFilename = filename_hash_cache.findValue(hash);
+
+                    // possibly a shared texture - but warn the user to allow investigation.
+                    if (cacheFilename && *cacheFilename != absFileName) {
+                        SG_LOG(SG_IO, SG_ALERT, " Already have " + hash + " : " + *cacheFilename + " not " + absFileName);
+                    }
+                    //                    SG_LOG(SG_IO, SG_ALERT, " >>>> " + hash + " :: " + newName);
+                }
+                newName = cache_root + "/" + hash.substr(0, 2) + "/" + hash + ".cache.dds";
             }
             else
             {
@@ -667,7 +667,7 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
     if (srcImage1->getFileName().empty()) {
         srcImage1->setFileName(absFileName);
     }
-//    srcImage1->setFileName(originalFileName);
+    srcImage1->setFileName(originalFileName);
 
     if(cache_active && getFileExtension(absFileName) != "dds")
     {

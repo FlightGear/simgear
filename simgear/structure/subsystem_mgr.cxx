@@ -232,7 +232,7 @@ public:
 
 
 
-SGSubsystemGroup::SGSubsystemGroup(const std::string &name) :
+SGSubsystemGroup::SGSubsystemGroup(const char *name) :
     _fixedUpdateTime(-1.0),
     _updateTimeRemainder(0.0),
     _initPosition(-1)
@@ -837,7 +837,7 @@ namespace {
     
 } // end of anonymous namespace
 
-SGSubsystemMgr::SGSubsystemMgr (const std::string &name) :
+SGSubsystemMgr::SGSubsystemMgr (const char *name) :
   _groups(MAX_GROUPS)
 {
     if (global_defaultSubsystemManager == nullptr) {

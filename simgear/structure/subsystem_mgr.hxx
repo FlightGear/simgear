@@ -378,7 +378,7 @@ typedef SGSharedPtr<SGSubsystem> SGSubsystemRef;
 class SGSubsystemGroup : public SGSubsystem
 {
 public:
-    SGSubsystemGroup (const std::string &name);
+    SGSubsystemGroup (const char *name);
     virtual ~SGSubsystemGroup ();
 
     void init() override;
@@ -501,7 +501,7 @@ public:
         MAX_GROUPS
     };
 
-    SGSubsystemMgr (const std::string &name);
+    SGSubsystemMgr (const char *name);
     virtual ~SGSubsystemMgr ();
 
     void init () override;

@@ -139,19 +139,21 @@ Texture2D* TextureUpdateVisitor::textureReplace(int unit, const StateAttribute* 
     if (image) {
         // The currently loaded file name
         fullFilePath = &image->getFileName();
-
     } else {
         fullFilePath = &texture->getName();
     }
+
     // The short name
     string fileName = getSimpleFileName(*fullFilePath);
     if (fileName.empty())
         return 0;
+
     // The name that should be found with the current database path
     string fullLiveryFile = findFileInPath(fileName, _pathList);
     // If it is empty or they are identical then there is nothing to do
     if (fullLiveryFile.empty() || fullLiveryFile == *fullFilePath)
         return 0;
+
 #if OSG_VERSION_LESS_THAN(3,4,0)
     Image* newImage = readImageFile(fullLiveryFile);
 #else
@@ -159,18 +161,23 @@ Texture2D* TextureUpdateVisitor::textureReplace(int unit, const StateAttribute* 
 #endif
     if (!newImage)
         return 0;
+
     CopyOp copyOp(CopyOp::DEEP_COPY_ALL & ~CopyOp::DEEP_COPY_IMAGES);
     Texture2D* newTexture = static_cast<Texture2D*>(copyOp(texture));
-    if (!newTexture) {
+    if (!newTexture)
         return 0;
-    } else {
-        newTexture->setImage(newImage);
-        if (newImage.valid())
-        {
-            newTexture->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
-        }
-        return newTexture;
+
+    newTexture->setImage(newImage);
+#if OSG_VERSION_LESS_THAN(3,4,0)
+    if (newImage->valid())
+#else
+    if (newImage.valid())
+#endif
+    {
+        newTexture->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
     }
+
+    return newTexture;
 }
 
 StateSet* TextureUpdateVisitor::cloneStateSet(const StateSet* stateSet)

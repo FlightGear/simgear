@@ -91,8 +91,6 @@ public:
 
     void               resized();
 
-    void               setCameraCullMasks(osg::Node::NodeMask nm);
-
     bool               computeIntersection(
         const osg::Vec2d& windowPos,
         osgUtil::LineSegmentIntersector::Intersections& intersections);

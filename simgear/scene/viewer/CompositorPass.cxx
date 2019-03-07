@@ -68,9 +68,6 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
     if (!eff_override_file.empty())
         pass->effect_override = makeEffect(eff_override_file, true, 0);
 
-    pass->cull_mask = std::stoul(root->getStringValue("cull-mask", "0xffffff"),
-                                 nullptr, 0);
-
     osg::Camera *camera = new Camera;
     pass->camera = camera;
 
@@ -82,6 +79,17 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
     // Same with the projection matrix
     camera->setProjectionResizePolicy(osg::Camera::FIXED);
     camera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+
+    // XXX: Should we make this configurable?
+    camera->setCullingMode(CullSettings::SMALL_FEATURE_CULLING
+                           | CullSettings::VIEW_FRUSTUM_CULLING);
+
+    osg::Node::NodeMask cull_mask =
+        std::stoul(root->getStringValue("cull-mask", "0xffffffff"), nullptr, 0);
+    pass->cull_mask = cull_mask;
+    camera->setCullMask(pass->cull_mask);
+    camera->setCullMaskLeft(pass->cull_mask);
+    camera->setCullMaskRight(pass->cull_mask);
 
     osg::Vec4f clear_color(0.0f, 0.0f, 0.0f, 0.0f);
     const SGPropertyNode *p_clear_color = root->getChild("clear-color");
@@ -265,7 +273,6 @@ struct QuadPassBuilder : public PassBuilder {
 public:
     virtual Pass *build(Compositor *compositor, const SGPropertyNode *root) {
         osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root);
-        pass->useMastersSceneData = false;
 
         osg::Camera *camera = pass->camera;
         camera->setAllowEventFocus(false);
@@ -366,62 +373,6 @@ protected:
 RegisterPassBuilder<QuadPassBuilder> registerQuadPass("quad");
 
 //------------------------------------------------------------------------------
-
-#if 0
-class ShadowMapUpdateCallback; // Forward declaration
-
-class ShadowMapCullCallback : public osg::NodeCallback {
-public:
-    ShadowMapCullCallback(int light_num, float near_m, float far_m) :
-        _light_num(light_num),
-        _near_m(near_m),
-        _far_m(far_m) {}
-
-    virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
-        osg::Camera *light_camera = static_cast<osg::Camera *>(node);
-        osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor *>(nv);
-
-        osg::Vec4 light_pos = _light->getPosition();
-        if (light_pos.w() != 0.0) {
-            // We only support directional light sources for now
-            traverse(node, nv);
-            return;
-        }
-
-        osg::Vec3 light_dir =
-            osg::Vec3(light_pos.x(), light_pos.y(), light_pos.z());
-
-        // Find the light
-        // Mostly taken from osgShadow
-        osgUtil::RenderStage *rs = cv->getRenderStage();
-        osgUtil::PositionalStateContainer::AttrMatrixList &aml =
-            rs->getPositionalStateContainer()->getAttrMatrixList();
-        for (auto &itr : aml) {
-            const osg::Light *light = dynamic_cast<const osg::Light *>(itr.first.get());
-            if (light) {
-                if (light->getLightNum() != _light_num)
-                    continue;
-
-                osg::Vec4 light_pos = light->getPosition();
-                if (light_pos.w() == 0.0) {
-                    // We only want directional lights
-                    light_dir = osg::Vec3(light_pos.x(), light_pos.y(), light_pos.z());
-                }
-            }
-        }
-        traverse(node, nv);
-    }
-protected:
-    friend ShadowMapUpdateCallback;
-    int _light_num;
-    float _near_m;
-    float _far_m;
-    osg::Matrix _camera_view;
-    osg::Matrix _camera_proj;
-    osg::observer_ptr<osg::Light> _light;
-    osg::ref_ptr<osg::Uniform> _light_matrix_uniform;
-};
-#endif
 
 class LightFinder : public osg::NodeVisitor {
 public:
@@ -565,6 +516,7 @@ protected:
 struct ShadowMapPassBuilder : public PassBuilder {
     virtual Pass *build(Compositor *compositor, const SGPropertyNode *root) {
         osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root);
+        pass->useMastersSceneData = true;
 
         osg::Camera *camera = pass->camera;
         camera->setReferenceFrame(osg::Camera::ABSOLUTE_RF_INHERIT_VIEWPOINT);
@@ -676,6 +628,8 @@ struct ScenePassBuilder : public PassBuilder {
 public:
     virtual Pass *build(Compositor *compositor, const SGPropertyNode *root) {
         osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root);
+        pass->useMastersSceneData = true;
+        pass->inherit_cull_mask = true;
 
         osg::Camera *camera = pass->camera;
         camera->setAllowEventFocus(true);

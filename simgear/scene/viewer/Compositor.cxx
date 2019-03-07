@@ -126,6 +126,17 @@ Compositor::update(const osg::Matrix &view_matrix,
                    const osg::Matrix &proj_matrix)
 {
     for (auto &pass : _passes) {
+        if (pass->inherit_cull_mask) {
+            osg::Camera *camera = pass->camera;
+            osg::Camera *view_camera = _view->getCamera();
+            camera->setCullMask(pass->cull_mask
+                                & view_camera->getCullMask());
+            camera->setCullMaskLeft(pass->cull_mask
+                                    & view_camera->getCullMaskLeft());
+            camera->setCullMaskRight(pass->cull_mask
+                                     & view_camera->getCullMaskRight());
+        }
+
         if (pass->update_callback.valid())
             pass->update_callback->updatePass(*pass.get(), view_matrix, proj_matrix);
     }
@@ -186,20 +197,6 @@ Compositor::resized()
         // Resize both the viewport and its texture attachments
         camera->resize(pass->viewport_width_scale  * _viewport->width(),
                        pass->viewport_height_scale * _viewport->height());
-    }
-}
-
-void
-Compositor::setCameraCullMasks(osg::Node::NodeMask nm)
-{
-    for (const auto &pass : _passes) {
-        osg::Camera *camera = pass->camera;
-        osg::Node::NodeMask pass_cm = nm;
-        pass_cm &= pass->cull_mask;
-
-        camera->setCullMask(pass_cm);
-        camera->setCullMaskLeft(pass_cm);
-        camera->setCullMaskRight(pass_cm);
     }
 }
 

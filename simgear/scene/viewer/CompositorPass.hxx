@@ -45,8 +45,9 @@ class Compositor;
  */
 struct Pass : public osg::Referenced {
     Pass() :
-        useMastersSceneData(true),
+        useMastersSceneData(false),
         cull_mask(0xffffff),
+        inherit_cull_mask(false),
         viewport_width_scale(0.0f),
         viewport_height_scale(0.0f) {}
 
@@ -57,6 +58,8 @@ struct Pass : public osg::Referenced {
     osg::ref_ptr<Effect>             effect_override;
     bool                             useMastersSceneData;
     osg::Node::NodeMask              cull_mask;
+    /** Whether the cull mask is ANDed with the view master camera cull mask. */
+    bool                             inherit_cull_mask;
     float                            viewport_width_scale;
     float                            viewport_height_scale;
 

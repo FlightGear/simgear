@@ -623,7 +623,8 @@ struct ReaderWriterSTG::_ModelBin {
             pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough);
             pagedLOD->setRadius(SG_TILE_RADIUS);
             SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Center: " << pagedLOD->getCenter().x() << "," << pagedLOD->getCenter().y() << "," << pagedLOD->getCenter().z() );
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Range: " << (2.0 * _object_range_rough + SG_TILE_RADIUS));
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Range: " << (2.0 * _object_range_rough));
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Radius: " << SG_TILE_RADIUS);
             return pagedLOD;
         }
     }

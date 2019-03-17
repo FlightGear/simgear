@@ -1007,6 +1007,16 @@ std::string unescape(const char* s)
   }
   return r;
 }
+std::string replace(std::string source, const std::string search, const std::string replacement, std::size_t start_pos)
+{
+    if (start_pos < source.length()) {
+        while ((start_pos = source.find(search, start_pos)) != std::string::npos) {
+            source.replace(start_pos, search.length(), replacement);
+            start_pos += replacement.length();
+        }
+    }
+    return source;
+}
 
 string sanitizePrintfFormat(const string& input)
 {

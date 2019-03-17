@@ -333,7 +333,18 @@ namespace simgear {
     inline std::string unescape(const std::string& str)
     { return unescape(str.c_str()); }
 
-      /**
+    /**
+    * Replace matching elements of string.
+    *
+    * @param source source string
+    * @param search search string
+    * @param replace replacement string
+    * @param start_pos starting position for replacement in source. Checked to ensure less than length of source.
+    * @return string with all occurrences of search changed to replace
+    */
+    std::string replace(std::string source, const std::string search, const std::string replacement, std::size_t start_pos = 0);
+
+    /**
        * Check a printf-style format string for dangerous (buffer-overflowing,
        * memory re-writing) format tokens. If a problematic token is
        * found, logs an error (SG_WARN) and returns an empty format string.

@@ -15,12 +15,13 @@
 
 #include <string>
 #include <map>
+#include <memory>
 
 #include <simgear/math/sg_types.hxx>
 
 // forward decls
 class SGPropertyNode;
-     
+
 /**
  * Manage commands.
  *
@@ -44,7 +45,7 @@ public:
         virtual bool operator()(const SGPropertyNode * arg, SGPropertyNode *root) = 0;
     };
 
-    
+
 	  typedef bool (*command_t) (const SGPropertyNode * arg, SGPropertyNode *root);
 
 private:
@@ -74,7 +75,7 @@ private:
         ObjPtr pObj_;
         MemFn pMemFn_;
     };
-    
+
    /**
     * Helper template functions.
     */
@@ -84,7 +85,7 @@ private:
    {
        return new MethodCommand<ObjPtr,MemFn>(pObj, pMemFn );
    }
-   
+
 public:
    /**
     * Default constructor (sets instance to created item)
@@ -99,6 +100,12 @@ public:
   static SGCommandMgr* instance();
 
   /**
+   * specify the root node to use if one is not explicitly provided when
+   * executing a command.
+   */
+  void setImplicitRoot(SGPropertyNode* root);
+    
+  /**
    * Register a new command with the manager.
    *
    * @param name    The command name. Any existing command with the same name
@@ -109,15 +116,15 @@ public:
    */
   void addCommand(const std::string& name, command_t f)
   { addCommandObject(name, new FunctionCommand(f)); }
-       
+
   void addCommandObject (const std::string &name, Command* command);
 
   template<class OBJ, typename METHOD>
   void addCommand(const std::string& name, const OBJ& o, METHOD m)
-  { 
+  {
     addCommandObject(name, make_functor(o,m));
   }
-  
+
   /**
    * Look up an existing command.
    *
@@ -147,21 +154,37 @@ public:
    * @return true if the command is present and executes successfully,
    * false otherwise.
    */
-  virtual bool execute (const std::string &name, const SGPropertyNode * arg, SGPropertyNode *root) const;
+  virtual bool execute (const std::string &name, const SGPropertyNode * arg, SGPropertyNode *root = nullptr) const;
+
+  /**
+   * Queue a command for execution on the main thread / thread owning
+   * this command manager. (In practice in FlightGear, this means the same thing)
+   * The argument node will be copied immediately, so changes made after this call
+   * will not be reflected when the command is executed.
+   *
+   * Note there is no way to unqueue a command, or find out when the execution
+   * actually occurs, at present. Queued ommands are executed in the order submitted,
+   * however, which can be used to infer completion.
+   *
+   * Queued execution always uses the implicit root node.
+   */
+  void queuedExecute(const std::string &name, const SGPropertyNode* arg);
+
+  /**
+   * Dispatch queued command. FlightGear calls this once per frame
+   * on the main thread.
+   *
+   */
+  void executedQueuedCommands();
 
   /**
    * Remove a command registration
    */
   bool removeCommand(const std::string& name);
-protected:
-
-
 
 private:
-
-  typedef std::map<std::string,Command*> command_map;
-  command_map _commands;
-
+    class Private;
+    std::unique_ptr<Private> d;
 };
 
 #endif // __COMMANDS_HXX

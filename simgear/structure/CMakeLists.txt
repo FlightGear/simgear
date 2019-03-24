@@ -39,7 +39,7 @@ set(SOURCES
     commands.cxx
     event_mgr.cxx
     exception.cxx
-    subsystem_mgr.cxx 
+    subsystem_mgr.cxx
     StateMachine.cxx
     )
 
@@ -62,6 +62,10 @@ add_test(expressions ${EXECUTABLE_OUTPUT_PATH}/test_expressions)
 add_executable(test_shared_ptr shared_ptr_test.cpp)
 target_link_libraries(test_shared_ptr ${TEST_LIBS})
 add_test(shared_ptr ${EXECUTABLE_OUTPUT_PATH}/test_shared_ptr)
+
+add_executable(test_commands test_commands.cxx)
+target_link_libraries(test_commands ${TEST_LIBS})
+add_test(subsystems ${EXECUTABLE_OUTPUT_PATH}/test_commands)
 
 endif(ENABLE_TESTS)
 

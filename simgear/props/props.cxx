@@ -90,6 +90,29 @@ struct PathComponent
  * Name: [_a-zA-Z][-._a-zA-Z0-9]*
  */
 
+namespace
+{
+// Parsing property names is a profiling hotspot. The regular C
+// library functions interact with the locale and are therefore quite
+// heavyweight. We only support ASCII letters and numbers in property
+// names, so use these simple functions instead.
+
+inline bool isalpha_c(int c)
+{
+    return (c <= 'Z' && c >= 'A') || (c <= 'z' && c >= 'a');
+}
+
+inline bool isdigit_c(int c)
+{
+    return c <= '9' && c >= '0';
+}
+
+inline bool isspecial_c(int c)
+{
+    return  c == '_' ||  c == '-' || c == '.';
+}
+}
+
 template<typename Range>
 inline Range
 parse_name (const SGPropertyNode *node, const Range &path)
@@ -104,14 +127,13 @@ parse_name (const SGPropertyNode *node, const Range &path)
     }
     if (i != max && *i != '/')
       throw std::string("illegal character after . or ..");
-  } else if (isalpha(*i) || *i == '_') {
+  } else if (isalpha_c(*i) || *i == '_') {
     i++;
 
 				// The rules inside a name are a little
 				// less restrictive.
     while (i != max) {
-      if (isalpha(*i) || isdigit(*i) || *i == '_' ||
-	  *i == '-' || *i == '.') {
+        if (isalpha_c(*i) || isdigit_c(*i) || isspecial_c(*i)) {
 	// name += path[i];
       } else if (*i == '[' || *i == '/') {
 	break;
@@ -157,8 +179,8 @@ inline bool validateName(const std::string& name)
   }
   return rv;
 #else
-  return all(make_iterator_range(name.begin(), name.end()),
-             is_alnum() || is_any_of("_-."));
+  return std::all_of(name.begin() + 1, name.end(),
+                     [](int c){ return isalpha_c(c) || isdigit_c(c) ||  isspecial_c(c); });
 #endif
 }
 

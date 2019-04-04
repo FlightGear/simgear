@@ -250,10 +250,16 @@ namespace canvas
 
     if( !texture )
     {
+      // It shouldn't be necessary to allocate an image for the
+      // texture that is the target of dynamic rendering, but
+      // otherwise OSG won't construct all the mipmaps for the texture
+      // and dynamic mipmap generation doesn't work.
+      osg::Image* image = new osg::Image;
+      image->allocateImage(_size_x, _size_y, 1, GL_RGBA, GL_UNSIGNED_BYTE);
       texture = new osg::Texture2D;
       texture->setResizeNonPowerOfTwoHint(false);
-      texture->setTextureSize(_size_x, _size_y);
-      texture->setInternalFormat(GL_RGBA);
+      texture->setImage(image);
+      texture->setUnRefImageDataAfterApply(true);
     }
 
     updateSampling();

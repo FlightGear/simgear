@@ -27,7 +27,7 @@ namespace compositor {
  * represented in the property tree. Useful for OSG or OpenGL enums.
  */
 template<class T>
-using PropStringMap = const std::unordered_map<std::string, T>;
+using PropStringMap = std::unordered_map<std::string, T>;
 
 template <class T>
 bool findPropString(const std::string &str,

@@ -21,6 +21,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <osg/Version>
 #include <osg/PagedLOD>
 #include <osg/ProxyNode>
 #include <osgDB/ReadFile>

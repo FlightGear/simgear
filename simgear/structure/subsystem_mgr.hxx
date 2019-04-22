@@ -130,7 +130,8 @@ typedef void (*SGSubsystemTimingCb)(void* userData, const std::string& name, Sam
 class SGSubsystem : public SGReferenced
 {
 public:
-  /**
+    using TimerStats = std::map<std::string, double>;
+    /**
    * Default constructor.
    */
   SGSubsystem ();
@@ -270,6 +271,7 @@ public:
    */
   void reportTiming(void);
 
+  virtual void reportTimingStats(TimerStats *_lastValues);
   /**
    * Place time stamps at strategic points in the execution of subsystems
    * update() member functions. Predominantly for debugging purposes.
@@ -323,6 +325,20 @@ public:
      * debug helper, print a state as a string
      */
     static std::string nameForState(State s);
+
+    /**
+    * gets fine grained stats of time elapsed since last clear
+    * returns map of ident and time
+    */
+    virtual const TimerStats  &getTimerStats() {
+        return _timerStats;
+    }
+
+    /**
+    * clear fine grained stats that are over the specified value.
+    */
+    virtual void resetTimerStats(double val = 0) { }
+
 protected:
     friend class SGSubsystemMgr;
     friend class SGSubsystemGroup;
@@ -342,9 +358,16 @@ protected:
 
   static SGSubsystemTimingCb reportTimingCb;
   static void* reportTimingUserData;
-    
+  static bool reportTimingStatsRequest;
+  static int maxTimePerFrame_ms;
+
 private:
     SGSubsystemGroup* _group = nullptr;
+protected:
+    TimerStats _timerStats, _lastTimerStats;
+    double _executionTime;
+    double _lastExecutionTime;
+
 };
 
 typedef SGSharedPtr<SGSubsystem> SGSubsystemRef;
@@ -355,7 +378,7 @@ typedef SGSharedPtr<SGSubsystem> SGSubsystemRef;
 class SGSubsystemGroup : public SGSubsystem
 {
 public:
-    SGSubsystemGroup ();
+    SGSubsystemGroup (const char *name);
     virtual ~SGSubsystemGroup ();
 
     void init() override;
@@ -380,6 +403,7 @@ public:
     bool remove_subsystem (const std::string &name);
     virtual bool has_subsystem (const std::string &name) const;
 
+    void reportTimingStats(TimerStats *_lastValues) override;
     /**
      * Remove all subsystems.
      */
@@ -477,7 +501,7 @@ public:
         MAX_GROUPS
     };
 
-    SGSubsystemMgr ();
+    SGSubsystemMgr (const char *name);
     virtual ~SGSubsystemMgr ();
 
     void init () override;
@@ -510,7 +534,8 @@ public:
     SGSubsystem* get_subsystem(const std::string &name, const std::string& instanceName) const;
 
     void reportTiming();
-    void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
+    void setReportTimingCb(void* userData, SGSubsystemTimingCb cb) { reportTimingCb = cb; reportTimingUserData = userData; }
+    void setReportTimingStats(bool v) { reportTimingStatsRequest = v; }
 
     /**
      * @brief set the root property node for this subsystem manager

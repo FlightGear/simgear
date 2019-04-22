@@ -773,7 +773,7 @@ void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache()
     try {
         readProperties(_persistentCachePath, cacheRoot);
     } catch (sg_exception& e) {
-        SG_LOG(SG_TERRASYNC, SG_INFO, "corrupted persistent cache, discarding");
+        SG_LOG(SG_TERRASYNC, SG_INFO, "corrupted persistent cache, discarding " << e.getFormattedMessage());
         return;
     }
 
@@ -864,28 +864,31 @@ void SGTerraSync::init()
     _inited = true;
 
     assert(_terraRoot);
-    _terraRoot->setBoolValue("built-in-svn-available", true);
 
     reinit();
 }
 
 void SGTerraSync::shutdown()
 {
+    SG_LOG(SG_TERRASYNC, SG_INFO, "Shutdown");
      _workerThread->stop();
 }
 
 void SGTerraSync::reinit()
 {
+    auto enabled = _enabledNode->getBoolValue();
     // do not reinit when enabled and we're already up and running
-    if ((_terraRoot->getBoolValue("enabled",false)) && _workerThread->isRunning())
+    if (enabled  && _workerThread->isRunning())
     {
+        _availableNode->setBoolValue(true);
         return;
     }
-
+    _stalledNode->setBoolValue(false);
     _workerThread->stop();
 
-    if (_terraRoot->getBoolValue("enabled",false))
+    if (enabled)
     {
+        _availableNode->setBoolValue(true);
         _workerThread->setHTTPServer( _terraRoot->getStringValue("http-server","automatic") );
         _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
         _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
@@ -907,6 +910,8 @@ void SGTerraSync::reinit()
             syncAirportsModels();
         }
     }
+    else
+        _availableNode->setBoolValue(false);
 
     _stalledNode->setBoolValue(_workerThread->isStalled());
 }
@@ -919,18 +924,33 @@ void SGTerraSync::bind()
 
     _bound = true;
 
-    _terraRoot->getNode("busy", true)->setAttribute(SGPropertyNode::WRITE,false);
-    _terraRoot->getNode("active", true)->setAttribute(SGPropertyNode::WRITE,false);
-    _terraRoot->getNode("update-count", true)->setAttribute(SGPropertyNode::WRITE,false);
-    _terraRoot->getNode("error-count", true)->setAttribute(SGPropertyNode::WRITE,false);
-    _terraRoot->getNode("tile-count", true)->setAttribute(SGPropertyNode::WRITE,false);
-    _terraRoot->getNode("use-built-in-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
-    _terraRoot->getNode("use-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
+    //_terraRoot->getNode("use-built-in-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
+    //_terraRoot->getNode("use-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
+    _terraRoot->getNode("intialized", true)->setBoolValue(true);
 
     // stalled is used as a signal handler (to connect listeners triggering GUI pop-ups)
     _stalledNode = _terraRoot->getNode("stalled", true);
     _stalledNode->setBoolValue(_workerThread->isStalled());
-    _stalledNode->setAttribute(SGPropertyNode::PRESERVE,true);
+//    _stalledNode->setAttribute(SGPropertyNode::PRESERVE,true);
+
+    _activeNode = _terraRoot->getNode("active", true);
+
+    _busyNode = _terraRoot->getNode("busy", true);
+    _updateCountNode = _terraRoot->getNode("update-count", true);
+    _errorCountNode = _terraRoot->getNode("error-count", true);
+    _tileCountNode = _terraRoot->getNode("tile-count", true);
+    _cacheHitsNode = _terraRoot->getNode("cache-hits", true);
+    _transferRateBytesSecNode = _terraRoot->getNode("transfer-rate-bytes-sec", true);
+    _pendingKbytesNode = _terraRoot->getNode("pending-kbytes", true);
+    _downloadedKBtesNode = _terraRoot->getNode("downloaded-kbytes", true);
+    _enabledNode = _terraRoot->getNode("enabled", true);
+    _availableNode = _terraRoot->getNode("available", true);
+    //_busyNode->setAttribute(SGPropertyNode::WRITE, false);
+    //_activeNode->setAttribute(SGPropertyNode::WRITE, false);
+    //_updateCountNode->setAttribute(SGPropertyNode::WRITE, false);
+    //_errorCountNode->setAttribute(SGPropertyNode::WRITE, false);
+    //_tileCountNode->setAttribute(SGPropertyNode::WRITE, false);
+
 }
 
 void SGTerraSync::unbind()
@@ -947,19 +967,33 @@ void SGTerraSync::unbind()
 
 void SGTerraSync::update(double)
 {
+    auto enabled = _enabledNode->getBoolValue();
+    auto worker_running = _workerThread->isRunning();
+
+    // see if the enabled status has changed; and if so take the appropriate action.
+    if (enabled && !worker_running)
+    {
+        reinit();
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "Terrasync started");
+    }
+    else if (!enabled && worker_running)
+    {
+        reinit();
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "Terrasync stopped");
+    }
     TerrasyncThreadState copiedState(_workerThread->threadsafeCopyState());
 
-    _terraRoot->setBoolValue("busy", copiedState._busy);
-    _terraRoot->setIntValue("update-count", copiedState._success_count);
-    _terraRoot->setIntValue("error-count", copiedState._fail_count);
-    _terraRoot->setIntValue("tile-count", copiedState._updated_tile_count);
-    _terraRoot->setIntValue("cache-hits", copiedState._cache_hits);
-    _terraRoot->setIntValue("transfer-rate-bytes-sec", copiedState._transfer_rate);
-    _terraRoot->setIntValue("downloaded-kbytes", copiedState._total_kb_downloaded);
-    _terraRoot->setIntValue("pending-kbytes", copiedState._totalKbPending);
+    _busyNode->setIntValue(copiedState._busy);
+    _updateCountNode->setIntValue(copiedState._success_count);
+    _errorCountNode->setIntValue(copiedState._fail_count);
+    _tileCountNode->setIntValue(copiedState._updated_tile_count);
+    _cacheHitsNode->setIntValue(copiedState._cache_hits);
+    _transferRateBytesSecNode->setIntValue(copiedState._transfer_rate);
+    _pendingKbytesNode->setIntValue(copiedState._totalKbPending);
+    _downloadedKBtesNode->setIntValue(copiedState._total_kb_downloaded);
 
     _stalledNode->setBoolValue(_workerThread->isStalled());
-    _terraRoot->setBoolValue("active", _workerThread->isRunning());
+    _activeNode->setBoolValue(worker_running);
 
     while (_workerThread->hasNewTiles())
     {

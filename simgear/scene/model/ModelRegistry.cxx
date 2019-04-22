@@ -397,7 +397,7 @@ ModelRegistry::readImage(const string& fileName,
     if (iter != imageCallbackMap.end() && iter->second.valid())
         return iter->second->readImage(fileName, opt);
     string absFileName = SGModelLib::findDataFile(fileName, opt);
-
+    string originalFileName = absFileName;
     if (!fileExists(absFileName)) {
         SG_LOG(SG_IO, SG_ALERT, "Cannot find image file \""
             << fileName << "\"");
@@ -426,21 +426,29 @@ ModelRegistry::readImage(const string& fileName,
                 boost::optional<std::string> cachehash = filename_hash_cache.get(absFileName);
                 if (cachehash) {
                     hash = *cachehash;
-//                    SG_LOG(SG_IO, SG_ALERT, "Hash for " + absFileName + " in cache " + hash);
+                    //                    SG_LOG(SG_IO, SG_ALERT, "Hash for " + absFileName + " in cache " + hash);
                 }
                 else {
-//                  SG_LOG(SG_IO, SG_ALERT, "Creating hash for " + absFileName);
-                    hash = f.computeHash();
+                    //                  SG_LOG(SG_IO, SG_ALERT, "Creating hash for " + absFileName);
+                    try {
+                        hash = f.computeHash();
+                    }
+                    catch (sg_io_exception &e) {
+                        SG_LOG(SG_INPUT, SG_ALERT, "Modelregistry::failed to compute filehash '" << absFileName << "' " << e.getFormattedMessage());
+                        hash = std::string();
+                    }
+                }
+                if (hash != std::string()) {
                     filename_hash_cache.insert(absFileName, hash);
                     boost::optional<std::string> cacheFilename = filename_hash_cache.findValue(hash);
 
                     // possibly a shared texture - but warn the user to allow investigation.
                     if (cacheFilename && *cacheFilename != absFileName) {
-                        SG_LOG(SG_IO, SG_ALERT, " Already have " + hash + " : " + *cacheFilename + " not "+absFileName);
+                        SG_LOG(SG_IO, SG_ALERT, " Already have " + hash + " : " + *cacheFilename + " not " + absFileName);
                     }
-//                    SG_LOG(SG_IO, SG_ALERT, " >>>> " + hash + " :: " + newName);
+                    //                    SG_LOG(SG_IO, SG_ALERT, " >>>> " + hash + " :: " + newName);
                 }
-                newName = cache_root + "/" + hash.substr(0,2) + "/" + hash + ".cache.dds";
+                newName = cache_root + "/" + hash.substr(0, 2) + "/" + hash + ".cache.dds";
             }
             else
             {
@@ -454,7 +462,7 @@ ModelRegistry::readImage(const string& fileName,
             //    
             //}
 
-            if (fileExists(newName) && doRefresh) {
+            if (newName != std::string() && fileExists(newName) && doRefresh) {
                 if (!filesCleaned.contains(newName)) {
                     SG_LOG(SG_IO, SG_ALERT, "Removing previously cached effects image " + newName);
                     SGPath(newName).remove();
@@ -463,7 +471,7 @@ ModelRegistry::readImage(const string& fileName,
 
             }
 
-            if (!fileExists(newName)) {
+            if (newName != std::string() && !fileExists(newName)) {
                 res = registry->readImageImplementation(absFileName, opt);
                 if (res.validImage()) {
                     osg::ref_ptr<osg::Image> srcImage = res.getImage();
@@ -637,7 +645,8 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
                 }
             }
             else {
-                absFileName = newName;
+                if (newName != std::string())
+                    absFileName = newName;
             }
         }
     }
@@ -658,10 +667,8 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
     if (srcImage1->getFileName().empty()) {
         srcImage1->setFileName(absFileName);
     }
+    srcImage1->setFileName(originalFileName);
 
-    if (srcImage1->getName().empty()) {
-        srcImage1->setName(absFileName);
-    }
     if(cache_active && getFileExtension(absFileName) != "dds")
     {
         if (processor) {

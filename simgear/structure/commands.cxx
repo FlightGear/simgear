@@ -4,9 +4,7 @@
 //
 // $Id$
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <memory>
 #include <cassert>
@@ -20,23 +18,46 @@
 #include <simgear/threads/SGGuard.hxx>
 #include <simgear/debug/logstream.hxx>
 
+struct Invocation
+{
+  std::string command;
+  SGPropertyNode_ptr args;
+};
+
+class SGCommandMgr::Private
+{
+public:
+  SGPropertyNode_ptr _rootNode;
+  
+  using InvocactionVec = std::vector<Invocation>;
+  InvocactionVec _queue;
+
+  SGMutex _mutex;
+
+  using command_map = std::map<std::string,Command*> ;
+  command_map _commands;
+  
+  long _mainThreadId = 0;
+};
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGCommandMgr class.
 ////////////////////////////////////////////////////////////////////////
 
-static SGCommandMgr* static_instance = NULL;
+static SGCommandMgr* static_instance = nullptr;
 
-SGCommandMgr::SGCommandMgr ()
+SGCommandMgr::SGCommandMgr () :
+  d(new Private)
 {
-    assert(static_instance == NULL);
+    d->_mainThreadId = SGThread::current();
+    assert(static_instance == nullptr);
     static_instance = this;
 }
 
 SGCommandMgr::~SGCommandMgr ()
 {
     assert(static_instance == this);
-    static_instance = NULL;
+    static_instance = nullptr;
 }
 
 SGCommandMgr*
@@ -45,28 +66,37 @@ SGCommandMgr::instance()
     return static_instance ? static_instance : new SGCommandMgr;
 }
 
+void SGCommandMgr::setImplicitRoot(SGPropertyNode *root)
+{
+  assert(root);
+  d->_rootNode = root;
+}
+
 void
 SGCommandMgr::addCommandObject (const std::string &name, Command* command)
 {
-    if (_commands.find(name) != _commands.end())
-        throw sg_exception("duplicate command name:" + name);
-    
-  _commands[name] = command;
+#if !defined(NDEBUG)
+  assert(SGThread::current() == d->_mainThreadId);
+#endif
+  if (d->_commands.find(name) != d->_commands.end())
+    throw sg_exception("duplicate command name:" + name);
+
+  d->_commands[name] = command;
 }
 
 SGCommandMgr::Command*
 SGCommandMgr::getCommand (const std::string &name) const
 {
-  const command_map::const_iterator it = _commands.find(name);
-  return (it != _commands.end() ? it->second : 0);
+  const auto it = d->_commands.find(name);
+  return (it != d->_commands.end() ? it->second : nullptr);
 }
 
 string_list
 SGCommandMgr::getCommandNames () const
 {
   string_list names;
-  command_map::const_iterator it = _commands.begin();
-  command_map::const_iterator last = _commands.end();
+  auto it = d->_commands.begin();
+  auto last = d->_commands.end();
   while (it != last) {
     names.push_back(it->first);
     ++it;
@@ -77,13 +107,24 @@ SGCommandMgr::getCommandNames () const
 bool
 SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg, SGPropertyNode *root) const
 {
+#if !defined(NDEBUG)
+    if (SGThread::current() != d->_mainThreadId) {
+        SG_LOG(SG_GENERAL, SG_WARN, "calling SGCommandMgr::execute from a different thread than expected. Command is:" << name);
+    }
+  // assert(SGThread::current() == d->_mainThreadId);
+#endif
   Command* command = getCommand(name);
-  if (command == 0)
+  if (command == nullptr)
   {
     SG_LOG(SG_GENERAL, SG_WARN, "command not found: '" << name << "'");
     return false;
   }
 
+  // use implicit root node if caller did not define one explicitly
+  if (root == nullptr) {
+    root = d->_rootNode.get();
+  }
+  
   try
   {
     return (*command)(arg, root);
@@ -122,13 +163,47 @@ SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg, SGPr
 
 bool SGCommandMgr::removeCommand(const std::string& name)
 {
-    command_map::iterator it = _commands.find(name);
-    if (it == _commands.end())
+#if !defined(NDEBUG)
+  assert(SGThread::current() == d->_mainThreadId);
+#endif
+    auto it = d->_commands.find(name);
+    if (it == d->_commands.end())
         return false;
-    
+
     delete it->second;
-    _commands.erase(it);
+    d->_commands.erase(it);
     return true;
 }
+
+void SGCommandMgr::queuedExecute(const std::string &name, const SGPropertyNode* arg)
+{
+  Invocation invoke = {name, new SGPropertyNode};
+  copyProperties(arg, invoke.args);
+  SGGuard<SGMutex> g(d->_mutex);
+  d->_queue.push_back(invoke);
+}
+
+void SGCommandMgr::executedQueuedCommands()
+{
+#if !defined(NDEBUG)
+  assert(SGThread::current() == d->_mainThreadId);
+#endif
+  
+  // locked swap with the shared queue
+  Private::InvocactionVec q;
+  {
+    SGGuard<SGMutex> g(d->_mutex);
+    d->_queue.swap(q);
+  }
+  
+  for (auto i : q) {
+    bool ok = execute(i.command, i.args);
+    if (!ok) {
+      SG_LOG(SG_GENERAL, SG_WARN, "queued execute of command " << i.command
+             << "failed");
+    }
+  }
+}
+
 
 // end of commands.cxx

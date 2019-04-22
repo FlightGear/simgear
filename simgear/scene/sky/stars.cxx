@@ -30,9 +30,11 @@
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/props/props.hxx>
 
 #include <stdio.h>
 #include <iostream>
+#include <algorithm>
 
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
@@ -47,9 +49,14 @@
 #include "stars.hxx"
 
 // Constructor
-SGStars::SGStars( void ) :
-old_phase(-1)
+SGStars::SGStars( SGPropertyNode* props ) :
+    old_phase(-1)
 {
+    if (props) {
+        // don't create here - if it's not defined, we won't use the cutoff
+        // from a property
+        _cutoffProperty = props->getNode("star-magnitude-cutoff");
+    }
 }
 
 
@@ -117,69 +124,102 @@ SGStars::build( int num, const SGVec3d star_data[], double star_dist ) {
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] ) {
-    // cout << "repainting stars" << endl;
-    // double min = 100;
-    // double max = -100;
+
+bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] )
+{
     double mag, nmag, alpha, factor, cutoff;
 
+    /*
+    maximal magnitudes under dark sky on Earth, from Eq.(90) and (91) of astro-ph/1405.4209
+	For (18 < musky < 20)
+	mmax = 0.27 musky + 0.8 - 2.5 * log(F)
+
+	For (19.5  µsky  22)
+	mmax = 0.383 musky - 1.44 - 2.5 * log(F)
+
+    
+	Let's take F = 1.4 for healthy young pilot
+	mudarksky ~ 22 mag/arcsec^2 => mmax=6.2
+	muastrotwilight ~ 20 mag/arsec^2 => mmax=5.4
+	mu99deg ~ 17.5 mag/arcsec^2 => mmax=4.7
+	mu97.5deg ~ 16 mag/arcsec^2 => ? let's keep it rough
+    */
+
+    double mag_nakedeye = 6.2;
+    double mag_twilight_astro = 5.4;
+    double mag_twilight_nautic = 4.7;
+
+    // sirius, brightest star (not brightest object)
+    double mag_min = -1.46;
+    
     int phase;
 
     // determine which star structure to draw
-    if ( sun_angle > (SGD_PI_2 + 10.0 * SGD_DEGREES_TO_RADIANS ) ) {
-        // deep night
+    if ( sun_angle > (SGD_PI_2 + 18.0 * SGD_DEGREES_TO_RADIANS ) ) {
+        // deep night, atmosphere is not lighten by the sun
         factor = 1.0;
-        cutoff = 4.5;
+        cutoff = mag_nakedeye;
         phase = 0;
-    } else if ( sun_angle > (SGD_PI_2 + 8.8 * SGD_DEGREES_TO_RADIANS ) ) {
+    } else if ( sun_angle > (SGD_PI_2 + 12.0 * SGD_DEGREES_TO_RADIANS ) ) {
+        // less than 18deg and more than 12deg is astronomical twilight
         factor = 1.0;
-        cutoff = 3.8;
+        cutoff = mag_twilight_astro;
         phase = 1;
+    } else if ( sun_angle > (SGD_PI_2 + 9.0 * SGD_DEGREES_TO_RADIANS ) ) {
+        // less 12deg and more than 6deg is is nautical twilight 
+        factor = 1.0;
+        cutoff = mag_twilight_nautic;
+        phase = 2;
     } else if ( sun_angle > (SGD_PI_2 + 7.5 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.95;
         cutoff = 3.1;
-        phase = 2;
+        phase = 3;
     } else if ( sun_angle > (SGD_PI_2 + 7.0 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.9;
         cutoff = 2.4;
-        phase = 3;
+        phase = 4;
     } else if ( sun_angle > (SGD_PI_2 + 6.5 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.85;
         cutoff = 1.8;
-        phase = 4;
+        phase = 5;
     } else if ( sun_angle > (SGD_PI_2 + 6.0 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.8;
         cutoff = 1.2;
-        phase = 5;
+        phase = 6;
     } else if ( sun_angle > (SGD_PI_2 + 5.5 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.75;
         cutoff = 0.6;
-        phase = 6;
+        phase = 7;
     } else {
         // early dusk or late dawn
         factor = 0.7;
         cutoff = 0.0;
-        phase = 7;
+        phase = 8;
     }
-
-    if( phase != old_phase ) {
+    
+    if (_cutoffProperty) {
+        double propCutoff = _cutoffProperty->getDoubleValue();
+        cutoff = std::min(propCutoff, cutoff);
+    }
+    
+    if ((phase != old_phase) || (cutoff != _cachedCutoff)) {
 	// cout << "  phase change, repainting stars, num = " << num << endl;
         old_phase = phase;
+        _cachedCutoff = cutoff;
+
         for ( int i = 0; i < num; ++i ) {
             // if ( star_data[i][2] < min ) { min = star_data[i][2]; }
             // if ( star_data[i][2] > max ) { max = star_data[i][2]; }
 
-            // magnitude ranges from -1 (bright) to 4 (dim).  The
+            // magnitude ranges from -1 (bright) to 6 (dim).  The
             // range of star and planet magnitudes can actually go
             // outside of this, but for our purpose, if it is brighter
-            // that -1, we'll color it full white/alpha anyway and 4
-            // is a convenient cutoff point which keeps the number of
-            // stars drawn at about 500.
+            // that magmin, we'll color it full white/alpha anyway
 
             // color (magnitude)
             mag = star_data[i][2];
             if ( mag < cutoff ) {
-                nmag = ( 4.5 - mag ) / 5.5; // translate to 0 ... 1.0 scale
+                nmag = ( cutoff - mag ) / (cutoff - mag_min); // translate to 0 ... 1.0 scale
                 alpha = nmag * 0.85 + 0.15; // translate to a 0.15 ... 1.0 scale
                 alpha *= factor;          // dim when the sun is brighter
             } else {
@@ -190,11 +230,8 @@ bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] ) {
             if (alpha < 0.0) { alpha = 0.0; }
 
             (*cl)[i] = osg::Vec4(1, 1, 1, alpha);
-            // cout << "alpha[" << i << "] = " << alpha << endl;
         }
         cl->dirty();
-    } else {
-	// cout << "  no phase change, skipping" << endl;
     }
 
     // cout << "min = " << min << " max = " << max << " count = " << num 

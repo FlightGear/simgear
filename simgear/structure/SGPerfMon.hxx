@@ -52,8 +52,10 @@ private:
     SGSubsystemMgr* _subSysMgr;
     SGPropertyNode_ptr _root;
     SGPropertyNode_ptr _statiticsSubsystems;
+    SGPropertyNode_ptr _timingDetailsFlag;
     SGPropertyNode_ptr _statisticsFlag;
     SGPropertyNode_ptr _statisticsInterval;
+    SGPropertyNode_ptr _maxTimePerFrame_ms;
 
     bool _isEnabled;
     int _count;

@@ -92,6 +92,17 @@ private:
     SGPropertyNode_ptr _renderingRoot;
     SGPropertyNode_ptr _stalledNode;
     SGPropertyNode_ptr _cacheHits;
+    SGPropertyNode_ptr _busyNode;
+    SGPropertyNode_ptr _activeNode;
+    SGPropertyNode_ptr _enabledNode;
+    SGPropertyNode_ptr _availableNode;
+    SGPropertyNode_ptr _updateCountNode;
+    SGPropertyNode_ptr _errorCountNode;
+    SGPropertyNode_ptr _tileCountNode;
+    SGPropertyNode_ptr _cacheHitsNode;
+    SGPropertyNode_ptr _transferRateBytesSecNode;
+    SGPropertyNode_ptr _pendingKbytesNode;
+    SGPropertyNode_ptr _downloadedKBtesNode;
 
     // we manually bind+init TerraSync during early startup
     // to get better overlap of slow operations (Shared Models sync

@@ -27,6 +27,7 @@
 
 #include <boost/bind.hpp>
 
+#include <osg/Version>
 #include <osg/Geode>
 #include <osg/MatrixTransform>
 #include <osgDB/ReadFile>
@@ -338,7 +339,7 @@ sgLoad3DModel_internal(const SGPath& path,
 
         options->setDatabasePath(texturepath.local8BitStr());
         osgDB::ReaderWriter::ReadResult modelResult;
-#if OSG_VERSION_LESS_THAN(3,4,0)
+#if OSG_VERSION_LESS_THAN(3,4,1)
         modelResult = osgDB::readNodeFile(modelpath.local8BitStr(), options.get());
 #else
         modelResult = osgDB::readRefNodeFile(modelpath.local8BitStr(), options.get());

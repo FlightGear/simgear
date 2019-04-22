@@ -51,7 +51,10 @@ SGPerformanceMonitor::bind(void)
 {
     _statiticsSubsystems = _root->getChild("subsystems",    0, true);
     _statisticsFlag      = _root->getChild("enabled",       0, true);
+    _timingDetailsFlag   = _root->getChild("dump-stats",    0, true);
+    _timingDetailsFlag->setBoolValue(false);
     _statisticsInterval  = _root->getChild("interval-s",    0, true);
+    _maxTimePerFrame_ms = _root->getChild("max-time-per-frame-ms", 0, true);
 }
 
 void
@@ -60,6 +63,7 @@ SGPerformanceMonitor::unbind(void)
     _statiticsSubsystems = 0;
     _statisticsFlag = 0;
     _statisticsInterval = 0;
+    _maxTimePerFrame_ms = 0;
 }
 
 void
@@ -83,7 +87,10 @@ SGPerformanceMonitor::update(double dt)
         else
             _subSysMgr->setReportTimingCb(this,0);
     }
-
+    if (_timingDetailsFlag->getBoolValue()) {
+        _subSysMgr->setReportTimingStats(true);
+        _timingDetailsFlag->setBoolValue(false);
+    }
     if (!_isEnabled)
         return;
 
@@ -93,6 +100,9 @@ SGPerformanceMonitor::update(double dt)
         // grab timing statistics
         _subSysMgr->reportTiming();
         _lastUpdate.stamp();
+    }
+    if (_maxTimePerFrame_ms) {
+        SGSubsystem::maxTimePerFrame_ms = _maxTimePerFrame_ms->getIntValue();
     }
 }
 

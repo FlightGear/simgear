@@ -25,6 +25,7 @@
 
 #include <cassert>
 
+#include <osg/Version>
 #include <osg/CullFace>
 #include <osg/PagedLOD>
 #include <osg/MatrixTransform>

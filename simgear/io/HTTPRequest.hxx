@@ -224,7 +224,7 @@ protected:
     virtual void onAlways();
 
     void setFailure(int code, const std::string& reason);
-
+    void setSuccess(int code);
 private:
     friend class Client;
     friend class Connection;

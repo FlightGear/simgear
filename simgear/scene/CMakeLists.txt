@@ -9,6 +9,7 @@ foreach( mylibfolder
         tgdb
         util
         tsync
+        viewer
     )
 
     add_subdirectory(${mylibfolder})

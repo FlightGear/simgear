@@ -620,9 +620,11 @@ struct ReaderWriterSTG::_ModelBin {
             pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
 
             // Objects may end up displayed up to 2x the object range.
-            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough + SG_TILE_RADIUS);
+            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough);
+            pagedLOD->setRadius(SG_TILE_RADIUS);
             SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Center: " << pagedLOD->getCenter().x() << "," << pagedLOD->getCenter().y() << "," << pagedLOD->getCenter().z() );
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Range: " << (2.0 * _object_range_rough + SG_TILE_RADIUS));
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Range: " << (2.0 * _object_range_rough));
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Radius: " << SG_TILE_RADIUS);
             return pagedLOD;
         }
     }

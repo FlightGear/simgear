@@ -29,11 +29,12 @@ class Texture2D;
 
 namespace simgear
 {
+class Effect;
 class EffectGeode;
 class EffectCullVisitor : public osgUtil::CullVisitor
 {
 public:
-    EffectCullVisitor(bool collectLights = false);
+    EffectCullVisitor(bool collectLights = false, Effect *effectOverride = 0);
     EffectCullVisitor(const EffectCullVisitor&);
     virtual osgUtil::CullVisitor* clone() const;
     using osgUtil::CullVisitor::apply;
@@ -48,6 +49,7 @@ private:
     std::map<std::string,osg::ref_ptr<osg::Texture2D> > _bufferList;
     std::vector<osg::ref_ptr<EffectGeode> > _lightList;
     bool _collectLights;
+    osg::ref_ptr<Effect> _effectOverride;
 };
 }
 #endif

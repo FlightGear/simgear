@@ -90,7 +90,7 @@ class InstrumentGroup : public SGSubsystemGroup
 {
 public:
     static const char* subsystemName() { return "instruments"; }
-
+    InstrumentGroup() : SGSubsystemGroup(InstrumentGroup::subsystemName()) {}
     virtual ~InstrumentGroup()
     {
     }
@@ -164,7 +164,7 @@ SGSubsystemMgr::InstancedRegistrant<FakeRadioSub> registrant3(SGSubsystemMgr::PO
 
 void testRegistrationAndCreation()
 {
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST1");
     
     auto anotherSub = manager->create<AnotherSub>();
     SG_VERIFY(anotherSub);
@@ -181,7 +181,7 @@ void testRegistrationAndCreation()
 
 void testAddGetRemove()
 {
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST1");
     auto d = new RecorderDelegate;
     manager->addDelegate(d);
     
@@ -228,7 +228,7 @@ void testAddGetRemove()
 
 void testSubGrouping()
 {
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST1");
     auto d = new RecorderDelegate;
     manager->addDelegate(d);
     
@@ -299,7 +299,7 @@ void testSubGrouping()
 
 void testIncrementalInit()
 {
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST");
     auto d = new RecorderDelegate;
     manager->addDelegate(d);
     
@@ -347,7 +347,7 @@ void testEmptyGroup()
     // https://sourceforge.net/p/flightgear/codetickets/2043/
     // when an empty group is inited, we skipped setting the state
     
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST");
     auto d = new RecorderDelegate;
     manager->addDelegate(d);
     
@@ -371,7 +371,7 @@ void testEmptyGroup()
 
 void testSuspendResume()
 {
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST");
     auto d = new RecorderDelegate;
     manager->addDelegate(d);
     
@@ -441,7 +441,7 @@ void testSuspendResume()
 
 void testPropertyRoot()
 {
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST");
     SGPropertyNode_ptr props(new SGPropertyNode);
     manager->set_root_node(props);
     
@@ -467,7 +467,7 @@ void testPropertyRoot()
 
 void testAddRemoveAfterInit()
 {
-    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr;
+    SGSharedPtr<SGSubsystemMgr> manager = new SGSubsystemMgr("TEST");
     auto d = new RecorderDelegate;
     manager->addDelegate(d);
     

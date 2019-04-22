@@ -47,7 +47,7 @@ SGEventMgr::SGEventMgr() :
     _inited(false),
     _shutdown(false)
 {
-    
+_name = "EventMgr";
 }
 
 SGEventMgr::~SGEventMgr()
@@ -86,10 +86,10 @@ void SGEventMgr::shutdown()
 
 void SGEventMgr::update(double delta_time_sec)
 {
-    _simQueue.update(delta_time_sec);
-    
+    _simQueue.update(delta_time_sec, _timerStats);
+
     double rt = _rtProp ? _rtProp->getDoubleValue() : 0;
-    _rtQueue.update(rt);
+    _rtQueue.update(rt, _timerStats);
 }
 
 void SGEventMgr::removeTask(const std::string& name)
@@ -169,19 +169,23 @@ void SGTimerQueue::clear()
         _table[i].timer = 0;
     }
 }
-
-void SGTimerQueue::update(double deltaSecs)
+int maxTimerQueuePerItem_us = 30;
+void SGTimerQueue::update(double deltaSecs, std::map<std::string, double> &timingStats)
 {
     _now += deltaSecs;
-    while(_numEntries && nextTime() <= _now) {
+
+    while (_numEntries && nextTime() <= _now) {
         SGTimer* t = remove();
-        if(t->repeat)
+        if (t->repeat)
             insert(t, t->interval);
         // warning: this is not thread safe
         // but the entire timer queue isn't either
+        SGTimeStamp timeStamp;
+        timeStamp.stamp();
         t->running = true;
         t->run();
         t->running = false;
+        timingStats[t->name] += timeStamp.elapsedMSec() / 1000.0;
         if (!t->repeat)
             delete t;
     }

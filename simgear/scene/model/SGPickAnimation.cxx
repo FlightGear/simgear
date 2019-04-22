@@ -582,20 +582,18 @@ public:
           }
         }
     }
-    
-    virtual bool buttonPressed( int button,
-                                const osgGA::GUIEventAdapter& ea,
-                                const Info& )
-    {        
+
+    bool buttonPressed( int button, const osgGA::GUIEventAdapter& ea, const Info& ) override
+    {
         if (!_condition || _condition->test()) {
             // the 'be nice to Mac / laptop' users option; alt-clicking spins the
-        // opposite direction. Should make this configurable
+            // opposite direction. Should make this configurable
             if ((button == 0) && (ea.getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_ALT)) {
                 button = 1;
             }
 
-            int increaseMouseWheel = static_knobMouseWheelAlternateDirection ? 3 : 4;
-            int decreaseMouseWheel = static_knobMouseWheelAlternateDirection ? 4 : 3;
+            const int increaseMouseWheel = static_knobMouseWheelAlternateDirection ? 4 : 3;
+            const int decreaseMouseWheel = static_knobMouseWheelAlternateDirection ? 3 : 4;
 
             _direction = DIRECTION_NONE;
             if ((button == 0) || (button == increaseMouseWheel)) {

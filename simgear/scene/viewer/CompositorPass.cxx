@@ -22,9 +22,12 @@
 #include <osg/PolygonMode>
 #include <osg/io_utils>
 
+#include <osgUtil/CullVisitor>
+
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/structure/exception.hxx>
 
@@ -50,34 +53,40 @@ PropStringMap<osg::Camera::BufferComponent> buffer_component_map = {
     {"packed-depth-stencil", osg::Camera::PACKED_DEPTH_STENCIL_BUFFER}
 };
 
-Pass *
-PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
-{
-    // The pass index matches its render order
-    int render_order = root->getIndex();
 
+Pass *
+PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
+                   const SGReaderWriterOptions *options)
+{
     osg::ref_ptr<Pass> pass = new Pass;
+    // The pass index matches its render order
+    pass->render_order = root->getIndex();
     pass->name = root->getStringValue("name");
     if (pass->name.empty()) {
-        SG_LOG(SG_INPUT, SG_WARN, "PassBuilder::build: Pass " << render_order
+        SG_LOG(SG_INPUT, SG_WARN, "PassBuilder::build: Pass " << pass->render_order
                << " has no name. It won't be addressable by name!");
     }
     pass->type = root->getStringValue("type");
 
     std::string eff_override_file = root->getStringValue("effect-override");
     if (!eff_override_file.empty())
-        pass->effect_override = makeEffect(eff_override_file, true, 0);
+        pass->effect_override = makeEffect(eff_override_file, true, options);
 
     osg::Camera *camera = new Camera;
     pass->camera = camera;
 
     camera->setName(pass->name);
-    camera->setGraphicsContext(compositor->_gc);
+    camera->setGraphicsContext(compositor->getGraphicsContext());
     // Even though this camera will be added as a slave to the view, it will
     // always be updated manually in Compositor::update()
     camera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
     // Same with the projection matrix
     camera->setProjectionResizePolicy(osg::Camera::FIXED);
+    // We only use POST_RENDER. Leave PRE_RENDER for Canvas and other RTT stuff
+    // that doesn't involve the rendering pipeline itself. NESTED_RENDER is also
+    // not a possibility since we don't want to share RenderStage with the View
+    // master camera.
+    camera->setRenderOrder(osg::Camera::POST_RENDER, pass->render_order * 10);
     camera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
 
     // XXX: Should we make this configurable?
@@ -144,7 +153,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
                 osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
         } catch (sg_exception &e) {
             SG_LOG(SG_INPUT, SG_ALERT, "PassBuilder::build: Skipping binding "
-                   << p_binding->getIndex() << " in pass " << render_order
+                   << p_binding->getIndex() << " in pass " << pass->render_order
                    << ": " << e.what());
         }
     }
@@ -153,22 +162,15 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
     if (p_attachments.empty()) {
         // If there are no attachments, assume the pass is rendering
         // directly to the screen
-
-        camera->setRenderOrder(osg::Camera::NESTED_RENDER, render_order * 10);
-        // OSG cameras use the framebuffer by default, but it is stated
-        // explicitly anyway
         camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER);
-
         camera->setDrawBuffer(GL_BACK);
         camera->setReadBuffer(GL_BACK);
 
         // Use the physical viewport. We can't let the user choose the viewport
         // size because some parts of the window might not be ours.
-        camera->setViewport(compositor->_viewport);
+        camera->setViewport(compositor->getViewport());
     } else {
         // This is a RTT camera
-
-        camera->setRenderOrder(osg::Camera::PRE_RENDER, render_order * 10);
         camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
 
         bool viewport_absolute = false;
@@ -252,13 +254,13 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
                         camera->setViewport(
                             0,
                             0,
-                            buffer->width_scale  * compositor->_viewport->width(),
-                            buffer->height_scale * compositor->_viewport->height());
+                            buffer->width_scale  * compositor->getViewport()->width(),
+                            buffer->height_scale * compositor->getViewport()->height());
                     }
                 }
             } catch (sg_exception &e) {
                 SG_LOG(SG_INPUT, SG_ALERT, "PassBuilder::build: Skipping attachment "
-                       << p_attachment->getIndex() << " in pass " << render_order
+                       << p_attachment->getIndex() << " in pass " << pass->render_order
                        << ": " << e.what());
             }
         }
@@ -271,8 +273,10 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root)
 
 struct QuadPassBuilder : public PassBuilder {
 public:
-    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root) {
-        osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root);
+    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root,
+                        const SGReaderWriterOptions *options) {
+        osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root, options);
+        pass->useMastersSceneData = false;
 
         osg::Camera *camera = pass->camera;
         camera->setAllowEventFocus(false);
@@ -289,11 +293,29 @@ public:
             scale  = p_geometry->getFloatValue("scale",  scale);
         }
 
-        const std::string eff_file = root->getStringValue("effect");
-
-        osg::ref_ptr<osg::Geode> quad = createFullscreenQuad(
-            left, bottom, width, height, scale, eff_file);
+        osg::ref_ptr<EffectGeode> quad = new EffectGeode;
         camera->addChild(quad);
+        quad->setCullingActive(false);
+
+        const std::string eff_file = root->getStringValue("effect");
+        if (!eff_file.empty()) {
+            Effect *eff = makeEffect(eff_file, true, options);
+            if (eff)
+                quad->setEffect(eff);
+        }
+
+        osg::ref_ptr<osg::Geometry> geom = createFullscreenQuadGeom(
+            left, bottom, width, height, scale);
+        quad->addDrawable(geom);
+
+        osg::ref_ptr<osg::StateSet> quad_state = quad->getOrCreateStateSet();
+        int values = osg::StateAttribute::OFF | osg::StateAttribute::PROTECTED;
+        quad_state->setAttribute(new osg::PolygonMode(
+                                     osg::PolygonMode::FRONT_AND_BACK,
+                                     osg::PolygonMode::FILL),
+                                 values);
+        quad_state->setMode(GL_LIGHTING,   values);
+        quad_state->setMode(GL_DEPTH_TEST, values);
 
         osg::StateSet *ss = camera->getOrCreateStateSet();
         for (const auto &uniform : compositor->getUniforms())
@@ -302,13 +324,12 @@ public:
         return pass.release();
     }
 protected:
-    osg::Geode *createFullscreenQuad(float left,
-                                     float bottom,
-                                     float width,
-                                     float height,
-                                     float scale,
-                                     const std::string &eff_file) {
-        osg::Geometry *geom;
+    osg::Geometry *createFullscreenQuadGeom(float left,
+                                            float bottom,
+                                            float width,
+                                            float height,
+                                            float scale) {
+        osg::ref_ptr<osg::Geometry> geom;
 
         // When the quad is fullscreen, it can be optimized by using a
         // a fullscreen triangle instead of a quad to avoid discarding pixels
@@ -349,30 +370,51 @@ protected:
                                       osg::PrimitiveSet::TRIANGLES, 0, 3));
         }
 
-        osg::ref_ptr<EffectGeode> quad = new EffectGeode;
-        if (!eff_file.empty()) {
-            Effect *eff = makeEffect(eff_file, true, 0);
-            if (eff)
-                quad->setEffect(eff);
-        }
-        quad->addDrawable(geom);
-        quad->setCullingActive(false);
-
-        osg::ref_ptr<osg::StateSet> quad_state = quad->getOrCreateStateSet();
-        int values = osg::StateAttribute::OFF | osg::StateAttribute::PROTECTED;
-        quad_state->setAttribute(new osg::PolygonMode(
-                                     osg::PolygonMode::FRONT_AND_BACK,
-                                     osg::PolygonMode::FILL),
-                                 values);
-        quad_state->setMode(GL_LIGHTING,   values);
-        quad_state->setMode(GL_DEPTH_TEST, values);
-
-        return quad.release();
+        return geom.release();
     }
 };
 RegisterPassBuilder<QuadPassBuilder> registerQuadPass("quad");
 
 //------------------------------------------------------------------------------
+
+class ShadowMapCullCallback : public osg::NodeCallback {
+public:
+    ShadowMapCullCallback(const std::string &suffix) {
+        _light_matrix_uniform = new osg::Uniform(
+            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix);
+    }
+
+    virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
+        osg::Camera *camera = static_cast<osg::Camera *>(node);
+
+        traverse(node, nv);
+
+        // The light matrix uniform is updated after the traverse in case the
+        // OSG near/far plane calculations were enabled
+        osg::Matrixf light_matrix =
+            // Include the real camera inverse view matrix because if the shader
+            // used world coordinates, there would be precision issues.
+            _real_inverse_view *
+            camera->getViewMatrix() *
+            camera->getProjectionMatrix() *
+            // Bias matrices
+            osg::Matrix::translate(1.0, 1.0, 1.0) *
+            osg::Matrix::scale(0.5, 0.5, 0.5);
+        _light_matrix_uniform->set(light_matrix);
+    }
+
+    void setRealInverseViewMatrix(const osg::Matrix &matrix) {
+        _real_inverse_view = matrix;
+    }
+
+    osg::Uniform *getLightMatrixUniform() const {
+        return _light_matrix_uniform.get();
+    }
+
+protected:
+    osg::Matrix                _real_inverse_view;
+    osg::ref_ptr<osg::Uniform> _light_matrix_uniform;
+};
 
 class LightFinder : public osg::NodeVisitor {
 public:
@@ -406,15 +448,14 @@ protected:
 
 struct ShadowMapUpdateCallback : public Pass::PassUpdateCallback {
 public:
-    ShadowMapUpdateCallback(const std::string &light_name,
+    ShadowMapUpdateCallback(ShadowMapCullCallback *cull_callback,
+                            const std::string &light_name,
                             float near_m, float far_m,
-                            const std::string &suffix,
                             int sm_width, int sm_height) :
+        _cull_callback(cull_callback),
         _light_finder(new LightFinder(light_name)),
         _near_m(near_m),
         _far_m(far_m) {
-        _light_matrix_uniform = new osg::Uniform(
-            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix);
         _half_sm_size = osg::Vec2d((double)sm_width, (double)sm_height) / 2.0;
     }
     virtual void updatePass(Pass &pass,
@@ -443,6 +484,7 @@ public:
         // This is not a problem though (for now).
 
         osg::Matrix view_inverse = osg::Matrix::inverse(view_matrix);
+        _cull_callback->setRealInverseViewMatrix(view_inverse);
 
         // Calculate the light's point of view transformation matrices.
         // Taken from Project Rembrandt.
@@ -489,37 +531,30 @@ public:
         osg::Matrixd round_matrix = osg::Matrixd::translate(
             rounding.x(), rounding.y(), 0.0);
         light_proj_matrix *= round_matrix;
-
-        osg::Matrixf light_matrix =
-            // Include the real camera inverse view matrix because if the shader
-            // used world coordinates, there would be precision issues.
-            view_inverse *
-            camera->getViewMatrix() *
-            camera->getProjectionMatrix() *
-            // Bias matrices
-            osg::Matrix::translate(1.0, 1.0, 1.0) *
-            osg::Matrix::scale(0.5, 0.5, 0.5);
-        _light_matrix_uniform->set(light_matrix);
     }
 
-    osg::Uniform *getLightMatrixUniform() const {
-        return _light_matrix_uniform.get();
-    }
 protected:
+    osg::observer_ptr<ShadowMapCullCallback> _cull_callback;
     osg::ref_ptr<LightFinder>     _light_finder;
     float                         _near_m;
     float                         _far_m;
-    osg::ref_ptr<osg::Uniform>    _light_matrix_uniform;
     osg::Vec2d                    _half_sm_size;
 };
 
 struct ShadowMapPassBuilder : public PassBuilder {
-    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root) {
-        osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root);
-        pass->useMastersSceneData = true;
+    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root,
+                        const SGReaderWriterOptions *options) {
+        osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root, options);
 
         osg::Camera *camera = pass->camera;
         camera->setReferenceFrame(osg::Camera::ABSOLUTE_RF_INHERIT_VIEWPOINT);
+        camera->setCullingMode(camera->getCullingMode() &
+                               ~osg::CullSettings::SMALL_FEATURE_CULLING);
+        //camera->setComputeNearFarMode(
+        //    osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
+
+        ShadowMapCullCallback *cull_callback = new ShadowMapCullCallback(pass->name);
+        camera->setCullCallback(cull_callback);
 
         std::string light_name = root->getStringValue("light-name");
         float near_m = root->getFloatValue("near-m");
@@ -527,9 +562,9 @@ struct ShadowMapPassBuilder : public PassBuilder {
         int sm_width  = camera->getViewport()->width();
         int sm_height = camera->getViewport()->height();
         pass->update_callback = new ShadowMapUpdateCallback(
+            cull_callback,
             light_name,
             near_m, far_m,
-            pass->name,
             sm_width, sm_height);
 
         return pass.release();
@@ -626,9 +661,9 @@ protected:
 
 struct ScenePassBuilder : public PassBuilder {
 public:
-    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root) {
-        osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root);
-        pass->useMastersSceneData = true;
+    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root,
+                        const SGReaderWriterOptions *options) {
+        osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root, options);
         pass->inherit_cull_mask = true;
 
         osg::Camera *camera = pass->camera;
@@ -636,7 +671,8 @@ public:
 
         const SGPropertyNode *clustered = root->getChild("clustered-forward");
         if (clustered) {
-            camera->setInitialDrawCallback(new ClusteredForwardDrawCallback);
+            int tile_size = clustered->getIntValue("tile-size", 64);
+            camera->setInitialDrawCallback(new ClusteredForwardDrawCallback(tile_size));
         }
 
         int cubemap_face = root->getIntValue("cubemap-face", -1);
@@ -644,23 +680,26 @@ public:
         float zFar  = root->getFloatValue("z-far",  0.0f);
         pass->update_callback = new SceneUpdateCallback(cubemap_face, zNear, zFar);
 
-        std::string shadow_pass_name = root->getStringValue("use-shadow-pass");
-        if (!shadow_pass_name.empty()) {
-            Pass *shadow_pass = compositor->getPass(shadow_pass_name);
-            if (shadow_pass) {
-                ShadowMapUpdateCallback *updatecb =
-                    dynamic_cast<ShadowMapUpdateCallback *>(
-                        shadow_pass->update_callback.get());
-                if (updatecb) {
-                    camera->getOrCreateStateSet()->addUniform(
-                        updatecb->getLightMatrixUniform());
+        PropertyList p_shadow_passes = root->getChildren("use-shadow-pass");
+        for (const auto &p_shadow_pass : p_shadow_passes) {
+            std::string shadow_pass_name = p_shadow_pass->getStringValue();
+            if (!shadow_pass_name.empty()) {
+                Pass *shadow_pass = compositor->getPass(shadow_pass_name);
+                if (shadow_pass) {
+                    ShadowMapCullCallback *cullcb =
+                        dynamic_cast<ShadowMapCullCallback *>(
+                            shadow_pass->camera->getCullCallback());
+                    if (cullcb) {
+                        camera->getOrCreateStateSet()->addUniform(
+                            cullcb->getLightMatrixUniform());
+                    } else {
+                        SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Pass '"
+                               << shadow_pass_name << "is not a shadow pass");
+                    }
                 } else {
-                    SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Pass '"
-                           << shadow_pass_name << "is not a shadow pass");
+                    SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Could not "
+                           "find shadow pass named '" << shadow_pass_name << "'");
                 }
-            } else {
-                SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Could not "
-                       "find shadow pass named '" << shadow_pass_name << "'");
             }
         }
 
@@ -673,7 +712,8 @@ RegisterPassBuilder<ScenePassBuilder> registerScenePass("scene");
 //------------------------------------------------------------------------------
 
 Pass *
-buildPass(Compositor *compositor, const SGPropertyNode *root)
+buildPass(Compositor *compositor, const SGPropertyNode *root,
+          const SGReaderWriterOptions *options)
 {
     std::string type = root->getStringValue("type");
     if (type.empty()) {
@@ -687,7 +727,7 @@ buildPass(Compositor *compositor, const SGPropertyNode *root)
         return 0;
     }
 
-    return builder->build(compositor, root);
+    return builder->build(compositor, root, options);
 }
 
 } // namespace compositor

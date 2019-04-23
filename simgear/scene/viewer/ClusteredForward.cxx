@@ -49,9 +49,9 @@ Light LIGHT_LIST[NUM_LIGHTS] = {
 };
 ///// END DEBUG
 
-ClusteredForwardDrawCallback::ClusteredForwardDrawCallback() :
+ClusteredForwardDrawCallback::ClusteredForwardDrawCallback(int tile_size) :
     _initialized(false),
-    _tile_size(64),
+    _tile_size(tile_size),
     _light_grid(new osg::Image),
     _light_indices(new osg::Image),
     _light_data(new osg::FloatArray(MAX_POINT_LIGHTS))
@@ -105,15 +105,15 @@ ClusteredForwardDrawCallback::operator()(osg::RenderInfo &renderInfo) const
         _light_data->setBufferObject(light_data_ubo.get());
 
 #if OSG_VERSION_LESS_THAN(3,6,0)
-         osg::ref_ptr<osg::UniformBufferBinding> light_data_ubb =
+        osg::ref_ptr<osg::UniformBufferBinding> light_data_ubb =
             new osg::UniformBufferBinding(0, light_data_ubo.get(),
                                           0, MAX_POINT_LIGHTS * 8 * sizeof(GLfloat));
 #else
-         osg::ref_ptr<osg::UniformBufferBinding> light_data_ubb =
+        osg::ref_ptr<osg::UniformBufferBinding> light_data_ubb =
             new osg::UniformBufferBinding(0, _light_data.get(),
                                           0, MAX_POINT_LIGHTS * 8 * sizeof(GLfloat));
 #endif
-light_data_ubb->setDataVariance(osg::Object::DYNAMIC);
+        light_data_ubb->setDataVariance(osg::Object::DYNAMIC);
 
         camera->getOrCreateStateSet()->setAttribute(
             light_data_ubb.get(), osg::StateAttribute::ON);

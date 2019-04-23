@@ -22,6 +22,9 @@
 class SGPropertyNode;
 
 namespace simgear {
+
+class SGReaderWriterOptions;
+
 namespace compositor {
 
 class Compositor;
@@ -38,7 +41,8 @@ struct Buffer : public osg::Referenced {
     float width_scale, height_scale;
 };
 
-Buffer *buildBuffer(Compositor *compositor, const SGPropertyNode *node);
+Buffer *buildBuffer(Compositor *compositor, const SGPropertyNode *node,
+                    const SGReaderWriterOptions *options);
 
 } // namespace compositor
 } // namespace simgear

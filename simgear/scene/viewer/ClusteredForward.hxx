@@ -24,7 +24,7 @@ namespace compositor {
 
 class ClusteredForwardDrawCallback : public osg::Camera::DrawCallback {
 public:
-    ClusteredForwardDrawCallback();
+    ClusteredForwardDrawCallback(int tile_size);
     virtual void operator()(osg::RenderInfo &renderInfo) const;
 protected:
     mutable bool                   _initialized;

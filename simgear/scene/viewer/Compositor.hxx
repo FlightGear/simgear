@@ -73,7 +73,8 @@ public:
     static Compositor *create(osg::View *view,
                               osg::GraphicsContext *gc,
                               osg::Viewport *viewport,
-                              const SGPropertyNode *property_list);
+                              const SGPropertyNode *property_list,
+                              const SGReaderWriterOptions *options);
     /**
      * \overload
      * \brief Create a Compositor from a file.
@@ -84,7 +85,8 @@ public:
     static Compositor *create(osg::View *view,
                               osg::GraphicsContext *gc,
                               osg::Viewport *viewport,
-                              const std::string &name);
+                              const std::string &name,
+                              const SGReaderWriterOptions *options);
 
     void               update(const osg::Matrix &view_matrix,
                               const osg::Matrix &proj_matrix);
@@ -95,9 +97,11 @@ public:
         const osg::Vec2d& windowPos,
         osgUtil::LineSegmentIntersector::Intersections& intersections);
 
-    const osg::GraphicsContext *getGraphicsContext() const { return _gc; }
+    osg::View         *getView() const { return _view; }
 
-    const osg::Viewport *getViewport() const { return _viewport; }
+    osg::GraphicsContext *getGraphicsContext() const { return _gc; }
+
+    osg::Viewport     *getViewport() const { return _viewport; }
 
     typedef std::array<
         osg::ref_ptr<osg::Uniform>,
@@ -121,8 +125,6 @@ public:
     Pass *             getPass(const std::string &name) const;
 
 protected:
-    friend class PassBuilder;
-
     osg::View                   *_view;
     osg::GraphicsContext        *_gc;
     osg::ref_ptr<osg::Viewport>  _viewport;

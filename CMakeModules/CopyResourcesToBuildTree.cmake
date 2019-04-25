@@ -30,12 +30,12 @@ function(copy_resources_to_build_tree _target)
 	endif()
 
 	get_target_property(_path ${_target} LOCATION)
-	get_filename_component(_path "${_path}" PATH)
+	get_filename_component(_path "${_path}" DIRECTORY)
 
 	if(NOT MSVC AND NOT "${CMAKE_GENERATOR}" MATCHES "Makefiles")
 		foreach(_config ${CMAKE_CONFIGURATION_TYPES})
 			get_target_property(_path${_config} ${_target} LOCATION_${_config})
-			get_filename_component(_path${_config} "${_path${_config}}" PATH)
+			get_filename_component(_path${_config} "${_path${_config}}" DIRECTORY)
 			add_custom_command(TARGET ${_target}
 						POST_BUILD
 						COMMAND

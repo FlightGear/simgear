@@ -98,6 +98,8 @@ public:
     void setGLExtensionsPred(float glVersion,
                              const std::vector<std::string>& extensions);
     void refreshValidity();
+    const std::string &getScheme() const { return _scheme; }
+    void setScheme(const std::string &scheme) { _scheme = scheme; }
 protected:
     // Validity of technique in a graphics context.
     struct ContextInfo : public osg::Referenced
@@ -117,6 +119,7 @@ protected:
     osg::ref_ptr<osg::StateSet> _shadowingStateSet;
     SGSharedPtr<SGExpressionb> _validExpression;
     int _contextIdLocation;
+    std::string _scheme;
 };
 
 class TechniquePredParser : public expression::ExpressionParser

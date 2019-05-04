@@ -1812,7 +1812,7 @@ namespace
     {
         static void write(const ImageUtils::PixelWriter* iw, const osg::Vec4f& c, int s, int t, int r, int m)
         {
-            GLubyte* ptr = (GLubyte*)iw->data(s, t, r, m);
+            iw->data(s, t, r, m);
             //OE_WARN << LC << "Target GL_UNSIGNED_BYTE_3_3_2 not yet implemented" << std::endl;
         }
     };

@@ -67,10 +67,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                << " has no name. It won't be addressable by name!");
     }
     pass->type = root->getStringValue("type");
-
-    std::string eff_override_file = root->getStringValue("effect-override");
-    if (!eff_override_file.empty())
-        pass->effect_override = makeEffect(eff_override_file, true, options);
+    pass->effect_scheme = root->getStringValue("effect-scheme");
 
     osg::Camera *camera = new Camera;
     pass->camera = camera;

@@ -92,7 +92,7 @@ public:
     SGPropertyNode_ptr root;
     // Pointer to the parameters node, if it exists
     SGPropertyNode_ptr parametersProp;
-    Technique* chooseTechnique(osg::RenderInfo* renderInfo);
+    Technique* chooseTechnique(osg::RenderInfo* renderInfo, const std::string &scheme);
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* state = 0) const;
     /**

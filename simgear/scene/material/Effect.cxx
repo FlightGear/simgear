@@ -77,6 +77,7 @@
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 #include <simgear/structure/SGExpression.hxx>
+#include <simgear/props/props_io.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>
@@ -245,11 +246,12 @@ int Effect::getGenerator(Effect::Generator what) const
 
 // There should always be a valid technique in an effect.
 
-Technique* Effect::chooseTechnique(RenderInfo* info)
+Technique* Effect::chooseTechnique(RenderInfo* info, const std::string &scheme)
 {
     BOOST_FOREACH(ref_ptr<Technique>& technique, techniques)
     {
-        if (technique->valid(info) == Technique::VALID)
+        if (technique->valid(info) == Technique::VALID &&
+            technique->getScheme() == scheme)
             return technique.get();
     }
     return 0;
@@ -1308,6 +1310,7 @@ void buildTechnique(Effect* effect, const SGPropertyNode* prop,
 {
     Technique* tniq = new Technique;
     effect->techniques.push_back(tniq);
+    tniq->setScheme(prop->getStringValue("scheme"));
     const SGPropertyNode* predProp = prop->getChild("predicate");
     if (!predProp) {
         tniq->setAlwaysValid(true);
@@ -1411,12 +1414,60 @@ bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
     return true;
 }
 
+SGPropertyNode_ptr schemeList;
+
+void mergeSchemesFallbacks(Effect *effect, const SGReaderWriterOptions *options)
+{
+    if (!schemeList) {
+        schemeList = new SGPropertyNode;
+        const string schemes_file("Effects/schemes.xml");
+        string absFileName
+            = SGModelLib::findDataFile(schemes_file, options);
+        if (absFileName.empty()) {
+            SG_LOG(SG_INPUT, SG_ALERT, "Could not find '" << schemes_file << "'");
+            return;
+        }
+        try {
+            readProperties(absFileName, schemeList, 0, true);
+        } catch (sg_io_exception& e) {
+            SG_LOG(SG_INPUT, SG_ALERT, "Error reading '" << schemes_file <<
+                   "': " << e.getFormattedMessage());
+            return;
+        }
+    }
+
+    PropertyList p_schemes = schemeList->getChildren("scheme");
+    for (const auto &p_scheme : p_schemes) {
+        string scheme_name   = p_scheme->getStringValue("name");
+        string fallback_name = p_scheme->getStringValue("fallback");
+        if (scheme_name.empty() || fallback_name.empty())
+            continue;
+        vector<SGPropertyNode_ptr> techniques = effect->root->getChildren("technique");
+        auto it = std::find_if(techniques.begin(), techniques.end(),
+                               [&scheme_name](const SGPropertyNode_ptr &tniq) {
+                                   return tniq->getStringValue("scheme") == scheme_name;
+                               });
+        // Only merge the fallback effect if we haven't found a technique
+        // implementing the scheme
+        if (it == techniques.end()) {
+            ref_ptr<Effect> fallback = makeEffect(fallback_name, false, options);
+            if (fallback) {
+                SGPropertyNode *new_root = new SGPropertyNode;
+                mergePropertyTrees(new_root, effect->root, fallback->root);
+                effect->root = new_root;
+                effect->parametersProp = effect->root->getChild("parameters");
+            }
+        }
+    }
+}
+
 // Walk the techniques property tree, building techniques and
 // passes.
 static SGMutex  realizeTechniques_lock;
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
     SGGuard<SGMutex> g(realizeTechniques_lock);
+    mergeSchemesFallbacks(this, options);
 
     if (_isRealized)
         return true;

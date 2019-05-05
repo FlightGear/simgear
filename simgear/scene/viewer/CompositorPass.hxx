@@ -57,9 +57,8 @@ struct Pass : public osg::Referenced {
     int                              render_order;
     std::string                      name;
     std::string                      type;
+    std::string                      effect_scheme;
     osg::ref_ptr<osg::Camera>        camera;
-    /** If null, there is no effect override for this pass. */
-    osg::ref_ptr<Effect>             effect_override;
     bool                             useMastersSceneData;
     osg::Node::NodeMask              cull_mask;
     /** Whether the cull mask is ANDed with the view master camera cull mask. */

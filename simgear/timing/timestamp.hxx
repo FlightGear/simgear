@@ -221,9 +221,13 @@ public:
     { return sleepFor(fromMSec(msec)); }
 
     /**
-     * elapsed time since the stamp was taken, in msec
-     */
+    * elapsed time since the stamp was taken, in msec
+    */
     int elapsedMSec() const;
+    /**
+    * elapsed time since the stamp was taken, in usec
+    */
+    int elapsedUSec() const;
 private:
     SGTimeStamp(sec_type sec, nsec_type nsec)
     { setTime(sec, nsec); }

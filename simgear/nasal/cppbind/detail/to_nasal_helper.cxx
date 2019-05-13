@@ -25,6 +25,12 @@
 
 #include <boost/function.hpp>
 
+#include <simgear/threads/SGThread.hxx>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+
+
 namespace nasal
 {
   //----------------------------------------------------------------------------
@@ -123,4 +129,116 @@ namespace nasal
     );
   }
 
+  template <class T>   class FastStack
+  {
+  public:
+      T* st;
+      int allocationSize;
+      int lastIndex;
+      //std::mutex mutex_;
+
+  public:
+      FastStack(int stackSize);
+      ~FastStack();
+
+      inline void resize(int newSize);
+      inline void push(T x);
+      inline void pop();
+      inline void clear();
+      inline void iterate(int(*process)(naRef v));
+      inline size_t size() {
+          return lastIndex + 1;
+      }
+      T top()
+      {
+          //std::unique_lock<std::mutex> lck(mutex_);
+          return st[lastIndex];
+      }
+      void push_if_not_present(naRef r);
+  };
+
+  template <class T>
+  FastStack<T>::FastStack(int stackSize)
+  {
+      st = NULL;
+      this->allocationSize = stackSize;
+      st = (T*)malloc(stackSize * sizeof(naRef));
+      lastIndex = -1;
+  }
+  template <class T>
+  FastStack<T>::~FastStack()
+  {
+      delete[] st;
+  }
+
+  template <class T>
+  void FastStack<T>::clear()
+  {
+      lastIndex = -1;
+  }
+
+  template <class T>
+  void FastStack<T>::push_if_not_present(naRef r) {
+      /*for (int i = 0; i <= lastIndex; i++)
+          if (st[i] == r)
+              return;*/
+      push(r);
+  }
+  template <class T>
+  void FastStack<T>::iterate(int(*process)(naRef v))
+  {
+      for (int i = 0; i <= lastIndex; i++)
+          if (process(st[i]))
+              break;
+  }
+
+  template <class T>
+  void FastStack<T>::pop()
+  {
+      --lastIndex;
+  }
+
+  template <class T>
+  void FastStack<T>::push(T x)
+  {
+      if (++lastIndex >= allocationSize)
+          resize(allocationSize * 2);
+      st[lastIndex] = x;
+  }
+
+  template <class T>
+  void FastStack<T>::resize(int newSize)
+  {
+      //std::unique_lock<std::mutex> lck(mutex_);
+      T* new_st = (T*)realloc(st, newSize * sizeof(naRef));
+      if (new_st)
+      {
+          st = new_st;
+          allocationSize = newSize;
+          SG_LOG(SG_NASAL, SG_WARN, "Increased tc stack to " << allocationSize);
+      }
+      else
+          throw "Failed to grow tc stack";
+  } 
+  FastStack < naRef> t_stack(40);
+  extern"C" {
+
+
+      int __stack_hwm = 0;
+      void na_t_stack_push(naRef v) {
+          t_stack.push(v);
+
+          if (t_stack.size() > __stack_hwm)
+              __stack_hwm = t_stack.size();
+      }
+      extern int na_t_stack_count() {
+          return t_stack.size();
+      }
+      extern naRef na_t_stack_pop()
+      {
+          naRef v = t_stack.top();
+          t_stack.pop();
+          return v;
+      }
+  }
 } // namespace nasal

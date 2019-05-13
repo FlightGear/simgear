@@ -176,6 +176,17 @@ void naiGCMarkHash(naRef hash)
         }
 }
 
+void oldnaiGCMarkHash(naRef hash)
+{
+    int i;
+    HashRec* hr = REC(hash);
+    for (i = 0; hr && i < NCELLS(hr); i++)
+        if (TAB(hr)[i] >= 0) {
+            oldnaiGCMark(ENTS(hr)[TAB(hr)[i]].key);
+            oldnaiGCMark(ENTS(hr)[TAB(hr)[i]].val);
+        }
+}
+
 static void tmpStr(naRef* out, struct naStr* str, const char* key)
 {
     str->type = T_STR;

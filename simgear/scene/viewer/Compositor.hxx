@@ -93,10 +93,6 @@ public:
 
     void               resized();
 
-    bool               computeIntersection(
-        const osg::Vec2d& windowPos,
-        osgUtil::LineSegmentIntersector::Intersections& intersections);
-
     osg::View         *getView() const { return _view; }
 
     osg::GraphicsContext *getGraphicsContext() const { return _gc; }

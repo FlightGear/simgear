@@ -202,51 +202,6 @@ Compositor::resized()
     }
 }
 
-bool
-Compositor::computeIntersection(
-    const osg::Vec2d& windowPos,
-    osgUtil::LineSegmentIntersector::Intersections& intersections)
-{
-    using osgUtil::Intersector;
-    using osgUtil::LineSegmentIntersector;
-
-    osg::Camera *camera = getPass(0)->camera;
-    const osg::Viewport* viewport = camera->getViewport();
-    SGRect<double> viewportRect(viewport->x(), viewport->y(),
-                                viewport->x() + viewport->width() - 1.0,
-                                viewport->y() + viewport->height()- 1.0);
-
-    double epsilon = 0.5;
-    if (!viewportRect.contains(windowPos.x(), windowPos.y(), epsilon))
-        return false;
-
-    osg::Vec4d start(windowPos.x(), windowPos.y(), 0.0, 1.0);
-    osg::Vec4d end(windowPos.x(), windowPos.y(), 1.0, 1.0);
-    osg::Matrix windowMat = viewport->computeWindowMatrix();
-    osg::Matrix startPtMat = osg::Matrix::inverse(camera->getProjectionMatrix()
-                                                  * windowMat);
-    osg::Matrix endPtMat = startPtMat; // no far camera
-
-    start = start * startPtMat;
-    start /= start.w();
-    end = end * endPtMat;
-    end /= end.w();
-    osg::ref_ptr<LineSegmentIntersector> picker
-        = new LineSegmentIntersector(Intersector::VIEW,
-                                     osg::Vec3d(start.x(), start.y(), start.z()),
-                                     osg::Vec3d(end.x(), end.y(), end.z()));
-    osgUtil::IntersectionVisitor iv(picker.get());
-    iv.setTraversalMask( simgear::PICK_BIT );
-
-    const_cast<osg::Camera*>(camera)->accept(iv);
-    if (picker->containsIntersections()) {
-        intersections = picker->getIntersections();
-        return true;
-    }
-
-    return false;
-}
-
 void
 Compositor::addBuffer(const std::string &name, Buffer *buffer)
 {

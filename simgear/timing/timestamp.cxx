@@ -345,13 +345,3 @@ int SGTimeStamp::elapsedUSec() const
 
     return static_cast<int>((now - *this).toUSecs());
 }
-extern "C" {
-    SGTimeStamp global_timestamp;
-    void global_stamp() {
-        global_timestamp.stamp();
-    }
-    extern int global_elapsedUSec()
-    {
-        return global_timestamp.elapsedUSec();
-    }
-    }

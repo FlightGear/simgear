@@ -1,6 +1,7 @@
 #include "nasal.h"
 #include "data.h"
 #include "code.h"
+
 #define MIN_BLOCK_SIZE 32
 
 static void reap(struct naPool* p);
@@ -11,17 +12,14 @@ struct Block {
     char* block;
     struct Block* next;
 };
+
 // Must be called with the giant exclusive lock!
-extern void global_stamp();
-extern int global_elapsedUSec();
-extern char *getName();
 static void freeDead()
 {
     int i;
     for(i=0; i<globals->ndead; i++)
         naFree(globals->deadBlocks[i]);
     globals->ndead = 0;
-    printf("--> freedead (%d) : %d", i, global_elapsedUSec());
 }
 
 static void marktemps(struct Context* c)
@@ -54,7 +52,6 @@ static void garbageCollect()
         marktemps(c);
         c = c->nextAll;
     }
-    printf("--> garbageCollect: %d ", global_elapsedUSec());
 
     mark(globals->save);
     mark(globals->save_hash);
@@ -63,13 +60,10 @@ static void garbageCollect()
     mark(globals->argRef);
     mark(globals->parentsRef);
 
-    printf("m> %d", global_elapsedUSec());
-
     // Finally collect all the freed objects
-    for (i = 0; i < NUM_NASAL_TYPES; i++) {
+    for(i=0; i<NUM_NASAL_TYPES; i++)
         reap(&(globals->pools[i]));
-        printf(" p(%d)> %d", i, global_elapsedUSec());
-    }
+
     // Make enough space for the dead blocks we need to free during
     // execution.  This works out to 1 spot for every 2 live objects,
     // which should be limit the number of bottleneck operations
@@ -81,7 +75,6 @@ static void garbageCollect()
         globals->deadBlocks = naAlloc(sizeof(void*) * globals->deadsz);
     }
     globals->needGC = 0;
-    printf(">> %d ", global_elapsedUSec());
 }
 
 void naModLock()
@@ -111,7 +104,6 @@ void naModUnlock()
 // you think about it).
 static void bottleneck()
 {
-    global_stamp();
     struct Globals* g = globals;
     g->bottleneck = 1;
     while(g->bottleneck && g->waitCount < g->nThreads - 1) {
@@ -119,16 +111,12 @@ static void bottleneck()
         UNLOCK(); naSemDown(g->sem); LOCK();
         g->waitCount--;
     }
-    printf("bottleneck wait finished %d usec", global_elapsedUSec());
     if(g->waitCount >= g->nThreads - 1) {
         freeDead();
-        //if(g->needGC) 
-            garbageCollect();
+        if(g->needGC) garbageCollect();
         if(g->waitCount) naSemUp(g->sem, g->waitCount);
         g->bottleneck = 0;
     }
-    char *c = getName();
-    printf("bottleneck finished: %d %s\n", global_elapsedUSec(), c);
 }
 
 void naGC()

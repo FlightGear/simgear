@@ -24,21 +24,6 @@ struct Globals* globals = 0;
 
 static naRef bindFunction(naContext ctx, struct Frame* f, naRef code);
 
-char __name[3000] = { 0 };
-int init = 0;
-void getSource(struct Context* c) {
-    naRef v = naGetSourceFile(c, 0);
-    init = 1;
-    if (!IS_NIL(v))
-        snprintf(__name, 3000, "%s:%d", naStr_data(v), naGetLine(c, 0));
-    else
-        *__name = 0;
-}
-char *getName() {
-    if (init)
-        return __name;
-    return "**";
-}
 #define ERR(c, msg) naRuntimeError((c),(msg))
 void naRuntimeError(naContext c, const char* fmt, ...)
 {
@@ -320,7 +305,6 @@ static void checkNamedArgs(naContext ctx, struct naCode* c, struct naHash* h)
 
 static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named)
 {
-    getSource(ctx);
     naRef *args, func, code, obj = naNil();
     struct Frame* f;
     int opf = ctx->opTop - nargs;
@@ -849,13 +833,9 @@ naRef naGetSourceFile(naContext ctx, int frame)
 {
     naRef f;
     frame = findFrame(ctx, &ctx, frame);
-    if (frame >= 0) {
-        f = ctx->fStack[frame].func;
-        f = PTR(f).func->code;
-        if (!IS_NIL(f) && PTR(f).code)
-            return PTR(f).code->srcFile;
-    }
-    return naNil();
+    f = ctx->fStack[frame].func;
+    f = PTR(f).func->code;
+    return PTR(f).code->srcFile;
 }
 
 char* naGetError(naContext ctx)

@@ -6,6 +6,7 @@ foreach( mylibfolder
         bvh
         debug
         embedded_resources
+        emesary
         ephemeris
         io
         magvar

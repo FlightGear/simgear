@@ -1,5 +1,5 @@
 set(HEADERS
-  ClusteredForward.hxx
+  ClusteredShading.hxx
   Compositor.hxx
   CompositorBuffer.hxx
   CompositorPass.hxx
@@ -7,7 +7,7 @@ set(HEADERS
   )
 
 set(SOURCES
-  ClusteredForward.cxx
+  ClusteredShading.cxx
   Compositor.cxx
   CompositorBuffer.cxx
   CompositorPass.cxx

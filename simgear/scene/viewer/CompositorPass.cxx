@@ -25,13 +25,14 @@
 #include <osgUtil/CullVisitor>
 
 #include <simgear/props/vectorPropTemplates.hxx>
+#include <simgear/scene/material/EffectCullVisitor.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/structure/exception.hxx>
 
-#include "ClusteredForward.hxx"
+#include "ClusteredShading.hxx"
 #include "Compositor.hxx"
 #include "CompositorUtil.hxx"
 
@@ -656,6 +657,27 @@ protected:
     float _zFar;
 };
 
+class SceneCullCallback : public osg::NodeCallback {
+public:
+    SceneCullCallback(ClusteredShading *clustered) :
+        _clustered(clustered) {}
+
+    virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
+        osg::Camera *camera = static_cast<osg::Camera *>(node);
+        EffectCullVisitor *cv = dynamic_cast<EffectCullVisitor *>(nv);
+
+        cv->traverse(*camera);
+
+        if (_clustered) {
+            // Retrieve the light list from the cull visitor
+            SGLightList light_list = cv->getLightList();
+            _clustered->update(light_list);
+        }
+    }
+protected:
+    osg::ref_ptr<ClusteredShading> _clustered;
+};
+
 struct ScenePassBuilder : public PassBuilder {
 public:
     virtual Pass *build(Compositor *compositor, const SGPropertyNode *root,
@@ -666,11 +688,12 @@ public:
         osg::Camera *camera = pass->camera;
         camera->setAllowEventFocus(true);
 
-        const SGPropertyNode *clustered = root->getChild("clustered-forward");
-        if (clustered) {
-            int tile_size = clustered->getIntValue("tile-size", 64);
-            camera->setInitialDrawCallback(new ClusteredForwardDrawCallback(tile_size));
-        }
+        const SGPropertyNode *p_clustered = root->getNode("clustered-shading");
+        ClusteredShading *clustered = 0;
+        if (p_clustered)
+            clustered = new ClusteredShading(camera, p_clustered);
+
+        camera->setCullCallback(new SceneCullCallback(clustered));
 
         int cubemap_face = root->getIntValue("cubemap-face", -1);
         float zNear = root->getFloatValue("z-near", 0.0f);

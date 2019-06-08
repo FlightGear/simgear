@@ -24,7 +24,7 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-#ifdef WINDOWS
+#if defined(_WINDOWS) || defined(WINDOWS)
 # include <winsock2.h>          /* includes <windows.h> */
 # include <ws2tcpip.h>          /* needed for struct in6_addr */
 #else
@@ -392,7 +392,7 @@ dns_set_tmcbck(struct dns_ctx *ctx, dns_utm_fn *fn, void *data) {
 }
 
 static unsigned dns_nonrandom_32(void) {
-#ifdef WINDOWS
+#if defined(_WINDOWS) || defined(WINDOWS)
   FILETIME ft;
   GetSystemTimeAsFileTime(&ft);
   return ft.dwLowDateTime;
@@ -551,7 +551,7 @@ int dns_open(struct dns_ctx *ctx) {
     ctx->dnsc_qstatus = DNS_E_TEMPFAIL;
     return -1;
   }
-#ifdef WINDOWS
+#if defined(_WINDOWS) || defined(WINDOWS)
   { unsigned long on = 1;
     if (ioctlsocket(sock, FIONBIO, &on) == SOCKET_ERROR) {
       closesocket(sock);
@@ -991,7 +991,7 @@ again: /* receive the reply */
      * or remote.  On local errors, we should stop, while
      * remote errors should be ignored (for now anyway).
      */
-#ifdef WINDOWS
+#if defined(_WINDOWS) || defined(WINDOWS)
     if (WSAGetLastError() == WSAEWOULDBLOCK)
 #else
     if (errno == EAGAIN)

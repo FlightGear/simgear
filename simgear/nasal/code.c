@@ -24,6 +24,21 @@ struct Globals* globals = 0;
 
 static naRef bindFunction(naContext ctx, struct Frame* f, naRef code);
 
+//char __name[3000] = { 0 };
+//int init = 0;
+//void getSource(struct Context* c) {
+//    naRef v = naGetSourceFile(c, 0);
+//    init = 1;
+//    if (!IS_NIL(v))
+//        snprintf(__name, 3000, "%s:%d", naStr_data(v), naGetLine(c, 0));
+//    else
+//        *__name = 0;
+//}
+//char *getName() {
+//    if (init)
+//        return __name;
+//    return "**";
+//}
 #define ERR(c, msg) naRuntimeError((c),(msg))
 void naRuntimeError(naContext c, const char* fmt, ...)
 {
@@ -157,7 +172,7 @@ static void initContext(naContext c)
     c->error[0] = 0;
     c->userData = 0;
 }
-
+#define BASE_SIZE 256000
 static void initGlobals()
 {
     int i;
@@ -168,10 +183,10 @@ static void initGlobals()
     globals->sem = naNewSem();
     globals->lock = naNewLock();
 
-    globals->allocCount = 256; // reasonable starting value
+    globals->allocCount = BASE_SIZE; // reasonable starting value
     for(i=0; i<NUM_NASAL_TYPES; i++)
         naGC_init(&(globals->pools[i]), i);
-    globals->deadsz = 256;
+    globals->deadsz = BASE_SIZE;
     globals->ndead = 0;
     globals->deadBlocks = naAlloc(sizeof(void*) * globals->deadsz);
 
@@ -305,6 +320,7 @@ static void checkNamedArgs(naContext ctx, struct naCode* c, struct naHash* h)
 
 static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named)
 {
+    //getSource(ctx);
     naRef *args, func, code, obj = naNil();
     struct Frame* f;
     int opf = ctx->opTop - nargs;
@@ -335,8 +351,9 @@ static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named
     f->ip = 0;
     f->bp = ctx->opFrame;
 
-    if(mcall) naHash_set(f->locals, globals->meRef, obj);
-
+    if (mcall) {
+        naHash_set(f->locals, globals->meRef, obj);
+    }
     if(named) checkNamedArgs(ctx, PTR(code).code, PTR(f->locals).hash);
     else      setupArgs(ctx, f, args, nargs);
 
@@ -833,9 +850,13 @@ naRef naGetSourceFile(naContext ctx, int frame)
 {
     naRef f;
     frame = findFrame(ctx, &ctx, frame);
-    f = ctx->fStack[frame].func;
-    f = PTR(f).func->code;
-    return PTR(f).code->srcFile;
+    if (frame >= 0) {
+        f = ctx->fStack[frame].func;
+        f = PTR(f).func->code;
+        if (!IS_NIL(f) && PTR(f).code)
+            return PTR(f).code->srcFile;
+    }
+    return naNil();
 }
 
 char* naGetError(naContext ctx)
@@ -901,8 +922,9 @@ naRef naCall(naContext ctx, naRef func, int argc, naRef* args,
         func = naNewFunc(ctx, func);
         PTR(func).func->namespace = locals;
     }
-    if(!IS_NIL(obj))
+    if (!IS_NIL(obj)) {
         naHash_set(locals, globals->meRef, obj);
+    }
 
     ctx->opTop = ctx->markTop = 0;
     ctx->fTop = 1;

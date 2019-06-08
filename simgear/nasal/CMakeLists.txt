@@ -28,6 +28,7 @@ set(SOURCES
     code.h
     data.h
     parse.h
+    ThreadedGarbageCollector.cpp
     )
 
 simgear_component(nasal nasal "${SOURCES}" "${HEADERS}")

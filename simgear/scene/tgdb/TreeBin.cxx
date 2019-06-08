@@ -65,6 +65,7 @@ namespace simgear
 
 bool use_tree_shadows;
 bool use_tree_normals;
+//OpenThreads::ReentrantMutex treeAddMutex;
 
 // Tree instance scheme:
 // vertex - local position of quad vertex.
@@ -325,6 +326,15 @@ struct QuadTreeCleaner : public osg::NodeVisitor
     QuadTreeCleaner() : NodeVisitor(NodeVisitor::TRAVERSE_ALL_CHILDREN)
     {
     }
+    virtual ~QuadTreeCleaner() {
+        if (cleanupList.size()) {
+            for (auto const& x : cleanupList){
+                x.second->removeChild(x.first);
+            }
+        }
+    }
+    std::map<Node*, LOD*> cleanupList;
+    // lod.removeChildren(i, 1);
     void apply(LOD& lod)
     {
         for (int i  = lod.getNumChildren() - 1; i >= 0; --i) {
@@ -347,7 +357,7 @@ struct QuadTreeCleaner : public osg::NodeVisitor
                 }
             }
             if (geodeEmpty)
-                lod.removeChildren(i, 1);
+                cleanupList[lod.getChild(i)] = &lod;
         }
     }
 };
@@ -359,6 +369,7 @@ struct QuadTreeCleaner : public osg::NodeVisitor
 osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
                          const SGReaderWriterOptions* options)
 {
+//    OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(treeAddMutex);
     Matrix transInv = Matrix::inverse(transform);
     static Matrix ident;
     // Set up some shared structures.

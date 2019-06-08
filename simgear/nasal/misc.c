@@ -65,6 +65,7 @@ naRef naStringValue(naContext c, naRef r)
 
 naRef naNew(struct Context* c, int type)
 {
+    //getSource(c);
     naRef result;
     if(c->nfree[type] == 0)
         c->free[type] = naGC_get(&globals->pools[type],

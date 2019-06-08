@@ -295,28 +295,31 @@ static naRef f_die(naContext c, naRef me, int argc, naRef* args)
     return naNil(); // never executes
 }
 
-// Wrapper around vsnprintf, iteratively increasing the buffer size
-// until it fits.  Returned buffer should be freed by the caller.
+// Wrapper around vsnprintf that will allocate the required size
+// by calling vsnprintf with NULL and 0 - and vsnsprintf will measure the
+// required amount of characters which we then allocate and return
+// Returned buffer should be freed by the caller.
 static char* dosprintf(char* f, ...)
 {
     char* buf;
     va_list va;
-    int olen, len = 16;
+    int len = 0;
     va_start(va, f);
-    while(1) {
-        buf = naAlloc(len);
-        va_list vaCopy;
-        va_copy(vaCopy, va);
-        olen = vsnprintf(buf, len, f, vaCopy);
-        if(olen >= 0 && olen < len) {
-            va_end(va);
-            va_end(vaCopy);
-            return buf;
-        }
-        va_end(vaCopy);
-        naFree(buf);
-        len *= 2;
+    va_list vaCopy;
+    va_copy(vaCopy, va);
+    len = vsnprintf(0, 0, f, vaCopy);
+    if (len <= 0) {
+        buf = naAlloc(2);
+        *buf = 0;
     }
+    else {
+        len++;// allow for terminating null
+        buf = naAlloc(len);
+        len = vsnprintf(buf, len, f, vaCopy);
+    }
+    va_end(va);
+    va_end(vaCopy);
+    return buf;
 }
 
 // Inspects a printf format string f, and finds the next "%..." format

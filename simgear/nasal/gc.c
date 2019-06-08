@@ -1,25 +1,30 @@
 #include "nasal.h"
 #include "data.h"
 #include "code.h"
-
 #define MIN_BLOCK_SIZE 32
 
 static void reap(struct naPool* p);
 static void mark(naRef r);
+static void process_all(naRef r, int(*process)(naRef r));
+
 
 struct Block {
     int   size;
     char* block;
     struct Block* next;
 };
-
 // Must be called with the giant exclusive lock!
-static void freeDead()
+extern void global_stamp();
+extern int global_elapsedUSec();
+int nasal_gc_old = 0;
+
+static int freeDead()
 {
     int i;
     for(i=0; i<globals->ndead; i++)
         naFree(globals->deadBlocks[i]);
     globals->ndead = 0;
+    return i;
 }
 
 static void marktemps(struct Context* c)
@@ -32,49 +37,105 @@ static void marktemps(struct Context* c)
     }
 }
 
+int __elements_visited = 0;
+extern int __stack_hwm;
+int busy=0;
 // Must be called with the big lock!
 static void garbageCollect()
 {
+    if (busy)
+        return;
+    busy = 1;
     int i;
     struct Context* c;
     globals->allocCount = 0;
     c = globals->allContexts;
-    while(c) {
-        for(i=0; i<NUM_NASAL_TYPES; i++)
+    int ctxc = 0;
+    __elements_visited = 0;
+    __stack_hwm = 0;
+    int st = global_elapsedUSec();
+    int et = 0;
+    int stel = __elements_visited;
+    int eel = 0;
+
+    c = globals->allContexts;
+    while (c) {
+        ctxc++;
+        for (i = 0; i < NUM_NASAL_TYPES; i++)
             c->nfree[i] = 0;
-        for(i=0; i < c->fTop; i++) {
+        for (i = 0; i < c->fTop; i++) {
             mark(c->fStack[i].func);
             mark(c->fStack[i].locals);
         }
-        for(i=0; i < c->opTop; i++)
+        for (i = 0; i < c->opTop; i++)
             mark(c->opStack[i]);
         mark(c->dieArg);
         marktemps(c);
         c = c->nextAll;
     }
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    printf("--> garbageCollect(#e%-5d): %-4d ", eel, et);
 
     mark(globals->save);
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    printf("s(%5d) %-5d ", eel, et);
+
     mark(globals->save_hash);
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    printf("h(%5d) %-5d ", eel, et);
+
+
     mark(globals->symbols);
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    //printf("sy(%5d) %-4d ", eel, et);
+
     mark(globals->meRef);
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    //printf("me(%5d) %-5d ", eel, et);
+
     mark(globals->argRef);
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    //printf("ar(%5d) %-5d ", eel, et);
+
     mark(globals->parentsRef);
-
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    //printf(" ev[%3d] %-5d", eel, et);
     // Finally collect all the freed objects
-    for(i=0; i<NUM_NASAL_TYPES; i++)
+    for (i = 0; i < NUM_NASAL_TYPES; i++) {
         reap(&(globals->pools[i]));
-
+    }
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    printf(" >> reap %-5d", et);
     // Make enough space for the dead blocks we need to free during
     // execution.  This works out to 1 spot for every 2 live objects,
     // which should be limit the number of bottleneck operations
     // without imposing an undue burden of extra "freeable" memory.
     if(globals->deadsz < globals->allocCount) {
         globals->deadsz = globals->allocCount;
-        if(globals->deadsz < 256) globals->deadsz = 256;
+        if(globals->deadsz < 256000) globals->deadsz = 256000;
         naFree(globals->deadBlocks);
         globals->deadBlocks = naAlloc(sizeof(void*) * globals->deadsz);
     }
     globals->needGC = 0;
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    printf(">> %-5d ", et);
+    busy = 0;
 }
 
 void naModLock()
@@ -104,6 +165,7 @@ void naModUnlock()
 // you think about it).
 static void bottleneck()
 {
+    global_stamp();
     struct Globals* g = globals;
     g->bottleneck = 1;
     while(g->bottleneck && g->waitCount < g->nThreads - 1) {
@@ -111,10 +173,31 @@ static void bottleneck()
         UNLOCK(); naSemDown(g->sem); LOCK();
         g->waitCount--;
     }
+    printf("GC: wait %2d ", global_elapsedUSec());
     if(g->waitCount >= g->nThreads - 1) {
-        freeDead();
-        if(g->needGC) garbageCollect();
+        int fd = freeDead();
+        printf("--> freedead (%5d) : %5d", fd, global_elapsedUSec());
+        if(g->needGC) 
+            garbageCollect();
         if(g->waitCount) naSemUp(g->sem, g->waitCount);
+        g->bottleneck = 0;
+    }
+    printf(" :: finished: %5d\n", global_elapsedUSec());
+}
+
+static void bottleneckFreeDead()
+{
+    global_stamp();
+    struct Globals* g = globals;
+    g->bottleneck = 1;
+    while (g->bottleneck && g->waitCount < g->nThreads - 1) {
+        g->waitCount++;
+        UNLOCK(); naSemDown(g->sem); LOCK();
+        g->waitCount--;
+    }
+    if (g->waitCount >= g->nThreads - 1) {
+        freeDead();
+         if (g->waitCount) naSemUp(g->sem, g->waitCount);
         g->bottleneck = 0;
     }
 }
@@ -126,6 +209,29 @@ void naGC()
     bottleneck();
     UNLOCK();
     naCheckBottleneck();
+}
+int naGarbageCollect()
+{
+    int rv = 1;
+    LOCK();
+    //
+    // The number here is again based on observation - if this is too low then the inline GC will be used
+    // which is fine occasionally.
+    // So what we're doing by checking the global alloc is to see if GC is likely required during the next frame and if
+    // so we pre-empt this by doing it now.
+    // GC can typically take between 5ms and 50ms (F-15, FG1000 PFD & MFD, Advanced weather) - but usually it is completed
+    // prior to the start of the next frame.
+
+    globals->needGC = nasal_globals->allocCount < 23000;
+    if (globals->needGC)
+        bottleneck();
+    else {
+        bottleneckFreeDead();
+        rv = 0;
+    }
+    UNLOCK();
+    naCheckBottleneck();
+    return rv;
 }
 
 void naCheckBottleneck()
@@ -207,7 +313,9 @@ static int poolsize(struct naPool* p)
     while(b) { total += b->size; b = b->next; }
     return total;
 }
-
+int GCglobalAlloc() {
+    return globals->allocCount;
+}
 struct naObj** naGC_get(struct naPool* p, int n, int* nout)
 {
     struct naObj** result;
@@ -215,6 +323,7 @@ struct naObj** naGC_get(struct naPool* p, int n, int* nout)
     LOCK();
     while(globals->allocCount < 0 || (p->nfree == 0 && p->freetop >= p->freesz)) {
         globals->needGC = 1;
+        printf("++");
         bottleneck();
     }
     if(p->nfree == 0)
@@ -227,51 +336,130 @@ struct naObj** naGC_get(struct naPool* p, int n, int* nout)
     UNLOCK();
     return result;
 }
+extern void na_t_stack_push(naRef v);
+extern int na_t_stack_count();
+extern naRef na_t_stack_pop();
 
-static void markvec(naRef r)
+static void oldmarkvec(naRef r)
 {
     int i;
     struct VecRec* vr = PTR(r).vec->rec;
-    if(!vr) return;
-    for(i=0; i<vr->size; i++)
+    if (!vr) return;
+    for (i = 0; i<vr->size; i++)
         mark(vr->array[i]);
 }
 
 // Sets the reference bit on the object, and recursively on all
 // objects reachable from it.  Uses the processor stack for recursion...
-static void mark(naRef r)
+static void oldmark(naRef r)
 {
     int i;
 
-    if(IS_NUM(r) || IS_NIL(r))
+    if (IS_NUM(r) || IS_NIL(r))
         return;
 
-    if(PTR(r).obj->mark == 1)
+    if (PTR(r).obj->mark == 1)
         return;
 
     PTR(r).obj->mark = 1;
-    switch(PTR(r).obj->type) {
-    case T_VEC: markvec(r); break;
+    switch (PTR(r).obj->type) {
+    case T_VEC: oldmarkvec(r); break;
     case T_HASH: naiGCMarkHash(r); break;
     case T_CODE:
-        mark(PTR(r).code->srcFile);
-        for(i=0; i<PTR(r).code->nConstants; i++)
+        oldmark(PTR(r).code->srcFile);
+        for (i = 0; i<PTR(r).code->nConstants; i++)
             mark(PTR(r).code->constants[i]);
         break;
     case T_FUNC:
-        mark(PTR(r).func->code);
-        mark(PTR(r).func->namespace);
-        mark(PTR(r).func->next);
+        oldmark(PTR(r).func->code);
+        oldmark(PTR(r).func->namespace);
+        oldmark(PTR(r).func->next);
         break;
     case T_GHOST:
-        mark(PTR(r).ghost->data);
+        oldmark(PTR(r).ghost->data);
         break;
+    }
+}
+void oldnaiGCMark(naRef r)
+{
+    oldmark(r);
+}
+
+static int do_mark(naRef r)
+{
+    if (IS_NUM(r) || IS_NIL(r))
+        return 1;
+
+    if (PTR(r).obj->mark == 1)
+        return 1;
+    PTR(r).obj->mark = 1;
+    return 0;
+}
+
+static void mark(naRef r) {
+    if (nasal_gc_old)
+        oldmark(r);
+    else
+        process_all(r, do_mark);
+}
+
+static void process_all(naRef r, int (*process)(naRef r))
+{
+    na_t_stack_push(r);
+    __elements_visited++;
+    while (na_t_stack_count() != 0)
+    {
+        naRef r = na_t_stack_pop();
+        if ((*process)(r))
+            continue;
+
+        switch (PTR(r).obj->type) {
+        case T_VEC: {
+            int i;
+            struct VecRec* vr = PTR(r).vec->rec;
+            if (vr) {
+                for (i = 0; i < vr->size; i++) {
+                    na_t_stack_push(vr->array[i]);
+                    __elements_visited++;
+                }
+            }
+            break;
+        }
+        case T_HASH: naiGCMarkHash(r); break;
+        case T_CODE:
+        {
+            int i;
+            na_t_stack_push(PTR(r).code->srcFile);
+            for (i = 0; i < PTR(r).code->nConstants; i++) {
+                na_t_stack_push(PTR(r).code->constants[i]);
+                __elements_visited++;
+            }
+            break;
+        }
+        case T_FUNC:
+            __elements_visited++;
+            __elements_visited++;
+            __elements_visited++;
+            na_t_stack_push(PTR(r).func->code);
+            na_t_stack_push(PTR(r).func->namespace);
+            na_t_stack_push(PTR(r).func->next);
+            break;
+        case T_GHOST:
+            na_t_stack_push(PTR(r).ghost->data);
+            __elements_visited++;
+            break;
+        }
     }
 }
 
 void naiGCMark(naRef r)
 {
-    mark(r);
+    if (oldmark)
+        oldnaiGCMark(r);
+    else {
+        na_t_stack_push(r);
+        __elements_visited++;
+    }
 }
 
 // Collects all the unreachable objects into a free list, and
@@ -292,9 +480,9 @@ static void reap(struct naPool* p)
     p->free = p->free0;
 
     for(b = p->blocks; b; b = b->next)
-        for(elem=0; elem < b->size; elem++) {
+        for (elem = 0; elem < b->size; elem++) {
             struct naObj* o = (struct naObj*)(b->block + elem * p->elemsz);
-            if(o->mark == 0)
+            if (o->mark == 0)
                 freeelem(p, o);
             o->mark = 0;
         }
@@ -306,11 +494,18 @@ static void reap(struct naPool* p)
 
     // Allocate more if necessary (try to keep 25-50% of the objects
     // available)
-    if(p->nfree < total/4) {
+    //if(p->nfree < total/4) {
+    //    int used = total - p->nfree;
+    //    int avail = total - used;
+    //    int need = used/2 - avail;
+    //    if(need > 0)
+    //        newBlock(p, need);
+    //}
+    if (p->nfree < total / 2) {
         int used = total - p->nfree;
         int avail = total - used;
-        int need = used/2 - avail;
-        if(need > 0)
+        int need = used / 1 - avail;
+        if (need > 0)
             newBlock(p, need);
     }
 }

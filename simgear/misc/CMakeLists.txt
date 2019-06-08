@@ -19,6 +19,7 @@ set(HEADERS
     tabbed_values.hxx
     texcoord.hxx
     test_macros.hxx
+    lru_cache.hxx
     )
 
 set(SOURCES

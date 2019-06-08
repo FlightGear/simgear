@@ -62,6 +62,7 @@
 #include <simgear/props/condition.hxx>
 #include <simgear/io/sg_file.hxx>
 #include <simgear/threads/SGGuard.hxx>
+#include <simgear/misc/lru_cache.hxx>
 
 #include "BoundingVolumeBuildVisitor.hxx"
 #include "model.hxx"
@@ -182,7 +183,7 @@ public:
 
 } // namespace
 
-static int nearestPowerOfTwo(unsigned int _v)
+static int nearestPowerOfTwo(int _v)
 {
     //    uint v; // compute the next highest power of 2 of 32-bit v
     unsigned int v = (unsigned int)_v;
@@ -207,10 +208,12 @@ static int nearestPowerOfTwo(unsigned int _v)
         _v = (int)v;
     return v;
 }
-    static bool isPowerOfTwo(int v)
+    
+static bool isPowerOfTwo(int v)
 {
     return ((v & (v - 1)) == 0);
 }
+
 osg::Node* DefaultProcessPolicy::process(osg::Node* node, const std::string& filename,
     const Options* opt)
 {
@@ -232,144 +235,28 @@ osg::Image* getImageByName(const std::string& filename)
     return nullptr;
 }
 #endif
-// a cache which evicts the least recently used item when it is full
-#include <map>
-#include <list>
-#include <utility>
 
-#include <boost/optional.hpp>
-template<class Key, class Value>
-class lru_cache
-{
-public:
-    SGMutex _mutex;
+// least recently used cache to speed up the process of finding a file
+// after the first time - otherwise each time we'll have to generate a hash
+// of the contents.
+static lru_cache < std::string, std::string> filename_hash_cache(100000);
 
-    typedef Key key_type;
-    typedef Value value_type;
-    typedef std::list<key_type> list_type;
-    typedef std::map<
-        key_type,
-        std::pair<value_type, typename list_type::iterator>
-    > map_type;
-
-    lru_cache(size_t capacity)
-        : m_capacity(capacity)
-    {
-    }
-
-    ~lru_cache()
-    {
-    }
-
-
-    size_t size() const
-    {
-        return m_map.size();
-    }
-
-    size_t capacity() const
-    {
-        return m_capacity;
-    }
-
-    bool empty() const
-    {
-        return m_map.empty();
-    }
-
-    bool contains(const key_type &key)
-    {
-        SGGuard<SGMutex> scopeLock(_mutex);
-        return m_map.find(key) != m_map.end();
-    }
-
-    void insert(const key_type &key, const value_type &value)
-    {
-        SGGuard<SGMutex> scopeLock(_mutex);
-        typename map_type::iterator i = m_map.find(key);
-        if (i == m_map.end()) {
-            // insert item into the cache, but first check if it is full
-            if (size() >= m_capacity) {
-                // cache is full, evict the least recently used item
-                evict();
-            }
-
-            // insert the new item
-            m_list.push_front(key);
-            m_map[key] = std::make_pair(value, m_list.begin());
-        }
-    }
-    boost::optional<key_type> findValue(const std::string &requiredValue)
-    {
-        SGGuard<SGMutex> scopeLock(_mutex);
-        for (typename map_type::iterator it = m_map.begin(); it != m_map.end(); ++it)
-            if (it->second.first == requiredValue)
-                return it->first;
-        return boost::none;
-    }
-    boost::optional<value_type> get(const key_type &key)
-    {
-        SGGuard<SGMutex> scopeLock(_mutex);
-        // lookup value in the cache
-        typename map_type::iterator i = m_map.find(key);
-        if (i == m_map.end()) {
-            // value not in cache
-            return boost::none;
-        }
-
-        // return the value, but first update its place in the most
-        // recently used list
-        typename list_type::iterator j = i->second.second;
-        if (j != m_list.begin()) {
-            // move item to the front of the most recently used list
-            m_list.erase(j);
-            m_list.push_front(key);
-
-            // update iterator in map
-            j = m_list.begin();
-            const value_type &value = i->second.first;
-            m_map[key] = std::make_pair(value, j);
-
-            // return the value
-            return value;
-        }
-        else {
-            // the item is already at the front of the most recently
-            // used list so just return it
-            return i->second.first;
-        }
-    }
-
-    void clear()
-    {
-        SGGuard<SGMutex> scopeLock(_mutex);
-        m_map.clear();
-        m_list.clear();
-    }
-
-private:
-    void evict()
-    {
-        SGGuard<SGMutex> scopeLock(_mutex);
-        // evict item from the end of most recently used list
-        typename list_type::iterator i = --m_list.end();
-        m_map.erase(*i);
-        m_list.erase(i);
-    }
-
-private:
-    map_type m_map;
-    list_type m_list;
-    size_t m_capacity;
-};
-lru_cache < std::string, std::string> filename_hash_cache(100000);
-lru_cache < std::string, bool> filesCleaned(100000);
-static bool refreshCache = false;
+// experimental (incomplete) features to allow maintenance of the filecache.
+//lru_cache < std::string, bool> filesCleaned(100000);
+//static bool refreshCache = false;
 
 ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,
     const Options* opt)
 {
+    // experimental feature to see if we can reload textures during model load
+    // as otherwise texture creation/editting requires a restart or a change to 
+    // a different filenaem
+    //if (SGSceneFeatures::instance()->getReloadCache()) {
+    //    SG_LOG(SG_IO, SG_INFO, "Clearing DDS-TC LRU Cache");
+    //    filename_hash_cache.clear();
+    //    SGSceneFeatures::instance()->setReloadCache(false);
+    //}
     /*
      * processor is the interface to the osg_nvtt plugin
      */
@@ -423,13 +310,21 @@ ModelRegistry::readImage(const string& fileName,
             if (fileExists(absFileName)) {
                 SGFile f(absFileName);
                 std::string hash;
+
+//                std::string attr = "";
+//                if (sgoptC && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED) {
+//                    attr += " effnorm";
+//                }
+//                else if (sgoptC && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
+//                    attr += " eff";
+//                    //                        can_compress = false;
+//                }
+//                SG_LOG(SG_IO, SG_INFO, absFileName << attr);
                 boost::optional<std::string> cachehash = filename_hash_cache.get(absFileName);
                 if (cachehash) {
                     hash = *cachehash;
-                    //                    SG_LOG(SG_IO, SG_ALERT, "Hash for " + absFileName + " in cache " + hash);
                 }
                 else {
-                    //                  SG_LOG(SG_IO, SG_ALERT, "Creating hash for " + absFileName);
                     try {
                         hash = f.computeHash();
                     }
@@ -444,9 +339,8 @@ ModelRegistry::readImage(const string& fileName,
 
                     // possibly a shared texture - but warn the user to allow investigation.
                     if (cacheFilename && *cacheFilename != absFileName) {
-                        SG_LOG(SG_IO, SG_ALERT, " Already have " + hash + " : " + *cacheFilename + " not " + absFileName);
+                        SG_LOG(SG_IO, SG_INFO, " Already have " + hash + " : " + *cacheFilename + " not " + absFileName);
                     }
-                    //                    SG_LOG(SG_IO, SG_ALERT, " >>>> " + hash + " :: " + newName);
                 }
                 newName = cache_root + "/" + hash.substr(0, 2) + "/" + hash + ".cache.dds";
             }
@@ -456,20 +350,14 @@ ModelRegistry::readImage(const string& fileName,
                 newName += "." + tstream.str();
                 newName += ".cache.dds";
             }
-            bool doRefresh = refreshCache;
-            //if (fileExists(newName) && sgoptC && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
-            //    doRefresh = true;
-            //    
+            //bool doRefresh = refreshCache;
+            //if (newName != std::string() && fileExists(newName) && doRefresh) {
+            //    if (!filesCleaned.contains(newName)) {
+            //        SG_LOG(SG_IO, SG_INFO, "Removing previously cached effects image " + newName);
+            //        SGPath(newName).remove();
+            //        filesCleaned.insert(newName, true);
+            //    }
             //}
-
-            if (newName != std::string() && fileExists(newName) && doRefresh) {
-                if (!filesCleaned.contains(newName)) {
-                    SG_LOG(SG_IO, SG_ALERT, "Removing previously cached effects image " + newName);
-                    SGPath(newName).remove();
-                    filesCleaned.insert(newName, true);
-                }
-
-            }
 
             if (newName != std::string() && !fileExists(newName)) {
                 res = registry->readImageImplementation(absFileName, opt);
@@ -494,13 +382,14 @@ ModelRegistry::readImage(const string& fileName,
                         isNormalMap = true;
                     }
                     else if (sgoptC && transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
-                        SG_LOG(SG_IO, SG_ALERT, "From effects transparent " + absFileName);
+                        SG_LOG(SG_IO, SG_INFO, "From effects transparent " + absFileName + " will generate mipmap only");
+                        isEffect = true;
+                        can_compress = false;
+                    }
+                    else if (sgoptC && !transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
+                        SG_LOG(SG_IO, SG_INFO, "From effects " + absFileName + " will generate mipmap only");
                         isEffect = true;
 //                        can_compress = false;
-                    }
-                    else if (sgoptC && transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
-                        SG_LOG(SG_IO, SG_ALERT, "From effects " + absFileName);
-                        isEffect = true;
                     }
                     if (can_compress)
                     {
@@ -516,8 +405,9 @@ ModelRegistry::readImage(const string& fileName,
                             resize = true;
                             pot_message += std::string(" not POT: resized height to ") + std::to_string(height);
                         }
-if (pot_message.size())
-SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
+
+                        if (pot_message.size())
+                            SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
 
                         // unlikely that after resizing in height the width will still be outside of the max texture size.
                         if (height > max_texture_size)
@@ -536,6 +426,7 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
                             width /= factor;
                             resize = true;
                         }
+                        
                         if (resize) {
                             osg::ref_ptr<osg::Image> resizedImage;
 
@@ -601,21 +492,22 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
                                         // normal maps:
                                         // nvdxt.exe - quality_highest - rescaleKaiser - Kaiser - dxt5nm - norm
                                         processor->compress(*srcImage, targetFormat, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
-                                        SG_LOG(SG_IO, SG_ALERT, "-- finished creating DDS: " + newName);
+                                        SG_LOG(SG_IO, SG_INFO, "-- finished creating DDS: " + newName);
                                         //processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
                                     }
                                     else {
                                         simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
-                                        SG_LOG(SG_IO, SG_WARN, "Texture compression plugin (osg_nvtt) not available; storing uncompressed image: " << absFileName);
+                                        SG_LOG(SG_IO, SG_INFO, "Texture compression plugin (osg_nvtt) not available; storing uncompressed image: " << absFileName);
                                         srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
                                     }
-                                }
-                                else {
-                                    SG_LOG(SG_IO, SG_ALERT, "Creating uncompressed DDS for " + absFileName);
-                                    if (processor) {
-                                        processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
                                     }
-                                    else {
+                                else {
+                                    SG_LOG(SG_IO, SG_INFO, "Creating uncompressed DDS for " + absFileName);
+                                    //if (processor) {
+                                    //    processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
+                                    //}
+                                    //else 
+                                    {
                                         simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
                                         srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
                                     }
@@ -660,25 +552,28 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
 
     osg::ref_ptr<osg::Image> srcImage1 = res.getImage();
 
-    //printf(" --> finished loading %s [%s] (%s) %d\n", absFileName.c_str(), srcImage1->getFileName().c_str(), res.loadedFromCache() ? "from cache" : "from disk", res.getImage()->getOrigin());
     /*
-    * Fixup the filename - as when loading from eg. dds.gz the originating filename is lost in the conversion due to the way the OSG loader works
-    */
-    if (srcImage1->getFileName().empty()) {
-        srcImage1->setFileName(absFileName);
-    }
+     * Fixup the filename - as when loading from eg. dds.gz the originating filename is lost in the conversion due to the way the OSG loader works
+     */
+    //if (srcImage1->getFileName().empty()) {
+    //    srcImage1->setFileName(absFileName);
+    //}
     srcImage1->setFileName(originalFileName);
 
-    if(cache_active && getFileExtension(absFileName) != "dds")
+    if(cache_active && getFileExtension(absFileName) != "dds"&& getFileExtension(absFileName) != "gz")
     {
-        if (processor) {
-            processor->generateMipMap(*srcImage1, true, osgDB::ImageProcessor::USE_CPU);
-            SG_LOG(SG_IO, SG_ALERT, "Created nvtt mipmaps DDS for " + absFileName);
-        }
-        else {
+        // In testing the internal mipmap generation works better than the external nvtt one
+        // (less artefacts); it might be that there are flags we can use to make this better
+        // but for now we'll just using the built in one
+        //if (processor) {
+        //     processor->generateMipMap(*srcImage1, true, osgDB::ImageProcessor::USE_CPU);
+        //     SG_LOG(SG_IO, SG_INFO, "Created nvtt mipmaps DDS for " + absFileName);
+        // }
+        // else
+        {
             simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
             srcImage1 = simgear::effect::computeMipmap(srcImage1, mipmapFunctions);
-            SG_LOG(SG_IO, SG_ALERT, "Created sg mipmaps DDS for " + absFileName);
+            SG_LOG(SG_IO, SG_DEBUG, "Created sg mipmaps DDS for " + absFileName);
         }
     }
 
@@ -688,75 +583,6 @@ SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
     else
         SG_LOG(SG_IO, SG_BULK, "Reading image \""
             << res.getImage()->getFileName() << "\"");
-
-    // as of March 2018 all patents have expired, https://en.wikipedia.org/wiki/S3_Texture_Compression#Patent
-    // there is support for S3TC DXT1..5 in MESA  https://www.phoronix.com/scan.php?page=news_item&px=S3TC-Lands-In-Mesa
-    // so it seems that there isn't a valid reason to warn any longer; and beside this is one of those cases where it should
-    // really only be a developer message
-#ifdef WARN_DDS_TEXTURES
-        // Check for precompressed textures that depend on an extension
-    switch (res.getImage()->getPixelFormat()) {
-
-        // GL_EXT_texture_compression_s3tc
-        // patented, no way to decompress these
-#ifndef GL_EXT_texture_compression_s3tc
-#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
-#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
-#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT  0x83F2
-#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
-#endif
-    case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
-    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-
-        // GL_EXT_texture_sRGB
-        // patented, no way to decompress these
-#ifndef GL_EXT_texture_sRGB
-#define GL_COMPRESSED_SRGB_S3TC_DXT1_EXT  0x8C4C
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
-#endif
-    case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
-    case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
-    case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
-    case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
-
-        // GL_TDFX_texture_compression_FXT1
-        // can decompress these in software but
-        // no code present in simgear.
-#ifndef GL_3DFX_texture_compression_FXT1
-#define GL_COMPRESSED_RGB_FXT1_3DFX       0x86B0
-#define GL_COMPRESSED_RGBA_FXT1_3DFX      0x86B1
-#endif
-    case GL_COMPRESSED_RGB_FXT1_3DFX:
-    case GL_COMPRESSED_RGBA_FXT1_3DFX:
-
-        // GL_EXT_texture_compression_rgtc
-        // can decompress these in software but
-        // no code present in simgear.
-#ifndef GL_EXT_texture_compression_rgtc
-#define GL_COMPRESSED_RED_RGTC1_EXT       0x8DBB
-#define GL_COMPRESSED_SIGNED_RED_RGTC1_EXT 0x8DBC
-#define GL_COMPRESSED_RED_GREEN_RGTC2_EXT 0x8DBD
-#define GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT 0x8DBE
-#endif
-    case GL_COMPRESSED_RED_RGTC1_EXT:
-    case GL_COMPRESSED_SIGNED_RED_RGTC1_EXT:
-    case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
-    case GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT:
-
-        SG_LOG(SG_IO, SG_WARN, "Image \"" << fileName << "\"\n"
-            "uses compressed textures which cannot be supported on "
-            "some systems.\n"
-            "Please decompress this texture for improved portability.");
-        break;
-
-    default:
-        break;
-    }
-#endif
 
     return res;
 }

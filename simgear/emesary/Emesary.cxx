@@ -4,11 +4,9 @@
 *
 *	File Type            : Implementation File
 *
-*	Description          : Templated version of Emesary
-*	                     :
-*	                     :
-*	                     :
-*	                     :
+*	Description          : Emesary main.
+*	                     : This only needs to instance the GlobalTransmitter as all of the 
+*	                     : logic is in the header files (by design)
 *
 *  References           : http://www.chateau-logic.com/content/class-based-inter-object-communication
 *
@@ -24,4 +22,10 @@
 
 #include "simgear/emesary/Emesary.hxx"
 
-simgear::Emesary::Transmitter GlobalTransmitter;
+namespace simgear
+{
+    namespace Emesary
+    {
+        Transmitter GlobalTransmitter;
+    }
+}

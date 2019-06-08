@@ -1,13 +1,12 @@
+#ifndef NOTIFICATIONS_hxx
+#define NOTIFICATIONS_hxx
 /*---------------------------------------------------------------------------
 *
 *	Title                : Emesary - class based inter-object communication
 *
 *	File Type            : Implementation File
 *
-*	Description          : Provides generic inter-object communication. For an object to receive a message it
-*	                     : must first register with a Transmitter, such as GlobalTransmitter, and implement the
-*	                     : IReceiver interface. That's it.
-*	                     : To send a message use a Transmitter with an object. That's all there is to it.
+*	Description          : simgear notifications
 *
 *  References           : http://www.chateau-logic.com/content/class-based-inter-object-communication
 *
@@ -20,16 +19,8 @@
 *  Copyright © 2002 - 2017 Richard Harrison           All Rights Reserved.
 *
 *---------------------------------------------------------------------------*/
-#include <typeinfo>
 
-#include <string>
-#include <list>
-#include <set>
-#include <vector>
-#include <Windows.h>
-#include <process.h>
-#include <atomic>
-#include <simgear/emesary/emesary.hxx>
+#include "INotification.hxx"
 
 namespace simgear
 {
@@ -74,3 +65,4 @@ namespace simgear
         };
     }
 }
+#endif

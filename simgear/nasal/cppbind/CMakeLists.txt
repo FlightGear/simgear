@@ -27,6 +27,7 @@ set(SOURCES
   NasalHash.cxx
   NasalString.cxx
   NasalObject.cxx
+  NasalEmesaryInterface.cxx
   detail/from_nasal_helper.cxx
   detail/to_nasal_helper.cxx
 )

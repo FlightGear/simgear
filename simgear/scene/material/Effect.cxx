@@ -978,6 +978,13 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                  type);
         program->setParameter(GL_GEOMETRY_OUTPUT_TYPE_EXT, type);
     }
+    PropertyList pUniformBlockBindings
+        = prop->getChildren("uniform-block-binding");
+    for (const auto &pUniformBlockBinding : pUniformBlockBindings) {
+        program->addBindUniformBlock(
+            pUniformBlockBinding->getStringValue("name"),
+            pUniformBlockBinding->getIntValue("index"));
+    }
     programMap.insert(ProgramMap::value_type(prgKey, program));
     resolvedProgramMap.insert(ProgramMap::value_type(resolvedKey, program));
     pass->setAttributeAndModes(program);

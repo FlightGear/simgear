@@ -10,6 +10,7 @@ set(HEADERS
     PrimitiveCollector.hxx
     SGClipGroup.hxx
     SGInteractionAnimation.hxx
+    SGLight.hxx
     SGMaterialAnimation.hxx
     SGPickAnimation.hxx
     SGOffsetTransform.hxx
@@ -35,6 +36,7 @@ set(SOURCES
     PrimitiveCollector.cxx
     SGClipGroup.cxx
     SGInteractionAnimation.cxx
+    SGLight.cxx
     SGLightAnimation.cxx
     SGPickAnimation.cxx
     SGMaterialAnimation.cxx

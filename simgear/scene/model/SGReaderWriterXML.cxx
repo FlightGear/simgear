@@ -50,6 +50,7 @@
 #include "animation.hxx"
 #include "particles.hxx"
 #include "model.hxx"
+#include "SGLight.hxx"
 #include "SGText.hxx"
 #include "SGMaterialAnimation.hxx"
 
@@ -516,6 +517,14 @@ sgLoad3DModel_internal(const SGPath& path,
         group->addChild(SGText::appendText(text_nodes[i],
                         prop_root,
                         options.get()));
+    }
+
+    std::vector<SGPropertyNode_ptr> light_nodes;
+    light_nodes = props->getChildren("light");
+    for (unsigned i = 0; i < light_nodes.size(); ++i) {
+        group->addChild(SGLight::appendLight(light_nodes[i],
+                                             prop_root,
+                                             options.get()));
     }
 
     PropertyList effect_nodes = props->getChildren("effect");

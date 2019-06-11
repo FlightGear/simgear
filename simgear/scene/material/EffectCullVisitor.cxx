@@ -21,6 +21,8 @@
 #include <osg/StateSet>
 #include <osg/Texture2D>
 
+#include <osg/io_utils>
+
 #include "EffectCullVisitor.hxx"
 
 #include "EffectGeode.hxx"
@@ -50,6 +52,19 @@ CullVisitor* EffectCullVisitor::clone() const
     return new EffectCullVisitor(*this);
 }
 
+void EffectCullVisitor::apply(osg::Node &node)
+{
+    // TODO: Properly cull lights outside the viewport (override computeBounds())
+    // if (isCulled(node))
+    //     return;
+    SGLight *light = dynamic_cast<SGLight *>(&node);
+    if (!light) {
+        CullVisitor::apply(node);
+        return;
+    }
+    _lightList.push_back(light);
+}
+
 void EffectCullVisitor::apply(osg::Geode& node)
 {
     if (isCulled(node))
@@ -58,9 +73,6 @@ void EffectCullVisitor::apply(osg::Geode& node)
     if (!eg) {
         CullVisitor::apply(node);
         return;
-    }
-    if (_collectLights && ( eg->getNodeMask() & MODELLIGHT_BIT ) ) {
-        _lightList.push_back( eg );
     }
     Effect* effect = eg->getEffect();
     Technique* technique = 0;

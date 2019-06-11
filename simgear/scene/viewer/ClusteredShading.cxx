@@ -253,12 +253,12 @@ ClusteredShading::update(const SGLightList &light_list)
         // Again, avoid the unnecessary threading overhead
         threadFunc(0);
     } else {
-        std::thread light_threads[_num_threads];
+        std::vector<std::thread> threads;
+        threads.reserve(_num_threads);
         for (int i = 0; i < _num_threads; ++i)
-            light_threads[i] = std::thread(&ClusteredShading::threadFunc, this, i);
+            threads.emplace_back(&ClusteredShading::threadFunc, this, i);
 
-        for (int i = 0; i < _num_threads; ++i)
-            light_threads[i].join();
+        for (auto &t : threads) t.join();
     }
 
     // Force upload of the image data

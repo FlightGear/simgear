@@ -13,7 +13,7 @@ set(HEADERS
     )
     
 set(SOURCES 
-    emesary.cxx
+    Emesary.cxx
     )
 
 simgear_component(emesary emesary "${SOURCES}" "${HEADERS}")

@@ -19,6 +19,7 @@
 #include "to_nasal_helper.hxx"
 #include <simgear/nasal/cppbind/NasalHash.hxx>
 #include <simgear/nasal/cppbind/Ghost.hxx>
+#include <simgear/nasal/cppbind/NasalEmesaryInterface.hxx>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -27,6 +28,19 @@
 
 namespace nasal
 {
+    // create single instance of the main loop recipient for Nasal - this will self register at the 
+    // global transmitter - and that's all that is needed to link up the background GC to the main 
+    // loop in FG that will send out the MainLoop notifications.
+    //class NasalMainLoopRecipientSingleton : public simgear::Singleton<NasalMainLoopRecipient>
+    //{
+    //public:
+    //    NasalMainLoopRecipientSingleton()
+    //    {
+    //    }
+    //    virtual ~NasalMainLoopRecipientSingleton() {}
+    //};
+  NasalMainLoopRecipient mrl;  
+
   //----------------------------------------------------------------------------
   naRef to_nasal_helper(naContext c, const std::string& str)
   {

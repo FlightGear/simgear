@@ -233,12 +233,11 @@ public:
 
 
 
-SGSubsystemGroup::SGSubsystemGroup(const char *name) :
+SGSubsystemGroup::SGSubsystemGroup() :
     _fixedUpdateTime(-1.0),
     _updateTimeRemainder(0.0),
     _initPosition(-1)
 {
-    _name = name;
 }
 
 SGSubsystemGroup::~SGSubsystemGroup ()
@@ -838,7 +837,7 @@ namespace {
     
 } // end of anonymous namespace
 
-SGSubsystemMgr::SGSubsystemMgr (const char *name) :
+SGSubsystemMgr::SGSubsystemMgr () :
   _groups(MAX_GROUPS)
 {
     if (global_defaultSubsystemManager == nullptr) {
@@ -855,7 +854,7 @@ SGSubsystemMgr::SGSubsystemMgr (const char *name) :
 #endif
     
     for (int i = 0; i < MAX_GROUPS; i++) {
-        auto g = new SGSubsystemGroup(name);
+        auto g = new SGSubsystemGroup();
         g->set_manager(this);
         _groups[i].reset(g);
     }

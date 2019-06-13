@@ -384,7 +384,7 @@ typedef SGSharedPtr<SGSubsystem> SGSubsystemRef;
 class SGSubsystemGroup : public SGSubsystem
 {
 public:
-    SGSubsystemGroup (const char *name);
+    SGSubsystemGroup ();
     virtual ~SGSubsystemGroup ();
 
     // Subsystem API.
@@ -509,7 +509,7 @@ public:
         MAX_GROUPS
     };
 
-    SGSubsystemMgr (const char *name);
+    SGSubsystemMgr ();
     virtual ~SGSubsystemMgr ();
 
     // Subsystem API.

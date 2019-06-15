@@ -302,23 +302,28 @@ static naRef f_die(naContext c, naRef me, int argc, naRef* args)
 static char* dosprintf(char* f, ...)
 {
     char* buf;
+
     va_list va;
-    int len = 0;
     va_start(va, f);
-    va_list vaCopy;
-    va_copy(vaCopy, va);
-    len = vsnprintf(0, 0, f, vaCopy);
+   
+    int len = vsnprintf(0, 0, f, va);
+    va_end(va);
+
     if (len <= 0) {
-        buf = naAlloc(2);
+        buf = (char *) naAlloc(2);
         *buf = 0;
     }
     else {
         len++;// allow for terminating null
-        buf = naAlloc(len);
-        len = vsnprintf(buf, len, f, vaCopy);
+        buf = (char *) naAlloc(len);
+
+        va_list va;
+        va_start(va, f);
+
+        len = vsnprintf(buf, len, f, va);
+        va_end(va);
     }
-    va_end(va);
-    va_end(vaCopy);
+
     return buf;
 }
 

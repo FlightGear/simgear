@@ -7,14 +7,14 @@
 
 #include <iostream>
 
-#include <simgear/emesary/emesary.hxx>
+#include <simgear/emesary/Emesary.hxx>
 
 using std::cout;
 using std::cerr;
 using std::endl;
 
-std::atomic<int> nthread = 0;
-std::atomic<int> noperations = 0;
+std::atomic<int> nthread {0};
+std::atomic<int> noperations {0};
 const int MaxIterations = 9999;
 
 class TestThreadNotification : public simgear::Emesary::INotification

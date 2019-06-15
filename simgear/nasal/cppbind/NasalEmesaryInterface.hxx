@@ -24,7 +24,7 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
 
-#include <simgear/emesary/emesary.hxx>
+#include <simgear/emesary/Emesary.hxx>
 #include <simgear/emesary/notifications.hxx>
 
 #include <boost/function.hpp>

@@ -16,7 +16,7 @@
 *
 *	Version              : $Header: $
 *
-*  Copyright © 2002 - 2017 Richard Harrison           All Rights Reserved.
+*  Copyright ï¿½ 2002 - 2017 Richard Harrison           All Rights Reserved.
 *
 *---------------------------------------------------------------------------*/
 
@@ -30,13 +30,13 @@ namespace simgear
         {
         public:
             enum Type { Started, Stopped, Begin, End };
-            MainLoopNotification(Type v) : Type(v) {}
+            MainLoopNotification(Type v) : _type(v) {}
 
-            virtual Type GetValue() { return Type; }
+            virtual Type GetValue() { return _type; }
             virtual const char *GetType() { return "MainLoop"; }
 
         protected:
-            Type Type;
+            Type _type;
         };
 
         class NasalGarbageCollectionConfigurationNotification : public simgear::Emesary::INotification

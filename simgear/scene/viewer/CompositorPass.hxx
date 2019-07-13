@@ -27,6 +27,9 @@
 #include <simgear/props/props.hxx>
 
 namespace simgear {
+
+class SGReaderWriterOptions;
+
 namespace compositor {
 
 class Compositor;
@@ -45,17 +48,17 @@ class Compositor;
  */
 struct Pass : public osg::Referenced {
     Pass() :
-        useMastersSceneData(false),
+        useMastersSceneData(true),
         cull_mask(0xffffff),
         inherit_cull_mask(false),
         viewport_width_scale(0.0f),
         viewport_height_scale(0.0f) {}
 
+    int                              render_order;
     std::string                      name;
     std::string                      type;
+    std::string                      effect_scheme;
     osg::ref_ptr<osg::Camera>        camera;
-    /** If null, there is no effect override for this pass. */
-    osg::ref_ptr<Effect>             effect_override;
     bool                             useMastersSceneData;
     osg::Node::NodeMask              cull_mask;
     /** Whether the cull mask is ANDed with the view master camera cull mask. */
@@ -85,10 +88,11 @@ public:
      * and overrided for more special passes.
      *
      * @param compositor The Compositor instance that owns the pass.
-     * @param The root node of the pass property tree.
+     * @param root The root node of the pass property tree.
      * @return A Pass or a null pointer if an error occurred.
      */
-    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root);
+    virtual Pass *build(Compositor *compositor, const SGPropertyNode *root,
+                        const SGReaderWriterOptions *options);
 
     static PassBuilder *find(const std::string &type) {
         auto itr = PassBuilderMapSingleton::instance()->_map.find(type);
@@ -125,7 +129,8 @@ struct RegisterPassBuilder {
  * @param node The root node of the pass property tree.
  * @return A Pass or a null pointer if an error occurred.
  */
-Pass *buildPass(Compositor *compositor, const SGPropertyNode *root);
+Pass *buildPass(Compositor *compositor, const SGPropertyNode *root,
+                const SGReaderWriterOptions *options);
 
 } // namespace compositor
 } // namespace simgear

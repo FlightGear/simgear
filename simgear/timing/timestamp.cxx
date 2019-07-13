@@ -337,3 +337,11 @@ int SGTimeStamp::elapsedMSec() const
     
     return static_cast<int>((now - *this).toMSecs());
 }
+
+int SGTimeStamp::elapsedUSec() const
+{
+    SGTimeStamp now;
+    now.stamp();
+
+    return static_cast<int>((now - *this).toUSecs());
+}

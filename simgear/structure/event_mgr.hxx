@@ -8,11 +8,12 @@
 
 class SGEventMgr;
 
-class SGTimer {
+class SGTimer
+{
 public:
     ~SGTimer();
     void run();
-    
+
     std::string name;
     double interval;
     SGCallback* callback;
@@ -20,7 +21,8 @@ public:
     bool running;
 };
 
-class SGTimerQueue {
+class SGTimerQueue
+{
 public:
     SGTimerQueue(int preSize=1);
     ~SGTimerQueue();
@@ -37,8 +39,9 @@ public:
     double   nextTime()  { return -_table[0].pri; }
 
     SGTimer* findByName(const std::string& name) const;
-    
+
     void dump();
+
 private:
     // The "priority" is stored as a negative time.  This allows the
     // implementation to treat the "top" of the heap as the largest
@@ -50,9 +53,9 @@ private:
     int rchild(int n) { return ((n+1)*2 + 1) - 1; }
     double pri(int n) { return _table[n].pri; }
     void swap(int a, int b) {
-	HeapEntry tmp = _table[a];
-	_table[a] = _table[b];
-	_table[b] = tmp;
+        HeapEntry tmp = _table[a];
+        _table[a] = _table[b];
+        _table[b] = tmp;
     }
     void siftDown(int n);
     void siftUp(int n);
@@ -73,10 +76,15 @@ public:
     SGEventMgr();
     ~SGEventMgr();
 
-    virtual void init();
-    virtual void update(double delta_time_sec);
-    virtual void unbind();
-    virtual void shutdown();
+    // Subsystem API.
+    void init() override;
+    void shutdown() override;
+    void unbind() override;
+    void update(double delta_time_sec) override;
+
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "events"; }
+
     void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
 
     /**
@@ -119,8 +127,9 @@ public:
 
 
     void removeTask(const std::string& name);
-    
+
     void dump();
+
 private:
     friend class SGTimer;
 
@@ -130,7 +139,7 @@ private:
 
     SGPropertyNode_ptr _freezeProp;
     SGPropertyNode_ptr _rtProp;
-    SGTimerQueue _rtQueue; 
+    SGTimerQueue _rtQueue;
     SGTimerQueue _simQueue;
     bool _inited, _shutdown;
 };

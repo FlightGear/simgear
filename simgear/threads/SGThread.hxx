@@ -23,7 +23,11 @@
 #ifndef SGTHREAD_HXX_INCLUDED
 #define SGTHREAD_HXX_INCLUDED 1
 
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 #include <simgear/compiler.h>
+#include <simgear/timing/timestamp.hxx>
 
 /**
  * Encapsulate generic threading methods.
@@ -182,6 +186,43 @@ private:
 
     struct PrivateData;
     PrivateData* _privateData;
+};
+
+///
+/// an exclusive thread is one that is designed for frame processing;
+/// it has the ability to synchronise such that the caller can await
+/// the processing to finish.
+class SGExclusiveThread : public SGThread{
+private:
+    std::mutex mutex_;
+    std::condition_variable condVar;
+    SGTimeStamp timestamp;
+    std::mutex Cmutex_;
+    std::condition_variable CcondVar;
+
+    bool _started;
+    bool _terminated;
+    int last_await_time;
+
+    std::atomic<bool> dataReady;
+    std::atomic<bool> complete;
+    std::atomic<bool> process_ran;
+    std::atomic<bool> process_running;
+
+public:
+    SGExclusiveThread();
+    virtual ~SGExclusiveThread();
+    void release();
+    void wait();
+    void clearAwaitCompletionTime();
+    virtual void awaitCompletion();
+    void setCompletion();
+    virtual int process() = 0;
+    virtual void run();
+    void terminate();
+    bool stop();
+    void ensure_running();
+    bool is_running();
 };
 
 #endif /* SGTHREAD_HXX_INCLUDED */

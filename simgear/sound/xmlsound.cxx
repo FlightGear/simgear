@@ -83,6 +83,9 @@ SGXmlSound::~SGXmlSound()
     if (_sample)
         _sample->stop();
 
+    if (_sgrp && (_name != ""))
+        _sgrp->remove(_name);
+
     _volume.clear();
     _pitch.clear();
 }

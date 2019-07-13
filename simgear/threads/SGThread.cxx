@@ -25,6 +25,7 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include "SGThread.hxx"
 
@@ -416,3 +417,98 @@ SGWaitCondition::broadcast()
 {
     _privateData->broadcast();
 }
+
+
+SGExclusiveThread::SGExclusiveThread() :
+        _started(false), _terminated(false), last_await_time(0),
+        dataReady(false), complete(true), process_ran(false), process_running(false)
+    {
+    }
+
+    SGExclusiveThread::~SGExclusiveThread()
+    {
+
+    }
+
+    void SGExclusiveThread::release() {
+        std::unique_lock<std::mutex> lck(mutex_);
+        if (!complete) {
+            SG_LOG(SG_NASAL, SG_ALERT, "[SGExclusiveThread]  not finished - skipping");
+            return;
+        }
+        if (!complete.exchange(false))
+            SG_LOG(SG_NASAL, SG_ALERT, "[SGExclusiveThread]  concurrent failure (2)");
+        if (dataReady.exchange(true))
+            SG_LOG(SG_NASAL, SG_ALERT, "[SGExclusiveThread]  concurrent failure (1)");
+        condVar.notify_one();
+    }
+    void SGExclusiveThread::wait() {
+        std::unique_lock<std::mutex> lck(mutex_);
+        if (!dataReady)
+        {
+            do
+            {
+                condVar.wait(lck);
+            } while (!dataReady);
+        }
+    }
+    void SGExclusiveThread::clearAwaitCompletionTime() {
+        last_await_time = 0;
+    }
+    void SGExclusiveThread::awaitCompletion() {
+        timestamp.stamp();
+        std::unique_lock<std::mutex> lck(Cmutex_);
+        if (!complete)
+        {
+            do {
+                CcondVar.wait(lck);
+            } while (!complete.load());
+        }
+
+        if (process_ran) {
+            last_await_time = timestamp.elapsedUSec();
+            process_ran = 0;
+        }
+    }
+
+    void SGExclusiveThread::setCompletion() {
+        std::unique_lock<std::mutex> lck(Cmutex_);
+        if (!dataReady.exchange(false))
+            SG_LOG(SG_NASAL, SG_ALERT, "[SGExclusiveThread]  atomic operation on dataReady failed (5)\n");
+
+        if (complete.exchange(true))
+            SG_LOG(SG_NASAL, SG_ALERT, "[SGExclusiveThread]  atomic operation on complete failed (5)\n");
+        CcondVar.notify_one();
+    }
+    void SGExclusiveThread::run()
+    {
+        process_running = true;
+        while (!_terminated) {
+            wait();
+            process_ran = process();
+            setCompletion();
+        }
+        process_running = false;
+        _terminated = false;
+        _started = false;
+    }
+
+    void SGExclusiveThread::terminate() {
+        _terminated = true;
+    }
+    bool SGExclusiveThread::stop()
+    {
+        return true;
+    }
+    void SGExclusiveThread::ensure_running()
+    {
+        if (!_started)
+        {
+            _started = true;
+            start();
+        }
+    }
+    bool SGExclusiveThread::is_running()
+    {
+        return process_running;
+    }

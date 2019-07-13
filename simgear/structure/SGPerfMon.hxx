@@ -34,14 +34,17 @@ class SampleStatistic;
 
 class SGPerformanceMonitor : public SGSubsystem
 {
-
 public:
     SGPerformanceMonitor(SGSubsystemMgr* subSysMgr, SGPropertyNode_ptr root);
 
-    virtual void bind   (void);
-    virtual void unbind (void);
-    virtual void init   (void);
-    virtual void update (double dt);
+    // Subsystem API.
+    void bind() override;
+    void init() override;
+    void unbind() override;
+    void update(double dt) override;
+
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "performance-mon"; }
 
 private:
     static void subSystemMgrHook(void* userData, const std::string& name, SampleStatistic* timeStat);

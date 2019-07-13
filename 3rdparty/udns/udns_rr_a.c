@@ -27,7 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#ifndef WINDOWS
+#if !defined(_WINDOWS) && !defined(WINDOWS)
 # include <sys/types.h>
 # include <netinet/in.h>
 #endif

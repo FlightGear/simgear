@@ -39,7 +39,8 @@ Compositor *
 Compositor::create(osg::View *view,
                    osg::GraphicsContext *gc,
                    osg::Viewport *viewport,
-                   const SGPropertyNode *property_list)
+                   const SGPropertyNode *property_list,
+                   const SGReaderWriterOptions *options)
 {
     osg::ref_ptr<Compositor> compositor = new Compositor(view, gc, viewport);
     compositor->_name = property_list->getStringValue("name");
@@ -55,7 +56,7 @@ Compositor::create(osg::View *view,
                    "a name to be available to passes. Skipping...");
             continue;
         }
-        Buffer *buffer = buildBuffer(compositor.get(), p_buffer);
+        Buffer *buffer = buildBuffer(compositor.get(), p_buffer, options);
         if (buffer)
             compositor->addBuffer(buffer_name, buffer);
     }
@@ -64,7 +65,7 @@ Compositor::create(osg::View *view,
     for (auto const &p_pass : p_passes) {
         if (!checkConditional(p_pass))
             continue;
-        Pass *pass = buildPass(compositor.get(), p_pass);
+        Pass *pass = buildPass(compositor.get(), p_pass, options);
         if (pass)
             compositor->addPass(pass);
     }
@@ -76,7 +77,8 @@ Compositor *
 Compositor::create(osg::View *view,
                    osg::GraphicsContext *gc,
                    osg::Viewport *viewport,
-                   const std::string &name)
+                   const std::string &name,
+                   const SGReaderWriterOptions *options)
 {
     std::string filename(name);
     filename += ".xml";
@@ -96,7 +98,7 @@ Compositor::create(osg::View *view,
         return 0;
     }
 
-    return create(view, gc, viewport, property_list);
+    return create(view, gc, viewport, property_list, options);
 }
 
 Compositor::Compositor(osg::View *view,
@@ -200,51 +202,6 @@ Compositor::resized()
     }
 }
 
-bool
-Compositor::computeIntersection(
-    const osg::Vec2d& windowPos,
-    osgUtil::LineSegmentIntersector::Intersections& intersections)
-{
-    using osgUtil::Intersector;
-    using osgUtil::LineSegmentIntersector;
-
-    osg::Camera *camera = getPass(0)->camera;
-    const osg::Viewport* viewport = camera->getViewport();
-    SGRect<double> viewportRect(viewport->x(), viewport->y(),
-                                viewport->x() + viewport->width() - 1.0,
-                                viewport->y() + viewport->height()- 1.0);
-
-    double epsilon = 0.5;
-    if (!viewportRect.contains(windowPos.x(), windowPos.y(), epsilon))
-        return false;
-
-    osg::Vec4d start(windowPos.x(), windowPos.y(), 0.0, 1.0);
-    osg::Vec4d end(windowPos.x(), windowPos.y(), 1.0, 1.0);
-    osg::Matrix windowMat = viewport->computeWindowMatrix();
-    osg::Matrix startPtMat = osg::Matrix::inverse(camera->getProjectionMatrix()
-                                                  * windowMat);
-    osg::Matrix endPtMat = startPtMat; // no far camera
-
-    start = start * startPtMat;
-    start /= start.w();
-    end = end * endPtMat;
-    end /= end.w();
-    osg::ref_ptr<LineSegmentIntersector> picker
-        = new LineSegmentIntersector(Intersector::VIEW,
-                                     osg::Vec3d(start.x(), start.y(), start.z()),
-                                     osg::Vec3d(end.x(), end.y(), end.z()));
-    osgUtil::IntersectionVisitor iv(picker.get());
-    iv.setTraversalMask( simgear::PICK_BIT );
-
-    const_cast<osg::Camera*>(camera)->accept(iv);
-    if (picker->containsIntersections()) {
-        intersections = picker->getIntersections();
-        return true;
-    }
-
-    return false;
-}
-
 void
 Compositor::addBuffer(const std::string &name, Buffer *buffer)
 {
@@ -272,7 +229,7 @@ Compositor::addPass(Pass *pass)
         identifier = sceneView->getCullVisitor()->getIdentifier();
 
         sceneView->setCullVisitor(
-            new EffectCullVisitor(false, pass->effect_override));
+            new EffectCullVisitor(false, pass->effect_scheme));
         sceneView->getCullVisitor()->setIdentifier(identifier.get());
 
         identifier = sceneView->getCullVisitorLeft()->getIdentifier();

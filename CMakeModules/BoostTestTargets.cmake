@@ -80,7 +80,7 @@ if(Boost_FOUND AND NOT "${Boost_VERSION}0" LESS "1034000")
 			set(_boostConfig "BoostTestTargetsDynamic.h")
 		endif()
 	endif()
-	get_filename_component(_moddir ${CMAKE_CURRENT_LIST_FILE} PATH)
+	get_filename_component(_moddir ${CMAKE_CURRENT_LIST_FILE} DIRECTORY)
 	configure_file("${_moddir}/${_boostConfig}"
 		"${CMAKE_CURRENT_BINARY_DIR}/BoostTestTargetConfig.h"
 		COPYONLY)

@@ -30,11 +30,16 @@
 // code can register another one immediately without worrying about
 // timer aliasing.
 
-class SGInterpolator : public SGSubsystem {
+class SGInterpolator : public SGSubsystem
+{
 public:
     SGInterpolator() { _list = 0; }
-    virtual void init() {}
-    virtual void update(double delta_time_sec);
+
+    // Subsystem API.
+    void update(double delta_time_sec) override;
+
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "interpolator"; }
 
     // Simple method that interpolates a double property value from
     // its current value (default of zero) to the specified target

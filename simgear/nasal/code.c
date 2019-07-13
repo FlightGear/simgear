@@ -157,7 +157,7 @@ static void initContext(naContext c)
     c->error[0] = 0;
     c->userData = 0;
 }
-
+#define BASE_SIZE 256000
 static void initGlobals()
 {
     int i;
@@ -168,10 +168,10 @@ static void initGlobals()
     globals->sem = naNewSem();
     globals->lock = naNewLock();
 
-    globals->allocCount = 256; // reasonable starting value
+    globals->allocCount = BASE_SIZE; // reasonable starting value
     for(i=0; i<NUM_NASAL_TYPES; i++)
         naGC_init(&(globals->pools[i]), i);
-    globals->deadsz = 256;
+    globals->deadsz = BASE_SIZE;
     globals->ndead = 0;
     globals->deadBlocks = naAlloc(sizeof(void*) * globals->deadsz);
 
@@ -833,9 +833,13 @@ naRef naGetSourceFile(naContext ctx, int frame)
 {
     naRef f;
     frame = findFrame(ctx, &ctx, frame);
-    f = ctx->fStack[frame].func;
-    f = PTR(f).func->code;
-    return PTR(f).code->srcFile;
+    if (frame >= 0) {
+        f = ctx->fStack[frame].func;
+        f = PTR(f).func->code;
+        if (!IS_NIL(f) && PTR(f).code)
+            return PTR(f).code->srcFile;
+    }
+    return naNil();
 }
 
 char* naGetError(naContext ctx)

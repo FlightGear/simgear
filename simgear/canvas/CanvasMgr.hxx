@@ -28,42 +28,39 @@ namespace simgear
 namespace canvas
 {
 
-  class CanvasMgr:
-    public PropertyBasedMgr
-  {
-    public:
+class CanvasMgr : public PropertyBasedMgr
+{
+public:
+    /**
+     * @param node    Root node of branch used to control canvasses
+     */
+    CanvasMgr(SGPropertyNode_ptr node);
 
-      /**
-       * @param node    Root node of branch used to control canvasses
-       */
-      CanvasMgr(SGPropertyNode_ptr node);
+    /**
+     * Create a new canvas
+     *
+     * @param name    Name of the new canvas
+     */
+    CanvasPtr createCanvas(const std::string& name = "");
 
-      /**
-       * Create a new canvas
-       *
-       * @param name    Name of the new canvas
-       */
-      CanvasPtr createCanvas(const std::string& name = "");
+    /**
+     * Get ::Canvas by index
+     *
+     * @param index Index of texture node in /canvas/by-index/
+     */
+    CanvasPtr getCanvas(size_t index) const;
 
-      /**
-       * Get ::Canvas by index
-       *
-       * @param index Index of texture node in /canvas/by-index/
-       */
-      CanvasPtr getCanvas(size_t index) const;
+    /**
+     * Get ::Canvas by name
+     *
+     * @param name Value of child node "name" in
+     *             /canvas/by-index/texture[i]/name
+     */
+    CanvasPtr getCanvas(const std::string& name) const;
 
-      /**
-       * Get ::Canvas by name
-       *
-       * @param name Value of child node "name" in
-       *             /canvas/by-index/texture[i]/name
-       */
-      CanvasPtr getCanvas(const std::string& name) const;
-
-    protected:
-
-      void elementCreated(PropertyBasedElementPtr element) override;
-  };
+protected:
+    void elementCreated(PropertyBasedElementPtr element) override;
+};
 
 } // namespace canvas
 } // namespace simgear

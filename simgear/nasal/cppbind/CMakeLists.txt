@@ -5,6 +5,7 @@ set(HEADERS
   Ghost.hxx
   NasalCallContext.hxx
   NasalContext.hxx
+  NasalEmesaryInterface.hxx
   NasalHash.hxx
   NasalMe.hxx
   NasalMethodHolder.hxx

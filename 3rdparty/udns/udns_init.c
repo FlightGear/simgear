@@ -24,7 +24,7 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-#ifdef WINDOWS
+#if defined(_WINDOWS) || defined(WINDOWS)
 # include <winsock2.h>          /* includes <windows.h> */
 # include <iphlpapi.h>		/* for dns server addresses etc */
 #else
@@ -53,7 +53,7 @@ static void dns_set_srch_internal(struct dns_ctx *ctx, char *srch) {
     dns_add_srch(ctx, srch);
 }
 
-#ifdef WINDOWS
+#if defined(_WINDOWS) || defined(WINDOWS)
 
 #ifndef NO_IPHLPAPI
 /* Apparently, some systems does not have proper headers for IPHLPAIP to work.
@@ -217,7 +217,7 @@ int dns_init(struct dns_ctx *ctx, int do_open) {
     ctx = &dns_defctx;
   dns_reset(ctx);
 
-#ifdef WINDOWS
+#if defined(_WINDOWS) || defined(WINDOWS)
   if (dns_initns_iphlpapi(ctx) != 0)
     dns_initns_registry(ctx);
   /*XXX WINDOWS: probably good to get default domain and search list too...

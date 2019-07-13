@@ -39,16 +39,19 @@ class BufferedLogCallback;
 class SGTerraSync : public SGSubsystem
 {
 public:
-
     SGTerraSync();
     virtual ~SGTerraSync();
 
-    virtual void init();
-    virtual void shutdown();
-    virtual void reinit();
-    virtual void bind();
-    virtual void unbind();
-    virtual void update(double);
+    // Subsystem API.
+    void bind() override;
+    void init() override;
+    void reinit() override;
+    void shutdown() override;
+    void unbind() override;
+    void update(double) override;
+
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "terrasync"; }
 
     /// notify terrasync that the sim was repositioned, as opposed to
     /// us travelling in a direction. Avoid last_lat / last_lon blocking
@@ -80,6 +83,7 @@ public:
     void scheduleDataDir(const std::string& dataDir);
 
     bool isDataDirPending(const std::string& dataDir) const;
+
 protected:
     void syncAirportsModels();
     string_list getSceneryPathSuffixes() const;

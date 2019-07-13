@@ -127,6 +127,7 @@ typedef void (*SGSubsystemTimingCb)(void* userData, const std::string& name, Sam
  * subsystems may also override the suspend() and resume() methods to
  * take different actions.</p>
  */
+
 class SGSubsystem : public SGReferenced
 {
 public:
@@ -281,19 +282,19 @@ public:
     /**
      * composite name for this subsystem (type name & optional instance name)
      */
-    std::string name() const
-    { return _name; }
+    std::string subsystemId() const
+    { return _subsystemId; }
 
     /**
      * @brief the type (class)-specific part of the subsystem name.
      */
-    std::string typeName() const;
+    std::string subsystemClassId() const;
     
     /**
      * @brief the instance part of the subsystem name. Empty if this
      * subsystem is not instanced
      */
-    std::string instanceName() const;
+    std::string subsystemInstanceId() const;
     
     virtual bool is_group() const
     { return false; }
@@ -342,26 +343,31 @@ public:
 protected:
     friend class SGSubsystemMgr;
     friend class SGSubsystemGroup;
-    
+
     void set_name(const std::string& n);
 
     void set_group(SGSubsystemGroup* group);
-    
+
     /// composite name for the subsystem (type name and instance name if this
     /// is an instanced subsystem. (Since this member was originally defined as
     /// protected, not private, we can't rename it easily)
     std::string _name;
     
-  bool _suspended = false;
+    bool _suspended = false;
 
-  eventTimeVec timingInfo;
+    eventTimeVec timingInfo;
 
-  static SGSubsystemTimingCb reportTimingCb;
-  static void* reportTimingUserData;
-  static bool reportTimingStatsRequest;
-  static int maxTimePerFrame_ms;
+    static SGSubsystemTimingCb reportTimingCb;
+    static void* reportTimingUserData;
+    static bool reportTimingStatsRequest;
+    static int maxTimePerFrame_ms;
 
 private:
+    /// composite name for the subsystem (type name and instance name if this
+    /// is an instanced subsystem. (Since this member was originally defined as
+    /// protected, not private, we can't rename it easily)
+    std::string _subsystemId;
+
     SGSubsystemGroup* _group = nullptr;
 protected:
     TimerStats _timerStats, _lastTimerStats;
@@ -378,20 +384,21 @@ typedef SGSharedPtr<SGSubsystem> SGSubsystemRef;
 class SGSubsystemGroup : public SGSubsystem
 {
 public:
-    SGSubsystemGroup (const char *name);
+    SGSubsystemGroup ();
     virtual ~SGSubsystemGroup ();
 
+    // Subsystem API.
+    void bind() override;
+    InitStatus incrementalInit() override;
     void init() override;
-    InitStatus incrementalInit () override;
-    void postinit () override;
-    void reinit () override;
-    void shutdown () override;
-    void bind () override;
-    void unbind () override;
-    void update (double delta_time_sec) override;
-    void suspend () override;
-    void resume () override;
-    bool is_suspended () const override;
+    void postinit() override;
+    void reinit() override;
+    void resume() override;
+    void shutdown() override;
+    void suspend() override;
+    void unbind() override;
+    void update(double delta_time_sec) override;
+    bool is_suspended() const override;
 
     virtual void set_subsystem (const std::string &name,
                                 SGSubsystem * subsystem,
@@ -416,21 +423,22 @@ public:
      */
     void set_fixed_update_time(double fixed_dt);
 
-	/**
-	 * retrive list of member subsystem names
-	 */
+    /**
+     * retrive list of member subsystem names
+     */
     string_list member_names() const;
 
     template<class T>
     T* get_subsystem()
     {
-        return dynamic_cast<T*>(get_subsystem(T::subsystemName()));
+        return dynamic_cast<T*>(get_subsystem(T::staticSubsystemClassId()));
     }
 
     bool is_group() const override
     { return true; }
     
     SGSubsystemMgr* get_manager() const override;
+
 private:
     void forEach(std::function<void(SGSubsystem*)> f);
     void reverseForEach(std::function<void(SGSubsystem*)> f);
@@ -501,20 +509,24 @@ public:
         MAX_GROUPS
     };
 
-    SGSubsystemMgr (const char *name);
+    SGSubsystemMgr ();
     virtual ~SGSubsystemMgr ();
 
-    void init () override;
-    InitStatus incrementalInit () override;
-    void postinit () override;
-    void reinit () override;
-    void shutdown () override;
-    void bind () override;
-    void unbind () override;
-    void update (double delta_time_sec) override;
-    void suspend () override;
-    void resume () override;
-    bool is_suspended () const override;
+    // Subsystem API.
+    void bind() override;
+    void init() override;
+    InitStatus incrementalInit() override;
+    void postinit() override;
+    void reinit() override;
+    void resume() override;
+    void shutdown() override;
+    void suspend() override;
+    void unbind() override;
+    void update(double delta_time_sec) override;
+    bool is_suspended() const override;
+
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "subsystem-mgr"; }
 
     virtual void add (const char * name,
                       SGSubsystem * subsystem,
@@ -531,7 +543,7 @@ public:
 
     SGSubsystem* get_subsystem(const std::string &name) const;
 
-    SGSubsystem* get_subsystem(const std::string &name, const std::string& instanceName) const;
+    SGSubsystem* get_subsystem(const std::string &name, const std::string& subsystemInstanceId) const;
 
     void reportTiming();
     void setReportTimingCb(void* userData, SGSubsystemTimingCb cb) { reportTimingCb = cb; reportTimingUserData = userData; }
@@ -552,34 +564,40 @@ public:
     template<class T>
     T* get_subsystem() const
     {
-        return dynamic_cast<T*>(get_subsystem(T::subsystemName()));
+        return dynamic_cast<T*>(get_subsystem(T::staticSubsystemClassId()));
     }
 
 // instanced overloads, for both raw char* and std::string
 // these concatenate the subsystem type name with the instance name
     template<class T>
-    T* get_subsystem(const char* instanceName) const
+    T* get_subsystem(const char* subsystemInstanceId) const
     {
-        return dynamic_cast<T*>(get_subsystem(T::subsystemName(), instanceName));
+        return dynamic_cast<T*>(get_subsystem(T::staticSubsystemClassId(), subsystemInstanceId));
     }
 
     template<class T>
-    T* get_subsystem(const std::string& instanceName) const
+    T* get_subsystem(const std::string& subsystemInstanceId) const
     {
-        return dynamic_cast<T*>(get_subsystem(T::subsystemName(), instanceName));
+        return dynamic_cast<T*>(get_subsystem(T::staticSubsystemClassId(), subsystemInstanceId));
     }
 
+    /**
+     * @brief Subsystem dependency structure.
+     */
     struct Dependency {
         enum Type {
-            HARD,
-            SOFT,
-            PROPERTY
+            HARD,               ///< The subsystem cannot run without this subsystem dependency.
+            SOFT,               ///< The subsystem uses this subsystem dependency, but can run without it.
+            SEQUENCE,           ///< Used for ordering subsystem initialisation.
+            NONSUBSYSTEM_HARD,  ///< The subsystem cannot run without this non-subsystem dependency.
+            NONSUBSYSTEM_SOFT,  ///< The subsystem uses this non-subsystem dependency, but can run without it.
+            PROPERTY            ///< The subsystem requires this property to exist to run.
         };
-        
+
         std::string name;
         Type type;
     };
-    
+
     using DependencyVec = std::vector<SGSubsystemMgr::Dependency>;
     using SubsystemFactoryFunctor = std::function<SGSubsystemRef()>;
 
@@ -598,11 +616,12 @@ public:
     class Registrant 
     {
     public:
-        Registrant(GroupType group = GENERAL, double updateInterval = 0.0,
-                   std::initializer_list<Dependency> deps = {})
+        Registrant(GroupType group = GENERAL,
+                   std::initializer_list<Dependency> deps = {},
+                   double updateInterval = 0.0)
         {
             SubsystemFactoryFunctor factory = [](){ return new T; };
-            SGSubsystemMgr::registerSubsystem(T::subsystemName(),
+            SGSubsystemMgr::registerSubsystem(T::staticSubsystemClassId(),
                                               factory, group,
                                               false, updateInterval,
                                               deps);
@@ -616,11 +635,11 @@ public:
     {
     public:
         InstancedRegistrant(GroupType group = GENERAL,
-                            double updateInterval = 0.0,
-                            std::initializer_list<Dependency> deps = {})
+                            std::initializer_list<Dependency> deps = {},
+                            double updateInterval = 0.0)
         {
             SubsystemFactoryFunctor factory = [](){ return new T; };
-            SGSubsystemMgr::registerSubsystem(T::subsystemName(),
+            SGSubsystemMgr::registerSubsystem(T::staticSubsystemClassId(),
                                               factory, group,
                                               true, updateInterval,
                                               deps);
@@ -636,14 +655,14 @@ public:
     template <class T>
     SGSharedPtr<T> add(GroupType customGroup = INVALID, double customInterval = 0.0)
     {
-        auto ref = create(T::subsystemName());
+        auto ref = create(T::staticSubsystemClassId());
         
         
         const GroupType group = (customGroup == INVALID) ?
-            defaultGroupFor(T::subsystemName()) : customGroup;
+            defaultGroupFor(T::staticSubsystemClassId()) : customGroup;
         const double interval = (customInterval == 0.0) ?
-        defaultUpdateIntervalFor(T::subsystemName()) : customInterval;
-        add(ref->name().c_str(), ref.ptr(), group, interval);
+        defaultUpdateIntervalFor(T::staticSubsystemClassId()) : customInterval;
+        add(ref->subsystemId().c_str(), ref.ptr(), group, interval);
         return dynamic_cast<T*>(ref.ptr());
     }
     
@@ -654,20 +673,20 @@ public:
     template <class T>
     SGSharedPtr<T> create()
     {
-        auto ref = create(T::subsystemName());
+        auto ref = create(T::staticSubsystemClassId());
         return dynamic_cast<T*>(ref.ptr());
     }
     
     SGSubsystemRef create(const std::string& name);
     
     template <class T>
-    SGSharedPtr<T> createInstance(const std::string& instanceName)
+    SGSharedPtr<T> createInstance(const std::string& subsystemInstanceId)
     {
-        auto ref = createInstance(T::subsystemName(), instanceName);
+        auto ref = createInstance(T::staticSubsystemClassId(), subsystemInstanceId);
         return dynamic_cast<T*>(ref.ptr());
     }
     
-    SGSubsystemRef createInstance(const std::string& name, const std::string& instanceName);
+    SGSubsystemRef createInstance(const std::string& name, const std::string& subsystemInstanceId);
 
     static GroupType defaultGroupFor(const char* name);
     static double defaultUpdateIntervalFor(const char* name);

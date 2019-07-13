@@ -28,6 +28,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "Compositor.hxx"
 #include "CompositorUtil.hxx"
@@ -49,6 +50,7 @@ PropStringMap<BufferFormat> buffer_format_map {
     {"rgba16f", {GL_RGBA16F_ARB, GL_RGBA, GL_FLOAT}},
     {"rgba32f", {GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT}},
     {"r32f", {GL_R32F, GL_RED, GL_FLOAT}},
+    {"rg16f", {GL_RG16F, GL_RG, GL_FLOAT}},
     {"rg32f", {GL_RG32F, GL_RG, GL_FLOAT}},
     {"depth16", {GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT}},
     {"depth24", {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT}},
@@ -92,7 +94,8 @@ PropStringMap<osg::Texture::ShadowCompareFunc> shadow_compare_func_map = {
 };
 
 Buffer *
-buildBuffer(Compositor *compositor, const SGPropertyNode *node)
+buildBuffer(Compositor *compositor, const SGPropertyNode *node,
+            const SGReaderWriterOptions *options)
 {
     std::string type = node->getStringValue("type");
     if (type.empty()) {

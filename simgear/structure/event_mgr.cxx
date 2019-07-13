@@ -47,7 +47,6 @@ SGEventMgr::SGEventMgr() :
     _inited(false),
     _shutdown(false)
 {
-_name = "EventMgr";
 }
 
 SGEventMgr::~SGEventMgr()
@@ -126,6 +125,11 @@ void SGEventMgr::dump()
     SG_LOG(SG_GENERAL, SG_INFO, "EventMgr: real-time queue:");
     _rtQueue.dump();
 }
+
+// Register the subsystem.
+SGSubsystemMgr::Registrant<SGEventMgr> registrantSGEventMgr(
+    SGSubsystemMgr::DISPLAY);
+
 
 ////////////////////////////////////////////////////////////////////////
 // SGTimerQueue

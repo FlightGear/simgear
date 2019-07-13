@@ -21,6 +21,7 @@
 #include <simgear_config.h>
 
 #include <algorithm>
+#include <cassert>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/timing/timestamp.hxx>
@@ -137,28 +138,28 @@ void SGSubsystem::stamp(const string& name)
 
 void SGSubsystem::set_name(const std::string &n)
 {
-    assert(_name.empty());
-    _name = n;
+    assert(_subsystemId.empty());
+    _subsystemId = n;
 }
 
-std::string SGSubsystem::typeName() const
+std::string SGSubsystem::subsystemClassId() const
 {
-    auto pos = _name.find(SUBSYSTEM_NAME_SEPARATOR);
+    auto pos = _subsystemId.find(SUBSYSTEM_NAME_SEPARATOR);
     if (pos == std::string::npos) {
-        return _name;
+        return _subsystemId;
     }
     
-    return _name.substr(0, pos);
+    return _subsystemId.substr(0, pos);
 }
 
-std::string SGSubsystem::instanceName() const
+std::string SGSubsystem::subsystemInstanceId() const
 {
-    auto pos = _name.find(SUBSYSTEM_NAME_SEPARATOR);
+    auto pos = _subsystemId.find(SUBSYSTEM_NAME_SEPARATOR);
     if (pos == std::string::npos) {
         return {};
     }
     
-    return _name.substr(pos+1);
+    return _subsystemId.substr(pos+1);
 }
 
 void SGSubsystem::set_group(SGSubsystemGroup* group)
@@ -174,7 +175,7 @@ SGSubsystemGroup* SGSubsystem::get_group() const
 SGSubsystemMgr* SGSubsystem::get_manager() const
 {
     if (!get_group())
-        throw sg_exception("SGSubsystem::get_manager: subsystem " + name() + " has no group");
+        throw sg_exception("SGSubsystem::get_manager: subsystem " + subsystemId() + " has no group");
     return get_group()->get_manager();
 }
 
@@ -232,12 +233,11 @@ public:
 
 
 
-SGSubsystemGroup::SGSubsystemGroup(const char *name) :
+SGSubsystemGroup::SGSubsystemGroup() :
     _fixedUpdateTime(-1.0),
     _updateTimeRemainder(0.0),
     _initPosition(-1)
 {
-    _name = name;
 }
 
 SGSubsystemGroup::~SGSubsystemGroup ()
@@ -473,7 +473,7 @@ void SGSubsystem::reportTimingStats(TimerStats *__lastValues) {
     if (reportDeltas) {
         auto deltaT = _executionTime - _lastExecutionTime;
         if (deltaT != 0) {
-            t << name() << "(+" << std::setprecision(2) << std::right << deltaT << "ms).";
+            t << subsystemInstanceId() << "(+" << std::setprecision(2) << std::right << deltaT << "ms).";
             _name = t.str();
         }
     }
@@ -505,7 +505,7 @@ void SGSubsystem::reportTimingStats(TimerStats *__lastValues) {
 void SGSubsystemGroup::reportTimingStats(TimerStats *_lastValues) {
     SGSubsystem::reportTimingStats(_lastValues);
 
-    std::string _name = name();
+    std::string _name = subsystemInstanceId();
     if (!_name.size())
         _name = typeid(this).name();
     if (_lastValues) {
@@ -513,11 +513,11 @@ void SGSubsystemGroup::reportTimingStats(TimerStats *_lastValues) {
         if (deltaT != 0) {
             SG_LOG(SG_EVENT, SG_ALERT, 
                 " +" << std::setw(6) << std::setprecision(4) << std::right << deltaT << "ms "
-                << name() );
+                << subsystemInstanceId() );
         }
     }
     else
-        SG_LOG(SG_EVENT, SG_ALERT, "SubSystemGroup: " << name() << " " << std::setw(6) << std::setprecision(4) << std::right << _executionTime / 1000.0 << "s");
+        SG_LOG(SG_EVENT, SG_ALERT, "SubSystemGroup: " << subsystemInstanceId() << " " << std::setw(6) << std::setprecision(4) << std::right << _executionTime / 1000.0 << "s");
     for (auto member : _members) {
         member->reportTimingStats(_lastValues);
     }
@@ -574,11 +574,11 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
     if (name.empty()) {
         SG_LOG(SG_GENERAL, SG_DEV_WARN, "adding subsystem to group without a name");
         // TODO, make this an exception in the future
-    } else if (subsystem->name().empty()) {
+    } else if (subsystem->subsystemId().empty()) {
         subsystem->set_name(name);
-    } else if (name != subsystem->name()) {
+    } else if (name != subsystem->subsystemId()) {
         SG_LOG(SG_GENERAL, SG_DEV_WARN, "adding subsystem to group with name '" << name
-               << "', but name() returns '" << subsystem->name() << "'");
+               << "', but subsystemId() returns '" << subsystem->subsystemId() << "'");
     }
     
     notifyWillChange(subsystem, State::ADD);
@@ -614,7 +614,7 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
 void
 SGSubsystemGroup::set_subsystem (SGSubsystem * subsystem, double min_step_sec)
 {
-    set_subsystem(subsystem->name(), subsystem, min_step_sec);
+    set_subsystem(subsystem->subsystemId(), subsystem, min_step_sec);
 }
 
 SGSubsystem *
@@ -837,7 +837,7 @@ namespace {
     
 } // end of anonymous namespace
 
-SGSubsystemMgr::SGSubsystemMgr (const char *name) :
+SGSubsystemMgr::SGSubsystemMgr () :
   _groups(MAX_GROUPS)
 {
     if (global_defaultSubsystemManager == nullptr) {
@@ -854,7 +854,7 @@ SGSubsystemMgr::SGSubsystemMgr (const char *name) :
 #endif
     
     for (int i = 0; i < MAX_GROUPS; i++) {
-        auto g = new SGSubsystemGroup(name);
+        auto g = new SGSubsystemGroup();
         g->set_manager(this);
         _groups[i].reset(g);
     }
@@ -1038,9 +1038,9 @@ SGSubsystemMgr::get_subsystem (const string &name) const
 }
 
 SGSubsystem*
-SGSubsystemMgr::get_subsystem(const std::string &name, const std::string& instanceName) const
+SGSubsystemMgr::get_subsystem(const std::string &name, const std::string& subsystemInstanceId) const
 {
-    return get_subsystem(name + SUBSYSTEM_NAME_SEPARATOR + instanceName);
+    return get_subsystem(name + SUBSYSTEM_NAME_SEPARATOR + subsystemInstanceId);
 }
 
 
@@ -1173,7 +1173,7 @@ SGSubsystemMgr::create(const std::string& name)
 }
 
 SGSubsystemRef
-SGSubsystemMgr::createInstance(const std::string& name, const std::string& instanceName)
+SGSubsystemMgr::createInstance(const std::string& name, const std::string& subsystemInstanceId)
 {
     auto it = findRegistration(name);
     auto &global_registrations = getGlobalRegistrations();
@@ -1190,7 +1190,7 @@ SGSubsystemMgr::createInstance(const std::string& name, const std::string& insta
         throw sg_exception("SGSubsystemMgr::create: functor failed to create an instsance of " + name);
     }
     
-    const auto combinedName = name + SUBSYSTEM_NAME_SEPARATOR + instanceName;
+    const auto combinedName = name + SUBSYSTEM_NAME_SEPARATOR + subsystemInstanceId;
     ref->set_name(combinedName);
     return ref;
 }
@@ -1275,7 +1275,7 @@ namespace {
         
         // allow override of the name but defaultt o the subsystem name
         std::string name = arg->getStringValue("name");
-        std::string instanceName = arg->getStringValue("instance");
+        std::string subsystemInstanceId = arg->getStringValue("instance");
 
         if (name.empty()) {
             // default name to subsystem name, but before we parse any instance name
@@ -1284,19 +1284,19 @@ namespace {
         
         auto separatorPos = subsystem.find(SUBSYSTEM_NAME_SEPARATOR);
         if (separatorPos != std::string::npos) {
-            if (!instanceName.empty()) {
+            if (!subsystemInstanceId.empty()) {
                 SG_LOG(SG_GENERAL, SG_WARN, "Specified a composite subsystem name and an instance name, please do one or the other: "
-                        << instanceName << " and " << subsystem);
+                        << subsystemInstanceId << " and " << subsystem);
                 return false;
             }
             
-            instanceName = subsystem.substr(separatorPos + 1);
+            subsystemInstanceId = subsystem.substr(separatorPos + 1);
             subsystem = subsystem.substr(0, separatorPos);
         }
         
         SGSubsystem* sub = nullptr;
-        if (!instanceName.empty()) {
-            sub = manager->createInstance(subsystem, instanceName);
+        if (!subsystemInstanceId.empty()) {
+            sub = manager->createInstance(subsystem, subsystemInstanceId);
         } else {
             sub = manager->create(subsystem);
         }
@@ -1312,7 +1312,7 @@ namespace {
         
         double minTime = arg->getDoubleValue("min-time-sec", 0.0);
         
-        const auto combinedName = subsystem + SUBSYSTEM_NAME_SEPARATOR + instanceName;
+        const auto combinedName = subsystem + SUBSYSTEM_NAME_SEPARATOR + subsystemInstanceId;
         manager->add(combinedName.c_str(),
                      sub,
                      group,

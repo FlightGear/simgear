@@ -340,7 +340,7 @@ void SGSoundMgr::suspend()
         for ( auto current = d->_sample_groups.begin();
                    current != d->_sample_groups.end(); ++current ) {
             SGSampleGroup *sgrp = current->second;
-            sgrp->stop();
+            sgrp->suspend();
         }
         _active = false;
     }

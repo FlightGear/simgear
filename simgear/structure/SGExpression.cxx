@@ -33,6 +33,7 @@
 #include <sstream>
 #include <boost/bind.hpp>
 #include <cstring> // for strcmp
+#include <cassert>
 
 #include <simgear/props/props.hxx>
 

@@ -49,18 +49,20 @@ class SGSoundSample;
 class SGSoundMgr : public SGSubsystem
 {
 public:
-
     SGSoundMgr();
     ~SGSoundMgr();
 
-    void init();
-    void update(double dt);
+    // Subsystem API.
+    void init() override;
+    void reinit() override;
+    void resume() override;
+    void suspend() override;
+    void update(double dt) override;
 
-    void suspend();
-    void resume();
+    // Subsystem identification.
+    static const char* staticSubsystemClassId() { return "sound"; }
+
     void stop();
-
-    void reinit();
 
     /**
      * Select a specific sound device.
@@ -310,7 +312,7 @@ public:
                        size_t *size,
                        int *freq,
                        int *block );
- 
+
     /**
      * Get a list of available playback devices.
      */
@@ -324,7 +326,6 @@ public:
 
     bool testForError(std::string s, std::string name = "sound manager");
 
-    static const char* subsystemName() { return "sound"; };
 private:
     class SoundManagerPrivate;
     /// private implementation object

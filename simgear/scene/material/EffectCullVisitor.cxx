@@ -21,6 +21,8 @@
 #include <osg/StateSet>
 #include <osg/Texture2D>
 
+#include <osg/io_utils>
+
 #include "EffectCullVisitor.hxx"
 
 #include "EffectGeode.hxx"
@@ -34,9 +36,9 @@ namespace simgear
 
 using osgUtil::CullVisitor;
 
-EffectCullVisitor::EffectCullVisitor(bool collectLights, Effect *effectOverride) :
+EffectCullVisitor::EffectCullVisitor(bool collectLights, const std::string &effScheme) :
     _collectLights(collectLights),
-    _effectOverride(effectOverride)
+    _effScheme(effScheme)
 {
 }
 
@@ -50,6 +52,19 @@ CullVisitor* EffectCullVisitor::clone() const
     return new EffectCullVisitor(*this);
 }
 
+void EffectCullVisitor::apply(osg::Node &node)
+{
+    // TODO: Properly cull lights outside the viewport (override computeBounds())
+    // if (isCulled(node))
+    //     return;
+    SGLight *light = dynamic_cast<SGLight *>(&node);
+    if (!light) {
+        CullVisitor::apply(node);
+        return;
+    }
+    _lightList.push_back(light);
+}
+
 void EffectCullVisitor::apply(osg::Geode& node)
 {
     if (isCulled(node))
@@ -59,21 +74,12 @@ void EffectCullVisitor::apply(osg::Geode& node)
         CullVisitor::apply(node);
         return;
     }
-    if (_collectLights && ( eg->getNodeMask() & MODELLIGHT_BIT ) ) {
-        _lightList.push_back( eg );
-    }
-    Effect *effect;
-    if (_effectOverride) {
-        effect = _effectOverride;
-    } else {
-        effect = eg->getEffect();
-        if (!effect) {
-            CullVisitor::apply(node);
-            return;
-        }
-    }
+    Effect* effect = eg->getEffect();
     Technique* technique = 0;
-    if (!(technique = effect->chooseTechnique(&getRenderInfo()))) {
+    if (!effect) {
+        CullVisitor::apply(node);
+        return;
+    } else if (!(technique = effect->chooseTechnique(&getRenderInfo(), _effScheme))) {
         return;
     }
     // push the node's state.

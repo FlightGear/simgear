@@ -1,7 +1,6 @@
 #include "nasal.h"
 #include "data.h"
 #include "code.h"
-
 #define MIN_BLOCK_SIZE 32
 
 static void reap(struct naPool* p);
@@ -12,14 +11,17 @@ struct Block {
     char* block;
     struct Block* next;
 };
-
 // Must be called with the giant exclusive lock!
-static void freeDead()
+extern void global_stamp();
+extern int global_elapsedUSec();
+
+static int freeDead()
 {
     int i;
     for(i=0; i<globals->ndead; i++)
         naFree(globals->deadBlocks[i]);
     globals->ndead = 0;
+    return i;
 }
 
 static void marktemps(struct Context* c)
@@ -31,50 +33,127 @@ static void marktemps(struct Context* c)
         mark(r);
     }
 }
-
+//#define GC_DETAIL_DEBUG 
+static int __elements_visited = 0;
+static int gc_busy=0;
 // Must be called with the big lock!
 static void garbageCollect()
 {
+    if (gc_busy)
+        return;
+    gc_busy = 1;
     int i;
     struct Context* c;
     globals->allocCount = 0;
     c = globals->allContexts;
-    while(c) {
-        for(i=0; i<NUM_NASAL_TYPES; i++)
+
+#if GC_DETAIL_DEBUG
+    int ctxc = 0;
+    __elements_visited = 0;
+    int st = global_elapsedUSec();
+    int et = 0;
+    int stel = __elements_visited;
+    int eel = 0;
+#endif
+
+    c = globals->allContexts;
+    while (c) {
+#if GC_DETAIL_DEBUG
+        ctxc++;
+#endif
+        for (i = 0; i < NUM_NASAL_TYPES; i++)
             c->nfree[i] = 0;
-        for(i=0; i < c->fTop; i++) {
+        for (i = 0; i < c->fTop; i++) {
             mark(c->fStack[i].func);
             mark(c->fStack[i].locals);
         }
-        for(i=0; i < c->opTop; i++)
+        for (i = 0; i < c->opTop; i++)
             mark(c->opStack[i]);
         mark(c->dieArg);
         marktemps(c);
         c = c->nextAll;
     }
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    printf("--> garbageCollect(#e%-5d): %-4d ", eel, et);
+#endif
 
     mark(globals->save);
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    printf("s(%5d) %-5d ", eel, et);
+#endif
+
     mark(globals->save_hash);
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    printf("h(%5d) %-5d ", eel, et);
+#endif
+
+
     mark(globals->symbols);
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    //printf("sy(%5d) %-4d ", eel, et);
+#endif
+
     mark(globals->meRef);
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    //printf("me(%5d) %-5d ", eel, et);
+#endif
+
     mark(globals->argRef);
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+    //printf("ar(%5d) %-5d ", eel, et);
+#endif
+
     mark(globals->parentsRef);
-
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    eel = __elements_visited - stel; stel = __elements_visited;
+#endif
+    //printf(" ev[%3d] %-5d", eel, et);
     // Finally collect all the freed objects
-    for(i=0; i<NUM_NASAL_TYPES; i++)
+    for (i = 0; i < NUM_NASAL_TYPES; i++) {
         reap(&(globals->pools[i]));
-
+    }
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    printf(" >> reap %-5d", et);
+#endif
     // Make enough space for the dead blocks we need to free during
     // execution.  This works out to 1 spot for every 2 live objects,
     // which should be limit the number of bottleneck operations
     // without imposing an undue burden of extra "freeable" memory.
     if(globals->deadsz < globals->allocCount) {
         globals->deadsz = globals->allocCount;
-        if(globals->deadsz < 256) globals->deadsz = 256;
+        if(globals->deadsz < 256000) globals->deadsz = 256000;
         naFree(globals->deadBlocks);
         globals->deadBlocks = naAlloc(sizeof(void*) * globals->deadsz);
     }
     globals->needGC = 0;
+#if GC_DETAIL_DEBUG
+    et = global_elapsedUSec() - st;
+    st = global_elapsedUSec();
+    printf(">> %-5d ", et);
+#endif
+    gc_busy = 0;
 }
 
 void naModLock()
@@ -104,6 +183,7 @@ void naModUnlock()
 // you think about it).
 static void bottleneck()
 {
+    global_stamp();
     struct Globals* g = globals;
     g->bottleneck = 1;
     while(g->bottleneck && g->waitCount < g->nThreads - 1) {
@@ -111,10 +191,37 @@ static void bottleneck()
         UNLOCK(); naSemDown(g->sem); LOCK();
         g->waitCount--;
     }
+#if GC_DETAIL_DEBUG
+    printf("GC: wait %2d ", global_elapsedUSec());
+#endif
     if(g->waitCount >= g->nThreads - 1) {
-        freeDead();
-        if(g->needGC) garbageCollect();
+        int fd = freeDead();
+#if GC_DETAIL_DEBUG
+        printf("--> freedead (%5d) : %5d", fd, global_elapsedUSec());
+#endif
+        if(g->needGC)
+            garbageCollect();
         if(g->waitCount) naSemUp(g->sem, g->waitCount);
+        g->bottleneck = 0;
+    }
+#if GC_DETAIL_DEBUG
+    printf(" :: finished: %5d\n", global_elapsedUSec());
+#endif
+}
+
+static void bottleneckFreeDead()
+{
+    global_stamp();
+    struct Globals* g = globals;
+    g->bottleneck = 1;
+    while (g->bottleneck && g->waitCount < g->nThreads - 1) {
+        g->waitCount++;
+        UNLOCK(); naSemDown(g->sem); LOCK();
+        g->waitCount--;
+    }
+    if (g->waitCount >= g->nThreads - 1) {
+        freeDead();
+         if (g->waitCount) naSemUp(g->sem, g->waitCount);
         g->bottleneck = 0;
     }
 }
@@ -126,6 +233,29 @@ void naGC()
     bottleneck();
     UNLOCK();
     naCheckBottleneck();
+}
+int naGarbageCollect()
+{
+    int rv = 1;
+    LOCK();
+    //
+    // The number here is again based on observation - if this is too low then the inline GC will be used
+    // which is fine occasionally.
+    // So what we're doing by checking the global alloc is to see if GC is likely required during the next frame and if
+    // so we pre-empt this by doing it now.
+    // GC can typically take between 5ms and 50ms (F-15, FG1000 PFD & MFD, Advanced weather) - but usually it is completed
+    // prior to the start of the next frame.
+
+    globals->needGC = nasal_globals->allocCount < 23000;
+    if (globals->needGC)
+        bottleneck();
+    else {
+        bottleneckFreeDead();
+        rv = 0;
+    }
+    UNLOCK();
+    naCheckBottleneck();
+    return rv;
 }
 
 void naCheckBottleneck()
@@ -207,7 +337,9 @@ static int poolsize(struct naPool* p)
     while(b) { total += b->size; b = b->next; }
     return total;
 }
-
+int GCglobalAlloc() {
+    return globals->allocCount;
+}
 struct naObj** naGC_get(struct naPool* p, int n, int* nout)
 {
     struct naObj** result;
@@ -215,6 +347,9 @@ struct naObj** naGC_get(struct naPool* p, int n, int* nout)
     LOCK();
     while(globals->allocCount < 0 || (p->nfree == 0 && p->freetop >= p->freesz)) {
         globals->needGC = 1;
+#if GC_DETAIL_DEBUG
+        printf("++");
+#endif
         bottleneck();
     }
     if(p->nfree == 0)
@@ -248,7 +383,7 @@ static void mark(naRef r)
 
     if(PTR(r).obj->mark == 1)
         return;
-
+    __elements_visited++;
     PTR(r).obj->mark = 1;
     switch(PTR(r).obj->type) {
     case T_VEC: markvec(r); break;
@@ -306,11 +441,14 @@ static void reap(struct naPool* p)
 
     // Allocate more if necessary (try to keep 25-50% of the objects
     // available)
-    if(p->nfree < total/4) {
+    // This was changed (2019.2) to allocate in larger blocks
+    // previously it used total/4 and used/2 now we
+    // use total/2 and used / 1
+    if (p->nfree < total / 2) {
         int used = total - p->nfree;
         int avail = total - used;
-        int need = used/2 - avail;
-        if(need > 0)
+        int need = used / 1 - avail;
+        if (need > 0)
             newBlock(p, need);
     }
 }

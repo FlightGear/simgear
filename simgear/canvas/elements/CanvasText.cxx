@@ -324,11 +324,13 @@ namespace canvas
   //----------------------------------------------------------------------------
 #if OSG_VERSION_LESS_THAN(3,6,5)
   TextLine Text::TextOSG::nearestLine(float pos_y) const
+  {
+    osgText::Font const* font = getActiveFont();
 #else
   TextLine Text::TextOSG::nearestLine(float pos_y)
-#endif
   {
     auto font = getActiveFont();
+#endif
 
     if( !font || lineCount() <= 0 )
       return TextLine(0, this);
@@ -360,7 +362,12 @@ namespace canvas
     if( _text.empty() )
       return SGVec2i(0, 0);
 
+#if OSG_VERSION_LESS_THAN(3,6,5)
+    osgText::Font* activefont = const_cast<osgText::Font*>(getActiveFont());
+#else
     auto activefont = getActiveFont();
+#endif
+
     if( !activefont )
       return SGVec2i(-1, -1);
 

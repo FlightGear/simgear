@@ -53,10 +53,13 @@ namespace canvas
       TextLine lineAt(size_t i) const;
 
       /// Get nearest line to given y-coordinate
+#if OSG_VERSION_LESS_THAN(3,6,5)
       TextLine nearestLine(float pos_y) const;
-
-
       SGVec2i sizeForWidth(int w) const;
+#else
+      TextLine nearestLine(float pos_y);
+      SGVec2i sizeForWidth(int w);
+#endif
 
       osg::BoundingBox
 #if OSG_VERSION_LESS_THAN(3,3,2)
@@ -319,9 +322,14 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+#if OSG_VERSION_LESS_THAN(3,6,5)
   TextLine Text::TextOSG::nearestLine(float pos_y) const
+#else
+  TextLine Text::TextOSG::nearestLine(float pos_y)
+#endif
   {
-    osgText::Font const* font = getActiveFont();
+    auto font = getActiveFont();
+
     if( !font || lineCount() <= 0 )
       return TextLine(0, this);
 
@@ -343,12 +351,16 @@ namespace canvas
   // simplified version of osgText::Text::computeGlyphRepresentation() to
   // just calculate the size for a given weight. Glpyh calculations/creating
   // is not necessary for this...
+#if OSG_VERSION_LESS_THAN(3,6,5)
   SGVec2i Text::TextOSG::sizeForWidth(int w) const
+#else
+  SGVec2i Text::TextOSG::sizeForWidth(int w)
+#endif
   {
     if( _text.empty() )
       return SGVec2i(0, 0);
 
-    osgText::Font* activefont = const_cast<osgText::Font*>(getActiveFont());
+    auto activefont = getActiveFont();
     if( !activefont )
       return SGVec2i(-1, -1);
 
@@ -727,7 +739,7 @@ namespace canvas
   }
 
 #else
-  void Text::TextOSG::computePositionsImplementation() 
+  void Text::TextOSG::computePositionsImplementation()
   {
           TextBase::computePositionsImplementation();
   }

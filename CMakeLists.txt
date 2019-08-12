@@ -521,6 +521,10 @@ include(CheckCXXFeatures)
 # ahead of system-installed libs
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
+    include_directories("/usr/X11R6/include")
+endif()
+
 add_definitions(-DHAVE_CONFIG_H)
 
 # configure a header file to pass some of the CMake settings

@@ -34,7 +34,7 @@
 #include <math.h>
 #include <float.h>
 
-#if !defined(VG_API_MACOSX) && !defined(__FreeBSD__)
+#if !defined(VG_API_MACOSX) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #  include <malloc.h>
 #endif
 
@@ -161,7 +161,7 @@ SHfloat getMaxFloat();
 
 /* OpenGL headers */
 
-#if defined(VG_API_LINUX) || defined(VG_API_FREEBSD)
+#if defined(VG_API_LINUX) || defined(VG_API_FREEBSD) || defined(VG_API_OPENBSD)
     #include <GL/gl.h>
     #include <GL/glx.h>
 #elif defined(VG_API_MACOSX)

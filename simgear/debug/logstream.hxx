@@ -113,6 +113,12 @@ public:
     void setDeveloperMode(bool devMode);
 
     /**
+     * set output of file:line mode on/off. If on, all log messages are
+     * prefixed by the file:line of the caller of SG_LOG().
+     */
+    void setFileLine(bool fileLine);
+
+    /**
      * the core logging method
      */
     void log( sgDebugClass c, sgDebugPriority p,

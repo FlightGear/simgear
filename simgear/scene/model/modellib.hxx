@@ -59,7 +59,9 @@ public:
     // data->modelLoaded() will be called after the model is loaded
     static osg::Node* loadModel(const std::string &path,
                                 SGPropertyNode *prop_root = NULL,
-                                SGModelData *data=0, bool load2DPanels=false);
+                                SGModelData *data=0, bool load2DPanels=false,
+                                bool autoTooltipsMaster=false,
+                                int autoTooltipsMasterMax=0);
 
     // Load a 3D model (any format) through the DatabasePager.
     // This function initially just returns a proxy node that refers to

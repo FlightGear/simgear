@@ -55,6 +55,8 @@ public:
         _load_panel(0),
         _instantiateEffects(false),
         _instantiateMaterialEffects(false),
+        _autoTooltipsMaster(false),
+        _autoTooltipsMasterMax(0),
         _LoadOriginHint(ORIGIN_MODEL)
     { }
     SGReaderWriterOptions(const std::string& str) :
@@ -63,6 +65,8 @@ public:
         _load_panel(0),
         _instantiateEffects(false),
         _instantiateMaterialEffects(false),
+        _autoTooltipsMaster(false),
+        _autoTooltipsMasterMax(0),
         _LoadOriginHint(ORIGIN_MODEL)
     { }
     SGReaderWriterOptions(const osgDB::Options& options,
@@ -72,6 +76,8 @@ public:
         _load_panel(0),
         _instantiateEffects(false),
         _instantiateMaterialEffects(false),
+        _autoTooltipsMaster(false),
+        _autoTooltipsMasterMax(0),
         _LoadOriginHint(ORIGIN_MODEL)
     { }
     SGReaderWriterOptions(const SGReaderWriterOptions& options,
@@ -88,6 +94,8 @@ public:
         _instantiateMaterialEffects(options._instantiateMaterialEffects),
         _materialName(options._materialName),
         _sceneryPathSuffixes(options._sceneryPathSuffixes),
+        _autoTooltipsMaster(options._autoTooltipsMaster),
+        _autoTooltipsMasterMax(options._autoTooltipsMasterMax),
         _LoadOriginHint(ORIGIN_MODEL)
     { }
 
@@ -142,6 +150,16 @@ public:
 
     void setSceneryPathSuffixes(const string_list& suffixes)
     { _sceneryPathSuffixes = suffixes; }
+    
+    bool getAutoTooltipsMaster() const
+    { return _autoTooltipsMaster; }
+    void setAutoTooltipsMaster(bool autoTooltipsMaster)
+    { _autoTooltipsMaster = autoTooltipsMaster; }
+    
+    int getAutoTooltipsMasterMax() const
+    { return _autoTooltipsMasterMax; }
+    void setAutoTooltipsMasterMax(int autoTooltipsMasterMax)
+    { _autoTooltipsMasterMax = autoTooltipsMasterMax; }
 
     static SGReaderWriterOptions* copyOrCreate(const osgDB::Options* options);
     static SGReaderWriterOptions* fromPath(const SGPath& path);
@@ -176,6 +194,8 @@ private:
     bool _instantiateMaterialEffects;
     string _materialName;
     string_list _sceneryPathSuffixes;
+    bool _autoTooltipsMaster;
+    int _autoTooltipsMasterMax;
     SGGeod _geod;
     mutable LoadOriginHint _LoadOriginHint;
 };

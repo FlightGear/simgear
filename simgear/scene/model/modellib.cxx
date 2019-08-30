@@ -128,7 +128,9 @@ osg::Node*
 SGModelLib::loadModel(const string &path,
                        SGPropertyNode *prop_root,
                        SGModelData *data,
-                       bool load2DPanels)
+                       bool load2DPanels,
+                       bool autoTooltipsMaster,
+                       int autoTooltipsMasterMax)
 {
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
@@ -139,6 +141,9 @@ SGModelLib::loadModel(const string &path,
     if (load2DPanels) {
        opt->setLoadPanel(static_panelFunc);
     }
+
+    opt->setAutoTooltipsMaster(autoTooltipsMaster);
+    opt->setAutoTooltipsMasterMax(autoTooltipsMasterMax);
 
     osg::Node *n = loadFile(path, opt.get());
     if (n && n->getName().empty())

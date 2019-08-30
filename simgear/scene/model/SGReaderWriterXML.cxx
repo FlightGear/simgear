@@ -256,6 +256,208 @@ namespace {
     }
 }
 
+struct DumpSGPropertyNode {
+    
+    SGPropertyNode*     _node;
+    const std::string&  _indent;
+    
+    DumpSGPropertyNode(SGPropertyNode* node, const std::string& indent="")
+    :
+    _node(node),
+    _indent(indent)
+    {}
+    
+    friend std::ostream& operator << (std::ostream& out, const DumpSGPropertyNode& dump)
+    {
+        if (!dump._node)    return out;
+        out << dump._indent << dump._node->getDisplayName() << "=" << dump._node->getStringValue() << "\n";
+        for (int i=0; i<dump._node->nChildren(); ++i) {
+            SGPropertyNode* child = dump._node->getChild(i);
+            out << DumpSGPropertyNode(child, dump._indent + "    ");
+        }
+        return out;
+    }
+};
+
+struct DumpOsgNode {
+    
+    osg::Node*          _node;
+    const std::string&  _indent;
+    
+    DumpOsgNode(osg::Node* node, const std::string& indent="")
+    :
+    _node(node),
+    _indent(indent)
+    {}
+    
+    friend std::ostream& operator << (std::ostream& out, const DumpOsgNode& dump)
+    {
+        if (!dump._node)    return out;
+        out << dump._indent << dump._node->getName() << "\n";
+        osg::Group* group = dynamic_cast<osg::Group*>(dump._node);
+        if (group) {
+            for (unsigned i=0; i<group->getNumChildren(); ++i) {
+                out << DumpOsgNode(group->getChild(i), dump._indent + "    ");
+            }
+        }
+        return out;
+    }
+};
+
+/* Finds all names recursively in an osg::Node. */
+struct OSGNodeGetNames
+{
+    std::vector<std::string>    names;
+    
+    OSGNodeGetNames(osg::Node* node=NULL)
+    {
+        add(node);
+    }
+    
+    void add(osg::Node* node)
+    {
+        if (!node)  return;
+        const std::string&  name = node->getName();
+        if (name != "") names.push_back(name);
+        
+        osg::Group* group = dynamic_cast<osg::Group*>(node);
+        if (group) {
+            for (unsigned i=0; i<group->getNumChildren(); ++i) {
+                add(group->getChild(i));
+            }
+        }
+    }
+};
+
+
+/* For each existing animation in <props>, we add a tooltip showing information
+on the properties that the animation depends on.
+
+At runtime, the tooltips only show if sim/animation-tooltips is true.
+
+The dummy animations will show up as yellow (like clickable items) if the user
+presses Ctrl-C, even if tooltips aren't showing because sim/animation-tooltips
+is false. */
+void addTooltipAnimations(const SGPath& path, SGPropertyNode_ptr props, osg::ref_ptr<osg::Node> model, int autoTooltipsMasterMax)
+{
+    OSGNodeGetNames model_names;
+    if (0) {
+        /* Include all names in the .asi file, in an attempt to make
+        tooltips activate for more than just the needle in instrument dials
+        for example. This doesn't seem to help. */
+        model_names.add(model);
+        if (!model_names.names.empty()) {
+            /* First name will be filename of .ac file. */
+            model_names.names.erase(model_names.names.begin());
+        }
+    }
+
+    /* For each animation add an extra animation with type=pick containing
+    set-tooltip. We use the object-name as the tooltip-id, and we use the
+    animation's property name/value(s) in the tooltip label. */
+    PropertyList animations = props->getChildren("animation");
+    SG_LOG(SG_INPUT, SG_DEBUG, "animations.size()=" << animations.size()
+            << " path=" << path
+            << " props=" << (props ? props->getPath() : "")
+            );
+    for (unsigned i = 0; i < animations.size(); ++i) {
+
+        SGPropertyNode* animation = animations[i];
+
+        if (!strcmp(animation->getStringValue("type"), "pick")) {
+            /* There appear to be many of these, and we end up consuming
+            GB's of memory if we install a tooltip for each one, so ignore.
+            */
+            continue;
+        }
+
+        PropertyList    properties = animation->getChildren("property");
+        if (properties.empty()) {
+            /* We can't really show anything useful in tooltip. */
+            continue;
+        }
+
+        PropertyList objectnames(animation->getChildren("object-name"));
+        if (objectnames.empty() && model_names.names.empty()) {
+            continue;
+        }
+
+        /* Make a unique tooltip-id. */
+        std::string id = "auto-tooltip-";
+        {
+            static int  id_n = 0;
+            id_n += 1;
+            if (autoTooltipsMasterMax > 0 && id_n > autoTooltipsMasterMax) {
+                continue;
+            }
+            std::ostringstream  s;
+            s << id_n;
+            id += s.str();
+        }
+
+        /* If we reach here, we create a new dummy animation with type="pick"
+        that will implement a tooltip with information about <animation>. */
+        SGPropertyNode* new_animation = props->addChild("animation");
+
+        new_animation->addChild("type")->setValue("pick");
+
+        /* Use <animation>'s object-names so that our tooltip appears whenever
+        the user hovers over <animation>'s objects. */
+        for (unsigned i=0; i<objectnames.size(); ++i) {
+            std::string objectname = objectnames[i]->getStringValue();
+            new_animation->addChild("object-name")->setStringValue(objectname);
+        }
+
+        for (auto name: model_names.names) {
+            bool found = false;
+            for (auto objectname: objectnames) {
+                if (name == objectname->getStringValue()) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                new_animation->addChild("object-name")->setStringValue(name);
+            }
+        }
+
+        SGPropertyNode* hovered_binding = new_animation->addChild("hovered")->addChild("binding");
+        hovered_binding->addChild("command")->setValue("set-tooltip");
+        hovered_binding->addChild("condition")->addChild("property")->setValue("sim/animation-tooltips");
+
+        hovered_binding->addChild("tooltip-id")->setStringValue(id);
+
+        /* Build up printf-style label string showing the property values
+        that <animation> depend on. */
+        std::string label;
+        for (unsigned i=0; i<properties.size(); ++i) {
+            if (i > 0)  label += " ";
+            SGPropertyNode* p = properties[i];
+            /* Using an alias here (rather then just copying the path) ensures
+            things work if <p> is itself an alias. */
+            hovered_binding->addChild("property")->alias(p);
+            if (p->isAlias()) {
+                /* We only get things like "/rpm[0]" here, rather than the full
+                path of the property to which p points. */
+                label += p->getAliasTarget()->getPath();
+            }
+            else {
+                label += p->getStringValue();
+            }
+            label += "=%s";
+        }
+        hovered_binding->addChild("label")->setStringValue(label);
+
+        SG_LOG(SG_INPUT, SG_BULK, "have added new_animation:\n"
+                << DumpSGPropertyNode(new_animation, "    ")
+                );
+    }
+
+    SG_LOG(SG_INPUT, SG_BULK, "props for path=" << path << ":\n"
+            << DumpSGPropertyNode(props, "    ")
+            );
+}
+
 static std::tuple<int, osg::Node *>
 sgLoad3DModel_internal(const SGPath& path,
                        const osgDB::Options* dbOptions,
@@ -295,6 +497,10 @@ sgLoad3DModel_internal(const SGPath& path,
                    << t.getFormattedMessage());
             throw;
         }
+        if (options->getAutoTooltipsMaster()) {
+            addTooltipAnimations(path, props, model, options->getAutoTooltipsMasterMax());
+        }
+        
         if (overlay)
             copyProperties(overlay, props);
 

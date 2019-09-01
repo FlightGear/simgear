@@ -87,8 +87,7 @@ struct SGSkyColor
  * The SGSky class models a blended sky dome, a haloed sun, a textured
  * moon with phase that properly matches the date, stars and planets,
  * and cloud layers. SGSky is designed to be dropped into existing
- * plib based applications and depends heavily on plib's scene graph
- * library, ssg. The sky implements various time of day lighting
+ * openGL based applications. The sky implements various time of day lighting
  * effects, it plays well with fog and visibility effects, and
  * implements scudded cloud fly-through effects. Additionally, you can
  * wire in the output of the SGEphemeris class to accurately position

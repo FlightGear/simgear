@@ -1,4 +1,4 @@
-// obj.cxx -- routines to handle loading scenery and building the plib
+// obj.cxx -- routines to handle loading scenery and building the
 //            scene graph.
 //
 // Written by Curtis Olson, started October 1997.

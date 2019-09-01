@@ -98,7 +98,6 @@
  * be installed before SimGear can be installed:
  *
  *   - glut and opengl
- *   - plib (http://plib.sf.net)
  *   - metakit
  *   - zlib
  *   - libjpeg (optional)

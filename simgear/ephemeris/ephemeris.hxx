@@ -151,9 +151,8 @@ public:
 
     /**
      * Returns a pointer to an array of planet data in sgdVec3
-     * format. (See plib.sourceforge.net for information on plib and
-     * the ``sg'' package.) An sgdVec3 is a 3 element double
-     * array. The first element is the right ascension of the planet,
+     * format. An sgdVec3 is a 3 element double array.
+     * The first element is the right ascension of the planet,
      * the second is the declination, and the third is the magnitude.
      * @return planets array
      */

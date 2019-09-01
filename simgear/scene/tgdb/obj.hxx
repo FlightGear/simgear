@@ -1,4 +1,4 @@
-// obj.hxx -- routines to handle loading scenery and building the plib
+// obj.hxx -- routines to handle loading scenery and building the
 //            scene graph.
 //
 // Written by Curtis Olson, started October 1997.

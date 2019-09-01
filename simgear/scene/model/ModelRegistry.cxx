@@ -608,7 +608,10 @@ osg::ref_ptr<osg::Node> DefaultCachePolicy::find(const string& fileName, const O
 void DefaultCachePolicy::addToCache(const string& fileName,
                                     osg::Node* node)
 {
-    Registry::instance()->addEntryToObjectCache(fileName, node);
+    /* Avoid default options=NULL in this call, as it provokes noisy diagnostic
+    in OSG. */
+    Options options;
+    Registry::instance()->addEntryToObjectCache(fileName, node, 0 /*timestamp*/, &options);
 }
 
 // Optimizations we don't use:

@@ -18,6 +18,8 @@
 #ifndef BVHPageNodeOSG_hxx
 #define BVHPageNodeOSG_hxx
 
+#include <string>
+
 #include "../../bvh/BVHPageNode.hxx"
 
 #include <osg/ref_ptr>

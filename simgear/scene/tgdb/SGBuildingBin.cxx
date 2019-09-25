@@ -104,7 +104,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(1, 0, 0) );    // normal
-          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Left face
@@ -115,7 +115,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(0, -1, 0) );   // normal
-          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Back face
@@ -126,7 +126,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(-1, 0, 0) );   // normal
-          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Right face
@@ -137,7 +137,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(0, 1, 0) );    // normal
-          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // MAIN BODY
@@ -149,7 +149,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(1, 0, 0) );    // normal
-          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Left face
@@ -160,7 +160,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(0, -1, 0) );    // normal
-          c->push_back( osg::Vec4(0,  1, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Back face
@@ -171,7 +171,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(-1, 0, 0) );    // normal
-          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Right face
@@ -182,7 +182,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(0, 1, 0) );    // normal
-          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // ROOF - assume pitched - will be flattened in shader if required.
@@ -194,7 +194,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(0.707, 0, 0.707) ); // normal
-          c->push_back( osg::Vec4(0, 0, 1, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Left pitched roof
@@ -205,7 +205,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(0, -1, 0) );   // normal
-          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Back pitched roof
@@ -216,7 +216,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(-0.707, 0, 0.707) ); // normal
-          c->push_back( osg::Vec4(0, 0, 1, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // Right pitched roof
@@ -227,7 +227,7 @@ struct MakeBuildingLeaf
 
         for (int i=0; i<4; ++i) {
           n->push_back( osg::Vec3(0, 1, 0) );   // normal
-          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to identify faces
+          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
         }
 
         // The 1024x1024 texture is split into 32x16 blocks.
@@ -308,6 +308,7 @@ struct MakeBuildingLeaf
         geom->setVertexAttribArray(BUILDING_SCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
         geom->setVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
         geom->setVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
 
         geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 48, 0) );
 
@@ -320,6 +321,7 @@ struct MakeBuildingLeaf
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_SCALE_ATTR, 1));
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ROT_PITCH_TEX0X_ATTR, 1));
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_RTEX0X_RTEX0Y_ATTR, 1));
 
         LOD* result = new LOD;
         result->addChild(geode, 0, _range);
@@ -342,15 +344,15 @@ struct AddBuildingLeafObject
 
         osg::Vec3Array* positions =  static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_POSITION_ATTR));    // (x,y,z)
         osg::Vec3Array* scale =  static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_SCALE_ATTR)); // (width, depth, height)
-        osg::Vec3Array* rot = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR)); // (rotation, pitch height, texture x offset)
-        osg::Vec3Array* tex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR)); // (texture y offset, texture x gain, texture y gain)
+        osg::Vec3Array* rot = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR)); // (rotation, pitch height, wall texture x offset)
+        osg::Vec3Array* tex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR)); // (wall texture y offset, wall/roof texture x gain, wall/roof texture y gain)
+        osg::Vec3Array* rtex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR)); // (roof texture x offset, roof texture y offset, unused)
 
         positions->push_back(building.position);
         scale->push_back(osg::Vec3(building.width, building.depth, building.height));
-        rot->push_back(osg::Vec3(building.rotation, building.pitch_height, building.tex0.x()));
-        tex->push_back(osg::Vec3(building.tex0.y(), building.tex1.x(), building.tex1.y()));
-
-        if ((building.tex0.y() > (1470.0f / 2048.0f)) && (building.tex1.x() > 0.25f)) cerr << "Building texture out of bounds " << building.tex0.y() << " " << building.tex1.x() << "\n";
+        rot->push_back(osg::Vec3(building.rotation, building.pitch_height, building.walltex0.x()));
+        tex->push_back(osg::Vec3(building.walltex0.y(), building.tex1.x(), building.tex1.y()));
+        rtex->push_back(osg::Vec3(building.rooftex0.x(), building.rooftex0.y(), 0.0f));
 
         DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(0));
         primSet->setNumInstances(positions->size());
@@ -399,7 +401,7 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       // and process further
       std::stringstream in(line);
 
-      // Line format is X Y Z R B W D H P S O F T
+      // Line format is X Y Z R B W D H P S O F WT RT
       // where:
       // X,Y,Z are the cartesian coordinates of the center of the front face. +X is East, +Y is North
       // R is the building rotation in degrees centered on the middle of the front face.
@@ -415,10 +417,11 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       //   0 = parallel to the front face of the building
       //   1 = orthogonal to the front face of the building
       // F is the number of floors (integer)
-      // T is the texture index to use (integer). Buildings with the same T value will have the same texture assigned.  There are 6 small, 6 medium and 4 large textures.
+      // WT is the texture index to use (integer) for walls. Buildings with the same WT value will have the same wall texture assigned.  There are 6 small, 6 medium and 4 large textures.
+      // RT is the texture index to use (integer) for roofs. Buildings with the same RT value will have the same roof texture assigned.  There are 6 small, 6 medium and 4 large textures.
       float x, y, z, r, w, d, h, p;
-      int b, s, o, f, t;
-      in >> x >> y >> z >> r >> b >> w >> d >> h >> p >> s >> o >> f >> t;
+      int b, s, o, f, wt, rt;
+      in >> x >> y >> z >> r >> b >> w >> d >> h >> p >> s >> o >> f >> wt >> rt;
 
       //SG_LOG(SG_TERRAIN, SG_ALERT, "Building entry " << x << " " << y << " " << z << " " << b );
       SGVec3f loc = SGVec3f(x,y,z);
@@ -435,7 +438,7 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
         // data for the buildings so just use the random building definitions
         insert(loc, rot, type);
       } else {
-        insert(loc, rot, type, w, d, h, p, f, t);
+        insert(loc, rot, type, w, d, h, p, f, wt, rt);
       }
     }
 
@@ -458,7 +461,7 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
   }
 
   // Generate a building specifying the exact position, dimensions and texture index.
-  void SGBuildingBin::insert(SGVec3f p, float r, BuildingType buildingtype, float width, float depth, float height, float pitch_height, int floors, int tex_index) {
+  void SGBuildingBin::insert(SGVec3f p, float r, BuildingType buildingtype, float width, float depth, float height, float pitch_height, int floors, int wall_tex_index, int roof_tex_index) {
 
     // The 2048x2048 texture is split into 64x32 blocks.  So there are 64 on
     // the x-axis and 128 on the y-axis.
@@ -466,54 +469,71 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
     // 32 for the roof.
     const float BUILDING_TEXTURE_BLOCK_HEIGHT = 1.0f / 64.0f; // The height of a single block within the random building texture
     const float BUILDING_TEXTURE_BLOCK_WIDTH  = 1.0f / 32.0f;  // The width of a single block within the random building texture
-    Vec2f tex0, tex1;
+    Vec2f wall_tex0, roof_tex0, tex1;
 
     if (buildingtype == SGBuildingBin::SMALL) {
       // SMALL BUILDINGS
       // Maximum texture height is 3 stories.
       // Small buildings are represented on the bottom 18 rows
       // Each block is 6m wide and 3m high.
-      int row = tex_index % 6;
-      float offset_x = 0.0f;
-      float offset_y = (float) row * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      int wall_row = wall_tex_index % 6;
+      int roof_row = roof_tex_index % 6;
+      float wall_offset_x = 0.0f;
+      float wall_offset_y = (float) wall_row  * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float roof_offset_x = 0.0f;
+      float roof_offset_y = (float) roof_row  * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT;
       float gain_x = min(0.5f, std::round(width / 6.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
       float gain_y =  (float) (min(3, floors)) * BUILDING_TEXTURE_BLOCK_HEIGHT;
 
-      tex0 = Vec2f(offset_x, offset_y);
+      wall_tex0 = Vec2f(wall_offset_x, wall_offset_y);
+      roof_tex0 = Vec2f(roof_offset_x, roof_offset_y);
       tex1 = Vec2f(gain_x, gain_y);
     } else if (buildingtype == SGBuildingBin::MEDIUM) {
       // MEDIUM BUILDING
       // Maximum texture height is 8 stories.
       // Medium buildings are arranged on the texture in a 2x3 pattern.
       // For a medium building, each block is 10m wide and 3m high.
-      int column = tex_index % 2;
-      int row = tex_index % 3;
-      float offset_x = column * 0.25f;
+      int wall_column = wall_tex_index % 2;
+      int wall_row = wall_tex_index % 3;
+      int roof_column = roof_tex_index % 2;
+      int roof_row = roof_tex_index % 3;
+
+      float wall_offset_x = wall_column * 0.25f;
       // Counting from the bottom, we have 6 rows of small buildings, each 3 blocks high
-      float offset_y = (6.0f * 3.0f + row * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float wall_offset_y = (6.0f * 3.0f + wall_row * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+
+      float roof_offset_x = roof_column * 0.25f;
+      // Counting from the bottom, we have 6 rows of small buildings, each 3 blocks high
+      float roof_offset_y = (6.0f * 3.0f + roof_row * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+
       float gain_x = min(0.25f, std::round(width / 10.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
       float gain_y = (float) (min(8, floors)) * BUILDING_TEXTURE_BLOCK_HEIGHT;
 
-      tex0 = Vec2f(offset_x, offset_y);
+      wall_tex0 = Vec2f(wall_offset_x, wall_offset_y);
+      roof_tex0 = Vec2f(roof_offset_x, roof_offset_y);
       tex1 = Vec2f(gain_x, gain_y);
     } else {
       // LARGE BUILDING
       // Maximum texture height is 22 stories.
       // Large buildings are arranged in a 4x1 pattern
       // Each block is 20m wide and 3m high.
-      int column = tex_index % 4;
+      int wall_column = wall_tex_index % 4;
+      int roof_column = roof_tex_index % 4;
       // Counting from the bottom we have 6 rows of small buildings (3 blocks high),
       // then 3 rows of medium buildings (8 blocks high).  Then the large building texture
-      float offset_x = column * 0.125f;
-      float offset_y = (6.0f * 3.0f + 3.0f * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float wall_offset_x = wall_column * 0.125f;
+      float wall_offset_y = (6.0f * 3.0f + 3.0f * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float roof_offset_x = roof_column * 0.125f;
+      float roof_offset_y = (6.0f * 3.0f + 3.0f * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
       float gain_x = min(0.125f, std::round(width / 20.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
       float gain_y = (float) min(22, floors) * BUILDING_TEXTURE_BLOCK_HEIGHT;
 
-      tex0 = Vec2f(offset_x, offset_y);
+      wall_tex0 = Vec2f(wall_offset_x, wall_offset_y);
+      roof_tex0 = Vec2f(roof_offset_x, roof_offset_y);
       tex1 = Vec2f(gain_x, gain_y);
     }
 
-    buildingLocations.push_back(BuildingInstance(toOsg(p), width, depth, height, pitch_height, r, tex0, tex1));
+    buildingLocations.push_back(BuildingInstance(toOsg(p), width, depth, height, pitch_height, r, wall_tex0, roof_tex0, tex1));
   }
 
 
@@ -562,7 +582,7 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       pitch_height = (mt_rand(&seed) < material->get_building_large_pitch()) ? 3.0 : 0.0;
     }
 
-    insert(p, r, buildingtype, width, depth, height, pitch_height, floors, (int) (mt_rand(&seed) * 1000.0));
+    insert(p, r, buildingtype, width, depth, height, pitch_height, floors, (int) (mt_rand(&seed) * 1000.0), (int) (mt_rand(&seed) * 1000.0));
   }
 
   int SGBuildingBin::getNumBuildings() {

@@ -54,8 +54,9 @@
 // these correspond to building.eff
 const int BUILDING_POSITION_ATTR = 10;  // (x,y,z)
 const int BUILDING_SCALE_ATTR = 11; // (width, depth, height)
-const int BUILDING_ROT_PITCH_TEX0X_ATTR = 12; // (rotation, pitch height, texture x offset)
-const int BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR = 13; // (texture y offset, texture x gain, texture y gain)
+const int BUILDING_ROT_PITCH_TEX0X_ATTR = 12; // (rotation, pitch height, wall texture x offset)
+const int BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR = 13; // (wall texture y offset, texture x gain, texture y gain)
+const int BUILDING_RTEX0X_RTEX0Y_ATTR = 14; // (roof texture x offset, roof texture y offset, unused)
 
 using namespace osg;
 
@@ -90,14 +91,15 @@ public:
     LARGE };
 
     struct BuildingInstance {
-      BuildingInstance(Vec3f p, float w, float d, float h, float ph, float r, Vec2f t0, Vec2f t1) :
+      BuildingInstance(Vec3f p, float w, float d, float h, float ph, float r, Vec2f wt0, Vec2f rt0, Vec2f t1) :
         position(p),
         width(w),
         depth(d),
         height(h),
         pitch_height(ph),
         rotation(r),
-        tex0(t0),
+        walltex0(wt0),
+        rooftex0(rt0),
         tex1(t1)
       { }
 
@@ -108,7 +110,8 @@ public:
         height(b.height),
         pitch_height(b.pitch_height),
         rotation(b.rotation),
-        tex0(b.tex0),
+        walltex0(b.walltex0),
+        rooftex0(b.rooftex0),
         tex1(b.tex1)
       { }
 
@@ -120,7 +123,8 @@ public:
       float pitch_height;
       float rotation;
 
-      Vec2f tex0;
+      Vec2f walltex0;
+      Vec2f rooftex0;
       Vec2f tex1;
 
       // References to allow the QuadTreeBuilder to work
@@ -159,7 +163,16 @@ public:
   ~SGBuildingBin();
 
   // Generate a building specifying the exact position, dimensions and texture index.
-  void insert(SGVec3f p, float r, BuildingType buildingtype, float width, float depth, float height, float pitch_height, int floors, int tex_index);
+  void insert(SGVec3f p,
+              float r,
+              BuildingType buildingtype,
+              float width,
+              float depth,
+              float height,
+              float pitch_height,
+              int floors,
+              int wall_tex_index,
+              int roof_tex_index);
 
   // Generate a building of a given type at a specified position, using the random building material definition to determine the dimensions and texture index.
   void insert(SGVec3f p, float r, BuildingType type);

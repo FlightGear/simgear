@@ -349,7 +349,8 @@ struct AddBuildingLeafObject
         osg::Vec3Array* rtex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR)); // (roof texture x offset, roof texture y offset, unused)
 
         positions->push_back(building.position);
-        scale->push_back(osg::Vec3(building.width, building.depth, building.height));
+        // Depth is the x-axis, width is the y-axis
+        scale->push_back(osg::Vec3(building.depth, building.width, building.height));
         rot->push_back(osg::Vec3(building.rotation, building.pitch_height, building.walltex0.x()));
         tex->push_back(osg::Vec3(building.walltex0.y(), building.tex1.x(), building.tex1.y()));
         rtex->push_back(osg::Vec3(building.rooftex0.x(), building.rooftex0.y(), 0.0f));

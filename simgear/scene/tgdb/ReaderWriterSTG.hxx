@@ -22,6 +22,8 @@
 #ifndef _READERWRITERSTG_HXX
 #define _READERWRITERSTG_HXX
 
+#include <functional>
+
 #include <osgDB/ReaderWriter>
 #include <simgear/math/sg_types.hxx>
 

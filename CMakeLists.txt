@@ -219,6 +219,12 @@ endif()
 
 find_package(Boost REQUIRED)
 set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION")
+
+if (NOT Boost_VERSION_MACRO)
+	# Compatibility with pre CMP0093 (CMake 3.15)
+	set(Boost_VERSION_MACRO ${Boost_VERSION})
+endif()
+
 include(BoostTestTargets)
 
 if(SIMGEAR_HEADLESS)

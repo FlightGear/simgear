@@ -57,6 +57,7 @@ const int BUILDING_SCALE_ATTR = 11; // (width, depth, height)
 const int BUILDING_ROT_PITCH_TEX0X_ATTR = 12; // (rotation, pitch height, wall texture x offset)
 const int BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR = 13; // (wall texture y offset, texture x gain, texture y gain)
 const int BUILDING_RTEX0X_RTEX0Y_ATTR = 14; // (roof texture x offset, roof texture y offset, unused)
+const int BUILDING_ROFFTOPSCALE_ATTR = 15; // (roof texture x offset, roof texture y offset, unused)
 
 using namespace osg;
 
@@ -91,7 +92,7 @@ public:
     LARGE };
 
     struct BuildingInstance {
-      BuildingInstance(Vec3f p, float w, float d, float h, float ph, float r, Vec2f wt0, Vec2f rt0, Vec2f t1) :
+      BuildingInstance(Vec3f p, float w, float d, float h, float ph, float r, Vec2f wt0, Vec2f rt0, Vec2f t1, Vec2f rs) :
         position(p),
         width(w),
         depth(d),
@@ -100,7 +101,8 @@ public:
         rotation(r),
         walltex0(wt0),
         rooftex0(rt0),
-        tex1(t1)
+        tex1(t1),
+        rooftop_scale(rs)
       { }
 
       BuildingInstance(Vec3f p, BuildingInstance b) :
@@ -112,7 +114,8 @@ public:
         rotation(b.rotation),
         walltex0(b.walltex0),
         rooftex0(b.rooftex0),
-        tex1(b.tex1)
+        tex1(b.tex1),
+        rooftop_scale(b.rooftop_scale)
       { }
 
 
@@ -126,6 +129,8 @@ public:
       Vec2f walltex0;
       Vec2f rooftex0;
       Vec2f tex1;
+
+      Vec2f rooftop_scale;
 
       // References to allow the QuadTreeBuilder to work
       //const BuildingList* buildingList;
@@ -171,6 +176,8 @@ public:
               float height,
               float pitch_height,
               int floors,
+              int roof_shape,
+              int roof_orientation,
               int wall_tex_index,
               int roof_tex_index);
 

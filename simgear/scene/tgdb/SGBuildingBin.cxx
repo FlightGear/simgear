@@ -85,10 +85,10 @@ struct MakeBuildingLeaf
         // Color array is used to identify the different building faces by the
         // vertex shader for texture mapping.
 
-        v->reserve(48);
-        t->reserve(48);
-        n->reserve(48);
-        c->reserve(48);
+        v->reserve(52);
+        t->reserve(52);
+        n->reserve(52);
+        c->reserve(52);
 
         // Now create an OSG Geometry based on the Building
         // 0,0,0 is the bottom center of the front
@@ -209,70 +209,111 @@ struct MakeBuildingLeaf
           c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
         }
 
-        // ROOF - assume pitched - will be flattened in shader if required.
-        // Front pitched roof
-        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // bottom right
-        v->push_back( osg::Vec3(  0.0,  0.5, 1.0) ); // bottom left
-        v->push_back( osg::Vec3(  0.0,  0.0, 1.5) ); // top left
-        v->push_back( osg::Vec3(  0.0,  0.0, 1.5) ); // top right
-
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-
-        for (int i=0; i<4; ++i) {
-          n->push_back( osg::Vec3( 1, 0, 0) );   // normal
-          c->push_back( osg::Vec4( 1, 0, 0, 0) ); // color - used to differentiate wall from roof. This is really an extension of the wall
-        }
-
-        // Left pitched roof
-        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // bottom left
-        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // bottom right
-        v->push_back( osg::Vec3(  0.0,  0.0, 1.5) ); // top right
-        v->push_back( osg::Vec3( -1.0,  0.0, 1.5) ); // top left
+        // ROOF 1 - built as a block.  The shader will deform it to the correct shape.
+        // Front face
+        v->push_back( osg::Vec3( 0.0, -0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3( 0.0,  0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3( 0.0,  0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( 0.0, -0.5, 1.0) ); // top right
 
         t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom right
         t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom left
-        t->push_back( osg::Vec2(  0.0, 1.0 ) ); // top left
-        t->push_back( osg::Vec2( -1.0, 1.0 ) ); // top right
+        t->push_back( osg::Vec2(  0.0, 1.0) ); // top left
+        t->push_back( osg::Vec2( -1.0, 1.0) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
 
         for (int i=0; i<4; ++i) {
-          n->push_back( osg::Vec3(0, -0.707, 0.707) ); // normal
-          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+          n->push_back( osg::Vec3(0.707, 0, 0.707) );    // normal
         }
 
-        // Back pitched roof
+        // Left face
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( -1.0, 1.0) ); // top left
+        t->push_back( osg::Vec2(  0.0, 1.0) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, -0.707, 0.707) );    // normal
+        }
+
+        // Back face
         v->push_back( osg::Vec3( -1.0,  0.5, 1.0) ); // bottom right
         v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // bottom left
-        v->push_back( osg::Vec3( -1.0,  0.0, 1.5) ); // top left
-        v->push_back( osg::Vec3( -1.0,  0.0, 1.5) ); // top right
-
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-        t->push_back( osg::Vec2( 0.5, 1.0) ); // bottom right
-
-        for (int i=0; i<4; ++i) {
-          n->push_back( osg::Vec3(-1.0, 0, 0) );   // normal
-          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof.  This is really an extension of the wall below.
-        }
-
-        // Right pitched roof
-        v->push_back( osg::Vec3(  0.0, 0.5, 1.0) ); // bottom left
-        v->push_back( osg::Vec3( -1.0, 0.5, 1.0) ); // bottom right
-        v->push_back( osg::Vec3( -1.0, 0.0, 1.5) ); // top right
-        v->push_back( osg::Vec3(  0.0, 0.0, 1.5) ); // top left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0,  0.5, 1.0) ); // top right
 
         t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom right
         t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom left
         t->push_back( osg::Vec2(  0.0, 1.0 ) ); // top left
         t->push_back( osg::Vec2( -1.0, 1.0 ) ); // top right
 
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
         for (int i=0; i<4; ++i) {
-          n->push_back( osg::Vec3(0, 0.707, 0.707) ); // normal
-          c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+          n->push_back( osg::Vec3(-0.707, 0, 0.707) );    // normal
         }
+
+        // Right face
+        v->push_back( osg::Vec3(  0.0, 0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3( -1.0, 0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0, 0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3(  0.0, 0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( -1.0, 1.0 ) ); // top left
+        t->push_back( osg::Vec2(  0.0, 1.0 ) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, 0.707, 0.707) );    // normal
+        }
+
+        // Top face
+        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3(  0.0,  0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0,  0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2(  0.0, 1.0) ); // top left
+        t->push_back( osg::Vec2( -1.0, 1.0) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, 0, -1.0) );    // normal
+        }
+
+        assert(v->size() == 52);
+        assert(t->size() == 52);
+        assert(c->size() == 52);
+        assert(n->size() == 52);
 
         Geometry* geom = new Geometry;
         static int buildingCounter = 0;
@@ -280,7 +321,7 @@ struct MakeBuildingLeaf
         geom->setVertexArray(v);
         geom->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
         geom->setNormalArray(n, Array::BIND_PER_VERTEX);
-        geom->setColorArray(c);
+        geom->setColorArray(c, Array::BIND_PER_VERTEX);
         geom->setUseDisplayList( false );
         geom->setUseVertexBufferObjects( true );
         geom->setComputeBoundingBoxCallback(new BuildingBoundingBoxCallback);
@@ -290,8 +331,10 @@ struct MakeBuildingLeaf
         geom->setVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
         geom->setVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
         geom->setVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_ROFFTOPSCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
 
-        geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 48, 0) );
+        //geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 48, 0) );
+        geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 52, 0) );
 
         EffectGeode* geode = new EffectGeode;
         geode->addDrawable(geom);
@@ -303,6 +346,7 @@ struct MakeBuildingLeaf
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ROT_PITCH_TEX0X_ATTR, 1));
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, 1));
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_RTEX0X_RTEX0Y_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ROFFTOPSCALE_ATTR, 1));
 
         LOD* result = new LOD;
         result->addChild(geode, 0, _range);
@@ -328,6 +372,7 @@ struct AddBuildingLeafObject
         osg::Vec3Array* rot = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR)); // (rotation, pitch height, wall texture x offset)
         osg::Vec3Array* tex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR)); // (wall texture y offset, wall/roof texture x gain, wall/roof texture y gain)
         osg::Vec3Array* rtex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR)); // (roof texture x offset, roof texture y offset, unused)
+        osg::Vec3Array* rooftops = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROFFTOPSCALE_ATTR)); // (rooftop scale x, rooftop scale y, unused)
 
         positions->push_back(building.position);
         // Depth is the x-axis, width is the y-axis
@@ -335,6 +380,7 @@ struct AddBuildingLeafObject
         rot->push_back(osg::Vec3f(building.rotation, building.pitch_height, building.walltex0.x()));
         tex->push_back(osg::Vec3f(building.walltex0.y(), building.tex1.x(), building.tex1.y()));
         rtex->push_back(osg::Vec3f(building.rooftex0.x(), building.rooftex0.y(), 0.0f));
+        rooftops->push_back(osg::Vec3f(building.rooftop_scale.x(), building.rooftop_scale.y(), 0.0f));
 
         DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(0));
         primSet->setNumInstances(positions->size());
@@ -392,10 +438,10 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       // D is the building depth in meters
       // H is the building height in meters, excluding any pitched roof
       // P is the pitch height in meters. 0 for a flat roof
-      // S is the roof shape (currently unused - all roofs are flat or gabled depending on pitch height) :
+      // S is the roof shape (Currently the following values are valid: 0, 2, 4, 5) :
       //   0=flat 1=skillion 2=gabled 3=half-hipped 4=hipped 5=pyramidal 6=gambled
       //   7=mansard 8=dome 9=onion 10=round 11=saltbox
-      // O is the roof ridge orientation (currently unused, all roofs are assumed orthogonal) :
+      // O is the roof ridge orientation :
       //   0 = parallel to the front face of the building
       //   1 = orthogonal to the front face of the building
       // F is the number of floors (integer)
@@ -420,7 +466,7 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
         // data for the buildings so just use the random building definitions
         insert(loc, rot, type);
       } else {
-        insert(loc, rot, type, w, d, h, p, f, wt, rt);
+        insert(loc, rot, type, w, d, h, p, f, s, o, wt, rt);
       }
     }
 
@@ -443,7 +489,7 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
   }
 
   // Generate a building specifying the exact position, dimensions and texture index.
-  void SGBuildingBin::insert(SGVec3f p, float r, BuildingType buildingtype, float width, float depth, float height, float pitch_height, int floors, int wall_tex_index, int roof_tex_index) {
+  void SGBuildingBin::insert(SGVec3f p, float r, BuildingType buildingtype, float width, float depth, float height, float pitch_height, int floors, int roof_shape, int roof_orientation, int wall_tex_index, int roof_tex_index) {
 
     // The 2048x2048 texture is split into 64x32 blocks.  So there are 64 on
     // the x-axis and 128 on the y-axis.
@@ -535,7 +581,32 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       tex1 = Vec2f(gain_x, gain_y);
     }
 
-    buildingLocations.push_back(BuildingInstance(toOsg(p), width, depth, height, pitch_height, r, wall_tex0, roof_tex0, tex1));
+    // Build a scaling factor in the x,y axes for the top of the roof. This allows us to create gabled, hipped, pyramidal roofs.
+    Vec2f rooftop_scale = Vec2f(1.0f, 1.0f); // Default of a flat roof.
+
+    if (pitch_height > 0.0f)
+    {
+      // Roof with some pitch height
+
+      if ((roof_shape == 2) || (roof_shape == 6) || (roof_shape == 10)  || (roof_shape == 11)) {
+        // Gabled, gambrel, round, saltbox
+        if (roof_orientation == 0) rooftop_scale = Vec2f(1.0f, 0.0f);
+        if (roof_orientation == 1) rooftop_scale = Vec2f(0.0f, 1.0f);
+      }
+
+      if ((roof_shape == 3) || (roof_shape == 4) || (roof_shape == 7)) {
+        // Hipped, half-hipped, mansard
+        // The pitch height expressed as a fraction of the building width/depth such that the hipped
+        // roof has a pitch of around 45 degrees.
+        if (roof_orientation == 0) rooftop_scale = Vec2f(min(0.5f,(width -  2*pitch_height) / width), 0.0f);
+        if (roof_orientation == 1) rooftop_scale = Vec2f(0.0f, min(0.5f,(depth -  2*pitch_height) / width));
+      }
+
+      // Pyramidal, dome, onion
+      if ((roof_shape == 5) || (roof_shape == 8) || (roof_shape == 9)) rooftop_scale = Vec2f(0.0f, 0.0f);
+    }
+
+    buildingLocations.push_back(BuildingInstance(toOsg(p), width, depth, height, pitch_height, r, wall_tex0, roof_tex0, tex1, rooftop_scale));
   }
 
 
@@ -544,6 +615,8 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
 
     float width, depth, height, pitch_height;
     int floors;
+    int roof_shape;
+    int roof_orientation;
 
     // Generate a random seed for the building generation.
     mt seed;
@@ -561,6 +634,14 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       if (depth > width) { depth = width; }
 
       pitch_height = (mt_rand(&seed) < material->get_building_small_pitch()) ? 3.0 : 0.0;
+
+      if (pitch_height == 0.0) {
+        roof_shape = 0;
+        roof_orientation = 0;
+      } else {
+        roof_shape = (int) (mt_rand(&seed) * 10.0);
+        roof_orientation = (int) std::round((float) mt_rand(&seed));
+      }
     } else if (buildingtype == SGBuildingBin::MEDIUM) {
       // MEDIUM BUILDING
       width = material->get_building_medium_min_width() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_medium_max_width() - material->get_building_medium_min_width());
@@ -575,6 +656,14 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       }
 
       pitch_height = (mt_rand(&seed) < material->get_building_medium_pitch()) ? 3.0 : 0.0;
+
+      if (pitch_height == 0.0) {
+        roof_shape = 0;
+        roof_orientation = 0;
+      } else {
+        roof_shape = (int) (mt_rand(&seed) * 10.0);
+        roof_orientation = (int) std::round((float) mt_rand(&seed));
+      }
     } else {
       // LARGE BUILDING
       width = material->get_building_large_min_width() + mt_rand(&seed) * (material->get_building_large_max_width() - material->get_building_large_min_width());
@@ -582,9 +671,17 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       floors = SGMisc<double>::round(material->get_building_large_min_floors() + mt_rand(&seed) * (material->get_building_large_max_floors() - material->get_building_large_min_floors()));
       height = floors * (2.8 + mt_rand(&seed));
       pitch_height = (mt_rand(&seed) < material->get_building_large_pitch()) ? 3.0 : 0.0;
+
+      if (pitch_height == 0.0) {
+        roof_shape = 0;
+        roof_orientation = 0;
+      } else {
+        roof_shape = (int) (mt_rand(&seed) * 10.0);
+        roof_orientation = (int) std::round((float) mt_rand(&seed));
+      }
     }
 
-    insert(p, r, buildingtype, width, depth, height, pitch_height, floors, (int) (mt_rand(&seed) * 1000.0), (int) (mt_rand(&seed) * 1000.0));
+    insert(p, r, buildingtype, width, depth, height, pitch_height, floors, roof_shape, roof_orientation, (int) (mt_rand(&seed) * 1000.0), (int) (mt_rand(&seed) * 1000.0));
   }
 
   int SGBuildingBin::getNumBuildings() {

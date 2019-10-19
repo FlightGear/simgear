@@ -38,28 +38,13 @@ if(ENABLE_TESTS AND ENABLE_SOUND)
             COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
     endfunction()
 
-    set( SOUND_TEST_LIBS
-        ${TEST_LIBS}
-    )
+    set( SOUND_TEST_LIBS ${TEST_LIBS} )
 
     if (USE_AEONWAVE)
-        if (SIMGEAR_SHARED)
-        else()
-            set(SOUND_TEST_LIBS ${SOUND_TEST_LIBS}
-                ${AAX_LIBRARY}
-            )
-        endif()
-
+        set(SOUND_TEST_LIBS ${SOUND_TEST_LIBS} ${AAX_LIBRARY})
         create_test(aeonwave_test1)
-
     else ()
-        if (SIMGEAR_SHARED)
-        else()
-            set(SOUND_TEST_LIBS ${SOUND_TEST_LIBS}
-                ${OPENAL_LIBRARY}
-            )
-        endif()
-
+        set(SOUND_TEST_LIBS ${SOUND_TEST_LIBS} ${OPENAL_LIBRARY})
         create_test(openal_test1)
     endif()
 

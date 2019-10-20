@@ -214,8 +214,7 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
   geometry->setDataVariance(osg::Object::STATIC);
   geometry->setVertexArray(vertices);
   geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-  geometry->setColorArray(colors);
-  geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+  geometry->setColorArray(colors, osg::Array::BIND_PER_VERTEX);
 
   osg::DrawArrays* drawArrays;
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
@@ -275,7 +274,7 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
   //stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
   osg::DrawArrays* drawArrays;
-  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
+  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
   return geometry;
@@ -370,18 +369,46 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights, const SGReader
 
   // generate a repeatable random seed
   sg_srandom(unsigned(lights.getLight(0).position[0]));
-  float flashTime = 2e-2 + 5e-3*sg_random();
+  float flashTime = 0.065 + 0.003 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
-  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
-                                  6.0f, 10.0f, true, options);
+  Effect* effect = getLightEffect(24.0f, osg::Vec3(1.0, 0.0001, 0.000001),
+                                  1.0f, 24.0f, true, options);
   for (int i = lights.getNumLights() - 1; 0 <= i; --i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
     egeode->addDrawable(getLightDrawable(lights.getLight(i)));
     sequence->addChild(egeode, flashTime);
   }
-  sequence->addChild(new osg::Group, 1 + 1e-1*sg_random());
+  sequence->addChild(new osg::Group, 1.9 + (0.1 * sg_random()) - (lights.getNumLights() * flashTime));
+  sequence->setInterval(osg::Sequence::LOOP, 0, -1);
+  sequence->setDuration(1.0f, -1);
+  sequence->setMode(osg::Sequence::START);
+  sequence->setSync(true);
+  return sequence;
+}
+
+osg::Node*
+SGLightFactory::getReil(const SGDirectionalLightBin& lights, const SGReaderWriterOptions* options)
+{
+  if (lights.getNumLights() <= 0)
+    return 0;
+
+  // generate a repeatable random seed
+  sg_srandom(unsigned(lights.getLight(0).position[0]));
+  float flashTime = 0.065 + 0.003 * sg_random();
+  osg::Sequence* sequence = new osg::Sequence;
+  sequence->setDefaultTime(flashTime);
+  Effect* effect = getLightEffect(24.0f, osg::Vec3(1.0, 0.0001, 0.000001),
+                                  1.0f, 24.0f, true, options);
+  EffectGeode* egeode = new EffectGeode;
+  egeode->setEffect(effect);
+
+  for (int i = lights.getNumLights() - 1; 0 <= i; --i) {
+    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+  }
+  sequence->addChild(egeode, flashTime);
+  sequence->addChild(new osg::Group, 1.9 + 0.1 * sg_random() - flashTime);
   sequence->setInterval(osg::Sequence::LOOP, 0, -1);
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
@@ -397,11 +424,11 @@ SGLightFactory::getOdal(const SGLightBin& lights, const SGReaderWriterOptions* o
 
   // generate a repeatable random seed
   sg_srandom(unsigned(lights.getLight(0).position[0]));
-  float flashTime = 2e-2 + 5e-3*sg_random();
+  float flashTime = 0.065 + 0.003 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
-  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
-                                  6.0, 10.0, false, options);
+  Effect* effect = getLightEffect(20.0f, osg::Vec3(1.0, 0.0001, 0.000001),
+                                  1.0f, 20.0f, false, options);
   // centerline lights
   for (int i = lights.getNumLights() - 1; i >= 2; i--) {
     EffectGeode* egeode = new EffectGeode;
@@ -409,18 +436,18 @@ SGLightFactory::getOdal(const SGLightBin& lights, const SGReaderWriterOptions* o
     egeode->addDrawable(getLightDrawable(lights.getLight(i)));
     sequence->addChild(egeode, flashTime);
   }
+  // add extra empty group for a break
+  sequence->addChild(new osg::Group, 4 * flashTime);
   // runway end lights
-  osg::Group* group = new osg::Group;
+  EffectGeode* egeode = new EffectGeode;
+  egeode->setEffect(effect);
   for (unsigned i = 0; i < 2; ++i) {
-    EffectGeode* egeode = new EffectGeode;
-    egeode->setEffect(effect);
     egeode->addDrawable(getLightDrawable(lights.getLight(i)));
-    group->addChild(egeode);
   }
-  sequence->addChild(group, flashTime);
+  sequence->addChild(egeode, flashTime);
 
   // add an extra empty group for a break
-  sequence->addChild(new osg::Group, 2 + 1e-1*sg_random());
+  sequence->addChild(new osg::Group, 1.9 + (0.1 * sg_random()) - ((lights.getNumLights() + 2) * flashTime));
   sequence->setInterval(osg::Sequence::LOOP, 0, -1);
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
@@ -437,23 +464,22 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights, const SGReader
     return 0;
 
   sg_srandom(unsigned(lights.getLight(0).position[0]));
-  float flashTime = 1 + 0.1 * sg_random();
+  float flashTime = 0.9 + 0.2 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
 
   // start with lights off
-  sequence->addChild(new osg::Group, flashTime);
+  sequence->addChild(new osg::Group, 0.2);
   // ...and increase the lights in steps
-  for (int i = 2; i < 7; i+=2) {
-      Effect* effect = getLightEffect(i, osg::Vec3(1, 0.001, 0.000002),
-                                      0.0f, i, true, options);
+  for (int i = 0; i < 5; i++) {
+      Effect* effect = getLightEffect(12.0f + i, osg::Vec3(1, 0.001, 0.0002),
+                                      1.0f, 12.0f + i, true, options);
       EffectGeode* egeode = new EffectGeode;
+      egeode->setEffect(effect);
       for (unsigned int j = 0; j < lights.getNumLights(); ++j) {
           egeode->addDrawable(getLightDrawable(lights.getLight(j)));
-          egeode->setEffect(effect);
       }
-      sequence->addChild(egeode, (i==6) ? flashTime : 0.1);
+      sequence->addChild(egeode, (i==4) ? flashTime : 0.1);
   }
-
   sequence->setInterval(osg::Sequence::SWING, 0, -1);
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
@@ -470,11 +496,11 @@ SGLightFactory::getGuard(const SGDirectionalLightBin& lights, const SGReaderWrit
 
   // generate a repeatable random seed
   sg_srandom(unsigned(lights.getLight(0).position[0]));
-  float flashTime = 1.0f + 1*sg_random();
+  float flashTime = 0.9 + 0.2 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
-  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.001, 0.000002),
-                                  0.0f, 8.0f, true, options);
+  Effect* effect = getLightEffect(16.0f, osg::Vec3(1.0, 0.001, 0.0002),
+                                  1.0f, 16.0f, true, options);
   for (unsigned int i = 0; i < lights.getNumLights(); ++i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);

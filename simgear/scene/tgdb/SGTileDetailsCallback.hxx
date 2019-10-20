@@ -903,64 +903,48 @@ public:
       }
 
       Effect* runwayEffect = 0;
-      if (runwayLights.getNumLights() > 0
-          || !rabitLights.empty()
-          || !reilLights.empty()
-          || !odalLights.empty()
-          || taxiLights.getNumLights() > 0) {
-          
+      if (runwayLights.getNumLights() > 0 || taxiLights.getNumLights() > 0) {
           runwayEffect = getLightEffect(16, osg::Vec3(1, 0.001, 0.0002), 1, 16, true, _options);
       }
-      
+
       if (runwayLights.getNumLights() > 0
           || !rabitLights.empty()
           || !reilLights.empty()
           || !odalLights.empty()
           || !holdshortLights.empty()
           || !guardLights.empty()) {
-        osg::Group* rwyLights = new osg::Group;
 
-        osg::StateSet* ss = lightManager->getRunwayLightStateSet();      
-        rwyLights->setStateSet(ss);      
-        rwyLights->setNodeMask(RUNWAYLIGHTS_BIT);
-        
-        if (runwayLights.getNumLights() != 0) {
-          EffectGeode* geode = new EffectGeode;
-          geode->setEffect(runwayEffect);
-          
-          osg::Drawable* rldraw = SGLightFactory::getLights(runwayLights);
-          geode->addDrawable( rldraw );
-          
-          rwyLights->addChild(geode);
-        }
+        osg::Group* rwyLightsGroup = new osg::Group;
+        rwyLightsGroup->setStateSet(lightManager->getRunwayLightStateSet());
+        rwyLightsGroup->setNodeMask(RUNWAYLIGHTS_BIT);
+
         SGDirectionalLightListBin::const_iterator i;
-        for (i = rabitLights.begin();
-             i != rabitLights.end(); ++i) {
-            osg::Node* seqNode = SGLightFactory::getSequenced(*i, _options);
-            rwyLights->addChild( seqNode );
+
+        for (i = rabitLights.begin() ; i != rabitLights.end() ; ++i) {
+            rwyLightsGroup->addChild(SGLightFactory::getSequenced(*i, _options));
         }
-        for (i = reilLights.begin();
-             i != reilLights.end(); ++i) {
-            osg::Node* seqNode = SGLightFactory::getSequenced(*i, _options);
-            rwyLights->addChild(seqNode);
+        for (i = reilLights.begin() ; i != reilLights.end() ; ++i) {
+            rwyLightsGroup->addChild(SGLightFactory::getReil(*i, _options));
         }
-        for (i = holdshortLights.begin();
-             i != holdshortLights.end(); ++i) {
-            osg::Node* seqNode = SGLightFactory::getHoldShort(*i, _options);
-            rwyLights->addChild(seqNode);
+        for (i = holdshortLights.begin() ; i != holdshortLights.end() ; ++i) {
+            rwyLightsGroup->addChild(SGLightFactory::getHoldShort(*i, _options));
         }
-        for (i = guardLights.begin();
-             i != guardLights.end(); ++i) {
-            osg::Node* seqNode = SGLightFactory::getGuard(*i, _options);
-            rwyLights->addChild(seqNode);
+        for (i = guardLights.begin() ; i != guardLights.end() ; ++i) {
+            rwyLightsGroup->addChild(SGLightFactory::getGuard(*i, _options));
         }
         SGLightListBin::const_iterator j;
-        for (j = odalLights.begin();
-             j != odalLights.end(); ++j) {
-            osg::Node* seqNode = SGLightFactory::getOdal(*j, _options);
-            rwyLights->addChild(seqNode);
+        for (j = odalLights.begin() ; j != odalLights.end() ; ++j) {
+            rwyLightsGroup->addChild(SGLightFactory::getOdal(*j, _options));
         }
-        lightGroup->addChild(rwyLights);
+
+        if (runwayLights.getNumLights() > 0) {
+          osg::ref_ptr<EffectGeode> geode = new EffectGeode;
+          geode->setEffect(runwayEffect);
+          geode->addDrawable(SGLightFactory::getLights(runwayLights));
+          rwyLightsGroup->addChild(geode);
+        }
+
+        lightGroup->addChild(rwyLightsGroup);
       }
 
       if (taxiLights.getNumLights() > 0) {

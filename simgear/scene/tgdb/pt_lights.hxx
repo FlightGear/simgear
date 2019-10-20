@@ -88,6 +88,9 @@ public:
   getSequenced(const SGDirectionalLightBin& lights, const simgear::SGReaderWriterOptions* options);
 
   static osg::Node*
+  getReil(const SGDirectionalLightBin& lights, const simgear::SGReaderWriterOptions* options);
+
+  static osg::Node*
   getOdal(const SGLightBin& lights, const simgear::SGReaderWriterOptions* options);
 
   static osg::Node*

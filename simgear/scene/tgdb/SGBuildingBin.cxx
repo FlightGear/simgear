@@ -503,14 +503,14 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       // SMALL BUILDINGS
       // Maximum texture height is 3 stories.
       // Small buildings are represented on the bottom 18 rows
-      // Each block is 6m wide and 3m high.
+      // Each block is 5m wide and 3m high.
       int wall_row = wall_tex_index % 6;
       int roof_row = roof_tex_index % 6;
       float wall_offset_x = 0.0f;
       float wall_offset_y = (float) wall_row  * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT;
       float roof_offset_x = 0.0f;
       float roof_offset_y = (float) roof_row  * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT;
-      float gain_x = min(0.5f, std::round(width / 6.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
+      float gain_x = min(0.5f, std::round(width / 5.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
       float gain_y =  (float) (min(3, floors)) * BUILDING_TEXTURE_BLOCK_HEIGHT;
 
       // Checks
@@ -597,9 +597,9 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       if ((roof_shape == 3) || (roof_shape == 4) || (roof_shape == 7)) {
         // Hipped, half-hipped, mansard
         // The pitch height expressed as a fraction of the building width/depth such that the hipped
-        // roof has a pitch of around 45 degrees.
-        if (roof_orientation == 0) rooftop_scale = Vec2f(min(0.5f,(width -  2*pitch_height) / width), 0.0f);
-        if (roof_orientation == 1) rooftop_scale = Vec2f(0.0f, min(0.5f,(depth -  2*pitch_height) / width));
+        // roof has a pitch of around 45 degrees.  A minimum of 0.5 so that they have at least some ridge.
+        if (roof_orientation == 0) rooftop_scale = Vec2f(max(0.5f,(width -  2*pitch_height) / width), 0.0f);
+        if (roof_orientation == 1) rooftop_scale = Vec2f(0.0f, max(0.5f,(depth -  2*pitch_height) / width));
       }
 
       // Pyramidal, dome, onion

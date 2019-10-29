@@ -112,15 +112,15 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     camera->setClearStencil(root->getIntValue("clear-stencil", 0));
 
     GLbitfield clear_mask = 0;
-    if (root->getBoolValue("clear-color-bit", true))
-        clear_mask |= GL_COLOR_BUFFER_BIT;
-    if (root->getBoolValue("clear-accum-bit", false))
-        clear_mask |= GL_ACCUM_BUFFER_BIT;
-    if (root->getBoolValue("clear-depth-bit", true))
-        clear_mask |= GL_DEPTH_BUFFER_BIT;
-    if (root->getBoolValue("clear-stencil-bit", false))
-        clear_mask |= GL_STENCIL_BUFFER_BIT;
-    // Default clear mask is GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, as in OSG
+    std::stringstream ss;
+    std::string bit;
+    // Default clear mask as in OSG
+    ss << root->getStringValue("clear-mask", "color depth");
+    while (ss >> bit) {
+        if (bit == "color")        clear_mask |= GL_COLOR_BUFFER_BIT;
+        else if (bit == "depth")   clear_mask |= GL_DEPTH_BUFFER_BIT;
+        else if (bit == "stencil") clear_mask |= GL_STENCIL_BUFFER_BIT;
+    }
     camera->setClearMask(clear_mask);
 
     PropertyList p_bindings = root->getChildren("binding");

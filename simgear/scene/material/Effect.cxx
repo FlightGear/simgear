@@ -1479,7 +1479,8 @@ static SGMutex  realizeTechniques_lock;
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
     SGGuard<SGMutex> g(realizeTechniques_lock);
-    mergeSchemesFallbacks(this, options);
+    if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false))
+        mergeSchemesFallbacks(this, options);
 
     if (_isRealized)
         return true;

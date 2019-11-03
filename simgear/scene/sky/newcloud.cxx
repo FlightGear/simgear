@@ -256,7 +256,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     geode->addDrawable(sg);
     geode->setName("3D cloud");
     geode->setEffect(effect.get());
-    geode->setNodeMask( ~simgear::MODELLIGHT_BIT );
+    geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
     
     return geode;
 }

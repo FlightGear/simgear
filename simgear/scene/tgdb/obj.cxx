@@ -159,6 +159,6 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       transform->addChild(pagedLOD);
     }
 
-    transform->setNodeMask( ~simgear::MODELLIGHT_BIT );
+    transform->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
     return transform;
 }

@@ -235,6 +235,11 @@ public:
 	inline const std::vector<std::string>& getWeather()		const	{ return _weather; }
 	inline const std::vector<struct Weather> getWeather2()	const   { return _weather2; }
 
+        /* Returns human-readable description. If tabtops is 0, we use tab
+        characters, otherwise we use spaces to pad to multiple of <tabstops>.
+        */
+        std::string     getDescription(int tabstops)   const;
+
 protected:
 	std::string	_url;
 	int	_grpcount;

@@ -302,7 +302,7 @@ void SGSampleGroup::update_pos_and_orientation() {
         sample->set_rotation( ec2body );
         sample->set_position(base_position);
         sample->set_velocity( velocity );
-        sample->set_atmosphere( _degC, _humidity );
+        sample->set_atmosphere( _degC, _humidity, _pressure );
 
         // Test if a sample is farther away than max distance, if so
         // stop the sound playback and free it's source.

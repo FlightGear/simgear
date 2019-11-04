@@ -182,6 +182,12 @@ public:
     inline float get_humidity() { return _humidity; }
 
     /**
+     * Get the pressure at the current altitude.
+     * @return Pressure in kPa
+     */
+    inline float get_pressure() { return _pressure; }
+
+    /**
      * Test if static data of audio sample configuration has changed.
      * Calling this function will reset the flag so calling it a second
      * time in a row will return false.
@@ -220,6 +226,7 @@ protected:
 
     float _reference_dist = 500.0f;
     float _max_dist = 3000.0f;
+    float _pressure = 101.325f;
     float _humidity = 0.5f;
     float _degC = 20.0f;
 
@@ -557,12 +564,15 @@ public:
 
     /**
      * Set both the temperature and relative humidity at the current altitude.
-     * @param temp Temperature in degrees Celsius
-     * @param hum Percent relative humidity (0.0 to 1.0)
+     * @param t Temperature in degrees Celsius
+     * @param h Percent relative humidity (0.0 to 1.0)
+     * @param p Pressure in kPa;
      */
-    inline void set_atmosphere(float temp, float hum) {
-        if (fabsf(_degC - temp) > 1.0f || fabsf(_humidity - hum) > 0.1f) {
-            _degC = temp, _humidity = hum; _static_changed = true;
+    inline void set_atmosphere(float t, float h, float p) {
+        if (fabsf(_degC - t) > 1.0f || fabsf(_humidity - h) > 0.1f ||
+            fabsf(_pressure - p) > 1.0f)
+        {
+            _degC = t, _humidity = h; _pressure = p; _static_changed = true;
         }
     }
 

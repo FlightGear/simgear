@@ -4,7 +4,7 @@
 // Modified to match the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2004  Curtis L. Olson - http://www.flightgear.org/~curt
-// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
+// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -49,24 +49,6 @@ using std::string;
 // empty constructor
 SGSoundSampleInfo::SGSoundSampleInfo() :
     _refname(random_string()),
-    _bits(16),
-    _tracks(1),
-    _samples(0),
-    _frequency(22500),
-    _compressed(false),
-    _loop(false),
-    _static_changed(true),
-    _playing(false),
-    _pitch(1.0f),
-    _volume(1.0f),
-    _master_volume(1.0f),
-    _use_pos_props(false),
-    _out_of_range(false),
-    _inner_angle(360.0f),
-    _outer_angle(360.0f),
-    _outer_gain(0.0f),
-    _reference_dist(500.0f),
-    _max_dist(3000.0f),
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
@@ -97,27 +79,9 @@ std::string SGSoundSampleInfo::random_string()
 // SGSoundSample
 //
 
-// empty constructor
-SGSoundSample::SGSoundSample() :
-    _is_file(false),
-    _changed(true),
-    _valid_source(false),
-    _source(SGSoundMgr::NO_SOURCE),
-    _data(NULL),
-    _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER)
-{
-}
-
 // constructor
 SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
-    _is_file(true),
-    _changed(true),
-    _valid_source(false),
-    _source(SGSoundMgr::NO_SOURCE),
-    _data(NULL),
-    _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER)
+    _is_file(true)
 {
     SGPath p = simgear::ResourceManager::instance()->findPath(file, currentDir);
     _refname = p.utf8Str();
@@ -125,13 +89,7 @@ SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
 
 // constructor
 SGSoundSample::SGSoundSample( const unsigned char** data,
-                              int len, int freq, int format ) :
-    _is_file(false),
-    _changed(true),
-    _valid_source(false),
-    _source(SGSoundMgr::NO_SOURCE),
-    _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER)
+                              int len, int freq, int format )
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;

@@ -2,7 +2,7 @@
 //
 // Written for the new SoundSystem by Erik Hofman, October 2009
 //
-// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
+// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -31,16 +31,7 @@
 #include "soundmgr.hxx"
 #include "sample_group.hxx"
 
-SGSampleGroup::SGSampleGroup () :
-    _smgr(NULL),
-    _refname(""),
-    _active(false),
-    _changed(false),
-    _pause(false),
-    _volume(1.0),
-    _tied_to_listener(false),
-    _velocity(SGVec3d::zeros()),
-    _orientation(SGQuatd::zeros())
+SGSampleGroup::SGSampleGroup ()
 {
     _samples.clear();
 }
@@ -48,14 +39,7 @@ SGSampleGroup::SGSampleGroup () :
 SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr,
                                const std::string &refname ):
     _smgr(smgr),
-    _refname(refname),
-    _active(false),
-    _changed(false),
-    _pause(false),
-    _volume(1.0),
-    _tied_to_listener(false),
-    _velocity(SGVec3d::zeros()),
-    _orientation(SGQuatd::zeros())
+    _refname(refname)
 {
     _smgr->add(this, refname);
     _samples.clear();
@@ -318,6 +302,7 @@ void SGSampleGroup::update_pos_and_orientation() {
         sample->set_rotation( ec2body );
         sample->set_position(base_position);
         sample->set_velocity( velocity );
+        sample->set_atmosphere( _degC, _humidity );
 
         // Test if a sample is farther away than max distance, if so
         // stop the sound playback and free it's source.

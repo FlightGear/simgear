@@ -191,7 +191,7 @@ void SGSoundMgr::init()
         TRY( d->_aax.set(dsp) );
 
         dsp = aax::dsp(d->_aax, AAX_DISTANCE_FILTER);
-        TRY( dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED) );
+        TRY( dsp.set(AAX_ISO9613_DISTANCE) );
         TRY( d->_aax.set(dsp) );
 
         dsp = aax::dsp(d->_aax, AAX_VELOCITY_EFFECT);
@@ -313,12 +313,6 @@ void SGSoundMgr::update( double dt )
             TRY( dsp.set(AAX_GAIN, _volume) );
             TRY( d->_aax.set(dsp) );
 
-#if 0
-            // TODO: altitude dependent
-            dsp = d->_aax.get(AAX_VELOCITY_EFFECT);
-            TRY( dsp.set(AAX_SOUND_VELOCITY, 340.3f) );
-            TRY( d->_aax.set(dsp) );
-#endif
             aax::Matrix64 mtx = d->_mtx;
             mtx.inverse();
             TRY( d->_aax.sensor_matrix(mtx) );
@@ -568,7 +562,7 @@ void SGSoundMgr::sample_play( SGSoundSample *sample )
 
     aax::dsp dsp = emitter.get(AAX_DISTANCE_FILTER);
     TRY( dsp.set(AAX_ROLLOFF_FACTOR, 0.3f) );
-    TRY( dsp.set(AAX_AL_INVERSE_DISTANCE_CLAMPED) );
+    TRY( dsp.set(AAX_ISO9613_DISTANCE) );
     TRY( emitter.set(dsp) );
 
     TRY( emitter.set(AAX_LOOPING, sample->is_looping()) );
@@ -666,6 +660,9 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
             dsp = emitter.get(AAX_DISTANCE_FILTER);
             TRY( dsp.set(AAX_REF_DISTANCE, sample->get_reference_dist()) );
             TRY( dsp.set(AAX_MAX_DISTANCE, sample->get_max_dist()) );
+            TRY( dsp.set(AAX_RELATIVE_HUMIDITY, sample->get_humidity()) );
+            TRY( dsp.set(AAX_TEMPERATURE, sample->get_temperature(),
+                                          AAX_DEGREES_CELSIUS) );
             TRY( emitter.set(dsp) );
        }
     }
@@ -693,6 +690,7 @@ vector<std::string> SGSoundMgr::get_available_devices()
             }
         }
     }
+    testForError("get_available_devices");
 #endif
     return devices;
 }

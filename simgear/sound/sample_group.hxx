@@ -6,7 +6,7 @@
 //
 // Written for the new SoundSystem by Erik Hofman, October 2009
 //
-// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
+// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -131,7 +131,7 @@ public:
      * @return true if the audio sample exsists and is scheduled for playing
      */
     bool play( const std::string& refname, bool looping = false );
-    
+
     /**
      * Request to start playing the referred audio sample looping.
      * @param refname Reference name of the audio sample to start playing
@@ -173,7 +173,7 @@ public:
     /**
      * Set the velocity vector of this sample group.
      * This is in the local frame coordinate system; x=north, y=east, z=down
-     * @param vel Velocity vector 
+     * @param vel Velocity vector
      */
     void set_velocity( const SGVec3d& vel ) {
        _velocity = vel; _changed = true;
@@ -197,28 +197,40 @@ public:
     }
 
     /**
+     * Set both the temperature and relative humidity at the current altitude.
+     * @param temp Temperature in degrees Celsius
+     * @param hum Percent relative humidity (0.0 to 1.0)
+     */
+    void set_atmosphere(float temp, float hum ) {
+        _degC = temp, _humidity = hum; _changed = true;
+    }
+
+    /**
      * Tie this sample group to the listener position, orientation and velocity
      */
     void tie_to_listener() { _tied_to_listener = true; }
 
 protected:
-    SGSoundMgr *_smgr;
-    std::string _refname;
-    bool _active;
+    SGSoundMgr *_smgr = NULL;
+    std::string _refname = "";
+    bool _active = false;
 
 private:
     void cleanup_removed_samples();
     void start_playing_sample(SGSoundSample *sample);
     void check_playing_sample(SGSoundSample *sample);
-  
-    bool _changed;
-    bool _pause;
-    float _volume;
-    bool _tied_to_listener;
 
-    SGVec3d _velocity;
+    bool _changed = false;
+    bool _pause = false;
+    float _volume = 1.0f;
+    float _humidity = 0.5f;
+    float _degC = 20.0f;
+
+    bool _tied_to_listener = false;
+
+    SGVec3d _velocity = SGVec3d::zeros();
+    SGQuatd _orientation = SGQuatd::zeros();
     SGGeod _base_pos;
-    SGQuatd _orientation;
 
     sample_map _samples;
     std::vector< SGSharedPtr<SGSoundSample> > _removed_samples;

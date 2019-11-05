@@ -270,19 +270,14 @@ std::string SGMetar::getDescription(int tabstops) const
 	int i, lineno;
         Tab tab(tabstops);
         
-        out << "METAR Report";
-        
 	if ((i = getReportType()) == SGMetar::AUTO)
-		out << tab << tab << "(automatically generated)";
+		out << "(METAR automatically generated)\n";
 	else if (i == SGMetar::COR)
-		out << tab << tab << "(manually corrected)";
+		out << "(METAR manually corrected)\n";
 	else if (i == SGMetar::RTD)
-		out << tab << tab << "(routine delayed)";
+		out << "(METAR routine delayed)\n";
         
-	out << "\n";
-        out << "============" << "\n";
 	out << "Airport-Id:" << tab << tab << getId() << "\n";
-
 
 	// date/time
 	int year = getYear();
@@ -331,7 +326,7 @@ std::string SGMetar::getDescription(int tabstops) const
 		if ((i = getWindDir()) == -1)
 			out << "from variable directions";
 		else
-			out << "from the " << azimuthName(i) << " (" << i << "°)";
+			out << "from the " << azimuthName(i) << " (" << i << " deg)";
 		out << " at " << rnd(d, -1) << " km/h";
 
 		out << tab << tab << rnd(getWindSpeed_kt(), -1) << " kt";
@@ -353,20 +348,20 @@ std::string SGMetar::getDescription(int tabstops) const
 		if (from != to) {
 			out << tab << tab << tab << "variable from " << azimuthName(from);
 			out << " to " << azimuthName(to);
-			out << " (" << from << "°--" << to << "°)" << "\n";
+			out << " (" << from << "deg --" << to << " deg)" << "\n";
 		}
 	}
 
 
 	// temperature/humidity/air pressure
 	if ((d = getTemperature_C()) != NaN) {
-		out << "Temperature:" << tab << tab << d << "°C" << tab << tab << tab << tab << tab;
-		out << rnd(getTemperature_F(), -1) << "°F" << "\n";
+		out << "Temperature:" << tab << tab << d << " C" << tab << tab << tab << tab << tab;
+		out << rnd(getTemperature_F(), -1) << " F" << "\n";
 
 		if ((d = getDewpoint_C()) != NaN) {
-			out << "Dewpoint:" << tab << tab << d << "°C" << tab << tab << tab << tab << tab;
-			out << rnd(getDewpoint_F(), -1) << "°F"  << "\n";
-			out << "Rel. Humidity: " << tab << tab << rnd(getRelHumidity()) << "%" << "\n";
+			out << "Dewpoint:" << tab << tab << d << " C" << tab << tab << tab << tab << tab;
+			out << rnd(getDewpoint_F(), -1) << " F"  << "\n";
+			out << "Rel. Humidity: " << tab << tab << rnd(getRelHumidity()) << " %" << "\n";
 		}
 	}
 	if ((d = getPressure_hPa()) != NaN) {

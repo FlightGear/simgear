@@ -1099,7 +1099,7 @@ public:
         if (forestNode.valid())  objectLOD->addChild(forestNode.get(), 0, 2.0 * object_range + SG_TILE_RADIUS);
         if (buildingNode.valid()) objectLOD->addChild(buildingNode.get(), 0, 2.0 * object_range + SG_TILE_RADIUS);
 
-        unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECEIVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
+        unsigned nodeMask = SG_NODEMASK_RECEIVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
         objectLOD->setNodeMask(nodeMask);
       }
 

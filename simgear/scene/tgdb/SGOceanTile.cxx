@@ -338,7 +338,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints, 
     transform->setMatrix(osg::Matrix::rotate(toOsg(hlOr))*
                          osg::Matrix::translate(toOsg(cartCenter)));
     transform->addChild(geode);
-    transform->setNodeMask( ~simgear::MODELLIGHT_BIT );
+    transform->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
     return transform;
 }

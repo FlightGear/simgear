@@ -236,8 +236,8 @@ public:
 	inline const std::vector<struct Weather> getWeather2()	const   { return _weather2; }
 
         /* Returns human-readable description. If tabtops is 0, we use tab
-        characters, otherwise we use spaces to pad to multiple of <tabstops>.
-        */
+        characters. If +ve we use spaces to pad to multiple of <tabstops>. If
+        -1 all sequences of tabs are represented by a single space. */
         std::string     getDescription(int tabstops)   const;
 
 protected:

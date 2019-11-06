@@ -203,6 +203,14 @@ std::ostream& operator << (std::ostream& out, const Tab& t)
     
     std::ostringstream& out2 = *(std::ostringstream*) &out;
     std::string s = out2.str();
+    
+    if (t._stops < 0) {
+        if (!s.size() || s[s.size()-1] != ' ') {
+            out << ' ';
+        }
+        return out;
+    }
+    
     auto nl = s.rfind('\n');
     if (nl < 0) nl = 0;
     int column = 0;

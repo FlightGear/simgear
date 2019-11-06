@@ -73,32 +73,39 @@ SGLight::appendLight(const SGPropertyNode *configNode,
     light->setSpotExponent(configNode->getFloatValue("spot-exponent"));
     light->setSpotCutoff(configNode->getFloatValue("spot-cutoff"));
 
-    osg::Group *group = 0;
-    if ((p = configNode->getNode("offsets")) == NULL) {
-        group = new osg::Group;
-    } else {
-        // Set up the alignment node ("stolen" from animation.cxx)
-        // XXX Order of rotations is probably not correct.
-        osg::MatrixTransform *align = new osg::MatrixTransform;
-        osg::Matrix res_matrix;
-        res_matrix.makeRotate(
-            p->getFloatValue("pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-            osg::Vec3(0, 1, 0),
-            p->getFloatValue("roll-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-            osg::Vec3(1, 0, 0),
-            p->getFloatValue("heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-            osg::Vec3(0, 0, 1));
+    osg::MatrixTransform *align = new osg::MatrixTransform;
+    align->addChild(light);
 
-        osg::Matrix tmat;
-        tmat.makeTranslate(configNode->getFloatValue("offsets/x-m", 0.0),
-                           configNode->getFloatValue("offsets/y-m", 0.0),
-                           configNode->getFloatValue("offsets/z-m", 0.0));
+    osg::Matrix t;
+    osg::Vec3 pos(configNode->getFloatValue("position/x-m"),
+                  configNode->getFloatValue("position/y-m"),
+                  configNode->getFloatValue("position/z-m"));
+    t.makeTranslate(pos);
 
-        align->setMatrix(res_matrix * tmat);
-        group = align;
+    osg::Matrix r;
+    if (const SGPropertyNode *dirNode = configNode->getNode("direction")) {
+        if (dirNode->hasValue("pitch-deg")) {
+            r.makeRotate(
+                dirNode->getFloatValue("pitch-deg")*SG_DEGREES_TO_RADIANS,
+                osg::Vec3(0, 1, 0),
+                dirNode->getFloatValue("roll-deg")*SG_DEGREES_TO_RADIANS,
+                osg::Vec3(1, 0, 0),
+                dirNode->getFloatValue("heading-deg")*SG_DEGREES_TO_RADIANS,
+                osg::Vec3(0, 0, 1));
+        } else if (dirNode->hasValue("lookat-x-m")) {
+            osg::Vec3 lookAt(dirNode->getFloatValue("lookat-x-m"),
+                             dirNode->getFloatValue("lookat-y-m"),
+                             dirNode->getFloatValue("lookat-z-m"));
+            osg::Vec3 dir = lookAt - pos;
+            r.makeRotate(osg::Vec3(0, 0, -1), dir);
+        } else {
+            r.makeRotate(osg::Vec3(0, 0, -1),
+                         osg::Vec3(dirNode->getFloatValue("x"),
+                                   dirNode->getFloatValue("y"),
+                                   dirNode->getFloatValue("z")));
+        }
     }
-
-    group->addChild(light);
+    align->setMatrix(r * t);
 
     osg::Shape *debug_shape;
     if (light->getType() == SGLight::Type::POINT) {
@@ -125,14 +132,14 @@ SGLight::appendLight(const SGPropertyNode *configNode,
     debug_switch->addChild(debug_geode);
     simgear::getPropertyRoot()->getNode("/sim/debug/show-light-volumes", true)->
         addChangeListener(new SGLightDebugListener(debug_switch), true);
-    group->addChild(debug_switch);
+    align->addChild(debug_switch);
 
     if ((p = configNode->getNode("name")) != NULL)
-        group->setName(p->getStringValue());
+        align->setName(p->getStringValue());
     else
-        group->setName("light");
+        align->setName("light");
 
-    return group;
+    return align;
 }
 
 SGLight::SGLight() :

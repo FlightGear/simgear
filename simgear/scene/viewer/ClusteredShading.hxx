@@ -42,19 +42,25 @@ protected:
     };
 
     struct PointlightBound {
-        SGLight *light;
+        SGLight *light = nullptr;
         osg::Vec4f position;
-        float range;
+        float range = 0.0f;
     };
     struct SpotlightBound {
-        SGLight *light;
+        SGLight *light = nullptr;
         osg::Vec4f position;
-        float range;
+        osg::Vec4f direction;
+        float cos_cutoff = 0.0f;
+        struct {
+            osg::Vec4f center;
+            float radius = 0.0f;
+        } bounding_sphere;
     };
 
     void threadFunc(int thread_id);
     void assignLightsToSlice(int slice);
     void writePointlightData();
+    void writeSpotlightData();
     float getDepthForSlice(int slice) const;
 
     osg::observer_ptr<osg::Camera>  _camera;

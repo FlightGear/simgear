@@ -257,7 +257,7 @@ void SGSoundMgr::stop()
 
     if (is_working()) {
         _active = false;
-        TRY( d->_aax.set(AAX_STOPPED) );
+        TRY( d->_aax.set(AAX_PROCESSED) );
 
         _renderer = "unknown";
         _vendor = "unknown";
@@ -411,11 +411,8 @@ void SGSoundMgr::release_source( unsigned int source )
     if ( source_it != d->_sources.end() )
     {
         aax::Emitter& emitter = source_it->second;
-        enum aaxState state = emitter.state();
-        if (state != AAX_PROCESSED) {
-           TRY( emitter.set(AAX_PROCESSED) );
-           TRY( d->_aax.remove(emitter) );
-        }
+        TRY( emitter.set(AAX_PROCESSED) );
+        TRY( d->_aax.remove(emitter) );
         TRY( emitter.remove_buffer() );
         d->_sources.erase(source_it);
     }
@@ -621,7 +618,7 @@ bool SGSoundMgr::is_sample_stopped(SGSoundSample *sample)
     assert(sample->is_valid_source());
     aax::Emitter& emitter = d->get_emitter(sample->get_source());
     int result = emitter.state();
-    return (result == AAX_STOPPED);
+    return (result == AAX_PROCESSED);
 #else
     return true;
 #endif
@@ -651,9 +648,9 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
         TRY( emitter.set(dsp) );
 
         if ( sample->has_static_data_changed() ) {
-            dsp = emitter.get(AAX_ANGULAR_FILTER);
-            TRY( dsp.set(AAX_INNER_ANGLE, sample->get_innerangle()) );
-            TRY( dsp.set(AAX_OUTER_ANGLE, sample->get_outerangle()) );
+            dsp = emitter.get(AAX_DIRECTIONAL_FILTER);
+            TRY( dsp.set(AAX_INNER_ANGLE, sample->get_innerangle(), AAX_DEGREES) );
+            TRY( dsp.set(AAX_OUTER_ANGLE, sample->get_outerangle(), AAX_DEGREES) );
             TRY( dsp.set(AAX_OUTER_GAIN, sample->get_outergain()) );
             TRY( emitter.set(dsp) );
 

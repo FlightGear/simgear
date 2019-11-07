@@ -567,8 +567,7 @@ struct ShadowMapPassBuilder : public PassBuilder {
 
         osg::Camera *camera = pass->camera;
         camera->setReferenceFrame(osg::Camera::ABSOLUTE_RF_INHERIT_VIEWPOINT);
-        camera->setCullingMode(camera->getCullingMode() &
-                               ~osg::CullSettings::SMALL_FEATURE_CULLING);
+        camera->setCullingMode(osg::CullSettings::ENABLE_ALL_CULLING);
         //camera->setComputeNearFarMode(
         //    osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
 

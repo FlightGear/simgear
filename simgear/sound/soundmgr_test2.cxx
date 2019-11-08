@@ -31,8 +31,7 @@ int main( int argc, char *argv[] ) {
     SGPath srcDir(SRC_DIR);
 
     // prevent NaNs
-    SGQuatd orient = SGQuatd::fromYawPitchRollDeg(0.0, 0.0, 0.0);
-    smgr->set_orientation( orient );
+    smgr->set_position( SGVec3d(0, 0, 0), SGGeod::fromDegFt(0, 0, 0) );
 
     printf("default position and orientation\n");
     SGSoundSample *sample1 = new SGSoundSample("jet.wav", srcDir);

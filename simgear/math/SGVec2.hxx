@@ -375,8 +375,7 @@ interpolate(T tau, const SGVec2<T>& v1, const SGVec2<T>& v2)
   return r;
 }
 
-// Is the first point inside the triangle formed by the other three points?
-// Helper function
+// Helper function for point_in_triangle
 template <typename T>
 inline
 T
@@ -384,7 +383,8 @@ pt_determine(const SGVec2<T>& pt1, const SGVec2<T>& pt2, const SGVec2<T>& pt3)
 {
   return (pt1.x()-pt3.x()) * (pt2.y()-pt3.y()) - (pt2.x() - pt3.x()) * (pt1.y() - pt3.y());
 }
-  
+
+// Is testpt inside the triangle formed by the other three points?
 template <typename T>
 inline
 bool

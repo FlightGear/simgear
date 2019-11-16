@@ -753,6 +753,7 @@ public:
                                            vegetation_density,
                                            mat->get_cos_tree_max_density_slope_angle(),
                                            mat->get_cos_tree_zero_density_slope_angle(),
+                                           mat->get_is_plantation(),
                                            randomPoints,
                                            randomPointNormals);
             

@@ -245,6 +245,13 @@ public:
   inline double get_wood_coverage () const { return wood_coverage; }
 
   /**
+   * Get whether or not vegetation is regularly spaced
+   *
+   * @return flag: if true, vegetation is regularly spaced.
+   */
+  inline bool get_is_plantation () const { return is_plantation; }
+
+  /**
    * Get the tree height.
    *
    * @return The average height of the trees.
@@ -454,6 +461,9 @@ private:
 
   // coverage of woods
   double wood_coverage;
+
+  // are trees regularly planted?
+  bool is_plantation;
 
   // Range at which trees become visible
   double tree_range;

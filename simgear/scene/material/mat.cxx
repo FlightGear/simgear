@@ -341,6 +341,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
     // Random vegetation properties
     wood_coverage = props->getDoubleValue("wood-coverage", 0.0);
+    is_plantation = props->getBoolValue("plantation",false);
     tree_effect = props->getStringValue("tree-effect", "Effects/tree");
     tree_height = props->getDoubleValue("tree-height-m", 0.0);
     tree_width = props->getDoubleValue("tree-width-m", 0.0);

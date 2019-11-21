@@ -335,48 +335,7 @@ public:
                     if (area <= SGLimitsf::min())
                         continue;
 
-                    if (!is_plantation) {
-                            // Determine the number of trees, taking into account vegetation
-                            // density (which is linear) and the slope density factor.
-                            // Use a zombie door method to create the proper random chance 
-                            // of a tree being created for partial values.
-                            int woodcount = (int) (vegetation_density * vegetation_density * 
-                                                   slope_density *
-                                                   area / wood_coverage + mt_rand(&seed));
-                            for (int j = 0; j < woodcount; j++) {
-                                // Use barycentric coordinates
-                                float a = mt_rand(&seed);
-                                float b = mt_rand(&seed);
-
-                                if ( a + b > 1.0f ) {
-                                    a = 1.0f - a;
-                                    b = 1.0f - b;
-                                }
-
-                                float c = 1.0f - a - b;
-
-                                SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
-                                if (object_mask != NULL) {
-                                    SGVec2f texCoord = a*t0 + b*t1 + c*t2;
-
-                                    // Check this random point against the object mask
-                                    // green (for trees) channel.
-                                    osg::Image* img = object_mask->getImage();       
-                                    unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
-                                    unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
-
-                                    if (mt_rand(&seed) < img->getColor(x, y).g()) {
-                                        // The red channel contains the rotation for this object
-                                        points.push_back(randomPoint);
-                                        normals.push_back(normalize(normal));
-                                    }
-                                } else {
-                                    points.push_back(randomPoint);
-                                    normals.push_back(normalize(normal));
-
-                                }
-                            }
-                        } else  {  // regularly-spaced vegetation
+                    if (is_plantation)  {  // regularly-spaced vegetation
                         // separate vegetation in integral 1m units
                         int separation = (int) ceil(sqrt(wood_coverage));
                         float max_x = ceil(max(max(v1.x(),v2.x()),v0.x()));
@@ -425,6 +384,47 @@ public:
                                     points.push_back(randomPoint);
                                     normals.push_back(normalize(normal));
                                 }
+                            }
+                        }
+                    }  else  {
+                        // Determine the number of trees, taking into account vegetation
+                        // density (which is linear) and the slope density factor.
+                        // Use a zombie door method to create the proper random chance 
+                        // of a tree being created for partial values.
+                        int woodcount = (int) (vegetation_density * vegetation_density * 
+                                               slope_density *
+                                               area / wood_coverage + mt_rand(&seed));
+                        for (int j = 0; j < woodcount; j++) {
+                            // Use barycentric coordinates
+                            float a = mt_rand(&seed);
+                            float b = mt_rand(&seed);
+
+                            if ( a + b > 1.0f ) {
+                                a = 1.0f - a;
+                                b = 1.0f - b;
+                            }
+
+                            float c = 1.0f - a - b;
+
+                            SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
+                            if (object_mask != NULL) {
+                                SGVec2f texCoord = a*t0 + b*t1 + c*t2;
+
+                                // Check this random point against the object mask
+                                // green (for trees) channel.
+                                osg::Image* img = object_mask->getImage();       
+                                unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
+                                unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+
+                                if (mt_rand(&seed) < img->getColor(x, y).g()) {
+                                    // The red channel contains the rotation for this object
+                                    points.push_back(randomPoint);
+                                    normals.push_back(normalize(normal));
+                                }
+                            } else {
+                                points.push_back(randomPoint);
+                                normals.push_back(normalize(normal));
+
                             }
                         }
                     }

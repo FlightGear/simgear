@@ -92,7 +92,7 @@ public:
     LARGE };
 
     struct BuildingInstance {
-      BuildingInstance(Vec3f p, float w, float d, float h, float ph, float r, Vec2f wt0, Vec2f rt0, Vec2f t1, Vec2f rs) :
+      BuildingInstance(Vec3f p, float w, float d, float h, float ph, float r, Vec2f wt0, Vec2f rt0, Vec3f t1, Vec2f rs) :
         position(p),
         width(w),
         depth(d),
@@ -128,7 +128,7 @@ public:
 
       Vec2f walltex0;
       Vec2f rooftex0;
-      Vec2f tex1;
+      Vec3f tex1; // Texture gains for the front, roof and sides
 
       Vec2f rooftop_scale;
 

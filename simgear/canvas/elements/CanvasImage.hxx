@@ -101,6 +101,22 @@ namespace canvas
        */
       void setSourceRect(const SGRect<float>& sourceRect);
 
+      /**
+       * fill the specified rectangle of the image, with an RGB value
+       */
+      void fillRect(const SGRect<int>& rect, const std::string& color);
+      
+      /**
+       * fill the specified rectangle of the image, with an RGB value
+       */
+      void fillRect(const SGRect<int>& rect, const osg::Vec4& color);
+      
+      void setPixel(int x, int y, const std::string& color);
+      
+      void setPixel(int x, int y, const osg::Vec4& color);
+
+      
+    //  void setRow(int row, int offset, )
     protected:
       enum ImageAttributes
       {

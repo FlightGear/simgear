@@ -838,5 +838,98 @@ namespace canvas
     return false;
   }
 
+  void Image::fillRect(const SGRect<int>& rect, const std::string& c)
+  {
+    osg::Vec4 color(1,1,1,1);
+    if(!c.empty() && !parseColor(c, color))
+      return;
+    
+    fillRect(rect, color);
+  }
+
+void fillRow(GLubyte* row, GLuint pixel, GLuint width, GLuint pixelBytes)
+{
+  GLubyte* dst = row;
+  for (int x = 0; x < width; ++x) {
+    memcpy(dst, &pixel, pixelBytes);
+    dst += pixelBytes;
+  }
+}
+
+SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
+{
+  SGVec2<int> m1 = max(a.getMin(), b.getMin());
+  SGVec2<int> m2 = min(a.getMax(), b.getMax());
+  return SGRect<int>(m1, m2);
+}
+
+  void Image::fillRect(const SGRect<int>& rect, const osg::Vec4& color)
+  {
+    osg::ref_ptr<osg::Image> image = _texture->getImage();
+    const auto format = image->getInternalTextureFormat();
+    
+    auto clippedRect = intersectRect(rect, SGRect<int>(0, 0, image->s(), image->t()));
+    if ((clippedRect.width() == 0) || (clippedRect.height() == 0)) {
+      return;
+    }
+    
+    GLubyte* rowData = nullptr;
+    size_t rowByteSize = 0;
+    GLuint pixelWidth = clippedRect.width();
+    GLuint pixel = 0;
+    GLuint pixelBytes = 0;
+    
+    switch (format) {
+    case GL_RGBA8:
+        rowByteSize = pixelWidth * 4;
+        rowData = static_cast<GLubyte*>(alloca(rowByteSize));
+        
+        // assume litte-endian, so read out backwards, hence when we memcpy
+        // the data, it ends up in RGBA order
+        pixel = color.asABGR();
+        pixelBytes = 4;
+        fillRow(rowData, pixel, pixelWidth, pixelBytes);
+        break;
+    
+    case GL_RGB8:
+        rowByteSize = pixelWidth * 3;
+        rowData = static_cast<GLubyte*>(alloca(rowByteSize));
+        pixel = color.asABGR();
+        pixelBytes = 3;
+        fillRow(rowData, pixel, pixelWidth, pixelBytes);
+        break;
+        
+    default:
+      SG_LOG(SG_IO, SG_WARN, __PRETTY_FUNCTION__ << ": unsupported internal image format:" << format);
+      return;
+    }
+    
+    for (int row=clippedRect.t(); row < clippedRect.b(); ++row) {
+      GLubyte* imageData = image->data(clippedRect.l(), row);
+      memcpy(imageData, rowData, rowByteSize);
+    }
+    
+    setImage(image);
+  }
+
+  void Image::setPixel(int x, int y, const std::string& c)
+  {
+    osg::Vec4 color(1,1,1,1);
+    if(!c.empty() && !parseColor(c, color))
+      return;
+    
+    setPixel(x, y, color);
+  }
+
+  void Image::setPixel(int x, int y, const osg::Vec4& color)
+  {
+    osg::ref_ptr<osg::Image> image = _texture->getImage();
+    image->setColor(color, x, y);
+    
+    // is this needed, or does OSG track modifications to the data
+    // automatically?
+    setImage(image);
+  }
+
 } // namespace canvas
 } // namespace simgear

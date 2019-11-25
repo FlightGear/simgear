@@ -193,8 +193,8 @@ min(S s, SGVec2<T> v)
 template<typename T>
 inline
 SGVec2<T>
-max(const SGVec2<T>& v1, const SGVec2<T>& v2)
-{ v1 = simd4::max(v1.simd2(), v2.simd2()); return v1; }
+max(SGVec2<T> v1, const SGVec2<T>& v2)
+{ v1.simd2() = simd4::max(v1.simd2(), v2.simd2()); return v1; }
 template<typename S, typename T>
 inline
 SGVec2<T>

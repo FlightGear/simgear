@@ -34,7 +34,7 @@ class ArchiveExtractor
 {
 public:
 	ArchiveExtractor(const SGPath& rootPath);
-	~ArchiveExtractor();
+	virtual ~ArchiveExtractor();
 
 	enum DetermineResult
 	{

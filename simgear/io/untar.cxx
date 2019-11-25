@@ -48,6 +48,8 @@ namespace simgear
 			assert(outer);
 		}
 
+        virtual ~ArchiveExtractorPrivate() = default;
+        
 		typedef enum {
 			INVALID = 0,
 			READING_HEADER,
@@ -614,10 +616,7 @@ ArchiveExtractor::ArchiveExtractor(const SGPath& rootPath) :
 {
 }
 
-ArchiveExtractor::~ArchiveExtractor()
-{
-
-}
+ArchiveExtractor::~ArchiveExtractor() = default;
 
 void ArchiveExtractor::extractBytes(const uint8_t* bytes, size_t count)
 {

@@ -68,8 +68,8 @@ namespace canvas
               Element* parent = 0 );
       virtual ~Window();
 
-      virtual void update(double delta_time_sec);
-      virtual void valueChanged(SGPropertyNode* node);
+      void update(double delta_time_sec) override;
+      void valueChanged(SGPropertyNode* node) override;
 
       const SGVec2<float> getPosition() const;
       const SGRect<float>  getScreenRegion() const;
@@ -84,8 +84,8 @@ namespace canvas
       bool isResizable() const;
       bool isCapturingEvents() const;
 
-      virtual void setVisible(bool visible);
-      virtual bool isVisible() const;
+      void setVisible(bool visible) override;
+      bool isVisible() const override;
 
       /**
        * Moves window on top of all other windows with the same z-index.

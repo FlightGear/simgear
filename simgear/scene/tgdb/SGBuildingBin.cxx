@@ -595,16 +595,16 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
 
       if ((roof_shape == 2) || (roof_shape == 6) || (roof_shape == 10)  || (roof_shape == 11)) {
         // Gabled, gambrel, round, saltbox
-        if (roof_orientation == 0) rooftop_scale = Vec2f(1.0f, 0.0f);
-        if (roof_orientation == 1) rooftop_scale = Vec2f(0.0f, 1.0f);
+        if (roof_orientation == 0) rooftop_scale = Vec2f(0.0f, 1.0f);
+        if (roof_orientation == 1) rooftop_scale = Vec2f(1.0f, 0.0f);
       }
 
       if ((roof_shape == 3) || (roof_shape == 4) || (roof_shape == 7)) {
         // Hipped, half-hipped, mansard
         // The pitch height expressed as a fraction of the building width/depth such that the hipped
         // roof has a pitch of around 45 degrees.  A minimum of 0.5 so that they have at least some ridge.
-        if (roof_orientation == 0) rooftop_scale = Vec2f(max(0.5f,(width -  2*pitch_height) / width), 0.0f);
-        if (roof_orientation == 1) rooftop_scale = Vec2f(0.0f, max(0.5f,(depth -  2*pitch_height) / width));
+        if (roof_orientation == 0) rooftop_scale = Vec2f(0.0f, max(0.5f,(depth -  2*pitch_height) / width));
+        if (roof_orientation == 1) rooftop_scale = Vec2f(max(0.5f,(width -  2*pitch_height) / width), 0.0f);
       }
 
       // Pyramidal, dome, onion

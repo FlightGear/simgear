@@ -420,10 +420,14 @@ naRef naParseCode(struct Context* c, naRef srcFile, int firstLine,
 
     // Catch parser errors here.
     p.errLine = *errLine = 1;
-    if(setjmp(p.jumpHandle)) {
-        strncpy(c->error, p.err, sizeof(c->error));
+    if (setjmp(p.jumpHandle)) {
+        size_t end_ = sizeof(c->error) - 1;
+        strncpy(c->error, p.err, end_);
+        c->error[end_] = '\0';
+
         *errLine = p.errLine;
         naParseDestroy(&p);
+
         return naNil();
     }
 

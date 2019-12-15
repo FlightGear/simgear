@@ -14,6 +14,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
+#include <stdexcept>
+
 #include "SGLight.hxx"
 
 #include <osg/Geode>
@@ -107,7 +109,7 @@ SGLight::appendLight(const SGPropertyNode *configNode,
     }
     align->setMatrix(r * t);
 
-    osg::Shape *debug_shape;
+    osg::Shape *debug_shape = nullptr;
     if (light->getType() == SGLight::Type::POINT) {
         debug_shape = new osg::Sphere(osg::Vec3(0, 0, 0), light->getRange());
     } else if (light->getType() == SGLight::Type::SPOT) {
@@ -116,7 +118,10 @@ SGLight::appendLight(const SGPropertyNode *configNode,
             osg::Vec3(0, 0, -0.75 * light->getRange()),
             tan(light->getSpotCutoff() * SG_DEGREES_TO_RADIANS) * light->getRange(),
             light->getRange());
+    } else {
+        throw std::domain_error("Unsupported SGLight::Type");
     }
+
     osg::ShapeDrawable *debug_drawable = new osg::ShapeDrawable(debug_shape);
     debug_drawable->setColor(osg::Vec4(1.0, 0.0, 0.0, 1.0));
     osg::Geode *debug_geode = new osg::Geode;

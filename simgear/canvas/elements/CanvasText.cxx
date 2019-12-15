@@ -61,13 +61,11 @@ namespace canvas
       SGVec2i sizeForWidth(int w);
 #endif
 
-      osg::BoundingBox
 #if OSG_VERSION_LESS_THAN(3,3,2)
-      computeBound()
+      osg::BoundingBox computeBound() const override;
 #else
-      computeBoundingBox()
+      osg::BoundingBox computeBoundingBox() const override;
 #endif
-      const override;
 
     protected:
       friend class TextLine;
@@ -129,7 +127,6 @@ namespace canvas
 
     _quads = &text->_textureGlyphQuadMap.begin()->second;
 
-
 #if OSG_VERSION_LESS_THAN(3,5,6)
     GlyphQuads::LineNumbers const& line_numbers = _quads->_lineNumbers;
     GlyphQuads::LineNumbers::const_iterator begin_it =
@@ -143,8 +140,7 @@ namespace canvas
     _end = std::upper_bound(begin_it, line_numbers.end(), _line)
          - line_numbers.begin();
 #else
-//OSG:TODO: Need 3.5.6 version of this
-
+  // TODO: Need 3.5.6 version of this
 #endif
   }
 
@@ -174,11 +170,17 @@ namespace canvas
 
     if( empty() )
       return pos;
+
 #if OSG_VERSION_LESS_THAN(3,3,5)
       GlyphQuads::Coords2 const& coords = _quads->_coords;
 #elif OSG_VERSION_LESS_THAN(3,5,6)
       GlyphQuads::Coords2 refCoords = _quads->_coords;
       GlyphQuads::Coords2::element_type &coords = *refCoords.get();
+#else
+  // TODO: need 3.5.7 version of this.
+      return pos;
+#endif
+
       size_t global_i = _begin + i;
 
       if (global_i == _begin)
@@ -201,9 +203,6 @@ namespace canvas
               // position at center between characters
               pos.x() = 0.5 * (prev_r + cur_l);
       }
-#else
-//OSG:TODO: need 3.5.7 version of this.
-#endif
 
     return pos;
   }
@@ -211,16 +210,20 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::Vec2 TextLine::nearestCursor(float x) const
   {
-    if( empty() )
+    if (empty())
       return cursorPos(0);
 
-    GlyphQuads::Glyphs const& glyphs = _quads->_glyphs;
 #if OSG_VERSION_LESS_THAN(3,3,5)
     GlyphQuads::Coords2 const& coords = _quads->_coords;
 #elif OSG_VERSION_LESS_THAN(3,5,6)
-
     GlyphQuads::Coords2 refCoords = _quads->_coords;
     GlyphQuads::Coords2::element_type &coords = *refCoords.get();
+#else
+  // TODO: need 3.5.7 version of this.
+	return cursorPos(0);
+#endif
+
+    GlyphQuads::Glyphs const& glyphs = _quads->_glyphs;
 
     float const HIT_FRACTION = 0.6;
     float const character_width = _text->getCharacterHeight()
@@ -240,10 +243,6 @@ namespace canvas
     }
 
     return cursorPos(i - _begin);
-#else
-//OSG:TODO: need 3.5.7 version of this.
-	return cursorPos(0);
-#endif
   }
 
   //----------------------------------------------------------------------------
@@ -647,19 +646,16 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  osg::BoundingBox
 #if OSG_VERSION_LESS_THAN(3,3,2)
-  Text::TextOSG::computeBound()
+  osg::BoundingBox Text::TextOSG::computeBound() const
 #else
-  Text::TextOSG::computeBoundingBox()
+  osg::BoundingBox Text::TextOSG::computeBoundingBox() const
 #endif
-  const
   {
-    osg::BoundingBox bb =
 #if OSG_VERSION_LESS_THAN(3,3,2)
-      osgText::Text::computeBound();
+      osg::BoundingBox bb = osgText::Text::computeBound();
 #else
-      osgText::Text::computeBoundingBox();
+      osg::BoundingBox bb = osgText::Text::computeBoundingBox();
 #endif
 
 #if OSG_VERSION_LESS_THAN(3,1,0)
@@ -748,7 +744,7 @@ namespace canvas
 #else
   void Text::TextOSG::computePositionsImplementation()
   {
-          TextBase::computePositionsImplementation();
+    TextBase::computePositionsImplementation();
   }
 #endif
  //----------------------------------------------------------------------------

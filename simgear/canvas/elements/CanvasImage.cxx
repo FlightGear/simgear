@@ -900,7 +900,7 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
         break;
         
     default:
-      SG_LOG(SG_IO, SG_WARN, __PRETTY_FUNCTION__ << ": unsupported internal image format:" << format);
+      SG_LOG(SG_IO, SG_WARN, "Image::fillRect: unsupported internal image format:" << format);
       return;
     }
     

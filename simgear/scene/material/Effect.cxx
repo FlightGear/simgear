@@ -918,8 +918,13 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     resolvedKey.attributes = prgKey.attributes;
     BOOST_FOREACH(const ShaderKey& shaderKey, prgKey.shaders)
     {
-        const string& shaderName = shaderKey.first;
+        // FIXME orig: const string& shaderName = shaderKey.first;
+        string shaderName = shaderKey.first;
         Shader::Type stype = (Shader::Type)shaderKey.second;
+        if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false) &&
+            shaderName.substr(0, shaderName.find("/")) == "Shaders") {
+            shaderName = "Compositor/" + shaderName;
+        }
         string fileName = SGModelLib::findDataFile(shaderName, options);
         if (fileName.empty())
         {
@@ -1474,7 +1479,8 @@ static SGMutex  realizeTechniques_lock;
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
     SGGuard<SGMutex> g(realizeTechniques_lock);
-    mergeSchemesFallbacks(this, options);
+    if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false))
+        mergeSchemesFallbacks(this, options);
 
     if (_isRealized)
         return true;

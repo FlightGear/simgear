@@ -821,6 +821,7 @@ public:
     USERARCHIVE = 64,
     PRESERVE = 128,
     PROTECTED   = 1 << 8,
+    LISTENER_SAFE = 1 << 9, /// it's safe to listen to this property, even if it's tied
     // beware: if you add another attribute here,
     // also update value of "LAST_USED_ATTRIBUTE".
   };

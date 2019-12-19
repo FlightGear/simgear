@@ -31,6 +31,11 @@
     // FreeBSD
     #define VG_API_FREEBSD
 
+#elif defined(__OpenBSD__)
+
+    // FreeBSD
+    #define VG_API_OPENBSD
+
 #else
 
     // Unsupported system

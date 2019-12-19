@@ -22,8 +22,12 @@
 #ifndef _READERWRITERSTG_HXX
 #define _READERWRITERSTG_HXX
 
-#include <osgDB/ReaderWriter>
+#include <functional>
 
+#include <osgDB/ReaderWriter>
+#include <simgear/math/sg_types.hxx>
+
+class SGGeod;
 class SGBucket;
 
 namespace simgear {
@@ -38,6 +42,11 @@ public:
     virtual ReadResult
     readNode(const std::string&, const osgDB::Options*) const;
 
+    //pitch and roll are not common, so passed in "restofline" only
+    using STGObjectCallback = std::function<bool(const std::string& token, const std::string& modelpath, const SGGeod& position, const double hdg, const string_list& restofline)>;
+    //add/remove a callback that is invoked for unknown STG token
+    static void setSTGObjectHandler(const std::string &token, STGObjectCallback callback);
+    static void removeSTGObjectHandler(const std::string &token, STGObjectCallback callback);
 private:
     struct _ModelBin;
 };

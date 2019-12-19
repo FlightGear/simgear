@@ -1,7 +1,7 @@
 
 configure_file (
     "${PROJECT_SOURCE_DIR}/3rdparty/expat/expat_config_cmake.in"
-    "${PROJECT_BINARY_DIR}/3rdparty/expat/expat_config.h"
+    "${PROJECT_BINARY_DIR}/3rdparty/expat/simgear_expat_config.h"
 )
 
 set(expat_sources 

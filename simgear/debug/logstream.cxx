@@ -194,7 +194,13 @@ public:
     {
         if (!shouldLog(c, p)) return;
         //fprintf(stderr, "%s\n", aMessage.c_str());
-        fprintf(stderr, "%8.2f [%.8s]:%-10s %s\n", logTimer.elapsedMSec()/1000.0, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
+        
+        if (file && line != -1) {
+            fprintf(stderr, "%8.2f %s:%i: [%.8s]:%-10s %s\n", logTimer.elapsedMSec()/1000.0, file, line, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
+        }
+        else {
+            fprintf(stderr, "%8.2f [%.8s]:%-10s %s\n", logTimer.elapsedMSec()/1000.0, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
+        }
         //    file, line, aMessage.c_str());
         //fprintf(stderr, "%s:%d:%s:%d:%s\n", debugClassToString(c), p,
         //    file, line, aMessage.c_str());
@@ -407,6 +413,7 @@ public:
     bool m_stdout_isRedirectedAlready = false;
 #endif
     bool m_developerMode = false;
+    bool m_fileLine = false;
 
     // test suite mode.
     bool m_testMode = false;
@@ -438,7 +445,7 @@ public:
             LogEntry entry(m_entries.pop());
             // special marker entry detected, terminate the thread since we are
             // making a configuration change or quitting the app
-            if ((entry.debugClass == SG_NONE) && !strcmp(entry.file, "done")) {
+            if ((entry.debugClass == SG_NONE) && entry.file && !strcmp(entry.file, "done")) {
                 return;
             }
             {
@@ -535,6 +542,10 @@ public:
             const char* fileName, int line, const std::string& msg)
     {
         p = translatePriority(p);
+        if (!m_fileLine) {
+            /* This prevents output of file:line. */
+            line = -1;
+        }
         LogEntry entry(c, p, fileName, line, msg);
         m_entries.push(entry);
     }
@@ -581,6 +592,10 @@ void logstream::setDeveloperMode(bool devMode)
     d->m_developerMode = devMode;
 }
 
+void logstream::setFileLine(bool fileLine)
+{
+    d->m_fileLine = fileLine;
+}
 
 void
 logstream::addCallback(simgear::LogCallback* cb)

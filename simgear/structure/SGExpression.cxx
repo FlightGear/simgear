@@ -95,9 +95,11 @@ SGReadValueFromString(const char* str, bool& value)
         SG_LOG(SG_IO, SG_ALERT, "Cannot read string content.");
         return false;
     }
+
     std::stringstream s;
     s.str(std::string(str));
     s >> value;
+
     if (!s.fail())
         return true;
 
@@ -109,10 +111,12 @@ SGReadValueFromString(const char* str, bool& value)
         value = true;
         return true;
     }
+
     if (stdstr == "false" || stdstr == "False" || stdstr == "FALSE") {
-        value = true;
+        value = false;
         return true;
     }
+
     return false;
 }
 

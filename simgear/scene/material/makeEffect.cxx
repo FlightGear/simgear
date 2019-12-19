@@ -130,8 +130,12 @@ Effect* makeEffect(const string& name,
     string effectFileName;
     // Use getPropertyRoot() because the SGReaderWriterOptions might not have a
     // valid property tree
-    if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false))
+    if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false) &&
+        name.substr(0, name.find("/")) == "Effects") {
+        // Temporarily append the Compositor/ directory to every effect that should
+        // be inside Effects/.
         effectFileName += "Compositor/";
+    }
     effectFileName += name;
     effectFileName += ".eff";
     string absFileName

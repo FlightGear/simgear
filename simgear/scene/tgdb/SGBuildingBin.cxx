@@ -55,7 +55,6 @@
 #include "ShaderGeometry.hxx"
 #include "SGBuildingBin.hxx"
 
-
 using namespace osg;
 
 namespace simgear
@@ -67,44 +66,339 @@ static BuildingStateSetMap statesetmap;
 typedef std::map<std::string, osg::observer_ptr<Effect> > EffectMap;
 static EffectMap buildingEffectMap;
 
-// Building instance scheme:
-// vertex - local position of vertices, with 0,0,0 being the center front.
-// fog coord - rotation
-// color - xyz of tree quad origin, replicated 4 times.
-
-struct BuildingBoundingBoxCallback : public Drawable::ComputeBoundingBoxCallback
+// Helper classes for creating the quad tree
+struct MakeBuildingLeaf
 {
-    BuildingBoundingBoxCallback() {}
-    BuildingBoundingBoxCallback(const BuildingBoundingBoxCallback&, const CopyOp&) {}
-    META_Object(simgear, BuildingBoundingBoxCallback);
-    virtual BoundingBox computeBound(const Drawable&) const;
+    MakeBuildingLeaf(float range, Effect* effect, bool fade) :
+        _range(range), _effect(effect), _fade_out(fade) {}
+
+    MakeBuildingLeaf(const MakeBuildingLeaf& rhs) :
+        _range(rhs._range), _effect(rhs._effect), _fade_out(rhs._fade_out)
+    {}
+
+    LOD* operator() () const
+    {
+        osg::Vec3Array* v = new osg::Vec3Array;
+        osg::Vec2Array* t = new osg::Vec2Array;
+        osg::Vec3Array* n = new osg::Vec3Array;
+        osg::Vec4Array* c = new osg::Vec4Array;
+        // Color array is used to identify the different building faces by the
+        // vertex shader for texture mapping:
+        // (front, roof, roof top vertex, side)
+
+        v->reserve(52);
+        t->reserve(52);
+        n->reserve(52);
+        c->reserve(52);
+
+        // Now create an OSG Geometry based on the Building
+        // 0,0,0 is the bottom center of the front
+        // face, e.g. where the front door would be
+
+        // BASEMENT
+        // This extends 10m below the main section
+        // Front face
+        v->push_back( osg::Vec3( 0.0, -0.5, -1.0) ); // bottom right
+        v->push_back( osg::Vec3( 0.0,  0.5, -1.0) ); // bottom left
+        v->push_back( osg::Vec3( 0.0,  0.5,  0.0) ); // top left
+        v->push_back( osg::Vec3( 0.0, -0.5,  0.0) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(1, 0, 0) );    // normal
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
+          t->push_back( osg::Vec2( 0.0, 0.0) );
+        }
+
+        // Left face
+        v->push_back( osg::Vec3( -1.0, -0.5, -1.0) ); // bottom right
+        v->push_back( osg::Vec3(  0.0, -0.5, -1.0) ); // bottom left
+        v->push_back( osg::Vec3(  0.0, -0.5,  0.0) ); // top left
+        v->push_back( osg::Vec3( -1.0, -0.5,  0.0) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, -1, 0) );   // normal
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
+          t->push_back( osg::Vec2( 0.0, 0.0) );
+        }
+
+        // Back face
+        v->push_back( osg::Vec3( -1.0,  0.5, -1.0) ); // bottom right
+        v->push_back( osg::Vec3( -1.0, -0.5, -1.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0, -0.5,  0.0) ); // top left
+        v->push_back( osg::Vec3( -1.0,  0.5,  0.0) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(-1, 0, 0) );   // normal
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
+          t->push_back( osg::Vec2( 0.0, 0.0) );
+        }
+
+        // Right face
+        v->push_back( osg::Vec3(  0.0, 0.5, -1.0) ); // bottom right
+        v->push_back( osg::Vec3( -1.0, 0.5, -1.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0, 0.5,  0.0) ); // top left
+        v->push_back( osg::Vec3(  0.0, 0.5,  0.0) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, 1, 0) );    // normal
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
+          t->push_back( osg::Vec2( 0.0, 0.0) );
+        }
+
+        // MAIN BODY
+        // Front face
+        v->push_back( osg::Vec3( 0.0, -0.5, 0.0) ); // bottom right
+        v->push_back( osg::Vec3( 0.0,  0.5, 0.0) ); // bottom left
+        v->push_back( osg::Vec3( 0.0,  0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( 0.0, -0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( 1.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( 0.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( 0.0, 1.0) ); // top left
+        t->push_back( osg::Vec2( 1.0, 1.0) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(1, 0, 0) );    // normal
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
+        }
+
+        // Left face
+        v->push_back( osg::Vec3( -1.0, -0.5, 0.0) ); // bottom right
+        v->push_back( osg::Vec3(  0.0, -0.5, 0.0) ); // bottom left
+        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( 0.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( 1.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( 1.0, 1.0) ); // top left
+        t->push_back( osg::Vec2( 0.0, 1.0) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, -1, 0) );    // normal
+          c->push_back( osg::Vec4(0, 0, 0, 1) ); // color - used to differentiate wall from roof
+        }
+
+        // Back face
+        v->push_back( osg::Vec3( -1.0,  0.5, 0.0) ); // bottom right
+        v->push_back( osg::Vec3( -1.0, -0.5, 0.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0,  0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( 1.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( 0.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( 0.0, 1.0 ) ); // top left
+        t->push_back( osg::Vec2( 1.0, 1.0 ) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(-1, 0, 0) );    // normal
+          c->push_back( osg::Vec4(1, 0, 0, 0) ); // color - used to differentiate wall from roof
+        }
+
+        // Right face
+        v->push_back( osg::Vec3(  0.0, 0.5, 0.0) ); // bottom right
+        v->push_back( osg::Vec3( -1.0, 0.5, 0.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0, 0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3(  0.0, 0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( 0.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( 1.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( 1.0, 1.0 ) ); // top left
+        t->push_back( osg::Vec2( 0.0, 1.0 ) ); // top right
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, 1, 0) );    // normal
+          c->push_back( osg::Vec4(0, 0, 0, 1) ); // color - used to differentiate wall from roof
+        }
+
+        // ROOF 1 - built as a block.  The shader will deform it to the correct shape.
+        // Front face
+        v->push_back( osg::Vec3( 0.0, -0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3( 0.0,  0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3( 0.0,  0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( 0.0, -0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2(  0.0, 1.0) ); // top left
+        t->push_back( osg::Vec2( -1.0, 1.0) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0.707, 0, 0.707) );    // normal
+        }
+
+        // Left face
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( -1.0, 1.0) ); // top left
+        t->push_back( osg::Vec2(  0.0, 1.0) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, -0.707, 0.707) );    // normal
+        }
+
+        // Back face
+        v->push_back( osg::Vec3( -1.0,  0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0,  0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2(  0.0, 1.0 ) ); // top left
+        t->push_back( osg::Vec2( -1.0, 1.0 ) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(-0.707, 0, 0.707) );    // normal
+        }
+
+        // Right face
+        v->push_back( osg::Vec3(  0.0, 0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3( -1.0, 0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0, 0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3(  0.0, 0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2( -1.0, 1.0 ) ); // top left
+        t->push_back( osg::Vec2(  0.0, 1.0 ) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 0, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, 0.707, 0.707) );    // normal
+        }
+
+        // Top face
+        v->push_back( osg::Vec3(  0.0, -0.5, 1.0) ); // bottom right
+        v->push_back( osg::Vec3(  0.0,  0.5, 1.0) ); // bottom left
+        v->push_back( osg::Vec3( -1.0,  0.5, 1.0) ); // top left
+        v->push_back( osg::Vec3( -1.0, -0.5, 1.0) ); // top right
+
+        t->push_back( osg::Vec2( -1.0, 0.0) ); // bottom right
+        t->push_back( osg::Vec2(  0.0, 0.0) ); // bottom left
+        t->push_back( osg::Vec2(  0.0, 1.0) ); // top left
+        t->push_back( osg::Vec2( -1.0, 1.0) ); // top right
+
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+        c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
+
+        for (int i=0; i<4; ++i) {
+          n->push_back( osg::Vec3(0, 0, -1.0) );    // normal
+        }
+
+        assert(v->size() == 52);
+        assert(t->size() == 52);
+        assert(c->size() == 52);
+        assert(n->size() == 52);
+
+        Geometry* geom = new Geometry;
+        static int buildingCounter = 0;
+        geom->setName("BuildingGeometry_" + std::to_string(buildingCounter++));
+        geom->setVertexArray(v);
+        geom->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
+        geom->setNormalArray(n, Array::BIND_PER_VERTEX);
+        geom->setColorArray(c, Array::BIND_PER_VERTEX);
+        geom->setUseDisplayList( false );
+        geom->setUseVertexBufferObjects( true );
+        geom->setComputeBoundingBoxCallback(new BuildingBoundingBoxCallback);
+
+        geom->setVertexAttribArray(BUILDING_POSITION_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_SCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_ROFFTOPSCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+
+        //geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 48, 0) );
+        geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 52, 0) );
+
+        EffectGeode* geode = new EffectGeode;
+        geode->addDrawable(geom);
+        geode->setEffect(_effect.get());
+
+        StateSet* ss = geode->getOrCreateStateSet();
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_POSITION_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_SCALE_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ROT_PITCH_TEX0X_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_RTEX0X_RTEX0Y_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ROFFTOPSCALE_ATTR, 1));
+
+        LOD* result = new LOD;
+        result->addChild(geode, 0, _range);
+        return result;
+    }
+
+    float _range;
+    ref_ptr<Effect> _effect;
+    bool _fade_out;
 };
 
-BoundingBox
-BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
+struct AddBuildingLeafObject
 {
-    BoundingBox bb;
-    const Geometry* geom = static_cast<const Geometry*>(&drawable);
-    const Vec3Array* v = static_cast<const Vec3Array*>(geom->getVertexArray());
-    const Vec4Array* pos = static_cast<const Vec4Array*>(geom->getColorArray());
+    void operator() (LOD* lod, const SGBuildingBin::BuildingInstance building) const
+    {
+        //Geode* geode = static_cast<Geode*>(lod->getChild(int(building.position.x() * 10.0f) % lod->getNumChildren()));
+        Geode* geode = static_cast<Geode*>(lod->getChild(0));
 
-    Geometry::PrimitiveSetList primSets = geom->getPrimitiveSetList();
-    for (Geometry::PrimitiveSetList::const_iterator psitr = primSets.begin(), psend = primSets.end();
-         psitr != psend;
-         ++psitr) {
-        DrawArrays* da = static_cast<DrawArrays*>(psitr->get());
-        GLint psFirst = da->getFirst();
-        GLint psEndVert = psFirst + da->getCount();
-        for (GLint i = psFirst;i < psEndVert; ++i) {
-            Vec3 pt = (*v)[i];
-            Matrixd trnsfrm = Matrixd::rotate(- M_PI * 2 * (*pos)[i].a(), Vec3(0.0f, 0.0f, 1.0f));
-            pt = pt * trnsfrm;
-            pt += Vec3((*pos)[i].x(), (*pos)[i].y(), (*pos)[i].z());
-            bb.expandBy(pt);
-        }
+        Geometry* geom = static_cast<Geometry*>(geode->getDrawable(0));
+
+        osg::Vec3Array* positions =  static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_POSITION_ATTR));    // (x,y,z)
+        osg::Vec3Array* scale =  static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_SCALE_ATTR)); // (width, depth, height)
+        osg::Vec3Array* rot = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR)); // (rotation, pitch height, wall texture x0)
+        osg::Vec3Array* tex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR)); // (wall texture y0, front/roof texture x1, front/side/roof texture y1)
+        osg::Vec3Array* rtex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR)); // (roof texture x0, roof texture y0, side texture x1)
+        osg::Vec3Array* rooftops = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROFFTOPSCALE_ATTR)); // (rooftop scale x, rooftop scale y, unused)
+
+        positions->push_back(building.position);
+        // Depth is the x-axis, width is the y-axis
+        scale->push_back(osg::Vec3f(building.depth, building.width, building.height));
+        rot->push_back(osg::Vec3f(building.rotation, building.pitch_height, building.walltex0.x()));
+        tex->push_back(osg::Vec3f(building.walltex0.y(), building.tex1.x(), building.tex1.y()));
+        rtex->push_back(osg::Vec3f(building.rooftex0.x(), building.rooftex0.y(), building.tex1.z()));
+        rooftops->push_back(osg::Vec3f(building.rooftop_scale.x(), building.rooftop_scale.y(), 0.0f));
+
+        DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(0));
+        primSet->setNumInstances(positions->size());
     }
-    return bb;
-}
+};
+
+struct GetBuildingCoord
+{
+    Vec3 operator() (const SGBuildingBin::BuildingInstance& building) const
+    {
+        return building.position;
+    }
+};
+
+typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf, AddBuildingLeafObject,
+                        GetBuildingCoord> BuildingGeometryQuadtree;
+
 
   // Set up a BuildingBin from a file containing a list of individual building
   // positions.
@@ -118,12 +412,12 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
 
     sg_gzifstream stream(absoluteFileName);
     if (!stream.is_open()) {
-      SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to open " << absoluteFileName << " does not exist.");
+      SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to open " << absoluteFileName);
       return;
     }
 
     while (!stream.eof()) {
-      // read a line.  Each line defines a single builing position, and may have
+      // read a line.  Each line defines a single building position, and may have
       // a comment, starting with #
       std::string line;
       std::getline(stream, line);
@@ -136,24 +430,45 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
       // and process further
       std::stringstream in(line);
 
-      // Line format is X Y Z R T
+      // Line format is X Y Z R B W D H P S O F WT RT
       // where:
-      // X,Y,Z are the cartesian coordinates of the bottom SW corner of the building.  +X is East, +Y is North
-      // R is the building rotation in degrees centered on the SW corner
-      // T is the building type [0, 1, 2] for SMALL, MEDIUM, LARGE
-      float x, y, z, r;
-      int t;
-      in >> x >> y >> z >> r >> t;
+      // X,Y,Z are the cartesian coordinates of the center of the front face. +X is East, +Y is North
+      // R is the building rotation in degrees centered on the middle of the front face.
+      // B is the building type [0, 1, 2] for SMALL, MEDIUM, LARGE
+      // W is the building width in meters
+      // D is the building depth in meters
+      // H is the building height in meters, excluding any pitched roof
+      // P is the pitch height in meters. 0 for a flat roof
+      // S is the roof shape (Currently the following values are valid: 0, 2, 4, 5) :
+      //   0=flat 1=skillion 2=gabled 3=half-hipped 4=hipped 5=pyramidal 6=gambrel
+      //   7=mansard 8=dome 9=onion 10=round 11=saltbox
+      // O is the roof ridge orientation :
+      //   0 = parallel to the front face of the building
+      //   1 = orthogonal to the front face of the building
+      // F is the number of floors (integer)
+      // WT is the texture index to use (integer) for walls. Buildings with the same WT value will have the same wall texture assigned.  There are 6 small, 6 medium and 4 large textures.
+      // RT is the texture index to use (integer) for roofs. Buildings with the same RT value will have the same roof texture assigned.  There are 6 small, 6 medium and 4 large textures.
+      float x, y, z, r, w, d, h, p;
+      int b, s, o, f, wt, rt;
+      in >> x >> y >> z >> r >> b >> w >> d >> h >> p >> s >> o >> f >> wt >> rt;
 
-      //SG_LOG(SG_TERRAIN, SG_ALERT, "Building entry " << x << " " << y << " " << z << " " << t );
-      SGVec3f p = SGVec3f(x,y,z);
+      //SG_LOG(SG_TERRAIN, SG_ALERT, "Building entry " << x << " " << y << " " << z << " " << b );
+      SGVec3f loc = SGVec3f(x,y,z);
       BuildingType type = BuildingType::SMALL;
-      if (t == 1)  type = BuildingType::MEDIUM;
-      if (t == 2)  type = BuildingType::LARGE;
+      if (b == 1)  type = BuildingType::MEDIUM;
+      if (b == 2)  type = BuildingType::LARGE;
 
       // Rotation is in the file as degrees, but in the datastructure normalized
       // to 0.0 - 1.0
-      insert(p, (float) (r / 360.0f), type);
+      float rot = (float) (r / 360.0f);
+
+      if (w == 0.0f) {
+        // If width is not defined, then we assume we don't have a full set of
+        // data for the buildings so just use the random building definitions
+        insert(loc, rot, type);
+      } else {
+        insert(loc, rot, type, w, d, h, p, f, s, o, wt, rt);
+      }
     }
 
     stream.close();
@@ -161,594 +476,240 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
 
   // Set up the building set based on the material definitions
   SGBuildingBin::SGBuildingBin(const SGMaterial *mat, bool useVBOs) {
-
     material_name = new std::string(mat->get_names()[0]);
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Building material " << material_name);
+    material = mat;
     texture = new std::string(mat->get_building_texture());
     lightMap = new std::string(mat->get_building_lightmap());
+    buildingRange = mat->get_building_range();
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Building texture " << texture);
+  }
+
+  SGBuildingBin::~SGBuildingBin() {
+    buildingLocations.clear();
+  }
+
+  // Generate a building specifying the exact position, dimensions and texture index.
+  void SGBuildingBin::insert(SGVec3f p, float r, BuildingType buildingtype, float width, float depth, float height, float pitch_height, int floors, int roof_shape, int roof_orientation, int wall_tex_index, int roof_tex_index) {
+
+    // The 2048x2048 texture is split into 64x32 blocks.  So there are 64 on
+    // the x-axis and 128 on the y-axis.
+    // The leftmost 32 are used for the sides of the building, and the rightmost
+    // 32 for the roof.
+    const float BUILDING_TEXTURE_BLOCK_HEIGHT = 32.0f / 2048.0f; // The height of a single block within the random building texture
+    const float BUILDING_TEXTURE_BLOCK_WIDTH  = 64.0f / 2048.0f;  // The width of a single block within the random building texture
+    Vec2f wall_tex0, roof_tex0;
+    Vec3f tex1;
+
+    if (buildingtype == SGBuildingBin::SMALL) {
+      // SMALL BUILDINGS
+      // Maximum texture height is 3 stories.
+      // Small buildings are represented on the bottom 18 rows
+      // Each block is 5m wide and 3m high.
+      int wall_row = wall_tex_index % 6;
+      int roof_row = roof_tex_index % 6;
+      float wall_x0 = 0.0f;
+      float wall_y0 = (float) wall_row  * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float roof_x0 = 0.0f;
+      float roof_y0 = (float) roof_row  * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float wall_roof_x1 = min(0.5f, std::round(width / 5.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
+      float side_x1 = min(0.5f, std::round(depth / 5.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
+      float y1 =  (float) (min(3, floors)) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+
+      // Checks
+      if ((wall_x0 + wall_roof_x1 > 0.5f) ||
+          (wall_y0 + y1 > (6.0f * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT))) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Small building texture coordinates out of bounds offset (" << wall_x0 << ", " << wall_y0 << ") gain (" << wall_roof_x1 << ", " << y1 << ")");
+      }
+
+
+      wall_tex0 = Vec2f(wall_x0, wall_y0);
+      roof_tex0 = Vec2f(roof_x0, roof_y0);
+      tex1 = Vec3f(wall_roof_x1, y1, side_x1);
+    } else if (buildingtype == SGBuildingBin::MEDIUM) {
+      // MEDIUM BUILDING
+      // Maximum texture height is 8 stories.
+      // Medium buildings are arranged on the texture in a 2x3 pattern.
+      // For a medium building, each block is 10m wide and 3m high.
+      int wall_column = wall_tex_index % 2;
+      int wall_row = wall_tex_index % 3;
+      int roof_column = roof_tex_index % 2;
+      int roof_row = roof_tex_index % 3;
+
+      float wall_x0 = wall_column * 0.25f;
+      // Counting from the bottom, we have 6 rows of small buildings, each 3 blocks high
+      float wall_y0 = (6.0f * 3.0f + wall_row * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+
+      float roof_x0 = roof_column * 0.25f;
+      // Counting from the bottom, we have 6 rows of small buildings, each 3 blocks high
+      float roof_y0 = (6.0f * 3.0f + roof_row * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+
+      float wall_roof_x1 = min(0.25f, std::ceil(width / 10.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
+      float side_x1 = min(0.5f, std::round(depth / 10.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
+      float y1 = (float) (min(8, floors)) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+
+      if ((wall_x0 + wall_roof_x1 > 0.5f) ||
+          (wall_y0 + y1 <  (6.0f * 3.0f * BUILDING_TEXTURE_BLOCK_HEIGHT))  ||
+          (wall_y0 + y1 > ((6.0f * 3.0f + 3.0f * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT))) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Medium building texture coordinates out of bounds offset (" << wall_x0 << ", " << wall_y0 << ") gain (" << wall_roof_x1 << ", " << y1 << ")");
+      }
+
+
+      wall_tex0 = Vec2f(wall_x0, wall_y0);
+      roof_tex0 = Vec2f(roof_x0, roof_y0);
+      tex1 = Vec3f(wall_roof_x1, y1, side_x1);
+    } else {
+      // LARGE BUILDING
+      // Maximum texture height is 22 stories.
+      // Large buildings are arranged in a 4x1 pattern
+      // Each block is 20m wide and 3m high.
+      int wall_column = wall_tex_index % 4;
+      int roof_column = roof_tex_index % 4;
+      // Counting from the bottom we have 6 rows of small buildings (3 blocks high),
+      // then 3 rows of medium buildings (8 blocks high).  Then the large building texture
+      float wall_x0 = wall_column * 0.125f;
+      float wall_y0 = (6.0f * 3.0f + 3.0f * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float roof_x0 = roof_column * 0.125f;
+      float roof_y0 = (6.0f * 3.0f + 3.0f * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+      float wall_roof_x1 = min(0.125f, std::ceil(width / 20.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
+      float side_x1 = min(0.5f, std::round(depth / 20.0f) * BUILDING_TEXTURE_BLOCK_WIDTH);
+      float y1 = (float) min(22, floors) * BUILDING_TEXTURE_BLOCK_HEIGHT;
+
+      if ((wall_x0 + wall_roof_x1 > 0.5f) ||
+          (wall_y0 + y1 < ((6.0f * 3.0f + 3.0f * 8.0f) * BUILDING_TEXTURE_BLOCK_HEIGHT)) ||
+          (wall_y0 + y1 > 1.0)     ) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Large building texture coordinates out of bounds offset (" << wall_x0 << ", " << wall_y0 << ") gain (" << wall_roof_x1 << ", " << y1 << ")");
+      }
+
+      wall_tex0 = Vec2f(wall_x0, wall_y0);
+      roof_tex0 = Vec2f(roof_x0, roof_y0);
+      tex1 = Vec3f(wall_roof_x1, y1, side_x1);
+    }
+
+    // Build a scaling factor in the x,y axes for the top of the roof. This allows us to create gabled, hipped, pyramidal roofs.
+    Vec2f rooftop_scale = Vec2f(1.0f, 1.0f); // Default of a flat roof.
+
+    if (pitch_height > 0.0f)
+    {
+      // Roof with some pitch height
+
+      if ((roof_shape == 2) || (roof_shape == 6) || (roof_shape == 10)  || (roof_shape == 11)) {
+        // Gabled, gambrel, round, saltbox
+        if (roof_orientation == 0) rooftop_scale = Vec2f(0.0f, 1.0f);
+        if (roof_orientation == 1) rooftop_scale = Vec2f(1.0f, 0.0f);
+      }
+
+      if ((roof_shape == 3) || (roof_shape == 4) || (roof_shape == 7)) {
+        // Hipped, half-hipped, mansard
+        // The pitch height expressed as a fraction of the building width/depth such that the hipped
+        // roof has a pitch of around 45 degrees.  A minimum of 0.5 so that they have at least some ridge.
+        if (roof_orientation == 0) rooftop_scale = Vec2f(0.0f, max(0.5f,(depth -  2*pitch_height) / width));
+        if (roof_orientation == 1) rooftop_scale = Vec2f(max(0.5f,(width -  2*pitch_height) / width), 0.0f);
+      }
+
+      // Pyramidal, dome, onion
+      if ((roof_shape == 5) || (roof_shape == 8) || (roof_shape == 9)) rooftop_scale = Vec2f(0.0f, 0.0f);
+    }
+
+    buildingLocations.push_back(BuildingInstance(toOsg(p), width, depth, height, pitch_height, r, wall_tex0, roof_tex0, tex1, rooftop_scale));
+  }
+
+
+  // Generate a building of a given type at a specified position, using the random building material definition to determine the dimensions and texture index.
+  void SGBuildingBin::insert(SGVec3f p, float r, BuildingType buildingtype) {
+
+    float width, depth, height, pitch_height;
+    int floors;
+    int roof_shape;
+    int roof_orientation;
 
     // Generate a random seed for the building generation.
     mt seed;
-    mt_init(&seed, unsigned(123));
+    mt_init(&seed, unsigned(p.x() + p.y() + p.z()));
 
-    smallSharedGeometry = new osg::Geometry();
-    mediumSharedGeometry = new osg::Geometry();
-    largeSharedGeometry = new osg::Geometry();
+    if (buildingtype == SGBuildingBin::SMALL) {
+      // Small building
+      // Maximum number of floors is 3, and maximum width/depth is 192m.
+      width = material->get_building_small_min_width() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_small_max_width() - material->get_building_small_min_width());
+      depth = material->get_building_small_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_small_max_depth() - material->get_building_small_min_depth());
+      floors = SGMisc<double>::round(material->get_building_small_min_floors() + mt_rand(&seed) * (material->get_building_small_max_floors() - material->get_building_small_min_floors()));
+      height = floors * (2.8 + mt_rand(&seed));
 
-    smallBuildingMaxRadius = std::max(mat->get_building_small_max_depth() * 0.5, mat->get_building_small_max_width() * 0.5);
-    mediumBuildingMaxRadius = std::max(mat->get_building_medium_max_depth() * 0.5, mat->get_building_medium_max_width() * 0.5);
-    largeBuildingMaxRadius = std::max(mat->get_building_large_max_depth() * 0.5, mat->get_building_large_max_width() * 0.5);
+      // Small buildings are never deeper than they are wide.
+      if (depth > width) { depth = width; }
 
-    smallBuildingMaxDepth = mat->get_building_small_max_depth();
-    mediumBuildingMaxDepth = mat->get_building_medium_max_depth();
-    largeBuildingMaxDepth = mat->get_building_large_max_depth();
+      pitch_height = (mt_rand(&seed) < material->get_building_small_pitch()) ? 3.0 : 0.0;
 
-    smallBuildingFraction = mat->get_building_small_fraction();
-    mediumBuildingFraction = mat->get_building_medium_fraction();
+      if (pitch_height == 0.0) {
+        roof_shape = 0;
+        roof_orientation = 0;
+      } else {
+        roof_shape = (int) (mt_rand(&seed) * 10.0);
+        roof_orientation = (int) std::round((float) mt_rand(&seed));
+      }
+    } else if (buildingtype == SGBuildingBin::MEDIUM) {
+      // MEDIUM BUILDING
+      width = material->get_building_medium_min_width() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_medium_max_width() - material->get_building_medium_min_width());
+      depth = material->get_building_medium_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_medium_max_depth() - material->get_building_medium_min_depth());
+      floors = SGMisc<double>::round(material->get_building_medium_min_floors() + mt_rand(&seed) * (material->get_building_medium_max_floors() - material->get_building_medium_min_floors()));
+      height = floors * (2.8 + mt_rand(&seed));
 
-    buildingRange = mat->get_building_range();
-
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Building fractions " << smallBuildingFraction << " " << mediumBuildingFraction);
-
-
-    // TODO: Reverse this - otherwise we never get any large buildings!
-    BuildingType types[] = { SGBuildingBin::SMALL, SGBuildingBin::MEDIUM, SGBuildingBin::LARGE };
-    BuildingList lists[] = { SGBuildingBin::smallBuildings, SGBuildingBin::mediumBuildings, SGBuildingBin::largeBuildings };
-    ref_ptr<Geometry> geometries[] = { smallSharedGeometry, mediumSharedGeometry, largeSharedGeometry };
-
-    for (int bt=0; bt < 3; bt++) {
-      SGBuildingBin::BuildingType buildingtype = types[bt];
-      ref_ptr<Geometry> sharedGeometry = geometries[bt];
-      BuildingList buildings = lists[bt];
-
-      osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
-      osg::ref_ptr<osg::Vec2Array> t = new osg::Vec2Array;
-      osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
-
-      v->reserve(BUILDING_SET_SIZE * VERTICES_PER_BUILDING);
-      t->reserve(BUILDING_SET_SIZE * VERTICES_PER_BUILDING);
-      n->reserve(BUILDING_SET_SIZE * VERTICES_PER_BUILDING);
-
-      sharedGeometry->setFogCoordBinding(osg::Geometry::BIND_PER_VERTEX);
-      sharedGeometry->setComputeBoundingBoxCallback(new BuildingBoundingBoxCallback);
-      sharedGeometry->setUseDisplayList(false);
-      sharedGeometry->setDataVariance(osg::Object::STATIC);
-      if (useVBOs) {
-          sharedGeometry->setUseVertexBufferObjects(true);
+      while ((height > width) && (floors > material->get_building_medium_min_floors())) {
+        // Ensure that medium buildings aren't taller than they are wide
+        floors--;
+        height = floors * (2.8 + mt_rand(&seed));
       }
 
-      for (unsigned int j = 0; j < BUILDING_SET_SIZE; j++) {
-        float width;
-        float depth;
-        int floors;
-        float height;
-        bool pitched;
-
-        if (buildingtype == SGBuildingBin::SMALL) {
-          // Small building
-          width = mat->get_building_small_min_width() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_small_max_width() - mat->get_building_small_min_width());
-          depth = mat->get_building_small_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_small_max_depth() - mat->get_building_small_min_depth());
-          floors = SGMisc<double>::round(mat->get_building_small_min_floors() + mt_rand(&seed) * (mat->get_building_small_max_floors() - mat->get_building_small_min_floors()));
-          height = floors * (2.8 + mt_rand(&seed));
-
-          // Small buildings are never deeper than they are wide.
-          if (depth > width) { depth = width; }
-
-          pitched = (mt_rand(&seed) < mat->get_building_small_pitch());
-        } else if (buildingtype == SGBuildingBin::MEDIUM) {
-          width = mat->get_building_medium_min_width() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_medium_max_width() - mat->get_building_medium_min_width());
-          depth = mat->get_building_medium_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_medium_max_depth() - mat->get_building_medium_min_depth());
-          floors = SGMisc<double>::round(mat->get_building_medium_min_floors() + mt_rand(&seed) * (mat->get_building_medium_max_floors() - mat->get_building_medium_min_floors()));
-          height = floors * (2.8 + mt_rand(&seed));
-
-          while ((height > width) && (floors > mat->get_building_medium_min_floors())) {
-            // Ensure that medium buildings aren't taller than they are wide
-            floors--;
-            height = floors * (2.8 + mt_rand(&seed));
-          }
-
-          pitched = (mt_rand(&seed) < mat->get_building_medium_pitch());
-        } else {
-          width = mat->get_building_large_min_width() + mt_rand(&seed) * (mat->get_building_large_max_width() - mat->get_building_large_min_width());
-          depth = mat->get_building_large_min_depth() + mt_rand(&seed) * (mat->get_building_large_max_depth() - mat->get_building_large_min_depth());
-          floors = SGMisc<double>::round(mat->get_building_large_min_floors() + mt_rand(&seed) * (mat->get_building_large_max_floors() - mat->get_building_large_min_floors()));
-          height = floors * (2.8 + mt_rand(&seed));
-          pitched = (mt_rand(&seed) < mat->get_building_large_pitch());
-        }
-
-        Building building = Building(buildingtype,
-                                    width,
-                                    depth,
-                                    height,
-                                    floors,
-                                    pitched);
-
-        buildings.push_back(building);
-
-        // Now create an OSG Geometry based on the Building
-        float cw = 0.5f * building.width;
-        float cd = building.depth;
-        float ch = building.height;
-
-        // 0,0,0 is the bottom center of the front
-        // face, e.g. where the front door would be
-
-        // BASEMENT
-        // This exteds 10m below the main section
-        // Front face
-        v->push_back( osg::Vec3( 0, -cw, -10) ); // bottom right
-        v->push_back( osg::Vec3( 0,  cw, -10) ); // bottom left
-        v->push_back( osg::Vec3( 0,  cw,   0) ); // top left
-        v->push_back( osg::Vec3( 0, -cw,   0) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(1, 0, 0) ); // normal
-
-        // Left face
-        v->push_back( osg::Vec3( -cd, -cw, -10) ); // bottom right
-        v->push_back( osg::Vec3(   0, -cw, -10) ); // bottom left
-        v->push_back( osg::Vec3(   0, -cw,   0) ); // top left
-        v->push_back( osg::Vec3( -cd, -cw,   0) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(0, -1, 0) ); // normal
-
-        // Back face
-        v->push_back( osg::Vec3( -cd,  cw, -10) ); // bottom right
-        v->push_back( osg::Vec3( -cd, -cw, -10) ); // bottom left
-        v->push_back( osg::Vec3( -cd, -cw,   0) ); // top left
-        v->push_back( osg::Vec3( -cd,  cw,   0) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(-1, 0, 0) ); // normal
-
-        // Right face
-        v->push_back( osg::Vec3(   0, cw, -10) ); // bottom right
-        v->push_back( osg::Vec3( -cd, cw, -10) ); // bottom left
-        v->push_back( osg::Vec3( -cd, cw,   0) ); // top left
-        v->push_back( osg::Vec3(   0, cw,   0) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(0, 1, 0) ); // normal
-
-        // MAIN BODY
-        // Front face
-        v->push_back( osg::Vec3( 0, -cw,  0) ); // bottom right
-        v->push_back( osg::Vec3( 0,  cw,  0) ); // bottom left
-        v->push_back( osg::Vec3( 0,  cw, ch) ); // top left
-        v->push_back( osg::Vec3( 0, -cw, ch) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(1, 0, 0) ); // normal
-
-        // Left face
-        v->push_back( osg::Vec3( -cd, -cw,  0) ); // bottom right
-        v->push_back( osg::Vec3(   0, -cw,  0) ); // bottom left
-        v->push_back( osg::Vec3(   0, -cw, ch) ); // top left
-        v->push_back( osg::Vec3( -cd, -cw, ch) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(0, -1, 0) ); // normal
-
-        // Back face
-        v->push_back( osg::Vec3( -cd,  cw,  0) ); // bottom right
-        v->push_back( osg::Vec3( -cd, -cw,  0) ); // bottom left
-        v->push_back( osg::Vec3( -cd, -cw, ch) ); // top left
-        v->push_back( osg::Vec3( -cd,  cw, ch) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(-1, 0, 0) ); // normal
-
-        // Right face
-        v->push_back( osg::Vec3(   0, cw,  0) ); // bottom right
-        v->push_back( osg::Vec3( -cd, cw,  0) ); // bottom left
-        v->push_back( osg::Vec3( -cd, cw, ch) ); // top left
-        v->push_back( osg::Vec3(   0, cw, ch) ); // top right
-
-        for (int i=0; i<4; ++i)
-          n->push_back( osg::Vec3(0, 1, 0) ); // normal
-
-        // ROOF
-        if (building.pitched) {
-
-          // Front pitched roof
-          v->push_back( osg::Vec3(    0, -cw,   ch) ); // bottom right
-          v->push_back( osg::Vec3(    0,  cw,   ch) ); // bottom left
-          v->push_back( osg::Vec3(-0.5*cd,  cw, ch+3) ); // top left
-          v->push_back( osg::Vec3(-0.5*cd, -cw, ch+3) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(0.707, 0, 0.707) ); // normal
-
-          // Left pitched roof
-          v->push_back( osg::Vec3(    -cd, -cw,   ch) ); // bottom right
-          v->push_back( osg::Vec3(      0, -cw,   ch) ); // bottom left
-          v->push_back( osg::Vec3(-0.5*cd, -cw, ch+3) ); // top left
-          v->push_back( osg::Vec3(-0.5*cd, -cw, ch+3) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(0, -1, 0) ); // normal
-
-          // Back pitched roof
-          v->push_back( osg::Vec3(    -cd,  cw,   ch) ); // bottom right
-          v->push_back( osg::Vec3(    -cd, -cw,   ch) ); // bottom left
-          v->push_back( osg::Vec3(-0.5*cd, -cw, ch+3) ); // top left
-          v->push_back( osg::Vec3(-0.5*cd,  cw, ch+3) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(-0.707, 0, 0.707) ); // normal
-
-          // Right pitched roof
-          v->push_back( osg::Vec3(      0, cw,   ch) ); // bottom right
-          v->push_back( osg::Vec3(    -cd, cw,   ch) ); // bottom left
-          v->push_back( osg::Vec3(-0.5*cd, cw, ch+3) ); // top left
-          v->push_back( osg::Vec3(-0.5*cd, cw, ch+3) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(0, 1, 0) ); // normal
-        } else {
-          // If the roof isn't pitched, we still generate the
-          // vertices for simplicity later.
-
-          // Top of the roof
-          v->push_back( osg::Vec3(  0, -cw, ch) ); // bottom right
-          v->push_back( osg::Vec3(  0,  cw, ch) ); // bottom left
-          v->push_back( osg::Vec3(-cd,  cw, ch) ); // top left
-          v->push_back( osg::Vec3(-cd, -cw, ch) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(0, 0, 1) ); // normal
-
-          // Left non-pitched roof
-          v->push_back( osg::Vec3( -cd, -cw, ch) ); // bottom right
-          v->push_back( osg::Vec3(   0, -cw, ch) ); // bottom left
-          v->push_back( osg::Vec3(   0, -cw, ch) ); // top left
-          v->push_back( osg::Vec3( -cd, -cw, ch) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(0, -1, 0) ); // normal
-
-          // Back pitched roof
-          v->push_back( osg::Vec3(-cd,  cw, ch) ); // bottom right
-          v->push_back( osg::Vec3(-cd, -cw, ch) ); // bottom left
-          v->push_back( osg::Vec3(-cd, -cw, ch) ); // top left
-          v->push_back( osg::Vec3(-cd,  cw, ch) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(1, 0, 0) ); // normal
-
-          // Right pitched roof
-          v->push_back( osg::Vec3(  0, cw, ch) ); // bottom right
-          v->push_back( osg::Vec3(-cd, cw, ch) ); // bottom left
-          v->push_back( osg::Vec3(-cd, cw, ch) ); // top left
-          v->push_back( osg::Vec3(  0, cw, ch) ); // top right
-
-          for (int i=0; i<4; ++i)
-            n->push_back( osg::Vec3(0, 1, 0) ); // normal
-        }
-
-        // The 1024x1024 texture is split into 32x16 blocks.
-        // For a small building, each block is 6m wide and 3m high.
-        // For a medium building, each block is 10m wide and 3m high.
-        // For a large building, each block is 20m wide and 3m high
-
-        if (building.type == SGBuildingBin::SMALL) {
-          // Small buildings are represented on the bottom 5 rows of 3 floors
-          int row = ((int) (mt_rand(&seed) * 1000)) % 5;
-          float base_y = (float) row * 16.0 * 3.0 / 1024.0;
-          float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-          float left_x = 32.0 / 1024.0 * SGMisc<double>::round((float)building.width / 6.0f);
-          float right_x = 0.0f;
-          float front_x = 384.0/1024.0;
-          float back_x = 384.0 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round((float)building.depth / 6.0f);
-
-          // BASEMENT - uses the baseline texture
-          for (unsigned int i = 0; i < 16; i++) {
-            t->push_back( osg::Vec2( left_x, base_y) );
-          }
-          // MAIN BODY
-          // Front
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Left
-          t->push_back( osg::Vec2( front_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( back_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( back_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( front_x, top_y ) ); // top right
-
-          // Back (same as front for the moment)
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Right (same as left for the moment)
-          t->push_back( osg::Vec2( front_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( back_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( back_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( front_x, top_y ) ); // top right
-
-          // ROOF
-          if (building.pitched) {
-            // Use the entire height of the roof texture
-            top_y = base_y + 16.0 * 3.0 / 1024.0;
-            left_x = 512 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round(building.width / 6.0f);
-            right_x = 512/1024.0;
-            front_x = 480.0/1024.0;
-            back_x = 512.0/1024.0;
-
-            // Front
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Left
-            t->push_back( osg::Vec2( front_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( back_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( back_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( front_x, top_y ) ); // top right
-
-            // Back (same as front for the moment)
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Right (same as left for the moment)
-            t->push_back( osg::Vec2( front_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( back_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( back_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( front_x, top_y ) ); // top right
-          } else {
-            // Flat roof
-            left_x = 640.0/1024.0;
-            right_x = 512.0/1024.0;
-            // Use the entire height of the roof texture
-            top_y = base_y + 16.0 * 3.0 / 1024.0;
-
-            // Flat roofs still have 4 surfaces, so we need to set the textures
-            for (int i=0; i<4; ++i) {
-              t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-              t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-              t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-              t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-            }
-          }
-
-        }
-
-        if (building.type == SGBuildingBin::MEDIUM)
-        {
-          int column = ((int) (mt_rand(&seed) * 1000)) % 5;
-          float base_y = 288 / 1024.0;
-          float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-          float left_x = column * 192.0 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round((float)building.width / 10.0f);
-          float right_x = column * 192.0 /1024.0;
-
-          // BASEMENT - uses the baseline texture
-          for (unsigned int i = 0; i < 16; i++) {
-            t->push_back( osg::Vec2( left_x, base_y) );
-          }
-
-          // MAIN BODY
-          // Front
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Left
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Back (same as front for the moment)
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Right (same as left for the moment)
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // ROOF
-          if (building.pitched) {
-            base_y = 288.0/1024.0;
-            top_y = 576.0/1024.0;
-            left_x = 960.0/1024.0;
-            right_x = 1.0;
-
-            // Front
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Left
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Back (same as front for the moment)
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Right (same as left for the moment)
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-          } else {
-            // Flat roof
-            base_y = 416/1024.0;
-            top_y = 576.0/1024.0;
-            left_x = column * 192.0 /1024.0;
-            right_x = (column + 1)* 192.0 /1024.0;
-
-            // Flat roofs still have 4 surfaces
-            for (int i=0; i<4; ++i) {
-              t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-              t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-              t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-              t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-            }
-          }
-        }
-
-        if (building.type == SGBuildingBin::LARGE)
-        {
-          int column = ((int) (mt_rand(&seed) * 1000)) % 8;
-          float base_y = 576 / 1024.0;
-          float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-          float left_x = column * 128.0 / 1024.0 + 32.0 / 1024.0 * SGMisc<double>::round((float)building.width / 20.0f);
-          float right_x = column * 128.0 /1024.0;
-
-          // BASEMENT - uses the baseline texture
-          for (unsigned int i = 0; i < 16; i++) {
-            t->push_back( osg::Vec2( left_x, base_y) );
-          }
-
-          // MAIN BODY
-          // Front
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Left
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Back (same as front for the moment)
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // Right (same as left for the moment)
-          t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-          t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-          t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-          t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-          // ROOF
-          if (building.pitched) {
-            base_y = 896/1024.0;
-            top_y = 1.0;
-            // Front
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Left
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Back (same as front for the moment)
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-
-            // Right (same as left for the moment)
-            t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-            t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-            t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-            t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-          } else {
-            // Flat roof
-            base_y = 896/1024.0;
-            top_y = 1.0;
-
-            // Flat roofs still have 4 surfaces
-            for (int i=0; i<4; ++i) {
-              t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
-              t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
-              t->push_back( osg::Vec2( left_x,  top_y ) ); // top left
-              t->push_back( osg::Vec2( right_x, top_y ) ); // top right
-            }
-          }
-        }
+      pitch_height = (mt_rand(&seed) < material->get_building_medium_pitch()) ? 3.0 : 0.0;
+
+      if (pitch_height == 0.0) {
+        roof_shape = 0;
+        roof_orientation = 0;
+      } else {
+        roof_shape = (int) (mt_rand(&seed) * 10.0);
+        roof_orientation = (int) std::round((float) mt_rand(&seed));
       }
+    } else {
+      // LARGE BUILDING
+      width = material->get_building_large_min_width() + mt_rand(&seed) * (material->get_building_large_max_width() - material->get_building_large_min_width());
+      depth = material->get_building_large_min_depth() + mt_rand(&seed) * (material->get_building_large_max_depth() - material->get_building_large_min_depth());
+      floors = SGMisc<double>::round(material->get_building_large_min_floors() + mt_rand(&seed) * (material->get_building_large_max_floors() - material->get_building_large_min_floors()));
+      height = floors * (2.8 + mt_rand(&seed));
+      pitch_height = (mt_rand(&seed) < material->get_building_large_pitch()) ? 3.0 : 0.0;
 
-      // Set the vertex, texture and normals.  Colors will be set per-instance
-      // later.
-      sharedGeometry->setVertexArray(v);
-      sharedGeometry->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
-      sharedGeometry->setNormalArray(n, Array::BIND_PER_VERTEX);
-    }
-  }
-
-  void SGBuildingBin::insert(SGVec3f p, float r, BuildingType type) {
-
-    if (type == SGBuildingBin::SMALL) {
-      smallBuildingLocations.push_back(BuildingInstance(p, r, &smallBuildings, smallSharedGeometry));
-    }
-
-    if (type == SGBuildingBin::MEDIUM) {
-      mediumBuildingLocations.push_back(BuildingInstance(p, r, &mediumBuildings, mediumSharedGeometry));
+      if (pitch_height == 0.0) {
+        roof_shape = 0;
+        roof_orientation = 0;
+      } else {
+        roof_shape = (int) (mt_rand(&seed) * 10.0);
+        roof_orientation = (int) std::round((float) mt_rand(&seed));
+      }
     }
 
-    if (type == SGBuildingBin::LARGE) {
-      largeBuildingLocations.push_back(BuildingInstance(p, r, &largeBuildings, largeSharedGeometry));
-    }
+    insert(p, r, buildingtype, width, depth, height, pitch_height, floors, roof_shape, roof_orientation, (int) (mt_rand(&seed) * 1000.0), (int) (mt_rand(&seed) * 1000.0));
   }
 
   int SGBuildingBin::getNumBuildings() {
-    return smallBuildingLocations.size() + mediumBuildingLocations.size() + largeBuildingLocations.size();
+    return buildingLocations.size();
   }
 
   bool SGBuildingBin::checkMinDist (SGVec3f p, float radius) {
     BuildingInstanceList::iterator iter;
-
-    float r = (radius + smallBuildingMaxRadius) * (radius + smallBuildingMaxRadius);
-    for (iter = smallBuildingLocations.begin(); iter != smallBuildingLocations.end(); ++iter) {
-      if (iter->getDistSqr(p) < r) {
+    for (iter = buildingLocations.begin(); iter != buildingLocations.end(); ++iter) {
+      if (iter->getDistSqr(toOsg(p)) < radius) {
         return false;
       }
     }
-
-    r = (radius + mediumBuildingMaxRadius) * (radius + mediumBuildingMaxRadius);
-    for (iter = mediumBuildingLocations.begin(); iter != mediumBuildingLocations.end(); ++iter) {
-      if (iter->getDistSqr(p) < r) {
-        return false;
-      }
-    }
-
-    r = (radius + largeBuildingMaxRadius) * (radius + largeBuildingMaxRadius);
-    for (iter = largeBuildingLocations.begin(); iter != largeBuildingLocations.end(); ++iter) {
-      if (iter->getDistSqr(p) < r) {
-        return false;
-      }
-    }
-
     return true;
   }
 
   SGBuildingBin::BuildingType SGBuildingBin::getBuildingType(float roll) {
 
-    if (roll < smallBuildingFraction) {
+    if (roll < material->get_building_small_fraction()) {
       return SGBuildingBin::SMALL;
     }
 
-    if (roll < (smallBuildingFraction + mediumBuildingFraction)) {
+    if (roll < (material->get_building_small_fraction() + material->get_building_medium_fraction())) {
       return SGBuildingBin::MEDIUM;
     }
 
@@ -756,20 +717,16 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
   }
 
   float SGBuildingBin::getBuildingMaxRadius(BuildingType type) {
-
-    if (type == SGBuildingBin::SMALL) return smallBuildingMaxRadius;
-    if (type == SGBuildingBin::MEDIUM) return mediumBuildingMaxRadius;
-    if (type == SGBuildingBin::LARGE) return largeBuildingMaxRadius;
-
+    if (type == SGBuildingBin::SMALL) return material->get_building_small_max_width();
+    if (type == SGBuildingBin::MEDIUM) return material->get_building_medium_max_width();
+    if (type == SGBuildingBin::LARGE) return material->get_building_large_max_width();
     return 0;
   }
 
   float SGBuildingBin::getBuildingMaxDepth(BuildingType type) {
-
-    if (type == SGBuildingBin::SMALL) return smallBuildingMaxDepth;
-    if (type == SGBuildingBin::MEDIUM) return mediumBuildingMaxDepth;
-    if (type == SGBuildingBin::LARGE) return largeBuildingMaxDepth;
-
+    if (type == SGBuildingBin::SMALL) return material->get_building_small_max_depth();
+    if (type == SGBuildingBin::MEDIUM) return material->get_building_medium_max_depth();
+    if (type == SGBuildingBin::LARGE) return material->get_building_large_max_depth();
     return 0;
   }
 
@@ -799,35 +756,33 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
           iter->second = effect; // update existing, but empty observer
     }
 
-    ref_ptr<Group> group = new osg::Group();
+    // Transform building positions from the "geocentric" positions we
+    // get from the scenery polys into the local Z-up coordinate
+    // system.
+    std::vector<BuildingInstance> rotatedBuildings;
+    rotatedBuildings.reserve(buildingLocations.size());
+    for (const auto &b : buildingLocations) {
+        rotatedBuildings.emplace_back(BuildingInstance(
+            b.position * transInv,
+            b
+        ));
+    }
 
     // Now, create a quadbuilding for the buildings.
+    BuildingGeometryQuadtree
+        quadbuilding(GetBuildingCoord(), AddBuildingLeafObject(),
+                 SG_BUILDING_QUAD_TREE_DEPTH,
+                 MakeBuildingLeaf(buildingRange, effect, false));
 
-    BuildingInstanceList locs[] = { smallBuildingLocations,
-                                    SGBuildingBin::mediumBuildingLocations,
-                                    SGBuildingBin::largeBuildingLocations };
+    quadbuilding.buildQuadTree(rotatedBuildings.begin(), rotatedBuildings.end());
 
-    for (int i = 0; i < 3; i++)
-    {
-      // Create a quad tree.  Only small and medium buildings are faded out.
-      BuildingGeometryQuadtree
-          quadbuilding(GetBuildingCoord(), AddBuildingLeafObject(),
-                   SG_BUILDING_QUAD_TREE_DEPTH,
-                   MakeBuildingLeaf(buildingRange, effect, (i != 2)));
+    ref_ptr<Group> group = new osg::Group();
 
-      // Transform building positions from the "geocentric" positions we
-      // get from the scenery polys into the local Z-up coordinate
-      // system.
-      std::vector<BuildingInstance> rotatedBuildings;
-      rotatedBuildings.reserve(locs[i].size());
-      std::transform(locs[i].begin(), locs[i].end(),
-                     std::back_inserter(rotatedBuildings),
-                     BuildingInstanceTransformer(transInv));
-      quadbuilding.buildQuadTree(rotatedBuildings.begin(), rotatedBuildings.end());
+    static int buildingGroupCounter = 0;
+    group->setName("BuildingsGroup_" + std::to_string(buildingGroupCounter++));
 
-      for (size_t j = 0; j < quadbuilding.getRoot()->getNumChildren(); ++j)
-              group->addChild(quadbuilding.getRoot()->getChild(j));
-    }
+    for (size_t j = 0; j < quadbuilding.getRoot()->getNumChildren(); ++j)
+            group->addChild(quadbuilding.getRoot()->getChild(j));
 
     return group;
   }
@@ -847,10 +802,6 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
               if (!geode)
                   continue;
               bool geodeEmpty = true;
-              if (geode->getNumDrawables() > 1) {
-                SG_LOG(SG_TERRAIN, SG_DEBUG, "Building LOD Drawables: " << geode->getNumDrawables());
-              }
-
               for (unsigned j = 0; j < geode->getNumDrawables(); ++j) {
                   const Geometry* geom = dynamic_cast<Geometry*>(geode->getDrawable(j));
                   if (!geom) {
@@ -878,7 +829,6 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
                            const SGReaderWriterOptions* options)
   {
       Matrix transInv = Matrix::inverse(transform);
-      static Matrix ident;
       // Set up some shared structures.
       MatrixTransform* mt = new MatrixTransform(transform);
       SGBuildingBinList::iterator i;
@@ -890,11 +840,7 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
           for (size_t j = 0; j < group->getNumChildren(); ++j) {
             mt->addChild(group->getChild(j));
           }
-
-          delete bin;
       }
-
-      buildings.clear();
 
       QuadTreeCleaner cleaner;
       mt->accept(cleaner);

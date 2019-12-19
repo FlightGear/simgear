@@ -36,6 +36,25 @@
 #include "Compositor.hxx"
 #include "CompositorUtil.hxx"
 
+namespace {
+osgUtil::RenderBin::RenderBinList
+removeTransparentBins(simgear::EffectCullVisitor *cv)
+{
+    osgUtil::RenderBin::RenderBinList transparent_bins;
+    osgUtil::RenderStage *stage = cv->getRenderStage();
+    osgUtil::RenderBin::RenderBinList &rbl = stage->getRenderBinList();
+    for (auto rbi = rbl.begin(); rbi != rbl.end(); ) {
+        if (rbi->second->getSortMode() == osgUtil::RenderBin::SORT_BACK_TO_FRONT) {
+            transparent_bins.insert(std::make_pair(rbi->first, rbi->second));
+            rbl.erase(rbi++);
+        } else {
+            ++rbi;
+        }
+    }
+    return transparent_bins;
+}
+} // anonymous namespace
+
 namespace simgear {
 namespace compositor {
 
@@ -112,15 +131,15 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     camera->setClearStencil(root->getIntValue("clear-stencil", 0));
 
     GLbitfield clear_mask = 0;
-    if (root->getBoolValue("clear-color-bit", true))
-        clear_mask |= GL_COLOR_BUFFER_BIT;
-    if (root->getBoolValue("clear-accum-bit", false))
-        clear_mask |= GL_ACCUM_BUFFER_BIT;
-    if (root->getBoolValue("clear-depth-bit", true))
-        clear_mask |= GL_DEPTH_BUFFER_BIT;
-    if (root->getBoolValue("clear-stencil-bit", false))
-        clear_mask |= GL_STENCIL_BUFFER_BIT;
-    // Default clear mask is GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, as in OSG
+    std::stringstream ss;
+    std::string bit;
+    // Default clear mask as in OSG
+    ss << root->getStringValue("clear-mask", "color depth");
+    while (ss >> bit) {
+        if (bit == "color")        clear_mask |= GL_COLOR_BUFFER_BIT;
+        else if (bit == "depth")   clear_mask |= GL_DEPTH_BUFFER_BIT;
+        else if (bit == "stencil") clear_mask |= GL_STENCIL_BUFFER_BIT;
+    }
     camera->setClearMask(clear_mask);
 
     PropertyList p_bindings = root->getChildren("binding");
@@ -384,8 +403,11 @@ public:
 
     virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
         osg::Camera *camera = static_cast<osg::Camera *>(node);
+        EffectCullVisitor *cv = dynamic_cast<EffectCullVisitor *>(nv);
 
         traverse(node, nv);
+
+        removeTransparentBins(cv);
 
         // The light matrix uniform is updated after the traverse in case the
         // OSG near/far plane calculations were enabled
@@ -497,19 +519,18 @@ public:
 
         osg::Vec4 aim4 = osg::Vec4(bs.center(), 1.0) * view_inverse;
         osg::Vec3 aim(aim4.x(), aim4.y(), aim4.z());
-        osg::Vec3 up(0.0f, 1.0f, 0.0f);
 
         osg::Matrixd &light_view_matrix = camera->getViewMatrix();
         light_view_matrix.makeLookAt(
-            aim + (light_dir * bs.radius() * 2.0f),
+            aim + light_dir * (bs.radius() + 10.0f),
             aim,
-            aim);
+            osg::Vec3(0.0f, 0.0f, 1.0f));
 
         osg::Matrixd &light_proj_matrix = camera->getProjectionMatrix();
         light_proj_matrix.makeOrtho(
             -bs.radius(), bs.radius(),
             -bs.radius(), bs.radius(),
-            -bs.radius() * 6.0f, bs.radius() * 6.0f);
+            1.0, bs.radius() * 10.0);
 
         // Do texel snapping to prevent flickering or shimmering.
         // We are using double precision vectors and matrices because in FG
@@ -520,8 +541,8 @@ public:
         osg::Vec2d shadow_origin(shadow_origin4.x(), shadow_origin4.y());
         shadow_origin = osg::Vec2d(shadow_origin.x() * _half_sm_size.x(),
                                    shadow_origin.y() * _half_sm_size.y());
-        osg::Vec2d rounded_origin(std::round(shadow_origin.x()),
-                                  std::round(shadow_origin.y()));
+        osg::Vec2d rounded_origin(std::floor(shadow_origin.x()),
+                                  std::floor(shadow_origin.y()));
         osg::Vec2d rounding = rounded_origin - shadow_origin;
         rounding = osg::Vec2d(rounding.x() / _half_sm_size.x(),
                               rounding.y() / _half_sm_size.y());
@@ -546,8 +567,7 @@ struct ShadowMapPassBuilder : public PassBuilder {
 
         osg::Camera *camera = pass->camera;
         camera->setReferenceFrame(osg::Camera::ABSOLUTE_RF_INHERIT_VIEWPOINT);
-        camera->setCullingMode(camera->getCullingMode() &
-                               ~osg::CullSettings::SMALL_FEATURE_CULLING);
+        camera->setCullingMode(osg::CullSettings::ENABLE_ALL_CULLING);
         //camera->setComputeNearFarMode(
         //    osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
 

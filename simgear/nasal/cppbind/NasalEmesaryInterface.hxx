@@ -67,7 +67,6 @@ namespace nasal
     public:
         NasalMainLoopRecipient() : receiveCount(0) {
             simgear::Emesary::GlobalTransmitter::instance()->Register(*this);
-            SG_LOG(SG_NASAL, SG_INFO, "NasalMainLoopRecipient created");
         }
         virtual ~NasalMainLoopRecipient() {
             simgear::Emesary::GlobalTransmitter::instance()->DeRegister(*this);

@@ -1,10 +1,10 @@
 // sample.hxx -- Audio sample encapsulation class
-// 
+//
 // Written by Curtis Olson, started April 2004.
 // Modified to match the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2004  Curtis L. Olson - http://www.flightgear.org/~curt
-// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
+// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -32,7 +32,8 @@
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/props/props.hxx>
-     
+#include "soundmgr.hxx"
+
 enum {
     SG_SAMPLE_MONO = 1,
     SG_SAMPLE_STEREO = 2,
@@ -76,7 +77,7 @@ public:
      * Returns the block alignment of this audio sample.
      * @return block alignment in bytes
      */
-    inline unsigned int get_block_align() { 
+    inline unsigned int get_block_align() {
         return _block_align;
     }
 
@@ -164,9 +165,27 @@ public:
     /**
      * Get maximum distance (in meters) of this sound.
      * This is the distance where this sound is no longer audible.
-     * @return dist Maximum distance
+     * @return Maximum distance
      */
     inline float get_max_dist() { return _max_dist; }
+
+    /**
+     * Get the temperature (in degrees Celsius) at the current altitude.
+     * @return temperature in degrees Celsius
+     */
+    inline float get_temperature() { return _degC; }
+
+    /**
+     * Get the relative humidity at the current altitude.
+     * @return Percent relative humidity (0.0 to 1.0)
+     */
+    inline float get_humidity() { return _humidity; }
+
+    /**
+     * Get the pressure at the current altitude.
+     * @return Pressure in kPa
+     */
+    inline float get_pressure() { return _pressure; }
 
     /**
      * Test if static data of audio sample configuration has changed.
@@ -181,32 +200,35 @@ public:
 protected:
     // static sound emitter info
     std::string _refname;
-    unsigned int _bits;
-    unsigned int _tracks;
-    unsigned int _samples;
-    unsigned int _frequency;
-    unsigned int _block_align;
-    bool _compressed;
-    bool _loop;
+    unsigned int _bits = 16;
+    unsigned int _tracks = 1;
+    unsigned int _samples = 0;
+    unsigned int _frequency = 22500;
+    unsigned int _block_align = 2;
+    bool _compressed = false;
+    bool _loop = false;
 
     // dynamic sound emitter info (non 3d)
-    bool _static_changed;
-    bool _playing;
+    bool _static_changed = true;
+    bool _playing = false;
 
-    float _pitch;
-    float _volume;
-    float _master_volume;
+    float _pitch = 1.0f;
+    float _volume = 1.0f;
+    float _master_volume = 1.0f;
 
     // dynamic sound emitter info (3d)
-    bool _use_pos_props;
-    bool _out_of_range;
+    bool _use_pos_props = false;
+    bool _out_of_range = false;
 
-    float _inner_angle;
-    float _outer_angle;
-    float _outer_gain;
+    float _inner_angle = 360.0f;
+    float _outer_angle = 360.0f;
+    float _outer_gain = 0.0f;
 
-    float _reference_dist;
-    float _max_dist;
+    float _reference_dist = 500.0f;
+    float _max_dist = 3000.0f;
+    float _pressure = 101.325f;
+    float _humidity = 0.5f;
+    float _degC = 20.0f;
 
     SGPropertyNode_ptr _pos_prop[3];
     SGVec3d _absolute_pos;	// absolute position
@@ -233,7 +255,7 @@ public:
       * Empty constructor, can be used to read data to the systems
       * memory and not to the driver.
       */
-    SGSoundSample();
+    SGSoundSample() {};
 
     /**
      * Constructor
@@ -307,7 +329,7 @@ public:
      */
     inline void play_once() { play(false); }
 
-    /** 
+    /**
      * Schedule this audio sample to play looped.
      * @see #play
      */
@@ -389,7 +411,7 @@ public:
      */
     inline void set_buffer(unsigned int bid) {
         _buffer = bid; _valid_buffer = true; _changed = true;
-    } 
+    }
 
     /**
      * Get the buffer-id of this source
@@ -409,7 +431,7 @@ public:
     inline void no_valid_buffer() { _valid_buffer = false; }
 
     /**
-     * Set the playback pitch of this audio sample. 
+     * Set the playback pitch of this audio sample.
      * Should be between 0.0 and 2.0 for maximum compatibility.
      * @param p Pitch
      */
@@ -541,6 +563,20 @@ public:
     }
 
     /**
+     * Set both the temperature and relative humidity at the current altitude.
+     * @param t Temperature in degrees Celsius
+     * @param h Percent relative humidity (0.0 to 1.0)
+     * @param p Pressure in kPa;
+     */
+    inline void set_atmosphere(float t, float h, float p) {
+        if (fabsf(_degC - t) > 1.0f || fabsf(_humidity - h) > 0.1f ||
+            fabsf(_pressure - p) > 1.0f)
+        {
+            _degC = t, _humidity = h; _pressure = p; _static_changed = true;
+        }
+    }
+
+    /**
      * Set reference distance (in meters) of this sound.
      * This is the distance where the gain will be half.
      * @param dist Reference distance
@@ -563,19 +599,19 @@ public:
     void update_pos_and_orientation();
 
 protected:
-    bool _is_file;
-    bool _changed;
+    bool _is_file = false;
+    bool _changed = true;
 
     // Sources are points emitting sound.
-    bool _valid_source;
-    unsigned int _source;
+    bool _valid_source = false;
+    unsigned int _source = SGSoundMgr::NO_SOURCE;
 
 private:
-    unsigned char* _data;
+    unsigned char* _data = NULL;
 
     // Buffers hold sound data.
-    bool _valid_buffer;
-    unsigned int _buffer;
+    bool _valid_buffer = false;
+    unsigned int _buffer = SGSoundMgr::NO_BUFFER;
 };
 
 #endif // _SG_SAMPLE_HXX

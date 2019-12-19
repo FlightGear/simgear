@@ -115,10 +115,21 @@ target_include_directories(SimGearCore BEFORE PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
+# so simgear/simgear_config.h is found
+target_include_directories(SimGearCore BEFORE PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include>)
+
 target_include_directories(SimGearCore PUBLIC
   ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR})
 target_include_directories(SimGearCore PRIVATE
   ${EXPAT_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
+
+if (NOT SYSTEM_EXPAT)
+    # XML_STATIC is important to avoid sg_expat_external.h
+    # declaring symbols as declspec(import)
+    target_compile_definitions(SimGearCore PRIVATE HAVE_SIMGEAR_EXPAT_CONFIG_H XML_STATIC)
+endif()
 
     install(TARGETS SimGearCore
             EXPORT SimGearTargets
@@ -144,9 +155,10 @@ if (NOT SIMGEAR_HEADLESS)
     endif()
 endif()
 
+# we expose ZLib in some of our headers
+target_link_libraries(SimGearCore PUBLIC ${ZLIB_LIBRARY})
 
-target_link_libraries(SimGearCore
-    ${ZLIB_LIBRARY}
+target_link_libraries(SimGearCore PRIVATE
     ${RT_LIBRARY}
     ${DL_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
@@ -155,29 +167,29 @@ target_link_libraries(SimGearCore
     ${WINSOCK_LIBRARY})
 
 if(SYSTEM_EXPAT)
-    target_link_libraries(SimGearCore
-        ${EXPAT_LIBRARIES})
+    target_link_libraries(SimGearCore PRIVATE ${EXPAT_LIBRARIES})
 endif()
 
 if(ENABLE_DNS AND SYSTEM_UDNS)
-    target_link_libraries(SimGearCore
-        ${UDNS_LIBRARIES})
+    target_link_libraries(SimGearCore PRIVATE ${UDNS_LIBRARIES})
 endif()
 
 if(NOT SIMGEAR_HEADLESS)
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
 
-    target_link_libraries(SimGearScene
+    target_link_libraries(SimGearScene PUBLIC         
         SimGearCore
-        ${ZLIB_LIBRARY}
         ${OPENSCENEGRAPH_LIBRARIES}
+    )
+
+    target_link_libraries(SimGearScene PRIVATE
+        ${ZLIB_LIBRARY}
         ${OPENAL_LIBRARY}
         ${OPENGL_LIBRARY}
         ${JPEG_LIBRARY})
 
     if(ENABLE_GDAL)
-        target_link_libraries(SimGearScene
-            ${GDAL_LIBRARIES})
+        target_link_libraries(SimGearScene PRIVATE ${GDAL_LIBRARIES})
     endif()
 
     # only actually needed by canvas/KeyboardEvent.cxx

@@ -12,6 +12,8 @@
 #include "amigaconfig.h"
 #elif defined(__WATCOMC__)
 #include "watcomconfig.h"
+#elif defined(HAVE_SIMGEAR_EXPAT_CONFIG_H)
+#include "simgear_expat_config.h"
 #else
 #ifdef HAVE_EXPAT_CONFIG_H
 #include "expat_config.h"

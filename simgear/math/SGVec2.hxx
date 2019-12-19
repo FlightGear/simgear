@@ -193,8 +193,8 @@ min(S s, SGVec2<T> v)
 template<typename T>
 inline
 SGVec2<T>
-max(const SGVec2<T>& v1, const SGVec2<T>& v2)
-{ v1 = simd4::max(v1.simd2(), v2.simd2()); return v1; }
+max(SGVec2<T> v1, const SGVec2<T>& v2)
+{ v1.simd2() = simd4::max(v1.simd2(), v2.simd2()); return v1; }
 template<typename S, typename T>
 inline
 SGVec2<T>
@@ -373,6 +373,29 @@ interpolate(T tau, const SGVec2<T>& v1, const SGVec2<T>& v2)
   SGVec2<T> r;
   r.simd2() = simd4::interpolate(tau, v1.simd2(), v2.simd2());
   return r;
+}
+
+// Helper function for point_in_triangle
+template <typename T>
+inline
+T
+pt_determine(const SGVec2<T>& pt1, const SGVec2<T>& pt2, const SGVec2<T>& pt3)
+{
+  return (pt1.x()-pt3.x()) * (pt2.y()-pt3.y()) - (pt2.x() - pt3.x()) * (pt1.y() - pt3.y());
+}
+
+// Is testpt inside the triangle formed by the other three points?
+template <typename T>
+inline
+bool
+point_in_triangle(const SGVec2<T>& testpt, const SGVec2<T>& pt1, const SGVec2<T>& pt2, const SGVec2<T>& pt3)
+{
+  T d1 = pt_determine(testpt,pt1,pt2);
+  T d2 = pt_determine(testpt,pt2,pt3);
+  T d3 = pt_determine(testpt,pt3,pt1);
+  bool has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+  bool has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+  return !(has_neg && has_pos);
 }
 
 #ifndef NDEBUG

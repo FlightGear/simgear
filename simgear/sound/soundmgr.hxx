@@ -11,7 +11,7 @@
 // Modified for the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
-// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
+// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -68,7 +68,7 @@ public:
      * Select a specific sound device.
      * Requires a init/reinit call before sound is actually switched.
      */
-    inline void select_device(const char* devname) {_device_name = devname;}
+    inline void select_device(const char* devname) { _device_name = devname; }
 
     /**
      * Test is the sound manager is in a working condition.

@@ -38,9 +38,12 @@
 #  include <simgear_config.h>
 #endif
 
+#include <iomanip>
 #include <string>
 #include <time.h>
 #include <cstring>
+#include <ostream>
+#include <sstream>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
@@ -154,6 +157,320 @@ SGMetar::~SGMetar()
 	delete[] _data;
 }
 
+
+static const char *azimuthName(double d)
+{
+	const char *dir[] = {
+		"N", "NNE", "NE", "ENE",
+		"E", "ESE", "SE", "SSE",
+		"S", "SSW", "SW", "WSW",
+		"W", "WNW", "NW", "NNW"
+	};
+	d += 11.25;
+	while (d < 0)
+		d += 360;
+	while (d >= 360)
+		d -= 360;
+	return dir[int(d / 22.5)];
+}
+
+
+// round double to 10^g
+static double rnd(double r, int g = 0)
+{
+	double f = pow(10.0, g);
+	return f * floor(r / f + 0.5);
+}
+
+
+/* A manipulator that can use spaces to emulate tab characters. */
+struct Tab
+{
+    /* If <stops> is 0, we simply insert tab characters. Otherwise we insert
+    spaces to align with the next column at multiple of <stops>. */
+    explicit Tab(int stops)
+    :
+    _stops(stops)
+    {}
+    int _stops;
+};
+
+std::ostream& operator << (std::ostream& out, const Tab& t)
+{
+    if (t._stops == 0) {
+        return out << '\t';
+    }
+    
+    std::ostringstream& out2 = *(std::ostringstream*) &out;
+    std::string s = out2.str();
+    
+    if (t._stops < 0) {
+        if (!s.size() || s[s.size()-1] != ' ') {
+            out << ' ';
+        }
+        return out;
+    }
+    
+    auto nl = s.rfind('\n');
+    if (nl < 0) nl = 0;
+    int column = 0;
+    for (auto i = nl+1; i != s.size(); ++i) {
+        if (s[i] == '\t')
+            column = (column + t._stops) / t._stops * t._stops;
+        else
+            column += 1;
+    }
+    int column2 = (column + t._stops) / t._stops * t._stops;
+    for (int i=column; i<column2; ++i) {
+        out << ' ';
+    }
+    return out;
+}
+
+/* Manipulator for SGMetarVisibility using a Tab. */
+struct SGMetarVisibilityManip
+{
+    explicit SGMetarVisibilityManip(const SGMetarVisibility& v, const Tab& tab)
+    :
+    _v(v),
+    _tab(tab)
+    {}
+    const SGMetarVisibility&    _v;
+    const Tab&                  _tab;
+};
+
+std::ostream& operator << (std::ostream& out, const SGMetarVisibilityManip& v)
+{
+	int m = v._v.getModifier();
+	const char *mod;
+	if (m == SGMetarVisibility::GREATER_THAN)
+		mod = ">=";
+	else if (m == SGMetarVisibility::LESS_THAN)
+		mod = "<";
+	else
+		mod = "";
+	out << mod;
+
+	double dist = rnd(v._v.getVisibility_m(), 1);
+	if (dist < 1000.0)
+		out << rnd(dist, 1) << " m";
+	else
+		out << rnd(dist / 1000.0, -1) << " km";
+
+	const char *dir = "";
+	int i;
+	if ((i = v._v.getDirection()) != -1) {
+		dir = azimuthName(i);
+		out << " " << dir;
+	}
+        out << v._tab << v._tab << v._tab << v._tab << v._tab;
+        out << mod << rnd(v._v.getVisibility_sm(), -1) << " US-miles " << dir;
+        return out;
+}
+
+
+std::string SGMetar::getDescription(int tabstops) const
+{
+        std::ostringstream  out;
+	const char *s;
+	char buf[256];
+	double d;
+	int i, lineno;
+        Tab tab(tabstops);
+        
+	if ((i = getReportType()) == SGMetar::AUTO)
+		out << "(METAR automatically generated)\n";
+	else if (i == SGMetar::COR)
+		out << "(METAR manually corrected)\n";
+	else if (i == SGMetar::RTD)
+		out << "(METAR routine delayed)\n";
+        
+	out << "Airport-Id:" << tab << tab << getId() << "\n";
+
+	// date/time
+	int year = getYear();
+	int month = getMonth();
+	out << "Report time:" << tab << tab << year << '/' << month << '/' << getDay();
+	out << ' ' << getHour() << ':';
+	out << std::setw(2) << std::setfill('0') << getMinute() << " UTC\n";
+
+
+	// visibility
+	SGMetarVisibility minvis = getMinVisibility();
+	SGMetarVisibility maxvis = getMaxVisibility();
+	double min = minvis.getVisibility_m();
+	double max = maxvis.getVisibility_m();
+	if (min != NaN) {
+		if (max != NaN) {
+			out << "min. Visibility:" << tab << SGMetarVisibilityManip(minvis, tab) << "\n";
+			out << "max. Visibility:" << tab << SGMetarVisibilityManip(maxvis, tab) << "\n";
+		} else {
+			out << "Visibility:" << tab << tab << SGMetarVisibilityManip(minvis, tab) << "\n";
+                }
+	}
+
+
+	// directed visibility
+	const SGMetarVisibility *dirvis = getDirVisibility();
+	for (i = 0; i < 8; i++, dirvis++)
+		if (dirvis->getVisibility_m() != NaN)
+			out << tab << tab << tab << SGMetarVisibilityManip(*dirvis, tab) << "\n";
+
+
+	// vertical visibility
+	SGMetarVisibility vertvis = getVertVisibility();
+	if ((d = vertvis.getVisibility_ft()) != NaN)
+		out << "Vert. visibility:" << tab << SGMetarVisibilityManip(vertvis, tab) << "\n";
+	else if (vertvis.getModifier() == SGMetarVisibility::NOGO)
+		out << "Vert. visibility:" << tab << "impossible to determine" << "\n";
+
+
+	// wind
+	d = getWindSpeed_kmh();
+	out << "Wind:" << tab << tab << tab;
+	if (d < .1)
+		out << "none" << "\n";
+	else {
+		if ((i = getWindDir()) == -1)
+			out << "from variable directions";
+		else
+			out << "from the " << azimuthName(i) << " (" << i << " deg)";
+		out << " at " << rnd(d, -1) << " km/h";
+
+		out << tab << tab << rnd(getWindSpeed_kt(), -1) << " kt";
+		out << " = " << rnd(getWindSpeed_mph(), -1) << " mph";
+		out << " = " << rnd(getWindSpeed_mps(), -1) << " m/s";
+		out << "\n";
+
+		d = getGustSpeed_kmh();
+                if (d != NaN && d != 0) {
+			out << tab << tab << tab << "with gusts at " << rnd(d, -1) << " km/h";
+			out << tab << tab << tab << rnd(getGustSpeed_kt(), -1) << " kt";
+			out << " = " << rnd(getGustSpeed_mph(), -1) << " mph";
+			out << " = " << rnd(getGustSpeed_mps(), -1) << " m/s";
+			out << "\n";
+		}
+
+		int from = getWindRangeFrom();
+		int to = getWindRangeTo();
+		if (from != to) {
+			out << tab << tab << tab << "variable from " << azimuthName(from);
+			out << " to " << azimuthName(to);
+			out << " (" << from << "deg --" << to << " deg)" << "\n";
+		}
+	}
+
+
+	// temperature/humidity/air pressure
+	if ((d = getTemperature_C()) != NaN) {
+		out << "Temperature:" << tab << tab << d << " C" << tab << tab << tab << tab << tab;
+		out << rnd(getTemperature_F(), -1) << " F" << "\n";
+
+		if ((d = getDewpoint_C()) != NaN) {
+			out << "Dewpoint:" << tab << tab << d << " C" << tab << tab << tab << tab << tab;
+			out << rnd(getDewpoint_F(), -1) << " F"  << "\n";
+			out << "Rel. Humidity: " << tab << tab << rnd(getRelHumidity()) << " %" << "\n";
+		}
+	}
+	if ((d = getPressure_hPa()) != NaN) {
+		out << "Pressure:" << tab << tab << rnd(d) << " hPa" << tab << tab << tab << tab;
+		out << rnd(getPressure_inHg(), -2) << " in. Hg" << "\n";
+	}
+
+
+	// weather phenomena
+	vector<string> wv = getWeather();
+	vector<string>::iterator weather;
+	for (i = 0, weather = wv.begin(); weather != wv.end(); weather++, i++) {
+		out << (i ? ", " : "Weather:") << tab << tab << weather->c_str();
+	}
+	if (i)
+		out << "\n";
+
+
+	// cloud layers
+	const char *coverage_string[5] = {
+		"clear skies", "few clouds", "scattered clouds", "broken clouds", "sky overcast"
+	};
+	vector<SGMetarCloud> cv = getClouds();
+	vector<SGMetarCloud>::iterator cloud;
+	for (lineno = 0, cloud = cv.begin(); cloud != cv.end(); cloud++, lineno++) {
+                if (lineno) out << tab << tab << tab;
+                else    out << "Sky condition:" << tab << tab;
+
+		if ((i = cloud->getCoverage()) != -1)
+			out << coverage_string[i];
+		if ((d = cloud->getAltitude_ft()) != NaN)
+			out << " at " << rnd(d, 1) << " ft";
+		if ((s = cloud->getTypeLongString()))
+			out << " (" << s << ')';
+		if (d != NaN)
+			out << tab << tab << tab << rnd(cloud->getAltitude_m(), 1) << " m";
+		out << "\n";
+	}
+
+
+	// runways
+	map<string, SGMetarRunway> rm = getRunways();
+	map<string, SGMetarRunway>::iterator runway;
+	for (runway = rm.begin(); runway != rm.end(); runway++) {
+		lineno = 0;
+		if (!strcmp(runway->first.c_str(), "ALL"))
+			out << "All runways:" << tab << tab;
+		else
+			out << "Runway " << runway->first << ":" << tab << tab;
+		SGMetarRunway rwy = runway->second;
+
+		// assemble surface string
+		vector<string> surface;
+		if ((s = rwy.getDepositString()) && strlen(s))
+			surface.push_back(s);
+		if ((s = rwy.getExtentString()) && strlen(s))
+			surface.push_back(s);
+		if ((d = rwy.getDepth()) != NaN) {
+			sprintf(buf, "%.1lf mm", d * 1000.0);
+			surface.push_back(buf);
+		}
+		if ((s = rwy.getFrictionString()) && strlen(s))
+			surface.push_back(s);
+		if ((d = rwy.getFriction()) != NaN) {
+			sprintf(buf, "friction: %.2lf", d);
+			surface.push_back(buf);
+		}
+
+		if (! surface.empty()) {
+			vector<string>::iterator rwysurf = surface.begin();
+			for (i = 0; rwysurf != surface.end(); rwysurf++, i++) {
+				if (i)
+					out << ", ";
+				out << *rwysurf;
+			}
+			lineno++;
+		}
+
+		// assemble visibility string
+		SGMetarVisibility minvis = rwy.getMinVisibility();
+		SGMetarVisibility maxvis = rwy.getMaxVisibility();
+		if ((d = minvis.getVisibility_m()) != NaN) {
+			if (lineno++)
+				out << "\n" << tab << tab << tab;
+			out << SGMetarVisibilityManip(minvis, tab);
+		}
+		if (maxvis.getVisibility_m() != d) {
+			out << "\n" << tab << tab << tab << SGMetarVisibilityManip(maxvis, tab) << "\n";
+			lineno++;
+		}
+
+		if (rwy.getWindShear()) {
+			if (lineno++)
+				out << "\n" << tab << tab << tab;
+			out << "critical wind shear" << "\n";
+		}
+		out << "\n";
+	}
+	out << "\n";
+        return out.str();
+}
 
 void SGMetar::useCurrentDate()
 {

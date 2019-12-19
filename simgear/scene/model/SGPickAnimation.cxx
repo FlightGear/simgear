@@ -615,9 +615,8 @@ public:
         return false;
     }
     
-    virtual void buttonReleased( int keyModState,
-                                 const osgGA::GUIEventAdapter&,
-                                 const Info* )
+    void buttonReleased( int keyModState, const osgGA::GUIEventAdapter&,
+                                const Info* ) override
     {
         if (!_condition || _condition->test()) {
 
@@ -641,8 +640,7 @@ public:
       return _dragDirection;
   }
   
-    virtual void mouseMoved( const osgGA::GUIEventAdapter& ea,
-                             const Info* )
+    void mouseMoved( const osgGA::GUIEventAdapter& ea, const Info* ) override
     {
         if (!_condition || _condition->test()) {
             _mousePos = eventToWindowCoords(ea);
@@ -675,7 +673,7 @@ public:
         }
     }
     
-    virtual void update(double dt, int keyModState)
+    void update(double dt, int keyModState) override
     {
         if (_hasDragged) {
             return;
@@ -688,8 +686,7 @@ public:
         } // of repeat iteration
     }
 
-    virtual bool hover( const osg::Vec2d& windowPos,
-                        const Info& )
+    bool hover( const osg::Vec2d& windowPos, const Info& ) override
     {
         if (!_condition || _condition->test()) {
 
@@ -711,7 +708,7 @@ public:
       _cursorName = aName;
     }
   
-    virtual std::string getCursor() const
+    std::string getCursor() const override
     { return _cursorName; }
   
 private:

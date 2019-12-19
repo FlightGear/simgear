@@ -95,6 +95,13 @@ static SGBucket bucketIndexFromFileName(const std::string& fileName)
   return SGBucket(index);
 }
 
+/**
+ * callback per STG token, with access synced by a lock.
+ */
+using TokenCallbackMap = std::map<std::string,ReaderWriterSTG::STGObjectCallback>;
+static TokenCallbackMap globalStgObjectCallbacks = {};
+static OpenThreads::Mutex globalStgObjectCallbackLock;
+
 struct ReaderWriterSTG::_ModelBin {
     struct _Object {
         SGPath _errorLocation;
@@ -536,8 +543,26 @@ struct ReaderWriterSTG::_ModelBin {
                   _buildingListList.push_back(buildinglist);
                   //SG_LOG(SG_TERRAIN, SG_ALERT, "Building list: " << buildinglist._filename << " " << buildinglist._material_name << " " << buildinglist._lon << " " << buildinglist._lat);
                 } else {
-                    SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
-                            << ": Unknown token '" << token << "'" );
+                    // Check registered callback for token. Keep lock until callback completed to make sure it will not be
+                    // executed after a thread successfully executed removeSTGObjectHandler()
+                    {
+                        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(globalStgObjectCallbackLock);
+                        STGObjectCallback callback = globalStgObjectCallbacks[token];
+
+                        if (callback != nullptr) {
+                            _ObjectStatic obj;
+                            // pitch and roll are not common, so passed in "restofline" only
+                            in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg;
+                            string_list restofline;
+                            std::string buf;
+                            while (in >> buf) {
+                                restofline.push_back(buf);
+                            }
+                            callback(token,name, SGGeod::fromDegM(obj._lon, obj._lat, obj._elev), obj._hdg,restofline);
+                        } else {
+                            SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName << ": Unknown token '" << token << "'" );
+                        }
+                    }
                 }
             }
         }
@@ -711,4 +736,16 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
     return modelBin.load(bucket, options);
 }
 
+
+void ReaderWriterSTG::setSTGObjectHandler(const std::string &token, STGObjectCallback callback)
+{
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(globalStgObjectCallbackLock);
+    globalStgObjectCallbacks[token] = callback;
+}
+
+void ReaderWriterSTG::removeSTGObjectHandler(const std::string &token, STGObjectCallback callback)
+{
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(globalStgObjectCallbackLock);
+    globalStgObjectCallbacks.erase(token);
+}
 }

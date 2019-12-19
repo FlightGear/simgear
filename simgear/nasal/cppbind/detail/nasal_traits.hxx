@@ -28,6 +28,7 @@ class SGWeakReferenced;
 template<class T> class SGSharedPtr;
 template<class T> class SGWeakPtr;
 template<class T> class SGVec2;
+template<class T> class SGVec4;
 
 namespace boost
 {
@@ -47,6 +48,9 @@ namespace osg
   class Vec2d;
   class Vec2f;
   class Vec2s;
+
+  class Vec4f;
+  class Vec4d;
 }
 
 // The actual traits...
@@ -54,6 +58,10 @@ namespace nasal
 {
   template<class T>
   struct is_vec2: public std::false_type {};
+
+  template<class T>
+  struct is_vec4: public std::false_type {};
+
 
 #define SG_MAKE_TRAIT(templ,type,attr)\
   template templ\
@@ -64,6 +72,10 @@ SG_MAKE_TRAIT(<>, osg::Vec2b, is_vec2)
 SG_MAKE_TRAIT(<>, osg::Vec2d, is_vec2)
 SG_MAKE_TRAIT(<>, osg::Vec2f, is_vec2)
 SG_MAKE_TRAIT(<>, osg::Vec2s, is_vec2)
+
+SG_MAKE_TRAIT(<class T>, SGVec4<T>, is_vec4)
+SG_MAKE_TRAIT(<>, osg::Vec4d, is_vec4)
+SG_MAKE_TRAIT(<>, osg::Vec4f, is_vec4)
 
 #undef SG_MAKE_TRAIT
 

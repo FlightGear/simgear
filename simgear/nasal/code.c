@@ -235,6 +235,21 @@ void naFreeContext(naContext c)
     if(c->callChild) naFreeContext(c->callChild);
     if(c->callParent) c->callParent->callChild = 0;
     LOCK();
+
+    // 2019-09-21
+    // James adding this to ensure stray stuff in freed contexts gets GCed
+    // this shows up when doing a reset / shutdown of all Nasal - we drop
+    // all our contexts and saved refs, and run a GC pass. We expect *everything*
+    // to be freed but actually the freed contexts often have a ref in their
+    // opStack.
+    //
+    // The underlying cause is likely some operation which leaves a value on
+    // the opstack accidently, but tracing that down requires more Nasal-fu
+    // than I have right now. So instead I'm clearing the stack tops here, so
+    // a freed context looks the same as a new one returned by initContext.
+
+    c->fTop = c->opTop = c->markTop = 0;
+
     c->nextFree = globals->freeContexts;
     globals->freeContexts = c;
     UNLOCK();

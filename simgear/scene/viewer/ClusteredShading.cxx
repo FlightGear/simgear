@@ -27,6 +27,7 @@
 
 #include <osg/io_utils>
 
+#include <simgear/constants.h>
 #include <simgear/structure/exception.hxx>
 
 namespace simgear {
@@ -40,7 +41,7 @@ const int MAX_SPOTLIGHTS = 256;
 // It must be a multiple of the size of a vec4 as per the std140 layout rules.
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_uniform_buffer_object.txt
 const int POINTLIGHT_BLOCK_SIZE = 20;
-const int SPOTLIGHT_BLOCK_SIZE = 8;
+const int SPOTLIGHT_BLOCK_SIZE = 28;
 
 ClusteredShading::ClusteredShading(osg::Camera *camera,
                                    const SGPropertyNode *config) :
@@ -180,12 +181,38 @@ ClusteredShading::update(const SGLightList &light_list)
             PointlightBound point;
             point.light = light;
             point.position = osg::Vec4f(0.0f, 0.0f, 0.0f, 1.0f) *
-                osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
-                _camera->getViewMatrix();
+                // The parenthesis are very important: if the vector is
+                // multiplied by the local to world matrix first we'll have
+                // precision issues
+                (osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
+                 _camera->getViewMatrix());
             point.range = light->getRange();
+
             _point_bounds.push_back(point);
         } else if (light->getType() == SGLight::Type::SPOT) {
+            SpotlightBound spot;
+            spot.light = light;
+            spot.position = osg::Vec4f(0.0f, 0.0f, 0.0f, 1.0f) *
+                (osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
+                 _camera->getViewMatrix());
+            spot.direction = osg::Vec4f(0.0f, 0.0f, -1.0f, 0.0f) *
+                (osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
+                 _camera->getViewMatrix());
 
+            float range = light->getRange();
+            float angle = light->getSpotCutoff() * SG_DEGREES_TO_RADIANS;
+            spot.cos_cutoff = cos(angle);
+            if(angle > SGD_PI_4) {
+                spot.bounding_sphere.radius = range * tan(angle);
+            } else {
+                spot.bounding_sphere.radius =
+                    range * 0.5f / pow(spot.cos_cutoff, 2.0f);
+            }
+
+            spot.bounding_sphere.center =
+                spot.position + spot.direction * spot.bounding_sphere.radius;
+
+            _spot_bounds.push_back(spot);
         }
     }
     if (_point_bounds.size() > MAX_POINTLIGHTS ||
@@ -265,8 +292,9 @@ ClusteredShading::update(const SGLightList &light_list)
     _light_grid->dirty();
     _light_indices->dirty();
 
-    // Upload pointlight data
+    // Upload pointlight and spotlight data
     writePointlightData();
+    writeSpotlightData();
 }
 
 void
@@ -301,6 +329,7 @@ ClusteredShading::assignLightsToSlice(int slice)
         GLuint local_point_count = 0;
         GLuint local_spot_count = 0;
 
+        // Test point lights
         for (GLushort point_iterator = 0;
              point_iterator < _point_bounds.size();
              ++point_iterator) {
@@ -328,25 +357,40 @@ ClusteredShading::assignLightsToSlice(int slice)
             }
         }
 
+        // Test spot lights
+        for (GLushort spot_iterator = 0;
+             spot_iterator < _spot_bounds.size();
+             ++spot_iterator) {
+            SpotlightBound spot = _spot_bounds[spot_iterator];
+
+            // Perform frustum-sphere collision tests
+            float distance = 0.0f;
+            for (int j = 0; j < 6; j++) {
+                distance = subfrustum.plane[j] * spot.bounding_sphere.center
+                    + spot.bounding_sphere.radius;
+                if (distance <= 0.0f)
+                    break;
+            }
+
+            if (distance > 0.0f) {
+                // Update light index list
+                indices[_global_light_count] = spot_iterator;
+                ++local_spot_count;
+                ++_global_light_count; // Atomic increment
+            }
+
+            if (_global_light_count >= MAX_LIGHT_INDICES) {
+                throw sg_range_exception(
+                    "Clustered shading light index count is over the hardcoded limit ("
+                    + std::to_string(MAX_LIGHT_INDICES) + ")");
+            }
+        }
+
         // Update light grid
         grid[(z_offset + i) * 3 + 0] = start_offset;
         grid[(z_offset + i) * 3 + 1] = local_point_count;
         grid[(z_offset + i) * 3 + 2] = local_spot_count;
     }
-
-    // for (int y = 0; y < _n_vtiles; ++y) {
-    //     for (int x = 0; x < _n_htiles; ++x) {
-    //         std::cout << grid[(y * _n_htiles + x) * 3 + 0] << ","
-    //                   << grid[(y * _n_htiles + x) * 3 + 1] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // std::cout << "\n\n";
-
-    // for (int i = 0; i < n_vtiles * n_htiles; ++i) {
-    //     std::cout << indices[i] << " ";
-    // }
-    // std::cout << "\n";
 }
 
 void
@@ -383,6 +427,51 @@ ClusteredShading::writePointlightData()
         // No padding needed as the resulting size is a multiple of vec4
     }
     _pointlight_data->dirty();
+}
+
+void
+ClusteredShading::writeSpotlightData()
+{
+    GLfloat *data = reinterpret_cast<GLfloat *>(&(*_spotlight_data)[0]);
+
+    for (const auto &spot : _spot_bounds) {
+        // vec4 position
+        *data++ = spot.position.x();
+        *data++ = spot.position.y();
+        *data++ = spot.position.z();
+        *data++ = 1.0f;
+        // vec4 direction
+        *data++ = spot.direction.x();
+        *data++ = spot.direction.y();
+        *data++ = spot.direction.z();
+        *data++ = 0.0f;
+        // vec4 ambient
+        *data++ = spot.light->getAmbient().x();
+        *data++ = spot.light->getAmbient().y();
+        *data++ = spot.light->getAmbient().z();
+        *data++ = spot.light->getAmbient().w();
+        // vec4 diffuse
+        *data++ = spot.light->getDiffuse().x();
+        *data++ = spot.light->getDiffuse().y();
+        *data++ = spot.light->getDiffuse().z();
+        *data++ = spot.light->getDiffuse().w();
+        // vec4 specular
+        *data++ = spot.light->getSpecular().x();
+        *data++ = spot.light->getSpecular().y();
+        *data++ = spot.light->getSpecular().z();
+        *data++ = spot.light->getSpecular().w();
+        // vec4 attenuation (x = constant, y = linear, z = quadratic, w = range)
+        *data++ = spot.light->getConstantAttenuation();
+        *data++ = spot.light->getLinearAttenuation();
+        *data++ = spot.light->getQuadraticAttenuation();
+        *data++ = spot.light->getRange();
+        // float cos_cutoff
+        *data++ = spot.cos_cutoff;
+        // float exponent
+        *data++ = spot.light->getSpotExponent();
+        // Needs 2N padding (8 bytes)
+    }
+    _spotlight_data->dirty();
 }
 
 float

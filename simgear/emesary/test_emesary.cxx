@@ -32,20 +32,23 @@ class TestThreadRecipient : public simgear::Emesary::IReceiver
 public:
     TestThreadRecipient() : receiveCount(0)
     {
-
     }
 
     std::atomic<int> receiveCount;
+
     virtual simgear::Emesary::ReceiptStatus Receive(simgear::Emesary::INotification &n)
     {
         if (n.GetType() == (const char*)this)
         {
-            TestThreadNotification *tn = dynamic_cast<TestThreadNotification *>(&n);
+            // Unused: TestThreadNotification *tn = dynamic_cast<TestThreadNotification *>(&n);
             receiveCount++;
+
             TestThreadNotification onwardNotification("AL");
             simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(onwardNotification);
+            
             return simgear::Emesary::ReceiptStatusOK;
         }
+
         return simgear::Emesary::ReceiptStatusOK;
     }
 };

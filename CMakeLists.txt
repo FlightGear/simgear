@@ -10,6 +10,9 @@ if(COMMAND cmake_policy)
    if(POLICY CMP0067)
        cmake_policy(SET CMP0067 NEW)
    endif()
+   if(POLICY CMP0093)
+       cmake_policy(SET CMP0093 NEW)
+   endif()
 endif()
 
 
@@ -173,15 +176,17 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
 
   set( OSG_MSVC "msvc" )
   if (${MSVC_VERSION_MAJOR} EQUAL "19")
-    if (${MSVC_VERSION_MINOR} EQUAL "00")
-      set( OSG_MSVC ${OSG_MSVC}140 )
-    else ()
+    if (${MSVC_VERSION_MINOR} GREATER_EQUAL "20")
+      set( OSG_MSVC ${OSG_MSVC}142 )
+    elseif (${MSVC_VERSION_MINOR} GREATER_EQUAL "10")
       set( OSG_MSVC ${OSG_MSVC}141 )
+    else ()
+      set( OSG_MSVC ${OSG_MSVC}140 )
     endif ()
   elseif (${MSVC_VERSION_MAJOR} EQUAL "18")
     set( OSG_MSVC ${OSG_MSVC}120 )
   else ()
-    message(FATAL_ERROR "Visual Studio 2013/15/17 is required")
+    message(FATAL_ERROR "Visual Studio 2013 or higher is required")
   endif ()
 
   if (CMAKE_CL_64)
@@ -271,9 +276,6 @@ if (SYSTEM_EXPAT)
 
 else()
     message(STATUS "Using built-in expat code")
-    # XML_STATIC is important to avoid sg_expat_external.h
-    # declaring symbols as declspec(import)
-    add_definitions(-DHAVE_EXPAT_CONFIG_H -DXML_STATIC)
     set(EXPAT_INCLUDE_DIRS
             ${PROJECT_SOURCE_DIR}/3rdparty/expat
             ${PROJECT_BINARY_DIR}/3rdparty/expat)
@@ -520,6 +522,10 @@ include(CheckCXXFeatures)
 # use BEFORE to ensure local directories are used first,
 # ahead of system-installed libs
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
+    include_directories("/usr/X11R6/include")
+endif()
 
 add_definitions(-DHAVE_CONFIG_H)
 

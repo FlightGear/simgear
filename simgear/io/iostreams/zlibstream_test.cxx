@@ -431,7 +431,7 @@ void test_ZlibDecompressorIStream_readPutbackEtc()
     try {
       // 'Z' is not the last character read from the stream
       decompressor.putback('Z');
-    } catch (std::ios_base::failure) {
+    } catch (const std::ios_base::failure&) {
       gotException = true;
     } catch (const std::exception& e) {
       // gcc fails to catch std::ios_base::failure due to an inconsistent C++11

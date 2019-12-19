@@ -29,6 +29,9 @@ int main( int argc, char *argv[] ) {
     smgr->set_volume(0.9);
     smgr->activate();
 
+    // prevent NaNs
+    smgr->set_position( SGVec3d(0, 0, 0), SGGeod::fromDegFt(0, 0, 0) );
+
     SGPath srcDir(SRC_DIR);
 
     SGSoundSample *sample1 = new SGSoundSample("jet.wav", srcDir);

@@ -53,9 +53,6 @@ class Technique;
 class Effect;
 class SGReaderWriterOptions;
 
-using namespace osg;
-using namespace std;
-
 /**
  * Object to be initialized at some point after an effect -- and its
  * containing effect geode -- are hooked into the scene graph. Some
@@ -179,9 +176,9 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
 
 class UniformFactoryImpl {
 public:
-    ref_ptr<Uniform> getUniform( Effect * effect,
+    osg::ref_ptr<osg::Uniform> getUniform( Effect * effect,
                                  const string & name,
-                                 Uniform::Type uniformType,
+                                 osg::Uniform::Type uniformType,
                                  SGConstPropertyNode_ptr valProp,
                                  const SGReaderWriterOptions* options );
     void updateListeners( SGPropertyNode* propRoot );
@@ -194,9 +191,9 @@ private:
 
     SGMutex _mutex;
 
-    typedef boost::tuple<std::string, Uniform::Type, std::string, std::string> UniformCacheKey;
-    typedef boost::tuple<ref_ptr<Uniform>, SGPropertyChangeListener*> UniformCacheValue;
-    std::map<UniformCacheKey,ref_ptr<Uniform> > uniformCache;
+    typedef boost::tuple<std::string, osg::Uniform::Type, std::string, std::string> UniformCacheKey;
+    typedef boost::tuple<osg::ref_ptr<osg::Uniform>, SGPropertyChangeListener*> UniformCacheValue;
+    std::map<UniformCacheKey,osg::ref_ptr<osg::Uniform> > uniformCache;
 
     typedef std::queue<DeferredPropertyListener*> DeferredListenerList;
     DeferredListenerList deferredListenerList;

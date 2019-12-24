@@ -356,7 +356,7 @@ namespace
 {
 TextureBuilder::Registrar install1D("1d", new TexBuilder<Texture1D>("1d"));
 TextureBuilder::Registrar install2D("2d", new TexBuilder<Texture2D>("2d"));
-TextureBuilder::Registrar install3D("3d", new TexBuilder<Texture3D>("3d"));
+//TextureBuilder::Registrar install3D("3d", new TexBuilder<Texture3D>("3d"));
 }
 
 class WhiteTextureBuilder : public TextureBuilder
@@ -775,6 +775,96 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
 namespace {
 TextureBuilder::Registrar installCubeMap("cubemap", new CubeMapBuilder);
 }
+
+
+class Texture3DBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+protected:
+    typedef map<TexTuple, observer_ptr<Texture3D> > TexMap;
+    TexMap texMap;
+};
+
+Texture* Texture3DBuilder::build(Effect* effect, Pass* pass,
+                                 const SGPropertyNode* props,
+                                 const SGReaderWriterOptions* options)
+{
+    TexTuple attrs = makeTexTuple(effect, props, options, "3d");
+    typename TexMap::iterator itr = texMap.find(attrs);
+
+    ref_ptr<Texture3D> tex;
+    if ((itr != texMap.end())&&
+        (itr->second.lock(tex)))
+    {
+        return tex.release();
+    }
+
+    tex = new Texture3D;
+
+    const string& imageName = attrs.get<0>();
+    if (imageName.empty())
+        return NULL;
+
+    osgDB::ReaderWriter::ReadResult result;
+
+    // load texture for effect
+    SGReaderWriterOptions::LoadOriginHint origLOH = options->getLoadOriginHint();
+    if(attrs.get<8>() == ImageInternalFormat::Normalized)
+        options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED);
+    else
+        options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
+#if OSG_VERSION_LESS_THAN(3,4,2)
+    result = osgDB::readImageFile(imageName, options);
+#else
+    result = osgDB::readRefImageFile(imageName, options);
+#endif
+    options->setLoadOriginHint(origLOH);
+    osg::ref_ptr<osg::Image> image;
+    if (result.success())
+        image = result.getImage();
+    if (image.valid())
+    {
+        osg::ref_ptr<osg::Image> image3d = new osg::Image;
+        int size = image->t();
+        int depth = image->s() / image->t();
+        image3d->allocateImage(size, size, depth,
+                               image->getPixelFormat(), image->getDataType());
+
+        for (int i = 0; i < depth; ++i) {
+            osg::ref_ptr<osg::Image> subimage = new osg::Image;
+            subimage->allocateImage(size, size, 1,
+                                    image->getPixelFormat(), image->getDataType());
+            copySubImage(image, size * i, 0, size, size, subimage.get(), 0, 0);
+            image3d->copySubImage(0, 0, i, subimage.get());
+        }
+
+        image3d->setInternalTextureFormat(image->getInternalTextureFormat());
+        image3d = computeMipmap(image3d.get(), attrs.get<7>());
+        tex->setImage(image3d.get());
+    } else {
+        SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file " << imageName);
+        return NULL;
+    }
+
+    tex->setFilter(Texture::MIN_FILTER, attrs.get<1>());
+    tex->setFilter(Texture::MAG_FILTER, attrs.get<2>());
+    tex->setWrap(Texture::WRAP_S, attrs.get<3>());
+    tex->setWrap(Texture::WRAP_T, attrs.get<4>());
+    tex->setWrap(Texture::WRAP_R, attrs.get<5>());
+
+    if (itr == texMap.end())
+        texMap.insert(make_pair(attrs, tex));
+    else
+        itr->second = tex; // update existing, but empty observer
+    return tex.release();
+}
+
+namespace {
+TextureBuilder::Registrar install3D("3d", new Texture3DBuilder);
+}
+
 
 EffectNameValue<TexEnvCombine::CombineParam> combineParamInit[] =
 {

@@ -118,7 +118,11 @@ SGLight::appendLight(const SGPropertyNode *configNode,
             light->getRange());
     }
     osg::ShapeDrawable *debug_drawable = new osg::ShapeDrawable(debug_shape);
-    debug_drawable->setColor(osg::Vec4(1.0, 0.0, 0.0, 1.0));
+    debug_drawable->setColor(
+        osg::Vec4(configNode->getFloatValue("debug-color/r", 1.0f),
+                  configNode->getFloatValue("debug-color/g", 0.0f),
+                  configNode->getFloatValue("debug-color/b", 0.0f),
+                  configNode->getFloatValue("debug-color/a", 1.0f)));
     osg::Geode *debug_geode = new osg::Geode;
     debug_geode->addDrawable(debug_drawable);
 

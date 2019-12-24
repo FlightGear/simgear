@@ -89,7 +89,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     pass->type = root->getStringValue("type");
     pass->effect_scheme = root->getStringValue("effect-scheme");
 
-    osg::Camera *camera = new Camera;
+    osg::Camera *camera = new osg::Camera;
     pass->camera = camera;
 
     camera->setName(pass->name);
@@ -107,8 +107,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     camera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
 
     // XXX: Should we make this configurable?
-    camera->setCullingMode(CullSettings::SMALL_FEATURE_CULLING
-                           | CullSettings::VIEW_FRUSTUM_CULLING);
+    camera->setCullingMode(osg::CullSettings::SMALL_FEATURE_CULLING
+                           | osg::CullSettings::VIEW_FRUSTUM_CULLING);
 
     osg::Node::NodeMask cull_mask =
         std::stoul(root->getStringValue("cull-mask", "0xffffffff"), nullptr, 0);
@@ -639,8 +639,8 @@ public:
 protected:
     // Given a projection matrix, return a new one with the same frustum
     // sides and new near / far values.
-    void makeNewProjMat(Matrixd& oldProj, double znear,
-                        double zfar, Matrixd& projection) {
+    void makeNewProjMat(osg::Matrixd& oldProj, double znear,
+                        double zfar, osg::Matrixd& projection) {
         projection = oldProj;
         // Slightly inflate the near & far planes to avoid objects at the
         // extremes being clipped out.

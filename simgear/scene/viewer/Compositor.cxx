@@ -28,9 +28,19 @@
 #include <simgear/scene/material/EffectCullVisitor.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/structure/exception.hxx>
 
 #include "CompositorUtil.hxx"
+
+
+class LightDirectionCallback : public osg::Uniform::Callback {
+public:
+    virtual void operator()(osg::Uniform *uniform, osg::NodeVisitor *nv) {
+        SGUpdateVisitor *uv = dynamic_cast<SGUpdateVisitor *>(nv);
+        uniform->set(toOsg(uv->getLightDirection()));
+    }
+};
 
 namespace simgear {
 namespace compositor {
@@ -113,10 +123,16 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_ViewMatrixInverse", osg::Matrixf()),
     new osg::Uniform("fg_ProjectionMatrix", osg::Matrixf()),
     new osg::Uniform("fg_ProjectionMatrixInverse", osg::Matrixf()),
+    new osg::Uniform("fg_PrevViewMatrix", osg::Matrixf()),
+    new osg::Uniform("fg_PrevViewMatrixInverse", osg::Matrixf()),
+    new osg::Uniform("fg_PrevProjectionMatrix", osg::Matrixf()),
+    new osg::Uniform("fg_PrevProjectionMatrixInverse", osg::Matrixf()),
     new osg::Uniform("fg_CameraPositionCart", osg::Vec3f()),
-    new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f())
+    new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
+    new osg::Uniform("fg_LightDirection", osg::Vec3f())
     }
 {
+    _uniforms[LIGHT_DIRECTION]->setUpdateCallback(new LightDirectionCallback);
 }
 
 Compositor::~Compositor()
@@ -148,6 +164,18 @@ Compositor::update(const osg::Matrix &view_matrix,
     osg::Vec4d camera_pos = osg::Vec4(0.0, 0.0, 0.0, 1.0) * view_inverse;
     SGGeod camera_pos_geod = SGGeod::fromCart(
         SGVec3d(camera_pos.x(), camera_pos.y(), camera_pos.z()));
+
+    osg::Matrixf prev_view_matrix, prev_view_matrix_inv;
+    _uniforms[VIEW_MATRIX]->get(prev_view_matrix);
+    _uniforms[VIEW_MATRIX_INV]->get(prev_view_matrix_inv);
+    osg::Matrixf prev_proj_matrix, prev_proj_matrix_inv;
+    _uniforms[PROJECTION_MATRIX]->get(prev_proj_matrix);
+    _uniforms[PROJECTION_MATRIX_INV]->get(prev_proj_matrix_inv);
+
+    _uniforms[PREV_VIEW_MATRIX]->set(prev_view_matrix);
+    _uniforms[PREV_VIEW_MATRIX_INV]->set(prev_view_matrix_inv);
+    _uniforms[PREV_PROJECTION_MATRIX]->set(prev_proj_matrix);
+    _uniforms[PREV_PROJECTION_MATRIX_INV]->set(prev_proj_matrix_inv);
 
     for (int i = 0; i < TOTAL_BUILTIN_UNIFORMS; ++i) {
         osg::ref_ptr<osg::Uniform> u = _uniforms[i];

@@ -39,7 +39,9 @@ namespace nasal
     //    }
     //    virtual ~NasalMainLoopRecipientSingleton() {}
     //};
-  NasalMainLoopRecipient mrl;  
+
+    // HACK: The below prevents shutdown on Linux. Disable until thread shutdown is implemented.
+    // NasalMainLoopRecipient mrl;
 
   //----------------------------------------------------------------------------
   naRef to_nasal_helper(naContext c, const std::string& str)

@@ -63,22 +63,23 @@ public:
             simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>( node );
             if (geode != 0) {
                 osg::ref_ptr<simgear::Effect> effect = geode->getEffect();
-
-                SGPropertyNode* params = effect->parametersProp;
-                params->getNode("ambient")->setValue(_ambient * dim);
-                params->getNode("diffuse")->setValue(_diffuse * dim);
-                params->getNode("specular")->setValue(_specular * dim);
-                BOOST_FOREACH(osg::ref_ptr<simgear::Technique>& technique, effect->techniques) {
-                    BOOST_FOREACH(osg::ref_ptr<simgear::Pass>& pass, technique->passes) {
-                        osg::Uniform* amb = pass->getUniform("Ambient");
-                        if (amb)
-                            amb->set(osg::Vec4f(_ambient.x() * dim, _ambient.y() * dim, _ambient.z() * dim, _ambient.w() * dim));
-                        osg::Uniform* dif = pass->getUniform("Diffuse");
-                        if (dif)
-                            dif->set(osg::Vec4f(_diffuse.x() * dim, _diffuse.y() * dim, _diffuse.z() * dim, _diffuse.w() * dim));
-                        osg::Uniform* spe = pass->getUniform("Specular");
-                        if (spe)
-                            spe->set(osg::Vec4f(_specular.x() * dim, _specular.y() * dim, _specular.z() * dim, _specular.w() * dim));
+                if (effect != nullptr) {
+                    SGPropertyNode* params = effect->parametersProp;
+                    params->getNode("ambient")->setValue(_ambient * dim);
+                    params->getNode("diffuse")->setValue(_diffuse * dim);
+                    params->getNode("specular")->setValue(_specular * dim);
+                    BOOST_FOREACH(osg::ref_ptr<simgear::Technique> & technique, effect->techniques) {
+                        BOOST_FOREACH(osg::ref_ptr<simgear::Pass> & pass, technique->passes) {
+                            osg::Uniform* amb = pass->getUniform("Ambient");
+                            if (amb)
+                                amb->set(osg::Vec4f(_ambient.x() * dim, _ambient.y() * dim, _ambient.z() * dim, _ambient.w() * dim));
+                            osg::Uniform* dif = pass->getUniform("Diffuse");
+                            if (dif)
+                                dif->set(osg::Vec4f(_diffuse.x() * dim, _diffuse.y() * dim, _diffuse.z() * dim, _diffuse.w() * dim));
+                            osg::Uniform* spe = pass->getUniform("Specular");
+                            if (spe)
+                                spe->set(osg::Vec4f(_specular.x() * dim, _specular.y() * dim, _specular.z() * dim, _specular.w() * dim));
+                        }
                     }
                 }
             }
@@ -189,7 +190,11 @@ SGLightAnimation::install(osg::Node& node)
     } else {
         effect = iter->second.get();
     }
-
+    if (effect == nullptr) {
+        printf("invalid effect - hiding geometry as light not valid.\n");
+        node.setNodeMask(0);
+        return;
+    }
     node.setNodeMask( simgear::MODELLIGHT_BIT );
     simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>(&node);
     if (geode == 0) {

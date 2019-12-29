@@ -158,11 +158,16 @@ public:
             << std::setw(10)
             << std::left
             << debugClassToString(c)
-            << " " 
-            << file 
-            << ":" 
-            << line 
-            << ":" 
+            ;
+        if (file && line != -1) {
+            m_file
+                << file 
+                << ":" 
+                << line
+                << ": " 
+                ;
+            }
+        m_file
             << message << std::endl;
         //m_file << debugClassToString(c) << ":" << (int)p
         //    << ":" << file << ":" << line << ":" << message << std::endl;

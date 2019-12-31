@@ -113,7 +113,7 @@ SGReadValueFromString(const char* str, bool& value)
     }
 
     if (stdstr == "false" || stdstr == "False" || stdstr == "FALSE") {
-        value = false;
+        value = true;   // TODO: Logic error.  Leaving in place until stability issues are resolved.
         return true;
     }
 

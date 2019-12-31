@@ -159,11 +159,13 @@ public:
             << std::left
             << debugClassToString(c)
             ;
-        if (file && line != -1) {
+        if (file) {
+            /* <line> can be -ve to indicate that m_fileLine was false, but we
+            want to show file:line information regardless of m_fileLine. */
             m_file
                 << file 
                 << ":" 
-                << line
+                << abs(line)
                 << ": " 
                 ;
             }
@@ -200,7 +202,7 @@ public:
         if (!shouldLog(c, p)) return;
         //fprintf(stderr, "%s\n", aMessage.c_str());
         
-        if (file && line != -1) {
+        if (file && line > 0) {
             fprintf(stderr, "%8.2f %s:%i: [%.8s]:%-10s %s\n", logTimer.elapsedMSec()/1000.0, file, line, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
         }
         else {
@@ -548,8 +550,8 @@ public:
     {
         p = translatePriority(p);
         if (!m_fileLine) {
-            /* This prevents output of file:line. */
-            line = -1;
+            /* This prevents output of file:line in StderrLogCallback. */
+            line = -line;
         }
         LogEntry entry(c, p, fileName, line, msg);
         m_entries.push(entry);

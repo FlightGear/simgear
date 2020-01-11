@@ -495,6 +495,8 @@ SGExclusiveThread::SGExclusiveThread() :
 
     void SGExclusiveThread::terminate() {
         _terminated = true;
+        release();
+        join();
     }
     bool SGExclusiveThread::stop()
     {

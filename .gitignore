@@ -16,3 +16,4 @@ build*
 Build
 CMakeLists.txt.user
 3rdparty/expat_2.2.6/
+nbproject

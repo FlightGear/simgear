@@ -9,9 +9,7 @@
 
 static int valid(double d)
 {
-    union { double d; unsigned long long ull; } u;
-    u.d = d;
-    return ((u.ull >> 52) & 0x7ff) != 0x7ff;
+    return isfinite(d);
 }
 
 static naRef die(naContext c, const char* fn)

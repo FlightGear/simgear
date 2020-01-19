@@ -56,7 +56,8 @@ public:
         FAIL_HTTP_FORBIDDEN, ///< URL returned a 403. Marked specially to catch rate-limiting
         FAIL_VALIDATION,    ///< catalog or package failed to validate
         STATUS_REFRESHED,
-        USER_CANCELLED
+        USER_CANCELLED,
+        USER_DISABLED
     } StatusCode;
 
 

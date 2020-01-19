@@ -198,9 +198,7 @@ private:
 //////////////////////////////////////////////////////////////////////////////
 
 Catalog::Catalog(Root *aRoot) :
-    m_root(aRoot),
-    m_status(Delegate::FAIL_UNKNOWN),
-    m_retrievedTime(0)
+    m_root(aRoot)
 {
 }
 
@@ -221,7 +219,7 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     SGPath xml = aPath;
     xml.append("catalog.xml");
     if (!xml.exists()) {
-        return NULL;
+        return nullptr;
     }
 
     SGPropertyNode_ptr props;
@@ -229,7 +227,7 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
         props = new SGPropertyNode;
         readProperties(xml, props);
     } catch (sg_exception& ) {
-        return NULL;
+        return nullptr;
     }
 
     bool versionCheckOk = checkVersion(aRoot->applicationVersion(), props);
@@ -240,19 +238,29 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     } else {
         SG_LOG(SG_GENERAL, SG_DEBUG, "creating catalog from:" << aPath);
     }
+    
+    // check for the marker file we write, to mark a catalog as disabled
+    const SGPath disableMarkerFile = aPath / "_disabled_";
 
     CatalogRef c = new Catalog(aRoot);
     c->m_installRoot = aPath;
+    
+    if (disableMarkerFile.exists()) {
+        c->m_userEnabled = false;
+    }
+    
     c->parseProps(props);
     c->parseTimestamp();
 
     if (!c->validatePackages()) {
         c->changeStatus(Delegate::FAIL_VALIDATION);
-    } else if (versionCheckOk) {
+    } else if (!versionCheckOk) {
+         c->changeStatus(Delegate::FAIL_VERSION);
+    } else if (!c->m_userEnabled) {
+          c->changeStatus(Delegate::USER_DISABLED);
+    } else {
         // parsed XML ok, mark status as valid
         c->changeStatus(Delegate::STATUS_SUCCESS);
-    } else {
-        c->changeStatus(Delegate::FAIL_VERSION);
     }
 
     return c;
@@ -592,6 +600,9 @@ Delegate::StatusCode Catalog::status() const
 
 bool Catalog::isEnabled() const
 {
+    if (!m_userEnabled)
+        return false;
+    
     switch (m_status) {
     case Delegate::STATUS_SUCCESS:
     case Delegate::STATUS_REFRESHED:
@@ -602,6 +613,36 @@ bool Catalog::isEnabled() const
     default:
         return false;
     }
+}
+
+bool Catalog::isUserEnabled() const
+{
+    return m_userEnabled;
+}
+
+void Catalog::setUserEnabled(bool b)
+{
+    if (m_userEnabled == b)
+        return;
+    
+    m_userEnabled = b;
+    SGPath disableMarkerFile = installRoot() / "_disabled_";
+    if (m_userEnabled) {
+        sg_ofstream of(disableMarkerFile);
+        of << "1\n"; // touch the file
+    } else {
+        bool ok = disableMarkerFile.remove();
+        if (!ok) {
+            SG_LOG(SG_GENERAL, SG_ALERT, "Failed to remove catalog-disable marker file:" << disableMarkerFile);
+        }
+    }
+    
+    Delegate::StatusCode effectiveStatus = m_status;
+    if ((m_status == Delegate::STATUS_SUCCESS) && !m_userEnabled) {
+        effectiveStatus = Delegate::USER_DISABLED;
+    }
+    
+    m_root->catalogRefreshStatus(this, effectiveStatus);
 }
     
 void Catalog::processAlternate(SGPropertyNode_ptr alt)

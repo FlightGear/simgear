@@ -150,6 +150,9 @@ public:
     {
       return addStatusCallback(boost::bind(mem_func, instance, _1));
     }
+    
+    bool isUserEnabled() const;
+    void setUserEnabled(bool b);
 private:
     Catalog(Root* aRoot);
 
@@ -185,11 +188,12 @@ private:
     SGPropertyNode_ptr m_props;
     SGPath m_installRoot;
     std::string m_url;
-    Delegate::StatusCode m_status;
+    Delegate::StatusCode m_status = Delegate::FAIL_UNKNOWN;
     HTTP::Request_ptr m_refreshRequest;
-
+    bool m_userEnabled = true;
+    
     PackageList m_packages;
-    time_t m_retrievedTime;
+    time_t m_retrievedTime = 0;
 
     typedef std::map<std::string, Package*> PackageWeakMap;
     PackageWeakMap m_variantDict;

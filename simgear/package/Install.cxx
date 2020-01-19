@@ -108,6 +108,8 @@ protected:
 		m_extractor.reset(new ArchiveExtractor(m_extractPath));
         memset(&m_md5, 0, sizeof(SG_MD5_CTX));
         SG_MD5Init(&m_md5);
+        
+        m_owner->startDownload();
     }
 
     virtual void gotBodyData(const char* s, int n)
@@ -395,6 +397,7 @@ Install* Install::progress(const ProgressCallback& cb)
 //------------------------------------------------------------------------------
 void Install::installResult(Delegate::StatusCode aReason)
 {
+    m_status = aReason;
     m_package->catalog()->root()->finishInstall(this, aReason);
     if (aReason == Delegate::STATUS_SUCCESS) {
         _cb_done(this);
@@ -412,6 +415,15 @@ void Install::installProgress(unsigned int aBytes, unsigned int aTotal)
   _cb_progress(this, aBytes, aTotal);
 }
 
+void Install::startDownload()
+{
+    m_status = Delegate::STATUS_IN_PROGRESS;
+}
+
+Delegate::StatusCode Install::status() const
+{
+    return m_status;
+}
 
 } // of namespace pkg
 

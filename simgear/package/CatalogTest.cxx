@@ -15,9 +15,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <simgear/misc/test_macros.hxx>
 
@@ -98,6 +96,11 @@ public:
             path = "/catalogTest1/movies-data.zip";
         }
 
+        if (path == "/catalogTest1/b747.tar.gz") {
+            sendErrorResponse(403, false, "Bad URL");
+            return;
+        }
+        
         localPath.append(path);
 
       //  SG_LOG(SG_IO, SG_INFO, "local path is:" << localPath.str());
@@ -158,7 +161,7 @@ int parseTest()
     SG_CHECK_EQUAL(cat->description(), "First test catalog");
 
 // check the packages too
-    SG_CHECK_EQUAL(cat->packages().size(), 5);
+    SG_CHECK_EQUAL(cat->packages().size(), 6);
 
     pkg::PackageRef p1 = cat->packages().front();
     SG_CHECK_EQUAL(p1->catalog(), cat.ptr());
@@ -349,7 +352,7 @@ void testAddCatalog(HTTP::Client* cl)
     p.append("org.flightgear.test.catalog1");
     p.append("catalog.xml");
     SG_VERIFY(p.exists());
-    SG_CHECK_EQUAL(root->allPackages().size(), 5);
+    SG_CHECK_EQUAL(root->allPackages().size(), 6);
     SG_CHECK_EQUAL(root->catalogs().size(), 1);
 
     pkg::PackageRef p1 = root->getPackageById("alpha");
@@ -383,6 +386,7 @@ void testInstallPackage(HTTP::Client* cl)
     waitForUpdateComplete(cl, root);
     SG_VERIFY(p1->isInstalled());
     SG_VERIFY(p1->existingInstall() == ins);
+    SG_CHECK_EQUAL(ins->status(), pkg::Delegate::STATUS_SUCCESS);
 
     pkg::PackageRef commonDeps = root->getPackageById("common-sounds");
     SG_VERIFY(commonDeps->existingInstall());
@@ -428,6 +432,7 @@ void testUninstall(HTTP::Client* cl)
 
     ins->uninstall();
 
+    SG_CHECK_EQUAL(ins->status(), pkg::Delegate::STATUS_SUCCESS);
     SG_VERIFY(!ins->path().exists());
 }
 
@@ -1075,9 +1080,45 @@ void updateInvalidToInvalid(HTTP::Client* cl)
     
 }
 
+void testInstallBadPackage(HTTP::Client* cl)
+{
+    global_catalogVersion = 0;
+
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_install_bad_pkg");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    // specify a test dir
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b747-400");
+    pkg::InstallRef ins = p1->install();
+    
+    bool didFail = false;
+    ins->fail([&didFail, &ins](pkg::Install* ourInstall) {
+        SG_CHECK_EQUAL(ins, ourInstall);
+        didFail = true;
+    });
+    
+    SG_VERIFY(ins->isQueued());
+
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(!p1->isInstalled());
+    SG_VERIFY(didFail);
+    SG_VERIFY(p1->existingInstall() == ins);
+    SG_CHECK_EQUAL(ins->status(), pkg::Delegate::FAIL_DOWNLOAD);
+    SG_CHECK_EQUAL(ins->path(), rootPath / "org.flightgear.test.catalog1" / "Aircraft" / "b744");
+}
+
+
 int main(int argc, char* argv[])
 {
-    sglog().setLogLevels( SG_ALL, SG_DEBUG );
+   // sglog().setLogLevels( SG_ALL, SG_DEBUG );
 
     HTTP::Client cl;
     cl.setMaxConnections(1);
@@ -1115,6 +1156,8 @@ int main(int argc, char* argv[])
     removeInvalidCatalog(&cl);
     
     testVersionMigrateToId(&cl);
+    
+    testInstallBadPackage(&cl);
     
     SG_LOG(SG_GENERAL, SG_INFO, "Successfully passed all tests!");
     return EXIT_SUCCESS;

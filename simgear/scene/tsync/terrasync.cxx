@@ -57,7 +57,6 @@
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/debug/BufferedLogCallback.hxx>
@@ -242,31 +241,31 @@ public:
 
     bool isIdle()
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         return !_state._busy;
     }
 
     bool isRunning()
     {
-         SGGuard<SGMutex> g(_stateLock);
+         std::lock_guard<std::mutex> g(_stateLock);
         return _running;
     }
 
     bool isStalled()
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         return _state._stalled;
     }
 
     bool hasServer()
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         return _state._hasServer;
     }
 
     bool hasServer( bool flag )
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         return (_state._hasServer = flag);
     }
 
@@ -309,14 +308,14 @@ public:
 
    void   setAllowedErrorCount(int errors)
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         _state._allowed_errors = errors;
     }
 
    void   setCachePath(const SGPath& p)     {_persistentCachePath = p;}
    void   setCacheHits(unsigned int hits)
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         _state._cache_hits = hits;
     }
 
@@ -324,7 +323,7 @@ public:
     {
         TerrasyncThreadState st;
         {
-            SGGuard<SGMutex> g(_stateLock);
+            std::lock_guard<std::mutex> g(_stateLock);
             st = _state;
         }
         return st;
@@ -332,7 +331,7 @@ public:
 private:
     void incrementCacheHits()
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         _state._cache_hits++;
     }
 
@@ -371,7 +370,7 @@ private:
     string _dnsdn;
 
     TerrasyncThreadState _state;
-    SGMutex _stateLock;
+    std::mutex _stateLock;
 };
 
 SGTerraSync::WorkerThread::WorkerThread() :
@@ -392,7 +391,7 @@ void SGTerraSync::WorkerThread::stop()
 
     // set stop flag and wake up the thread with an empty request
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         _stop = true;
     }
 
@@ -520,7 +519,7 @@ bool SGTerraSync::WorkerThread::findServer()
 void SGTerraSync::WorkerThread::run()
 {
     {
-         SGGuard<SGMutex> g(_stateLock);
+         std::lock_guard<std::mutex> g(_stateLock);
         _running = true;
     }
 
@@ -529,7 +528,7 @@ void SGTerraSync::WorkerThread::run()
     runInternal();
 
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         _running = false;
     }
 }
@@ -640,7 +639,7 @@ void SGTerraSync::WorkerThread::runInternal()
         }
 
         {
-            SGGuard<SGMutex> g(_stateLock);
+            std::lock_guard<std::mutex> g(_stateLock);
             _state._transfer_rate = _http.transferRateBytesPerSec();
             // convert from bytes to kbytes
             _state._total_kb_downloaded = static_cast<int>(_http.totalBytesDownloaded() / 1024);
@@ -676,7 +675,7 @@ void SGTerraSync::WorkerThread::runInternal()
         }
 
         {
-            SGGuard<SGMutex> g(_stateLock);
+            std::lock_guard<std::mutex> g(_stateLock);
             _state._totalKbPending = newPendingCount; // approximately atomic update
             _state._busy = anySlotBusy;
         }
@@ -714,7 +713,7 @@ SyncItem::Status SGTerraSync::WorkerThread::isPathCached(const SyncItem& next) c
 
 void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
 {
-    SGGuard<SGMutex> g(_stateLock);
+    std::lock_guard<std::mutex> g(_stateLock);
     time_t now = time(0);
     _state._consecutive_errors++;
     _state._fail_count++;
@@ -742,7 +741,7 @@ void SGTerraSync::WorkerThread::notFound(SyncItem item)
 void SGTerraSync::WorkerThread::updated(SyncItem item, bool isNewDirectory)
 {
     {
-        SGGuard<SGMutex> g(_stateLock);
+        std::lock_guard<std::mutex> g(_stateLock);
         time_t now = time(0);
         _state._consecutive_errors = 0;
         _state._success_count++;

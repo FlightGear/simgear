@@ -111,7 +111,7 @@ private:
   SGAtomic& operator=(const SGAtomic&);
 
 #if defined(SGATOMIC_USE_MUTEX)
-  mutable SGMutex mMutex;
+  mutable std::mutex mMutex;
 #endif
   unsigned mValue;
 };

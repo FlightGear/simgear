@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include <queue>
+#include <mutex>
 
 #include <boost/functional/hash.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -32,7 +33,6 @@
 #include <simgear/props/props.hxx>
 #include <simgear/scene/util/UpdateOnceCallback.hxx>
 #include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 #include <simgear/structure/Singleton.hxx>
 
 namespace osg
@@ -189,7 +189,7 @@ private:
     static const char* vec3Names[];
     static const char* vec4Names[];
 
-    SGMutex _mutex;
+    std::mutex _mutex;
 
     typedef boost::tuple<std::string, osg::Uniform::Type, std::string, std::string> UniformCacheKey;
     typedef boost::tuple<osg::ref_ptr<osg::Uniform>, SGPropertyChangeListener*> UniformCacheValue;

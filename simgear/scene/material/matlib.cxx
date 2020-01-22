@@ -31,6 +31,7 @@
 
 #include <string.h>
 #include <string>
+#include <mutex>
 
 #include <osgDB/Registry>
 
@@ -41,8 +42,6 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
-#include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 #include "mat.hxx"
 
@@ -56,7 +55,7 @@ using std::string;
 class SGMaterialLib::MatLibPrivate
 {
 public:
-    SGMutex mutex;
+    std::mutex mutex;
 };
 
 // Constructor

@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <cassert>
+#include <mutex>
 
 #include <simgear/props/props_io.hxx>
 
@@ -15,7 +16,6 @@
 
 #include <simgear/structure/exception.hxx>
 #include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 #include <simgear/debug/logstream.hxx>
 
 struct Invocation
@@ -32,7 +32,7 @@ public:
   using InvocactionVec = std::vector<Invocation>;
   InvocactionVec _queue;
 
-  SGMutex _mutex;
+  std::mutex _mutex;
 
   using command_map = std::map<std::string,Command*> ;
   command_map _commands;
@@ -179,7 +179,7 @@ void SGCommandMgr::queuedExecute(const std::string &name, const SGPropertyNode* 
 {
   Invocation invoke = {name, new SGPropertyNode};
   copyProperties(arg, invoke.args);
-  SGGuard<SGMutex> g(d->_mutex);
+  std::lock_guard<std::mutex> g(d->_mutex);
   d->_queue.push_back(invoke);
 }
 
@@ -192,7 +192,7 @@ void SGCommandMgr::executedQueuedCommands()
   // locked swap with the shared queue
   Private::InvocactionVec q;
   {
-    SGGuard<SGMutex> g(d->_mutex);
+    std::lock_guard<std::mutex> g(d->_mutex);
     d->_queue.swap(q);
   }
   

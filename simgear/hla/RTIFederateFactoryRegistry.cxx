@@ -19,11 +19,13 @@
 #  include <simgear_config.h>
 #endif
 
+#include <mutex>
+
 #include <simgear/compiler.h>
 
 #include "RTIFederateFactoryRegistry.hxx"
 
-#include "simgear/threads/SGGuard.hxx"
+#include "simgear/threads/std::lock_guard.hxx"
 #include "RTIFederate.hxx"
 
 namespace simgear {
@@ -39,7 +41,7 @@ RTIFederateFactoryRegistry::~RTIFederateFactoryRegistry()
 SGSharedPtr<RTIFederate>
 RTIFederateFactoryRegistry::create(const std::string& name, const std::list<std::string>& stringList) const
 {
-    SGGuard<SGMutex> guard(_mutex);
+    std::lock_guard<std::mutex> guard(_mutex);
     for (FederateFactoryList::const_iterator i = _federateFactoryList.begin(); i != _federateFactoryList.end(); ++i) {
         SGSharedPtr<RTIFederate> federate = (*i)->create(name, stringList);
         if (!federate.valid())
@@ -52,7 +54,7 @@ RTIFederateFactoryRegistry::create(const std::string& name, const std::list<std:
 void
 RTIFederateFactoryRegistry::registerFactory(RTIFederateFactory* factory)
 {
-    SGGuard<SGMutex> guard(_mutex);
+    std::lock_guard<std::mutex> guard(_mutex);
     _federateFactoryList.push_back(factory);
 }
 

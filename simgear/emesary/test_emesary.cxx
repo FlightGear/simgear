@@ -7,6 +7,7 @@
 
 #include <iostream>
 
+#include <simgear/threads/SGThread.hxx>
 #include <simgear/emesary/Emesary.hxx>
 
 using std::cout;

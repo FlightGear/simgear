@@ -37,6 +37,7 @@
 #include <map>
 #include <list>
 #include <utility>
+#include <mutex>
 
 #include <boost/optional.hpp>
 #include <simgear/threads/SGThread.hxx>
@@ -48,7 +49,7 @@ namespace simgear
     class lru_cache
     {
     public:
-        SGMutex _mutex;
+        std::mutex _mutex;
 
         typedef Key key_type;
         typedef Value value_type;
@@ -85,13 +86,13 @@ namespace simgear
 
         bool contains(const key_type &key)
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             return m_map.find(key) != m_map.end();
         }
 
         void insert(const key_type &key, const value_type &value)
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             typename map_type::iterator i = m_map.find(key);
             if (i == m_map.end()) {
                 // insert item into the cache, but first check if it is full
@@ -107,7 +108,7 @@ namespace simgear
         }
         boost::optional<key_type> findValue(const std::string &requiredValue)
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             for (typename map_type::iterator it = m_map.begin(); it != m_map.end(); ++it)
                 if (it->second.first == requiredValue)
                     return it->first;
@@ -115,7 +116,7 @@ namespace simgear
         }
         boost::optional<value_type> get(const key_type &key)
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             // lookup value in the cache
             typename map_type::iterator i = m_map.find(key);
             if (i == m_map.end()) {
@@ -148,7 +149,7 @@ namespace simgear
 
         void clear()
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             m_map.clear();
             m_list.clear();
         }
@@ -156,7 +157,7 @@ namespace simgear
     private:
         void evict()
         {
-            SGGuard<SGMutex> scopeLock(_mutex);
+            std::lock_guard<std::mutex> scopeLock(_mutex);
             // evict item from the end of most recently used list
             typename list_type::iterator i = --m_list.end();
             m_map.erase(*i);

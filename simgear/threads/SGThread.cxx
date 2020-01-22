@@ -29,29 +29,26 @@
 
 #include "SGThread.hxx"
 
-#ifdef _WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-/// win32 threads
-/////////////////////////////////////////////////////////////////////////////
-
-#include <list>
-#include <windows.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
+#include <climits>
 
 struct SGThread::PrivateData {
-    PrivateData() :
-        _handle(INVALID_HANDLE_VALUE)
+    PrivateData()
     {
     }
     ~PrivateData()
     {
-        if (_handle == INVALID_HANDLE_VALUE)
+        // If we are still having a started thread and nobody waited,
+        // now detach ...
+        if (!_started)
             return;
-        CloseHandle(_handle);
-        _handle = INVALID_HANDLE_VALUE;
+        _thread.detach();
     }
 
-    static DWORD WINAPI start_routine(LPVOID data)
+    static void *start_routine(void* data)
     {
         SGThread* thread = reinterpret_cast<SGThread*>(data);
         thread->run();
@@ -60,55 +57,50 @@ struct SGThread::PrivateData {
 
     bool start(SGThread& thread)
     {
-        if (_handle != INVALID_HANDLE_VALUE)
+        if (_started)
             return false;
-        _handle = CreateThread(0, 0, start_routine, &thread, 0, 0);
-        if (_handle == INVALID_HANDLE_VALUE)
+
+        try {
+           _thread = std::thread(start_routine, &thread);
+        } catch (std::runtime_error &ex) {
             return false;
+        }
+
+        _started = true;
         return true;
     }
 
     void join()
     {
-        if (_handle == INVALID_HANDLE_VALUE)
+        if (!_started)
             return;
-        DWORD ret = WaitForSingleObject(_handle, INFINITE);
-        if (ret != WAIT_OBJECT_0)
-            return;
-        CloseHandle(_handle);
-        _handle = INVALID_HANDLE_VALUE;
+
+        _thread.join();
+        _started = false;
     }
 
-    HANDLE _handle;
+    std::thread _thread;
+    bool _started = false;
 };
 
-long SGThread::current( void ) {
+long SGThread::current( void )
+{
+#ifdef _WIN32
     return (long)GetCurrentThreadId();
+#else
+    return (long)pthread_self();
+#endif
 }
 
-struct SGMutex::PrivateData {
-    PrivateData()
-    {
-        InitializeCriticalSection((LPCRITICAL_SECTION)&_criticalSection);
-    }
 
-    ~PrivateData()
-    {
-        DeleteCriticalSection((LPCRITICAL_SECTION)&_criticalSection);
-    }
+#if _WIN32
 
-    void lock(void)
-    {
-        EnterCriticalSection((LPCRITICAL_SECTION)&_criticalSection);
-    }
+/////////////////////////////////////////////////////////////////////////////
+/// win32 threads
+/////////////////////////////////////////////////////////////////////////////
 
-    void unlock(void)
-    {
-        LeaveCriticalSection((LPCRITICAL_SECTION)&_criticalSection);
-    }
-
-    CRITICAL_SECTION _criticalSection;
-};
+#include <list>
+#include <windows.h>
 
 struct SGWaitCondition::PrivateData {
     ~PrivateData(void)
@@ -138,7 +130,7 @@ struct SGWaitCondition::PrivateData {
         _mutex.unlock();
     }
 
-    bool wait(SGMutex::PrivateData& externalMutex, DWORD msec)
+    bool wait(std::mutex& externalMutex, DWORD msec)
     {
         _mutex.lock();
         if (_pool.empty())
@@ -163,13 +155,13 @@ struct SGWaitCondition::PrivateData {
         return result == WAIT_OBJECT_0;
     }
 
-    void wait(SGMutex::PrivateData& externalMutex)
+    void wait(std::mutex& externalMutex)
     {
         wait(externalMutex, INFINITE);
     }
 
     // Protect the list of waiters
-    SGMutex::PrivateData _mutex;
+    std::mutex _mutex;
 
     std::list<HANDLE> _waiters;
     std::list<HANDLE> _pool;
@@ -184,89 +176,6 @@ struct SGWaitCondition::PrivateData {
 #include <cassert>
 #include <cerrno>
 #include <sys/time.h>
-
-struct SGThread::PrivateData {
-    PrivateData() :
-        _started(false)
-    {
-    }
-    ~PrivateData()
-    {
-        // If we are still having a started thread and nobody waited,
-        // now detach ...
-        if (!_started)
-            return;
-        pthread_detach(_thread);
-    }
-
-    static void *start_routine(void* data)
-    {
-        SGThread* thread = reinterpret_cast<SGThread*>(data);
-        thread->run();
-        return 0;
-    }
-
-    bool start(SGThread& thread)
-    {
-        if (_started)
-            return false;
-
-        int ret = pthread_create(&_thread, 0, start_routine, &thread);
-        if (0 != ret)
-            return false;
-
-        _started = true;
-        return true;
-    }
-
-    void join()
-    {
-        if (!_started)
-            return;
-
-        pthread_join(_thread, 0);
-        _started = false;
-    }
-
-    pthread_t _thread;
-    bool _started;
-};
-
-long SGThread::current( void ) {
-    return (long)pthread_self();
-}
-
-struct SGMutex::PrivateData {
-    PrivateData()
-    {
-        int err = pthread_mutex_init(&_mutex, 0);
-        assert(err == 0);
-        (void)err;
-    }
-
-    ~PrivateData()
-    {
-        int err = pthread_mutex_destroy(&_mutex);
-        assert(err == 0);
-        (void)err;
-    }
-
-    void lock(void)
-    {
-        int err = pthread_mutex_lock(&_mutex);
-        assert(err == 0);
-        (void)err;
-    }
-
-    void unlock(void)
-    {
-        int err = pthread_mutex_unlock(&_mutex);
-        assert(err == 0);
-        (void)err;
-    }
-
-    pthread_mutex_t _mutex;
-};
 
 struct SGWaitCondition::PrivateData {
     PrivateData(void)
@@ -296,14 +205,14 @@ struct SGWaitCondition::PrivateData {
         (void)err;
     }
 
-    void wait(SGMutex::PrivateData& mutex)
+    void wait(std::mutex& mutex)
     {
-        int err = pthread_cond_wait(&_condition, &mutex._mutex);
+        int err = pthread_cond_wait(&_condition, mutex.native_handle());
         assert(err == 0);
         (void)err;
     }
 
-    bool wait(SGMutex::PrivateData& mutex, unsigned msec)
+    bool wait(std::mutex& mutex, unsigned msec)
     {
         struct timespec ts;
 #ifdef HAVE_CLOCK_GETTIME
@@ -324,7 +233,7 @@ struct SGWaitCondition::PrivateData {
         }
         ts.tv_sec += msec / 1000;
 
-        int evalue = pthread_cond_timedwait(&_condition, &mutex._mutex, &ts);
+        int evalue = pthread_cond_timedwait(&_condition, mutex.native_handle(), &ts);
         if (evalue == 0)
           return true;
 
@@ -360,29 +269,6 @@ SGThread::join()
     _privateData->join();
 }
 
-SGMutex::SGMutex() :
-    _privateData(new PrivateData)
-{
-}
-
-SGMutex::~SGMutex()
-{
-    delete _privateData;
-    _privateData = 0;
-}
-
-void
-SGMutex::lock()
-{
-    _privateData->lock();
-}
-
-void
-SGMutex::unlock()
-{
-    _privateData->unlock();
-}
-
 SGWaitCondition::SGWaitCondition() :
     _privateData(new PrivateData)
 {
@@ -395,15 +281,15 @@ SGWaitCondition::~SGWaitCondition()
 }
 
 void
-SGWaitCondition::wait(SGMutex& mutex)
+SGWaitCondition::wait(std::mutex& mutex)
 {
-    _privateData->wait(*mutex._privateData);
+    _privateData->wait(mutex);
 }
 
 bool
-SGWaitCondition::wait(SGMutex& mutex, unsigned msec)
+SGWaitCondition::wait(std::mutex& mutex, unsigned msec)
 {
-    return _privateData->wait(*mutex._privateData, msec);
+    return _privateData->wait(mutex, msec);
 }
 
 void

@@ -87,49 +87,6 @@ private:
 class SGWaitCondition;
 
 /**
- * A mutex is used to protect a section of code such that at any time
- * only a single thread can execute the code.
- */
-class SGMutex {
-public:
-    /**
-     * Create a new mutex.
-     * Under Linux this is a 'fast' mutex.
-     */
-    SGMutex();
-
-    /**
-     * Destroy a mutex object.
-     * Note: it is the responsibility of the caller to ensure the mutex is
-     * unlocked before destruction occurs.
-     */
-    ~SGMutex();
-
-    /**
-     * Lock this mutex.
-     * If the mutex is currently unlocked, it becomes locked and owned by
-     * the calling thread.  If the mutex is already locked by another thread,
-     * the calling thread is suspended until the mutex is unlocked.  If the
-     * mutex is already locked and owned by the calling thread, the calling
-     * thread is suspended until the mutex is unlocked, effectively causing
-     * the calling thread to deadlock.
-     */
-    void lock();
-
-    /**
-     * Unlock this mutex.
-     * It is assumed that the mutex is locked and owned by the calling thread.
-     */
-    void unlock();
-
-private:
-    struct PrivateData;
-    PrivateData* _privateData;
-
-    friend class SGWaitCondition;
-};
-
-/**
  * A condition variable is a synchronization device that allows threads to
  * suspend execution until some predicate on shared data is satisfied.
  * A condition variable is always associated with a mutex to avoid race
@@ -152,7 +109,7 @@ public:
      *
      * @param mutex Reference to a locked mutex.
      */
-    void wait(SGMutex& mutex);
+    void wait(std::mutex& mutex);
 
     /**
      * Wait for this condition variable to be signaled for at most \a 'msec'
@@ -163,7 +120,7 @@ public:
      *
      * @return
      */
-    bool wait(SGMutex& mutex, unsigned msec);
+    bool wait(std::mutex& mutex, unsigned msec);
 
     /**
      * Wake one thread waiting on this condition variable.

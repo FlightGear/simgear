@@ -1,6 +1,7 @@
 include (SimGearComponent)
 
 set(HEADERS 
+    SGGuard.hxx
     SGQueue.hxx
     SGThread.hxx)
 

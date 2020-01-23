@@ -29,6 +29,11 @@
 #include <simgear/compiler.h>
 #include <simgear/timing/timestamp.hxx>
 
+
+// backwards compatibility, just needs a recompile
+#define SGMutex		std::mutex
+
+
 /**
  * Encapsulate generic threading methods.
  * Users derive a class from SGThread and implement the run() member function.

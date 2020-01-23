@@ -83,16 +83,6 @@ struct SGThread::PrivateData {
     bool _started = false;
 };
 
-long SGThread::current( void )
-{
-#ifdef _WIN32
-    return (long)GetCurrentThreadId();
-#else
-    return (long)pthread_self();
-#endif
-}
-
-
 #if _WIN32
 
 /////////////////////////////////////////////////////////////////////////////
@@ -268,6 +258,16 @@ SGThread::join()
 {
     _privateData->join();
 }
+
+long SGThread::current( void )
+{
+#ifdef _WIN32
+    return (long)GetCurrentThreadId();
+#else
+    return (long)pthread_self();
+#endif
+}
+
 
 SGWaitCondition::SGWaitCondition() :
     _privateData(new PrivateData)

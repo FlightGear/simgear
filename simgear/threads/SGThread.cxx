@@ -95,8 +95,8 @@ struct SGWaitCondition::PrivateData {
 
 #ifndef NDEBUG
 # if _WIN32
-        native_handle_type *m = mutex.native_handle();
-        assert(m->LockCount == 0);
+//      native_handle_type *m = mutex.native_handle();
+//      assert(m->LockCount == 0);
 # else
         pthread_mutex_t *m = mutex.native_handle();
         assert(m->__data.__count == 0);
@@ -119,8 +119,8 @@ struct SGWaitCondition::PrivateData {
 
 #ifndef NDEBUG
 # if _WIN32
-        native_handle_type *m = mutex.native_handle();
-        assert(m->LockCount == 0);
+//      native_handle_type *m = mutex.native_handle();
+//      assert(m->LockCount == 0);
 # else
         pthread_mutex_t *m = mutex.native_handle();
         assert(m->__data.__count == 0);

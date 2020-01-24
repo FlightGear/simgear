@@ -35,6 +35,85 @@
 #include <chrono>
 #include <climits>
 
+#if _WIN32
+# include <list>
+# include <windows.h>
+#else
+# include <pthread.h>
+# include <cassert>
+# include <cerrno>
+# include <sys/time.h>
+#endif
+
+struct SGWaitCondition::PrivateData {
+    PrivateData(void)
+    {
+    }
+    ~PrivateData(void)
+    {
+    }
+
+    void signal(void)
+    {
+        bool waiter;
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            waiter = !ready;
+            ready = true;
+        }
+        if (waiter) {
+            _condition.notify_one();
+        }
+    }
+
+    void broadcast(void)
+    {
+        bool waiter;
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            waiter = !ready;
+            ready = true;
+        }
+        if (waiter) {
+            _condition.notify_all();
+        }
+    }
+
+    void wait(std::mutex& mutex)
+    {
+        std::unique_lock<std::mutex> lock(_mutex);
+
+        mutex.unlock();
+        _condition.wait(lock, [this]{ return ready; } );
+        mutex.lock();
+
+        ready = false;
+    }
+
+    bool wait(std::mutex& mutex, unsigned msec)
+    {
+        auto timeout = std::chrono::milliseconds(msec);
+        std::unique_lock<std::mutex> lock(mutex);
+
+        try {
+            mutex.unlock();
+            _condition.wait_for(lock, timeout, [this]{ return ready; } );
+            mutex.lock();
+
+            ready = false;
+        } catch (std::runtime_error &ex) {
+            return false;
+        }
+        return true;
+    }
+
+    std::mutex _mutex;
+    std::condition_variable _condition;
+
+private:
+    bool ready = false;
+};
+
 struct SGThread::PrivateData {
     PrivateData()
     {
@@ -82,159 +161,6 @@ struct SGThread::PrivateData {
     std::thread _thread;
     bool _started = false;
 };
-
-#if _WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-/// win32 threads
-/////////////////////////////////////////////////////////////////////////////
-
-#include <list>
-#include <windows.h>
-
-struct SGWaitCondition::PrivateData {
-    ~PrivateData(void)
-    {
-        // The waiters list should be empty anyway
-        _mutex.lock();
-        while (!_pool.empty()) {
-            CloseHandle(_pool.front());
-            _pool.pop_front();
-        }
-        _mutex.unlock();
-    }
-
-    void signal(void)
-    {
-        _mutex.lock();
-        if (!_waiters.empty())
-            SetEvent(_waiters.back());
-        _mutex.unlock();
-    }
-
-    void broadcast(void)
-    {
-        _mutex.lock();
-        for (std::list<HANDLE>::iterator i = _waiters.begin(); i != _waiters.end(); ++i)
-            SetEvent(*i);
-        _mutex.unlock();
-    }
-
-    bool wait(std::mutex& externalMutex, DWORD msec)
-    {
-        _mutex.lock();
-        if (_pool.empty())
-            _waiters.push_front(CreateEvent(NULL, FALSE, FALSE, NULL));
-        else
-            _waiters.splice(_waiters.begin(), _pool, _pool.begin());
-        std::list<HANDLE>::iterator i = _waiters.begin();
-        _mutex.unlock();
-
-        externalMutex.unlock();
-
-        DWORD result = WaitForSingleObject(*i, msec);
-
-        externalMutex.lock();
-
-        _mutex.lock();
-        if (result != WAIT_OBJECT_0)
-            result = WaitForSingleObject(*i, 0);
-        _pool.splice(_pool.begin(), _waiters, i);
-        _mutex.unlock();
-
-        return result == WAIT_OBJECT_0;
-    }
-
-    void wait(std::mutex& externalMutex)
-    {
-        wait(externalMutex, INFINITE);
-    }
-
-    // Protect the list of waiters
-    std::mutex _mutex;
-
-    std::list<HANDLE> _waiters;
-    std::list<HANDLE> _pool;
-};
-
-#else
-/////////////////////////////////////////////////////////////////////////////
-/// posix threads
-/////////////////////////////////////////////////////////////////////////////
-
-#include <pthread.h>
-#include <cassert>
-#include <cerrno>
-#include <sys/time.h>
-
-struct SGWaitCondition::PrivateData {
-    PrivateData(void)
-    {
-        int err = pthread_cond_init(&_condition, NULL);
-        assert(err == 0);
-        (void)err;
-    }
-    ~PrivateData(void)
-    {
-        int err = pthread_cond_destroy(&_condition);
-        assert(err == 0);
-        (void)err;
-    }
-
-    void signal(void)
-    {
-        int err = pthread_cond_signal(&_condition);
-        assert(err == 0);
-        (void)err;
-    }
-
-    void broadcast(void)
-    {
-        int err = pthread_cond_broadcast(&_condition);
-        assert(err == 0);
-        (void)err;
-    }
-
-    void wait(std::mutex& mutex)
-    {
-        int err = pthread_cond_wait(&_condition, mutex.native_handle());
-        assert(err == 0);
-        (void)err;
-    }
-
-    bool wait(std::mutex& mutex, unsigned msec)
-    {
-        struct timespec ts;
-#ifdef HAVE_CLOCK_GETTIME
-        if (0 != clock_gettime(CLOCK_REALTIME, &ts))
-            return false;
-#else
-        struct timeval tv;
-        if (0 != gettimeofday(&tv, NULL))
-            return false;
-        ts.tv_sec = tv.tv_sec;
-        ts.tv_nsec = tv.tv_usec * 1000;
-#endif
-
-        ts.tv_nsec += 1000000*(msec % 1000);
-        if (1000000000 <= ts.tv_nsec) {
-            ts.tv_nsec -= 1000000000;
-            ts.tv_sec += 1;
-        }
-        ts.tv_sec += msec / 1000;
-
-        int evalue = pthread_cond_timedwait(&_condition, mutex.native_handle(), &ts);
-        if (evalue == 0)
-          return true;
-
-        assert(evalue == ETIMEDOUT);
-        return false;
-    }
-
-    pthread_cond_t _condition;
-};
-
-#endif
 
 SGThread::SGThread() :
     _privateData(new PrivateData)

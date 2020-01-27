@@ -1,6 +1,6 @@
 /* -*-c++-*-
  *
- * Copyright (C) 2006-2007 Mathias Froehlich 
+ * Copyright (C) 2006-2007 Mathias Froehlich
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -46,6 +46,7 @@ SGSceneFeatures::SGSceneFeatures() :
   _TextureCacheActive(false),
   _shaderLights(true),
   _pointSpriteLights(true),
+  _triangleDirectionalLights(true),
   _distanceAttenuationLights(true),
   _textureFilter(1)
 {
@@ -108,7 +109,7 @@ SGSceneFeatures::getHaveFragmentPrograms(unsigned contextId) const
     return false;
   if (!fpe->isFragmentProgramSupported())
     return false;
-  
+
   return true;
 #else
   const osg::GLExtensions* ex = osg::GLExtensions::Get(contextId, true);
@@ -126,7 +127,7 @@ SGSceneFeatures::getHaveVertexPrograms(unsigned contextId) const
     return false;
   if (!vpe->isVertexProgramSupported())
     return false;
-  
+
   return true;
 #else
   const osg::GLExtensions* ex = osg::GLExtensions::Get(contextId, true);
@@ -158,4 +159,3 @@ SGSceneFeatures::getHavePointParameters(unsigned contextId) const
   return ex && ex->isPointParametersSupported;
 #endif
 }
-

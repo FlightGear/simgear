@@ -153,41 +153,49 @@ SGLightFactory::getLightDrawable(const SGLightBin::Light& light)
 }
 
 osg::Drawable*
-SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light)
+SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light, bool useTriangles)
 {
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
 
-  SGVec4f visibleColor(light.color);
-  SGVec4f invisibleColor(visibleColor[0], visibleColor[1],
-                         visibleColor[2], 0);
-  SGVec3f normal = normalize(light.normal);
-  SGVec3f perp1 = perpendicular(normal);
-  SGVec3f perp2 = cross(normal, perp1);
-  SGVec3f position = light.position;
-  vertices->push_back(toOsg(position));
-  vertices->push_back(toOsg(position + perp1));
-  vertices->push_back(toOsg(position + perp2));
-  colors->push_back(toOsg(visibleColor));
-  colors->push_back(toOsg(invisibleColor));
-  colors->push_back(toOsg(invisibleColor));
+  if (useTriangles) {
+    SGVec4f visibleColor(light.color);
+    SGVec4f invisibleColor(visibleColor[0], visibleColor[1],
+                           visibleColor[2], 0);
+    SGVec3f normal = normalize(light.normal);
+    SGVec3f perp1 = perpendicular(normal);
+    SGVec3f perp2 = cross(normal, perp1);
+    SGVec3f position = light.position;
+    vertices->push_back(toOsg(position));
+    vertices->push_back(toOsg(position + perp1));
+    vertices->push_back(toOsg(position + perp2));
+    colors->push_back(toOsg(visibleColor));
+    colors->push_back(toOsg(invisibleColor));
+    colors->push_back(toOsg(invisibleColor));
 
-  osg::Geometry* geometry = new osg::Geometry;
-  geometry->setDataVariance(osg::Object::STATIC);
-  geometry->setVertexArray(vertices);
-  geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-  geometry->setColorArray(colors);
-  geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setDataVariance(osg::Object::STATIC);
+    geometry->setVertexArray(vertices);
+    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
+    geometry->setColorArray(colors);
+    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
 
-  // Enlarge the bounding box to avoid such light nodes being victim to
-  // small feature culling.
-  geometry->setComputeBoundingBoxCallback(new SGEnlargeBoundingBox(1));
+    // Enlarge the bounding box to avoid such light nodes being victim to
+    // small feature culling.
+    geometry->setComputeBoundingBoxCallback(new SGEnlargeBoundingBox(1));
 
-  osg::DrawArrays* drawArrays;
-  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
-                                   0, vertices->size());
-  geometry->addPrimitiveSet(drawArrays);
-  return geometry;
+    osg::DrawArrays* drawArrays;
+    drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
+                                     0, vertices->size());
+    geometry->addPrimitiveSet(drawArrays);
+    return geometry;
+  } else {
+    // Workaround for driver issue where point sprites cannot be triangles,
+    // (which we use to provide a sensible normal).  So fall back to a simple
+    // non-directional point sprite.
+    const SGLightBin::Light nonDirectionalLight = SGLightBin::Light(light.position, light.color);
+    return getLightDrawable(nonDirectionalLight);
+  }
 }
 
 namespace
@@ -367,6 +375,9 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights, const SGReader
   if (lights.getNumLights() <= 0)
     return 0;
 
+  static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
+  bool useTriangles = sceneFeatures->getEnableTriangleDirectionalLights();
+
   // generate a repeatable random seed
   sg_srandom(unsigned(lights.getLight(0).position[0]));
   float flashTime = 0.065 + 0.003 * sg_random();
@@ -377,7 +388,7 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights, const SGReader
   for (int i = lights.getNumLights() - 1; 0 <= i; --i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
-    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    egeode->addDrawable(getLightDrawable(lights.getLight(i), useTriangles));
     sequence->addChild(egeode, flashTime);
   }
   sequence->addChild(new osg::Group, 1.9 + (0.1 * sg_random()) - (lights.getNumLights() * flashTime));
@@ -394,6 +405,9 @@ SGLightFactory::getReil(const SGDirectionalLightBin& lights, const SGReaderWrite
   if (lights.getNumLights() <= 0)
     return 0;
 
+  static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
+  bool useTriangles = sceneFeatures->getEnableTriangleDirectionalLights();
+
   // generate a repeatable random seed
   sg_srandom(unsigned(lights.getLight(0).position[0]));
   float flashTime = 0.065 + 0.003 * sg_random();
@@ -405,7 +419,7 @@ SGLightFactory::getReil(const SGDirectionalLightBin& lights, const SGReaderWrite
   egeode->setEffect(effect);
 
   for (int i = lights.getNumLights() - 1; 0 <= i; --i) {
-    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    egeode->addDrawable(getLightDrawable(lights.getLight(i), useTriangles));
   }
   sequence->addChild(egeode, flashTime);
   sequence->addChild(new osg::Group, 1.9 + 0.1 * sg_random() - flashTime);
@@ -463,6 +477,9 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights, const SGReader
   if (lights.getNumLights() < 2)
     return 0;
 
+  static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
+  bool useTriangles = sceneFeatures->getEnableTriangleDirectionalLights();
+
   sg_srandom(unsigned(lights.getLight(0).position[0]));
   float flashTime = 0.9 + 0.2 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
@@ -476,7 +493,7 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights, const SGReader
       EffectGeode* egeode = new EffectGeode;
       egeode->setEffect(effect);
       for (unsigned int j = 0; j < lights.getNumLights(); ++j) {
-          egeode->addDrawable(getLightDrawable(lights.getLight(j)));
+          egeode->addDrawable(getLightDrawable(lights.getLight(j), useTriangles));
       }
       sequence->addChild(egeode, (i==4) ? flashTime : 0.1);
   }
@@ -494,6 +511,9 @@ SGLightFactory::getGuard(const SGDirectionalLightBin& lights, const SGReaderWrit
   if (lights.getNumLights() < 2)
     return 0;
 
+  static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
+  bool useTriangles = sceneFeatures->getEnableTriangleDirectionalLights();
+
   // generate a repeatable random seed
   sg_srandom(unsigned(lights.getLight(0).position[0]));
   float flashTime = 0.9 + 0.2 * sg_random();
@@ -504,7 +524,7 @@ SGLightFactory::getGuard(const SGDirectionalLightBin& lights, const SGReaderWrit
   for (unsigned int i = 0; i < lights.getNumLights(); ++i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
-    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    egeode->addDrawable(getLightDrawable(lights.getLight(i), useTriangles));
     sequence->addChild(egeode, flashTime);
   }
   sequence->setInterval(osg::Sequence::LOOP, 0, -1);

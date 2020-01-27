@@ -75,6 +75,21 @@ public:
         return getHavePointSprites(contextId);
     }
 
+    void setEnableTriangleDirectionalLights(bool enable)
+    {
+        _triangleDirectionalLights = enable;
+    }
+    bool getEnableTriangleDirectionalLights() const
+    {
+        return _triangleDirectionalLights;
+    }
+    bool getEnableTriangleDirectionalLights(unsigned contextId) const
+    {
+        if (!_triangleDirectionalLights)
+            return false;
+        return getHaveTriangleDirectionals(contextId);
+    }
+
     void setEnableDistanceAttenuationLights(bool enable)
     {
         _distanceAttenuationLights = enable;
@@ -108,6 +123,7 @@ public:
 
 protected:
     bool getHavePointSprites(unsigned contextId) const;
+    bool getHaveTriangleDirectionals(unsigned contextId) const;
     bool getHaveFragmentPrograms(unsigned contextId) const;
     bool getHaveVertexPrograms(unsigned contextId) const;
     bool getHaveShaderPrograms(unsigned contextId) const;
@@ -126,6 +142,7 @@ private:
     bool _TextureCacheActive;
     bool _shaderLights;
     bool _pointSpriteLights;
+    bool _triangleDirectionalLights;
     bool _distanceAttenuationLights;
     int  _textureFilter;
 };

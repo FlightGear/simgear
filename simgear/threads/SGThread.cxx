@@ -4,6 +4,7 @@
 //
 // Copyright (C) 2001  Bernard Bright - bbright@bigpond.net.au
 // Copyright (C) 2011  Mathias Froehlich
+// Copyright (C) 2020  Erik Hofman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -36,178 +37,49 @@
 #include <climits>
 
 #if _WIN32
-# include <list>
 # include <windows.h>
 #else
 # include <pthread.h>
-# include <cassert>
-# include <cerrno>
-# include <sys/time.h>
 #endif
 
-struct SGWaitCondition::PrivateData {
-    PrivateData(void)
-    {
-    }
-    ~PrivateData(void)
-    {
-    }
 
-    void signal(void)
-    {
-        bool waiting;
-
-        {
-            std::lock_guard<std::mutex> lock(_mtx);
-            waiting = !ready;
-            ready = true;
-        }
-
-        if (waiting) {
-            _condition.notify_one();
-        }
-    }
-
-    void broadcast(void)
-    {
-        bool waiting;
-
-        {
-            std::lock_guard<std::mutex> lock(_mtx);
-            waiting = !ready;
-            ready = true;
-        }
-
-        if (waiting) {
-            _condition.notify_all();
-        }
-    }
-
-    void wait(std::mutex& mutex) noexcept
-    {
-        mutex.unlock();
-
-        {
-            std::unique_lock<std::mutex> lock(_mtx);
-            _condition.wait(lock, [this]{ return ready; } );
-            ready = false;
-        }
-
-#ifndef NDEBUG
-# if _WIN32
-//      native_handle_type *m = mutex.native_handle();
-//      assert(m->LockCount == 0);
-# else
-        pthread_mutex_t *m = mutex.native_handle();
-        assert(m->__data.__count == 0);
-# endif
-#endif
-        mutex.lock();
-    }
-
-    bool wait(std::mutex& mutex, unsigned msec) noexcept
-    {
-        auto timeout = std::chrono::milliseconds(msec);
-
-        mutex.unlock();
-
-        {
-            std::unique_lock<std::mutex> lock(_mtx);
-            _condition.wait_for(lock, timeout, [this]{ return ready; } );
-            ready = false;
-        }
-
-#ifndef NDEBUG
-# if _WIN32
-//      native_handle_type *m = mutex.native_handle();
-//      assert(m->LockCount == 0);
-# else
-        pthread_mutex_t *m = mutex.native_handle();
-        assert(m->__data.__count == 0);
-# endif
-#endif
-        mutex.lock();
-
-        return true;
-    }
-
-    std::mutex _mtx;
-    std::condition_variable _condition;
-    std::atomic<std::thread::id> m_holder;
-
-private:
-    bool ready = false;
-};
-
-struct SGThread::PrivateData {
-    PrivateData()
-    {
-    }
-    ~PrivateData()
-    {
-        // If we are still having a started thread and nobody waited,
-        // now detach ...
-        if (!_started)
-            return;
-        _thread.detach();
-    }
-
-    static void *start_routine(void* data)
-    {
-        SGThread* thread = reinterpret_cast<SGThread*>(data);
-        thread->run();
-        return 0;
-    }
-
-    bool start(SGThread& thread)
-    {
-        if (_started)
-            return false;
-
-        try {
-           _thread = std::thread(start_routine, &thread);
-        } catch (std::runtime_error &ex) {
-            return false;
-        }
-
-        _started = true;
-        return true;
-    }
-
-    void join()
-    {
-        if (!_started)
-            return;
-
-        _thread.join();
-        _started = false;
-    }
-
-    std::thread _thread;
-    bool _started = false;
-};
-
-SGThread::SGThread() :
-    _privateData(new PrivateData)
+SGThread::SGThread()
 {
 }
 
 SGThread::~SGThread()
 {
-    delete _privateData;
-    _privateData = 0;
+    // If we are still having a started thread and nobody waited,
+    // now detach ...
+    if (!_started)
+        return;
+    _thread.detach();
 }
 
 bool
 SGThread::start()
 {
-    return _privateData->start(*this);
+    if (_started)
+        return false;
+
+    try {
+       _thread = std::thread(start_routine, this);
+    } catch (std::runtime_error &ex) {
+        return false;
+    }
+
+    _started = true;
+    return true;
 }
 
 void
 SGThread::join()
 {
-    _privateData->join();
+    if (!_started)
+        return;
+
+    _thread.join();
+    _started = false;
 }
 
 long SGThread::current( void )
@@ -219,40 +91,100 @@ long SGThread::current( void )
 #endif
 }
 
+void *SGThread::start_routine(void* data)
+{
+    SGThread* thread = reinterpret_cast<SGThread*>(data);
+    thread->run();
+    return 0;
+}
 
-SGWaitCondition::SGWaitCondition() :
-    _privateData(new PrivateData)
+
+SGWaitCondition::SGWaitCondition()
 {
 }
 
 SGWaitCondition::~SGWaitCondition()
 {
-    delete _privateData;
-    _privateData = 0;
 }
 
 void
 SGWaitCondition::wait(std::mutex& mutex)
 {
-    _privateData->wait(mutex);
+#ifndef NDEBUG
+    try {
+        mutex.unlock();
+    } catch(const std::system_error& e) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Unlocking error " << e.what() );
+    }
+#else
+    mutex.unlock();
+#endif
+
+    {
+        std::unique_lock<std::mutex> lock(_mtx);
+        _condition.wait(lock, [this]{ return ready; } );
+        ready = false;
+    }
+
+#ifndef NDEBUG
+    try {
+        mutex.lock();
+    } catch(const std::system_error& e) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Locking error " << e.what() );
+    }
+#else
+    mutex.lock();
+#endif
 }
 
 bool
 SGWaitCondition::wait(std::mutex& mutex, unsigned msec)
 {
-    return _privateData->wait(mutex, msec);
+    auto timeout = std::chrono::milliseconds(msec);
+
+    mutex.unlock();
+
+    {
+        std::unique_lock<std::mutex> lock(_mtx);
+        _condition.wait_for(lock, timeout, [this]{ return ready; } );
+        ready = false;
+    }
+
+    mutex.lock();
+
+    return true;
 }
 
 void
 SGWaitCondition::signal()
 {
-    _privateData->signal();
+    bool waiting;
+
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        waiting = !ready;
+        ready = true;
+    }
+
+    if (waiting) {
+        _condition.notify_one();
+    }
 }
 
 void
 SGWaitCondition::broadcast()
 {
-    _privateData->broadcast();
+    bool waiting;
+
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        waiting = !ready;
+        ready = true;
+    }
+
+    if (waiting) {
+        _condition.notify_all();
+    }
 }
 
 

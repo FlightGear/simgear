@@ -4,6 +4,7 @@
 //
 // Copyright (C) 2001  Bernard Bright - bbright@bigpond.net.au
 // Copyright (C) 2011  Mathias Froehlich
+// Copyright (C) 2020  Erik Hofman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -23,6 +24,7 @@
 #ifndef SGTHREAD_HXX_INCLUDED
 #define SGTHREAD_HXX_INCLUDED 1
 
+#include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
@@ -78,18 +80,20 @@ protected:
      */
     virtual void run() = 0;
 
+    /**
+     * General thread starter routine.
+     */
+    static void *start_routine(void* data);
+
 private:
     // Disable copying.
     SGThread(const SGThread&);
     SGThread& operator=(const SGThread&);
 
-    struct PrivateData;
-    PrivateData* _privateData;
-
-    friend struct PrivateData;
+    std::thread _thread;
+    bool _started = false;
 };
 
-class SGWaitCondition;
 
 /**
  * A condition variable is a synchronization device that allows threads to
@@ -146,8 +150,9 @@ private:
     SGWaitCondition(const SGWaitCondition&);
     SGWaitCondition& operator=(const SGWaitCondition&);
 
-    struct PrivateData;
-    PrivateData* _privateData;
+    bool ready = false;
+    std::mutex _mtx;
+    std::condition_variable _condition;
 };
 
 ///

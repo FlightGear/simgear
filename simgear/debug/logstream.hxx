@@ -210,9 +210,11 @@ logstream& sglog();
     } } while(0)
 #ifdef FG_NDEBUG
 # define SG_LOG(C,P,M)	do { if((P) == SG_POPUP) SG_LOGX(C,P,M) } while(0)
+# define SG_LOG_NAN(C,P,M) SG_LOG(C,P,M)
 # define SG_HEXDUMP(C,P,MEM,LEN)
 #else
 # define SG_LOG(C,P,M)	SG_LOGX(C,P,M)
+# define SG_LOG_NAN(C,P,M) do { SG_LOGX(C,P,M); throw std::overflow_error(M); } while(0)
 # define SG_LOG_HEXDUMP(C,P,MEM,LEN) if(sglog().would_log(C,P)) sglog().hexdump(C, P, __FILE__, __LINE__, MEM, LEN)
 #endif
 

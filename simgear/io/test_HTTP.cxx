@@ -381,6 +381,26 @@ void waitForFailed(HTTP::Client* cl, TestRequest* tr)
     cerr << "timed out waiting for failure" << endl;
 }
 
+using CompletionCheck = std::function<bool()>;
+
+bool waitFor(HTTP::Client* cl, CompletionCheck ccheck)
+{
+    SGTimeStamp start(SGTimeStamp::now());
+    while (start.elapsedMSec() <  10000) {
+        cl->update();
+        testServer.poll();
+
+        if (ccheck()) {
+            return true;
+        }
+        SGTimeStamp::sleepForMSec(15);
+    }
+
+    cerr << "timed out" << endl;
+    return false;
+}
+
+
 int main(int argc, char* argv[])
 {
     sglog().setLogLevels( SG_ALL, SG_INFO );
@@ -456,6 +476,8 @@ int main(int argc, char* argv[])
 
 // larger get request
     for (unsigned int i=0; i<body2Size; ++i) {
+        // this contains embeded 0s on purpose, i.e it's
+        // not text data but binary
         body2[i] = (i << 4) | (i >> 2);
     }
 
@@ -600,9 +622,10 @@ cout << "testing proxy close" << endl;
         HTTP::Request_ptr own3(tr3);
         cl.makeRequest(tr3);
 
-        waitForComplete(&cl, tr3);
-        SG_VERIFY(tr->complete);
-        SG_VERIFY(tr2->complete);
+        SG_VERIFY(waitFor(&cl, [tr, tr2, tr3]() {
+            return tr->complete && tr2->complete &&tr3->complete; 
+        }));
+
         SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
 
         SG_CHECK_EQUAL(tr2->responseLength(), strlen(BODY3));
@@ -631,9 +654,9 @@ cout << "testing proxy close" << endl;
         HTTP::Request_ptr own3(tr3);
         cl.makeRequest(tr3);
 
-        waitForComplete(&cl, tr3);
-        SG_VERIFY(tr->complete);
-        SG_VERIFY(tr2->complete);
+        SG_VERIFY(waitFor(&cl, [tr, tr2, tr3]() {
+            return tr->complete && tr2->complete &&tr3->complete; 
+        }));
 
         SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
         SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));

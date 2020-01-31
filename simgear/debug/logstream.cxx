@@ -28,13 +28,13 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <mutex>
 
 #include <boost/foreach.hpp>
 
 #include <simgear/sg_inlines.h>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGQueue.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -398,7 +398,7 @@ public:
         removeCallbacks();
     }
 
-    SGMutex m_lock;
+    std::mutex m_lock;
     SGBlockingQueue<LogEntry> m_entries;
 
     // log entries posted during startup
@@ -427,7 +427,7 @@ public:
 
     void startLog()
     {
-        SGGuard<SGMutex> g(m_lock);
+        std::lock_guard<std::mutex> g(m_lock);
         if (m_isRunning) return;
         m_isRunning = true;
         start();
@@ -440,7 +440,7 @@ public:
         }
 
         {
-            SGGuard<SGMutex> g(m_lock);
+            std::lock_guard<std::mutex> g(m_lock);
             m_startupLogging = on;
             m_startupEntries.clear();
         }
@@ -456,7 +456,7 @@ public:
                 return;
             }
             {
-                SGGuard<SGMutex> g(m_lock);
+                std::lock_guard<std::mutex> g(m_lock);
                 if (m_startupLogging) {
                     // save to the startup list for not-yet-added callbacks to
                     // pull down on startup
@@ -474,7 +474,7 @@ public:
     bool stop()
     {
         {
-            SGGuard<SGMutex> g(m_lock);
+            std::lock_guard<std::mutex> g(m_lock);
             if (!m_isRunning) {
                 return false;
             }
@@ -574,7 +574,7 @@ public:
 /////////////////////////////////////////////////////////////////////////////
 
 static std::unique_ptr<logstream> global_logstream;
-static SGMutex global_logStreamLock;
+static std::mutex global_logStreamLock;
 
 logstream::logstream()
 {
@@ -742,7 +742,7 @@ sglog()
     // http://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf
     // in the absence of portable memory barrier ops in Simgear,
     // let's keep this correct & safe
-    SGGuard<SGMutex> g(global_logStreamLock);
+    std::lock_guard<std::mutex> g(global_logStreamLock);
 
     if( !global_logstream )
         global_logstream.reset(new logstream);
@@ -823,7 +823,7 @@ void requestConsole()
 
 void shutdownLogging()
 {
-    SGGuard<SGMutex> g(global_logStreamLock);
+    std::lock_guard<std::mutex> g(global_logStreamLock);
     global_logstream.reset();
 }
 

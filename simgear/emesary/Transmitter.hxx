@@ -27,7 +27,7 @@
 #include <set>
 #include <vector>
 #include <atomic>
-#include <simgear/threads/SGThread.hxx>
+#include <mutex>
 
 namespace simgear
 {
@@ -41,7 +41,7 @@ namespace simgear
             RecipientList recipient_list;
             RecipientList deleted_recipients;
             int CurrentRecipientIndex = 0;
-            SGMutex _lock;
+            std::mutex _lock;
             std::atomic<int> receiveDepth;
             std::atomic<int> sentMessageCount;
 

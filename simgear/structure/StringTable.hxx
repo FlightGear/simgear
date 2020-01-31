@@ -2,8 +2,8 @@
 #define SIMGEAR_STRINGTABLE_HXX 1
 
 #include <string>
+#include <mutex>
 
-#include <simgear/threads/SGThread.hxx>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/identity.hpp>
@@ -21,7 +21,7 @@ class StringTable
 {
     const std::string* insert(const std::string& str);
 private:
-    SGMutex _mutex;
+    std::mutex _mutex;
     StringContainer _strings;
 };
 }

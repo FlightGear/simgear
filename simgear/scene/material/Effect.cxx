@@ -33,6 +33,7 @@
 #include <queue>
 #include <utility>
 #include <unordered_map>
+#include <mutex>
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -79,8 +80,6 @@
 #include <simgear/structure/SGExpression.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
-#include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 namespace simgear
 {
@@ -104,7 +103,7 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
                                  SGConstPropertyNode_ptr valProp,
                                  const SGReaderWriterOptions* options )
 {
-	SGGuard<SGMutex> scopeLock(_mutex);
+	std::lock_guard<std::mutex> scopeLock(_mutex);
 	std::string val = "0";
 
 	if (valProp->nChildren() == 0) {
@@ -191,7 +190,7 @@ void UniformFactoryImpl::addListener(DeferredPropertyListener* listener)
 
 void UniformFactoryImpl::updateListeners( SGPropertyNode* propRoot )
 {
-	SGGuard<SGMutex> scopeLock(_mutex);
+	std::lock_guard<std::mutex> scopeLock(_mutex);
 
 	if (deferredListenerList.empty()) return;
 
@@ -1475,10 +1474,10 @@ void mergeSchemesFallbacks(Effect *effect, const SGReaderWriterOptions *options)
 
 // Walk the techniques property tree, building techniques and
 // passes.
-static SGMutex  realizeTechniques_lock;
+static std::mutex  realizeTechniques_lock;
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
-    SGGuard<SGMutex> g(realizeTechniques_lock);
+    std::lock_guard<std::mutex> g(realizeTechniques_lock);
     if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false))
         mergeSchemesFallbacks(this, options);
 

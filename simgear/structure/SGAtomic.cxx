@@ -31,7 +31,7 @@
 #elif defined(GCC_ATOMIC_BUILTINS_FOUND)
 #elif defined(__GNUC__) && defined(__i386__)
 #elif defined(SGATOMIC_USE_MUTEX)
-# include <simgear/threads/SGGuard.hxx>
+# include <mutex>
 #else
 # error
 #endif
@@ -52,7 +52,7 @@ SGAtomic::operator++()
                          : "memory");
     return result + 1;
 #else
-    SGGuard<SGMutex> lock(mMutex);
+    std::lock_guard<std::mutex> lock(mMutex);
     return ++mValue;
 #endif
 }
@@ -73,7 +73,7 @@ SGAtomic::operator--()
                          : "memory");
     return result - 1;
 #else
-    SGGuard<SGMutex> lock(mMutex);
+    std::lock_guard<std::mutex> lock(mMutex);
     return --mValue;
 #endif
 }
@@ -89,7 +89,7 @@ SGAtomic::operator unsigned() const
     __asm__ __volatile__("": : : "memory");
     return mValue;
 #else
-    SGGuard<SGMutex> lock(mMutex);
+    std::lock_guard<std::mutex> lock(mMutex);
     return mValue;
 #endif
 }
@@ -111,7 +111,7 @@ SGAtomic::compareAndExchange(unsigned oldValue, unsigned newValue)
                          : "memory");
     return before == oldValue;
 #else
-    SGGuard<SGMutex> lock(mMutex);
+    std::lock_guard<std::mutex> lock(mMutex);
     if (mValue != oldValue)
         return false;
     mValue = newValue;

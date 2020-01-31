@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <queue>
-#include "SGGuard.hxx"
+#include <mutex>
 #include "SGThread.hxx"
 
 /**
@@ -94,7 +94,7 @@ public:
      * @return True if queue is empty, otherwise false.
      */
     virtual bool empty() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 	return this->fifo.empty();
     }
 
@@ -104,7 +104,7 @@ public:
      * @param item object to add.
      */
     virtual void push( const T& item ) {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 	this->fifo.push( item );
     }
 
@@ -114,7 +114,7 @@ public:
      * @return The next available object.
      */
     virtual T front() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 	assert( ! this->fifo.empty() );
 	T item = this->fifo.front();
 	return item;
@@ -126,7 +126,7 @@ public:
      * @return The next available object.
      */
     virtual T pop() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 	    if (this->fifo.empty()) return T(); // assumes T is default constructable
         
 //  	if (fifo.empty())
@@ -145,7 +145,7 @@ public:
      * @return Size of queue.
      */
     virtual size_t size() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
         return this->fifo.size();
     }
 
@@ -154,7 +154,7 @@ private:
     /**
      * Mutex to serialise access.
      */
-    SGMutex mutex;
+    std::mutex mutex;
 
 private:
     // Prevent copying.
@@ -184,7 +184,7 @@ public:
      *
      */
     virtual bool empty() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 	return this->fifo.empty();
     }
 
@@ -194,7 +194,7 @@ public:
      * @param item The object to add.
      */
     virtual void push( const T& item ) {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 	this->fifo.push( item );
 	not_empty.signal();
     }
@@ -206,7 +206,7 @@ public:
      * @return The next available object.
      */
     virtual T front() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 
 	assert(this->fifo.empty() != true);
 	//if (fifo.empty()) throw ??
@@ -222,7 +222,7 @@ public:
      * @return The next available object.
      */
     virtual T pop() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
 
 	while (this->fifo.empty())
 	    not_empty.wait(mutex);
@@ -241,7 +241,7 @@ public:
      * @return Size of queue.
      */
     virtual size_t size() {
-	SGGuard<SGMutex> g(mutex);
+	std::lock_guard<std::mutex> g(mutex);
         return this->fifo.size();
     }
 
@@ -250,7 +250,7 @@ private:
     /**
      * Mutex to serialise access.
      */
-    SGMutex mutex;
+    std::mutex mutex;
 
     /**
      * Condition to signal when queue not empty.
@@ -286,7 +286,7 @@ public:
      *
      */
     virtual void clear() {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
     this->queue.clear();
     }
 
@@ -294,7 +294,7 @@ public:
      *
      */
     virtual bool empty() {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
     return this->queue.empty();
     }
 
@@ -304,7 +304,7 @@ public:
      * @param item The object to add.
      */
     virtual void push_front( const T& item ) {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
     this->queue.push_front( item );
     not_empty.signal();
     }
@@ -315,7 +315,7 @@ public:
      * @param item The object to add.
      */
     virtual void push_back( const T& item ) {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
     this->queue.push_back( item );
     not_empty.signal();
     }
@@ -327,7 +327,7 @@ public:
      * @return The next available object.
      */
     virtual T front() {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
 
     assert(this->queue.empty() != true);
     //if (queue.empty()) throw ??
@@ -343,7 +343,7 @@ public:
      * @return The next available object.
      */
     virtual T pop_front() {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
 
     while (this->queue.empty())
         not_empty.wait(mutex);
@@ -363,7 +363,7 @@ public:
      * @return The next available object.
      */
     virtual T pop_back() {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
 
     while (this->queue.empty())
         not_empty.wait(mutex);
@@ -382,12 +382,12 @@ public:
      * @return Size of queue.
      */
     virtual size_t size() {
-    SGGuard<SGMutex> g(mutex);
+    std::lock_guard<std::mutex> g(mutex);
         return this->queue.size();
     }
 
     void waitOnNotEmpty() {
-    	SGGuard<SGMutex> g(mutex);
+    	std::lock_guard<std::mutex> g(mutex);
     	while (this->queue.empty())
     	    not_empty.wait(mutex);
     }
@@ -396,7 +396,7 @@ private:
     /**
      * Mutex to serialise access.
      */
-    SGMutex mutex;
+    std::mutex mutex;
 
     /**
      * Condition to signal when queue not empty.

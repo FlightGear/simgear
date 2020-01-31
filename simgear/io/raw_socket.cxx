@@ -36,6 +36,7 @@
 #include <cstring>
 #include <cassert>
 #include <cstdio> // for snprintf
+#include <mutex>
 #include <errno.h>
 
 #if defined(WINSOCK)
@@ -213,7 +214,7 @@ private:
       return ok;
     }
 
-    SGMutex _lock;
+    std::mutex _lock;
     SGWaitCondition _wait;
 
     typedef std::map<string, simgear::IPAddress*> AddressCache;

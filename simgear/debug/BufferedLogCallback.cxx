@@ -26,9 +26,9 @@
      
 #include <simgear/sg_inlines.h>
 #include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 #include <cstdlib> // for malloc
+#include <mutex>
      
 namespace simgear
 {
@@ -36,7 +36,7 @@ namespace simgear
 class BufferedLogCallback::BufferedLogCallbackPrivate
 {
 public:
-    SGMutex m_mutex;
+    std::mutex m_mutex;
     vector_cstring m_buffer;
     unsigned int m_stamp;
     unsigned int m_maxLength;
@@ -74,7 +74,7 @@ void BufferedLogCallback::operator()(sgDebugClass c, sgDebugPriority p,
         msg = (vector_cstring::value_type) strdup(aMessage.c_str());
     }
     
-    SGGuard<SGMutex> g(d->m_mutex);
+    std::lock_guard<std::mutex> g(d->m_mutex);
     d->m_buffer.push_back(msg);
     d->m_stamp++;
 }
@@ -86,7 +86,7 @@ unsigned int BufferedLogCallback::stamp() const
  
 unsigned int BufferedLogCallback::threadsafeCopy(vector_cstring& aOutput)
 {
-    SGGuard<SGMutex> g(d->m_mutex);
+    std::lock_guard<std::mutex> g(d->m_mutex);
     size_t sz = d->m_buffer.size();
     aOutput.resize(sz);
     memcpy(aOutput.data(), d->m_buffer.data(), sz * sizeof(vector_cstring::value_type));

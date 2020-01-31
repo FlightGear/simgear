@@ -31,6 +31,7 @@
 #include <string>      // Standard C++ string library
 #include <vector>
 #include <map>
+#include <mutex>
 
 #include "Effect.hxx"
 
@@ -517,7 +518,7 @@ private:
   const SGPropertyNode* parameters;
 
   // per-material lock for entrypoints called from multiple threads
-  SGMutex _lock;
+  std::mutex _lock;
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.

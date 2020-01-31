@@ -61,7 +61,6 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/io/sg_file.hxx>
-#include <simgear/threads/SGGuard.hxx>
 #include <simgear/misc/lru_cache.hxx>
 
 #include "BoundingVolumeBuildVisitor.hxx"

@@ -55,10 +55,12 @@ class Effect;
 // appropriate extensions are available.)
 
 inline void SGConfigureDirectionalLights( bool use_point_sprites,
-                                   bool distance_attenuation ) {
+                                   bool distance_attenuation,
+                                  bool use_triangles ) {
   static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
   sceneFeatures->setEnablePointSpriteLights(use_point_sprites);
   sceneFeatures->setEnableDistanceAttenuationLights(distance_attenuation);
+  sceneFeatures->setEnableTriangleDirectionalLights(use_triangles);
 }
 
 class SGLightFactory {
@@ -68,7 +70,7 @@ public:
   getLightDrawable(const SGLightBin::Light& light);
 
   static osg::Drawable*
-  getLightDrawable(const SGDirectionalLightBin::Light& light);
+  getLightDrawable(const SGDirectionalLightBin::Light& light, bool useTriangles);
 
   /**
    * Return a drawable for a very simple point light that isn't

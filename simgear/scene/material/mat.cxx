@@ -31,6 +31,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <mutex>
 
 #include <boost/foreach.hpp>
 #include "mat.hxx"
@@ -50,7 +51,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/props/props_io.hxx>
@@ -463,7 +463,7 @@ Effect* SGMaterial::get_effect(int i)
 
 Effect* SGMaterial::get_one_effect(int texIndex)
 {
-    SGGuard<SGMutex> g(_lock);
+    std::lock_guard<std::mutex> g(_lock);
     if (_status.empty()) {
         SG_LOG( SG_GENERAL, SG_WARN, "No effect available.");
         return 0;
@@ -475,7 +475,7 @@ Effect* SGMaterial::get_one_effect(int texIndex)
 
 Effect* SGMaterial::get_effect()
 {
-    SGGuard<SGMutex> g(_lock);
+    std::lock_guard<std::mutex> g(_lock);
     return get_effect(0);
 }
 

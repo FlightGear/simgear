@@ -216,7 +216,7 @@
         </rating>
 
         <md5>a94ca5704f305b90767f40617d194ed6</md5>
-        <!-- this will fail, on purpose -->
+        <!-- this URL will fail, on purpose -->
         <url>http://localhost:2000/catalogTest1/b747.tar.gz</url>
       </package>
 

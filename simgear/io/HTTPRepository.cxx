@@ -34,9 +34,11 @@
 
 #include "simgear/debug/logstream.hxx"
 #include "simgear/misc/strutils.hxx"
+
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/io/sg_file.hxx>
+#include <simgear/io/untar.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/timing/timestamp.hxx>
@@ -176,7 +178,8 @@ class HTTPDirectory
         enum Type
         {
             FileType,
-            DirectoryType
+            DirectoryType,
+            TarballType
         };
 
         ChildInfo(Type ty, const std::string & nameData, const std::string & hashData) :
@@ -186,7 +189,7 @@ class HTTPDirectory
         {
         }
 
-		ChildInfo(const ChildInfo& other) = default;
+		    ChildInfo(const ChildInfo& other) = default;
 
         void setSize(const std::string & sizeData)
         {
@@ -311,59 +314,41 @@ public:
 
     void updateChildrenBasedOnHash()
     {
-        //SG_LOG(SG_TERRASYNC, SG_DEBUG, "updated children for:" << relativePath());
+      copyInstalledChildren();
 
-        copyInstalledChildren();
+      ChildInfoList toBeUpdated;
 
-		string_list toBeUpdated, orphans,
-			indexNames = indexChildren();
-        simgear::Dir d(absolutePath());
-        PathList fsChildren = d.children(0);
+      simgear::Dir d(absolutePath());
+      PathList fsChildren = d.children(0);
+      PathList orphans = d.children(0);
 
-        for (const auto& child : fsChildren) {
-			const auto& fileName = child.file();
-			if ((fileName == ".dirindex") || (fileName == ".hashes")) {
-				continue;
-			}
+      ChildInfoList::const_iterator it;
+      for (it=children.begin(); it != children.end(); ++it) {
+        // Check if the file exists
+        PathList::const_iterator p = std::find_if(fsChildren.begin(), fsChildren.end(), LocalFileMatcher(*it));
+        if (p == fsChildren.end()) {
+          // File or directory does not exist on local disk, so needs to be updated.
+          toBeUpdated.push_back(ChildInfo(*it));
+        } else if (hashForChild(*it) != it->hash) {
+          // File/directory exists, but hash doesn't match.
+          toBeUpdated.push_back(ChildInfo(*it));
+          orphans.erase(std::remove(orphans.begin(), orphans.end(), *p), orphans.end());
+        } else {
+          // File/Directory exists and hash is valid.
+          orphans.erase(std::remove(orphans.begin(), orphans.end(), *p), orphans.end());
 
-            ChildInfo info(child.isDir() ? ChildInfo::DirectoryType : ChildInfo::FileType, 
-				fileName, "");
-			info.path = child;
-            std::string hash = hashForChild(info);
+          if (it->type == ChildInfo::DirectoryType) {
+              // If it's a directory,perform a recursive check.
+              HTTPDirectory* childDir = childDirectory(it->name);
+              childDir->updateChildrenBasedOnHash();
+          }
+        }
+      }
 
-            ChildInfoList::iterator c = findIndexChild(fileName);
-            if (c == children.end()) {
-                orphans.push_back(fileName);
-            } else if (c->hash != hash) {
-#if 0
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "hash mismatch'" << fileName);
-                // file exists, but hash mismatch, schedule update
-                if (!hash.empty()) {
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "file exists but hash is wrong for:" << fileName);
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "on disk:" << hash << " vs in info:" << c->hash);
-                }
-#endif
-                toBeUpdated.push_back(fileName);
-            } else {
-                // file exists and hash is valid. If it's a directory,
-                // perform a recursive check.
-                if (c->type == ChildInfo::DirectoryType) {
-                    HTTPDirectory* childDir = childDirectory(fileName);
-                    childDir->updateChildrenBasedOnHash();
-                }
-            }
-
-            // remove existing file system children from the index list,
-            // so we can detect new children
-            // https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Erase-Remove
-            indexNames.erase(std::remove(indexNames.begin(), indexNames.end(), fileName), indexNames.end());
-        } // of real children iteration
-
-        // all remaining names in indexChilden are new children
-        toBeUpdated.insert(toBeUpdated.end(), indexNames.begin(), indexNames.end());
-
-        removeOrphans(orphans);
-        scheduleUpdates(toBeUpdated);
+      // We now have a list of entries that need to be updated, and a list
+      // of orphan files that should be removed.
+      removeOrphans(orphans);
+      scheduleUpdates(toBeUpdated);
     }
 
     HTTPDirectory* childDirectory(const std::string& name)
@@ -372,10 +357,12 @@ public:
         return _repository->getOrCreateDirectory(childPath);
     }
 
-    void removeOrphans(const string_list& orphans)
+    void removeOrphans(const PathList orphans)
     {
-        string_list::const_iterator it;
+        PathList::const_iterator it;
         for (it = orphans.begin(); it != orphans.end(); ++it) {
+            if (it->file() == ".dirindex") continue;
+            if (it->file() == ".hash") continue;
             removeChild(*it);
         }
     }
@@ -391,21 +378,20 @@ public:
         return r;
     }
 
-    void scheduleUpdates(const string_list& names)
+    void scheduleUpdates(const ChildInfoList names)
     {
-        string_list::const_iterator it;
+        ChildInfoList::const_iterator it;
         for (it = names.begin(); it != names.end(); ++it) {
-            ChildInfoList::iterator cit = findIndexChild(*it);
-            if (cit == children.end()) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "scheduleUpdate, unknown child:" << *it);
-                continue;
-            }
-
-            if (cit->type == ChildInfo::FileType) {
-                _repository->updateFile(this, *it, cit->sizeInBytes);
+            if (it->type == ChildInfo::FileType) {
+                _repository->updateFile(this, it->name, it->sizeInBytes);
+            } else if (it->type == ChildInfo::DirectoryType){
+                HTTPDirectory* childDir = childDirectory(it->name);
+                _repository->updateDir(childDir, it->hash, it->sizeInBytes);
+            } else if (it->type == ChildInfo::TarballType) {
+                // Download a tarball just as a file.
+                _repository->updateFile(this, it->name, it->sizeInBytes);
             } else {
-                HTTPDirectory* childDir = childDirectory(*it);
-                _repository->updateDir(childDir, cit->hash, cit->sizeInBytes);
+                SG_LOG(SG_TERRASYNC, SG_ALERT, "Coding error!  Unknown Child type to schedule update");
             }
         }
     }
@@ -430,12 +416,58 @@ public:
             SG_LOG(SG_TERRASYNC, SG_WARN, "updated file but not found in dir:" << _relativePath << " " << file);
         } else {
             if (it->hash != hash) {
-                // we don't erase the file on a hash mismatch, becuase if we're syncing during the
+                SG_LOG(SG_TERRASYNC, SG_INFO, "Checksum error for " << absolutePath() << "/" << file << " " << it->hash << " " << hash);
+                // we don't erase the file on a hash mismatch, because if we're syncing during the
                 // middle of a server-side update, the downloaded file may actually become valid.
                 _repository->failedToUpdateChild(_relativePath, HTTPRepository::REPO_ERROR_CHECKSUM);
             } else {
                 _repository->updatedFileContents(it->path, hash);
                 _repository->totalDownloaded += sz;
+                SGPath p = SGPath(absolutePath(), file);
+
+                if ((p.extension() == "tgz") || (p.extension() == "zip")) {
+                  // We require that any compressed files have the same filename as the file or directory
+                  // they expand to, so we can remove the old file/directory before extracting the new
+                  // data.
+                  SGPath removePath = SGPath(p.base());
+                  bool pathAvailable = true;
+                  if (removePath.exists()) {
+                    if (removePath.isDir()) {
+                      simgear::Dir pd(removePath);
+                    	pathAvailable = pd.removeChildren();
+                    } else {
+                      pathAvailable = removePath.remove();
+                    }
+                  }
+
+                  if (pathAvailable) {
+                    // If this is a tarball, then extract it.
+                    SGBinaryFile f(p);
+                    if (! f.open(SG_IO_IN)) SG_LOG(SG_TERRASYNC, SG_ALERT, "Unable to open " << p << " to extract");
+
+                    SG_LOG(SG_TERRASYNC, SG_INFO, "Extracting " << absolutePath() << "/" << file << " to " << p.dir());
+                    SGPath extractDir = p.dir();
+                    ArchiveExtractor ex(extractDir);
+
+                    uint8_t* buf = (uint8_t*) alloca(128);
+                    while (!f.eof()) {
+                      size_t bufSize = f.read((char*) buf, 128);
+                      ex.extractBytes(buf, bufSize);
+                    }
+
+                    ex.flush();
+                    if (! ex.isAtEndOfArchive()) {
+                      SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << p);
+                    }
+
+                    if (ex.hasError()) {
+                      SG_LOG(SG_TERRASYNC, SG_ALERT, "Error extracting " << p);
+                    }
+
+                  } else {
+                    SG_LOG(SG_TERRASYNC, SG_ALERT, "Unable to remove old file/directory " << removePath);
+                  } // of pathAvailable
+                } // of handling tgz files
             } // of hash matches
         } // of found in child list
     }
@@ -456,6 +488,16 @@ private:
 
         bool operator()(const ChildInfo& info) const
         { return info.name == name; }
+    };
+
+    struct LocalFileMatcher
+    {
+        LocalFileMatcher(const ChildInfo ci) : childInfo(ci) {}
+        ChildInfo childInfo;
+
+        bool operator()(const SGPath path) const {
+          return path.file() == childInfo.name;
+        }
     };
 
     ChildInfoList::iterator findIndexChild(const std::string& name)
@@ -519,8 +561,8 @@ private:
                 continue;
             }
 
-            if (typeData != "f" && typeData != "d" ) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: invalid type in line '" << line << "', expected 'd' or 'f', (ignoring line)"
+            if (typeData != "f" && typeData != "d"  && typeData != "t" ) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "malformed .dirindex file: invalid type in line '" << line << "', expected 't', 'd' or 'f', (ignoring line)"
                        << "\n\tparsing:" << p.utf8Str());
                 continue;
             }
@@ -533,8 +575,12 @@ private:
                 continue;
             }
 
-            children.emplace_back(ChildInfo(typeData == "f" ? ChildInfo::FileType : ChildInfo::DirectoryType, tokens[1], tokens[2]));
-			children.back().path = absolutePath() / tokens[1];
+            ChildInfo ci = ChildInfo(ChildInfo::FileType, tokens[1], tokens[2]);
+            if (typeData == "d") ci.type = ChildInfo::DirectoryType;
+            if (typeData == "t") ci.type = ChildInfo::TarballType;
+
+            children.emplace_back(ci);
+			      children.back().path = absolutePath() / tokens[1];
             if (tokens.size() > 3) {
                 children.back().setSize(tokens[3]);
             }
@@ -543,40 +589,36 @@ private:
         return true;
     }
 
-    void removeChild(const std::string& name)
+    void removeChild(SGPath path)
     {
-        SGPath p(absolutePath());
-        p.append(name);
         bool ok;
+        SG_LOG(SG_TERRASYNC, SG_WARN, "Removing:" << path);
 
-        std::string fpath = _relativePath + "/" + name;
-        if (p.isDir()) {
-            ok = _repository->deleteDirectory(fpath, p);
+        std::string fpath = _relativePath + "/" + path.file();
+        if (path.isDir()) {
+            ok = _repository->deleteDirectory(fpath, path);
         } else {
             // remove the hash cache entry
-            _repository->updatedFileContents(p, std::string());
-            ok = p.remove();
+            _repository->updatedFileContents(path, std::string());
+            ok = path.remove();
         }
 
         if (!ok) {
-            SG_LOG(SG_TERRASYNC, SG_WARN, "removal failed for:" << p);
-            throw sg_io_exception("Failed to remove existing file/dir:", p);
+            SG_LOG(SG_TERRASYNC, SG_WARN, "removal failed for:" << path);
+            throw sg_io_exception("Failed to remove existing file/dir:", path);
         }
     }
 
     std::string hashForChild(const ChildInfo& child) const
     {
-		SGPath p(child.path);
-        if (child.type == ChildInfo::DirectoryType) {
-            p.append(".dirindex");
-        }
+		    SGPath p(child.path);
+        if (child.type == ChildInfo::DirectoryType) p.append(".dirindex");
+        if (child.type == ChildInfo::TarballType) p.concat(".tgz");  // For tarballs the hash is against the tarball file itself
         return _repository->hashForPath(p);
     }
 
     HTTPRepoPrivate* _repository;
     std::string _relativePath; // in URL and file-system space
-
-
 };
 
 HTTPRepository::HTTPRepository(const SGPath& base, HTTP::Client *cl) :

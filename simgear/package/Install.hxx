@@ -86,6 +86,8 @@ public:
     
     size_t downloadedBytes() const;
     
+    Delegate::StatusCode status() const;
+    
     /**
      * full path to the primary -set.xml file for this install
      */
@@ -169,6 +171,7 @@ private:
     
     void installResult(Delegate::StatusCode aReason);
     void installProgress(unsigned int aBytes, unsigned int aTotal);
+    void startDownload();
     
     PackageRef m_package;
     unsigned int m_revision; ///< revision on disk

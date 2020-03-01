@@ -195,6 +195,32 @@
       </package>
 
     <package>
+        <id>b747-400</id>
+        <name>Boeing 747-400</name>
+        <dir>b744</dir>
+        <description>A popular four-engined wide-body jet</description>
+        <revision type="int">111</revision>
+        <file-size-bytes type="int">860</file-size-bytes>
+
+        <tag>boeing</tag>
+        <tag>jet</tag>
+        <tag>ifr</tag>
+
+  
+
+        <rating>
+          <FDM type="int">5</FDM>
+          <systems type="int">5</systems>
+          <model type="int">4</model>
+          <cockpit type="int">4</cockpit>
+        </rating>
+
+        <md5>a94ca5704f305b90767f40617d194ed6</md5>
+        <!-- this URL will fail, on purpose -->
+        <url>http://localhost:2000/catalogTest1/b747.tar.gz</url>
+      </package>
+
+    <package>
         <id>common-sounds</id>
         <name>Common sound files for test catalog aircraft</name>
         <revision>10</revision>

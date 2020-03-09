@@ -25,7 +25,7 @@
 
 #include "RTIFederateFactoryRegistry.hxx"
 
-#include "simgear/threads/std::lock_guard.hxx"
+#include "simgear/threads/SGThread.hxx"
 #include "RTIFederate.hxx"
 
 namespace simgear {

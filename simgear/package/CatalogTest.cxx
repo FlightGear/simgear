@@ -60,6 +60,7 @@ std::string readFileIntoString(const SGPath& path)
 SGPath global_serverFilesRoot;
 unsigned int global_catalogVersion = 0;
 bool global_failRequests = false;
+bool global_fail747Request = true;
 
 class TestPackageChannel : public TestServerChannel
 {
@@ -97,8 +98,12 @@ public:
         }
 
         if (path == "/catalogTest1/b747.tar.gz") {
-            sendErrorResponse(403, false, "Bad URL");
-            return;
+            if (global_fail747Request) {
+                sendErrorResponse(403, false, "Bad URL");
+                return;
+            } else {
+                path = "/catalogTest1/b747.tar.gz"; // valid path
+            }
         }
         
         localPath.append(path);
@@ -1083,7 +1088,8 @@ void updateInvalidToInvalid(HTTP::Client* cl)
 void testInstallBadPackage(HTTP::Client* cl)
 {
     global_catalogVersion = 0;
-
+    global_fail747Request = true;
+    
     SGPath rootPath(simgear::Dir::current().path());
     rootPath.append("pkg_install_bad_pkg");
     simgear::Dir pd(rootPath);
@@ -1113,15 +1119,29 @@ void testInstallBadPackage(HTTP::Client* cl)
     SG_VERIFY(p1->existingInstall() == ins);
     SG_CHECK_EQUAL(ins->status(), pkg::Delegate::FAIL_DOWNLOAD);
     SG_CHECK_EQUAL(ins->path(), rootPath / "org.flightgear.test.catalog1" / "Aircraft" / "b744");
-}
+    
+    // now retry, it should work
+    global_fail747Request = false;
+    
+    auto ins2 = p1->install();
+    SG_CHECK_EQUAL(ins2, p1->existingInstall());
+    root->scheduleToUpdate(ins2);
+    SG_VERIFY(ins2->isQueued());
 
+    didFail = false;
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(p1->isInstalled());
+    SG_VERIFY(!didFail);
+    SG_CHECK_EQUAL(ins->status(), pkg::Delegate::STATUS_SUCCESS);
+    SG_CHECK_EQUAL(ins->path(), rootPath / "org.flightgear.test.catalog1" / "Aircraft" / "b744");
+}
 
 int main(int argc, char* argv[])
 {
    // sglog().setLogLevels( SG_ALL, SG_DEBUG );
 
     HTTP::Client cl;
-    cl.setMaxConnections(1);
+    cl.setMaxConnections(1); 
 
     global_serverFilesRoot = SGPath(SRC_DIR);
 
@@ -1156,7 +1176,7 @@ int main(int argc, char* argv[])
     removeInvalidCatalog(&cl);
     
     testVersionMigrateToId(&cl);
-    
+
     testInstallBadPackage(&cl);
     
     SG_LOG(SG_GENERAL, SG_INFO, "Successfully passed all tests!");

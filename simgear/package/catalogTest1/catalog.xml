@@ -215,8 +215,8 @@
           <cockpit type="int">4</cockpit>
         </rating>
 
-        <md5>a94ca5704f305b90767f40617d194ed6</md5>
-        <!-- this URL will fail, on purpose -->
+        <md5>4d3f7417d74f811aa20ccc4f35673d20</md5>
+        <!-- this URL will sometimes fail, on purpose -->
         <url>http://localhost:2000/catalogTest1/b747.tar.gz</url>
       </package>
 

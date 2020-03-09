@@ -634,7 +634,7 @@ void ArchiveExtractor::extractBytes(const uint8_t* bytes, size_t count)
 			d.reset(new ZipExtractorPrivate(this));
 		}
 		else {
-			SG_LOG(SG_IO, SG_ALERT, "Invcalid archive type");
+			SG_LOG(SG_IO, SG_ALERT, "Invalid archive type");
 			_invalidDataType = true;
 			return;
 		}
@@ -724,8 +724,10 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::isTarData(const uint8_t* byt
         }
 
         int result = inflate(&z, Z_SYNC_FLUSH);
-        if (result != Z_OK) {
-            SG_LOG(SG_IO, SG_WARN, "inflate failed:" << result);
+        if ((result == Z_OK) || (result == Z_STREAM_END)) {
+            // all good
+        } else {
+            SG_LOG(SG_IO, SG_WARN, "isTarData: Zlib inflate failed:" << result);
             inflateEnd(&z);
             return Invalid; // not tar data
         }

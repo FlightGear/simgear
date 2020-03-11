@@ -115,6 +115,7 @@ namespace canvas
       
       void setPixel(int x, int y, const osg::Vec4& color);
 
+      osg::ref_ptr<osg::Image> getImage() const;
       
     //  void setRow(int row, int offset, )
     protected:
@@ -141,6 +142,8 @@ namespace canvas
                       HTTP::Request& request,
                       const std::string& type );
 
+      void allocateImage();
+      
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas
       CanvasWeakPtr _src_canvas;

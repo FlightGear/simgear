@@ -86,7 +86,7 @@ void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time 
             SGPath zone( root );
             zone.append( "zone.tab" );
             SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: " << zone );
-            std::string zs = zone.local8BitStr();
+            std::string zs = zone.utf8Str();
             static_tzContainer.reset(new SGTimeZoneContainer( zs.c_str() ));
         }
 
@@ -243,7 +243,7 @@ void SGTime::updateLocal( const SGGeod& aLocation, const SGPath& root ) {
     }
 
     currGMT = sgTimeGetGMT( gmtime(&cur_time) );
-    std::string zs = zone.local8BitStr();
+    std::string zs = zone.utf8Str();
     aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zs.c_str())) );
     local_offset = aircraftLocalTime - currGMT;
     // cout << "Using " << local_offset << " as local time offset Timezone is " 

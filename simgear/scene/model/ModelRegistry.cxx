@@ -292,9 +292,10 @@ ModelRegistry::readImage(const string& fileName,
     Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
 
-    if (cache_active) {
+    const SGReaderWriterOptions* sgoptC = dynamic_cast<const SGReaderWriterOptions*>(opt);
+
+    if (cache_active && (!sgoptC || sgoptC->getLoadOriginHint() != SGReaderWriterOptions::LoadOriginHint::ORIGIN_SPLASH_SCREEN)) {
         if (fileExtension != "dds" && fileExtension != "gz") {
-            const SGReaderWriterOptions* sgoptC = dynamic_cast<const SGReaderWriterOptions*>(opt);
 
             std::string root = getPathRoot(absFileName);
             std::string prr = getPathRelative(root, absFileName);

@@ -45,6 +45,7 @@ public:
         ORIGIN_MODEL,
         ORIGIN_EFFECTS,
         ORIGIN_EFFECTS_NORMALIZED,
+        ORIGIN_SPLASH_SCREEN,
     };
 
     //SGReaderWriterOptions* cloneOptions(const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) const { return static_cast<SGReaderWriterOptions*>(clone(copyop)); }

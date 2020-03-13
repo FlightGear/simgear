@@ -333,6 +333,12 @@ void test_hash_function()
   SG_CHECK_NE(std::hash<SGPath>{}(p), std::hash<SGPath>{}(p / "foobar"));
 }
 
+void test_null_path()
+{
+	const SGPath nullPath;
+	SG_VERIFY(!nullPath.exists());
+}
+
 int main(int argc, char* argv[])
 {
     SGPath pa;
@@ -441,6 +447,7 @@ int main(int argc, char* argv[])
     test_update_dir();
     test_comparisons();
     test_hash_function();
+	test_null_path();
 
     cout << "all tests passed OK" << endl;
     return 0; // passed

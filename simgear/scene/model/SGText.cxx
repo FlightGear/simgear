@@ -97,7 +97,7 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
 
   SGPath path("Fonts" );
   path.append( configNode->getStringValue( "font", "Helvetica" ));
-  text->setFont( path.local8BitStr() );
+  text->setFont( path.utf8Str() );
 
   text->setCharacterSize(configNode->getDoubleValue("character-size", 1.0 ), 
                          configNode->getDoubleValue("character-aspect-ratio", 1.0 ));

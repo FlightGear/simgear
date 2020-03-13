@@ -97,7 +97,7 @@ public:
      * calling the constructor you need to provide a path pointing to
      * your star database file.
      * @param path path to your star database */
-    SGEphemeris( const std::string &path );
+    SGEphemeris( const SGPath &path );
 
     /** Destructor */
     ~SGEphemeris( void );

@@ -222,7 +222,7 @@ void SGTime::update( const SGGeod& location, time_t ct, long int warp )
 
 
 // Given lon/lat, update timezone information and local_offset
-void SGTime::updateLocal( const SGGeod& aLocation, const string& root ) {
+void SGTime::updateLocal( const SGGeod& aLocation, const SGPath& root ) {
   SGGeod location(aLocation);
     if (!aLocation.isValid()) {
         location = SGGeod();

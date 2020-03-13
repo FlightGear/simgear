@@ -338,12 +338,12 @@ sgLoad3DModel_internal(const SGPath& path,
         if (!texturepath.extension().empty())
             texturepath = texturepath.dir();
 
-        options->setDatabasePath(texturepath.local8BitStr());
+        options->setDatabasePath(texturepath.utf8Str());
         osgDB::ReaderWriter::ReadResult modelResult;
 #if OSG_VERSION_LESS_THAN(3,4,1)
-        modelResult = osgDB::readNodeFile(modelpath.local8BitStr(), options.get());
+        modelResult = osgDB::readNodeFile(modelpath.utf8Str(), options.get());
 #else
-        modelResult = osgDB::readRefNodeFile(modelpath.local8BitStr(), options.get());
+        modelResult = osgDB::readRefNodeFile(modelpath.utf8Str(), options.get());
 #endif
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
@@ -503,7 +503,7 @@ sgLoad3DModel_internal(const SGPath& path,
                 if (!texturepath.extension().empty())
                     texturepath = texturepath.dir();
 
-                options2->setDatabasePath(texturepath.local8BitStr());
+                options2->setDatabasePath(texturepath.utf8Str());
             }
             group->addChild(Particles::appendParticles(particle_nodes[i],
                                                        prop_root,
@@ -544,7 +544,7 @@ sgLoad3DModel_internal(const SGPath& path,
         group = static_cast<Group*>(modelWithEffects.get());
     }
 
-    simgear::SGTransientModelData modelData(group.get(), prop_root, options.get(), path.local8BitStr());
+    simgear::SGTransientModelData modelData(group.get(), prop_root, options.get(), path.utf8Str());
 
     for (unsigned i = 0; i < animation_nodes.size(); ++i) {
         if (previewMode && animation_nodes[i]->hasChild("nopreview")) {

@@ -115,7 +115,7 @@ Dir Dir::tempDir(const std::string& templ)
     // Mac OS-X / BSD manual says any number of 'X's, but GLibc manual
     // says exactly six, so that's what I'm going with
     p.concat("-XXXXXX");
-    std::string s = p.local8BitStr();
+    std::string s = p.utf8Str();
     ::snprintf(buf, 1024, "%s", s.c_str());
     if (!mkdtemp(buf)) {
         SG_LOG(SG_IO, SG_WARN,
@@ -206,7 +206,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 
   FindClose(find);
 #else
-    std::string ps = _path.local8BitStr();
+    std::string ps = _path.utf8Str();
   DIR* dp = opendir(ps.c_str());
   if (!dp) {
     SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: opendir failed:" << _path);
@@ -290,7 +290,7 @@ bool Dir::isEmpty() const
   std::wstring ps = _path.wstr();
   return PathIsDirectoryEmptyW( ps.c_str() );
 #else
-  std::string ps = _path.local8BitStr();
+  std::string ps = _path.utf8Str();
   DIR* dp = opendir( ps.c_str() );
   if (!dp) return true;
 
@@ -339,7 +339,7 @@ bool Dir::create(mode_t mode)
 	std::wstring ps = _path.wstr();
 	int err = _wmkdir(ps.c_str());
 #else
-    std::string ps = _path.local8BitStr();
+    std::string ps = _path.utf8Str();
     int err = mkdir(ps.c_str(), mode);
 #endif
     if (err) {
@@ -394,7 +394,7 @@ bool Dir::remove(bool recursive)
 	std::wstring ps = _path.wstr();
     int err = _wrmdir(ps.c_str());
 #else
-	std::string ps = _path.local8BitStr();
+	std::string ps = _path.utf8Str();
     int err = rmdir(ps.c_str());
 #endif
     if (err) {

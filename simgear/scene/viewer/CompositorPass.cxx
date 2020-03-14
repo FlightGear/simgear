@@ -36,24 +36,6 @@
 #include "Compositor.hxx"
 #include "CompositorUtil.hxx"
 
-namespace {
-osgUtil::RenderBin::RenderBinList
-removeTransparentBins(simgear::EffectCullVisitor *cv)
-{
-    osgUtil::RenderBin::RenderBinList transparent_bins;
-    osgUtil::RenderStage *stage = cv->getRenderStage();
-    osgUtil::RenderBin::RenderBinList &rbl = stage->getRenderBinList();
-    for (auto rbi = rbl.begin(); rbi != rbl.end(); ) {
-        if (rbi->second->getSortMode() == osgUtil::RenderBin::SORT_BACK_TO_FRONT) {
-            transparent_bins.insert(std::make_pair(rbi->first, rbi->second));
-            rbl.erase(rbi++);
-        } else {
-            ++rbi;
-        }
-    }
-    return transparent_bins;
-}
-} // anonymous namespace
 
 namespace simgear {
 namespace compositor {
@@ -407,8 +389,6 @@ public:
 
         traverse(node, nv);
 
-        removeTransparentBins(cv);
-
         // The light matrix uniform is updated after the traverse in case the
         // OSG near/far plane calculations were enabled
         osg::Matrixf light_matrix =
@@ -736,9 +716,6 @@ public:
                         SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Pass '"
                                << shadow_pass_name << "is not a shadow pass");
                     }
-                } else {
-                    SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Could not "
-                           "find shadow pass named '" << shadow_pass_name << "'");
                 }
             }
         }

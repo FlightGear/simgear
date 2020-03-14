@@ -33,7 +33,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/props/props_io.hxx>
-#include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SplicingVisitor.hxx>
 #include <simgear/structure/SGExpression.hxx>
@@ -127,16 +126,7 @@ Effect* makeEffect(const string& name,
             itr->second.valid())
             return itr->second.get();
     }
-    string effectFileName;
-    // Use getPropertyRoot() because the SGReaderWriterOptions might not have a
-    // valid property tree
-    if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false) &&
-        name.substr(0, name.find("/")) == "Effects") {
-        // Temporarily append the Compositor/ directory to every effect that should
-        // be inside Effects/.
-        effectFileName += "Compositor/";
-    }
-    effectFileName += name;
+    string effectFileName(name);
     effectFileName += ".eff";
     string absFileName
         = SGModelLib::findDataFile(effectFileName, options);

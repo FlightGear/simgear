@@ -672,8 +672,7 @@ static std::string convertWStringToMultiByte(DWORD encoding, const std::wstring&
 std::wstring convertUtf8ToWString(const std::string& a)
 {
 #if defined(SG_WINDOWS)
-    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> ucs2conv;
-    return ucs2conv.from_bytes(a);
+    return convertMultiByteToWString(CP_UTF8, a);
 #else
     assert(sizeof(wchar_t) == 4);
     std::wstring result;
@@ -723,8 +722,7 @@ std::wstring convertUtf8ToWString(const std::string& a)
 std::string convertWStringToUtf8(const std::wstring& w)
 {
 #if defined(SG_WINDOWS)
-    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> ucs2conv;
-    return ucs2conv.to_bytes(w);
+    return convertWStringToMultiByte(CP_UTF8, w);
 #else
     assert(sizeof(wchar_t) == 4);
     std::string result;

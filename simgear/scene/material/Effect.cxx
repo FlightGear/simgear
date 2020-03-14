@@ -81,6 +81,8 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
 
+#include <simgear/io/iostreams/sgstream.hxx>
+
 namespace simgear
 {
 using namespace std;
@@ -95,6 +97,25 @@ const char* UniformFactoryImpl::vec4Names[] = {"x", "y", "z", "w"};
 void UniformFactoryImpl::reset()
 {
   uniformCache.clear();
+}
+
+// work around the fact osg::Shader::loadShaderFromSourceFile does not
+// respect UTF8 paths, even when OSG_USE_UTF8_FILENAME is set :(
+bool loadShaderFromUTF8File(osg::Shader* shader, const std::string& fileName)
+{
+    sg_ifstream inStream(SGPath::fromUtf8(fileName), std::ios::in | std::ios::binary);
+    if (!inStream.is_open())
+        return false;
+    
+    string shaderSource;
+    while (!inStream.eof()) {
+        char bytes[8192];
+        inStream.read(bytes, 8192);
+        shaderSource.append(bytes, inStream.gcount());
+    }
+    inStream.close();
+    shader->setShaderSource(shaderSource);
+    return true;
 }
 
 ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
@@ -829,7 +850,7 @@ void reload_shaders()
         Shader *shader = sitr->second.get();
         string fileName = SGModelLib::findDataFile(sitr->first.first);
         if (!fileName.empty()) {
-            shader->loadShaderSourceFromFile(fileName);
+            loadShaderFromUTF8File(shader, fileName);
         }
         else
             SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader: " << fileName);
@@ -953,7 +974,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         } else {
             ref_ptr<Shader> shader = new Shader(stype);
 			shader->setName(fileName);
-            if (shader->loadShaderSourceFromFile(fileName)) {
+            if (loadShaderFromUTF8File(shader, fileName)) {
                 program->addShader(shader.get());
                 shaderMap.insert(ShaderMap::value_type(skey, shader));
             }

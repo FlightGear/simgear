@@ -201,5 +201,5 @@ if(ENABLE_RTI)
     set_property(SOURCE hla/RTI13InteractionClass.cxx hla/RTI13ObjectClass.cxx
         hla/RTI13ObjectInstance.cxx hla/RTI13Federate.cxx
         hla/RTI13FederateFactory.cxx
-        APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIR}")
+        APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIRS}")
 endif(ENABLE_RTI)

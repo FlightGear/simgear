@@ -18,6 +18,16 @@ set(USE_AEONWAVE @USE_AEONWAVE@)
 
 set(ENABLE_SIMD @ENABLE_SIMD@)
 
+# OpenRTI support
+set(ENABLE_RTI @ENABLE_RTI@)
+if(ENABLE_RTI)
+  set(RTI_FOUND @RTI_FOUND@)
+  if(RTI_FOUND)
+    set(RTI_INCLUDE_DIRS @RTI_INCLUDE_DIRS@)
+    set(RTI_LDFLAGS @RTI_LDFLAGS@)
+  endif(RTI_FOUND)
+endif(ENABLE_RTI)
+
 # Alternative terrain engine based on pagedLOD
 
 set(ENABLE_GDAL @ENABLE_GDAL@)

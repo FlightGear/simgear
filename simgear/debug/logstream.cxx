@@ -564,7 +564,7 @@ public:
         }
 
         if (in == SG_DEV_ALERT) {
-            return m_developerMode ? SG_POPUP : SG_WARN;
+            return m_developerMode ? SG_ALERT : SG_WARN;
         }
 
         return in;

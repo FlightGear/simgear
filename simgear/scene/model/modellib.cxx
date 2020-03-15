@@ -77,12 +77,26 @@ std::string SGModelLib::findDataFile(const std::string& file,
     return file;
   SGPath p = ResourceManager::instance()->findPath(file, currentPath);
   if (p.exists()) {
-    return p.local8BitStr();
+    return p.utf8Str();
   }
 
   // finally hand on to standard OSG behaviour
   return osgDB::findDataFile(file, opts);
 }
+
+std::string SGModelLib::findDataFile(const SGPath& file,
+  const osgDB::Options* opts,
+  SGPath currentPath)
+{
+  SGPath p = ResourceManager::instance()->findPath(file.utf8Str(), currentPath);
+  if (p.exists()) {
+    return p.utf8Str();
+  }
+
+  // finally hand on to standard OSG behaviour
+  return osgDB::findDataFile(file.utf8Str(), opts);
+}
+
 
 SGModelLib::SGModelLib()
 {

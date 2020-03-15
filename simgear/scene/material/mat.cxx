@@ -149,7 +149,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
         SGPath tpath("Textures");
         tpath.append(tname);
-        std::string fullTexPath = SGModelLib::findDataFile(tpath.local8BitStr(), options);
+        std::string fullTexPath = SGModelLib::findDataFile(tpath, options);
         if (fullTexPath.empty()) {
             SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
                     << tname << "\" in Textures folders.");
@@ -181,7 +181,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
             SGPath tpath("Textures");
             tpath.append(tname);
-            std::string fullTexPath = SGModelLib::findDataFile(tpath.local8BitStr(), options);
+            std::string fullTexPath = SGModelLib::findDataFile(tpath, options);
             if (fullTexPath.empty()) {
                 SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
                         << tname << "\" in Textures folders.");
@@ -207,7 +207,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         SGPath tpath("Textures");
         tpath.append("Terrain");
         tpath.append("unknown.rgb");
-        _internal_state st( NULL, tpath.local8BitStr(), true, options );
+        _internal_state st( NULL, tpath.utf8Str(), true, options );
         _status.push_back( st );
     }
 
@@ -219,7 +219,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         if (! omname.empty()) {
             SGPath ompath("Textures");
             ompath.append(omname);
-            std::string fullMaskPath = SGModelLib::findDataFile(ompath.local8BitStr(), options);
+            std::string fullMaskPath = SGModelLib::findDataFile(ompath, options);
 
             if (fullMaskPath.empty()) {
                 SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
@@ -358,7 +358,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         if (! treeTexPath.empty()) {
             SGPath treePath("Textures");
             treePath.append(treeTexPath);
-            tree_texture = SGModelLib::findDataFile(treePath.local8BitStr(), options);
+            tree_texture = SGModelLib::findDataFile(treePath, options);
 
             if (tree_texture.empty()) {
                 SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""

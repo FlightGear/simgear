@@ -31,7 +31,7 @@
 
 
 // Constructor
-SGEphemeris::SGEphemeris( const std::string &path ) {
+SGEphemeris::SGEphemeris( const SGPath& path ) {
     our_sun = new Star;
     moon = new MoonPos;
     mercury = new Mercury;
@@ -44,7 +44,7 @@ SGEphemeris::SGEphemeris( const std::string &path ) {
     nplanets = 7;
     for ( int i = 0; i < nplanets; ++i )
       planets[i] = SGVec3d::zeros();
-    stars = new SGStarData( SGPath(path) );
+    stars = new SGStarData(path);
 }
 
 

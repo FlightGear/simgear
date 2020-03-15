@@ -285,16 +285,17 @@ ModelRegistry::readImage(const string& fileName,
     string absFileName = SGModelLib::findDataFile(fileName, opt);
     string originalFileName = absFileName;
     if (!fileExists(absFileName)) {
-        SG_LOG(SG_IO, SG_ALERT, "Cannot find image file \""
+        SG_LOG(SG_IO, SG_DEV_ALERT, "Cannot find image file \""
             << fileName << "\"");
         return ReaderWriter::ReadResult::FILE_NOT_FOUND;
     }
     Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
 
-    if (cache_active) {
+    const SGReaderWriterOptions* sgoptC = dynamic_cast<const SGReaderWriterOptions*>(opt);
+
+    if (cache_active && (!sgoptC || sgoptC->getLoadOriginHint() != SGReaderWriterOptions::LoadOriginHint::ORIGIN_SPLASH_SCREEN)) {
         if (fileExtension != "dds" && fileExtension != "gz") {
-            const SGReaderWriterOptions* sgoptC = dynamic_cast<const SGReaderWriterOptions*>(opt);
 
             std::string root = getPathRoot(absFileName);
             std::string prr = getPathRelative(root, absFileName);
@@ -328,7 +329,7 @@ ModelRegistry::readImage(const string& fileName,
                         hash = f.computeHash();
                     }
                     catch (sg_io_exception &e) {
-                        SG_LOG(SG_INPUT, SG_ALERT, "Modelregistry::failed to compute filehash '" << absFileName << "' " << e.getFormattedMessage());
+                        SG_LOG(SG_IO, SG_DEV_ALERT, "Modelregistry::failed to compute filehash '" << absFileName << "' " << e.getFormattedMessage());
                         hash = std::string();
                     }
                 }
@@ -406,12 +407,12 @@ ModelRegistry::readImage(const string& fileName,
                         }
 
                         if (pot_message.size())
-                            SG_LOG(SG_IO, SG_WARN, pot_message << " " << absFileName);
+                            SG_LOG(SG_IO, SG_DEV_WARN, pot_message << " " << absFileName);
 
                         // unlikely that after resizing in height the width will still be outside of the max texture size.
                         if (height > max_texture_size)
                         {
-                            SG_LOG(SG_IO, SG_WARN, "Image texture too high (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
+                            SG_LOG(SG_IO, SG_DEV_WARN, "Image texture too high (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
                             int factor = height / max_texture_size;
                             height /= factor;
                             width /= factor;
@@ -419,7 +420,7 @@ ModelRegistry::readImage(const string& fileName,
                         }
                         if (width > max_texture_size)
                         {
-                            SG_LOG(SG_IO, SG_WARN, "Image texture too wide (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
+                            SG_LOG(SG_IO, SG_DEV_WARN, "Image texture too wide (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
                             int factor = width / max_texture_size;
                             height /= factor;
                             width /= factor;
@@ -487,7 +488,7 @@ ModelRegistry::readImage(const string& fileName,
 
                                     if (processor)
                                     {
-                                        SG_LOG(SG_IO, SG_ALERT, "Creating " << targetFormat << " for " + absFileName);
+                                        SG_LOG(SG_IO, SG_DEV_ALERT, "Creating " << targetFormat << " for " + absFileName);
                                         // normal maps:
                                         // nvdxt.exe - quality_highest - rescaleKaiser - Kaiser - dxt5nm - norm
                                         processor->compress(*srcImage, targetFormat, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
@@ -527,11 +528,11 @@ ModelRegistry::readImage(const string& fileName,
                                 absFileName = newName;
                             }
                             catch (...) {
-                                SG_LOG(SG_IO, SG_ALERT, "Exception processing " << absFileName << " may be corrupted");
+                                SG_LOG(SG_IO, SG_DEV_ALERT, "Exception processing " << absFileName << " may be corrupted");
                             }
                         }
                         else
-                            SG_LOG(SG_IO, SG_WARN, absFileName + " too small " << width << "," << height);
+                            SG_LOG(SG_IO, SG_DEV_WARN, absFileName + " too small " << width << "," << height);
                     }
                 }
             }
@@ -545,7 +546,7 @@ ModelRegistry::readImage(const string& fileName,
     res = registry->readImageImplementation(absFileName, opt);
 
     if (!res.success()) {
-        SG_LOG(SG_IO, SG_WARN, "Image loading failed:" << res.message());
+        SG_LOG(SG_IO, SG_DEV_WARN, "Image loading failed:" << res.message());
         return res;
     }
 

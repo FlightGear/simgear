@@ -381,9 +381,9 @@ public:
                                        osg::StateAttribute::ON);
             }
           } else {
-              SG_LOG(SG_IO, SG_WARN, "texture animation: requested texture : " << textureName << " not found. Searched paths:" );
+              SG_LOG(SG_IO, SG_DEV_WARN, "texture animation: requested texture : " << textureName << " not found. Searched paths:" );
               for( osgDB::FilePathList::iterator it = _texturePathList.begin(); it != _texturePathList.end(); ++it ) {
-                SG_LOG(SG_IO, SG_WARN, " - " << *it );
+                SG_LOG(SG_IO, SG_DEV_WARN, " - " << *it );
               }
           }
         }
@@ -420,7 +420,7 @@ SGMaterialAnimation::SGMaterialAnimation(simgear::SGTransientModelData &modelDat
     SGAnimation(modelData), texturePathList(modelData.getOptions()->getDatabasePathList())
 {
   if (modelData.getConfigNode()->hasChild("global"))
-    SG_LOG(SG_IO, SG_ALERT, modelData.getPath() <<
+    SG_LOG(SG_IO, SG_DEV_ALERT, modelData.getPath() <<
            ": Use of <global> in material animation is "
            "no longer supported.");
 }

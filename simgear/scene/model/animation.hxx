@@ -100,6 +100,7 @@ protected:
 
   const SGCondition* getCondition() const;
 
+  simgear::SGTransientModelData &_modelData;
   std::list<std::string> _objectNames;
 private:
   void installInGroup(const std::string& name, osg::Group& group,

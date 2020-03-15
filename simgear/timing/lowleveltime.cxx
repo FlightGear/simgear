@@ -42,6 +42,7 @@
 #include <limits.h>
 
 #include <simgear/structure/exception.hxx>
+#include <simgear/misc/strutils.hxx>
 
 #include "lowleveltime.h"
 
@@ -857,7 +858,12 @@ void fgtzfile_read (const char *file)
 //       file = _new;
 //     }
 
-  f = fopen (file, "rb");
+#if defined(SG_WINDOWS)
+  const std::wstring wfile = simgear::strutils::convertUtf8ToWString(file);
+  f = _wfopen(wfile.c_str(), L"rb");
+#else
+  f = fopen(file, "rb");
+#endif
 
   if (f == NULL) {
       perror( "fgtzfile_read(): " );

@@ -78,7 +78,7 @@ SGMakeState(const SGPath &path, const char* colorTexture,
     osg::StateSet *stateSet = new osg::StateSet;
 
     osg::ref_ptr<SGReaderWriterOptions> options;
-    options = SGReaderWriterOptions::fromPath(path.local8BitStr());
+    options = SGReaderWriterOptions::fromPath(path);
     stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture,
                                                      options.get()));
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
@@ -93,7 +93,7 @@ SGMakeState(const SGPath &path, const char* colorTexture,
 }
 
 // Constructor
-SGCloudLayer::SGCloudLayer( const string &tex_path ) :
+SGCloudLayer::SGCloudLayer( const SGPath &tex_path ) :
     cloud_root(new osg::Switch),
     layer_root(new osg::Switch),
     group_top(new osg::Group),

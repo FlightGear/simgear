@@ -42,6 +42,7 @@
 #include <osg/Switch>
 
 class SGCloudField;
+class SGPath;
 
 /**
  * A class layer to model a single cloud layer
@@ -73,7 +74,7 @@ public:
      * Constructor
      * @param tex_path the path to the set of cloud textures
      */
-    SGCloudLayer( const std::string &tex_path );
+    SGCloudLayer( const SGPath &tex_path );
 
     /**
      * Destructor

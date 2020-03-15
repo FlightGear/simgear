@@ -69,7 +69,7 @@ class FindGroupVisitor:
         _group(0)
     {
       if( name.empty() )
-        SG_LOG(SG_IO, SG_WARN, "FindGroupVisitor: empty name provided");
+        SG_LOG(SG_IO, SG_DEV_WARN, "FindGroupVisitor: empty name provided");
     }
 
     osg::Group* getGroup() const
@@ -91,7 +91,7 @@ class FindGroupVisitor:
         SG_LOG
         (
           SG_IO,
-          SG_WARN,
+          SG_DEV_WARN,
           "FindGroupVisitor: name not unique '" << _name << "'"
         );
     }
@@ -154,7 +154,7 @@ class SGTrackToAnimation::UpdateCallback:
 
       if( _lock_axis.normalize() == 0.0 )
       {
-        anim->log(SG_WARN, "invalid lock-axis");
+        anim->log(SG_DEV_WARN, "invalid lock-axis");
         _lock_axis.set(0, 1, 0);
       }
 
@@ -184,7 +184,7 @@ class SGTrackToAnimation::UpdateCallback:
           if( _slave_dof < 2 )
             // Without slave_dof >= 2, can not rotate out of plane normal to
             // lock axis.
-            anim->log(SG_WARN, "track-axis not perpendicular to lock-axis");
+            anim->log(SG_DEV_WARN, "track-axis not perpendicular to lock-axis");
 
           // Make tracking axis perpendicular to locked axis
           _track_axis -= _lock_axis * proj;
@@ -192,7 +192,7 @@ class SGTrackToAnimation::UpdateCallback:
 
         if( _track_axis.normalize() == 0.0 )
         {
-          anim->log(SG_WARN, "invalid track-axis");
+          anim->log(SG_DEV_WARN, "invalid track-axis");
           if( std::fabs(_lock_axis.x()) < 0.1 )
             _track_axis.set(1, 0, 0);
           else
@@ -383,7 +383,7 @@ SGTrackToAnimation::SGTrackToAnimation(simgear::SGTransientModelData &modelData)
   modelData.getNode()->accept(target_finder);
 
   if( !(_target_group = target_finder.getGroup()) )
-    log(SG_ALERT, "target not found: '" + target + '\'');
+    log(SG_DEV_ALERT, "target not found: '" + target + '\'');
 
   std::string slave = modelData.getConfigNode()->getStringValue("slave-name");
   if( !slave.empty() )

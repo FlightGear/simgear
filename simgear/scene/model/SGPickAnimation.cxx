@@ -186,7 +186,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
      osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
      _texX(x), _texY(y), _mask(mask), _done(false)
    {
-     SG_LOG(SG_INPUT, SG_DEBUG, "VncVisitor constructor "
+     SG_LOG(SG_IO, SG_DEBUG, "VncVisitor constructor "
        << x << "," << y << " mask " << mask);
    }
 
@@ -240,7 +240,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
        int pixX = _texX * img->s();
        int pixY = _texY * img->t();
        _done = img->sendPointerEvent(pixX, pixY, _mask);
-       SG_LOG(SG_INPUT, SG_DEBUG, "VncVisitor image said " << _done
+       SG_LOG(SG_IO, SG_DEBUG, "VncVisitor image said " << _done
          << " to coord " << pixX << "," << pixY);
      }
    }
@@ -267,7 +267,7 @@ public:
      : _condition(condition)
      , _node(node)
  {
-   SG_LOG(SG_INPUT, SG_DEBUG, "Configuring VNC callback");
+   SG_LOG(SG_IO, SG_DEBUG, "Configuring VNC callback");
    const char *cornernames[3] = {"top-left", "top-right", "bottom-left"};
    SGVec3d *cornercoords[3] = {&_topLeft, &_toRight, &_toDown};
    for (int c =0; c < 3; c++) {
@@ -289,7 +289,7 @@ public:
  {
      if (!_condition || _condition->test()) {
          SGVec3d loc(info.local);
-         SG_LOG(SG_INPUT, SG_DEBUG, "VNC pressed " << button << ": " << loc);
+         SG_LOG(SG_IO, SG_DEBUG, "VNC pressed " << button << ": " << loc);
          loc -= _topLeft;
          _x = dot(loc, _toRight) / _squaredRight;
          _y = dot(loc, _toDown) / _squaredDown;
@@ -307,7 +307,7 @@ public:
  {
      if (!_condition || _condition->test()) {
          SG_UNUSED(keyModState);
-         SG_LOG(SG_INPUT, SG_DEBUG, "VNC release");
+         SG_LOG(SG_IO, SG_DEBUG, "VNC release");
          VncVisitor vv(_x, _y, 0);
          _node->accept(vv);
      }

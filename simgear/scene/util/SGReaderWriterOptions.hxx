@@ -31,6 +31,8 @@
 #endif
 
 class SGPropertyNode;
+class SGPath;
+
 typedef std::vector < std::string > string_list;
 
 namespace simgear
@@ -43,6 +45,7 @@ public:
         ORIGIN_MODEL,
         ORIGIN_EFFECTS,
         ORIGIN_EFFECTS_NORMALIZED,
+        ORIGIN_SPLASH_SCREEN,
     };
 
     //SGReaderWriterOptions* cloneOptions(const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) const { return static_cast<SGReaderWriterOptions*>(clone(copyop)); }
@@ -50,7 +53,6 @@ public:
     SGReaderWriterOptions() :
         _materialLib(0),
         _load_panel(0),
-        _model_data(0),
         _instantiateEffects(false),
         _instantiateMaterialEffects(false),
         _LoadOriginHint(ORIGIN_MODEL)
@@ -59,7 +61,6 @@ public:
         osgDB::Options(str),
         _materialLib(0),
         _load_panel(0),
-        _model_data(0),
         _instantiateEffects(false),
         _instantiateMaterialEffects(false),
         _LoadOriginHint(ORIGIN_MODEL)
@@ -69,7 +70,6 @@ public:
         osgDB::Options(options, copyop),
         _materialLib(0),
         _load_panel(0),
-        _model_data(0),
         _instantiateEffects(false),
         _instantiateMaterialEffects(false),
         _LoadOriginHint(ORIGIN_MODEL)
@@ -144,7 +144,7 @@ public:
     { _sceneryPathSuffixes = suffixes; }
 
     static SGReaderWriterOptions* copyOrCreate(const osgDB::Options* options);
-    static SGReaderWriterOptions* fromPath(const std::string& path);
+    static SGReaderWriterOptions* fromPath(const SGPath& path);
 
     void setLocation(double lon, double lat)
     { _geod = SGGeod::fromDeg(lon, lat); }

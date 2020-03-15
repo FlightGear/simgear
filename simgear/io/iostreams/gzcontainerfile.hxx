@@ -35,7 +35,7 @@ typedef int ContainerType;
 class gzContainerReader : public sg_gzifstream
 {
 public:
-    gzContainerReader( const std::string& name,
+    gzContainerReader( const SGPath& name,
                        const std::string& fileMagic);
 
     bool readContainerHeader(ContainerType* pType, size_t* pSize);
@@ -48,7 +48,7 @@ private:
 class gzContainerWriter : public sg_gzofstream
 {
 public:
-    gzContainerWriter( const std::string& name,
+    gzContainerWriter( const SGPath& name,
                        const std::string& fileMagic);
 
     bool writeContainerHeader(ContainerType Type, size_t Size);

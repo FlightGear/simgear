@@ -65,7 +65,7 @@ SGMaterialLib::SGMaterialLib ( void ) :
 }
 
 // Load a library of material properties
-bool SGMaterialLib::load( const string &fg_root, const string& mpath,
+bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
         SGPropertyNode *prop_root )
 {
     SGPropertyNode materialblocks;
@@ -81,7 +81,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
     osg::ref_ptr<osgDB::Options> options
         = new osgDB::Options;
     options->setObjectCacheHint(osgDB::Options::CACHE_ALL);
-    options->setDatabasePath(fg_root);
+    options->setDatabasePath(fg_root.utf8Str());
 
     simgear::PropertyList blocks = materialblocks.getChildren("region");
     simgear::PropertyList::const_iterator block_iter = blocks.begin();

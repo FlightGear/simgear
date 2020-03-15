@@ -162,7 +162,7 @@ public:
      * @param location  Current geodetic location
      * @param root      Bbase path containing time zone directory
      */
-    void updateLocal( const SGGeod& location, const std::string& root );
+    void updateLocal( const SGGeod& location, const SGPath& root );
 
     /** @return current system/unix time in seconds */
     inline time_t get_cur_time() const { return cur_time; };

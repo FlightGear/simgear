@@ -36,6 +36,7 @@
 #include <cstdlib>
 
 #include <simgear/structure/exception.hxx>
+#include <simgear/misc/strutils.hxx>
 
 #include "timezone.h"
 
@@ -134,7 +135,12 @@ SGTimeZone::SGTimeZone(const SGTimeZone& other)
 SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
 {
     char buffer[256];
-    FILE* infile = fopen(filename, "rb");
+#if defined(SG_WINDOWS)
+  const std::wstring wfile = simgear::strutils::convertUtf8ToWString(filename);
+  FILE* infile = _wfopen(wfile.c_str(), L"rb");
+#else
+  FILE* infile = fopen(filename, "rb");
+#endif
     if (!(infile)) {
         std::string e = "Unable to open time zone file '";
         throw sg_exception(e + filename + '\'');

@@ -47,10 +47,10 @@ SGReaderWriterOptions::copyOrCreate(const osgDB::Options* options)
 }
 
 SGReaderWriterOptions*
-SGReaderWriterOptions::fromPath(const std::string& path)
+SGReaderWriterOptions::fromPath(const SGPath& path)
 {
-    SGReaderWriterOptions* options = copyOrCreate(0);
-    options->setDatabasePath(path);
+    SGReaderWriterOptions* options = copyOrCreate(nullptr);
+    options->setDatabasePath(path.utf8Str());
     return options;
 }
 

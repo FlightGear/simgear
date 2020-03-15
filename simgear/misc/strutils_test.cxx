@@ -458,7 +458,7 @@ void test_escape()
                  " ab\\nc \\\\def\\t\\r \\\\ ghi\\\\");
   // U+0152 is LATIN CAPITAL LIGATURE OE. The last word is Egg translated in
   // French and encoded in UTF-8 ('Œuf' if you can read UTF-8).
-  SG_CHECK_EQUAL(strutils::escape("Un \"Bel\" '\u0152uf'"),
+  SG_CHECK_EQUAL(strutils::escape(u8"Un \"Bel\" '\u0152uf'"),
                  "Un \\\"Bel\\\" '\\305\\222uf'");
   SG_CHECK_EQUAL(strutils::escape("\a\b\f\n\r\t\v"),
                  "\\a\\b\\f\\n\\r\\t\\v");
@@ -628,6 +628,11 @@ void test_utf8Convert()
     
     std::wstring aRoundTrip = strutils::convertUtf8ToWString(utf8A);
     SG_VERIFY(a == aRoundTrip);
+
+
+    const auto wide2(L"\U0001f6eb\u2708\ufe0f\u2764\ufe0f");
+    std::string utf8_2 = strutils::convertWStringToUtf8(wide2);
+    SG_VERIFY(utf8_2 == std::string("\xf0\x9f\x9b\xab\xe2\x9c\x88\xef\xb8\x8f\xe2\x9d\xa4\xef\xb8\x8f"));
 }
 
 void test_parseGeod()

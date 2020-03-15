@@ -866,6 +866,11 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
   void Image::fillRect(const SGRect<int>& rect, const osg::Vec4& color)
   {
     osg::ref_ptr<osg::Image> image = _texture->getImage();
+    if (!image) {
+      allocateImage();
+      image = _texture->getImage();
+    }
+      
     const auto format = image->getInternalTextureFormat();
     
     auto clippedRect = intersectRect(rect, SGRect<int>(0, 0, image->s(), image->t()));
@@ -881,6 +886,7 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
     
     switch (format) {
     case GL_RGBA8:
+    case GL_RGBA:
         rowByteSize = pixelWidth * 4;
         rowData = static_cast<GLubyte*>(alloca(rowByteSize));
         
@@ -892,6 +898,7 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
         break;
     
     case GL_RGB8:
+    case GL_RGB:
         rowByteSize = pixelWidth * 3;
         rowData = static_cast<GLubyte*>(alloca(rowByteSize));
         pixel = color.asABGR();
@@ -908,8 +915,8 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
       GLubyte* imageData = image->data(clippedRect.l(), row);
       memcpy(imageData, rowData, rowByteSize);
     }
-    
-    setImage(image);
+      
+    image->dirty();
   }
 
   void Image::setPixel(int x, int y, const std::string& c)
@@ -924,12 +931,30 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
   void Image::setPixel(int x, int y, const osg::Vec4& color)
   {
     osg::ref_ptr<osg::Image> image = _texture->getImage();
+    if (!image) {
+        allocateImage();
+        image = _texture->getImage();
+    }
+      
     image->setColor(color, x, y);
-    
-    // is this needed, or does OSG track modifications to the data
-    // automatically?
-    setImage(image);
   }
+
+  void Image::allocateImage()
+  {
+    osg::Image* image = new osg::Image;
+    // default to RGBA
+    image->allocateImage(_node->getIntValue("size[0]"), _node->getIntValue("size[1]"), 1, GL_RGBA, GL_UNSIGNED_BYTE);
+    image->setInternalTextureFormat(GL_RGBA);
+    _texture->setImage(image);
+  }
+
+
+osg::ref_ptr<osg::Image> Image::getImage() const
+{
+    if (!_texture)
+        return {};
+    return _texture->getImage();
+}
 
 } // namespace canvas
 } // namespace simgear

@@ -38,6 +38,7 @@
 
 class SGMaterial;
 class SGPropertyNode;
+class SGPath;
 
 namespace simgear { class Effect; }
 namespace osg { class Geode; }
@@ -87,7 +88,7 @@ public:
     SGMaterialLib ( void );
 
     // Load a library of material properties
-    bool load( const std::string &fg_root, const std::string& mpath,
+    bool load( const SGPath &fg_root, const SGPath& mpath,
             SGPropertyNode *prop_root );
     // find a material record by material name
     SGMaterial *find( const std::string& material, SGVec2f center ) const;

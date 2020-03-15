@@ -326,7 +326,7 @@ public:
      *
      * @param path Base path to texture locations
      */
-    void texture_path( const std::string& path );
+    void set_texture_path( const SGPath& path );
 
     /**
      * Get the current sun color

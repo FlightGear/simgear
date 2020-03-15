@@ -786,8 +786,8 @@ bool SGPath::rename(const SGPath& newName)
 	std::wstring np = newName.wstr();
 	if (_wrename(p.c_str(), np.c_str()) != 0)
 #else
-    std::string p = local8BitStr();
-    std::string np = newName.local8BitStr();
+    std::string p = utf8Str();
+    std::string np = newName.utf8Str();
     if( ::rename(p.c_str(), np.c_str()) != 0 )
 #endif
 

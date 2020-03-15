@@ -95,7 +95,7 @@ SGReaderWriterXML::readNode(const std::string& name,
         int num_anims;
         std::tie(num_anims, result) = sgLoad3DModel_internal(p, options);
     } catch (const sg_exception &t) {
-        SG_LOG(SG_INPUT, SG_ALERT, "Failed to load model: " << t.getFormattedMessage()
+        SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load model: " << t.getFormattedMessage()
           << "\n\tfrom:" << fileName);
         result=new osg::Node;
     }
@@ -264,7 +264,7 @@ sgLoad3DModel_internal(const SGPath& path,
                        SGPropertyNode *overlay)
 {
     if (!path.exists()) {
-      SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path << "\"");
+      SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load file: \"" << path << "\"");
       return std::make_tuple(0, (osg::Node *) NULL);
     }
 
@@ -293,7 +293,7 @@ sgLoad3DModel_internal(const SGPath& path,
        try {
             readProperties(modelpath, props);
         } catch (const sg_exception &t) {
-            SG_LOG(SG_INPUT, SG_ALERT, "Failed to load xml: "
+            SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load xml: "
                    << t.getFormattedMessage());
             throw;
         }
@@ -414,7 +414,7 @@ sgLoad3DModel_internal(const SGPath& path,
           NULL, modelDir);
 
         if (submodelPath.isNull()) {
-          SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << subPathStr << "\"");
+          SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load file: \"" << subPathStr << "\"");
           continue;
         }
 
@@ -433,7 +433,7 @@ sgLoad3DModel_internal(const SGPath& path,
                                               sub_props->getNode("overlay"));
             animationcount += num_anims;
         } catch (const sg_exception &t) {
-            SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage()
+            SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load submodel: " << t.getFormattedMessage()
               << "\n\tfrom:" << t.getOrigin());
             continue;
         }
@@ -484,7 +484,7 @@ sgLoad3DModel_internal(const SGPath& path,
         // Load panels
         vector<SGPropertyNode_ptr> panel_nodes = props->getChildren("panel");
         for (unsigned i = 0; i < panel_nodes.size(); i++) {
-            SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
+            SG_LOG(SG_IO, SG_DEBUG, "Loading a panel");
             osg::ref_ptr<osg::Node> panel = load_panel(panel_nodes[i]);
             if (panel_nodes[i]->hasValue("name"))
                 panel->setName(panel_nodes[i]->getStringValue("name"));

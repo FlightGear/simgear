@@ -455,9 +455,9 @@ SGAnimation::~SGAnimation()
       }
       if (!info.empty())
       {
-          SG_LOG(SG_IO, SG_ALERT, "Could not find at least one of the following"
+          SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following"
                   " objects for animation: " << info);
-          SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+          SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
       }
   }
 }
@@ -673,7 +673,7 @@ public:
         _group(0)
     {
         if (name.empty())
-            SG_LOG(SG_IO, SG_WARN, "FindGroupVisitor: empty name provided");
+            SG_LOG(SG_IO, SG_DEV_WARN, "FindGroupVisitor: empty name provided");
     }
 
     osg::Group* getGroup() const
@@ -695,7 +695,7 @@ public:
             SG_LOG
             (
                 SG_IO,
-                SG_WARN,
+                SG_DEV_WARN,
                 "FindGroupVisitor: name not unique '" << _name << "'"
             );
     }
@@ -774,13 +774,13 @@ bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& cente
                     object_group->setNodeMask(0);
                 }
                 else {
-                    SG_LOG(SG_INPUT, SG_ALERT, "Could not find a valid line segment for animation:  " << axis_object_name);
-                    SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+                    SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find a valid line segment for animation:  " << axis_object_name);
+                    SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
                 }
             }
             else if (can_warn) {
-                SG_LOG(SG_INPUT, SG_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
-                SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+                SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
+                SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
             }
         }
         if (axisSegment)
@@ -2398,14 +2398,14 @@ SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
       else if (subtype == "textrapezoid")
         appendTexTrapezoid(*transformConfigs[i], updateCallback);
       else {
-        SG_LOG(SG_INPUT, SG_ALERT,
+        SG_LOG(SG_IO, SG_DEV_ALERT,
                "Ignoring unknown texture transform subtype");
-        SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+        SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
       }
     }
   } else {
-    SG_LOG(SG_INPUT, SG_ALERT, "Ignoring unknown texture transform type");
-    SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+    SG_LOG(SG_IO, SG_DEV_ALERT, "Ignoring unknown texture transform type");
+    SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
   }
 
   texMat->setUpdateCallback(updateCallback);

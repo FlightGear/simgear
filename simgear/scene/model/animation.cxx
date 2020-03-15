@@ -426,6 +426,7 @@ struct DoDrawArraysVisitor : public osg::NodeVisitor {
 
 SGAnimation::SGAnimation(simgear::SGTransientModelData &modelData) :
   osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+  _modelData(modelData),
   _found(false),
   _configNode(modelData.getConfigNode()),
   _modelRoot(modelData.getModelRoot())
@@ -456,6 +457,7 @@ SGAnimation::~SGAnimation()
       {
           SG_LOG(SG_IO, SG_ALERT, "Could not find at least one of the following"
                   " objects for animation: " << info);
+          SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
       }
   }
 }
@@ -771,11 +773,15 @@ bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& cente
                      */
                     object_group->setNodeMask(0);
                 }
-                else
+                else {
                     SG_LOG(SG_INPUT, SG_ALERT, "Could not find a valid line segment for animation:  " << axis_object_name);
+                    SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+                }
             }
-            else if (can_warn)
+            else if (can_warn) {
                 SG_LOG(SG_INPUT, SG_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
+                SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+            }
         }
         if (axisSegment)
         {
@@ -2391,12 +2397,15 @@ SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
         appendTexRotate(*transformConfigs[i], updateCallback);
       else if (subtype == "textrapezoid")
         appendTexTrapezoid(*transformConfigs[i], updateCallback);
-      else
+      else {
         SG_LOG(SG_INPUT, SG_ALERT,
                "Ignoring unknown texture transform subtype");
+        SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
+      }
     }
   } else {
     SG_LOG(SG_INPUT, SG_ALERT, "Ignoring unknown texture transform type");
+    SG_LOG(SG_IO, SG_ALERT, " in file: " << _modelData.getPath());
   }
 
   texMat->setUpdateCallback(updateCallback);

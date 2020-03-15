@@ -93,7 +93,7 @@ SGMakeState(const SGPath &path, const char* colorTexture,
 }
 
 // Constructor
-SGCloudLayer::SGCloudLayer( const string &tex_path ) :
+SGCloudLayer::SGCloudLayer( const SGPath &tex_path ) :
     cloud_root(new osg::Switch),
     layer_root(new osg::Switch),
     group_top(new osg::Group),

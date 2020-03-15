@@ -296,8 +296,9 @@ void SGSky::set_3dCloudUseImpostors(bool imp)
     SGCloudField::setUseImpostors(imp);
 }
 
-void SGSky::texture_path( const std::string& path ) {
-	tex_path = SGPath( path );
+void SGSky::set_texture_path( const SGPath& path ) 
+{
+	tex_path = path;
 }
 
 // modify the current visibility based on cloud layers, thickness,

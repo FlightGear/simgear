@@ -71,10 +71,10 @@ static const uint32_t EndianMagic = 0x11223344;
  * gzContainerWriter
  **************************************************************************/
 
-gzContainerWriter::gzContainerWriter(const std::string& name,
+gzContainerWriter::gzContainerWriter(const SGPath& name,
                                      const std::string& fileMagic) :
         sg_gzofstream(name, ios_out | ios_binary),
-        filename(name)
+        filename(name.utf8Str())
 {
     /* write byte-order marker **************************************/
     write((char*)&EndianMagic, sizeof(EndianMagic));
@@ -138,10 +138,10 @@ gzContainerWriter::writeContainer(ContainerType Type, SGPropertyNode* root)
  * gzContainerReader
  **************************************************************************/
 
-gzContainerReader::gzContainerReader(const std::string& name,
+gzContainerReader::gzContainerReader(const SGPath& name,
                                      const std::string& fileMagic) :
         sg_gzifstream(SGPath(name), ios_in | ios_binary),
-        filename(name)
+        filename(name.utf8Str())
 {
     bool ok = (good() && !eof());
 

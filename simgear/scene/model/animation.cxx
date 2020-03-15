@@ -456,8 +456,7 @@ SGAnimation::~SGAnimation()
       if (!info.empty())
       {
           SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following"
-                  " objects for animation: " << info);
-          SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
+                  " objects for animation: " << info << " in file: " << _modelData.getPath());
       }
   }
 }
@@ -774,13 +773,11 @@ bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& cente
                     object_group->setNodeMask(0);
                 }
                 else {
-                    SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find a valid line segment for animation:  " << axis_object_name);
-                    SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
+                    SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find a valid line segment for animation:  " << axis_object_name << " in file: " << _modelData.getPath());
                 }
             }
             else if (can_warn) {
-                SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name);
-                SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
+                SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name << " in file: " << _modelData.getPath());
             }
         }
         if (axisSegment)
@@ -2399,13 +2396,11 @@ SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
         appendTexTrapezoid(*transformConfigs[i], updateCallback);
       else {
         SG_LOG(SG_IO, SG_DEV_ALERT,
-               "Ignoring unknown texture transform subtype");
-        SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
+               "Ignoring unknown texture transform subtype in file: " << _modelData.getPath());
       }
     }
   } else {
-    SG_LOG(SG_IO, SG_DEV_ALERT, "Ignoring unknown texture transform type");
-    SG_LOG(SG_IO, SG_DEV_ALERT, " in file: " << _modelData.getPath());
+    SG_LOG(SG_IO, SG_DEV_ALERT, "Ignoring unknown texture transform type in file: " << _modelData.getPath());
   }
 
   texMat->setUpdateCallback(updateCallback);

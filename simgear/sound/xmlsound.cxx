@@ -131,7 +131,8 @@ SGXmlSound::init( SGPropertyNode *root,
 
    if (!_property && !_condition)
       SG_LOG(SG_SOUND, SG_DEV_WARN,
-             "  Neither a condition nor a property specified");
+             "  Neither a condition nor a property specified"
+             " in section: " << _name);
 
    _delay = node->getDoubleValue("delay-sec", 0.0);
 
@@ -175,19 +176,21 @@ SGXmlSound::init( SGPropertyNode *root,
             }
 
          if (!volume.fn)
-            SG_LOG(SG_SOUND,SG_INFO,
-                   "  Unknown volume type, default to 'lin'");
+            SG_LOG(SG_SOUND, SG_DEV_WARN,
+                   "  Unknown volume type, default to 'lin'"
+                   " in section: " << _name);
       }
 
       volume.offset = kids[i]->getDoubleValue("offset", 0.0);
 
       if ((volume.min = kids[i]->getDoubleValue("min", 0.0)) < 0.0)
-         SG_LOG( SG_SOUND, SG_WARN,
-          "Volume minimum value below 0. Forced to 0.");
+         SG_LOG(SG_SOUND, SG_DEV_WARN,
+          "Volume minimum value below 0. Forced to 0"
+          " in section: " << _name);
 
       volume.max = kids[i]->getDoubleValue("max", 0.0);
       if (volume.max && (volume.max < volume.min) )
-         SG_LOG(SG_SOUND,SG_ALERT,
+         SG_LOG(SG_SOUND, SG_DEV_ALERT,
                 "  Volume maximum below minimum. Neglected.");
 
       _volume.push_back(volume);
@@ -238,20 +241,23 @@ SGXmlSound::init( SGPropertyNode *root,
             }
 
          if (!pitch.fn)
-            SG_LOG(SG_SOUND,SG_INFO,
-                   "  Unknown pitch type, default to 'lin'");
+            SG_LOG(SG_SOUND, SG_DEV_WARN,
+                   "  Unknown pitch type, default to 'lin'"
+                   " in section: " << _name);
       }
 
       pitch.offset = kids[i]->getDoubleValue("offset", 1.0);
 
       if ((pitch.min = kids[i]->getDoubleValue("min", 0.0)) < 0.0)
-         SG_LOG(SG_SOUND,SG_WARN,
-                "  Pitch minimum value below 0. Forced to 0.");
+         SG_LOG(SG_SOUND, SG_DEV_WARN,
+                "  Pitch minimum value below 0. Forced to 0"
+                " in section: " << _name);
 
       pitch.max = kids[i]->getDoubleValue("max", 0.0);
       if (pitch.max && (pitch.max < pitch.min) )
-         SG_LOG(SG_SOUND,SG_ALERT,
-                "  Pitch maximum below minimum. Neglected");
+         SG_LOG(SG_SOUND, SG_DEV_ALERT,
+                "  Pitch maximum below minimum. Neglected"
+                " in section: " << _name);
 
       _pitch.push_back(pitch);
       p += pitch.offset;

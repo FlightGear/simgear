@@ -26,6 +26,7 @@
 #define _SG_SOUND_HXX 1
 
 
+#include <map>
 #include <vector>
 #include <string>
      
@@ -147,6 +148,11 @@ protected:
         double max;
         bool subtract;
   } _snd_prop;
+
+protected:
+  typedef double (*_fn_t)(double);
+  typedef std::map <std::string, _fn_t> _sound_fn_t;
+  _sound_fn_t _sound_fn;
 
 private:
 

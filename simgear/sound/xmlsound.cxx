@@ -37,6 +37,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 
 #include "sample_group.hxx"
@@ -53,18 +54,6 @@ static double _snd_log(double v)   { return log(fabs(v)+1e-9); }
 // static double _snd_sqr(double v)   { return v*v; }
 // static double _snd_pow3(double v)  { return v*v*v; }
 
-static const struct {
-	const char *name;
-	double (*fn)(double);
-} __sound_fn[] = {
-	{"inv", _snd_inv},
-	{"abs", _snd_abs},
-	{"sqrt", _snd_sqrt},
-	{"log", _snd_log10},
-	{"ln", _snd_log},
-	{"", NULL}
-};
-
 SGXmlSound::SGXmlSound()
   : _sample(NULL),
     _active(false),
@@ -76,6 +65,11 @@ SGXmlSound::SGXmlSound()
     _delay(0.0),
     _stopping(0.0)
 {
+    _sound_fn["inv"] = _snd_inv;
+    _sound_fn["abs"] = _snd_abs;
+    _sound_fn["sqrt"] = _snd_sqrt;
+    _sound_fn["log"] = _snd_log10;
+    _sound_fn["ln"] = _snd_log;
 }
 
 SGXmlSound::~SGXmlSound()
@@ -167,13 +161,12 @@ SGXmlSound::init( SGPropertyNode *root,
          }
 
       string type_str = kids[i]->getStringValue("type", "");
-      if ( type_str != "" ) {
+      if ( type_str != "" && type_str != "lin" ) {
 
-         for (int j=0; __sound_fn[j].fn; j++)
-           if ( type_str == __sound_fn[j].name ) {
-               volume.fn = __sound_fn[j].fn;
-               break;
-            }
+         auto it = _sound_fn.find(type_str);
+         if (it != _sound_fn.end()) {
+            volume.fn = it->second;
+         }
 
          if (!volume.fn)
             SG_LOG(SG_SOUND, SG_DEV_WARN,
@@ -210,6 +203,9 @@ SGXmlSound::init( SGPropertyNode *root,
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
       _snd_prop pitch = {NULL, NULL, NULL, NULL, 1.0, 1.0, 0.0, 0.0, false};
 
+      double randomness = kids[i]->getDoubleValue("random", 0.0);
+      randomness *= sg_random();
+
       SGPropertyNode *n = kids[i]->getChild("expression");
       if (n != NULL) {
          pitch.expr = SGReadDoubleExpression(root, n->getChild(0));
@@ -232,13 +228,12 @@ SGXmlSound::init( SGPropertyNode *root,
          }
 
       string type_str = kids[i]->getStringValue("type", "");
-      if ( type_str != "" ) {
+      if ( type_str != "" && type_str != "lin" ) {
 
-         for (int j=0; __sound_fn[j].fn; j++)
-            if ( type_str == __sound_fn[j].name ) {
-               pitch.fn = __sound_fn[j].fn;
-               break;
-            }
+         auto it = _sound_fn.find(type_str);
+         if (it != _sound_fn.end()) {
+            pitch.fn = it->second;
+         }
 
          if (!pitch.fn)
             SG_LOG(SG_SOUND, SG_DEV_WARN,
@@ -247,6 +242,7 @@ SGXmlSound::init( SGPropertyNode *root,
       }
 
       pitch.offset = kids[i]->getDoubleValue("offset", 1.0);
+      pitch.offset += randomness;
 
       if ((pitch.min = kids[i]->getDoubleValue("min", 0.0)) < 0.0)
          SG_LOG(SG_SOUND, SG_DEV_WARN,

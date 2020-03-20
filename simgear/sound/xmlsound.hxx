@@ -29,6 +29,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <functional>
      
 #include <simgear/compiler.h>
 
@@ -136,11 +137,11 @@ protected:
   enum { ONCE=0, LOOPED, IN_TRANSIT };
   enum { LEVEL=0, INVERTED, FLIPFLOP };
 
-  // SGXmlSound properties for
+  using _fn_t = std::function<double(double)>;
   typedef struct {
         SGSharedPtr<SGExpressiond> expr;	// sound system version 2.0
         SGPropertyNode_ptr prop;
-        double (*fn)(double);
+        _fn_t fn;
         double *intern;
         double factor;
         double offset;
@@ -149,9 +150,7 @@ protected:
         bool subtract;
   } _snd_prop;
 
-protected:
-  typedef double (*_fn_t)(double);
-  typedef std::map <std::string, _fn_t> _sound_fn_t;
+  using _sound_fn_t = std::map <std::string, _fn_t>;
   _sound_fn_t _sound_fn;
 
 private:

@@ -55,7 +55,7 @@ static double _snd_log(double v)   { return log(fabs(v)+1e-9); }
 // static double _snd_pow3(double v)  { return v*v*v; }
 
 SGXmlSound::SGXmlSound()
-  : _sample(NULL),
+  : _sample(nullptr),
     _active(false),
     _name(""),
     _mode(SGXmlSound::ONCE),
@@ -120,7 +120,7 @@ SGXmlSound::init( SGPropertyNode *root,
       _property = root->getNode(propval, true);
 
    SGPropertyNode *condition = node->getChild("condition");
-   if (condition != NULL)
+   if (condition != nullptr)
       _condition = sgReadCondition(root, condition);
 
    if (!_property && !_condition)
@@ -137,10 +137,10 @@ SGXmlSound::init( SGPropertyNode *root,
    float v = 0.0;
    std::vector<SGPropertyNode_ptr> kids = node->getChildren("volume");
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
-      _snd_prop volume = {NULL, NULL, NULL, NULL, 1.0, 0.0, 0.0, 0.0, false};
+      _snd_prop volume = {nullptr, nullptr, nullptr, nullptr, 1.0, 0.0, 0.0, 0.0, false};
 
       SGPropertyNode *n = kids[i]->getChild("expression");
-      if (n != NULL) {
+      if (n != nullptr) {
          volume.expr = SGReadDoubleExpression(root, n->getChild(0));
       }
 
@@ -201,13 +201,13 @@ SGXmlSound::init( SGPropertyNode *root,
    float p = 0.0;
    kids = node->getChildren("pitch");
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
-      _snd_prop pitch = {NULL, NULL, NULL, NULL, 1.0, 1.0, 0.0, 0.0, false};
+      _snd_prop pitch = {nullptr, nullptr, nullptr, nullptr, 1.0, 1.0, 0.0, 0.0, false};
 
       double randomness = kids[i]->getDoubleValue("random", 0.0);
       randomness *= sg_random();
 
       SGPropertyNode *n = kids[i]->getChild("expression");
-      if (n != NULL) {
+      if (n != nullptr) {
          pitch.expr = SGReadDoubleExpression(root, n->getChild(0));
       }
 
@@ -265,7 +265,7 @@ SGXmlSound::init( SGPropertyNode *root,
    SGVec3f offset_pos = SGVec3f::zeros();
    SGPropertyNode_ptr prop = node->getChild("position");
    SGPropertyNode_ptr pos_prop[3];
-   if ( prop != NULL ) {
+   if ( prop != nullptr ) {
        offset_pos[0] = -prop->getDoubleValue("x", 0.0);
        offset_pos[1] = -prop->getDoubleValue("y", 0.0);
        offset_pos[2] = -prop->getDoubleValue("z", 0.0);
@@ -295,7 +295,7 @@ SGXmlSound::init( SGPropertyNode *root,
    float outer = 360.0;
    float outer_gain = 0.0;
    prop = node->getChild("orientation");
-   if ( prop != NULL ) {
+   if ( prop != nullptr ) {
       dir = SGVec3f(-prop->getFloatValue("x", 0.0),
                     -prop->getFloatValue("y", 0.0),
                     -prop->getFloatValue("z", 0.0));
@@ -414,7 +414,7 @@ SGXmlSound::update (double dt)
       double v = 1.0;
 
       if (_volume[i].expr) {
-         v = _volume[i].expr->getValue(NULL);
+         v = _volume[i].expr->getValue(nullptr);
          expr = true;
          continue;
       }
@@ -462,7 +462,7 @@ SGXmlSound::update (double dt)
       double p = 1.0;
 
       if (_pitch[i].expr) {
-         p = _pitch[i].expr->getValue(NULL);
+         p = _pitch[i].expr->getValue(nullptr);
          expr = true;
          continue;
       }

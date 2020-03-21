@@ -18,8 +18,8 @@
 #include <simgear_config.h>
 #include <simgear/package/Install.hxx>
 
-#include <boost/foreach.hpp>
 #include <fstream>
+#include <cstdlib>
 
 #include <simgear/package/unzip.h>
 #include <simgear/package/md5.h>
@@ -43,21 +43,17 @@ namespace pkg {
 class Install::PackageArchiveDownloader : public HTTP::Request
 {
 public:
-    PackageArchiveDownloader(InstallRef aOwner) :
+    PackageArchiveDownloader(InstallRef aOwner, const string_list& urls) :
         HTTP::Request("" /* dummy URL */),
         m_owner(aOwner)
     {
-        m_urls = m_owner->package()->downloadUrls();
-        if (m_urls.empty()) {
-            throw sg_exception("no package download URLs");
+        m_urls = urls;
+        if (urls.empty()) {
+            m_urls = m_owner->package()->downloadUrls();
         }
 
-       // if (m_owner->package()->properties()->hasChild("archive-type")) {
-       //     setArchiveTypeFromExtension(m_owner->package()->properties()->getStringValue("archive-type"));
-        //}
+        selectMirrorUrl();
         
-        // TODO randomise order of m_urls
-
         m_extractPath = aOwner->path().dir();
         m_extractPath.append("_extract_" + aOwner->package()->md5());
 
@@ -93,12 +89,19 @@ public:
         return (m_downloaded * 100) / responseLength();
     }
 protected:
-    virtual std::string url() const
+    void selectMirrorUrl()
     {
-        return m_urls.front();
+        const int randomizedIndex = rand() % m_urls.size();
+        m_activeURL = m_urls.at(randomizedIndex);
+        m_urls.erase(m_urls.begin() + randomizedIndex);
+    }
+    
+    virtual std::string url() const override
+    {
+        return m_activeURL;
     }
 
-    virtual void responseHeadersComplete()
+    void responseHeadersComplete() override
     {
         Request::responseHeadersComplete();
 
@@ -112,7 +115,7 @@ protected:
         m_owner->startDownload();
     }
 
-    virtual void gotBodyData(const char* s, int n)
+    void gotBodyData(const char* s, int n) override
     {
 		const uint8_t* ubytes = (uint8_t*) s;
         SG_MD5Update(&m_md5, ubytes, n);
@@ -121,10 +124,10 @@ protected:
 		m_extractor->extractBytes(ubytes, n);
     }
 
-    virtual void onDone()
+    void onDone() override
     {
         if (responseCode() != 200) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "download failure:" << responseCode() <<
+            SG_LOG(SG_GENERAL, SG_WARN, "download failure:" << responseCode() <<
                    "\n\t" << url());
             Delegate::StatusCode code = Delegate::FAIL_DOWNLOAD;
             if (responseCode() == 404) {
@@ -141,7 +144,7 @@ protected:
           strutils::encodeHex(digest, MD5_DIGEST_LENGTH);
 
         if (hex_md5 != m_owner->package()->md5()) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "md5 verification failed:\n"
+            SG_LOG(SG_GENERAL, SG_WARN, "md5 verification failed:\n"
                 << "\t" << hex_md5 << "\n\t"
                 << m_owner->package()->md5() << "\n\t"
                 << "downloading from:" << url());
@@ -196,7 +199,7 @@ protected:
         m_owner->installResult(Delegate::STATUS_SUCCESS);
     }
 
-    virtual void onFail()
+    void onFail() override
     {
         if (responseCode() == -1) {
             doFailure(Delegate::USER_CANCELLED);
@@ -212,6 +215,18 @@ private:
         if (dir.exists()) {
             dir.remove(true /* recursive */);
         }
+        
+        const auto canRetry = (aReason == Delegate::FAIL_NOT_FOUND) || (aReason == Delegate::FAIL_DOWNLOAD);
+        if (canRetry && !m_urls.empty()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "archive download failed from:" << m_activeURL
+                   << "\n\twill retry with next mirror");
+            // becuase selectMirrorUrl erased the active URL from m_urls,
+            // this new request will select one of the other mirrors
+            auto retryDownload = new PackageArchiveDownloader(m_owner, m_urls);
+            m_owner->m_download.reset(retryDownload);
+            m_owner->package()->catalog()->root()->makeHTTPRequest(retryDownload);
+            return;
+        }
 
         // TODO - try other mirrors
         m_owner->m_download.reset(); // ensure we get cleaned up
@@ -220,6 +235,7 @@ private:
 
     
     InstallRef m_owner;
+    string m_activeURL;
     string_list m_urls;
     SG_MD5_CTX m_md5;
     SGPath m_extractPath;
@@ -283,7 +299,7 @@ void Install::startUpdate()
         return; // already active
     }
 
-    m_download = new PackageArchiveDownloader(this);
+    m_download = new PackageArchiveDownloader(this, {});
     m_package->catalog()->root()->makeHTTPRequest(m_download);
     m_package->catalog()->root()->startInstall(this);
 }
@@ -343,6 +359,7 @@ void Install::cancelDownload()
     }
 
     m_package->catalog()->root()->cancelDownload(this);
+    m_download.clear();
 }
 
 SGPath Install::primarySetPath() const

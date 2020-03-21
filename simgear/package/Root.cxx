@@ -660,7 +660,7 @@ void Root::startNext(InstallRef aCurrent)
 void Root::finishInstall(InstallRef aInstall, Delegate::StatusCode aReason)
 {
     if (aReason != Delegate::STATUS_SUCCESS) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "failed to install package:"
+        SG_LOG(SG_GENERAL, SG_WARN, "failed to install package:"
                << aInstall->package()->id() << ":" << aReason);
     }
 

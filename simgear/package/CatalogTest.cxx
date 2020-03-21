@@ -62,6 +62,8 @@ unsigned int global_catalogVersion = 0;
 bool global_failRequests = false;
 bool global_fail747Request = true;
 
+int global_737RequestsToFailCount = 0;
+
 class TestPackageChannel : public TestServerChannel
 {
 public:
@@ -104,6 +106,15 @@ public:
             } else {
                 path = "/catalogTest1/b747.tar.gz"; // valid path
             }
+        }
+        
+        if ((path.find("/mirror") == 0) && (path.find("/b737.tar.gz") == 8)) {
+            if (global_737RequestsToFailCount > 0) {
+                sendErrorResponse(404, false, "Mirror failure");
+                --global_737RequestsToFailCount;
+                return;
+            }
+            path = "/catalogTest1/b737.tar.gz";
         }
         
         localPath.append(path);
@@ -329,7 +340,9 @@ int parseTest()
         SG_VERIFY(p3->matches(queryText.ptr()));
     }
     
-    
+    string_list urls = p3->downloadUrls();
+    SG_CHECK_EQUAL(urls.size(), 3);
+    SG_CHECK_EQUAL(urls.at(1), "http://localhost:2000/mirrorB/b737.tar.gz");
 
     delete root;
     return EXIT_SUCCESS;
@@ -1136,9 +1149,44 @@ void testInstallBadPackage(HTTP::Client* cl)
     SG_CHECK_EQUAL(ins->path(), rootPath / "org.flightgear.test.catalog1" / "Aircraft" / "b744");
 }
 
+void testMirrorsFailure(HTTP::Client* cl)
+{
+    global_catalogVersion = 0;
+    // there's three mirrors defined, so se tthe first twom attempts to fail
+    global_737RequestsToFailCount = 2;
+    
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_install_mirror_fail");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    // specify a test dir
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+    pkg::InstallRef ins = p1->install();
+    
+    bool didFail = false;
+    ins->fail([&didFail, &ins](pkg::Install* ourInstall) {
+        SG_CHECK_EQUAL(ins, ourInstall);
+        didFail = true;
+    });
+    
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(p1->isInstalled());
+    SG_VERIFY(!didFail);
+    SG_VERIFY(p1->existingInstall() == ins);
+    SG_CHECK_EQUAL(ins->status(), pkg::Delegate::STATUS_SUCCESS);
+    
+}
+
 int main(int argc, char* argv[])
 {
-   // sglog().setLogLevels( SG_ALL, SG_DEBUG );
+    sglog().setLogLevels( SG_ALL, SG_WARN );
 
     HTTP::Client cl;
     cl.setMaxConnections(1); 
@@ -1150,7 +1198,7 @@ int main(int argc, char* argv[])
     parseTest();
 
     parseInvalidTest();
-    
+
     testInstallPackage(&cl);
 
     testUninstall(&cl);
@@ -1179,6 +1227,8 @@ int main(int argc, char* argv[])
 
     testInstallBadPackage(&cl);
     
-    SG_LOG(SG_GENERAL, SG_INFO, "Successfully passed all tests!");
+    testMirrorsFailure(&cl);
+    
+    cerr << "Successfully passed all tests!" << endl;
     return EXIT_SUCCESS;
 }

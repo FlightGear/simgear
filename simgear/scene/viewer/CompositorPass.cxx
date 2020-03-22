@@ -385,7 +385,6 @@ public:
 
     virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
         osg::Camera *camera = static_cast<osg::Camera *>(node);
-        EffectCullVisitor *cv = dynamic_cast<EffectCullVisitor *>(nv);
 
         traverse(node, nv);
 
@@ -719,6 +718,10 @@ public:
                 }
             }
         }
+
+        osg::StateSet *ss = camera->getOrCreateStateSet();
+        auto &uniforms = compositor->getUniforms();
+        ss->addUniform(uniforms[Compositor::FCOEF]);
 
         return pass.release();
     }

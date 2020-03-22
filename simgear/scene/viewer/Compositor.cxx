@@ -129,6 +129,8 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_PrevProjectionMatrixInverse", osg::Matrixf()),
     new osg::Uniform("fg_CameraPositionCart", osg::Vec3f()),
     new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
+    new osg::Uniform("fg_NearFarPlanes", osg::Vec3f()),
+    new osg::Uniform("fg_Fcoef", 0.0f),
     new osg::Uniform("fg_LightDirection", osg::Vec3f())
     }
 {
@@ -164,6 +166,9 @@ Compositor::update(const osg::Matrix &view_matrix,
     osg::Vec4d camera_pos = osg::Vec4(0.0, 0.0, 0.0, 1.0) * view_inverse;
     SGGeod camera_pos_geod = SGGeod::fromCart(
         SGVec3d(camera_pos.x(), camera_pos.y(), camera_pos.z()));
+
+    double left, right, bottom, top, zNear, zFar;
+    proj_matrix.getFrustum(left, right, bottom, top, zNear, zFar);
 
     osg::Matrixf prev_view_matrix, prev_view_matrix_inv;
     _uniforms[VIEW_MATRIX]->get(prev_view_matrix);
@@ -202,6 +207,12 @@ Compositor::update(const osg::Matrix &view_matrix,
             u->set(osg::Vec3f(camera_pos_geod.getLongitudeRad(),
                               camera_pos_geod.getLatitudeRad(),
                               camera_pos_geod.getElevationM()));
+            break;
+        case NEAR_FAR_PLANES:
+            u->set(osg::Vec3f(-zFar, -zFar * zNear, zFar - zNear));
+            break;
+        case FCOEF:
+            u->set(2.0f / log2(float(zFar) + 1.0f));
             break;
         default:
             // Unknown uniform

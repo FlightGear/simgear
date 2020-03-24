@@ -59,7 +59,7 @@ public:
 
     virtual void installProgress(pkg::InstallRef aInstall, unsigned int bytes, unsigned int total)
     {
-        unsigned int percent = (bytes * 100) / total;
+        size_t percent = (static_cast<size_t>(bytes) * 100) / total;
         if (percent == _lastPercent) {
             return;
         }
@@ -78,7 +78,7 @@ public:
     }
 
 private:
-    unsigned int _lastPercent;
+    size_t _lastPercent;
 
 };
 
@@ -124,8 +124,8 @@ int main(int argc, char** argv)
 {
 
     HTTP::Client* http = new HTTP::Client();
-    pkg::Root* root = new pkg::Root(Dir::current().path(), "");
-
+    pkg::Root* root = new pkg::Root(Dir::current().path(), "2019.1.1");
+    
     MyDelegate dlg;
     root->addDelegate(&dlg);
 

@@ -340,7 +340,7 @@ public:
         }
         
         if (!isSafePath(tarPath)) {
-            SG_LOG(SG_IO, SG_WARN, "bad tar path:" << tarPath);
+            SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping::" << tarPath);
             skipCurrentEntry = true;
         }
 
@@ -506,7 +506,7 @@ public:
 #endif
 		unzFile zip = unzOpen2(bufferName, &memoryAccessFuncs);
 
-		const size_t BUFFER_SIZE = 32 * 1024;
+		const size_t BUFFER_SIZE = 1024 * 1024;
 		void* buf = malloc(BUFFER_SIZE);
 
 		try {
@@ -532,24 +532,28 @@ public:
 			state = END_OF_ARCHIVE;
 		}
 		catch (sg_exception&) {
-			state = BAD_ARCHIVE;
-		}
-
-		free(buf);
-		unzClose(zip);
-	}
-
-	void extractCurrentFile(unzFile zip, char* buffer, size_t bufferSize)
-	{
-		unz_file_info fileInfo;
-		unzGetCurrentFileInfo(zip, &fileInfo,
-			buffer, bufferSize,
-			NULL, 0,  /* extra field */
-			NULL, 0 /* comment field */);
-
+            state = BAD_ARCHIVE;
+        }
+        
+        free(buf);
+        unzClose(zip);
+    }
+    
+    void extractCurrentFile(unzFile zip, char* buffer, size_t bufferSize)
+    {
+        unz_file_info fileInfo;
+        int result = unzGetCurrentFileInfo(zip, &fileInfo,
+                                           buffer, bufferSize,
+                                           NULL, 0,  /* extra field */
+                                           NULL, 0 /* comment field */);
+        if (result != Z_OK) {
+            throw sg_io_exception("Failed to get zip current file info");
+        }
+        
 		std::string name(buffer);
 		if (!isSafePath(name)) {
-			throw sg_format_exception("Bad zip path", name);
+            SG_LOG(SG_IO, SG_WARN, "unsafe zip path, skipping::" << name);
+            return;
 		}
 
 		auto filterResult = filterPath(name);
@@ -568,7 +572,7 @@ public:
 			return;
 		}
 
-		int result = unzOpenCurrentFile(zip);
+		result = unzOpenCurrentFile(zip);
 		if (result != UNZ_OK) {
 			throw sg_io_exception("opening current zip file failed", sg_location(name));
 		}

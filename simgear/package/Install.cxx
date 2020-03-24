@@ -122,6 +122,9 @@ protected:
         m_downloaded += n;
         m_owner->installProgress(m_downloaded, responseLength());
 		m_extractor->extractBytes(ubytes, n);
+        if (m_extractor->hasError()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "archive extraction failed");
+        }
     }
 
     void onDone() override

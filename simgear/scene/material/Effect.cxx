@@ -107,14 +107,7 @@ bool loadShaderFromUTF8File(osg::Shader* shader, const std::string& fileName)
     if (!inStream.is_open())
         return false;
     
-    string shaderSource;
-    while (!inStream.eof()) {
-        char bytes[8192];
-        inStream.read(bytes, 8192);
-        shaderSource.append(bytes, inStream.gcount());
-    }
-    inStream.close();
-    shader->setShaderSource(shaderSource);
+    shader->setShaderSource(inStream.read_all());
     return true;
 }
 

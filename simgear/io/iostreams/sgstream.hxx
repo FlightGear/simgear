@@ -196,6 +196,10 @@ public:
 
     void open( const SGPath& name,
 	       ios_openmode io_mode = ios_in|ios_binary );
+    
+    /// read the entire stream into a buffer. Use on files, etc - not recommended on streams
+    /// which never EOF, will bvlock forever.
+    std::string read_all();
 };
 
 class sg_ofstream : public std::ofstream

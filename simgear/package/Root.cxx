@@ -178,8 +178,7 @@ public:
                 SG_LOG(SG_IO, SG_WARN, "Download failed for: " << u << ", will use old cached data");
                 cachePath.touch(); // touch the file so we don't repeat this danxce
                 // kick a load from the cache
-                
-                queueLoadFromPersistentCache(u, cachePath);
+                loadFromPersistentCache(u, cachePath);
             }
         }
 
@@ -202,6 +201,7 @@ public:
 
         std::string u = pendingThumbnails.front();
         pendingThumbnails.pop_front();
+        
         thumbnailDownloadRequest = new Root::ThumbnailDownloader(this, u);
 
         if (http) {
@@ -260,11 +260,11 @@ public:
             return false;
         }
         
-        queueLoadFromPersistentCache(url, cachePath);
+        loadFromPersistentCache(url, cachePath);
         return true;
     }
     
-    void queueLoadFromPersistentCache(const std::string& url, const SGPath& path)
+    void loadFromPersistentCache(const std::string& url, const SGPath& path)
     {
         assert(path.exists());
         
@@ -277,17 +277,9 @@ public:
             assert(it->second.pathOnDisk.isNull() || (it->second.pathOnDisk == path));
         }
         
-        if (it->second.requestPending) {
-            return; // all done
-        }
-        
-        it->second.requestPending = true;
-        auto dl = new Root::ThumbnailDownloader(this, path.fileUrl(), url);
-        if (http) {
-            http->makeRequest(dl);
-        } else {
-            httpPendingRequests.push_back(dl);
-        }
+        sg_ifstream thumbnailStream(path, std::ios::in | std::ios::binary);
+        string bytes = thumbnailStream.read_all();
+        fireDataForThumbnail(url, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
     }
     
     DelegateVec delegates;
@@ -813,7 +805,7 @@ void Root::requestThumbnailData(const std::string& aUrl)
         }
     } else {
         if (!it->second.requestPending && it->second.pathOnDisk.exists()) {
-            d->queueLoadFromPersistentCache(aUrl, it->second.pathOnDisk);
+            d->loadFromPersistentCache(aUrl, it->second.pathOnDisk);
         }
     }
 }

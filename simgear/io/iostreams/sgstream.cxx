@@ -227,6 +227,20 @@ void sg_ifstream::open( const SGPath& name, ios_openmode io_mode )
     std::ifstream::open(ps.c_str(), io_mode);
 }
 
+std::string sg_ifstream::read_all()
+{
+	this->seekg(0, std::ios::end); // seek to end
+	const auto pos = this->tellg();
+
+	std::string result;
+	result.resize(pos);
+
+	this->seekg(0, std::ios::beg);
+	this->read(const_cast<char*>(result.data()), pos);
+    return result;
+}
+
+
 sg_ofstream::sg_ofstream(const SGPath& path, ios_openmode io_mode)
 {
 #if defined(SG_WINDOWS)

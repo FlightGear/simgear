@@ -54,10 +54,10 @@
 // these correspond to building.eff
 const int BUILDING_POSITION_ATTR = 10;  // (x,y,z)
 const int BUILDING_SCALE_ATTR = 11; // (width, depth, height)
-const int BUILDING_ROT_PITCH_TEX0X_ATTR = 12; // (rotation, pitch height, wall texture x offset)
-const int BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR = 13; // (wall texture y offset, texture x gain, texture y gain)
-const int BUILDING_RTEX0X_RTEX0Y_ATTR = 14; // (roof texture x offset, roof texture y offset, unused)
-const int BUILDING_ROFFTOPSCALE_ATTR = 15; // (roof texture x offset, roof texture y offset, unused)
+const int BUILDING_ATTR1 = 12;
+const int BUILDING_ATTR2 = 13;
+const int BUILDING_ATTR3 = 14;
+const int BUILDING_ATTR4 = 15;
 
 using namespace osg;
 

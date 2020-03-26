@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <math.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -329,10 +330,8 @@ struct MakeBuildingLeaf
 
         geom->setVertexAttribArray(BUILDING_POSITION_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
         geom->setVertexAttribArray(BUILDING_SCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
-        geom->setVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
-        geom->setVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
-        geom->setVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
-        geom->setVertexAttribArray(BUILDING_ROFFTOPSCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_ATTR1, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_ATTR2, new osg::Vec3Array, Array::BIND_PER_VERTEX);
 
         //geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 48, 0) );
         geom->addPrimitiveSet( new osg::DrawArrays( GL_QUADS, 0, 52, 0) );
@@ -344,10 +343,8 @@ struct MakeBuildingLeaf
         StateSet* ss = geode->getOrCreateStateSet();
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_POSITION_ATTR, 1));
         ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_SCALE_ATTR, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ROT_PITCH_TEX0X_ATTR, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_RTEX0X_RTEX0Y_ATTR, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ROFFTOPSCALE_ATTR, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ATTR1, 1));
+        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ATTR2, 1));
 
         LOD* result = new LOD;
         result->addChild(geode, 0, _range);
@@ -357,6 +354,15 @@ struct MakeBuildingLeaf
     float _range;
     ref_ptr<Effect> _effect;
     bool _fade_out;
+};
+
+const float pack_precision = 128.0;
+const float pack_precision1 = pack_precision+1.0;
+
+float pack8bit(float a, float b, float c) {
+	return floor(a * pack_precision + 0.5)
+		   + floor(b * pack_precision + 0.5) * pack_precision1
+		   + floor(c * pack_precision + 0.5) * pack_precision1 * pack_precision1;
 };
 
 struct AddBuildingLeafObject
@@ -370,18 +376,29 @@ struct AddBuildingLeafObject
 
         osg::Vec3Array* positions =  static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_POSITION_ATTR));    // (x,y,z)
         osg::Vec3Array* scale =  static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_SCALE_ATTR)); // (width, depth, height)
-        osg::Vec3Array* rot = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROT_PITCH_TEX0X_ATTR)); // (rotation, pitch height, wall texture x0)
-        osg::Vec3Array* tex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_TEX0Y_TEX1X_TEX1Y_ATTR)); // (wall texture y0, front/roof texture x1, front/side/roof texture y1)
-        osg::Vec3Array* rtex = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_RTEX0X_RTEX0Y_ATTR)); // (roof texture x0, roof texture y0, side texture x1)
-        osg::Vec3Array* rooftops = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ROFFTOPSCALE_ATTR)); // (rooftop scale x, rooftop scale y, unused)
+        osg::Vec3Array* attrib1 = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ATTR1));
+        osg::Vec3Array* attrib2 = static_cast<osg::Vec3Array*> (geom->getVertexAttribArray(BUILDING_ATTR2));
 
         positions->push_back(building.position);
         // Depth is the x-axis, width is the y-axis
         scale->push_back(osg::Vec3f(building.depth, building.width, building.height));
-        rot->push_back(osg::Vec3f(building.rotation, building.pitch_height, building.walltex0.x()));
-        tex->push_back(osg::Vec3f(building.walltex0.y(), building.tex1.x(), building.tex1.y()));
-        rtex->push_back(osg::Vec3f(building.rooftex0.x(), building.rooftex0.y(), building.tex1.z()));
-        rooftops->push_back(osg::Vec3f(building.rooftop_scale.x(), building.rooftop_scale.y(), 0.0f));
+        attrib1->push_back(osg::Vec3d(
+          pack8bit(building.rotation,         // attr1 in shader
+                      building.walltex0.x(),
+                      building.walltex0.y()),
+          building.pitch_height,
+          pack8bit(building.tex1.x(),    // attr2 in shader
+                      building.tex1.y(),
+                      building.rooftex0.x())
+        ));
+        attrib2->push_back(osg::Vec3f(
+          pack8bit(    // attr3 in shader
+            building.rooftex0.y(),
+            building.tex1.z(),
+            building.rooftop_scale.x()),
+          building.rooftop_scale.y(),
+          0.0f
+        ));
 
         DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(0));
         primSet->setNumInstances(positions->size());

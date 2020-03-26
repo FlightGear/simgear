@@ -75,23 +75,23 @@ ALuint createBufferFromFile(const SGPath& path)
 }
 
 
-int main( int argc, char *argv[] ) 
+int main( int argc, char *argv[] )
 {
     sglog().setLogLevels( SG_ALL, SG_ALERT );
-    
+
     // initialize OpenAL
-    ALCdevice *dev = alcOpenDevice(NULL); 
+    ALCdevice *dev = alcOpenDevice(nullptr);
     if (!dev) {
       SG_LOG( SG_GENERAL, SG_ALERT, "Audio device initialization failed!" );
       return EXIT_FAILURE;
     }
-    
-    ALCcontext *context = alcCreateContext(dev, NULL);
+
+    ALCcontext *context = alcCreateContext(dev, nullptr);
     if (!context) {
       SG_LOG( SG_GENERAL, SG_ALERT, "Audio context initialization failed!" );
       return EXIT_FAILURE;
     }
-    
+
     alcMakeContextCurrent( context );
 
     // Position of the listener.
@@ -111,7 +111,7 @@ int main( int argc, char *argv[] )
     listener_vel[0] = 0.0;
     listener_vel[1] = 0.0;
     listener_vel[2] = 0.0;
-    
+
     listener_ori[0] = 0.0;
     listener_ori[1] = 0.0;
     listener_ori[2] = -1.0;
@@ -163,10 +163,10 @@ int main( int argc, char *argv[] )
     alSourcePlay( source );
 
     sleep(10);
-    
-     alcMakeContextCurrent(NULL);
-     alcDestroyContext(context);
-     alcCloseDevice(dev);
-     
+
+    alcMakeContextCurrent(nullptr);
+    alcDestroyContext(context);
+    alcCloseDevice(dev);
+
     return 0;
 }

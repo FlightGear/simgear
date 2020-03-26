@@ -39,7 +39,7 @@
 #include "sample.hxx"
 
 
-typedef std::map < std::string, SGSharedPtr<SGSoundSample> > sample_map;
+using sample_map = std::map< std::string, SGSharedPtr<SGSoundSample> >;
 
 class SGSoundMgr;
 
@@ -212,7 +212,7 @@ public:
     void tie_to_listener() { _tied_to_listener = true; }
 
 protected:
-    SGSoundMgr *_smgr = NULL;
+    SGSoundMgr *_smgr = nullptr;
     std::string _refname = "";
     bool _active = false;
 

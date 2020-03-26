@@ -180,12 +180,12 @@ bool SGSampleGroup::exists( const std::string &refname ) {
 
 
 // return a pointer to the SGSoundSample if the specified sound exists
-// in the sound manager system, otherwise return NULL
+// in the sound manager system, otherwise return nullptr
 SGSoundSample *SGSampleGroup::find( const std::string &refname ) {
     auto sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
         // sample was not found
-        return NULL;
+        return nullptr;
     }
 
     return sample_it->second;
@@ -241,7 +241,7 @@ bool SGSampleGroup::play( const std::string &refname,
 {
     SGSoundSample *sample = find( refname );
 
-    if ( sample == NULL ) {
+    if ( sample == nullptr ) {
         return false;
     }
 
@@ -254,7 +254,7 @@ bool SGSampleGroup::play( const std::string &refname,
 bool SGSampleGroup::is_playing( const std::string& refname ) {
     SGSoundSample *sample = find( refname );
 
-    if ( sample == NULL ) {
+    if ( sample == nullptr ) {
         return false;
     }
 
@@ -265,7 +265,7 @@ bool SGSampleGroup::is_playing( const std::string& refname ) {
 bool SGSampleGroup::stop( const std::string& refname ) {
     SGSoundSample *sample  = find( refname );
 
-    if ( sample == NULL ) {
+    if ( sample == nullptr ) {
         return false;
     }
 
@@ -357,7 +357,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample )
 
 bool SGSampleGroup::testForError(void *p, std::string s)
 {
-   if (p == NULL) {
+   if (p == nullptr) {
       SG_LOG( SG_SOUND, SG_ALERT, "Error (sample group): " << s);
       return true;
    }

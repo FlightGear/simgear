@@ -255,7 +255,8 @@ public:
       * Empty constructor, can be used to read data to the systems
       * memory and not to the driver.
       */
-    SGSoundSample() {};
+    SGSoundSample() = default;
+    virtual ~SGSoundSample () = default;
 
     /**
      * Constructor
@@ -269,19 +270,14 @@ public:
      * @param data Pointer to a memory buffer containing this audio sample data
        The application may free the data by calling free_data(), otherwise it
        will be resident until the class is destroyed. This pointer will be
-       set to NULL after calling this function.
+       set to nullptr after calling this function.
      * @param len Byte length of array
      * @param freq Frequency of the provided data (bytes per second)
      * @param format SimGear format id of the data
      */
-    SGSoundSample( void** data, int len, int freq, int format=SG_SAMPLE_MONO8 );
-    SGSoundSample( const unsigned char** data, int len, int freq,
+    SGSoundSample( std::unique_ptr<unsigned char, decltype(free)*>& data,
+                   int len, int freq,
                    int format = SG_SAMPLE_MONO8 );
-
-    /**
-     * Destructor
-     */
-    virtual ~SGSoundSample ();
 
     /**
      * Test if this audio sample configuration has changed since the last call.
@@ -360,25 +356,22 @@ public:
     /**
      * Set the data associated with this audio sample
      * @param data Pointer to a memory block containg this audio sample data.
-       This pointer will be set to NULL after calling this function.
+       This pointer will be set to nullptr after calling this function.
      */
-    inline void set_data( const unsigned char **data ) {
-        _data = (unsigned char*)*data; *data = NULL;
-    }
-    inline void set_data( const void **data ) {
-        _data = (unsigned char*)*data; *data = NULL;
+    inline void set_data( std::unique_ptr<unsigned char, decltype(free)*>& data ) {
+        _data = std::move(data);
     }
 
     /**
      * Return the data associated with this audio sample.
      * @return A pointer to this sound data of this audio sample.
      */
-    inline void* get_data() const { return _data; }
+    inline unsigned char* get_data() const { return _data.get(); }
 
     /**
      * Free the data associated with this audio sample
      */
-    void free_data();
+    inline void free_data() { _data = nullptr; }
 
     /**
      * Set the source id of this source
@@ -607,7 +600,7 @@ protected:
     unsigned int _source = SGSoundMgr::NO_SOURCE;
 
 private:
-    unsigned char* _data = NULL;
+    std::unique_ptr<unsigned char, decltype(free)*> _data = { nullptr, free };
 
     // Buffers hold sound data.
     bool _valid_buffer = false;

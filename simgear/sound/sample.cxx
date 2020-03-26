@@ -88,38 +88,16 @@ SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
 }
 
 // constructor
-SGSoundSample::SGSoundSample( const unsigned char** data,
+SGSoundSample::SGSoundSample( std::unique_ptr<unsigned char, decltype(free)*>& data,
                               int len, int freq, int format )
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
-    _data = (unsigned char*)*data; *data = NULL;
+
+    _data = std::move(data);
 
     set_frequency(freq);
     set_format(format);
     set_size(len);
-}
-
-// constructor
-SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
-    _is_file(false),
-    _changed(true),
-    _valid_source(false),
-    _source(SGSoundMgr::NO_SOURCE),
-    _valid_buffer(false),
-    _buffer(SGSoundMgr::NO_BUFFER)
-{
-    SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
-    _data = (unsigned char*)*data; *data = NULL;
-
-    set_frequency(freq);
-    set_format(format);
-    set_size(len);
-}
-
-
-// destructor
-SGSoundSample::~SGSoundSample() {
-    if ( _data != NULL ) free(_data);
 }
 
 void SGSoundSample::update_pos_and_orientation() {
@@ -147,12 +125,4 @@ SGPath SGSoundSample::file_path() const
   }
 
   return SGPath(_refname);
-}
-
-void SGSoundSample::free_data()
-{
-   if ( _data != NULL ) {
-     free( _data );
-   }
-   _data = NULL;
 }

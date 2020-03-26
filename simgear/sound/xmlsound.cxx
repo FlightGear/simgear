@@ -150,9 +150,9 @@ SGXmlSound::init( SGPropertyNode *root,
 
       string intern_str = kids[i]->getStringValue("internal", "");
       if (intern_str == "dt_play")
-         volume.intern = &_dt_play;
+         volume.intern = std::make_shared<double>(_dt_play);
       else if (intern_str == "dt_stop")
-         volume.intern = &_dt_stop;
+         volume.intern = std::make_shared<double>(_dt_stop);
 
       if ((volume.factor = kids[i]->getDoubleValue("factor", 1.0)) != 0.0)
          if (volume.factor < 0.0) {
@@ -217,9 +217,9 @@ SGXmlSound::init( SGPropertyNode *root,
 
       string intern_str = kids[i]->getStringValue("internal", "");
       if (intern_str == "dt_play")
-         pitch.intern = &_dt_play;
+         pitch.intern = std::make_shared<double>(_dt_play);
       else if (intern_str == "dt_stop")
-         pitch.intern = &_dt_stop;
+         pitch.intern = std::make_shared<double>(_dt_stop);
 
       if ((pitch.factor = kids[i]->getDoubleValue("factor", 1.0)) != 0.0)
          if (pitch.factor < 0.0) {

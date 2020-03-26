@@ -307,7 +307,7 @@ public:
      * @return true if succesful, false on error
      */
     virtual bool load( const std::string &samplepath,
-                       void **data,
+                       void** data,
                        int *format,
                        size_t *size,
                        int *freq,

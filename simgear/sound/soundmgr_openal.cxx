@@ -68,8 +68,8 @@ class SGSoundMgr::SoundManagerPrivate
 {
 public:
     SoundManagerPrivate() :
-        _device(NULL),
-        _context(NULL),
+        _device(nullptr),
+        _context(nullptr),
         _absolute_pos(SGVec3d::zeros()),
         _base_pos(SGVec3d::zeros()),
         _orientation(SGQuatd::zeros())
@@ -173,10 +173,10 @@ void SGSoundMgr::init()
     d->_sources_in_use.clear();
     d->_sources_in_use.reserve( MAX_SOURCES );
 
-    ALCdevice *device = NULL;
+    ALCdevice *device = nullptr;
     const char* devname = _device_name.c_str();
     if (_device_name == "")
-        devname = NULL; // use default device
+        devname = nullptr; // use default device
     else
     {
         // try non-default device
@@ -184,13 +184,13 @@ void SGSoundMgr::init()
     }
 
     if ((!devname)||(testForError(device, "Audio device not available, trying default.")) ) {
-        device = alcOpenDevice(NULL);
+        device = alcOpenDevice(nullptr);
         if (testForError(device, "Default audio device not available.") ) {
            return;
         }
     }
 
-    ALCcontext *context = alcCreateContext(device, NULL);
+    ALCcontext *context = alcCreateContext(device, nullptr);
     testForALCError("context creation.");
     if ( testForError(context, "Unable to create a valid context.") ) {
         alcCloseDevice (device);
@@ -204,7 +204,7 @@ void SGSoundMgr::init()
         return;
     }
 
-    if (d->_context != NULL)
+    if (d->_context != nullptr)
     {
         SG_LOG(SG_SOUND, SG_ALERT, "context is already assigned");
     }
@@ -324,8 +324,8 @@ void SGSoundMgr::stop()
         _active = false;
         alcDestroyContext(d->_context);
         alcCloseDevice(d->_device);
-        d->_context = NULL;
-        d->_device = NULL;
+        d->_context = nullptr;
+        d->_device = nullptr;
 
         _renderer = "unknown";
         _vendor = "unknown";
@@ -448,7 +448,7 @@ bool SGSoundMgr::exists( const std::string &refname ) {
 
 
 // return a pointer to the SGSampleGroup if the specified sound exists
-// in the sound manager system, otherwise return NULL
+// in the sound manager system, otherwise return nullptr
 SGSampleGroup *SGSoundMgr::find( const std::string &refname, bool create ) {
     auto sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it == d->_sample_groups.end() ) {
@@ -459,7 +459,7 @@ SGSampleGroup *SGSoundMgr::find( const std::string &refname, bool create ) {
             return sgrp;
         }
         else 
-            return NULL;
+            return nullptr;
     }
 
     return sample_grp_it->second;
@@ -525,7 +525,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
     if ( !sample->is_valid_buffer() ) {
         // sample was not yet loaded or removed again
         std::string sample_name = sample->get_sample_name();
-        void *sample_data = NULL;
+        void* sample_data = nullptr;
 
         // see if the sample name is already cached
         auto buffer_it = d->_buffers.find( sample_name );
@@ -784,7 +784,7 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
 
 
 bool SGSoundMgr::load( const std::string &samplepath,
-                       void **dbuf,
+                       void** dbuf,
                        int *fmt,
                        size_t *sz,
                        int *frq,
@@ -797,18 +797,16 @@ bool SGSoundMgr::load( const std::string &samplepath,
     unsigned int blocksz;
     ALsizei size;
     ALsizei freq;
-    ALvoid *data;
-
     ALfloat freqf;
 
-    data = simgear::loadWAVFromFile(samplepath, format, size, freqf, blocksz);
+    auto data = simgear::loadWAVFromFile(samplepath, format, size, freqf, blocksz);
     freq = (ALsizei)freqf;
-    if (data == NULL) {
+    if (data == nullptr) {
         throw sg_io_exception("Failed to load wav file", sg_location(samplepath));
     }
 
     if (format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO16) {
-        free(data);
+         free(data);
         throw sg_io_exception("Warning: STEREO files are not supported for 3D audio effects: " + samplepath);
     }
 
@@ -827,10 +825,10 @@ vector<std::string> SGSoundMgr::get_available_devices()
 #ifdef ENABLE_SOUND
     const ALCchar *s;
 
-    if (alcIsExtensionPresent(NULL, "ALC_enumerate_all_EXT") == AL_TRUE) {
-        s = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+    if (alcIsExtensionPresent(nullptr, "ALC_enumerate_all_EXT") == AL_TRUE) {
+        s = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
     } else {
-        s = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+        s = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
     }
 
     if (s) {
@@ -851,7 +849,7 @@ vector<std::string> SGSoundMgr::get_available_devices()
 
 bool SGSoundMgr::testForError(void *p, std::string s)
 {
-   if (p == NULL) {
+   if (p == nullptr) {
       SG_LOG( SG_SOUND, SG_ALERT, "Error: " << s);
       return true;
    }
@@ -889,7 +887,7 @@ bool SGSoundMgr::testForALCError(std::string s)
 
 bool SGSoundMgr::is_working() const 
 {
-    return (d->_device != NULL);
+    return (d->_device != nullptr);
 }
 
 const SGQuatd& SGSoundMgr::get_orientation() const

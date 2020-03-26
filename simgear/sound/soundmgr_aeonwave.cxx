@@ -48,11 +48,11 @@
 
 
 // We keep track of the emitters ourselves.
-typedef std::map < unsigned int, aax::Emitter > source_map;
+using source_map = std::map< unsigned int, aax::Emitter >;
 
 // The AeonWave class keeps track of the buffers, so use a reference instead.
-typedef std::map < unsigned int, aax::Buffer& > buffer_map;
-typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
+using buffer_map = std::map< unsigned int, aax::Buffer& >;
+using sample_group_map = std::map< std::string, SGSharedPtr<SGSampleGroup> >;
 
 #ifndef NDEBUG
 # define TRY(a)	if ((a) == 0) printf("%i: %s\n", __LINE__, d->_aax.strerror())
@@ -64,14 +64,7 @@ typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 class SGSoundMgr::SoundManagerPrivate
 {
 public:
-    SoundManagerPrivate() :
-        _absolute_pos(SGVec3d::zeros()),
-        _base_pos(SGVec3d::zeros()),
-        _orientation(SGQuatd::zeros()),
-        _buffer_id(0),
-        _source_id(0)
-    {
-    }
+    SoundManagerPrivate() = default;
 
     ~SoundManagerPrivate()
     {
@@ -96,11 +89,11 @@ public:
     aax::AeonWave _aax;
     aax::Matrix64 _mtx;
 
-    SGVec3d _absolute_pos;
-    SGVec3d _base_pos;
-    SGQuatd _orientation;
+    SGVec3d _absolute_pos = SGVec3d::zeros();
+    SGVec3d _base_pos = SGVec3d::zeros();
+    SGQuatd _orientation = SGQuatd::zeros();
 
-    unsigned int _buffer_id;
+    unsigned int _buffer_id = 0;
     buffer_map _buffers;
     aax::Buffer nullBuffer;
     aax::Buffer& get_buffer(unsigned int id) {
@@ -110,7 +103,7 @@ public:
         return nullBuffer;
     }
 
-    unsigned int _source_id;
+    unsigned int _source_id = 0;
     source_map _sources;
     aax::Emitter nullEmitter;
     aax::Emitter& get_emitter(unsigned int id) {
@@ -229,10 +222,8 @@ void SGSoundMgr::activate()
     if ( is_working() ) {
         _active = true;
                 
-        for ( auto current = d->_sample_groups.begin();
-                   current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->activate();
+        for ( auto current : d->_sample_groups ) {
+            current.second->activate();
         }
     }
 #endif
@@ -243,10 +234,8 @@ void SGSoundMgr::stop()
 {
 #ifdef ENABLE_SOUND
     // first stop all sample groups
-    for ( auto current = d->_sample_groups.begin();
-               current != d->_sample_groups.end();  ++ current ) {
-        SGSampleGroup *sgrp = current->second;
-        sgrp->stop();
+    for ( auto current : d->_sample_groups ) {
+        current.second->stop();
     }
 
     d->_buffer_id = 0;
@@ -269,10 +258,8 @@ void SGSoundMgr::suspend()
 {
 #ifdef ENABLE_SOUND
     if (is_working()) {
-        for (auto current = d->_sample_groups.begin();
-                  current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->stop();
+        for (auto current : d->_sample_groups ) {
+            current.second->stop();
         }
         _active = false;
     }
@@ -283,10 +270,8 @@ void SGSoundMgr::resume()
 {
 #ifdef ENABLE_SOUND
     if (is_working()) {
-        for ( auto current = d->_sample_groups.begin();
-                   current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->resume();
+        for ( auto current : d->_sample_groups ) {
+            current.second->resume();
         }
         _active = true;
     }
@@ -302,10 +287,8 @@ void SGSoundMgr::update( double dt )
             d->update_pos_and_orientation();
         }
 
-        for ( auto current = d->_sample_groups.begin();
-                   current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->update(dt);
+        for ( auto current : d->_sample_groups ) {
+            current.second->update(dt);
         }
 
         if (_changed) {
@@ -371,21 +354,21 @@ bool SGSoundMgr::exists( const std::string &refname ) {
 
 
 // return a pointer to the SGSampleGroup if the specified sound exists
-// in the sound manager system, otherwise return NULL
+// in the sound manager system, otherwise return nullptr
 SGSampleGroup *SGSoundMgr::find( const std::string &refname, bool create ) {
     auto sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it == d->_sample_groups.end() ) {
         // sample group was not found.
         if (create) {
-            SGSampleGroup* sgrp = new SGSampleGroup(this, refname);
+            SGSampleGroup *sgrp = new SGSampleGroup(this, refname);
             add( sgrp, refname );
             return sgrp;
         }
         else 
-            return NULL;
+            return nullptr;
     }
 
-    return sample_grp_it->second;
+    return sample_grp_it->second.get();
 }
 
 
@@ -695,7 +678,7 @@ vector<std::string> SGSoundMgr::get_available_devices()
 
 bool SGSoundMgr::testForError(void *p, std::string s)
 {
-   if (p == NULL) {
+   if (p == nullptr) {
       SG_LOG( SG_SOUND, SG_ALERT, "Error: " << s);
       return true;
    }
@@ -718,7 +701,7 @@ bool SGSoundMgr::testForError(std::string s, std::string name)
 
 bool SGSoundMgr::is_working() const 
 {
-    return ((const void*)d->_aax != NULL ? true : false);
+    return ((const void*)d->_aax != nullptr ? true : false);
 }
 
 const SGQuatd& SGSoundMgr::get_orientation() const

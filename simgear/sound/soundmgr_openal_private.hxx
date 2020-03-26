@@ -63,8 +63,8 @@ struct refUint {
     ~refUint() {};
 };
 
-typedef std::map < std::string, refUint > buffer_map;
-typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
+using buffer_map = std::map < std::string, refUint >;
+using sample_group_map = std::map < std::string, SGSharedPtr<SGSampleGroup> >;
 
 inline bool isNaN(float *v) {
    return (SGMisc<float>::isNaN(v[0]) || SGMisc<float>::isNaN(v[1]) || SGMisc<float>::isNaN(v[2]));

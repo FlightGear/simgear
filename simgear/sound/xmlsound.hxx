@@ -138,24 +138,24 @@ protected:
   enum { LEVEL=0, INVERTED, FLIPFLOP };
 
   using _fn_t = std::function<double(double)>;
-  typedef struct {
+  using _snd_prop = struct {
         SGSharedPtr<SGExpressiond> expr;	// sound system version 2.0
+        std::shared_ptr<double> intern;
         SGPropertyNode_ptr prop;
         _fn_t fn;
-        double *intern;
         double factor;
         double offset;
         double min;
         double max;
         bool subtract;
-  } _snd_prop;
+  };
 
   using _sound_fn_t = std::map <std::string, _fn_t>;
   _sound_fn_t _sound_fn;
 
 private:
 
-  SGSampleGroup * _sgrp;
+  SGSharedPtr<SGSampleGroup> _sgrp;
   SGSharedPtr<SGSoundSample> _sample;
 
   SGSharedPtr<SGCondition> _condition;

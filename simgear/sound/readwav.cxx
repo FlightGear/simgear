@@ -46,7 +46,7 @@ namespace
     ALfloat frequency;
     SGPath path;
       
-    Buffer() : data(NULL), format(AL_NONE), length(0), frequency(0.0f) {}
+    Buffer() : data(nullptr), format(AL_NONE), length(0), frequency(0.0f) {}
     
     ~Buffer()
     {
@@ -119,7 +119,7 @@ namespace
     uint8_t *d = (uint8_t *) b->data;
     size_t newLength = b->length * 2;
     int16_t *buf = (int16_t *) malloc(newLength);
-    if (buf == NULL)
+    if (buf == nullptr)
       throw sg_exception("malloc failed decoing ULaw WAV file");
    
     for (ALsizei i = 0; i < b->length; i++) {
@@ -193,7 +193,7 @@ namespace
     size_t blocks = b->length/block_align;
     size_t newLength = block_align * blocks * 4;
     int16_t *buf = (int16_t *) malloc ( newLength );
-    if (buf == NULL)
+    if (buf == nullptr)
       throw sg_exception("malloc failed decoing IMA4 WAV file");
 
     int16_t *ptr = buf;
@@ -260,7 +260,7 @@ namespace
   
   void loadWavFile(gzFile fd, Buffer* b)
   {
-    assert(b->data == NULL);
+    assert(b->data == nullptr);
     
     bool found_header = false;
     bool compressed = false;
@@ -405,7 +405,7 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   }
 
   ALvoid* data = b.data;
-  b.data = NULL; // don't free when Buffer does out of scope
+  b.data = nullptr; // don't free when Buffer does out of scope
   format = b.format;
   block_align = b.block_align;
   size = b.length;

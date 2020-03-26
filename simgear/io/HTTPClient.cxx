@@ -273,6 +273,11 @@ void Client::makeRequest(const Request_ptr& r)
     curl_easy_setopt(curlRequest, CURLOPT_WRITEDATA, r.get());
     curl_easy_setopt(curlRequest, CURLOPT_HEADERFUNCTION, requestHeaderCallback);
     curl_easy_setopt(curlRequest, CURLOPT_HEADERDATA, r.get());
+
+#if !defined(CURL_MAX_READ_SIZE)
+	const int CURL_MAX_READ_SIZE = 512 * 1024;
+#endif
+
     curl_easy_setopt(curlRequest, CURLOPT_BUFFERSIZE, CURL_MAX_READ_SIZE);
     curl_easy_setopt(curlRequest, CURLOPT_USERAGENT, d->userAgent.c_str());
     curl_easy_setopt(curlRequest, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);

@@ -33,6 +33,7 @@
 #include <vector>
 #include <type_traits>
 #include <cstdlib>
+#include <cstdint>
 
 typedef std::vector < std::string > string_list;
 
@@ -303,6 +304,9 @@ namespace simgear {
     std::string encodeHex(const std::string& bytes);
 
     std::string encodeHex(const unsigned char* rawBytes, unsigned int length);
+
+  
+    std::vector<uint8_t> decodeHex(const std::string& input);
 
     /**
      * Backslash-escape a string for C/C++ string literal syntax.

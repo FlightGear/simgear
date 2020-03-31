@@ -897,6 +897,69 @@ std::string encodeHex(const unsigned char* rawBytes, unsigned int length)
   return hex;
 }
 
+std::vector<uint8_t> decodeHex(const std::string& input)
+{
+    std::vector<uint8_t> result;
+    char* ptr = const_cast<char*>(input.data());
+    const char* end = ptr + input.length();
+    
+    bool highNibble = true;
+    uint8_t b = 0;
+    
+    while (ptr != end) {
+        const char c = *ptr;
+        char val = 0;
+        
+        if (c == '0') {
+            val = 0;
+            if ((ptr + 1) < end) {
+                const auto peek = *(ptr + 1);
+                if (peek == 'x') {
+                    // tolerate 0x prefixing
+                    highNibble = true;
+                    ptr += 2; // skip both bytes
+                    continue;
+                }
+            }
+        } else if (isdigit(c)) {
+            val =  c - '0';
+        } else if ((c >= 'A') && (c <= 'F')) {
+            val = c - 'A' + 10;
+        } else if ((c >= 'a') && (c <= 'f')) {
+            val = c - 'a' + 10;
+        } else {
+            // any other input: newline, space, tab, comma...
+            if (!highNibble) {
+                // allow a single digit to work, if we have spacing
+                highNibble = true;
+                result.push_back(b >> 4);
+            }
+            
+            ++ptr;
+            continue;
+        }
+        
+        if (highNibble) {
+            highNibble = false;
+            b = val << 4;
+        } else {
+            highNibble = true;
+            b |= val;
+            result.push_back(b);
+        }
+        
+        ++ptr;
+    }
+    
+    // watch for trailing single digit
+    // this is reqquired so a stirng ending in 0x3 is decoded.
+    if (!highNibble) {
+        result.push_back(b >> 4);
+    }
+    
+    return result;
+}
+    
 // Write an octal backslash-escaped respresentation of 'val' to 'buf'.
 //
 // At least 4 write positions must be available at 'buf'. The result is *not*

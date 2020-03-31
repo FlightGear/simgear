@@ -730,6 +730,13 @@ void test_formatGeod()
     
 }
 
+void testDecodeHex()
+{
+    const auto decoded = simgear::strutils::decodeHex("01 0xff,0xcd \n\t99 0xcD abcdef\n\r0x1 0x2 0x3");
+    vector<uint8_t> data1 = {0x1, 0xff, 0xcd, 0x99, 0xcd, 0xAB, 0xCD,0xEF, 1, 2, 3};
+    SG_VERIFY(decoded == data1);
+}
+
 int main(int argc, char* argv[])
 {
     test_strip();
@@ -753,6 +760,7 @@ int main(int argc, char* argv[])
     test_parseGeod();
     test_formatGeod();
     test_iequals();
+    testDecodeHex();
     
     return EXIT_SUCCESS;
 }

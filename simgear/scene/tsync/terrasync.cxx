@@ -1030,14 +1030,14 @@ string_list SGTerraSync::getSceneryPathSuffixes() const
     string_list scenerySuffixes;
 
     for (auto node : _renderingRoot->getChildren("scenery-path-suffix")) {
-        if (node->getBoolValue("enabled", true)) {
+        if (node->getBoolValue("enabled", true) && node->hasValue("name")) {
             scenerySuffixes.push_back(node->getStringValue("name"));
         }
     }
 
     if (scenerySuffixes.empty()) {
         // if preferences didn't load, use some default
-        scenerySuffixes = {"Objects", "Terrain"}; // defaut values
+        scenerySuffixes = {"Objects", "Terrain"}; // default values
     }
 
     return scenerySuffixes;

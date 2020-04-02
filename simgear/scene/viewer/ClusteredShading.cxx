@@ -290,7 +290,6 @@ ClusteredShading::update(const SGLightList &light_list)
 
     // Force upload of the image data
     _light_grid->dirty();
-    _light_indices->dirty();
 
     // Upload pointlight and spotlight data
     writePointlightData();

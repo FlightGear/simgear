@@ -152,12 +152,12 @@ protected:
             // check for a version redirect entry
             auto alt = alternateForVersion(ver, props);
             if (alt) {
-                SG_LOG(SG_GENERAL, SG_WARN, "have alternate version of package at:"
+                SG_LOG(SG_GENERAL, SG_INFO, "have alternate version of package at:"
                        << alt->getStringValue("url"));
                 m_owner->processAlternate(alt);
             } else {
-                SG_LOG(SG_GENERAL, SG_WARN, "downloaded catalog " << m_owner->url()
-                       << ", but app version " << ver << " is not comaptible");
+                SG_LOG(SG_GENERAL, SG_DEBUG, "downloaded catalog " << m_owner->url()
+                       << ", but app version " << ver << " is not compatible");
                 m_owner->refreshComplete(Delegate::FAIL_VERSION);
             }
 

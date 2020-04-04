@@ -573,7 +573,7 @@ RegisterPassBuilder<ShadowMapPassBuilder> registerShadowMapPass("shadow-map");
 
 class SceneUpdateCallback : public Pass::PassUpdateCallback {
 public:
-    SceneUpdateCallback(int cubemap_face, float zNear, float zFar) :
+    SceneUpdateCallback(int cubemap_face, double zNear, double zFar) :
         _cubemap_face(cubemap_face),
         _zNear(zNear),
         _zFar(zFar) {}
@@ -608,10 +608,14 @@ public:
                                                  1.0, 10000.0);
         }
 
-        if (_zNear != 0.0f && _zFar != 0.0f) {
-            osg::Matrix new_proj;
-            makeNewProjMat(camera->getProjectionMatrix(),
-                           _zNear, _zFar, new_proj);
+        if (_zNear != 0.0 || _zFar != 0.0) {
+            osg::Matrixd given_proj = camera->getProjectionMatrix();
+            double left, right, bottom, top, znear, zfar;
+            given_proj.getFrustum(left, right, bottom, top, znear, zfar);
+            if (_zNear != 0.0) znear = _zNear;
+            if (_zFar  != 0.0) zfar  = _zFar;
+            osg::Matrixd new_proj;
+            makeNewProjMat(given_proj, znear, zfar, new_proj);
             camera->setProjectionMatrix(new_proj);
         }
     }
@@ -652,8 +656,8 @@ protected:
     }
 
     int _cubemap_face;
-    float _zNear;
-    float _zFar;
+    double _zNear;
+    double _zFar;
 };
 
 class SceneCullCallback : public osg::NodeCallback {

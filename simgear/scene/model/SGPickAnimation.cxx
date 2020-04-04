@@ -921,9 +921,9 @@ class TouchPickCallback : public SGPickCallback {
             _hover = readBindingList(hoverNode->getChildren("binding"), modelRoot);
         }
 
-        virtual bool buttonPressed(int touchIdx,
+        bool buttonPressed(int touchIdx,
             const osgGA::GUIEventAdapter& event,
-            const Info& info)
+            const Info& info) override
         {
             if (_touches.find(touchIdx) == _touches.end()) {
                 return false;
@@ -940,18 +940,21 @@ class TouchPickCallback : public SGPickCallback {
             fireBindingList(_bindingsTouched, params.ptr());
             return true;
         }
-        virtual void buttonReleased(int keyModState,
+        
+        void buttonReleased(int keyModState,
             const osgGA::GUIEventAdapter&,
-            const Info* info)
+            const Info* info) override
         {
             SG_UNUSED(keyModState);
             SGPropertyNode_ptr params(new SGPropertyNode);
-            params->setDoubleValue("x", info->uv[0]);
-            params->setDoubleValue("y", info->uv[1]);
+            if (info) {
+                params->setDoubleValue("x", info->uv[0]);
+                params->setDoubleValue("y", info->uv[1]);
+            }
             fireBindingList(_bindingsReleased, params.ptr());
         }
 
-        virtual void update(double dt, int keyModState)
+        void update(double dt, int keyModState) override
         {
             SG_UNUSED(keyModState);
             if (!_repeatable)
@@ -964,8 +967,8 @@ class TouchPickCallback : public SGPickCallback {
             }
         }
 
-        virtual bool hover(const osg::Vec2d& windowPos,
-            const Info& info)
+        bool hover(const osg::Vec2d& windowPos,
+            const Info& info) override
         {
             if (!anyBindingEnabled(_hover)) {
                 return false;
@@ -978,12 +981,12 @@ class TouchPickCallback : public SGPickCallback {
             return true;
         }
 
-        std::string getCursor() const
+        std::string getCursor() const override
         {
             return _cursorName;
         }
         
-        virtual bool needsUV() const { return true; }
+        bool needsUV() const override { return true; }
 
     private:
         SGBindingList _bindingsTouched;
@@ -1010,7 +1013,7 @@ osg::Group* SGTouchAnimation::createMainGroup(osg::Group* pr)
 
 void SGTouchAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
 {
-    TouchPickCallback* touchCb = NULL;
+    TouchPickCallback* touchCb = nullptr;
 
     // add actions that become macro and command invocations
     std::vector<SGPropertyNode_ptr> actions;

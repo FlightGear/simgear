@@ -65,6 +65,9 @@ if(SIMGEAR_SHARED)
         set_property(TARGET SimGearScene PROPERTY VERSION   ${SIMGEAR_VERSION})
         set_property(TARGET SimGearScene PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
     endif()
+
+    export_debug_symbols(SimGearCore)
+    export_debug_symbols(SimGearScene)
 else()
     message(STATUS "Library building mode: STATIC LIBRARIES")
 

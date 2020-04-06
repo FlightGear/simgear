@@ -39,7 +39,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment ver
 
 # let's use & require C++11 - note these are only functional with CMake 3.1
 # we do manual fallbacks for CMake 3.0 in the compilers section
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 # read 'version' file into a variable (stripping any newlines or spaces)

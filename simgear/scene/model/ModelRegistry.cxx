@@ -117,7 +117,9 @@ protected:
     }
 };
 
-
+// disabling old-syle texture compression in favour of the 
+// texture-cache
+#if 0
 class SGTexCompressionVisitor : public SGTextureStateAttributeVisitor {
 public:
   virtual void apply(int, StateSet::RefAttributePair& refAttr)
@@ -142,12 +144,13 @@ public:
     int t = image->t();
 
     if (s <= t && 32 <= s) {
-      SGSceneFeatures::instance()->setTextureCompression(texture);
+      SGSceneFeatures::instance()->applyTextureCompression(texture);
     } else if (t < s && 32 <= t) {
-      SGSceneFeatures::instance()->setTextureCompression(texture);
+      SGSceneFeatures::instance()->applyTextureCompression(texture);
     }
   }
 };
+#endif
 
 class SGTexDataVarianceVisitor : public SGTextureStateAttributeVisitor {
 public:
@@ -645,8 +648,12 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
     SGTexDataVarianceVisitor dataVarianceVisitor;
     node->accept(dataVarianceVisitor);
 
+// disabling old-syle texture compression in favour of the 
+// texture-cache
+#if 0
     SGTexCompressionVisitor texComp;
     node->accept(texComp);
+#endif
     return node;
 }
 

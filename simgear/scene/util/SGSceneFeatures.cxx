@@ -67,8 +67,13 @@ SGSceneFeatures::instance()
 }
 
 void
-SGSceneFeatures::setTextureCompression(osg::Texture* texture) const
+SGSceneFeatures::applyTextureCompression(osg::Texture* texture) const
 {
+  // disable older texture-compression, since it interacts confusingly
+  // with the the runtime texture-cache. We always want to use 
+  // 'USE_IMAGE_DATA_FORMAT' when the texture-cache is active, since we
+  // decided whether to compress (or not) prior to this point.
+#if 0
   switch (_textureCompression) {
   case UseARBCompression:
     texture->setInternalFormatMode(osg::Texture::USE_ARB_COMPRESSION);
@@ -86,6 +91,7 @@ SGSceneFeatures::setTextureCompression(osg::Texture* texture) const
     texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
     break;
   }
+#endif
 }
 
 bool

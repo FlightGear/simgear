@@ -292,9 +292,9 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         int s = image->s();
         int t = image->t();
         if (s <= t && 32 <= s) {
-            SGSceneFeatures::instance()->setTextureCompression(tex);
+            SGSceneFeatures::instance()->applyTextureCompression(tex);
         } else if (t < s && 32 <= t) {
-            SGSceneFeatures::instance()->setTextureCompression(tex);
+            SGSceneFeatures::instance()->applyTextureCompression(tex);
         }
         tex->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
     } else {

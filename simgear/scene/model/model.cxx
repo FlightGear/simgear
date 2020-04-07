@@ -75,9 +75,9 @@ SGLoadTexture2D(bool staticTexture, const std::string& path,
     int t = image->t();
 
     if (s <= t && 32 <= s) {
-      SGSceneFeatures::instance()->setTextureCompression(texture.get());
+      SGSceneFeatures::instance()->applyTextureCompression(texture.get());
     } else if (t < s && 32 <= t) {
-      SGSceneFeatures::instance()->setTextureCompression(texture.get());
+      SGSceneFeatures::instance()->applyTextureCompression(texture.get());
     }
   }
 

@@ -58,7 +58,7 @@ public:
     TextureCompression getTextureCompression() const { return _textureCompression; }
 
     // modify the texture compression on the texture parameter
-    void setTextureCompression(osg::Texture* texture) const;
+    void applyTextureCompression(osg::Texture* texture) const;
 
     void setEnablePointSpriteLights(bool enable)
     {

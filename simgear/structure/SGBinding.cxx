@@ -11,7 +11,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <boost/foreach.hpp>
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
 
@@ -103,7 +102,7 @@ SGBinding::fire (SGPropertyNode* params) const
     if (params != NULL) {
       copyProperties(params, _arg);
     }
-    
+
     innerFire();
   }
 }
@@ -132,14 +131,14 @@ SGBinding::fire (double setting) const
 
 void fireBindingList(const SGBindingList& aBindings, SGPropertyNode* params)
 {
-    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+    for (auto b : aBindings) {
         b->fire(params);
     }
 }
 
 void fireBindingListWithOffset(const SGBindingList& aBindings, double offset, double max)
 {
-    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+    for (auto b : aBindings) {
         b->fire(offset, max);
     }
 }
@@ -147,16 +146,16 @@ void fireBindingListWithOffset(const SGBindingList& aBindings, double offset, do
 SGBindingList readBindingList(const simgear::PropertyList& aNodes, SGPropertyNode* aRoot)
 {
     SGBindingList result;
-    BOOST_FOREACH(SGPropertyNode* node, aNodes) {
+    for (auto node : aNodes) {
         result.push_back(new SGBinding(node, aRoot));
     }
-    
+
     return result;
 }
 
 void clearBindingList(const SGBindingList& aBindings)
 {
-    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+    for (auto b : aBindings) {
         b->clear();
     }
 }
@@ -167,7 +166,7 @@ bool anyBindingEnabled(const SGBindingList& aBindings)
         return false;
     }
 
-    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+    for (auto b : aBindings) {
         if (b->test()) {
             return true;
         }
@@ -175,4 +174,3 @@ bool anyBindingEnabled(const SGBindingList& aBindings)
 
     return false;
 }
-

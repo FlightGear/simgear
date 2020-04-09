@@ -24,13 +24,12 @@
 
 #include "logstream.hxx"
 
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <mutex>
-
-#include <boost/foreach.hpp>
 
 #include <simgear/sg_inlines.h>
 #include <simgear/threads/SGThread.hxx>
@@ -63,7 +62,7 @@ LogCallback::LogCallback(sgDebugClass c, sgDebugPriority p) :
 
 bool LogCallback::shouldLog(sgDebugClass c, sgDebugPriority p) const
 {
-    
+
     if ((c & m_class) != 0 && p >= m_priority)
         return true;
     if (c == SG_OSG) // always have OSG logging as it OSG logging is configured separately.
@@ -164,10 +163,10 @@ public:
             /* <line> can be -ve to indicate that m_fileLine was false, but we
             want to show file:line information regardless of m_fileLine. */
             m_file
-                << file 
-                << ":" 
+                << file
+                << ":"
                 << abs(line)
-                << ": " 
+                << ": "
                 ;
             }
         m_file
@@ -202,7 +201,7 @@ public:
     {
         if (!shouldLog(c, p)) return;
         //fprintf(stderr, "%s\n", aMessage.c_str());
-        
+
         if (file && line > 0) {
             fprintf(stderr, "%8.2f %s:%i: [%.8s]:%-10s %s\n", logTimer.elapsedMSec()/1000.0, file, line, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
         }
@@ -303,10 +302,10 @@ public:
          *    window; stdout/stderr will not appear (except in logfiles as they do now)
          * 4) When started from the Console (with --console) open a new console window
          * 5) Ensure that IO redirection still works when started from the console
-         * 
+         *
          * Notes:
          * 1) fgfs needs to be a GUI subsystem app - which it already is
-         * 2) What can't be done is to make the cmd prompt run fgfs synchronously; 
+         * 2) What can't be done is to make the cmd prompt run fgfs synchronously;
          * this is only something that can be done via "start /wait fgfs".
          */
 
@@ -330,7 +329,7 @@ public:
 			}
         } else {
             /*
-            * Attempt to attach to the console process of the parent process; when launched from cmd.exe this should be the console, 
+            * Attempt to attach to the console process of the parent process; when launched from cmd.exe this should be the console,
             * when launched via the RUN menu explorer, or another GUI app that wasn't started from the console this will fail.
             * When it fails we will redirect to the NUL device. This is to ensure that we have valid streams.
             * Later on in the initialisation sequence the --console option will be processed and this will cause the requestConsole() to
@@ -360,7 +359,7 @@ public:
             if (!stdout_isNull){
                 if (!m_stdout_isRedirectedAlready)
                     freopen("conout$", "w", stdout);
-                else 
+                else
                     /*
                     * for already redirected streams we need to attach the stream to the OS handle that is open.
                     * - this comes from part of the answer http://stackoverflow.com/a/13841522
@@ -379,7 +378,7 @@ public:
             }
         }
         //http://stackoverflow.com/a/25927081
-        //Clear the error state for each of the C++ standard stream objects. 
+        //Clear the error state for each of the C++ standard stream objects.
         std::wcout.clear();
         std::cout.clear();
         std::wcerr.clear();
@@ -532,7 +531,7 @@ public:
         PauseThread pause(this);
         m_logPriority = p;
         m_logClass = c;
-		BOOST_FOREACH(simgear::LogCallback* cb, m_consoleCallbacks) {
+                for (auto cb : m_consoleCallbacks) {
 	        cb->setLogLevels(c, p);
 		}
     }
@@ -542,7 +541,7 @@ public:
         // Testing mode, so always log.
         if (m_testMode) return true;
 
-        // SG_OSG (OSG notify) - will always be displayed regardless of FG log settings as OSG log level is configured 
+        // SG_OSG (OSG notify) - will always be displayed regardless of FG log settings as OSG log level is configured
         // separately and thus it makes more sense to allow these message through.
         if (static_cast<unsigned>(p) == static_cast<unsigned>(SG_OSG)) return true;
 
@@ -822,7 +821,7 @@ namespace simgear
 {
 
 void requestConsole()
-{ 
+{
     sglog().requestConsole();
 }
 

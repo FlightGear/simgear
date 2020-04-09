@@ -29,7 +29,6 @@
 #include <map>
 #include <math.h>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include <osg/Geode>

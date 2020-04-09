@@ -25,7 +25,6 @@
 #endif
 
 #include <vector>
-#include <boost/foreach.hpp>
 
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -101,19 +100,19 @@ struct GlyphGeometry
   osg::Vec2Array* uvs;
   osg::Vec3Array* vertices;
   osg::Vec3Array* normals;
-  
+
   void addGlyph(SGMaterialGlyph* glyph, double x, double y, double width, double height, const osg::Matrix& xform)
   {
-    
+
     vertices->push_back(xform.preMult(osg::Vec3(thick, x, y)));
     vertices->push_back(xform.preMult(osg::Vec3(thick, x + width, y)));
     vertices->push_back(xform.preMult(osg::Vec3(thick, x + width, y + height)));
     vertices->push_back(xform.preMult(osg::Vec3(thick, x, y + height)));
-    
+
     // texture coordinates
     double xoffset = glyph->get_left();
     double texWidth = glyph->get_width();
-    
+
     uvs->push_back(osg::Vec2(xoffset,         0));
     uvs->push_back(osg::Vec2(xoffset + texWidth, 0));
     uvs->push_back(osg::Vec2(xoffset + texWidth, 1));
@@ -122,10 +121,10 @@ struct GlyphGeometry
     // normals
     for (int i=0; i<4; ++i)
       normals->push_back(xform.preMult(osg::Vec3(0, -1, 0)));
-    
+
     quads->setCount(vertices->size());
   }
-  
+
   void addSignCase(double caseWidth, double caseHeight, const osg::Matrix& xform)
   {
     int last = vertices->size();
@@ -141,7 +140,7 @@ struct GlyphGeometry
     uvs->push_back(osg::Vec2(0.75, 1));
     uvs->push_back(osg::Vec2(0.75, 0));
     uvs->push_back(osg::Vec2(1,    0));
-    
+
     for (int i=0; i<4; ++i)
       normals->push_back(osg::Vec3(-1, 0.0, 0));
 
@@ -150,7 +149,7 @@ struct GlyphGeometry
     vertices->push_back(osg::Vec3(thick,  -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
-    
+
     uvs->push_back(osg::Vec2(1,    texsize));
     uvs->push_back(osg::Vec2(0.75, texsize));
     uvs->push_back(osg::Vec2(0.75, 0));
@@ -179,7 +178,7 @@ struct GlyphGeometry
       (*vertices)[i]= xform.preMult((*vertices)[i]);
       (*normals)[i] = xform.preMult((*normals)[i]);
     }
-    
+
     quads->setCount(vertices->size());
   }
 };
@@ -189,17 +188,17 @@ typedef std::map<Effect*, GlyphGeometry*> EffectGeometryMap;
 GlyphGeometry* makeGeometry(Effect* eff, osg::Group* group)
 {
   GlyphGeometry* gg = new GlyphGeometry;
-  
+
   EffectGeode* geode = new EffectGeode;
   geode->setEffect(eff);
- 
+
   gg->vertices = new osg::Vec3Array;
   gg->normals = new osg::Vec3Array;
   gg->uvs = new osg::Vec2Array;
-  
+
   osg::Vec4Array* cl = new osg::Vec4Array;
   cl->push_back(osg::Vec4(1, 1, 1, 1));
-  
+
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setVertexArray(gg->vertices);
   geometry->setNormalArray(gg->normals);
@@ -207,7 +206,7 @@ GlyphGeometry* makeGeometry(Effect* eff, osg::Group* group)
   geometry->setColorArray(cl);
   geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
   geometry->setTexCoordArray(0, gg->uvs);
-  
+
   gg->quads = new osg::DrawArrays(GL_QUADS, 0, gg->vertices->size());
   geometry->addPrimitiveSet(gg->quads);
   geode->addDrawable(geometry);
@@ -227,29 +226,29 @@ public:
     EffectGeometryMap geometries;
     osg::MatrixTransform* signsGroup;
     GlyphGeometry* signCaseGeometry;
-    
+
     GlyphGeometry* getGeometry(Effect* eff)
     {
         EffectGeometryMap::iterator it = geometries.find(eff);
         if (it != geometries.end()) {
             return it->second;
         }
-        
+
         GlyphGeometry* gg = makeGeometry(eff, signsGroup);
         geometries[eff] = gg;
         return gg;
     }
-    
+
     void makeFace(const ElementVec& elements, double hpos, const osg::Matrix& xform)
     {
-        BOOST_FOREACH(element_info* element, elements) {
+        for (auto element : elements) {
             GlyphGeometry* gg = getGeometry(element->material->get_effect());
             gg->addGlyph(element->glyph, hpos, grounddist, element->abswidth, element->height, xform);
             hpos += element->abswidth;
             delete element;
         }
     }
-    
+
 };
 
 AirportSignBuilder::AirportSignBuilder(SGMaterialLib* mats, const SGGeod& center) :
@@ -257,7 +256,7 @@ AirportSignBuilder::AirportSignBuilder(SGMaterialLib* mats, const SGGeod& center
 {
     d->signsGroup = new osg::MatrixTransform;
     d->signsGroup->setMatrix(makeZUpFrame(center));
-    
+
     assert(mats);
     d->materials = mats;
     d->signCaseGeometry = d->getGeometry(d->materials->find("signcase", center)->get_effect());
@@ -505,12 +504,12 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
     double boxwidth = std::max(total_width1, total_width2) * 0.5;
     double hpos = -boxwidth;
     SGMaterial *mat = d->materials->find("signcase", pos);
-  
+
     double coverSize = fabs(total_width1 - total_width2) * 0.5;
     element_info* s1 = new element_info(mat, mat->get_glyph("cover1"), sign_height, coverSize);
     element_info* s2 = new element_info(mat, mat->get_glyph("cover2"), sign_height, coverSize);
-  
-    if (total_width1 < total_width2) {            
+
+    if (total_width1 < total_width2) {
         elements1.insert(elements1.begin(), s1);
         elements1.push_back(s2);
     } else if (total_width2 < total_width1) {
@@ -520,25 +519,24 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
         delete s1;
         delete s2;
     }
-    
+
 // position the sign
     const osg::Vec3 Z_AXIS(0, 0, 1);
     osg::Matrix m(makeZUpFrame(pos));
     m.preMultRotate(osg::Quat(SGMiscd::deg2rad(heading), Z_AXIS));
-    
+
     // apply the inverse of the group transform, so sign vertices
     // are relative to the tile center, and hence have a magnitude which
     // fits in a float with sufficent precision.
     m.postMult(d->signsGroup->getInverseMatrix());
-    
+
     d->makeFace(elements1, hpos, m);
 // Create back side
     osg::Matrix back(m);
     back.preMultRotate(osg::Quat(M_PI, Z_AXIS));
     d->makeFace(elements2, hpos, back);
-    
+
     d->signCaseGeometry->addSignCase(boxwidth, sign_height, m);
 }
 
 } // of namespace simgear
-

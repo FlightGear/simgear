@@ -41,7 +41,6 @@
 
 #include <simgear/misc/strutils.hxx>
 #include <simgear/debug/logstream.hxx>
-#include <boost/foreach.hpp>
 
 #include <cstring>
 #include <cstdlib>
@@ -122,7 +121,7 @@ Dir Dir::tempDir(const std::string& templ)
                "mkdtemp failed: " << simgear::strutils::error_string(errno));
         return Dir();
     }
-    
+
     return Dir(SGPath(buf));
 #else
 #if defined(SG_WINDOWS)
@@ -138,7 +137,7 @@ Dir Dir::tempDir(const std::string& templ)
         SG_LOG(SG_IO, SG_WARN, "failed to create temporary directory at " << p);
         return Dir();
     }
-    
+
     return t;
 #endif
 }
@@ -154,7 +153,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   if (types == 0) {
     types = TYPE_FILE | TYPE_DIR | NO_DOT_OR_DOTDOT;
   }
-  
+
 #if defined(SG_WINDOWS)
   std::wstring search(_path.wstr());
   if (nameFilter.empty()) {
@@ -162,18 +161,18 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   } else {
     search += simgear::strutils::convertUtf8ToWString("\\*" + nameFilter);
   }
-  
+
   WIN32_FIND_DATAW fData;
   HANDLE find = FindFirstFileW(search.c_str(), &fData);
   if (find == INVALID_HANDLE_VALUE) {
 	  int err = GetLastError();
 	  if (err != ERROR_FILE_NOT_FOUND) {
-		SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: FindFirstFile failed:" << 
+		SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: FindFirstFile failed:" <<
 			_path << " with error:" << err);
 	  }
     return result;
   }
-  
+
   bool done = false;
   for (bool done = false; !done; done = (FindNextFileW(find, &fData) == 0)) {
     if (fData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) {
@@ -181,7 +180,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
         continue;
       }
     }
-    
+
 	std::string utf8File = simgear::strutils::convertWStringToUtf8(fData.cFileName);
     if (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 	  if (types & NO_DOT_OR_DOTDOT) {
@@ -212,32 +211,32 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     SG_LOG(SG_GENERAL, SG_WARN, "Dir::children: opendir failed:" << _path);
     return result;
   }
-  
+
   int filterLen = nameFilter.size();
-  
+
   while (true) {
     struct dirent* entry = readdir(dp);
     if (!entry) {
       break; // done iteration
     }
-    
+
     // skip hidden files (names beginning with '.') unless requested
     if (!(types & INCLUDE_HIDDEN) && (entry->d_name[0] == '.') &&
          strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
       continue;
     }
-    
+
     SGPath f = file(entry->d_name);
     if (!f.exists()) {
       continue; // stat() failed
     }
-    
+
     if (f.isDir()) {
       // directory handling
       if (!(types & TYPE_DIR)) {
         continue;
       }
-      
+
       if (types & NO_DOT_OR_DOTDOT) {
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
           continue;
@@ -258,17 +257,17 @@ PathList Dir::children(int types, const std::string& nameFilter) const
       if (nameLen < filterLen) {
         continue; // name is shorter than the filter
       }
-    
+
       char* nameSuffix = entry->d_name + (nameLen - filterLen);
       if (strcmp(nameSuffix, nameFilter.c_str())) {
         continue;
       }
     }
-    
+
   // passed all criteria, add to our result vector
     result.push_back(file(entry->d_name));
   }
-  
+
   closedir(dp);
 #endif
 
@@ -316,7 +315,7 @@ SGPath Dir::file(const std::string& name) const
   SGPath childPath = _path;
   childPath.set_cached(true);
   childPath.append(name);
-  return childPath;  
+  return childPath;
 }
 
 bool Dir::create(mode_t mode)
@@ -324,7 +323,7 @@ bool Dir::create(mode_t mode)
     if (exists()) {
         return false; // already exists
     }
-    
+
 // recursively create parent directories
     Dir pr(parent());
     if (!pr.path().isNull() && !pr.exists()) {
@@ -333,7 +332,7 @@ bool Dir::create(mode_t mode)
             return false;
         }
     }
-    
+
 // finally, create ourselves
 #if defined(SG_WINDOWS)
 	std::wstring ps = _path.wstr();
@@ -347,7 +346,7 @@ bool Dir::create(mode_t mode)
                "directory creation failed for '" << _path.utf8Str() << "': " <<
                simgear::strutils::error_string(errno));
     }
-    
+
     return (err == 0);
 }
 
@@ -359,20 +358,20 @@ bool Dir::removeChildren() const
 
     bool ok;
     PathList cs = children(NO_DOT_OR_DOTDOT | INCLUDE_HIDDEN | TYPE_FILE | TYPE_DIR);
-    BOOST_FOREACH(SGPath path, cs) {
+    for (auto path : cs) {
         if (path.isDir()) {
             Dir childDir(path);
             ok = childDir.remove(true);
         } else {
             ok = path.remove();
         }
-        
+
         if (!ok) {
             SG_LOG(SG_IO, SG_WARN, "failed to remove:" << path);
             return false;
         }
     } // of child iteration
-    
+
     return true;
 }
 
@@ -382,7 +381,7 @@ bool Dir::remove(bool recursive)
         SG_LOG(SG_IO, SG_WARN, "attempt to remove non-existant dir:" << _path);
         return false;
     }
-    
+
     if (recursive) {
         if (!removeChildren()) {
             SG_LOG(SG_IO, SG_WARN, "Dir at:" << _path << " failed to remove children");

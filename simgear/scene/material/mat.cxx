@@ -33,7 +33,6 @@
 #include <string>
 #include <mutex>
 
-#include <boost/foreach.hpp>
 #include "mat.hxx"
 
 #include <osg/CullFace>
@@ -520,8 +519,7 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
         makeChild(binProp, "bin-number")->setIntValue(TRANSPARENT_BIN);
         makeChild(binProp, "bin-name")->setStringValue("DepthSortedBin");
     }
-    BOOST_FOREACH(_internal_state& matState, _status)
-    {
+    for (auto& matState : _status) {
         SGPropertyNode_ptr effectProp = new SGPropertyNode();
         copyProperties(propRoot, effectProp);
         SGPropertyNode* effectParamProp = effectProp->getChild("parameters", 0);

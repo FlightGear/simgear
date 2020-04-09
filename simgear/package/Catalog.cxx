@@ -18,7 +18,6 @@
 #include <simgear_config.h>
 #include <simgear/package/Catalog.hxx>
 
-#include <boost/foreach.hpp>
 #include <algorithm>
 #include <fstream>
 #include <cstring>
@@ -49,7 +48,7 @@ bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
     }
     return false;
 }
-    
+
 SGPropertyNode_ptr alternateForVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
     for (auto v : props->getChildren("alternate-version")) {
@@ -59,7 +58,7 @@ SGPropertyNode_ptr alternateForVersion(const std::string& aVersion, SGPropertyNo
             }
         }
     }
-    
+
     return {};
 }
 
@@ -131,7 +130,7 @@ protected:
 
             return;
         } // of version check failed
-        
+
         // validate what we downloaded, in case it's now corrupted
         // (i.e someone uploaded bad XML data)
         if (!m_owner->validatePackages()) {
@@ -150,7 +149,7 @@ protected:
         m_owner->writeTimestamp();
         m_owner->refreshComplete(Delegate::STATUS_REFRESHED);
     }
-    
+
     void onFail() override
     {
         // network level failure
@@ -206,17 +205,17 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     } else {
         SG_LOG(SG_GENERAL, SG_DEBUG, "creating catalog from:" << aPath);
     }
-    
+
     // check for the marker file we write, to mark a catalog as disabled
     const SGPath disableMarkerFile = aPath / "_disabled_";
 
     CatalogRef c = new Catalog(aRoot);
     c->m_installRoot = aPath;
-    
+
     if (disableMarkerFile.exists()) {
         c->m_userEnabled = false;
     }
-    
+
     c->parseProps(props);
     c->parseTimestamp();
 
@@ -233,7 +232,7 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 
     return c;
 }
-    
+
 bool Catalog::validatePackages() const
 {
     for (auto pack : packages()) {
@@ -242,7 +241,7 @@ bool Catalog::validatePackages() const
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -285,10 +284,10 @@ bool Catalog::removeDirectory()
     Dir d(m_installRoot);
     if (!m_installRoot.exists())
         return true;
-    
+
     return d.remove(true /* recursive */);
 }
-    
+
 PackageList const&
 Catalog::packages() const
 {
@@ -299,7 +298,7 @@ PackageList
 Catalog::packagesMatching(const SGPropertyNode* aFilter) const
 {
     PackageList r;
-    BOOST_FOREACH(PackageRef p, m_packages) {
+    for (auto p : m_packages) {
         if (p->matches(aFilter)) {
             r.push_back(p);
         }
@@ -311,7 +310,7 @@ PackageList
 Catalog::packagesNeedingUpdate() const
 {
     PackageList r;
-    BOOST_FOREACH(PackageRef p, m_packages) {
+    for (auto p : m_packages) {
         if (!p->isInstalled()) {
             continue;
         }
@@ -327,7 +326,7 @@ PackageList
 Catalog::installedPackages() const
 {
   PackageList r;
-  BOOST_FOREACH(PackageRef p, m_packages) {
+  for (auto p : m_packages) {
     if (p->isInstalled()) {
       r.push_back(p);
     }
@@ -570,7 +569,7 @@ bool Catalog::isEnabled() const
 {
     if (!m_userEnabled)
         return false;
-    
+
     switch (m_status) {
     case Delegate::STATUS_SUCCESS:
     case Delegate::STATUS_REFRESHED:
@@ -592,7 +591,7 @@ void Catalog::setUserEnabled(bool b)
 {
     if (m_userEnabled == b)
         return;
-    
+
     m_userEnabled = b;
     SGPath disableMarkerFile = installRoot() / "_disabled_";
     if (m_userEnabled) {
@@ -604,15 +603,15 @@ void Catalog::setUserEnabled(bool b)
             SG_LOG(SG_GENERAL, SG_ALERT, "Failed to remove catalog-disable marker file:" << disableMarkerFile);
         }
     }
-    
+
     Delegate::StatusCode effectiveStatus = m_status;
     if ((m_status == Delegate::STATUS_SUCCESS) && !m_userEnabled) {
         effectiveStatus = Delegate::USER_DISABLED;
     }
-    
+
     m_root->catalogRefreshStatus(this, effectiveStatus);
 }
-    
+
 void Catalog::processAlternate(SGPropertyNode_ptr alt)
 {
     std::string altId;
@@ -620,19 +619,19 @@ void Catalog::processAlternate(SGPropertyNode_ptr alt)
     if (idPtr) {
         altId = std::string(idPtr);
     }
-    
+
     std::string altUrl;
     if (alt->getStringValue("url")) {
         altUrl = std::string(alt->getStringValue("url"));
     }
-    
+
     CatalogRef existing;
     if (!altId.empty()) {
         existing = root()->getCatalogById(altId);
     } else {
         existing = root()->getCatalogByUrl(altUrl);
     }
-    
+
     if (existing && (existing != this)) {
         // we already have the alternate, so just go quiet here
         changeStatus(Delegate::FAIL_VERSION);
@@ -650,13 +649,13 @@ void Catalog::processAlternate(SGPropertyNode_ptr alt)
         changeStatus(Delegate::FAIL_VERSION);
         return;
     }
-    
+
     SG_LOG(SG_GENERAL, SG_INFO, "Migrating catalog " << id() << " to new URL:" << altUrl);
     setUrl(altUrl);
     Downloader* dl = new Downloader(this, altUrl);
     root()->makeHTTPRequest(dl);
 }
-    
+
 } // of namespace pkg
 
 } // of namespace simgear

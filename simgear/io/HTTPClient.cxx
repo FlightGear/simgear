@@ -35,7 +35,6 @@
 #include <stdexcept>
 #include <mutex>
 
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include <simgear/simgear_config.h>
@@ -125,7 +124,7 @@ Client::Client() :
 
     static bool didInitCurlGlobal = false;
     static std::mutex initMutex;
-    
+
     std::lock_guard<std::mutex> g(initMutex);
     if (!didInitCurlGlobal) {
       curl_global_init(CURL_GLOBAL_ALL);
@@ -183,15 +182,15 @@ void Client::update(int waitTimeout)
                      &curlWriteFDs,
                      &curlErrorFDs,
                      &maxFD);
-    
+
     struct timeval timeout;
     long t;
-    
+
     curl_multi_timeout(d->curlMulti, &t);
     if ((t < 0) || (t > waitTimeout)) {
         t = waitTimeout;
     }
-    
+
     timeout.tv_sec = t / 1000;
     timeout.tv_usec = (t % 1000) * 1000;
     ::select(maxFD, &curlReadFDs, &curlWriteFDs, &curlErrorFDs, &timeout);
@@ -489,7 +488,7 @@ bool isRedirectStatus(int code)
 {
     return ((code >= 300) && (code < 400));
 }
-    
+
 size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems, void *userdata)
 {
   size_t byteSize = size * nitems;
@@ -504,7 +503,7 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
           return byteSize;
       }
   }
-    
+
   if (req->readyState() == HTTP::Request::OPENED) {
     req->responseStart(h);
     return byteSize;

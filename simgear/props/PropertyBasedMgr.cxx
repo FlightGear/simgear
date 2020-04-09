@@ -21,8 +21,6 @@
 
 #include "PropertyBasedMgr.hxx"
 
-#include <boost/foreach.hpp>
-
 #include <stdexcept>
 #include <string>
 
@@ -78,7 +76,7 @@ namespace simgear
     if( name.empty() )
       return PropertyBasedElementPtr();
 
-    BOOST_FOREACH(PropertyBasedElementPtr el, _elements)
+    for (auto el : _elements)
       if( el && el->getProps()->getStringValue("name") == name )
         return el;
 

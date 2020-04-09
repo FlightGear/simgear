@@ -20,7 +20,6 @@
 #include <simgear/package/Package.hxx>
 
 #include <cassert>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include <simgear/debug/logstream.hxx>
@@ -144,19 +143,19 @@ bool Package::matches(const SGPropertyNode* aFilter) const
 
     return false;
 }
-    
+
 bool Package::matchesDescription(const std::string &search) const
 {
     std::string n(search);
     boost::to_lower(n);
-    
+
     bool localized;
     auto d = getLocalisedString(m_props, "description", &localized);
     boost::to_lower(d);
     if (d.find(n) != std::string::npos) {
         return true;
     }
-    
+
     // try non-localized description too, if the abovce was a localized one
     if (localized) {
         const std::string baseDesc = m_props->getStringValue("description");
@@ -165,7 +164,7 @@ bool Package::matchesDescription(const std::string &search) const
             return true;
         }
     }
-    
+
     // try each variant's description
     for (auto var : m_props->getChildren("variant")) {
         auto vd = getLocalisedString(var, "description", &localized);
@@ -175,7 +174,7 @@ bool Package::matchesDescription(const std::string &search) const
                 return true;
             }
         }
-        
+
         if (localized) {
             // try non-localized variant description
             std::string vd = var->getStringValue("description");
@@ -185,7 +184,7 @@ bool Package::matchesDescription(const std::string &search) const
             }
         }
     } // of variant iteration
-    
+
     return false;
 }
 
@@ -298,7 +297,7 @@ string_set Package::tags() const
 {
     return m_tags;
 }
-    
+
 bool Package::hasTag(const std::string& tag) const
 {
     return m_tags.find(tag) != m_tags.end();
@@ -344,11 +343,11 @@ std::string Package::getLocalisedString(const SGPropertyNode* aRoot, const char*
     // we now check first in /sim/localized/<locale>/name first
     const auto& locale = m_catalog->root()->getLocale();
     if (isLocalized) *isLocalized = false;
-    
+
     if (locale.empty()) {
         return aRoot->getStringValue(aName);
     }
-    
+
     const SGPropertyNode* localeRoot;
     if (aRoot->hasChild("localized")) {
         localeRoot = aRoot->getChild("localized")->getChild(locale);
@@ -369,7 +368,7 @@ PackageList Package::dependencies() const
 {
     PackageList result;
 
-    BOOST_FOREACH(SGPropertyNode* dep, m_props->getChildren("depends")) {
+    for (auto dep : m_props->getChildren("depends")) {
         std::string depName = dep->getStringValue("id");
         unsigned int rev = dep->getIntValue("revision", 0);
 
@@ -410,7 +409,7 @@ std::string Package::nameForVariant(const std::string& vid) const
         return name();
     }
 
-    BOOST_FOREACH(SGPropertyNode* var, m_props->getChildren("variant")) {
+    for (auto var : m_props->getChildren("variant")) {
         if (vid == var->getStringValue("id")) {
             return var->getStringValue("name");
         }
@@ -546,19 +545,19 @@ bool Package::validate() const
 {
     if (m_id.empty())
         return false;
-    
+
     std::string nm(m_props->getStringValue("name"));
     if (nm.empty())
         return false;
-    
+
     std::string dir(m_props->getStringValue("dir"));
     if (dir.empty())
         return false;
-    
+
     return true;
 }
 
-    
+
 } // of namespace pkg
 
 } // of namespace simgear

@@ -5,8 +5,6 @@
 #include <signal.h>
 
 #include <iostream>
-#include <boost/foreach.hpp>
-
 
 #include <simgear/io/sg_file.hxx>
 #include <simgear/io/HTTPClient.hxx>
@@ -29,17 +27,17 @@ public:
         _complete(false),
         _file(NULL)
     {
-        
+
     }
-    
+
     void setFile(SGFile* f)
     {
         _file = f;
     }
-    
+
     bool complete() const
         { return _complete; }
-        
+
     void addHeader(const string& h)
     {
         int colonPos = h.find(':');
@@ -47,22 +45,22 @@ public:
             cerr << "malformed header: " << h << endl;
             return;
         }
-        
+
         string key = h.substr(0, colonPos);
         requestHeader(key) = h.substr(colonPos + 1);
     }
-    
+
 protected:
     virtual void onDone()
     {
         _complete = true;
-    }  
+    }
 
     virtual void gotBodyData(const char* s, int n)
     {
         _file->write(s, n);
     }
-private:    
+private:
     bool _complete;
     SGFile* _file;
 };
@@ -74,7 +72,7 @@ int main(int argc, char* argv[])
     string proxy, proxyAuth;
     string_list headers;
     string url;
-    
+
     for (int a=0; a<argc;++a) {
         if (argv[a][0] == '-') {
             if (!strcmp(argv[a], "--user-agent")) {
@@ -105,7 +103,7 @@ int main(int argc, char* argv[])
             proxyHost = proxy.substr(0, colonPos);
             proxyPort = strutils::to_int(proxy.substr(colonPos + 1));
         }
-        
+
         cl.setProxy(proxyHost, proxyPort, proxyAuth);
     }
 
@@ -123,23 +121,23 @@ int main(int argc, char* argv[])
     }
 
     ARequest* req = new ARequest(url);
-    BOOST_FOREACH(string h, headers) {
+    for (const auto& h : headers) {
         req->addHeader(h);
     }
-    
+
     req->setFile(outFile);
     cl.makeRequest(req);
-    
+
     while (!req->complete()) {
         cl.update();
         SGTimeStamp::sleepForMSec(100);
     }
-        
+
     if (req->responseCode() != 200) {
         cerr << "got response:" << req->responseCode() << endl;
         cerr << "\treason:" << req->responseReason() << endl;
         return EXIT_FAILURE;
     }
-    
+
     return EXIT_SUCCESS;
 }

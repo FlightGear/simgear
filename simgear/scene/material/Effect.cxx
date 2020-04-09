@@ -36,7 +36,6 @@
 #include <mutex>
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -106,7 +105,7 @@ bool loadShaderFromUTF8File(osg::Shader* shader, const std::string& fileName)
     sg_ifstream inStream(SGPath::fromUtf8(fileName), std::ios::in | std::ios::binary);
     if (!inStream.is_open())
         return false;
-    
+
     shader->setShaderSource(inStream.read_all());
     return true;
 }
@@ -261,8 +260,7 @@ int Effect::getGenerator(Effect::Generator what) const
 
 Technique* Effect::chooseTechnique(RenderInfo* info, const std::string &scheme)
 {
-    BOOST_FOREACH(ref_ptr<Technique>& technique, techniques)
-    {
+    for (auto& technique : techniques) {
         if (technique->valid(info) == Technique::VALID &&
             technique->getScheme() == scheme)
             return technique.get();
@@ -272,16 +270,14 @@ Technique* Effect::chooseTechnique(RenderInfo* info, const std::string &scheme)
 
 void Effect::resizeGLObjectBuffers(unsigned int maxSize)
 {
-    BOOST_FOREACH(const ref_ptr<Technique>& technique, techniques)
-    {
+    for (const auto& technique : techniques) {
         technique->resizeGLObjectBuffers(maxSize);
     }
 }
 
 void Effect::releaseGLObjects(osg::State* state) const
 {
-    BOOST_FOREACH(const ref_ptr<Technique>& technique, techniques)
-    {
+    for (const auto& technique : techniques) {
         technique->releaseGLObjects(state);
     }
 }
@@ -929,8 +925,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     // resolvedProgramMap for a program using those shaders.
     ProgramKey resolvedKey;
     resolvedKey.attributes = prgKey.attributes;
-    BOOST_FOREACH(const ShaderKey& shaderKey, prgKey.shaders)
-    {
+    for (const auto& shaderKey : prgKey.shaders) {
         // FIXME orig: const string& shaderName = shaderKey.first;
         string shaderName = shaderKey.first;
         Shader::Type stype = (Shader::Type)shaderKey.second;
@@ -957,8 +952,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         return;
     }
     program = new Program;
-    BOOST_FOREACH(const ShaderKey& skey, resolvedKey.shaders)
-    {
+    for (const auto& skey : resolvedKey.shaders) {
         const string& fileName = skey.first;
         Shader::Type stype = (Shader::Type)skey.second;
         ShaderMap::iterator sitr = shaderMap.find(skey);
@@ -973,7 +967,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
             }
         }
     }
-    BOOST_FOREACH(const ProgramKey::AttribKey& key, prgKey.attributes) {
+    for (const auto& key : prgKey.attributes) {
         program->addBindAttribLocation(key.first, key.second);
     }
     const SGPropertyNode* pGeometryVerticesOut
@@ -1551,7 +1545,7 @@ bool Effect_writeLocalData(const Object& obj, osgDB::Output& fw)
     const Effect& effect = static_cast<const Effect&>(obj);
 
     fw.indent() << "techniques " << effect.techniques.size() << "\n";
-    BOOST_FOREACH(const ref_ptr<Technique>& technique, effect.techniques) {
+    for (const auto& technique : effect.techniques) {
         fw.writeObject(*technique);
     }
     return true;

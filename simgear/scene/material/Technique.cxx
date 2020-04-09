@@ -7,8 +7,6 @@
 #include "Pass.hxx"
 #include "EffectCullVisitor.hxx"
 
-#include <boost/foreach.hpp>
-
 #include <iterator>
 #include <vector>
 #include <string>
@@ -177,8 +175,7 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
     }
     EffectCullVisitor* ecv = dynamic_cast<EffectCullVisitor*>( cv );
     EffectGeode::DrawablesIterator drawablesEnd = itr;
-    BOOST_FOREACH(ref_ptr<Pass>& pass, passes)
-    {
+    for (auto& pass : passes) {
         osg::ref_ptr<osg::StateSet> ss = pass;
         if (ecv && ( ! pass->getBufferUnitList().empty() || ! pass->getPositionedUniformMap().empty() ) ) {
             ss = static_cast<osg::StateSet*>(
@@ -220,7 +217,7 @@ void Technique::resizeGLObjectBuffers(unsigned int maxSize)
 {
     if (_shadowingStateSet.valid())
         _shadowingStateSet->resizeGLObjectBuffers(maxSize);
-    BOOST_FOREACH(ref_ptr<Pass>& pass, passes) {
+    for (auto& pass : passes) {
         pass->resizeGLObjectBuffers(maxSize);
     }
     _contextMap.resize(maxSize);
@@ -230,8 +227,7 @@ void Technique::releaseGLObjects(osg::State* state) const
 {
     if (_shadowingStateSet.valid())
         _shadowingStateSet->releaseGLObjects(state);
-    BOOST_FOREACH(const ref_ptr<Pass>& pass, passes)
-    {
+    for (const auto& pass : passes) {
         pass->releaseGLObjects(state);
     }
     if (state == 0) {
@@ -384,7 +380,7 @@ Expression* glslSupportedParser(const SGPropertyNode* exp,
 
 expression::ExpParserRegistrar glslSupportedRegistrar("glsl-supported",
                                                       glslSupportedParser);
-                                                                                                              
+
 void Technique::setGLExtensionsPred(float glVersion,
                                     const std::vector<std::string>& extensions)
 {
@@ -444,7 +440,7 @@ bool Technique_writeLocalData(const Object& obj, osgDB::Output& fw)
         fw.writeObject(*tniq.getShadowingStateSet());
     }
     fw.indent() << "num_passes " << tniq.passes.size() << "\n";
-    BOOST_FOREACH(const ref_ptr<Pass>& pass, tniq.passes) {
+    for (const auto& pass : tniq.passes) {
         fw.writeObject(*pass);
     }
     return true;

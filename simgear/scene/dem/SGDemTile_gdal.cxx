@@ -8,7 +8,7 @@
  * Author:   Frank Warmerdam <warmerdam@pobox.com>
  *
  ******************************************************************************
- * Copyright (c) 2002, i3 - information integration and imaging 
+ * Copyright (c) 2002, i3 - information integration and imaging
  *                          Fort Collin, CO
  * Copyright (c) 2007-2013, Even Rouault <even dot rouault at mines-paris dot org>
  *
@@ -33,8 +33,6 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-
-#include <boost/foreach.hpp>
 
 #include <cpl_conv.h> // for CPLMalloc()
 #include "ogr_spatialref.h"
@@ -163,14 +161,14 @@ GDALDatasetH SGDemTile::createTile( char **papszSrcFiles, const char *pszFilenam
         {
             const char *pszMethod = CSLFetchNameValue( papszTO, "METHOD" );
 
-            if( GDALGetProjectionRef( hSrcDS ) != NULL 
+            if( GDALGetProjectionRef( hSrcDS ) != NULL
                 && strlen(GDALGetProjectionRef( hSrcDS )) > 0
                 && (pszMethod == NULL || EQUAL(pszMethod,"GEOTRANSFORM")) ) {
 
                 pszThisSourceSRS = GDALGetProjectionRef( hSrcDS );
             } else if( GDALGetGCPProjection( hSrcDS ) != NULL
-                     && strlen(GDALGetGCPProjection(hSrcDS)) > 0 
-                     && GDALGetGCPCount( hSrcDS ) > 1 
+                     && strlen(GDALGetGCPProjection(hSrcDS)) > 0
+                     && GDALGetGCPCount( hSrcDS ) > 1
                      && (pszMethod == NULL || EQUALN(pszMethod,"GCP_",4)) ) {
                 pszThisSourceSRS = GDALGetGCPProjection( hSrcDS );
             } else if( pszMethod != NULL && EQUAL(pszMethod,"RPC") ) {
@@ -229,7 +227,7 @@ GDALDatasetH SGDemTile::createTile( char **papszSrcFiles, const char *pszFilenam
         nPixels = nForcePixels;
         nLines = nForceLines;
     }
-    else 
+    else
     {
         fprintf(stderr, "UHOH - need force pixels/lines\n");
     }
@@ -238,7 +236,7 @@ GDALDatasetH SGDemTile::createTile( char **papszSrcFiles, const char *pszFilenam
     /*      Create the output file.                                         */
     /* -------------------------------------------------------------------- */
     char** papszCreateOptions = CSLAddString( NULL, "COMPRESS=DEFLATE" );
-    hDstDS = GDALCreate( hDriver, pszFilename, nPixels, nLines, 
+    hDstDS = GDALCreate( hDriver, pszFilename, nPixels, nLines,
                          nDstBandCount, eDT, papszCreateOptions );
 
     CSLDestroy( papszCreateOptions );
@@ -361,17 +359,17 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
             CSLDestroy(papszMetadataNew);
 
             /* copy band-level metadata and other info */
-            if ( GDALGetRasterCount( hSrcDS ) == GDALGetRasterCount( hDstDS ) )              
+            if ( GDALGetRasterCount( hSrcDS ) == GDALGetRasterCount( hDstDS ) )
             {
                 for ( int iBand = 0; iBand < GDALGetRasterCount( hSrcDS ); iBand++ )
                 {
                     hSrcBand = GDALGetRasterBand( hSrcDS, iBand + 1 );
                     hDstBand = GDALGetRasterBand( hDstDS, iBand + 1 );
                     /* copy metadata, except stats (#5319) */
-                    papszMetadata = GDALGetMetadata( hSrcBand, NULL);              
+                    papszMetadata = GDALGetMetadata( hSrcBand, NULL);
                     if ( CSLCount(papszMetadata) > 0 )
                     {
-                        //GDALSetMetadata( hDstBand, papszMetadata, NULL );       
+                        //GDALSetMetadata( hDstBand, papszMetadata, NULL );
                         char** papszMetadataNew = NULL;
                         for( int i = 0; papszMetadata != NULL && papszMetadata[i] != NULL; i++ )
                         {
@@ -385,23 +383,23 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
                     if ( bCopyBandInfo ) {
                         pszSrcInfo = GDALGetDescription( hSrcBand );
                         if(  pszSrcInfo != NULL && strlen(pszSrcInfo) > 0 )
-                            GDALSetDescription( hDstBand, pszSrcInfo );  
+                            GDALSetDescription( hDstBand, pszSrcInfo );
                         pszSrcInfo = GDALGetRasterUnitType( hSrcBand );
                         if(  pszSrcInfo != NULL && strlen(pszSrcInfo) > 0 )
-                            GDALSetRasterUnitType( hDstBand, pszSrcInfo );  
+                            GDALSetRasterUnitType( hDstBand, pszSrcInfo );
                     }
                 }
             }
         }
         /* remove metadata that conflicts between datasets */
-        else 
+        else
         {
             CPLDebug("WARP", "Removing conflicting metadata from destination dataset (source #%d)", iSrc );
             /* remove conflicting dataset-level metadata */
             RemoveConflictingMetadata( hDstDS, GDALGetMetadata( hSrcDS, NULL ), pszMDConflictValue );
 
             /* remove conflicting copy band-level metadata and other info */
-            if ( GDALGetRasterCount( hSrcDS ) == GDALGetRasterCount( hDstDS ) )              
+            if ( GDALGetRasterCount( hSrcDS ) == GDALGetRasterCount( hDstDS ) )
             {
                 for ( int iBand = 0; iBand < GDALGetRasterCount( hSrcDS ); iBand++ )
                 {
@@ -416,13 +414,13 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
                         if( ! ( pszSrcInfo != NULL && strlen(pszSrcInfo) > 0  &&
                                 pszDstInfo != NULL && strlen(pszDstInfo) > 0  &&
                                 EQUAL( pszSrcInfo, pszDstInfo ) ) )
-                            GDALSetDescription( hDstBand, "" );  
+                            GDALSetDescription( hDstBand, "" );
                         pszSrcInfo = GDALGetRasterUnitType( hSrcBand );
                         pszDstInfo = GDALGetRasterUnitType( hDstBand );
                         if( ! ( pszSrcInfo != NULL && strlen(pszSrcInfo) > 0  &&
                                 pszDstInfo != NULL && strlen(pszDstInfo) > 0  &&
                                 EQUAL( pszSrcInfo, pszDstInfo ) ) )
-                            GDALSetRasterUnitType( hDstBand, "" );  
+                            GDALSetRasterUnitType( hDstBand, "" );
                     }
                 }
             }
@@ -465,7 +463,7 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
     /* -------------------------------------------------------------------- */
     /*      Warp the transformer with a linear approximator                 */
     /* -------------------------------------------------------------------- */
-    hTransformArg = GDALCreateApproxTransformer( GDALGenImgProjTransform, 
+    hTransformArg = GDALCreateApproxTransformer( GDALGenImgProjTransform,
                                                  hTransformArg, dfErrorThreshold);
     pfnTransformer = GDALApproxTransform;
     GDALApproxTransformerOwnsSubtransformer(hTransformArg, TRUE);
@@ -474,7 +472,7 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
     /*      Clear temporary INIT_DEST settings after the first image.       */
     /* -------------------------------------------------------------------- */
     if( iSrc == 1 )
-        papszWarpOptions = CSLSetNameValue( papszWarpOptions, 
+        papszWarpOptions = CSLSetNameValue( papszWarpOptions,
                                             "INIT_DEST", NULL );
 
     /* -------------------------------------------------------------------- */
@@ -518,13 +516,13 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
     if( bEnableSrcAlpha )
         psWO->nSrcAlphaBand = GDALGetRasterCount(hSrcDS);
 
-    if( !bEnableDstAlpha 
-        && GDALGetRasterCount(hDstDS) == psWO->nBandCount+1 
-        && GDALGetRasterColorInterpretation( 
-            GDALGetRasterBand(hDstDS,GDALGetRasterCount(hDstDS))) 
+    if( !bEnableDstAlpha
+        && GDALGetRasterCount(hDstDS) == psWO->nBandCount+1
+        && GDALGetRasterColorInterpretation(
+            GDALGetRasterBand(hDstDS,GDALGetRasterCount(hDstDS)))
         == GCI_AlphaBand )
     {
-        printf( "Using band %d of destination image as alpha.\n", 
+        printf( "Using band %d of destination image as alpha.\n",
                 GDALGetRasterCount(hDstDS) );
 
         bEnableDstAlpha = TRUE;
@@ -551,9 +549,9 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
             printf( "Using internal nodata values (e.g. %g) for image %s.\n",
                     dfReal, pszSrcFile );
 
-        psWO->padfSrcNoDataReal = (double *) 
+        psWO->padfSrcNoDataReal = (double *)
             CPLMalloc(psWO->nBandCount*sizeof(double));
-        psWO->padfSrcNoDataImag = (double *) 
+        psWO->padfSrcNoDataImag = (double *)
             CPLMalloc(psWO->nBandCount*sizeof(double));
 
         for( int i = 0; i < psWO->nBandCount; i++ )
@@ -578,9 +576,9 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
     /* else try to fill dstNoData from source bands */
     if ( psWO->padfSrcNoDataReal != NULL )
     {
-        psWO->padfDstNoDataReal = (double *) 
+        psWO->padfDstNoDataReal = (double *)
             CPLMalloc(psWO->nBandCount*sizeof(double));
-        psWO->padfDstNoDataImag = (double *) 
+        psWO->padfDstNoDataImag = (double *)
             CPLMalloc(psWO->nBandCount*sizeof(double));
 
         printf( "Copying nodata values from source %s \n", pszSrcFile );
@@ -597,13 +595,13 @@ void SGDemTile::doWarp( int iSrc, char* pszSrcFile, GDALDatasetH hDstDS, char** 
             {
                 psWO->padfDstNoDataReal[i] = psWO->padfSrcNoDataReal[i];
                 psWO->padfDstNoDataImag[i] = psWO->padfSrcNoDataImag[i];
-                CPLDebug("WARP", "srcNoData=%f dstNoData=%f", 
+                CPLDebug("WARP", "srcNoData=%f dstNoData=%f",
                         psWO->padfSrcNoDataReal[i], psWO->padfDstNoDataReal[i] );
             }
 
             CPLDebug("WARP", "calling GDALSetRasterNoDataValue() for band#%d", i );
-            GDALSetRasterNoDataValue( 
-                GDALGetRasterBand( hDstDS, psWO->panDstBands[i] ), 
+            GDALSetRasterNoDataValue(
+                GDALGetRasterBand( hDstDS, psWO->panDstBands[i] ),
                 psWO->padfDstNoDataReal[i] );
         }
     }

@@ -22,8 +22,6 @@
 #include <fstream>
 #include <limits>
 
-#include <boost/foreach.hpp>
-
 #include <cpl_conv.h> // for CPLMalloc()
 #include "ogr_spatialref.h"
 
@@ -96,7 +94,7 @@ int SGDem::addRoot( const SGPath& root )
 
                 std::istringstream iss( p.file() );
                 getline(iss, prefix, '_');
-                if ( ((iss.rdstate() & std::ifstream::failbit ) == 0 ) && 
+                if ( ((iss.rdstate() & std::ifstream::failbit ) == 0 ) &&
                       (prefix == "level" ) ) {
                     iss >> level;
 
@@ -234,7 +232,7 @@ SGDemSession SGDem::openSession( const SGGeod& min, const SGGeod& max, const SGP
     int max_lat = (int)(ceil(max.getLatitudeDeg()+FP_ROUNDOFF_OUTSIDE));
 
     // Create the session
-    SG_LOG( SG_TERRAIN, SG_INFO, "SGDem::OpenSession - create sesion obj - req from " << 
+    SG_LOG( SG_TERRAIN, SG_INFO, "SGDem::OpenSession - create sesion obj - req from " <<
 	min.getLongitudeDeg() << ", " << min.getLatitudeDeg() << " to " <<
 	max.getLongitudeDeg() << ", " << max.getLatitudeDeg() << " - getting " <<
 	min_lon << ", " << min_lat << " to " << max_lon << ", " << max_lat );
@@ -251,7 +249,7 @@ SGDemSession SGDem::openSession( const SGGeod& min, const SGGeod& max, const SGP
     SG_LOG( SG_TERRAIN, SG_INFO, "SGDem::OpenSession - Traverse tiles");
     for (int lon = min_lon; lon < max_lon; lon += w) {
         for (int lat = min_lat; lat < max_lat; lat += h) {
-	    SG_LOG( SG_TERRAIN, SG_INFO, "SGDem::OpenSession - Create tile " << 
+	    SG_LOG( SG_TERRAIN, SG_INFO, "SGDem::OpenSession - Create tile " <<
 		lon << ", " << lat << " from dir " << input );
 
             unsigned wo = (lon+180)*8;
@@ -291,7 +289,7 @@ unsigned short SGDem::getAlt( const SGDemSession& s, const SGGeod& loc ) const
     int lvlIndex = s.getLvlIndex();
 
     if ( lvlIndex >= 0 ) {
-        // be careful with coordinates that lie on session boundaries - 
+        // be careful with coordinates that lie on session boundaries -
         // on min, ok.
         // on max - make sure we select the tile in the session...
         int lvlWidth  = levels[lvlIndex].getWidth();

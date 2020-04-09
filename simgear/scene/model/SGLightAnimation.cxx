@@ -34,7 +34,6 @@
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <boost/scoped_array.hpp>
-#include <boost/foreach.hpp>
 
 typedef std::map<std::string, osg::observer_ptr<simgear::Effect> > EffectMap;
 static EffectMap lightEffectMap;
@@ -68,8 +67,8 @@ public:
                     params->getNode("ambient")->setValue(_ambient * dim);
                     params->getNode("diffuse")->setValue(_diffuse * dim);
                     params->getNode("specular")->setValue(_specular * dim);
-                    BOOST_FOREACH(osg::ref_ptr<simgear::Technique> & technique, effect->techniques) {
-                        BOOST_FOREACH(osg::ref_ptr<simgear::Pass> & pass, technique->passes) {
+                    for (auto& technique : effect->techniques) {
+                        for (auto& pass : technique->passes) {
                             osg::Uniform* amb = pass->getUniform("Ambient");
                             if (amb)
                                 amb->set(osg::Vec4f(_ambient.x() * dim, _ambient.y() * dim, _ambient.z() * dim, _ambient.w() * dim));

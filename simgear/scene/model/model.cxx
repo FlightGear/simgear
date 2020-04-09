@@ -9,8 +9,6 @@
 
 #include <utility>
 
-#include <boost/foreach.hpp>
-
 #include <osg/ref_ptr>
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
@@ -349,7 +347,7 @@ ref_ptr<Node> instantiateEffects(osg::Node* modelGroup,
         SGPropertyNode* defaultNode = configNode->getChild("default");
         if (defaultNode && defaultNode->getValue<bool>())
             defaultEffectPropRoot = configNode;
-        BOOST_FOREACH(SGPropertyNode_ptr objNameNode, objectNames) {
+        for (auto objNameNode : objectNames) {
             emap.insert(make_pair(objNameNode->getStringValue(), configNode));
         }
         configNode->removeChild("default");

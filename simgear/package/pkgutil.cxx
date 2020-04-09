@@ -24,7 +24,6 @@
 #include <simgear/package/Root.hxx>
 #include <simgear/misc/sg_dir.hxx>
 
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <cstring>
 
@@ -98,7 +97,7 @@ void printPackageInfo(pkg::Package* pkg)
 
     if (pkg->properties()->hasChild("author")) {
         cout << "Authors:" << endl;
-        BOOST_FOREACH(SGPropertyNode* author, pkg->properties()->getChildren("author")) {
+        for (auto author : pkg->properties()->getChildren("author")) {
             if (author->hasChild("name")) {
                 cout << "\t" << author->getStringValue("name") << endl;
 
@@ -174,7 +173,7 @@ int main(int argc, char** argv)
         pkg->install()->uninstall();
     } else if (!strcmp(argv[1], "update-all")) {
         pkg::PackageList updates = root->packagesNeedingUpdate();
-        BOOST_FOREACH(pkg::Package* p, updates) {
+        for (auto p : updates) {
             root->scheduleToUpdate(p->install());
         }
     } else if (!strcmp(argv[1], "list-updated")) {
@@ -185,7 +184,7 @@ int main(int argc, char** argv)
         }
 
         cout << updates.size() << " packages have updates" << endl;
-        BOOST_FOREACH(pkg::Package* p, updates) {
+        for (auto p : updates) {
             cout << "\t" << p->id() << " " << p->getLocalisedProp("name") << endl;
         }
     } else if (!strcmp(argv[1], "info")) {

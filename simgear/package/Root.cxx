@@ -19,7 +19,6 @@
 
 #include <simgear/package/Root.hxx>
 
-#include <boost/foreach.hpp>
 #include <cstring>
 #include <map>
 #include <deque>
@@ -50,7 +49,7 @@ namespace {
         return strutils::encodeHex(sha1_result(&info), HASH_LENGTH);
     }
 } // of anonymous namespace
-    
+
 namespace pkg {
 
 typedef std::map<std::string, CatalogRef> CatalogDict;
@@ -70,7 +69,7 @@ public:
             m_realUrl = aUrl;
         }
     }
-    
+
     std::string realUrl() const
     {
         return m_realUrl;
@@ -105,7 +104,7 @@ public:
             d->installStatusChanged(install, status);
         }
     }
-    
+
     void fireStartInstall(InstallRef install)
     {
         for (auto d : delegates) {
@@ -151,7 +150,7 @@ public:
         std::string u = dl->realUrl();
         if (status == Delegate::STATUS_SUCCESS) {
             thumbnailCache[u].requestPending = false;
-            
+
             // if this was a network load, rather than a re-load from the disk cache,
             // then persist to disk now.
             if (strutils::starts_with(request->url(), "http")) {
@@ -201,7 +200,7 @@ public:
 
         std::string u = pendingThumbnails.front();
         pendingThumbnails.pop_front();
-        
+
         thumbnailDownloadRequest = new Root::ThumbnailDownloader(this, u);
 
         if (http) {
@@ -217,7 +216,7 @@ public:
             d->finishUninstall(pkg);
         }
     }
-    
+
     SGPath pathInCache(const std::string& url) const
     {
         const auto hash = hashForUrl(url);
@@ -226,7 +225,7 @@ public:
         if (pos == std::string::npos) {
             return SGPath();
         }
-        
+
         return path / "ThumbnailCache" / (hash + url.substr(pos));
     }
 
@@ -243,14 +242,14 @@ public:
         assert(it != thumbnailCache.end());
         it->second.pathOnDisk = cachePath;
     }
-    
+
     bool checkPersistentCache(const std::string& url)
     {
         SGPath cachePath = pathInCache(url);
         if (!cachePath.exists()) {
             return false;
         }
-        
+
         // check age, if it's too old, expire and download again
         int age = time(nullptr) - cachePath.modTime();
         const int cacheMaxAge = SECONDS_PER_DAY * 7;
@@ -259,15 +258,15 @@ public:
             // cache refresh might fail
             return false;
         }
-        
+
         loadFromPersistentCache(url, cachePath);
         return true;
     }
-    
+
     void loadFromPersistentCache(const std::string& url, const SGPath& path)
     {
         assert(path.exists());
-        
+
         auto it = thumbnailCache.find(url);
         if (it == thumbnailCache.end()) {
             ThumbnailCacheEntry entry;
@@ -276,12 +275,12 @@ public:
         } else {
             assert(it->second.pathOnDisk.isNull() || (it->second.pathOnDisk == path));
         }
-        
+
         sg_ifstream thumbnailStream(path, std::ios::in | std::ios::binary);
         string bytes = thumbnailStream.read_all();
         fireDataForThumbnail(url, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
     }
-    
+
     DelegateVec delegates;
 
     SGPath path;
@@ -299,14 +298,14 @@ public:
 
     HTTP::Request_ptr thumbnailDownloadRequest;
     StringDeque pendingThumbnails;
-    
+
     struct ThumbnailCacheEntry
     {
         int retryCount = 0;
         bool requestPending = false;
         SGPath pathOnDisk;
     };
-    
+
     std::map<std::string, ThumbnailCacheEntry> thumbnailCache;
 
     typedef std::map<PackageRef, InstallRef> InstallCache;
@@ -320,7 +319,7 @@ void Root::ThumbnailDownloader::onDone()
         m_owner->thumbnailDownloadComplete(this, Delegate::STATUS_SUCCESS, m_buffer);
         return;
     }
-    
+
     if (responseCode() != 200) {
         auto status = (responseCode() == 403) ? Delegate::FAIL_HTTP_FORBIDDEN : Delegate::FAIL_DOWNLOAD;
         SG_LOG(SG_NETWORK, SG_INFO, "thumbnail download failure: " << url() << " with reason " << responseCode());
@@ -349,7 +348,7 @@ unsigned int Root::maxAgeSeconds() const
 void Root::setHTTPClient(HTTP::Client* aHTTP)
 {
     d->http = aHTTP;
-    BOOST_FOREACH(HTTP::Request_ptr req, d->httpPendingRequests) {
+    for (auto req : d->httpPendingRequests) {
         d->http->makeRequest(req);
     }
 
@@ -398,7 +397,7 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
     if (!thumbsCacheDir.exists()) {
         thumbsCacheDir.create(0755);
     }
-    
+
     for (SGPath c : dir.children(Dir::TYPE_DIR | Dir::NO_DOT_OR_DOTDOT)) {
         // note this will set the catalog status, which will insert into
         // disabled catalogs automatically if necesary
@@ -449,10 +448,10 @@ CatalogRef Root::getCatalogByUrl(const std::string& aUrl) const
                            { return (v.second->url() == aUrl); });
     if (it == d->catalogs.end())
         return {};
-    
+
     return it->second;
 }
-    
+
 PackageRef Root::getPackageById(const std::string& aName) const
 {
     size_t lastDot = aName.rfind('.');
@@ -491,7 +490,7 @@ CatalogList Root::catalogs() const
 
     return r;
 }
-    
+
 CatalogList Root::allCatalogs() const
 {
     CatalogList r = catalogs();
@@ -597,7 +596,7 @@ void Root::scheduleToUpdate(InstallRef aInstall)
     if (!aInstall) {
         throw sg_exception("missing argument to scheduleToUpdate");
     }
-    
+
     auto it = std::find(d->updateDeque.begin(), d->updateDeque.end(), aInstall);
     if (it != d->updateDeque.end()) {
         // already scheduled to update
@@ -724,17 +723,17 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
         d->firePackagesChanged();
     }
 }
-    
+
 bool Root::removeCatalog(CatalogRef cat)
 {
     if (!cat)
         return false;
-    
+
     // normal remove path
     if (!cat->id().empty()) {
         return removeCatalogById(cat->id());
     }
-    
+
     if (!cat->removeDirectory()) {
         SG_LOG(SG_GENERAL, SG_WARN, "removeCatalog: failed to remove directory " << cat->installRoot());
     }
@@ -744,10 +743,10 @@ bool Root::removeCatalog(CatalogRef cat)
     if (it != d->disabledCatalogs.end()) {
         d->disabledCatalogs.erase(it);
     }
-    
+
     // notify that a catalog is being removed
     d->firePackagesChanged();
-    
+
     return true;
 }
 

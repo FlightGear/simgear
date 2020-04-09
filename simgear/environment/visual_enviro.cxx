@@ -191,52 +191,11 @@ SGEnviro::~SGEnviro(void) {
 
   // OSGFIXME
   return;
-	list_of_lightning::iterator iLightning;
-	for( iLightning = lightnings.begin() ; iLightning != lightnings.end() ; ++iLightning ) {
-		delete (*iLightning);
-	}
-	lightnings.clear();
 }
 
 void SGEnviro::startOfFrame( SGVec3f p, SGVec3f up, double lon, double lat, double alt, double delta_time) {
   // OSGFIXME
   return;
-	view_in_cloud = false;
-	// ask the impostor cache to do some cleanup
-	last_cloud_turbulence = cloud_turbulence;
-	cloud_turbulence = 0.0;
-	elapsed_time += delta_time;
-	min_time_before_lt -= delta_time;
-	dt = delta_time;
-#if 0
-	sgMat4 T1, LON, LAT;
-    sgVec3 axis;
-
-    sgMakeTransMat4( T1, p );
-
-    sgSetVec3( axis, 0.0, 0.0, 1.0 );
-    sgMakeRotMat4( LON, lon, axis );
-
-    sgSetVec3( axis, 0.0, 1.0, 0.0 );
-    sgMakeRotMat4( LAT, 90.0 - lat, axis );
-
-    sgMat4 TRANSFORM;
-
-    sgCopyMat4( TRANSFORM, T1 );
-    sgPreMultMat4( TRANSFORM, LON );
-    sgPreMultMat4( TRANSFORM, LAT );
-
-    sgCoord pos;
-    sgSetCoord( &pos, TRANSFORM );
-
-	sgMakeCoordMat4( transform, &pos );
-  #endif
-    last_lon = lon;
-    last_lat = lat;
-	last_alt = alt;
-
-	radarEcho.clear();
-	precipitation_max_alt = 400.0;
 }
 
 void SGEnviro::endOfFrame(void) {
@@ -291,10 +250,6 @@ void SGEnviro::set_lightning_enable_state(bool enable) {
 void SGEnviro::setLight(SGVec4f adj_fog_color) {
   // OSGFIXME
   return;
-	 fog_color = adj_fog_color;
-	if( false ) {
-	//    ssgGetLight( 0 ) -> setColour( GL_DIFFUSE, l->scene_diffuse() );
-	}
 }
 #if 0
 void SGEnviro::callback_cloud(float heading, float alt, float radius, int family, float dist, int cloudId) {
@@ -431,9 +386,6 @@ void SGEnviro::set_sampleGroup(SGSampleGroup *sgr) {
 void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double heading, double hspeed) {
   // OSGFIXME
   return;
-	if( precipitation_enable_state && rain_norm > 0.0)
-	  if( precipitation_max_alt >= last_alt )
-		drawRain(pitch, roll, heading, hspeed, rain_norm);
 }
 
 
@@ -471,10 +423,6 @@ void SGLightning::lt_Render(void) {
 void SGEnviro::addLightning(double lon, double lat, double alt) {
   // OSGFIXME
   return;
-	if( lightnings.size() > 10)
-		return;
-	SGLightning *lt= new SGLightning(lon, lat, alt);
-	lightnings.push_back(lt);
 }
 
 void SGEnviro::drawLightning(void) {

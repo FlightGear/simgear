@@ -39,43 +39,11 @@ namespace simgear {
 
 namespace pkg {
 
-bool checkVersionString(const std::string& aVersion, const std::string& aCandidate)
-{
-    if (aCandidate == aVersion) {
-        return true;
-    }
-
-    // examine each dot-seperated component in turn, supporting a wildcard
-    // in the versions from the catalog.
-    string_list appVersionParts = simgear::strutils::split(aVersion, ".");
-    string_list catVersionParts = simgear::strutils::split(aCandidate, ".");
-
-    size_t partCount = appVersionParts.size();
-    bool previousCandidatePartWasWildcard = false;
-
-    for (unsigned int p=0; p < partCount; ++p) {
-        // candidate string is too short, can match if it ended with wildcard
-        // part. This allows candidate '2016.*' to match '2016.1.2' and so on
-        if (catVersionParts.size() <= p) {
-            return previousCandidatePartWasWildcard;
-        }
-
-        if (catVersionParts[p] == "*") {
-            // always passes
-            previousCandidatePartWasWildcard = true;
-        } else if (appVersionParts[p] != catVersionParts[p]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 bool checkVersion(const std::string& aVersion, SGPropertyNode_ptr props)
 {
-    BOOST_FOREACH(SGPropertyNode* v, props->getChildren("version")) {
+    for (SGPropertyNode* v : props->getChildren("version")) {
         std::string s(v->getStringValue());
-        if (checkVersionString(aVersion, s)) {
+        if (strutils::compareVersionToWildcard(aVersion, s)) {
             return true;
         }
     }
@@ -86,7 +54,7 @@ SGPropertyNode_ptr alternateForVersion(const std::string& aVersion, SGPropertyNo
 {
     for (auto v : props->getChildren("alternate-version")) {
         for (auto versionSpec : v->getChildren("version")) {
-            if (checkVersionString(aVersion, versionSpec->getStringValue())) {
+            if (strutils::compareVersionToWildcard(aVersion, versionSpec->getStringValue())) {
                 return v;
             }
         }

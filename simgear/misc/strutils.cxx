@@ -587,6 +587,40 @@ namespace simgear {
         // reached end - longer wins
         return v1parts.size() - v2parts.size();
     }
+    
+    bool compareVersionToWildcard(const std::string& aVersion, const std::string& aCandidate)
+    {
+        if (aCandidate == aVersion) {
+            return true;
+        }
+
+        // examine each dot-seperated component in turn, supporting a wildcard
+        // in the versions from the catalog.
+        string_list parts = split(aVersion, ".");
+        string_list candidateParts = split(aCandidate, ".");
+
+        const size_t partCount = parts.size();
+        const size_t candidatePartCount =  candidateParts.size();
+        
+        bool previousCandidatePartWasWildcard = false;
+
+        for (unsigned int p=0; p < partCount; ++p) {
+            // candidate string is too short, can match if it ended with wildcard
+            // part. This allows candidate '2016.*' to match '2016.1.2' and so on
+            if (candidatePartCount <= p) {
+                return previousCandidatePartWasWildcard;
+            }
+
+            if (candidateParts.at(p) == "*") {
+                // always passes
+                previousCandidatePartWasWildcard = true;
+            } else if (parts.at(p) != candidateParts.at(p)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     string join(const string_list& l, const string& joinWith)
     {

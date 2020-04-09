@@ -249,6 +249,13 @@ namespace simgear {
                           int maxComponents = 0 );
 
     /**
+        @brief COmpare a version string to a template version string (which can contain wildcards)
+     @param aVersion : a regular version such as 2017.6 or 2020.1.2
+     @param aCandidate : a version specifier, eg 2020.* or 21.5.*
+     */
+    bool compareVersionToWildcard(const std::string& aVersion, const std::string& aCandidate);
+  
+    /**
      * Convert a string to upper case.
      * @return upper case string
      */

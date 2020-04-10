@@ -638,7 +638,7 @@ void ArchiveExtractor::extractBytes(const uint8_t* bytes, size_t count)
 			d.reset(new ZipExtractorPrivate(this));
 		}
 		else {
-			SG_LOG(SG_IO, SG_ALERT, "Invalid archive type");
+			SG_LOG(SG_IO, SG_WARN, "Invalid archive type");
 			_invalidDataType = true;
 			return;
 		}

@@ -38,6 +38,7 @@
 
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
 
 #if defined (SG_WINDOWS)
@@ -387,9 +388,14 @@ public:
 
         m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
         m_consoleCallbacks.push_back(m_callbacks.back());
-#if defined (SG_WINDOWS) && !defined(NDEBUG)
-		m_callbacks.push_back(new WinDebugLogCallback(m_logClass, m_logPriority));
-		m_consoleCallbacks.push_back(m_callbacks.back());
+        
+#if defined (SG_WINDOWS)
+        const char* winDebugEnv = ::getenv("SG_WINDEBUG");
+        const bool b = winDebugEnv ? simgear::strutils::to_bool(std::string{winDebugEnv}) : false;
+        if (b) {
+            m_callbacks.push_back(new WinDebugLogCallback(m_logClass, m_logPriority));
+            m_consoleCallbacks.push_back(m_callbacks.back());
+        }
 #endif
     }
 

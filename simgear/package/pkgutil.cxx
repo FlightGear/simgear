@@ -122,14 +122,17 @@ void printPackageInfo(pkg::Package* pkg)
 
 int main(int argc, char** argv)
 {
-
+    sglog().setLogLevels( SG_ALL, SG_INFO );
+    
     HTTP::Client* http = new HTTP::Client();
-    pkg::Root* root = new pkg::Root(Dir::current().path(), "");
-
+    
+    SGPath rootPath = SGPath::fromEnv("SG_PKG_ROOT", Dir::current().path());
+    pkg::Root* root = new pkg::Root(rootPath, "2019.1.1");
+    
     MyDelegate dlg;
     root->addDelegate(&dlg);
 
-    cout << "Package root is:" << Dir::current().path() << endl;
+    cout << "Package root is:" << rootPath << endl;
     cout << "have " << root->catalogs().size() << " catalog(s)" << endl;
 
     root->setHTTPClient(http);

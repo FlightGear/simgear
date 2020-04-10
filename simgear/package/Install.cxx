@@ -57,7 +57,7 @@ public:
         m_extractPath = aOwner->path().dir();
         m_extractPath.append("_extract_" + aOwner->package()->md5());
 
-        // clean up any existing files
+        // clean up any existing files (eg from previous failed download)
         Dir d(m_extractPath);
         if (d.exists()) {
             d.remove(true /* recursive */);
@@ -106,7 +106,9 @@ protected:
         Request::responseHeadersComplete();
 
         Dir d(m_extractPath);
-        d.create(0755);
+        if (!d.create(0755)) {
+            SG_LOG(SG_GENERAL, SG_WARN, "Failed to create extraction directory" << d.path());
+        }
 
 		m_extractor.reset(new ArchiveExtractor(m_extractPath));
         memset(&m_md5, 0, sizeof(SG_MD5_CTX));
@@ -115,11 +117,20 @@ protected:
 
     void gotBodyData(const char* s, int n) override
     {
+        // if there's a pre-existing error, discard byte sinstead of pushing
+        // more through the extactor
+        if (m_extractor->hasError()) {
+            return;
+        }
+        
 		const uint8_t* ubytes = (uint8_t*) s;
         SG_MD5Update(&m_md5, ubytes, n);
         m_downloaded += n;
         m_owner->installProgress(m_downloaded, responseLength());
 		m_extractor->extractBytes(ubytes, n);
+        if (m_extractor->hasError()) {
+            SG_LOG(SG_GENERAL, SG_WARN, "archive extraction failed (from " + m_activeURL + ")");
+        }
     }
 
     void onDone() override
@@ -214,7 +225,9 @@ private:
             dir.remove(true /* recursive */);
         }
         
-        const auto canRetry = (aReason == Delegate::FAIL_NOT_FOUND) || (aReason == Delegate::FAIL_DOWNLOAD);
+        const auto canRetry = (aReason == Delegate::FAIL_NOT_FOUND) ||
+            (aReason == Delegate::FAIL_DOWNLOAD) || (aReason == Delegate::FAIL_CHECKSUM);
+        
         if (canRetry && !m_urls.empty()) {
             SG_LOG(SG_GENERAL, SG_WARN, "archive download failed from:" << m_activeURL
                    << "\n\twill retry with next mirror");
@@ -226,7 +239,6 @@ private:
             return;
         }
 
-        // TODO - try other mirrors
         m_owner->m_download.reset(); // ensure we get cleaned up
         m_owner->installResult(aReason);
     }

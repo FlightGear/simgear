@@ -134,6 +134,13 @@ public:
         for (std::vector<SGPropertyNode_ptr>::iterator it=begin() ; it < end(); it++ )
            (*it)->setAttribute(attr, state);
     }
+    
+    void fireValueChanged()
+    {
+        for (const auto& p : *this) {
+            p->fireValueChanged();
+        }
+    }
 private:
     SGPropertyNode_ptr _root;
 };

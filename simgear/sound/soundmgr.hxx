@@ -39,6 +39,10 @@
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/math/SGMath.hxx>
 
+
+// Speed of sound in meters per second
+#define SPEED_OF_SOUND		340.3f
+
 // forward decls
 class SGSampleGroup;
 class SGSoundSample;
@@ -194,6 +198,13 @@ public:
     inline float get_volume() { return _volume; }
 
     /**
+     * Set the speed of sound.
+     *
+     * @param vel Sound velocity
+     */
+    void set_sound_velocity( float vel ) { _sound_velocity = vel; }
+
+    /**
      * Get a free OpenAL source-id
      *
      * @return NO_SOURCE if no source is available
@@ -332,19 +343,21 @@ private:
     std::unique_ptr<SoundManagerPrivate> d;
 
     bool _block_support;
-    bool _active;
-    bool _changed;
-    float _volume;
+    bool _active = false;
+    bool _changed = true;
+    float _volume = 0.0f;
+
+    float _sound_velocity = SPEED_OF_SOUND;
 
     // Position of the listener.
     SGGeod _geod_pos;
 
     // Velocity of the listener.
-    SGVec3d _velocity;
+    SGVec3d _velocity = SGVec3d::zeros();
 
-    bool _bad_doppler;
-    std::string _renderer;
-    std::string _vendor;
+    bool _bad_doppler = false;
+    std::string _renderer = "unknown";
+    std::string _vendor = "unknown";
     std::string _device_name;
 
     bool testForALCError(std::string s);

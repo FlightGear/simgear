@@ -93,6 +93,8 @@ public:
     SGVec3d _base_pos = SGVec3d::zeros();
     SGQuatd _orientation = SGQuatd::zeros();
 
+    float _sound_velocity = SPEED_OF_SOUND;
+
     unsigned int _buffer_id = 0;
     buffer_map _buffers;
     aax::Buffer nullBuffer;
@@ -122,15 +124,7 @@ public:
 //
 
 // constructor
-SGSoundMgr::SGSoundMgr() :
-    _active(false),
-    _changed(true),
-    _volume(0.0),
-    _velocity(SGVec3d::zeros()),
-    _bad_doppler(false),
-    _renderer("unknown"),
-    _vendor("unknown")
-{
+SGSoundMgr::SGSoundMgr() {
     d.reset(new SoundManagerPrivate);
     d->_base_pos = SGVec3d::fromGeod(_geod_pos);
 }
@@ -189,7 +183,7 @@ void SGSoundMgr::init()
 
         dsp = aax::dsp(d->_aax, AAX_VELOCITY_EFFECT);
         TRY( dsp.set(AAX_DOPPLER_FACTOR, 1.0f) );
-        TRY( dsp.set(AAX_SOUND_VELOCITY, 340.3f) );
+        TRY( dsp.set(AAX_SOUND_VELOCITY, _sound_velocity) );
         TRY( d->_aax.set(dsp) );
         testForError("scenery setup");
 
@@ -307,6 +301,14 @@ void SGSoundMgr::update( double dt )
             }
             aax::Vector vel( toVec3f(velocity).data() );
             TRY( d->_aax.sensor_velocity(vel) );
+
+            if (fabsf(_sound_velocity - d->_sound_velocity) > 10.0f) {
+                d->_sound_velocity = _sound_velocity;
+
+                dsp = aax::dsp(d->_aax, AAX_VELOCITY_EFFECT);
+                TRY( dsp.set(AAX_SOUND_VELOCITY, _sound_velocity) );
+                TRY( d->_aax.set(dsp) );
+            }
 
             testForError("update");
             _changed = false;

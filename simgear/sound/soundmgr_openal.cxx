@@ -67,16 +67,7 @@ using std::vector;
 class SGSoundMgr::SoundManagerPrivate
 {
 public:
-    SoundManagerPrivate() :
-        _device(nullptr),
-        _context(nullptr),
-        _absolute_pos(SGVec3d::zeros()),
-        _base_pos(SGVec3d::zeros()),
-        _orientation(SGQuatd::zeros())
-    {
-        
-        
-    }
+    SoundManagerPrivate() = default;
     
     void init()
     {
@@ -109,15 +100,15 @@ public:
         _absolute_pos = _base_pos;
     }
         
-    ALCdevice *_device;
-    ALCcontext *_context;
+    ALCdevice *_device = nullptr;
+    ALCcontext *_context = nullptr;
     
     std::vector<ALuint> _free_sources;
     std::vector<ALuint> _sources_in_use;
     
-    SGVec3d _absolute_pos;
-    SGVec3d _base_pos;
-    SGQuatd _orientation;
+    SGVec3d _absolute_pos = SGVec3d::zeros();
+    SGVec3d _base_pos = SGVec3d::zeros();
+    SGQuatd _orientation = SGQuatd::zeros();
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
     ALfloat _at_up_vec[6];
@@ -132,15 +123,7 @@ public:
 //
 
 // constructor
-SGSoundMgr::SGSoundMgr() :
-    _active(false),
-    _changed(true),
-    _volume(0.0),
-    _velocity(SGVec3d::zeros()),
-    _bad_doppler(false),
-    _renderer("unknown"),
-    _vendor("unknown")
-{
+SGSoundMgr::SGSoundMgr() {
     d.reset(new SoundManagerPrivate);
     d->_base_pos = SGVec3d::fromGeod(_geod_pos);
 
@@ -219,7 +202,7 @@ void SGSoundMgr::init()
     alListenerfv( AL_VELOCITY, SGVec3f::zeros().data() );
 
     alDopplerFactor(1.0);
-    alDopplerVelocity(340.3);   // speed of sound in meters per second.
+    alDopplerVelocity(_sound_velocity);
 
     // gain = AL_REFERENCE_DISTANCE / (AL_REFERENCE_DISTANCE +
     //        AL_ROLLOFF_FACTOR * (distance - AL_REFERENCE_DISTANCE));
@@ -392,14 +375,20 @@ if (isNaN(toVec3f(_velocity).data())) printf("NaN in listener velocity\n");
             SGVec3d velocity = SGVec3d::zeros();
             if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
                 velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
-            }
 
-            if ( _bad_doppler ) {
-                velocity *= 100.0f;
+                if ( _bad_doppler ) {
+                    double fact = 100.0;
+                    double mag = length( velocity*fact );
+
+                    if (mag > _sound_velocity) {
+                        fact *= _sound_velocity / mag;
+                    }
+                    velocity *= fact;
+                }
             }
 
             alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
-            // alDopplerVelocity(340.3);	// TODO: altitude dependent
+             alDopplerVelocity(_sound_velocity);
             testForError("update");
             _changed = false;
         }

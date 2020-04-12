@@ -38,13 +38,23 @@
 
 #include "soundmgr.hxx"
 #include "readwav.hxx"
-#include "soundmgr_openal_private.hxx"
 #include "sample_group.hxx"
 
 #include <simgear/sg_inlines.h>
 #include <simgear/structure/exception.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
+
+#if defined(__APPLE__)
+# include <OpenAL/al.h>
+# include <OpenAL/alc.h>
+#elif defined(OPENALSDK)
+# include <al.h>
+# include <alc.h>
+#else
+# include <AL/al.h>
+# include <AL/alc.h>
+#endif
 
 using std::vector;
 
@@ -64,10 +74,29 @@ using std::vector;
 # define AL_UNPACK_BLOCK_ALIGNMENT_SOFT	0x200C
 #endif
 
+
+struct refUint {
+    unsigned int refctr;
+    ALuint id;
+
+    refUint() { refctr = 0; id = (ALuint)-1; };
+    refUint(ALuint i) { refctr = 1; id = i; };
+    ~refUint() {};
+};
+
+using buffer_map = std::map < std::string, refUint >;
+using sample_group_map = std::map < std::string, SGSharedPtr<SGSampleGroup> >;
+
+inline bool isNaN(float *v) {
+   return (SGMisc<float>::isNaN(v[0]) || SGMisc<float>::isNaN(v[1]) || SGMisc<float>::isNaN(v[2]));
+}
+
+
 class SGSoundMgr::SoundManagerPrivate
 {
 public:
     SoundManagerPrivate() = default;
+    ~SoundManagerPrivate() = default;
     
     void init()
     {
@@ -112,6 +141,8 @@ public:
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
     ALfloat _at_up_vec[6];
+
+    bool _bad_doppler = false;
     
     sample_group_map _sample_groups;
     buffer_map _buffers;
@@ -201,7 +232,7 @@ void SGSoundMgr::init()
     alListenerfv( AL_POSITION, SGVec3f::zeros().data() );
     alListenerfv( AL_VELOCITY, SGVec3f::zeros().data() );
 
-    alDopplerFactor(1.0);
+    alDopplerFactor(1.0f);
     alDopplerVelocity(_sound_velocity);
 
     // gain = AL_REFERENCE_DISTANCE / (AL_REFERENCE_DISTANCE +
@@ -231,9 +262,11 @@ void SGSoundMgr::init()
     _renderer = (const char *)alGetString(AL_RENDERER);
 
     if (_vendor == "Creative Labs Inc.") {
-       _bad_doppler = true;
+       alDopplerFactor(100.0f);
+       d->_bad_doppler = true;
     } else if (_vendor == "OpenAL Community" && _renderer == "OpenAL Soft") {
-       _bad_doppler = true;
+       alDopplerFactor(100.0f);
+       d->_bad_doppler = true;
     }
 
     if (d->_free_sources.empty()) {
@@ -264,10 +297,8 @@ void SGSoundMgr::activate()
     if ( is_working() ) {
         _active = true;
                 
-        for ( auto current = d->_sample_groups.begin();
-                   current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->activate();
+        for ( auto current : d->_sample_groups ) {
+            current.second->activate();
         }
     }
 #endif
@@ -278,10 +309,8 @@ void SGSoundMgr::stop()
 {
 #ifdef ENABLE_SOUND
     // first stop all sample groups
-    for ( auto current = d->_sample_groups.begin();
-               current != d->_sample_groups.end(); ++current ) {
-        SGSampleGroup *sgrp = current->second;
-        sgrp->stop();
+    for ( auto current : d->_sample_groups ) {
+        current.second->stop();
     }
 
     // clear all OpenAL sources
@@ -292,9 +321,8 @@ void SGSoundMgr::stop()
     d->_free_sources.clear();
 
     // clear any OpenAL buffers before shutting down
-    for ( auto current = d->_buffers.begin();
-               current != d->_buffers.begin(); ++current ) {
-        refUint ref = current->second;
+    for ( auto current : d->_buffers ) {
+        refUint ref = current.second;
         ALuint buffer = ref.id;
         alDeleteBuffers(1, &buffer);
         testForError("SGSoundMgr::stop: delete buffers");
@@ -320,10 +348,8 @@ void SGSoundMgr::suspend()
 {
 #ifdef ENABLE_SOUND
     if (is_working()) {
-        for ( auto current = d->_sample_groups.begin();
-                   current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->suspend();
+        for ( auto current : d->_sample_groups ) {
+            current.second->suspend();
         }
         _active = false;
     }
@@ -334,10 +360,8 @@ void SGSoundMgr::resume()
 {
 #ifdef ENABLE_SOUND
     if (is_working()) {
-        for ( auto current = d->_sample_groups.begin();
-                   current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->resume();
+        for ( auto current : d->_sample_groups ) {
+            current.second->resume();
         }
         _active = true;
     }
@@ -355,10 +379,8 @@ void SGSoundMgr::update( double dt )
             d->update_pos_and_orientation();
         }
 
-        for ( auto current = d->_sample_groups.begin();
-                   current != d->_sample_groups.end(); ++current ) {
-            SGSampleGroup *sgrp = current->second;
-            sgrp->update(dt);
+        for ( auto current : d->_sample_groups ) {
+            current.second->update(dt);
         }
 
         if (_changed) {
@@ -376,19 +398,19 @@ if (isNaN(toVec3f(_velocity).data())) printf("NaN in listener velocity\n");
             if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
                 velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
 
-                if ( _bad_doppler ) {
-                    double fact = 100.0;
-                    double mag = length( velocity*fact );
+                if ( d->_bad_doppler ) {
+                    float fact = 100.0f;
+                    float mag = length( velocity );
 
                     if (mag > _sound_velocity) {
                         fact *= _sound_velocity / mag;
                     }
-                    velocity *= fact;
+                    alDopplerFactor(fact);
                 }
             }
 
             alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
-             alDopplerVelocity(_sound_velocity);
+//          alDopplerVelocity(_sound_velocity);
             testForError("update");
             _changed = false;
         }

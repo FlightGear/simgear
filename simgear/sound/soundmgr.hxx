@@ -41,7 +41,7 @@
 
 
 // Speed of sound in meters per second
-#define SPEED_OF_SOUND		340.3f
+#define SPEED_OF_SOUND		340.3
 
 // forward decls
 class SGSampleGroup;
@@ -202,7 +202,7 @@ public:
      *
      * @param vel Sound velocity
      */
-    void set_sound_velocity( float vel ) { _sound_velocity = vel; }
+    void set_sound_velocity( double vel ) { _sound_velocity = vel; }
 
     /**
      * Get a free OpenAL source-id
@@ -300,14 +300,6 @@ public:
     inline bool has_changed() { return _changed; }
 
     /**
-     * Some implementations seem to need the velocity multiplied by a
-     * factor of 100 to make them distinct. I've not found if this is
-     * a problem in the implementation or in out code. Until then
-     * this function is used to detect the problematic implementations.
-     */
-    inline bool bad_doppler_effect() { return _bad_doppler; }
-
-    /**
      * Load a sample file and return it's configuration and data.
      *
      * @param samplepath Path to the file to load
@@ -347,7 +339,7 @@ private:
     bool _changed = true;
     float _volume = 0.0f;
 
-    float _sound_velocity = SPEED_OF_SOUND;
+    double _sound_velocity = SPEED_OF_SOUND;
 
     // Position of the listener.
     SGGeod _geod_pos;
@@ -355,7 +347,6 @@ private:
     // Velocity of the listener.
     SGVec3d _velocity = SGVec3d::zeros();
 
-    bool _bad_doppler = false;
     std::string _renderer = "unknown";
     std::string _vendor = "unknown";
     std::string _device_name;

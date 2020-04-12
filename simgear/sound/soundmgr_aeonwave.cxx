@@ -298,6 +298,7 @@ void SGSoundMgr::update( double dt )
             SGVec3d velocity = SGVec3d::zeros();
             if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
                 velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
+printf("lst vel: %f\n", length(velocity));
             }
             aax::Vector vel( toVec3f(velocity).data() );
             TRY( d->_aax.sensor_velocity(vel) );
@@ -619,6 +620,7 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
         aax::Vector64 pos = position.data();
         aax::Vector ori = orientation.data();
         aax::Vector vel = velocity.data();
+printf("src vel: %f\n", length(velocity));
 
         aax::Matrix64 mtx(pos, ori);
         TRY( emitter.matrix(mtx) );

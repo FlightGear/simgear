@@ -24,7 +24,6 @@ if (USE_AEONWAVE)
 else()
     set(SOURCES ${SOURCES}
         soundmgr_openal.cxx
-        soundmgr_openal_private.hxx
         )
 endif()
 

@@ -49,7 +49,7 @@ SGSampleGroup::~SGSampleGroup ()
 {
     _active = false;
     stop();
-    _smgr = 0;
+    _smgr = nullptr;
 }
 
 #include <stdio.h>
@@ -121,8 +121,8 @@ void SGSampleGroup::update( double dt ) {
         _changed = false;
     }
 
-    for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
-        SGSoundSample *sample = current->second;
+    for (auto current : _samples) {
+        SGSoundSample *sample = current.second;
 
         if ( !sample->is_valid_source() && sample->is_playing() && !sample->test_out_of_range()) {
             start_playing_sample(sample);
@@ -196,9 +196,8 @@ void
 SGSampleGroup::stop ()
 {
     _pause = true;
-    for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
-        SGSoundSample *sample = current->second;
-        _smgr->sample_destroy( sample );
+    for (auto current : _samples) {
+        _smgr->sample_destroy( current.second );
     }
 }
 
@@ -208,12 +207,11 @@ SGSampleGroup::suspend ()
 {
     if (_active && _pause == false) {
         _pause = true;
-        for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
 #ifdef ENABLE_SOUND
-            SGSoundSample *sample = current->second;
-            _smgr->sample_suspend( sample );
-#endif
+        for (auto current : _samples) {
+            _smgr->sample_suspend( current.second );
         }
+#endif
         testForMgrError("suspend");
     }
 }
@@ -224,9 +222,8 @@ SGSampleGroup::resume ()
 {
     if (_active && _pause == true) {
 #ifdef ENABLE_SOUND
-        for (auto current =_samples.begin(); current !=_samples.end(); ++current) {
-            SGSoundSample *sample = current->second;
-            _smgr->sample_resume( sample );
+        for (auto current : _samples) {
+            _smgr->sample_resume( current.second );
         }
         testForMgrError("resume");
 #endif
@@ -295,8 +292,8 @@ void SGSampleGroup::update_pos_and_orientation() {
        velocity = toVec3f( hlOr.backTransform(_velocity*SG_FEET_TO_METER) );
     }
 
-    for (auto current =_samples.begin(); current !=_samples.end(); ++current ) {
-        SGSoundSample *sample = current->second;
+    for (auto current : _samples ) {
+        SGSoundSample *sample = current.second;
         sample->set_master_volume( _volume );
         sample->set_orientation( _orientation );
         sample->set_rotation( ec2body );
@@ -336,10 +333,6 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample )
         orientation = sample->get_orientation();
         position = sample->get_position() - _smgr->get_position();
         velocity = sample->get_velocity();
-    }
-
-    if (_smgr->bad_doppler_effect()) {
-        velocity *= 100.0f;
     }
 
 #if 0

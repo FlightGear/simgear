@@ -759,6 +759,9 @@ private:
 };
 
 
+struct SGPropertyNodeListeners;
+
+
 /**
  * A node in a property tree.
  */
@@ -1713,7 +1716,7 @@ public:
   /**
    * Get the number of listeners.
    */
-  int nListeners () const { return _listeners ? (int)_listeners->size() : 0; }
+  int nListeners () const;
 
 
   /**
@@ -1847,7 +1850,7 @@ private:
     char * string_val;
   } _local_val;
 
-  std::vector<SGPropertyChangeListener *> * _listeners;
+  SGPropertyNodeListeners*  _listeners;
 
   // Pass name as a pair of iterators
   template<typename Itr>

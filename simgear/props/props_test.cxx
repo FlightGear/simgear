@@ -451,13 +451,17 @@ void defineSamplePropertyTree(SGPropertyNode_ptr root)
 class TestListener : public SGPropertyChangeListener
 {
 public:
-    TestListener(SGPropertyNode* root, bool recursive = false) :
-        _root(root) {}
+    TestListener(SGPropertyNode* root, bool recursive = false, bool self_unregister = false) :
+        _root(root), _self_unregister(self_unregister) {}
 
     virtual void valueChanged(SGPropertyNode* node) override
     {
         std::cout << "saw value changed for:" << node->getPath() << std::endl;
         valueChangeCount[node]++;
+        if (_self_unregister) {
+            std::cout << "valueChanged(): calling removeChangeListener() to self-remove\n";
+            node->removeChangeListener(this);
+        }
     }
 
     int checkValueChangeCount(const std::string& path) const
@@ -533,6 +537,7 @@ public:
         }
 private:
     SGPropertyNode* _root;
+    bool            _self_unregister;
     std::map<SGPropertyNode*, unsigned int> valueChangeCount;
 
     std::vector<ParentChange> adds;
@@ -942,6 +947,13 @@ void testDeleterListener()
         SG_VERIFY(ensureNListeners(tree, 0));
     }
 
+    // Self-unregister. prior to 2019-07-08 this would segv.
+    {
+        std::shared_ptr<TestListener>   l1( new TestListener(tree.get(), true /* recursive */, true /*self_unregister*/));
+        tree->setFloatValue("position/body/sub/self-unregister", 0.1);
+        tree->getNode("position/body/sub/self-unregister")->addChangeListener(l1.get());
+        tree->setFloatValue("position/body/sub/self-unregister", 0.2);
+    }
 }
 
 int main (int ac, char ** av)

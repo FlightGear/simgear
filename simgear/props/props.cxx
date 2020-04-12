@@ -48,6 +48,18 @@ using std::stringstream;
 
 using namespace simgear;
 
+
+struct SGPropertyNodeListeners
+{
+  /* This keeps a count of the current number of nested invocations of
+  forEachListener(). If non-zero, other code higher up the stack is iterating
+  _items[] so for example code must not erase items in the vector. */
+  int _num_iterators = 0;
+  
+  std::vector<SGPropertyChangeListener *> _items;
+};
+
+
 ////////////////////////////////////////////////////////////////////////
 // Local classes.
 ////////////////////////////////////////////////////////////////////////
@@ -968,7 +980,7 @@ SGPropertyNode::~SGPropertyNode ()
 
   if (_listeners) {
     vector<SGPropertyChangeListener*>::iterator it;
-    for (it = _listeners->begin(); it != _listeners->end(); ++it)
+    for (it = _listeners->_items.begin(); it != _listeners->_items.end(); ++it)
       (*it)->unregister_property(this);
     delete _listeners;
   }
@@ -2392,8 +2404,21 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
                                    bool initial)
 {
   if (_listeners == 0)
-    _listeners = new vector<SGPropertyChangeListener*>;
-  _listeners->push_back(listener);
+    _listeners = new SGPropertyNodeListeners;
+
+  /* If there's a nullptr entry (a listener that was unregistered), we
+  overwrite it. This ensures that listeners that routinely unregister+register
+  themselves don't make _listeners->_items grow unnecessarily. Otherwise simply
+  append. */
+  auto it = std::find(_listeners->_items.begin(), _listeners->_items.end(),
+        (SGPropertyChangeListener*) nullptr
+        );
+  if (it == _listeners->_items.end()) {
+    _listeners->_items.push_back(listener);
+  }
+  else {
+    *it = listener;
+  }
   listener->register_property(this);
   if (initial)
     listener->valueChanged(this);
@@ -2405,14 +2430,29 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
   if (_listeners == 0)
     return;
   vector<SGPropertyChangeListener*>::iterator it =
-    find(_listeners->begin(), _listeners->end(), listener);
-  if (it != _listeners->end()) {
-    _listeners->erase(it);
-    listener->unregister_property(this);
-    if (_listeners->empty()) {
-      vector<SGPropertyChangeListener*>* tmp = _listeners;
-      _listeners = 0;
-      delete tmp;
+    find(_listeners->_items.begin(), _listeners->_items.end(), listener);
+  if (it != _listeners->_items.end()) {
+    if (_listeners->_num_iterators) {
+      /* _listeners._items is currently being iterated further up the stack in
+      this thread by one or more nested invocations of forEachListener(), so
+      we must be careful to not break these iterators. So we must not delete
+      _listeners. And we must not erase this entry from the vector because that
+      could cause the next listener to be missed out.
+
+      So we simply set this entry to nullptr (nullptr items are skipped by
+      forEachListener()). When all invocations of forEachListener() have
+      finished iterating and it is safe to modify things again, it will clean
+      up any nullptr entries in _listeners->_items. */
+      *it = nullptr;
+      listener->unregister_property(this);
+    }
+    else {
+      _listeners->_items.erase(it);
+      listener->unregister_property(this);
+      if (_listeners->_items.empty()) {
+        delete _listeners;
+        _listeners = 0;
+      }
     }
   }
 }
@@ -2461,15 +2501,67 @@ SGPropertyNode::fireChildrenRemovedRecursive()
   }
 }
 
+/* Calls <callback> for each item in _listeners. We are careful to skip nullptr
+entries in _listeners->items[], which can be created if listeners are removed
+while we are iterating. */
+static void forEachListener(
+    SGPropertyNode* node,
+    SGPropertyNodeListeners*& _listeners,
+    std::function<void (SGPropertyChangeListener*)> callback
+    )
+{
+  if (!_listeners) return;
+  
+  _listeners->_num_iterators += 1;
+  
+  /* We need to use an index here when iterating _listeners->_items, not an
+  iterator. This is because a listener may add new listeners, causing the
+  vector to be reallocated, which would invalidate any iterator. */
+  for (size_t i = 0; i < _listeners->_items.size(); ++i) {
+    auto listener = _listeners->_items[i];
+    if (listener) {
+      try {
+        callback(listener);
+      }
+      catch (std::exception& e) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Ignoring exception from property callback: " << e.what());
+      }
+    }
+  }
+  
+  _listeners->_num_iterators -= 1;
+  
+  if (_listeners->_num_iterators == 0) {
+    /* Remove any items that have been set to nullptr. */
+    _listeners->_items.erase(
+        std::remove(_listeners->_items.begin(), _listeners->_items.end(), (SGPropertyChangeListener*) nullptr),
+        _listeners->_items.end()
+        );
+    if (_listeners->_items.empty()) {
+      delete _listeners;
+      _listeners = nullptr;
+    }
+  }
+}
+
+int SGPropertyNode::nListeners() const
+{
+  if (!_listeners) return 0;
+  int   n = 0;
+  for (auto listener: _listeners->_items) {
+    if (listener)   n += 1;
+  }
+  return n;
+}
+
 void
 SGPropertyNode::fireValueChanged (SGPropertyNode * node)
 {
-  if (_listeners != 0) {
-    for (unsigned int i = 0; i < _listeners->size(); i++) {
-        if ((*_listeners)[i])
-            (*_listeners)[i]->valueChanged(node);
-    }
-  }
+  forEachListener(
+      node,
+      _listeners,
+      [&](SGPropertyChangeListener* listener) { listener->valueChanged(node);}
+      );
   if (_parent != 0)
     _parent->fireValueChanged(node);
 }
@@ -2478,11 +2570,11 @@ void
 SGPropertyNode::fireChildAdded (SGPropertyNode * parent,
 				SGPropertyNode * child)
 {
-  if (_listeners != 0) {
-    for (unsigned int i = 0; i < _listeners->size(); i++) {
-      (*_listeners)[i]->childAdded(parent, child);
-    }
-  }
+  forEachListener(
+      parent,
+      _listeners,
+      [&](SGPropertyChangeListener* listener) { listener->childAdded(parent, child);}
+      );
   if (_parent != 0)
     _parent->fireChildAdded(parent, child);
 }
@@ -2491,11 +2583,11 @@ void
 SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
 				  SGPropertyNode * child)
 {
-  if (_listeners != 0) {
-    for (unsigned int i = 0; i < _listeners->size(); i++) {
-      (*_listeners)[i]->childRemoved(parent, child);
-    }
-  }
+  forEachListener(
+      parent,
+      _listeners,
+      [&](SGPropertyChangeListener* listener) { listener->childRemoved(parent, child);}
+      );
   if (_parent != 0)
     _parent->fireChildRemoved(parent, child);
 }

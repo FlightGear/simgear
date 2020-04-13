@@ -50,6 +50,7 @@ using std::vector;
 
 
 #define MAX_SOURCES	128
+#define SPEED_OF_SOUND	340.4f
 
 #ifndef ALC_ALL_DEVICES_SPECIFIER
 # define ALC_ALL_DEVICES_SPECIFIER	0x1013
@@ -218,8 +219,8 @@ void SGSoundMgr::init()
     alListenerfv( AL_POSITION, SGVec3f::zeros().data() );
     alListenerfv( AL_VELOCITY, SGVec3f::zeros().data() );
 
-    alDopplerFactor(1.0);
-    alDopplerVelocity(340.3);   // speed of sound in meters per second.
+    alDopplerFactor(1.0f);
+    alDopplerVelocity(SPEED_OF_SOUND);
 
     // gain = AL_REFERENCE_DISTANCE / (AL_REFERENCE_DISTANCE +
     //        AL_ROLLOFF_FACTOR * (distance - AL_REFERENCE_DISTANCE));
@@ -248,8 +249,10 @@ void SGSoundMgr::init()
     _renderer = (const char *)alGetString(AL_RENDERER);
 
     if (_vendor == "Creative Labs Inc.") {
+       alDopplerFactor(100.0f);
        _bad_doppler = true;
     } else if (_vendor == "OpenAL Community" && _renderer == "OpenAL Soft") {
+       alDopplerFactor(100.0f);
        _bad_doppler = true;
     }
 
@@ -392,14 +395,20 @@ if (isNaN(toVec3f(_velocity).data())) printf("NaN in listener velocity\n");
             SGVec3d velocity = SGVec3d::zeros();
             if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
                 velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
-            }
 
-            if ( _bad_doppler ) {
-                velocity *= 100.0f;
+                if ( _bad_doppler ) {
+                    double fact = 100.0;
+                    double mag = length( velocity );
+
+                    if (mag > SPEED_OF_SOUND) {
+                        fact *= SPEED_OF_SOUND / mag;
+                    }
+                    alDopplerFactor(fact);
+                }
             }
 
             alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
-            // alDopplerVelocity(340.3);	// TODO: altitude dependent
+            // alDopplerVelocity(SPEED_OF_SOUND);
             testForError("update");
             _changed = false;
         }

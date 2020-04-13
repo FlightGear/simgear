@@ -353,10 +353,6 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample )
         velocity = sample->get_velocity();
     }
 
-    if (_smgr->bad_doppler_effect()) {
-        velocity *= 100.0f;
-    }
-
 #if 0
     if (length(position) > 20000)
         printf("%s source and listener distance greater than 20km!\n",

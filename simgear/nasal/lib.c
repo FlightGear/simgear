@@ -99,9 +99,31 @@ static naRef f_int(naContext c, naRef me, int argc, naRef* args)
     return naNil();
 }
 
+static naRef f_isint(naContext c, naRef me, int argc, naRef* args)
+{
+    if(argc > 0) {
+        naRef n = naNumValue(args[0]);
+        if(naIsNil(n)) return naNum(0);
+        if(n.num < 0) n.num = -n.num;
+        if(n.num == floor(n.num)) return naNum(1);
+        else return naNum(0);
+    } else ARGERR();
+    return naNil();
+}
+
 static naRef f_num(naContext c, naRef me, int argc, naRef* args)
 {
     return argc > 0 ? naNumValue(args[0]) : naNil();
+}
+
+static naRef f_isnum(naContext c, naRef me, int argc, naRef* args)
+{
+    if(argc > 0) {
+        naRef n = naNumValue(args[0]);
+        if(naIsNil(n)) return naNum(0);
+        else return naNum(1);
+    } else ARGERR();
+    return naNil();
 }
 
 static naRef f_streq(naContext c, naRef me, int argc, naRef* args)
@@ -628,6 +650,8 @@ static naCFuncItem funcs[] = {
     { "bind", f_bind },
     { "sort", f_sort },
     { "id", f_id },
+    { "isint", f_isint },
+    { "isnum", f_isnum },
     { 0 }
 };
 

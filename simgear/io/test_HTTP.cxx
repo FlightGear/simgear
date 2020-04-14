@@ -5,8 +5,6 @@
 #include <sstream>
 #include <cerrno>
 
-#include <boost/algorithm/string/case_conv.hpp>
-
 #include <simgear/simgear_config.h>
 
 #include "HTTPClient.hxx"

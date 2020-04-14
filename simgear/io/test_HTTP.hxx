@@ -1,6 +1,7 @@
 #ifndef SIMGEAR_IO_TEST_HTTP_HXX
 #define SIMGEAR_IO_TEST_HTTP_HXX
 
+#include <algorithm>
 #include <sstream>
 #include <vector>
 

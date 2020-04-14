@@ -7,8 +7,6 @@
 #include <thread>
 #include <atomic>
 
-#include <boost/algorithm/string/case_conv.hpp>
-
 #include <simgear/simgear_config.h>
 
 #include "DNSClient.hxx"

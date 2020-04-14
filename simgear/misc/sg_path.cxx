@@ -29,6 +29,7 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 
+#include <cstring>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -46,8 +47,6 @@
 #endif
 
 #include "sg_path.hxx"
-
-#include <boost/algorithm/string/case_conv.hpp>
 
 using std::string;
 using simgear::strutils::starts_with;
@@ -398,7 +397,7 @@ string SGPath::extension() const {
 }
 
 string SGPath::lower_extension() const {
-    return boost::to_lower_copy(extension());
+    return simgear::strutils::lowercase (extension());
 }
 
 string SGPath::complete_lower_extension() const
@@ -412,7 +411,7 @@ string SGPath::complete_lower_extension() const
 
     string::size_type firstDot = path.find(".", index);
     if ((firstDot != string::npos)  && (path.find(sgDirPathSep, firstDot) == string::npos)) {
-        return boost::to_lower_copy(path.substr(firstDot + 1));
+        return simgear::strutils::lowercase (path.substr(firstDot + 1));
     } else {
         return "";
     }

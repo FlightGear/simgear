@@ -20,7 +20,6 @@
 #include <simgear/package/Package.hxx>
 
 #include <cassert>
-#include <boost/algorithm/string/case_conv.hpp>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
@@ -44,8 +43,7 @@ void Package::initWithProps(const SGPropertyNode* aProps)
     m_props = const_cast<SGPropertyNode*>(aProps);
 // cache tag values
     for (auto c : aProps->getChildren("tag")) {
-      std::string t(c->getStringValue());
-      m_tags.insert(boost::to_lower_copy(t));
+      m_tags.insert (strutils::lowercase (c->getStringValue()));
     }
 
     m_id = m_props->getStringValue("id");
@@ -97,8 +95,7 @@ bool Package::matches(const SGPropertyNode* aFilter) const
     }
 
     if (filter_name == "tag") {
-        std::string tag(aFilter->getStringValue());
-        boost::to_lower(tag);
+        const std::string tag = strutils::lowercase (aFilter->getStringValue());
         return (m_tags.find(tag) != m_tags.end());
     }
 
@@ -110,18 +107,16 @@ bool Package::matches(const SGPropertyNode* aFilter) const
     // substring search of name, description, across variants too
     if ((filter_name == "text") || (filter_name == "name")) {
         handled = true;
-      std::string n(aFilter->getStringValue());
-      boost::to_lower(n);
+      const std::string n = strutils::lowercase (aFilter->getStringValue());
 
-      size_t pos = boost::to_lower_copy(name()).find(n);
+      const size_t pos = strutils::lowercase (name()).find(n);
       if (pos != std::string::npos) {
         return true;
       }
 
       for (auto var : m_props->getChildren("variant")) {
           if (var->hasChild("name")) {
-              std::string variantName(var->getStringValue("name"));
-              boost::to_lower(variantName);
+              const std::string variantName = strutils::lowercase (var->getStringValue("name"));
               size_t pos = variantName.find(n);
               if (pos != std::string::npos) {
                   return true;
@@ -146,12 +141,10 @@ bool Package::matches(const SGPropertyNode* aFilter) const
 
 bool Package::matchesDescription(const std::string &search) const
 {
-    std::string n(search);
-    boost::to_lower(n);
+    const std::string n = strutils::lowercase (search);
 
     bool localized;
-    auto d = getLocalisedString(m_props, "description", &localized);
-    boost::to_lower(d);
+    const auto d = strutils::lowercase (getLocalisedString(m_props, "description", &localized));
     if (d.find(n) != std::string::npos) {
         return true;
     }
@@ -159,7 +152,7 @@ bool Package::matchesDescription(const std::string &search) const
     // try non-localized description too, if the abovce was a localized one
     if (localized) {
         const std::string baseDesc = m_props->getStringValue("description");
-        auto pos = boost::to_lower_copy(baseDesc).find(n);
+        const auto pos = strutils::lowercase (baseDesc).find(n);
         if (pos != std::string::npos) {
             return true;
         }
@@ -167,9 +160,8 @@ bool Package::matchesDescription(const std::string &search) const
 
     // try each variant's description
     for (auto var : m_props->getChildren("variant")) {
-        auto vd = getLocalisedString(var, "description", &localized);
+        const auto vd = strutils::lowercase (getLocalisedString(var, "description", &localized));
         if (!vd.empty()) {
-            boost::to_lower(vd);
             if (vd.find(n) != std::string::npos) {
                 return true;
             }
@@ -177,8 +169,7 @@ bool Package::matchesDescription(const std::string &search) const
 
         if (localized) {
             // try non-localized variant description
-            std::string vd = var->getStringValue("description");
-            boost::to_lower(vd);
+            const std::string vd = strutils::lowercase (var->getStringValue("description"));
             if (vd.find(n) != std::string::npos) {
                 return true;
             }

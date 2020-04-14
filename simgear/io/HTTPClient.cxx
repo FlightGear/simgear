@@ -35,8 +35,6 @@
 #include <stdexcept>
 #include <mutex>
 
-#include <boost/algorithm/string/case_conv.hpp>
-
 #include <simgear/simgear_config.h>
 
 #include <curl/multi.h>
@@ -297,7 +295,7 @@ void Client::makeRequest(const Request_ptr& r)
       }
     }
 
-    std::string method = boost::to_lower_copy(r->method());
+    const std::string method = strutils::lowercase (r->method());
     if (method == "get") {
       curl_easy_setopt(curlRequest, CURLOPT_HTTPGET, 1);
     } else if (method == "put") {
@@ -530,8 +528,8 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
       return byteSize;
   }
 
-  std::string key = strutils::simplify(h.substr(0, colonPos));
-  std::string lkey = boost::to_lower_copy(key);
+  const std::string key = strutils::simplify(h.substr(0, colonPos));
+  const std::string lkey = strutils::lowercase (key);
   std::string value = strutils::strip(h.substr(colonPos + 1));
 
   req->responseHeader(lkey, value);

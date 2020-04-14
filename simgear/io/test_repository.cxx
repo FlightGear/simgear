@@ -5,8 +5,6 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <boost/algorithm/string/case_conv.hpp>
-
 #include <simgear/simgear_config.h>
 
 #include "test_HTTP.hxx"

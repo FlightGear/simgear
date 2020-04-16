@@ -226,6 +226,41 @@ static naRef f_typeof(naContext c, naRef me, int argc, naRef* args)
     return NEWCSTR(c, t);
 }
 
+static naRef f_isstr(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef r = argc > 0 ? args[0] : naNil();
+    if(naIsString(r)) return naNum(1);
+    else return naNum(0);
+}
+
+static naRef f_isvec(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef r = argc > 0 ? args[0] : naNil();
+    if(naIsVector(r)) return naNum(1);
+    else return naNum(0);
+}
+
+static naRef f_ishash(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef r = argc > 0 ? args[0] : naNil();
+    if(naIsHash(r)) return naNum(1);
+    else return naNum(0);
+}
+
+static naRef f_isfunc(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef r = argc > 0 ? args[0] : naNil();
+    if(naIsFunc(r)) return naNum(1);
+    else return naNum(0);
+}
+
+static naRef f_isghost(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef r = argc > 0 ? args[0] : naNil();
+    if(naIsGhost(r)) return naNum(1);
+    else return naNum(0);
+}
+
 static naRef f_ghosttype(naContext c, naRef me, int argc, naRef* args)
 {
     naRef g = argc > 0 ? args[0] : naNil();
@@ -652,6 +687,11 @@ static naCFuncItem funcs[] = {
     { "id", f_id },
     { "isint", f_isint },
     { "isnum", f_isnum },
+    { "isghost", f_isghost },
+    { "isstr", f_isstr },
+    { "isvec", f_isvec },
+    { "ishash", f_ishash },
+    { "isfunc", f_isfunc },
     { 0 }
 };
 

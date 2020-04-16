@@ -212,6 +212,21 @@ static naRef f_contains(naContext c, naRef me, int argc, naRef* args)
     return naHash_get(hash, key, &key) ? naNum(1) : naNum(0);
 }
 
+static naRef f_vecindex(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef vec = argc > 0 ? args[0] : naNil();
+    naRef value = argc > 1 ? args[1] : naNil();
+    if(naIsNil(vec) || naIsNil(value)) ARGERR();
+    if(!naIsVector(vec)) return naNil();
+    const int len = naVec_size(vec);
+    for(int i=0; i<len; i++) {
+        if (naEqual(naVec_get(vec, i), value))
+            return naNum(i);
+    }
+    
+    return naNil();
+}
+
 static naRef f_typeof(naContext c, naRef me, int argc, naRef* args)
 {
     naRef r = argc > 0 ? args[0] : naNil();
@@ -660,7 +675,8 @@ static naCFuncItem funcs[] = {
     { "append", f_append }, 
     { "pop", f_pop }, 
     { "setsize", f_setsize }, 
-    { "subvec", f_subvec }, 
+    { "subvec", f_subvec },
+    { "vecindex", f_vecindex },
     { "delete", f_delete }, 
     { "int", f_int },
     { "num", f_num },

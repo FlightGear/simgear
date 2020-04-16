@@ -219,7 +219,8 @@ static naRef f_vecindex(naContext c, naRef me, int argc, naRef* args)
     if(naIsNil(vec) || naIsNil(value)) ARGERR();
     if(!naIsVector(vec)) return naNil();
     const int len = naVec_size(vec);
-    for(int i=0; i<len; i++) {
+    int i;
+    for(i=0; i<len; i++) {
         if (naEqual(naVec_get(vec, i), value))
             return naNum(i);
     }

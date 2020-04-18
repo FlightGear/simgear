@@ -242,6 +242,13 @@ static naRef f_typeof(naContext c, naRef me, int argc, naRef* args)
     return NEWCSTR(c, t);
 }
 
+static naRef f_isscalar(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef r = argc > 0 ? args[0] : naNil();
+    if(naIsString(r) || naIsNum(r)) return naNum(1);
+    else return naNum(0);
+}
+
 static naRef f_isstr(naContext c, naRef me, int argc, naRef* args)
 {
     naRef r = argc > 0 ? args[0] : naNil();
@@ -702,6 +709,7 @@ static naCFuncItem funcs[] = {
     { "bind", f_bind },
     { "sort", f_sort },
     { "id", f_id },
+    { "isscalar", f_isscalar },
     { "isint", f_isint },
     { "isnum", f_isnum },
     { "isghost", f_isghost },

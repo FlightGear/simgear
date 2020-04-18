@@ -871,6 +871,10 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
       image = _texture->getImage();
     }
       
+      if (image->getDataVariance() != osg::Object::DYNAMIC) {
+          image->setDataVariance(osg::Object::DYNAMIC);
+      }
+      
     const auto format = image->getInternalTextureFormat();
     
     auto clippedRect = intersectRect(rect, SGRect<int>(0, 0, image->s(), image->t()));
@@ -917,6 +921,8 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
     }
       
     image->dirty();
+    auto c = getCanvas().lock();
+    c->enableRendering(true); // force a repaint
   }
 
   void Image::setPixel(int x, int y, const std::string& c)
@@ -935,8 +941,14 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
         allocateImage();
         image = _texture->getImage();
     }
+     
+    if (image->getDataVariance() != osg::Object::DYNAMIC) {
+      image->setDataVariance(osg::Object::DYNAMIC);
+    }
       
     image->setColor(color, x, y);
+    auto c = getCanvas().lock();
+    c->enableRendering(true); // force a repaint
   }
 
   void Image::allocateImage()

@@ -30,11 +30,12 @@ template<class T> class SGWeakPtr;
 template<class T> class SGVec2;
 template<class T> class SGVec4;
 
-namespace boost
+namespace std
 {
   template<class T> class shared_ptr;
   template<class T> class weak_ptr;
 }
+
 namespace osg
 {
   class Referenced;
@@ -114,7 +115,7 @@ SG_MAKE_TRAIT(<>, osg::Vec4f, is_vec4)
 
   SG_MAKE_SHARED_PTR_TRAIT(SGSharedPtr, SGWeakPtr, true)
   SG_MAKE_SHARED_PTR_TRAIT(osg::ref_ptr, osg::observer_ptr, true)
-  SG_MAKE_SHARED_PTR_TRAIT(boost::shared_ptr, boost::weak_ptr, false)
+  SG_MAKE_SHARED_PTR_TRAIT(std::shared_ptr, std::weak_ptr, false)
 
 #undef SG_MAKE_SHARED_PTR_TRAIT
 

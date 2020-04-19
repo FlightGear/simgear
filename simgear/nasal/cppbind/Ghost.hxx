@@ -33,14 +33,20 @@
 #include <boost/call_traits.hpp>
 #include <boost/function.hpp>
 #include <boost/mpl/has_xxx.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <map>
+#include <memory>
 
 template<class T>
-inline T* get_pointer(boost::weak_ptr<T> const& p)
+inline T* get_pointer(std::weak_ptr<T> const& p)
 {
   return p.lock().get();
+}
+
+template<class T>
+inline T* get_pointer(std::shared_ptr<T> const& p)
+{
+  return p.get();
 }
 
 template<class T>
@@ -77,7 +83,7 @@ get_pointer(T ptr)
 
   // With old g++ on Jenkins (21.07.2014), ADL for static_pointer_cast does not
   // work.
-  using boost::static_pointer_cast;
+  using std::static_pointer_cast;
   using osg::static_pointer_cast;
 #else
   // VS (2008, 2010, ... ?) only allow this version.
@@ -193,7 +199,7 @@ namespace nasal
    *     int myMember();
    *     void doSomethingElse(const nasal::CallContext& ctx);
    * }
-   * using MyClassPtr = boost::shared_ptr<MyClass>;
+   * using MyClassPtr = std::shared_ptr<MyClass>;
    *
    * std::string myOtherFreeMember(int num);
    *
@@ -201,7 +207,7 @@ namespace nasal
    * {
    *   // Register a nasal ghost type for MyClass. This needs to be done only
    *   // once before creating the first ghost instance. The exposed class needs
-   *   // to be wrapped inside a shared pointer, eg. boost::shared_ptr.
+   *   // to be wrapped inside a shared pointer, eg. std::shared_ptr.
    *   Ghost<MyClassPtr>::init("MyClass")
    *     // Members can be exposed by getters and setters
    *     .member("x", &MyClass::getX, &MyClass::setX)

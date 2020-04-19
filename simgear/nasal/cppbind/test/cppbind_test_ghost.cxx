@@ -6,10 +6,6 @@
 #include <simgear/nasal/cppbind/Ghost.hxx>
 #include <simgear/nasal/cppbind/NasalContext.hxx>
 
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 class Base1:
   public virtual SGVirtualWeakReferenced
 {};
@@ -43,7 +39,7 @@ typedef SGSharedPtr<SGReferenced> SGReferencedPtr;
   CHECK_PTR_TRAIT_TYPE(weak, weak_ref, weak)\
 
 CHECK_PTR_TRAIT(DerivedPtr, DerivedWeakPtr)
-CHECK_PTR_TRAIT(boost::shared_ptr<Base1>, boost::weak_ptr<Base1>)
+CHECK_PTR_TRAIT(std::shared_ptr<Base1>, std::weak_ptr<Base1>)
 
 #undef CHECK_PTR_TRAIT
 #undef CHECK_PTR_TRAIT_TYPE
@@ -150,11 +146,11 @@ BOOST_AUTO_TEST_CASE( ghost_casting_storage )
 CHECK_PTR_STORAGE_TRAIT_TYPE(DerivedPtr, Derived)
 CHECK_PTR_STORAGE_TRAIT_TYPE(DerivedWeakPtr, DerivedWeakPtr)
 
-typedef boost::shared_ptr<Derived> BoostDerivedPtr;
-CHECK_PTR_STORAGE_TRAIT_TYPE(BoostDerivedPtr, BoostDerivedPtr)
+typedef std::shared_ptr<Derived> StdDerivedPtr;
+CHECK_PTR_STORAGE_TRAIT_TYPE(StdDerivedPtr, StdDerivedPtr)
 
-typedef boost::weak_ptr<Derived> BoostDerivedWeakPtr;
-CHECK_PTR_STORAGE_TRAIT_TYPE(BoostDerivedWeakPtr, BoostDerivedWeakPtr)
+typedef std::weak_ptr<Derived> StdDerivedWeakPtr;
+CHECK_PTR_STORAGE_TRAIT_TYPE(StdDerivedWeakPtr, StdDerivedWeakPtr)
 
 #undef CHECK_PTR_STORAGE_TRAIT_TYPE
 
@@ -164,8 +160,8 @@ BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<DerivedPtr>::is_intrusive::value)
 BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<DerivedWeakPtr>::is_intrusive::value));
 BOOST_STATIC_ASSERT(( nasal::shared_ptr_traits<SGReferencedPtr>::is_intrusive::value));
 
-BOOST_STATIC_ASSERT((!nasal::shared_ptr_traits<boost::shared_ptr<Derived> >::is_intrusive::value));
-BOOST_STATIC_ASSERT((!nasal::shared_ptr_traits<boost::weak_ptr<Derived> >::is_intrusive::value));
+BOOST_STATIC_ASSERT((!nasal::shared_ptr_traits<std::shared_ptr<Derived> >::is_intrusive::value));
+BOOST_STATIC_ASSERT((!nasal::shared_ptr_traits<std::weak_ptr<Derived> >::is_intrusive::value));
 
 BOOST_AUTO_TEST_CASE( storage_traits )
 {
@@ -207,7 +203,7 @@ BOOST_AUTO_TEST_CASE( bind_methods )
       arg4 = a4;
     }
   };
-  using TestClassPtr = boost::shared_ptr<TestClass>;
+  using TestClassPtr = std::shared_ptr<TestClass>;
   auto set_func = boost::function<
     void (TestClass&, int, const std::string&, const std::string&, int)
   >(&TestClass::set);
@@ -216,7 +212,7 @@ BOOST_AUTO_TEST_CASE( bind_methods )
     .method("setReverse", set_func, std::index_sequence<3,2,1,0>{});
 
   TestContext ctx;
-  auto test = boost::make_shared<TestClass>();
+  auto test = std::make_shared<TestClass>();
 
   ctx.exec("me.set(1, \"s2\", \"s3\", 4);", ctx.to_me(test));
   BOOST_CHECK_EQUAL(test->arg1, 1);

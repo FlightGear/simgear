@@ -9,9 +9,6 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/map.hxx>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 #include <cstring>
 
 enum MyEnum
@@ -79,7 +76,7 @@ struct DoubleDerived:
 
 };
 
-typedef boost::shared_ptr<Base> BasePtr;
+typedef std::shared_ptr<Base> BasePtr;
 typedef std::vector<BasePtr> BaseVec;
 
 struct DoubleDerived2:
@@ -102,13 +99,13 @@ class SGWeakReferenceBasedClass:
 
 };
 
-typedef boost::shared_ptr<Derived> DerivedPtr;
-typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
-typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
+typedef std::shared_ptr<Derived> DerivedPtr;
+typedef std::shared_ptr<DoubleDerived> DoubleDerivedPtr;
+typedef std::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
 typedef SGSharedPtr<SGReferenceBasedClass> SGRefBasedPtr;
 typedef SGSharedPtr<SGWeakReferenceBasedClass> SGWeakRefBasedPtr;
 
-typedef boost::weak_ptr<Derived> DerivedWeakPtr;
+typedef std::weak_ptr<Derived> DerivedWeakPtr;
 
 naRef derivedFreeMember(Derived&, const nasal::CallContext&) { return naNil(); }
 naRef f_derivedGetX(const Derived& d, naContext c)
@@ -361,9 +358,9 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   BOOST_CHECK_EQUAL( c.from_nasal<BasePtr>(derived), d3 );
   BOOST_CHECK_NE( c.from_nasal<BasePtr>(derived), d2 );
   BOOST_CHECK_EQUAL( c.from_nasal<DerivedPtr>(derived),
-                     boost::dynamic_pointer_cast<Derived>(d3) );
+                     std::dynamic_pointer_cast<Derived>(d3) );
   BOOST_CHECK_EQUAL( c.from_nasal<DoubleDerived2Ptr>(derived),
-                     boost::dynamic_pointer_cast<DoubleDerived2>(d3) );
+                     std::dynamic_pointer_cast<DoubleDerived2>(d3) );
   BOOST_CHECK_THROW( c.from_nasal<DoubleDerivedPtr>(derived), bad_nasal_cast );
 
   std::map<std::string, BasePtr> instances;

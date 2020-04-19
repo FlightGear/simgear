@@ -27,8 +27,6 @@
 #include <osgText/Font>
 
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 
 #include <map>
 #include <vector>
@@ -62,8 +60,8 @@ namespace canvas
 
 #define SG_FWD_DECL(name)\
   class name;\
-  typedef boost::shared_ptr<name> name##Ptr;\
-  typedef boost::weak_ptr<name> name##WeakPtr;
+  typedef std::shared_ptr<name> name##Ptr;\
+  typedef std::weak_ptr<name> name##WeakPtr;
 
   SG_FWD_DECL(Placement)
   SG_FWD_DECL(SystemAdapter)

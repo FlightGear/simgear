@@ -1230,7 +1230,7 @@ namespace nasal
         // Either const CallContext& or CallContext, non-const reference
         // does not make sense.
         static_assert(
-          !boost::is_same<Arg, CallContext&>::value,
+          !std::is_same<Arg, CallContext&>::value,
           "Only const reference and value make sense!");
         return ctx;
       };

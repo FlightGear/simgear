@@ -24,44 +24,13 @@
 
 #include <simgear/compiler.h>
 #if PROPS_STANDALONE
-// taken from: boost/utility/enable_if.hpp
-#ifndef SG_LOG
-# define SG_GENERAL	0
-# define SG_ALERT	0
-# define SG_WARN		1
-# define SG_LOG(type, level, message) (type) ? (std::cerr <<message << endl) : (std::cout <<message << endl)
-#endif
-namespace boost {
-  template <bool B, class T = void>
-  struct enable_if_c {
-    typedef T type;
-  };
-
-  template <class T>
-  struct enable_if_c<false, T> {};
-
-  template <class Cond, class T = void>
-  struct enable_if : public enable_if_c<Cond::value, T> {};
-
-  template <bool B, class T = void>
-  struct disable_if_c {
-    typedef T type;
-  };
-
-  template <class T>
-  struct disable_if_c<true, T> {};
-
-  template <class Cond, class T = void>
-  struct disable_if : public disable_if_c<Cond::value, T> {};
-}
+# ifndef SG_LOG
+#   define SG_GENERAL	0
+#   define SG_ALERT	0
+#   define SG_WARN	1
+#   define SG_LOG(type, level, message) (type) ? (std::cerr <<message << endl) : (std::cout <<message << endl)
+# endif
 #else
-# include <boost/type_traits/is_enum.hpp>
-#if BOOST_VERSION >= 105600
-#include <boost/core/enable_if.hpp>
-#else
-#include <boost/utility/enable_if.hpp>
-#endif
-
 # include <simgear/debug/logstream.hxx>
 # include <simgear/math/SGMathFwd.hxx>
 # include <simgear/math/sg_types.hxx>
@@ -1263,11 +1232,11 @@ public:
    * match the desired type, a conversion isn't guaranteed.
    */
   template<typename T>
-  T getValue(typename boost::enable_if_c<simgear::props::PropertyTraits<T>::Internal>
+  T getValue(typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>
              ::type* dummy = 0) const;
   // Getter for extended property
   template<typename T>
-  T getValue(typename boost::disable_if_c<simgear::props::PropertyTraits<T>::Internal>
+  T getValue(typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>
              ::type* dummy = 0) const;
 
   /**
@@ -1331,12 +1300,12 @@ public:
 
   template<typename T>
   bool setValue(const T& val,
-                typename boost::enable_if_c<simgear::props::PropertyTraits<T>::Internal>
+                typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>
                 ::type* dummy = 0);
 
   template<typename T>
   bool setValue(const T& val,
-                typename boost::disable_if_c<simgear::props::PropertyTraits<T>::Internal>
+                typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>
                 ::type* dummy = 0);
 
   template<int N>
@@ -1899,7 +1868,7 @@ template<typename T>
 #if PROPS_STANDALONE
 T
 #else
-typename boost::disable_if<boost::is_enum<T>, T>::type
+typename std::enable_if<!std::is_enum<T>::value, T>::type
 #endif
 getValue(const SGPropertyNode*);
 
@@ -1967,7 +1936,7 @@ template<typename T>
 #if PROPS_STANDALONE
 inline T
 #else
-inline typename boost::enable_if<boost::is_enum<T>, T>::type
+inline typename std::enable_if<std::is_enum<T>::value, T>::type
 #endif
 getValue(const SGPropertyNode* node)
 {
@@ -2053,7 +2022,7 @@ bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
                           bool useDefault);
 
 template<typename T>
-T SGPropertyNode::getValue(typename boost::disable_if_c<simgear::props
+T SGPropertyNode::getValue(typename std::enable_if<!simgear::props
                            ::PropertyTraits<T>::Internal>::type* dummy) const
 {
     using namespace simgear::props;
@@ -2081,7 +2050,7 @@ T SGPropertyNode::getValue(typename boost::disable_if_c<simgear::props
 }
 
 template<typename T>
-inline T SGPropertyNode::getValue(typename boost::enable_if_c<simgear::props
+inline T SGPropertyNode::getValue(typename std::enable_if<simgear::props
                                   ::PropertyTraits<T>::Internal>::type* dummy) const
 {
   return ::getValue<T>(this);
@@ -2108,7 +2077,7 @@ std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
 
 template<typename T>
 bool SGPropertyNode::setValue(const T& val,
-                              typename boost::disable_if_c<simgear::props
+                              typename std::enable_if<!simgear::props
                               ::PropertyTraits<T>::Internal>::type* dummy)
 {
     using namespace simgear::props;
@@ -2137,7 +2106,7 @@ bool SGPropertyNode::setValue(const T& val,
 
 template<typename T>
 inline bool SGPropertyNode::setValue(const T& val,
-                                     typename boost::enable_if_c<simgear::props
+                                     typename std::enable_if<simgear::props
                                      ::PropertyTraits<T>::Internal>::type* dummy)
 {
   return ::setValue(this, val);

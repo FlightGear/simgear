@@ -24,11 +24,6 @@
 
 #include <simgear/structure/map.hxx>
 #include <boost/iterator/iterator_facade.hpp>
-#if BOOST_VERSION >= 105600
-#include <boost/core/enable_if.hpp>
-#else
-#include <boost/utility/enable_if.hpp>
-#endif
 
 namespace nasal
 {
@@ -125,9 +120,9 @@ namespace nasal
        * @param name    Member name
        */
       template<class Sig, class Key>
-      typename boost::enable_if< boost::is_function<Sig>,
-                                 boost::function<Sig>
-                               >::type
+      typename std::enable_if< std::is_function<Sig>::value,
+                               std::function<Sig>
+                             >::type
       get(const Key& name) const
       {
         BOOST_STATIC_ASSERT(( boost::is_convertible<Key, naRef>::value
@@ -242,9 +237,9 @@ namespace nasal
            */
           template<bool is_other_const>
           Iterator( Iterator<is_other_const> const& other,
-                    typename boost::enable_if_c< is_const || !is_other_const,
-                                                 void*
-                                               >::type = NULL ):
+                    typename std::enable_if< is_const || !is_other_const,
+                                             void*
+                                           >::type = NULL ):
             _hash(other._hash),
             _index(other._index)
           {}

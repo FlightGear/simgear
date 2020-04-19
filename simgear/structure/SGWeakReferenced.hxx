@@ -21,13 +21,6 @@
 #include "SGReferenced.hxx"
 #include "SGSharedPtr.hxx"
 
-#include <boost/type_traits/is_base_of.hpp>
-#if BOOST_VERSION >= 105600
-#include <boost/core/enable_if.hpp>
-#else
-#include <boost/utility/enable_if.hpp>
-#endif
-
 #ifdef _MSC_VER
 # pragma warning(push)
   // C4355: 'this' : used in base member initializer list
@@ -121,8 +114,8 @@ private:
     /// Upcast in a class hierarchy with a virtual base class
     template<class T>
     static
-    typename boost::enable_if<
-      boost::is_base_of<SGVirtualWeakReferenced, T>,
+    typename std::enable_if<
+      std::is_base_of<SGVirtualWeakReferenced, T>::value,
       T*
     >::type
     up_cast(SGWeakReferenced* ptr);
@@ -130,8 +123,8 @@ private:
     /// Upcast in a non-virtual class hierarchy
     template<class T>
     static
-    typename boost::disable_if<
-      boost::is_base_of<SGVirtualWeakReferenced, T>,
+    typename std::enable_if<
+      !std::is_base_of<SGVirtualWeakReferenced, T>::value,
       T*
     >::type
     up_cast(SGWeakReferenced* ptr)
@@ -185,8 +178,8 @@ class SGVirtualWeakReferenced:
 /// Upcast in a class hierarchy with a virtual base class
 // We (clang) need the definition of SGVirtualWeakReferenced for the static_cast
 template<class T>
-typename boost::enable_if<
-  boost::is_base_of<SGVirtualWeakReferenced, T>,
+typename std::enable_if<
+  std::is_base_of<SGVirtualWeakReferenced, T>::value,
   T*
 >::type
 SGWeakReferenced::WeakData::up_cast(SGWeakReferenced* ptr)

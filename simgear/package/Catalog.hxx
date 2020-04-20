@@ -22,8 +22,6 @@
 #include <ctime>
 #include <map>
 
-#include <boost/bind.hpp>
-
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
@@ -148,7 +146,7 @@ public:
     template<class C>
     void addStatusCallback(C* instance, void (C::*mem_func)(Catalog*))
     {
-      return addStatusCallback(boost::bind(mem_func, instance, _1));
+      return addStatusCallback(std::bind(mem_func, instance, std::placeholders::_1));
     }
     
     bool isUserEnabled() const;

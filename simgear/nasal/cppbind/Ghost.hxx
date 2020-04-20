@@ -29,7 +29,6 @@
 #include <simgear/structure/SGWeakReferenced.hxx>
 #include <simgear/structure/SGWeakPtr.hxx>
 
-#include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/function.hpp>
 #include <boost/mpl/has_xxx.hpp>
@@ -217,7 +216,7 @@ namespace nasal
    *     .member("x_writeonly", &MyClass::setX)
    *     // Methods can be nearly anything callable and accepting a reference
    *     // to an instance of the class type. (member functions, free functions
-   *     // and anything else bindable using boost::function and boost::bind)
+   *     // and anything else bindable using boost::function and std::bind)
    *     .method("myMember", &MyClass::myMember)
    *     .method("doSomething", &MyClass::doSomethingElse)
    *     .method("other", &myOtherFreeMember);
@@ -596,9 +595,12 @@ namespace nasal
                                                 const std::string&,
                                                 Param& )>& getter )
       {
-        return _get(boost::bind(
-          convert_param_invoker<Param>, getter, _1, _2, _3, _4
-        ));
+        return _get(std::bind(convert_param_invoker<Param>,
+                              getter,
+                              std::placeholders::_1,
+                              std::placeholders::_2,
+                              std::placeholders::_3,
+                              std::placeholders::_4));
       }
 
       /**
@@ -672,12 +674,12 @@ namespace nasal
         //                         naContext,
         //                         const std::string&,
         //                         naRef )
-        return _set(boost::bind(
-          setter,
-          _1,
-          _3,
-          boost::bind(from_nasal_ptr<Param>::get(), _2, _4)
-        ));
+        return _set(std::bind(setter,
+                              std::placeholders::_1,
+                              std::placeholders::_3,
+                              std::bind(from_nasal_ptr<Param>::get(),
+                                        std::placeholders::_2,
+                                        std::placeholders::_4)));
       }
 
       /**
@@ -769,7 +771,10 @@ namespace nasal
         const boost::function<Ret (raw_type&, const CallContext&)>& func
       )
       {
-        return method(name, boost::bind(method_invoker<Ret>, func, _1, _2));
+        return method(name, std::bind(method_invoker<Ret>,
+                                      func,
+                                      std::placeholders::_1,
+                                      std::placeholders::_2));
       }
 
       /**
@@ -783,16 +788,13 @@ namespace nasal
                      const method_variadic_t<Ret, Args...>& func,
                      std::index_sequence<Indices...> )
       {
-        return method<Ret>
-        (
-          name,
-          typename boost::function<Ret (raw_type&, const CallContext&)>
-          ( boost::bind(
-            func,
-            _1,
-            boost::bind(&Ghost::arg_from_nasal<Args>, _2, Indices)...
-          ))
-        );
+        return method<Ret>(name,
+                           typename boost::function<Ret (raw_type&, const CallContext&)>
+                               (std::bind(func,
+                                          std::placeholders::_1,
+                                          std::bind(&Ghost::arg_from_nasal<Args>,
+                                                    std::placeholders::_2,
+                                                    Indices)...)));
       }
 
       template<class Ret, class... Args>
@@ -1124,24 +1126,20 @@ namespace nasal
         naRef(*to_nasal_)(naContext, param_type) = &to_nasal;
 
         // Getter signature: naRef(raw_type&, naContext)
-        return boost::bind
-        (
-          to_nasal_,
-          _2,
-          boost::bind(getter, _1)
-        );
+        return std::bind(to_nasal_,
+                         std::placeholders::_2,
+                         std::bind(getter, std::placeholders::_1));
       }
 
       template<class Param>
       setter_t to_setter(void (raw_type::*setter)(Param))
       {
         // Setter signature: void(raw_type&, naContext, naRef)
-        return boost::bind
-        (
-          setter,
-          _1,
-          boost::bind(from_nasal_ptr<Param>::get(), _2, _3)
-        );
+        return std::bind(setter,
+                         std::placeholders::_1,
+                         std::bind(from_nasal_ptr<Param>::get(),
+                                   std::placeholders::_2,
+                                   std::placeholders::_3));
       }
 
       /**

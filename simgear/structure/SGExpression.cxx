@@ -31,7 +31,6 @@
 #include <utility>
 #include <string>
 #include <sstream>
-#include <boost/bind.hpp>
 #include <cstring> // for strcmp
 #include <cassert>
 
@@ -854,12 +853,12 @@ ExpParserRegistrar leRegistrar("less-equal", predParser<LessEqualExpression>);
 template<typename Logicop>
 Expression* logicopParser(const SGPropertyNode* exp, Parser* parser)
 {
-    using namespace boost;
-    vector<Expression*> children;
+    std::vector<Expression*> children;
     parser->readChildren(exp, children);
-    vector<Expression*>::iterator notBool =
-        find_if(children.begin(), children.end(),
-                boost::bind(&Expression::getType, _1) != BOOL);
+    std::vector<Expression*>::const_iterator notBool =
+        std::find_if(children.begin(), children.end(),
+                     [] (const Expression* const e) {
+                         return e->getType () != BOOL; });
     if (notBool != children.end())
         throw("non boolean operand to logical expression");
     Logicop *expr = new Logicop;
@@ -873,9 +872,10 @@ ExpParserRegistrar orRegistrar("or", logicopParser<OrExpression>);
 size_t BindingLayout::addBinding(const string& name, Type type)
 {
     //XXX error checkint
-    vector<VariableBinding>::iterator itr
-        = find_if(bindings.begin(), bindings.end(),
-                  boost::bind(&VariableBinding::name, _1) == name);
+    std::vector<VariableBinding>::const_iterator itr =
+        std::find_if(bindings.begin(), bindings.end(),
+                     [&name] (const VariableBinding& v) {
+                         return v.name == name; });
     if (itr != bindings.end())
         return itr->location;
     size_t result = bindings.size();
@@ -886,11 +886,10 @@ size_t BindingLayout::addBinding(const string& name, Type type)
 bool BindingLayout::findBinding(const std::string& name,
                                 VariableBinding& result) const
 {
-    using namespace std;
-    using namespace boost;
-    vector<VariableBinding>::const_iterator itr
-        = find_if(bindings.begin(), bindings.end(),
-                  boost::bind(&VariableBinding::name, _1) == name);
+    std::vector<VariableBinding>::const_iterator itr =
+        std::find_if(bindings.begin(), bindings.end(),
+                     [&name] (const VariableBinding& v) {
+                         return v.name == name; });
     if (itr != bindings.end()) {
         result = *itr;
         return true;

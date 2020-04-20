@@ -29,7 +29,6 @@ using std::cerr;
 # include <boost/algorithm/string/find_iterator.hpp>
 # include <boost/algorithm/string/predicate.hpp>
 # include <boost/algorithm/string/classification.hpp>
-# include <boost/bind.hpp>
 # include <boost/functional/hash.hpp>
 # include <boost/range.hpp>
 # include <simgear/compiler.h>

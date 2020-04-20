@@ -29,7 +29,6 @@
 #include <osg/Object>
 #include <osgDB/Registry>
 
-#include <boost/bind.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -633,8 +632,9 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    SetterReturn (ObjType::*setter)(const OSGParamType),
                    const SGReaderWriterOptions* options)
 {
-	initFromParameters<OSGParamType>(effect, prop, obj,
-                                     boost::bind(setter, _1, _2), options);
+    initFromParameters<OSGParamType>(effect, prop, obj,
+                                     std::bind(setter, std::placeholders::_1, std::placeholders::_2),
+                                     options);
 }
 
 /*
@@ -694,8 +694,8 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    NameItrType nameItr, const SGReaderWriterOptions* options)
 {
     initFromParameters<OSGParamType>(effect, prop, obj,
-                                     boost::bind(setter, _1, _2), nameItr,
-                                     options);
+                                     std::bind(setter, std::placeholders::_1, std::placeholders::_2),
+                                     nameItr, options);
 }
 extern const char* colorFields[];
 }

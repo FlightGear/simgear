@@ -29,8 +29,6 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/io/HTTPRequest.hxx>
 
-#include <boost/bind.hpp>
-
 namespace simgear
 {
     
@@ -112,7 +110,7 @@ public:
     template<class C>
     Install* done(C* instance, void (C::*mem_func)(Install*))
     {
-      return done(boost::bind(mem_func, instance, _1));
+      return done(std::bind(mem_func, instance, std::placeholders::_1));
     }
 
     /**
@@ -126,7 +124,7 @@ public:
     template<class C>
     Install* fail(C* instance, void (C::*mem_func)(Install*))
     {
-      return fail(boost::bind(mem_func, instance, _1));
+      return fail(std::bind(mem_func, instance, std::placeholders::_1));
     }
 
     /**
@@ -141,7 +139,7 @@ public:
     template<class C>
     Install* always(C* instance, void (C::*mem_func)(Install*))
     {
-      return always(boost::bind(mem_func, instance, _1));
+      return always(std::bind(mem_func, instance, std::placeholders::_1));
     }
     
     /**
@@ -155,7 +153,11 @@ public:
     Install* progress(C* instance,
                       void (C::*mem_func)(Install*, unsigned int, unsigned int))
     {
-      return progress(boost::bind(mem_func, instance, _1, _2, _3));
+      return progress(std::bind(mem_func,
+                                instance,
+                                std::placeholders::_1,
+                                std::placeholders::_2,
+                                std::placeholders::_3));
     }
 
 private:

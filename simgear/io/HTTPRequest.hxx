@@ -28,8 +28,6 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/sg_types.hxx>
 
-#include <boost/bind.hpp>
-
 class SGPropertyNode;
 
 namespace simgear
@@ -82,7 +80,7 @@ public:
     template<class C>
     Request* done(C* instance, void (C::*mem_func)(Request*))
     {
-      return done(boost::bind(mem_func, instance, _1));
+      return done(std::bind(mem_func, instance, std::placeholders::_1));
     }
 
     /**
@@ -97,7 +95,7 @@ public:
     template<class C>
     Request* fail(C* instance, void (C::*mem_func)(Request*))
     {
-      return fail(boost::bind(mem_func, instance, _1));
+      return fail(std::bind(mem_func, instance, std::placeholders::_1));
     }
 
     /**
@@ -112,7 +110,7 @@ public:
     template<class C>
     Request* always(C* instance, void (C::*mem_func)(Request*))
     {
-      return always(boost::bind(mem_func, instance, _1));
+      return always(std::bind(mem_func, instance, std::placeholders::_1));
     }
 
     /**

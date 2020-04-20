@@ -35,7 +35,6 @@
 #include <unordered_map>
 #include <mutex>
 
-#include <boost/bind.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -880,7 +879,6 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                                           const SGReaderWriterOptions*
                                           options)
 {
-    using namespace boost;
     if (!isAttributeActive(effect, prop))
         return;
     PropertyList pVertShaders = prop->getChildren("vertex-shader");
@@ -889,12 +887,15 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     PropertyList pAttributes = prop->getChildren("attribute");
     ProgramKey prgKey;
     std::back_insert_iterator<vector<ShaderKey> > inserter(prgKey.shaders);
-    transform(pVertShaders.begin(), pVertShaders.end(), inserter,
-              boost::bind(makeShaderKey, _1, Shader::VERTEX));
-    transform(pGeomShaders.begin(), pGeomShaders.end(), inserter,
-              boost::bind(makeShaderKey, _1, Shader::GEOMETRY));
-    transform(pFragShaders.begin(), pFragShaders.end(), inserter,
-              boost::bind(makeShaderKey, _1, Shader::FRAGMENT));
+    std::transform(pVertShaders.begin(), pVertShaders.end(), inserter,
+                   [] (SGPropertyNode_ptr& ptr) {
+                       return makeShaderKey(ptr, Shader::VERTEX); });
+    std::transform(pGeomShaders.begin(), pGeomShaders.end(), inserter,
+                   [] (SGPropertyNode_ptr& ptr) {
+                       return makeShaderKey(ptr, Shader::GEOMETRY); });
+    std::transform(pFragShaders.begin(), pFragShaders.end(), inserter,
+                   [] (SGPropertyNode_ptr& ptr) {
+                       return makeShaderKey(ptr, Shader::FRAGMENT); });
     for (PropertyList::iterator itr = pAttributes.begin(),
              e = pAttributes.end();
          itr != e;

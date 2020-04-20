@@ -2,8 +2,7 @@
 #define SIMGEAR_EXTENDEDPROPERTYADAPTER_HXX 1
 
 #include <algorithm>
-
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/exception.hxx>
@@ -65,7 +64,8 @@ inline void makeChildList(SGPropertyNode* prop, InIterator inBegin,
                           InIterator inEnd, OutIterator outBegin)
 {
     std::transform(inBegin, inEnd, outBegin,
-                   boost::bind(static_cast<SGPropertyNode* (SGPropertyNode::*)(const char*, int, bool)>(&SGPropertyNode::getChild), prop, _1, 0, true));
+                   std::bind(static_cast<SGPropertyNode* (SGPropertyNode::*)(const char*, int, bool)>(&SGPropertyNode::getChild),
+                             prop, std::placeholders::_1, 0, true));
 }
 
 }

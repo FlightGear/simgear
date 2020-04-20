@@ -25,8 +25,6 @@
 #include <cstring>
 #include <cassert>
 
-#include <boost/bind.hpp>
-
 #include <osg/Version>
 #include <osg/Geode>
 #include <osg/MatrixTransform>
@@ -197,10 +195,10 @@ void makeEffectAnimations(PropertyList& animation_nodes,
 
         }
     }
-    animation_nodes.erase(remove_if(animation_nodes.begin(),
-                                    animation_nodes.end(),
-                                    !boost::bind(&SGPropertyNode_ptr::valid,
-                                                 _1)),
+    animation_nodes.erase(std::remove_if(animation_nodes.begin(),
+                                         animation_nodes.end(),
+                                         [] (const SGPropertyNode_ptr& ptr) {
+                                             return !ptr.valid(); }),
                           animation_nodes.end());
 }
 }

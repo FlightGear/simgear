@@ -9,8 +9,6 @@
 #include <iterator>
 #include <vector>
 
-#include <boost/bind.hpp>
-
 #include <simgear/structure/Singleton.hxx>
 
 namespace simgear

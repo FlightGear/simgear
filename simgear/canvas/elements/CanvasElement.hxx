@@ -29,7 +29,6 @@
 #include <osg/BoundingBox>
 #include <osg/MatrixTransform>
 
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
 
 namespace osg
@@ -345,13 +344,10 @@ namespace canvas
         if( style->func )
           style = style->next = new StyleSetter;
 
-        style->func = boost::bind
-        (
-          &type_match<Derived>::call,
-          _1,
-          _2,
-          bindStyleSetter<T1>(name, setter)
-        );
+        style->func = std::bind(&type_match<Derived>::call,
+                                std::placeholders::_1,
+                                std::placeholders::_2,
+                                bindStyleSetter<T1>(name, setter));
         return *style;
       }
 
@@ -528,7 +524,9 @@ namespace canvas
       boost::function<void (Derived&, T)>
       bindOther( void (Other::*setter)(T), OtherRef Derived::*instance_ref )
       {
-        return boost::bind(setter, boost::bind(instance_ref, _1), _2);
+        return std::bind(setter,
+                         std::bind(instance_ref, std::placeholders::_1),
+                         std::placeholders::_2);
       }
 
       template<typename T, class Derived, class Other, class OtherRef>
@@ -537,16 +535,10 @@ namespace canvas
       bindOther( const boost::function<void (Other&, T)>& setter,
                  OtherRef Derived::*instance_ref )
       {
-        return boost::bind
-        (
-          setter,
-          boost::bind
-          (
-            &reference_from_pointer<Other, OtherRef>,
-            boost::bind(instance_ref, _1)
-          ),
-          _2
-        );
+        return std::bind(setter,
+                         std::bind(&reference_from_pointer<Other, OtherRef>,
+                                   std::bind(instance_ref, std::placeholders::_1)),
+                         std::placeholders::_2);
       }
 
       template<typename T1, typename T2, class Derived>
@@ -555,14 +547,11 @@ namespace canvas
       bindStyleSetter( const std::string& name,
                        const boost::function<void (Derived&, T2)>& setter )
       {
-        return boost::bind
-        (
-          setter,
-          // We will only call setters with Derived instances, so we can safely
-          // cast here.
-          boost::bind(&derived_cast<Derived>, _1),
-          boost::bind(&getValue<T1>, _2)
-        );
+        return std::bind(setter,
+                         // We will only call setters with Derived instances, so we can safely
+                         // cast here.
+                         std::bind(&derived_cast<Derived>, std::placeholders::_1),
+                         std::bind(&getValue<T1>, std::placeholders::_2));
       }
 
       bool isStyleEmpty(const SGPropertyNode* child) const;

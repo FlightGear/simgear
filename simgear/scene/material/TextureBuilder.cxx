@@ -39,7 +39,6 @@
 #include <OpenThreads/Mutex>
 #include <OpenThreads/ScopedLock>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -124,10 +123,11 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
         const SGPropertyNode* pName = prop->getChild("name");
         if (pName)
             try {
-                unit = boost::lexical_cast<int>(pName->getStringValue());
-            } catch (boost::bad_lexical_cast& lex) {
+                unit = std::stoi(pName->getStringValue());
+            }
+            catch (const std::invalid_argument& ia) {
                 SG_LOG(SG_INPUT, SG_ALERT, "can't decode name as texture unit "
-                       << lex.what());
+                       << ia.what());
             }
     }
     const SGPropertyNode* pType = getEffectPropertyChild(effect, prop, "type");

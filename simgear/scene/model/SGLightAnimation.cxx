@@ -19,8 +19,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <boost/lexical_cast.hpp>
-
 #include "animation.hxx"
 #include "ConditionNode.hxx"
 
@@ -109,7 +107,7 @@ SGLightAnimation::SGLightAnimation(simgear::SGTransientModelData &modelData) :
     _cutoff = getConfig()->getDoubleValue("cutoff");
     _near = getConfig()->getDoubleValue("near-m");
     _far = getConfig()->getDoubleValue("far-m");
-    _key = modelData.getPath() + ";" + boost::lexical_cast<std::string>(modelData.getIndex() );
+    _key = modelData.getPath() + ";" + std::to_string(modelData.getIndex());
 
     SGConstPropertyNode_ptr dim_factor = modelData.getConfigNode()->getChild("dim-factor");
     if (dim_factor.valid()) {

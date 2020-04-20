@@ -20,7 +20,6 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
 #include <map>
@@ -77,7 +76,7 @@ namespace simgear
            tok != tokens.end() && comp < 4;
            ++tok, ++comp )
       {
-        color[comp] = boost::lexical_cast<float>(*tok)
+        color[comp] = std::stof(*tok)
                     // rgb = [0,255], a = [0,1]
                     / (comp < 3 ? 255 : 1);
       }

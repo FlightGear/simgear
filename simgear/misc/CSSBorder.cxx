@@ -18,7 +18,6 @@
 
 #include "CSSBorder.hxx"
 
-#include <boost/lexical_cast.hpp>
 #include <boost/range.hpp>
 #include <boost/tokenizer.hpp>
 
@@ -114,9 +113,9 @@ namespace simgear
           std::max
           (
             0.f,
-            boost::lexical_cast<float>
+            std::stof
             (
-              rel ? boost::make_iterator_range(tok->begin(), tok->end() - 1)
+              rel ? std::string(tok->begin(), tok->end() - 1)
                   : *tok
             )
             /

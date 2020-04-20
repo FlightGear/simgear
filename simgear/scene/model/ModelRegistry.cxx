@@ -66,7 +66,6 @@
 #include "BoundingVolumeBuildVisitor.hxx"
 #include "model.hxx"
 
-#include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 

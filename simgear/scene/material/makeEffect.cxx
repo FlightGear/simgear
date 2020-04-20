@@ -11,9 +11,7 @@
 #include <algorithm>
 #include <cstring>
 #include <map>
-#include <sstream>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -167,22 +165,25 @@ Effect* makeEffect(SGPropertyNode* prop,
     vector<SGPropertyNode_ptr> techniques = prop->getChildren("technique");
     for (int i = 0; i < (int)techniques.size(); ++i) {
         SGPropertyNode* tniqProp = techniques[i].ptr();
-        if (!tniqProp->hasChild("name"))
+        if (!tniqProp->hasChild("name")) {
             setValue(tniqProp->getChild("name", 0, true),
-                     boost::lexical_cast<string>(i));
+                     std::to_string(i));
+        }
         vector<SGPropertyNode_ptr> passes = tniqProp->getChildren("pass");
         for (int j = 0; j < (int)passes.size(); ++j) {
             SGPropertyNode* passProp = passes[j].ptr();
-            if (!passProp->hasChild("name"))
+            if (!passProp->hasChild("name")) {
                 setValue(passProp->getChild("name", 0, true),
-                         boost::lexical_cast<string>(j));
+                         std::to_string(j));
+            }
             vector<SGPropertyNode_ptr> texUnits
                 = passProp->getChildren("texture-unit");
             for (int k = 0; k < (int)texUnits.size(); ++k) {
                 SGPropertyNode* texUnitProp = texUnits[k].ptr();
-                if (!texUnitProp->hasChild("name"))
+                if (!texUnitProp->hasChild("name")) {
                     setValue(texUnitProp->getChild("name", 0, true),
-                             boost::lexical_cast<string>(k));
+                             std::to_string(k));
+                }
             }
         }
     }

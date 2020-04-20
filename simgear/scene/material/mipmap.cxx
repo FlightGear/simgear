@@ -27,7 +27,6 @@
 #include <osg/Image>
 #include <osg/Vec4>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
 namespace simgear { namespace effect {

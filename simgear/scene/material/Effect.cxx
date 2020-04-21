@@ -36,7 +36,6 @@
 #include <mutex>
 
 #include <boost/functional/hash.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include <osg/AlphaFunc>

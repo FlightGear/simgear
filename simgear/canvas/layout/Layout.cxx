@@ -18,6 +18,9 @@
 
 #include <simgear_config.h>
 #include "Layout.hxx"
+
+#include <algorithm>
+
 #include <simgear/debug/logstream.hxx>
 
 namespace simgear

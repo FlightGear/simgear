@@ -27,7 +27,6 @@
 #include <simgear/nasal/cppbind/cppbind_fwd.hxx>
 #include <simgear/std/type_traits.hxx>
 
-#include <boost/function/function_fwd.hpp>
 #include <boost/call_traits.hpp>
 
 #include <array>

@@ -39,7 +39,6 @@
 #include <OpenThreads/Mutex>
 #include <OpenThreads/ScopedLock>
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include <simgear/scene/util/OsgMath.hxx>

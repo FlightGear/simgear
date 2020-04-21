@@ -29,8 +29,6 @@
 #include <map>
 #include <math.h>
 
-#include <boost/tuple/tuple_comparison.hpp>
-
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Math>

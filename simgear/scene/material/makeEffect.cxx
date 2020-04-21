@@ -12,9 +12,6 @@
 #include <cstring>
 #include <map>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-
 #include <OpenThreads/ReentrantMutex>
 #include <OpenThreads/ScopedLock>
 

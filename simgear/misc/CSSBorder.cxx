@@ -18,7 +18,6 @@
 
 #include "CSSBorder.hxx"
 
-#include <boost/range.hpp>
 #include <boost/tokenizer.hpp>
 
 namespace simgear

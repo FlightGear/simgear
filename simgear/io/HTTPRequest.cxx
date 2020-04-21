@@ -19,6 +19,7 @@
 #include "HTTPRequest.hxx"
 
 #include <cstring>
+#include <algorithm> // for std::min
 
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>

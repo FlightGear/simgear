@@ -66,9 +66,6 @@
 #include "BoundingVolumeBuildVisitor.hxx"
 #include "model.hxx"
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-
 using namespace std;
 using namespace osg;
 using namespace osgUtil;

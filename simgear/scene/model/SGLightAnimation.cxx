@@ -31,7 +31,6 @@
 #include <simgear/scene/util/CopyOp.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
-#include <boost/scoped_array.hpp>
 
 typedef std::map<std::string, osg::observer_ptr<simgear::Effect> > EffectMap;
 static EffectMap lightEffectMap;

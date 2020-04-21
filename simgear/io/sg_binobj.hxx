@@ -34,18 +34,15 @@
 #include <simgear/math/sg_types.hxx>
 #include <simgear/math/SGMath.hxx>
 
-#include <vector>
+#include <array>
 #include <string>
-#include <boost/array.hpp>
+#include <vector>
 
 #define MAX_TC_SETS     (4)
 #define MAX_VAS         (8)
 
-// I really want to pass around fixed length arrays, as the size 
-// has to be hardcoded
-// but it's a C++0x feature use boost in its absence
-typedef boost::array<int_list, MAX_TC_SETS> tci_list;
-typedef boost::array<int_list, MAX_VAS>     vai_list;
+typedef std::array<int_list, MAX_TC_SETS> tci_list;
+typedef std::array<int_list, MAX_VAS>     vai_list;
 
 /** STL Structure used to store (integer index) object information */
 typedef std::vector < int_list > group_list;

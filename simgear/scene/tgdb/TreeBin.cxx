@@ -28,8 +28,6 @@
 #include <string>
 #include <map>
 
-#include <boost/tuple/tuple_comparison.hpp>
-
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Math>

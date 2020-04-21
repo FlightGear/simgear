@@ -28,9 +28,9 @@ using std::cerr;
 #else
 # include <boost/algorithm/string/find_iterator.hpp>
 # include <boost/algorithm/string/predicate.hpp>
-# include <boost/algorithm/string/classification.hpp>
 # include <boost/functional/hash.hpp>
 # include <boost/range.hpp>
+
 # include <simgear/compiler.h>
 # include <simgear/debug/logstream.hxx>
 # include <simgear/sg_inlines.h>
@@ -162,7 +162,6 @@ parse_name (const SGPropertyNode *node, const Range &path)
 // Validate the name of a single node
 inline bool validateName(const std::string& name)
 {
-  using namespace boost;
   if (name.empty())
     return false;
   if (!isalpha(name[0]) && name[0] != '_')
@@ -2088,10 +2087,9 @@ SGPropertyNode::getNode (const char * relative_path, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  using namespace boost;
-
-  return find_node(this, make_iterator_range(relative_path, relative_path
-                                             + strlen(relative_path)),
+  return find_node(this,
+                   boost::make_iterator_range(relative_path,
+                                              relative_path + strlen(relative_path)),
                    create);
 #endif
 }
@@ -2107,10 +2105,9 @@ SGPropertyNode::getNode (const char * relative_path, int index, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  using namespace boost;
-
-  return find_node(this, make_iterator_range(relative_path, relative_path
-                                             + strlen(relative_path)),
+  return find_node(this,
+                   boost::make_iterator_range(relative_path,
+                                              relative_path + strlen(relative_path)),
                    create, index);
 #endif
 }

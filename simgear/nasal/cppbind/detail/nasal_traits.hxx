@@ -20,6 +20,7 @@
 #ifndef SG_NASAL_TRAITS_HXX_
 #define SG_NASAL_TRAITS_HXX_
 
+#include <memory>
 #include <simgear/std/type_traits.hxx>
 
 // Forward declarations
@@ -29,12 +30,6 @@ template<class T> class SGSharedPtr;
 template<class T> class SGWeakPtr;
 template<class T> class SGVec2;
 template<class T> class SGVec4;
-
-namespace std
-{
-  template<class T> class shared_ptr;
-  template<class T> class weak_ptr;
-}
 
 namespace osg
 {

@@ -27,8 +27,6 @@
 #include <osg/Image>
 #include <osg/Vec4>
 
-#include <boost/tuple/tuple_comparison.hpp>
-
 namespace simgear { namespace effect {
 
 EffectNameValue<MipMapFunction> mipmapFunctionsInit[] =

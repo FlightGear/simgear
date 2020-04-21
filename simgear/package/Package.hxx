@@ -51,7 +51,7 @@ typedef std::vector<PackageRef> PackageList;
 {
 public:
 
-    typedef boost::function<void(Package*, Install*)> InstallCallback;
+    typedef std::function<void(Package*, Install*)> InstallCallback;
 
     /**
      * get or create an install for the package

@@ -27,8 +27,6 @@
 #include <simgear/emesary/Emesary.hxx>
 #include <simgear/emesary/notifications.hxx>
 
-#include <boost/function.hpp>
-
 #include <simgear/debug/logstream.hxx>
 
 #include <simgear/threads/SGThread.hxx>

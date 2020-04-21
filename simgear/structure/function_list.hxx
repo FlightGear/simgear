@@ -19,7 +19,7 @@
 #ifndef SG_FUNCTION_LIST_HXX_
 #define SG_FUNCTION_LIST_HXX_
 
-#include <boost/function.hpp>
+#include <functional>
 #include <vector>
 
 namespace simgear
@@ -27,14 +27,14 @@ namespace simgear
   template<typename Sig> class function_list;
 
   /**
-   * Handle a list of callbacks like a single boost::function.
+   * Handle a list of callbacks like a single std::function.
    *
    * @tparam Ret    Return type of the callbacks
    * @tparam Args   Parameter types of the callbacks
    */
   template<class Ret, class... Args>
   class function_list<Ret(Args...)>:
-    public std::vector<boost::function<Ret(Args...)>>
+    public std::vector<std::function<Ret(Args...)>>
   {
     public:
       Ret operator()(Args ... args) const
@@ -53,10 +53,10 @@ namespace simgear
 
   /**
    * Handle a list of callbacks with the same signature as the given
-   * boost::function type.
+   * std::function type.
    */
   template<class Ret, class... Args>
-  class function_list<boost::function<Ret(Args...)>>:
+  class function_list<std::function<Ret(Args...)>>:
     public function_list<Ret(Args...)>
   {
 

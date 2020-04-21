@@ -19,9 +19,11 @@
 
 #include <simgear/package/Root.hxx>
 
+#include <algorithm>
+#include <cassert>
 #include <cstring>
-#include <map>
 #include <deque>
+#include <map>
 #include <set>
 
 #include <simgear/debug/logstream.hxx>

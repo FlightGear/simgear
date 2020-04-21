@@ -18,6 +18,8 @@
 #include <simgear_config.h>
 #include "HTTPRequest.hxx"
 
+#include <cstring>
+
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/strutils.hxx>

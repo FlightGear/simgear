@@ -32,9 +32,8 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
-#include <boost/function.hpp>
-
 #include <array>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -110,14 +109,14 @@ namespace nasal
   bool from_nasal_helper(naContext c, naRef ref, const bool*);
 
   /**
-   * Convert a Nasal function to a boost::function with the given signature.
+   * Convert a Nasal function to a std::function with the given signature.
    *
    * @tparam Sig    Signature of returned function (arguments and return value
    *                are automatically converted using from_nasal/to_nasal)
    */
   template<class Ret, class... Args>
-  boost::function<Ret (Args...)>
-  from_nasal_helper(naContext c, naRef ref, const boost::function<Ret (Args...)>*)
+  std::function<Ret (Args...)>
+  from_nasal_helper(naContext c, naRef ref, const std::function<Ret (Args...)>*)
   {
     if( naIsNil(ref) )
       return {};
@@ -131,11 +130,11 @@ namespace nasal
   }
 
   template<class Ret, class... Args>
-  boost::function<Ret (Args...)>
+  std::function<Ret (Args...)>
   from_nasal_helper(naContext c, naRef ref, Ret (*const)(Args...))
   {
     return
-    from_nasal_helper(c, ref, static_cast<boost::function<Ret (Args...)>*>(0));
+    from_nasal_helper(c, ref, static_cast<std::function<Ret (Args...)>*>(0));
   }
 
   /**

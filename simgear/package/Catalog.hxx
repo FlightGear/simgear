@@ -139,7 +139,7 @@ public:
      */
     bool isEnabled() const;
 
-    typedef boost::function<void(Catalog*)> Callback;
+    typedef std::function<void(Catalog*)> Callback;
 
     void addStatusCallback(const Callback& cb);
 

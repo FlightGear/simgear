@@ -18,8 +18,9 @@
 #include <simgear_config.h>
 #include <simgear/package/Install.hxx>
 
-#include <fstream>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
 
 #include <simgear/package/unzip.h>
 #include <simgear/package/md5.h>

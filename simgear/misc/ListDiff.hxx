@@ -21,7 +21,6 @@
 #define SG_LISTDIFF_HXX_
 
 #include <vector>
-#include <boost/function.hpp>
 
 namespace simgear
 {
@@ -30,7 +29,7 @@ namespace simgear
   struct ListDiff
   {
     typedef std::vector<T> List;
-    typedef boost::function<void (T)> Callback;
+    typedef std::function<void (T)> Callback;
 
     /**
      * Perform list diff in-place (modifies both lists) and call cb_add for

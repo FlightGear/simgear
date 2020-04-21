@@ -33,7 +33,6 @@
 #ifndef LRU_CACHE_HXX_
 #define LRU_CACHE_HXX_
 
-#include <boost/function.hpp>
 #include <map>
 #include <list>
 #include <utility>

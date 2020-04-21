@@ -44,7 +44,7 @@ class Request:
   public SGReferenced
 {
 public:
-    typedef boost::function<void(Request*)> Callback;
+    typedef std::function<void(Request*)> Callback;
 
     enum ReadyState
     {

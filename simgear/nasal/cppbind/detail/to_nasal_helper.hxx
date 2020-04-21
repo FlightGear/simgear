@@ -31,6 +31,7 @@
 #include <boost/call_traits.hpp>
 
 #include <array>
+#include <functional>
 #include <initializer_list>
 #include <map>
 #include <string>
@@ -42,7 +43,7 @@ class SGPath;
 namespace nasal
 {
 
-  typedef boost::function<naRef (CallContext)> free_function_t;
+  typedef std::function<naRef (CallContext)> free_function_t;
 
   /**
    * Convert std::string to Nasal string

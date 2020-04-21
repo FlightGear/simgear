@@ -30,7 +30,6 @@
 #include <simgear/structure/SGWeakPtr.hxx>
 
 #include <boost/call_traits.hpp>
-#include <boost/function.hpp>
 #include <boost/mpl/has_xxx.hpp>
 
 #include <map>
@@ -216,7 +215,7 @@ namespace nasal
    *     .member("x_writeonly", &MyClass::setX)
    *     // Methods can be nearly anything callable and accepting a reference
    *     // to an instance of the class type. (member functions, free functions
-   *     // and anything else bindable using boost::function and std::bind)
+   *     // and anything else bindable using std::function and std::bind)
    *     .method("myMember", &MyClass::myMember)
    *     .method("doSomething", &MyClass::doSomethingElse)
    *     .method("other", &myOtherFreeMember);
@@ -233,16 +232,16 @@ namespace nasal
       using weak_ref    = typename shared_ptr_traits<T>::weak_ref;
       using member_func_t = naRef (raw_type::*)(const CallContext&);
       using free_func_t = naRef (*)(raw_type&, const CallContext&);
-      using getter_t    = boost::function<naRef(raw_type&, naContext)>;
-      using setter_t    = boost::function<void( raw_type&, naContext, naRef)>;
-      using method_t    = boost::function<naRef(raw_type&, const CallContext&)>;
+      using getter_t    = std::function<naRef(raw_type&, naContext)>;
+      using setter_t    = std::function<void( raw_type&, naContext, naRef)>;
+      using method_t    = std::function<naRef(raw_type&, const CallContext&)>;
       using fallback_getter_t =
-        boost::function<bool(raw_type&, naContext, const std::string&, naRef&)>;
+        std::function<bool(raw_type&, naContext, const std::string&, naRef&)>;
       using fallback_setter_t =
-        boost::function<bool(raw_type&, naContext, const std::string&, naRef)>;
+        std::function<bool(raw_type&, naContext, const std::string&, naRef)>;
 
       template<class Ret, class... Args>
-      using method_variadic_t = boost::function<Ret (raw_type&, Args...)>;
+      using method_variadic_t = std::function<Ret (raw_type&, Args...)>;
 
       class MethodHolder:
         public internal::MethodHolder
@@ -564,7 +563,7 @@ namespace nasal
                      const getter_t& getter,
                      const setter_t& setter = setter_t() )
       {
-        if( !getter.empty() || !setter.empty() )
+        if( getter || setter )
           _members[field] = member_t(getter, setter);
         else
           SG_LOG
@@ -591,9 +590,9 @@ namespace nasal
        * of this ghost, and convert it to the given @a Param type.
        */
       template<class Param>
-      Ghost& _get( const boost::function<bool ( raw_type&,
-                                                const std::string&,
-                                                Param& )>& getter )
+      Ghost& _get( const std::function<bool ( raw_type&,
+                                              const std::string&,
+                                              Param& )>& getter )
       {
         return _get(std::bind(convert_param_invoker<Param>,
                               getter,
@@ -623,7 +622,7 @@ namespace nasal
       Ghost& _get(bool (raw_type::*getter)(const std::string&, Param&) const)
       {
         return _get(
-          boost::function<bool (raw_type&, const std::string&, Param&)>(getter)
+          std::function<bool (raw_type&, const std::string&, Param&)>(getter)
         );
       }
 
@@ -666,9 +665,9 @@ namespace nasal
        * this ghost, and convert it to the given @a Param type.
        */
       template<class Param>
-      Ghost& _set(const boost::function<bool ( raw_type&,
-                                               const std::string&,
-                                               Param )>& setter)
+      Ghost& _set(const std::function<bool ( raw_type&,
+                                             const std::string&,
+                                             Param )>& setter)
       {
         // Setter signature: bool( raw_type&,
         //                         naContext,
@@ -702,7 +701,7 @@ namespace nasal
       Ghost& _set(bool (raw_type::*setter)(const std::string&, Param))
       {
         return _set(
-          boost::function<bool (raw_type&, const std::string&, Param)>(setter)
+          std::function<bool (raw_type&, const std::string&, Param)>(setter)
         );
       }
 
@@ -768,7 +767,7 @@ namespace nasal
       Ghost& method
       (
         const std::string& name,
-        const boost::function<Ret (raw_type&, const CallContext&)>& func
+        const std::function<Ret (raw_type&, const CallContext&)>& func
       )
       {
         return method(name, std::bind(method_invoker<Ret>,
@@ -789,7 +788,7 @@ namespace nasal
                      std::index_sequence<Indices...> )
       {
         return method<Ret>(name,
-                           typename boost::function<Ret (raw_type&, const CallContext&)>
+                           typename std::function<Ret (raw_type&, const CallContext&)>
                                (std::bind(func,
                                           std::placeholders::_1,
                                           std::bind(&Ghost::arg_from_nasal<Args>,
@@ -1149,9 +1148,9 @@ namespace nasal
       static
       bool convert_param_invoker
       (
-        const boost::function<bool ( raw_type&,
-                                     const std::string&,
-                                     Param& )>& func,
+        const std::function<bool ( raw_type&,
+                                   const std::string&,
+                                   Param& )>& func,
         raw_type& obj,
         naContext c,
         const std::string& key,
@@ -1174,7 +1173,7 @@ namespace nasal
       std::enable_if_t<!std::is_void<Ret>::value, naRef>
       method_invoker
       (
-        const boost::function<Ret (raw_type&, const CallContext&)>& func,
+        const std::function<Ret (raw_type&, const CallContext&)>& func,
         raw_type& obj,
         const CallContext& ctx
       )
@@ -1190,7 +1189,7 @@ namespace nasal
       std::enable_if_t<std::is_void<Ret>::value, naRef>
       method_invoker
       (
-        const boost::function<Ret (raw_type&, const CallContext&)>& func,
+        const std::function<Ret (raw_type&, const CallContext&)>& func,
         raw_type& obj,
         const CallContext& ctx
       )
@@ -1362,7 +1361,7 @@ namespace nasal
         }
         else if( member->second.func )
           *out = member->second.func->get_naRef(c);
-        else if( !member->second.getter.empty() )
+        else if( member->second.getter )
           *out = member->second.getter(obj, c);
         else
           return "Read-protected member";
@@ -1411,7 +1410,7 @@ namespace nasal
           else if( !fallback_set(obj, c, key, val) )
             naRuntimeError(c, "ghost: Failed to write (_set: %s)", key.c_str());
         }
-        else if( member->second.setter.empty() )
+        else if( !member->second.setter )
           naRuntimeError(c, "ghost: Write protected member: %s", key.c_str());
         else if( member->second.func )
           naRuntimeError(c, "ghost: Write to function: %s", key.c_str());

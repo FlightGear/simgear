@@ -231,25 +231,25 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
 
 
   // 'func' is a C++ function registered to Nasal and now converted back to C++
-  boost::function<int (int)> f = hash.get<int (int)>("func");
+  std::function<int (int)> f = hash.get<int (int)>("func");
   BOOST_REQUIRE( f );
   BOOST_CHECK_EQUAL(f(3), 3);
 
-  boost::function<std::string (int)> fs = hash.get<std::string (int)>("func");
+  std::function<std::string (int)> fs = hash.get<std::string (int)>("func");
   BOOST_REQUIRE( fs );
   BOOST_CHECK_EQUAL(fs(14), "14");
 
-  typedef boost::function<void (int)> FuncVoidInt;
+  typedef std::function<void (int)> FuncVoidInt;
   FuncVoidInt fvi = hash.get<FuncVoidInt>("func");
   BOOST_REQUIRE( fvi );
   fvi(123);
 
-  typedef boost::function<std::string (const std::string&, int, float)> FuncMultiArg;
+  typedef std::function<std::string (const std::string&, int, float)> FuncMultiArg;
   FuncMultiArg fma = hash.get<FuncMultiArg>("func");
   BOOST_REQUIRE( fma );
   BOOST_CHECK_EQUAL(fma("test", 3, .5), "test");
 
-  typedef boost::function<naRef (naRef)> naRefMemFunc;
+  typedef std::function<naRef (naRef)> naRefMemFunc;
   naRefMemFunc fmem = hash.get<naRefMemFunc>("func");
   BOOST_REQUIRE( fmem );
   naRef ret = fmem(hash.get_naRef()),
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
 
   // Check if nasal::Me gets passed as self/me and remaining arguments are
   // passed on to function
-  typedef boost::function<int (Me, int)> MeIntFunc;
+  typedef std::function<int (Me, int)> MeIntFunc;
   MeIntFunc fmeint = hash.get<MeIntFunc>("func");
   BOOST_CHECK_EQUAL(fmeint(Me{}, 5), 5);
 
@@ -331,7 +331,7 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   BOOST_CHECK( naIsFunc(thisGetter) );
 
   // ...and check if it really gets passed the correct instance
-  typedef boost::function<unsigned long (Me)> MemFunc;
+  typedef std::function<unsigned long (Me)> MemFunc;
   MemFunc fGetThis = c.from_nasal<MemFunc>(thisGetter);
   BOOST_REQUIRE( fGetThis );
   BOOST_CHECK_EQUAL( fGetThis(Me{derived}), (unsigned long)d.get() );

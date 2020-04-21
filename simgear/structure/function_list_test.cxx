@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE( create_and_call )
   BOOST_REQUIRE_EQUAL(func_called, 2);
   BOOST_REQUIRE_EQUAL(func2_called, 1);
 
-  function_list<boost::function<int (int)> > func_list2;
+  function_list<std::function<int (int)> > func_list2;
   func_list2.push_back(&func);
   func_list2.push_back(&func2);
   func_list2.push_back(&func2);
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE( create_and_call )
   BOOST_REQUIRE_EQUAL(func2_called, 3);
 
   // two parameters
-  function_list<boost::function<int (int, int)> > func_list3;
+  function_list<std::function<int (int, int)> > func_list3;
   func_list3.push_back(&func_add);
   func_list3.push_back(&func2_add);
 

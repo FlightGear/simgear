@@ -19,8 +19,9 @@
 #include <simgear/package/Catalog.hxx>
 
 #include <algorithm>
-#include <fstream>
+#include <cassert>
 #include <cstring>
+#include <fstream>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props_io.hxx>

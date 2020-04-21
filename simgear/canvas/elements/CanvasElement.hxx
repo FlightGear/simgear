@@ -29,8 +29,6 @@
 #include <osg/BoundingBox>
 #include <osg/MatrixTransform>
 
-#include <boost/function.hpp>
-
 namespace osg
 {
   class Drawable;
@@ -61,9 +59,9 @@ namespace canvas
           OSGUserData(ElementPtr element);
       };
 
-      typedef boost::function<bool(Element&, const SGPropertyNode*)>
+      typedef std::function<bool(Element&, const SGPropertyNode*)>
               StyleSetterFunc;
-      typedef boost::function<void(Element&, const SGPropertyNode*)>
+      typedef std::function<void(Element&, const SGPropertyNode*)>
               StyleSetterFuncUnchecked;
       struct StyleSetter:
         public SGReferenced
@@ -318,7 +316,7 @@ namespace canvas
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
-                const boost::function<void (Derived&, T2)>& setter,
+                const std::function<void (Derived&, T2)>& setter,
                 bool inheritable = true )
       {
         StyleInfo& style_info = _style_setters[ name ];
@@ -359,7 +357,7 @@ namespace canvas
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
-                const boost::function<void (Derived&, T)>& setter,
+                const std::function<void (Derived&, T)>& setter,
                 bool inheritable = true )
       {
         return addStyle<T, T>(name, type, setter, inheritable);
@@ -380,7 +378,7 @@ namespace canvas
         (
           name,
           type,
-          boost::function<void (Derived&, T)>(setter),
+          std::function<void (Derived&, T)>(setter),
           inheritable
         );
       }
@@ -401,7 +399,7 @@ namespace canvas
         (
           name,
           type,
-          boost::function<void (Derived&, T2)>(setter),
+          std::function<void (Derived&, T2)>(setter),
           inheritable
         );
       }
@@ -420,7 +418,7 @@ namespace canvas
         (
           name,
           type,
-          boost::function<void (Derived&, const std::string&)>(setter),
+          std::function<void (Derived&, const std::string&)>(setter),
           inheritable
         );
       }
@@ -483,7 +481,7 @@ namespace canvas
       StyleSetter
       addStyle( const std::string& name,
                 const std::string& type,
-                const boost::function<void (Other&, T2)>& setter,
+                const std::function<void (Other&, T2)>& setter,
                 OtherRef Derived::*instance_ref,
                 bool inheritable = true )
       {
@@ -513,7 +511,7 @@ namespace canvas
         (
           name,
           type,
-          boost::function<void (Other&, const std::string&)>(setter),
+          std::function<void (Other&, const std::string&)>(setter),
           instance_ref,
           inheritable
         );
@@ -521,7 +519,7 @@ namespace canvas
 
       template<typename T, class Derived, class Other, class OtherRef>
       static
-      boost::function<void (Derived&, T)>
+      std::function<void (Derived&, T)>
       bindOther( void (Other::*setter)(T), OtherRef Derived::*instance_ref )
       {
         return std::bind(setter,
@@ -531,8 +529,8 @@ namespace canvas
 
       template<typename T, class Derived, class Other, class OtherRef>
       static
-      boost::function<void (Derived&, T)>
-      bindOther( const boost::function<void (Other&, T)>& setter,
+      std::function<void (Derived&, T)>
+      bindOther( const std::function<void (Other&, T)>& setter,
                  OtherRef Derived::*instance_ref )
       {
         return std::bind(setter,
@@ -545,7 +543,7 @@ namespace canvas
       static
       StyleSetterFuncUnchecked
       bindStyleSetter( const std::string& name,
-                       const boost::function<void (Derived&, T2)>& setter )
+                       const std::function<void (Derived&, T2)>& setter )
       {
         return std::bind(setter,
                          // We will only call setters with Derived instances, so we can safely

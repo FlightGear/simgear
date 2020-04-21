@@ -24,8 +24,6 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
 
-#include <boost/function.hpp>
-
 namespace nasal
 {
     // create single instance of the main loop recipient for Nasal - this will self register at the 

@@ -23,7 +23,6 @@
 #include "PropertyBasedElement.hxx"
 #include <simgear/structure/subsystem_mgr.hxx>
 
-#include <boost/function.hpp>
 #include <vector>
 
 namespace simgear
@@ -62,7 +61,7 @@ public:
     virtual const SGPropertyNode* getPropertyRoot() const;
 
 protected:
-    typedef boost::function<PropertyBasedElementPtr(SGPropertyNode*)>
+    typedef std::function<PropertyBasedElementPtr(SGPropertyNode*)>
             ElementFactory;
 
     /** Branch in the property tree for this property managed subsystem */

@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE( bind_methods )
     }
   };
   using TestClassPtr = std::shared_ptr<TestClass>;
-  auto set_func = boost::function<
+  auto set_func = std::function<
     void (TestClass&, int, const std::string&, const std::string&, int)
   >(&TestClass::set);
   nasal::Ghost<TestClassPtr>::init("TestClass")

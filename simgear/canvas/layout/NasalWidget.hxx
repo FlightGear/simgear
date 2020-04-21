@@ -40,8 +40,8 @@ namespace canvas
   {
     public:
 
-      typedef boost::function<void (nasal::Me, const SGRecti&)> SetGeometryFunc;
-      typedef boost::function<int (nasal::Me, int)> HeightForWidthFunc;
+      typedef std::function<void (nasal::Me, const SGRecti&)> SetGeometryFunc;
+      typedef std::function<int (nasal::Me, int)> HeightForWidthFunc;
 
       /**
        *

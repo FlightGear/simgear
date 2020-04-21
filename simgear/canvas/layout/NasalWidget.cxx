@@ -150,7 +150,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool NasalWidget::hasHeightForWidth() const
   {
-    return !_height_for_width.empty() || !_min_height_for_width.empty();
+    return _height_for_width || _min_height_for_width;
   }
 
   //----------------------------------------------------------------------------
@@ -186,7 +186,7 @@ namespace canvas
   int NasalWidget::callHeightForWidthFunc( const HeightForWidthFunc& hfw,
                                            int w ) const
   {
-    if( hfw.empty() )
+    if( !hfw )
       return -1;
 
     try
@@ -239,17 +239,17 @@ namespace canvas
   //----------------------------------------------------------------------------
   int NasalWidget::heightForWidthImpl(int w) const
   {
-    return callHeightForWidthFunc( _height_for_width.empty()
-                                 ? _min_height_for_width
-                                 : _height_for_width, w );
+    return callHeightForWidthFunc( _height_for_width
+                                 ? _height_for_width
+                                 : _min_height_for_width, w );
   }
 
   //----------------------------------------------------------------------------
   int NasalWidget::minimumHeightForWidthImpl(int w) const
   {
-    return callHeightForWidthFunc( _min_height_for_width.empty()
-                                 ? _height_for_width
-                                 : _min_height_for_width, w );
+    return callHeightForWidthFunc( _min_height_for_width
+                                 ? _min_height_for_width
+                                 : _height_for_width, w );
   }
 
 

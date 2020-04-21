@@ -26,9 +26,9 @@
 #include <osg/ref_ptr>
 #include <osgText/Font>
 
-#include <boost/function.hpp>
-
+#include <functional>
 #include <map>
+#include <memory>
 #include <vector>
 
 namespace simgear
@@ -83,10 +83,10 @@ namespace canvas
   typedef osg::ref_ptr<osgText::Font> FontPtr;
 
   typedef std::vector<PlacementPtr> Placements;
-  typedef boost::function<Placements( SGPropertyNode*,
-                                      CanvasPtr )> PlacementFactory;
+  typedef std::function<Placements( SGPropertyNode*,
+                                    CanvasPtr )> PlacementFactory;
 
-  typedef boost::function<void(const EventPtr&)> EventListener;
+  typedef std::function<void(const EventPtr&)> EventListener;
 
 } // namespace canvas
 } // namespace simgear

@@ -52,7 +52,7 @@ namespace nasal
           return Ret();
 
         Context ctx;
-        auto func = get_member<boost::function<Ret (Me, Args...)>>(
+        auto func = get_member<std::function<Ret (Me, Args...)>>(
           ctx, _nasal_impl.get_naRef(), name
         );
         if( func )

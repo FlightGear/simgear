@@ -52,9 +52,8 @@ class Install : public SGReferenced
 public:
     virtual ~Install();
   
-    typedef boost::function<void(Install*)> Callback;
-    typedef boost::function<void(Install*, unsigned int, unsigned int)>
-                                            ProgressCallback;
+    typedef std::function<void(Install*)> Callback;
+    typedef std::function<void(Install*, unsigned int, unsigned int)> ProgressCallback;
 
     /**
      * create from a directory on disk, or fail.

@@ -19,6 +19,7 @@
 
 #include <simgear/package/Package.hxx>
 
+#include <algorithm>
 #include <cassert>
 
 #include <simgear/debug/logstream.hxx>

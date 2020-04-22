@@ -647,6 +647,14 @@ SGSubsystemGroup::remove_subsystem(const string &name)
         // found it, great
         const auto sub = (*it)->subsystem;
         
+        // ensure we clear the name during shutdown. This ensures that
+        // a lookup during shutdown fails, which is the desired behaviour.
+        // for an example see: https://sourceforge.net/p/flightgear/codetickets/2217/
+        // where we looked up Nasal during Nasal shutdown
+        // without this, the SubsystemMgr re-caches a dead pointer
+        // after doing its clear()
+        (*it)->name.clear();
+        
         if (_state != State::INVALID) {
             // transition out correctly
             if ((_state >= State::INIT) && (_state < State::SHUTDOWN)) {

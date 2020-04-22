@@ -39,8 +39,6 @@
 #include <OpenThreads/Mutex>
 #include <OpenThreads/ScopedLock>
 
-#include <boost/tuple/tuple_comparison.hpp>
-
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
@@ -73,9 +71,9 @@ osg::Texture* TextureBuilder::buildFromType(Effect* effect, Pass* pass, const st
     return EffectBuilder<Texture>::buildFromType(effect, pass, type, props, options);
 }
 
-typedef boost::tuple<string, Texture::FilterMode, Texture::FilterMode,
-                     Texture::WrapMode, Texture::WrapMode, Texture::WrapMode,
-                     string, MipMapTuple, ImageInternalFormat> TexTuple;
+typedef std::tuple<string, Texture::FilterMode, Texture::FilterMode,
+                   Texture::WrapMode, Texture::WrapMode, Texture::WrapMode,
+                   string, MipMapTuple, ImageInternalFormat> TexTuple;
 
 EffectNameValue<TexEnv::Mode> texEnvModesInit[] =
 {
@@ -263,7 +261,7 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
 bool setAttrs(const TexTuple& attrs, Texture* tex,
               const SGReaderWriterOptions* options)
 {
-    const string& imageName = attrs.get<0>();
+    const string& imageName = std::get<0>(attrs);
     if (imageName.empty())
         return false;
 
@@ -271,7 +269,7 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
 
     // load texture for effect
     SGReaderWriterOptions::LoadOriginHint origLOH = options->getLoadOriginHint();
-    if(attrs.get<8>() == ImageInternalFormat::Normalized)
+    if (std::get<8>(attrs) == ImageInternalFormat::Normalized)
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED);
     else
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
@@ -286,7 +284,7 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         image = result.getImage();
     if (image.valid())
     {
-        image = computeMipmap( image.get(), attrs.get<7>() );
+        image = computeMipmap( image.get(), std::get<7>(attrs) );
         tex->setImage(GL_FRONT_AND_BACK, image.get());
         int s = image->s();
         int t = image->t();
@@ -302,11 +300,11 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
     }
 
     // texture->setDataVariance(osg::Object::STATIC);
-    tex->setFilter(Texture::MIN_FILTER, attrs.get<1>());
-    tex->setFilter(Texture::MAG_FILTER, attrs.get<2>());
-    tex->setWrap(Texture::WRAP_S, attrs.get<3>());
-    tex->setWrap(Texture::WRAP_T, attrs.get<4>());
-    tex->setWrap(Texture::WRAP_R, attrs.get<5>());
+    tex->setFilter(Texture::MIN_FILTER, std::get<1>(attrs));
+    tex->setFilter(Texture::MAG_FILTER, std::get<2>(attrs));
+    tex->setWrap(Texture::WRAP_S, std::get<3>(attrs));
+    tex->setWrap(Texture::WRAP_T, std::get<4>(attrs));
+    tex->setWrap(Texture::WRAP_R, std::get<5>(attrs));
     return true;
 }
 
@@ -521,7 +519,7 @@ TextureBuilder::Registrar installLightSprite("light-sprite", new LightSpriteBuil
 }
 
 // Image names for all sides
-typedef boost::tuple<string, string, string, string, string, string> CubeMapTuple;
+typedef std::tuple<string, string, string, string, string, string> CubeMapTuple;
 
 CubeMapTuple makeCubeMapTuple(Effect* effect, const SGPropertyNode* props)
 {
@@ -610,54 +608,54 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
         SGReaderWriterOptions::LoadOriginHint origLOH = wOpts->getLoadOriginHint();
         wOpts->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
 #if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(_tuple.get<0>(), options);
+        result = osgDB::readImageFile(std::get<0>(_tuple), options);
 #else
-        result = osgDB::readRefImageFile(_tuple.get<0>(), options);
+        result = osgDB::readRefImageFile(std::get<0>(_tuple), options);
 #endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
 #if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(_tuple.get<1>(), options);
+        result = osgDB::readImageFile(std::get<1>(_tuple), options);
 #else
-        result = osgDB::readRefImageFile(_tuple.get<1>(), options);
+        result = osgDB::readRefImageFile(std::get<1>(_tuple), options);
 #endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
 #if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(_tuple.get<2>(), options);
+        result = osgDB::readImageFile(std::get<2>(_tuple), options);
 #else
-        result = osgDB::readRefImageFile(_tuple.get<2>(), options);
+        result = osgDB::readRefImageFile(std::get<2>(_tuple), options);
 #endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
 #if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(_tuple.get<3>(), options);
+        result = osgDB::readImageFile(std::get<3>(_tuple), options);
 #else
-        result = osgDB::readRefImageFile(_tuple.get<3>(), options);
+        result = osgDB::readRefImageFile(std::get<3>(_tuple), options);
 #endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
 #if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(_tuple.get<4>(), options);
+        result = osgDB::readImageFile(std::get<4>(_tuple), options);
 #else
-        result = osgDB::readRefImageFile(_tuple.get<4>(), options);
+        result = osgDB::readRefImageFile(std::get<4>(_tuple), options);
 #endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
 #if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(_tuple.get<5>(), options);
+        result = osgDB::readImageFile(std::get<5>(_tuple), options);
 #else
-        result = osgDB::readRefImageFile(_tuple.get<5>(), options);
+        result = osgDB::readRefImageFile(std::get<5>(_tuple), options);
 #endif
         if(result.success()) {
             osg::Image* image = result.getImage();
@@ -802,7 +800,7 @@ Texture* Texture3DBuilder::build(Effect* effect, Pass* pass,
 
     tex = new Texture3D;
 
-    const string& imageName = attrs.get<0>();
+    const string& imageName = std::get<0>(attrs);
     if (imageName.empty())
         return NULL;
 
@@ -810,7 +808,7 @@ Texture* Texture3DBuilder::build(Effect* effect, Pass* pass,
 
     // load texture for effect
     SGReaderWriterOptions::LoadOriginHint origLOH = options->getLoadOriginHint();
-    if(attrs.get<8>() == ImageInternalFormat::Normalized)
+    if (std::get<8>(attrs) == ImageInternalFormat::Normalized)
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED);
     else
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
@@ -840,18 +838,18 @@ Texture* Texture3DBuilder::build(Effect* effect, Pass* pass,
         }
 
         image3d->setInternalTextureFormat(image->getInternalTextureFormat());
-        image3d = computeMipmap(image3d.get(), attrs.get<7>());
+        image3d = computeMipmap(image3d.get(), std::get<7>(attrs));
         tex->setImage(image3d.get());
     } else {
         SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file " << imageName);
         return NULL;
     }
 
-    tex->setFilter(Texture::MIN_FILTER, attrs.get<1>());
-    tex->setFilter(Texture::MAG_FILTER, attrs.get<2>());
-    tex->setWrap(Texture::WRAP_S, attrs.get<3>());
-    tex->setWrap(Texture::WRAP_T, attrs.get<4>());
-    tex->setWrap(Texture::WRAP_R, attrs.get<5>());
+    tex->setFilter(Texture::MIN_FILTER, std::get<1>(attrs));
+    tex->setFilter(Texture::MAG_FILTER, std::get<2>(attrs));
+    tex->setWrap(Texture::WRAP_S, std::get<3>(attrs));
+    tex->setWrap(Texture::WRAP_T, std::get<4>(attrs));
+    tex->setWrap(Texture::WRAP_R, std::get<5>(attrs));
 
     if (itr == texMap.end())
         texMap.insert(make_pair(attrs, tex));

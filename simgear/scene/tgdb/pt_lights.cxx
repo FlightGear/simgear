@@ -27,7 +27,6 @@
 #include "pt_lights.hxx"
 
 #include <map>
-#include <boost/tuple/tuple_comparison.hpp>
 
 #include <osg/Array>
 #include <osg/Geometry>
@@ -78,7 +77,7 @@ static Mutex lightMutex;
 
 namespace
 {
-typedef boost::tuple<float, osg::Vec3, float, float, bool> PointParams;
+typedef std::tuple<float, osg::Vec3, float, float, bool> PointParams;
 typedef std::map<PointParams, observer_ptr<Effect> > EffectMap;
 
 EffectMap effectMap;

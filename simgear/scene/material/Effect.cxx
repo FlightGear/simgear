@@ -36,7 +36,6 @@
 #include <mutex>
 
 #include <boost/functional/hash.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
@@ -137,7 +136,7 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
 		}
 	}
 
-	UniformCacheKey key = boost::make_tuple(name, uniformType, val, effect->getName());
+	UniformCacheKey key = std::make_tuple(name, uniformType, val, effect->getName());
 	ref_ptr<Uniform> uniform = uniformCache[key];
 
     if (uniform.valid()) {

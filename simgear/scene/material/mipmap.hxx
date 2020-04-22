@@ -17,7 +17,7 @@
 #ifndef SIMGEAR_MIPMAP_HXX
 #define SIMGEAR_MIPMAP_HXX 1
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 class SGPropertyNode;
 
@@ -44,7 +44,7 @@ namespace effect {
         Normalized,
     };
 
-typedef boost::tuple<MipMapFunction, MipMapFunction, MipMapFunction, MipMapFunction> MipMapTuple;
+typedef std::tuple<MipMapFunction, MipMapFunction, MipMapFunction, MipMapFunction> MipMapTuple;
 
 MipMapTuple makeMipMapTuple(Effect* effect, const SGPropertyNode* props,
                       const SGReaderWriterOptions* options);

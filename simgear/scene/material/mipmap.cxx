@@ -215,13 +215,13 @@ osg::Vec4 computeColor( osg::Vec4 colors[2][2][2], bool colorValid[2][2][2], Mip
 {
     osg::Vec4 result;
     unsigned int nbComponents = osg::Image::computeNumComponents( pixelFormat );
-    result[0] = computeComponent( 0, colors, colorValid, attrs.get<0>() );
+    result[0] = computeComponent( 0, colors, colorValid, std::get<0>(attrs) );
     if ( nbComponents >= 2 )
-        result[1] = computeComponent( 1, colors, colorValid, attrs.get<1>() );
+        result[1] = computeComponent( 1, colors, colorValid, std::get<1>(attrs) );
     if ( nbComponents >= 3 )
-        result[2] = computeComponent( 2, colors, colorValid, attrs.get<2>() );
+        result[2] = computeComponent( 2, colors, colorValid, std::get<2>(attrs) );
     if ( nbComponents == 4 )
-        result[3] = computeComponent( 3, colors, colorValid, attrs.get<3>() );
+        result[3] = computeComponent( 3, colors, colorValid, std::get<3>(attrs) );
     return result;
 }
 
@@ -265,17 +265,17 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
 {
     bool computeMipmap = false;
     unsigned int nbComponents = osg::Image::computeNumComponents( image->getPixelFormat() );
-    if ( attrs.get<0>() != AUTOMATIC &&
-        ( attrs.get<1>() != AUTOMATIC || nbComponents < 2 ) &&
-        ( attrs.get<2>() != AUTOMATIC || nbComponents < 3 ) &&
-        ( attrs.get<3>() != AUTOMATIC || nbComponents < 4 ) )
+    if ( std::get<0>(attrs) != AUTOMATIC &&
+        ( std::get<1>(attrs) != AUTOMATIC || nbComponents < 2 ) &&
+        ( std::get<2>(attrs) != AUTOMATIC || nbComponents < 3 ) &&
+        ( std::get<3>(attrs) != AUTOMATIC || nbComponents < 4 ) )
     {
         computeMipmap = true;
     }
-    else if ( attrs.get<0>() != AUTOMATIC ||
-        ( attrs.get<1>() != AUTOMATIC && nbComponents >= 2 ) ||
-        ( attrs.get<2>() != AUTOMATIC && nbComponents >= 3 ) ||
-        ( attrs.get<3>() != AUTOMATIC && nbComponents == 4 ) )
+    else if ( std::get<0>(attrs) != AUTOMATIC ||
+             ( std::get<1>(attrs) != AUTOMATIC && nbComponents >= 2 ) ||
+             ( std::get<2>(attrs) != AUTOMATIC && nbComponents >= 3 ) ||
+             ( std::get<3>(attrs) != AUTOMATIC && nbComponents == 4 ) )
     {
         throw BuilderException("invalid mipmap control function combination");
     }

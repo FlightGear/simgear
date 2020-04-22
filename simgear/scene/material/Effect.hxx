@@ -24,7 +24,6 @@
 #include <mutex>
 
 #include <boost/functional/hash.hpp>
-#include <boost/tuple/tuple.hpp>
 
 #include <osg/Object>
 #include <osg/observer_ptr>
@@ -191,8 +190,8 @@ private:
 
     std::mutex _mutex;
 
-    typedef boost::tuple<std::string, osg::Uniform::Type, std::string, std::string> UniformCacheKey;
-    typedef boost::tuple<osg::ref_ptr<osg::Uniform>, SGPropertyChangeListener*> UniformCacheValue;
+    typedef std::tuple<std::string, osg::Uniform::Type, std::string, std::string> UniformCacheKey;
+    typedef std::tuple<osg::ref_ptr<osg::Uniform>, SGPropertyChangeListener*> UniformCacheValue;
     std::map<UniformCacheKey,osg::ref_ptr<osg::Uniform> > uniformCache;
 
     typedef std::queue<DeferredPropertyListener*> DeferredListenerList;

@@ -275,7 +275,6 @@ public:
     //osg::Geode* geode = new osg::Geode;
     SGMaterialTriangleMap::const_iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      osg::Geometry* geometry = i->second.buildGeometry(useVBOs);
       SGMaterial *mat = NULL;
       if (matcache) {
         mat = matcache->find(i->first);
@@ -288,8 +287,15 @@ public:
       } else {
         eg->setMaterial(NULL);
       }
-      eg->addDrawable(geometry);
+      // If effect requests normal generation, we do not include terragear
+      // normals in the geometry
+      bool include_normals = true;
+      int n = eg->getEffect()->getGenerator(Effect::NORMAL);
+      if (n != -1)
+        include_normals = false;
+      osg::Geometry* geometry = i->second.buildGeometry(useVBOs, include_normals);
       eg->runGenerators(geometry);  // Generate extra data needed by effect
+      eg->addDrawable(geometry);
       if (group) {
         group->addChild(eg);
       }

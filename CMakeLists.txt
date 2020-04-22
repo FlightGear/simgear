@@ -18,6 +18,9 @@ if(COMMAND cmake_policy)
 
    if(POLICY CMP0093)
        cmake_policy(SET CMP0093 NEW)
+       endif()	
+   if(POLICY CMP0072)
+       cmake_policy(SET CMP0072 NEW)
    endif()
 endif()
 

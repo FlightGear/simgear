@@ -348,7 +348,7 @@ public:
     }
   }
 
-   void addRandomPoints(double coverage, 
+  void addRandomPoints(double coverage, 
                         double spacing,
                         osg::Texture2D* object_mask,
                         std::vector<std::pair<SGVec3f, float> >& points)
@@ -421,7 +421,9 @@ public:
     }
   }
 
-  osg::Geometry* buildGeometry(const TriangleVector& triangles, bool useVBOs) const
+  // If include_norms is true, normals from the input vertices are added to the geometry. If false,
+  // they should be generated during geometry initialisation.
+  osg::Geometry* buildGeometry(const TriangleVector& triangles, bool useVBOs, bool include_norms) const
   {
     // Do not build anything if there is nothing in here ...
     if (empty() || triangles.empty())
@@ -444,8 +446,10 @@ public:
     
     geometry->setDataVariance(osg::Object::STATIC);
     geometry->setVertexArray(vertices);
-    geometry->setNormalArray(normals);
-    geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+    if (include_norms) { 
+        geometry->setNormalArray(normals);
+        geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+    }
     geometry->setColorArray(colors);
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     if ( has_sec_tcs ) {
@@ -499,8 +503,8 @@ public:
     return geometry;
   }
 
-  osg::Geometry* buildGeometry(bool useVBOs) const
-  { return buildGeometry(getTriangles(), useVBOs); }
+  osg::Geometry* buildGeometry(bool useVBOs, bool include_norms) const
+  { return buildGeometry(getTriangles(), useVBOs, include_norms); }
   
   int getTextureIndex() const
   {

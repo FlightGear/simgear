@@ -56,8 +56,6 @@ SGInterpTable::SGInterpTable(const SGPropertyNode* interpolation)
 // file
 SGInterpTable::SGInterpTable( const std::string& file )
 {
-    SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
-
     sg_gzifstream in( SGPath::fromUtf8(file) );
     if ( !in.is_open() ) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Cannot open file: " << file );
@@ -78,8 +76,6 @@ SGInterpTable::SGInterpTable( const std::string& file )
 // file
 SGInterpTable::SGInterpTable( const SGPath& file )
 {
-    SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
-
     sg_gzifstream in( file );
     if ( !in.is_open() ) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Cannot open file: " << file );

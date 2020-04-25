@@ -20,6 +20,7 @@ set(HEADERS
     texcoord.hxx
     test_macros.hxx
     lru_cache.hxx
+    simgear_optional.hxx
     )
 
 set(SOURCES

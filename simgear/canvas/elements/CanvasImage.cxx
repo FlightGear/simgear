@@ -947,9 +947,17 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
     }
       
     image->setColor(color, x, y);
-    auto c = getCanvas().lock();
-    c->enableRendering(true); // force a repaint
   }
+
+    void Image::dirtyPixels()
+    {
+        osg::ref_ptr<osg::Image> image = _texture->getImage();
+        if (!image)
+            return;
+        image->dirty();
+        auto c = getCanvas().lock();
+        c->enableRendering(true); // force a repaint
+    }
 
   void Image::allocateImage()
   {

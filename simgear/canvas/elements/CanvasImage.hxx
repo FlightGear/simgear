@@ -115,6 +115,11 @@ namespace canvas
       
       void setPixel(int x, int y, const osg::Vec4& color);
 
+      /**
+        * mark the image pixels as modified, so the canvas is re-painted
+       */
+      void dirtyPixels();
+      
       osg::ref_ptr<osg::Image> getImage() const;
       
     //  void setRow(int row, int offset, )

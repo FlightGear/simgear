@@ -503,7 +503,7 @@ static void setMember(naContext ctx, naRef obj, naRef fld, naRef value)
         return;
     }
     
-    if(!IS_HASH(obj)) ERR(ctx, "non-objects have no members");
+    if(!IS_HASH(obj)) naRuntimeError(ctx, "non-object does not have member: %s", naStr_data(fld));
     naHash_set(obj, fld, value);
     ctx->opTop -= 2;
 }

@@ -854,4 +854,48 @@ copyPropertiesWithAttribute(const SGPropertyNode *in, SGPropertyNode *out,
     return true;
 }
 
+namespace {
+
+// for normal recursion we want to call the predicate *before* creating children
+bool _inner_copyPropertiesIf(const SGPropertyNode *in, SGPropertyNode *out,
+                        PropertyPredicate predicate)
+{
+    bool retval = copyPropertyValue(in, out);
+    if (!retval) {
+        return false;
+    }
+    out->setAttributes( in->getAttributes() );
+    
+    int nChildren = in->nChildren();
+    for (int i = 0; i < nChildren; i++) {
+        const SGPropertyNode* in_child = in->getChild(i);
+        // skip this child
+        if (!predicate(in_child)) {
+          continue;
+        }
+
+        SGPropertyNode* out_child = out->getChild(in_child->getNameString(),
+                                      in_child->getIndex(),
+                                      true);
+        
+        bool ok = copyPropertiesIf(in_child, out_child, predicate);
+        if (!ok) {
+            return false;
+        }
+    } // of children iteration
+    return true;
+}
+
+} // of anonymous namespace
+
+bool copyPropertiesIf(const SGPropertyNode *in, SGPropertyNode *out,
+                        PropertyPredicate predicate)
+{
+  // allow the *entire* copy to be a no-op
+    bool doCopy = predicate(in);
+    if (!doCopy)
+      return true; // doesn't count as failure
+
+   return _inner_copyPropertiesIf(in, out, predicate);
+}
 // end of props_io.cxx

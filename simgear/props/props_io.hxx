@@ -17,6 +17,7 @@
 
 #include <string>
 #include <iosfwd>
+#include <functional>
 
 /**
  * Read properties from an XML input stream.
@@ -66,6 +67,16 @@ bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out);
 
 bool copyPropertiesWithAttribute(const SGPropertyNode *in, SGPropertyNode *out,
                                  SGPropertyNode::Attribute attr);
+
+using PropertyPredicate = std::function<bool (const SGPropertyNode* in)>;
+
+/**
+ * Copy properties, if the predicate returns true for the in node.
+ * If a parent node returns false, descendats will <em>not</em> be
+ * checked
+ */
+bool copyPropertiesIf(const SGPropertyNode *in, SGPropertyNode *out,
+                        PropertyPredicate predicate);
 
 #endif // __PROPS_IO_HXX
 

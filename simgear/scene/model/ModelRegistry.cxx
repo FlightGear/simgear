@@ -113,9 +113,6 @@ protected:
     }
 };
 
-// disabling old-syle texture compression in favour of the 
-// texture-cache
-#if 0
 class SGTexCompressionVisitor : public SGTextureStateAttributeVisitor {
 public:
   virtual void apply(int, StateSet::RefAttributePair& refAttr)
@@ -146,7 +143,6 @@ public:
     }
   }
 };
-#endif
 
 class SGTexDataVarianceVisitor : public SGTextureStateAttributeVisitor {
 public:
@@ -644,12 +640,8 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
     SGTexDataVarianceVisitor dataVarianceVisitor;
     node->accept(dataVarianceVisitor);
 
-// disabling old-syle texture compression in favour of the 
-// texture-cache
-#if 0
     SGTexCompressionVisitor texComp;
     node->accept(texComp);
-#endif
     return node;
 }
 

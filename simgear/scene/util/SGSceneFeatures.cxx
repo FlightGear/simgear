@@ -69,29 +69,29 @@ SGSceneFeatures::instance()
 void
 SGSceneFeatures::applyTextureCompression(osg::Texture* texture) const
 {
-  // disable older texture-compression, since it interacts confusingly
-  // with the the runtime texture-cache. We always want to use 
-  // 'USE_IMAGE_DATA_FORMAT' when the texture-cache is active, since we
-  // decided whether to compress (or not) prior to this point.
-#if 0
-  switch (_textureCompression) {
-  case UseARBCompression:
-    texture->setInternalFormatMode(osg::Texture::USE_ARB_COMPRESSION);
-    break;
-  case UseDXT1Compression:
-    texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT1_COMPRESSION);
-    break;
-  case UseDXT3Compression:
-    texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT3_COMPRESSION);
-    break;
-  case UseDXT5Compression:
-    texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
-    break;
-  default:
-    texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
-    break;
-  }
-#endif
+    // if the texture cache is active, always use the file data format
+    if (_TextureCacheActive && _TextureCacheCompressionActive) {
+        texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+    } else {
+        // keep the older texture compression working, some people need it
+        switch (_textureCompression) {
+        case UseARBCompression:
+          texture->setInternalFormatMode(osg::Texture::USE_ARB_COMPRESSION);
+          break;
+        case UseDXT1Compression:
+          texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT1_COMPRESSION);
+          break;
+        case UseDXT3Compression:
+          texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT3_COMPRESSION);
+          break;
+        case UseDXT5Compression:
+          texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
+          break;
+        default:
+          texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+          break;
+        }
+    }
 }
 
 bool

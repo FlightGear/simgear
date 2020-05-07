@@ -165,6 +165,10 @@ if (MSVC)
   else (EXISTS ${TEST_3RDPARTY_DIR})
     set(MSVC_3RDPARTY_ROOT NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
   endif (EXISTS ${TEST_3RDPARTY_DIR})
+
+  # override CMake default RelWithDebInfo flags. This is important to ensure
+  # good performance
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT /Zi /O2 /Ob2 /D NDEBUG")
 else (MSVC)
   set(MSVC_3RDPARTY_ROOT NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
 endif (MSVC)

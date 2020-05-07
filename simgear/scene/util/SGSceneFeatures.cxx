@@ -70,7 +70,7 @@ void
 SGSceneFeatures::applyTextureCompression(osg::Texture* texture) const
 {
     // if the texture cache is active, always use the file data format
-    if (_TextureCacheCompressionActive) {
+    if (_TextureCacheActive && _TextureCacheCompressionActive) {
         texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
     } else {
         // keep the older texture compression working, some people need it

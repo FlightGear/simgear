@@ -445,15 +445,18 @@ if (CLANG)
     # fix Boost compilation :(
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(CMAKE_C_FLAGS
-        "${CMAKE_C_FLAGS} -O0 -fno-omit-frame-pointer -fno-inline-functions")
-      set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -O0 -fno-omit-frame-pointer -fno-inline-functions")
-    elseif (ENABLE_SIMD)
+    # override CMake default RelWithDebInfo flags.
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO  "-O3 -g -DNDEBUG")
+
+    if (ENABLE_SIMD)
       if (X86 OR X86_64)
         set(CMAKE_C_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
         set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
+
+        # propogate to the RelWithDebInfo flags
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -g -DNDEBUG")
+        set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -g -DNDEBUG")
       endif()
     endif()
 endif()

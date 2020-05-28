@@ -417,11 +417,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
       message(WARNING "GCC 4.4 will be required soon, please upgrade")
     endif()
 
-    if (ENABLE_SIMD)
-      if (X86 OR X86_64)
-        set(CMAKE_C_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
-      endif()
+    if (X86 OR X86_64)
+        set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
     endif()
 
     # certain GCC versions don't provide the atomic builds, and hence
@@ -444,16 +441,7 @@ if (CLANG)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO  "-O3 -g -DNDEBUG")
 
-    if (ENABLE_SIMD)
-      if (X86 OR X86_64)
-        set(CMAKE_C_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
-
-        # propogate to the RelWithDebInfo flags
-        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -g -DNDEBUG")
-        set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} -g -DNDEBUG")
-      endif()
-    endif()
+    set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
 endif()
 
 if (ENABLE_OPENMP)
@@ -485,14 +473,8 @@ if(WIN32)
 
     if(MSVC)
         set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP")
-        if(ENABLE_SIMD)
-          if (X86)
-            SET(CMAKE_C_FLAGS_RELEASE "/O2 /arch:SSE /arch:SSE2")
-            SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /arch:SSE /arch:SSE2")
-          else()
-            SET(CMAKE_C_FLAGS_RELEASE "/O2")
-            SET(CMAKE_CXX_FLAGS_RELEASE "/O2")
-          endif()
+        if (X86)
+          set(SIMD_COMPILER_FLAGS "/arch:SSE /arch:SSE2")
         endif()
 
         if (NOT OSG_FSTREAM_EXPORT_FIXED)
@@ -515,6 +497,20 @@ if(WIN32)
     set( SHLWAPI_LIBRARY "Shlwapi.lib" )
     set( RT_LIBRARY "winmm" )
 endif(WIN32)
+
+# append the SIMD flags if requested
+if (ENABLE_SIMD)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SIMD_COMPILER_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SIMD_COMPILER_FLAGS}")
+
+  # set for multi-configuration generators
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${SIMD_COMPILER_FLAGS}")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${SIMD_COMPILER_FLAGS}")
+
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${SIMD_COMPILER_FLAGS}")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${SIMD_COMPILER_FLAGS}")
+endif()
+
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")

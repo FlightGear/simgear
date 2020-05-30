@@ -65,6 +65,9 @@ public:
   // Geocentric course/distance computation
   static void advanceRadM(const SGGeoc& geoc, double course, double distance,
                           SGGeoc& result);
+
+  static SGGeoc advanceDegM(const SGGeoc &geoc, double course, double distance);
+
   static double courseRad(const SGGeoc& from, const SGGeoc& to);
   static double distanceRad(const SGGeoc& from, const SGGeoc& to);
   static double distanceM(const SGGeoc& from, const SGGeoc& to);

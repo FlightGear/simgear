@@ -537,6 +537,13 @@ SGGeodesy::advanceRadM(const SGGeoc& geoc, double course, double distance,
   }
 }
 
+SGGeoc SGGeodesy::advanceDegM(const SGGeoc &geoc, double course,
+                              double distance) {
+  SGGeoc result;
+  advanceRadM(geoc, course * SG_DEGREES_TO_RADIANS, distance, result);
+  return result;
+}
+
 double
 SGGeodesy::courseRad(const SGGeoc& from, const SGGeoc& to)
 {

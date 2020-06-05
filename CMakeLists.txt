@@ -10,6 +10,12 @@ if(COMMAND cmake_policy)
    if(POLICY CMP0067)
        cmake_policy(SET CMP0067 NEW)
    endif()
+    
+  # OpenGL VND policy : use the old definition for now, until we can audit this
+  if(POLICY CMP0072)
+        cmake_policy(SET CMP0071 OLD)
+  endif()
+
    if(POLICY CMP0093)
        cmake_policy(SET CMP0093 NEW)
    endif()

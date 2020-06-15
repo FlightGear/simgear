@@ -850,7 +850,7 @@ namespace canvas
 void fillRow(GLubyte* row, GLuint pixel, GLuint width, GLuint pixelBytes)
 {
   GLubyte* dst = row;
-  for (int x = 0; x < width; ++x) {
+  for (GLuint x = 0; x < width; ++x) {
     memcpy(dst, &pixel, pixelBytes);
     dst += pixelBytes;
   }

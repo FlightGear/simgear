@@ -136,11 +136,19 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
      
    virtual void update(double dt, int keyModState)
    {
-       if (!_condition || _condition->test()) {
-           SG_UNUSED(keyModState);
-           if (!_repeatable)
-               return;
+       SG_UNUSED(keyModState);
+       if (_condition && !_condition->test()) {
+           return;
+       }
 
+       if (!_repeatable)
+           return;
+
+       const bool zeroInterval = (_repeatInterval <= 0.0);
+       if (zeroInterval) {
+           // fire once per frame
+           fireBindingList(_bindingsDown);
+       } else {
            _repeatTime += dt;
            while (_repeatInterval < _repeatTime) {
                _repeatTime -= _repeatInterval;
@@ -682,12 +690,18 @@ public:
         if (_hasDragged) {
             return;
         }
-        
-        _repeatTime += dt;
-        while (_repeatInterval < _repeatTime) {
-            _repeatTime -= _repeatInterval;
+
+        const bool zeroInterval = (_repeatInterval <= 0.0);
+        if (zeroInterval) {
+            // fire once per frame
             fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT, _direction);
-        } // of repeat iteration
+        } else {
+            _repeatTime += dt;
+            while (_repeatInterval < _repeatTime) {
+                _repeatTime -= _repeatInterval;
+                fire(keyModState & osgGA::GUIEventAdapter::MODKEY_SHIFT, _direction);
+            } // of repeat iteration
+        }
     }
 
     virtual bool hover( const osg::Vec2d& windowPos,

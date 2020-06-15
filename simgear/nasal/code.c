@@ -36,7 +36,7 @@ void naRuntimeError(naContext c, const char* fmt, ...)
 
 void naRethrowError(naContext subc)
 {
-    strncpy(subc->callParent->error, subc->error, sizeof(subc->error));
+    strncpy(subc->callParent->error, subc->error, sizeof(subc->callParent->error));
     subc->callParent->dieArg = subc->dieArg;
     longjmp(subc->callParent->jumpHandle, 1);
 }

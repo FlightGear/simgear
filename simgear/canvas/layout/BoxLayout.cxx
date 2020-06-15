@@ -73,7 +73,7 @@ namespace canvas
                               int stretch,
                               uint8_t alignment )
   {
-    ItemData item_data = {0};
+    ItemData item_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     item_data.layout_item = item;
     item_data.stretch = std::max(0, stretch);
 

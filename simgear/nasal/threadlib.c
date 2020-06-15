@@ -9,10 +9,10 @@
 #include "code.h"
 
 static void lockDestroy(void* lock) { naFreeLock(lock); }
-static naGhostType LockType = { lockDestroy };
+static naGhostType LockType = { lockDestroy, NULL, NULL, NULL };
 
 static void semDestroy(void* sem) { naFreeSem(sem); }
-static naGhostType SemType = { semDestroy };
+static naGhostType SemType = { semDestroy, NULL, NULL, NULL };
 
 typedef struct {
     naContext ctx;

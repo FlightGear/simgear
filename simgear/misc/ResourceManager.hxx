@@ -45,8 +45,10 @@ public:
       PRIORITY_HIGH = 1000
     } Priority;
 
-    static ResourceManager* instance();    
-    
+    static ResourceManager* instance();
+
+    static void reset();
+
     /**
      * add a simple fixed resource location, to resolve against
      */

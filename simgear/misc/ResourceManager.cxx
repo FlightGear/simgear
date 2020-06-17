@@ -56,6 +56,15 @@ ResourceManager::~ResourceManager()
     std::for_each(_providers.begin(), _providers.end(), 
         [](ResourceProvider* p) { delete p; });
 }
+
+void ResourceManager::reset()
+{
+    if (static_manager) {
+        delete static_manager;
+        static_manager = nullptr;
+    }
+}
+
 /**
  * trivial provider using a fixed base path
  */
@@ -107,6 +116,8 @@ void ResourceManager::removeProvider(ResourceProvider* aProvider)
         SG_LOG(SG_GENERAL, SG_DEV_ALERT, "unknown provider doing remove");
         return;
     }
+
+    _providers.erase(it);
 }
 
 SGPath ResourceManager::findPath(const std::string& aResource, SGPath aContext)

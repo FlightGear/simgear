@@ -1,27 +1,16 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.10)
 
-if(COMMAND cmake_policy)
-   if(POLICY CMP0054)
-       cmake_policy(SET CMP0054 NEW)
-   endif()
-   if(POLICY CMP0042)
-       cmake_policy(SET CMP0042 NEW)
-   endif()
-   if(POLICY CMP0067)
-       cmake_policy(SET CMP0067 NEW)
-   endif()
-    
-  # OpenGL VND policy : use the old definition for now, until we can audit this
-  if(POLICY CMP0072)
-        cmake_policy(SET CMP0072 OLD)
-  endif()
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0067 NEW)
 
-   if(POLICY CMP0093)
-       cmake_policy(SET CMP0093 NEW)
-       endif()	
-   if(POLICY CMP0072)
-       cmake_policy(SET CMP0072 NEW)
-   endif()
+# OpenGL VND policy : use the old definition for now, until we can audit this
+if(POLICY CMP0072)
+  cmake_policy(SET CMP0072 OLD)
+endif()
+
+if(POLICY CMP0093)
+  cmake_policy(SET CMP0093 NEW)
 endif()
 
 
@@ -44,11 +33,9 @@ include (GenerateExportHeader)
 
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
 
-# let's use & require C++11 - note these are only functional with CMake 3.1
-# we do manual fallbacks for CMake 3.0 in the compilers section
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
@@ -151,16 +138,6 @@ include (ExportDebugSymbols)
 # until the fstream fix is applied and generally available in OSG,
 # keep the compatability link option as the default
 option(OSG_FSTREAM_EXPORT_FIXED "Set to ON if the osgDB fstream export patch is applied" OFF)
-
-if (CMAKE_COMPILER_IS_GNUCXX OR CLANG)
-  if (CMAKE_VERSION VERSION_LESS 3.1)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
-  elseif (CMAKE_VERSION VERSION_LESS 3.8)
-    # policy CMP0067 (try_compile does not honor CMAKE_CXX_STANDARD)
-    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
-  endif()
-endif()
-
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_BINARY_DIR} DIRECTORY)
@@ -421,10 +398,6 @@ check_cxx_source_compiles(
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall -fPIC")
     set(WARNING_FLAGS_C   "-Wall -fPIC")
-
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.4)
-      message(WARNING "GCC 4.4 will be required soon, please upgrade")
-    endif()
 
     if (X86 OR X86_64)
         set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")

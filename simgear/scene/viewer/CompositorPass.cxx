@@ -99,7 +99,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     camera->setCullMaskLeft(pass->cull_mask);
     camera->setCullMaskRight(pass->cull_mask);
 
-    osg::Vec4f clear_color(0.0f, 0.0f, 0.0f, 0.0f);
+    osg::Vec4f clear_color(0.0f, 0.0f, 0.0f, 1.0f);
     const SGPropertyNode *p_clear_color = root->getChild("clear-color");
     if (p_clear_color)
         clear_color = toOsg(p_clear_color->getValue<SGVec4d>());
@@ -376,9 +376,9 @@ RegisterPassBuilder<QuadPassBuilder> registerQuadPass("quad");
 
 //------------------------------------------------------------------------------
 
-class ShadowMapCullCallback : public osg::NodeCallback {
+class CSMCullCallback : public osg::NodeCallback {
 public:
-    ShadowMapCullCallback(const std::string &suffix) {
+    CSMCullCallback(const std::string &suffix) {
         _light_matrix_uniform = new osg::Uniform(
             osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix);
     }
@@ -445,14 +445,16 @@ protected:
     osg::observer_ptr<osg::Light> _light;
 };
 
-struct ShadowMapUpdateCallback : public Pass::PassUpdateCallback {
+struct CSMUpdateCallback : public Pass::PassUpdateCallback {
 public:
-    ShadowMapUpdateCallback(ShadowMapCullCallback *cull_callback,
-                            const std::string &light_name,
-                            float near_m, float far_m,
-                            int sm_width, int sm_height) :
+    CSMUpdateCallback(CSMCullCallback *cull_callback,
+                      const std::string &light_name,
+                      bool render_at_night,
+                      float near_m, float far_m,
+                      int sm_width, int sm_height) :
         _cull_callback(cull_callback),
         _light_finder(new LightFinder(light_name)),
+        _render_at_night(render_at_night),
         _near_m(near_m),
         _far_m(far_m) {
         _half_sm_size = osg::Vec2d((double)sm_width, (double)sm_height) / 2.0;
@@ -484,6 +486,19 @@ public:
 
         osg::Matrix view_inverse = osg::Matrix::inverse(view_matrix);
         _cull_callback->setRealInverseViewMatrix(view_inverse);
+
+        if (!_render_at_night) {
+            osg::Vec3 camera_pos = osg::Vec3(0.0f, 0.0f, 0.0f) * view_inverse;
+            camera_pos.normalize();
+            float cos_light_angle = camera_pos * light_dir;
+            if (cos_light_angle < -0.1) {
+                // Night
+                camera->setCullMask(0);
+            } else {
+                // Day
+                camera->setCullMask(pass.cull_mask);
+            }
+        }
 
         // Calculate the light's point of view transformation matrices.
         // Taken from Project Rembrandt.
@@ -532,14 +547,15 @@ public:
     }
 
 protected:
-    osg::observer_ptr<ShadowMapCullCallback> _cull_callback;
+    osg::observer_ptr<CSMCullCallback> _cull_callback;
     osg::ref_ptr<LightFinder>     _light_finder;
+    bool                          _render_at_night;
     float                         _near_m;
     float                         _far_m;
     osg::Vec2d                    _half_sm_size;
 };
 
-struct ShadowMapPassBuilder : public PassBuilder {
+struct CSMPassBuilder : public PassBuilder {
     virtual Pass *build(Compositor *compositor, const SGPropertyNode *root,
                         const SGReaderWriterOptions *options) {
         osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root, options);
@@ -550,24 +566,27 @@ struct ShadowMapPassBuilder : public PassBuilder {
         //camera->setComputeNearFarMode(
         //    osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
 
-        ShadowMapCullCallback *cull_callback = new ShadowMapCullCallback(pass->name);
+        CSMCullCallback *cull_callback = new CSMCullCallback(pass->name);
         camera->setCullCallback(cull_callback);
 
-        std::string light_name = root->getStringValue("light-name");
+        // Use the Sun as the default light source
+        std::string light_name = root->getStringValue("light-name", "FGLightSource");
+        bool render_at_night = root->getBoolValue("render-at-night", true);
         float near_m = root->getFloatValue("near-m");
         float far_m  = root->getFloatValue("far-m");
         int sm_width  = camera->getViewport()->width();
         int sm_height = camera->getViewport()->height();
-        pass->update_callback = new ShadowMapUpdateCallback(
+        pass->update_callback = new CSMUpdateCallback(
             cull_callback,
             light_name,
+            render_at_night,
             near_m, far_m,
             sm_width, sm_height);
 
         return pass.release();
     }
 };
-RegisterPassBuilder<ShadowMapPassBuilder> registerShadowMapPass("shadow-map");
+RegisterPassBuilder<CSMPassBuilder> registerCSMPass("csm");
 
 //------------------------------------------------------------------------------
 
@@ -709,8 +728,8 @@ public:
             if (!shadow_pass_name.empty()) {
                 Pass *shadow_pass = compositor->getPass(shadow_pass_name);
                 if (shadow_pass) {
-                    ShadowMapCullCallback *cullcb =
-                        dynamic_cast<ShadowMapCullCallback *>(
+                    CSMCullCallback *cullcb =
+                        dynamic_cast<CSMCullCallback *>(
                             shadow_pass->camera->getCullCallback());
                     if (cullcb) {
                         camera->getOrCreateStateSet()->addUniform(

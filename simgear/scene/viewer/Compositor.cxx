@@ -55,6 +55,11 @@ Compositor::create(osg::View *view,
     osg::ref_ptr<Compositor> compositor = new Compositor(view, gc, viewport);
     compositor->_name = property_list->getStringValue("name");
 
+    gc->getState()->setUseModelViewAndProjectionUniforms(
+        property_list->getBoolValue("use-osg-uniforms", false));
+    gc->getState()->setUseVertexAttributeAliasing(
+        property_list->getBoolValue("use-vertex-attribute-aliasing", false));
+
     // Read all buffers first so passes can use them
     PropertyList p_buffers = property_list->getChildren("buffer");
     for (auto const &p_buffer : p_buffers) {
@@ -139,6 +144,11 @@ Compositor::Compositor(osg::View *view,
 
 Compositor::~Compositor()
 {
+    // Remove slave cameras from the viewer
+    for (const auto &pass : _passes) {
+        unsigned int index = _view->findSlaveIndexForCamera(pass->camera);
+        _view->removeSlave(index);
+    }
 }
 
 void

@@ -67,33 +67,32 @@ protected:
 
     osg::ref_ptr<osg::Uniform>      _slice_scale;
     osg::ref_ptr<osg::Uniform>      _slice_bias;
+    osg::ref_ptr<osg::Uniform>      _horizontal_tiles;
+    osg::ref_ptr<osg::Uniform>      _vertical_tiles;
 
-    int                             _tile_size;
-    int                             _depth_slices;
-    int                             _num_threads;
-    int                             _slices_per_thread;
-    int                             _slices_remainder;
+    int                             _tile_size = 0;
+    int                             _depth_slices = 0;
+    int                             _num_threads = 0;
+    int                             _slices_per_thread = 0;
+    int                             _slices_remainder = 0;
 
-    float                           _zNear;
-    float                           _zFar;
+    float                           _zNear = 0.0f;
+    float                           _zFar = 0.0f;
 
-    int                             _n_htiles;
-    int                             _n_vtiles;
+    int                             _n_htiles = 0;
+    int                             _n_vtiles = 0;
 
-    float                           _x_step;
-    float                           _y_step;
+    float                           _x_step = 0.0f;
+    float                           _y_step = 0.0f;
 
-    osg::ref_ptr<osg::Image>        _light_grid;
-    osg::ref_ptr<osg::Image>        _light_indices;
-    osg::ref_ptr<osg::FloatArray>   _pointlight_data;
-    osg::ref_ptr<osg::FloatArray>   _spotlight_data;
+    osg::ref_ptr<osg::Image>        _clusters;
+    osg::ref_ptr<osg::Image>        _pointlights;
+    osg::ref_ptr<osg::Image>        _spotlights;
 
     std::unique_ptr<Subfrustum[]>   _subfrusta;
 
     std::vector<PointlightBound>    _point_bounds;
     std::vector<SpotlightBound>     _spot_bounds;
-
-    std::atomic<GLuint>             _global_light_count;
 };
 
 } // namespace compositor

@@ -18,11 +18,9 @@
 
 #include <thread>
 
-#include <osg/BufferIndexBinding>
-#include <osg/BufferObject>
 #include <osg/RenderInfo>
+#include <osg/Texture2D>
 #include <osg/Texture3D>
-#include <osg/TextureBuffer>
 #include <osg/Version>
 
 #include <osg/io_utils>
@@ -33,15 +31,10 @@
 namespace simgear {
 namespace compositor {
 
-const int MAX_LIGHT_INDICES = 524288;      // 1 MB (2 bytes per index)
-const int MAX_POINTLIGHTS = 256;
-const int MAX_SPOTLIGHTS = 256;
-
-// Size in floats (4 bytes) of the light struct to be passed to the GLSL shader.
-// It must be a multiple of the size of a vec4 as per the std140 layout rules.
-// See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_uniform_buffer_object.txt
-const int POINTLIGHT_BLOCK_SIZE = 20;
-const int SPOTLIGHT_BLOCK_SIZE = 28;
+const int MAX_POINTLIGHTS = 1024;
+const int MAX_SPOTLIGHTS = 1024;
+// A light group is a group of 4 light indices packed into a single RGBA texel
+const int MAX_LIGHT_GROUPS_PER_CLUSTER = 255;
 
 ClusteredShading::ClusteredShading(osg::Camera *camera,
                                    const SGPropertyNode *config) :
@@ -67,102 +60,76 @@ ClusteredShading::ClusteredShading(osg::Camera *camera,
     ss->addUniform(_slice_scale.get());
     _slice_bias = new osg::Uniform("fg_ClusteredSliceBias", 0.0f);
     ss->addUniform(_slice_bias.get());
+    _horizontal_tiles = new osg::Uniform("fg_ClusteredHorizontalTiles", 0);
+    ss->addUniform(_horizontal_tiles.get());
+    _vertical_tiles = new osg::Uniform("fg_ClusteredVerticalTiles", 0);
+    ss->addUniform(_vertical_tiles.get());
 
-    // Create and associate the light grid 3D texture
+    // Create and associate the cluster 3D texture
     ////////////////////////////////////////////////////////////////////////////
-    _light_grid = new osg::Image;
-    _light_grid->setInternalTextureFormat(GL_RGB32UI_EXT);
-    // Image allocation happens in setupSubfrusta() because the light grid size
-    // can change at runtime (viewport resize)
+    _clusters = new osg::Image;
+    // Image allocation happens in setupSubfrusta() because the number of
+    // clusters can change at runtime (viewport resize)
 
-    osg::ref_ptr<osg::Texture3D> light_grid_tex = new osg::Texture3D;
-    light_grid_tex->setResizeNonPowerOfTwoHint(false);
-    light_grid_tex->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
-    light_grid_tex->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::CLAMP_TO_BORDER);
-    light_grid_tex->setWrap(osg::Texture3D::WRAP_T, osg::Texture3D::CLAMP_TO_BORDER);
-    light_grid_tex->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture3D::NEAREST);
-    light_grid_tex->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture3D::NEAREST);
-    light_grid_tex->setImage(_light_grid.get());
+    osg::ref_ptr<osg::Texture3D> clusters_tex = new osg::Texture3D;
+    clusters_tex->setInternalFormat(GL_RGBA32F);
+    clusters_tex->setResizeNonPowerOfTwoHint(false);
+    clusters_tex->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
+    clusters_tex->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::CLAMP_TO_BORDER);
+    clusters_tex->setWrap(osg::Texture3D::WRAP_T, osg::Texture3D::CLAMP_TO_BORDER);
+    clusters_tex->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture3D::NEAREST);
+    clusters_tex->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture3D::NEAREST);
+    clusters_tex->setImage(_clusters.get());
 
-    int light_grid_bind_unit = config->getIntValue("grid-bind-unit", 11);
+    int clusters_bind_unit = config->getIntValue("clusters-bind-unit", 11);
     ss->setTextureAttributeAndModes(
-        light_grid_bind_unit, light_grid_tex.get(), osg::StateAttribute::ON);
+        clusters_bind_unit, clusters_tex.get(), osg::StateAttribute::ON);
 
-    osg::ref_ptr<osg::Uniform> light_grid_uniform =
-        new osg::Uniform("fg_ClusteredLightGrid", light_grid_bind_unit);
-    ss->addUniform(light_grid_uniform.get());
+    osg::ref_ptr<osg::Uniform> clusters_uniform =
+        new osg::Uniform("fg_Clusters", clusters_bind_unit);
+    ss->addUniform(clusters_uniform.get());
 
-    // Create and associate the light indices TBO
-    ////////////////////////////////////////////////////////////////////////////
-    _light_indices = new osg::Image;
-    _light_indices->allocateImage(
-        MAX_LIGHT_INDICES, 1, 1, GL_RED_INTEGER_EXT, GL_UNSIGNED_SHORT);
+    _pointlights = new osg::Image;
+    _pointlights->allocateImage(5, MAX_POINTLIGHTS, 1, GL_RGBA, GL_FLOAT);
 
-    osg::ref_ptr<osg::TextureBuffer> light_indices_tbo =
-        new osg::TextureBuffer;
-    light_indices_tbo->setInternalFormat(GL_R16UI);
-    light_indices_tbo->setImage(_light_indices.get());
+    osg::ref_ptr<osg::Texture2D> pointlights_tex = new osg::Texture2D;
+    pointlights_tex->setInternalFormat(GL_RGBA32F);
+    pointlights_tex->setResizeNonPowerOfTwoHint(false);
+    pointlights_tex->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
+    pointlights_tex->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::CLAMP_TO_BORDER);
+    pointlights_tex->setWrap(osg::Texture3D::WRAP_T, osg::Texture3D::CLAMP_TO_BORDER);
+    pointlights_tex->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture3D::NEAREST);
+    pointlights_tex->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture3D::NEAREST);
+    pointlights_tex->setImage(_pointlights.get());
 
-    int light_indices_bind_unit = config->getIntValue("indices-bind-unit", 12);
-    ss->setTextureAttribute(light_indices_bind_unit, light_indices_tbo.get());
+    int pointlights_bind_unit = config->getIntValue("pointlights-bind-unit", 12);
+    ss->setTextureAttributeAndModes(
+        pointlights_bind_unit, pointlights_tex.get(), osg::StateAttribute::ON);
 
-    osg::ref_ptr<osg::Uniform> light_indices_uniform =
-        new osg::Uniform("fg_ClusteredLightIndices", light_indices_bind_unit);
-    ss->addUniform(light_indices_uniform.get());
+    osg::ref_ptr<osg::Uniform> pointlights_uniform =
+        new osg::Uniform("fg_ClusteredPointLights", pointlights_bind_unit);
+    ss->addUniform(pointlights_uniform.get());
 
-    // Create and associate the pointlight data UBO
-    ////////////////////////////////////////////////////////////////////////////
-    _pointlight_data = new osg::FloatArray(MAX_POINTLIGHTS * POINTLIGHT_BLOCK_SIZE);
+    _spotlights = new osg::Image;
+    _spotlights->allocateImage(7, MAX_SPOTLIGHTS, 1, GL_RGBA, GL_FLOAT);
 
-    osg::ref_ptr<osg::UniformBufferObject> pointlight_data_ubo =
-        new osg::UniformBufferObject;
-    _pointlight_data->setBufferObject(pointlight_data_ubo.get());
+    osg::ref_ptr<osg::Texture2D> spotlights_tex = new osg::Texture2D;
+    spotlights_tex->setInternalFormat(GL_RGBA32F);
+    spotlights_tex->setResizeNonPowerOfTwoHint(false);
+    spotlights_tex->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
+    spotlights_tex->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::CLAMP_TO_BORDER);
+    spotlights_tex->setWrap(osg::Texture3D::WRAP_T, osg::Texture3D::CLAMP_TO_BORDER);
+    spotlights_tex->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture3D::NEAREST);
+    spotlights_tex->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture3D::NEAREST);
+    spotlights_tex->setImage(_spotlights.get());
 
-    int pointlight_ubo_index = config->getIntValue("pointlight-ubo-index", 5);
-#if OSG_VERSION_LESS_THAN(3,6,0)
-    osg::ref_ptr<osg::UniformBufferBinding> pointlight_data_ubb =
-        new osg::UniformBufferBinding(
-            pointlight_ubo_index,
-            pointlight_data_ubo.get(),
-            0,
-            MAX_POINTLIGHTS * POINTLIGHT_BLOCK_SIZE * sizeof(GLfloat));
-#else
-    osg::ref_ptr<osg::UniformBufferBinding> pointlight_data_ubb =
-        new osg::UniformBufferBinding(
-            pointlight_ubo_index,
-            _pointlight_data.get(),
-            0,
-            MAX_POINTLIGHTS * POINTLIGHT_BLOCK_SIZE * sizeof(GLfloat));
-#endif
-    pointlight_data_ubb->setDataVariance(osg::Object::DYNAMIC);
-    ss->setAttribute(pointlight_data_ubb.get(), osg::StateAttribute::ON);
+    int spotlights_bind_unit = config->getIntValue("spotlights-bind-unit", 13);
+    ss->setTextureAttributeAndModes(
+        spotlights_bind_unit, spotlights_tex.get(), osg::StateAttribute::ON);
 
-    // Create and associate the spotlight data UBO
-    ////////////////////////////////////////////////////////////////////////////
-    _spotlight_data = new osg::FloatArray(MAX_SPOTLIGHTS * SPOTLIGHT_BLOCK_SIZE);
-
-    osg::ref_ptr<osg::UniformBufferObject> spotlight_data_ubo =
-        new osg::UniformBufferObject;
-    _spotlight_data->setBufferObject(spotlight_data_ubo.get());
-
-    int spotlight_ubo_index = config->getIntValue("spotlight-ubo-index", 6);
-#if OSG_VERSION_LESS_THAN(3,6,0)
-    osg::ref_ptr<osg::UniformBufferBinding> spotlight_data_ubb =
-        new osg::UniformBufferBinding(
-            spotlight_ubo_index,
-            spotlight_data_ubo.get(),
-            0,
-            MAX_SPOTLIGHTS * SPOTLIGHT_BLOCK_SIZE * sizeof(GLfloat));
-#else
-    osg::ref_ptr<osg::UniformBufferBinding> spotlight_data_ubb =
-        new osg::UniformBufferBinding(
-            spotlight_ubo_index,
-            _spotlight_data.get(),
-            0,
-            MAX_SPOTLIGHTS * SPOTLIGHT_BLOCK_SIZE * sizeof(GLfloat));
-#endif
-    spotlight_data_ubb->setDataVariance(osg::Object::DYNAMIC);
-    ss->setAttribute(spotlight_data_ubb.get(), osg::StateAttribute::ON);
+    osg::ref_ptr<osg::Uniform> spotlights_uniform =
+        new osg::Uniform("fg_ClusteredSpotLights", spotlights_bind_unit);
+    ss->addUniform(spotlights_uniform.get());
 }
 
 ClusteredShading::~ClusteredShading()
@@ -198,6 +165,7 @@ ClusteredShading::update(const SGLightList &light_list)
             spot.direction = osg::Vec4f(0.0f, 0.0f, -1.0f, 0.0f) *
                 (osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
                  _camera->getViewMatrix());
+            spot.direction.normalize();
 
             float range = light->getRange();
             float angle = light->getSpotCutoff() * SG_DEGREES_TO_RADIANS;
@@ -237,10 +205,14 @@ ClusteredShading::update(const SGLightList &light_list)
         _x_step = (_tile_size / float(width)) * 2.0;
         _y_step = (_tile_size / float(height)) * 2.0;
 
-        _light_grid->allocateImage(_n_htiles, _n_vtiles, _depth_slices,
-                                   GL_RGB_INTEGER_EXT, GL_UNSIGNED_INT);
+        _clusters->allocateImage(_n_htiles, _n_vtiles * _depth_slices,
+                                 MAX_LIGHT_GROUPS_PER_CLUSTER + 1,
+                                 GL_RGBA, GL_FLOAT);
         _subfrusta.reset(new Subfrustum[_n_htiles * _n_vtiles]);
     }
+
+    _horizontal_tiles->set(_n_htiles);
+    _vertical_tiles->set(_n_vtiles);
 
     for (int y = 0; y < _n_vtiles; ++y) {
         float ymin = -1.0 + _y_step * float(y);
@@ -270,8 +242,6 @@ ClusteredShading::update(const SGLightList &light_list)
         }
     }
 
-    _global_light_count = 0;
-
     if (_depth_slices == 1) {
         // Just run the light assignment on the main thread to avoid the
         // unnecessary threading overhead
@@ -289,9 +259,8 @@ ClusteredShading::update(const SGLightList &light_list)
     }
 
     // Force upload of the image data
-    _light_grid->dirty();
+    _clusters->dirty();
 
-    // Upload pointlight and spotlight data
     writePointlightData();
     writeSpotlightData();
 }
@@ -309,93 +278,112 @@ ClusteredShading::threadFunc(int thread_id)
 void
 ClusteredShading::assignLightsToSlice(int slice)
 {
-    size_t z_offset = slice * _n_htiles * _n_vtiles;
-
     float near = getDepthForSlice(slice);
     float far  = getDepthForSlice(slice + 1);
+
     osg::Vec4f near_plane(0.0f, 0.0f, -1.0f, -near);
     osg::Vec4f far_plane (0.0f, 0.0f,  1.0f,  far);
 
-    GLuint *grid = reinterpret_cast<GLuint *>(_light_grid->data());
-    GLushort *indices = reinterpret_cast<GLushort *>(_light_indices->data());
+    GLfloat *clusters = reinterpret_cast<GLfloat *>(_clusters->data());
 
-    for (int i = 0; i < (_n_htiles * _n_vtiles); ++i) {
-        Subfrustum subfrustum = _subfrusta[i];
-        subfrustum.plane[4] = near_plane;
-        subfrustum.plane[5] = far_plane;
+    for (int j = 0; j < _n_vtiles; ++j) {
+        for (int i = 0; i < _n_htiles; ++i) {
+            Subfrustum subfrustum = _subfrusta[i];
+            subfrustum.plane[4] = near_plane;
+            subfrustum.plane[5] = far_plane;
 
-        GLuint start_offset = _global_light_count;
-        GLuint local_point_count = 0;
-        GLuint local_spot_count = 0;
+            GLuint term = 0;
+            GLuint point_count = 0;
+            GLuint spot_count = 0;
+            GLuint total_count = 0;
 
-        // Test point lights
-        for (GLushort point_iterator = 0;
-             point_iterator < _point_bounds.size();
-             ++point_iterator) {
-            PointlightBound point = _point_bounds[point_iterator];
+            // Test point lights
+            for (GLushort point_iterator = 0;
+                 point_iterator < _point_bounds.size();
+                 ++point_iterator) {
+                PointlightBound point = _point_bounds[point_iterator];
 
-            // Perform frustum-sphere collision tests
-            float distance = 0.0f;
-            for (int j = 0; j < 6; j++) {
-                distance = subfrustum.plane[j] * point.position + point.range;
-                if (distance <= 0.0f)
-                    break;
+                // Perform frustum-sphere collision tests
+                float distance = 0.0f;
+                for (int n = 0; n < 6; ++n) {
+                    distance = subfrustum.plane[n] * point.position + point.range;
+                    if (distance <= 0.0f)
+                        break;
+                }
+
+                if (distance > 0.0f) {
+                    size_t p =
+                        (total_count / 4 + 1) * _n_htiles * _n_vtiles * _depth_slices
+                        + slice * _n_htiles * _n_vtiles
+                        + j * _n_htiles
+                        + i;
+                    clusters[p * 4 + term] = float(point_iterator);
+                    ++term;
+                    ++point_count;
+                    ++total_count;
+                }
+
+                if (term >= 4)
+                    term = 0;
+
+                if ((total_count / 4 + term) >= MAX_LIGHT_GROUPS_PER_CLUSTER) {
+                    throw sg_range_exception(
+                        "Number of light groups per cluster is over the hardcoded limit ("
+                        + std::to_string(MAX_LIGHT_GROUPS_PER_CLUSTER) + ")");
+                }
             }
 
-            if (distance > 0.0f) {
-                // Update light index list
-                indices[_global_light_count] = point_iterator;
-                ++local_point_count;
-                ++_global_light_count; // Atomic increment
+            // Test spot lights
+            for (GLushort spot_iterator = 0;
+                 spot_iterator < _spot_bounds.size();
+                 ++spot_iterator) {
+                SpotlightBound spot = _spot_bounds[spot_iterator];
+
+                // Perform frustum-sphere collision tests
+                float distance = 0.0f;
+                for (int n = 0; n < 6; ++n) {
+                    distance = subfrustum.plane[n] * spot.bounding_sphere.center
+                        + spot.bounding_sphere.radius;
+                    if (distance <= 0.0f)
+                        break;
+                }
+
+                if (distance > 0.0f) {
+                    size_t p =
+                        (total_count / 4 + 1) * _n_htiles * _n_vtiles * _depth_slices
+                        + slice * _n_htiles * _n_vtiles
+                        + j * _n_htiles
+                        + i;
+                    clusters[p * 4 + term] = float(spot_iterator);
+                    ++term;
+                    ++spot_count;
+                    ++total_count;
+                }
+
+                if (term >= 4)
+                    term = 0;
+
+                if ((total_count / 4 + term) >= MAX_LIGHT_GROUPS_PER_CLUSTER) {
+                    throw sg_range_exception(
+                        "Number of light groups per cluster is over the hardcoded limit ("
+                        + std::to_string(MAX_LIGHT_GROUPS_PER_CLUSTER) + ")");
+                }
             }
 
-            if (_global_light_count >= MAX_LIGHT_INDICES) {
-                throw sg_range_exception(
-                    "Clustered shading light index count is over the hardcoded limit ("
-                    + std::to_string(MAX_LIGHT_INDICES) + ")");
-            }
+            clusters[(slice * _n_htiles * _n_vtiles
+                      + j * _n_htiles
+                      + i) * 4 + 0] = point_count;
+            clusters[(slice * _n_htiles * _n_vtiles
+                      + j * _n_htiles
+                      + i) * 4 + 1] = spot_count;
         }
-
-        // Test spot lights
-        for (GLushort spot_iterator = 0;
-             spot_iterator < _spot_bounds.size();
-             ++spot_iterator) {
-            SpotlightBound spot = _spot_bounds[spot_iterator];
-
-            // Perform frustum-sphere collision tests
-            float distance = 0.0f;
-            for (int j = 0; j < 6; j++) {
-                distance = subfrustum.plane[j] * spot.bounding_sphere.center
-                    + spot.bounding_sphere.radius;
-                if (distance <= 0.0f)
-                    break;
-            }
-
-            if (distance > 0.0f) {
-                // Update light index list
-                indices[_global_light_count] = spot_iterator;
-                ++local_spot_count;
-                ++_global_light_count; // Atomic increment
-            }
-
-            if (_global_light_count >= MAX_LIGHT_INDICES) {
-                throw sg_range_exception(
-                    "Clustered shading light index count is over the hardcoded limit ("
-                    + std::to_string(MAX_LIGHT_INDICES) + ")");
-            }
-        }
-
-        // Update light grid
-        grid[(z_offset + i) * 3 + 0] = start_offset;
-        grid[(z_offset + i) * 3 + 1] = local_point_count;
-        grid[(z_offset + i) * 3 + 2] = local_spot_count;
     }
 }
 
 void
 ClusteredShading::writePointlightData()
 {
-    GLfloat *data = reinterpret_cast<GLfloat *>(&(*_pointlight_data)[0]);
+    GLfloat *data = reinterpret_cast<GLfloat *>(_pointlights->data());
 
     for (const auto &point : _point_bounds) {
         // vec4 position
@@ -425,13 +413,13 @@ ClusteredShading::writePointlightData()
         *data++ = point.light->getRange();
         // No padding needed as the resulting size is a multiple of vec4
     }
-    _pointlight_data->dirty();
+    _pointlights->dirty();
 }
 
 void
 ClusteredShading::writeSpotlightData()
 {
-    GLfloat *data = reinterpret_cast<GLfloat *>(&(*_spotlight_data)[0]);
+    GLfloat *data = reinterpret_cast<GLfloat *>(_spotlights->data());
 
     for (const auto &spot : _spot_bounds) {
         // vec4 position
@@ -468,9 +456,11 @@ ClusteredShading::writeSpotlightData()
         *data++ = spot.cos_cutoff;
         // float exponent
         *data++ = spot.light->getSpotExponent();
-        // Needs 2N padding (8 bytes)
+        // Needs 2 float padding
+        *data++ = 0.0f;
+        *data++ = 0.0f;
     }
-    _spotlight_data->dirty();
+    _spotlights->dirty();
 }
 
 float

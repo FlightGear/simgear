@@ -104,7 +104,7 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
     }
 
     osg::ref_ptr<Buffer> buffer = new Buffer;
-    osg::Texture *texture;
+    osg::Texture *texture = nullptr;
 
     int width = 0;
     const SGPropertyNode *p_width = getPropertyChild(node, "width");

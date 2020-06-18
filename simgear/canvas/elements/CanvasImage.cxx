@@ -179,13 +179,7 @@ namespace canvas
         && child->getNameString() == "visible"
         && child->getBoolValue() )
     {
-      CullCallback* cb =
-#if OSG_VERSION_LESS_THAN(3,3,2)
-        static_cast<CullCallback*>
-#else
-        dynamic_cast<CullCallback*>
-#endif
-        ( _geom->getCullCallback() );
+      CullCallback* cb = dynamic_cast<CullCallback*>( _geom->getCullCallback() );
 
       if( cb )
         cb->cullNextFrame();

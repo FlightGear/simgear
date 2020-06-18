@@ -226,11 +226,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             }
             else
             {
-#if OSG_VERSION_LESS_THAN(3,4,0)
-                osg::Image* image = osgDB::readImageFile(fullMaskPath, options);
-#else
                 osg::Image* image = osgDB::readRefImageFile(fullMaskPath, options);
-#endif
                 if (image && image->valid())
                 {
                     Texture2DRef object_mask = new osg::Texture2D;

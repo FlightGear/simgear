@@ -116,11 +116,7 @@ osg::Node* loadFile(const string& path, SGReaderWriterOptions* options)
         options->setInstantiateEffects(true);
     }
 
-#if OSG_VERSION_LESS_THAN(3,4,0)
-    ref_ptr<Node> model = readNodeFile(path, options);
-#else
     ref_ptr<Node> model = readRefNodeFile(path, options);
-#endif
     if (!model)
         return 0;
     else

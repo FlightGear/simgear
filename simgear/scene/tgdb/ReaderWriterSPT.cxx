@@ -209,11 +209,7 @@ ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* o
         imageFileName = osgDB::concatPaths(imageFileName, "Globe");
         imageFileName = osgDB::concatPaths(imageFileName, "world.topo.bathy.200407.3x4096x2048.png");
     }
-#if OSG_VERSION_LESS_THAN(3,4,0)
-    if (osg::Image* image = osgDB::readImageFile(imageFileName, options)) {
-#else
     if (osg::Image* image = osgDB::readRefImageFile(imageFileName, options)) {
-#endif
         osg::Texture2D* texture = new osg::Texture2D;
         texture->setImage(image);
         texture->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);
@@ -261,11 +257,7 @@ ReaderWriterSPT::createTree(const BucketBox& bucketBox, const LocalOptions& opti
     if (bucketBox.getIsBucketSize()) {
         std::string fileName;
         fileName = bucketBox.getBucket().gen_index_str() + std::string(".stg");
-#if OSG_VERSION_LESS_THAN(3,4,0)
-        return osgDB::readNodeFile(fileName, options._options);
-#else
         return osgDB::readRefNodeFile(fileName, options._options);
-#endif
     } else if (!topLevel && options.isPageLevel(bucketBox.getStartLevel())) {
         return createPagedLOD(bucketBox, options);
     } else {
@@ -323,11 +315,8 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const LocalOptions& 
         std::string fileName = osgDB::findDataFile(lodPath + extensions[i], options._options);
         if (fileName.empty())
             continue;
-#if OSG_VERSION_LESS_THAN(3,4,0)
-        osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(fileName, options._options);
-#else
+
         osg::ref_ptr<osg::Node> node = osgDB::readRefNodeFile(fileName, options._options);
-#endif
         if (!node.valid())
             continue;
         pagedLOD->addChild(node.get(), range, std::numeric_limits<float>::max());
@@ -425,11 +414,7 @@ ReaderWriterSPT::getLowLODStateSet(const LocalOptions& options) const
     localOptions = static_cast<osgDB::Options*>(options._options->clone(osg::CopyOp()));
     localOptions->setObjectCacheHint(osgDB::Options::CACHE_ALL);
 
-#if OSG_VERSION_LESS_THAN(3,4,0)
-    osg::ref_ptr<osg::Object> object = osgDB::readObjectFile("state.spt", localOptions.get());
-#else
     osg::ref_ptr<osg::Object> object = osgDB::readRefObjectFile("state.spt", localOptions.get());
-#endif
     if (!dynamic_cast<osg::StateSet*>(object.get()))
         return 0;
 

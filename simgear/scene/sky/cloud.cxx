@@ -29,7 +29,6 @@
 
 #include <math.h>
 
-#include <simgear/structure/OSGVersion.hxx>
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/CullFace>

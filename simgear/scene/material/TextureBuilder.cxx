@@ -273,11 +273,7 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED);
     else
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
-#if OSG_VERSION_LESS_THAN(3,4,2)
-    result = osgDB::readImageFile(imageName, options);
-#else
     result = osgDB::readRefImageFile(imageName, options);
-#endif
     options->setLoadOriginHint(origLOH);
     osg::ref_ptr<osg::Image> image;
     if (result.success())
@@ -607,56 +603,34 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
         SGReaderWriterOptions* wOpts = (SGReaderWriterOptions*)options;
         SGReaderWriterOptions::LoadOriginHint origLOH = wOpts->getLoadOriginHint();
         wOpts->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
-#if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(std::get<0>(_tuple), options);
-#else
         result = osgDB::readRefImageFile(std::get<0>(_tuple), options);
-#endif
+
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(std::get<1>(_tuple), options);
-#else
         result = osgDB::readRefImageFile(std::get<1>(_tuple), options);
-#endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(std::get<2>(_tuple), options);
-#else
         result = osgDB::readRefImageFile(std::get<2>(_tuple), options);
-#endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(std::get<3>(_tuple), options);
-#else
         result = osgDB::readRefImageFile(std::get<3>(_tuple), options);
-#endif
+
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(std::get<4>(_tuple), options);
-#else
         result = osgDB::readRefImageFile(std::get<4>(_tuple), options);
-#endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
-#if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(std::get<5>(_tuple), options);
-#else
         result = osgDB::readRefImageFile(std::get<5>(_tuple), options);
-#endif
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
@@ -681,11 +655,8 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             return cubeTexture.release();
 
         osgDB::ReaderWriter::ReadResult result;
-#if OSG_VERSION_LESS_THAN(3,4,1)
-        result = osgDB::readImageFile(texname, options);
-#else
         result = osgDB::readRefImageFile(texname, options);
-#endif
+
         if(result.success()) {
             osg::Image* image = result.getImage();
             image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones
@@ -812,11 +783,7 @@ Texture* Texture3DBuilder::build(Effect* effect, Pass* pass,
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED);
     else
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
-#if OSG_VERSION_LESS_THAN(3,4,2)
-    result = osgDB::readImageFile(imageName, options);
-#else
     result = osgDB::readRefImageFile(imageName, options);
-#endif
     options->setLoadOriginHint(origLOH);
     osg::ref_ptr<osg::Image> image;
     if (result.success())

@@ -47,11 +47,8 @@ void ShaderGeometry::addObject(const Vec3& position, float scale,
 void ShaderGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
 {
     State& state = *renderInfo.getState();
-#if OSG_VERSION_LESS_THAN(3,3,4)
-    const Extensions* extensions = getExtensions(state.getContextID(), true);
-#else
     const GLExtensions* extensions = GLExtensions::Get(state.getContextID(), true);
-#endif
+
     Vec4Array::const_iterator citer = _posScaleArray->begin();
     Vec4Array::const_iterator cend = _posScaleArray->end();
     FloatArray::const_iterator viter = _vertexAttribArray->begin();
@@ -64,20 +61,9 @@ void ShaderGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
     }
 }
 
-BoundingBox
-#if OSG_VERSION_LESS_THAN(3,3,2)
-ShaderGeometry::computeBound()
-#else
-ShaderGeometry::computeBoundingBox()
-#endif
-const
+BoundingBox ShaderGeometry::computeBoundingBox() const
 {
-    const BoundingBox& geom_box =
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      _geometry->getBound();
-#else
-      _geometry->getBoundingBox();
-#endif
+    const BoundingBox& geom_box = _geometry->getBoundingBox();
 
     BoundingBox bb;
     const Vec4Array* posScales = _posScaleArray.get();

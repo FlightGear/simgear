@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <iostream>
 
-#include <simgear/structure/OSGVersion.hxx>
 #include <osg/Array>
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>

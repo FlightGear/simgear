@@ -25,7 +25,6 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
-#include <simgear/structure/OSGVersion.hxx>
 
 #include <osgParticle/SmokeTrailEffect>
 #include <osgParticle/FireEffect>

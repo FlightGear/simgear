@@ -61,11 +61,7 @@ namespace canvas
       SGVec2i sizeForWidth(int w);
 #endif
 
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      osg::BoundingBox computeBound() const override;
-#else
       osg::BoundingBox computeBoundingBox() const override;
-#endif
 
     protected:
       friend class TextLine;
@@ -174,12 +170,8 @@ namespace canvas
 #if OSG_VERSION_GREATER_OR_EQUAL(3,5,6)
     // TODO: need 3.5.6 version of this.
 #else
-#if OSG_VERSION_LESS_THAN(3,3,5)
-      GlyphQuads::Coords2 const& coords = _quads->_coords;
-#else
       GlyphQuads::Coords2 refCoords = _quads->_coords;
       GlyphQuads::Coords2::element_type &coords = *refCoords.get();
-#endif
 
       size_t global_i = _begin + i;
 
@@ -218,12 +210,8 @@ namespace canvas
   // TODO: need 3.5.7 version of this.
 	return cursorPos(0);
 #else
-#if OSG_VERSION_LESS_THAN(3,3,5)
-    GlyphQuads::Coords2 const& coords = _quads->_coords;
-#else
     GlyphQuads::Coords2 refCoords = _quads->_coords;
     GlyphQuads::Coords2::element_type &coords = *refCoords.get();
-#endif
 
     GlyphQuads::Glyphs const& glyphs = _quads->_glyphs;
 
@@ -649,28 +637,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-#if OSG_VERSION_LESS_THAN(3,3,2)
-  osg::BoundingBox Text::TextOSG::computeBound() const
-#else
   osg::BoundingBox Text::TextOSG::computeBoundingBox() const
-#endif
   {
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      osg::BoundingBox bb = osgText::Text::computeBound();
-#else
-      osg::BoundingBox bb = osgText::Text::computeBoundingBox();
-#endif
-
-#if OSG_VERSION_LESS_THAN(3,1,0)
-    if( bb.valid() )
-    {
-      // TODO bounding box still doesn't seem always right (eg. with center
-      //      horizontal alignment not completely accurate)
-      bb._min.y() += _offset.y();
-      bb._max.y() += _offset.y();
-    }
-#endif
-
+    osg::BoundingBox bb = osgText::Text::computeBoundingBox();
     return bb;
   }
 
@@ -685,12 +654,8 @@ namespace canvas
 
     const GlyphQuads& quads = _textureGlyphQuadMap.begin()->second;
     const GlyphQuads::Glyphs& glyphs = quads._glyphs;
-#if OSG_VERSION_LESS_THAN(3,3,5)
-    GlyphQuads::Coords2 const& coords = quads._coords;
-#else
     GlyphQuads::Coords2 refCoords = quads._coords;
     GlyphQuads::Coords2::element_type &coords = *refCoords.get();
-#endif
 
     const GlyphQuads::LineNumbers& line_numbers = quads._lineNumbers;
 

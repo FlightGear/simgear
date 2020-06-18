@@ -43,12 +43,7 @@ SGEnlargeBoundingBox::SGEnlargeBoundingBox(const SGEnlargeBoundingBox& cb,
 osg::BoundingBox
 SGEnlargeBoundingBox::computeBound(const osg::Drawable& drawable) const
 {
-  osg::BoundingBox bound =
-#if OSG_VERSION_LESS_THAN(3,3,2)
-    drawable.computeBound();
-#else
-    drawable.computeBoundingBox();
-#endif
+  osg::BoundingBox bound = drawable.computeBoundingBox();
 
   if (!bound.valid())
     return bound;

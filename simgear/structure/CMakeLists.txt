@@ -3,7 +3,6 @@ include (SimGearComponent)
 
 set(HEADERS
     OSGUtils.hxx
-    OSGVersion.hxx
     SGAtomic.hxx
     SGBinding.hxx
     SGExpression.hxx

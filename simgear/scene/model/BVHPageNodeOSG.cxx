@@ -216,11 +216,7 @@ public:
                 if (pagedLOD.getMinRange(i) <= 0) {
                     osg::ref_ptr<const osgDB::Options> options;
                     options = getOptions(pagedLOD.getDatabaseOptions(), pagedLOD.getDatabasePath());
-#if OSG_VERSION_LESS_THAN(3,4,0)
-                    node = osgDB::readNodeFile(pagedLOD.getFileName(i), options.get());
-#else
                     node = osgDB::readRefNodeFile(pagedLOD.getFileName(i), options.get());
-#endif
                 }
                 if (!node.valid())
                     node = new osg::Group;
@@ -261,11 +257,7 @@ public:
             osg::ref_ptr<const osgDB::Options> options;
             options = getOptions(proxyNode.getDatabaseOptions(), proxyNode.getDatabasePath());
             osg::ref_ptr<osg::Node> node;
-#if OSG_VERSION_LESS_THAN(3,4,0)
-            node = osgDB::readNodeFile(proxyNode.getFileName(i), options.get());
-#else
             node = osgDB::readRefNodeFile(proxyNode.getFileName(i), options.get());
-#endif
             if (!node.valid())
                 node = new osg::Group;
             if (i < proxyNode.getNumChildren())
@@ -362,11 +354,8 @@ SGSharedPtr<BVHNode>
 BVHPageNodeOSG::load(const std::string& name, const osg::ref_ptr<const osg::Referenced>& options)
 {
     osg::ref_ptr<osg::Node> node;
-#if OSG_VERSION_LESS_THAN(3,4,0)
-    node = osgDB::readNodeFile(name, dynamic_cast<const osgDB::Options*>(options.get()));
-#else
     node = osgDB::readRefNodeFile(name, dynamic_cast<const osgDB::Options*>(options.get()));
-#endif
+
     if (!node.valid())
         return SGSharedPtr<BVHNode>();
 

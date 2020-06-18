@@ -18,7 +18,6 @@
 #define SIMGEAR_EFFECT_GEODE_HXX 1
 
 #include <osg/Geode>
-#include <osg/Version>
 
 #include <boost/iterator/iterator_adaptor.hpp>
 
@@ -31,9 +30,6 @@ class EffectGeode : public osg::Geode
 {
   public:
 
-#if OSG_VERSION_LESS_THAN(3,3,2)
-    typedef DrawableList::iterator DrawablesIterator;
-#else
     class DrawablesIterator:
       public boost::iterator_adaptor<
         DrawablesIterator,
@@ -62,7 +58,6 @@ class EffectGeode : public osg::Geode
           return base_reference()->get()->asDrawable();
         }
     };
-#endif
 
     EffectGeode();
     EffectGeode(const EffectGeode& rhs,
@@ -75,13 +70,9 @@ class EffectGeode : public osg::Geode
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* = 0) const;
 
-#if OSG_VERSION_LESS_THAN(3,3,2)
-    DrawablesIterator drawablesBegin() { return _drawables.begin(); }
-    DrawablesIterator drawablesEnd() { return _drawables.end(); }
-#else
+
     DrawablesIterator drawablesBegin() { return DrawablesIterator(_children.begin()); }
     DrawablesIterator drawablesEnd() { return DrawablesIterator(_children.end()); }
-#endif
 
     void runGenerators(osg::Geometry *geometry);
 private:

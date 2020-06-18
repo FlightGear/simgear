@@ -586,11 +586,7 @@ ModelRegistry::readImage(const string& fileName,
 osg::ref_ptr<osg::Node> DefaultCachePolicy::find(const string& fileName, const Options* opt)
 {
     Registry* registry = Registry::instance();
-#if OSG_VERSION_LESS_THAN(3,4,0)
-    osg::ref_ptr<osg::Object> cachedObject = registry->getFromObjectCache(fileName);
-#else
     osg::ref_ptr<osg::Object> cachedObject = registry->getRefFromObjectCache(fileName);
-#endif
 
     ref_ptr<osg::Node> cachedNode = dynamic_cast<osg::Node*>(cachedObject.get());
     if (cachedNode.valid())

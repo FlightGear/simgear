@@ -30,7 +30,6 @@
 #include <osg/Drawable>
 #include <osg/Geode>
 #include <osg/StateAttribute>
-#include <osg/Version>
 
 #include <cassert>
 #include <cmath>
@@ -365,13 +364,7 @@ namespace canvas
 
     // Drawables have a bounding box...
     if( _drawable )
-      return _drawable->
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      getBound()
-#else
-      getBoundingBox()
-#endif
-      .contains(osg::Vec3f(local_pos, 0));
+      return _drawable->getBoundingBox().contains(osg::Vec3f(local_pos, 0));
     else if( _scene_group.valid() )
       // ... for other elements, i.e. groups only a bounding sphere is available
       return _scene_group->getBound().contains(osg::Vec3f(parent_pos, 0));
@@ -643,11 +636,7 @@ namespace canvas
   osg::BoundingBox Element::getBoundingBox() const
   {
     if( _drawable )
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      return _drawable->getBound();
-#else
       return _drawable->getBoundingBox();
-#endif
 
     osg::BoundingBox bb;
 
@@ -670,12 +659,7 @@ namespace canvas
       return osg::BoundingBox();
 
     osg::BoundingBox transformed;
-    const osg::BoundingBox& bb =
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      _drawable->getBound();
-#else
-      _drawable->getBoundingBox();
-#endif
+    const osg::BoundingBox& bb = _drawable->getBoundingBox();
 
     for(int i = 0; i < 4; ++i)
       transformed.expandBy( bb.corner(i) * m );

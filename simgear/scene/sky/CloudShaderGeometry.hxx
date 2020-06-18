@@ -32,7 +32,6 @@
 #include <osg/Vec3>
 #include <osg/Vec4>
 #include <osg/buffered_value>
-#include <osg/Version>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/math/sg_random.h>
@@ -98,13 +97,7 @@ class CloudShaderGeometry : public osg::Drawable
         { return _cloudsprites[i]; }
         
         virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
-        virtual osg::BoundingBox
-#if OSG_VERSION_LESS_THAN(3,3,2)
-        computeBound()
-#else
-        computeBoundingBox()
-#endif
-        const
+        virtual osg::BoundingBox computeBoundingBox() const
         {
             return _bbox;
         }

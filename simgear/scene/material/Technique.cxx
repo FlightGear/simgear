@@ -142,14 +142,9 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
     {
       Drawable* drawable = itr->get();
 
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      const BoundingBox& bb = drawable->getBound();
-      osg::Drawable::CullCallback* cull = drawable->getCullCallback();
-#else
       const BoundingBox& bb = drawable->getBoundingBox();
       osg::Drawable::CullCallback* cull =
         dynamic_cast<osg::Drawable::CullCallback*>(drawable->getCullCallback());
-#endif
 
       if(   (cull && cull->cull(cv, drawable, &cv->getRenderInfo()))
          || (isCullingActive && cv->isCulled(bb)) )
@@ -322,15 +317,9 @@ public:
             = GL2Extensions::Get(static_cast<unsigned>(contextId), true);
         if (!extensions)
             return;
-#if OSG_VERSION_LESS_THAN(3,3,4)
-        if (!extensions->isGlslSupported())
-            return;
-        value = extensions->getLanguageVersion();
-#else
         if (!extensions->isGlslSupported)
             return;
         value = extensions->glslLanguageVersion;
-#endif
     }
 };
 
@@ -359,11 +348,7 @@ public:
            = GL2Extensions::Get(static_cast<unsigned>(contextId), true);
        if (!extensions)
            return;
-#if OSG_VERSION_LESS_THAN(3,3,4)
-       value = extensions->isGlslSupported();
-#else
        value = extensions->isGlslSupported;
-#endif
    }
 };
 

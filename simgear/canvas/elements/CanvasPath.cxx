@@ -24,7 +24,6 @@
 #include <simgear/misc/strutils.hxx>
 
 #include <osg/Drawable>
-#include <osg/Version>
 
 #include <vg/openvg.h>
 #include <cassert>
@@ -559,12 +558,8 @@ namespace canvas
       /**
        * Compute the bounding box
        */
-      osg::BoundingBox
-#if OSG_VERSION_LESS_THAN(3,3,2)
-      computeBound()
-#else
-      computeBoundingBox()
-#endif
+      osg::BoundingBox computeBoundingBox()
+
       const override
       {
         if( _path == VG_INVALID_HANDLE || (_attributes_dirty & PATH) )

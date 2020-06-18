@@ -32,7 +32,7 @@ public:
   SGEnlargeBoundingBox(float offset = 0);
   SGEnlargeBoundingBox(const SGEnlargeBoundingBox& cb, const osg::CopyOp&);
   META_Object(osg, SGEnlargeBoundingBox);
-  virtual osg::BoundingBox computeBound(const osg::Drawable& drawable) const;
+  osg::BoundingBox computeBound(const osg::Drawable& drawable) const override;
 
 private:
   float _offset;

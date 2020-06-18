@@ -41,17 +41,9 @@ SGLoadTexture2D(bool staticTexture, const std::string& path,
 {
   osg::ref_ptr<osg::Image> image;
   if (options)
-#if OSG_VERSION_LESS_THAN(3,4,0)
-      image = osgDB::readImageFile(path, options);
-#else
       image = osgDB::readRefImageFile(path, options);
-#endif
   else
-#if OSG_VERSION_LESS_THAN(3,4,0)
-      image = osgDB::readImageFile(path);
-#else
       image = osgDB::readRefImageFile(path);
-#endif
 
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image);
@@ -152,11 +144,7 @@ Texture2D* TextureUpdateVisitor::textureReplace(int unit, const StateAttribute* 
     if (fullLiveryFile.empty() || fullLiveryFile == *fullFilePath)
         return 0;
 
-#if OSG_VERSION_LESS_THAN(3,4,0)
-    Image* newImage = readImageFile(fullLiveryFile);
-#else
     osg::ref_ptr<Image> newImage = readRefImageFile(fullLiveryFile);
-#endif
     if (!newImage)
         return 0;
 
@@ -166,11 +154,7 @@ Texture2D* TextureUpdateVisitor::textureReplace(int unit, const StateAttribute* 
         return 0;
 
     newTexture->setImage(newImage);
-#if OSG_VERSION_LESS_THAN(3,4,0)
-    if (newImage->valid())
-#else
     if (newImage.valid())
-#endif
     {
         newTexture->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
     }

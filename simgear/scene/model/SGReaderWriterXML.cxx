@@ -396,10 +396,10 @@ void addTooltipAnimations(const SGPath& path, SGPropertyNode_ptr props, osg::ref
         /* Make a unique tooltip-id. */
         std::string tooltip_id = "auto-tooltip-";
         {
-            num_new_animations += 1;
             if (autoTooltipsMasterMax > 0 && num_new_animations > autoTooltipsMasterMax) {
                 continue;
             }
+            num_new_animations += 1;
             std::ostringstream  s;
             s << num_new_animations;
             tooltip_id += s.str();

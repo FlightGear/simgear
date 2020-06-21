@@ -2,6 +2,7 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(ZLIB)
 find_dependency(Threads)
+find_dependency(CURL)
 
 # OSG
 
@@ -21,11 +22,10 @@ set(ENABLE_SIMD @ENABLE_SIMD@)
 # OpenRTI support
 set(ENABLE_RTI @ENABLE_RTI@)
 if(ENABLE_RTI)
-  set(RTI_FOUND @RTI_FOUND@)
-  if(RTI_FOUND)
-    set(RTI_INCLUDE_DIRS @RTI_INCLUDE_DIRS@)
-    set(RTI_LDFLAGS @RTI_LDFLAGS@)
-  endif(RTI_FOUND)
+    find_dependency(PkgConfig)
+    if(PKG_CONFIG_FOUND)
+      pkg_check_modules(RTI IMPORTED_TARGET hla-rti13)
+    endif(PKG_CONFIG_FOUND)
 endif(ENABLE_RTI)
 
 # Alternative terrain engine based on pagedLOD

@@ -213,7 +213,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD
 endif()
 
 find_package(Boost REQUIRED)
-set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG")
+set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG -DBOOST_NO_AUTO_PTR -DBOOST_NO_CXX98_BINDERS")
 include(BoostTestTargets)
 
 if(SIMGEAR_HEADLESS)
@@ -287,7 +287,7 @@ if(ENABLE_RTI)
     find_package(PkgConfig)
     if(PKG_CONFIG_FOUND)
       SET(ENV{PKG_CONFIG_PATH} "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-      pkg_check_modules(RTI hla-rti13)
+      pkg_check_modules(RTI IMPORTED_TARGET hla-rti13)
     endif(PKG_CONFIG_FOUND)
     if(RTI_FOUND)
       message(STATUS "RTI: ENABLED")
@@ -359,16 +359,6 @@ SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually 'd' on windows"
 SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 SET(CMAKE_RELWITHDEBINFO_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 SET(CMAKE_MINSIZEREL_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
-
-# isnan might not be real symbol, so can't check using function_exists
-check_cxx_source_compiles(
-    "#include <cmath>
-    int main() { return std::isnan(0.0);} "
-    HAVE_STD_ISNAN)
-
-if (NOT ${HAVE_STD_ISNAN})
-  message(FATAL_ERROR "Your compiler lacks C++11 std::isnan, please update it")
-endif()
 
 # Check if the <regex> implementation in the C++ standard library is usable.
 # This is necessary because g++ 4.8 lies about its C++11 compliance: its

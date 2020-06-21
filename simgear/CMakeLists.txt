@@ -124,9 +124,9 @@ target_include_directories(SimGearCore BEFORE PUBLIC
     $<INSTALL_INTERFACE:include>)
 
 target_include_directories(SimGearCore PUBLIC
-  ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR})
+  ${Boost_INCLUDE_DIRS})
 target_include_directories(SimGearCore PRIVATE
-  ${EXPAT_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
+  ${EXPAT_INCLUDE_DIRS} )
 
 if (NOT SYSTEM_EXPAT)
     # XML_STATIC is important to avoid sg_expat_external.h
@@ -159,14 +159,19 @@ if (NOT SIMGEAR_HEADLESS)
 endif()
 
 # we expose ZLib in some of our headers
-target_link_libraries(SimGearCore PUBLIC ${ZLIB_LIBRARY})
+target_link_libraries(SimGearCore PUBLIC ZLIB::ZLIB)
+
+if (ENABLE_RTI)
+    target_sources(SimGearCore PRIVATE $<TARGET_OBJECTS:rti> $<TARGET_OBJECTS:rti13>)
+    target_link_libraries(SimGearCore PRIVATE PkgConfig::RTI)
+endif()
 
 target_link_libraries(SimGearCore PRIVATE
     ${RT_LIBRARY}
     ${DL_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${COCOA_LIBRARY}
-    ${CURL_LIBRARIES}
+    CURL::libcurl
     ${WINSOCK_LIBRARY})
 
 if(SYSTEM_EXPAT)
@@ -186,7 +191,7 @@ if(NOT SIMGEAR_HEADLESS)
     )
 
     target_link_libraries(SimGearScene PRIVATE
-        ${ZLIB_LIBRARY}
+        ZLIB::ZLIB
         ${OPENAL_LIBRARY}
         ${OPENGL_LIBRARY}
         ${JPEG_LIBRARY})
@@ -198,11 +203,3 @@ if(NOT SIMGEAR_HEADLESS)
     # only actually needed by canvas/KeyboardEvent.cxx
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/utf8/source)
 endif()
-
-if(ENABLE_RTI)
-    # Ugly first aid to make hla compile agian
-    set_property(SOURCE hla/RTI13InteractionClass.cxx hla/RTI13ObjectClass.cxx
-        hla/RTI13ObjectInstance.cxx hla/RTI13Federate.cxx
-        hla/RTI13FederateFactory.cxx
-        APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIRS}")
-endif(ENABLE_RTI)

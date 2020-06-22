@@ -57,19 +57,6 @@ OpenThreads::ReentrantMutex effectMutex;
  * Nodes are considered equal if their names and indexes are equal.
  */
 
-struct PropPredicate
-    : public unary_function<const SGPropertyNode*, bool>
-{
-    PropPredicate(const SGPropertyNode* node_) : node(node_) {}
-    bool operator()(const SGPropertyNode* arg) const
-    {
-        if (strcmp(node->getName(), arg->getName()))
-            return false;
-        return node->getIndex() == arg->getIndex();
-    }
-    const SGPropertyNode* node;
-};
-
 namespace effect
 {
 void mergePropertyTrees(SGPropertyNode* resultNode,
@@ -86,9 +73,12 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
     // Merge identical nodes
     for (int i = 0; i < right->nChildren(); ++i) {
         const SGPropertyNode* node = right->getChild(i);
-        RawPropVector::iterator litr
-            = find_if(leftChildren.begin(), leftChildren.end(),
-                      PropPredicate(node));
+        auto litr = find_if(leftChildren.begin(), leftChildren.end(),
+                            [node](const SGPropertyNode* arg) {
+                                if (strcmp(node->getName(), arg->getName()))
+                                    return false;
+                                return node->getIndex() == arg->getIndex();
+                            });
         SGPropertyNode* newChild
             = resultNode->getChild(node->getName(), node->getIndex(), true);
         if (litr != leftChildren.end()) {

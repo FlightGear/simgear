@@ -35,7 +35,7 @@ include (GenerateExportHeader)
 set(CMAKE_OSX_RPATH 1)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
@@ -444,7 +444,7 @@ if(WIN32)
     endif()
 
     if(MSVC)
-        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP")
+        set(MSVC_FLAGS "-D_HAS_STD_BYTE=0 -DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP /bigobj")
         if (X86)
           set(SIMD_COMPILER_FLAGS "/arch:SSE /arch:SSE2")
         endif()
@@ -455,11 +455,6 @@ if(WIN32)
           # symbols. Suspect this may be an OSG-DB export bug
             set( MSVC_LD_FLAGS "/FORCE:MULTIPLE" )
         endif ()
-
-        if (${MSVC_VERSION} GREATER 1899)
-            # needed for debug builds with VS2015
-            set( MSVC_FLAGS "${MSVC_FLAGS} /bigobj" )
-        endif()
     endif(MSVC)
 
     # assumed on Windows

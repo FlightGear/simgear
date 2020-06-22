@@ -2829,25 +2829,25 @@ size_t hash_value(const SGPropertyNode& node)
             return 0;
 
         case props::BOOL:
-            return hash_value(node.getValue<bool>());
+            return boost::hash_value(node.getValue<bool>());
         case props::INT:
-            return hash_value(node.getValue<int>());
+            return boost::hash_value(node.getValue<int>());
         case props::LONG:
-            return hash_value(node.getValue<long>());
+            return boost::hash_value(node.getValue<long>());
         case props::FLOAT:
-            return hash_value(node.getValue<float>());
+            return boost::hash_value(node.getValue<float>());
         case props::DOUBLE:
-            return hash_value(node.getValue<double>());
+            return boost::hash_value(node.getValue<double>());
         case props::STRING:
         case props::UNSPECIFIED:
         {
             const char *val = node.getStringValue();
-            return hash_range(val, val + strlen(val));
+            return boost::hash_range(val, val + strlen(val));
         }
         case props::VEC3D:
         {
             const SGVec3d val = node.getValue<SGVec3d>();
-            return hash_range(&val[0], &val[3]);
+            return boost::hash_range(&val[0], &val[3]);
         }
         case props::VEC4D:
         {

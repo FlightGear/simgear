@@ -28,28 +28,6 @@
 namespace nasal
 {
 
-  /**
-   *  Predicate (eg. for std::find_if) returning true if no character of the
-   *  stored string given by the range [begin, end) matches.
-   */
-  struct no_match:
-    public std::unary_function<const char, bool>
-  {
-    no_match(const char* begin, const char* end):
-      _begin(begin),
-      _end(end)
-    {}
-
-    bool operator()(const char c) const
-    {
-      return std::find(_begin, _end, c) == _end;
-    }
-
-    private:
-      const char* _begin;
-      const char* _end;
-  };
-
 //template<typename Iterator>
 //Iterator
 //rfind_first_of( Iterator rbegin_src, Iterator rend_src,
@@ -171,8 +149,9 @@ namespace nasal
     if( pos >= size() )
       return npos;
 
-    const char* result = std::find_if( begin() + pos, end(),
-                                       no_match(chr.begin(), chr.end()) );
+    const char* result = std::find_if(begin() + pos, end(), [&chr](const char c) {
+        return std::find(chr.begin(), chr.end(), c) == chr.end();
+    });
 
     return result != end() ? result - begin() : npos;
   }

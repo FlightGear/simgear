@@ -62,7 +62,7 @@ public:
     };
     typedef std::list<LeafRef> LeafRefList;
 
-    struct LeafRefLess : public std::binary_function<LeafRef, LeafRef, bool> {
+    struct LeafRefLess {
         LeafRefLess(unsigned sortAxis) : _sortAxis(sortAxis) {}
         bool operator()(const LeafRef& x, const LeafRef& y)
         { return x._center[_sortAxis] < y._center[_sortAxis]; }

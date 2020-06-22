@@ -24,58 +24,6 @@
 #include <osg/StateAttribute>
 #include <osg/StateSet>
 
-namespace simgear
-{
-// RefPtrAdapter also appears in OpenSceneGraph's
-// osgDB/DatabasePager.cpp. I wrote that code too. -- Tim Moore
-
-// Convert function objects that take pointer args into functions that a
-// reference to an osg::ref_ptr. This is quite useful for doing STL
-// operations on lists of ref_ptr. This code assumes that a function
-// with an argument const Foo* should be composed into a function of
-// argument type ref_ptr<Foo>&, not ref_ptr<const Foo>&. Some support
-// for that should be added to make this more general.
-template <typename U>
-struct PointerTraits
-{
-    typedef class NullType {} PointeeType;
-};
-
-template <typename U>
-struct PointerTraits<U*>
-{
-    typedef U PointeeType;
-};
-
-template <typename U>
-struct PointerTraits<const U*>
-{
-    typedef U PointeeType;
-};
-
-template <typename FuncObj>
-class RefPtrAdapter
-    : public std::unary_function<const osg::ref_ptr<typename PointerTraits<typename FuncObj::argument_type>::PointeeType>,
-                                 typename FuncObj::result_type>
-{
-public:
-    typedef typename PointerTraits<typename FuncObj::argument_type>::PointeeType PointeeType;
-    typedef osg::ref_ptr<PointeeType> RefPtrType;
-    explicit RefPtrAdapter(const FuncObj& funcObj) : _func(funcObj) {}
-    typename FuncObj::result_type operator()(const RefPtrType& refPtr) const
-    {
-        return _func(refPtr.get());
-    }
-protected:
-        FuncObj _func;
-};
-
-template <typename FuncObj>
-RefPtrAdapter<FuncObj> refPtrAdapt(const FuncObj& func)
-{
-    return RefPtrAdapter<FuncObj>(func);
-}
-}
 /** Typesafe wrapper around OSG's object clone function. Something
  * very similar is in current OSG sources.
  */

@@ -50,7 +50,7 @@ Set ``CURL_NO_CURL_CMAKE`` to ``ON`` to disable this search.
 
 #]=======================================================================]
 
-include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
+include(FindPackageHandleStandardArgs)
 
 if(NOT CURL_NO_CURL_CMAKE)
   # do a find package call to specifically look for the CMake version
@@ -104,7 +104,7 @@ if(NOT CURL_LIBRARY)
   )
   mark_as_advanced(CURL_LIBRARY_DEBUG)
 
-  include(${CMAKE_CURRENT_LIST_DIR}/SelectLibraryConfigurations.cmake)
+  include(SelectLibraryConfigurations)
   select_library_configurations(CURL)
 endif()
 

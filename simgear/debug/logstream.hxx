@@ -106,6 +106,11 @@ public:
     sgDebugPriority get_log_priority() const;
 
     /**
+        @brief convert a string value to a log prioirty.
+        throws std::invalid_argument if the string is not valid
+     */
+    static sgDebugPriority priorityFromString(const std::string& s);
+    /**
      * set developer mode on/off. In developer mode, SG_DEV_WARN messags
      * are treated as warnings. In normal (non-developer) mode they are
      * treated as SG_DEBUG.

@@ -451,7 +451,7 @@ public:
         }
     }
 
-    virtual void run()
+    void run() override
     {
         while (1) {
             LogEntry entry(m_entries.pop());
@@ -737,6 +737,16 @@ logstream::set_log_classes( sgDebugClass c)
     d->setLogLevels(c, d->m_logPriority);
 }
 
+sgDebugPriority logstream::priorityFromString(const std::string& s)
+{
+    if (s == "bulk") return SG_BULK;
+    if (s == "debug") return SG_DEBUG;
+    if (s == "info") return SG_INFO;
+    if (s == "warn") return SG_WARN;
+    if (s == "alert") return SG_ALERT;
+
+    throw std::invalid_argument("Couldn't parse log prioirty:" + s);
+}
 
 logstream&
 sglog()

@@ -105,6 +105,8 @@ public:
     unsigned int bytesTransferred;
     unsigned int lastTransferRate;
     uint64_t totalBytesDownloaded;
+
+    SGPath tlsCertificatePath;
 };
 
 Client::Client() :
@@ -119,6 +121,8 @@ Client::Client() :
     d->totalBytesDownloaded = 0;
     d->maxPipelineDepth = 5;
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
+
+    d->tlsCertificatePath = SGPath::fromEnv("SIMGEAR_TLS_CERT_PATH");
 
     static bool didInitCurlGlobal = false;
     static std::mutex initMutex;
@@ -284,6 +288,11 @@ void Client::makeRequest(const Request_ptr& r)
     }
 
     curl_easy_setopt(curlRequest, CURLOPT_FOLLOWLOCATION, 1);
+
+    if (!d->tlsCertificatePath.isNull()) {
+        const auto utf8 = d->tlsCertificatePath.utf8Str();
+        curl_easy_setopt(curlRequest, CURLOPT_CAINFO, utf8.c_str());
+    }
 
     if (!d->proxy.empty()) {
       curl_easy_setopt(curlRequest, CURLOPT_PROXY, d->proxy.c_str());

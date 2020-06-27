@@ -39,7 +39,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
-file(READ version versionFile)
+file(READ simgear-version versionFile)
 string(STRIP ${versionFile} SIMGEAR_VERSION)
 
 project(SimGear VERSION ${SIMGEAR_VERSION} LANGUAGES C CXX)

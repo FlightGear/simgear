@@ -196,6 +196,12 @@ public:
     std::string gen_base_path() const;
 
     /**
+     * Build the base path name for this bucket.
+     * @return base path in string form
+     */
+    std::string gen_vpb_base() const;
+
+    /**
      * @return the center lon of a tile.
      */
     inline double get_center_lon() const {

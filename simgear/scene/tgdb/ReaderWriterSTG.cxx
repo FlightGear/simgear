@@ -22,7 +22,7 @@
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
 #endif
-
+#include <algorithm>
 #include "ReaderWriterSTG.hxx"
 
 #include <osg/LOD>
@@ -52,6 +52,8 @@
 #include <simgear/scene/tgdb/obj.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/tgdb/SGBuildingBin.hxx>
+
+#include <simgear/scene/util/SGSceneFeatures.hxx>
 
 #include "SGOceanTile.hxx"
 
@@ -376,6 +378,8 @@ struct ReaderWriterSTG::_ModelBin {
         int bucket = atoi(absoluteFileName.file_base().c_str());
         mt_init(&seed, bucket);
 
+        bool vpb_active = SGSceneFeatures::instance()->getVPBActive();
+
         // do only load airport btg files.
         bool onlyAirports = options->getPluginStringData("SimGear::FG_ONLY_AIRPORTS") == "ON";
         // do only load terrain btg files
@@ -409,18 +413,19 @@ struct ReaderWriterSTG::_ModelBin {
             path.append(name);
 
             if (token == "OBJECT_BASE") {
-                // Load only once (first found)
-                SG_LOG( SG_TERRAIN, SG_BULK, "    " << token << " " << name );
-                _foundBase = true;
-                if (!onlyAirports || isAirportBtg(name)) {
-                    _Object obj;
-                    obj._errorLocation = absoluteFileName;
-                    obj._token = token;
-                    obj._name = path.utf8Str();
-                    obj._options = staticOptions(filePath, options);
-                    _objectList.push_back(obj);
+                if (!vpb_active) {
+                    // Load only once (first found)
+                    SG_LOG( SG_TERRAIN, SG_BULK, "    " << token << " " << name );
+                    _foundBase = true;
+                    if (!onlyAirports || isAirportBtg(name)) {
+                        _Object obj;
+                        obj._errorLocation = absoluteFileName;
+                        obj._token = token;
+                        obj._name = path.utf8Str();
+                        obj._options = staticOptions(filePath, options);
+                        _objectList.push_back(obj);
+                    }
                 }
-
             } else if (token == "OBJECT") {
                 if (!onlyAirports || isAirportBtg(name)) {
                     _Object obj;
@@ -430,7 +435,6 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._options = staticOptions(filePath, options);
                     _objectList.push_back(obj);
                 }
-
             } else if (!onlyTerrain) {
                 // Load non-terrain objects
 
@@ -566,6 +570,8 @@ struct ReaderWriterSTG::_ModelBin {
         return true;
     }
 
+    std::map<std::string, bool> tile_map;
+
     osg::Node* load(const SGBucket& bucket, const osgDB::Options* opt)
     {
         osg::ref_ptr<SGReaderWriterOptions> options;
@@ -575,6 +581,19 @@ struct ReaderWriterSTG::_ModelBin {
         terrainGroup->setDataVariance(osg::Object::STATIC);
         terrainGroup->setName("terrain");
 
+        bool vpb_active = SGSceneFeatures::instance()->getVPBActive();
+        if (vpb_active) {
+            std::string filename = "vpb/" + bucket.gen_vpb_base() + ".osgb";
+            //std::string filename = "vpb/*.osgb";
+            if (tile_map.count(filename) == 0) {
+                auto vpb_node = osgDB::readRefNodeFile(filename, options);
+                terrainGroup->addChild(vpb_node);
+                tile_map[filename] = true;
+                SG_LOG(SG_TERRAIN, SG_INFO, "Loading: " << filename);
+            }
+        }
+
+        if (!vpb_active) {
         if (_foundBase) {
             for (auto stgObject : _objectList) {
                 osg::ref_ptr<osg::Node> node;
@@ -598,6 +617,7 @@ struct ReaderWriterSTG::_ModelBin {
                 SG_LOG( SG_TERRAIN, SG_ALERT,
                         "Warning: failed to generate ocean tile!" );
             }
+        }
         }
 
         for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {

@@ -184,6 +184,51 @@ void SGBucket::innerSet( double dlon, double dlat )
     }
 }
 
+std::string SGBucket::gen_vpb_base() const {
+    // long int index;
+    int top_lon, top_lat, main_lon, main_lat;
+    char hem, pole;
+    char raw_path[256];
+
+    top_lon = lon / 10;
+    main_lon = lon;
+    if ((lon < 0) && (top_lon * 10 != lon)) {
+        top_lon -= 1;
+    }
+    top_lon *= 10;
+    if (top_lon >= 0) {
+        hem = 'E';
+    }
+    else {
+        hem = 'W';
+        top_lon *= -1;
+    }
+    if (main_lon < 0) {
+        main_lon *= -1;
+    }
+
+    top_lat = lat / 10;
+    main_lat = lat;
+    if ((lat < 0) && (top_lat * 10 != lat)) {
+        top_lat -= 1;
+    }
+    top_lat *= 10;
+    if (top_lat >= 0) {
+        pole = 'N';
+    }
+    else {
+        pole = 'S';
+        top_lat *= -1;
+    }
+    if (main_lat < 0) {
+        main_lat *= -1;
+    }
+
+    ::snprintf(raw_path, 256, "WS_%c%d%c%2d", hem, main_lon, pole, main_lat);
+
+    return raw_path;
+}
+
 // Build the path name for this bucket
 std::string SGBucket::gen_base_path() const {
     // long int index;

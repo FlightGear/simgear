@@ -39,6 +39,7 @@ public:
         UseDXT3Compression,
         UseDXT5Compression
     };
+
     int getMaxTextureSize() const { return _MaxTextureSize; }
     void setMaxTextureSize(const int maxTextureSize) { _MaxTextureSize = maxTextureSize; }
 
@@ -59,6 +60,9 @@ public:
 
     // modify the texture compression on the texture parameter
     void applyTextureCompression(osg::Texture* texture) const;
+
+    bool getVPBActive() const { return _VPBActive; }
+    void setVPBActive(const bool val) { _VPBActive = val; }
 
     void setEnablePointSpriteLights(bool enable)
     {
@@ -145,6 +149,7 @@ private:
     bool _triangleDirectionalLights;
     bool _distanceAttenuationLights;
     int  _textureFilter;
+    bool _VPBActive;
 };
 
 #endif

@@ -48,7 +48,8 @@ SGSceneFeatures::SGSceneFeatures() :
   _pointSpriteLights(true),
   _triangleDirectionalLights(true),
   _distanceAttenuationLights(true),
-  _textureFilter(1)
+  _textureFilter(1),
+  _VPBActive(false)
 {
 }
 

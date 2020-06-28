@@ -172,7 +172,11 @@ GDALDatasetH SGDemTile::createTile( char **papszSrcFiles, const char *pszFilenam
                      && (pszMethod == NULL || EQUALN(pszMethod,"GCP_",4)) ) {
                 pszThisSourceSRS = GDALGetGCPProjection( hSrcDS );
             } else if( pszMethod != NULL && EQUAL(pszMethod,"RPC") ) {
+#ifndef SRS_WKT_WGS84
+                pszThisSourceSRS = SRS_WKT_WGS84_LAT_LONG;
+#else
                 pszThisSourceSRS = SRS_WKT_WGS84;
+#endif
             } else {
                 pszThisSourceSRS = "";
             }

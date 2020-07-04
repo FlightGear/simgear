@@ -21,6 +21,7 @@
 #include "NasalString.hxx"
 
 #include <cassert>
+#include <stdexcept> // for std::runtime_error
 
 namespace nasal
 {

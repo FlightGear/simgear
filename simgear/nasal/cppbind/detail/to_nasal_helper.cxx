@@ -21,6 +21,7 @@
 #include <simgear/nasal/cppbind/Ghost.hxx>
 #include <simgear/nasal/cppbind/NasalEmesaryInterface.hxx>
 
+#include <simgear/structure/exception.hxx>
 #include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
 
@@ -101,13 +102,11 @@ namespace nasal
     {
       return (*func)(nasal::CallContext(c, me, argc, args));
     }
-    catch(const std::exception& ex)
+    // CppUnit::Exception inherits std::exception, so restrict ourselves to
+    // sg_exception
+    catch (const sg_exception& e)
     {
-      naRuntimeError(c, "Fatal error in Nasal call: %s", ex.what());
-    }
-    catch(...)
-    {
-      naRuntimeError(c, "Unknown exception in Nasal call.");
+       naRuntimeError(c, "Fatal error in Nasal call: %s", e.what());
     }
 
     return naNil();

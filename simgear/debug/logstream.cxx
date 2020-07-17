@@ -262,6 +262,7 @@ private:
         const char* file;
         const int line;
         const std::string message;
+        bool freeFilename = false;
     };
 
     /**
@@ -473,6 +474,10 @@ public:
                 (*cb)(entry.debugClass, entry.debugPriority,
                     entry.file, entry.line, entry.message);
             }
+            
+            if (entry.freeFilename) {
+                free(const_cast<char*>(entry.file));
+            }
         } // of main thread loop
     }
 
@@ -486,7 +491,7 @@ public:
 
             // log a special marker value, which will cause the thread to wakeup,
             // and then exit
-            log(SG_NONE, SG_ALERT, "done", -1, "");
+            log(SG_NONE, SG_ALERT, "done", -1, "", false);
         }
         join();
 
@@ -551,7 +556,8 @@ public:
     }
 
     void log( sgDebugClass c, sgDebugPriority p,
-            const char* fileName, int line, const std::string& msg)
+            const char* fileName, int line, const std::string& msg,
+             bool freeFilename)
     {
         p = translatePriority(p);
         if (!m_fileLine) {
@@ -559,6 +565,7 @@ public:
             line = -line;
         }
         LogEntry entry(c, p, fileName, line, msg);
+        entry.freeFilename = freeFilename;
         m_entries.push(entry);
     }
 
@@ -625,7 +632,14 @@ void
 logstream::log( sgDebugClass c, sgDebugPriority p,
         const char* fileName, int line, const std::string& msg)
 {
-    d->log(c, p, fileName, line, msg);
+    d->log(c, p, fileName, line, msg, false);
+}
+
+void
+logstream::logCopyingFilename( sgDebugClass c, sgDebugPriority p,
+         const char* fileName, int line, const std::string& msg)
+{
+    d->log(c, p, strdup(fileName), line, msg, true);
 }
 
 

@@ -129,6 +129,14 @@ public:
     void log( sgDebugClass c, sgDebugPriority p,
             const char* fileName, int line, const std::string& msg);
 
+    // overload of above, which can transfer ownership of the file-name.
+    // this is unecesary overhead when logging from C++, since __FILE__ points
+    // to constant data, but it's needed when the filename is Nasal data (for
+    // example) since during shutdown the filename is freed by Nasal GC
+    // asynchronously with the logging thread.
+    void logCopyingFilename( sgDebugClass c, sgDebugPriority p,
+             const char* fileName, int line, const std::string& msg);
+    
     /**
     * output formatted hex dump of memory block
     */

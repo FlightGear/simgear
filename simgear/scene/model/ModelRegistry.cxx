@@ -359,6 +359,8 @@ ModelRegistry::readImage(const string& fileName,
                 if (res.validImage()) {
                     osg::ref_ptr<osg::Image> srcImage = res.getImage();
                     int width = srcImage->s();
+                    //int packing = srcImage->getPacking();
+                    //printf("packing %d format %x pixel size %d InternalTextureFormat %x\n", packing, srcImage->getPixelFormat(), srcImage->getPixelSizeInBits(), srcImage->getInternalTextureFormat() );
                     bool transparent = srcImage->isImageTranslucent();
                     bool isNormalMap = false;
                     bool isEffect = false;
@@ -366,6 +368,11 @@ ModelRegistry::readImage(const string& fileName,
                     * decide if we need to compress this.
                     */
                     bool can_compress = (transparent && compress_transparent) || (!transparent && compress_solid);
+
+                    if (srcImage->getPixelSizeInBits() <= 16) {
+                        SG_LOG(SG_IO, SG_INFO, "Ignoring " + absFileName + " for inclusion into the texture cache because pixel density too low at " << srcImage->getPixelSizeInBits() << " bits per pixek");
+                        can_compress = false;
+                    }
 
                     int height = srcImage->t();
 

@@ -414,9 +414,11 @@ SGXmlSound::update (double dt)
       double v = 1.0;
 
       if (_volume[i].expr) {
-         v = _volume[i].expr->getValue(nullptr);
-         expr = true;
-         continue;
+          double expression_value = _volume[i].expr->getValue(nullptr);
+          if (expression_value >= 0)
+              volume *= expression_value;
+		  expr = true;
+		  continue;
       }
 
       if (_volume[i].prop) {
@@ -437,19 +439,23 @@ SGXmlSound::update (double dt)
 
       if (_volume[i].max && (v > _volume[i].max))
          v = _volume[i].max;
-
       else if (v < _volume[i].min)
          v = _volume[i].min;
 
-      if (_volume[i].subtract)				// Hack!
-         volume = _volume[i].offset - v;
 
+      if (_volume[i].subtract){				// Hack!
+          v = v + _volume[i].offset;
+          if (v >= 0)
+            volume = volume * v;
+      }
       else {
-         volume_offset += _volume[i].offset;
-         volume *= v;
+          if (v >= 0) {
+              volume_offset += _volume[i].offset;
+              volume = volume * v;
+          }
       }
    }
-
+   
    //
    // Update the pitch
    //
@@ -462,9 +468,9 @@ SGXmlSound::update (double dt)
       double p = 1.0;
 
       if (_pitch[i].expr) {
-         p = _pitch[i].expr->getValue(nullptr);
-         expr = true;
-         continue;
+          pitch *= _pitch[i].expr->getValue(nullptr);
+          expr = true;
+          continue;
       }
 
       if (_pitch[i].prop) {

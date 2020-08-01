@@ -6,6 +6,12 @@
 #include <simgear/nasal/cppbind/Ghost.hxx>
 #include <simgear/nasal/cppbind/NasalContext.hxx>
 
+#ifdef __OpenBSD__
+
+#warning "OpenBSD's clang cannot cope with this code."
+
+#else
+
 class Base1:
   public virtual SGVirtualWeakReferenced
 {};
@@ -226,3 +232,4 @@ BOOST_AUTO_TEST_CASE( bind_methods )
   BOOST_CHECK_EQUAL(test->arg3, "s2");
   BOOST_CHECK_EQUAL(test->arg4, 1);
 }
+#endif

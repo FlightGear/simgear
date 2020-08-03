@@ -165,6 +165,14 @@ void Client::setMaxPipelineDepth(unsigned int depth)
 #endif
 }
 
+void Client::reset()
+{
+    curl_multi_cleanup(d->curlMulti);
+    d.reset(new ClientPrivate);
+    d->tlsCertificatePath = SGPath::fromEnv("SIMGEAR_TLS_CERT_PATH");
+    d->createCurlMulti();
+}
+
 void Client::update(int waitTimeout)
 {
     if (d->requests.empty()) {

@@ -116,9 +116,6 @@ private:
 
     simgear::TiedPropertyList _tiedProperties;
     BufferedLogCallback* _log;
-
-    typedef std::set<std::string> string_set;
-    string_set _activeTileDirs;
 };
 
 }

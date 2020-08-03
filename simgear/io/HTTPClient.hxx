@@ -47,6 +47,8 @@ public:
 
     void update(int waitTimeout = 0);
 
+    void reset();
+
     void makeRequest(const Request_ptr& r);
 
     void cancelRequest(const Request_ptr& r, std::string reason = std::string());

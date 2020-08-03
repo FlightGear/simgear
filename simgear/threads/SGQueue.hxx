@@ -272,30 +272,35 @@ template<class T>
 class SGBlockingDeque
 {
 public:
+    using value_type = T;
+    using container_type = std::deque<T>;
+
     /**
      * Create a new SGBlockingDequeue.
      */
-    SGBlockingDeque() {}
+    SGBlockingDeque() = default;
 
     /**
      * Destroy this dequeue.
      */
-    virtual ~SGBlockingDeque() {}
+    ~SGBlockingDeque() = default;
 
     /**
      *
      */
-    virtual void clear() {
-    std::lock_guard<std::mutex> g(mutex);
-    this->queue.clear();
+    void clear()
+    {
+        std::lock_guard<std::mutex> g(mutex);
+        this->queue.clear();
     }
 
     /**
      *
      */
-    virtual bool empty() {
-    std::lock_guard<std::mutex> g(mutex);
-    return this->queue.empty();
+    bool empty() const
+    {
+        std::lock_guard<std::mutex> g(mutex);
+        return this->queue.empty();
     }
 
     /**
@@ -303,10 +308,11 @@ public:
      *
      * @param item The object to add.
      */
-    virtual void push_front( const T& item ) {
-    std::lock_guard<std::mutex> g(mutex);
-    this->queue.push_front( item );
-    not_empty.signal();
+    void push_front(const T& item)
+    {
+        std::lock_guard<std::mutex> g(mutex);
+        this->queue.push_front(item);
+        not_empty.signal();
     }
 
     /**
@@ -314,10 +320,11 @@ public:
      *
      * @param item The object to add.
      */
-    virtual void push_back( const T& item ) {
-    std::lock_guard<std::mutex> g(mutex);
-    this->queue.push_back( item );
-    not_empty.signal();
+    void push_back(const T& item)
+    {
+        std::lock_guard<std::mutex> g(mutex);
+        this->queue.push_back(item);
+        not_empty.signal();
     }
 
     /**
@@ -326,14 +333,15 @@ public:
      *
      * @return The next available object.
      */
-    virtual T front() {
-    std::lock_guard<std::mutex> g(mutex);
+    T front() const
+    {
+        std::lock_guard<std::mutex> g(mutex);
 
-    assert(this->queue.empty() != true);
-    //if (queue.empty()) throw ??
+        assert(this->queue.empty() != true);
+        //if (queue.empty()) throw ??
 
-    T item = this->queue.front();
-    return item;
+        T item = this->queue.front();
+        return item;
     }
 
     /**
@@ -342,18 +350,19 @@ public:
      *
      * @return The next available object.
      */
-    virtual T pop_front() {
-    std::lock_guard<std::mutex> g(mutex);
+    T pop_front()
+    {
+        std::lock_guard<std::mutex> g(mutex);
 
-    while (this->queue.empty())
-        not_empty.wait(mutex);
+        while (this->queue.empty())
+            not_empty.wait(mutex);
 
-    assert(this->queue.empty() != true);
-    //if (queue.empty()) throw ??
+        assert(this->queue.empty() != true);
+        //if (queue.empty()) throw ??
 
-    T item = this->queue.front();
-    this->queue.pop_front();
-    return item;
+        T item = this->queue.front();
+        this->queue.pop_front();
+        return item;
     }
 
     /**
@@ -362,18 +371,19 @@ public:
      *
      * @return The next available object.
      */
-    virtual T pop_back() {
-    std::lock_guard<std::mutex> g(mutex);
+    T pop_back()
+    {
+        std::lock_guard<std::mutex> g(mutex);
 
-    while (this->queue.empty())
-        not_empty.wait(mutex);
+        while (this->queue.empty())
+            not_empty.wait(mutex);
 
-    assert(this->queue.empty() != true);
-    //if (queue.empty()) throw ??
+        assert(this->queue.empty() != true);
+        //if (queue.empty()) throw ??
 
-    T item = this->queue.back();
-    this->queue.pop_back();
-    return item;
+        T item = this->queue.back();
+        this->queue.pop_back();
+        return item;
     }
 
     /**
@@ -381,8 +391,9 @@ public:
      *
      * @return Size of queue.
      */
-    virtual size_t size() {
-    std::lock_guard<std::mutex> g(mutex);
+    size_t size() const
+    {
+        std::lock_guard<std::mutex> g(mutex);
         return this->queue.size();
     }
 
@@ -391,12 +402,19 @@ public:
     	while (this->queue.empty())
     	    not_empty.wait(mutex);
     }
+
+    container_type copy() const
+    {
+        std::lock_guard<std::mutex> g(mutex);
+        return queue;
+    }
+
 private:
 
     /**
      * Mutex to serialise access.
      */
-    std::mutex mutex;
+    mutable std::mutex mutex;
 
     /**
      * Condition to signal when queue not empty.
@@ -409,7 +427,7 @@ private:
     SGBlockingDeque& operator=( const SGBlockingDeque& );
 
 protected:
-    std::deque<T> queue;
+    container_type queue;
 };
 
 #endif // SGQUEUE_HXX_INCLUDED

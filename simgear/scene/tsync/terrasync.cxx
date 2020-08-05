@@ -201,7 +201,6 @@ struct TerrasyncThreadState
         _updated_tile_count(0),
         _success_count(0),
         _consecutive_errors(0),
-        _allowed_errors(6),
         _cache_hits(0),
         _transfer_rate(0),
         _total_kb_downloaded(0),
@@ -215,7 +214,6 @@ struct TerrasyncThreadState
     int  _updated_tile_count;
     int  _success_count;
     int  _consecutive_errors;
-    int  _allowed_errors;
     int  _cache_hits;
     int _transfer_rate;
     // kbytes, not bytes, because bytes might overflow 2^31
@@ -301,12 +299,6 @@ public:
    string getLocalDir()                     { return _local_dir;}
 
     void setInstalledDir(const SGPath& p)  { _installRoot = p; }
-
-   void   setAllowedErrorCount(int errors)
-    {
-        std::lock_guard<std::mutex> g(_stateLock);
-        _state._allowed_errors = errors;
-    }
 
    void   setCacheHits(unsigned int hits)
     {
@@ -565,6 +557,7 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 
         // check result
         HTTPRepository::ResultCode res = slot.repository->failure();
+
         if (res == HTTPRepository::REPO_ERROR_NOT_FOUND) {
             notFound(slot.currentItem);
         } else if (res != HTTPRepository::REPO_NO_ERROR) {
@@ -631,21 +624,23 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 
 void SGTerraSync::WorkerThread::runInternal()
 {
-    unsigned dnsRetryCount = 0;
-
     while (!_stop) {
         // try to find a terrasync server
         if( !hasServer() ) {
-          if( ++dnsRetryCount > 5 ) {
-            SG_LOG(SG_TERRASYNC, SG_WARN, "Can't find a terrasync server. TS disabled.");
-            break;
-          }
-          if( hasServer( findServer() ) ) {
-            SG_LOG(SG_TERRASYNC, SG_INFO, "terrasync scenery provider of the day is '" << _httpServer << "'");
-          }
-          continue;
+            const auto haveServer = findServer();
+            if (haveServer) {
+                hasServer(true);
+
+                std::lock_guard<std::mutex> g(_stateLock);
+                _state._consecutive_errors = 0;
+
+                SG_LOG(SG_TERRASYNC, SG_INFO, "terrasync scenery provider of the day is '" << _httpServer << "'");
+            } else {
+                std::lock_guard<std::mutex> g(_stateLock);
+                _state._consecutive_errors++;
+            }
+            continue;
         }
-        dnsRetryCount = 0;
 
         try {
             _http.update(10);
@@ -886,7 +881,6 @@ void SGTerraSync::reinit()
 
         SGPath installPath(_terraRoot->getStringValue("installation-dir"));
         _workerThread->setInstalledDir(installPath);
-        _workerThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
         _workerThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
 
         if (_workerThread->start())
@@ -929,12 +923,7 @@ void SGTerraSync::bind()
     _downloadedKBtesNode = _terraRoot->getNode("downloaded-kbytes", true);
     _enabledNode = _terraRoot->getNode("enabled", true);
     _availableNode = _terraRoot->getNode("available", true);
-    //_busyNode->setAttribute(SGPropertyNode::WRITE, false);
-    //_activeNode->setAttribute(SGPropertyNode::WRITE, false);
-    //_updateCountNode->setAttribute(SGPropertyNode::WRITE, false);
-    //_errorCountNode->setAttribute(SGPropertyNode::WRITE, false);
-    //_tileCountNode->setAttribute(SGPropertyNode::WRITE, false);
-
+    _maxErrorsNode = _terraRoot->getNode("max-errors", true);
 }
 
 void SGTerraSync::unbind()
@@ -953,6 +942,11 @@ void SGTerraSync::update(double)
 {
     auto enabled = _enabledNode->getBoolValue();
     auto worker_running = _workerThread->isRunning();
+
+    // hold enabled false until retry time passes
+    if (enabled && (_retryTime > SGTimeStamp::now())) {
+        enabled = false;
+    }
 
     // see if the enabled status has changed; and if so take the appropriate action.
     if (enabled && !worker_running)
@@ -978,6 +972,16 @@ void SGTerraSync::update(double)
 
     _stalledNode->setBoolValue(_workerThread->isStalled());
     _activeNode->setBoolValue(worker_running);
+
+    int allowedErrors = _maxErrorsNode->getIntValue();
+    if (worker_running && (copiedState._consecutive_errors >= allowedErrors)) {
+        _workerThread->stop();
+
+        _retryBackOffSeconds = std::min(_retryBackOffSeconds + 60, 60u * 15);
+        const int seconds = static_cast<int>(sg_random() * _retryBackOffSeconds);
+        _retryTime = SGTimeStamp::now() + SGTimeStamp::fromSec(seconds);
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "Terrasync paused due to " << copiedState._consecutive_errors << " consecutive errors during sync; will retry in " << seconds << " seconds.");
+    }
 
     while (_workerThread->hasNewTiles())
     {

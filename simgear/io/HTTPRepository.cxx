@@ -1173,8 +1173,12 @@ HTTPRepository::failure() const
 
     void HTTPRepoPrivate::failedToGetRootIndex(HTTPRepository::ResultCode st)
     {
-        SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl << " " << st);
-        status = st;
+        if (st == HTTPRepository::REPO_ERROR_FILE_NOT_FOUND) {
+            status = HTTPRepository::REPO_ERROR_NOT_FOUND;
+        } else {
+            SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl << " " << st);
+            status = st;
+        }
     }
 
     void HTTPRepoPrivate::failedToUpdateChild(const SGPath& relativePath,

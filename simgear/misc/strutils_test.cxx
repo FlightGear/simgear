@@ -737,6 +737,11 @@ void testDecodeHex()
     SG_VERIFY(decoded == data1);
 }
 
+void test_makeStringSafeForPropertyName()
+{
+    SG_CHECK_EQUAL(strutils::makeStringSafeForPropertyName(" ABC/01234\t:\\\"_*$"), "-ABC-01234-_-_-__");
+}
+
 int main(int argc, char* argv[])
 {
     test_strip();
@@ -761,6 +766,7 @@ int main(int argc, char* argv[])
     test_formatGeod();
     test_iequals();
     testDecodeHex();
-    
+    test_makeStringSafeForPropertyName();
+
     return EXIT_SUCCESS;
 }

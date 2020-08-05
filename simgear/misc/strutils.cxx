@@ -267,6 +267,38 @@ namespace simgear {
 	    return do_strip( s, BOTHSTRIP );
 	}
 
+    string makeStringSafeForPropertyName(const std::string& str)
+    {
+        // This function replaces all characters in 'str' that are not
+        // alphanumeric or '-'.
+        // TODO: make the function multibyte safe.
+        string res = str;
+
+        int index = 0;
+        for (char& c : res) {
+            if (!std::isalpha(c) && !std::isdigit(c) && c != '-') {
+                switch (c) {
+                case ' ':
+                case '\t':
+                case '\n':
+                case '\r':
+                case '_':
+                case '.':
+                case '/':
+                case '\\':
+                    res[index] = '-';
+                    break;
+                default:
+                    res[index] = '_';
+                    SG_LOG(SG_GENERAL, SG_WARN, "makeStringSafeForPropertyName: Modified '" << str << "' to '" << res << "'");
+                }
+            }
+            index++;
+        }
+
+        return res;
+    }
+
         void
         stripTrailingNewlines_inplace(string& s)
         {

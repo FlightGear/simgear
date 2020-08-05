@@ -107,6 +107,7 @@ private:
     SGPropertyNode_ptr _transferRateBytesSecNode;
     SGPropertyNode_ptr _pendingKbytesNode;
     SGPropertyNode_ptr _downloadedKBtesNode;
+    SGPropertyNode_ptr _maxErrorsNode;
 
     // we manually bind+init TerraSync during early startup
     // to get better overlap of slow operations (Shared Models sync
@@ -116,6 +117,11 @@ private:
 
     simgear::TiedPropertyList _tiedProperties;
     BufferedLogCallback* _log;
+
+    /// if we disabled TerraSync due to errors, this is the time at which we will restart it
+    /// automatically.
+    SGTimeStamp _retryTime;
+    unsigned int _retryBackOffSeconds = 0;
 };
 
 }

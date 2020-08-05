@@ -75,7 +75,9 @@ namespace simgear {
 	std::string rstrip( const std::string& s );
 	std::string strip( const std::string& s );
 
-	/**
+    std::string makeStringSafeForPropertyName(const std::string& str);
+
+    /**
          * Return a new string with any trailing \\r and \\n characters removed.
          * Typically useful to clean a CR-terminated line obtained from
          * std::getline() which, upon reading CRLF (\\r\\n), discards the Line

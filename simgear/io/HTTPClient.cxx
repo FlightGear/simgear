@@ -183,32 +183,22 @@ void Client::update(int waitTimeout)
     }
 
     int remainingActive, messagesInQueue;
-#if defined(SG_MAC)
-    // Mac 10.8 libCurl lacks this, let's keep compat for now
-    fd_set curlReadFDs, curlWriteFDs, curlErrorFDs;
-    int maxFD;
-    curl_multi_fdset(d->curlMulti,
-                     &curlReadFDs,
-                     &curlWriteFDs,
-                     &curlErrorFDs,
-                     &maxFD);
-
-    struct timeval timeout;
-    long t;
-
-    curl_multi_timeout(d->curlMulti, &t);
-    if ((t < 0) || (t > waitTimeout)) {
-        t = waitTimeout;
+    int numFds;
+    CURLMcode mc = curl_multi_wait(d->curlMulti, NULL, 0, waitTimeout, &numFds);
+    if (mc != CURLM_OK) {
+        SG_LOG(SG_IO, SG_WARN, "curl_multi_wait failed:" << curl_multi_strerror(mc));
+        return;
     }
 
-    timeout.tv_sec = t / 1000;
-    timeout.tv_usec = (t % 1000) * 1000;
-    ::select(maxFD, &curlReadFDs, &curlWriteFDs, &curlErrorFDs, &timeout);
-#else
-    int numFds;
-    curl_multi_wait(d->curlMulti, NULL, 0, waitTimeout, &numFds);
-#endif
-    curl_multi_perform(d->curlMulti, &remainingActive);
+    mc = curl_multi_perform(d->curlMulti, &remainingActive);
+    if (mc == CURLM_CALL_MULTI_PERFORM) {
+        // we could loop here, but don't want to get blocked
+        // also this shouldn't  ocurr in any modern libCurl
+        curl_multi_perform(d->curlMulti, &remainingActive);
+    } else if (mc != CURLM_OK) {
+        SG_LOG(SG_IO, SG_WARN, "curl_multi_perform failed:" << curl_multi_strerror(mc));
+        return;
+    }
 
     CURLMsg* msg;
     while ((msg = curl_multi_info_read(d->curlMulti, &messagesInQueue))) {

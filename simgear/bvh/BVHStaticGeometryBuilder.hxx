@@ -47,8 +47,15 @@ public:
         _currentMaterial(0),
         _currentMaterialIndex(~0u)
     { }
+
     virtual ~BVHStaticGeometryBuilder()
-    { }
+    {
+        // REVIEW: Memory Leak
+        //         4,518,880 bytes in 141,215 blocks are still reachable in loss record 15,491 of 15,501
+        // for (LeafRef ref : _leafRefList) {
+        //     delete ref._leaf;
+        // }
+    }
 
     struct LeafRef {
         LeafRef(const BVHStaticLeaf* leaf, const BVHStaticData& data) :

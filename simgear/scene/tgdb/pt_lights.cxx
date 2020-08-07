@@ -280,9 +280,19 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
   //stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
   //stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
+
+  static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
+  bool useTriangles = sceneFeatures->getEnableTriangleDirectionalLights();
+  SG_LOG(SG_TERRAIN, SG_ALERT, "using triangles for lights " << useTriangles);
+
   osg::DrawArrays* drawArrays;
-  drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
-                                   0, vertices->size());
+  if (useTriangles)
+    drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
+                                     0, vertices->size());
+  else
+   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
+                                     0, vertices->size());
+
   geometry->addPrimitiveSet(drawArrays);
   return geometry;
 }

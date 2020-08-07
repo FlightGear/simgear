@@ -462,9 +462,17 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       // F is the number of floors (integer)
       // WT is the texture index to use (integer) for walls. Buildings with the same WT value will have the same wall texture assigned.  There are 6 small, 6 medium and 4 large textures.
       // RT is the texture index to use (integer) for roofs. Buildings with the same RT value will have the same roof texture assigned.  There are 6 small, 6 medium and 4 large textures.
-      float x, y, z, r, w, d, h, p;
-      int b, s, o, f, wt, rt;
-      in >> x >> y >> z >> r >> b >> w >> d >> h >> p >> s >> o >> f >> wt >> rt;
+      float x = 0.0f, y = 0.0f, z = 0.0f, r = 0.0f, w = 0.0f, d = 0.0f, h = 0.0f, p = 0.0f;
+      int b = 0, s = 0, o = 0, f = 0, wt = 0, rt = 0;
+      in >> x >> y >> z >> r >> b;
+
+      if (in.failbit) {
+          SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing build entry in: " << absoluteFileName);
+          continue;
+      }
+
+      // these might fail, so check them after we look at failbit
+      in >> w >> d >> h >> p >> s >> o >> f >> wt >> rt;
 
       //SG_LOG(SG_TERRAIN, SG_ALERT, "Building entry " << x << " " << y << " " << z << " " << b );
       SGVec3f loc = SGVec3f(x,y,z);

@@ -952,6 +952,8 @@ bool SGMetar::scanWeather()
 		weather += string(a->text) + " ";
 		if (!strcmp(a->id, "RA"))
 			_rain = w.intensity;
+		else if (!strcmp(a->id, "DZ"))
+			_rain = LIGHT;
 		else if (!strcmp(a->id, "HA"))
 			_hail = w.intensity;
 		else if (!strcmp(a->id, "SN"))

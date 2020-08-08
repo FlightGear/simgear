@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <cerrno>
 
@@ -408,19 +409,23 @@ int main(int argc, char* argv[])
     cl.setMaxConnections(1);
 
 // test URL parsing
-    TestRequest* tr1 = new TestRequest("http://localhost.woo.zar:2000/test1?foo=bar");
-    SG_CHECK_EQUAL(tr1->scheme(), "http");
-    SG_CHECK_EQUAL(tr1->hostAndPort(), "localhost.woo.zar:2000");
-    SG_CHECK_EQUAL(tr1->host(), "localhost.woo.zar");
-    SG_CHECK_EQUAL(tr1->port(), 2000);
-    SG_CHECK_EQUAL(tr1->path(), "/test1");
+    {
+        auto tr1 = std::make_unique<TestRequest>("http://localhost.woo.zar:2000/test1?foo=bar");
+        SG_CHECK_EQUAL(tr1->scheme(), "http");
+        SG_CHECK_EQUAL(tr1->hostAndPort(), "localhost.woo.zar:2000");
+        SG_CHECK_EQUAL(tr1->host(), "localhost.woo.zar");
+        SG_CHECK_EQUAL(tr1->port(), 2000);
+        SG_CHECK_EQUAL(tr1->path(), "/test1");
+    }
 
-    TestRequest* tr2 = new TestRequest("http://192.168.1.1/test1/dir/thing/file.png");
-    SG_CHECK_EQUAL(tr2->scheme(), "http");
-    SG_CHECK_EQUAL(tr2->hostAndPort(), "192.168.1.1");
-    SG_CHECK_EQUAL(tr2->host(), "192.168.1.1");
-    SG_CHECK_EQUAL(tr2->port(), 80);
-    SG_CHECK_EQUAL(tr2->path(), "/test1/dir/thing/file.png");
+    {
+        auto tr2 = std::make_unique<TestRequest>("http://192.168.1.1/test1/dir/thing/file.png");
+        SG_CHECK_EQUAL(tr2->scheme(), "http");
+        SG_CHECK_EQUAL(tr2->hostAndPort(), "192.168.1.1");
+        SG_CHECK_EQUAL(tr2->host(), "192.168.1.1");
+        SG_CHECK_EQUAL(tr2->port(), 80);
+        SG_CHECK_EQUAL(tr2->path(), "/test1/dir/thing/file.png");
+    }
 
 // basic get request
     {

@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <signal.h>
 
 #include <iostream>
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
     }
 
     SGPath rootPath = simgear::Dir::current().path();
-    HTTPRepository* repo = new HTTPRepository(rootPath, &cl);
+    auto repo = std::make_unique<HTTPRepository>(rootPath, &cl);
     repo->setBaseUrl(url);
     repo->update();
 

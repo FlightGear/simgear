@@ -973,10 +973,9 @@ SGPropertyNode::SGPropertyNode( const std::string& name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
-  // REVIEW: Memory Leak: 95 MB
-  //         99,418,032 bytes in 654,066 blocks are still reachable in loss record 15,500 of 15,501
-  removeAllChildren();
-
+  // zero out all parent pointers, else they might be dangling
+  for (unsigned i = 0; i < _children.size(); ++i)
+    _children[i]->_parent = 0;
   clearValue();
 
   if (_listeners) {

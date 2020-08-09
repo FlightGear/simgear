@@ -2045,6 +2045,7 @@ T SGPropertyNode::getValue(typename std::enable_if<!simgear::props
     case STRING:
     case UNSPECIFIED:
         return simgear::parseString<T>(make_string());
+        break;
     default: // avoid compiler warning
         break;
     }

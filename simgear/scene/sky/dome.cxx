@@ -185,6 +185,7 @@ SGSkyDome::build( double hscale, double vscale, simgear::SGReaderWriterOptions *
     // force a repaint of the sky colors with ugly defaults
     repaint(SGVec3f(1, 1, 1), SGVec3f(1, 1, 1), SGVec3f(1, 1, 1), 0.0, 5000.0 );
     dome_transform = new osg::MatrixTransform;
+    dome_transform->setName("SkyDome transform");
     dome_transform->addChild(geode);
 
     return dome_transform.get();

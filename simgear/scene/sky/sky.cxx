@@ -53,6 +53,7 @@ SGSky::SGSky( void ) {
     clouds_3d_density = 0.8;
 
     pre_root = new osg::Group;
+    pre_root->setName("SGSky-pre-root");
     pre_root->setNodeMask(simgear::BACKGROUND_BIT);
     osg::StateSet* preStateSet = new osg::StateSet;
     preStateSet->setAttribute(new osg::Depth(osg::Depth::LESS, 0.0, 1.0,
@@ -63,8 +64,11 @@ SGSky::SGSky( void ) {
     cloud_root->setName("SGSky-cloud-root");
 
     pre_transform = new osg::Group;
+    pre_transform->setName("SGSky-pre-transform");
+
     _ephTransform = new osg::MatrixTransform;
-    
+    _ephTransform->setName("SGSky-eph-transform");
+
     // Set up a RNG that is repeatable within 10 minutes to ensure that clouds
     // are synced up in multi-process deployments.
     mt_init_time_10(&seed);

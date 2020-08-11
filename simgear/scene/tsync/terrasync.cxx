@@ -830,6 +830,12 @@ SGTerraSync::~SGTerraSync()
 
 void SGTerraSync::setRoot(SGPropertyNode_ptr root)
 {
+    if (!root) {
+        _terraRoot.clear();
+        _renderingRoot.clear();
+        return;
+    }
+
     _terraRoot = root->getNode("/sim/terrasync",true);
     _renderingRoot = root->getNode("/sim/rendering", true);
 }
@@ -935,7 +941,20 @@ void SGTerraSync::unbind()
 
     _terraRoot.clear();
     _stalledNode.clear();
+    _activeNode.clear();
     _cacheHits.clear();
+    _renderingRoot.clear();
+    _busyNode.clear();
+    _updateCountNode.clear();
+    _errorCountNode.clear();
+    _tileCountNode.clear();
+    _cacheHitsNode.clear();
+    _transferRateBytesSecNode.clear();
+    _pendingKbytesNode.clear();
+    _downloadedKBtesNode.clear();
+    _enabledNode.clear();
+    _availableNode.clear();
+    _maxErrorsNode.clear();
 }
 
 void SGTerraSync::update(double)

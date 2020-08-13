@@ -48,6 +48,12 @@ void test_basic()
     SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1025, TEST_EPSILON);
 }
 
+void test_drizzle()
+{
+    SGMetar m1("2011/10/20 11:25 EHAM 201125Z 27012KT 9999 DZ FEW025CB 10/05 Q1025");
+    SG_CHECK_EQUAL(m1.getRain(), 1);
+}
+
 void test_sensor_failure_weather()
 {
     SGMetar m1("2011/10/20 11:25 EHAM 201125Z 27012KT 240V300 9999 // FEW025CB SCT048 10/05 Q1025");
@@ -82,6 +88,7 @@ int main(int argc, char* argv[])
         test_basic();
         test_sensor_failure_weather();
         test_sensor_failure_cloud();
+        test_drizzle();
     } catch (sg_exception& e) {
         cerr << "got exception:" << e.getMessage() << endl;
         return -1;

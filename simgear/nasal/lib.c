@@ -472,7 +472,7 @@ static naRef f_sprintf(naContext c, naRef me, int argc, naRef* args)
         } else {
             arg = naNumValue(arg);
             if(naIsNil(arg))
-                fout = dosprintf(fstr, "nil");
+                fout = dosprintf("nil");
             else if(t=='d' || t=='i' || t=='c')
                 fout = dosprintf(fstr, (int)naNumValue(arg).num);
             else if(t=='o' || t=='u' || t=='x' || t=='X')

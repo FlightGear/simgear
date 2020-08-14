@@ -28,7 +28,7 @@
 #include <simgear/compiler.h>
 
 #include <map>
-
+#include <mutex>
 
 #include <osg/AlphaFunc>
 #include <osg/Group>

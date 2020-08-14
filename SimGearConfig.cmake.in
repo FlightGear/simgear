@@ -9,6 +9,7 @@ find_dependency(CURL)
 set(SIMGEAR_HEADLESS @SIMGEAR_HEADLESS@)
 set(SIMGEAR_SOUND @ENABLE_SOUND@)
 set(USE_AEONWAVE @USE_AEONWAVE@)
+set(ENABLE_ASAN @ENABLE_ASAN@)
 
 # OpenAL isn't a public dependency, so maybe not needed
 #if (SIMGEAR_SOUND)

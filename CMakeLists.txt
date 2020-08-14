@@ -108,6 +108,8 @@ if (NOT MSVC)
 option(SIMGEAR_SHARED   "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system expat library" OFF)
 option(SYSTEM_UDNS      "Set to ON to build SimGear using the system udns library" OFF)
+option(ENABLE_ASAN      "Set to ON to build SimGear with LLVM AddressSanitizer (ASan) support" OFF)
+
 else()
 # Building SimGear DLLs is currently not supported for MSVC.
 set(SIMGEAR_SHARED OFF)
@@ -408,12 +410,21 @@ if (CLANG)
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
     # fix Boost compilation :(
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-
     # override CMake default RelWithDebInfo flags.
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO  "-O3 -g -DNDEBUG")
 
     set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
+
+    if (ENABLE_ASAN)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+
+      # needed for check_cxx_source_compiles
+      set(CMAKE_REQUIRED_LINK_OPTIONS "-fsanitize=address")
+    endif()
 endif()
 
 if (ENABLE_OPENMP)

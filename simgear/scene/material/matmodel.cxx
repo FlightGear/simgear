@@ -103,37 +103,39 @@ SGMatModel::get_model_count( SGPropertyNode *prop_root )
 inline void
 SGMatModel::load_models( SGPropertyNode *prop_root )
 {
-				// Load model only on demand
-  if (!_models_loaded) {
-    for (unsigned int i = 0; i < _paths.size(); i++) {
-      osg::Node *entity = SGModelLib::loadModel(_paths[i], prop_root);
-      if (entity != 0) {
-        // FIXME: this stuff can be handled
-        // in the XML wrapper as well (at least,
-        // the billboarding should be handled
-        // there).
-        
-        if (_heading_type == HEADING_BILLBOARD) {
-          // if the model is a billboard, it is likely :
-          // 1. a branch with only leaves,
-          // 2. a tree or a non rectangular shape faked by transparency
-          // We add alpha clamp then
-          osg::StateSet* stateSet = entity->getOrCreateStateSet();
-          osg::AlphaFunc* alphaFunc =
-            new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01f);
-          stateSet->setAttributeAndModes(alphaFunc,
-                                         osg::StateAttribute::OVERRIDE);
-          stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-        } 
-        
-        _models.push_back(entity);
-        
-      } else {
-        SG_LOG(SG_INPUT, SG_ALERT, "Failed to load object " << _paths[i]);
-        // Ensure the vector contains something, otherwise get_random_model below fails
-        _models.push_back(new osg::Node());
-      }
-    }
+    std::lock_guard<std::mutex> g(_loadMutex);
+
+    // Load model only on demand
+    if (!_models_loaded) {
+        for (unsigned int i = 0; i < _paths.size(); i++) {
+            osg::Node* entity = SGModelLib::loadModel(_paths[i], prop_root);
+            if (entity != 0) {
+                // FIXME: this stuff can be handled
+                // in the XML wrapper as well (at least,
+                // the billboarding should be handled
+                // there).
+
+                if (_heading_type == HEADING_BILLBOARD) {
+                    // if the model is a billboard, it is likely :
+                    // 1. a branch with only leaves,
+                    // 2. a tree or a non rectangular shape faked by transparency
+                    // We add alpha clamp then
+                    osg::StateSet* stateSet = entity->getOrCreateStateSet();
+                    osg::AlphaFunc* alphaFunc =
+                        new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01f);
+                    stateSet->setAttributeAndModes(alphaFunc,
+                                                   osg::StateAttribute::OVERRIDE);
+                    stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+                }
+
+                _models.push_back(entity);
+
+            } else {
+                SG_LOG(SG_INPUT, SG_ALERT, "Failed to load object " << _paths[i]);
+                // Ensure the vector contains something, otherwise get_random_model below fails
+                _models.push_back(new osg::Node());
+            }
+        }
   }
   _models_loaded = true;
 }

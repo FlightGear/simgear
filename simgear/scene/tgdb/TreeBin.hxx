@@ -35,11 +35,14 @@ namespace simgear
 {
 class TreeBin {
 public:
-  struct Tree {
-    SGVec3f position;
-    SGVec3f tnormal;
-    Tree(const SGVec3f& p, const SGVec3f& t) : position(p),tnormal(t)
-    { }
+    ~TreeBin() = default;
+
+    struct Tree {
+        SGVec3f position;
+        SGVec3f tnormal;
+        Tree(const SGVec3f& p, const SGVec3f& t) : position(p), tnormal(t)
+        {
+        }
   };
 
     typedef std::vector<Tree> TreeList;
@@ -55,18 +58,24 @@ public:
     { _trees.push_back(t); }
 
     void insert(const SGVec3f& p, const SGVec3f& tnorm)
-    {insert(Tree(p,tnorm));}
+    {
+        _trees.emplace_back(p, tnorm);
+    }
 
     unsigned getNumTrees() const
     { return _trees.size(); }
+
     const Tree& getTree(unsigned i) const
-    { return _trees[i]; }
+    {
+        assert(i < _trees.size());
+        return _trees.at(i);
+    }
+
     TreeList _trees;
     
-    ~TreeBin() {
-      _trees.clear();
-    }    
 };
+
+void clearSharedTreeGeometry();
 
 typedef std::list<TreeBin*> SGTreeBinList;
 

@@ -151,14 +151,26 @@ Geometry* makeSharedTreeGeometry(int numQuads)
     return result;
 }
 
-ref_ptr<Geometry> sharedTreeGeometry;
+static std::mutex static_sharedGeometryMutex;
+static ref_ptr<Geometry> sharedTreeGeometry;
+
+void clearSharedTreeGeometry()
+{
+    std::lock_guard<std::mutex> g(static_sharedGeometryMutex);
+    sharedTreeGeometry = {};
+}
 
 Geometry* createTreeGeometry(float width, float height, int varieties)
 {
-    if (!sharedTreeGeometry)
-        sharedTreeGeometry = makeSharedTreeGeometry(1600);
-    Geometry* quadGeom = simgear::clone(sharedTreeGeometry.get(),
-                                        CopyOp::SHALLOW_COPY);
+    Geometry* quadGeom = nullptr;
+    {
+        std::lock_guard<std::mutex> g(static_sharedGeometryMutex);
+        if (!sharedTreeGeometry)
+            sharedTreeGeometry = makeSharedTreeGeometry(1600);
+        quadGeom = simgear::clone(sharedTreeGeometry.get(),
+                                  CopyOp::SHALLOW_COPY);
+    }
+
     Vec3Array* params = new Vec3Array;
     params->push_back(Vec3(width, height, (float)varieties));
     quadGeom->setNormalArray(params);

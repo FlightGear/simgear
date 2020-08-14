@@ -357,7 +357,7 @@ public:
       _textureProp = modelRoot->getNode(node->getStringValue(), true);
   }
 
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  void operator()(osg::Node* node, osg::NodeVisitor* nv) override
   {
     osg::StateSet* stateSet = node->getStateSet();
     if (stateSet) {
@@ -424,6 +424,8 @@ SGMaterialAnimation::SGMaterialAnimation(simgear::SGTransientModelData &modelDat
            ": Use of <global> in material animation is "
            "no longer supported.");
 }
+
+SGMaterialAnimation::~SGMaterialAnimation() = default;
 
 osg::Group*
 SGMaterialAnimation::createAnimationGroup(osg::Group& parent)

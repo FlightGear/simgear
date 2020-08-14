@@ -34,7 +34,7 @@ public:
     ConditionNode(const ConditionNode& rhs,
               const osg::CopyOp& op = osg::CopyOp::SHALLOW_COPY);
     META_Node(simgear,ConditionNode);
-    ~ConditionNode();
+    virtual ~ConditionNode();
     const SGCondition* getCondition() const { return _condition.ptr(); }
     void setCondition(const SGCondition* condition) { _condition = condition; }
 

@@ -22,6 +22,8 @@
 class SGMaterialAnimation : public SGAnimation {
 public:
   SGMaterialAnimation(simgear::SGTransientModelData &modelData);
+    virtual ~SGMaterialAnimation();
+    
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
   static SGPropertyNode_ptr makeEffectProperties(const SGPropertyNode* animProp);

@@ -149,6 +149,8 @@ private:
     double _spacing_m;
     double _range_m;
     HeadingType _heading_type;
+
+    std::mutex _loadMutex;
 };
 
 

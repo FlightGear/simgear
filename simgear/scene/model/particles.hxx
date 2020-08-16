@@ -1,5 +1,5 @@
 // particles.hxx - classes to manage particles
-// Copyright (C) 2008 Tiago Gusmão
+// Copyright (C) 2008 Tiago Gusmï¿½o
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -53,133 +53,37 @@ class ParticleSystemUpdater;
 #include <simgear/math/SGMatrix.hxx>
 
 
-// Has anyone done anything *really* stupid, like making min and max macros?
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
-
-#include "animation.hxx"
-
 namespace simgear
 {
 
-class GlobalParticleCallback : public osg::NodeCallback 
-{
-public:
-    GlobalParticleCallback(const SGPropertyNode* modelRoot) 
-    {
-        this->modelRoot=modelRoot;
-    }
-
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-
-    static const osg::Vec3 &getGravityVector()
-    {
-        return gravity;
-    }
-
-    static const osg::Vec3 &getWindVector()
-    {
-        return wind;
-    }
-
-    static void setSwitch(const SGPropertyNode* n)
-    {
-        enabledNode = n;
-    }
-
-    static bool getEnabled()
-    {
-        return enabled;
-    }
-
-private:
-    static osg::Vec3 gravity;
-    static osg::Vec3 wind;
-    SGConstPropertyNode_ptr modelRoot;
-    static SGConstPropertyNode_ptr enabledNode;
-    static bool enabled;
-};
-
-
+class ParticlesGlobalManager;
 
 class Particles : public osg::NodeCallback 
 {
 public:
-    Particles();
+    Particles() = default;
 
-    static osg::Group * appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::Options* options);
-
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+    void operator()(osg::Node* node, osg::NodeVisitor* nv) override;
 
     void setupShooterSpeedData(const SGPropertyNode* configNode,
-                               SGPropertyNode* modelRoot)
-    {
-        shooterValue = read_value(configNode, modelRoot, "-m",
-                                  -SGLimitsd::max(), SGLimitsd::max());
-        if(!shooterValue){
-            SG_LOG(SG_GENERAL, SG_ALERT, "shooter property error!\n");
-        }
-        shooterExtraRange = configNode->getFloatValue("extrarange",0);
-    }
+                               SGPropertyNode* modelRoot);
 
     void setupCounterData(const SGPropertyNode* configNode,
-                          SGPropertyNode* modelRoot)
-    {
-        counterValue = read_value(configNode, modelRoot, "-m",
-                                  -SGLimitsd::max(), SGLimitsd::max());
-        if(!counterValue){
-            SG_LOG(SG_GENERAL, SG_ALERT, "counter property error!\n");
-        }
-        counterExtraRange = configNode->getFloatValue("extrarange",0);
-    }
+                          SGPropertyNode* modelRoot);
 
     void setupCounterCondition(const SGPropertyNode* configNode,
-                               SGPropertyNode* modelRoot)
-    {
-        counterCond = sgReadCondition(modelRoot, configNode);
-    }
-
+                               SGPropertyNode* modelRoot);
     void setupCounterCondition(float counterStaticValue,
-                               float counterStaticExtraRange)
-    {
-        this->counterStaticValue = counterStaticValue;
-        this->counterStaticExtraRange = counterStaticExtraRange;
-    }
+                               float counterStaticExtraRange);
 
     void setupStartSizeData(const SGPropertyNode* configNode,
-                            SGPropertyNode* modelRoot)
-    {
-        startSizeValue = read_value(configNode, modelRoot, "-m",
-                                    -SGLimitsd::max(), SGLimitsd::max());
-        if(!startSizeValue) 
-        {
-            SG_LOG(SG_GENERAL, SG_ALERT, "startSizeValue error!\n");
-        }
-    }
+                            SGPropertyNode* modelRoot);
 
     void setupEndSizeData(const SGPropertyNode* configNode,
-                          SGPropertyNode* modelRoot)
-    {
-        endSizeValue = read_value(configNode, modelRoot, "-m",
-                                  -SGLimitsd::max(), SGLimitsd::max());
-        if(!endSizeValue){
-            SG_LOG(SG_GENERAL, SG_ALERT, "startSizeValue error!\n");
-        }
-    }
+                          SGPropertyNode* modelRoot);
 
     void setupLifeData(const SGPropertyNode* configNode,
-                       SGPropertyNode* modelRoot)
-    {
-        lifeValue = read_value(configNode, modelRoot, "-m",
-                               -SGLimitsd::max(), SGLimitsd::max());
-        if(!lifeValue){
-            SG_LOG(SG_GENERAL, SG_ALERT, "lifeValue error!\n");
-        }
-    }
+                       SGPropertyNode* modelRoot);
 
     void setupStaticSizeData(float startSize, float endSize)
     {
@@ -212,60 +116,14 @@ public:
     //component: r=0, g=1, ... ; color: 0=start color, 1=end color
     void setupColorComponent(const SGPropertyNode* configNode,
                              SGPropertyNode* modelRoot, int color,
-                             int component)
-    {
-        SGExpressiond *colorValue = read_value(configNode, modelRoot, "-m",
-                                               -SGLimitsd::max(),
-                                               SGLimitsd::max());
-        if(!colorValue){
-            SG_LOG(SG_GENERAL, SG_ALERT, "color property error!\n");
-        }
-        colorComponents[(color*4)+component] = colorValue;
-        //number of color components = 4
-    }
+                             int component);
 
-    void setupStaticColorComponent(float r1,float g1, float b1, float a1,
-                                   float r2, float g2, float b2, float a2)
-    {
-        staticColorComponents[0] = r1;
-        staticColorComponents[1] = g1;
-        staticColorComponents[2] = b1;
-        staticColorComponents[3] = a1;
-        staticColorComponents[4] = r2;
-        staticColorComponents[5] = g2;
-        staticColorComponents[6] = b2;
-        staticColorComponents[7] = a2;
-    }
+    void setupStaticColorComponent(float r1, float g1, float b1, float a1,
+                                   float r2, float g2, float b2, float a2);
 
-    static osg::Group * getCommonRoot();
-
-    static osg::Geode * getCommonGeode()
-    {
-        return commonGeode.get();
-    }
-
-    static osgParticle::ParticleSystemUpdater * getPSU()
-    {
-        return psu.get();
-    }
-
-    static void setFrozen(bool e) { _frozen = e; }
-
-    /**
-     *  Set and get the wind vector for particles in the
-     * atmosphere. This vector is in the Z-up Y-north frame, and the
-     * magnitude is the velocity in meters per second.
-     */
-    static void setWindVector(const osg::Vec3& wind) { _wind = wind; }
-    static void setWindFrom(const double from_deg, const double speed_kt) {
-	double map_rad = -from_deg * SG_DEGREES_TO_RADIANS;
-	double speed_mps = speed_kt * SG_KT_TO_MPS;
-	_wind[0] = cos(map_rad) * speed_mps;
-	_wind[1] = sin(map_rad) * speed_mps;
-	_wind[2] = 0.0;
-    }
-    static const osg::Vec3& getWindVector() { return _wind; }
 protected:
+    friend class ParticlesGlobalManager;
+
     float shooterExtraRange;
     float counterExtraRange;
     SGSharedPtr<SGExpressiond> shooterValue;
@@ -285,39 +143,54 @@ protected:
     osg::ref_ptr<osgParticle::ParticleSystem> particleSys;
     osg::ref_ptr<osgParticle::FluidProgram> program;
     osg::ref_ptr<osg::MatrixTransform> particleFrame;
-    
-    bool useGravity;
-    bool useWind;
-    static bool _frozen;
-    static osg::ref_ptr<osgParticle::ParticleSystemUpdater> psu;
-    static osg::ref_ptr<osg::Group> commonRoot;
-    static osg::ref_ptr<osg::Geode> commonGeode;
-    static osg::Vec3 _wind;
+
+    bool useGravity = false;
+    bool useWind = false;
 };
-}
-#endif
 
-
-/*
-class CustomModularEmitter : public osgParticle::ModularEmitter, public osg::Observer
+class ParticlesGlobalManager
 {
 public:
+    ~ParticlesGlobalManager();
 
-virtual void objectDeleted (void *)
-{
-SG_LOG(SG_GENERAL, SG_ALERT, "object deleted!\n");
+    static ParticlesGlobalManager* instance();
+    static void clear();
 
-SGParticles::getCommonRoot()->removeChild(this->getParticleSystem()->getParent(0));
-SGParticles::getPSU()->removeParticleSystem(this->getParticleSystem());
-}
+    bool isEnabled() const;
 
+    osg::ref_ptr<osg::Group> appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::Options* options);
 
-//   ~CustomModularEmitter()
-//   {
-//     SG_LOG(SG_GENERAL, SG_ALERT, "object deleted!\n");
-//     
-//     SGParticles::getCommonRoot()->removeChild(this->getParticleSystem()->getParent(0));
-//     SGParticles::getPSU()->removeParticleSystem(this->getParticleSystem());
-//   }
+    osg::Group* getCommonRoot();
+
+    osg::Geode* getCommonGeode();
+
+    osgParticle::ParticleSystemUpdater* getPSU();
+
+    void setFrozen(bool e);
+    bool isFrozen() const;
+
+    void setSwitchNode(const SGPropertyNode* n);
+
+    /**
+     *  Set and get the wind vector for particles in the
+     * atmosphere. This vector is in the Z-up Y-north frame, and the
+     * magnitude is the velocity in meters per second.
+     */
+    void setWindVector(const osg::Vec3& wind);
+    void setWindFrom(const double from_deg, const double speed_kt);
+
+    osg::Vec3 getWindVector() const;
+
+private:
+    ParticlesGlobalManager();
+
+    class ParticlesGlobalManagerPrivate;
+
+    // because Private inherits NodeCallback, we need to own it
+    // via an osg::ref_ptr
+    osg::ref_ptr<ParticlesGlobalManagerPrivate> d;
 };
-*/
+
+} // namespace simgear
+
+#endif

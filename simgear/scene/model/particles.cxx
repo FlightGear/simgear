@@ -78,6 +78,21 @@ public:
         // _localWind = om.preMult(w);
     }
 
+    // only call this with the lock held!
+    osg::Group* internalGetCommonRoot()
+    {
+        if (!_commonRoot.valid()) {
+            SG_LOG(SG_PARTICLES, SG_DEBUG, "Particle common root called.");
+            _commonRoot = new osg::Group;
+            _commonRoot->setName("common particle system root");
+            _commonGeode->setName("common particle system geode");
+            _commonRoot->addChild(_commonGeode);
+            _commonRoot->addChild(_updater);
+            _commonRoot->setNodeMask(~simgear::MODELLIGHT_BIT);
+        }
+        return _commonRoot.get();
+    }
+
     std::mutex _lock;
     bool _frozen = false;
     osg::ref_ptr<osgParticle::ParticleSystemUpdater> _updater;
@@ -342,16 +357,7 @@ void ParticlesGlobalManager::setWindFrom(const double from_deg, const double spe
 osg::Group* ParticlesGlobalManager::getCommonRoot()
 {
     std::lock_guard<std::mutex> g(d->_lock);
-    if (!d->_commonRoot.valid()) {
-        SG_LOG(SG_PARTICLES, SG_DEBUG, "Particle common root called.");
-        d->_commonRoot = new osg::Group;
-        d->_commonRoot->setName("common particle system root");
-        d->_commonGeode->setName("common particle system geode");
-        d->_commonRoot->addChild(d->_commonGeode);
-        d->_commonRoot->addChild(d->_updater);
-        d->_commonRoot->setNodeMask(~simgear::MODELLIGHT_BIT);
-    }
-    return d->_commonRoot.get();
+    return d->internalGetCommonRoot();
 }
 
 osg::ref_ptr<osg::Group> ParticlesGlobalManager::appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::Options* options)
@@ -722,12 +728,13 @@ osg::ref_ptr<osg::Group> ParticlesGlobalManager::appendParticles(const SGPropert
     }
 
     // touch shared data now (and not before)
+
     {
         std::lock_guard<std::mutex> g(d->_lock);
         d->_updater->addParticleSystem(particleSys);
 
         if (attach != "local") {
-            getCommonRoot()->addChild(callback()->particleFrame);
+            d->internalGetCommonRoot()->addChild(callback()->particleFrame);
         }
 
         if (!d->_globalCallbackRegistered) {

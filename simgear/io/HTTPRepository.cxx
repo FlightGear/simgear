@@ -626,6 +626,10 @@ HTTPRepository::HTTPRepository(const SGPath& base, HTTP::Client *cl) :
 {
     _d->http = cl;
     _d->basePath = base;
+    // REVIEW: Memory Leak - 885,598 (3,072 direct, 882,526 indirect) bytes in 48 blocks are definitely lost
+    //      _d->rootDir should be changed to a shared_ptr
+    //      this object is passed to several chained methods, so destruction within ~HTTPRepoPrivate may be
+    //      an easier fix assuming sole ownership would apply
     _d->rootDir = new HTTPDirectory(_d.get(), "");
     _d->parseHashCache();
 }

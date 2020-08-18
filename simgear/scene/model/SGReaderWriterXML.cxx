@@ -730,7 +730,8 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     }
 
-    if (GlobalParticleCallback::getEnabled()){//dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
+    auto particlesManager = ParticlesGlobalManager::instance();
+    if (particlesManager->isEnabled()) { //dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
         std::vector<SGPropertyNode_ptr> particle_nodes;
         particle_nodes = props->getChildren("particlesystem");
         for (unsigned i = 0; i < particle_nodes.size(); ++i) {
@@ -743,9 +744,9 @@ sgLoad3DModel_internal(const SGPath& path,
 
                 options2->setDatabasePath(texturepath.utf8Str());
             }
-            group->addChild(Particles::appendParticles(particle_nodes[i],
-                                                       prop_root,
-                                                       options2.get()));
+            group->addChild(particlesManager->appendParticles(particle_nodes[i],
+                                                              prop_root,
+                                                              options2.get()));
         }
     }
 

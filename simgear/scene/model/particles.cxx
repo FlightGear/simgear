@@ -17,9 +17,12 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
+
+#include "particles.hxx"
+
+
+#include <mutex>
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
@@ -41,53 +44,122 @@
 #include <osg/MatrixTransform>
 #include <osg/Node>
 
-#include "particles.hxx"
+
+#include <simgear/scene/model/animation.hxx>
 
 namespace simgear
 {
-void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-    enabled = !enabledNode || enabledNode->getBoolValue();
-    if (!enabled)
-        return;
-    SGQuatd q
-        = SGQuatd::fromLonLatDeg(modelRoot->getFloatValue("/position/longitude-deg",0),
-                                 modelRoot->getFloatValue("/position/latitude-deg",0));
-    osg::Matrix om(toOsg(q));
-    osg::Vec3 v(0,0,9.81);
-    gravity = om.preMult(v);
-    // NOTE: THIS WIND COMPUTATION DOESN'T SEEM TO AFFECT PARTICLES
-    const osg::Vec3& zUpWind = Particles::getWindVector();
-    osg::Vec3 w(zUpWind.y(), zUpWind.x(), -zUpWind.z());
-    wind = om.preMult(w);
 
-    // SG_LOG(SG_PARTICLES, SG_ALERT,
-    //        "wind vector:" << w[0] << "," <<w[1] << "," << w[2]);
+class ParticlesGlobalManager::ParticlesGlobalManagerPrivate : public osg::NodeCallback
+{
+public:
+    ParticlesGlobalManagerPrivate() : _updater(new osgParticle::ParticleSystemUpdater),
+                                      _commonGeode(new osg::Geode)
+    {
+    }
+
+    void operator()(osg::Node* node, osg::NodeVisitor* nv) override
+    {
+        std::lock_guard<std::mutex> g(_lock);
+        _enabled = !_enabledNode || _enabledNode->getBoolValue();
+
+        if (!_enabled)
+            return;
+
+        const auto q = SGQuatd::fromLonLatDeg(_longitudeNode->getFloatValue(), _latitudeNode->getFloatValue());
+        osg::Matrix om(toOsg(q));
+        osg::Vec3 v(0, 0, 9.81);
+
+        _gravity = om.preMult(v);
+
+        // NOTE: THIS WIND COMPUTATION DOESN'T SEEM TO AFFECT PARTICLES
+        // const osg::Vec3& zUpWind = _wind;
+        // osg::Vec3 w(zUpWind.y(), zUpWind.x(), -zUpWind.z());
+        // _localWind = om.preMult(w);
+    }
+
+    // only call this with the lock held!
+    osg::Group* internalGetCommonRoot()
+    {
+        if (!_commonRoot.valid()) {
+            SG_LOG(SG_PARTICLES, SG_DEBUG, "Particle common root called.");
+            _commonRoot = new osg::Group;
+            _commonRoot->setName("common particle system root");
+            _commonGeode->setName("common particle system geode");
+            _commonRoot->addChild(_commonGeode);
+            _commonRoot->addChild(_updater);
+            _commonRoot->setNodeMask(~simgear::MODELLIGHT_BIT);
+        }
+        return _commonRoot.get();
+    }
+
+    std::mutex _lock;
+    bool _frozen = false;
+    osg::ref_ptr<osgParticle::ParticleSystemUpdater> _updater;
+    osg::ref_ptr<osg::Group> _commonRoot;
+    osg::ref_ptr<osg::Geode> _commonGeode;
+    osg::Vec3 _wind;
+    bool _globalCallbackRegistered = false;
+    bool _enabled = true;
+    osg::Vec3 _gravity;
+    //  osg::Vec3 _localWind;
+
+    SGConstPropertyNode_ptr _enabledNode;
+    SGConstPropertyNode_ptr _longitudeNode, _latitudeNode;
+};
+
+static std::mutex static_managerLock;
+static std::unique_ptr<ParticlesGlobalManager> static_instance;
+
+ParticlesGlobalManager* ParticlesGlobalManager::instance()
+{
+    std::lock_guard<std::mutex> g(static_managerLock);
+    if (!static_instance) {
+        static_instance.reset(new ParticlesGlobalManager);
+    }
+
+    return static_instance.get();
 }
 
-
-//static members
-osg::Vec3 GlobalParticleCallback::gravity;
-osg::Vec3 GlobalParticleCallback::wind;
-bool GlobalParticleCallback::enabled = true;
-SGConstPropertyNode_ptr GlobalParticleCallback::enabledNode = 0;
-
-osg::ref_ptr<osg::Group> Particles::commonRoot;
-osg::ref_ptr<osgParticle::ParticleSystemUpdater> Particles::psu = new osgParticle::ParticleSystemUpdater;
-osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;
-osg::Vec3 Particles::_wind;
-bool Particles::_frozen = false;
-
-Particles::Particles() : 
-    useGravity(false),
-    useWind(false)
+void ParticlesGlobalManager::clear()
 {
+    std::lock_guard<std::mutex> g(static_managerLock);
+    static_instance.reset();
+}
+
+ParticlesGlobalManager::ParticlesGlobalManager() : d(new ParticlesGlobalManagerPrivate)
+{
+}
+
+ParticlesGlobalManager::~ParticlesGlobalManager()
+{
+    if (d->_globalCallbackRegistered) {
+        // is this actually necessary? possibly not
+        d->_updater->setUpdateCallback(nullptr);
+    }
+}
+
+bool ParticlesGlobalManager::isEnabled() const
+{
+    std::lock_guard<std::mutex> g(d->_lock);
+    return d->_enabled;
+}
+
+bool ParticlesGlobalManager::isFrozen() const
+{
+    std::lock_guard<std::mutex> g(d->_lock);
+    return d->_frozen;
+}
+
+osg::Vec3 ParticlesGlobalManager::getWindVector() const
+{
+    std::lock_guard<std::mutex> g(d->_lock);
+    return d->_wind;
 }
 
 template <typename Object>
 class PointerGuard{
 public:
-    PointerGuard() : _ptr(0) {}
     Object* get() { return _ptr; }
     Object* operator () ()
     {
@@ -96,23 +168,8 @@ public:
         return _ptr;
     }
 private:
-    Object* _ptr;
+    Object* _ptr = nullptr;
 };
-
-osg::Group* Particles::getCommonRoot()
-{
-    if(!commonRoot.valid())
-    {
-        SG_LOG(SG_PARTICLES, SG_DEBUG, "Particle common root called.");
-        commonRoot = new osg::Group;
-        commonRoot.get()->setName("common particle system root");
-        commonGeode.get()->setName("common particle system geode");
-        commonRoot.get()->addChild(commonGeode.get());
-        commonRoot.get()->addChild(psu.get());
-        commonRoot->setNodeMask( ~simgear::MODELLIGHT_BIT );
-    }
-    return commonRoot.get();
-}
 
 void transformParticles(osgParticle::ParticleSystem* particleSys,
                         const osg::Matrix& mat)
@@ -128,10 +185,182 @@ void transformParticles(osgParticle::ParticleSystem* particleSys,
     }
 }
 
-osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
-                                          SGPropertyNode* modelRoot,
-                                          const osgDB::Options*
-                                          options)
+void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{
+    auto globalManager = ParticlesGlobalManager::instance();
+
+    //SG_LOG(SG_PARTICLES, SG_ALERT, "callback!\n");
+    particleSys->setFrozen(globalManager->isFrozen());
+
+    using namespace osg;
+    if (shooterValue)
+        shooter->setInitialSpeedRange(shooterValue->getValue(),
+                                      (shooterValue->getValue() + shooterExtraRange));
+    if (counterValue)
+        counter->setRateRange(counterValue->getValue(),
+                              counterValue->getValue() + counterExtraRange);
+    else if (counterCond)
+        counter->setRateRange(counterStaticValue,
+                              counterStaticValue + counterStaticExtraRange);
+    if (!globalManager->isEnabled() || (counterCond && !counterCond->test()))
+        counter->setRateRange(0, 0);
+    bool colorchange = false;
+    for (int i = 0; i < 8; ++i) {
+        if (colorComponents[i]) {
+            staticColorComponents[i] = colorComponents[i]->getValue();
+            colorchange = true;
+        }
+    }
+    if (colorchange)
+        particleSys->getDefaultParticleTemplate().setColorRange(osgParticle::rangev4(Vec4(staticColorComponents[0], staticColorComponents[1], staticColorComponents[2], staticColorComponents[3]), Vec4(staticColorComponents[4], staticColorComponents[5], staticColorComponents[6], staticColorComponents[7])));
+    if (startSizeValue)
+        startSize = startSizeValue->getValue();
+    if (endSizeValue)
+        endSize = endSizeValue->getValue();
+    if (startSizeValue || endSizeValue)
+        particleSys->getDefaultParticleTemplate().setSizeRange(osgParticle::rangef(startSize, endSize));
+    if (lifeValue)
+        particleSys->getDefaultParticleTemplate().setLifeTime(lifeValue->getValue());
+
+    if (particleFrame.valid()) {
+        MatrixList mlist = node->getWorldMatrices();
+        if (!mlist.empty()) {
+            const Matrix& particleMat = particleFrame->getMatrix();
+            Vec3d emitOrigin(mlist[0](3, 0), mlist[0](3, 1), mlist[0](3, 2));
+            Vec3d displace = emitOrigin - Vec3d(particleMat(3, 0), particleMat(3, 1),
+                                                particleMat(3, 2));
+            if (displace * displace > 10000.0 * 10000.0) {
+                // Make new frame for particle system, coincident with
+                // the emitter frame, but oriented with local Z.
+                SGGeod geod = SGGeod::fromCart(toSG(emitOrigin));
+                Matrix newParticleMat = makeZUpFrame(geod);
+                Matrix changeParticleFrame = particleMat * Matrix::inverse(newParticleMat);
+                particleFrame->setMatrix(newParticleMat);
+                transformParticles(particleSys.get(), changeParticleFrame);
+            }
+        }
+    }
+    if (program.valid() && useWind)
+        program->setWind(globalManager->getWindVector());
+}
+
+void Particles::setupShooterSpeedData(const SGPropertyNode* configNode,
+                                      SGPropertyNode* modelRoot)
+{
+    shooterValue = read_value(configNode, modelRoot, "-m",
+                              -SGLimitsd::max(), SGLimitsd::max());
+    if (!shooterValue) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "Particles: shooter property error!\n");
+    }
+    shooterExtraRange = configNode->getFloatValue("extrarange", 0);
+}
+
+void Particles::setupCounterData(const SGPropertyNode* configNode,
+                                 SGPropertyNode* modelRoot)
+{
+    counterValue = read_value(configNode, modelRoot, "-m",
+                              -SGLimitsd::max(), SGLimitsd::max());
+    if (!counterValue) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "counter property error!\n");
+    }
+    counterExtraRange = configNode->getFloatValue("extrarange", 0);
+}
+
+void Particles::Particles::setupCounterCondition(const SGPropertyNode* configNode,
+                                                 SGPropertyNode* modelRoot)
+{
+    counterCond = sgReadCondition(modelRoot, configNode);
+}
+
+void Particles::setupCounterCondition(float aCounterStaticValue,
+                                      float aCounterStaticExtraRange)
+{
+    counterStaticValue = aCounterStaticValue;
+    counterStaticExtraRange = aCounterStaticExtraRange;
+}
+
+void Particles::setupStartSizeData(const SGPropertyNode* configNode,
+                                   SGPropertyNode* modelRoot)
+{
+    startSizeValue = read_value(configNode, modelRoot, "-m",
+                                -SGLimitsd::max(), SGLimitsd::max());
+    if (!startSizeValue) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "Particles: startSizeValue error!\n");
+    }
+}
+
+void Particles::setupEndSizeData(const SGPropertyNode* configNode,
+                                 SGPropertyNode* modelRoot)
+{
+    endSizeValue = read_value(configNode, modelRoot, "-m",
+                              -SGLimitsd::max(), SGLimitsd::max());
+    if (!endSizeValue) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "Particles: startSizeValue error!\n");
+    }
+}
+
+void Particles::setupLifeData(const SGPropertyNode* configNode,
+                              SGPropertyNode* modelRoot)
+{
+    lifeValue = read_value(configNode, modelRoot, "-m",
+                           -SGLimitsd::max(), SGLimitsd::max());
+    if (!lifeValue) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "Particles: lifeValue error!\n");
+    }
+}
+
+void Particles::setupColorComponent(const SGPropertyNode* configNode,
+                                    SGPropertyNode* modelRoot, int color,
+                                    int component)
+{
+    SGSharedPtr<SGExpressiond> colorValue = read_value(configNode, modelRoot, "-m",
+                                                       -SGLimitsd::max(),
+                                                       SGLimitsd::max());
+    if (!colorValue) {
+        SG_LOG(SG_GENERAL, SG_DEV_WARN, "Particles: color property error!\n");
+    }
+    colorComponents[(color * 4) + component] = colorValue;
+    //number of color components = 4
+}
+
+void Particles::setupStaticColorComponent(float r1, float g1, float b1, float a1,
+                                          float r2, float g2, float b2, float a2)
+{
+    staticColorComponents[0] = r1;
+    staticColorComponents[1] = g1;
+    staticColorComponents[2] = b1;
+    staticColorComponents[3] = a1;
+    staticColorComponents[4] = r2;
+    staticColorComponents[5] = g2;
+    staticColorComponents[6] = b2;
+    staticColorComponents[7] = a2;
+}
+
+void ParticlesGlobalManager::setWindVector(const osg::Vec3& wind)
+{
+    std::lock_guard<std::mutex> g(d->_lock);
+    d->_wind = wind;
+}
+
+void ParticlesGlobalManager::setWindFrom(const double from_deg, const double speed_kt)
+{
+    double map_rad = -from_deg * SG_DEGREES_TO_RADIANS;
+    double speed_mps = speed_kt * SG_KT_TO_MPS;
+
+    std::lock_guard<std::mutex> g(d->_lock);
+    d->_wind[0] = cos(map_rad) * speed_mps;
+    d->_wind[1] = sin(map_rad) * speed_mps;
+    d->_wind[2] = 0.0;
+}
+
+
+osg::Group* ParticlesGlobalManager::getCommonRoot()
+{
+    std::lock_guard<std::mutex> g(d->_lock);
+    return d->internalGetCommonRoot();
+}
+
+osg::ref_ptr<osg::Group> ParticlesGlobalManager::appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::Options* options)
 {
     SG_LOG(SG_PARTICLES, SG_DEBUG,
            "Setting up a particle system." << std::boolalpha
@@ -151,7 +380,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         << "\n    Wind: " << configNode->getChild("program")->getBoolValue("wind", true)
         << std::noboolalpha);
 
-    osgParticle::ParticleSystem *particleSys;
+    osg::ref_ptr<osgParticle::ParticleSystem> particleSys;
 
     //create a generic particle system
     std::string type = configNode->getStringValue("type", "normal");
@@ -159,11 +388,10 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         particleSys = new osgParticle::ParticleSystem;
     else
         particleSys = new osgParticle::ConnectedParticleSystem;
+
     //may not be used depending on the configuration
     PointerGuard<Particles> callback;
 
-    getPSU()->addParticleSystem(particleSys); 
-    getPSU()->setUpdateCallback(new GlobalParticleCallback(modelRoot));
     //contains counter, placer and shooter by default
     osgParticle::ModularEmitter* emitter = new osgParticle::ModularEmitter;
 
@@ -171,7 +399,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
 
     // Set up the alignment node ("stolen" from animation.cxx)
     // XXX Order of rotations is probably not correct.
-    osg::MatrixTransform *align = new osg::MatrixTransform;
+    osg::ref_ptr<osg::MatrixTransform> align = new osg::MatrixTransform;
     osg::Matrix res_matrix;
     res_matrix.makeRotate(
         configNode->getFloatValue("offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
@@ -186,11 +414,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                        configNode->getFloatValue("offsets/y-m", 0.0),
                        configNode->getFloatValue("offsets/z-m", 0.0));
     align->setMatrix(res_matrix * tmat);
-
     align->setName("particle align");
-
-    //if (dynamic_cast<CustomModularEmitter*>(emitter)==0) SG_LOG(SG_PARTICLES, SG_ALERT, "observer error\n");
-    //align->addObserver(dynamic_cast<CustomModularEmitter*>(emitter));
 
     align->addChild(emitter);
 
@@ -208,7 +432,6 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         osg::Geode* g = new osg::Geode;
         g->addDrawable(particleSys);
         callback()->particleFrame->addChild(g);
-        getCommonRoot()->addChild(callback()->particleFrame.get());
     }
     std::string textureFile;
     if (configNode->hasValue("texture")) {
@@ -504,66 +727,38 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         emitter->setUpdateCallback(callback.get());
     }
 
+    // touch shared data now (and not before)
+
+    {
+        std::lock_guard<std::mutex> g(d->_lock);
+        d->_updater->addParticleSystem(particleSys);
+
+        if (attach != "local") {
+            d->internalGetCommonRoot()->addChild(callback()->particleFrame);
+        }
+
+        if (!d->_globalCallbackRegistered) {
+            SG_LOG(SG_PARTICLES, SG_INFO, "Registering global particles callback");
+            d->_globalCallbackRegistered = true;
+            d->_longitudeNode = modelRoot->getNode("/position/longitude-deg", true);
+            d->_latitudeNode = modelRoot->getNode("/position/latitude-deg", true);
+            d->_updater->setUpdateCallback(d.get());
+        }
+    }
+
     return align;
 }
 
-void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
+void ParticlesGlobalManager::setSwitchNode(const SGPropertyNode* n)
 {
-    //SG_LOG(SG_PARTICLES, SG_ALERT, "callback!\n");
-    this->particleSys->setFrozen(_frozen);
-
-    using namespace osg;
-    if (shooterValue)
-        shooter->setInitialSpeedRange(shooterValue->getValue(),
-                                      (shooterValue->getValue()
-                                       + shooterExtraRange));
-    if (counterValue)
-        counter->setRateRange(counterValue->getValue(),
-                              counterValue->getValue() + counterExtraRange);
-    else if (counterCond)
-        counter->setRateRange(counterStaticValue,
-                              counterStaticValue + counterStaticExtraRange);
-    if (!GlobalParticleCallback::getEnabled() || (counterCond && !counterCond->test()))
-        counter->setRateRange(0, 0);
-    bool colorchange=false;
-    for (int i = 0; i < 8; ++i) {
-        if (colorComponents[i]) {
-            staticColorComponents[i] = colorComponents[i]->getValue();
-            colorchange=true;
-        }
-    }
-    if (colorchange)
-        particleSys->getDefaultParticleTemplate().setColorRange(osgParticle::rangev4( Vec4(staticColorComponents[0], staticColorComponents[1], staticColorComponents[2], staticColorComponents[3]), Vec4(staticColorComponents[4], staticColorComponents[5], staticColorComponents[6], staticColorComponents[7])));
-    if (startSizeValue)
-        startSize = startSizeValue->getValue();
-    if (endSizeValue)
-        endSize = endSizeValue->getValue();
-    if (startSizeValue || endSizeValue)
-        particleSys->getDefaultParticleTemplate().setSizeRange(osgParticle::rangef(startSize, endSize));
-    if (lifeValue)
-        particleSys->getDefaultParticleTemplate().setLifeTime(lifeValue->getValue());
-
-    if (particleFrame.valid()) {
-        MatrixList mlist = node->getWorldMatrices();
-        if (!mlist.empty()) {
-            const Matrix& particleMat = particleFrame->getMatrix();
-            Vec3d emitOrigin(mlist[0](3, 0), mlist[0](3, 1), mlist[0](3, 2));
-            Vec3d displace
-                = emitOrigin - Vec3d(particleMat(3, 0), particleMat(3, 1),
-                                     particleMat(3, 2));
-            if (displace * displace > 10000.0 * 10000.0) {
-                // Make new frame for particle system, coincident with
-                // the emitter frame, but oriented with local Z.
-                SGGeod geod = SGGeod::fromCart(toSG(emitOrigin));
-                Matrix newParticleMat = makeZUpFrame(geod);
-                Matrix changeParticleFrame
-                    = particleMat * Matrix::inverse(newParticleMat);
-                particleFrame->setMatrix(newParticleMat);
-                transformParticles(particleSys.get(), changeParticleFrame);
-            }
-        }
-    }
-    if (program.valid() && useWind)
-        program->setWind(_wind);
+    std::lock_guard<std::mutex> g(d->_lock);
+    d->_enabledNode = n;
 }
+
+void ParticlesGlobalManager::setFrozen(bool b)
+{
+    std::lock_guard<std::mutex> g(d->_lock);
+    d->_frozen = b;
+}
+
 } // namespace simgear

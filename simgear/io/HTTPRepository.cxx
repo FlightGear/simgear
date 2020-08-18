@@ -630,6 +630,9 @@ HTTPRepository::HTTPRepository(const SGPath& base, HTTP::Client *cl) :
     //      _d->rootDir should be changed to a shared_ptr
     //      this object is passed to several chained methods, so destruction within ~HTTPRepoPrivate may be
     //      an easier fix assuming sole ownership would apply
+    // REVIEW: _d is only partially initialized when it is being passed to the HTTPDirectory ctor.
+    //      The HTTPDirectory object is taking ownership of the shared HTTPRepoPrivate object.
+    //      Mismatch between _d being a unique_ptr, yet also cloned into HTTPDirectory.
     _d->rootDir = new HTTPDirectory(_d.get(), "");
     _d->parseHashCache();
 }

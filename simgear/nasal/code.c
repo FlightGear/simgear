@@ -173,6 +173,8 @@ static void initGlobals()
         naGC_init(&(globals->pools[i]), i);
     globals->deadsz = BASE_SIZE;
     globals->ndead = 0;
+    // REVIEW: Memory Leak - 2,048,000 bytes in 1 blocks are still reachable
+    // naFree(globals->deadBlocks) is required during shutdown
     globals->deadBlocks = naAlloc(sizeof(void*) * globals->deadsz);
 
     // Initialize a single context

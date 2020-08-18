@@ -61,8 +61,7 @@ simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
-add_executable(test_parse_color parse_color_test.cxx )
-add_test(parse_color ${EXECUTABLE_OUTPUT_PATH}/test_parse_color)
-target_link_libraries(test_parse_color ${TEST_LIBS})
+add_simgear_autotest(test_parse_color parse_color_test.cxx )
+target_link_libraries(test_parse_color SimGearScene)
 
 endif(ENABLE_TESTS)

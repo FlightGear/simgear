@@ -21,5 +21,5 @@ simgear_scene_component(canvas-layout canvas/layout "${SOURCES}" "${HEADERS}")
 
 add_boost_test(canvas_layout
   SOURCES canvas_layout_test.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearScene
 )

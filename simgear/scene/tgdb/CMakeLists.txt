@@ -44,9 +44,5 @@ set(SOURCES
 simgear_scene_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
-
-  add_executable(BucketBoxTest BucketBoxTest.cxx)
-  target_link_libraries(BucketBoxTest ${TEST_LIBS})
-  add_test(BucketBoxTest ${EXECUTABLE_OUTPUT_PATH}/BucketBoxTest)
-
+  add_simgear_scene_autotest(BucketBoxTest BucketBoxTest.cxx)
 endif(ENABLE_TESTS)

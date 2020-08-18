@@ -26,8 +26,24 @@ set(expat_sources
         sg_expat_external.h 
 	)
 
-foreach(s ${expat_sources})
-	set_property(GLOBAL
-		APPEND PROPERTY LOCAL_EXPAT_SOURCES 
-        "${CMAKE_CURRENT_SOURCE_DIR}/${s}")
-endforeach()
+add_library(FGExpat STATIC ${expat_sources})
+
+target_include_directories(FGExpat BEFORE PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>)
+
+# for the config file above
+target_include_directories(FGExpat PRIVATE ${PROJECT_BINARY_DIR}/3rdparty/expat)
+
+target_compile_definitions(FGExpat PUBLIC HAVE_SIMGEAR_EXPAT_CONFIG_H XML_STATIC)
+
+# look like Expat found by find()
+add_library(EXPAT::EXPAT ALIAS FGExpat)
+
+# in the non-shared case, we need to export these as well
+if (NOT SIMGEAR_SHARED)
+    install(TARGETS FGExpat
+        EXPORT SimGearTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()

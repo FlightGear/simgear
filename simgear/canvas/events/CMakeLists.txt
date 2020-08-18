@@ -18,11 +18,10 @@ simgear_scene_component(canvas-events canvas/events "${SOURCES}" "${HEADERS}")
 
 add_boost_test(canvas_event
   SOURCES event_test.cpp
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearScene
 )
 
-add_executable(input_event_demo input_event_demo.cxx)
+add_simgear_test(input_event_demo input_event_demo.cxx)
 target_link_libraries(input_event_demo
-  ${TEST_LIBS}
-  ${OPENSCENEGRAPH_LIBRARIES}
+  SimGearScene
 )

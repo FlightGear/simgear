@@ -13,7 +13,6 @@ CHECK_SYMBOL_EXISTS(AF_INET6 "netinet/in.h" HAVE_IPv6)
 check_include_file(windows.h  WINDOWS)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/config.h)
-include_directories(${CMAKE_BINARY_DIR})
 
 set(HEADERS
 )
@@ -38,4 +37,21 @@ set(SOURCES
     udns_XtoX.c
 )
 
-simgear_component(udns 3rdparty/udns "${SOURCES}" "${HEADERS}")
+add_library(FGUdns STATIC ${SOURCES})
+
+target_include_directories(FGUdns BEFORE PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>)
+    
+target_include_directories(FGUdns PRIVATE ${CMAKE_BINARY_DIR})
+
+# match the name of imported UDns 
+add_librarY(Udns::Udns ALIAS FGUdns)
+
+# in the non-shared case, we need to export these as well
+if (NOT SIMGEAR_SHARED)
+    install(TARGETS FGUdns
+        EXPORT SimGearTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()

@@ -50,43 +50,26 @@ simgear_component(misc misc "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
-add_executable(test_argparse argparse_test.cxx)
-target_link_libraries(test_argparse ${TEST_LIBS})
-add_test(argparse ${EXECUTABLE_OUTPUT_PATH}/test_argparse)
-
-add_executable(test_CSSBorder CSSBorder_test.cxx)
-add_test(CSSBorder ${EXECUTABLE_OUTPUT_PATH}/test_CSSBorder)
-target_link_libraries(test_CSSBorder ${TEST_LIBS})
-
-add_executable(test_tabbed_values tabbed_values_test.cxx)
-add_test(tabbed_values ${EXECUTABLE_OUTPUT_PATH}/test_tabbed_values)
-target_link_libraries(test_tabbed_values ${TEST_LIBS})
-
-add_executable(test_strutils strutils_test.cxx)
-target_link_libraries(test_strutils ${TEST_LIBS})
-add_test(strutils ${EXECUTABLE_OUTPUT_PATH}/test_strutils)
-
-add_executable(test_path path_test.cxx )
-add_test(path ${EXECUTABLE_OUTPUT_PATH}/test_path)
-target_link_libraries(test_path ${TEST_LIBS})
-
-add_executable(test_sg_dir sg_dir_test.cxx)
-target_link_libraries(test_sg_dir ${TEST_LIBS})
-add_test(sg_dir ${EXECUTABLE_OUTPUT_PATH}/test_sg_dir)
+add_simgear_autotest(test_argparse argparse_test.cxx)
+add_simgear_autotest(test_CSSBorder CSSBorder_test.cxx)
+add_simgear_autotest(test_tabbed_values tabbed_values_test.cxx)
+add_simgear_autotest(test_strutils strutils_test.cxx)
+add_simgear_autotest(test_path path_test.cxx )
+add_simgear_autotest(test_sg_dir sg_dir_test.cxx)
 
 endif(ENABLE_TESTS)
 
 add_boost_test(SimpleMarkdown
   SOURCES SimpleMarkdown_test.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearCore
 )
 
 add_boost_test(SVGpreserveAspectRatio
   SOURCES SVGpreserveAspectRatio_test.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearCore
 )
 
 add_boost_test(utf8tolatin1
   SOURCES utf8tolatin1_test.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearCore
 )

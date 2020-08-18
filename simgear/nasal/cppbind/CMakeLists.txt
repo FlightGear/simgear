@@ -37,20 +37,20 @@ simgear_component(nasal/cppbind/detail nasal/cppbind/detail "" "${DETAIL_HEADERS
 
 add_boost_test(cppbind_ghost
   SOURCES test/cppbind_test_ghost.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearCore
 )
 
 add_boost_test(cppbind_misc
   SOURCES test/cppbind_test.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearCore
 )
 
 add_boost_test(nasal_gc_test
   SOURCES test/nasal_gc_test.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearCore
 )
 
 add_boost_test(nasal_num
   SOURCES test/nasal_num_test.cxx
-  LIBRARIES ${TEST_LIBS}
+  LIBRARIES SimGearCore
 )

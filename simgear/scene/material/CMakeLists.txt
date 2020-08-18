@@ -34,8 +34,7 @@ simgear_scene_component(material scene/material "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
-add_executable(test_parseBlendFunc parseBlendFunc_test.cxx )
-add_test(parseBlendFunc ${EXECUTABLE_OUTPUT_PATH}/test_parseBlendFunc)
-target_link_libraries(test_parseBlendFunc ${TEST_LIBS} ${OPENSCENEGRAPH_LIBRARIES})
+add_simgear_autotest(test_parseBlendFunc parseBlendFunc_test.cxx )
+target_link_libraries(test_parseBlendFunc SimGearScene)
 
 endif(ENABLE_TESTS)

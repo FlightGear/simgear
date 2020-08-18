@@ -39,4 +39,19 @@ else ()
   # show the UDNS_INCLUDE_DIRS and UDNS_LIBRARIES variables only in the advanced view
   mark_as_advanced(UDNS_INCLUDE_DIRS UDNS_LIBRARIES)
 
+  if(UDNS_FOUND)
+ 
+  if(NOT TARGET Udns::Udns)
+    add_library(Udns::Udns UNKNOWN IMPORTED)
+    set_target_properties(Udns::Udns PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${UDNS_INCLUDE_DIRS}")
+
+      set_target_properties(Udns::Udns PROPERTIES
+        IMPORTED_LINK_INTERFACE_LANGUAGES "C"
+        IMPORTED_LOCATION "${UDNS_LIBRARIES}")
+    
+  endif()
+endif()
+
+
 endif ()

@@ -60,32 +60,11 @@ if(InSourceBuild)
     message(WARNING  "  mkdir ../sgbuild && cd ../sgbuild && cmake ${CMAKE_SOURCE_DIR}")
 endif(InSourceBuild)
 
-#packaging
-SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
-SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simulation support libraries for FlightGear and related projects")
-SET(CPACK_PACKAGE_VENDOR "The FlightGear project")
-SET(CPACK_GENERATOR "TBZ2")
-SET(CPACK_INSTALL_CMAKE_PROJECTS  ${CMAKE_CURRENT_BINARY_DIR};SimGear;ALL;/)
-
-
-# split version string into components, note CMAKE_MATCH_0 is the entire regexp match
-string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${SIMGEAR_VERSION} )
-set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
-set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
-set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
-
-message(STATUS "version is ${CPACK_PACKAGE_VERSION_MAJOR} dot ${CPACK_PACKAGE_VERSION_MINOR} dot ${CPACK_PACKAGE_VERSION_PATCH}")
-
-set(CPACK_SOURCE_GENERATOR TBZ2)
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "simgear-${SIMGEAR_VERSION}" CACHE INTERNAL "tarball basename")
-set(CPACK_SOURCE_IGNORE_FILES
-  "^${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
-
-include (CPack)
 
 # We have some custom .cmake scripts not in the official distribution.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+
+include(Packaging)
 
 # Change the default build type to something fast
 if(NOT CMAKE_BUILD_TYPE)
@@ -108,8 +87,6 @@ if (NOT MSVC)
 option(SIMGEAR_SHARED   "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system expat library" OFF)
 option(SYSTEM_UDNS      "Set to ON to build SimGear using the system udns library" OFF)
-option(ENABLE_ASAN      "Set to ON to build SimGear with LLVM AddressSanitizer (ASan) support" OFF)
-
 else()
 # Building SimGear DLLs is currently not supported for MSVC.
 set(SIMGEAR_SHARED OFF)
@@ -125,10 +102,9 @@ option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applicati
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
 option(USE_AEONWAVE     "Set to ON to use AeonWave instead of OpenAL" ON)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
-option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" ON)
 option(ENABLE_SIMD      "Enable SSE/SSE2 support for compilers" ON)
 option(ENABLE_SIMD_CODE	"Enable SSE/SSE2 support code for compilers" OFF)
-option(ENABLE_OPENMP    "Enable OpenMP compiler support" OFF)
+option(ENABLE_ASAN      "Set to ON to build SimGear with LLVM AddressSanitizer (ASan) support" OFF)
 
 if (NOT ENABLE_SIMD AND ENABLE_SIMD_CODE)
   set(ENABLE_SIMD_CODE OFF)
@@ -210,9 +186,7 @@ if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-    find_package(Threads REQUIRED)
-endif()
+find_package(Threads REQUIRED)
 
 find_package(Boost REQUIRED)
 set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG -DBOOST_NO_AUTO_PTR -DBOOST_NO_CXX98_BINDERS")
@@ -270,20 +244,12 @@ if (SYSTEM_EXPAT)
 
 else()
     message(STATUS "Using built-in expat code")
-    set(EXPAT_INCLUDE_DIRS
-            ${PROJECT_SOURCE_DIR}/3rdparty/expat
-            ${PROJECT_BINARY_DIR}/3rdparty/expat)
 endif(SYSTEM_EXPAT)
 
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
-
-if(HAVE_INTTYPES_H)
-  # ShivaVG needs inttypes.h
-  add_definitions(-DHAVE_INTTYPES_H)
-endif()
 
 if(ENABLE_RTI)
     find_package(PkgConfig)
@@ -302,60 +268,9 @@ endif(ENABLE_RTI)
 
 if(ENABLE_GDAL)
     find_package(GDAL 2.0.0 REQUIRED)
-    if (GDAL_FOUND)
-        include_directories(${GDAL_INCLUDE_DIR})
-    endif(GDAL_FOUND)
 endif(ENABLE_GDAL)
 
-check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
-check_function_exists(rint HAVE_RINT)
-check_function_exists(mkdtemp HAVE_MKDTEMP)
-check_function_exists(bcopy HAVE_BCOPY)
-check_function_exists(mmap HAVE_MMAP)
-
-if (NOT MSVC)
-  check_function_exists(timegm HAVE_TIMEGM)
-  if (NOT HAVE_TIMEGM)
-    message(FATAL_ERROR "Non-Windows platforms must support timegm()")
-  endif()
-endif()
-
-if(HAVE_UNISTD_H)
-    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})
-    check_cxx_source_compiles(
-       "#include <unistd.h>
-        #if !defined(_POSIX_TIMERS) || (0 >= _POSIX_TIMERS)
-            #error clock_gettime is not supported
-        #endif
-
-        int main() { return 0; }
-        "
-        HAVE_CLOCK_GETTIME)
-endif(HAVE_UNISTD_H)
-
-set(RT_LIBRARY "")
-if(HAVE_CLOCK_GETTIME)
-    check_library_exists(rt clock_gettime "" HAVE_RT)
-    if(HAVE_RT)
-        set(RT_LIBRARY rt)
-    endif(HAVE_RT)
-endif(HAVE_CLOCK_GETTIME)
-
-set(DL_LIBRARY "")
-check_cxx_source_compiles(
-    "#include <dlfcn.h>
-    int main(void) {
-        return 0;
-    }
-    "
-    HAVE_DLFCN_H)
-
-if(HAVE_DLFCN_H)
-    check_library_exists(dl dlerror "" HAVE_DL)
-    if(HAVE_DL)
-        set(DL_LIBRARY "dl")
-    endif()
-endif()
+include(CheckPOSIXFeatures)
 
 SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually 'd' on windows")
 SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
@@ -415,29 +330,16 @@ if (CLANG)
     set(CMAKE_C_FLAGS_RELWITHDEBINFO  "-O3 -g -DNDEBUG")
 
     set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
-
-    if (ENABLE_ASAN)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
-
-      # needed for check_cxx_source_compiles
-      set(CMAKE_REQUIRED_LINK_OPTIONS "-fsanitize=address")
-    endif()
 endif()
 
-if (ENABLE_OPENMP)
-    find_package(OpenMP)
-    if(OPENMP_FOUND)
-        message(STATUS "OpenMP: ENABLED")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    else()
-        message(STATUS "OpenMP: NOT FOUND")
-    endif()
-else()
-    message(STATUS "OpenMP: DISABLED")
+if (ENABLE_ASAN)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+
+  # needed for check_cxx_source_compiles
+  set(CMAKE_REQUIRED_LINK_OPTIONS "-fsanitize=address")
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -496,14 +398,6 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 
 include(CheckCXXFeatures)
 
-# use BEFORE to ensure local directories are used first,
-# ahead of system-installed libs
-include_directories(BEFORE ${PROJECT_BINARY_DIR}/simgear)
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
-    include_directories("/usr/X11R6/include")
-endif()
-
 add_definitions(-DHAVE_CONFIG_H)
 
 # configure a header file to pass some of the CMake settings
@@ -513,48 +407,17 @@ configure_file (
   "${PROJECT_BINARY_DIR}/simgear/simgear_config.h"
   )
 
-if(ENABLE_TESTS)
-    # enable CTest / make test target
-    message(STATUS "Tests: ENABLED")
-
-    include (Dart)
-    enable_testing()
-else()
-    message(STATUS "Tests: DISABLED")
-endif(ENABLE_TESTS)
-
-# always set TEST_LIBS as it is also used by other tools/applications
-set(TEST_LIBS_INTERNAL_CORE
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${ZLIB_LIBRARY}
-    ${WINSOCK_LIBRARY}
-    ${SHLWAPI_LIBRARY}
-    ${RT_LIBRARY}
-    ${DL_LIBRARY}
-    ${COCOA_LIBRARY}
-    ${CURL_LIBRARIES}
-    ${GDAL_LIBRARY})
-set(TEST_LIBS SimGearCore ${TEST_LIBS_INTERNAL_CORE})
-
-if(NOT SIMGEAR_HEADLESS)
-    set(TEST_LIBS SimGearScene ${OPENGL_LIBRARIES} ${TEST_LIBS})
-endif()
+include (Dart)
+enable_testing()
+include(AddSimGearTest) # helper to setup a test
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 
-if(ENABLE_DNS)
-    if(SYSTEM_UDNS)
-        message(STATUS "Requested to use system udns library, forcing SIMGEAR_SHARED to true")
-        set(SIMGEAR_SHARED ON)
-        find_package(Udns REQUIRED)
-    else()
-        message(STATUS "DNS resolver: ENABLED")
-        include_directories(3rdparty/udns)
-    endif()
-else()
-    message(STATUS "DNS resolver: DISABLED")
+if(SYSTEM_UDNS)
+    message(STATUS "Requested to use system udns library, forcing SIMGEAR_SHARED to true")
+    set(SIMGEAR_SHARED ON)
+    find_package(Udns REQUIRED)
 endif()
-
 
 add_subdirectory(3rdparty)
 add_subdirectory(simgear)

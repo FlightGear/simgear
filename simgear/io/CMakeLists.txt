@@ -20,6 +20,7 @@ set(HEADERS
     HTTPRequest.hxx
     HTTPRepository.hxx
     untar.hxx
+    DNSClient.hxx
     )
 
 set(SOURCES
@@ -40,55 +41,25 @@ set(SOURCES
     HTTPRequest.cxx
     HTTPRepository.cxx
     untar.cxx
+    DNSClient.cxx
     )
-
-if(ENABLE_DNS)
-  list(APPEND SOURCES DNSClient.cxx)
-  list(APPEND HEADERS DNSClient.hxx)
-endif()
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
 
-add_executable(test_sock socktest.cxx)
-target_link_libraries(test_sock ${TEST_LIBS})
+add_simgear_test(test_sock socktest.cxx)
+add_simgear_autotest(test_http test_HTTP.cxx)
+add_simgear_autotest(test_dns test_DNS.cxx)
+add_simgear_test(httpget httpget.cxx)
+add_simgear_test(http_repo_sync http_repo_sync.cxx)
+add_simgear_test(decode_binobj decode_binobj.cxx)
+add_simgear_autotest(test_binobj test_binobj.cxx)
+add_simgear_autotest(test_repository test_repository.cxx)
 
-add_executable(test_http test_HTTP.cxx)
-target_link_libraries(test_http ${TEST_LIBS})
 
-add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
-
-if(ENABLE_DNS)
-	add_executable(test_dns test_DNS.cxx)
-	target_link_libraries(test_dns ${TEST_LIBS})
-	add_test(dns ${EXECUTABLE_OUTPUT_PATH}/test_dns)
-endif()
-
-add_executable(httpget httpget.cxx)
-target_link_libraries(httpget ${TEST_LIBS})
-
-add_executable(http_repo_sync http_repo_sync.cxx)
-target_link_libraries(http_repo_sync ${TEST_LIBS})
-
-add_executable(decode_binobj decode_binobj.cxx)
-target_link_libraries(decode_binobj ${TEST_LIBS})
-
-add_executable(test_binobj test_binobj.cxx)
-target_link_libraries(test_binobj ${TEST_LIBS})
-
-add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
-
-add_executable(test_repository test_repository.cxx)
-target_link_libraries(test_repository ${TEST_LIBS})
-add_test(http_repository ${EXECUTABLE_OUTPUT_PATH}/test_repository)
-
-add_executable(test_untar test_untar.cxx)
-
+add_simgear_autotest(test_untar test_untar.cxx)
 set_target_properties(test_untar PROPERTIES
   COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
-
-target_link_libraries(test_untar ${TEST_LIBS})
-add_test(untar ${EXECUTABLE_OUTPUT_PATH}/test_untar)
 
 endif(ENABLE_TESTS)

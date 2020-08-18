@@ -48,7 +48,6 @@ install (FILES ${HEADERS}  DESTINATION include/simgear/)
 get_property(coreSources GLOBAL PROPERTY CORE_SOURCES)
 get_property(sceneSources GLOBAL PROPERTY SCENE_SOURCES)
 get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
-get_property(localExpatSources GLOBAL PROPERTY LOCAL_EXPAT_SOURCES)
 
 if(SIMGEAR_SHARED)
     message(STATUS "Library building mode: SHARED LIBRARIES")
@@ -89,7 +88,7 @@ else()
 		source_group("${name}\\Headers" FILES ${g2})
 	endforeach()
 
-    add_library(SimGearCore STATIC ${coreSources} ${localExpatSources})
+    add_library(SimGearCore STATIC ${coreSources})
 
     if(NOT SIMGEAR_HEADLESS)
 		get_property(FG_GROUPS_SCENE_SOURCES_C GLOBAL PROPERTY FG_GROUPS_SCENE_SOURCES_C)
@@ -111,6 +110,11 @@ else()
 		endforeach()
 
         add_library(SimGearScene STATIC ${sceneSources})
+
+        if(HAVE_INTTYPES_H)
+            # ShivaVG needs inttypes.h
+            target_compile_definitions(SimGearScene PRIVATE HAVE_INTTYPES_H)
+        endif()
     endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
 
@@ -118,45 +122,16 @@ target_include_directories(SimGearCore BEFORE PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
-# so simgear/simgear_config.h is found
-target_include_directories(SimGearCore BEFORE PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>)
+# for simgear_config.h
+target_include_directories(SimGearCore PRIVATE ${PROJECT_BINARY_DIR}/simgear)
 
 target_include_directories(SimGearCore PUBLIC
   ${Boost_INCLUDE_DIRS})
-target_include_directories(SimGearCore PRIVATE
-  ${EXPAT_INCLUDE_DIRS} )
 
-if (NOT SYSTEM_EXPAT)
-    # XML_STATIC is important to avoid sg_expat_external.h
-    # declaring symbols as declspec(import)
-    target_compile_definitions(SimGearCore PRIVATE HAVE_SIMGEAR_EXPAT_CONFIG_H XML_STATIC)
-endif()
-
-    install(TARGETS SimGearCore
-            EXPORT SimGearTargets
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-if (NOT SIMGEAR_HEADLESS)
-  install(TARGETS SimGearScene
-          EXPORT SimGearTargets
-          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-  target_include_directories(SimGearScene BEFORE PUBLIC
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>)
-
-    target_include_directories(SimGearScene PUBLIC ${OPENSCENEGRAPH_INCLUDE_DIRS})
-
-    if (USE_AEONWAVE)
-      target_include_directories(SimGearScene PRIVATE ${AAX_INCLUDE_DIR} )
-    else()
-      target_include_directories(SimGearScene PRIVATE ${OPENAL_INCLUDE_DIR} )
-    endif()
-endif()
+install(TARGETS SimGearCore
+        EXPORT SimGearTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # we expose ZLib in some of our headers
 target_link_libraries(SimGearCore PUBLIC ZLIB::ZLIB)
@@ -166,21 +141,17 @@ if (ENABLE_RTI)
     target_link_libraries(SimGearCore PRIVATE PkgConfig::RTI)
 endif()
 
+# all of these we keep privately
 target_link_libraries(SimGearCore PRIVATE
+    ${SHLWAPI_LIBRARY}
     ${RT_LIBRARY}
     ${DL_LIBRARY}
-    ${CMAKE_THREAD_LIBS_INIT}
+    Threads::Threads
     ${COCOA_LIBRARY}
     CURL::libcurl
+    EXPAT::EXPAT
+    Udns::Udns
     ${WINSOCK_LIBRARY})
-
-if(SYSTEM_EXPAT)
-    target_link_libraries(SimGearCore PRIVATE ${EXPAT_LIBRARIES})
-endif()
-
-if(ENABLE_DNS AND SYSTEM_UDNS)
-    target_link_libraries(SimGearCore PRIVATE ${UDNS_LIBRARIES})
-endif()
 
 if(NOT SIMGEAR_HEADLESS)
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShivaVG/include)
@@ -197,9 +168,28 @@ if(NOT SIMGEAR_HEADLESS)
         ${JPEG_LIBRARY})
 
     if(ENABLE_GDAL)
-        target_link_libraries(SimGearScene PRIVATE ${GDAL_LIBRARIES})
+        target_link_libraries(SimGearScene PRIVATE GDAL::GDAL)
     endif()
 
     # only actually needed by canvas/KeyboardEvent.cxx
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/utf8/source)
+
+    install(TARGETS SimGearScene
+        EXPORT SimGearTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+    target_include_directories(SimGearScene BEFORE PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>)
+
+    # for simgear_config.h
+    target_include_directories(SimGearScene PRIVATE ${PROJECT_BINARY_DIR}/simgear)
+    target_include_directories(SimGearScene PUBLIC ${OPENSCENEGRAPH_INCLUDE_DIRS})
+
+    if (USE_AEONWAVE)
+        target_include_directories(SimGearScene PRIVATE ${AAX_INCLUDE_DIR} )
+    else()
+        target_include_directories(SimGearScene PRIVATE ${OPENAL_INCLUDE_DIR} )
+    endif()
 endif()

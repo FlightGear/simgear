@@ -59,9 +59,5 @@ set(SOURCES
 simgear_scene_component(model scene/model "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
-
-  add_executable(test_animations animation_test.cxx)
-  target_link_libraries(test_animations ${TEST_LIBS} ${OPENSCENEGRAPH_LIBRARIES})
-  add_test(animations ${EXECUTABLE_OUTPUT_PATH}/test_animations)
-
+  add_simgear_scene_autotest(test_animations animation_test.cxx)
 endif(ENABLE_TESTS)

@@ -420,6 +420,8 @@ static void reap(struct naPool* p)
     if(p->freesz < freesz) {
         naFree(p->free0);
         p->freesz = freesz;
+        // REVIEW: Memory Leak - 1,032,712 bytes in 6 blocks are still reachable
+        // naFree(p->free0) is required during shutdown
         p->free = p->free0 = naAlloc(sizeof(void*) * p->freesz);
     }
 

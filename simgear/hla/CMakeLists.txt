@@ -66,8 +66,9 @@ if(RTI_FOUND)
 
   target_include_directories(rti13 PUBLIC ${PROJECT_SOURCE_DIR})
   target_include_directories(rti13 PUBLIC ${PROJECT_BINARY_DIR})
-  #target_include_directories(rti13 PRIVATE ${RTI_INCLUDE_DIRS})
   target_link_libraries(rti13 PRIVATE PkgConfig::RTI)
+  # for simgear_config.h
+  target_include_directories(rti13 PRIVATE ${PROJECT_BINARY_DIR}/simgear)
 
   set_property(TARGET rti13 PROPERTY CXX_STANDARD 11) 
   #simgear_component(rti13 hla "${RTI13_SOURCES}" "")
@@ -85,7 +86,8 @@ set(RTI_SOURCES
   add_library(rti OBJECT ${RTI_SOURCES})
   target_include_directories(rti PUBLIC ${PROJECT_SOURCE_DIR})
   target_include_directories(rti PUBLIC ${PROJECT_BINARY_DIR})
-  #target_include_directories(rti PRIVATE ${RTI_INCLUDE_DIRS})
+  target_include_directories(rti PRIVATE ${PROJECT_BINARY_DIR}/simgear)
+
   target_link_libraries(rti PRIVATE PkgConfig::RTI)
 
   set_property(TARGET rti PROPERTY CXX_STANDARD 11) 

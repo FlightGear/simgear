@@ -49,6 +49,7 @@ namespace simgear
 {
 
     class HTTPDirectory;
+    using HTTPDirectory_ptr = std::unique_ptr<HTTPDirectory>;
 
     class HTTPRepoGetRequest : public HTTP::Request
     {
@@ -137,7 +138,7 @@ public:
     SGPath basePath;
     bool isUpdating;
     HTTPRepository::ResultCode status;
-    HTTPDirectory* rootDir;
+    HTTPDirectory_ptr rootDir;
     size_t totalDownloaded;
 
     HTTP::Request_ptr updateFile(HTTPDirectory* dir, const std::string& name,
@@ -165,7 +166,7 @@ public:
     HTTPDirectory* getOrCreateDirectory(const std::string& path);
     bool deleteDirectory(const std::string& relPath, const SGPath& absPath);
 
-    typedef std::vector<HTTPDirectory*> DirectoryVector;
+    typedef std::vector<HTTPDirectory_ptr> DirectoryVector;
     DirectoryVector directories;
 
     SGPath installedCopyPath;
@@ -592,7 +593,7 @@ private:
     void removeChild(SGPath path)
     {
         bool ok;
-        SG_LOG(SG_TERRASYNC, SG_WARN, "Removing:" << path);
+        SG_LOG(SG_TERRASYNC, SG_INFO, "Removing:" << path);
 
         std::string fpath = _relativePath + "/" + path.file();
         if (path.isDir()) {
@@ -626,7 +627,7 @@ HTTPRepository::HTTPRepository(const SGPath& base, HTTP::Client *cl) :
 {
     _d->http = cl;
     _d->basePath = base;
-    _d->rootDir = new HTTPDirectory(_d.get(), "");
+    _d->rootDir.reset(new HTTPDirectory(_d.get(), ""));
     _d->parseHashCache();
 }
 
@@ -663,7 +664,7 @@ void HTTPRepository::update()
     _d->status = REPO_NO_ERROR;
     _d->isUpdating = true;
     _d->failures.clear();
-    _d->updateDir(_d->rootDir, std::string(), 0);
+    _d->updateDir(_d->rootDir.get(), {}, 0);
 }
 
 bool HTTPRepository::isDoingSync() const
@@ -931,10 +932,7 @@ HTTPRepository::failure() const
             http->cancelRequest(*rq, "Repository object deleted");
         }
 
-        DirectoryVector::iterator it;
-        for (it=directories.begin(); it != directories.end(); ++it) {
-            delete *it;
-        }
+        directories.clear(); // wil delete them all
     }
 
     HTTP::Request_ptr HTTPRepoPrivate::updateFile(HTTPDirectory* dir, const std::string& name, size_t sz)
@@ -1097,7 +1095,7 @@ HTTPRepository::failure() const
     {
     public:
         DirectoryWithPath(const std::string& p) : path(p) {}
-        bool operator()(const HTTPDirectory* entry) const
+        bool operator()(const HTTPDirectory_ptr& entry) const
         { return entry->relativePath() == path; }
     private:
         std::string path;
@@ -1106,14 +1104,13 @@ HTTPRepository::failure() const
     HTTPDirectory* HTTPRepoPrivate::getOrCreateDirectory(const std::string& path)
     {
         DirectoryWithPath p(path);
-        DirectoryVector::iterator it = std::find_if(directories.begin(), directories.end(), p);
+        auto it = std::find_if(directories.begin(), directories.end(), p);
         if (it != directories.end()) {
-            return *it;
+            return it->get();
         }
 
-        HTTPDirectory* d = new HTTPDirectory(this, path);
-        directories.push_back(d);
-        return d;
+        directories.emplace_back(new HTTPDirectory(this, path));
+        return directories.back().get();
     }
 
     bool HTTPRepoPrivate::deleteDirectory(const std::string& relPath, const SGPath& absPath)
@@ -1121,10 +1118,9 @@ HTTPRepository::failure() const
         DirectoryWithPath p(relPath);
         auto it = std::find_if(directories.begin(), directories.end(), p);
         if (it != directories.end()) {
-            HTTPDirectory* d = *it;
+            HTTPDirectory* d = it->get();
 			assert(d->absolutePath() == absPath);
             directories.erase(it);
-            delete d;
 		} else {
 			// we encounter this code path when deleting an orphaned directory
 		}

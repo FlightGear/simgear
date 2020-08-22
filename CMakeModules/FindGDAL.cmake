@@ -60,6 +60,8 @@ GDAL installation prefix.
 #
 #include "gdal.h"
 
+include(FindPackageHandleStandardArgs)
+
 find_path(GDAL_INCLUDE_DIR gdal.h
   HINTS
     ENV GDAL_DIR
@@ -149,7 +151,6 @@ else ()
     set(GDAL_VERSION GDAL_VERSION-NOTFOUND)
 endif ()
 
-include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GDAL
     VERSION_VAR GDAL_VERSION
     REQUIRED_VARS GDAL_LIBRARY GDAL_INCLUDE_DIR)

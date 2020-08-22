@@ -618,6 +618,9 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     } else {
         setDynamicVariance(obj);
         std::string propName = getGlobalProperty(valProp, options);
+        // REVIEW: Memory Leak - 156,910 (2,320 direct, 154,590 indirect) bytes in 29 blocks are definitely lost
+        // Weak Efforts::dtor
+        // Weak UniformFactoryImpl handling of dynamic memory
         ScalarChangeListener<OSGParamType, ObjType, F>* listener
             = new ScalarChangeListener<OSGParamType, ObjType, F>(obj, setter,
                                                                  propName);

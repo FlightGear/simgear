@@ -145,6 +145,7 @@ ref_ptr<Uniform> UniformFactoryImpl::getUniform( Effect * effect,
     }
 
     SG_LOG(SG_GL,SG_DEBUG,"new uniform " << name << " value " << uniformCache.size());
+    // REVIEW: Memory Leak - 13,800 bytes in 69 blocks are indirectly lost
     uniformCache[key] = uniform = new Uniform;
 
     uniform->setName(name);

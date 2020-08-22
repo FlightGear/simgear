@@ -433,6 +433,7 @@ public:
     osg::Vec3Array* vertices = new osg::Vec3Array;
     osg::Vec3Array* normals = new osg::Vec3Array;
     osg::Vec2Array* priTexCoords = new osg::Vec2Array;
+    // REVIEW: Memory Leak - 42,560 bytes in 280 blocks are definitely lost
     osg::Vec2Array* secTexCoords = new osg::Vec2Array;
 
     osg::Vec4Array* colors = new osg::Vec4Array;

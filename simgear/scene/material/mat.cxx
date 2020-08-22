@@ -412,6 +412,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     if (props->hasChild("parameters")) {
         parameters = props->getChild("parameters");
     } else {
+        // REVIEW: Memory Leak - 61,560 bytes in 405 blocks are definitely lost
         parameters = new SGPropertyNode();
     }
 }

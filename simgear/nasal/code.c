@@ -210,6 +210,7 @@ naContext naNewContext()
         initContext(c);
     } else {
         UNLOCK();
+        // REVIEW: Memory Leak - 8,184 bytes in 1 blocks are still reachable
         c = (naContext)naAlloc(sizeof(struct Context));
         initTemps(c);
         initContext(c);

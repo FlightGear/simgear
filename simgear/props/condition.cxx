@@ -502,6 +502,7 @@ readNotCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
 static SGCondition *
 readAndConditions( SGPropertyNode *prop_root, const SGPropertyNode *node )
 {
+  // REVIEW: Memory Leak - 11,502 (1,560 direct, 9,942 indirect) bytes in 39 blocks are definitely lost
   SGAndCondition * andCondition = new SGAndCondition;
   int nChildren = node->nChildren();
   for (int i = 0; i < nChildren; i++) {

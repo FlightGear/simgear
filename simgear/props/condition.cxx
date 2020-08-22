@@ -426,6 +426,7 @@ SGComparisonCondition::setPrecisionValue (const SGPropertyNode *node)
 void
 SGComparisonCondition::setRightValue (const SGPropertyNode *node)
 {
+  // REVIEW: Memory Leak - 7,144 bytes in 47 blocks are indirectly lost
   _right_property = new SGPropertyNode(*node);
 }
 

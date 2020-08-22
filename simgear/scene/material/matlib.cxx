@@ -97,6 +97,7 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
 		}
 
 		// Read list of areas
+        // REVIEW: Memory Leak - 10,240 (1,440 direct, 8,800 indirect) bytes in 60 blocks are definitely lost
 		AreaList* arealist = new AreaList;
 
 		const simgear::PropertyList areas = node->getChildren("area");

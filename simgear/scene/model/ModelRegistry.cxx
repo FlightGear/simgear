@@ -545,6 +545,8 @@ ModelRegistry::readImage(const string& fileName,
         }
     }
 
+    // REVIEW: Memory Leak - 262,144 bytes in 1 blocks are indirectly lost
+    // The leak occurs with OSG, but may be related to opt being a raw pointer
     res = registry->readImageImplementation(absFileName, opt);
 
     if (!res.success()) {

@@ -189,7 +189,9 @@ class HTTPDirectory
         {
         }
 
-		    ChildInfo(const ChildInfo& other) = default;
+        // REVIEW: Memory Leak - 93,275 bytes in 2,275 blocks are indirectly lost
+        // Default copy-ctor is inappropriate when using dynamic memory allocation
+        ChildInfo(const ChildInfo& other) = default;
 
         void setSize(const std::string & sizeData)
         {

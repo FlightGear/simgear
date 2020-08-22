@@ -190,9 +190,8 @@ class HTTPDirectory
         {
         }
 
-        // REVIEW: Memory Leak - 93,275 bytes in 2,275 blocks are indirectly lost
-        // Default copy-ctor is inappropriate when using dynamic memory allocation
         ChildInfo(const ChildInfo& other) = default;
+        ChildInfo& operator=(const ChildInfo& other) = default;
 
         void setSize(const std::string & sizeData)
         {
@@ -586,7 +585,7 @@ private:
             // emplace_back is triggering an allocation which is leading to a leak
             // Implies that ci is lacking a proper copy-ctor/assignment-op
             children.emplace_back(ci);
-			      children.back().path = absolutePath() / tokens[1];
+            children.back().path = absolutePath() / tokens[1];
             if (tokens.size() > 3) {
                 children.back().setSize(tokens[3]);
             }

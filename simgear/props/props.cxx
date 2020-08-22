@@ -2421,6 +2421,7 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
   }
   listener->register_property(this);
   if (initial)
+    // REVIEW: Memory Leak - 24,928 bytes in 164 blocks are indirectly lost
     listener->valueChanged(this);
 }
 

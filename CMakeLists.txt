@@ -246,11 +246,6 @@ else()
     message(STATUS "Using built-in expat code")
 endif(SYSTEM_EXPAT)
 
-check_include_file(inttypes.h HAVE_INTTYPES_H)
-check_include_file(sys/time.h HAVE_SYS_TIME_H)
-check_include_file(unistd.h HAVE_UNISTD_H)
-check_include_file(windows.h HAVE_WINDOWS_H)
-
 if(ENABLE_RTI)
     find_package(PkgConfig)
     if(PKG_CONFIG_FOUND)

@@ -110,11 +110,6 @@ else()
 		endforeach()
 
         add_library(SimGearScene STATIC ${sceneSources})
-
-        if(HAVE_INTTYPES_H)
-            # ShivaVG needs inttypes.h
-            target_compile_definitions(SimGearScene PRIVATE HAVE_INTTYPES_H)
-        endif()
     endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
 
@@ -160,6 +155,11 @@ if(NOT SIMGEAR_HEADLESS)
         SimGearCore
         ${OPENSCENEGRAPH_LIBRARIES}
     )
+
+    if(HAVE_INTTYPES_H)
+        # ShivaVG needs inttypes.h
+        target_compile_definitions(SimGearScene PRIVATE HAVE_INTTYPES_H)
+    endif()
 
     target_link_libraries(SimGearScene PRIVATE
         ZLIB::ZLIB

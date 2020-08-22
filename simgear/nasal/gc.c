@@ -302,6 +302,7 @@ static void newBlock(struct naPool* p, int need)
     if(need < MIN_BLOCK_SIZE) need = MIN_BLOCK_SIZE;
 
     newb = naAlloc(sizeof(struct Block));
+    // REVIEW: Memory Leak - 113,376 bytes in 1 blocks are still reachable
     newb->block = naAlloc(need * p->elemsz);
     newb->size = need;
     newb->next = p->blocks;

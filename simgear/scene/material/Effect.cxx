@@ -1101,6 +1101,9 @@ struct UniformBuilder :public PassAttributeBuilder
                 uniform = colorMode[val];
             }
         }
+
+        // REVIEW: Memory Leak - 144,400 bytes in 38 blocks are indirectly lost
+        // Leak occurs within OSG, likely caused by passing a raw pointer
         pass->addUniform(uniform.get());
         if (positionedProp && positionedProp->getBoolValue() && uniformType == Uniform::FLOAT_VEC4) {
             osg::Vec4 offset;

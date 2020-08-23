@@ -17,6 +17,7 @@ void naTempSave(naContext c, naRef r)
     if(c->ntemps >= c->tempsz) {
         struct naObj** newtemps;
         c->tempsz *= 2;
+        // REVIEW: Memory Leak - 1,024 bytes in 1 blocks are still reachable
         newtemps = naAlloc(c->tempsz * sizeof(struct naObj*));
         for(i=0; i<c->ntemps; i++)
             newtemps[i] = c->temps[i];

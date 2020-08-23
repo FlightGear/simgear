@@ -30,6 +30,7 @@ static void setlen(struct naStr* s, int sz)
     if(sz > MAX_STR_EMBLEN) {
         s->emblen = -1;
         s->data.ref.len = sz;
+        // REVIEW: Memory Leak - 3,953 bytes in 184 blocks are still reachable
         s->data.ref.ptr = naAlloc(sz+1);
     } else {
         s->emblen = sz;

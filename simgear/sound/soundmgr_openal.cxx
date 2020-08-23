@@ -198,12 +198,14 @@ void SGSoundMgr::init()
     }
 
     if ((!devname)||(testForError(device, "Audio device not available, trying default.")) ) {
+        // REVIEW: Memory Leak - 26 bytes in 1 blocks are still reachable
         device = alcOpenDevice(nullptr);
         if (testForError(device, "Default audio device not available.") ) {
            return;
         }
     }
 
+    // REVIEW: Memory Leak - 64 bytes in 1 blocks are still reachable
     ALCcontext *context = alcCreateContext(device, nullptr);
     testForALCError("context creation.");
     if ( testForError(context, "Unable to create a valid context.") ) {
@@ -838,6 +840,7 @@ vector<std::string> SGSoundMgr::get_available_devices()
     const ALCchar *s;
 
     if (alcIsExtensionPresent(nullptr, "ALC_enumerate_all_EXT") == AL_TRUE) {
+        // REVIEW: Memory Leak - 4,136 bytes in 1 blocks are still reachable
         s = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
     } else {
         s = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);

@@ -217,6 +217,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void ODGauge::allocRT(osg::NodeCallback* camera_cull_callback)
   {
+    // REVIEW: Memory Leak - 2,712 bytes in 3 blocks are indirectly lost
     camera = new osg::Camera;
     camera->setDataVariance(osg::Object::DYNAMIC);
     camera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
@@ -238,13 +239,16 @@ namespace canvas
     stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
     stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
     stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+    // REVIEW: Memory Leak - 168 bytes in 3 blocks are indirectly lost
     stateSet->setAttributeAndModes(
       new osg::PolygonMode( osg::PolygonMode::FRONT_AND_BACK,
                             osg::PolygonMode::FILL ),
       osg::StateAttribute::ON );
+    // REVIEW: Memory Leak - 3,572 (8 direct, 3,564 indirect) bytes in 1 blocks are definitely lost
     stateSet->setAttributeAndModes(
       new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.001f),
       osg::StateAttribute::ON );
+    // REVIEW: Memory Leak - 384 bytes in 3 blocks are indirectly lost
     stateSet->setAttribute(new osg::ShadeModel(osg::ShadeModel::FLAT));
 
     if( !texture )
@@ -373,6 +377,7 @@ namespace canvas
   {
     assert( camera );
 
+    // REVIEW: Memory Leak - 3,572 (136 direct, 3,436 indirect) bytes in 1 blocks are definitely lost
     camera->getOrCreateStateSet()
       ->setAttributeAndModes
       (

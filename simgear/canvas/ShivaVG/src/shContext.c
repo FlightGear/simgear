@@ -39,6 +39,7 @@ VG_API_CALL VGboolean vgCreateContextSH(VGint width, VGint height)
   if (g_context) return VG_TRUE;
   
   /* create new context */
+  // REVIEW: Memory Leak - 1,624 bytes in 1 blocks are still reachable
   SH_NEWOBJ(VGContext, g_context);
   if (!g_context) return VG_FALSE;
   

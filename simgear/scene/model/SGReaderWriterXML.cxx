@@ -594,6 +594,7 @@ sgLoad3DModel_internal(const SGPath& path,
         // clone all structural nodes here we need that extra
         // reference to the original object
         SGDatabaseReference* databaseReference;
+        // REVIEW: Memory Leak - 4,352 bytes in 272 blocks are definitely lost
         databaseReference = new SGDatabaseReference(modelResult.getNode());
         model->addObserver(databaseReference);
 

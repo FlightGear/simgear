@@ -32,6 +32,10 @@ endif(ENABLE_RTI)
 # Alternative terrain engine based on pagedLOD
 
 set(ENABLE_GDAL @ENABLE_GDAL@)
+if (ENABLE_GDAL)
+  find_dependency(GDAL)
+endif()
+
 set(ENABLE_OPENMP @ENABLE_OPENMP@)
 
 include("${CMAKE_CURRENT_LIST_DIR}/SimGearTargets.cmake")

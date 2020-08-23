@@ -168,7 +168,9 @@ if(NOT SIMGEAR_HEADLESS)
         ${JPEG_LIBRARY})
 
     if(ENABLE_GDAL)
-        target_link_libraries(SimGearScene PRIVATE GDAL::GDAL)
+        # FIXME: should be RIVATE, but we leak GDAL headers
+        # in our own headers :(
+        target_link_libraries(SimGearScene PUBLIC GDAL::GDAL)
     endif()
 
     # only actually needed by canvas/KeyboardEvent.cxx

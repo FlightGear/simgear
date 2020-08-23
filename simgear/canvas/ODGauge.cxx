@@ -259,6 +259,7 @@ namespace canvas
       // and dynamic mipmap generation doesn't work.
       osg::Image* image = new osg::Image;
       image->allocateImage(_size_x, _size_y, 1, GL_RGBA, GL_UNSIGNED_BYTE);
+      // REVIEW: Memory Leak - 1,176 bytes in 3 blocks are indirectly lost
       texture = new osg::Texture2D;
       texture->setResizeNonPowerOfTwoHint(false);
       texture->setImage(image);
@@ -339,6 +340,7 @@ namespace canvas
 
     if( _flags & USE_STENCIL )
     {
+      // REVIEW: Memory Leak - 264 bytes in 3 blocks are indirectly lost
       camera->attach( osg::Camera::PACKED_DEPTH_STENCIL_BUFFER,
                        GL_DEPTH_STENCIL_EXT );
       mask |= GL_STENCIL_BUFFER_BIT;

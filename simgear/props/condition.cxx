@@ -235,6 +235,7 @@ SGAndCondition::test () const
 void
 SGAndCondition::addCondition (SGCondition * condition)
 {
+  // REVIEW: Memory Leak - 632 bytes in 79 blocks are indirectly lost
   _conditions.push_back(condition);
 }
 
@@ -535,6 +536,7 @@ readComparison( SGPropertyNode *prop_root,
                 SGComparisonCondition::Type type,
 		bool reverse)
 {
+  // REVIEW: Memory Leak - 2,880 bytes in 40 blocks are indirectly lost
   SGComparisonCondition * condition = new SGComparisonCondition(type, reverse);
   if (node->nChildren() < 2 || node->nChildren() > 3 ) {
     throw sg_exception("condition: comparison without two or three children");

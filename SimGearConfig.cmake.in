@@ -10,11 +10,15 @@ set(SIMGEAR_HEADLESS @SIMGEAR_HEADLESS@)
 set(SIMGEAR_SOUND @ENABLE_SOUND@)
 set(USE_AEONWAVE @USE_AEONWAVE@)
 set(ENABLE_ASAN @ENABLE_ASAN@)
+set(SIMGEAR_SHARED @SIMGEAR_SHARED@)
 
-# OpenAL isn't a public dependency, so maybe not needed
-#if (SIMGEAR_SOUND)
-#  find_dependency(OpenAL)
-#endif()
+if (NOT SIMGEAR_SHARED AND SIMGEAR_SOUND)
+  if (USE_AEONWAVE)
+      find_dependency(AAX)
+  else()
+      find_dependency(OpenAL)
+  endif()
+endif()
 
 # SSE/SSE2 support
 
@@ -35,7 +39,5 @@ set(ENABLE_GDAL @ENABLE_GDAL@)
 if (ENABLE_GDAL)
   find_dependency(GDAL)
 endif()
-
-set(ENABLE_OPENMP @ENABLE_OPENMP@)
 
 include("${CMAKE_CURRENT_LIST_DIR}/SimGearTargets.cmake")

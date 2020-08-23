@@ -185,6 +185,9 @@ gzfilebuf::setcompressionstrategy( int comp_strategy )
 
 z_off_t
 gzfilebuf::approxOffset() {
+    #ifdef __OpenBSD__
+    z_off_t res = 0;
+    #else
     z_off_t res = gzoffset(file);
 
     if (res == -1) {
@@ -201,7 +204,7 @@ gzfilebuf::approxOffset() {
         SG_LOG( SG_GENERAL, SG_ALERT, errMsg );
         throw sg_io_exception(errMsg);
     }
-
+    #endif
     return res;
 }
 

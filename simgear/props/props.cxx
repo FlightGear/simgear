@@ -330,6 +330,7 @@ static char *
 copy_string (const char * s)
 {
   size_t slen = strlen(s);
+  // REVIEW: Memory Leak - 1,963 bytes in 47 blocks are indirectly lost
   char * copy = new char[slen + 1];
 
   // the source string length is known so no need to check for '\0'
@@ -432,6 +433,7 @@ SGPropertyNode::getChildImpl (Itr begin, Itr end, int index, bool create)
     if (node) {
       return node;
     } else if (create) {
+      // REVIEW: Memory Leak - 2,028 (1,976 direct, 52 indirect) bytes in 13 blocks are definitely lost
       node = new SGPropertyNode(begin, end, index, this);
       _children.push_back(node);
       fireChildAdded(node);
@@ -960,6 +962,7 @@ SGPropertyNode::SGPropertyNode( const std::string& name,
     _type(props::NONE),
     _tied(false),
     _attr(READ|WRITE),
+    // REVIEW: Memory Leak - 662 bytes in 32 blocks are indirectly lost
     _listeners(0)
 {
   _local_val.string_val = 0;
@@ -1083,6 +1086,7 @@ SGPropertyNode::addChild(const char * name, int min_index, bool append)
           : first_unused_index(name, _children, min_index);
 
   SGPropertyNode_ptr node;
+  // REVIEW: Memory Leak - 152 bytes in 1 blocks are definitely lost
   node = new SGPropertyNode(name, name + strlen(name), pos, this);
   _children.push_back(node);
   fireChildAdded(node);
@@ -2405,6 +2409,7 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
                                    bool initial)
 {
   if (_listeners == 0)
+    // REVIEW: Memory Leak - 32 bytes in 1 blocks are indirectly lost
     _listeners = new SGPropertyNodeListeners;
 
   /* If there's a nullptr entry (a listener that was unregistered), we
@@ -2415,6 +2420,7 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
         (SGPropertyChangeListener*) nullptr
         );
   if (it == _listeners->_items.end()) {
+    // REVIEW: Memory Leak - 8 bytes in 1 blocks are indirectly lost
     _listeners->_items.push_back(listener);
   }
   else {
@@ -2645,6 +2651,7 @@ SGPropertyChangeListener::childRemoved (SGPropertyNode * parent,
 void
 SGPropertyChangeListener::register_property (SGPropertyNode * node)
 {
+  // REVIEW: Memory Leak - 1,544 bytes in 193 blocks are indirectly lost
   _properties.push_back(node);
 }
 

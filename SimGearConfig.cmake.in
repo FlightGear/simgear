@@ -16,7 +16,7 @@ if (NOT SIMGEAR_SHARED AND SIMGEAR_SOUND)
   if (USE_AEONWAVE)
       find_dependency(AAX)
   else()
-      find_dependency(OpenAL)
+      #find_dependency(OpenAL)
   endif()
 endif()
 

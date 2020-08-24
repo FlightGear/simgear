@@ -581,9 +581,6 @@ private:
             if (typeData == "d") ci.type = ChildInfo::DirectoryType;
             if (typeData == "t") ci.type = ChildInfo::TarballType;
 
-            // REVIEW: Memory Leak - 447,264 bytes in 39 blocks are indirectly lost
-            // emplace_back is triggering an allocation which is leading to a leak
-            // Implies that ci is lacking a proper copy-ctor/assignment-op
             children.emplace_back(ci);
             children.back().path = absolutePath() / tokens[1];
             if (tokens.size() > 3) {

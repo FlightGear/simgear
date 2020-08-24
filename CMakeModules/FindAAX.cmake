@@ -3,7 +3,7 @@
 #
 # AAX_FOUND - if false, do not try to link to AAX
 # AAX_INCLUDE_DIR - where to find the headers
-# AAX_LIBRARIES - Link these to use AAX
+# AAX_LIBRARY - Link these to use AAX
 #
 # Copyright (C) 2016-2018 by Erik Hofman.
 # Copyright (C) 2016-2018 by Adalin B.V.
@@ -59,7 +59,7 @@ else()
 
   if (AAX_FOUND)
     if (NOT Udns_FIND_QUIETLY)
-      message(STATUS "Found AeonWave: ${AAX_LIBRARIES}")
+      message(STATUS "Found AeonWave: ${AAX_LIBRARY}")
     endif ()
   else ()
     if (Udns_FIND_REQUIRED)
@@ -67,8 +67,8 @@ else()
     endif ()
   endif ()
 
-  # show the AAX_INCLUDE_DIRS and AAX_LIBRARIES variables only in the advanced view
-  mark_as_advanced(AAX_INCLUDE_DIRS AAX_LIBRARIES)
+  # show the AAX_INCLUDE_DIR and AAX_LIBRARY variables only in the advanced view
+  mark_as_advanced(AAX_INCLUDE_DIR AAX_LIBRARY)
 
 endif()
 

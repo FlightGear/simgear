@@ -163,9 +163,18 @@ if(NOT SIMGEAR_HEADLESS)
 
     target_link_libraries(SimGearScene PRIVATE
         ZLIB::ZLIB
-        ${OPENAL_LIBRARY} ${AAX_LIBRARY}
         ${OPENGL_LIBRARY}
         ${JPEG_LIBRARY})
+
+    # ToDo: define an ALIAS target for the sound backend, to get
+    # rid of this logic here
+    if (ENABLE_SOUND)
+        if (USE_AEONWAVE)
+            target_link_libraries(SimGearScene PRIVATE ${AAX_LIBRARY})
+        else()
+            target_link_libraries(SimGearScene PRIVATE ${OPENAL_LIBRARY} )
+        endif()
+    endif()
 
     if(ENABLE_GDAL)
         # FIXME: should be RIVATE, but we leak GDAL headers

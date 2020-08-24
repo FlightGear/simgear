@@ -12,14 +12,6 @@ set(USE_AEONWAVE @USE_AEONWAVE@)
 set(ENABLE_ASAN @ENABLE_ASAN@)
 set(SIMGEAR_SHARED @SIMGEAR_SHARED@)
 
-if (NOT SIMGEAR_SHARED AND SIMGEAR_SOUND)
-  if (USE_AEONWAVE)
-      find_dependency(AAX)
-  else()
-      #find_dependency(OpenAL)
-  endif()
-endif()
-
 # SSE/SSE2 support
 
 set(ENABLE_SIMD @ENABLE_SIMD@)

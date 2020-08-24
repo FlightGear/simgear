@@ -163,7 +163,7 @@ if(NOT SIMGEAR_HEADLESS)
 
     target_link_libraries(SimGearScene PRIVATE
         ZLIB::ZLIB
-        ${OPENAL_LIBRARY}
+        ${OPENAL_LIBRARY} ${AAX_LIBRARY}
         ${OPENGL_LIBRARY}
         ${JPEG_LIBRARY})
 

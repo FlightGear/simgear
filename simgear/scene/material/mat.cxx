@@ -96,7 +96,7 @@ void SGMaterial::_internal_state::add_texture(const std::string &t, int i)
 SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
                         const SGPropertyNode *props,
                         SGPropertyNode *prop_root,
-                        AreaList *a,
+                        std::shared_ptr<AreaList> a,
 						SGSharedPtr<const SGCondition> c)
 {
     init();
@@ -109,7 +109,7 @@ SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
 SGMaterial::SGMaterial( const osgDB::Options* options,
                         const SGPropertyNode *props,
                         SGPropertyNode *prop_root,
-                        AreaList *a,
+                        std::shared_ptr<AreaList> a,
                         SGSharedPtr<const SGCondition> c)
 {
     osg::ref_ptr<SGReaderWriterOptions> opt;
@@ -412,7 +412,6 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     if (props->hasChild("parameters")) {
         parameters = props->getChild("parameters");
     } else {
-        // REVIEW: Memory Leak - 61,560 bytes in 405 blocks are definitely lost
         parameters = new SGPropertyNode();
     }
 }

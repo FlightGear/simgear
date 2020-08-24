@@ -31,6 +31,7 @@
 #include <string>      // Standard C++ string library
 #include <vector>
 #include <map>
+#include <memory>
 #include <mutex>
 
 #include "Effect.hxx"
@@ -96,15 +97,15 @@ public:
   SGMaterial(const osgDB::Options*,
              const SGPropertyNode *props,
              SGPropertyNode *prop_root,
-             AreaList *a,
-			 SGSharedPtr<const SGCondition> c);
+             std::shared_ptr<AreaList> a,
+             SGSharedPtr<const SGCondition> c);
 
 
   SGMaterial(const simgear::SGReaderWriterOptions*,
              const SGPropertyNode *props,
              SGPropertyNode *prop_root,
-             AreaList *a,
-			 SGSharedPtr<const SGCondition> c);
+             std::shared_ptr<AreaList> a,
+             SGSharedPtr<const SGCondition> c);
 
   /**
    * Destructor.
@@ -512,10 +513,10 @@ private:
   SGSharedPtr<const SGCondition> condition;
 
   // List of geographical rectangles for this material
-  AreaList* areas;
+  std::shared_ptr<AreaList> areas;
 
   // Parameters from the materials file
-  const SGPropertyNode* parameters;
+  SGConstPropertyNode_ptr parameters;
 
   // per-material lock for entrypoints called from multiple threads
   std::mutex _lock;

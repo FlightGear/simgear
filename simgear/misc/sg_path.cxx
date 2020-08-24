@@ -280,10 +280,6 @@ void SGPath::append( const string& p ) {
         path = p;
     } else {
     if ( p[0] != sgDirPathSep ) {
-        // REVIEW: Memory Leak - 212,955 bytes in 2,277 blocks are indirectly lost
-        // operator+= is triggering a leak within Qt5Qml.
-        // basic_string is doing _M_allocate & _M_mutate so it seems to be type conversion related
-        // This is being called via HTTPRepository:586... children.back().path = absolutePath() / tokens[1];
         path += sgDirPathSep;
     }
         path += p;

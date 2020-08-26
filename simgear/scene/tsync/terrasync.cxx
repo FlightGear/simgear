@@ -46,6 +46,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <algorithm>
 
 #include <simgear/version.h>
 

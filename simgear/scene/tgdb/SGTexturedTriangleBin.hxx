@@ -430,13 +430,12 @@ public:
       return 0;
 
     // FIXME: do not include all values here ...
-    osg::Vec3Array* vertices = new osg::Vec3Array;
-    osg::Vec3Array* normals = new osg::Vec3Array;
-    osg::Vec2Array* priTexCoords = new osg::Vec2Array;
-    // REVIEW: Memory Leak - 42,560 bytes in 280 blocks are definitely lost
-    osg::Vec2Array* secTexCoords = new osg::Vec2Array;
+    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec2Array> priTexCoords = new osg::Vec2Array;
+    osg::ref_ptr<osg::Vec2Array> secTexCoords = new osg::Vec2Array;
 
-    osg::Vec4Array* colors = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
     colors->push_back(osg::Vec4(1, 1, 1, 1));
 
     osg::Geometry* geometry = new osg::Geometry;
@@ -446,18 +445,18 @@ public:
     }
     
     geometry->setDataVariance(osg::Object::STATIC);
-    geometry->setVertexArray(vertices);
+    geometry->setVertexArray(vertices.get());
     if (include_norms) { 
-        geometry->setNormalArray(normals);
+        geometry->setNormalArray(normals.get());
         geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
     }
-    geometry->setColorArray(colors);
+    geometry->setColorArray(colors.get());
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     if ( has_sec_tcs ) {
-        geometry->setTexCoordArray(0, priTexCoords);
-        geometry->setTexCoordArray(1, secTexCoords);
+        geometry->setTexCoordArray(0, priTexCoords.get());
+        geometry->setTexCoordArray(1, secTexCoords.get());
     } else {
-        geometry->setTexCoordArray(0, priTexCoords);
+        geometry->setTexCoordArray(0, priTexCoords.get());
     }        
 
     const unsigned invalid = ~unsigned(0);

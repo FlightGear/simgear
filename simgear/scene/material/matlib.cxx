@@ -111,7 +111,6 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
 					std::min<float>(y1, y2),
 					fabs(x2 - x1),
 					fabs(y2 - y1));
-            // REVIEW: Memory Leak - 8,800 bytes in 57 blocks are indirectly lost
 			arealist->push_back(rect);
 			SG_LOG( SG_TERRAIN, SG_DEBUG, " Area ("
 					<< rect.x() << ","

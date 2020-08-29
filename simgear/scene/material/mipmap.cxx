@@ -82,13 +82,13 @@ void _writeColor(GLenum pixelFormat, T* data, float scale, osg::Vec4 value)
     switch(pixelFormat)
     {
         case(GL_DEPTH_COMPONENT):   //intentionally fall through and execute the code for GL_LUMINANCE
-        case(GL_LUMINANCE):         { *data++ = value.r()*scale; break; }
-        case(GL_ALPHA):             { *data++ = value.a()*scale; break; }
-        case(GL_LUMINANCE_ALPHA):   { *data++ = value.r()*scale; *data++ = value.a()*scale; break; }
-        case(GL_RGB):               { *data++ = value.r()*scale; *data++ = value.g()*scale; *data++ = value.b()*scale; break; }
-        case(GL_RGBA):              { *data++ = value.r()*scale; *data++ = value.g()*scale; *data++ = value.b()*scale; *data++ = value.a()*scale; break; }
-        case(GL_BGR):               { *data++ = value.b()*scale; *data++ = value.g()*scale; *data++ = value.r()*scale; break; }
-        case(GL_BGRA):              { *data++ = value.b()*scale; *data++ = value.g()*scale; *data++ = value.r()*scale; *data++ = value.a()*scale; break; }
+        case(GL_LUMINANCE):         { *data = value.r()*scale; break; }
+        case(GL_ALPHA):             { *data = value.a()*scale; break; }
+        case(GL_LUMINANCE_ALPHA):   { *data++ = value.r()*scale; *data = value.a()*scale; break; }
+        case(GL_RGB):               { *data++ = value.r()*scale; *data++ = value.g()*scale; *data = value.b()*scale; break; }
+        case(GL_RGBA):              { *data++ = value.r()*scale; *data++ = value.g()*scale; *data++ = value.b()*scale; *data = value.a()*scale; break; }
+        case(GL_BGR):               { *data++ = value.b()*scale; *data++ = value.g()*scale; *data = value.r()*scale; break; }
+        case(GL_BGRA):              { *data++ = value.b()*scale; *data++ = value.g()*scale; *data++ = value.r()*scale; *data = value.a()*scale; break; }
     }
 }
 
@@ -265,7 +265,13 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
 {
     bool computeMipmap = false;
     unsigned int nbComponents = osg::Image::computeNumComponents( image->getPixelFormat() );
-    if ( std::get<0>(attrs) != AUTOMATIC &&
+    int s = image->s();
+    int t = image->t();
+    if ( (s & (s - 1)) || (t & (t - 1)) ) // power of two test
+    {
+        SG_LOG(SG_IO, SG_DEV_ALERT, "mipmapping: texture size not a power-of-two: " + image->getFileName());
+    }
+    else if ( std::get<0>(attrs) != AUTOMATIC &&
         ( std::get<1>(attrs) != AUTOMATIC || nbComponents < 2 ) &&
         ( std::get<2>(attrs) != AUTOMATIC || nbComponents < 3 ) &&
         ( std::get<3>(attrs) != AUTOMATIC || nbComponents < 4 ) )
@@ -283,9 +289,7 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
     if ( computeMipmap )
     {
         osg::ref_ptr<osg::Image> mipmaps = new osg::Image();
-        int s = image->s(),
-            t = image->t(),
-            r = image->r();
+        int r = image->r();
         int nb = osg::Image::computeNumberOfMipmapLevels(s, t, r);
         osg::Image::MipmapDataType mipmapOffsets;
         unsigned int offset = 0;

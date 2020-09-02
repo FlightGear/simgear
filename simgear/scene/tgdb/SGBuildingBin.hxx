@@ -145,20 +145,19 @@ public:
     };
 
 private:
+    const SGSharedPtr<SGMaterial> _material;
 
-  const SGMaterial *material;
+    std::string _materialName;
+    std::string _textureName;
+    std::string _lightMapName;
 
-  std::string* material_name;
-  std::string* texture;
-  std::string* lightMap;
-
-  // Visibility range for buildings
-  float buildingRange;
+    // Visibility range for buildings
+    float buildingRange;
 
 
-  // Information for an instance of a building - position and orientation
-  typedef std::vector<BuildingInstance> BuildingInstanceList;
-  BuildingInstanceList buildingLocations;
+    // Information for an instance of a building - position and orientation
+    typedef std::vector<BuildingInstance> BuildingInstanceList;
+    BuildingInstanceList buildingLocations;
 
 public:
 
@@ -187,7 +186,7 @@ public:
 
   bool checkMinDist (SGVec3f p, float radius);
 
-  std::string* getMaterialName() { return material_name; }
+  const std::string& getMaterialName() const { return _materialName; }
 
   BuildingType getBuildingType(float roll);
   float getBuildingMaxRadius(BuildingType);

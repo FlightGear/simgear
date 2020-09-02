@@ -497,14 +497,20 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
   };
 
   // Set up the building set based on the material definitions
-  SGBuildingBin::SGBuildingBin(const SGMaterial *mat, bool useVBOs) {
-    material_name = new std::string(mat->get_names()[0]);
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Building material " << material_name);
-    material = mat;
-    texture = new std::string(mat->get_building_texture());
-    lightMap = new std::string(mat->get_building_lightmap());
-    buildingRange = mat->get_building_range();
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Building texture " << texture);
+  SGBuildingBin::SGBuildingBin(const SGMaterial* mat, bool useVBOs) : _material(const_cast<SGMaterial*>(mat))
+  {
+      const auto& materialNames = mat->get_names();
+      if (materialNames.empty()) {
+          SG_LOG(SG_TERRAIN, SG_DEV_ALERT, "SGBuildingBin: material has zero names defined");
+      } else {
+          _materialName = materialNames.front();
+          SG_LOG(SG_TERRAIN, SG_DEBUG, "Building material " << _materialName);
+      }
+
+      _textureName = mat->get_building_texture();
+      _lightMapName = mat->get_building_lightmap();
+      buildingRange = mat->get_building_range();
+      SG_LOG(SG_TERRAIN, SG_DEBUG, "Building texture " << _textureName);
   }
 
   SGBuildingBin::~SGBuildingBin() {
@@ -652,15 +658,15 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
     if (buildingtype == SGBuildingBin::SMALL) {
       // Small building
       // Maximum number of floors is 3, and maximum width/depth is 192m.
-      width = material->get_building_small_min_width() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_small_max_width() - material->get_building_small_min_width());
-      depth = material->get_building_small_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_small_max_depth() - material->get_building_small_min_depth());
-      floors = SGMisc<double>::round(material->get_building_small_min_floors() + mt_rand(&seed) * (material->get_building_small_max_floors() - material->get_building_small_min_floors()));
+      width = _material->get_building_small_min_width() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_small_max_width() - _material->get_building_small_min_width());
+      depth = _material->get_building_small_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_small_max_depth() - _material->get_building_small_min_depth());
+      floors = SGMisc<double>::round(_material->get_building_small_min_floors() + mt_rand(&seed) * (_material->get_building_small_max_floors() - _material->get_building_small_min_floors()));
       height = floors * (2.8 + mt_rand(&seed));
 
       // Small buildings are never deeper than they are wide.
       if (depth > width) { depth = width; }
 
-      pitch_height = (mt_rand(&seed) < material->get_building_small_pitch()) ? 3.0 : 0.0;
+      pitch_height = (mt_rand(&seed) < _material->get_building_small_pitch()) ? 3.0 : 0.0;
 
       if (pitch_height == 0.0) {
         roof_shape = 0;
@@ -671,18 +677,18 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       }
     } else if (buildingtype == SGBuildingBin::MEDIUM) {
       // MEDIUM BUILDING
-      width = material->get_building_medium_min_width() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_medium_max_width() - material->get_building_medium_min_width());
-      depth = material->get_building_medium_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (material->get_building_medium_max_depth() - material->get_building_medium_min_depth());
-      floors = SGMisc<double>::round(material->get_building_medium_min_floors() + mt_rand(&seed) * (material->get_building_medium_max_floors() - material->get_building_medium_min_floors()));
+      width = _material->get_building_medium_min_width() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_medium_max_width() - _material->get_building_medium_min_width());
+      depth = _material->get_building_medium_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_medium_max_depth() - _material->get_building_medium_min_depth());
+      floors = SGMisc<double>::round(_material->get_building_medium_min_floors() + mt_rand(&seed) * (_material->get_building_medium_max_floors() - _material->get_building_medium_min_floors()));
       height = floors * (2.8 + mt_rand(&seed));
 
-      while ((height > width) && (floors > material->get_building_medium_min_floors())) {
-        // Ensure that medium buildings aren't taller than they are wide
-        floors--;
-        height = floors * (2.8 + mt_rand(&seed));
+      while ((height > width) && (floors > _material->get_building_medium_min_floors())) {
+          // Ensure that medium buildings aren't taller than they are wide
+          floors--;
+          height = floors * (2.8 + mt_rand(&seed));
       }
 
-      pitch_height = (mt_rand(&seed) < material->get_building_medium_pitch()) ? 3.0 : 0.0;
+      pitch_height = (mt_rand(&seed) < _material->get_building_medium_pitch()) ? 3.0 : 0.0;
 
       if (pitch_height == 0.0) {
         roof_shape = 0;
@@ -693,11 +699,11 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       }
     } else {
       // LARGE BUILDING
-      width = material->get_building_large_min_width() + mt_rand(&seed) * (material->get_building_large_max_width() - material->get_building_large_min_width());
-      depth = material->get_building_large_min_depth() + mt_rand(&seed) * (material->get_building_large_max_depth() - material->get_building_large_min_depth());
-      floors = SGMisc<double>::round(material->get_building_large_min_floors() + mt_rand(&seed) * (material->get_building_large_max_floors() - material->get_building_large_min_floors()));
+      width = _material->get_building_large_min_width() + mt_rand(&seed) * (_material->get_building_large_max_width() - _material->get_building_large_min_width());
+      depth = _material->get_building_large_min_depth() + mt_rand(&seed) * (_material->get_building_large_max_depth() - _material->get_building_large_min_depth());
+      floors = SGMisc<double>::round(_material->get_building_large_min_floors() + mt_rand(&seed) * (_material->get_building_large_max_floors() - _material->get_building_large_min_floors()));
       height = floors * (2.8 + mt_rand(&seed));
-      pitch_height = (mt_rand(&seed) < material->get_building_large_pitch()) ? 3.0 : 0.0;
+      pitch_height = (mt_rand(&seed) < _material->get_building_large_pitch()) ? 3.0 : 0.0;
 
       if (pitch_height == 0.0) {
         roof_shape = 0;
@@ -726,36 +732,35 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
   }
 
   SGBuildingBin::BuildingType SGBuildingBin::getBuildingType(float roll) {
+      if (roll < _material->get_building_small_fraction()) {
+          return SGBuildingBin::SMALL;
+      }
 
-    if (roll < material->get_building_small_fraction()) {
-      return SGBuildingBin::SMALL;
-    }
-
-    if (roll < (material->get_building_small_fraction() + material->get_building_medium_fraction())) {
-      return SGBuildingBin::MEDIUM;
-    }
+      if (roll < (_material->get_building_small_fraction() + _material->get_building_medium_fraction())) {
+          return SGBuildingBin::MEDIUM;
+      }
 
     return SGBuildingBin::LARGE;
   }
 
   float SGBuildingBin::getBuildingMaxRadius(BuildingType type) {
-    if (type == SGBuildingBin::SMALL) return material->get_building_small_max_width();
-    if (type == SGBuildingBin::MEDIUM) return material->get_building_medium_max_width();
-    if (type == SGBuildingBin::LARGE) return material->get_building_large_max_width();
-    return 0;
+      if (type == SGBuildingBin::SMALL) return _material->get_building_small_max_width();
+      if (type == SGBuildingBin::MEDIUM) return _material->get_building_medium_max_width();
+      if (type == SGBuildingBin::LARGE) return _material->get_building_large_max_width();
+      return 0;
   }
 
   float SGBuildingBin::getBuildingMaxDepth(BuildingType type) {
-    if (type == SGBuildingBin::SMALL) return material->get_building_small_max_depth();
-    if (type == SGBuildingBin::MEDIUM) return material->get_building_medium_max_depth();
-    if (type == SGBuildingBin::LARGE) return material->get_building_large_max_depth();
-    return 0;
+      if (type == SGBuildingBin::SMALL) return _material->get_building_small_max_depth();
+      if (type == SGBuildingBin::MEDIUM) return _material->get_building_medium_max_depth();
+      if (type == SGBuildingBin::LARGE) return _material->get_building_large_max_depth();
+      return 0;
   }
 
   ref_ptr<Group> SGBuildingBin::createBuildingsGroup(Matrix transInv, const SGReaderWriterOptions* options)
   {
     ref_ptr<Effect> effect;
-    EffectMap::iterator iter = buildingEffectMap.find(*texture);
+    auto iter = buildingEffectMap.find(_textureName);
 
     if ((iter == buildingEffectMap.end())||
         (!iter->second.lock(effect)))
@@ -764,16 +769,14 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       makeChild(effectProp, "inherits-from")->setStringValue("Effects/building");
       SGPropertyNode* params = makeChild(effectProp, "parameters");
       // Main texture - n=0
-      params->getChild("texture", 0, true)->getChild("image", 0, true)
-          ->setStringValue(*texture);
+      params->getChild("texture", 0, true)->getChild("image", 0, true)->setStringValue(_textureName);
 
       // Light map - n=3
-      params->getChild("texture", 3, true)->getChild("image", 0, true)
-          ->setStringValue(*lightMap);
+      params->getChild("texture", 3, true)->getChild("image", 0, true)->setStringValue(_lightMapName);
 
       effect = makeEffect(effectProp, true, options);
       if (iter == buildingEffectMap.end())
-          buildingEffectMap.insert(EffectMap::value_type(*texture, effect));
+          buildingEffectMap.insert(EffectMap::value_type(_textureName, effect));
       else
           iter->second = effect; // update existing, but empty observer
     }

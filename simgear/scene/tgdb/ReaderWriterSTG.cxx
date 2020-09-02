@@ -221,29 +221,41 @@ struct ReaderWriterSTG::_ModelBin {
             if (signBuilder.getSignsGroup())
                 group->addChild(signBuilder.getSignsGroup());
 
-            if (_buildingList.size() > 0) {
+            if (!_buildingList.empty()) {
                 SGMaterialLibPtr matlib = _options->getMaterialLib();
                 bool useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
 
                 if (!matlib) {
                     SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get materials definition for buildings");
                 } else {
-                    for (std::list<_BuildingList>::iterator i = _buildingList.begin(); i != _buildingList.end(); ++i) {
+                    for (const auto& b : _buildingList) {
                         // Build buildings for each list of buildings
-                        SGGeod geodPos = SGGeod::fromDegM(i->_lon, i->_lat, 0.0);
-                        SGMaterial* mat = matlib->find(i->_material_name, geodPos);
-                        SGPath path = SGPath(i->_filename);
+                        SGGeod geodPos = SGGeod::fromDegM(b._lon, b._lat, 0.0);
+                        SGSharedPtr<SGMaterial> mat = matlib->find(b._material_name, geodPos);
+
+                        // trying to avoid crash on null material, see:
+                        // https://sentry.io/organizations/flightgear/issues/1867075869
+                        if (!mat) {
+                            SG_LOG(SG_TERRAIN, SG_ALERT, "Building specifies unknown material: " << b._material_name);
+                            continue;
+                        }
+
+                        const auto path = SGPath(b._filename);
                         SGBuildingBin* buildingBin = new SGBuildingBin(path, mat, useVBOs);
 
-                        SGBuildingBinList buildingBinList;
-                        buildingBinList.push_back(buildingBin);
+                        SGBuildingBinList bbList;
+                        bbList.push_back(buildingBin);
 
                         osg::MatrixTransform* matrixTransform;
-                        matrixTransform = new osg::MatrixTransform(makeZUpFrame(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev)));
+                        matrixTransform = new osg::MatrixTransform(makeZUpFrame(SGGeod::fromDegM(b._lon, b._lat, b._elev)));
                         matrixTransform->setName("rotateBuildings");
                         matrixTransform->setDataVariance(osg::Object::STATIC);
-                        matrixTransform->addChild(createRandomBuildings(buildingBinList, osg::Matrix::identity(), _options));
+                        matrixTransform->addChild(createRandomBuildings(bbList, osg::Matrix::identity(), _options));
                         group->addChild(matrixTransform);
+
+                        std::for_each(bbList.begin(), bbList.end(), [](SGBuildingBin* bb) {
+                            delete bb;
+                        });
                     }
                 }
             }

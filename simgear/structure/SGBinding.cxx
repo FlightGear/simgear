@@ -18,24 +18,16 @@
 #include <simgear/structure/exception.hxx>
 
 SGBinding::SGBinding()
-  : _command(0),
-    _arg(new SGPropertyNode),
-    _setting(0)
+    : _arg(new SGPropertyNode)
 {
 }
 
 SGBinding::SGBinding(const std::string& commandName)
-    : _command(0),
-    _arg(0),
-    _setting(0)
 {
     _command_name = commandName;
 }
 
 SGBinding::SGBinding(const SGPropertyNode* node, SGPropertyNode* root)
-  : _command(0),
-    _arg(0),
-    _setting(0)
 {
   read(node, root);
 }
@@ -43,8 +35,8 @@ SGBinding::SGBinding(const SGPropertyNode* node, SGPropertyNode* root)
 void
 SGBinding::clear()
 {
-    _command = NULL;
     _arg.clear();
+    _root.clear();
     _setting.clear();
 }
 
@@ -57,14 +49,12 @@ SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
 
   _command_name = node->getStringValue("command", "");
   if (_command_name.empty()) {
-    SG_LOG(SG_INPUT, SG_WARN, "No command supplied for binding.");
-    _command = 0;
+      SG_LOG(SG_INPUT, SG_DEV_ALERT, "No command supplied for binding.");
   }
 
   _arg = const_cast<SGPropertyNode*>(node);
   _root = const_cast<SGPropertyNode*>(root);
-  _setting = 0;
-
+  _setting.clear();
 }
 
 void
@@ -78,30 +68,29 @@ SGBinding::fire() const
 void
 SGBinding::innerFire () const
 {
-  if (_command == 0)
-    _command = SGCommandMgr::instance()->getCommand(_command_name);
-  if (_command == 0) {
-    SG_LOG(SG_INPUT, SG_WARN, "No command attached to binding:" << _command_name);
-  } else {
-      try {
-          if (!(*_command)(_arg, _root)) {
-                SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command "
-                       << _command_name);
-          }
-      } catch (sg_exception& e) {
+    auto cmd = SGCommandMgr::instance()->getCommand(_command_name);
+    if (!cmd) {
+        SG_LOG(SG_INPUT, SG_WARN, "No command found for binding:" << _command_name);
+        return;
+    }
+
+    try {
+        if (!(*cmd)(_arg, _root)) {
+            SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command " << _command_name);
+        }
+    } catch (sg_exception& e) {
         SG_LOG(SG_GENERAL, SG_ALERT, "command '" << _command_name << "' failed with exception\n"
-          << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
-      }
-  }
+                                                 << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
+    }
 }
 
 void
 SGBinding::fire (SGPropertyNode* params) const
 {
   if (test()) {
-    if (params != NULL) {
-      copyProperties(params, _arg);
-    }
+      if (params != nullptr) {
+          copyProperties(params, _arg);
+      }
 
     innerFire();
   }
@@ -122,8 +111,9 @@ SGBinding::fire (double setting) const
   if (test()) {
                                 // A value is automatically added to
                                 // the args
-    if (_setting == 0)          // save the setting node for efficiency
-      _setting = _arg->getChild("setting", 0, true);
+                                if (!_setting) { // save the setting node for efficiency
+                                    _setting = _arg->getChild("setting", 0, true);
+                                }
     _setting->setDoubleValue(setting);
     innerFire();
   }

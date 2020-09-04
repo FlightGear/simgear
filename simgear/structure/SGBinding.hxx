@@ -77,16 +77,6 @@ public:
    */
   const std::string &getCommandName () const { return _command_name; }
 
-
-  /**
-   * Get the command itself.
-   *
-   * @return The command associated with this binding, or 0 if none
-   * is present.
-   */
-  SGCommandMgr::Command* getCommand () const { return _command; }
-
-
   /**
    * Get the argument that will be passed to the command.
    *
@@ -140,7 +130,6 @@ private:
   SGBinding (const SGBinding &binding);
 
   std::string _command_name;
-  mutable SGCommandMgr::Command* _command;
   mutable SGPropertyNode_ptr _arg;
   mutable SGPropertyNode_ptr _setting;
   mutable SGPropertyNode_ptr _root;

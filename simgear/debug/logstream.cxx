@@ -139,8 +139,8 @@ public:
         logTimer.stamp();
     }
 
-    virtual void operator()(sgDebugClass c, sgDebugPriority p,
-        const char* file, int line, const std::string& message)
+    void operator()(sgDebugClass c, sgDebugPriority p,
+                    const char* file, int line, const std::string& message) override
     {
         if (!shouldLog(c, p)) return;
 
@@ -402,6 +402,13 @@ public:
     ~LogStreamPrivate()
     {
         removeCallbacks();
+
+        // house-keeping, avoid leak warnings if we exit before disabling
+        // startup logging
+        {
+            std::lock_guard<std::mutex> g(m_lock);
+            clearStartupEntriesLocked();
+        }
     }
 
     std::mutex m_lock;
@@ -448,8 +455,16 @@ public:
         {
             std::lock_guard<std::mutex> g(m_lock);
             m_startupLogging = on;
-            m_startupEntries.clear();
+            clearStartupEntriesLocked();
         }
+    }
+
+    void clearStartupEntriesLocked()
+    {
+        std::for_each(m_startupEntries.begin(), m_startupEntries.end(), [](const LogEntry& e) {
+            if (e.freeFilename) free(const_cast<char*>(e.file));
+        });
+        m_startupEntries.clear();
     }
 
     void run() override
@@ -474,8 +489,10 @@ public:
                 (*cb)(entry.debugClass, entry.debugPriority,
                     entry.file, entry.line, entry.message);
             }
-            
-            if (entry.freeFilename) {
+
+            // frrr the filename if required. For startup entries
+            // we wait and do this later
+            if (!m_startupLogging && entry.freeFilename) {
                 free(const_cast<char*>(entry.file));
             }
         } // of main thread loop
@@ -536,9 +553,9 @@ public:
         PauseThread pause(this);
         m_logPriority = p;
         m_logClass = c;
-                for (auto cb : m_consoleCallbacks) {
-	        cb->setLogLevels(c, p);
-		}
+        for (auto cb : m_consoleCallbacks) {
+            cb->setLogLevels(c, p);
+        }
     }
 
     bool would_log( sgDebugClass c, sgDebugPriority p ) const

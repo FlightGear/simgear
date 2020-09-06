@@ -448,10 +448,8 @@ bool SGTerraSync::WorkerThread::start()
     _stop = false;
     _state = TerrasyncThreadState(); // clean state
 
-    // not really an alert - but we want to (always) see this message, so user is
-    // aware we're downloading scenery (and using bandwidth).
-    SG_LOG(SG_TERRASYNC,SG_ALERT,
-           "Starting automatic scenery download/synchronization to '"<< _local_dir << "'.");
+    SG_LOG(SG_TERRASYNC, SG_MANDATORY_INFO,
+           "Starting automatic scenery download/synchronization to '" << _local_dir << "'.");
 
     SGThread::start();
     return true;

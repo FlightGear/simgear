@@ -1,3 +1,5 @@
+#pragma once
+
 /** \file debug_types.h
  *  Define the various logging classes and priorities
  */
@@ -52,16 +54,17 @@ typedef enum {
  * appended, or the priority Nasal reports to compiled code will change.
  */
 typedef enum {
-    SG_BULK = 1,       // For frequent messages
-    SG_DEBUG,          // Less frequent debug type messages
-    SG_INFO,           // Informatory messages
-    SG_WARN,           // Possible impending problem
-    SG_ALERT,          // Very possible impending problem
-    SG_POPUP,          // Severe enough to alert using a pop-up window
+    SG_BULK = 1, // For frequent messages
+    SG_DEBUG,    // Less frequent debug type messages
+    SG_INFO,     // Informatory messages
+    SG_WARN,     // Possible impending problem
+    SG_ALERT,    // Very possible impending problem
+    SG_POPUP,    // Severe enough to alert using a pop-up window
     // SG_EXIT,        // Problem (no core)
     // SG_ABORT        // Abandon ship (core)
 
-    SG_DEV_WARN,       // Warning for developers, translated to other priority
-    SG_DEV_ALERT       // Alert for developers, translated
-} sgDebugPriority;
+    SG_DEV_WARN,  // Warning for developers, translated to other priority
+    SG_DEV_ALERT, // Alert for developers, translated
 
+    SG_MANDATORY_INFO // information, but should always be shown
+} sgDebugPriority;

@@ -35,6 +35,7 @@
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGQueue.hxx>
 
+#include "LogCallback.hxx"
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
@@ -47,86 +48,9 @@
     #include <io.h>
 #endif
 
-
-
 //////////////////////////////////////////////////////////////////////////////
 
-namespace simgear
-{
 
-LogCallback::LogCallback(sgDebugClass c, sgDebugPriority p) :
-	m_class(c),
-	m_priority(p)
-{
-}
-
-bool LogCallback::shouldLog(sgDebugClass c, sgDebugPriority p) const
-{
-
-    if ((c & m_class) != 0 && p >= m_priority)
-        return true;
-    if (c == SG_OSG) // always have OSG logging as it OSG logging is configured separately.
-        return true;
-    return false;
-}
-
-void LogCallback::setLogLevels( sgDebugClass c, sgDebugPriority p )
-{
-	m_priority = p;
-	m_class = c;
-}
-const char* LogCallback::debugPriorityToString(sgDebugPriority p)
-{
-    switch (p) {
-    case SG_ALERT: return "ALRT";
-    case SG_BULK:  return "BULK";
-    case SG_DEBUG: return "DBUG";
-    case SG_INFO:  return "INFO";
-    case SG_POPUP: return "POPU";
-    case SG_WARN:  return "WARN";
-    default: return "UNKN";
-    }
-}
-
-const char* LogCallback::debugClassToString(sgDebugClass c)
-{
-    switch (c) {
-        case SG_NONE:       return "none";
-        case SG_TERRAIN:    return "terrain";
-        case SG_ASTRO:      return "astro";
-        case SG_FLIGHT:     return "flight";
-        case SG_INPUT:      return "input";
-        case SG_GL:         return "opengl";
-        case SG_VIEW:       return "view";
-        case SG_COCKPIT:    return "cockpit";
-        case SG_GENERAL:    return "general";
-        case SG_MATH:       return "math";
-        case SG_EVENT:      return "event";
-        case SG_AIRCRAFT:   return "aircraft";
-        case SG_AUTOPILOT:  return "autopilot";
-        case SG_IO:         return "io";
-        case SG_CLIPPER:    return "clipper";
-        case SG_NETWORK:    return "network";
-        case SG_ATC:        return "atc";
-        case SG_NASAL:      return "nasal";
-        case SG_INSTR:      return "instruments";
-        case SG_SYSTEMS:    return "systems";
-        case SG_AI:         return "ai";
-        case SG_ENVIRONMENT:return "environment";
-        case SG_SOUND:      return "sound";
-        case SG_NAVAID:     return "navaid";
-        case SG_GUI:        return "gui";
-        case SG_TERRASYNC:  return "terrasync";
-        case SG_PARTICLES:  return "particles";
-        case SG_HEADLESS:   return "headless";
-        case SG_OSG:        return "OSG";
-        default:            return "unknown";
-    }
-}
-
-} // of namespace simgear
-
-//////////////////////////////////////////////////////////////////////////////
 
 class FileLogCallback : public simgear::LogCallback
 {
@@ -196,8 +120,8 @@ public:
     }
 #endif
 
-    virtual void operator()(sgDebugClass c, sgDebugPriority p,
-        const char* file, int line, const std::string& aMessage)
+    void operator()(sgDebugClass c, sgDebugPriority p,
+                    const char* file, int line, const std::string& aMessage) override
     {
         if (!shouldLog(c, p)) return;
         //fprintf(stderr, "%s\n", aMessage.c_str());
@@ -226,8 +150,8 @@ public:
     {
     }
 
-    virtual void operator()(sgDebugClass c, sgDebugPriority p,
-        const char* file, int line, const std::string& aMessage)
+    void operator()(sgDebugClass c, sgDebugPriority p,
+                    const char* file, int line, const std::string& aMessage) override
     {
         if (!shouldLog(c, p)) return;
 
@@ -242,29 +166,6 @@ public:
 class logstream::LogStreamPrivate : public SGThread
 {
 private:
-    /**
-     * storage of a single log entry. This is used to pass log entries from
-     * the various threads to the logging thread, and also to store the startup
-     * entries
-     */
-    class LogEntry
-    {
-    public:
-        LogEntry(sgDebugClass c, sgDebugPriority p,
-            const char* f, int l, const std::string& msg) :
-            debugClass(c), debugPriority(p), file(f), line(l),
-                message(msg)
-        {
-        }
-
-        const sgDebugClass debugClass;
-        const sgDebugPriority debugPriority;
-        const char* file;
-        const int line;
-        const std::string message;
-        bool freeFilename = false;
-    };
-
     /**
      * RAII object to pause the logging thread if it's running, and restart it.
      * used to safely make configuration changes.
@@ -412,10 +313,10 @@ public:
     }
 
     std::mutex m_lock;
-    SGBlockingQueue<LogEntry> m_entries;
+    SGBlockingQueue<simgear::LogEntry> m_entries;
 
     // log entries posted during startup
-    std::vector<LogEntry> m_startupEntries;
+    std::vector<simgear::LogEntry> m_startupEntries;
     bool m_startupLogging = false;
 
     typedef std::vector<simgear::LogCallback*> CallbackVec;
@@ -437,6 +338,8 @@ public:
 
     // test suite mode.
     bool m_testMode = false;
+
+    std::vector<std::string> _popupMessages;
 
     void startLog()
     {
@@ -461,16 +364,13 @@ public:
 
     void clearStartupEntriesLocked()
     {
-        std::for_each(m_startupEntries.begin(), m_startupEntries.end(), [](const LogEntry& e) {
-            if (e.freeFilename) free(const_cast<char*>(e.file));
-        });
         m_startupEntries.clear();
     }
 
     void run() override
     {
         while (1) {
-            LogEntry entry(m_entries.pop());
+            simgear::LogEntry entry(m_entries.pop());
             // special marker entry detected, terminate the thread since we are
             // making a configuration change or quitting the app
             if ((entry.debugClass == SG_NONE) && entry.file && !strcmp(entry.file, "done")) {
@@ -486,14 +386,7 @@ public:
             }
             // submit to each installed callback in turn
             for (simgear::LogCallback* cb : m_callbacks) {
-                (*cb)(entry.debugClass, entry.debugPriority,
-                    entry.file, entry.line, entry.message);
-            }
-
-            // frrr the filename if required. For startup entries
-            // we wait and do this later
-            if (!m_startupLogging && entry.freeFilename) {
-                free(const_cast<char*>(entry.file));
+                cb->processEntry(entry);
             }
         } // of main thread loop
     }
@@ -523,9 +416,8 @@ public:
 
         // we clear startup entries not using this, so always safe to run
         // this code, container will simply be empty
-        for (auto entry : m_startupEntries) {
-            (*cb)(entry.debugClass, entry.debugPriority,
-               entry.file, entry.line, entry.message);
+        for (const auto& entry : m_startupEntries) {
+            cb->processEntry(entry);
         }
     }
 
@@ -576,12 +468,13 @@ public:
             const char* fileName, int line, const std::string& msg,
              bool freeFilename)
     {
-        p = translatePriority(p);
+        auto tp = translatePriority(p);
         if (!m_fileLine) {
             /* This prevents output of file:line in StderrLogCallback. */
             line = -line;
         }
-        LogEntry entry(c, p, fileName, line, msg);
+
+        simgear::LogEntry entry(c, tp, p, fileName, line, msg);
         entry.freeFilename = freeFilename;
         m_entries.push(entry);
     }
@@ -613,8 +506,8 @@ logstream::logstream()
 
 logstream::~logstream()
 {
-    popup_msgs.clear();
     d->stop();
+    d.reset();
 }
 
 void
@@ -717,17 +610,18 @@ void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName,
 void
 logstream::popup( const std::string& msg)
 {
-    popup_msgs.push_back(msg);
+    std::lock_guard<std::mutex> g(d->m_lock);
+    d->_popupMessages.push_back(msg);
 }
 
 std::string
 logstream::get_popup()
 {
-    std::string rv = "";
-    if (!popup_msgs.empty())
-    {
-        rv = popup_msgs.front();
-        popup_msgs.erase(popup_msgs.begin());
+    std::string rv;
+    std::lock_guard<std::mutex> g(d->m_lock);
+    if (!d->_popupMessages.empty()) {
+        rv = d->_popupMessages.front();
+        d->_popupMessages.erase(d->_popupMessages.begin());
     }
     return rv;
 }
@@ -735,7 +629,8 @@ logstream::get_popup()
 bool
 logstream::has_popup()
 {
-    return (popup_msgs.size() > 0) ? true : false;
+    std::lock_guard<std::mutex> g(d->m_lock);
+    return !d->_popupMessages.empty();
 }
 
 bool

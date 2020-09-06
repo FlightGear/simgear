@@ -37,27 +37,8 @@ class SGPath;
       
 namespace simgear
 {
-     
-class LogCallback
-{
-public:
-    virtual ~LogCallback() {}
-    virtual void operator()(sgDebugClass c, sgDebugPriority p, 
-        const char* file, int line, const std::string& aMessage) = 0;
 
-	void setLogLevels(sgDebugClass c, sgDebugPriority p);
-protected:
-	LogCallback(sgDebugClass c, sgDebugPriority p);
-
-	bool shouldLog(sgDebugClass c, sgDebugPriority p) const;
-
-    static const char* debugClassToString(sgDebugClass c);
-    static const char* debugPriorityToString(sgDebugPriority p);
-private:
-	sgDebugClass m_class;
-	sgDebugPriority m_priority;
-};
-
+class LogCallback;
 /**
  * Helper force a console on platforms where it might optional, when
  * we need to show a console. This basically means Windows at the
@@ -197,8 +178,6 @@ public:
 private:
     // constructor
     logstream();
-
-    std::vector<std::string> popup_msgs;
 
     class LogStreamPrivate;
 

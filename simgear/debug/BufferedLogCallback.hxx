@@ -26,7 +26,7 @@
 #include <vector>
 #include <memory> // for std::unique_ptr
 
-#include <simgear/debug/logstream.hxx>
+#include <simgear/debug/LogCallback.hxx>
 
 namespace simgear
 {

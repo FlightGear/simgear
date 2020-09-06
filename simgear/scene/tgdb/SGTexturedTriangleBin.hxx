@@ -428,12 +428,12 @@ public:
       return 0;
 
     // FIXME: do not include all values here ...
-    osg::Vec3Array* vertices = new osg::Vec3Array;
-    osg::Vec3Array* normals = new osg::Vec3Array;
-    osg::Vec2Array* priTexCoords = new osg::Vec2Array;
-    osg::Vec2Array* secTexCoords = new osg::Vec2Array;
+    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec2Array> priTexCoords = new osg::Vec2Array;
+    osg::ref_ptr<osg::Vec2Array> secTexCoords = new osg::Vec2Array;
 
-    osg::Vec4Array* colors = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
     colors->push_back(osg::Vec4(1, 1, 1, 1));
 
     osg::Geometry* geometry = new osg::Geometry;

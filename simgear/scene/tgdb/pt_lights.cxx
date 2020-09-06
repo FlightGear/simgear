@@ -283,7 +283,6 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
 
   static SGSceneFeatures* sceneFeatures = SGSceneFeatures::instance();
   bool useTriangles = sceneFeatures->getEnableTriangleDirectionalLights();
-  SG_LOG(SG_TERRAIN, SG_ALERT, "using triangles for lights " << useTriangles);
 
   osg::DrawArrays* drawArrays;
   if (useTriangles)

@@ -402,6 +402,13 @@ public:
     ~LogStreamPrivate()
     {
         removeCallbacks();
+
+        // house-keeping, avoid leak warnings if we exit before disabling
+        // startup logging
+        {
+            std::lock_guard<std::mutex> g(m_lock);
+            clearStartupEntriesLocked();
+        }
     }
 
     std::mutex m_lock;
@@ -489,13 +496,6 @@ public:
                 free(const_cast<char*>(entry.file));
             }
         } // of main thread loop
-
-        // house-keeping, avoid leak warnings if we exit before disabling
-        // startup logging
-        {
-            std::lock_guard<std::mutex> g(m_lock);
-            clearStartupEntriesLocked();
-        }
     }
 
     bool stop()

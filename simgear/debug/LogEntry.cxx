@@ -18,6 +18,7 @@
 
 #include "LogEntry.hxx"
 
+#include <cstring> // for strdup
 
 namespace simgear {
 

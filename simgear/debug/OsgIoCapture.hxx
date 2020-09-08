@@ -2,8 +2,7 @@
 
 #include <osg/Notify>
 
-using namespace osg;
-
+#include <simgear/debug/logstream.hxx>
 
 /**
 * merge OSG output into our logging system, so it gets recorded to file,

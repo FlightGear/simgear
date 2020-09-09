@@ -51,29 +51,29 @@ inline void unit(simd4x4_t<T,N>& r) {
 template<typename T>
 inline simd4x4_t<T,4> rotation_matrix(T angle, const simd4_t<T,3>& axis)
 {
-    T s = std::sin(angle), c = std::cos(angle), t = T(1)-c;
-    simd4_t<T,3> at = axis*t, as = axis*s;
+    T s = std::sin(angle);
+    T c = std::cos(angle);
+    T t = T(1) - c;
+
+    simd4_t<T,3> at = axis*t;
+    simd4_t<T,3> as = axis*s;
     simd4x4_t<T,4> m;
 
     simd4x4::unit(m);
-    for (int i=0; i<3; ++i) {
-        simd4_t<T,3> r = axis.ptr()[i]*at;
-        for (int j=0; j<3; ++j) {
-            m.m4x4()[0][j] = r.v4()[j];
-        }
-    }
+    simd4_t<T,3> aat = axis.ptr()[0]*at;
+    m.ptr()[0][0] = aat.ptr()[0] + c;
+    m.ptr()[0][1] = aat.ptr()[1] + as.ptr()[2];
+    m.ptr()[0][2] = aat.ptr()[2] - as.ptr()[1];
 
-    m.ptr()[0][0] += c;
-    m.ptr()[0][1] += as.ptr()[2];
-    m.ptr()[0][2] -= as.ptr()[1];
+    aat = axis.ptr()[1]*at;
+    m.ptr()[1][0] = aat.ptr()[0] - as.ptr()[2];
+    m.ptr()[1][1] = aat.ptr()[1] + c;
+    m.ptr()[1][2] = aat.ptr()[2] + as.ptr()[0];
 
-    m.ptr()[1][0] -= as.ptr()[2];
-    m.ptr()[1][1] += c;
-    m.ptr()[1][2] += as.ptr()[0];
-
-    m.ptr()[2][0] += as.ptr()[1];
-    m.ptr()[2][1] -= as.ptr()[0];
-    m.ptr()[2][2] += c;
+    aat = axis.ptr()[2]*at;
+    m.ptr()[2][0] = aat.ptr()[0] + as.ptr()[1];
+    m.ptr()[2][1] = aat.ptr()[1] - as.ptr()[0];
+    m.ptr()[2][2] = aat.ptr()[2] + c;
 
     return m;
 }
@@ -260,9 +260,9 @@ public:
 
 template<typename T, int N>
 inline simd4x4_t<T,N> operator-(simd4x4_t<T,N> m) {
-    simd4x4_t<T,N> r; 
+    simd4x4_t<T,N> r;
     simd4x4::zeros(r);
-    r -= m; 
+    r -= m;
     return r;
 }
 
@@ -341,7 +341,7 @@ public:
     inline const __m128 (&m4x4(void) const)[4] {
         return simd4x4;
     }
-    
+
     inline const float (&ptr(void) const)[4][4] {
         return mtx;
     }
@@ -734,7 +734,7 @@ public:
     simd4x4_t(double m00, double m01, double m02, double m03,
               double m10, double m11, double m12, double m13,
               double m20, double m21, double m22, double m23,
-              double m30, double m31, double m32, double m33) 
+              double m30, double m31, double m32, double m33)
     {
         simd4x4[0][0] = _mm_set_pd(m10,m00);
         simd4x4[0][1] = _mm_set_pd(m30,m20);
@@ -1035,7 +1035,7 @@ public:
     inline const __m128i (&m4x4(void) const)[4] {
         return simd4x4;
     }
-    
+
     inline const int (&ptr(void) const)[4][4] {
         return mtx;
     }

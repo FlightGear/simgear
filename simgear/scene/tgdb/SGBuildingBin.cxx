@@ -466,8 +466,8 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       int b = 0, s = 0, o = 0, f = 0, wt = 0, rt = 0;
       in >> x >> y >> z >> r >> b;
 
-      if (in.failbit) {
-          SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing build entry in: " << absoluteFileName);
+      if (in.bad() || in.fail()) {
+          SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing build entry in: " << absoluteFileName << " line: \"" << line << "\"");
           continue;
       }
 

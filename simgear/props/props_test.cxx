@@ -3,9 +3,7 @@
 // Test harness.
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <simgear/compiler.h>
 
@@ -13,6 +11,7 @@
 #include <memory>               // std::unique_ptr
 #include <iostream>
 #include <map>
+#include <exception>
 
 #include "props.hxx"
 #include "props_io.hxx"
@@ -968,8 +967,8 @@ int main (int ac, char ** av)
         readProperties(SGPath::fromLocal8Bit(av[i]), &root);
       writeProperties(cout, &root, true);
    //   cout << endl;
-    } catch (std::string &message) {
-      cout << "Aborted with " << message << endl;
+    } catch (std::exception &e) {
+      cout << "Aborted with " << e.what() << endl;
     }
   }
 

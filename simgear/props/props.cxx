@@ -6,9 +6,7 @@
 //
 // $Id$
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include "props.hxx"
 
@@ -19,6 +17,8 @@
 #include <sstream>
 #include <iomanip>
 #include <iterator>
+#include <exception> // can't use sg_exception becuase of PROPS_STANDALONE
+
 #include <stdio.h>
 #include <string.h>
 
@@ -137,7 +137,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
       i++;
     }
     if (i != max && *i != '/')
-      throw std::string("illegal character after . or ..");
+        throw std::runtime_error("illegal character after . or .. in '" + node->getPath() + "'");
   } else if (isalpha_c(*i) || *i == '_') {
     i++;
 
@@ -153,7 +153,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
         err.push_back(*i);
         err.append("' found in propertyname after '"+node->getPath()+"'");
         err.append("\nname may contain only ._- and alphanumeric characters");
-	throw err;
+        throw std::runtime_error(err);
       }
       i++;
     }
@@ -165,7 +165,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
       err.push_back(*i);
       err.append("' found in propertyname after '"+node->getPath()+"'");
       err.append("\nname must begin with alpha or '_'");
-      throw err;
+      throw std::runtime_error(err);
     }
   }
   return Range(path.begin(), i);
@@ -215,7 +215,7 @@ parse_name (const string &path, int &i)
       name = ".";
     }
     if (i < max && path[i] != '/')
-      throw string("Illegal character after " + name);
+      throw std::invalid_argument("Illegal character after " + name);
   }
 
   else if (isalpha(path[i]) || path[i] == '_') {
@@ -231,7 +231,7 @@ parse_name (const string &path, int &i)
       } else if (path[i] == '[' || path[i] == '/') {
         break;
       } else {
-        throw string("name may contain only ._- and alphanumeric characters");
+        throw std::invalid_argument("name may contain only ._- and alphanumeric characters");
       }
       i++;
     }
@@ -239,7 +239,7 @@ parse_name (const string &path, int &i)
 
   else {
     if (name.size() == 0)
-      throw string("name must begin with alpha or '_'");
+      throw std::invalid_argument("name must begin with alpha or '_'");
   }
 
   return name;
@@ -272,7 +272,7 @@ parse_index (const string &path, int &i)
     }
   }
 
-  throw string("unterminated index (looking for ']')");
+  throw std::invalid_argument("unterminated index (looking for ']')");
 }
 
 /**
@@ -467,7 +467,7 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
   if (equals(name, "..")) {
     SGPropertyNode * parent = current->getParent();
     if (parent == 0)
-      throw std::string("attempt to move past root with '..'");
+      throw std::runtime_error("attempt to move past root with '..'");
     return find_node_aux(parent, ++itr, create, last_index);
   }
   int index = -1;
@@ -500,10 +500,10 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
           }
         }
         if (i == token.end() || *i != ']')
-          throw std::string("unterminated index (looking for ']')");
+          throw std::runtime_error("unterminated index (looking for ']')");
       } else {
-        throw std::string("illegal characters in token: ")
-          + std::string(name.begin(), name.end());
+          throw std::runtime_error(string{"illegal characters in token: "}
+          + std::string(name.begin(), name.end()));
       }
     }
   }
@@ -545,7 +545,7 @@ find_node (SGPropertyNode * current,
   else if (components[position].name == "..") {
     SGPropertyNode * parent = current->getParent();
     if (parent == 0)
-      throw string("Attempt to move past root with '..'");
+      throw std::runtime_error("Attempt to move past root with '..'");
     else
       return find_node(parent, components, position + 1, create);
   }
@@ -950,7 +950,7 @@ SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(_name))
-    throw std::string("plain name expected instead of '") + _name + '\'';
+      throw std::invalid_argument(string{"plain name expected instead of '"} + _name + '\'');
 }
 
 SGPropertyNode::SGPropertyNode( const std::string& name,
@@ -968,7 +968,7 @@ SGPropertyNode::SGPropertyNode( const std::string& name,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(name))
-    throw std::string("plain name expected instead of '") + _name + '\'';
+    throw std::invalid_argument(string{"plain name expected instead of '"} + _name + '\'');
 }
 
 /**

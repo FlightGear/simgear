@@ -74,7 +74,9 @@ public:
      */
     void setLogLevels( sgDebugClass c, sgDebugPriority p );
 
-    bool would_log(  sgDebugClass c, sgDebugPriority p ) const;
+    bool would_log(  sgDebugClass c, sgDebugPriority p,
+            const char* file, int line, const char* function,
+            bool freeFilename=false ) const;
 
     void logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p );
 
@@ -108,7 +110,8 @@ public:
      * the core logging method
      */
     void log( sgDebugClass c, sgDebugPriority p,
-            const char* fileName, int line, const std::string& msg);
+            const char* fileName, int line, const char* function,
+            const std::string& msg);
 
     // overload of above, which can transfer ownership of the file-name.
     // this is unecesary overhead when logging from C++, since __FILE__ points
@@ -116,12 +119,15 @@ public:
     // example) since during shutdown the filename is freed by Nasal GC
     // asynchronously with the logging thread.
     void logCopyingFilename( sgDebugClass c, sgDebugPriority p,
-             const char* fileName, int line, const std::string& msg);
+             const char* fileName, int line, const char* function,
+             const std::string& msg);
     
     /**
     * output formatted hex dump of memory block
     */
-    void hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, unsigned int columns = 16);
+    void hexdump(sgDebugClass c, sgDebugPriority p,
+            const char* fileName, int line, const char* function,
+            const void *mem, unsigned int len, unsigned int columns = 16);
 
 
     /**
@@ -195,9 +201,9 @@ logstream& sglog();
  * @param M message
  */
 # define SG_LOGX(C,P,M) \
-    do { if(sglog().would_log(C,P)) {                         \
+    do { if(sglog().would_log(C,P, __FILE__, __LINE__, __FUNCTION__)) { \
         std::ostringstream os; os << M;                  \
-        sglog().log(C, P, __FILE__, __LINE__, os.str()); \
+        sglog().log(C, P, __FILE__, __LINE__, __FUNCTION__, os.str()); \
         if ((P) == SG_POPUP) sglog().popup(os.str());    \
     } } while(0)
 #ifdef FG_NDEBUG
@@ -207,7 +213,8 @@ logstream& sglog();
 #else
 # define SG_LOG(C,P,M)	SG_LOGX(C,P,M)
 # define SG_LOG_NAN(C,P,M) do { SG_LOGX(C,P,M); throw std::overflow_error(M); } while(0)
-# define SG_LOG_HEXDUMP(C,P,MEM,LEN) if(sglog().would_log(C,P)) sglog().hexdump(C, P, __FILE__, __LINE__, MEM, LEN)
+# define SG_LOG_HEXDUMP(C,P,MEM,LEN) if(sglog().would_log(C,P, __FILE__, __LINE__, __FUNCTION__)) \
+        sglog().hexdump(C, P, __FILE__, __LINE__, __FUNCTION__, MEM, LEN)
 #endif
 
 #define SG_ORIGIN __FILE__ ":" SG_STRINGIZE(__LINE__)

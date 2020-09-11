@@ -22,6 +22,7 @@
 
 #include <simgear_config.h>
 
+#include "logdelta.hxx"
 #include "logstream.hxx"
 
 #include <cstring>
@@ -401,7 +402,7 @@ public:
 
             // log a special marker value, which will cause the thread to wakeup,
             // and then exit
-            log(SG_NONE, SG_ALERT, "done", -1, "", false);
+            log(SG_NONE, SG_ALERT, "done", -1, "", "", false);
         }
         join();
 
@@ -450,7 +451,9 @@ public:
         }
     }
 
-    bool would_log( sgDebugClass c, sgDebugPriority p ) const
+    bool would_log( sgDebugClass c, sgDebugPriority p,
+            const char* file, int line, const char* function,
+            bool freeFilename ) const
     {
         // Testing mode, so always log.
         if (m_testMode) return true;
@@ -459,28 +462,30 @@ public:
         // separately and thus it makes more sense to allow these message through.
         if (static_cast<unsigned>(p) == static_cast<unsigned>(SG_OSG)) return true;
 
-        p = translatePriority(p);
+        p = translatePriority(p, file, line, function, freeFilename);
         if (p >= SG_INFO) return true;
         return ((c & m_logClass) != 0 && p >= m_logPriority);
     }
 
     void log( sgDebugClass c, sgDebugPriority p,
-            const char* fileName, int line, const std::string& msg,
-             bool freeFilename)
+            const char* fileName, int line, const char* function,
+            const std::string& msg, bool freeFilename)
     {
-        auto tp = translatePriority(p);
+        auto tp = translatePriority(p, fileName, line, function, freeFilename);
         if (!m_fileLine) {
             /* This prevents output of file:line in StderrLogCallback. */
             line = -line;
         }
 
-        simgear::LogEntry entry(c, tp, p, fileName, line, msg);
-        entry.freeFilename = freeFilename;
+        simgear::LogEntry entry(c, tp, p, fileName, line, function, msg, freeFilename);
         m_entries.push(entry);
     }
 
-    sgDebugPriority translatePriority(sgDebugPriority in) const
+    sgDebugPriority translatePriority(sgDebugPriority in,
+            const char* filename, int line, const char* function,
+            bool freeFilename) const
     {
+        in = logDeltaAdd(in, filename, line, function, freeFilename);
         if (in == SG_DEV_WARN) {
             return m_developerMode ? SG_WARN : SG_DEBUG;
         }
@@ -540,20 +545,24 @@ logstream::removeCallback(simgear::LogCallback* cb)
 
 void
 logstream::log( sgDebugClass c, sgDebugPriority p,
-        const char* fileName, int line, const std::string& msg)
+        const char* fileName, int line, const char* function,
+        const std::string& msg)
 {
-    d->log(c, p, fileName, line, msg, false);
+    d->log(c, p, fileName, line, function, msg, false);
 }
 
 void
 logstream::logCopyingFilename( sgDebugClass c, sgDebugPriority p,
-         const char* fileName, int line, const std::string& msg)
+         const char* fileName, int line, const char* function,
+         const std::string& msg)
 {
-    d->log(c, p, strdup(fileName), line, msg, true);
+    d->log(c, p, strdup(fileName), line, strdup(function), msg, true);
 }
 
 
-void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName, int line, const void *mem, unsigned int len, unsigned int columns)
+void logstream::hexdump(sgDebugClass c, sgDebugPriority p,
+        const char* fileName, int line, const char* function,
+        const void *mem, unsigned int len, unsigned int columns)
 {
     unsigned int i, j;
     char temp[3000], temp1[3000];
@@ -601,7 +610,7 @@ void logstream::hexdump(sgDebugClass c, sgDebugPriority p, const char* fileName,
                     strcat(temp, ".");
                 }
             }
-            log(c, p, fileName, line, temp );
+            log(c, p, fileName, line, function, temp );
             *temp = 0;
         }
     }
@@ -634,9 +643,11 @@ logstream::has_popup()
 }
 
 bool
-logstream::would_log( sgDebugClass c, sgDebugPriority p ) const
+logstream::would_log( sgDebugClass c, sgDebugPriority p,
+        const char* file, int line, const char* function,
+        bool freeFilename ) const
 {
-    return d->would_log(c,p);
+    return d->would_log(c, p, file, line, function, freeFilename);
 }
 
 sgDebugClass

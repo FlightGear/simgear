@@ -30,9 +30,17 @@ class LogEntry
 public:
     LogEntry(sgDebugClass c, sgDebugPriority p,
              sgDebugPriority op,
-             const char* f, int l, const std::string& msg) : debugClass(c), debugPriority(p), originalPriority(op),
-                                                             file(f), line(l),
-                                                             message(msg)
+             const char* file, int line, const char* function,
+             const std::string& msg, bool freeFilename)
+    :
+    debugClass(c),
+    debugPriority(p),
+    originalPriority(op),
+    file(file),
+    line(line),
+    function(function),
+    message(msg),
+    freeFilename(freeFilename)
     {
     }
 
@@ -46,6 +54,7 @@ public:
     const sgDebugPriority originalPriority;
     const char* file;
     const int line;
+    const char* function;
     const std::string message;
 
     bool freeFilename = false; ///< if true, we own, and therefore need to free, the memory pointed to by 'file'

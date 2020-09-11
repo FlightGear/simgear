@@ -26,6 +26,7 @@ LogEntry::~LogEntry()
 {
     if (freeFilename) {
         free(const_cast<char*>(file));
+        free(const_cast<char*>(function));
     }
 }
 
@@ -34,11 +35,13 @@ LogEntry::LogEntry(const LogEntry& c) : debugClass(c.debugClass),
                                         originalPriority(c.originalPriority),
                                         file(c.file),
                                         line(c.line),
+                                        function(c.function),
                                         message(c.message),
                                         freeFilename(c.freeFilename)
 {
     if (c.freeFilename) {
         file = strdup(c.file);
+        function = strdup(c.function);
     }
 }
 

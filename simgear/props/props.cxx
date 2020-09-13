@@ -1098,6 +1098,20 @@ SGPropertyNode::addChild(const char * name, int min_index, bool append)
   return node;
 }
 
+SGPropertyNode_ptr SGPropertyNode::addChild(SGPropertyNode_ptr node, const std::string& name,
+        int min_index, bool append)
+{
+  int pos = append
+          ? std::max(find_last_child(name.c_str(), _children) + 1, min_index)
+          : first_unused_index(name.c_str(), _children, min_index);
+  node->_name = name;
+  node->_parent = this;
+  node->_index = pos;
+  _children.push_back(node);
+  fireChildAdded(node);
+  return node;
+}
+
 /**
  * Create multiple children with unused indices
  */

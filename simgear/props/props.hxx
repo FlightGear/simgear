@@ -925,6 +925,16 @@ public:
                               int min_index = 0,
                               bool append = true )
   { return addChild(name.c_str(), min_index, append); }
+  
+  /**
+   * Add existing node as child.
+   *
+   * @param min_index Minimal index for new node (skips lower indices)
+   * @param append    Whether to simply use the index after the last used index
+   *                  or use a lower, unused index if it exists
+   */
+  SGPropertyNode_ptr addChild(SGPropertyNode_ptr node, const std::string& name,
+        int min_index=0, bool append=true);
 
   /**
    * Create multiple child nodes with the given name an unused indices

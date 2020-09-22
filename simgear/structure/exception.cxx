@@ -13,6 +13,8 @@
 
 #include <simgear/misc/sg_path.hxx>
 
+static ThrowCallback static_callback;
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_location class.
 ////////////////////////////////////////////////////////////////////////
@@ -49,19 +51,7 @@ sg_location::sg_location (const char* path, int line, int column)
   setPath(path);
 }
 
-sg_location::~sg_location ()
-{
-}
-
-const char*
-sg_location::getPath () const
-{
-  return _path;
-}
-
-void
-sg_location::setPath (const char* path)
-{
+void sg_location::setPath(const char *path) {
   if (path) {
     strncpy(_path, path, max_path);
     _path[max_path -1] = '\0';
@@ -70,17 +60,9 @@ sg_location::setPath (const char* path)
   }
 }
 
-int
-sg_location::getLine () const
-{
-  return _line;
-}
+const char *sg_location::getPath() const { return _path; }
 
-void
-sg_location::setLine (int line)
-{
-  _line = line;
-}
+int sg_location::getLine() const { return _line; }
 
 int
 sg_location::getColumn () const
@@ -88,22 +70,11 @@ sg_location::getColumn () const
   return _column;
 }
 
-void
-sg_location::setColumn (int column)
-{
-  _column = column;
-}
 
 int
 sg_location::getByte () const
 {
   return _byte;
-}
-
-void
-sg_location::setByte (int byte)
-{
-  _byte = byte;
 }
 
 std::string
@@ -126,8 +97,8 @@ sg_location::asString () const
   return out.str();
 }
 
+bool sg_location::isValid() const { return strlen(_path) > 0; }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_throwable class.
 ////////////////////////////////////////////////////////////////////////
@@ -138,10 +109,14 @@ sg_throwable::sg_throwable ()
   _origin[0] = '\0';
 }
 
-sg_throwable::sg_throwable (const char* message, const char* origin)
-{
+sg_throwable::sg_throwable(const char *message, const char *origin,
+                           const sg_location &loc) {
   setMessage(message);
   setOrigin(origin);
+
+  if (static_callback) {
+    static_callback(_message, _origin, loc);
+  }
 }
 
 sg_throwable::~sg_throwable ()
@@ -228,16 +203,13 @@ sg_exception::sg_exception ()
 {
 }
 
-sg_exception::sg_exception (const char* message, const char* origin)
-  : sg_throwable(message, origin)
-{
-}
+sg_exception::sg_exception(const char *message, const char *origin,
+                           const sg_location &loc)
+    : sg_throwable(message, origin, loc) {}
 
-sg_exception::sg_exception( const std::string& message,
-                            const std::string& origin )
-  : sg_throwable(message.c_str(), origin.c_str())
-{
-}
+sg_exception::sg_exception(const std::string &message,
+                           const std::string &origin, const sg_location &loc)
+    : sg_throwable(message.c_str(), origin.c_str(), loc) {}
 
 sg_exception::~sg_exception ()
 {
@@ -257,13 +229,10 @@ sg_io_exception::sg_io_exception (const char* message, const char* origin)
 {
 }
 
-sg_io_exception::sg_io_exception (const char* message,
-				  const sg_location &location,
-				  const char* origin)
-  : sg_exception(message, origin),
-    _location(location)
-{
-}
+sg_io_exception::sg_io_exception(const char *message,
+                                 const sg_location &location,
+                                 const char *origin)
+    : sg_exception(message, origin, location), _location(location) {}
 
 sg_io_exception::sg_io_exception( const std::string& message,
                                   const std::string& origin )
@@ -271,13 +240,10 @@ sg_io_exception::sg_io_exception( const std::string& message,
 {
 }
 
-sg_io_exception::sg_io_exception( const std::string& message,
-                                  const sg_location &location,
-                                  const std::string& origin )
-  : sg_exception(message, origin),
-    _location(location)
-{
-}
+sg_io_exception::sg_io_exception(const std::string &message,
+                                 const sg_location &location,
+                                 const std::string &origin)
+    : sg_exception(message, origin, location), _location(location) {}
 
 sg_io_exception::~sg_io_exception ()
 {
@@ -382,4 +348,9 @@ sg_range_exception::sg_range_exception(const std::string& message,
 sg_range_exception::~sg_range_exception ()
 {
 }
+
+////////////////////////////////////////////////////////////////////////
+
+void setThrowCallback(ThrowCallback cb) { static_callback = cb; }
+
 // end of exception.cxx

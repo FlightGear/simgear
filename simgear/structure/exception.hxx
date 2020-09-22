@@ -11,6 +11,7 @@
 #define __SIMGEAR_MISC_EXCEPTION_HXX 1
 
 #include <exception>
+#include <functional>
 #include <simgear/compiler.h>
 #include <string>
 
@@ -31,17 +32,20 @@ public:
   sg_location(const std::string& path, int line = -1, int column = -1);
   sg_location(const SGPath& path, int line = -1, int column = -1);
   explicit sg_location(const char* path, int line = -1, int column = -1);
-  virtual ~sg_location();
-  virtual const char* getPath() const;
-  virtual void setPath (const char* path);
-  virtual int getLine () const;
-  virtual void setLine (int line);
-  virtual int getColumn () const;
-  virtual void setColumn (int column);
-  virtual int getByte () const;
-  virtual void setByte (int byte);
-  virtual std::string asString () const;
+
+  ~sg_location() = default;
+
+  const char *getPath() const;
+  int getLine() const;
+  int getColumn() const;
+  int getByte() const;
+
+  std::string asString() const;
+  bool isValid() const;
+
 private:
+  void setPath(const char *p);
+
   char _path[max_path];
   int _line;
   int _column;
@@ -57,7 +61,9 @@ class sg_throwable : public std::exception
 public:
   enum {MAX_TEXT_LEN = 1024};
   sg_throwable ();
-  sg_throwable (const char* message, const char* origin = 0);
+  sg_throwable(const char *message, const char *origin = 0,
+               const sg_location &loc = {});
+
   virtual ~sg_throwable ();
   virtual const char* getMessage () const;
   virtual const std::string getFormattedMessage () const;
@@ -86,7 +92,7 @@ class sg_error : public sg_throwable
 public:
   sg_error ();
   sg_error (const char* message, const char* origin = 0);
-  sg_error (const std::string& message, const std::string& origin = "");  
+  sg_error(const std::string &message, const std::string &origin = {});
   virtual ~sg_error ();
 };
 
@@ -109,8 +115,10 @@ class sg_exception : public sg_throwable
 {
 public:
   sg_exception ();
-  sg_exception (const char* message, const char* origin = 0);
-  sg_exception (const std::string& message, const std::string& = "");
+  sg_exception(const char *message, const char *origin = 0,
+               const sg_location &loc = {});
+  sg_exception(const std::string &message, const std::string & = {},
+               const sg_location &loc = {});
   virtual ~sg_exception ();
 };
 
@@ -192,6 +200,17 @@ public:
                       const std::string& origin = "");
   virtual ~sg_range_exception ();
 };
+
+using ThrowCallback = std::function<void(
+    const char *message, const char *origin, const sg_location &loc)>;
+
+/**
+ * @brief Specify a callback to be invoked when an exception is created.
+ *
+ * This is used to capture a stack-trace for our crash/error reporting system,
+ * if a callback is defined
+ */
+void setThrowCallback(ThrowCallback cb);
 
 #endif
 

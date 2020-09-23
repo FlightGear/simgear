@@ -984,16 +984,24 @@ HTTPRepository::failure() const
     std::string HTTPRepoPrivate::computeHashForPath(const SGPath& p)
     {
         if (!p.exists())
-            return std::string();
+            return {};
+
         sha1nfo info;
         sha1_init(&info);
-        char* buf = static_cast<char*>(malloc(1024 * 1024));
+
+        const int bufSize = 1024 * 1024;
+        char* buf = static_cast<char*>(malloc(bufSize));
+        if (!buf) {
+            sg_io_exception("Couldn't allocate SHA1 computation buffer");
+        }
+
         size_t readLen;
         SGBinaryFile f(p);
         if (!f.open(SG_IO_IN)) {
+            free(buf);
             throw sg_io_exception("Couldn't open file for compute hash", p);
         }
-        while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
+        while ((readLen = f.read(buf, bufSize)) > 0) {
             sha1_write(&info, buf, readLen);
         }
 

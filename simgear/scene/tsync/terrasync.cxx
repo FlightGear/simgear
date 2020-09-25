@@ -970,12 +970,12 @@ void SGTerraSync::update(double)
     if (enabled && !worker_running)
     {
         reinit();
-        SG_LOG(SG_TERRASYNC, SG_ALERT, "Terrasync started");
+        SG_LOG(SG_TERRASYNC, SG_MANDATORY_INFO, "Terrasync started");
     }
     else if (!enabled && worker_running)
     {
         reinit();
-        SG_LOG(SG_TERRASYNC, SG_ALERT, "Terrasync stopped");
+        SG_LOG(SG_TERRASYNC, SG_MANDATORY_INFO, "Terrasync stopped");
     }
     TerrasyncThreadState copiedState(_workerThread->threadsafeCopyState());
 

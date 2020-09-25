@@ -113,6 +113,7 @@ public:
             return;
         _triangleSet.insert(indexKey);
         BVHStaticTriangle* staticTriangle;
+        // REVIEW: Memory Leak - 11,680 bytes in 365 blocks are indirectly lost
         staticTriangle = new BVHStaticTriangle(_currentMaterialIndex, indices);
         _leafRefList.push_back(LeafRef(staticTriangle, *_staticData));
     }

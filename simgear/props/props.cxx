@@ -1202,6 +1202,7 @@ SGPropertyNode::getChild (const std::string& name, int index, bool create)
     } else if (create) {
       // REVIEW: Memory Leak - 12,862 (11,856 direct, 1,006 indirect) bytes in 78 blocks are definitely lost
       SGPropertyNode* node = new SGPropertyNode(name, index, this);
+      // REVIEW: Memory Leak - 104,647 (8 direct, 104,639 indirect) bytes in 1 blocks are definitely lost
       _children.push_back(node);
       fireChildAdded(node);
       return node;

@@ -288,6 +288,7 @@ Effect::~Effect()
 void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
                const SGReaderWriterOptions* options)
 {
+    // REVIEW: Memory Leak - 35,712 bytes in 72 blocks are still reachable
     Pass* pass = new Pass;
     tniq->passes.push_back(pass);
     for (int i = 0; i < prop->nChildren(); ++i) {
@@ -490,6 +491,8 @@ void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
 {
     if (!isAttributeActive(effect, prop))
         return;
+
+    // REVIEW: Memory Leak - 20,160 bytes in 72 blocks are still reachable
     Material* mat = new Material;
     const SGPropertyNode* color = 0;
     if ((color = getEffectPropertyChild(effect, prop, "ambient")))
@@ -1330,6 +1333,7 @@ InstallAttributeBuilder<DepthBuilder> installDepth("depth");
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
                     const SGReaderWriterOptions* options)
 {
+    // REVIEW: Memory Leak - 13,248 bytes in 72 blocks are indirectly lost
     Technique* tniq = new Technique;
     effect->techniques.push_back(tniq);
     tniq->setScheme(prop->getStringValue("scheme"));

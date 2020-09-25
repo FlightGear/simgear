@@ -291,6 +291,7 @@ Expression* extensionSupportedParser(const SGPropertyNode* exp,
 {
     if (exp->getType() == props::STRING
         || exp->getType() == props::UNSPECIFIED) {
+        // REVIEW: Memory Leak - 15,552 bytes in 216 blocks are indirectly lost
         ExtensionSupportedExpression* esp
             = new ExtensionSupportedExpression(exp->getStringValue());
         int location = parser->getBindingLayout().addBinding("__contextId",

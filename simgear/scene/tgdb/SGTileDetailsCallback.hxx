@@ -393,6 +393,7 @@ public:
             SGBuildingBin* bin = NULL;
             
             if (building_coverage > 0) {
+                // REVIEW: Memory Leak - 317,405 (544 direct, 316,861 indirect) bytes in 4 blocks are definitely lost
                 bin = new SGBuildingBin(mat, useVBOs);                
                 randomBuildings.push_back(bin);
             }

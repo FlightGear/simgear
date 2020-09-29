@@ -311,6 +311,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     check_cxx_source_compiles(
        "int main() { unsigned mValue; return __sync_add_and_fetch(&mValue, 1); }"
         GCC_ATOMIC_BUILTINS_FOUND)
+
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO  "-O3 -g -DNDEBUG")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if (CLANG)

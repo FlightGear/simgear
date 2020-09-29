@@ -54,7 +54,8 @@ public:
       HEADERS_RECEIVED,
       LOADING,
       DONE,
-      FAILED
+      FAILED,
+      CANCELLED
     };
 
     virtual ~Request();

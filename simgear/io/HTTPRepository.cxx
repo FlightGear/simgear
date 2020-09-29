@@ -417,7 +417,7 @@ public:
             SG_LOG(SG_TERRASYNC, SG_WARN, "updated file but not found in dir:" << _relativePath << " " << file);
         } else {
             if (it->hash != hash) {
-                SG_LOG(SG_TERRASYNC, SG_INFO, "Checksum error for " << absolutePath() << "/" << file << " " << it->hash << " " << hash);
+                SG_LOG(SG_TERRASYNC, SG_WARN, "Checksum error for " << absolutePath() << "/" << file << " " << it->hash << " " << hash);
                 // we don't erase the file on a hash mismatch, because if we're syncing during the
                 // middle of a server-side update, the downloaded file may actually become valid.
                 _repository->failedToUpdateChild(_relativePath, HTTPRepository::REPO_ERROR_CHECKSUM);
@@ -1209,15 +1209,15 @@ HTTPRepository::failure() const
         } else if (fileStatus == HTTPRepository::REPO_ERROR_CANCELLED) {
             // if we were cancelled, don't report or log
             return;
+        } else {
+            SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update entry:" << relativePath << " status/code: "
+               << innerResultCodeAsString(fileStatus) << "/" << fileStatus);
         }
 
         Failure f;
         f.path = relativePath;
         f.error = fileStatus;
         failures.push_back(f);
-
-        SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update entry:" << relativePath << " status/code: "
-               << innerResultCodeAsString(fileStatus) << "/" << fileStatus);
     }
 
 } // of namespace simgear

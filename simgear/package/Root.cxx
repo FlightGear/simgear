@@ -690,14 +690,17 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
         d->refreshing.erase(aCat);
     }
 
-    if ((aReason == Delegate::STATUS_REFRESHED) && (catIt == d->catalogs.end())) {
+    if (aCat->isUserEnabled() &&
+        (aReason == Delegate::STATUS_REFRESHED) && 
+        (catIt == d->catalogs.end())) 
+    {
         assert(!aCat->id().empty());
         d->catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));
 
-        // catalog might have been previously disabled, let's remove in that case
+    // catalog might have been previously disabled, let's remove in that case
         auto j = std::find(d->disabledCatalogs.begin(),
-                           d->disabledCatalogs.end(),
-                           aCat);
+                        d->disabledCatalogs.end(),
+                        aCat);
         if (j != d->disabledCatalogs.end()) {
             SG_LOG(SG_GENERAL, SG_INFO, "re-enabling disabled catalog:" << aCat->id());
             d->disabledCatalogs.erase(j);
@@ -705,7 +708,7 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
     }
 
     if (!aCat->isEnabled()) {
-        // catalog has errors, disable it
+        // catalog has errors or was disabled by user, disable it
         auto j = std::find(d->disabledCatalogs.begin(),
                            d->disabledCatalogs.end(),
                            aCat);

@@ -595,13 +595,17 @@ void Catalog::setUserEnabled(bool b)
 
     m_userEnabled = b;
     SGPath disableMarkerFile = installRoot() / "_disabled_";
-    if (m_userEnabled) {
-        sg_ofstream of(disableMarkerFile);
-        of << "1\n"; // touch the file
+
+    if (m_userEnabled == false) {
+        sg_ofstream of(disableMarkerFile, std::ios::trunc | std::ios::out);
+        of << "1" << std::flush; // touch the file
+        of.close();
     } else {
-        bool ok = disableMarkerFile.remove();
-        if (!ok) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "Failed to remove catalog-disable marker file:" << disableMarkerFile);
+        if (disableMarkerFile.exists()) {
+            const bool ok = disableMarkerFile.remove();
+            if (!ok) {
+                SG_LOG(SG_IO, SG_WARN, "Failed to remove catalog-disable marker file:" << disableMarkerFile);
+            }
         }
     }
 

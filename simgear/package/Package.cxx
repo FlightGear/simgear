@@ -34,7 +34,7 @@ namespace simgear {
 namespace pkg {
 
 Package::Package(const SGPropertyNode* aProps, CatalogRef aCatalog) :
-    m_catalog(aCatalog)
+    m_catalog(aCatalog.get())
 {
     initWithProps(aProps);
 }
@@ -233,6 +233,11 @@ InstallRef Package::existingInstall(const InstallCallback& cb) const
 std::string Package::id() const
 {
     return m_id;
+}
+
+CatalogRef Package::catalog() const
+{
+    return {m_catalog};
 }
 
 std::string Package::qualifiedId() const

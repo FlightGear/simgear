@@ -319,7 +319,9 @@ public:
 
     bool isDirActive(const std::string& path) const;
 
-private:
+    void setCachePath(const SGPath &p) { _persistentCachePath = p; }
+
+  private:
     void incrementCacheHits()
     {
         std::lock_guard<std::mutex> g(_stateLock);
@@ -340,6 +342,9 @@ private:
     void updated(SyncItem item, bool isNewDirectory);
     void fail(SyncItem failedItem);
     void notFound(SyncItem notFoundItem);
+
+    void initCompletedTilesPersistentCache();
+    void writeCompletedTilesPersistentCache() const;
 
     HTTP::Client _http;
     SyncSlot _syncSlots[NUM_SYNC_SLOTS];
@@ -530,6 +535,7 @@ void SGTerraSync::WorkerThread::run()
         _running = true;
     }
 
+    initCompletedTilesPersistentCache();
     runInternal();
 
     {
@@ -730,6 +736,7 @@ void SGTerraSync::WorkerThread::notFound(SyncItem item)
     item._status = SyncItem::NotFound;
     _freshTiles.push_back(item);
     _notFoundItems[ item._dir ] = now + UpdateInterval::SuccessfulAttempt;
+    writeCompletedTilesPersistentCache();
 }
 
 void SGTerraSync::WorkerThread::updated(SyncItem item, bool isNewDirectory)
@@ -750,6 +757,8 @@ void SGTerraSync::WorkerThread::updated(SyncItem item, bool isNewDirectory)
         _freshTiles.push_back(item);
         _completedTiles[ item._dir ] = now + UpdateInterval::SuccessfulAttempt;
     }
+
+    writeCompletedTilesPersistentCache();
 }
 
 void SGTerraSync::WorkerThread::drainWaitingTiles()
@@ -801,6 +810,68 @@ bool SGTerraSync::WorkerThread::isDirActive(const std::string& path) const
     } // of sync slots iteration
 
     return false;
+}
+
+void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache() {
+  if (!_persistentCachePath.exists()) {
+    return;
+  }
+
+  SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
+  time_t now = time(0);
+
+  try {
+    readProperties(_persistentCachePath, cacheRoot);
+  } catch (sg_exception &e) {
+    SG_LOG(SG_TERRASYNC, SG_INFO, "corrupted persistent cache, discarding");
+    return;
+  }
+
+  for (int i = 0; i < cacheRoot->nChildren(); ++i) {
+    SGPropertyNode *entry = cacheRoot->getChild(i);
+    bool isNotFound = (strcmp(entry->getName(), "not-found") == 0);
+    string tileName = entry->getStringValue("path");
+    time_t stamp = entry->getIntValue("stamp");
+    if (stamp < now) {
+      continue;
+    }
+
+    if (isNotFound) {
+      _notFoundItems[tileName] = stamp;
+    } else {
+      _completedTiles[tileName] = stamp;
+    }
+  }
+}
+
+void SGTerraSync::WorkerThread::writeCompletedTilesPersistentCache() const {
+  // cache is disabled
+  if (_persistentCachePath.isNull()) {
+    return;
+  }
+
+  sg_ofstream f(_persistentCachePath, std::ios::trunc);
+  if (!f.is_open()) {
+    return;
+  }
+
+  SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
+  TileAgeCache::const_iterator it = _completedTiles.begin();
+  for (; it != _completedTiles.end(); ++it) {
+    SGPropertyNode *entry = cacheRoot->addChild("entry");
+    entry->setStringValue("path", it->first);
+    entry->setIntValue("stamp", it->second);
+  }
+
+  it = _notFoundItems.begin();
+  for (; it != _notFoundItems.end(); ++it) {
+    SGPropertyNode *entry = cacheRoot->addChild("not-found");
+    entry->setStringValue("path", it->first);
+    entry->setIntValue("stamp", it->second);
+  }
+
+  writeProperties(f, cacheRoot, true /* write_all */);
+  f.close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -882,10 +953,17 @@ void SGTerraSync::reinit()
 #else
         _workerThread->setDNSDN( _terraRoot->getStringValue("dnsdn","terrasync.flightgear.org") );
 #endif
-        _workerThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
+
+        SGPath sceneryRoot{_terraRoot->getStringValue("scenery-dir", "")};
+        _workerThread->setLocalDir(sceneryRoot.utf8Str());
 
         SGPath installPath(_terraRoot->getStringValue("installation-dir"));
         _workerThread->setInstalledDir(installPath);
+
+        if (_terraRoot->getBoolValue("enable-persistent-cache", true)) {
+          _workerThread->setCachePath(sceneryRoot / "RecheckCache");
+        }
+
         _workerThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
 
         if (_workerThread->start())

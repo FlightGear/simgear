@@ -82,6 +82,9 @@ protected:
 
     float                           _x_step;
     float                           _y_step;
+    
+    int                             _old_width = 0;
+    int                             _old_height = 0;
 
     osg::ref_ptr<osg::Image>        _light_grid;
     osg::ref_ptr<osg::Image>        _light_indices;

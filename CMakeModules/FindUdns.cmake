@@ -38,9 +38,10 @@ else ()
 
   # show the UDNS_INCLUDE_DIRS and UDNS_LIBRARIES variables only in the advanced view
   mark_as_advanced(UDNS_INCLUDE_DIRS UDNS_LIBRARIES)
+endif ()
 
-  if(UDNS_FOUND)
- 
+if(UDNS_FOUND)
+
   if(NOT TARGET Udns::Udns)
     add_library(Udns::Udns UNKNOWN IMPORTED)
     set_target_properties(Udns::Udns PROPERTIES
@@ -52,6 +53,3 @@ else ()
     
   endif()
 endif()
-
-
-endif ()

@@ -107,7 +107,7 @@ public:
    * @param avionics    A pointer to the pre-initialized avionics sample group.
    * @param path        The path where the audio files remain.
    */
-  virtual void init( SGPropertyNode *root,
+  virtual bool init( SGPropertyNode *root,
                      SGPropertyNode *child,
                      SGSampleGroup *sgrp,
                      SGSampleGroup *avionics,

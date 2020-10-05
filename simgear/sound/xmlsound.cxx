@@ -84,7 +84,7 @@ SGXmlSound::~SGXmlSound()
     _pitch.clear();
 }
 
-void
+bool
 SGXmlSound::init( SGPropertyNode *root,
                   SGPropertyNode *node,
                   SGSampleGroup *sgrp,
@@ -315,8 +315,8 @@ SGXmlSound::init( SGPropertyNode *root,
    string soundFileStr = node->getStringValue("path", "");
    _sample = new SGSoundSample(soundFileStr.c_str(), path);
    if (!_sample->file_path().exists()) {
-      throw sg_io_exception("XML sound: couldn't find file: '" + soundFileStr + "'");
-      return;
+      SG_LOG(SG_SOUND, SG_WARN, "XML sound: couldn't find file: '" + soundFileStr + "'");
+      return false;
    }
 
    _sample->set_relative_position( offset_pos );
@@ -328,6 +328,8 @@ SGXmlSound::init( SGPropertyNode *root,
    _sample->set_volume( v );
    _sample->set_pitch( p );
    _sgrp->add( _sample, _name );
+
+   return true;
 }
 
 void

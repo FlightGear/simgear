@@ -597,8 +597,32 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
             }
         } // of creating directory step
 
-        slot.repository.reset(new HTTPRepository(path, &_http));
-        slot.repository->setBaseUrl(_httpServer + "/" + slot.currentItem._dir);
+        // optimise initial Airport download
+        if (slot.isNewDirectory &&
+            (slot.currentItem._type == SyncItem::AirportData)) {
+          SG_LOG(SG_TERRASYNC, SG_INFO, "doing Airports download via tarball");
+
+          // we want to sync the 'root' TerraSync dir, but not all of it, just
+          // the Airports_archive.tar.gz file so we use our TerraSync local root
+          // as the path (since the archive will add Airports/)
+          slot.repository.reset(new HTTPRepository(_local_dir, &_http));
+          slot.repository->setBaseUrl(_httpServer + "/");
+
+          // filter callback to *only* sync the Airport_archive tarball,
+          // and ensure no other contents are touched
+          auto f = [](const HTTPRepository::SyncItem &item) {
+            if (!item.directory.empty())
+              return false;
+            return (item.filename.find("Airports_archive.") == 0);
+          };
+
+          slot.repository->setFilter(f);
+
+        } else {
+          slot.repository.reset(new HTTPRepository(path, &_http));
+          slot.repository->setBaseUrl(_httpServer + "/" +
+                                      slot.currentItem._dir);
+        }
 
         if (_installRoot.exists()) {
             SGPath p = _installRoot;
@@ -1089,21 +1113,10 @@ bool SGTerraSync::isIdle() {return _workerThread->isIdle();}
 
 void SGTerraSync::syncAirportsModels()
 {
-    static const char* bounds = "MZAJKL"; // airport sync order: K-L, A-J, M-Z
-    // note "request" method uses LIFO order, i.e. processes most recent request first
-    for( unsigned i = 0; i < strlen(bounds)/2; i++ )
-    {
-        for ( char synced_other = bounds[2*i]; synced_other <= bounds[2*i+1]; synced_other++ )
-        {
-            ostringstream dir;
-            dir << "Airports/" << synced_other;
-            SyncItem w(dir.str(), SyncItem::AirportData);
-            _workerThread->request( w );
-        }
-    }
-
-    SyncItem w("Models", SyncItem::SharedModels);
-    _workerThread->request( w );
+  SyncItem w("Airports", SyncItem::AirportData);
+  SyncItem a("Models", SyncItem::SharedModels);
+  _workerThread->request(w);
+  _workerThread->request(a);
 }
 
 string_list SGTerraSync::getSceneryPathSuffixes() const

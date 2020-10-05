@@ -140,6 +140,7 @@ public:
     HTTPRepository::ResultCode status;
     HTTPDirectory_ptr rootDir;
     size_t totalDownloaded;
+    HTTPRepository::SyncPredicate syncPredicate;
 
     HTTP::Request_ptr updateFile(HTTPDirectory* dir, const std::string& name,
                                  size_t sz);
@@ -176,25 +177,14 @@ class HTTPDirectory
 {
     struct ChildInfo
     {
-        enum Type
-        {
-            FileType,
-            DirectoryType,
-            TarballType
-        };
+      ChildInfo(HTTPRepository::EntryType ty, const std::string &nameData,
+                const std::string &hashData)
+          : type(ty), name(nameData), hash(hashData) {}
 
-        ChildInfo(Type ty, const std::string & nameData, const std::string & hashData) :
-            type(ty),
-            name(nameData),
-            hash(hashData)
-        {
-        }
+      ChildInfo(const ChildInfo &other) = default;
 
-		    ChildInfo(const ChildInfo& other) = default;
-
-        void setSize(const std::string & sizeData)
-        {
-            sizeInBytes = ::strtol(sizeData.c_str(), NULL, 10);
+      void setSize(const std::string &sizeData) {
+        sizeInBytes = ::strtol(sizeData.c_str(), NULL, 10);
         }
 
         bool operator<(const ChildInfo& other) const
@@ -202,7 +192,7 @@ class HTTPDirectory
             return name < other.name;
         }
 
-        Type type;
+        HTTPRepository::EntryType type;
         std::string name, hash;
 		size_t sizeInBytes = 0;
 		SGPath path; // absolute path on disk
@@ -238,9 +228,9 @@ public:
 
     std::string url() const
     {
-        if (_relativePath.empty()) {
-            return _repository->baseUrl;
-        }
+      if (_relativePath.empty()) { // root directory of the repo
+        return _repository->baseUrl;
+      }
 
         return _repository->baseUrl + "/" + _relativePath;
     }
@@ -276,17 +266,17 @@ public:
 		size_t bufSize = 0;
 
 		for (const auto& child : children) {
-			if (child.type != ChildInfo::FileType)
-				continue;
+                  if (child.type != HTTPRepository::FileType)
+                    continue;
 
-			if (child.path.exists())
-				continue;
+                  if (child.path.exists())
+                    continue;
 
-			SGPath cp = _repository->installedCopyPath;
-			cp.append(relativePath());
-			cp.append(child.name);
-			if (!cp.exists()) {
-				continue;
+                  SGPath cp = _repository->installedCopyPath;
+                  cp.append(relativePath());
+                  cp.append(child.name);
+                  if (!cp.exists()) {
+                    continue;
 			}
 
 			SGBinaryFile src(cp);
@@ -315,6 +305,8 @@ public:
 
     void updateChildrenBasedOnHash()
     {
+      using SAct = HTTPRepository::SyncAction;
+
       copyInstalledChildren();
 
       ChildInfoList toBeUpdated;
@@ -323,27 +315,77 @@ public:
       PathList fsChildren = d.children(0);
       PathList orphans = d.children(0);
 
-      ChildInfoList::const_iterator it;
-      for (it=children.begin(); it != children.end(); ++it) {
+      for (const auto &c : children) {
         // Check if the file exists
-        PathList::const_iterator p = std::find_if(fsChildren.begin(), fsChildren.end(), LocalFileMatcher(*it));
-        if (p == fsChildren.end()) {
-          // File or directory does not exist on local disk, so needs to be updated.
-          toBeUpdated.push_back(ChildInfo(*it));
-        } else if (hashForChild(*it) != it->hash) {
-          // File/directory exists, but hash doesn't match.
-          toBeUpdated.push_back(ChildInfo(*it));
-          orphans.erase(std::remove(orphans.begin(), orphans.end(), *p), orphans.end());
-        } else {
-          // File/Directory exists and hash is valid.
-          orphans.erase(std::remove(orphans.begin(), orphans.end(), *p), orphans.end());
+        auto p = std::find_if(fsChildren.begin(), fsChildren.end(),
+                              LocalFileMatcher(c));
 
-          if (it->type == ChildInfo::DirectoryType) {
-              // If it's a directory,perform a recursive check.
-              HTTPDirectory* childDir = childDirectory(it->name);
-              childDir->updateChildrenBasedOnHash();
+        const bool isNew = (p == fsChildren.end());
+        const bool upToDate = hashForChild(c) == c.hash;
+
+        if (!isNew) {
+          orphans.erase(std::remove(orphans.begin(), orphans.end(), *p),
+                        orphans.end());
+        }
+
+        if (_repository->syncPredicate) {
+          const auto pathOnDisk = isNew ? absolutePath() / c.name : *p;
+          // never handle deletes here, do them at the end
+          const auto action =
+              isNew ? SAct::Add : (upToDate ? SAct::UpToDate : SAct::Update);
+          const HTTPRepository::SyncItem item = {relativePath(), c.type, c.name,
+                                                 action, pathOnDisk};
+
+          const bool doSync = _repository->syncPredicate(item);
+          if (!doSync) {
+            continue; // skip it, predicate filtered it out
           }
         }
+
+        if (isNew) {
+          // File or directory does not exist on local disk, so needs to be updated.
+          toBeUpdated.push_back(c);
+        } else if (!upToDate) {
+          // File/directory exists, but hash doesn't match.
+          toBeUpdated.push_back(c);
+        } else {
+          // File/Directory exists and hash is valid.
+
+          if (c.type == HTTPRepository::DirectoryType) {
+            // If it's a directory,perform a recursive check.
+            HTTPDirectory *childDir = childDirectory(c.name);
+            childDir->updateChildrenBasedOnHash();
+          }
+        }
+      } // of repository-defined (well, .dirIndex) children iteration
+
+      // allow the filtering of orphans; this is important so that a filter
+      // can be used to preserve non-repo files in a directory,
+      // i.e somewhat like a .gitignore
+      if (!orphans.empty() && _repository->syncPredicate) {
+        const auto ourPath = relativePath();
+        const auto pred = _repository->syncPredicate;
+
+        auto l = [ourPath, pred](const SGPath &o) {
+          // this doesn't special-case for tarballs (they will be reported as a
+          // file) I think that's okay, since a filter can see the full path
+          const auto type = o.isDir() ? HTTPRepository::DirectoryType
+                                      : HTTPRepository::FileType;
+
+          const HTTPRepository::SyncItem item = {ourPath, type, o.file(),
+                                                 SAct::Delete, o};
+
+          const bool r = pred(item);
+          // clarification: the predicate returns true if the file should be
+          // handled as normal, false if it should be skipped. But since we're
+          // inside a remove_if, we want to remove *skipped* files from orphans,
+          // so they don't get deleted. So we want to return true here, if the
+          // file should be skipped.
+          return (r == false);
+        };
+
+        auto it = std::remove_if(orphans.begin(), orphans.end(), l);
+        orphans.erase(it, orphans.end());
       }
 
       // We now have a list of entries that need to be updated, and a list
@@ -383,17 +425,18 @@ public:
     {
         ChildInfoList::const_iterator it;
         for (it = names.begin(); it != names.end(); ++it) {
-            if (it->type == ChildInfo::FileType) {
-                _repository->updateFile(this, it->name, it->sizeInBytes);
-            } else if (it->type == ChildInfo::DirectoryType){
-                HTTPDirectory* childDir = childDirectory(it->name);
-                _repository->updateDir(childDir, it->hash, it->sizeInBytes);
-            } else if (it->type == ChildInfo::TarballType) {
-                // Download a tarball just as a file.
-                _repository->updateFile(this, it->name, it->sizeInBytes);
-            } else {
-                SG_LOG(SG_TERRASYNC, SG_ALERT, "Coding error!  Unknown Child type to schedule update");
-            }
+          if (it->type == HTTPRepository::FileType) {
+            _repository->updateFile(this, it->name, it->sizeInBytes);
+          } else if (it->type == HTTPRepository::DirectoryType) {
+            HTTPDirectory *childDir = childDirectory(it->name);
+            _repository->updateDir(childDir, it->hash, it->sizeInBytes);
+          } else if (it->type == HTTPRepository::TarballType) {
+            // Download a tarball just as a file.
+            _repository->updateFile(this, it->name, it->sizeInBytes);
+          } else {
+            SG_LOG(SG_TERRASYNC, SG_ALERT,
+                   "Coding error!  Unknown Child type to schedule update");
+          }
         }
     }
 
@@ -450,19 +493,23 @@ public:
                     SGPath extractDir = p.dir();
                     ArchiveExtractor ex(extractDir);
 
-                    uint8_t* buf = (uint8_t*) alloca(128);
+                    uint8_t *buf = (uint8_t *)alloca(2048);
                     while (!f.eof()) {
-                      size_t bufSize = f.read((char*) buf, 128);
+                      size_t bufSize = f.read((char *)buf, 2048);
                       ex.extractBytes(buf, bufSize);
                     }
 
                     ex.flush();
                     if (! ex.isAtEndOfArchive()) {
                       SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << p);
+                      _repository->failedToUpdateChild(
+                          _relativePath, HTTPRepository::REPO_ERROR_IO);
                     }
 
                     if (ex.hasError()) {
                       SG_LOG(SG_TERRASYNC, SG_ALERT, "Error extracting " << p);
+                      _repository->failedToUpdateChild(
+                          _relativePath, HTTPRepository::REPO_ERROR_IO);
                     }
 
                   } else {
@@ -576,9 +623,12 @@ private:
                 continue;
             }
 
-            ChildInfo ci = ChildInfo(ChildInfo::FileType, tokens[1], tokens[2]);
-            if (typeData == "d") ci.type = ChildInfo::DirectoryType;
-            if (typeData == "t") ci.type = ChildInfo::TarballType;
+            ChildInfo ci =
+                ChildInfo(HTTPRepository::FileType, tokens[1], tokens[2]);
+            if (typeData == "d")
+              ci.type = HTTPRepository::DirectoryType;
+            if (typeData == "t")
+              ci.type = HTTPRepository::TarballType;
 
             children.emplace_back(ci);
 			      children.back().path = absolutePath() / tokens[1];
@@ -612,10 +662,13 @@ private:
 
     std::string hashForChild(const ChildInfo& child) const
     {
-		    SGPath p(child.path);
-        if (child.type == ChildInfo::DirectoryType) p.append(".dirindex");
-        if (child.type == ChildInfo::TarballType) p.concat(".tgz");  // For tarballs the hash is against the tarball file itself
-        return _repository->hashForPath(p);
+      SGPath p(child.path);
+      if (child.type == HTTPRepository::DirectoryType)
+        p.append(".dirindex");
+      if (child.type == HTTPRepository::TarballType)
+        p.concat(
+            ".tgz"); // For tarballs the hash is against the tarball file itself
+      return _repository->hashForPath(p);
     }
 
     HTTPRepoPrivate* _repository;
@@ -718,6 +771,8 @@ std::string HTTPRepository::resultCodeAsString(ResultCode code)
 {
     return innerResultCodeAsString(code);
 }
+
+void HTTPRepository::setFilter(SyncPredicate sp) { _d->syncPredicate = sp; }
 
 HTTPRepository::ResultCode
 HTTPRepository::failure() const
@@ -847,9 +902,15 @@ HTTPRepository::failure() const
             if (responseCode() == 200) {
                 std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
                 if (!_targetHash.empty() && (hash != _targetHash)) {
-                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM);
-                    _directory->repository()->finishedRequest(this);
-                    return;
+                  SG_LOG(SG_TERRASYNC, SG_WARN,
+                         "Checksum error getting dirIndex for:"
+                             << _directory->relativePath() << "; expected "
+                             << _targetHash << " but received " << hash);
+
+                  _directory->failedToUpdate(
+                      HTTPRepository::REPO_ERROR_CHECKSUM);
+                  _directory->repository()->finishedRequest(this);
+                  return;
                 }
 
                 std::string curHash = _directory->repository()->hashForPath(path());

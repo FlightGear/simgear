@@ -20,6 +20,7 @@
 #ifndef SG_IO_HTTP_REPOSITORY_HXX
 #define SG_IO_HTTP_REPOSITORY_HXX
 
+#include <functional>
 #include <memory>
 
 #include <simgear/misc/sg_path.hxx>
@@ -74,7 +75,23 @@ public:
     
     static std::string resultCodeAsString(ResultCode code);
 
-private:
+    enum class SyncAction { Add, Update, Delete, UpToDate };
+
+    enum EntryType { FileType, DirectoryType, TarballType };
+
+    struct SyncItem {
+      const std::string directory; // relative path in the repository
+      const EntryType type;
+      const std::string filename;
+      const SyncAction action;
+      const SGPath pathOnDisk; // path the entry does / will have
+    };
+
+    using SyncPredicate = std::function<bool(const SyncItem &item)>;
+
+    void setFilter(SyncPredicate sp);
+
+  private:
     bool isBare() const;
 
     std::unique_ptr<HTTPRepoPrivate> _d;

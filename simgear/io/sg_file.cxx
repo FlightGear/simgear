@@ -71,21 +71,31 @@ SGFile::~SGFile() {
 std::string SGFile::computeHash()
 {
     if (!file_name.exists())
-        return std::string();
+        return {};
+        
     simgear::sha1nfo info;
     sha1_init(&info);
-    char* buf = static_cast<char*>(malloc(1024 * 1024));
+    
+    // unique_ptr with custom deleter for exception safety
+    const int bufSize = 1024 * 1024;
+    std::unique_ptr<char, std::function<void(char*)>> buf{static_cast<char*>(malloc(bufSize)), 
+        [](char* p) { free(p); }};
+
+    if (!buf) {
+        SG_LOG(SG_IO, SG_ALERT, "Failed to malloc buffer for SHA1 check");
+    }
+
     size_t readLen;
     SGBinaryFile f(file_name);
     if (!f.open(SG_IO_IN)) {
-        throw sg_io_exception("Couldn't open file for compute hash", file_name);
+        SG_LOG(SG_IO, SG_ALERT, "SGFile::computeHash: Failed to open " << file_name);
+        return {};
     }
-    while ((readLen = f.read(buf, 1024 * 1024)) > 0) {
-        sha1_write(&info, buf, readLen);
+    while ((readLen = f.read(buf.get(), bufSize)) > 0) {
+        sha1_write(&info, buf.get(), readLen);
     }
 
     f.close();
-    free(buf);
     std::string hashBytes((char*)sha1_result(&info), HASH_LENGTH);
     return simgear::strutils::encodeHex(hashBytes);
 }

@@ -49,6 +49,11 @@ ResourceManager* ResourceManager::instance()
     return static_manager;
 }    
 
+bool ResourceManager::haveInstance()
+{
+    return static_manager != nullptr;
+}
+
 ResourceManager::~ResourceManager()
 {
     assert(this == static_manager);

@@ -47,6 +47,8 @@ public:
 
     static ResourceManager* instance();
 
+    static bool haveInstance();
+
     static void reset();
 
     /**

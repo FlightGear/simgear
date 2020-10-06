@@ -314,7 +314,15 @@ public:
 
       simgear::Dir d(absolutePath());
       PathList fsChildren = d.children(0);
-      PathList orphans = d.children(0);
+      PathList orphans = fsChildren;
+
+      // on Windows, children() will return our .hashes and .dirIndex
+      // entries; skip them.
+      orphans.erase(std::remove_if(orphans.begin(), orphans.end(),
+                                   [](const SGPath &p) {
+                                     return p.file().front() == '.';
+                                   }),
+                    orphans.end());
 
       for (const auto &c : children) {
         // Check if the file exists

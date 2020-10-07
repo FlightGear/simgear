@@ -356,6 +356,7 @@ private:
     mutable bool _exists : 1;
     mutable bool _isDir : 1;
     mutable bool _isFile : 1;
+    mutable bool _existsCached : 1; ///< only used on Windows
     mutable time_t _modTime;
     mutable size_t _size;
 };

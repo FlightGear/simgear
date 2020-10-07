@@ -111,7 +111,7 @@ public:
 
     typedef std::vector<HashCacheEntry> HashCache;
     HashCache hashes;
-    bool hashCacheDirty;
+    int hashCacheDirty = 0;
 
     struct Failure
     {
@@ -123,7 +123,6 @@ public:
     FailureList failures;
 
     HTTPRepoPrivate(HTTPRepository* parent) :
-        hashCacheDirty(false),
         p(parent),
         isUpdating(false),
         status(HTTPRepository::REPO_NO_ERROR),
@@ -1083,10 +1082,10 @@ HTTPRepository::failure() const
     void HTTPRepoPrivate::updatedFileContents(const SGPath& p, const std::string& newHash)
     {
         // remove the existing entry
-        HashCache::iterator it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p));
+        auto it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p));
         if (it != hashes.end()) {
             hashes.erase(it);
-            hashCacheDirty = true;
+            ++hashCacheDirty;
         }
 
         if (newHash.empty()) {
@@ -1105,12 +1104,12 @@ HTTPRepository::failure() const
         entry.lengthBytes = p2.sizeInBytes();
         hashes.push_back(entry);
 
-        hashCacheDirty = true;
+        ++hashCacheDirty ;
     }
 
     void HTTPRepoPrivate::writeHashCache()
     {
-        if (!hashCacheDirty) {
+        if (hashCacheDirty == 0) {
             return;
         }
 
@@ -1123,7 +1122,7 @@ HTTPRepository::failure() const
             << it->lengthBytes << "*" << it->hashHex << "\n";
         }
         stream.close();
-        hashCacheDirty = false;
+        hashCacheDirty = 0;
     }
 
     void HTTPRepoPrivate::parseHashCache()
@@ -1237,10 +1236,16 @@ HTTPRepository::failure() const
             http->makeRequest(rr);
         }
 
-        writeHashCache();
+        // rate limit how often we write this, since otherwise
+        // it dominates the time on Windows. 256 seems about right,
+        // causes a write a few times a minute.
+        if (hashCacheDirty > 256) {
+            writeHashCache();
+        }
 
         if (activeRequests.empty() && queuedRequests.empty()) {
             isUpdating = false;
+            writeHashCache();
         }
     }
 

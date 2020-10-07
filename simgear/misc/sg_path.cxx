@@ -44,6 +44,7 @@
 #if defined(SG_WINDOWS)
 #  include <direct.h>
 #  include <sys/utime.h>
+#  include <Shlwapi.h>
 #endif
 
 #include "sg_path.hxx"
@@ -194,7 +195,8 @@ SGPath::SGPath(PermissionChecker validator)
     _permission_checker(validator),
     _cached(false),
     _rwCached(false),
-    _cacheEnabled(true)
+    _cacheEnabled(true),
+    _existsCached(false)
 {
 }
 
@@ -205,7 +207,8 @@ SGPath::SGPath( const std::string& p, PermissionChecker validator )
     _permission_checker(validator),
     _cached(false),
     _rwCached(false),
-    _cacheEnabled(true)
+    _cacheEnabled(true),
+    _existsCached(false)
 {
     fix();
 }
@@ -230,7 +233,8 @@ SGPath::SGPath( const SGPath& p,
     _permission_checker(validator),
     _cached(false),
     _rwCached(false),
-    _cacheEnabled(p._cacheEnabled)
+    _cacheEnabled(p._cacheEnabled),
+    _existsCached(false)
 {
     append(r);
     fix();
@@ -510,6 +514,19 @@ void SGPath::checkAccess() const
 
 bool SGPath::exists() const
 {
+#if defined(SG_WINDOWS)
+  // optimisation: _wstat is slow, eg for TerraSync
+  if (!_cached && !_existsCached) {
+      std::wstring w(wstr());
+    if ((path.length() > 1) && (path.back() == '/')) {
+	    w.pop_back();
+    }
+
+    _existsCached = true;
+    _exists = PathFileExistsW(w.c_str());
+    return _exists;
+  }
+#endif
   validate();
   return _exists;
 }

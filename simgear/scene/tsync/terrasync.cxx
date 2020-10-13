@@ -743,6 +743,7 @@ void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
     _state._fail_count++;
     failedItem._status = SyncItem::Failed;
     _freshTiles.push_back(failedItem);
+    // not we also end up here for partial syncs
     SG_LOG(SG_TERRASYNC,SG_INFO,
            "Failed to sync'" << failedItem._dir << "'");
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;

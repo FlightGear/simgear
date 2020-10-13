@@ -1,16 +1,18 @@
 #include <cassert>
 #include <cstdlib>
+#include <errno.h>
+#include <fcntl.h>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <sstream>
-#include <errno.h>
-#include <fcntl.h>
 
 #include <simgear/simgear_config.h>
 
-#include "test_HTTP.hxx"
-#include "HTTPRepository.hxx"
 #include "HTTPClient.hxx"
+#include "HTTPRepository.hxx"
+#include "HTTPTestApi_private.hxx"
+#include "test_HTTP.hxx"
 
 #include <simgear/misc/strutils.hxx>
 #include <simgear/misc/sg_hash.hxx>
@@ -24,6 +26,8 @@
 #include <simgear/io/sg_file.hxx>
 
 using namespace simgear;
+
+using TestApi = simgear::HTTP::TestApi;
 
 std::string dataForFile(const std::string& parentName, const std::string& name, int revision)
 {
@@ -44,6 +48,9 @@ std::string hashForData(const std::string& d)
     sha1_write(&info, d.data(), d.size());
     return strutils::encodeHex(sha1_result(&info), HASH_LENGTH);
 }
+
+class TestRepoEntry;
+using AccessCallback = std::function<void(TestRepoEntry &entry)>;
 
 class TestRepoEntry
 {
@@ -70,7 +77,8 @@ public:
     int requestCount;
     bool getWillFail;
     bool returnCorruptData;
-    std::unique_ptr<SGCallback> accessCallback;
+
+    AccessCallback accessCallback;
 
     void clearRequestCounts();
 
@@ -270,8 +278,8 @@ public:
                 return;
             }
 
-            if (entry->accessCallback.get()) {
-                (*entry->accessCallback)();
+            if (entry->accessCallback) {
+              entry->accessCallback(*entry);
             }
 
             if (entry->getWillFail) {
@@ -282,20 +290,29 @@ public:
             entry->requestCount++;
 
             std::string content;
+            bool closeSocket = false;
+            size_t contentSize = 0;
+
             if (entry->returnCorruptData) {
                 content = dataForFile("!$£$!" + entry->parent->name,
                                       "corrupt_" + entry->name,
                                       entry->revision);
+                contentSize = content.size();
             } else {
-                content = entry->data();
+              content = entry->data();
+              contentSize = content.size();
             }
 
             std::stringstream d;
             d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << content.size() << "\r\n";
+            d << "Content-Length:" << contentSize << "\r\n";
             d << "\r\n"; // final CRLF to terminate the headers
             d << content;
             push(d.str().c_str());
+
+            if (closeSocket) {
+              closeWhenDone();
+            }
         } else {
             sendErrorResponse(404, false, "");
         }
@@ -399,6 +416,15 @@ void waitForUpdateComplete(HTTP::Client* cl, HTTPRepository* repo)
     }
 
     std::cerr << "timed out" << std::endl;
+}
+
+void runForTime(HTTP::Client *cl, HTTPRepository *repo, int msec = 15) {
+  SGTimeStamp start(SGTimeStamp::now());
+  while (start.elapsedMSec() < msec) {
+    cl->update();
+    testServer.poll();
+    SGTimeStamp::sleepForMSec(1);
+  }
 }
 
 void testBasicClone(HTTP::Client* cl)
@@ -618,9 +644,19 @@ void testAbandonCorruptFiles(HTTP::Client* cl)
     repo->setBaseUrl("http://localhost:2000/repo");
     repo->update();
     waitForUpdateComplete(cl, repo.get());
-    if (repo->failure() != HTTPRepository::REPO_ERROR_CHECKSUM) {
-        std::cerr << "Got failure state:" << repo->failure() << std::endl;
-        throw sg_exception("Bad result from corrupt files test");
+    if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
+      std::cerr << "Got failure state:" << repo->failure() << std::endl;
+      throw sg_exception("Bad result from corrupt files test");
+    }
+
+    auto failedFiles = repo->failures();
+    if (failedFiles.size() != 1) {
+      throw sg_exception("Bad result from corrupt files test");
+    }
+
+    if (failedFiles.front().path.utf8Str() != "dirB/subdirG/fileBGA") {
+      throw sg_exception("Bad path from corrupt files test:" +
+                         failedFiles.front().path.utf8Str());
     }
 
     repo.reset();
@@ -657,15 +693,21 @@ void testServerModifyDuringSync(HTTP::Client* cl)
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
 
-    global_repo->findEntry("dirA/fileAA")->accessCallback.reset(make_callback(&modifyBTree));
+    global_repo->findEntry("dirA/fileAA")->accessCallback =
+        [](const TestRepoEntry &r) {
+          std::cout << "Modifying sub-tree" << std::endl;
+          global_repo->findEntry("dirB/subdirA/fileBAC")->revision++;
+          global_repo->defineFile("dirB/subdirZ/fileBZA");
+          global_repo->findEntry("dirB/subdirB/fileBBB")->revision++;
+        };
 
     repo->update();
     waitForUpdateComplete(cl, repo.get());
 
-    global_repo->findEntry("dirA/fileAA")->accessCallback.reset();
+    global_repo->findEntry("dirA/fileAA")->accessCallback = AccessCallback{};
 
-    if (repo->failure() != HTTPRepository::REPO_ERROR_CHECKSUM) {
-        throw sg_exception("Bad result from modify during sync test");
+    if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
+      throw sg_exception("Bad result from modify during sync test");
     }
 
     std::cout << "Passed test modify server during sync" << std::endl;
@@ -755,6 +797,103 @@ void testCopyInstalledChildren(HTTP::Client* cl)
     std::cout << "passed Copy installed children" << std::endl;
 }
 
+void testRetryAfterSocketFailure(HTTP::Client *cl) {
+  global_repo->clearRequestCounts();
+  global_repo->clearFailFlags();
+
+  std::unique_ptr<HTTPRepository> repo;
+  SGPath p(simgear::Dir::current().path());
+  p.append("http_repo_retry_after_socket_fail");
+  simgear::Dir pd(p);
+  if (pd.exists()) {
+    pd.removeChildren();
+  }
+
+  repo.reset(new HTTPRepository(p, cl));
+  repo->setBaseUrl("http://localhost:2000/repo");
+
+  int aaFailsRemaining = 2;
+  int subdirBAFailsRemaining = 2;
+  TestApi::setResponseDoneCallback(
+      cl, [&aaFailsRemaining, &subdirBAFailsRemaining](int curlResult,
+                                                       HTTP::Request_ptr req) {
+        if (req->url() == "http://localhost:2000/repo/dirA/fileAA") {
+          if (aaFailsRemaining == 0)
+            return false;
+
+          --aaFailsRemaining;
+          TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
+          return true;
+        } else if (req->url() ==
+                   "http://localhost:2000/repo/dirB/subdirA/.dirindex") {
+          if (subdirBAFailsRemaining == 0)
+            return false;
+
+          --subdirBAFailsRemaining;
+          TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
+          return true;
+        } else {
+          return false;
+        }
+      });
+
+  repo->update();
+  waitForUpdateComplete(cl, repo.get());
+
+  if (repo->failure() != HTTPRepository::REPO_NO_ERROR) {
+    throw sg_exception("Bad result from retry socket failure test");
+  }
+
+  verifyFileState(p, "dirA/fileAA");
+  verifyFileState(p, "dirB/subdirA/fileBAA");
+  verifyFileState(p, "dirB/subdirA/fileBAC");
+
+  verifyRequestCount("dirA/fileAA", 3);
+  verifyRequestCount("dirB/subdirA", 3);
+  verifyRequestCount("dirB/subdirA/fileBAC", 1);
+}
+
+void testPersistentSocketFailure(HTTP::Client *cl) {
+  global_repo->clearRequestCounts();
+  global_repo->clearFailFlags();
+
+  std::unique_ptr<HTTPRepository> repo;
+  SGPath p(simgear::Dir::current().path());
+  p.append("http_repo_persistent_socket_fail");
+  simgear::Dir pd(p);
+  if (pd.exists()) {
+    pd.removeChildren();
+  }
+
+  repo.reset(new HTTPRepository(p, cl));
+  repo->setBaseUrl("http://localhost:2000/repo");
+
+  TestApi::setResponseDoneCallback(
+      cl, [](int curlResult, HTTP::Request_ptr req) {
+        const auto url = req->url();
+        if (url.find("http://localhost:2000/repo/dirB") == 0) {
+          TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
+          return true;
+        }
+
+        return false;
+      });
+
+  repo->update();
+  waitForUpdateComplete(cl, repo.get());
+
+  if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
+    throw sg_exception("Bad result from retry socket failure test");
+  }
+
+  verifyFileState(p, "dirA/fileAA");
+  verifyRequestCount("dirA/fileAA", 1);
+
+  verifyRequestCount("dirD/fileDA", 1);
+  verifyRequestCount("dirD/subdirDA/fileDAA", 1);
+  verifyRequestCount("dirD/subdirDB/fileDBA", 1);
+}
+
 int main(int argc, char* argv[])
 {
   sglog().setLogLevels( SG_ALL, SG_INFO );
@@ -800,6 +939,8 @@ int main(int argc, char* argv[])
     cl.clearAllConnections();
 
     testCopyInstalledChildren(&cl);
+    testRetryAfterSocketFailure(&cl);
+    testPersistentSocketFailure(&cl);
 
     std::cout << "all tests passed ok" << std::endl;
     return 0;

@@ -36,10 +36,12 @@ set(SOURCES
     sg_socket.cxx
     sg_socket_udp.cxx
     HTTPClient.cxx
+    HTTPTestApi_private.hxx
     HTTPFileRequest.cxx
     HTTPMemoryRequest.cxx
     HTTPRequest.cxx
     HTTPRepository.cxx
+    HTTPRepository_private.hxx
     untar.cxx
     DNSClient.cxx
     )

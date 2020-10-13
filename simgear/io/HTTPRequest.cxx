@@ -56,6 +56,15 @@ Request::~Request()
 
 }
 
+void Request::prepareForRetry() {
+  setReadyState(UNSENT);
+  _willClose = false;
+  _connectionCloseHeader = false;
+  _responseStatus = 0;
+  _responseLength = 0;
+  _receivedBodyBytes = 0;
+}
+
 //------------------------------------------------------------------------------
 Request* Request::done(const Callback& cb)
 {

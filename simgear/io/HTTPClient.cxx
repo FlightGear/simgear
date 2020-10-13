@@ -37,7 +37,6 @@
 
 #include <simgear/simgear_config.h>
 
-#include <curl/multi.h>
 
 #include <simgear/io/sg_netChat.hxx>
 
@@ -46,6 +45,9 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/structure/exception.hxx>
+
+#include "HTTPClient_private.hxx"
+#include "HTTPTestApi_private.hxx"
 
 #if defined( HAVE_VERSION_H ) && HAVE_VERSION_H
 #include "version.h"
@@ -64,50 +66,20 @@ namespace HTTP
 extern const int DEFAULT_HTTP_PORT = 80;
 const char* CONTENT_TYPE_URL_ENCODED = "application/x-www-form-urlencoded";
 
-class Connection;
-typedef std::multimap<std::string, Connection*> ConnectionDict;
-typedef std::list<Request_ptr> RequestList;
-
-class Client::ClientPrivate
-{
-public:
-    CURLM* curlMulti;
-
-    void createCurlMulti()
-    {
-        curlMulti = curl_multi_init();
-        // see https://curl.haxx.se/libcurl/c/CURLMOPT_PIPELINING.html
-        // we request HTTP 1.1 pipelining
-        curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, 1 /* aka CURLPIPE_HTTP1 */);
+void Client::ClientPrivate::createCurlMulti() {
+  curlMulti = curl_multi_init();
+  // see https://curl.haxx.se/libcurl/c/CURLMOPT_PIPELINING.html
+  // we request HTTP 1.1 pipelining
+  curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, 1 /* aka CURLPIPE_HTTP1 */);
 #if (LIBCURL_VERSION_MINOR >= 30)
-        curl_multi_setopt(curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxConnections);
-        curl_multi_setopt(curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH,
-                          (long) maxPipelineDepth);
-        curl_multi_setopt(curlMulti, CURLMOPT_MAX_HOST_CONNECTIONS,
-                          (long) maxHostConnections);
+  curl_multi_setopt(curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS,
+                    (long)maxConnections);
+  curl_multi_setopt(curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH,
+                    (long)maxPipelineDepth);
+  curl_multi_setopt(curlMulti, CURLMOPT_MAX_HOST_CONNECTIONS,
+                    (long)maxHostConnections);
 #endif
-    }
-
-    typedef std::map<Request_ptr, CURL*> RequestCurlMap;
-    RequestCurlMap requests;
-
-    std::string userAgent;
-    std::string proxy;
-    int proxyPort;
-    std::string proxyAuth;
-    unsigned int maxConnections;
-    unsigned int maxHostConnections;
-    unsigned int maxPipelineDepth;
-
-    RequestList pendingRequests;
-
-    SGTimeStamp timeTransferSample;
-    unsigned int bytesTransferred;
-    unsigned int lastTransferRate;
-    uint64_t totalBytesDownloaded;
-
-    SGPath tlsCertificatePath;
-};
+}
 
 Client::Client() :
     d(new ClientPrivate)
@@ -223,12 +195,23 @@ void Client::update(int waitTimeout)
           assert(it->second == e);
           d->requests.erase(it);
 
-        if (msg->data.result == 0) {
-          req->responseComplete();
-        } else {
-          SG_LOG(SG_IO, SG_WARN, "CURL Result:" << msg->data.result << " " << curl_easy_strerror(msg->data.result));
-          req->setFailure(msg->data.result, curl_easy_strerror(msg->data.result));
-        }
+          bool doProcess = true;
+          if (d->testsuiteResponseDoneCallback) {
+            doProcess =
+                !d->testsuiteResponseDoneCallback(msg->data.result, req);
+          }
+
+          if (doProcess) {
+            if (msg->data.result == 0) {
+              req->responseComplete();
+            } else {
+              SG_LOG(SG_IO, SG_WARN,
+                     "CURL Result:" << msg->data.result << " "
+                                    << curl_easy_strerror(msg->data.result));
+              req->setFailure(msg->data.result,
+                              curl_easy_strerror(msg->data.result));
+            }
+          }
 
         curl_multi_remove_handle(d->curlMulti, e);
         curl_easy_cleanup(e);
@@ -557,6 +540,17 @@ void Client::clearAllConnections()
 {
     curl_multi_cleanup(d->curlMulti);
     d->createCurlMulti();
+}
+
+/////////////////////////////////////////////////////////////////////
+
+void TestApi::setResponseDoneCallback(Client *cl, ResponseDoneCallback cb) {
+  cl->d->testsuiteResponseDoneCallback = cb;
+}
+
+void TestApi::markRequestAsFailed(Request_ptr req, int curlCode,
+                                  const std::string &message) {
+  req->setFailure(curlCode, message);
 }
 
 } // of namespace HTTP

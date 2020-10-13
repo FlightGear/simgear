@@ -33,63 +33,76 @@ class HTTPRepoPrivate;
 class HTTPRepository
 {
 public:
-    enum ResultCode {
-        REPO_NO_ERROR = 0,
-        REPO_ERROR_NOT_FOUND,
-        REPO_ERROR_SOCKET,
-        SVN_ERROR_XML,
-        SVN_ERROR_TXDELTA,
-        REPO_ERROR_IO,
-        REPO_ERROR_CHECKSUM,
-        REPO_ERROR_FILE_NOT_FOUND,
-        REPO_ERROR_HTTP,
-        REPO_ERROR_CANCELLED,
-        REPO_PARTIAL_UPDATE
-    };
+  enum ResultCode {
+    REPO_NO_ERROR = 0,
+    REPO_ERROR_NOT_FOUND,
+    REPO_ERROR_SOCKET,
+    SVN_ERROR_XML,
+    SVN_ERROR_TXDELTA,
+    REPO_ERROR_IO,
+    REPO_ERROR_CHECKSUM,
+    REPO_ERROR_FILE_NOT_FOUND,
+    REPO_ERROR_HTTP,
+    REPO_ERROR_CANCELLED,
+    REPO_PARTIAL_UPDATE ///< repository is working, but file-level failures
+                        ///< occurred
+  };
 
-    HTTPRepository(const SGPath& root, HTTP::Client* cl);
-    virtual ~HTTPRepository();
+  HTTPRepository(const SGPath &root, HTTP::Client *cl);
+  virtual ~HTTPRepository();
 
-    virtual SGPath fsBase() const;
+  virtual SGPath fsBase() const;
 
-    virtual void setBaseUrl(const std::string& url);
-    virtual std::string baseUrl() const;
+  virtual void setBaseUrl(const std::string &url);
+  virtual std::string baseUrl() const;
 
-    virtual HTTP::Client* http() const;
+  virtual HTTP::Client *http() const;
 
-    virtual void update();
+  virtual void update();
 
-    virtual bool isDoingSync() const;
+  virtual bool isDoingSync() const;
 
-    virtual ResultCode failure() const;
+  virtual ResultCode failure() const;
 
-    virtual size_t bytesToDownload() const;
+  virtual size_t bytesToDownload() const;
 
-    virtual size_t bytesDownloaded() const;
+  virtual size_t bytesDownloaded() const;
 
-    /**
-     * optionally provide the location of an installer copy of this
-     * repository. When a file is missing it will be copied from this tree.
-     */
-    void setInstalledCopyPath(const SGPath& copyPath);
-    
-    static std::string resultCodeAsString(ResultCode code);
+  /**
+   * optionally provide the location of an installer copy of this
+   * repository. When a file is missing it will be copied from this tree.
+   */
+  void setInstalledCopyPath(const SGPath &copyPath);
 
-    enum class SyncAction { Add, Update, Delete, UpToDate };
+  static std::string resultCodeAsString(ResultCode code);
 
-    enum EntryType { FileType, DirectoryType, TarballType };
+  enum class SyncAction { Add, Update, Delete, UpToDate };
 
-    struct SyncItem {
-      const std::string directory; // relative path in the repository
-      const EntryType type;
-      const std::string filename;
-      const SyncAction action;
-      const SGPath pathOnDisk; // path the entry does / will have
-    };
+  enum EntryType { FileType, DirectoryType, TarballType };
+
+  struct SyncItem {
+    const std::string directory; // relative path in the repository
+    const EntryType type;
+    const std::string filename;
+    const SyncAction action;
+    const SGPath pathOnDisk; // path the entry does / will have
+  };
 
     using SyncPredicate = std::function<bool(const SyncItem &item)>;
 
     void setFilter(SyncPredicate sp);
+
+    struct Failure {
+      SGPath path;
+      ResultCode error;
+    };
+
+    using FailureVec = std::vector<Failure>;
+
+    /**
+     * @brief return file-level failures
+     */
+    FailureVec failures() const;
 
   private:
     bool isBare() const;

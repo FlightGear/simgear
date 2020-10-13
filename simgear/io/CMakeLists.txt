@@ -35,10 +35,12 @@ set(SOURCES
     sg_socket.cxx
     sg_socket_udp.cxx
     HTTPClient.cxx
+    HTTPTestApi_private.hxx
     HTTPFileRequest.cxx
     HTTPMemoryRequest.cxx
     HTTPRequest.cxx
     HTTPRepository.cxx
+    HTTPRepository_private.hxx
     untar.cxx
     )
 
@@ -81,6 +83,7 @@ add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
 
 add_executable(test_repository test_repository.cxx)
 target_link_libraries(test_repository ${TEST_LIBS})
+target_compile_definitions(test_repository PUBLIC BUILDING_TESTSUITE)
 add_test(http_repository ${EXECUTABLE_OUTPUT_PATH}/test_repository)
 
 add_executable(test_untar test_untar.cxx)

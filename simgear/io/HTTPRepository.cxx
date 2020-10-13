@@ -45,132 +45,43 @@
 
 #include <simgear/misc/sg_hash.hxx>
 
+#include "HTTPRepository_private.hxx"
+
 namespace simgear
 {
 
-    class HTTPDirectory;
-    using HTTPDirectory_ptr = std::unique_ptr<HTTPDirectory>;
+namespace {
 
-    class HTTPRepoGetRequest : public HTTP::Request
-    {
-    public:
-        HTTPRepoGetRequest(HTTPDirectory* d, const std::string& u) :
-            HTTP::Request(u),
-            _directory(d)
-        {
-        }
+std::string innerResultCodeAsString(HTTPRepository::ResultCode code) {
+  switch (code) {
+  case HTTPRepository::REPO_NO_ERROR:
+    return "no error";
+  case HTTPRepository::REPO_ERROR_NOT_FOUND:
+    return "not found";
+  case HTTPRepository::REPO_ERROR_SOCKET:
+    return "socket error";
+  case HTTPRepository::SVN_ERROR_XML:
+    return "malformed XML";
+  case HTTPRepository::SVN_ERROR_TXDELTA:
+    return "malformed XML";
+  case HTTPRepository::REPO_ERROR_IO:
+    return "I/O error";
+  case HTTPRepository::REPO_ERROR_CHECKSUM:
+    return "checksum verification error";
+  case HTTPRepository::REPO_ERROR_FILE_NOT_FOUND:
+    return "file not found";
+  case HTTPRepository::REPO_ERROR_HTTP:
+    return "HTTP-level error";
+  case HTTPRepository::REPO_ERROR_CANCELLED:
+    return "cancelled";
+  case HTTPRepository::REPO_PARTIAL_UPDATE:
+    return "partial update (incomplete)";
+  }
 
-        virtual void cancel();
+  return "Unknown response code";
+}
 
-        size_t contentSize() const
-        {
-            return _contentSize;
-        }
-
-        void setContentSize(size_t sz)
-        {
-            _contentSize = sz;
-        }
-    protected:
-        HTTPDirectory* _directory;
-        size_t _contentSize = 0;
-    };
-
-    typedef SGSharedPtr<HTTPRepoGetRequest> RepoRequestPtr;
-
-    std::string innerResultCodeAsString(HTTPRepository::ResultCode code)
-    {
-        switch (code) {
-        case HTTPRepository::REPO_NO_ERROR:     return "no error";
-        case HTTPRepository::REPO_ERROR_NOT_FOUND:  return "not found";
-        case HTTPRepository::REPO_ERROR_SOCKET:     return "socket error";
-        case HTTPRepository::SVN_ERROR_XML:        return "malformed XML";
-        case HTTPRepository::SVN_ERROR_TXDELTA:        return "malformed XML";
-        case HTTPRepository::REPO_ERROR_IO:         return "I/O error";
-        case HTTPRepository::REPO_ERROR_CHECKSUM:         return "checksum verification error";
-        case HTTPRepository::REPO_ERROR_FILE_NOT_FOUND: return "file not found";
-        case HTTPRepository::REPO_ERROR_HTTP:   return "HTTP-level error";
-        case HTTPRepository::REPO_ERROR_CANCELLED:   return "cancelled";
-        case HTTPRepository::REPO_PARTIAL_UPDATE:   return "partial update (incomplete)";
-        }
-
-        return "Unknown response code";
-    }
-
-class HTTPRepoPrivate
-{
-public:
-    struct HashCacheEntry
-    {
-        std::string filePath;
-        time_t modTime;
-        size_t lengthBytes;
-        std::string hashHex;
-
-    };
-
-    typedef std::vector<HashCacheEntry> HashCache;
-    HashCache hashes;
-    int hashCacheDirty = 0;
-
-    struct Failure
-    {
-        SGPath path;
-        HTTPRepository::ResultCode error;
-    };
-
-    typedef std::vector<Failure> FailureList;
-    FailureList failures;
-
-    HTTPRepoPrivate(HTTPRepository* parent) :
-        p(parent),
-        isUpdating(false),
-        status(HTTPRepository::REPO_NO_ERROR),
-        totalDownloaded(0)
-    { ; }
-
-    ~HTTPRepoPrivate();
-
-    HTTPRepository* p; // link back to outer
-    HTTP::Client* http;
-    std::string baseUrl;
-    SGPath basePath;
-    bool isUpdating;
-    HTTPRepository::ResultCode status;
-    HTTPDirectory_ptr rootDir;
-    size_t totalDownloaded;
-    HTTPRepository::SyncPredicate syncPredicate;
-
-    HTTP::Request_ptr updateFile(HTTPDirectory* dir, const std::string& name,
-                                 size_t sz);
-    HTTP::Request_ptr updateDir(HTTPDirectory* dir, const std::string& hash,
-                                size_t sz);
-
-    std::string hashForPath(const SGPath& p);
-    void updatedFileContents(const SGPath& p, const std::string& newHash);
-    void parseHashCache();
-    std::string computeHashForPath(const SGPath& p);
-    void writeHashCache();
-
-    void failedToGetRootIndex(HTTPRepository::ResultCode st);
-    void failedToUpdateChild(const SGPath& relativePath,
-                             HTTPRepository::ResultCode fileStatus);
-
-    typedef std::vector<RepoRequestPtr> RequestVector;
-    RequestVector queuedRequests,
-        activeRequests;
-
-    void makeRequest(RepoRequestPtr req);
-    void finishedRequest(const RepoRequestPtr& req);
-
-    HTTPDirectory* getOrCreateDirectory(const std::string& path);
-    bool deleteDirectory(const std::string& relPath, const SGPath& absPath);
-
-    typedef std::vector<HTTPDirectory_ptr> DirectoryVector;
-    DirectoryVector directories;
-
-    SGPath installedCopyPath;
-};
+} // namespace
 
 class HTTPDirectory
 {
@@ -243,6 +154,8 @@ public:
         children.clear();
         parseDirIndex(children);
         std::sort(children.begin(), children.end());
+
+        _repository->updatedChildSuccessfully(_relativePath);
     }
 
     void failedToUpdate(HTTPRepository::ResultCode status)
@@ -470,9 +383,14 @@ public:
                 SG_LOG(SG_TERRASYNC, SG_WARN, "Checksum error for " << absolutePath() << "/" << file << " " << it->hash << " " << hash);
                 // we don't erase the file on a hash mismatch, because if we're syncing during the
                 // middle of a server-side update, the downloaded file may actually become valid.
-                _repository->failedToUpdateChild(_relativePath, HTTPRepository::REPO_ERROR_CHECKSUM);
+                _repository->failedToUpdateChild(
+                    _relativePath + "/" + file,
+                    HTTPRepository::REPO_ERROR_CHECKSUM);
             } else {
                 _repository->updatedFileContents(it->path, hash);
+                _repository->updatedChildSuccessfully(_relativePath + "/" +
+                                                      file);
+
                 _repository->totalDownloaded += sz;
                 SGPath p = SGPath(absolutePath(), file);
 
@@ -779,6 +697,10 @@ std::string HTTPRepository::resultCodeAsString(ResultCode code)
     return innerResultCodeAsString(code);
 }
 
+HTTPRepository::FailureVec HTTPRepository::failures() const {
+  return _d->failures;
+}
+
 void HTTPRepository::setFilter(SyncPredicate sp) { _d->syncPredicate = sp; }
 
 HTTPRepository::ResultCode
@@ -809,61 +731,80 @@ HTTPRepository::failure() const
         }
 
     protected:
-        virtual void gotBodyData(const char* s, int n)
-        {
-            if (!file.get()) {
-                file.reset(new SGBinaryFile(pathInRepo));
-                if (!file->open(SG_IO_OUT)) {
-                  SG_LOG(SG_TERRASYNC, SG_WARN, "unable to create file " << pathInRepo);
-                    _directory->repository()->http->cancelRequest(this, "Unable to create output file:" + pathInRepo.utf8Str());
-                }
+      void gotBodyData(const char *s, int n) override {
+        if (!file.get()) {
+          file.reset(new SGBinaryFile(pathInRepo));
+          if (!file->open(SG_IO_OUT)) {
+            SG_LOG(SG_TERRASYNC, SG_WARN,
+                   "unable to create file " << pathInRepo);
+            _directory->repository()->http->cancelRequest(
+                this, "Unable to create output file:" + pathInRepo.utf8Str());
+          }
 
-                sha1_init(&hashContext);
-            }
-
-            sha1_write(&hashContext, s, n);
-            file->write(s, n);
+          sha1_init(&hashContext);
         }
 
-        virtual void onDone()
-        {
-            file->close();
-            if (responseCode() == 200) {
-                std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
-                _directory->didUpdateFile(fileName, hash, contentSize());
-            } else if (responseCode() == 404) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file not found on server: " << fileName << " for " << _directory->absolutePath());
-                _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
-            } else {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "terrasync file download error on server: " << fileName << " for " << _directory->absolutePath() <<
-                       "\n\tserver responded: " << responseCode() << "/" << responseReason());
-                _directory->didFailToUpdateFile(fileName, HTTPRepository::REPO_ERROR_HTTP);
-            }
+        sha1_write(&hashContext, s, n);
+        file->write(s, n);
+      }
 
-            _directory->repository()->finishedRequest(this);
+      void onDone() override {
+        file->close();
+        if (responseCode() == 200) {
+          std::string hash =
+              strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
+          _directory->didUpdateFile(fileName, hash, contentSize());
+        } else if (responseCode() == 404) {
+          SG_LOG(SG_TERRASYNC, SG_WARN,
+                 "terrasync file not found on server: "
+                     << fileName << " for " << _directory->absolutePath());
+          _directory->didFailToUpdateFile(
+              fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
+        } else {
+          SG_LOG(SG_TERRASYNC, SG_WARN,
+                 "terrasync file download error on server: "
+                     << fileName << " for " << _directory->absolutePath()
+                     << "\n\tserver responded: " << responseCode() << "/"
+                     << responseReason());
+          _directory->didFailToUpdateFile(fileName,
+                                          HTTPRepository::REPO_ERROR_HTTP);
+          // should we every retry here?
         }
 
-        virtual void onFail()
-        {
-            HTTPRepository::ResultCode code = HTTPRepository::REPO_ERROR_SOCKET;
-            if (responseCode() == -1) {
-                code = HTTPRepository::REPO_ERROR_CANCELLED;
-            }
+        _directory->repository()->finishedRequest(
+            this, HTTPRepoPrivate::RequestFinish::Done);
+      }
 
-			if (file) {
-				file->close();
-			}
-
-            file.reset();
-            if (pathInRepo.exists()) {
-                pathInRepo.remove();
-            }
-
-            if (_directory) {
-                _directory->didFailToUpdateFile(fileName, code);
-                _directory->repository()->finishedRequest(this);
-            }
+      void onFail() override {
+        HTTPRepository::ResultCode code = HTTPRepository::REPO_ERROR_SOCKET;
+        if (responseCode() == -1) {
+          code = HTTPRepository::REPO_ERROR_CANCELLED;
         }
+
+        if (file) {
+          file->close();
+        }
+
+        file.reset();
+        if (pathInRepo.exists()) {
+          pathInRepo.remove();
+        }
+
+        if (_directory) {
+          _directory->didFailToUpdateFile(fileName, code);
+
+          const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
+                                   ? HTTPRepoPrivate::RequestFinish::Retry
+                                   : HTTPRepoPrivate::RequestFinish::Done;
+          _directory->repository()->finishedRequest(this, doRetry);
+        }
+      }
+
+      void prepareForRetry() override {
+        HTTP::Request::prepareForRetry();
+        file.reset();
+      }
+
     private:
         static std::string makeUrl(HTTPDirectory* d, const std::string& file)
         {
@@ -897,80 +838,106 @@ HTTPRepository::failure() const
             return _isRootDir;
         }
 
-    protected:
-        virtual void gotBodyData(const char* s, int n)
-        {
-            body += std::string(s, n);
-            sha1_write(&hashContext, s, n);
+        void prepareForRetry() override {
+          body.clear();
+          sha1_init(&hashContext);
+          HTTP::Request::prepareForRetry();
         }
 
-        virtual void onDone()
-        {
-            if (responseCode() == 200) {
-                std::string hash = strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
-                if (!_targetHash.empty() && (hash != _targetHash)) {
-                  SG_LOG(SG_TERRASYNC, SG_WARN,
-                         "Checksum error getting dirIndex for:"
-                             << _directory->relativePath() << "; expected "
-                             << _targetHash << " but received " << hash);
+      protected:
+        void gotBodyData(const char *s, int n) override {
+          body += std::string(s, n);
+          sha1_write(&hashContext, s, n);
+        }
 
-                  _directory->failedToUpdate(
-                      HTTPRepository::REPO_ERROR_CHECKSUM);
-                  _directory->repository()->finishedRequest(this);
-                  return;
-                }
+        void onDone() override {
+          if (responseCode() == 200) {
+            std::string hash =
+                strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
+            if (!_targetHash.empty() && (hash != _targetHash)) {
+              SG_LOG(SG_TERRASYNC, SG_WARN,
+                     "Checksum error getting dirIndex for:"
+                         << _directory->relativePath() << "; expected "
+                         << _targetHash << " but received " << hash);
 
-                std::string curHash = _directory->repository()->hashForPath(path());
-                if (hash != curHash) {
-                    simgear::Dir d(_directory->absolutePath());
-                    if (!d.exists()) {
-                        if (!d.create(0700)) {
-                            throw sg_io_exception("Unable to create directory", d.path());
-                        }
-                    }
+              _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM);
 
-                    // dir index data has changed, so write to disk and update
-                    // the hash accordingly
-                    sg_ofstream of(pathInRepo(), std::ios::trunc | std::ios::out | std::ios::binary);
-                    if (!of.is_open()) {
-                        throw sg_io_exception("Failed to open directory index file for writing", pathInRepo());
-                    }
-
-                    of.write(body.data(), body.size());
-                    of.close();
-                    _directory->dirIndexUpdated(hash);
-
-                    //SG_LOG(SG_TERRASYNC, SG_INFO, "updated dir index " << _directory->absolutePath());
-                }
-
-                _directory->repository()->totalDownloaded += contentSize();
-
-                try {
-                    // either way we've confirmed the index is valid so update
-                    // children now
-                    SGTimeStamp st;
-                    st.stamp();
-                    _directory->updateChildrenBasedOnHash();
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "after update of:" << _directory->absolutePath() << " child update took:" << st.elapsedMSec());
-                } catch (sg_exception& ) {
-                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO);
-                }
-            } else if (responseCode() == 404) {
-                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
-            } else {
-                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP);
+              // don't retry checkums failures
+              _directory->repository()->finishedRequest(
+                  this, HTTPRepoPrivate::RequestFinish::Done);
+              return;
             }
 
-            _directory->repository()->finishedRequest(this);
+            std::string curHash = _directory->repository()->hashForPath(path());
+            if (hash != curHash) {
+              simgear::Dir d(_directory->absolutePath());
+              if (!d.exists()) {
+                if (!d.create(0700)) {
+                  throw sg_io_exception("Unable to create directory", d.path());
+                }
+              }
+
+              // dir index data has changed, so write to disk and update
+              // the hash accordingly
+              sg_ofstream of(pathInRepo(), std::ios::trunc | std::ios::out |
+                                               std::ios::binary);
+              if (!of.is_open()) {
+                throw sg_io_exception(
+                    "Failed to open directory index file for writing",
+                    pathInRepo());
+              }
+
+              of.write(body.data(), body.size());
+              of.close();
+              _directory->dirIndexUpdated(hash);
+
+              // SG_LOG(SG_TERRASYNC, SG_INFO, "updated dir index " <<
+              // _directory->absolutePath());
+            }
+
+            _directory->repository()->totalDownloaded += contentSize();
+
+            try {
+              // either way we've confirmed the index is valid so update
+              // children now
+              SGTimeStamp st;
+              st.stamp();
+              _directory->updateChildrenBasedOnHash();
+              SG_LOG(SG_TERRASYNC, SG_DEBUG,
+                     "after update of:" << _directory->absolutePath()
+                                        << " child update took:"
+                                        << st.elapsedMSec());
+            } catch (sg_exception &) {
+              _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO);
+            }
+          } else if (responseCode() == 404) {
+            _directory->failedToUpdate(
+                HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
+          } else {
+            _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP);
+          }
+
+          _directory->repository()->finishedRequest(
+              this, HTTPRepoPrivate::RequestFinish::Done);
         }
 
-        virtual void onFail()
-        {
-            if (_directory) {
-                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_SOCKET);
-                _directory->repository()->finishedRequest(this);
-            }
+        void onFail() override {
+          HTTPRepository::ResultCode code = HTTPRepository::REPO_ERROR_SOCKET;
+          if (responseCode() == -1) {
+            code = HTTPRepository::REPO_ERROR_CANCELLED;
+          }
+
+          SG_LOG(SG_TERRASYNC, SG_WARN,
+                 "Socket failure getting directory: " << url());
+          if (_directory) {
+            _directory->failedToUpdate(code);
+            const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
+                                     ? HTTPRepoPrivate::RequestFinish::Retry
+                                     : HTTPRepoPrivate::RequestFinish::Done;
+            _directory->repository()->finishedRequest(this, doRetry);
+          }
         }
+
     private:
         static std::string makeUrl(HTTPDirectory* d)
         {
@@ -1194,10 +1161,9 @@ HTTPRepository::failure() const
         DirectoryWithPath p(relPath);
         auto it = std::find_if(directories.begin(), directories.end(), p);
         if (it != directories.end()) {
-            HTTPDirectory* d = it->get();
-			assert(d->absolutePath() == absPath);
-            directories.erase(it);
-		} else {
+          assert((*it)->absolutePath() == absPath);
+          directories.erase(it);
+                } else {
 			// we encounter this code path when deleting an orphaned directory
 		}
 
@@ -1213,40 +1179,46 @@ HTTPRepository::failure() const
     void HTTPRepoPrivate::makeRequest(RepoRequestPtr req)
     {
         if (activeRequests.size() > 4) {
-            queuedRequests.push_back(req);
+          queuedRequests.push_back(req);
         } else {
             activeRequests.push_back(req);
             http->makeRequest(req);
         }
     }
 
-    void HTTPRepoPrivate::finishedRequest(const RepoRequestPtr& req)
-    {
-        RequestVector::iterator it = std::find(activeRequests.begin(), activeRequests.end(), req);
-        // in some cases, for example a checksum failure, we clear the active
-        // and queued request vectors, so the ::find above can fail
-        if (it != activeRequests.end()) {
-            activeRequests.erase(it);
-        }
+    void HTTPRepoPrivate::finishedRequest(const RepoRequestPtr &req,
+                                          RequestFinish retryRequest) {
+      auto it = std::find(activeRequests.begin(), activeRequests.end(), req);
+      // in some cases, we clear the active
+      // and queued request vectors, so the ::find above can fail
+      if (it != activeRequests.end()) {
+        activeRequests.erase(it);
+      }
 
-        if (!queuedRequests.empty()) {
-            RepoRequestPtr rr = queuedRequests.front();
-            queuedRequests.erase(queuedRequests.begin());
-            activeRequests.push_back(rr);
-            http->makeRequest(rr);
-        }
+      if (retryRequest == HTTPRepoPrivate::RequestFinish::Retry) {
+        SG_LOG(SG_TERRASYNC, SG_INFO, "Retrying request for:" << req->url());
+        req->prepareForRetry();
+        queuedRequests.push_back(req);
+      }
 
-        // rate limit how often we write this, since otherwise
-        // it dominates the time on Windows. 256 seems about right,
-        // causes a write a few times a minute.
-        if (hashCacheDirty > 256) {
-            writeHashCache();
-        }
+      if (!queuedRequests.empty()) {
+        RepoRequestPtr rr = queuedRequests.front();
+        queuedRequests.erase(queuedRequests.begin());
+        activeRequests.push_back(rr);
+        http->makeRequest(rr);
+      }
 
-        if (activeRequests.empty() && queuedRequests.empty()) {
-            isUpdating = false;
-            writeHashCache();
-        }
+      // rate limit how often we write this, since otherwise
+      // it dominates the time on Windows. 256 seems about right,
+      // causes a write a few times a minute.
+      if (hashCacheDirty > 256) {
+        writeHashCache();
+      }
+
+      if (activeRequests.empty() && queuedRequests.empty()) {
+        isUpdating = false;
+        writeHashCache();
+      }
     }
 
     void HTTPRepoPrivate::failedToGetRootIndex(HTTPRepository::ResultCode st)
@@ -1262,36 +1234,49 @@ HTTPRepository::failure() const
     void HTTPRepoPrivate::failedToUpdateChild(const SGPath& relativePath,
                                               HTTPRepository::ResultCode fileStatus)
     {
-        if (fileStatus == HTTPRepository::REPO_ERROR_CHECKSUM) {
-            // stop updating, and mark repository as failed, becuase this
-            // usually indicates we need to start a fresh update from the
-            // root.
-            // (we could issue a retry here, but we leave that to higher layers)
-            status = fileStatus;
+      if (fileStatus == HTTPRepository::REPO_ERROR_CANCELLED) {
+        // if we were cancelled, don't report or log
+        return;
+      } else {
+        SG_LOG(SG_TERRASYNC, SG_WARN,
+               "failed to update entry:" << relativePath << " status/code: "
+                                         << innerResultCodeAsString(fileStatus)
+                                         << "/" << fileStatus);
+      }
 
-            queuedRequests.clear();
+      HTTPRepository::Failure f;
+      f.path = relativePath;
+      f.error = fileStatus;
+      failures.push_back(f);
 
-            RequestVector copyOfActive(activeRequests);
-            RequestVector::iterator rq;
-            for (rq = copyOfActive.begin(); rq != copyOfActive.end(); ++rq) {
-                http->cancelRequest(*rq, "Repository updated failed due to checksum error");
-            }
+      if (failures.size() >= maxPermittedFailures) {
+        SG_LOG(SG_TERRASYNC, SG_WARN,
+               "Repo:" << baseUrl << " exceeded failure count ("
+                       << failures.size() << "), abandoning");
 
-            SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update repository:" << baseUrl
-                   << "\n\tchecksum failure for: " << relativePath
-                   << "\n\tthis typically indicates the remote repository is corrupt or was being updated during the sync");
-        } else if (fileStatus == HTTPRepository::REPO_ERROR_CANCELLED) {
-            // if we were cancelled, don't report or log
-            return;
-        } else {
-            SG_LOG(SG_TERRASYNC, SG_WARN, "failed to update entry:" << relativePath << " status/code: "
-               << innerResultCodeAsString(fileStatus) << "/" << fileStatus);
+        status = HTTPRepository::REPO_PARTIAL_UPDATE;
+
+        queuedRequests.clear();
+        auto copyOfActiveRequests = activeRequests;
+        for (auto rq : copyOfActiveRequests) {
+          http->cancelRequest(rq,
+                              "Abandoning repo sync due to multiple failures");
         }
+      }
+    }
 
-        Failure f;
-        f.path = relativePath;
-        f.error = fileStatus;
-        failures.push_back(f);
+    void HTTPRepoPrivate::updatedChildSuccessfully(const SGPath &relativePath) {
+      if (failures.empty()) {
+        return;
+      }
+
+      // find and remove any existing failures for that path
+      failures.erase(
+          std::remove_if(failures.begin(), failures.end(),
+                         [relativePath](const HTTPRepository::Failure &f) {
+                           return f.path == relativePath;
+                         }),
+          failures.end());
     }
 
 } // of namespace simgear

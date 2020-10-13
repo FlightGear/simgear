@@ -24,7 +24,8 @@
 #ifndef SG_HTTP_CLIENT_HXX
 #define SG_HTTP_CLIENT_HXX
 
-#include <memory> // for std::unique_ptr
+#include <functional>
+#include <memory>   // for std::unique_ptr
 #include <stdint.h> // for uint_64t
 
 #include <simgear/io/HTTPFileRequest.hxx>
@@ -125,6 +126,7 @@ private:
 
     friend class Connection;
     friend class Request;
+    friend class TestApi;
 
     class ClientPrivate;
     std::unique_ptr<ClientPrivate> d;

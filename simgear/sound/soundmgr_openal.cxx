@@ -815,13 +815,14 @@ bool SGSoundMgr::load( const std::string &samplepath,
 
     auto data = simgear::loadWAVFromFile(samplepath, format, size, freqf, blocksz);
     freq = (ALsizei)freqf;
-    if (data == nullptr) {
-        throw sg_io_exception("Failed to load wav file", sg_location(samplepath));
+    if (!data) {
+        return false;
     }
 
     if (format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO16) {
          free(data);
-        throw sg_io_exception("Warning: STEREO files are not supported for 3D audio effects: " + samplepath);
+        SG_LOG(SG_IO, SG_DEV_ALERT, "Warning: STEREO files are not supported for 3D audio effects: " << samplepath);
+        return false;
     }
 
     *dbuf = (void *)data;

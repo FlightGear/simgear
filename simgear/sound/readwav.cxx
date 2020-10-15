@@ -380,7 +380,8 @@ namespace simgear
 ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size, ALfloat& freqf, unsigned int& block_align)
 {
   if (!path.exists()) {
-    throw sg_io_exception("loadWAVFromFile: file not found", path);
+    SG_LOG(SG_IO, SG_DEV_ALERT, "loadWAVFromFile: file not found:" << path);
+    return nullptr;
   }
 
   Buffer b;
@@ -395,13 +396,15 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   fd = gzopen(ps.c_str(), "rb");
 #endif
   if (!fd) {
-    throw sg_io_exception("loadWAVFromFile: unable to open file", path);
+    SG_LOG(SG_IO, SG_DEV_ALERT, "loadWAVFromFile: unable to open file:" << path);
+    return nullptr;
   }
 
   try {
       loadWavFile(fd, &b);
   } catch (sg_exception& e) {
-      throw sg_io_exception(e.getFormattedMessage() + "\nfor: " + path.str());
+      SG_LOG(SG_IO, SG_DEV_ALERT, "loadWAVFromFile:" << e.getFormattedMessage() << "\nfor: " << path);
+      return nullptr;
   }
 
   ALvoid* data = b.data;

@@ -361,9 +361,9 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 {
     struct tm mt;
 
-    mt.tm_mon = month - 1;
+    mt.tm_mon = month;
     mt.tm_mday = day;
-    mt.tm_year = year - 1900;
+    mt.tm_year = year;
     mt.tm_hour = hour;
     mt.tm_min = min;
     mt.tm_sec = sec;

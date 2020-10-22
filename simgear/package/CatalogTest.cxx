@@ -827,7 +827,10 @@ void testVersionMigrateToId(HTTP::Client* cl)
         
         it = std::find(enabledCats.begin(), enabledCats.end(), altCat);
         SG_VERIFY(it != enabledCats.end());
-        
+
+        SG_CHECK_EQUAL(altCat->packagesNeedingUpdate().size(),
+                       1); // should be the 737
+
         // install a parallel package from the new catalog
         pkg::PackageRef p2 = root->getPackageById("org.flightgear.test.catalog-alt.b737-NG");
         SG_CHECK_EQUAL(p2->id(), "b737-NG");
@@ -840,8 +843,8 @@ void testVersionMigrateToId(HTTP::Client* cl)
         pkg::PackageRef p3 = root->getPackageById("b737-NG");
         SG_CHECK_EQUAL(p2, p3);
     }
-    
-    // test that re-init-ing doesn't mirgate again
+
+    // test that re-init-ing doesn't migrate again
     {
         pkg::RootRef root(new pkg::Root(rootPath, "7.5"));
         root->setHTTPClient(cl);
@@ -1184,6 +1187,128 @@ void testMirrorsFailure(HTTP::Client* cl)
     
 }
 
+void testMigrateInstalled(HTTP::Client *cl) {
+  SGPath rootPath(simgear::Dir::current().path());
+  rootPath.append("pkg_migrate_installed");
+  simgear::Dir pd(rootPath);
+  pd.removeChildren();
+
+  pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+  root->setHTTPClient(cl);
+
+  pkg::CatalogRef oldCatalog, newCatalog;
+
+  {
+    oldCatalog = pkg::Catalog::createFromUrl(
+        root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    pkg::PackageRef p1 =
+        root->getPackageById("org.flightgear.test.catalog1.b747-400");
+    p1->install();
+    auto p2 = root->getPackageById("org.flightgear.test.catalog1.c172p");
+    p2->install();
+    auto p3 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+    p3->install();
+    waitForUpdateComplete(cl, root);
+  }
+
+  {
+    newCatalog = pkg::Catalog::createFromUrl(
+        root.ptr(), "http://localhost:2000/catalogTest2/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    string_list existing;
+    for (const auto &pack : oldCatalog->installedPackages()) {
+      existing.push_back(pack->id());
+    }
+
+    SG_CHECK_EQUAL(4, existing.size());
+
+    int result = newCatalog->markPackagesForInstallation(existing);
+    SG_CHECK_EQUAL(2, result);
+    SG_CHECK_EQUAL(2, newCatalog->packagesNeedingUpdate().size());
+
+    auto p1 = root->getPackageById("org.flightgear.test.catalog2.b737-NG");
+    auto ins = p1->existingInstall();
+    SG_CHECK_EQUAL(0, ins->revsion());
+  }
+
+  {
+    root->scheduleAllUpdates();
+    waitForUpdateComplete(cl, root);
+
+    SG_CHECK_EQUAL(0, newCatalog->packagesNeedingUpdate().size());
+
+    auto p1 = root->getPackageById("org.flightgear.test.catalog2.b737-NG");
+    auto ins = p1->existingInstall();
+    SG_CHECK_EQUAL(ins->revsion(), p1->revision());
+  }
+}
+
+void testDontMigrateRemoved(HTTP::Client *cl) {
+  global_catalogVersion = 2; // version which has migration info
+  SGPath rootPath(simgear::Dir::current().path());
+  rootPath.append("cat_dont_migrate_id");
+  simgear::Dir pd(rootPath);
+  pd.removeChildren();
+
+  // install and mnaully remove the alt catalog
+
+  {
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(
+        root.ptr(), "http://localhost:2000/catalogTest1/catalog-alt.xml");
+    waitForUpdateComplete(cl, root);
+
+    root->removeCatalogById("org.flightgear.test.catalog-alt");
+  }
+
+  // install the migration catalog
+  {
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(
+        root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+    SG_VERIFY(c->isEnabled());
+  }
+
+  // change version to an alternate one
+  {
+    pkg::RootRef root(new pkg::Root(rootPath, "7.5"));
+
+    auto removed = root->explicitlyRemovedCatalogs();
+    auto j = std::find(removed.begin(), removed.end(),
+                       "org.flightgear.test.catalog-alt");
+    SG_VERIFY(j != removed.end());
+
+    root->setHTTPClient(cl);
+
+    // this would tirgger migration, but we blocked it
+    root->refresh(true);
+    waitForUpdateComplete(cl, root);
+
+    pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
+    SG_VERIFY(!cat->isEnabled());
+    SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VERSION);
+    SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
+    SG_CHECK_EQUAL(cat->url(),
+                   "http://localhost:2000/catalogTest1/catalog.xml");
+
+    auto enabledCats = root->catalogs();
+    auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
+    SG_VERIFY(it == enabledCats.end());
+
+    // check the new catalog
+    auto altCat = root->getCatalogById("org.flightgear.test.catalog-alt");
+    SG_VERIFY(altCat.get() == nullptr);
+  }
+}
+
 int main(int argc, char* argv[])
 {
     sglog().setLogLevels( SG_ALL, SG_WARN );
@@ -1228,7 +1353,11 @@ int main(int argc, char* argv[])
     testInstallBadPackage(&cl);
     
     testMirrorsFailure(&cl);
-    
+
+    testMigrateInstalled(&cl);
+
+    testDontMigrateRemoved(&cl);
+
     cerr << "Successfully passed all tests!" << endl;
     return EXIT_SUCCESS;
 }

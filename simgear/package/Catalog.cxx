@@ -643,16 +643,53 @@ void Catalog::processAlternate(SGPropertyNode_ptr alt)
         return;
     }
 
-    // we have an alternate ID, and it's differnt from our ID, so let's
+    // we have an alternate ID, and it's different from our ID, so let's
     // define a new catalog
     if (!altId.empty()) {
-        SG_LOG(SG_GENERAL, SG_INFO, "Adding new catalog:" << altId << " as version alternate for " << id());
-        // new catalog being added
-        createFromUrl(root(), altUrl);
-
-        // and we can go idle now
+      // don't auto-re-add Catalogs the user has explicilty rmeoved, that would
+      // suck
+      const auto removedByUser = root()->explicitlyRemovedCatalogs();
+      auto it = std::find(removedByUser.begin(), removedByUser.end(), altId);
+      if (it != removedByUser.end()) {
         changeStatus(Delegate::FAIL_VERSION);
         return;
+      }
+
+      SG_LOG(SG_GENERAL, SG_WARN,
+             "Adding new catalog:" << altId << " as version alternate for "
+                                   << id());
+      // new catalog being added
+      auto newCat = createFromUrl(root(), altUrl);
+
+      bool didRun = false;
+      newCat->m_migratedFrom = this;
+
+      auto migratePackagesCb = [didRun](Catalog *c) mutable {
+        // removing callbacks is awkward, so use this
+        // flag to only run once. (and hence, we need to be mutable)
+        if (didRun)
+          return;
+
+        if (c->status() == Delegate::STATUS_REFRESHED) {
+          didRun = true;
+
+          string_list existing;
+          for (const auto &pack : c->migratedFrom()->installedPackages()) {
+            existing.push_back(pack->id());
+          }
+
+          const int count = c->markPackagesForInstallation(existing);
+          SG_LOG(
+              SG_GENERAL, SG_INFO,
+              "Marked " << count
+                        << " packages from previous catalog for installation");
+        }
+      };
+
+      newCat->addStatusCallback(migratePackagesCb);
+      // and we can go idle now
+      changeStatus(Delegate::FAIL_VERSION);
+      return;
     }
 
     SG_LOG(SG_GENERAL, SG_INFO, "Migrating catalog " << id() << " to new URL:" << altUrl);
@@ -660,6 +697,26 @@ void Catalog::processAlternate(SGPropertyNode_ptr alt)
     Downloader* dl = new Downloader(this, altUrl);
     root()->makeHTTPRequest(dl);
 }
+
+int Catalog::markPackagesForInstallation(const string_list &packageIds) {
+  int result = 0;
+
+  for (const auto &id : packageIds) {
+    auto ourPkg = getPackageById(id);
+    if (!ourPkg)
+      continue;
+
+    auto existing = ourPkg->existingInstall();
+    if (!existing) {
+      ourPkg->markForInstall();
+      ++result;
+    }
+  } // of outer package ID candidates iteration
+
+  return result;
+}
+
+CatalogRef Catalog::migratedFrom() const { return m_migratedFrom; }
 
 } // of namespace pkg
 

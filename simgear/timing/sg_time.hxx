@@ -260,7 +260,7 @@ double sgTimeCalcGST( double mjd );
  * @param buf buffer space to contain the result
  * @return pointer to character array containt the result
  */
-char* sgTimeFormatTime( const struct tm* p, char* buf );
+std::string sgTimeFormatTime( const struct tm* p);
 
 
 #endif // _SG_TIME_HXX

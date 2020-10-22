@@ -361,9 +361,9 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 {
     struct tm mt;
 
-    mt.tm_mon = month;
+    mt.tm_mon = month - 1;
     mt.tm_mday = day;
-    mt.tm_year = year;
+    mt.tm_year = year - 1900;
     mt.tm_hour = hour;
     mt.tm_min = min;
     mt.tm_sec = sec;
@@ -379,10 +379,11 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 }
 
 // format time
-char* sgTimeFormatTime( const struct tm* p, char* buf )
+std::string sgTimeFormatTime( const struct tm* p )
 {
-    sprintf( buf, "%d/%d/%2d %d:%02d:%02d", 
-	     p->tm_mon, p->tm_mday, p->tm_year,
-	     p->tm_hour, p->tm_min, p->tm_sec);
-    return buf;
+    std::ostringstream buf;
+
+    buf << 1900+p->tm_year << '-' << p->tm_mon+1 << '-' << p->tm_mday << 'T';
+    buf << p->tm_hour << ':' << p->tm_min << ':' << p->tm_sec;
+    return buf.str();
 }

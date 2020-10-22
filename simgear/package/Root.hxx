@@ -155,7 +155,22 @@ public:
     void requestThumbnailData(const std::string& aUrl);
     
     bool isInstallQueued(InstallRef aInstall) const;
-private:
+
+    /**
+     * Mark all 'to be updated' packages for update now
+     */
+    void scheduleAllUpdates();
+
+    /**
+     * @brief list of catalog IDs, the user has explicitly removed via
+     * removeCatalogById(). This is important to allow the user to opt-out
+     * of migrated packages.
+     *
+     * This information is stored in a helper file, in the root directory
+     */
+    string_list explicitlyRemovedCatalogs() const;
+
+  private:
     friend class Install;
     friend class Catalog;    
     friend class Package;

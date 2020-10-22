@@ -23,6 +23,7 @@
 #include <map>
 
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/props/props.hxx>
 
 #include <simgear/structure/SGReferenced.hxx>
@@ -93,7 +94,7 @@ public:
 
     /**
      * retrieve all the packages in the catalog which are installed
-     * and have a pendig update
+     * and have a pending update
      */
     PackageList packagesNeedingUpdate() const;
 
@@ -151,7 +152,32 @@ public:
     
     bool isUserEnabled() const;
     void setUserEnabled(bool b);
-private:
+
+    /**
+     * Given a list of package IDs, mark all which exist in this package,
+     * for installation. ANy packahe IDs not present in this catalog,
+     * will be ignored.
+     *
+     * @result The number for packages newly marked for installation.
+     */
+    int markPackagesForInstallation(const string_list &packageIds);
+
+    /**
+     * When a catalog is added due to migration, this will contain the
+     * Catalog which triggered the add. Usually this will be a catalog
+     * corresponding to an earlier version.
+     *
+     * Note it's only valid at the time, the migration actually took place;
+     * when the new catalog is loaded from disk, this value will return
+     * null.
+     *
+     * This is intended to allow Uis to show a 'catalog was migrated'
+     * feedback, when they see a catalog refresh, which has a non-null
+     * value of this method.
+     */
+    CatalogRef migratedFrom() const;
+
+  private:
     Catalog(Root* aRoot);
 
     class Downloader;
@@ -197,6 +223,8 @@ private:
     PackageWeakMap m_variantDict;
 
     function_list<Callback> m_statusCallbacks;
+
+    CatalogRef m_migratedFrom;
 };
 
 } // of namespace pkg

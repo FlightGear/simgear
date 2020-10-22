@@ -61,6 +61,13 @@ public:
     InstallRef
     existingInstall(const InstallCallback& cb = InstallCallback()) const;
 
+    /**
+     * Mark this package for installation, but don't actually start the
+     * download process. This creates the on-disk placeholder, so
+     * the package will appear an eededing to be updated.
+     */
+    InstallRef markForInstall();
+
     bool isInstalled() const;
 
     /**

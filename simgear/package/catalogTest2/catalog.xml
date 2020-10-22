@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+    <id>org.flightgear.test.catalog2</id>
+    <description>Second test catalog</description>
+    <url>http://localhost:2000/catalogTest2/catalog.xml</url>
+    <catalog-version>4</catalog-version>
+
+    <version>8.1.*</version>
+    <version>8.0.0</version>
+    <version>8.2.0</version>
+
+    <package>
+        <id>alpha</id>
+        <name>Alpha package</name>
+        <revision type="int">8</revision>
+        <file-size-bytes type="int">593</file-size-bytes>
+
+        <md5>a469c4b837f0521db48616cfe65ac1ea</md5>
+        <url>http://localhost:2000/catalogTest1/alpha.zip</url>
+
+        <dir>alpha</dir>
+
+    </package>
+
+
+    <package>
+        <id>b737-NG</id>
+        <name>Boeing 737 NG</name>
+        <dir>b737NG</dir>
+        <description>A popular twin-engined narrow body jet</description>
+        <revision type="int">111</revision>
+        <file-size-bytes type="int">860</file-size-bytes>
+
+        <tag>boeing</tag>
+        <tag>jet</tag>
+        <tag>ifr</tag>
+
+      <!-- not within a localized element -->
+          <de>
+            <description>German description of B737NG XYZ</description>
+          </de>
+          <fr>
+            <description>French description of B737NG</description>
+          </fr>
+
+        <rating>
+          <FDM type="int">5</FDM>
+          <systems type="int">5</systems>
+          <model type="int">4</model>
+          <cockpit type="int">4</cockpit>
+        </rating>
+
+        <md5>a94ca5704f305b90767f40617d194ed6</md5>
+        <url>http://localhost:2000/mirrorA/b737.tar.gz</url>
+        <url>http://localhost:2000/mirrorB/b737.tar.gz</url>
+        <url>http://localhost:2000/mirrorC/b737.tar.gz</url>
+      </package>
+
+    <package>
+        <id>b747-400</id>
+        <name>Boeing 747-400</name>
+        <dir>b744</dir>
+        <description>A popular four-engined wide-body jet</description>
+        <revision type="int">111</revision>
+        <file-size-bytes type="int">860</file-size-bytes>
+
+        <tag>boeing</tag>
+        <tag>jet</tag>
+        <tag>ifr</tag>
+
+  
+
+        <rating>
+          <FDM type="int">5</FDM>
+          <systems type="int">5</systems>
+          <model type="int">4</model>
+          <cockpit type="int">4</cockpit>
+        </rating>
+
+        <md5>4d3f7417d74f811aa20ccc4f35673d20</md5>
+        <!-- this URL will sometimes fail, on purpose -->
+        <url>http://localhost:2000/catalogTest1/b747.tar.gz</url>
+      </package>
+
+</PropertyList>

@@ -631,11 +631,15 @@ bool SGMetar::scanWind()
 	int dir;
 	if (!strncmp(m, "VRB", 3))
 		m += 3, dir = -1;
+	else if (!strncmp(m, "///", 3))	// direction not measurable
+		m += 3, dir = -1;
 	else if (!scanNumber(&m, &dir, 3))
 		return false;
 
 	int i;
-	if (!scanNumber(&m, &i, 2, 3))
+	if (!strncmp(m, "//", 2))	// speed not measurable
+		m += 2, i = -1;
+	else if (!scanNumber(&m, &i, 2, 3))
 		return false;
 	double speed = i;
 

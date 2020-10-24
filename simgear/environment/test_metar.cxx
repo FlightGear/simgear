@@ -82,12 +82,20 @@ void test_sensor_failure_cloud()
     SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1025, TEST_EPSILON);
 }
 
+void test_sensor_failure_wind()
+{
+    SGMetar m1("2020/10/23 16:55 LIVD 231655Z /////KT 9999 OVC025 10/08 Q1020 RMK OVC VIS MIN 9999 BLU");
+    SG_CHECK_EQUAL(m1.getWindDir(), -1);
+    SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), -1, TEST_EPSILON);
+}
+
 int main(int argc, char* argv[])
 {
     try {
         test_basic();
         test_sensor_failure_weather();
         test_sensor_failure_cloud();
+        test_sensor_failure_wind();
         test_drizzle();
     } catch (sg_exception& e) {
         cerr << "got exception:" << e.getMessage() << endl;

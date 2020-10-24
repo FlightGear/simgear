@@ -659,6 +659,8 @@ bool SGMetar::scanWind()
 		m += 3, factor = SG_KMH_TO_MPS;
 	else if (!strncmp(m, "MPS", 3))
 		m += 3, factor = 1.0;
+	else if (!strncmp(m, " ", 1))		// default to Knots
+		factor = SG_KT_TO_MPS;
 	else
 		return false;
 	if (!scanBoundary(&m))

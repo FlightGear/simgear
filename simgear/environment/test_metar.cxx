@@ -89,6 +89,14 @@ void test_sensor_failure_wind()
     SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), -1, TEST_EPSILON);
 }
 
+void test_wind_unit_not_specified()
+{
+    SGMetar m1("2020/10/23 11:58 KLSV 231158Z 05010G14 10SM CLR 16/M04 A2992 RMK SLPNO WND DATA ESTMD ALSTG/SLP ESTMD 10320 20124 5//// $");
+    SG_CHECK_EQUAL(m1.getWindDir(), 50);
+    SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), 10.0, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m1.getGustSpeed_kt(), 14.0, TEST_EPSILON);
+}
+
 int main(int argc, char* argv[])
 {
     try {
@@ -96,6 +104,7 @@ int main(int argc, char* argv[])
         test_sensor_failure_weather();
         test_sensor_failure_cloud();
         test_sensor_failure_wind();
+        test_wind_unit_not_specified();
         test_drizzle();
     } catch (sg_exception& e) {
         cerr << "got exception:" << e.getMessage() << endl;

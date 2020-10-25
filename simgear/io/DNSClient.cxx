@@ -156,8 +156,13 @@ static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
         r->ttl = result->dnstxt_ttl;
         for (int i = 0; i < result->dnstxt_nrr; i++) {
           //TODO: interprete the .len field of dnstxt_txt?
-          string txt = string((char*)result->dnstxt_txt[i].txt);
-          r->entries.push_back( txt );
+          auto rawTxt = reinterpret_cast<char*>(result->dnstxt_txt[i].txt);
+          if (!rawTxt) {
+              continue;
+          }
+
+          const string txt{rawTxt};
+          r->entries.push_back(txt);
           string_list tokens = simgear::strutils::split( txt, "=", 1 );
           if( tokens.size() == 2 ) {
             r->attributes[tokens[0]] = tokens[1];

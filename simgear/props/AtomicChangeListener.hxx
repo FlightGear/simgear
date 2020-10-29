@@ -52,7 +52,17 @@ public:
     bool isDirty() { return _dirty; }
     bool isValid() { return _valid; }
     virtual void unregister_property(SGPropertyNode* node) override;
+
     static void fireChangeListeners();
+
+    /**
+     * @brief Ensure we've deleted any pending changes. 
+     * 
+     * This is important in shutdown and reset, to avoid holding
+     * property listeners around after the property tree is destroyed
+     */
+    static void clearPendingChanges();
+
 private:
     virtual void valueChangedImplementation() override;
     virtual void valuesChanged();

@@ -986,25 +986,16 @@ HTTPRepository::failure() const
         return r;
     }
 
-
-    class HashEntryWithPath
-    {
-    public:
-        HashEntryWithPath(const SGPath& p) : path(p.utf8Str()) {}
-        bool operator()(const HTTPRepoPrivate::HashCacheEntry& entry) const
-        { return entry.filePath == path; }
-    private:
-        std::string path;
-    };
-
     std::string HTTPRepoPrivate::hashForPath(const SGPath& p)
     {
-        HashCache::iterator it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p));
+        const auto ps = p.utf8Str();
+        auto it = hashes.find(ps);
         if (it != hashes.end()) {
+            const auto& entry = it->second;
             // ensure data on disk hasn't changed.
             // we could also use the file type here if we were paranoid
-            if ((p.sizeInBytes() == it->lengthBytes) && (p.modTime() == it->modTime)) {
-                return it->hashHex;
+            if ((p.sizeInBytes() == entry.lengthBytes) && (p.modTime() == entry.modTime)) {
+                return entry.hashHex;
             }
 
             // entry in the cache, but it's stale so remove and fall through
@@ -1049,7 +1040,8 @@ HTTPRepository::failure() const
     void HTTPRepoPrivate::updatedFileContents(const SGPath& p, const std::string& newHash)
     {
         // remove the existing entry
-        auto it = std::find_if(hashes.begin(), hashes.end(), HashEntryWithPath(p));
+        const auto ps = p.utf8Str();
+        auto it = hashes.find(ps);
         if (it != hashes.end()) {
             hashes.erase(it);
             ++hashCacheDirty;
@@ -1065,11 +1057,11 @@ HTTPRepository::failure() const
         p2.set_cached(true);
 
         HashCacheEntry entry;
-        entry.filePath = p.utf8Str();
+        entry.filePath = ps;
         entry.hashHex = newHash;
         entry.modTime = p2.modTime();
         entry.lengthBytes = p2.sizeInBytes();
-        hashes.push_back(entry);
+        hashes.insert(std::make_pair(ps, entry));
 
         ++hashCacheDirty ;
     }
@@ -1083,10 +1075,11 @@ HTTPRepository::failure() const
         SGPath cachePath = basePath;
         cachePath.append(".hashes");
         sg_ofstream stream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
-        HashCache::const_iterator it;
-        for (it = hashes.begin(); it != hashes.end(); ++it) {
-            stream << it->filePath << "*" << it->modTime << "*"
-            << it->lengthBytes << "*" << it->hashHex << "\n";
+        for (const auto& e : hashes) {
+            const auto& entry = e.second;
+            
+            stream << entry.filePath << "*" << entry.modTime << "*"
+            << entry.lengthBytes << "*" << entry.hashHex << "\n";
         }
         stream.close();
         hashCacheDirty = 0;
@@ -1130,7 +1123,7 @@ HTTPRepository::failure() const
             entry.hashHex = hashData;
             entry.modTime = strtol(timeData.c_str(), NULL, 10);
             entry.lengthBytes = strtol(sizeData.c_str(), NULL, 10);
-            hashes.push_back(entry);
+            hashes.insert(std::make_pair(entry.filePath, entry));
         }
     }
 

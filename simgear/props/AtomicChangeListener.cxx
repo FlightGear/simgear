@@ -59,6 +59,12 @@ void AtomicChangeListener::fireChangeListeners()
     listeners.clear();
 }
 
+void AtomicChangeListener::clearPendingChanges()
+{
+    auto& listeners = ListenerListSingleton::instance()->listeners;
+    listeners.clear();
+}
+
 void AtomicChangeListener::valueChangedImplementation()
 {
     if (!_dirty) {

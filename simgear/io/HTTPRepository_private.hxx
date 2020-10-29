@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -59,7 +60,7 @@ public:
     std::string hashHex;
   };
 
-  typedef std::vector<HashCacheEntry> HashCache;
+  using HashCache = std::unordered_map<std::string, HashCacheEntry>;
   HashCache hashes;
   int hashCacheDirty = 0;
 

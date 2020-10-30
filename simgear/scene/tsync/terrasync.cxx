@@ -641,7 +641,7 @@ void SGTerraSync::WorkerThread::beginSyncAirports(SyncSlot& slot)
     // the Airports_archive.tar.gz file so we use our TerraSync local root
     // as the path (since the archive will add Airports/)
     slot.repository.reset(new HTTPRepository(_local_dir, &_http));
-    slot.repository->setBaseUrl(_httpServer + "/");
+    slot.repository->setBaseUrl(_httpServer);
 
     // filter callback to *only* sync the Airport_archive tarball,
     // and ensure no other contents are touched

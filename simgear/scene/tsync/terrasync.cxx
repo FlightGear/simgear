@@ -334,6 +334,10 @@ public:
     void runInternal();
     void updateSyncSlot(SyncSlot& slot);
 
+    void beginSyncAirports(SyncSlot& slot);
+    void beginSyncTile(SyncSlot& slot);
+    void beginNormalSync(SyncSlot& slot);
+
     void drainWaitingTiles();
 
     // commond helpers between both internal and external models
@@ -589,41 +593,14 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         SGPath path(_local_dir);
         path.append(slot.currentItem._dir);
         slot.isNewDirectory = !path.exists();
-        if (slot.isNewDirectory) {
-            int rc = path.create_dir( 0755 );
-            if (rc) {
-                SG_LOG(SG_TERRASYNC,SG_ALERT,
-                       "Cannot create directory '" << path << "', return code = " << rc );
-                fail(slot.currentItem);
-                return;
-            }
-        } // of creating directory step
+        const auto type = slot.currentItem._type;
 
-        // optimise initial Airport download
-        if (slot.isNewDirectory &&
-            (slot.currentItem._type == SyncItem::AirportData)) {
-          SG_LOG(SG_TERRASYNC, SG_INFO, "doing Airports download via tarball");
-
-          // we want to sync the 'root' TerraSync dir, but not all of it, just
-          // the Airports_archive.tar.gz file so we use our TerraSync local root
-          // as the path (since the archive will add Airports/)
-          slot.repository.reset(new HTTPRepository(_local_dir, &_http));
-          slot.repository->setBaseUrl(_httpServer + "/");
-
-          // filter callback to *only* sync the Airport_archive tarball,
-          // and ensure no other contents are touched
-          auto f = [](const HTTPRepository::SyncItem &item) {
-            if (!item.directory.empty())
-              return false;
-            return (item.filename.find("Airports_archive.") == 0);
-          };
-
-          slot.repository->setFilter(f);
-
+        if (type == SyncItem::AirportData) {
+            beginSyncAirports(slot);
+        } else if (type == SyncItem::Tile) {
+            beginSyncTile(slot);
         } else {
-          slot.repository.reset(new HTTPRepository(path, &_http));
-          slot.repository->setBaseUrl(_httpServer + "/" +
-                                      slot.currentItem._dir);
+            beginNormalSync(slot);
         }
 
         if (_installRoot.exists()) {
@@ -650,6 +627,85 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 
         SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
     }
+}
+
+void SGTerraSync::WorkerThread::beginSyncAirports(SyncSlot& slot)
+{
+    if (!slot.isNewDirectory) {
+        beginNormalSync(slot);
+        return;
+    }
+
+    SG_LOG(SG_TERRASYNC, SG_INFO, "doing Airports download via tarball");
+
+    // we want to sync the 'root' TerraSync dir, but not all of it, just
+    // the Airports_archive.tar.gz file so we use our TerraSync local root
+    // as the path (since the archive will add Airports/)
+    slot.repository.reset(new HTTPRepository(_local_dir, &_http));
+    slot.repository->setBaseUrl(_httpServer + "/");
+
+    // filter callback to *only* sync the Airport_archive tarball,
+    // and ensure no other contents are touched
+    auto f = [](const HTTPRepository::SyncItem& item) {
+        if (!item.directory.empty())
+            return false;
+        return (item.filename.find("Airports_archive.") == 0);
+    };
+
+    slot.repository->setFilter(f);
+}
+
+void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
+{
+    // avoid 404 requests by doing a sync which excludes all paths
+    // except our tile path. In the case of a missing 1x1 tile, we will
+    // stop becuase all directories are filtered out, which is what we want
+
+    auto comps = strutils::split(slot.currentItem._dir, "/");
+    if (comps.size() != 3) {
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "Bad tile path:" << slot.currentItem._dir);
+        beginNormalSync(slot);
+        return;
+    }
+
+    const auto tileCategory = comps.front();
+    const auto tenByTenDir = comps.at(1);
+    const auto oneByOneDir = comps.at(2);
+
+    const auto path = SGPath::fromUtf8(_local_dir) / tileCategory;
+    slot.repository.reset(new HTTPRepository(path, &_http));
+    slot.repository->setBaseUrl(_httpServer + "/" + tileCategory);
+
+    const auto dirPrefix = tenByTenDir + "/" + oneByOneDir;
+
+    // filter callback to *only* sync the 1x1 dir we want, if it exists
+    // if doesn't, we'll simply stop, which is what we want
+    auto f = [tenByTenDir, oneByOneDir, dirPrefix](const HTTPRepository::SyncItem& item) {
+        // only allow the specific 10x10 and 1x1 dirs we want
+        if (item.directory.empty()) {
+            return item.filename == tenByTenDir;
+        } else if (item.directory == tenByTenDir) {
+            return item.filename == oneByOneDir;
+        }
+
+        // allow arbitrary children below dirPrefix, including sub-dirs
+        if (item.directory.find(dirPrefix) == 0) {
+            return true;
+        }
+
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "Tile sync: saw weird path:" << item.directory << " file " << item.filename);
+        return false;
+    };
+
+    slot.repository->setFilter(f);
+}
+
+void SGTerraSync::WorkerThread::beginNormalSync(SyncSlot& slot)
+{
+    SGPath path(_local_dir);
+    path.append(slot.currentItem._dir);
+    slot.repository.reset(new HTTPRepository(path, &_http));
+    slot.repository->setBaseUrl(_httpServer + "/" + slot.currentItem._dir);
 }
 
 void SGTerraSync::WorkerThread::runInternal()

@@ -462,13 +462,15 @@ public:
                     SGPath extractDir = p.dir();
                     ArchiveExtractor ex(extractDir);
 
-                    uint8_t *buf = (uint8_t *)alloca(2048);
+                    const size_t bufSize = 1024 * 1024;
+                    uint8_t* buf = (uint8_t*)malloc(bufSize);
                     while (!f.eof()) {
-                      size_t bufSize = f.read((char *)buf, 2048);
-                      ex.extractBytes(buf, bufSize);
+                        size_t rd = f.read((char*)buf, bufSize);
+                        ex.extractBytes(buf, rd);
                     }
 
                     ex.flush();
+                    free(buf);
                     if (! ex.isAtEndOfArchive()) {
                       SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << p);
                       _repository->failedToUpdateChild(

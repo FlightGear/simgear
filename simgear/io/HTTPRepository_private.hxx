@@ -54,16 +54,7 @@ typedef SGSharedPtr<HTTPRepoGetRequest> RepoRequestPtr;
 
 class HTTPRepoPrivate {
 public:
-  struct HashCacheEntry {
-    std::string filePath;
-    time_t modTime;
-    size_t lengthBytes;
-    std::string hashHex;
-  };
 
-  using HashCache = std::unordered_map<std::string, HashCacheEntry>;
-  HashCache hashes;
-  int hashCacheDirty = 0;
 
   HTTPRepository::FailureVec failures;
   int maxPermittedFailures = 16;
@@ -90,12 +81,6 @@ public:
                                size_t sz);
   HTTP::Request_ptr updateDir(HTTPDirectory *dir, const std::string &hash,
                               size_t sz);
-
-  std::string hashForPath(const SGPath &p);
-  void updatedFileContents(const SGPath &p, const std::string &newHash);
-  void parseHashCache();
-  std::string computeHashForPath(const SGPath &p);
-  void writeHashCache();
 
   void failedToGetRootIndex(HTTPRepository::ResultCode st);
   void failedToUpdateChild(const SGPath &relativePath,
@@ -128,6 +113,9 @@ public:
   std::deque<HTTPDirectory*> pendingUpdateOfChildren;
 
   SGPath installedCopyPath;
+
+  int countDirtyHashCaches() const;
+  void flushHashCaches();
 };
 
 } // namespace simgear

@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <deque>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -102,6 +103,8 @@ public:
 
   void updatedChildSuccessfully(const SGPath &relativePath);
 
+  void checkForComplete();
+
   typedef std::vector<RepoRequestPtr> RequestVector;
   RequestVector queuedRequests, activeRequests;
 
@@ -114,8 +117,15 @@ public:
   HTTPDirectory *getOrCreateDirectory(const std::string &path);
   bool deleteDirectory(const std::string &relPath, const SGPath &absPath);
 
+  void scheduleUpdateOfChildren(HTTPDirectory* dir);
+
   typedef std::vector<HTTPDirectory_ptr> DirectoryVector;
   DirectoryVector directories;
+
+  // list of directories to be locally processed
+  // this is used to avoid deep recursion when receiving the .dirIndex;
+  // we don't want to recurse over a large repo in a single call
+  std::deque<HTTPDirectory*> pendingUpdateOfChildren;
 
   SGPath installedCopyPath;
 };

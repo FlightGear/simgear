@@ -409,6 +409,7 @@ void waitForUpdateComplete(HTTP::Client* cl, HTTPRepository* repo)
         cl->update();
         testServer.poll();
 
+        repo->process();
         if (!repo->isDoingSync()) {
             return;
         }
@@ -423,6 +424,7 @@ void runForTime(HTTP::Client *cl, HTTPRepository *repo, int msec = 15) {
   while (start.elapsedMSec() < msec) {
     cl->update();
     testServer.poll();
+    repo->process();
     SGTimeStamp::sleepForMSec(1);
   }
 }

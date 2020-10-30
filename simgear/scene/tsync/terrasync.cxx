@@ -546,6 +546,7 @@ void SGTerraSync::WorkerThread::run()
 void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 {
     if (slot.repository.get()) {
+        slot.repository->process();
         if (slot.repository->isDoingSync()) {
 #if 1
             if (slot.stamp.elapsedMSec() > (int)slot.nextWarnTimeout) {

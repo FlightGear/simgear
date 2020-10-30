@@ -274,7 +274,7 @@ public:
           if (c.type == HTTPRepository::DirectoryType) {
             // If it's a directory,perform a recursive check.
             HTTPDirectory *childDir = childDirectory(c.name);
-            childDir->updateChildrenBasedOnHash();
+            _repository->scheduleUpdateOfChildren(childDir);
           }
         }
       } // of repository-defined (well, .dirIndex) children iteration
@@ -652,6 +652,33 @@ bool HTTPRepository::isDoingSync() const
     }
 
     return _d->isUpdating;
+}
+
+void HTTPRepository::process()
+{
+    int processedCount = 0;
+    const int maxToProcess = 16;
+
+    while (processedCount < maxToProcess) {
+        if (_d->pendingUpdateOfChildren.empty()) {
+            break;
+        }
+
+        auto dirToUpdate = _d->pendingUpdateOfChildren.front();
+        _d->pendingUpdateOfChildren.pop_front();
+        dirToUpdate->updateChildrenBasedOnHash();
+        ++processedCount;
+    }
+
+    _d->checkForComplete();
+}
+
+void HTTPRepoPrivate::checkForComplete()
+{
+    if (pendingUpdateOfChildren.empty() && activeRequests.empty() && queuedRequests.empty()) {
+        isUpdating = false;
+        writeHashCache();
+    }
 }
 
 size_t HTTPRepository::bytesToDownload() const
@@ -1208,10 +1235,7 @@ HTTPRepository::failure() const
         writeHashCache();
       }
 
-      if (activeRequests.empty() && queuedRequests.empty()) {
-        isUpdating = false;
-        writeHashCache();
-      }
+      checkForComplete();
     }
 
     void HTTPRepoPrivate::failedToGetRootIndex(HTTPRepository::ResultCode st)
@@ -1270,6 +1294,16 @@ HTTPRepository::failure() const
                            return f.path == relativePath;
                          }),
           failures.end());
+    }
+
+    void HTTPRepoPrivate::scheduleUpdateOfChildren(HTTPDirectory* dir)
+    {
+        auto it = std::find(pendingUpdateOfChildren.begin(), pendingUpdateOfChildren.end(), dir);
+        if (it != pendingUpdateOfChildren.end()) {
+            return; // duplicate add, skip
+        }
+
+        pendingUpdateOfChildren.push_back(dir);
     }
 
 } // of namespace simgear

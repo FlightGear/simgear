@@ -62,6 +62,11 @@ public:
 
   virtual bool isDoingSync() const;
 
+  /**
+        @brief call this periodically to progress non-network tasks
+     */
+  void process();
+
   virtual ResultCode failure() const;
 
   virtual size_t bytesToDownload() const;

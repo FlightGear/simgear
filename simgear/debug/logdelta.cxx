@@ -82,7 +82,7 @@ struct logDelta
             std::string delta = item;
             
             if (delta.empty()
-                    or delta.find_first_not_of("0123456789-+") != std::string::npos
+                    || delta.find_first_not_of("0123456789-+") != std::string::npos
                     ) {
                 std::cerr << __FILE__ << ":" << __LINE__ << ": "
                         << "Ignoring item '" << item_orig << "'"
@@ -158,7 +158,7 @@ struct logDelta
             it = m_cache.find(flf);
             
             assert(m_cache.find(flf)->second == delta);
-            if (0 and delta != 0) {
+            if (0 && delta != 0) {
                 std::cerr << __FILE__ << ":" << __LINE__ << ": "
                         << "caching delta=" << delta
                         << " for: " << file << ":" << line << ":" << function
@@ -232,7 +232,7 @@ sgDebugPriority logDeltaAdd(sgDebugPriority priority,
     int priority_new = (int) priority + log_delta(file, line, function);
     
     // Don't cause new popups.
-    if (priority < SG_POPUP and priority_new >= SG_POPUP) {
+    if (priority < SG_POPUP && priority_new >= SG_POPUP) {
         priority_new = SG_POPUP - 1;
     }
     // Keep new priority within range of sgDebugPriority enum.

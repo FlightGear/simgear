@@ -417,6 +417,66 @@ public:
         return _relativePath;
     }
 
+    class ArchiveExtractTask {
+    public:
+      ArchiveExtractTask(SGPath p, const std::string &relPath)
+          : relativePath(relPath), file(p), extractor(p.dir()) {
+        if (!file.open(SG_IO_IN)) {
+          SG_LOG(SG_TERRASYNC, SG_ALERT,
+                 "Unable to open " << p << " to extract");
+          return;
+        }
+
+        buffer = (uint8_t *)malloc(bufferSize);
+      }
+
+      ArchiveExtractTask(const ArchiveExtractTask &) = delete;
+
+      HTTPRepoPrivate::ProcessResult run(HTTPRepoPrivate *repo) {
+        size_t rd = file.read((char *)buffer, bufferSize);
+        extractor.extractBytes(buffer, rd);
+
+        if (file.eof()) {
+          extractor.flush();
+          file.close();
+
+          if (!extractor.isAtEndOfArchive()) {
+            SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << relativePath);
+            repo->failedToUpdateChild(relativePath,
+                                      HTTPRepository::REPO_ERROR_IO);
+            return HTTPRepoPrivate::ProcessFailed;
+          }
+
+          if (extractor.hasError()) {
+            SG_LOG(SG_TERRASYNC, SG_ALERT, "Error extracting " << relativePath);
+            repo->failedToUpdateChild(relativePath,
+                                      HTTPRepository::REPO_ERROR_IO);
+            return HTTPRepoPrivate::ProcessFailed;
+          }
+
+          return HTTPRepoPrivate::ProcessDone;
+        }
+
+        return HTTPRepoPrivate::ProcessContinue;
+      }
+
+      ~ArchiveExtractTask() { free(buffer); }
+
+    private:
+      // intentionally small so we extract incrementally on Windows
+      // where Defender throttles many small files, sorry
+      // if you make this bigger we will be more efficient but stall for
+      // longer when extracting the Airports_archive
+      const int bufferSize = 1024 * 64;
+
+      std::string relativePath;
+      uint8_t *buffer = nullptr;
+      SGBinaryFile file;
+      ArchiveExtractor extractor;
+    };
+
+    using ArchiveExtractTaskPtr = std::shared_ptr<ArchiveExtractTask>;
+
     void didUpdateFile(const std::string& file, const std::string& hash, size_t sz)
     {
         // check hash matches what we expected
@@ -455,35 +515,22 @@ public:
                   }
 
                   if (pathAvailable) {
-                    // If this is a tarball, then extract it.
-                    SGBinaryFile f(p);
-                    if (! f.open(SG_IO_IN)) SG_LOG(SG_TERRASYNC, SG_ALERT, "Unable to open " << p << " to extract");
+                    // we use a Task helper to extract tarballs incrementally.
+                    // without this, archive extraction blocks here, which
+                    // prevents other repositories downloading / updating.
+                    // Unfortunately due Windows AV (Defender, etc) we cna block
+                    // here for many minutes.
 
-                    SG_LOG(SG_TERRASYNC, SG_INFO, "Extracting " << absolutePath() << "/" << file << " to " << p.dir());
-                    SGPath extractDir = p.dir();
-                    ArchiveExtractor ex(extractDir);
+                    // use a lambda to own this shared_ptr; this means when the
+                    // lambda is destroyed, the ArchiveExtraTask will get
+                    // cleaned up.
+                    ArchiveExtractTaskPtr t =
+                        std::make_shared<ArchiveExtractTask>(p, _relativePath);
+                    auto cb = [t](HTTPRepoPrivate *repo) {
+                      return t->run(repo);
+                    };
 
-                    const size_t bufSize = 1024 * 1024;
-                    uint8_t* buf = (uint8_t*)malloc(bufSize);
-                    while (!f.eof()) {
-                        size_t rd = f.read((char*)buf, bufSize);
-                        ex.extractBytes(buf, rd);
-                    }
-
-                    ex.flush();
-                    free(buf);
-                    if (! ex.isAtEndOfArchive()) {
-                      SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << p);
-                      _repository->failedToUpdateChild(
-                          _relativePath, HTTPRepository::REPO_ERROR_IO);
-                    }
-
-                    if (ex.hasError()) {
-                      SG_LOG(SG_TERRASYNC, SG_ALERT, "Error extracting " << p);
-                      _repository->failedToUpdateChild(
-                          _relativePath, HTTPRepository::REPO_ERROR_IO);
-                    }
-
+                    _repository->addTask(cb);
                   } else {
                     SG_LOG(SG_TERRASYNC, SG_ALERT, "Unable to remove old file/directory " << removePath);
                   } // of pathAvailable
@@ -821,14 +868,19 @@ void HTTPRepository::process()
     const int maxToProcess = 16;
 
     while (processedCount < maxToProcess) {
-        if (_d->pendingUpdateOfChildren.empty()) {
-            break;
-        }
+      if (_d->pendingTasks.empty()) {
+        break;
+      }
 
-        auto dirToUpdate = _d->pendingUpdateOfChildren.front();
-        _d->pendingUpdateOfChildren.pop_front();
-        dirToUpdate->updateChildrenBasedOnHash();
-        ++processedCount;
+      auto task = _d->pendingTasks.front();
+      auto result = task(_d.get());
+      if (result == HTTPRepoPrivate::ProcessContinue) {
+        // assume we're not complete
+        return;
+      }
+
+      _d->pendingTasks.pop_front();
+      ++processedCount;
     }
 
     _d->checkForComplete();
@@ -836,9 +888,10 @@ void HTTPRepository::process()
 
 void HTTPRepoPrivate::checkForComplete()
 {
-    if (pendingUpdateOfChildren.empty() && activeRequests.empty() && queuedRequests.empty()) {
-        isUpdating = false;
-    }
+  if (pendingTasks.empty() && activeRequests.empty() &&
+      queuedRequests.empty()) {
+    isUpdating = false;
+  }
 }
 
 size_t HTTPRepository::bytesToDownload() const
@@ -1310,12 +1363,16 @@ HTTPRepository::failure() const
 
     void HTTPRepoPrivate::scheduleUpdateOfChildren(HTTPDirectory* dir)
     {
-        auto it = std::find(pendingUpdateOfChildren.begin(), pendingUpdateOfChildren.end(), dir);
-        if (it != pendingUpdateOfChildren.end()) {
-            return; // duplicate add, skip
-        }
+      auto updateChildTask = [dir](const HTTPRepoPrivate *) {
+        dir->updateChildrenBasedOnHash();
+        return ProcessDone;
+      };
 
-        pendingUpdateOfChildren.push_back(dir);
+      addTask(updateChildTask);
+    }
+
+    void HTTPRepoPrivate::addTask(RepoProcessTask task) {
+      pendingTasks.push_back(task);
     }
 
     int HTTPRepoPrivate::countDirtyHashCaches() const

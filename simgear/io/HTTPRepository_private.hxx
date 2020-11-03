@@ -20,6 +20,7 @@
 #pragma once
 
 #include <deque>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -50,7 +51,7 @@ protected:
   size_t _contentSize = 0;
 };
 
-typedef SGSharedPtr<HTTPRepoGetRequest> RepoRequestPtr;
+using RepoRequestPtr = SGSharedPtr<HTTPRepoGetRequest>;
 
 class HTTPRepoPrivate {
 public:
@@ -102,20 +103,24 @@ public:
   HTTPDirectory *getOrCreateDirectory(const std::string &path);
   bool deleteDirectory(const std::string &relPath, const SGPath &absPath);
 
-  void scheduleUpdateOfChildren(HTTPDirectory* dir);
 
   typedef std::vector<HTTPDirectory_ptr> DirectoryVector;
   DirectoryVector directories;
 
-  // list of directories to be locally processed
-  // this is used to avoid deep recursion when receiving the .dirIndex;
-  // we don't want to recurse over a large repo in a single call
-  std::deque<HTTPDirectory*> pendingUpdateOfChildren;
+  void scheduleUpdateOfChildren(HTTPDirectory *dir);
 
   SGPath installedCopyPath;
 
   int countDirtyHashCaches() const;
   void flushHashCaches();
+
+  enum ProcessResult { ProcessContinue, ProcessDone, ProcessFailed };
+
+  using RepoProcessTask = std::function<ProcessResult(HTTPRepoPrivate *repo)>;
+
+  void addTask(RepoProcessTask task);
+
+  std::deque<RepoProcessTask> pendingTasks;
 };
 
 } // namespace simgear

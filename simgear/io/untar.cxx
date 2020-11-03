@@ -31,6 +31,8 @@
 #include <simgear/sg_inlines.h>
 #include <simgear/io/sg_file.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/strutils.hxx>
+
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/package/unzip.h>
@@ -592,7 +594,7 @@ public:
 
 		outFile.open(path, std::ios::binary | std::ios::trunc | std::ios::out);
 		if (outFile.fail()) {
-			throw sg_io_exception("failed to open output file for writing", path);
+			throw sg_io_exception("failed to open output file for writing:" + strutils::error_string(errno), path);
 		}
 
 		while (!eof) {

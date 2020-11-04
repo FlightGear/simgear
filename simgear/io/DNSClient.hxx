@@ -40,28 +40,38 @@ namespace DNS
 {
 
 class Client;
+
+using UDNSQueryPtr = void*;
+
 class Request : public SGReferenced
 {
 public:
     Request( const std::string & dn );
     virtual ~Request();
-    std::string getDn() const { return _dn; }
+    const std::string& getDn() const { return _dn; }
     int getType() const { return _type; }
     bool isComplete() const { return _complete; }
     bool isTimeout() const;
     void setComplete( bool b = true ) { _complete = b; }
+    bool isCancelled() const { return _cancelled; }
 
     virtual void submit( Client * client) = 0;
+
+    void cancel();
 
     std::string cname;
     std::string qname;
     unsigned ttl;
 protected:
+    friend class Client;
+
+    UDNSQueryPtr _query = nullptr;
     std::string _dn;
     int _type;
     bool _complete;
     time_t _timeout_secs;
     time_t _start;
+    bool _cancelled = false;
 };
 typedef SGSharedPtr<Request> Request_ptr;
 
@@ -69,7 +79,7 @@ class NAPTRRequest : public Request
 {
 public:
     NAPTRRequest( const std::string & dn );
-    virtual void submit( Client * client );
+    void submit(Client* client) override;
 
     struct NAPTR : SGReferenced {
         int order;
@@ -92,7 +102,7 @@ class SRVRequest : public Request
 public:
     SRVRequest( const std::string & dn );
     SRVRequest( const std::string & dn, const string & service, const string & protocol );
-    virtual void submit( Client * client );
+    void submit(Client* client) override;
 
     struct SRV : SGReferenced {
       int priority;
@@ -112,7 +122,7 @@ class TXTRequest : public Request
 {
 public:
     TXTRequest( const std::string & dn );
-    virtual void submit( Client * client );
+    void submit(Client* client) override;
 
     typedef std::vector<string> TXT_list;
     typedef std::map<std::string,std::string> TXT_Attribute_map;

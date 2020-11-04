@@ -61,6 +61,10 @@ public:
 
     struct dns_ctx * ctx;
     static size_t instanceCounter;
+
+    using RequestVec = std::vector<Request_ptr>;
+
+    RequestVec _activeRequests;
 };
 
 size_t Client::ClientPrivate::instanceCounter = 0;
@@ -76,6 +80,11 @@ Request::Request( const std::string & dn ) :
 
 Request::~Request()
 {
+}
+
+void Request::cancel()
+{
+    _cancelled = true;
 }
 
 bool Request::isTimeout() const
@@ -114,18 +123,20 @@ static void dnscbSRV(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
 {
     SRVRequest * r = static_cast<SRVRequest*>(data);
     if (result) {
-        r->cname = result->dnssrv_cname;
-        r->qname = result->dnssrv_qname;
-        r->ttl = result->dnssrv_ttl;
-        for (int i = 0; i < result->dnssrv_nrr; i++) {
-            SRVRequest::SRV_ptr srv(new SRVRequest::SRV);
-            r->entries.push_back(srv);
-            srv->priority = result->dnssrv_srv[i].priority;
-            srv->weight = result->dnssrv_srv[i].weight;
-            srv->port = result->dnssrv_srv[i].port;
-            srv->target = result->dnssrv_srv[i].name;
+        if (!r->isCancelled()) {
+            r->cname = result->dnssrv_cname;
+            r->qname = result->dnssrv_qname;
+            r->ttl = result->dnssrv_ttl;
+            for (int i = 0; i < result->dnssrv_nrr; i++) {
+                SRVRequest::SRV_ptr srv(new SRVRequest::SRV);
+                r->entries.push_back(srv);
+                srv->priority = result->dnssrv_srv[i].priority;
+                srv->weight = result->dnssrv_srv[i].weight;
+                srv->port = result->dnssrv_srv[i].port;
+                srv->target = result->dnssrv_srv[i].name;
+            }
+            std::sort(r->entries.begin(), r->entries.end(), sortSRV);
         }
-        std::sort( r->entries.begin(), r->entries.end(), sortSRV );
         free(result);
     }
     r->setComplete();
@@ -134,11 +145,16 @@ static void dnscbSRV(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
 void SRVRequest::submit( Client * client )
 {
     // if service is defined, pass service and protocol
-    if (!dns_submit_srv(client->d->ctx, getDn().c_str(), _service.empty() ? NULL : _service.c_str(), _service.empty() ? NULL : _protocol.c_str(), 0, dnscbSRV, this )) {
+    auto q = dns_submit_srv(client->d->ctx, getDn().c_str(), _service.empty() ? NULL : _service.c_str(),
+                            _service.empty() ? NULL : _protocol.c_str(),
+                            0, dnscbSRV, this);
+
+    if (!q) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }
     _start = time(NULL);
+    _query = q;
 }
 
 TXTRequest::TXTRequest( const std::string & dn ) :
@@ -151,22 +167,24 @@ static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
 {
     TXTRequest * r = static_cast<TXTRequest*>(data);
     if (result) {
-        r->cname = result->dnstxt_cname;
-        r->qname = result->dnstxt_qname;
-        r->ttl = result->dnstxt_ttl;
-        for (int i = 0; i < result->dnstxt_nrr; i++) {
-          //TODO: interprete the .len field of dnstxt_txt?
-          auto rawTxt = reinterpret_cast<char*>(result->dnstxt_txt[i].txt);
-          if (!rawTxt) {
-              continue;
-          }
+        if (!r->isCancelled()) {
+            r->cname = result->dnstxt_cname;
+            r->qname = result->dnstxt_qname;
+            r->ttl = result->dnstxt_ttl;
+            for (int i = 0; i < result->dnstxt_nrr; i++) {
+                //TODO: interprete the .len field of dnstxt_txt?
+                auto rawTxt = reinterpret_cast<char*>(result->dnstxt_txt[i].txt);
+                if (!rawTxt) {
+                    continue;
+                }
 
-          const string txt{rawTxt};
-          r->entries.push_back(txt);
-          string_list tokens = simgear::strutils::split( txt, "=", 1 );
-          if( tokens.size() == 2 ) {
-            r->attributes[tokens[0]] = tokens[1];
-          }
+                const string txt{rawTxt};
+                r->entries.push_back(txt);
+                string_list tokens = simgear::strutils::split(txt, "=", 1);
+                if (tokens.size() == 2) {
+                    r->attributes[tokens[0]] = tokens[1];
+                }
+            }
         }
         free(result);
     }
@@ -176,11 +194,13 @@ static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
 void TXTRequest::submit( Client * client )
 {
     // protocol and service an already encoded in DN so pass in NULL for both
-    if (!dns_submit_txt(client->d->ctx, getDn().c_str(), DNS_C_IN, 0, dnscbTXT, this )) {
+    auto q = dns_submit_txt(client->d->ctx, getDn().c_str(), DNS_C_IN, 0, dnscbTXT, this);
+    if (!q) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }
     _start = time(NULL);
+    _query = q;
 }
 
 
@@ -195,27 +215,29 @@ static void dnscbNAPTR(struct dns_ctx *ctx, struct dns_rr_naptr *result, void *d
 {
     NAPTRRequest * r = static_cast<NAPTRRequest*>(data);
     if (result) {
-        r->cname = result->dnsnaptr_cname;
-        r->qname = result->dnsnaptr_qname;
-        r->ttl = result->dnsnaptr_ttl;
-        for (int i = 0; i < result->dnsnaptr_nrr; i++) {
-            if( !r->qservice.empty() && r->qservice != result->dnsnaptr_naptr[i].service )
-                continue;
+        if (!r->isCancelled()) {
+            r->cname = result->dnsnaptr_cname;
+            r->qname = result->dnsnaptr_qname;
+            r->ttl = result->dnsnaptr_ttl;
+            for (int i = 0; i < result->dnsnaptr_nrr; i++) {
+                if (!r->qservice.empty() && r->qservice != result->dnsnaptr_naptr[i].service)
+                    continue;
 
-            //TODO: case ignore and result flags may have more than one flag
-            if( !r->qflags.empty() && r->qflags != result->dnsnaptr_naptr[i].flags )
-                continue;
+                //TODO: case ignore and result flags may have more than one flag
+                if (!r->qflags.empty() && r->qflags != result->dnsnaptr_naptr[i].flags)
+                    continue;
 
-            NAPTRRequest::NAPTR_ptr naptr(new NAPTRRequest::NAPTR);
-            r->entries.push_back(naptr);
-            naptr->order = result->dnsnaptr_naptr[i].order;
-            naptr->preference = result->dnsnaptr_naptr[i].preference;
-            naptr->flags = result->dnsnaptr_naptr[i].flags;
-            naptr->service = result->dnsnaptr_naptr[i].service;
-            naptr->regexp = result->dnsnaptr_naptr[i].regexp;
-            naptr->replacement = result->dnsnaptr_naptr[i].replacement;
+                NAPTRRequest::NAPTR_ptr naptr(new NAPTRRequest::NAPTR);
+                r->entries.push_back(naptr);
+                naptr->order = result->dnsnaptr_naptr[i].order;
+                naptr->preference = result->dnsnaptr_naptr[i].preference;
+                naptr->flags = result->dnsnaptr_naptr[i].flags;
+                naptr->service = result->dnsnaptr_naptr[i].service;
+                naptr->regexp = result->dnsnaptr_naptr[i].regexp;
+                naptr->replacement = result->dnsnaptr_naptr[i].replacement;
+            }
+            std::sort(r->entries.begin(), r->entries.end(), sortNAPTR);
         }
-        std::sort( r->entries.begin(), r->entries.end(), sortNAPTR );
         free(result);
     }
     r->setComplete();
@@ -223,11 +245,13 @@ static void dnscbNAPTR(struct dns_ctx *ctx, struct dns_rr_naptr *result, void *d
 
 void NAPTRRequest::submit( Client * client )
 {
-    if (!dns_submit_naptr(client->d->ctx, getDn().c_str(), 0, dnscbNAPTR, this )) {
+    auto q = dns_submit_naptr(client->d->ctx, getDn().c_str(), 0, dnscbNAPTR, this);
+    if (!q) {
         SG_LOG(SG_IO, SG_ALERT, "Can't submit dns request for " << getDn());
         return;
     }
     _start = time(NULL);
+    _query = q;
 }
 
 
@@ -242,6 +266,7 @@ Client::Client() :
 
 void Client::makeRequest(const Request_ptr& r)
 {
+    d->_activeRequests.push_back(r);
     r->submit(this);
 }
 
@@ -252,6 +277,19 @@ void Client::update(int waitTimeout)
         return;
 
     dns_ioevent(d->ctx, now);
+
+    // drop our owning ref to completed requests,
+    // and cancel any which timed out
+    auto it = std::remove_if(d->_activeRequests.begin(), d->_activeRequests.end(),
+                             [this](const Request_ptr& r) {
+                                 if (r->isTimeout()) {
+                                     dns_cancel(d->ctx, reinterpret_cast<struct dns_query*>(r->_query));
+                                     return true;
+                                 }
+
+                                 return r->isComplete();
+                             });
+    d->_activeRequests.erase(it, d->_activeRequests.end());
 }
 
 } // of namespace DNS

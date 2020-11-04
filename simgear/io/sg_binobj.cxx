@@ -42,6 +42,7 @@
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/math/SGGeometry.hxx>
 #include <simgear/structure/exception.hxx>
 
@@ -563,6 +564,12 @@ bool SGBinObject::read_bin( const SGPath& file ) {
     // read headers
     unsigned int header;
     sgReadUInt( fp, &header );
+
+    if (sgReadError()) {
+        gzclose(fp);
+        throw sg_io_exception("Unable to read BTG header: " + simgear::strutils::error_string(errno), sg_location(file));
+    }
+
     if ( ((header & 0xFF000000) >> 24) == 'S' &&
          ((header & 0x00FF0000) >> 16) == 'G' ) {
 

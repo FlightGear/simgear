@@ -221,42 +221,48 @@ public:
 		char* buf = nullptr;
 		size_t bufSize = 0;
 
-		for (const auto& child : children) {
-            if (child.type != HTTPRepository::FileType)
-                continue;
+                for (auto &child : children) {
+                  if (child.type != HTTPRepository::FileType)
+                    continue;
 
-            if (child.path.exists())
-                continue;
+                  if (child.path.exists())
+                    continue;
 
-            SGPath cp = _repository->installedCopyPath;
-            cp.append(relativePath());
-            cp.append(child.name);
-            if (!cp.exists()) {
-                continue;
-            }
+                  SGPath cp = _repository->installedCopyPath;
+                  cp.append(relativePath());
+                  cp.append(child.name);
+                  if (!cp.exists()) {
+                    continue;
+                  }
 
-            SGBinaryFile src(cp);
-			SGBinaryFile dst(child.path);
-			src.open(SG_IO_IN);
-			dst.open(SG_IO_OUT);
+                  SGBinaryFile src(cp);
+                  SGBinaryFile dst(child.path);
+                  src.open(SG_IO_IN);
+                  dst.open(SG_IO_OUT);
 
-			if (bufSize < cp.sizeInBytes()) {
-				bufSize = cp.sizeInBytes();
-				free(buf);
-				buf = (char*) malloc(bufSize);
-				if (!buf) {
-					continue;
-				}
-			}
+                  if (bufSize < cp.sizeInBytes()) {
+                    bufSize = cp.sizeInBytes();
+                    free(buf);
+                    buf = (char *)malloc(bufSize);
+                    if (!buf) {
+                      continue;
+                    }
+                  }
 
-			src.read(buf, cp.sizeInBytes());
-			dst.write(buf, cp.sizeInBytes());
-			src.close();
-			dst.close();
+                  src.read(buf, cp.sizeInBytes());
+                  dst.write(buf, cp.sizeInBytes());
+                  src.close();
+                  dst.close();
 
-		}
+                  // reset caching
+                  child.path.set_cached(false);
+                  child.path.set_cached(true);
 
-		free(buf);
+                  std::string hash = computeHashForPath(child.path);
+                  updatedFileContents(child.path, hash);
+                }
+
+                free(buf);
     }
 
     void updateChildrenBasedOnHash()

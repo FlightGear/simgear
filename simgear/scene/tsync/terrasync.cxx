@@ -602,12 +602,6 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
             beginNormalSync(slot);
         }
 
-        if (_installRoot.exists()) {
-            SGPath p = _installRoot;
-            p.append(slot.currentItem._dir);
-            slot.repository->setInstalledCopyPath(p);
-        }
-
         try {
             slot.repository->update();
         } catch (sg_exception& e) {
@@ -675,6 +669,11 @@ void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
     slot.repository.reset(new HTTPRepository(path, &_http));
     slot.repository->setBaseUrl(_httpServer + "/" + tileCategory);
 
+    if (_installRoot.exists()) {
+      SGPath p = _installRoot / tileCategory;
+      slot.repository->setInstalledCopyPath(p);
+    }
+
     const auto dirPrefix = tenByTenDir + "/" + oneByOneDir;
 
     // filter callback to *only* sync the 1x1 dir we want, if it exists
@@ -705,6 +704,12 @@ void SGTerraSync::WorkerThread::beginNormalSync(SyncSlot& slot)
     path.append(slot.currentItem._dir);
     slot.repository.reset(new HTTPRepository(path, &_http));
     slot.repository->setBaseUrl(_httpServer + "/" + slot.currentItem._dir);
+
+    if (_installRoot.exists()) {
+      SGPath p = _installRoot;
+      p.append(slot.currentItem._dir);
+      slot.repository->setInstalledCopyPath(p);
+    }
 }
 
 void SGTerraSync::WorkerThread::runInternal()

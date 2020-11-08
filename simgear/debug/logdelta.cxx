@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -137,6 +138,8 @@ struct logDelta
         if (!function)  function = "";
         logDeltaCacheItem flf(file, line, function);
         
+        std::lock_guard<std::mutex> lock( m_mutex);
+        
         auto it = m_cache.find(flf);
         
         if (it == m_cache.end()) {
@@ -212,6 +215,7 @@ struct logDelta
     }
     
     private:
+        std::mutex                          m_mutex;
         std::map<logDeltaCacheItem, int>    m_cache;
         std::vector<logDeltaItem>           m_items;
 };

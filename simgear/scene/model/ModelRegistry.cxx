@@ -48,6 +48,8 @@
 #include <osgUtil/Optimizer>
 #include <osg/Texture>
 
+#include <osgTerrain/Terrain>
+
 #include <simgear/sg_inlines.h>
 
 #include <simgear/scene/util/SGSceneFeatures.hxx>
@@ -55,6 +57,8 @@
 #include <simgear/scene/util/SGTextureStateAttributeVisitor.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/NodeAndDrawableVisitor.hxx>
+
+#include <simgear/scene/tgdb/VPBTechnique.hxx>
 
 #include <simgear/structure/exception.hxx>
 #include <simgear/props/props.hxx>
@@ -869,6 +873,145 @@ struct IVEOptimizePolicy : public OptimizeModelPolicy {
     }
 };
 
+template<class T>
+class FindTopMostNodeOfTypeVisitor : public osg::NodeVisitor
+{
+public:
+    FindTopMostNodeOfTypeVisitor():
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _foundNode(0)
+    {}
+
+    void apply(osg::Node& node)
+    {
+        T* result = dynamic_cast<T*>(&node);
+        if (result)
+        {
+            _foundNode = result;
+        }
+        else
+        {
+            traverse(node);
+        }
+    }
+
+    T* _foundNode;
+};
+
+template<class T>
+T* findTopMostNodeOfType(osg::Node* node)
+{
+    if (!node) return 0;
+
+    FindTopMostNodeOfTypeVisitor<T> fnotv;
+    node->accept(fnotv);
+
+    return fnotv._foundNode;
+}
+
+class CleanTechniqueVisitor : public osg::NodeVisitor
+{
+public:
+    CleanTechniqueVisitor():
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
+
+    void apply(osg::Node& node)
+    {
+        osgTerrain::TerrainTile* tile = dynamic_cast<osgTerrain::TerrainTile*>(&node);
+        if (tile)
+        {
+            if (tile->getTerrainTechnique())
+            {
+                // OSG_NOTICE<<"Resetting TerrainTechnhique "<<tile->getTerrainTechnique()->className()<<" to 0"<<std::endl;
+                tile->setTerrainTechnique(0);
+            }
+        }
+        else
+        {
+            traverse(node);
+        }
+    }
+};
+
+struct OSGOptimizePolicy : public OptimizeModelPolicy {
+
+    
+    OSGOptimizePolicy(const string& extension) :
+        OptimizeModelPolicy(extension)
+    {
+        _osgOptions &= ~Optimizer::TRISTRIP_GEOMETRY;
+    }
+    Node* optimize(Node* node, const string& fileName,
+        const Options* opt)
+    {
+        ref_ptr<Node> optimized = node;
+
+        const SGReaderWriterOptions* sgopt
+            = dynamic_cast<const SGReaderWriterOptions*>(opt);
+
+        if (fileName.find("vpb/WS_") != string::npos) {
+            // Currently the only way we have to identify WS3.0 / VirtualPlanetBuilder files is by the filename
+
+            // Clean out any existing osgTerrain techniques
+            CleanTechniqueVisitor ctv;
+            optimized->accept(ctv);
+
+            osg::ref_ptr<osgTerrain::Terrain> terrain = findTopMostNodeOfType<osgTerrain::Terrain>(optimized.get());
+
+            if (terrain != NULL) {
+                // Top level
+                terrain->setSampleRatio(1.0);
+                terrain->setVerticalScale(1.0);
+                terrain->setBlendingPolicy(osgTerrain::TerrainTile::INHERIT);           
+                terrain->setTerrainTechniquePrototype(new VPBTechnique(sgopt));
+            } else {
+                // no Terrain node present insert one above the loaded model.  
+                terrain = new osgTerrain::Terrain;
+                //SG_LOG(SG_TERRAIN, SG_ALERT, "Creating Terrain Node for " << fileName);
+
+                // if CoordinateSystemNode is present copy it's contents into the Terrain, and discard it.
+                osg::CoordinateSystemNode* csn = findTopMostNodeOfType<osg::CoordinateSystemNode>(optimized.get());
+                if (csn)
+                {
+                    terrain->set(*csn);
+                    for(unsigned int i=0; i<csn->getNumChildren();++i)
+                    {
+                        terrain->addChild(csn->getChild(i));
+                    }
+                }
+                else
+                {
+                    terrain->addChild(optimized.get());
+                }
+            }
+        }
+
+        optimized = OptimizeModelPolicy::optimize(optimized, fileName, opt);
+        Group* group = dynamic_cast<Group*>(optimized.get());
+        MatrixTransform* transform
+            = dynamic_cast<MatrixTransform*>(optimized.get());
+        if (((transform && transform->getMatrix().isIdentity()) || group)
+            && group->getName().empty()
+            && group->getNumChildren() == 1) {
+            optimized = static_cast<Node*>(group->getChild(0));
+            group = dynamic_cast<Group*>(optimized.get());
+            if (group && group->getName().empty()
+                && group->getNumChildren() == 1)
+                optimized = static_cast<Node*>(group->getChild(0));
+        }
+
+        if (sgopt && sgopt->getInstantiateMaterialEffects()) {
+            optimized = instantiateMaterialEffects(optimized.get(), sgopt);
+        }
+        else if (sgopt && sgopt->getInstantiateEffects()) {
+            optimized = instantiateEffects(optimized.get(), sgopt);
+        }
+
+        return optimized.release();
+    }
+};
+
+
 struct IVEProcessPolicy {
     IVEProcessPolicy(const string& extension) {}
     Node* process(Node* node, const string& filename,
@@ -897,12 +1040,17 @@ typedef ModelRegistryCallback<IVEProcessPolicy, DefaultCachePolicy,
     OSGSubstitutePolicy, BuildLeafBVHPolicy>
     IVECallback;
 
+typedef ModelRegistryCallback<IVEProcessPolicy, DefaultCachePolicy,
+    OSGOptimizePolicy,
+    OSGSubstitutePolicy, BuildLeafBVHPolicy>
+    OSGCallback;
+
 namespace
 {
 ModelRegistryCallbackProxy<ACCallback> g_acRegister("ac");
 ModelRegistryCallbackProxy<OBJCallback> g_objRegister("obj");
 ModelRegistryCallbackProxy<IVECallback> g_iveRegister("ive");
-ModelRegistryCallbackProxy<IVECallback> g_osgtRegister("osgt");
-ModelRegistryCallbackProxy<IVECallback> g_osgbRegister("osgb");
+ModelRegistryCallbackProxy<OSGCallback> g_osgtRegister("osgt");
+ModelRegistryCallbackProxy<OSGCallback> g_osgbRegister("osgb");
 
 }

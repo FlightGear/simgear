@@ -19,6 +19,7 @@ set(HEADERS
     SGVertexArrayBin.hxx
     ShaderGeometry.hxx
     TreeBin.hxx
+    VPBTechnique.hxx
     apt_signs.hxx
     obj.hxx
     pt_lights.hxx
@@ -35,6 +36,7 @@ set(SOURCES
     SGVasiDrawable.cxx
     ShaderGeometry.cxx
     TreeBin.cxx
+    VPBTechnique.cxx
     apt_signs.cxx
     obj.cxx
     pt_lights.cxx

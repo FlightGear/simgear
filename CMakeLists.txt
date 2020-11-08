@@ -161,7 +161,7 @@ else()
         endif()
     endif(ENABLE_SOUND)
 
-    find_package(OpenSceneGraph 3.4.1 REQUIRED osgText osgSim osgDB osgParticle osgGA osgViewer osgUtil)
+    find_package(OpenSceneGraph 3.4.1 REQUIRED osgText osgSim osgDB osgParticle osgGA osgViewer osgUtil osgTerrain)
 
     if (MSVC)
       set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})

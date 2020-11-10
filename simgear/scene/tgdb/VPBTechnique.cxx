@@ -1482,9 +1482,9 @@ void VPBTechnique::applyTransparency(BufferData& buffer)
 
 }
 
-void VPBTechnique::update(osgUtil::UpdateVisitor* uv)
+void VPBTechnique::update(osg::NodeVisitor& nv)
 {
-    if (_terrainTile) _terrainTile->osg::Group::traverse(*uv);
+    if (_terrainTile) _terrainTile->osg::Group::traverse(nv);
 
     if (_newBufferData.valid())
     {
@@ -1494,13 +1494,13 @@ void VPBTechnique::update(osgUtil::UpdateVisitor* uv)
 }
 
 
-void VPBTechnique::cull(osgUtil::CullVisitor* cv)
+void VPBTechnique::cull(osg::NodeVisitor& nv)
 {
     if (_currentBufferData.valid())
     {
         if (_currentBufferData->_transform.valid())
         {
-            _currentBufferData->_transform->accept(*cv);
+            _currentBufferData->_transform->accept(nv);
         }
     }
 }
@@ -1514,22 +1514,13 @@ void VPBTechnique::traverse(osg::NodeVisitor& nv)
     if (nv.getVisitorType()==osg::NodeVisitor::UPDATE_VISITOR)
     {
         if (_terrainTile->getDirty()) _terrainTile->init(_terrainTile->getDirtyMask(), false);
-
-        osgUtil::UpdateVisitor* uv = nv.asUpdateVisitor();
-        if (uv)
-        {
-            update(uv);
-            return;
-        }
+        update(nv);
+        return;
     }
     else if (nv.getVisitorType()==osg::NodeVisitor::CULL_VISITOR)
     {
-        osgUtil::CullVisitor* cv = nv.asCullVisitor();
-        if (cv)
-        {
-            cull(cv);
-            return;
-        }
+        cull(nv);
+        return;
     }
 
 

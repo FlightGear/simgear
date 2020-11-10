@@ -49,9 +49,9 @@ class VPBTechnique : public TerrainTechnique
         virtual Locator* computeMasterLocator();
 
 
-        virtual void update(osgUtil::UpdateVisitor* nv);
+        virtual void update(osg::NodeVisitor& nv);
 
-        virtual void cull(osgUtil::CullVisitor* nv);
+        virtual void cull(osg::NodeVisitor& nv);
 
         /** Traverse the terain subgraph.*/
         virtual void traverse(osg::NodeVisitor& nv);

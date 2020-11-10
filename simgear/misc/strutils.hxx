@@ -448,6 +448,19 @@ namespace simgear {
       std::string formatGeodAsString(const SGGeod& geod,
                                      LatLonFormat format = LatLonFormat::DECIMAL_DEGREES,
                                      DegreeSymbol degreeSymbol = DegreeSymbol::ASTERISK);
+
+
+      enum class PrintfFormatType {
+          Invalid,
+          Int,
+          Long,
+          Float,
+          Double,
+          CharPointer
+      };
+
+      PrintfFormatType validatePrintfFormat(const char* f);
+
   } // end namespace strutils
 } // end namespace simgear
 

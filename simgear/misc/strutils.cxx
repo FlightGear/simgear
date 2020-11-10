@@ -1587,6 +1587,56 @@ std::string formatGeodAsString(const SGGeod& geod, LatLonFormat format,
         + formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew, degreeSymbol);
 }
 
+PrintfFormatType validatePrintfFormat(const char* f)
+{
+    bool l = false;
+    for (; *f; f++) {
+        if (*f == '%') {
+            if (f[1] == '%')
+                f++;
+            else
+                break;
+        }
+    }
+    if (*f++ != '%')
+        return PrintfFormatType::Invalid;
+
+    PrintfFormatType type = PrintfFormatType::Invalid;
+    while (*f == ' ' || *f == '+' || *f == '-' || *f == '#' || *f == '0')
+        f++;
+    while (*f && isdigit(*f))
+        f++;
+    if (*f == '.') {
+        f++;
+        while (*f && isdigit(*f))
+            f++;
+    }
+
+    if (*f == 'l')
+        l = true, f++;
+
+    if (*f == 'd') {
+        type = l ? PrintfFormatType::Long : PrintfFormatType::Int;
+    } else if (*f == 'f')
+        type = l ? PrintfFormatType::Double : PrintfFormatType::Float;
+    else if (*f == 's') {
+        if (l)
+            return PrintfFormatType::Invalid;
+        type = PrintfFormatType::CharPointer;
+    } else
+        return PrintfFormatType::Invalid;
+
+    for (++f; *f; f++) {
+        if (*f == '%') {
+            if (f[1] == '%')
+                f++;
+            else
+                return PrintfFormatType::Invalid;
+        }
+    }
+    return type;
+}
+
 } // end namespace strutils
 
 } // end namespace simgear

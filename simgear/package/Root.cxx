@@ -722,12 +722,6 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
     auto catIt = d->catalogs.find(aCat->id());
     d->fireRefreshStatus(aCat, aReason);
 
-    if (aReason == Delegate::STATUS_IN_PROGRESS) {
-        d->refreshing.insert(aCat);
-    } else {
-        d->refreshing.erase(aCat);
-    }
-
     if (aCat->isUserEnabled() &&
         (aReason == Delegate::STATUS_REFRESHED) && 
         (catIt == d->catalogs.end())) 
@@ -760,6 +754,17 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
             d->catalogs.erase(catIt);
         }
     } // of catalog is disabled
+
+    // remove from refreshing /after/ checking for enable / disabled, since for
+    // new catalogs, the reference in d->refreshing might be our /only/
+    // reference to the catalog. Once the refresh is done (either failed or
+    // succeeded) the Catalog will be in either d->catalogs or
+    // d->disabledCatalogs
+    if (aReason == Delegate::STATUS_IN_PROGRESS) {
+      d->refreshing.insert(aCat);
+    } else {
+      d->refreshing.erase(aCat);
+    }
 
     if (d->refreshing.empty()) {
         d->fireRefreshStatus(CatalogRef(), Delegate::STATUS_REFRESHED);

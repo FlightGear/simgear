@@ -19,6 +19,10 @@
 #include <sstream>
 #include <iomanip>
 #include <iterator>
+#include <exception> // can't use sg_exception becuase of PROPS_STANDALONE
+#include <mutex>
+#include <thread>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -51,11 +55,15 @@ using namespace simgear;
 
 struct SGPropertyNodeListeners
 {
+  /* Protect _num_iterators and _items. We use a recursive mutex to allow
+  nested access to work as normal. */
+  std::recursive_mutex  _rmutex;
+
   /* This keeps a count of the current number of nested invocations of
   forEachListener(). If non-zero, other code higher up the stack is iterating
   _items[] so for example code must not erase items in the vector. */
   int _num_iterators = 0;
-  
+
   std::vector<SGPropertyChangeListener *> _items;
 };
 
@@ -2406,6 +2414,7 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
   if (_listeners == 0)
     _listeners = new SGPropertyNodeListeners;
 
+  std::lock_guard<std::recursive_mutex> lock(_listeners->_rmutex);
   /* If there's a nullptr entry (a listener that was unregistered), we
   overwrite it. This ensures that listeners that routinely unregister+register
   themselves don't make _listeners->_items grow unnecessarily. Otherwise simply
@@ -2429,9 +2438,13 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
 {
   if (_listeners == 0)
     return;
+  /* We use a std::unique_lock rather than a std::lock_guard because we may
+  need to unlock early. */
+  std::unique_lock<std::recursive_mutex> lock(_listeners->_rmutex);
   vector<SGPropertyChangeListener*>::iterator it =
     find(_listeners->_items.begin(), _listeners->_items.end(), listener);
   if (it != _listeners->_items.end()) {
+    assert(_listeners->_num_iterators >= 0);
     if (_listeners->_num_iterators) {
       /* _listeners._items is currently being iterated further up the stack in
       this thread by one or more nested invocations of forEachListener(), so
@@ -2450,6 +2463,7 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
       _listeners->_items.erase(it);
       listener->unregister_property(this);
       if (_listeners->_items.empty()) {
+        lock.unlock();
         delete _listeners;
         _listeners = 0;
       }
@@ -2511,9 +2525,11 @@ static void forEachListener(
     )
 {
   if (!_listeners) return;
-  
+
+  std::lock_guard<std::recursive_mutex> lock(_listeners->_rmutex);
+  assert(_listeners->_num_iterators >= 0);
   _listeners->_num_iterators += 1;
-  
+
   /* We need to use an index here when iterating _listeners->_items, not an
   iterator. This is because a listener may add new listeners, causing the
   vector to be reallocated, which would invalidate any iterator. */
@@ -2528,10 +2544,12 @@ static void forEachListener(
       }
     }
   }
-  
+
   _listeners->_num_iterators -= 1;
-  
+  assert(_listeners->_num_iterators >= 0);
+
   if (_listeners->_num_iterators == 0) {
+
     /* Remove any items that have been set to nullptr. */
     _listeners->_items.erase(
         std::remove(_listeners->_items.begin(), _listeners->_items.end(), (SGPropertyChangeListener*) nullptr),
@@ -2547,6 +2565,7 @@ static void forEachListener(
 int SGPropertyNode::nListeners() const
 {
   if (!_listeners) return 0;
+  std::lock_guard<std::recursive_mutex> lock(_listeners->_rmutex);
   int   n = 0;
   for (auto listener: _listeners->_items) {
     if (listener)   n += 1;

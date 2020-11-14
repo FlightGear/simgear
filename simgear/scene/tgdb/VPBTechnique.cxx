@@ -1331,6 +1331,41 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
     }
 #endif
 
+    // Tile-specific information for the shaders
+    osg::StateSet *ss = buffer._geode->getOrCreateStateSet();
+    osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
+    level->setDataVariance(osg::Object::STATIC);
+    ss->addUniform(level);
+
+    // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
+    // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
+    // difference in axis length is < 1%, so we will just take the average.
+    osg::Vec3f bottom_left, bottom_right, top_left, top_right;
+    bool got_bl = VNG.vertex(0, 0, bottom_left);
+    bool got_br = VNG.vertex(0, VNG._numColumns - 1, bottom_right);
+    bool got_tl = VNG.vertex(VNG._numColumns - 1, 0, top_left);
+    bool got_tr = VNG.vertex(VNG._numColumns - 1, VNG._numRows -1, top_right);
+    float tile_width = 1.0;
+    float tile_height = 1.0;
+    if (got_bl && got_br && got_tl && got_tr) {
+        auto s = bottom_right - bottom_left;
+        auto t = top_left - bottom_left;
+        auto u = top_right - top_left;
+        auto v = top_right - bottom_right;
+        tile_width = 0.5 * (s.length() + u.length());
+        tile_height = 0.5 * (t.length() + v.length());
+    }
+
+    SG_LOG(SG_TERRAIN, SG_ALERT, "Tile Level " << _terrainTile->getTileID().level << " width " << tile_width << " height " << tile_height);
+
+    osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("tile_width", tile_width);
+    twu->setDataVariance(osg::Object::STATIC);
+    ss->addUniform(twu);
+
+    osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("tile_height", tile_height);
+    thu->setDataVariance(osg::Object::STATIC);
+    ss->addUniform(thu);
+
     // Force build of KD trees?
     if (osgDB::Registry::instance()->getBuildKdTreesHint()==osgDB::ReaderWriter::Options::BUILD_KDTREES &&
         osgDB::Registry::instance()->getKdTreeBuilder())

@@ -173,6 +173,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
             camera->setViewport(compositor->getViewport());
         } else {
             // We are rendering to the target texture
+            camera->setRenderOrder(osg::Camera::PRE_RENDER,
+                                   pass->render_order * (-1000));
             camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
             camera->setViewport(compositor->getViewport());
             camera->attach(osg::Camera::COLOR_BUFFER, target_texture);

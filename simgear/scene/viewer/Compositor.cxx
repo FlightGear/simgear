@@ -114,7 +114,7 @@ Compositor::create(osg::View *view,
         return 0;
     }
 
-    return create(view, gc, viewport, property_list, options);
+    return create(view, gc, viewport, property_list, options, target_texture);
 }
 
 Compositor::Compositor(osg::View *view,

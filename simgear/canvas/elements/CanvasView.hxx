@@ -24,6 +24,8 @@ struct View : simgear::canvas::Element
             const Style& parent_style,
             ElementWeakPtr parent
             );
+
+    void update(double dt) override;
     
     std::shared_ptr<SviewView>      m_sview;
     osg::ref_ptr<osg::Texture2D>    m_texture;

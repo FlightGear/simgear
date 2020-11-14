@@ -1,5 +1,7 @@
 #include "CanvasView.hxx"
 
+#include <simgear/canvas/Canvas.hxx>
+
 struct SviewView;
 
 namespace simgear
@@ -81,6 +83,14 @@ Element(canvas, node, parent_style, parent)
     m_quad->getOrCreateStateSet()->setTextureAttributeAndModes(0, m_texture.get(), osg::StateAttribute::ON);
 
     setDrawable(m_quad.get());
+}
+
+void View::update(double dt)
+{
+    auto c = getCanvas().lock();
+    c->enableRendering(true); // force a repaint
+
+    Element::update(dt);
 }
 
 

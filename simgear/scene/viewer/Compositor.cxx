@@ -50,9 +50,14 @@ Compositor::create(osg::View *view,
                    osg::GraphicsContext *gc,
                    osg::Viewport *viewport,
                    const SGPropertyNode *property_list,
-                   const SGReaderWriterOptions *options)
+                   const SGReaderWriterOptions *options,
+                   osg::Texture2D *target_texture)
 {
-    osg::ref_ptr<Compositor> compositor = new Compositor(view, gc, viewport);
+    osg::ref_ptr<Compositor> compositor = new Compositor(
+        view,
+        gc,
+        viewport,
+        target_texture);
     compositor->_name = property_list->getStringValue("name");
 
     // Read all buffers first so passes can use them
@@ -88,7 +93,8 @@ Compositor::create(osg::View *view,
                    osg::GraphicsContext *gc,
                    osg::Viewport *viewport,
                    const std::string &name,
-                   const SGReaderWriterOptions *options)
+                   const SGReaderWriterOptions *options,
+                   osg::Texture2D *target_texture)
 {
     std::string filename(name);
     filename += ".xml";
@@ -113,10 +119,12 @@ Compositor::create(osg::View *view,
 
 Compositor::Compositor(osg::View *view,
                        osg::GraphicsContext *gc,
-                       osg::Viewport *viewport) :
+                       osg::Viewport *viewport,
+                       osg::Texture2D *target_texture) :
     _view(view),
     _gc(gc),
     _viewport(viewport),
+    _target_texture(target_texture),
     _uniforms{
     new osg::Uniform("fg_ViewportSize", osg::Vec2f()),
     new osg::Uniform("fg_ViewMatrix", osg::Matrixf()),

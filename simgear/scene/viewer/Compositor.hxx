@@ -20,6 +20,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <osg/Texture2D>
+
 // For osgUtil::LineSegmentIntersector::Intersections, which is a typedef.
 #include <osgUtil/LineSegmentIntersector>
 
@@ -65,7 +67,8 @@ public:
 
     Compositor(osg::View *view,
                osg::GraphicsContext *gc,
-               osg::Viewport *viewport);
+               osg::Viewport *viewport,
+               osg::Texture2D *target_texture = nullptr);
     ~Compositor();
 
     /**
@@ -75,13 +78,15 @@ public:
      * @param gc The context where the internal osg::Cameras will draw on.
      * @param viewport The viewport position and size inside the window.
      * @param property_list A valid property list that describes the Compositor.
+     * @param target_texture An optional texture to render to.
      * @return A Compositor or a null pointer if there was an error.
      */
     static Compositor *create(osg::View *view,
                               osg::GraphicsContext *gc,
                               osg::Viewport *viewport,
                               const SGPropertyNode *property_list,
-                              const SGReaderWriterOptions *options);
+                              const SGReaderWriterOptions *options,
+                              osg::Texture2D *target_texture = nullptr);
     /**
      * \overload
      * \brief Create a Compositor from a file.
@@ -93,7 +98,8 @@ public:
                               osg::GraphicsContext *gc,
                               osg::Viewport *viewport,
                               const std::string &name,
-                              const SGReaderWriterOptions *options);
+                              const SGReaderWriterOptions *options,
+                              osg::Texture2D *target_texture = nullptr);
 
     void               update(const osg::Matrix &view_matrix,
                               const osg::Matrix &proj_matrix);
@@ -105,6 +111,8 @@ public:
     osg::GraphicsContext *getGraphicsContext() const { return _gc; }
 
     osg::Viewport     *getViewport() const { return _viewport; }
+
+    osg::Texture2D    *getTargetTexture() const { return _target_texture; }
 
     typedef std::array<
         osg::ref_ptr<osg::Uniform>,
@@ -131,6 +139,7 @@ protected:
     osg::View                   *_view;
     osg::GraphicsContext        *_gc;
     osg::ref_ptr<osg::Viewport>  _viewport;
+    osg::ref_ptr<osg::Texture2D> _target_texture;
     std::string                  _name;
     BufferMap                    _buffers;
     PassList                     _passes;

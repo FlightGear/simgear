@@ -160,14 +160,23 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     PropertyList p_attachments = root->getChildren("attachment");
     if (p_attachments.empty()) {
         // If there are no attachments, assume the pass is rendering
-        // directly to the screen
-        camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER);
-        camera->setDrawBuffer(GL_BACK);
-        camera->setReadBuffer(GL_BACK);
+        // directly to the screen or the target texture
+        osg::Texture2D *target_texture = compositor->getTargetTexture();
+        if (!target_texture) {
+            // We are rendering to the screen
+            camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER);
+            camera->setDrawBuffer(GL_BACK);
+            camera->setReadBuffer(GL_BACK);
 
-        // Use the physical viewport. We can't let the user choose the viewport
-        // size because some parts of the window might not be ours.
-        camera->setViewport(compositor->getViewport());
+            // Use the physical viewport. We can't let the user choose the viewport
+            // size because some parts of the window might not be ours.
+            camera->setViewport(compositor->getViewport());
+        } else {
+            // We are rendering to the target texture
+            camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
+            camera->setViewport(compositor->getViewport());
+            camera->attach(osg::Camera::COLOR_BUFFER, target_texture);
+        }
     } else {
         // This is a RTT camera
         camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);

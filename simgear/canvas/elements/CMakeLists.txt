@@ -7,6 +7,7 @@ set(HEADERS
   CanvasMap.hxx
   CanvasPath.hxx
   CanvasText.hxx
+  CanvasView.hxx
 )
 
 set(SOURCES
@@ -16,6 +17,7 @@ set(SOURCES
   CanvasMap.cxx
   CanvasPath.cxx
   CanvasText.cxx
+  CanvasView.cxx
 )
 
 simgear_scene_component(canvas-elements canvas/elements "${SOURCES}" "${HEADERS}")

@@ -8,6 +8,14 @@ namespace simgear
 namespace canvas
 {
 
+void View::staticInit()
+{
+    if (isInit<View>()) {
+        return;
+    }
+    // Do some initialization if needed...
+}
+
 View::View(
             const CanvasWeakPtr& canvas,
             const SGPropertyNode_ptr& node,
@@ -19,11 +27,13 @@ Element(canvas, node, parent_style, parent)
 {
     assert(s_sview_factory);
     
+    int width = node->getIntValue("width");
+    int height = node->getIntValue("height");
     osg::GraphicsContext::Traits*   gc_traits = new osg::GraphicsContext::Traits;
     gc_traits->x = 0;
     gc_traits->y = 0;
-    gc_traits->width    = node->getDoubleValue("width");
-    gc_traits->height   = node->getDoubleValue("height");
+    gc_traits->width    = width;
+    gc_traits->height   = height;
     gc_traits->windowDecoration = false;
     gc_traits->doubleBuffer = true;
     gc_traits->sharedContext = 0;
@@ -46,14 +56,33 @@ Element(canvas, node, parent_style, parent)
     osg::ref_ptr<osg::GraphicsContext> gc = osg::GraphicsContext::createGraphicsContext(gc_traits);
     assert(gc.valid());
     
-    osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
-    texture->setTextureWidth(gc_traits->width);
-    texture->setTextureHeight(gc_traits->height);
+    /* Maybe m_texture doesn't need to be a member - will be owned by m_sview's
+    compositor. */
+    m_texture = new osg::Texture2D;
     
-    m_sview = s_sview_factory("current", gc, texture);
+    m_texture->setTextureWidth(width);
+    m_texture->setTextureHeight(height);
+    m_texture->setDataVariance(osg::Object::DYNAMIC);    
+    m_texture->setInternalFormat(GL_RGBA);
+    m_texture->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR);
+    m_texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
+    
+    m_sview = s_sview_factory("current", gc, m_texture);
+    
+    m_quad = osg::createTexturedQuadGeometry(osg::Vec3(0.0,    0.0,     0.0),
+                                            osg::Vec3(width, 0.0,     0.0),
+                                            osg::Vec3(0.0,    height, 0.0),
+                                            // In Canvas (0,0) is the top left corner, while in OSG/OpenGL
+                                            // it's the bottom left corner.
+                                            0.0, 1.0, 1.0, 0.0);
+    m_quad->getOrCreateStateSet()->setTextureAttributeAndModes(0, m_texture.get(), osg::StateAttribute::ON);
+
+    setDrawable(m_quad.get());
 }
 
-View::sview_factory_t View::s_sview_factory = nullptr;
+
+View::sview_factory_t   View::s_sview_factory = nullptr;
+const std::string       View::TYPE_NAME = "view";
 
 void View::register_sview_factory(sview_factory_t fn)
 {

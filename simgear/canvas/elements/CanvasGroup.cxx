@@ -24,6 +24,7 @@
 #include "CanvasMap.hxx"
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
+#include "CanvasView.hxx"
 
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
@@ -64,6 +65,7 @@ namespace canvas
     add<Map  >(_child_factories);
     add<Path >(_child_factories);
     add<Text >(_child_factories);
+    add<View >(_child_factories);
   }
 
   //----------------------------------------------------------------------------

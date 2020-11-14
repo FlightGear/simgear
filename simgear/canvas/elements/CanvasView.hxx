@@ -15,7 +15,9 @@ namespace canvas
 
 struct View : simgear::canvas::Element
 {
-    /* See flightgear/src/Viewer/sview.hxx:SviewCreate(). */
+    static const std::string TYPE_NAME;
+    static void staticInit();
+    
     View(
             const CanvasWeakPtr& canvas,
             const SGPropertyNode_ptr& node,
@@ -23,8 +25,9 @@ struct View : simgear::canvas::Element
             ElementWeakPtr parent
             );
     
-    std::shared_ptr<SviewView>  m_sview;
-    
+    std::shared_ptr<SviewView>      m_sview;
+    osg::ref_ptr<osg::Texture2D>    m_texture;
+    osg::ref_ptr<osg::Geometry>     m_quad;    
     
     typedef std::shared_ptr<SviewView> (*sview_factory_t)(
                 const std::string& type,

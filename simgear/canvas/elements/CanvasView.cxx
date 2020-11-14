@@ -26,9 +26,9 @@ View::View(
 Element(canvas, node, parent_style, parent)
 {
     assert(s_sview_factory);
-    
-    int width = node->getIntValue("width");
-    int height = node->getIntValue("height");
+    SG_LOG(SG_GENERAL, SG_ALERT, "Creating canvas view...");
+    int width = node->getIntValue("width", 100);
+    int height = node->getIntValue("height", 100);
     osg::GraphicsContext::Traits*   gc_traits = new osg::GraphicsContext::Traits;
     gc_traits->x = 0;
     gc_traits->y = 0;

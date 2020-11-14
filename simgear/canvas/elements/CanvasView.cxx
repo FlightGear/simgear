@@ -29,6 +29,8 @@ Element(canvas, node, parent_style, parent)
     SG_LOG(SG_GENERAL, SG_ALERT, "Creating canvas view...");
     int width = node->getIntValue("width", 100);
     int height = node->getIntValue("height", 100);
+    
+    #if 0
     osg::GraphicsContext::Traits*   gc_traits = new osg::GraphicsContext::Traits;
     gc_traits->x = 0;
     gc_traits->y = 0;
@@ -55,6 +57,7 @@ Element(canvas, node, parent_style, parent)
 
     osg::ref_ptr<osg::GraphicsContext> gc = osg::GraphicsContext::createGraphicsContext(gc_traits);
     assert(gc.valid());
+    #endif
     
     /* Maybe m_texture doesn't need to be a member - will be owned by m_sview's
     compositor. */
@@ -67,7 +70,7 @@ Element(canvas, node, parent_style, parent)
     m_texture->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR);
     m_texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
     
-    m_sview = s_sview_factory("current", gc, m_texture);
+    m_sview = s_sview_factory("current", m_texture);
     
     m_quad = osg::createTexturedQuadGeometry(osg::Vec3(0.0,    0.0,     0.0),
                                             osg::Vec3(width, 0.0,     0.0),
@@ -82,7 +85,7 @@ Element(canvas, node, parent_style, parent)
 
 
 View::sview_factory_t   View::s_sview_factory = nullptr;
-const std::string       View::TYPE_NAME = "view";
+const std::string       View::TYPE_NAME = "canvasview";
 
 void View::register_sview_factory(sview_factory_t fn)
 {

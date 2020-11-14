@@ -31,7 +31,6 @@ struct View : simgear::canvas::Element
     
     typedef std::shared_ptr<SviewView> (*sview_factory_t)(
                 const std::string& type,
-                osg::ref_ptr<osg::GraphicsContext> gc,
                 osg::ref_ptr<osg::Texture2D> texture
                 );
     

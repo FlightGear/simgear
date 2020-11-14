@@ -34,6 +34,27 @@ Element(canvas, node, parent_style, parent)
     int width = canvas2->getViewWidth();
     int height = canvas2->getViewHeight();
     
+    // these values seem to be +/- infinity.
+    ElementPtr parent2 = parent.lock();
+    osg::BoundingBox    bb = parent2->getBoundingBox();
+    osg::BoundingBox    bbtight = parent2->getTightBoundingBox();
+    SG_LOG(SG_GENERAL, SG_ALERT, "bb:     "
+            << ' ' << bb.xMin()
+            << ' ' << bb.yMin()
+            << ' ' << bb.zMin()
+            << ' ' << bb.xMax()
+            << ' ' << bb.yMax()
+            << ' ' << bb.zMax()
+            );
+    SG_LOG(SG_GENERAL, SG_ALERT, "bbtight:"
+            << ' ' << bbtight.xMin()
+            << ' ' << bbtight.yMin()
+            << ' ' << bbtight.zMin()
+            << ' ' << bbtight.xMax()
+            << ' ' << bbtight.yMax()
+            << ' ' << bbtight.zMax()
+            );
+
     /* Maybe m_texture doesn't need to be a member - will be owned by m_sview's
     compositor. */
     m_texture = new osg::Texture2D;

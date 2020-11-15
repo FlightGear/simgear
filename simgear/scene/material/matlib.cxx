@@ -128,12 +128,13 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
 
 		// Now build all the materials for this set of areas and conditions
 
+                const std::string region = node->getStringValue("name");
 		const simgear::PropertyList materials = node->getChildren("material");
 		simgear::PropertyList::const_iterator materials_iter = materials.begin();
 		for (; materials_iter != materials.end(); materials_iter++) {
 			const SGPropertyNode *node = materials_iter->get();
 			SGSharedPtr<SGMaterial> m =
-					new SGMaterial(options.get(), node, prop_root, arealist, condition);
+					new SGMaterial(options.get(), node, prop_root, arealist, condition, region);
 
 			std::vector<SGPropertyNode_ptr>names = node->getChildren("name");
 			for ( unsigned int j = 0; j < names.size(); j++ ) {

@@ -98,14 +98,16 @@ public:
              const SGPropertyNode *props,
              SGPropertyNode *prop_root,
              std::shared_ptr<AreaList> a,
-             SGSharedPtr<const SGCondition> c);
+             SGSharedPtr<const SGCondition> c,
+             const std::string& n);
 
 
   SGMaterial(const simgear::SGReaderWriterOptions*,
              const SGPropertyNode *props,
              SGPropertyNode *prop_root,
              std::shared_ptr<AreaList> a,
-             SGSharedPtr<const SGCondition> c);
+             SGSharedPtr<const SGCondition> c,
+             const std::string& n);
 
   /**
    * Destructor.
@@ -123,6 +125,11 @@ public:
    */
   simgear::Effect* get_one_effect(int texIndex);
   simgear::Effect* get_effect();
+
+  /**
+   * Get the region Name.
+   */
+  const std::string get_region_name() const { return region; }
 
   /**
    * Get the Effect Name.
@@ -487,6 +494,9 @@ private:
   // material properties
   SGVec4f ambient, diffuse, specular, emission;
   double shininess;
+
+  // region of this material
+  std::string region;
 
   // effect for this material
   std::string effect;

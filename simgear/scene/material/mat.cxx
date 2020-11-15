@@ -97,11 +97,13 @@ SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
                         const SGPropertyNode *props,
                         SGPropertyNode *prop_root,
                         std::shared_ptr<AreaList> a,
-						SGSharedPtr<const SGCondition> c)
+			SGSharedPtr<const SGCondition> c,
+                        const std::string& n)
 {
     init();
     areas = a;
     condition = c;
+    region = n;
     read_properties( options, props, prop_root );
     buildEffectProperties(options);
 }
@@ -110,12 +112,14 @@ SGMaterial::SGMaterial( const osgDB::Options* options,
                         const SGPropertyNode *props,
                         SGPropertyNode *prop_root,
                         std::shared_ptr<AreaList> a,
-                        SGSharedPtr<const SGCondition> c)
+                        SGSharedPtr<const SGCondition> c,
+                        const std::string& n)
 {
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(options);
     areas = a;
     condition = c;
+    region = n;
     init();
     read_properties(opt.get(), props, prop_root);
     buildEffectProperties(opt.get());

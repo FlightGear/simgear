@@ -286,16 +286,16 @@ public:
                 continue;
       
             if (heightSplitBox.getWidthIsBucketSize()) {
+                assert(numTiles < bucketBoxListSize);
                 bucketBoxList[numTiles++] = heightSplitBox;
-                assert(numTiles <= bucketBoxListSize);
             } else {
                 for (unsigned i = 0; i < _lonFactors[widthLevel]; ++i) {
                     BucketBox childBox = _intersection(heightSplitBox, heightSplitBox.getSubBoxWidth(i, widthLevel + 1));
                     if (childBox.empty())
                         continue;
           
+                    assert(numTiles < bucketBoxListSize);
                     bucketBoxList[numTiles++] = childBox;
-                    assert(numTiles <= bucketBoxListSize);
                 }
             }
         }

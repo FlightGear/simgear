@@ -59,6 +59,7 @@ Element(canvas, node, parent_style, parent)
     compositor. */
     m_texture = new osg::Texture2D;
     
+    SG_LOG(SG_GENERAL, SG_ALERT, "" << " width=" << width << " height=" << height);
     m_texture->setTextureWidth(width);
     m_texture->setTextureHeight(height);
     m_texture->setDataVariance(osg::Object::DYNAMIC);    

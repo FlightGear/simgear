@@ -93,7 +93,7 @@ ClusteredShading::ClusteredShading(osg::Camera *camera,
     _pointlights->allocateImage(5, MAX_POINTLIGHTS, 1, GL_RGBA, GL_FLOAT);
 
     osg::ref_ptr<osg::Texture2D> pointlights_tex = new osg::Texture2D;
-    pointlights_tex->setInternalFormat(GL_RGBA32F);
+    pointlights_tex->setInternalFormat(GL_RGBA32F_ARB);
     pointlights_tex->setResizeNonPowerOfTwoHint(false);
     pointlights_tex->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
     pointlights_tex->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::CLAMP_TO_BORDER);
@@ -114,7 +114,7 @@ ClusteredShading::ClusteredShading(osg::Camera *camera,
     _spotlights->allocateImage(7, MAX_SPOTLIGHTS, 1, GL_RGBA, GL_FLOAT);
 
     osg::ref_ptr<osg::Texture2D> spotlights_tex = new osg::Texture2D;
-    spotlights_tex->setInternalFormat(GL_RGBA32F);
+    spotlights_tex->setInternalFormat(GL_RGBA32F_ARB);
     spotlights_tex->setResizeNonPowerOfTwoHint(false);
     spotlights_tex->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
     spotlights_tex->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::CLAMP_TO_BORDER);

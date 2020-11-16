@@ -72,7 +72,7 @@ ClusteredShading::ClusteredShading(osg::Camera *camera,
     // clusters can change at runtime (viewport resize)
 
     osg::ref_ptr<osg::Texture3D> clusters_tex = new osg::Texture3D;
-    clusters_tex->setInternalFormat(GL_RGBA32F);
+    clusters_tex->setInternalFormat(GL_RGBA32F_ARB);
     clusters_tex->setResizeNonPowerOfTwoHint(false);
     clusters_tex->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
     clusters_tex->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::CLAMP_TO_BORDER);

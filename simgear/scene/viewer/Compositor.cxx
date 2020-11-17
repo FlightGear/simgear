@@ -177,7 +177,8 @@ Compositor::update(const osg::Matrix &view_matrix,
     SGGeod camera_pos_geod = SGGeod::fromCart(
         SGVec3d(camera_pos.x(), camera_pos.y(), camera_pos.z()));
 
-    double left, right, bottom, top, zNear, zFar;
+    double left = 0.0, right = 0.0, bottom = 0.0, top = 0.0,
+        zNear = 0.0, zFar = 0.0;
     proj_matrix.getFrustum(left, right, bottom, top, zNear, zFar);
 
     osg::Matrixf prev_view_matrix, prev_view_matrix_inv;

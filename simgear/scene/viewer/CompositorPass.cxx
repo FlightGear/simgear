@@ -502,7 +502,8 @@ public:
 
         // Calculate the light's point of view transformation matrices.
         // Taken from Project Rembrandt.
-        double left, right, bottom, top, zNear, zFar;
+        double left = 0.0, right = 0.0, bottom = 0.0, top = 0.0,
+            zNear = 0.0, zFar = 0.0;
         proj_matrix.getFrustum(left, right, bottom, top, zNear, zFar);
 
         osg::BoundingSphere bs;

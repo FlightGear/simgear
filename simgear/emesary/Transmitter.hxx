@@ -45,14 +45,6 @@ namespace simgear
             std::atomic<int> receiveDepth;
             std::atomic<int> sentMessageCount;
 
-            void UnlockList()
-            {
-                _lock.unlock();
-            }
-            void LockList()
-            {
-                _lock.lock();
-            }
         public:
             Transmitter() : receiveDepth(0), sentMessageCount(0)
             {
@@ -69,20 +61,17 @@ namespace simgear
             // most recently registered recipients should process the messages/events first.
             virtual void Register(IReceiver& r)
             {
-                LockList();
+                std::lock_guard<std::mutex> scopeLock(_lock);
                 recipient_list.push_back(&r);
                 r.OnRegisteredAtTransmitter(this);
                 if (std::find(deleted_recipients.begin(), deleted_recipients.end(), &r) != deleted_recipients.end())
                     deleted_recipients.remove(&r);
-
-                UnlockList();
             }
 
             //  Removes an object from receving message from this transmitter
             virtual void DeRegister(IReceiver& R)
             {
-                LockList();
-                //printf("Remove %x\n", &R);
+                std::lock_guard<std::mutex> scopeLock(_lock);
                 if (recipient_list.size())
                 {
                     if (std::find(recipient_list.begin(), recipient_list.end(), &R) != recipient_list.end())
@@ -93,7 +82,6 @@ namespace simgear
                             deleted_recipients.push_back(&R);
                     }
                 }
-                UnlockList();
             }
 
             // Notify all registered recipients. Stop when receipt status of abort or finished are received.
@@ -107,69 +95,68 @@ namespace simgear
                 ReceiptStatus return_status = ReceiptStatusNotProcessed;
 
                 sentMessageCount++;
-                try
+
+                std::vector<IReceiver*> temp;
                 {
-                    LockList();
+                    std::lock_guard<std::mutex> scopeLock(_lock);
                     if (receiveDepth == 0)
                         deleted_recipients.clear();
                     receiveDepth++;
-                    std::vector<IReceiver*> temp(recipient_list.size());
+
                     int idx = 0;
                     for (RecipientList::iterator i = recipient_list.begin(); i != recipient_list.end(); i++)
                     {
-                        temp[idx++] = *i;
+                        temp.push_back(*i);
                     }
-                    UnlockList();
-                    int tempSize = temp.size();
-                    for (int index = 0; index < tempSize; index++)
+                }
+                int tempSize = temp.size();
+                for (int index = 0; index < tempSize; index++)
+                {
+                    IReceiver* R = temp[index];
                     {
-                        IReceiver* R = temp[index];
-                        LockList();
+                        std::lock_guard<std::mutex> scopeLock(_lock);
                         if (deleted_recipients.size())
                         {
                             if (std::find(deleted_recipients.begin(), deleted_recipients.end(), R) != deleted_recipients.end())
                             {
-                                UnlockList();
                                 continue;
                             }
                         }
-                        UnlockList();
-                        if (R)
-                        {
-                            ReceiptStatus rstat = R->Receive(M);
-                            switch (rstat)
-                            {
-                            case ReceiptStatusFail:
-                                return_status = ReceiptStatusFail;
-                                break;
-                            case ReceiptStatusPending:
-                                return_status = ReceiptStatusPending;
-                                break;
-                            case ReceiptStatusPendingFinished:
-                                return rstat;
-
-                            case ReceiptStatusNotProcessed:
-                                break;
-                            case ReceiptStatusOK:
-                                if (return_status == ReceiptStatusNotProcessed)
-                                    return_status = rstat;
-                                break;
-
-                            case ReceiptStatusAbort:
-                                return ReceiptStatusAbort;
-
-                            case ReceiptStatusFinished:
-                                return ReceiptStatusOK;
-                            }
-                        }
-
                     }
+                    if (R)
+                    {
+                        ReceiptStatus rstat = R->Receive(M);
+                        switch (rstat)
+                        {
+                        case ReceiptStatusFail:
+                            return_status = ReceiptStatusFail;
+                            break;
+
+                        case ReceiptStatusPending:
+                            return_status = ReceiptStatusPending;
+                            break;
+
+                        case ReceiptStatusPendingFinished:
+                            return rstat;
+
+                        case ReceiptStatusNotProcessed:
+                            break;
+
+                        case ReceiptStatusOK:
+                            if (return_status == ReceiptStatusNotProcessed)
+                                return_status = rstat;
+                            break;
+
+                        case ReceiptStatusAbort:
+                            return ReceiptStatusAbort;
+
+                        case ReceiptStatusFinished:
+                            return ReceiptStatusOK;
+                        }
+                    }
+
                 }
-                catch (...)
-                {
-                    throw;
-                    // return_status = ReceiptStatusAbort;
-                }
+
                 receiveDepth--;
                 return return_status;
             }
@@ -177,9 +164,8 @@ namespace simgear
             // number of currently registered recipients
             virtual int Count()
             {
-                LockList();
+                std::lock_guard<std::mutex> scopeLock(_lock);
                 return recipient_list.size();
-                UnlockList();
             }
 
             // number of sent messages.

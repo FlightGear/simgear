@@ -500,8 +500,6 @@ TreeBin(mat)
         SGVec3f loc = SGVec3f(x,y,z);
         SGVec3f norm = SGVec3f(a,b,c);
 
-        SG_LOG(SG_TERRAIN, SG_ALERT, "Adding tree " << x << " " << y << " " << z);
-
         insert(Tree(loc, norm));
     }
 

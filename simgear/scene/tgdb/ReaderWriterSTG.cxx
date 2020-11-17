@@ -114,7 +114,7 @@ struct ReaderWriterSTG::_ModelBin {
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _ObjectStatic {
-        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(0) { }
+        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(SG_OBJECT_RANGE_ROUGH), _radius(10) { }
         SGPath _errorLocation;
         std::string _token;
         std::string _name;
@@ -122,7 +122,7 @@ struct ReaderWriterSTG::_ModelBin {
         bool _proxy;
         double _lon, _lat, _elev;
         double _hdg, _pitch, _roll;
-        double _range;
+        double _range, _radius;
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _Sign {
@@ -170,7 +170,7 @@ struct ReaderWriterSTG::_ModelBin {
                 // Give the node some values so the Quadtree builder has
                 // a BoundingBox to work with prior to the model being loaded.
                 proxy->setCenter(osg::Vec3f(0.0f,0.0f,0.0f));
-                proxy->setRadius(10);
+                proxy->setRadius(o._radius);
                 proxy->setCenterMode(osg::ProxyNode::UNION_OF_BOUNDING_SPHERE_AND_USER_DEFINED);
                 node = proxy;
             } else {
@@ -290,7 +290,6 @@ struct ReaderWriterSTG::_ModelBin {
 
                         SGTreeBinList treeList;
                         treeList.push_back(treeBin);
-                        SG_LOG(SG_TERRAIN, SG_ALERT, "Making trees " << b._material_name);
 
                         osg::MatrixTransform* matrixTransform;
                         matrixTransform = new osg::MatrixTransform(makeZUpFrame(SGGeod::fromDegM(b._lon, b._lat, b._elev)));
@@ -518,8 +517,8 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._name = name;
                     obj._agl = (token == "OBJECT_STATIC_AGL");
                     obj._proxy = true;
-                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._range;
-                    obj._range += range;
+                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._radius;
+                    obj._range = range;
                     obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
                     _objectStaticList.push_back(obj);
@@ -536,8 +535,8 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._name = name;
                     obj._agl = (token == "OBJECT_SHARED_AGL");
                     obj._proxy = false;
-                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._range;
-                    obj._range += range;
+                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._radius;
+                    obj._range = range;
                     obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
                     _objectStaticList.push_back(obj);
@@ -579,7 +578,7 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._name = name;
                     obj._agl = false;
                     obj._proxy = true;
-                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._range;
+                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._radius;
 
                     opt->setLocation(obj._lon, obj._lat);
                     if (token == BUILDING_DETAILED || token == ROAD_DETAILED || token == RAILWAY_DETAILED ) {
@@ -590,9 +589,7 @@ struct ReaderWriterSTG::_ModelBin {
                         else if (lrand < 0.4) range = range * 1.5;                                        
                     }
                     
-                    obj._range += range;
-
-                    SG_LOG(SG_TERRAIN, SG_ALERT, "Building list: " << name << " " << obj._range);
+                    obj._range = range;
 
                     obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);

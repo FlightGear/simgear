@@ -397,6 +397,10 @@ ModelRegistry::readImage(const string& fileName,
                         isEffect = true;
 //                        can_compress = false;
                     }
+                    else if (sgoptC && !transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_CANVAS) {
+                        SG_LOG(SG_IO, SG_INFO, "From Canvas " + absFileName + " will generate mipmap only");
+                        can_compress = false;
+                    }
                     if (can_compress)
                     {
                         std::string pot_message;

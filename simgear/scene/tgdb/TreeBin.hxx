@@ -35,6 +35,10 @@ namespace simgear
 {
 class TreeBin {
 public:
+    TreeBin() = default;
+    TreeBin(const SGMaterial *mat);
+    TreeBin(const SGPath& absoluteFileName, const SGMaterial *mat);
+
     ~TreeBin() = default;
 
     struct Tree {

@@ -39,6 +39,7 @@
 #include <osgDB/FileUtils>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/scene/material/Effect.hxx>
@@ -441,6 +442,71 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
     mt->accept(cleaner);
     return mt;
 }
+
+TreeBin::TreeBin(const SGMaterial *mat)
+{
+    texture_varieties = mat->get_tree_varieties();
+    range = mat->get_tree_range();
+    height = mat->get_tree_height();
+    width = mat->get_tree_width();
+    texture = mat->get_tree_texture();
+    teffect = mat->get_tree_effect();
+};
+
+
+TreeBin::TreeBin(const SGPath& absoluteFileName, const SGMaterial *mat) : 
+TreeBin(mat)
+{
+    if (!absoluteFileName.exists()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Tree list file " << absoluteFileName << " does not exist.");
+        return;
+    }
+
+    sg_gzifstream stream(absoluteFileName);
+    if (!stream.is_open()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to open " << absoluteFileName);
+        return;
+    }
+
+    while (!stream.eof()) {
+        // read a line.  Each line defines a single tree position, and may have
+        // a comment, starting with #
+        std::string line;
+        std::getline(stream, line);
+
+        // strip comments
+        std::string::size_type hash_pos = line.find('#');
+        if (hash_pos != std::string::npos)
+            line.resize(hash_pos);
+
+        // and process further
+        std::stringstream in(line);
+
+        // Line format is X Y Z A B C
+        // where:
+        // X,Y,Z are the cartesian coordinates of the center tree
+        // A,B,C is the normal of the underlying terrain, defaulting to 0,0,1
+        float x = 0.0f, y = 0.0f, z = 0.0f, a = 0.0f, b = 0.0f, c = 1.0f;
+        in >> x >> y >> z;
+
+        if (in.bad() || in.fail()) {
+            SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing tree entry in: " << absoluteFileName << " line: \"" << line << "\"");
+            continue;
+        }
+
+        // these might fail, so check them after we look at failbit
+        in >> a >> b >> c;
+
+        SGVec3f loc = SGVec3f(x,y,z);
+        SGVec3f norm = SGVec3f(a,b,c);
+
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Adding tree " << x << " " << y << " " << z);
+
+        insert(Tree(loc, norm));
+    }
+
+    stream.close();
+};
 
 
 }

@@ -52,6 +52,7 @@
 #include <simgear/scene/tgdb/obj.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/tgdb/SGBuildingBin.hxx>
+#include <simgear/scene/tgdb/TreeBin.hxx>
 
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 
@@ -64,6 +65,7 @@
 #define RAILWAY_ROUGH "OBJECT_RAILWAY_ROUGH"
 #define RAILWAY_DETAILED "OBJECT_RAILWAY_DETAILED"
 #define BUILDING_LIST "BUILDING_LIST"
+#define TREE_LIST "TREE_LIST"
 
 namespace simgear {
 
@@ -139,6 +141,13 @@ struct ReaderWriterSTG::_ModelBin {
       std::string _material_name;
       double _lon, _lat, _elev;
     };
+    struct _TreeList {
+      _TreeList() : _lon(0), _lat(0), _elev(0) { }
+      std::string _filename;
+      std::string _material_name;
+      double _lon, _lat, _elev;
+    };
+
 
     class DelayLoadReadFileCallback : public OptionsReadFileCallback {
 
@@ -258,6 +267,45 @@ struct ReaderWriterSTG::_ModelBin {
                 }
             }
 
+            if (!_treeList.empty()) {
+                SGMaterialLibPtr matlib = _options->getMaterialLib();
+
+                if (!matlib) {
+                    SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get materials definition for buildings");
+                } else {
+                    for (const auto& b : _treeList) {
+                        // Build buildings for each list of buildings
+                        SGGeod geodPos = SGGeod::fromDegM(b._lon, b._lat, 0.0);
+                        SGSharedPtr<SGMaterial> mat = matlib->find(b._material_name, geodPos);
+
+                        // trying to avoid crash on null material, see:
+                        // https://sentry.io/organizations/flightgear/issues/1867075869
+                        if (!mat) {
+                            SG_LOG(SG_TERRAIN, SG_ALERT, "Tree list specifies unknown material: " << b._filename << " " << b._material_name);
+                            continue;
+                        }
+
+                        const auto path = SGPath(b._filename);
+                        TreeBin* treeBin = new TreeBin(path, mat);
+
+                        SGTreeBinList treeList;
+                        treeList.push_back(treeBin);
+                        SG_LOG(SG_TERRAIN, SG_ALERT, "Making trees " << b._material_name);
+
+                        osg::MatrixTransform* matrixTransform;
+                        matrixTransform = new osg::MatrixTransform(makeZUpFrame(SGGeod::fromDegM(b._lon, b._lat, b._elev)));
+                        matrixTransform->setName("rotateTrees");
+                        matrixTransform->setDataVariance(osg::Object::STATIC);
+                        matrixTransform->addChild(createForest(treeList, osg::Matrix::identity(), _options));
+                        group->addChild(matrixTransform);
+
+                        std::for_each(treeList.begin(), treeList.end(), [](TreeBin* bb) {
+                            delete bb;
+                        });
+                    }
+                }
+            }
+
             return group.release();
         }
 
@@ -265,6 +313,7 @@ struct ReaderWriterSTG::_ModelBin {
         std::list<_ObjectStatic> _objectStaticList;
         std::list<_Sign> _signList;
         std::list<_BuildingList> _buildingList;
+        std::list<_TreeList> _treeList;
 
         /// The original options to use for this bunch of models
         osg::ref_ptr<SGReaderWriterOptions> _options;
@@ -554,7 +603,12 @@ struct ReaderWriterSTG::_ModelBin {
                   in >> buildinglist._material_name >> buildinglist._lon >> buildinglist._lat >> buildinglist._elev;
                   checkInsideBucket(absoluteFileName, buildinglist._lon, buildinglist._lat);
                   _buildingListList.push_back(buildinglist);
-                  //SG_LOG(SG_TERRAIN, SG_ALERT, "Building list: " << buildinglist._filename << " " << buildinglist._material_name << " " << buildinglist._lon << " " << buildinglist._lat);
+                } else if (token == TREE_LIST) {
+                  _TreeList treelist;
+                  treelist._filename = path.utf8Str();
+                  in >> treelist._material_name >> treelist._lon >> treelist._lat >> treelist._elev;
+                  checkInsideBucket(absoluteFileName, treelist._lon, treelist._lat);
+                  _treeListList.push_back(treelist);
                 } else {
                     // Check registered callback for token. Keep lock until callback completed to make sure it will not be
                     // executed after a thread successfully executed removeSTGObjectHandler()
@@ -640,7 +694,7 @@ struct ReaderWriterSTG::_ModelBin {
             i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
 
-        if (_objectStaticList.empty() && _signList.empty() && (_buildingListList.size() == 0)) {
+        if (_objectStaticList.empty() && _signList.empty() && (_buildingListList.size() == 0) && (_treeListList.size() == 0)) {
             // The simple case, just return the terrain group
             return terrainGroup.release();
         } else {
@@ -656,6 +710,7 @@ struct ReaderWriterSTG::_ModelBin {
             osg::ref_ptr<DelayLoadReadFileCallback> readFileCallback = new DelayLoadReadFileCallback;
             readFileCallback->_objectStaticList = _objectStaticList;
             readFileCallback->_buildingList = _buildingListList;
+            readFileCallback->_treeList = _treeListList;
             readFileCallback->_signList = _signList;
             readFileCallback->_options = options;
             readFileCallback->_bucket = bucket;
@@ -683,6 +738,7 @@ struct ReaderWriterSTG::_ModelBin {
     std::list<_ObjectStatic> _objectStaticList;
     std::list<_Sign> _signList;
     std::list<_BuildingList> _buildingListList;
+    std::list<_TreeList> _treeListList;
 };
 
 ReaderWriterSTG::ReaderWriterSTG()

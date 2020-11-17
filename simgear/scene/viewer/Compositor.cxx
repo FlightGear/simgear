@@ -222,7 +222,8 @@ Compositor::update(const osg::Matrix &view_matrix,
             u->set(osg::Vec3f(-zFar, -zFar * zNear, zFar - zNear));
             break;
         case FCOEF:
-            u->set(2.0f / log2(float(zFar) + 1.0f));
+            if (zFar != 0.0)
+                u->set(2.0f / log2(float(zFar) + 1.0f));
             break;
         default:
             // Unknown uniform

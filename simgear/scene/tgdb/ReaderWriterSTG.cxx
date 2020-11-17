@@ -112,7 +112,7 @@ struct ReaderWriterSTG::_ModelBin {
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _ObjectStatic {
-        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(SG_OBJECT_RANGE_ROUGH) { }
+        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0), _range(0) { }
         SGPath _errorLocation;
         std::string _token;
         std::string _name;
@@ -375,8 +375,7 @@ struct ReaderWriterSTG::_ModelBin {
         double bareRangeDelta = atof(options->getPluginStringData("SimGear::LOD_RANGE_BARE").c_str());
         double roughRangeDelta = atof(options->getPluginStringData("SimGear::LOD_RANGE_ROUGH").c_str());
 
-        // Determine object ranges.  Mesh size of 2000mx2000m needs to be accounted for.
-        _object_range_detailed = 1414.0f + detailedRange;
+        _object_range_detailed = detailedRange;
         _object_range_bare = _object_range_detailed + bareRangeDelta;
         _object_range_rough = _object_range_detailed + roughRangeDelta;
 
@@ -450,56 +449,56 @@ struct ReaderWriterSTG::_ModelBin {
             } else if (!onlyTerrain) {
                 // Load non-terrain objects
 
-								// Determine an appropriate range for the object, which has some randomness
-								double range = _object_range_rough;
-								double lrand = mt_rand(&seed);
-								if      (lrand < 0.1) range = range * 2.0;
-								else if (lrand < 0.4) range = range * 1.5;
+                // Determine an appropriate range for the object, which has some randomness
+                double range = _object_range_rough;
+                double lrand = mt_rand(&seed);
+                if      (lrand < 0.1) range = range * 2.0;
+                else if (lrand < 0.4) range = range * 1.5;
 
                 if (token == "OBJECT_STATIC" || token == "OBJECT_STATIC_AGL") {
-										osg::ref_ptr<SGReaderWriterOptions> opt;
-										opt = staticOptions(filePath, options);
-										if (SGPath(name).lower_extension() == "ac")
-												opt->setInstantiateEffects(true);
-										else
-												opt->setInstantiateEffects(false);
-										_ObjectStatic obj;
+                    osg::ref_ptr<SGReaderWriterOptions> opt;
+                    opt = staticOptions(filePath, options);
+                    if (SGPath(name).lower_extension() == "ac")
+                            opt->setInstantiateEffects(true);
+                    else
+                            opt->setInstantiateEffects(false);
+                    _ObjectStatic obj;
 
-										obj._errorLocation = absoluteFileName;
-										obj._token = token;
-										obj._name = name;
-										obj._agl = (token == "OBJECT_STATIC_AGL");
-										obj._proxy = true;
-										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
-										obj._range = range;
-										obj._options = opt;
+                    obj._errorLocation = absoluteFileName;
+                    obj._token = token;
+                    obj._name = name;
+                    obj._agl = (token == "OBJECT_STATIC_AGL");
+                    obj._proxy = true;
+                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._range;
+                    obj._range += range;
+                    obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
                     _objectStaticList.push_back(obj);
                 } else if (token == "OBJECT_SHARED" || token == "OBJECT_SHARED_AGL") {
-										osg::ref_ptr<SGReaderWriterOptions> opt;
-										opt = sharedOptions(filePath, options);
-										if (SGPath(name).lower_extension() == "ac")
-												opt->setInstantiateEffects(true);
-										else
-												opt->setInstantiateEffects(false);
-										_ObjectStatic obj;
-										obj._errorLocation = absoluteFileName;
-										obj._token = token;
-										obj._name = name;
-										obj._agl = (token == "OBJECT_SHARED_AGL");
-										obj._proxy = false;
-										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
-										obj._range = range;
-										obj._options = opt;
+                    osg::ref_ptr<SGReaderWriterOptions> opt;
+                    opt = sharedOptions(filePath, options);
+                    if (SGPath(name).lower_extension() == "ac")
+                            opt->setInstantiateEffects(true);
+                    else
+                            opt->setInstantiateEffects(false);
+                    _ObjectStatic obj;
+                    obj._errorLocation = absoluteFileName;
+                    obj._token = token;
+                    obj._name = name;
+                    obj._agl = (token == "OBJECT_SHARED_AGL");
+                    obj._proxy = false;
+                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._range;
+                    obj._range += range;
+                    obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
                     _objectStaticList.push_back(obj);
                 } else if (token == "OBJECT_SIGN" || token == "OBJECT_SIGN_AGL") {
-										_Sign sign;
-										sign._token = token;
-										sign._name = name;
-										sign._agl = (token == "OBJECT_SIGN_AGL");
-										in >> sign._lon >> sign._lat >> sign._elev >> sign._hdg >> sign._size;
-										_signList.push_back(sign);
+                    _Sign sign;
+                    sign._token = token;
+                    sign._name = name;
+                    sign._agl = (token == "OBJECT_SIGN_AGL");
+                    in >> sign._lon >> sign._lat >> sign._elev >> sign._hdg >> sign._size;
+                    _signList.push_back(sign);
                 } else if (token == BUILDING_ROUGH || token == BUILDING_DETAILED ||
                            token == ROAD_ROUGH     || token == ROAD_DETAILED     ||
                            token == RAILWAY_ROUGH  || token == RAILWAY_DETAILED)   {
@@ -531,18 +530,20 @@ struct ReaderWriterSTG::_ModelBin {
                     obj._name = name;
                     obj._agl = false;
                     obj._proxy = true;
-                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+                    in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll >> obj._range;
 
                     opt->setLocation(obj._lon, obj._lat);
                     if (token == BUILDING_DETAILED || token == ROAD_DETAILED || token == RAILWAY_DETAILED ) {
-											// Apply a lower LOD range if this is a detailed mesh
-											range = _object_range_detailed;
-											double lrand = mt_rand(&seed);
-											if      (lrand < 0.1) range = range * 2.0;
-											else if (lrand < 0.4) range = range * 1.5;
-										}
+                        // Apply a lower LOD range if this is a detailed mesh.
+                        range = _object_range_detailed;
+                        double lrand = mt_rand(&seed);
+                        if      (lrand < 0.1) range = range * 2.0;
+                        else if (lrand < 0.4) range = range * 1.5;                                        
+                    }
+                    
+                    obj._range += range;
 
-                    obj._range = range;
+                    SG_LOG(SG_TERRAIN, SG_ALERT, "Building list: " << name << " " << obj._range);
 
                     obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
@@ -596,24 +597,20 @@ struct ReaderWriterSTG::_ModelBin {
         bool vpb_active = SGSceneFeatures::instance()->getVPBActive();
         if (vpb_active) {
             std::string filename = "vpb/" + bucket.gen_vpb_base() + ".osgb";
-            //std::string filename = "vpb/*.osgb";
             if (tile_map.count(filename) == 0) {
                 auto vpb_node = osgDB::readRefNodeFile(filename, options);
                 terrainGroup->addChild(vpb_node);
                 tile_map[filename] = true;
                 SG_LOG(SG_TERRAIN, SG_INFO, "Loading: " << filename);
             }
-        }
-
-        if (!vpb_active) {
-        if (_foundBase) {
+        } else if (_foundBase) {
             for (auto stgObject : _objectList) {
                 osg::ref_ptr<osg::Node> node;
                 node = osgDB::readRefNodeFile(stgObject._name, stgObject._options.get());
 
                 if (!node.valid()) {
                     SG_LOG(SG_TERRAIN, SG_ALERT, stgObject._errorLocation << ": Failed to load "
-                           << stgObject._token << " '" << stgObject._name << "'");
+                        << stgObject._token << " '" << stgObject._name << "'");
                     continue;
                 }
                 terrainGroup->addChild(node.get());
@@ -629,7 +626,6 @@ struct ReaderWriterSTG::_ModelBin {
                 SG_LOG( SG_TERRAIN, SG_ALERT,
                         "Warning: failed to generate ocean tile!" );
             }
-        }
         }
 
         for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {

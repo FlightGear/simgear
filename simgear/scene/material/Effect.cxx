@@ -259,8 +259,8 @@ int Effect::getGenerator(Effect::Generator what) const
 Technique* Effect::chooseTechnique(RenderInfo* info, const std::string &scheme)
 {
     for (auto& technique : techniques) {
-        if (technique->valid(info) == Technique::VALID &&
-            technique->getScheme() == scheme)
+        if ((technique->valid(info) == Technique::VALID) &&
+            (technique->getScheme() == scheme))
             return technique.get();
     }
     return 0;
@@ -1473,7 +1473,7 @@ void mergeSchemesFallbacks(Effect *effect, const SGReaderWriterOptions *options)
         // implementing the scheme
         if (it == techniques.end()) {
             ref_ptr<Effect> fallback = makeEffect(fallback_name, false, options);
-            if (fallback) {
+            if (fallback.valid()) {
                 SGPropertyNode *new_root = new SGPropertyNode;
                 mergePropertyTrees(new_root, effect->root, fallback->root);
                 effect->root = new_root;
@@ -1489,10 +1489,12 @@ static std::mutex  realizeTechniques_lock;
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
     std::lock_guard<std::mutex> g(realizeTechniques_lock);
-    mergeSchemesFallbacks(this, options);
 
     if (_isRealized)
         return true;
+
+    mergeSchemesFallbacks(this, options);
+
     PropertyList tniqList = root->getChildren("technique");
     for (PropertyList::iterator itr = tniqList.begin(), e = tniqList.end();
          itr != e;

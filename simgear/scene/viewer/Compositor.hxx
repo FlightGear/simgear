@@ -127,6 +127,7 @@ public:
     Pass *             getPass(size_t index) const { return _passes[index]; }
     Pass *             getPass(const std::string &name) const;
 
+    int                getOrderOffset() const { return _order_offset; }
 protected:
     osg::View                   *_view;
     osg::GraphicsContext        *_gc;
@@ -135,6 +136,7 @@ protected:
     BufferMap                    _buffers;
     PassList                     _passes;
     BuiltinUniforms              _uniforms;
+    static int                   _order_offset;
 };
 
 } // namespace compositor

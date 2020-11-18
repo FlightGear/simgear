@@ -85,7 +85,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     // that doesn't involve the rendering pipeline itself. NESTED_RENDER is also
     // not a possibility since we don't want to share RenderStage with the View
     // master camera.
-    camera->setRenderOrder(osg::Camera::POST_RENDER, pass->render_order * 10);
+    camera->setRenderOrder(osg::Camera::POST_RENDER,
+                           pass->render_order + compositor->getOrderOffset() * 100);
     camera->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
 
     // XXX: Should we make this configurable?

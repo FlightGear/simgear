@@ -45,6 +45,8 @@ public:
 namespace simgear {
 namespace compositor {
 
+int Compositor::_order_offset = 0;
+
 Compositor *
 Compositor::create(osg::View *view,
                    osg::GraphicsContext *gc,
@@ -84,6 +86,8 @@ Compositor::create(osg::View *view,
         if (pass)
             compositor->addPass(pass);
     }
+
+    ++_order_offset;
 
     return compositor.release();
 }

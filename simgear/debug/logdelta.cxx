@@ -62,9 +62,6 @@ struct logDelta
         //
         const char* items = getenv("SG_LOG_DELTAS");
         if (!items) {
-            std::cerr << __FILE__ << ":" << __LINE__ << ": "
-                    << "$SG_LOG_DELTAS is not set"
-                    << "\n";
             return;
         }
 

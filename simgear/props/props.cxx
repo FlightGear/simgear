@@ -472,8 +472,10 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
     return find_node_aux(current, ++itr, create, last_index);
   if (equals(name, "..")) {
     SGPropertyNode * parent = current->getParent();
-    if (parent == 0)
-      throw std::runtime_error("attempt to move past root with '..'");
+    if (parent == 0) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "attempt to move past root with '..' node " << current->getName());
+        return nullptr;
+    }
     return find_node_aux(parent, ++itr, create, last_index);
   }
   int index = -1;

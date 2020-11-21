@@ -646,16 +646,21 @@ bool SGMetar::scanWind()
 	double gust = NaN;
 	if (*m == 'G') {
 		m++;
-		if (!scanNumber(&m, &i, 2, 3))
+		if (!strncmp(m, "//", 2))	// speed not measurable
+			m += 2, i = -1;
+		else if (!scanNumber(&m, &i, 2, 3))
 			return false;
-		gust = i;
+
+		if (i != -1)
+			gust = i;
 	}
+
 	double factor;
 	if (!strncmp(m, "KT", 2))
 		m += 2, factor = SG_KT_TO_MPS;
-	else if (!strncmp(m, "KMH", 3))
+	else if (!strncmp(m, "KMH", 3))		// invalid Km/h
 		m += 3, factor = SG_KMH_TO_MPS;
-	else if (!strncmp(m, "KPH", 3))		// ??
+	else if (!strncmp(m, "KPH", 3))		// invalid Km/h
 		m += 3, factor = SG_KMH_TO_MPS;
 	else if (!strncmp(m, "MPS", 3))
 		m += 3, factor = 1.0;
@@ -680,18 +685,28 @@ bool SGMetar::scanVariability()
 {
 	char *m = _m;
 	int from, to;
-	if (!scanNumber(&m, &from, 3))
+
+	if (!strncmp(m, "///", 3))	// direction not measurable
+		m += 3, from = -1;
+	else if (!scanNumber(&m, &from, 3))
 		return false;
+
 	if (*m++ != 'V')
 		return false;
-	if (!scanNumber(&m, &to, 3))
+
+	if (!strncmp(m, "///", 3))	// direction not measurable
+		m += 3, to = -1;
+	else if (!scanNumber(&m, &to, 3))
 		return false;
+
 	if (!scanBoundary(&m))
 		return false;
+
 	_m = m;
 	_wind_range_from = from;
 	_wind_range_to = to;
 	_grpcount++;
+
 	return true;
 }
 

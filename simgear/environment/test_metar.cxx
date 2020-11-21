@@ -87,6 +87,15 @@ void test_sensor_failure_wind()
     SGMetar m1("2020/10/23 16:55 LIVD 231655Z /////KT 9999 OVC025 10/08 Q1020 RMK OVC VIS MIN 9999 BLU");
     SG_CHECK_EQUAL(m1.getWindDir(), -1);
     SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), -1, TEST_EPSILON);
+
+    SGMetar m2("2020/10/21 16:55 LIVD 211655Z /////KT CAVOK 07/03 Q1023 RMK SKC VIS MIN 9999 BLU");
+    SG_CHECK_EQUAL(m2.getWindDir(), -1);
+    SG_CHECK_EQUAL_EP2(m2.getWindSpeed_kt(), -1, TEST_EPSILON);
+
+    SGMetar m3("2020/11/17 16:00 CYAZ 171600Z 14040G//KT 10SM -RA OVC012 12/11 A2895 RMK NS8 VIA CYXY SLP806 DENSITY ALT 900FT");
+    SG_CHECK_EQUAL(m3.getWindDir(), 140);
+    SG_CHECK_EQUAL_EP2(m3.getWindSpeed_kt(), 40, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m3.getGustSpeed_kt(), SGMetarNaN, TEST_EPSILON);
 }
 
 void test_wind_unit_not_specified()

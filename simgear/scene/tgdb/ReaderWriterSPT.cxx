@@ -294,7 +294,7 @@ ReaderWriterSPT::createTree(const BucketBox& bucketBox, const LocalOptions& opti
 osg::ref_ptr<osg::Node>
 ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const LocalOptions& options) const
 {
-    osg::PagedLOD* pagedLOD = new osg::PagedLOD;
+    osg::ref_ptr<osg::PagedLOD> pagedLOD = new osg::PagedLOD;
 
     pagedLOD->setCenterMode(osg::PagedLOD::USER_DEFINED_CENTER);
     SGSpheref sphere = bucketBox.getBoundingSphere();

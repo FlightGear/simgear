@@ -650,9 +650,14 @@ struct ReaderWriterSTG::_ModelBin {
             std::string filename = "vpb/" + bucket.gen_vpb_base() + ".osgb";
             if (tile_map.count(filename) == 0) {
                 auto vpb_node = osgDB::readRefNodeFile(filename, options);
-                terrainGroup->addChild(vpb_node);
-                tile_map[filename] = true;
-                SG_LOG(SG_TERRAIN, SG_INFO, "Loading: " << filename);
+                if (!vpb_node.valid()) {
+                    SG_LOG(SG_TERRAIN, SG_WARN, "Failure to load: " <<filename);
+                }
+                else {
+                    terrainGroup->addChild(vpb_node);
+                    tile_map[filename] = true;
+                    SG_LOG(SG_TERRAIN, SG_INFO, "Loading: " << filename);
+                }
             }
         } else if (_foundBase) {
             for (auto stgObject : _objectList) {
@@ -788,6 +793,8 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
     // But do load all STGs at the same level (i.e from the same scenery path)
     const osgDB::FilePathList& filePathList = options->getDatabasePathList();
     for (auto path : filePathList) {
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "OSG DatabasePath: " << path);
+
         if (modelBin._foundBase) {
             break;
         }

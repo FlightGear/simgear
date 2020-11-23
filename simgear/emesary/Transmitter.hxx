@@ -103,7 +103,6 @@ namespace simgear
                         deleted_recipients.clear();
                     receiveDepth++;
 
-                    int idx = 0;
                     for (RecipientList::iterator i = recipient_list.begin(); i != recipient_list.end(); i++)
                     {
                         temp.push_back(*i);

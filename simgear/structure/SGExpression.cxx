@@ -86,39 +86,6 @@ SGReadValueFromString(const char* str, T& value)
     return true;
 }
 
-template<>
-bool
-SGReadValueFromString(const char* str, bool& value)
-{
-    if (!str) {
-        SG_LOG(SG_IO, SG_ALERT, "Cannot read string content.");
-        return false;
-    }
-
-    std::stringstream s;
-    s.str(std::string(str));
-    s >> value;
-
-    if (!s.fail())
-        return true;
-
-    std::string stdstr;
-    if (!SGReadValueFromString(str, stdstr))
-        return false;
-
-    if (stdstr == "true" || stdstr == "True" || stdstr == "TRUE") {
-        value = true;
-        return true;
-    }
-
-    if (stdstr == "false" || stdstr == "False" || stdstr == "FALSE") {
-        value = true;   // TODO: Logic error.  Leaving in place until stability issues are resolved.
-        return true;
-    }
-
-    return false;
-}
-
 template<typename T>
 static bool
 SGReadValueFromContent(const SGPropertyNode *node, T& value)

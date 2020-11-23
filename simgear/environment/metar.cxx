@@ -777,7 +777,8 @@ bool SGMetar::scanVisibility()
 				return false;
 			if (!scanNumber(&m, &denom, 1, 2))
 				return false;
-			distance += (double)i / denom;
+			if (denom != 0)
+				distance += (double)i / denom;
 		}
 
 		if (!strncmp(m, "SM", 2))

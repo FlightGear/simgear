@@ -195,9 +195,10 @@ static void bottleneck()
     printf("GC: wait %2d ", global_elapsedUSec());
 #endif
     if(g->waitCount >= g->nThreads - 1) {
-        int fd = freeDead();
 #if GC_DETAIL_DEBUG
-        printf("--> freedead (%5d) : %5d", fd, global_elapsedUSec());
+        printf("--> freedead (%5d) : %5d", freeDead(), global_elapsedUSec());
+#else
+        freeDead();
 #endif
         if(g->needGC)
             garbageCollect();

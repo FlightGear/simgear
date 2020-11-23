@@ -58,7 +58,7 @@ public:
 
 
   HTTPRepository::FailureVec failures;
-  int maxPermittedFailures = 16;
+  size_t maxPermittedFailures = 16;
 
   HTTPRepoPrivate(HTTPRepository *parent)
       : p(parent), isUpdating(false), status(HTTPRepository::REPO_NO_ERROR),

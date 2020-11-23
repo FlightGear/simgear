@@ -7,6 +7,7 @@ set(HEADERS
     NodeAndDrawableVisitor.hxx
     Noise.hxx
     OptionsReadFileCallback.hxx
+    OrthophotoManager.hxx
     OsgDebug.hxx
     OsgMath.hxx
     OsgSingleton.hxx
@@ -40,6 +41,7 @@ set(SOURCES
     NodeAndDrawableVisitor.cxx
     Noise.cxx
     OptionsReadFileCallback.cxx
+    OrthophotoManager.cxx
     OsgDebug.cxx
     parse_color.cxx
     PrimitiveUtils.cxx

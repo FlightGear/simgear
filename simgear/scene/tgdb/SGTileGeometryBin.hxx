@@ -58,6 +58,7 @@ public:
     const std::vector<SGVec3d>& vertices(obj.get_wgs84_nodes());
     const std::vector<SGVec3f>& normals(obj.get_normals());
     const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
+    const std::vector<SGVec2f>& overlayCoords(obj.get_overlaycoords());
     const int_list& tris_v(obj.get_tris_v()[grp]);
     const int_list& tris_n(obj.get_tris_n()[grp]);
     const tci_list& tris_tc(obj.get_tris_tcs()[grp]);
@@ -82,6 +83,8 @@ public:
         if (!tris_tc[1].empty()) {
             v0.SetTexCoord( 1, getTexCoord(texCoords, tris_tc[1], tc1Scale, i-2) );
         }
+        v0.SetOverlayCoord(overlayCoords[tris_v[i-2]]);
+
         SGVertNormTex v1;
         v1.SetVertex( toVec3f(vertices[tris_v[i-1]]) );
         v1.SetNormal( num_norms_is_num_verts ? normals[tris_n[i-1]] :
@@ -90,6 +93,8 @@ public:
         if (!tris_tc[1].empty()) {
             v1.SetTexCoord( 1, getTexCoord(texCoords, tris_tc[1], tc1Scale, i-1) );
         }
+        v1.SetOverlayCoord(overlayCoords[tris_v[i-1]]);
+
         SGVertNormTex v2;
         v2.SetVertex( toVec3f(vertices[tris_v[i]]) );
         v2.SetNormal( num_norms_is_num_verts ? normals[tris_n[i]] :
@@ -98,6 +103,7 @@ public:
         if (!tris_tc[1].empty()) {
             v2.SetTexCoord( 1, getTexCoord(texCoords, tris_tc[1], tc1Scale, i) );
         }
+        v2.SetOverlayCoord(overlayCoords[tris_v[i]]);
 
         triangles.insert(v0, v1, v2);
     }
@@ -168,6 +174,7 @@ public:
       const std::vector<SGVec3d>& vertices(obj.get_wgs84_nodes());
       const std::vector<SGVec3f>& normals(obj.get_normals());
       const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
+      const std::vector<SGVec2f>& overlayCoords(obj.get_overlaycoords());
       const int_list& fans_v(obj.get_fans_v()[grp]);
       const int_list& fans_n(obj.get_fans_n()[grp]);
       const tci_list& fans_tc(obj.get_fans_tcs()[grp]);
@@ -191,6 +198,8 @@ public:
     if (!fans_tc[1].empty()) {
         v0.SetTexCoord( 1, getTexCoord(texCoords, fans_tc[1], tc1Scale, 0) );
     }
+    v0.SetOverlayCoord(overlayCoords[fans_v[0]]);
+
     SGVertNormTex v1;
     v1.SetVertex( toVec3f(vertices[fans_v[1]]) );
     v1.SetNormal( num_norms_is_num_verts ? normals[fans_n[1]] :
@@ -199,6 +208,8 @@ public:
     if (!fans_tc[1].empty()) {
         v1.SetTexCoord( 1, getTexCoord(texCoords, fans_tc[1], tc1Scale, 1) );
     }
+    v1.SetOverlayCoord(overlayCoords[fans_v[1]]);
+
     for (unsigned i = 2; i < fans_v.size(); ++i) {
       SGVertNormTex v2;
       v2.SetVertex( toVec3f(vertices[fans_v[i]]) );
@@ -208,6 +219,8 @@ public:
       if (!fans_tc[1].empty()) {
           v2.SetTexCoord( 1, getTexCoord(texCoords, fans_tc[1], tc1Scale, i) );
       }
+      v2.SetOverlayCoord(overlayCoords[fans_v[i]]);
+      
       triangles.insert(v0, v1, v2);
       v1 = v2;
     }

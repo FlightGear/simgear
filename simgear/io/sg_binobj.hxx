@@ -150,6 +150,7 @@ private:
     std::vector<SGVec4f> colors;        // color list
     std::vector<SGVec3f> normals;       // normal list
     std::vector<SGVec2f> texcoords;     // texture coordinate list
+    std::vector<SGVec2f> overlaycoords; // overlay texture coordinate list
     std::vector<float>   va_flt;        // vertex attribute list (floats)
     std::vector<int>     va_int;        // vertex attribute list (ints) 
     
@@ -226,6 +227,9 @@ public:
     
     inline const std::vector<SGVec2f>& get_texcoords() const { return texcoords; }
     inline void set_texcoords( const std::vector<SGVec2f>& t ) { texcoords = t; }
+
+    inline const std::vector<SGVec2f>& get_overlaycoords() const { return overlaycoords; }
+    inline void set_overlaycoords( const std::vector<SGVec2f>& t ) { overlaycoords = t; }
     
     // Points API
     bool add_point( const SGBinObjectPoint& pt );

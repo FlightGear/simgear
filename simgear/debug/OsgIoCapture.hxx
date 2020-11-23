@@ -22,19 +22,21 @@ public:
             // as this is going to segfault ignore the translation of severity and always output the message.
             SG_LOG(SG_GL, SG_ALERT, message);
 #ifndef DEBUG
-            throw new std::string(message);
+            throw std::string(message);
             //int* trigger_segfault = 0;
             //*trigger_segfault     = 0;
 #endif
             return;
         }
         char*tmessage = strdup(message);
-        char*lf = strrchr(tmessage, '\n');
-        if (lf)
-            *lf = 0;
+        if (tmessage) {
+            char*lf = strrchr(tmessage, '\n');
+            if (lf)
+                *lf = 0;
 
-        SG_LOG(SG_OSG, translateSeverity(severity), tmessage);
-        free(tmessage);
+            SG_LOG(SG_OSG, translateSeverity(severity), tmessage);
+            free(tmessage);
+        }
     }
 
 private:

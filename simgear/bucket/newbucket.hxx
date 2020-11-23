@@ -179,7 +179,7 @@ public:
      * @return tile index
      */
     inline long int gen_index() const {
-	return ((lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x;
+	    return ((lon + 180) << 14) + ((lat + 90) << 6) + static_cast<unsigned char>(y << 3) + x;
     }
 
     /**
@@ -200,6 +200,7 @@ public:
      * @return base path in string form
      */
     std::string gen_vpb_base() const;
+    std::string gen_vpb_base_alt() const;
 
     /**
      * @return the center lon of a tile.

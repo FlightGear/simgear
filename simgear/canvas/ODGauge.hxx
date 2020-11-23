@@ -109,6 +109,8 @@ namespace canvas
                         int coverage_samples = 0,
                         int color_samples = 0 );
 
+      void setMaxAnisotropy(float anis);
+
       /**
        * Enable/Disable updating the texture (If disabled the contents of the
        * texture remains with the outcome of the last rendering pass)

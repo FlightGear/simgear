@@ -202,6 +202,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void ODGauge::setMaxAnisotropy(float anis)
+  {
+    texture->setMaxAnisotropy(anis);
+  }
+
+  //----------------------------------------------------------------------------
   void ODGauge::setRender(bool render)
   {
     // Only the far camera should trigger this texture to be rendered.

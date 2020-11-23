@@ -108,10 +108,10 @@ SGSubsystem::suspend (bool suspended)
     // so this works out, whereas is_suspended() is always false for groups
     if (_suspended == suspended)
         return;
-    
+
     const auto newState = suspended ? State::SUSPEND : State::RESUME;
     const auto manager = get_manager();
-    
+
     if (manager)
         manager->notifyDelegatesWillChange(this, newState);
     _suspended = suspended;
@@ -148,7 +148,7 @@ std::string SGSubsystem::subsystemClassId() const
     if (pos == std::string::npos) {
         return _subsystemId;
     }
-    
+
     return _subsystemId.substr(0, pos);
 }
 
@@ -158,7 +158,7 @@ std::string SGSubsystem::subsystemInstanceId() const
     if (pos == std::string::npos) {
         return {};
     }
-    
+
     return _subsystemId.substr(pos+1);
 }
 
@@ -203,13 +203,13 @@ std::string SGSubsystem::nameForState(State s)
 ////////////////////////////////////////////////////////////////////////
 
 class SGSubsystemGroup::Member
-{    
+{
 private:
     Member(const Member &member);
 public:
     Member();
     ~Member ();
-    
+
     void update (double delta_time_sec);
 
     void reportTiming(void) { if (reportTimingCb) reportTimingCb(reportTimingUserData, name, &timeStat); }
@@ -271,31 +271,31 @@ SGSubsystemGroup::incrementalInit()
         _state = State::INIT;
         return INIT_DONE;
     }
-  
+
     if (_initPosition < 0) {
         // first call
         assert(_state == State::BIND);
         _initPosition = 0;
         notifyWillChange(_members.front()->subsystem, State::INIT);
     }
-    
-    const auto m = _members[_initPosition]; 
+
+    const auto m = _members[_initPosition];
     SGTimeStamp st;
     st.stamp();
     const InitStatus memberStatus = m->subsystem->incrementalInit();
     m->initTime += st.elapsedMSec();
-  
+
     if (memberStatus == INIT_DONE) {
         // complete init of this one
         notifyDidChange(m->subsystem, State::INIT);
         ++_initPosition;
-        
+
         if (_initPosition < static_cast<int>(_members.size())) {
             // start init of the next one
             notifyWillChange( _members[_initPosition]->subsystem, State::INIT);
         }
     }
-  
+
   return INIT_CONTINUE;
 }
 
@@ -487,10 +487,10 @@ void SGSubsystem::reportTimingStats(TimerStats *__lastValues) {
             {
                 auto delta = item.second - (*__lastValues)[item.first];
                 if (delta != 0) {
-                    output 
+                    output
                         << "  +" << std::setw(6) << std::setprecision(4) << std::left << (delta * 1000.0)
                         << _name << item.first
-                        << "  total " << std::setw(6) << std::setprecision(4) << std::right << item.second << "s " 
+                        << "  total " << std::setw(6) << std::setprecision(4) << std::right << item.second << "s "
                         ;
                 }
             }
@@ -511,7 +511,7 @@ void SGSubsystemGroup::reportTimingStats(TimerStats *_lastValues) {
     if (_lastValues) {
         auto deltaT = _executionTime - _lastExecutionTime;
         if (deltaT != 0) {
-            SG_LOG(SG_EVENT, SG_ALERT, 
+            SG_LOG(SG_EVENT, SG_ALERT,
                 " +" << std::setw(6) << std::setprecision(4) << std::right << deltaT << "ms "
                 << subsystemInstanceId() );
         }
@@ -580,7 +580,7 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
         SG_LOG(SG_GENERAL, SG_DEV_WARN, "adding subsystem to group with name '" << name
                << "', but subsystemId() returns '" << subsystem->subsystemId() << "'");
     }
-    
+
     notifyWillChange(subsystem, State::ADD);
     Member* member = get_member(name, true);
     member->name = name;
@@ -588,7 +588,7 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
     member->min_step_sec = min_step_sec;
     subsystem->set_group(this);
     notifyDidChange(subsystem, State::ADD);
-    
+
     if (_state != State::INVALID && (_state <= State::POSTINIT)) {
         // transition to the correct state
         if (_state >= State::BIND) {
@@ -596,13 +596,13 @@ SGSubsystemGroup::set_subsystem (const string &name, SGSubsystem * subsystem,
             subsystem->bind();
             notifyDidChange(subsystem, State::BIND);
         }
-        
+
         if (_state >= State::INIT) {
             notifyWillChange(subsystem, State::INIT);
             subsystem->init();
             notifyDidChange(subsystem, State::INIT);
         }
-        
+
         if (_state == State::POSTINIT) {
             notifyWillChange(subsystem, State::POSTINIT);
             subsystem->postinit();
@@ -624,7 +624,7 @@ SGSubsystemGroup::get_subsystem (const string &name)
         const Member* member = get_member(name, false);
         return member->subsystem;
     }
-    
+
     // recursive search
     for (const auto& m : _members) {
         if (m->subsystem->is_group()) {
@@ -633,7 +633,7 @@ SGSubsystemGroup::get_subsystem (const string &name)
                 return s;
         }
     }
-    
+
     return {};
 }
 
@@ -646,7 +646,7 @@ SGSubsystemGroup::remove_subsystem(const string &name)
     if (it != _members.end()) {
         // found it, great
         const auto sub = (*it)->subsystem;
-        
+
         // ensure we clear the name during shutdown. This ensures that
         // a lookup during shutdown fails, which is the desired behaviour.
         // for an example see: https://sourceforge.net/p/flightgear/codetickets/2217/
@@ -654,7 +654,7 @@ SGSubsystemGroup::remove_subsystem(const string &name)
         // without this, the SubsystemMgr re-caches a dead pointer
         // after doing its clear()
         (*it)->name.clear();
-        
+
         if (_state != State::INVALID) {
             // transition out correctly
             if ((_state >= State::INIT) && (_state < State::SHUTDOWN)) {
@@ -662,21 +662,21 @@ SGSubsystemGroup::remove_subsystem(const string &name)
                 sub->shutdown();
                 notifyDidChange(sub, State::SHUTDOWN);
             }
-            
+
             if ((_state >= State::BIND) && (_state < State::UNBIND)) {
                 notifyWillChange(sub, State::UNBIND);
                 sub->unbind();
                 notifyDidChange(sub, State::UNBIND);
             }
         }
-        
+
         notifyWillChange(sub, State::REMOVE);
         delete *it;
         _members.erase(it);
         notifyDidChange(sub, State::REMOVE);
         return true;
     }
-    
+
     // recursive removal
     for (const auto& m : _members) {
         if (m->subsystem->is_group()) {
@@ -687,7 +687,7 @@ SGSubsystemGroup::remove_subsystem(const string &name)
             }
         }
     }
-    
+
     return false;
 }
 
@@ -722,7 +722,7 @@ void SGSubsystemGroup::clearSubsystems()
         delete *it;
         notifyDidChange(sub, State::REMOVE);
     }
-    
+
     _members.clear();
 }
 
@@ -754,7 +754,7 @@ auto SGSubsystemGroup::get_member(const string &name, bool create) -> Member*
         _members.push_back(m);
         return _members.back();
     }
-    
+
     return *it;
 }
 
@@ -764,7 +764,7 @@ SGSubsystemMgr* SGSubsystemGroup::get_manager() const
     if (parentGroup) {
         return parentGroup->get_manager();
     }
-    
+
     return _manager;
 }
 
@@ -808,11 +808,11 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
     if (elapsed_sec < min_step_sec) {
         return;
     }
-    
+
     if (subsystem->is_suspended()) {
         return;
     }
-    
+
     SGTimeStamp oTimer;
     try {
         oTimer.stamp();
@@ -824,7 +824,7 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
     catch (sg_exception& e) {
       SG_LOG(SG_GENERAL, SG_ALERT, "caught exception processing subsystem:" << name
         << "\nmessage:" << e.getMessage());
-      
+
       if (++exceptionCount > SG_MAX_SUBSYSTEM_EXCEPTIONS) {
         SG_LOG(SG_GENERAL, SG_ALERT, "(exceptionCount=" << exceptionCount <<
           ", suspending)");
@@ -840,9 +840,11 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 
 namespace {
     SGSubsystemMgr* global_defaultSubsystemManager = nullptr;
-    
+
+    // disabled until subsystemfactory is removed from FlightGear
+#if 0
     void registerSubsystemCommands();
-    
+#endif
 } // end of anonymous namespace
 
 SGSubsystemMgr::SGSubsystemMgr () :
@@ -860,7 +862,7 @@ SGSubsystemMgr::SGSubsystemMgr () :
         registerSubsystemCommands();
     }
 #endif
-    
+
     for (int i = 0; i < MAX_GROUPS; i++) {
         auto g = new SGSubsystemGroup();
         g->set_manager(this);
@@ -872,7 +874,7 @@ SGSubsystemMgr::~SGSubsystemMgr ()
 {
     _destructorActive = true;
     _groups.clear();
-    
+
     // if we were the global one, null out the pointer so it doesn't dangle.
     // don't do anything clever to track multiple subsystems for now; if we
     // a smarter scheme, let's wait until it's clearer what that might be.
@@ -886,7 +888,7 @@ SGSubsystemMgr* SGSubsystemMgr::getManager(const std::string& id)
     if (id.empty()) {
         return global_defaultSubsystemManager;
     }
-    
+
     // remove me when if/when we supprot multiple subsystem instances
     throw sg_exception("multiple subsystem instances not supported yet");
 }
@@ -904,11 +906,11 @@ SGSubsystemMgr::incrementalInit()
 {
   if (_initPosition >= MAX_GROUPS)
     return INIT_DONE;
-  
-  InitStatus memberStatus = _groups[_initPosition]->incrementalInit();  
+
+  InitStatus memberStatus = _groups[_initPosition]->incrementalInit();
   if (memberStatus == INIT_DONE)
     ++_initPosition;
-  
+
   return INIT_CONTINUE;
 }
 
@@ -932,7 +934,7 @@ SGSubsystemMgr::shutdown ()
     // reverse order to prevent order dependency problems
     for (int i = MAX_GROUPS-1; i >= 0; i--)
         _groups[i]->shutdown();
-  
+
     _initPosition = 0;
 }
 
@@ -989,7 +991,7 @@ SGSubsystemMgr::add (const char * name, SGSubsystem * subsystem,
 {
     if (get_subsystem(name) != nullptr)
         throw sg_exception("Duplicate add of subsystem: " + std::string(name));
-    
+
     SG_LOG(SG_GENERAL, SG_DEBUG, "Adding subsystem " << name);
     get_group(group)->set_subsystem(name, subsystem, min_time_sec);
 }
@@ -999,7 +1001,7 @@ SGSubsystemMgr::remove(const char* name)
 {
     // drop the cache
     _subsystemNameCache.clear();
-  
+
 // we don't know which group the subsystem belongs too
 // fortunately this is a very infrequently used code path, so the slow
 // search is not a problem
@@ -1009,7 +1011,7 @@ SGSubsystemMgr::remove(const char* name)
             return true;
         }
     } // of groups iteration
-    
+
     SG_LOG(SG_GENERAL, SG_WARN, "SGSubsystemMgr::remove: not found: " << name);
     return false;
 }
@@ -1026,7 +1028,7 @@ SGSubsystemMgr::get_subsystem (const string &name) const
 {
     if (_destructorActive)
         return nullptr;
-    
+
     auto s =_subsystemNameCache.find(name);
     if (s != _subsystemNameCache.end()) {
         // in the cache, excellent
@@ -1041,7 +1043,7 @@ SGSubsystemMgr::get_subsystem (const string &name) const
             return sub;
         }
     }
-    
+
     return nullptr;
 }
 
@@ -1077,18 +1079,18 @@ namespace  {
             defaultUpdateInterval(aInterval)
         {
         }
-        
+
         std::string name;
         bool instanced = false;
         SGSubsystemMgr::SubsystemFactoryFunctor functor;
         SGSubsystemMgr::GroupType defaultGroup;
         double defaultUpdateInterval = 0.0;
-        
+
         SGSubsystemMgr::DependencyVec depends;
     };
-    
+
     using SybsystemRegistrationVec = std::vector<RegisteredSubsystemData>;
-    
+
     SybsystemRegistrationVec &getGlobalRegistrations()
     {
         static SybsystemRegistrationVec global_registrations;
@@ -1117,7 +1119,7 @@ void SGSubsystemMgr::registerSubsystem(const std::string& name,
     if (findRegistration(name) != global_registrations.end()) {
         throw sg_exception("duplicate subsystem registration for: " + name);
     }
-    
+
     global_registrations.push_back({name, instanced, f, group, updateInterval});
     if (deps.size() > 0) {
         global_registrations.back().depends = deps;
@@ -1131,7 +1133,7 @@ auto SGSubsystemMgr::defaultGroupFor(const char* name) -> GroupType
     if (it == global_registrations.end()) {
         throw sg_exception("unknown subsystem registration for: " + std::string(name));
     }
-    
+
     return it->defaultGroup;
 }
 
@@ -1142,7 +1144,7 @@ double SGSubsystemMgr::defaultUpdateIntervalFor(const char* name)
     if (it == global_registrations.end()) {
         throw sg_exception("unknown subsystem registration for: " + std::string(name));
     }
-    
+
     return it->defaultUpdateInterval;
 }
 
@@ -1154,7 +1156,7 @@ SGSubsystemMgr::dependsFor(const char* name)
     if (it == global_registrations.end()) {
         throw sg_exception("unknown subsystem registration for: " + std::string(name));
     }
-    
+
     return it->depends;
 }
 
@@ -1166,16 +1168,16 @@ SGSubsystemMgr::create(const std::string& name)
     if (it == global_registrations.end()) {
         return {}; // or should this throw with a 'not registered'?
     }
-    
+
     if (it->instanced) {
         throw sg_exception("SGSubsystemMgr::create: using non-instanced mode for instanced subsytem");
     }
-    
+
     SGSubsystemRef ref = it->functor();
     if (!ref) {
         throw sg_exception("SGSubsystemMgr::create: functor failed to create subsystem implementation: " + name);
     }
-    
+
     ref->set_name(name);
     return ref;
 }
@@ -1188,16 +1190,16 @@ SGSubsystemMgr::createInstance(const std::string& name, const std::string& subsy
     if (it == global_registrations.end()) {
         return {}; // or should this throw with a 'not registered'?
     }
-    
+
     if (!it->instanced) {
         throw sg_exception("SGSubsystemMgr::create: using instanced mode for non-instanced subsytem");
     }
-    
+
     SGSubsystemRef ref = it->functor();
     if (!ref) {
         throw sg_exception("SGSubsystemMgr::create: functor failed to create an instsance of " + name);
     }
-    
+
     const auto combinedName = name + SUBSYSTEM_NAME_SEPARATOR + subsystemInstanceId;
     ref->set_name(combinedName);
     return ref;
@@ -1225,7 +1227,7 @@ void SGSubsystemMgr::removeDelegate(Delegate * d)
         SG_LOG(SG_GENERAL, SG_DEV_ALERT, "removeDelegate: unknown delegate");
         return;
     }
-    
+
     _delegates.erase(it);
 }
 
@@ -1253,15 +1255,15 @@ SGSubsystemMgr::root_node() const
 }
 
 namespace {
-    
+    // disabled until subsystemfactory is removed from FlightGear
+#if 0
     bool
     do_check_subsystem_running(const SGPropertyNode * arg, SGPropertyNode * root)
     {
         auto manager = SGSubsystemMgr::getManager({});
         return (manager->get_subsystem(arg->getStringValue("name")) != nullptr);
     }
-    
-    
+
     SGSubsystemMgr::GroupType mapGroupNameToType(const std::string& s)
     {
         if (s == "init")        return SGSubsystemMgr::INIT;
@@ -1270,17 +1272,17 @@ namespace {
         if (s == "post-fdm")    return SGSubsystemMgr::POST_FDM;
         if (s == "display")     return SGSubsystemMgr::DISPLAY;
         if (s == "sound")       return SGSubsystemMgr::SOUND;
-        
+
         SG_LOG(SG_GENERAL, SG_ALERT, "unrecognized subsystem group:" << s);
         return SGSubsystemMgr::GENERAL;
     }
-    
+
     bool
     do_add_subsystem (const SGPropertyNode * arg, SGPropertyNode * root)
     {
         auto manager = SGSubsystemMgr::getManager({});
         std::string subsystem = arg->getStringValue("subsystem");
-        
+
         // allow override of the name but defaultt o the subsystem name
         std::string name = arg->getStringValue("name");
         std::string subsystemInstanceId = arg->getStringValue("instance");
@@ -1289,7 +1291,7 @@ namespace {
             // default name to subsystem name, but before we parse any instance name
             name = subsystem;
         }
-        
+
         auto separatorPos = subsystem.find(SUBSYSTEM_NAME_SEPARATOR);
         if (separatorPos != std::string::npos) {
             if (!subsystemInstanceId.empty()) {
@@ -1297,58 +1299,58 @@ namespace {
                         << subsystemInstanceId << " and " << subsystem);
                 return false;
             }
-            
+
             subsystemInstanceId = subsystem.substr(separatorPos + 1);
             subsystem = subsystem.substr(0, separatorPos);
         }
-        
+
         SGSubsystem* sub = nullptr;
         if (!subsystemInstanceId.empty()) {
             sub = manager->createInstance(subsystem, subsystemInstanceId);
         } else {
             sub = manager->create(subsystem);
         }
-        
+
         if (!sub)
             return false;
-        
+
         std::string groupArg = arg->getStringValue("group");
         SGSubsystemMgr::GroupType group = SGSubsystemMgr::GENERAL;
         if (!groupArg.empty()) {
             group = mapGroupNameToType(groupArg);
         }
-        
+
         double minTime = arg->getDoubleValue("min-time-sec", 0.0);
-        
+
         const auto combinedName = subsystem + SUBSYSTEM_NAME_SEPARATOR + subsystemInstanceId;
         manager->add(combinedName.c_str(),
                      sub,
                      group,
                      minTime);
-        
+
         // we no longer check for the do-bind-init flag here, since set_subsystem
         // tracks the group state and will transition the added subsystem
         // automatically
 
         return true;
     }
-    
+
     bool do_remove_subsystem(const SGPropertyNode * arg, SGPropertyNode * root)
     {
         auto manager = SGSubsystemMgr::getManager({});
         std::string name = arg->getStringValue("subsystem");
-        
+
         SGSubsystem* instance = manager->get_subsystem(name);
         if (!instance) {
             SG_LOG(SG_GENERAL, SG_ALERT, "do_remove_subsystem: unknown subsytem:" << name);
             return false;
         }
-                
+
         // unplug from the manager (this also deletes the instance!)
         manager->remove(name.c_str());
         return true;
     }
-    
+
     /**
      * Built-in command: reinitialize one or more subsystems.
      *
@@ -1379,7 +1381,7 @@ namespace {
 
         return result;
     }
-    
+
     /**
      * Built-in command: suspend one or more subsystems.
      *
@@ -1402,7 +1404,7 @@ namespace {
         }
         return result;
     }
-    
+
     /**
      * Built-in command: suspend one or more subsystems.
      *
@@ -1425,12 +1427,12 @@ namespace {
         }
         return result;
     }
-    
+
      struct CommandDef {
         const char * name;
         SGCommandMgr::command_t command;
      };
-    
+
     CommandDef built_ins[] = {
         { "add-subsystem", do_add_subsystem },
         { "remove-subsystem", do_remove_subsystem },
@@ -1447,7 +1449,7 @@ namespace {
             commandManager->addCommand(b.name, b.command);
         }
     }
-    
+#endif
 } // anonymous namespace implementing subsystem commands
 
 // end of subsystem_mgr.cxx

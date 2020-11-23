@@ -691,6 +691,10 @@ namespace canvas
       {
         _sampling_dirty = true;
       }
+      else if( name == "anisotropy" )
+      {
+        _texture.setMaxAnisotropy( node->getFloatValue() );
+      }
       else if( name == "additive-blend" )
       {
         _texture.useAdditiveBlend( node->getBoolValue() );

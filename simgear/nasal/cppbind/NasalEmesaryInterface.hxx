@@ -63,7 +63,7 @@ namespace nasal
 
     class NasalMainLoopRecipient : public simgear::Emesary::IReceiver {
     public:
-        NasalMainLoopRecipient() : receiveCount(0), Active(false), CanWait(false) {
+        NasalMainLoopRecipient() : receiveCount(0), CanWait(false), Active(false) {
             simgear::Emesary::GlobalTransmitter::instance()->Register(*this);
         }
         virtual ~NasalMainLoopRecipient() {

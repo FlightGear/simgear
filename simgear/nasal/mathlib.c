@@ -145,7 +145,7 @@ static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)
     return VALIDATE(x);
 
 //    x.num = SGMiscd::normalizePeriodic(a, b, x);
-    return VALIDATE(x);
+//    return VALIDATE(x);
 }
 
 static naRef f_round(naContext c, naRef me, int argc, naRef* args)

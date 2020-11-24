@@ -528,15 +528,16 @@ sgLoad3DModel_internal(const SGPath& path,
     // Check for an XML wrapper
     if (modelpath.extension() == "xml") {
        try {
-           if (overlay)
-               copyProperties(overlay, props);
-
            readProperties(modelpath, props);
         } catch (const sg_exception &t) {
             SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load xml: "
                    << t.getFormattedMessage());
             throw;
         }
+
+        if (overlay)
+            copyProperties(overlay, props);
+
         if (options->getAutoTooltipsMaster()) {
             addTooltipAnimations(path, props, model, options->getAutoTooltipsMasterMax());
         }

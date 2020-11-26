@@ -212,7 +212,8 @@ struct ReaderWriterSTG::_ModelBin {
             STGObjectsQuadtree quadtree((GetModelLODCoord()), (AddModelLOD()));
             quadtree.buildQuadTree(_objectStaticList.begin(), _objectStaticList.end());
             osg::ref_ptr<osg::Group> group = quadtree.getRoot();
-            group->setName("STG-group-A");
+            string group_name = string("STG-group-A ").append(_bucket.gen_index_str());
+            group->setName(group_name);
             group->setDataVariance(osg::Object::STATIC);
 
             simgear::AirportSignBuilder signBuilder(_options->getMaterialLib(), _bucket.get_center());
@@ -586,10 +587,12 @@ struct ReaderWriterSTG::_ModelBin {
     {
         osg::ref_ptr<SGReaderWriterOptions> options;
         options = SGReaderWriterOptions::copyOrCreate(opt);
+        float pagedLODExpiry = atoi(options->getPluginStringData("SimGear::PAGED_LOD_EXPIRY").c_str());
 
         osg::ref_ptr<osg::Group> terrainGroup = new osg::Group;
         terrainGroup->setDataVariance(osg::Object::STATIC);
-        terrainGroup->setName("terrain");
+        std::string terrain_name = string("terrain ").append(bucket.gen_index_str());
+        terrainGroup->setName(terrain_name);
 
         if (_foundBase) {
             for (auto stgObject : _objectList) {
@@ -637,11 +640,13 @@ struct ReaderWriterSTG::_ModelBin {
         } else {
             osg::PagedLOD* pagedLOD = new osg::PagedLOD;
             pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
-            pagedLOD->setName("pagedObjectLOD");
+            std::string name = string("pagedObjectLOD ").append(bucket.gen_index_str());
+            pagedLOD->setName(name);
 
             // This should be visible in any case.
             // If this is replaced by some lower level of detail, the parent LOD node handles this.
             pagedLOD->addChild(terrainGroup, 0, std::numeric_limits<float>::max());
+            pagedLOD->setMinimumExpiryTime(0, pagedLODExpiry);
 
             // we just need to know about the read file callback that itself holds the data
             osg::ref_ptr<DelayLoadReadFileCallback> readFileCallback = new DelayLoadReadFileCallback;
@@ -658,10 +663,11 @@ struct ReaderWriterSTG::_ModelBin {
 
             // Objects may end up displayed up to 2x the object range.
             pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough);
+            pagedLOD->setMinimumExpiryTime(pagedLOD->getNumChildren(), pagedLODExpiry);
             pagedLOD->setRadius(SG_TILE_RADIUS);
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Center: " << pagedLOD->getCenter().x() << "," << pagedLOD->getCenter().y() << "," << pagedLOD->getCenter().z() );
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Range: " << (2.0 * _object_range_rough));
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile PagedLOD Radius: " << SG_TILE_RADIUS);
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Center: " << pagedLOD->getCenter().x() << "," << pagedLOD->getCenter().y() << "," << pagedLOD->getCenter().z() );
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Range: " << (2.0 * _object_range_rough));
+            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Radius: " << SG_TILE_RADIUS);
             return pagedLOD;
         }
     }

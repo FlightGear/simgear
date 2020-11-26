@@ -218,6 +218,9 @@ const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
 #define SG_OBJECT_RANGE_ROUGH     9000.0
 #define SG_OBJECT_RANGE_DETAILED  1500.0
 
+/** Minimum expiry time of PagedLOD within the Tile.  Overridden by /sim/rendering/plod-minimum-expiry-time-secs **/
+#define SG_TILE_MIN_EXPIRY 180.0
+
 /** Radius of scenery tiles in m **/
 #define SG_TILE_RADIUS      14000.0
 

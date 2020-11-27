@@ -91,6 +91,7 @@ namespace simgear {
 
         void registerOrthophoto(const long bucket_idx, const OrthophotoRef& orthophoto);
         void unregisterOrthophoto(const long bucket_idx);
+        void unregisterAll();
 
         /**
          * Get an orthophoto by bucket index

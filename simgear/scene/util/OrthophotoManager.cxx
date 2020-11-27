@@ -371,6 +371,11 @@ namespace simgear {
         }
     }
 
+    void OrthophotoManager::unregisterAll() {
+        _orthophotos.clear();
+        SG_LOG(SG_TERRAIN, SG_INFO, "Unregistered all orthophotos");
+    }
+
     OrthophotoRef OrthophotoManager::getOrthophoto(const long bucket_idx) {
         if (_orthophotos[bucket_idx]) {
             return _orthophotos[bucket_idx];

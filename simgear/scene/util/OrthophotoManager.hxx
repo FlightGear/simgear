@@ -22,9 +22,11 @@
 
 #include <unordered_map>
 
-#include <osg/Referenced>
 #include <osg/Image>
 #include <osg/Texture2D>
+#include <osg/Referenced>
+#include <osg/ref_ptr>
+#include <osg/observer_ptr>
 #include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
 #include <simgear/misc/sg_dir.hxx>
@@ -41,6 +43,7 @@ namespace simgear {
 
     class Orthophoto;
     using OrthophotoRef = osg::ref_ptr<Orthophoto>;
+    using OrthophotoWeakRef = osg::observer_ptr<Orthophoto>;
 
     class OrthophotoBounds {
     private:
@@ -85,13 +88,11 @@ namespace simgear {
 
     class OrthophotoManager : public osg::Referenced {
     private:
-        std::unordered_map<long, OrthophotoRef> _orthophotos;
+        std::unordered_map<long, OrthophotoWeakRef> _orthophotos;
     public:
         static OrthophotoManager* instance();
 
         void registerOrthophoto(const long bucket_idx, const OrthophotoRef& orthophoto);
-        void unregisterOrthophoto(const long bucket_idx);
-        void unregisterAll();
 
         /**
          * Get an orthophoto by bucket index

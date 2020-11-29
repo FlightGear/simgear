@@ -347,9 +347,9 @@ namespace simgear {
     }
 
     void OrthophotoManager::registerOrthophoto(const long bucket_idx, const OrthophotoRef& orthophoto) {
-        OrthophotoRef& entry = _orthophotos[bucket_idx];
+        OrthophotoWeakRef& entry = _orthophotos[bucket_idx];
 
-        if (entry) {
+        if (entry.valid()) {
             SG_LOG(SG_TERRAIN, SG_WARN, "OrthophotoManager::registerOrthophoto(): Bucket index " << bucket_idx << " already has a registered orthophoto.");
         }
 
@@ -362,26 +362,13 @@ namespace simgear {
         SG_LOG(SG_TERRAIN, SG_INFO, "Registered orthophoto for bucket index " << bucket_idx);
     }
 
-    void OrthophotoManager::unregisterOrthophoto(const long bucket_idx) {
-        if (_orthophotos[bucket_idx]) {
-            _orthophotos.erase(bucket_idx);
-            SG_LOG(SG_TERRAIN, SG_INFO, "Unregistered orthophoto with bucket index " << bucket_idx);
-        } else {
-            SG_LOG(SG_TERRAIN, SG_WARN, "OrthophotoManager::unregisterOrthophoto(): Attempted to unregister orthophoto with bucket index that is not currently registered.");
-        }
-    }
-
-    void OrthophotoManager::unregisterAll() {
-        _orthophotos.clear();
-        SG_LOG(SG_TERRAIN, SG_INFO, "Unregistered all orthophotos");
-    }
-
     OrthophotoRef OrthophotoManager::getOrthophoto(const long bucket_idx) {
-        if (_orthophotos[bucket_idx]) {
-            return _orthophotos[bucket_idx];
-        } else {
-            return nullptr;
+        OrthophotoWeakRef weak_ref = _orthophotos[bucket_idx];
+        OrthophotoRef ref;
+        if (weak_ref.valid()) {
+            weak_ref.lock(ref);
         }
+        return ref;
     }
 
     OrthophotoRef OrthophotoManager::getOrthophoto(const std::vector<SGVec3d>& nodes, const SGVec3d& center) {

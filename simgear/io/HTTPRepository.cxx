@@ -994,7 +994,10 @@ HTTPRepository::failure() const
       }
 
       void onDone() override {
-        file->close();
+          if (file) {
+              file->close();
+          }
+
         if (responseCode() == 200) {
           std::string hash =
               strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);

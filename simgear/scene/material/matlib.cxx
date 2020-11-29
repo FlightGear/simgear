@@ -51,7 +51,6 @@
 
 using std::string;
 
-
 class SGMaterialLib::MatLibPrivate
 {
 public:
@@ -127,8 +126,7 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
 		}
 
 		// Now build all the materials for this set of areas and conditions
-
-                const std::string region = node->getStringValue("name");
+        const std::string region = node->getStringValue("name");
 		const simgear::PropertyList materials = node->getChildren("material");
 		simgear::PropertyList::const_iterator materials_iter = materials.begin();
 		for (; materials_iter != materials.end(); materials_iter++) {
@@ -146,6 +144,23 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
 						<< names[j]->getStringValue() );
 			}
 		}
+    }
+
+    simgear::PropertyList landclasses = materialblocks.getNode("landclass-mapping", true)->getChildren("map");
+    simgear::PropertyList::const_iterator lc_iter = landclasses.begin();
+
+    for (; lc_iter != landclasses.end(); lc_iter++) {
+    	SGPropertyNode_ptr node = lc_iter->get();
+		int lc = node->getIntValue("landclass");
+		const std::string mat = node->getStringValue("material-name");
+        
+        // Verify that the landclass mapping exists before creating the mapping
+        const_material_map_iterator it = matlib.find( mat );
+        if ( it == end() ) {
+            SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find material " << mat << " for landclass " << lc);
+        } else {
+            landclasslib[lc] = mat;
+        }
     }
 
     return true;
@@ -174,11 +189,32 @@ SGMaterial *SGMaterialLib::find( const string& material, const SGVec2f center ) 
     return NULL;
 }
 
+SGMaterial *SGMaterialLib::find( int lc, const SGVec2f center ) const
+{
+    const_landclass_map_iterator it = landclasslib.find( lc );
+    if (it != landclasslib.end()) {
+        return find(it->second, center);
+    } else {
+        return NULL;
+    }
+}
+
 // find a material record by material name and tile center
 SGMaterial *SGMaterialLib::find( const string& material, const SGGeod& center ) const
 {
 	SGVec2f c = SGVec2f(center.getLongitudeDeg(), center.getLatitudeDeg());
 	return find(material, c);
+}
+
+// find a material record by material name and tile center
+SGMaterial *SGMaterialLib::find( int lc, const SGGeod& center ) const
+{
+    const_landclass_map_iterator it = landclasslib.find( lc );
+    if (it != landclasslib.end()) {
+        return find(it->second, center);
+    } else {
+        return NULL;
+    }
 }
 
 SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center)
@@ -188,7 +224,13 @@ SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center)
     for (; it != matlib.rend(); ++it) {
         newCache->insert(it->first, find(it->first, center));
     }
-    
+
+    // Collapse down the mapping from landclasses to materials.
+    const_landclass_map_iterator lc_iter = landclasslib.begin();
+    for (; lc_iter != landclasslib.end(); ++lc_iter) {
+        newCache->insert(lc_iter->first, find(lc_iter->second, center));
+    }
+
     return newCache;
 }
 
@@ -229,8 +271,13 @@ SGMaterialCache::SGMaterialCache ( void )
 
 // Insertion into the material cache
 void SGMaterialCache::insert(const std::string& name, SGSharedPtr<SGMaterial> material) {
-	cache[name] = material;
+	cache[name] = material;    
 }
+
+void SGMaterialCache::insert(int lc, SGSharedPtr<SGMaterial> material) {
+	cache[getNameFromLandclass(lc)] = material;
+}
+
 
 // Search of the material cache
 SGMaterial *SGMaterialCache::find(const string& material) const
@@ -240,6 +287,12 @@ SGMaterial *SGMaterialCache::find(const string& material) const
         return NULL;
 
     return it->second;
+}
+
+// Search of the material cache for a material code as an integer (e.g. from a VPB landclass texture).
+SGMaterial *SGMaterialCache::find(int lc) const
+{
+    return find(getNameFromLandclass(lc));
 }
 
 // Destructor

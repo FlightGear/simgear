@@ -50,15 +50,21 @@ private:
     typedef std::map < std::string, SGSharedPtr<SGMaterial> > material_cache;
     material_cache cache;
 
+    const std::string getNameFromLandclass(int lc) const {
+        return std::string("WS30_").append(std::to_string(lc));
+    }
+
 public:
     // Constructor
     SGMaterialCache ( void );
 
     // Insertion
     void insert( const std::string& name, SGSharedPtr<SGMaterial> material );
+    void insert( int lc, SGSharedPtr<SGMaterial> material );
 
     // Lookup
     SGMaterial *find( const std::string& material ) const;
+    SGMaterial *find( int material ) const;
 
     // Destructor
     ~SGMaterialCache ( void );
@@ -80,7 +86,12 @@ private:
     typedef material_map::iterator material_map_iterator;
     typedef material_map::const_iterator const_material_map_iterator;
 
+    typedef std::map < int, std::string> landclass_map;
+    typedef landclass_map::iterator landclass_map_iterator;
+    typedef landclass_map::const_iterator const_landclass_map_iterator;
+
     material_map matlib;
+    landclass_map landclasslib;
     
 public:
 
@@ -93,6 +104,8 @@ public:
     // find a material record by material name
     SGMaterial *find( const std::string& material, SGVec2f center ) const;
     SGMaterial *find( const std::string& material, const SGGeod& center ) const;
+    SGMaterial *find( const int lc, SGVec2f center ) const;
+    SGMaterial *find( const int lc, const SGGeod& center ) const;
 
     /**
      * Material lookup involves evaluation of position and SGConditions to

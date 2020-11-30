@@ -441,7 +441,7 @@ void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
         std::string nm = stateDesc->getStringValue("name");
 
         if (nm.empty()) {
-          SG_LOG(SG_GENERAL, SG_ALERT, "No name found for state in branch " << path);
+          SG_LOG(SG_GENERAL, SG_DEV_ALERT, "No name found for state in branch " << path);
           throw sg_exception("No name element in state");
         }
 
@@ -464,8 +464,8 @@ void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
         std::string target_id = tDesc->getStringValue("target");
 
         if (nm.empty()) {
-          SG_LOG(SG_GENERAL, SG_ALERT, "No name found for transition in branch " << path);
-          throw sg_exception("No name element in transition");
+          SG_LOG(SG_GENERAL, SG_DEV_WARN, "No name found for transition in branch " << path);
+          nm = "transition-to-" + target_id;
         }
 
         if (target_id.empty()) {

@@ -438,32 +438,37 @@ public:
 
       ArchiveExtractTask(const ArchiveExtractTask &) = delete;
 
-      HTTPRepoPrivate::ProcessResult run(HTTPRepoPrivate *repo) {
-        size_t rd = file.read((char *)buffer, bufferSize);
-        extractor.extractBytes(buffer, rd);
-
-        if (file.eof()) {
-          extractor.flush();
-          file.close();
-
-          if (!extractor.isAtEndOfArchive()) {
-            SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << relativePath);
-            repo->failedToUpdateChild(relativePath,
-                                      HTTPRepository::REPO_ERROR_IO);
-            return HTTPRepoPrivate::ProcessFailed;
+      HTTPRepoPrivate::ProcessResult run(HTTPRepoPrivate* repo)
+      {
+          if (!buffer) {
+              return HTTPRepoPrivate::ProcessFailed;
           }
 
-          if (extractor.hasError()) {
-            SG_LOG(SG_TERRASYNC, SG_ALERT, "Error extracting " << relativePath);
-            repo->failedToUpdateChild(relativePath,
-                                      HTTPRepository::REPO_ERROR_IO);
-            return HTTPRepoPrivate::ProcessFailed;
+          size_t rd = file.read((char*)buffer, bufferSize);
+          extractor.extractBytes(buffer, rd);
+
+          if (file.eof()) {
+              extractor.flush();
+              file.close();
+
+              if (!extractor.isAtEndOfArchive()) {
+                  SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << relativePath);
+                  repo->failedToUpdateChild(relativePath,
+                                            HTTPRepository::REPO_ERROR_IO);
+                  return HTTPRepoPrivate::ProcessFailed;
+              }
+
+              if (extractor.hasError()) {
+                  SG_LOG(SG_TERRASYNC, SG_ALERT, "Error extracting " << relativePath);
+                  repo->failedToUpdateChild(relativePath,
+                                            HTTPRepository::REPO_ERROR_IO);
+                  return HTTPRepoPrivate::ProcessFailed;
+              }
+
+              return HTTPRepoPrivate::ProcessDone;
           }
 
-          return HTTPRepoPrivate::ProcessDone;
-        }
-
-        return HTTPRepoPrivate::ProcessContinue;
+          return HTTPRepoPrivate::ProcessContinue;
       }
 
       ~ArchiveExtractTask() { free(buffer); }
@@ -974,6 +979,8 @@ HTTPRepository::failure() const
         {
             pathInRepo = _directory->absolutePath();
             pathInRepo.append(fileName);
+
+            sha1_init(&hashContext);
         }
 
     protected:
@@ -986,8 +993,6 @@ HTTPRepository::failure() const
             _directory->repository()->http->cancelRequest(
                 this, "Unable to create output file:" + pathInRepo.utf8Str());
           }
-
-          sha1_init(&hashContext);
         }
 
         sha1_write(&hashContext, s, n);

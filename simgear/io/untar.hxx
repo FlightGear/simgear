@@ -70,6 +70,11 @@ public:
 		Stop
 	};
 
+    SGPath rootPath() const
+    {
+        return _rootPath;
+    }
+
 protected:
 
 

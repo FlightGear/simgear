@@ -511,32 +511,34 @@ public:
 		const size_t BUFFER_SIZE = 1024 * 1024;
 		void* buf = malloc(BUFFER_SIZE);
 
-		try {
-			int result = unzGoToFirstFile(zip);
-			if (result != UNZ_OK) {
-				throw sg_exception("failed to go to first file in archive");
-			}
-
-			while (true) {
-				extractCurrentFile(zip, (char*)buf, BUFFER_SIZE);
-				if (state == FILTER_STOPPED) {
-					break;
-				}
-
-				result = unzGoToNextFile(zip);
-				if (result == UNZ_END_OF_LIST_OF_FILE) {
-					break;
-				}
-				else if (result != UNZ_OK) {
-					throw sg_io_exception("failed to go to next file in the archive");
-				}
-			}
-			state = END_OF_ARCHIVE;
-		}
-		catch (sg_exception&) {
+        int result = unzGoToFirstFile(zip);
+        if (result != UNZ_OK) {
+            SG_LOG(SG_IO, SG_ALERT, outer->rootPath() << "failed to go to first file in archive:" << result);
             state = BAD_ARCHIVE;
+            free(buf);
+            unzClose(zip);
+            return;
         }
-        
+
+        while (true) {
+            extractCurrentFile(zip, (char*)buf, BUFFER_SIZE);
+            if (state == FILTER_STOPPED) {
+                state = END_OF_ARCHIVE;
+                break;
+            }
+
+            result = unzGoToNextFile(zip);
+            if (result == UNZ_END_OF_LIST_OF_FILE) {
+                state = END_OF_ARCHIVE;
+                break;
+            } else if (result != UNZ_OK) {
+                SG_LOG(SG_IO, SG_ALERT, outer->rootPath() << "failed to go to next file in archive:" << result);
+                state = BAD_ARCHIVE;
+                break;
+            }
+        }
+
+
         free(buf);
         unzClose(zip);
     }

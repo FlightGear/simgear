@@ -30,6 +30,7 @@
 #include <osg/TexGen>
 #include <osg/Texture1D>
 #include <osg/Texture2D>
+#include <osg/Texture2DArray>
 #include <osg/Texture3D>
 #include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
@@ -742,6 +743,80 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
 
 namespace {
 TextureBuilder::Registrar installCubeMap("cubemap", new CubeMapBuilder);
+}
+
+
+typedef map<int, string> Tex2DArraySignature;
+
+Tex2DArraySignature makeTex2DArraySignature(Effect *effect,
+                                            const SGPropertyNode *props)
+{
+    Tex2DArraySignature signature;
+    const PropertyList images = props->getChildren("image");
+    for (const auto &image : images) {
+        const SGPropertyNode *real_prop = getEffectPropertyNode(effect, image);
+        signature[image->getIndex()] = real_prop->getStringValue();
+    }
+    return signature;
+}
+
+class Texture2DArrayBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+protected:
+    typedef map<Tex2DArraySignature, observer_ptr<Texture2DArray>> TexMap;
+    TexMap texMap;
+};
+
+Texture* Texture2DArrayBuilder::build(Effect* effect, Pass* pass,
+                                      const SGPropertyNode* props,
+                                      const SGReaderWriterOptions* options)
+{
+    Tex2DArraySignature signature = makeTex2DArraySignature(effect, props);
+
+    auto itr = texMap.find(signature);
+    ref_ptr<Texture2DArray> tex;
+
+    if (itr != texMap.end() && itr->second.lock(tex))
+        return tex.release();
+
+    tex = new osg::Texture2DArray;
+
+    osgDB::ReaderWriter::ReadResult result;
+    SGReaderWriterOptions* wOpts = (SGReaderWriterOptions*)options;
+    SGReaderWriterOptions::LoadOriginHint origLOH = wOpts->getLoadOriginHint();
+    wOpts->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
+
+    for (const auto &pair : signature) {
+        osg::ref_ptr<osg::Image> image;
+        result = osgDB::readRefImageFile(pair.second, options);
+        if (result.success())
+            image = result.getImage();
+
+        if (image.valid()) {
+            tex->setImage(pair.first, image);
+        } else {
+            SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file '"
+                   << pair.second << "'");
+            return nullptr;
+        }
+    }
+
+    wOpts->setLoadOriginHint(origLOH);
+
+    // TODO: Filtering, wrap-mode, etc. should be configurable
+
+    if (itr == texMap.end())
+        texMap[signature] = tex;
+    else
+        itr->second = tex; // update existing
+    return tex.release();
+}
+
+namespace {
+TextureBuilder::Registrar install2DArray("2d-array", new Texture2DArrayBuilder);
 }
 
 

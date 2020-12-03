@@ -31,6 +31,10 @@ using TestApi = simgear::HTTP::TestApi;
 
 std::string dataForFile(const std::string& parentName, const std::string& name, int revision)
 {
+    if (name == "zeroByteFile") {
+        return {};
+    }
+
     std::ostringstream os;
     // random content but which definitely depends on our tree location
     // and revision.
@@ -446,6 +450,7 @@ void testBasicClone(HTTP::Client* cl)
     verifyFileState(p, "fileA");
     verifyFileState(p, "dirA/subdirA/fileAAA");
     verifyFileState(p, "dirC/subdirA/subsubA/fileCAAA");
+    verifyFileState(p, "dirA/subdirA/zeroByteFile");
 
     global_repo->findEntry("fileA")->revision++;
     global_repo->findEntry("dirB/subdirA/fileBAA")->revision++;
@@ -911,6 +916,8 @@ int main(int argc, char* argv[])
     global_repo->defineFile("dirA/fileAC");
     global_repo->defineFile("dirA/subdirA/fileAAA");
     global_repo->defineFile("dirA/subdirA/fileAAB");
+    global_repo->defineFile("dirA/subdirA/zeroByteFile");
+
     global_repo->defineFile("dirB/subdirA/fileBAA");
     global_repo->defineFile("dirB/subdirA/fileBAB");
     global_repo->defineFile("dirB/subdirA/fileBAC");

@@ -979,55 +979,74 @@ HTTPRepository::failure() const
         {
             pathInRepo = _directory->absolutePath();
             pathInRepo.append(fileName);
-
-            sha1_init(&hashContext);
         }
 
     protected:
-      void gotBodyData(const char *s, int n) override {
-        if (!file.get()) {
-          file.reset(new SGBinaryFile(pathInRepo));
-          if (!file->open(SG_IO_OUT)) {
-            SG_LOG(SG_TERRASYNC, SG_WARN,
-                   "unable to create file " << pathInRepo);
-            _directory->repository()->http->cancelRequest(
-                this, "Unable to create output file:" + pathInRepo.utf8Str());
-          }
+        void gotBodyData(const char* s, int n) override
+        {
+            if (!file.get()) {
+                const bool ok = createOutputFile();
+                if (!ok) {
+                    _directory->repository()->http->cancelRequest(
+                        this, "Unable to create output file:" + pathInRepo.utf8Str());
+                }
+            }
+
+            sha1_write(&hashContext, s, n);
+            file->write(s, n);
         }
 
-        sha1_write(&hashContext, s, n);
-        file->write(s, n);
-      }
+        bool createOutputFile()
+        {
+            file.reset(new SGBinaryFile(pathInRepo));
+            if (!file->open(SG_IO_OUT)) {
+                SG_LOG(SG_TERRASYNC, SG_WARN,
+                       "unable to create file " << pathInRepo);
+                return false;
+            }
 
-      void onDone() override {
-          if (file) {
-              file->close();
-          }
-
-        if (responseCode() == 200) {
-          std::string hash =
-              strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
-          _directory->didUpdateFile(fileName, hash, contentSize());
-        } else if (responseCode() == 404) {
-          SG_LOG(SG_TERRASYNC, SG_WARN,
-                 "terrasync file not found on server: "
-                     << fileName << " for " << _directory->absolutePath());
-          _directory->didFailToUpdateFile(
-              fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
-        } else {
-          SG_LOG(SG_TERRASYNC, SG_WARN,
-                 "terrasync file download error on server: "
-                     << fileName << " for " << _directory->absolutePath()
-                     << "\n\tserver responded: " << responseCode() << "/"
-                     << responseReason());
-          _directory->didFailToUpdateFile(fileName,
-                                          HTTPRepository::REPO_ERROR_HTTP);
-          // should we every retry here?
+            sha1_init(&hashContext);
+            return true;
         }
 
-        _directory->repository()->finishedRequest(
-            this, HTTPRepoPrivate::RequestFinish::Done);
-      }
+        void onDone() override
+        {
+            const bool is200Response = (responseCode() == 200);
+            if (!file && is200Response) {
+                // if the server defines a zero-byte file, we will never call
+                // gotBodyData, so create the file here
+                // this ensures all the logic below works as expected
+                createOutputFile();
+            }
+
+            if (file) {
+                file->close();
+            }
+
+            if (is200Response) {
+                std::string hash =
+                    strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
+                _directory->didUpdateFile(fileName, hash, contentSize());
+            } else if (responseCode() == 404) {
+                SG_LOG(SG_TERRASYNC, SG_WARN,
+                       "terrasync file not found on server: "
+                           << fileName << " for " << _directory->absolutePath());
+                _directory->didFailToUpdateFile(
+                    fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
+            } else {
+                SG_LOG(SG_TERRASYNC, SG_WARN,
+                       "terrasync file download error on server: "
+                           << fileName << " for " << _directory->absolutePath()
+                           << "\n\tserver responded: " << responseCode() << "/"
+                           << responseReason());
+                _directory->didFailToUpdateFile(fileName,
+                                                HTTPRepository::REPO_ERROR_HTTP);
+                // should we every retry here?
+            }
+
+            _directory->repository()->finishedRequest(
+                this, HTTPRepoPrivate::RequestFinish::Done);
+        }
 
       void onFail() override {
         HTTPRepository::ResultCode code = HTTPRepository::REPO_ERROR_SOCKET;

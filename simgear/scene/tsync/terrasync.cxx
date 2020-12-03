@@ -572,6 +572,15 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
             notFound(slot.currentItem);
         } else if (res != HTTPRepository::REPO_NO_ERROR) {
             fail(slot.currentItem);
+
+            // in case the Airports_archive download fails, create the
+            // directory, so that next sync, we do a manual sync
+            if ((slot.currentItem._type == SyncItem::AirportData) && slot.isNewDirectory) {
+                SG_LOG(SG_TERRASYNC, SG_ALERT, "Failed to download Airports_archive, will download discrete files next time");
+                simgear::Dir d(_local_dir + "/Airports");
+                d.create(0755);
+                _completedTiles.erase(slot.currentItem._dir);
+            }
         } else {
             updated(slot.currentItem, slot.isNewDirectory);
             SG_LOG(SG_TERRASYNC, SG_DEBUG, "sync of " << slot.repository->baseUrl() << " finished ("

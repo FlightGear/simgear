@@ -30,9 +30,10 @@
 #include "subsystem_mgr.hxx"
 #include "commands.hxx"
 
-#include <simgear/props/props.hxx>
-#include <simgear/math/SGMath.hxx>
 #include "SGSmplstat.hxx"
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/math/SGMath.hxx>
+#include <simgear/props/props.hxx>
 
 const int SG_MAX_SUBSYSTEM_EXCEPTIONS = 4;
 const char SUBSYSTEM_NAME_SEPARATOR = '.';
@@ -828,8 +829,18 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
       if (++exceptionCount > SG_MAX_SUBSYSTEM_EXCEPTIONS) {
         SG_LOG(SG_GENERAL, SG_ALERT, "(exceptionCount=" << exceptionCount <<
           ", suspending)");
+        simgear::reportError("suspending subsystem after too many errors:" + name);
         subsystem->suspend();
       }
+    } catch (std::bad_alloc& ba) {
+        // attempting to track down source of these on Sentry.io
+        SG_LOG(SG_GENERAL, SG_ALERT, "caught bad_alloc processing subsystem:" << name);
+        simgear::reportError("caught bad_alloc processing subsystem:" + name);
+
+        if (++exceptionCount > SG_MAX_SUBSYSTEM_EXCEPTIONS) {
+            SG_LOG(SG_GENERAL, SG_ALERT, "(exceptionCount=" << exceptionCount << ", suspending)");
+            subsystem->suspend();
+        }
     }
 }
 

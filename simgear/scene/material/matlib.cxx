@@ -33,7 +33,7 @@
 #include <string>
 #include <mutex>
 
-#include <osgDB/Registry>
+#include <osgDB/ReadFile>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -41,7 +41,9 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
+#include <simgear/scene/model/modellib.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "mat.hxx"
 
@@ -50,6 +52,7 @@
 #include "matlib.hxx"
 
 using std::string;
+using namespace simgear;
 
 class SGMaterialLib::MatLibPrivate
 {
@@ -217,9 +220,11 @@ SGMaterial *SGMaterialLib::find( int lc, const SGGeod& center ) const
     }
 }
 
-SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center)
+SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center, const simgear::SGReaderWriterOptions* options)
 {
-	SGMaterialCache* newCache = new SGMaterialCache();
+
+
+	SGMaterialCache* newCache = new SGMaterialCache(getMaterialTextureAtlas(center, options));
     material_map::const_reverse_iterator it = matlib.rbegin();
     for (; it != matlib.rend(); ++it) {
         newCache->insert(it->first, find(it->first, center));
@@ -234,10 +239,10 @@ SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center)
     return newCache;
 }
 
-SGMaterialCache *SGMaterialLib::generateMatCache(SGGeod center)
+SGMaterialCache *SGMaterialLib::generateMatCache(SGGeod center, const simgear::SGReaderWriterOptions* options)
 {
 	SGVec2f c = SGVec2f(center.getLongitudeDeg(), center.getLatitudeDeg());
-	return SGMaterialLib::generateMatCache(c);
+	return SGMaterialLib::generateMatCache(c, options);
 }
 
 
@@ -265,8 +270,9 @@ const SGMaterial *SGMaterialLib::findMaterial(const osg::Geode* geode)
 }
 
 // Constructor
-SGMaterialCache::SGMaterialCache ( void )
+SGMaterialCache::SGMaterialCache (Atlas atlas)
 {
+    _atlas = atlas;
 }
 
 // Insertion into the material cache
@@ -293,6 +299,92 @@ SGMaterial *SGMaterialCache::find(const string& material) const
 SGMaterial *SGMaterialCache::find(int lc) const
 {
     return find(getNameFromLandclass(lc));
+}
+
+// Generate a texture atlas for this location
+SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, const simgear::SGReaderWriterOptions* options)
+{
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Getting Texture Atlas for " << center);
+
+    SGMaterialCache::AtlasIndex atlasIndex;
+    SGMaterialCache::AtlasImage atlasImage;
+    std::string id;
+    const_landclass_map_iterator lc_iter = landclasslib.begin();
+    for (; lc_iter != landclasslib.end(); ++lc_iter) {
+        SGMaterial* mat = find(lc_iter->second, center);
+        const std::string texture = mat->get_one_texture(0,0);
+        id.append(texture);
+        id.append(";");        
+    }
+
+    SGMaterialLib::atlas_map::iterator atlas_iter = _atlasCache.find(id);
+
+    if (atlas_iter != _atlasCache.end()) return atlas_iter->second;
+
+    // Cache lookup failure - generate a new atlas, but only if we have a change of reading any textures
+    if (options == 0) {
+        return SGMaterialCache::Atlas(atlasIndex, atlasImage);
+    }
+
+    atlasImage = new osg::Texture2DArray();
+
+    atlasImage->setMaxAnisotropy(16.0f);
+    atlasImage->setResizeNonPowerOfTwoHint(false);
+
+    atlasImage->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
+    atlasImage->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
+
+    atlasImage->setWrap(osg::Texture::WRAP_S,osg::Texture::REPEAT);
+    atlasImage->setWrap(osg::Texture::WRAP_T,osg::Texture::REPEAT);
+
+    int index = -1; 
+    lc_iter = landclasslib.begin();
+    for (; lc_iter != landclasslib.end(); ++lc_iter) {
+        // index is incremented at the start of the loop so that we have a valid
+        // mapping based on the lanclassList, even if we fail to process the texture.
+        ++index;
+        int i = lc_iter->first;
+        SGMaterial* mat = find(lc_iter->second, center);
+        atlasIndex[i] = index;
+
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "  Lookup " << i << " " << lc_iter->second);
+
+
+        if (mat == NULL) continue;
+
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "  Found it!");
+
+        // Just get the first texture in the first texture-set for the moment.
+        // Should add some variability in texture-set in the future.
+        const std::string texture = mat->get_one_texture(0,0);
+
+        if (texture.empty()) continue;
+
+        SGPath texturePath = SGPath("Textures");
+        //texturePath.append(texture);
+        std::string fullPath = SGModelLib::findDataFile(texture, options, texturePath);
+
+        if (fullPath.empty()) {
+            SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                    << texture << "\" in Textures folders when creating texture atlas");
+        }
+        else
+        {
+            // Copy the texture into the atlas in the appropriate place
+            osg::ref_ptr<osg::Image> subtexture = osgDB::readRefImageFile(fullPath, options);
+
+            if (subtexture && subtexture->valid()) {
+                subtexture->scaleImage(2048,2048,1);
+                SG_LOG(SG_TERRAIN, SG_ALERT, "Adding image " << fullPath << " to texture atlas " << subtexture->getInternalTextureFormat());
+                atlasImage->setImage(index,subtexture);
+            }
+        }
+    }
+
+    // Cache for future lookups
+    SGMaterialCache::Atlas atlas = SGMaterialCache::Atlas(atlasIndex, atlasImage);
+    _atlasCache[id] = atlas;
+    return atlas;
 }
 
 // Destructor

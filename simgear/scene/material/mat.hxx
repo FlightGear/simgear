@@ -141,6 +141,11 @@ public:
    */
   osg::Texture2D* get_one_object_mask(int texIndex);
 
+  /**
+   * Get the textured state.
+   */
+  std::string get_one_texture(int setIndex, int texIndex);
+
 
   /**
    * Get the number of textures assigned to this material.

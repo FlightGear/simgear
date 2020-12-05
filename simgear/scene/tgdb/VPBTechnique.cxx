@@ -16,6 +16,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#include <cmath>
+
 #include <osgTerrain/TerrainTile>
 #include <osgTerrain/Terrain>
 
@@ -25,6 +27,7 @@
 
 #include <osg/io_utils>
 #include <osg/Texture2D>
+#include <osg/Texture2DArray>
 #include <osg/Texture1D>
 #include <osg/Program>
 #include <osg/Math>
@@ -151,14 +154,14 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         }
         else
         {
-            applyColorLayers(*buffer);
+            applyColorLayers(*buffer, masterLocator);
             applyTransparency(*buffer);
         }
     }
     else
     {
         generateGeometry(*buffer, masterLocator, centerModel);
-        applyColorLayers(*buffer);
+        applyColorLayers(*buffer, masterLocator);
         applyTransparency(*buffer);
     }
 
@@ -1356,7 +1359,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         tile_height = 0.5 * (t.length() + v.length());
     }
 
-    SG_LOG(SG_TERRAIN, SG_ALERT, "Tile Level " << _terrainTile->getTileID().level << " width " << tile_width << " height " << tile_height);
+    //SG_LOG(SG_TERRAIN, SG_ALERT, "Tile Level " << _terrainTile->getTileID().level << " width " << tile_width << " height " << tile_height);
 
     osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("tile_width", tile_width);
     twu->setDataVariance(osg::Object::STATIC);
@@ -1380,10 +1383,12 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
     }
 }
 
-void VPBTechnique::applyColorLayers(BufferData& buffer)
-{
+void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
+{   
     typedef std::map<osgTerrain::Layer*, osg::Texture*> LayerToTextureMap;
+    typedef std::map<osgTerrain::Layer*, osg::Texture2DArray*> LayerToAtlasMap;
     LayerToTextureMap layerToTextureMap;
+    LayerToAtlasMap layerToAtlasMap;
 
     for(unsigned int layerNum=0; layerNum<_terrainTile->getNumColorLayers(); ++layerNum)
     {
@@ -1413,15 +1418,50 @@ void VPBTechnique::applyColorLayers(BufferData& buffer)
             osg::StateSet* stateset = buffer._geode->getOrCreateStateSet();
 
             osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(layerToTextureMap[colorLayer]);
+            osg::Texture2DArray* atlasTexture = dynamic_cast<osg::Texture2DArray*>(layerToAtlasMap[colorLayer]);
             if (!texture2D)
             {
                 texture2D = new osg::Texture2D;
+
+                // First time generating this texture, so process to change landclass IDs to texure indexes.
+                SGPropertyNode_ptr effectProp;
+                SGMaterialLibPtr matlib  = _options->getMaterialLib();
+                osg::Vec3d world;
+                SGGeod loc;
+
+                if (matlib)                    
+                {
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Generating texture atlas for " << image->getName());
+                    // Determine the center of the tile, sadly non-trivial.
+                    osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
+                    masterLocator->convertLocalToModel(tileloc, world);
+                    const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
+                    loc = SGGeod::fromCart(world2);
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
+
+                    if (_matcache ==0) _matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
+                    
+                    atlasTexture = _matcache->getAtlasImage();
+                    layerToAtlasMap[colorLayer] = atlasTexture;
+                    SGMaterialCache::AtlasIndex atlasIndex = _matcache->getAtlasIndex();
+
+                    for (int s = 0; s < image->s(); s++) {
+                        for (int t = 0; t < image->t(); t++) {
+                            osg::Vec4 c = image->getColor(s, t);
+                            int i = int(round(c.x() * 255.0));
+                            c.set(c.x(), (float) (atlasIndex[i] / 255.0), c.z(), c.w() );
+                            image->setColor(c, s, t);
+                        }
+                    }
+
+                }
+
                 texture2D->setImage(image);
                 texture2D->setMaxAnisotropy(16.0f);
                 texture2D->setResizeNonPowerOfTwoHint(false);
 
-                texture2D->setFilter(osg::Texture::MIN_FILTER, colorLayer->getMinFilter());
-                texture2D->setFilter(osg::Texture::MAG_FILTER, colorLayer->getMagFilter());
+                texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
+                texture2D->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
 
                 texture2D->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
                 texture2D->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
@@ -1432,7 +1472,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer)
 
                 if (mipMapping && (s_NotPowerOfTwo || t_NotPowerOfTwo))
                 {
-                    OSG_INFO<<"Disabling mipmapping for non power of two tile size("<<image->s()<<", "<<image->t()<<")"<<std::endl;
+                    SG_LOG(SG_TERRAIN, SG_ALERT, "Disabling mipmapping for non power of two tile size("<<image->s()<<", "<<image->t()<<")");
                     texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
                 }
 
@@ -1441,7 +1481,8 @@ void VPBTechnique::applyColorLayers(BufferData& buffer)
 
             }
 
-            stateset->setTextureAttributeAndModes(layerNum, texture2D, osg::StateAttribute::ON);
+            stateset->setTextureAttributeAndModes(2*layerNum, texture2D, osg::StateAttribute::ON);
+            stateset->setTextureAttributeAndModes(2*layerNum +1, atlasTexture, osg::StateAttribute::ON);
 
         }
         else if (contourLayer)

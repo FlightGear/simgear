@@ -55,7 +55,6 @@ typedef std::list<SGDirectionalLightBin> SGDirectionalLightListBin;
 #define SG_SIMPLIFIER_RATIO         (0.001)
 #define SG_SIMPLIFIER_MAX_LENGTH    (1000.0)
 #define SG_SIMPLIFIER_MAX_ERROR     (2000.0)
-#define SG_TILE_MIN_EXPIRY          (180.0)
 using namespace simgear;
 
 // QuadTreeBuilder is used by Random Objects Generator

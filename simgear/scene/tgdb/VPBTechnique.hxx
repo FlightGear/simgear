@@ -107,7 +107,7 @@ class VPBTechnique : public TerrainTechnique
 
         virtual void generateGeometry(BufferData& buffer, Locator* masterLocator, const osg::Vec3d& centerModel);
 
-        virtual void applyColorLayers(BufferData& buffer);
+        virtual void applyColorLayers(BufferData& buffer, Locator* masterLocator);
 
         virtual void applyTransparency(BufferData& buffer);
 
@@ -123,6 +123,8 @@ class VPBTechnique : public TerrainTechnique
         osg::Matrix3                        _filterMatrix;
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
+        osg::ref_ptr<osg::Image>            _atlas;
+        osg::ref_ptr<SGMaterialCache>       _matcache;
 };
 
 }

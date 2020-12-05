@@ -496,6 +496,28 @@ osg::Texture2D* SGMaterial::get_one_object_mask(int texIndex)
     }
 }
 
+std::string SGMaterial::get_one_texture(int setIndex, int texIndex)
+{
+    if (_status.empty()) {
+        SG_LOG( SG_GENERAL, SG_WARN, "No material available.");
+        return 0;
+    }
+
+    unsigned int i = setIndex % _status.size();
+
+    SGMaterial::_internal_state st = _status[i];
+    //if (st == NULL) return 0;
+
+    std::string texturePath = "";
+
+    auto iter = st.texture_paths.begin();
+    for (; iter != st.texture_paths.end(); ++iter) {
+        if (iter->second == texIndex) texturePath = iter->first;
+    }
+
+    return texturePath;
+}
+
 void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
 {
     using namespace osg;

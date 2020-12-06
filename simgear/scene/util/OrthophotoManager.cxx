@@ -219,6 +219,9 @@ namespace simgear {
             path.concat(".png");
             if (path.exists()) {
                 ImageRef image = osgDB::readRefImageFile(path.str());
+                if (!image) {
+                    return nullptr;
+                }
                 image->flipVertical();
                 OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
                 return new Orthophoto(image, bbox);

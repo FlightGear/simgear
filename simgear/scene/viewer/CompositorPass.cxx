@@ -518,7 +518,7 @@ public:
 
         osg::Matrixd &light_view_matrix = camera->getViewMatrix();
         light_view_matrix.makeLookAt(
-            aim + light_dir * (bs.radius() + 10.0f),
+            aim + light_dir * (bs.radius() + 100.f),
             aim,
             osg::Vec3(0.0f, 0.0f, 1.0f));
 
@@ -526,7 +526,7 @@ public:
         light_proj_matrix.makeOrtho(
             -bs.radius(), bs.radius(),
             -bs.radius(), bs.radius(),
-            1.0, bs.radius() * 10.0);
+            1.f, bs.radius() * 6.f + 100.f);
 
         // Do texel snapping to prevent flickering or shimmering.
         // We are using double precision vectors and matrices because in FG

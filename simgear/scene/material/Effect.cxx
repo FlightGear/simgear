@@ -1485,11 +1485,8 @@ void mergeSchemesFallbacks(Effect *effect, const SGReaderWriterOptions *options)
 
 // Walk the techniques property tree, building techniques and
 // passes.
-static std::mutex  realizeTechniques_lock;
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
-    std::lock_guard<std::mutex> g(realizeTechniques_lock);
-
     if (_isRealized)
         return true;
 

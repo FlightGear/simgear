@@ -114,7 +114,7 @@ public:
         matlib = _options->getMaterialLib();
         if (matlib) {
             SGGeod geodPos = SGGeod::fromCart(_gbs_center);            
-            matcache = matlib->generateMatCache(geodPos);
+            matcache = matlib->generateMatCache(geodPos, _options);
         }
         
 #if 0
@@ -281,7 +281,7 @@ public:
 
       // Generate a materials cache
       if (matlib) {
-          matcache = matlib->generateMatCache(geodPos);
+          matcache = matlib->generateMatCache(geodPos, _options);
       }
       
       // rotate the tiles so that the bounding boxes get nearly axis aligned.

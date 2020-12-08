@@ -85,7 +85,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     SGGeod geodPos = SGGeod::fromCart(center);
     SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
     if (matlib)
-    	matcache = matlib->generateMatCache(geodPos);
+    	matcache = matlib->generateMatCache(geodPos, options);
 
     std::vector<SGVec3d> nodes = tile.get_wgs84_nodes();
 

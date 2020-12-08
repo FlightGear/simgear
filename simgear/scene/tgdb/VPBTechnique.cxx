@@ -799,7 +799,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
       const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
       const SGGeod loc = SGGeod::fromCart(world2);
       SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
-      SGMaterialCache* matcache = _options->getMaterialLib()->generateMatCache(loc);
+      SGMaterialCache* matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
       SGMaterial* mat = matcache->find("ws30");
       delete matcache;
 
@@ -1337,17 +1337,19 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
     // Tile-specific information for the shaders
     osg::StateSet *ss = buffer._geode->getOrCreateStateSet();
     osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
-    level->setDataVariance(osg::Object::STATIC);
     ss->addUniform(level);
 
     // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
     // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
     // difference in axis length is < 1%, so we will just take the average.
+    // Note that we can ignore the actual texture coordinates as we know from above that they are always
+    // [0..1.0] [0..1.0] across the entire tile.
     osg::Vec3f bottom_left, bottom_right, top_left, top_right;
     bool got_bl = VNG.vertex(0, 0, bottom_left);
     bool got_br = VNG.vertex(0, VNG._numColumns - 1, bottom_right);
     bool got_tl = VNG.vertex(VNG._numColumns - 1, 0, top_left);
     bool got_tr = VNG.vertex(VNG._numColumns - 1, VNG._numRows -1, top_right);
+
     float tile_width = 1.0;
     float tile_height = 1.0;
     if (got_bl && got_br && got_tl && got_tr) {
@@ -1359,14 +1361,11 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         tile_height = 0.5 * (t.length() + v.length());
     }
 
-    //SG_LOG(SG_TERRAIN, SG_ALERT, "Tile Level " << _terrainTile->getTileID().level << " width " << tile_width << " height " << tile_height);
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Tile Level " << _terrainTile->getTileID().level << " width " << tile_width << " height " << tile_height);
 
     osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("tile_width", tile_width);
-    twu->setDataVariance(osg::Object::STATIC);
     ss->addUniform(twu);
-
     osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("tile_height", tile_height);
-    thu->setDataVariance(osg::Object::STATIC);
     ss->addUniform(thu);
 
     // Force build of KD trees?
@@ -1385,10 +1384,12 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
 void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
 {   
-    typedef std::map<osgTerrain::Layer*, osg::Texture*> LayerToTextureMap;
-    typedef std::map<osgTerrain::Layer*, osg::Texture2DArray*> LayerToAtlasMap;
-    LayerToTextureMap layerToTextureMap;
+    typedef std::map<osgTerrain::Layer*, SGMaterialCache::Atlas> LayerToAtlasMap;
+    typedef std::map<osgTerrain::Layer*, osg::ref_ptr<osg::Texture2D>> LayerToTexture2DMap;
+    typedef std::map<osgTerrain::Layer*, osg::ref_ptr<osg::Texture1D>> LayerToTexture1DMap;
     LayerToAtlasMap layerToAtlasMap;
+    LayerToTexture2DMap layerToTextureMap; 
+    LayerToTexture1DMap layerToContourMap;
 
     for(unsigned int layerNum=0; layerNum<_terrainTile->getNumColorLayers(); ++layerNum)
     {
@@ -1413,15 +1414,17 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
 
         osgTerrain::ImageLayer* imageLayer = dynamic_cast<osgTerrain::ImageLayer*>(colorLayer);
         osgTerrain::ContourLayer* contourLayer = dynamic_cast<osgTerrain::ContourLayer*>(colorLayer);
+        SGMaterialCache::Atlas atlas = layerToAtlasMap[colorLayer];
         if (imageLayer)
         {
             osg::StateSet* stateset = buffer._geode->getOrCreateStateSet();
 
-            osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(layerToTextureMap[colorLayer]);
-            osg::Texture2DArray* atlasTexture = dynamic_cast<osg::Texture2DArray*>(layerToAtlasMap[colorLayer]);
+            osg::ref_ptr<osg::Texture2D> texture2D  = layerToTextureMap[colorLayer];
+            SGMaterialCache::Atlas atlas = layerToAtlasMap[colorLayer];
+
             if (!texture2D)
             {
-                texture2D = new osg::Texture2D;
+                texture2D  = new osg::Texture2D;
 
                 // First time generating this texture, so process to change landclass IDs to texure indexes.
                 SGPropertyNode_ptr effectProp;
@@ -1441,9 +1444,8 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
 
                     if (_matcache ==0) _matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
                     
-                    atlasTexture = _matcache->getAtlasImage();
-                    layerToAtlasMap[colorLayer] = atlasTexture;
-                    SGMaterialCache::AtlasIndex atlasIndex = _matcache->getAtlasIndex();
+                    atlas = _matcache->getAtlas();
+                    SGMaterialCache::AtlasIndex atlasIndex = atlas.index;
 
                     for (int s = 0; s < image->s(); s++) {
                         for (int t = 0; t < image->t(); t++) {
@@ -1476,20 +1478,21 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
                     texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
                 }
 
-
                 layerToTextureMap[colorLayer] = texture2D;
-
+                layerToAtlasMap[colorLayer] = atlas;
             }
 
-            stateset->setTextureAttributeAndModes(2*layerNum, texture2D, osg::StateAttribute::ON);
-            stateset->setTextureAttributeAndModes(2*layerNum +1, atlasTexture, osg::StateAttribute::ON);
-
+            stateset->setTextureAttributeAndModes(5*layerNum, texture2D, osg::StateAttribute::ON);
+            stateset->setTextureAttributeAndModes(5*layerNum + 1, atlas.image, osg::StateAttribute::ON);
+            stateset->setTextureAttributeAndModes(5*layerNum + 2, atlas.dimensions, osg::StateAttribute::ON);
+            stateset->setTextureAttributeAndModes(5*layerNum + 3, atlas.diffuse, osg::StateAttribute::ON);
+            stateset->setTextureAttributeAndModes(5*layerNum + 4, atlas.specular, osg::StateAttribute::ON);
         }
         else if (contourLayer)
         {
             osg::StateSet* stateset = buffer._geode->getOrCreateStateSet();
 
-            osg::Texture1D* texture1D = dynamic_cast<osg::Texture1D*>(layerToTextureMap[colorLayer]);
+            osg::ref_ptr< osg::Texture1D> texture1D = layerToContourMap[colorLayer];
             if (!texture1D)
             {
                 texture1D = new osg::Texture1D;
@@ -1498,11 +1501,10 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
                 texture1D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
                 texture1D->setFilter(osg::Texture::MAG_FILTER, colorLayer->getMagFilter());
 
-                layerToTextureMap[colorLayer] = texture1D;
+                layerToContourMap[colorLayer] = texture1D;
             }
 
             stateset->setTextureAttributeAndModes(layerNum, texture1D, osg::StateAttribute::ON);
-
         }
     }
 }

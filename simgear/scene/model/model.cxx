@@ -354,7 +354,7 @@ ref_ptr<Node> instantiateMaterialEffects(osg::Node* modelGroup,
 
     if (options->getMaterialLib()) {
       const SGGeod loc = SGGeod(options->getLocation());
-      SGMaterialCache* matcache = options->getMaterialLib()->generateMatCache(loc);
+      SGMaterialCache* matcache = options->getMaterialLib()->generateMatCache(loc, options);
       SGMaterial* mat = matcache->find(options->getMaterialName());
       delete matcache;
 

@@ -45,6 +45,7 @@ class StateSet;
 }
 
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/threads/SGThread.hxx> // for SGMutex
 #include <simgear/math/SGLimits.hxx>
 #include <simgear/math/SGMisc.hxx>
@@ -325,6 +326,15 @@ public:
    * @return the cosine of the maximum tree density slope angle.
    */
   inline double get_cos_tree_zero_density_slope_angle () const { return cos_tree_zero_density_slope_angle; }
+
+  /**
+   * Get the various colour attributes
+   */
+  inline osg::Vec4 get_ambient() const { return toOsg(ambient); }
+  inline osg::Vec4 get_diffuse() const { return toOsg(diffuse); }
+  inline osg::Vec4 get_specular() const { return toOsg(specular); }
+  inline osg::Vec4 get_emission() const { return toOsg(emission); }
+  inline double    get_shininess() const { return shininess; }
 
   /**
    * Get the list of names for this material

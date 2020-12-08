@@ -279,7 +279,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints, 
     double tex_width = 1000.0;
   
     // find Ocean material in the properties list
-    SGMaterialCache* matcache = matlib->generateMatCache(b.get_center());
+    SGMaterialCache* matcache = matlib->generateMatCache(b.get_center(), 0);
     SGMaterial* mat = matcache->find( "Ocean" );
     delete matcache;
 

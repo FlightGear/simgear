@@ -31,6 +31,7 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <osg/Texture2DArray>
+#include <osg/Texture1D>
 
 #include <memory>
 #include <string>		// Standard C++ string library
@@ -49,11 +50,18 @@ class SGMaterialCache : public osg::Referenced
 {
 public:
 
-    // An atlas, consisting of a landclass index and an atlas image
+    // An atlas, consisting of a landclass index, an atlas image and set 
+    // of texture1D containing further data
     typedef std::map<int, int> AtlasIndex;
     typedef osg::ref_ptr<osg::Texture2DArray> AtlasImage;
 
-    typedef std::pair<AtlasIndex,  AtlasImage> Atlas;
+    typedef struct {
+        AtlasIndex index;
+        AtlasImage image;
+        osg::ref_ptr<osg::Texture1D> dimensions;
+        osg::ref_ptr<osg::Texture1D> diffuse;
+        osg::ref_ptr<osg::Texture1D> specular;
+    } Atlas;
 
     // Constructor
     SGMaterialCache (Atlas atlas);
@@ -66,8 +74,7 @@ public:
     SGMaterial *find( const std::string& material ) const;
     SGMaterial *find( int material ) const;
 
-    AtlasIndex getAtlasIndex() { return _atlas.first; };
-    AtlasImage getAtlasImage() { return _atlas.second; };
+    Atlas getAtlas() { return _atlas; };
 
     // Destructor
     ~SGMaterialCache ( void );
@@ -137,8 +144,8 @@ public:
      * cache of the valid materials based on the current state and a given position.
      */
 
-    SGMaterialCache *generateMatCache( SGVec2f center, const simgear::SGReaderWriterOptions* options=0);
-    SGMaterialCache *generateMatCache( SGGeod center, const simgear::SGReaderWriterOptions* options=0);
+    SGMaterialCache *generateMatCache( SGVec2f center, const simgear::SGReaderWriterOptions* options);
+    SGMaterialCache *generateMatCache( SGGeod center, const simgear::SGReaderWriterOptions* options);
 
     material_map_iterator begin() { return matlib.begin(); }
     const_material_map_iterator begin() const { return matlib.begin(); }

@@ -306,8 +306,7 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
 {
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Getting Texture Atlas for " << center);
 
-    SGMaterialCache::AtlasIndex atlasIndex;
-    SGMaterialCache::AtlasImage atlasImage;
+    SGMaterialCache::Atlas atlas;
     std::string id;
     const_landclass_map_iterator lc_iter = landclasslib.begin();
     for (; lc_iter != landclasslib.end(); ++lc_iter) {
@@ -323,19 +322,44 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
 
     // Cache lookup failure - generate a new atlas, but only if we have a change of reading any textures
     if (options == 0) {
-        return SGMaterialCache::Atlas(atlasIndex, atlasImage);
+        return atlas;
     }
 
-    atlasImage = new osg::Texture2DArray();
+    atlas.image = new osg::Texture2DArray();
 
-    atlasImage->setMaxAnisotropy(16.0f);
-    atlasImage->setResizeNonPowerOfTwoHint(false);
+    osg::ref_ptr<osg::Image> dimensionImage = new osg::Image();
+    dimensionImage->allocateImage(512, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
+    atlas.dimensions = new osg::Texture1D(dimensionImage.get());
+    atlas.dimensions->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
+    atlas.dimensions->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
+    atlas.dimensions->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP);
+    atlas.dimensions->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP);
 
-    atlasImage->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
-    atlasImage->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
 
-    atlasImage->setWrap(osg::Texture::WRAP_S,osg::Texture::REPEAT);
-    atlasImage->setWrap(osg::Texture::WRAP_T,osg::Texture::REPEAT);
+    osg::ref_ptr<osg::Image> diffuseImage = new osg::Image();
+    diffuseImage->allocateImage(512, 1, 1,  GL_RGBA, GL_UNSIGNED_BYTE);
+    atlas.diffuse = new osg::Texture1D(diffuseImage.get());
+    atlas.diffuse->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
+    atlas.diffuse->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
+    atlas.diffuse->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP);
+    atlas.diffuse->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP);
+
+    osg::ref_ptr<osg::Image> specularImage = new osg::Image();
+    specularImage->allocateImage(512, 1, 1,  GL_RGBA, GL_UNSIGNED_BYTE);
+    atlas.specular = new osg::Texture1D(specularImage.get());
+    atlas.specular->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
+    atlas.specular->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
+    atlas.specular->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP);
+    atlas.specular->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP);
+
+    atlas.image->setMaxAnisotropy(16.0f);
+    atlas.image->setResizeNonPowerOfTwoHint(false);
+
+    atlas.image->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
+    atlas.image->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
+
+    atlas.image->setWrap(osg::Texture::WRAP_S,osg::Texture::REPEAT);
+    atlas.image->setWrap(osg::Texture::WRAP_T,osg::Texture::REPEAT);
 
     int index = -1; 
     lc_iter = landclasslib.begin();
@@ -345,19 +369,13 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
         ++index;
         int i = lc_iter->first;
         SGMaterial* mat = find(lc_iter->second, center);
-        atlasIndex[i] = index;
-
-        SG_LOG(SG_TERRAIN, SG_DEBUG, "  Lookup " << i << " " << lc_iter->second);
-
+        atlas.index[i] = index;
 
         if (mat == NULL) continue;
-
-        SG_LOG(SG_TERRAIN, SG_DEBUG, "  Found it!");
 
         // Just get the first texture in the first texture-set for the moment.
         // Should add some variability in texture-set in the future.
         const std::string texture = mat->get_one_texture(0,0);
-
         if (texture.empty()) continue;
 
         SGPath texturePath = SGPath("Textures");
@@ -375,14 +393,24 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
 
             if (subtexture && subtexture->valid()) {
                 subtexture->scaleImage(2048,2048,1);
-                SG_LOG(SG_TERRAIN, SG_ALERT, "Adding image " << fullPath << " to texture atlas " << subtexture->getInternalTextureFormat());
-                atlasImage->setImage(index,subtexture);
+
+                // Add other useful information, such as the texture size in m.
+                // As we pack the texture size into a texture, we need to scale to [0..1.0]
+                float x_size = (0 < mat->get_xsize()) ? mat->get_xsize()/10000.0 : 0.1f;
+                float y_size = (0 < mat->get_ysize()) ? mat->get_ysize()/10000.0 : 0.1f;
+
+                SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding image " << fullPath << " to texture atlas " << x_size << " " << y_size);
+                atlas.image->setImage(index,subtexture);
+
+                atlas.dimensions->getImage()->setColor(osg::Vec4(x_size, y_size, mat->get_shininess(), 1.0f), index);
+                atlas.diffuse->getImage()->setColor(mat->get_diffuse(), index);
+                atlas.specular->getImage()->setColor(mat->get_specular(), index);
             }
+
         }
     }
 
     // Cache for future lookups
-    SGMaterialCache::Atlas atlas = SGMaterialCache::Atlas(atlasIndex, atlasImage);
     _atlasCache[id] = atlas;
     return atlas;
 }

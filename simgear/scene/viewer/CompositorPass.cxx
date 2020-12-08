@@ -603,9 +603,22 @@ public:
                             const osg::Matrix &view_matrix,
                             const osg::Matrix &proj_matrix) {
         osg::Camera *camera = pass.camera;
+
+        double left = 0.0, right = 0.0, bottom = 0.0, top = 0.0,
+            znear = 0.0, zfar = 0.0;
+        proj_matrix.getFrustum(left, right, bottom, top, znear, zfar);
+
+        osg::Matrixd given_proj_matrix = proj_matrix;
+        osg::Matrixd new_proj_matrix = given_proj_matrix;
+        if (_zNear != 0.0 || _zFar != 0.0) {
+            if (_zNear != 0.0) znear = _zNear;
+            if (_zFar  != 0.0) zfar  = _zFar;
+            makeNewProjMat(given_proj_matrix, znear, zfar, new_proj_matrix);
+        }
+
         if (_cubemap_face < 0) {
             camera->setViewMatrix(view_matrix);
-            camera->setProjectionMatrix(proj_matrix);
+            camera->setProjectionMatrix(new_proj_matrix);
         } else {
             osg::Vec3 camera_pos = osg::Vec3(0.0, 0.0, 0.0) *
                 osg::Matrix::inverse(view_matrix);
@@ -626,56 +639,10 @@ public:
                                            camera_pos + id[_cubemap_face].second);
             camera->setViewMatrix(cubemap_view_matrix);
             camera->setProjectionMatrixAsFrustum(-1.0, 1.0, -1.0, 1.0,
-                                                 1.0, 10000.0);
-        }
-
-        if (_zNear != 0.0 || _zFar != 0.0) {
-            osg::Matrixd given_proj = camera->getProjectionMatrix();
-            double left, right, bottom, top, znear, zfar;
-            given_proj.getFrustum(left, right, bottom, top, znear, zfar);
-            if (_zNear != 0.0) znear = _zNear;
-            if (_zFar  != 0.0) zfar  = _zFar;
-            osg::Matrixd new_proj;
-            makeNewProjMat(given_proj, znear, zfar, new_proj);
-            camera->setProjectionMatrix(new_proj);
+                                                 znear, zfar);
         }
     }
 protected:
-    // Given a projection matrix, return a new one with the same frustum
-    // sides and new near / far values.
-    void makeNewProjMat(osg::Matrixd& oldProj, double znear,
-                        double zfar, osg::Matrixd& projection) {
-        projection = oldProj;
-        // Slightly inflate the near & far planes to avoid objects at the
-        // extremes being clipped out.
-        znear *= 0.999;
-        zfar *= 1.001;
-
-        // Clamp the projection matrix z values to the range (near, far)
-        double epsilon = 1.0e-6;
-        if (fabs(projection(0,3)) < epsilon &&
-            fabs(projection(1,3)) < epsilon &&
-            fabs(projection(2,3)) < epsilon) {
-            // Projection is Orthographic
-            epsilon = -1.0/(zfar - znear); // Used as a temp variable
-            projection(2,2) = 2.0*epsilon;
-            projection(3,2) = (zfar + znear)*epsilon;
-        } else {
-            // Projection is Perspective
-            double trans_near = (-znear*projection(2,2) + projection(3,2)) /
-                (-znear*projection(2,3) + projection(3,3));
-            double trans_far = (-zfar*projection(2,2) + projection(3,2)) /
-                (-zfar*projection(2,3) + projection(3,3));
-            double ratio = fabs(2.0/(trans_near - trans_far));
-            double center = -0.5*(trans_near + trans_far);
-
-            projection.postMult(osg::Matrixd(1.0, 0.0, 0.0, 0.0,
-                                             0.0, 1.0, 0.0, 0.0,
-                                             0.0, 0.0, ratio, 0.0,
-                                             0.0, 0.0, center*ratio, 1.0));
-        }
-    }
-
     int _cubemap_face;
     double _zNear;
     double _zFar;

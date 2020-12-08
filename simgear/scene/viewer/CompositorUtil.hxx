@@ -66,6 +66,11 @@ const SGPropertyNode *getPropertyNode(const SGPropertyNode *prop);
 const SGPropertyNode *getPropertyChild(const SGPropertyNode *prop,
                                        const char *name);
 
+// Given a projection matrix, return a new one with the same frustum
+// sides and new near / far values.
+void makeNewProjMat(osg::Matrixd& oldProj, double znear,
+                    double zfar, osg::Matrixd& projection);
+
 } // namespace compositor
 } // namespace simgear
 

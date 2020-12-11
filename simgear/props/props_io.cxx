@@ -689,6 +689,24 @@ writeProperties (ostream &output, const SGPropertyNode * start_node,
   output << "</PropertyList>" << endl;
 }
 
+writePropertiesInline::writePropertiesInline(
+        const SGPropertyNode * start_node,
+        bool write_all,
+        SGPropertyNode::Attribute archive_flag
+        )
+:
+m_start_node(start_node),
+m_write_all(write_all),
+m_archive_flag(archive_flag)
+{
+}
+
+std::ostream& operator<< (std::ostream& out, const writePropertiesInline& wpm)
+{
+    writeProperties(out, wpm.m_start_node, wpm.m_write_all, wpm.m_archive_flag);
+    return out;
+}
+
 
 void
 writeProperties (const SGPath &path, const SGPropertyNode * start_node,

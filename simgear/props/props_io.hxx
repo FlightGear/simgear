@@ -49,6 +49,23 @@ void writeProperties (std::ostream &output, const SGPropertyNode * start_node,
 		      bool write_all = false,
 		      SGPropertyNode::Attribute archive_flag = SGPropertyNode::ARCHIVE);
 
+/**
+ * Convenience manipulator for calling writeProperties(), e.g.:
+ * std::cerr << "node is:\n" << writePropertiesStream(node, true) << "\n";
+ */
+struct writePropertiesInline
+{
+    writePropertiesInline(
+            const SGPropertyNode * start_node,
+		    bool write_all = false,
+		    SGPropertyNode::Attribute archive_flag = SGPropertyNode::ARCHIVE
+            );
+    const SGPropertyNode * m_start_node;
+    bool m_write_all;
+    SGPropertyNode::Attribute m_archive_flag;
+};
+
+std::ostream& operator<< (std::ostream& out, const writePropertiesInline& wpm);
 
 /**
  * Write properties to an XML file.

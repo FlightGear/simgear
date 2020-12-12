@@ -224,7 +224,19 @@ namespace simgear {
 
         for (const auto& scenery_path : scenery_paths) {
             SGPath path = scenery_path / "Orthophotos" / bucket_path / std::to_string(bucket.gen_index());
-
+            
+            SGPath dds_path = path;
+            dds_path.concat(".dds");
+            if (dds_path.exists()) {
+                ImageRef image = osgDB::readRefImageFile(dds_path.str());
+                if (!image) {
+                    return nullptr;
+                }
+                const Texture2DRef texture = textureFromImage(image);
+                const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
+                return new Orthophoto(texture, bbox);
+            }
+            
             SGPath png_path = path;
             png_path.concat(".png");
             if (png_path.exists()) {
@@ -233,18 +245,6 @@ namespace simgear {
                     return nullptr;
                 }
                 image->flipVertical();
-                const Texture2DRef texture = textureFromImage(image);
-                const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
-                return new Orthophoto(texture, bbox);
-            }
-
-            SGPath dds_path = path;
-            dds_path.concat(".dds");
-            if (dds_path.exists()) {
-                ImageRef image = osgDB::readRefImageFile(dds_path.str());
-                if (!image) {
-                    return nullptr;
-                }
                 const Texture2DRef texture = textureFromImage(image);
                 const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
                 return new Orthophoto(texture, bbox);

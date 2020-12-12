@@ -40,6 +40,7 @@
 namespace simgear {
 
     using ImageRef = osg::ref_ptr<osg::Image>;
+    using Texture2DRef = osg::ref_ptr<osg::Texture2D>;
 
     class Orthophoto;
     using OrthophotoRef = osg::ref_ptr<Orthophoto>;
@@ -73,16 +74,16 @@ namespace simgear {
 
     class Orthophoto : public osg::Referenced {
     private:
-        ImageRef _image;
+        Texture2DRef _texture;
         OrthophotoBounds _bbox;
 
     public:
         static OrthophotoRef fromBucket(const SGBucket& bucket, const PathList& scenery_paths);
 
-        Orthophoto(const ImageRef& image, const OrthophotoBounds& bbox) { _image = image; _bbox = bbox; }
-        Orthophoto(const std::vector<OrthophotoRef>& orthophotos, const OrthophotoBounds& needed_bbox);
+        Orthophoto(const Texture2DRef& texture, const OrthophotoBounds& bbox) { _texture = texture; _bbox = bbox; }
+        Orthophoto(const std::vector<OrthophotoRef>& orthophotos);
 
-        osg::ref_ptr<osg::Texture2D> getTexture();
+        Texture2DRef getTexture() const { return _texture; };
         OrthophotoBounds getBbox() const { return _bbox; };
     };
 

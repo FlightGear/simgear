@@ -287,6 +287,11 @@ namespace simgear {
             // Make a deep copy of the orthophoto's image so that we don't modify the original when scaling
             ImageRef sub_image = new osg::Image(*orthophoto->_texture->getImage(), osg::CopyOp::DEEP_COPY_ALL);
 
+            if (sub_image->getPixelFormat() != pixel_format) {
+                SG_LOG(SG_OSG, SG_ALERT, "Pixel format mismatch. Not creating part of composite orthophoto.");
+                continue;
+            }
+
             sub_image->scaleImage(width, height, depth);
             
             composite_image->copySubImage(s_offset, t_offset, 0, sub_image);

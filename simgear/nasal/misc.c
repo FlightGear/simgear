@@ -101,7 +101,14 @@ naRef naNewHash(struct Context* c)
 
 naRef naNewCode(struct Context* c)
 {
-    return naNew(c, T_CODE);
+    naRef r = naNew(c, T_CODE);
+    // naNew can return a previously used naCode. naCodeGen will init
+    // all these members but a GC can occur inside naCodeGen, so we see
+    // partially initalized state here. To avoid this, clear out the values
+    // which mark() cares about.
+    PTR(r).code->srcFile = naNil();
+    PTR(r).code->nConstants = 0;
+    return r;
 }
 
 naRef naNewCCode(struct Context* c, naCFunction fptr)

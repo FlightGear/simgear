@@ -251,7 +251,7 @@ void naFreeContext(naContext c)
     // than I have right now. So instead I'm clearing the stack tops here, so
     // a freed context looks the same as a new one returned by initContext.
 
-    c->fTop = c->opTop = c->markTop = 0;
+    c->fTop = c->opTop = c->markTop = c->ntemps = 0;
 
     c->nextFree = globals->freeContexts;
     globals->freeContexts = c;

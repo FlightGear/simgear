@@ -29,6 +29,13 @@ public:
   /// Default constructor, initializes the instance to lat = lon = elev = 0
   SGGeod(void);
 
+  /**
+    return an SGGeod for which isValid() returns false.
+    This is necessaerby becuase for historical reasons, ther defaulrt constructor above initialsies to zero,zero,zero
+    which *is*
+   */
+  static SGGeod invalid();
+
   /// Factory from angular values in radians and elevation is 0
   static SGGeod fromRad(double lon, double lat);
   /// Factory from angular values in degrees and elevation is 0

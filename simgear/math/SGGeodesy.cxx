@@ -663,3 +663,8 @@ SGGeodesy::radialIntersection(const SGGeod& a, double aRadial,
   result = SGGeod::fromGeoc(r);
   return true;
 }
+
+SGGeod SGGeod::invalid()
+{
+    return SGGeod::fromDeg(-999.9, -999.0);
+}

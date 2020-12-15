@@ -568,23 +568,15 @@ find_node (SGPropertyNode * current,
   }
 }
 #else
-template<typename Range>
-SGPropertyNode*
-find_node (SGPropertyNode * current,
-           const Range& path,
-           bool create,
-           int last_index = -1)
-{
+template <typename Range>
+SGPropertyNode *find_node(SGPropertyNode *current, const Range &path,
+                          bool create, int last_index = -1) {
   using namespace boost;
-  typedef split_iterator<typename range_result_iterator<Range>::type>
-    PathSplitIterator;
-
-  PathSplitIterator itr
-    = make_split_iterator(path, first_finder("/", is_equal()));
+  auto itr = make_split_iterator(path, first_finder("/", is_equal()));
   if (*path.begin() == '/')
     return find_node_aux(current->getRootNode(), itr, create, last_index);
-   else
-     return find_node_aux(current, itr, create, last_index);
+  else
+    return find_node_aux(current, itr, create, last_index);
 }
 #endif
 

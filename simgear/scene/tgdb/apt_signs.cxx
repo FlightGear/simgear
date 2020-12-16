@@ -211,6 +211,13 @@ GlyphGeometry* makeGeometry(Effect* eff, osg::Group* group)
   geometry->addPrimitiveSet(gg->quads);
   geode->addDrawable(geometry);
   group->addChild(geode);
+
+  // Because the airport signs are rendered with some of the same shaders as terrain,
+  // we need to explicitly set orthophotoAvailable to false.
+  osg::StateSet *stateSet = group->getOrCreateStateSet();
+  osg::ref_ptr<osg::Uniform> orthophotoAvailable = stateSet->getOrCreateUniform("orthophotoAvailable", osg::Uniform::Type::BOOL);
+  orthophotoAvailable->set(false);
+
   return gg;
 }
 

@@ -699,7 +699,7 @@ struct ReaderWriterSTG::_ModelBin {
             i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
 
-        if (_objectStaticList.empty() && _signList.empty() && (_buildingListList.size() == 0) && (_treeListList.size() == 0)) {
+        if (_objectStaticList.empty() && _signList.empty() && _buildingListList.empty() && _treeListList.empty()) {
             // The simple case, just return the terrain group
             return terrainGroup.release();
         } else {

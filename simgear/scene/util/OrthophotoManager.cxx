@@ -350,7 +350,7 @@ namespace simgear {
             }
         }
 
-        if (orthophotos.size() == 0) {
+        if (orthophotos.empty()) {
             return nullptr;
         } else if (orthophotos.size() == 1) {
             return orthophotos[0];

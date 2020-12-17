@@ -175,9 +175,10 @@ SGSubsystemGroup* SGSubsystem::get_group() const
 
 SGSubsystemMgr* SGSubsystem::get_manager() const
 {
-    if (!get_group())
-        throw sg_exception("SGSubsystem::get_manager: subsystem " + subsystemId() + " has no group");
-    return get_group()->get_manager();
+    if (auto group = get_group(); group)
+        return group->get_manager();
+
+    return nullptr;
 }
 
 std::string SGSubsystem::nameForState(State s)
@@ -695,8 +696,7 @@ SGSubsystemGroup::remove_subsystem(const string &name)
 void
 SGSubsystemGroup::notifyWillChange(SGSubsystem* sub, SGSubsystemMgr::State s)
 {
-    auto manager = get_manager();
-    if (manager) {
+    if (auto manager = get_manager(); manager) {
         manager->notifyDelegatesWillChange(sub, s);
     }
 }
@@ -704,8 +704,7 @@ SGSubsystemGroup::notifyWillChange(SGSubsystem* sub, SGSubsystemMgr::State s)
 void
 SGSubsystemGroup::notifyDidChange(SGSubsystem* sub, SGSubsystemMgr::State s)
 {
-    auto manager = get_manager();
-    if (manager) {
+    if (auto manager = get_manager(); manager) {
         manager->notifyDelegatesDidChange(sub, s);
     }
 }
@@ -761,8 +760,7 @@ auto SGSubsystemGroup::get_member(const string &name, bool create) -> Member*
 
 SGSubsystemMgr* SGSubsystemGroup::get_manager() const
 {
-    auto parentGroup = get_group();
-    if (parentGroup) {
+    if (auto parentGroup = get_group(); parentGroup) {
         return parentGroup->get_manager();
     }
 

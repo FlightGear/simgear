@@ -312,9 +312,8 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode * right, const S
       return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
       return SGComparisonCondition::GREATER_THAN;
-    else
-      return SGComparisonCondition::EQUALS;
-    break;
+
+    return SGComparisonCondition::EQUALS;
   }
   case props::INT:
     return doComp<int>(left->getIntValue(), right->getIntValue(), 
@@ -342,9 +341,8 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode * right, const S
       return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
       return SGComparisonCondition::GREATER_THAN;
-    else
-      return SGComparisonCondition::EQUALS;
-    break;
+
+    return SGComparisonCondition::EQUALS;
   }
   default:
     throw sg_exception("condition: unrecognized node type in comparison");

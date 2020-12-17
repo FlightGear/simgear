@@ -300,10 +300,9 @@ read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
     if (minClip > SGMiscd::min(SGLimitsd::min(), -SGLimitsd::max()) ||
         maxClip < SGLimitsd::max())
       value = new SGClipExpression<double>(value, minClip, maxClip);
-    
-    return value;
   }
-  return 0;
+
+  return value;
 }
 
 ////////////////////////////////////////////////////////////////////////

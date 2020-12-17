@@ -1907,37 +1907,26 @@ namespace
         {
         case GL_DEPTH_COMPONENT:
             return chooseReader<GL_DEPTH_COMPONENT>(dataType);
-            break;
         case GL_LUMINANCE:
             return chooseReader<GL_LUMINANCE>(dataType);
-            break;
         case GL_RED:
             return chooseReader<GL_RED>(dataType);
-            break;
         case GL_ALPHA:
             return chooseReader<GL_ALPHA>(dataType);
-            break;
         case GL_LUMINANCE_ALPHA:
             return chooseReader<GL_LUMINANCE_ALPHA>(dataType);
-            break;
         case GL_RGB:
             return chooseReader<GL_RGB>(dataType);
-            break;
         case GL_RGBA:
             return chooseReader<GL_RGBA>(dataType);
-            break;
         case GL_BGR:
             return chooseReader<GL_BGR>(dataType);
-            break;
         case GL_BGRA:
             return chooseReader<GL_BGRA>(dataType);
-            break;
         case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
             return &ColorReader<GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GLubyte>::read;
-            break;
         default:
             return 0L;
-            break;
         }
     }
 }
@@ -2057,34 +2046,24 @@ namespace
         {
         case GL_DEPTH_COMPONENT:
             return chooseWriter<GL_DEPTH_COMPONENT>(dataType);
-            break;
         case GL_LUMINANCE:
             return chooseWriter<GL_LUMINANCE>(dataType);
-            break;
         case GL_RED:
             return chooseWriter<GL_RED>(dataType);
-            break;
         case GL_ALPHA:
             return chooseWriter<GL_ALPHA>(dataType);
-            break;
         case GL_LUMINANCE_ALPHA:
             return chooseWriter<GL_LUMINANCE_ALPHA>(dataType);
-            break;
         case GL_RGB:
             return chooseWriter<GL_RGB>(dataType);
-            break;
         case GL_RGBA:
             return chooseWriter<GL_RGBA>(dataType);
-            break;
         case GL_BGR:
             return chooseWriter<GL_BGR>(dataType);
-            break;
         case GL_BGRA:
             return chooseWriter<GL_BGRA>(dataType);
-            break;
         default:
             return 0L;
-            break;
         }
     }
 }

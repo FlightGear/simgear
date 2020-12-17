@@ -43,7 +43,7 @@ namespace compositor {
  *     and they can output to other buffers. They are also integrated with the
  *     Effects framework, so the OpenGL internal state is configurable per pass.
  */
-class Compositor : public osg::Referenced {
+class Compositor {
 public:
     enum BuiltinUniform {
         VIEWPORT_SIZE = 0,

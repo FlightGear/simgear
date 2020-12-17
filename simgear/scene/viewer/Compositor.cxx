@@ -54,7 +54,7 @@ Compositor::create(osg::View *view,
                    const SGPropertyNode *property_list,
                    const SGReaderWriterOptions *options)
 {
-    osg::ref_ptr<Compositor> compositor = new Compositor(view, gc, viewport);
+    Compositor *compositor = new Compositor(view, gc, viewport);
     compositor->_name = property_list->getStringValue("name");
 
     gc->getState()->setUseModelViewAndProjectionUniforms(
@@ -73,7 +73,7 @@ Compositor::create(osg::View *view,
                    "a name to be available to passes. Skipping...");
             continue;
         }
-        Buffer *buffer = buildBuffer(compositor.get(), p_buffer, options);
+        Buffer *buffer = buildBuffer(compositor, p_buffer, options);
         if (buffer)
             compositor->addBuffer(buffer_name, buffer);
     }
@@ -82,14 +82,14 @@ Compositor::create(osg::View *view,
     for (auto const &p_pass : p_passes) {
         if (!checkConditional(p_pass))
             continue;
-        Pass *pass = buildPass(compositor.get(), p_pass, options);
+        Pass *pass = buildPass(compositor, p_pass, options);
         if (pass)
             compositor->addPass(pass);
     }
 
     ++_order_offset;
 
-    return compositor.release();
+    return compositor;
 }
 
 Compositor *

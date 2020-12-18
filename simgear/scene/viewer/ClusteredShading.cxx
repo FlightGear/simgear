@@ -194,10 +194,9 @@ ClusteredShading::update(const SGLightList &light_list)
     _slice_bias->set(-_depth_slices * log2(_zNear) / log2(_zFar / _zNear));
 
     const osg::Viewport *vp = _camera->getViewport();
-    static int old_width = 0, old_height = 0;
     int width = vp->width(); int height = vp->height();
-    if (width != old_width || height != old_height) {
-        old_width = width; old_height = height;
+    if (width != _old_width || height != _old_height) {
+        _old_width = width; _old_height = height;
 
         _n_htiles = (width  + _tile_size - 1) / _tile_size;
         _n_vtiles = (height + _tile_size - 1) / _tile_size;

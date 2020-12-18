@@ -79,6 +79,9 @@ protected:
     float                           _zNear = 0.0f;
     float                           _zFar = 0.0f;
 
+    int                             _old_width = 0;
+    int                             _old_height = 0;
+
     int                             _n_htiles = 0;
     int                             _n_vtiles = 0;
 

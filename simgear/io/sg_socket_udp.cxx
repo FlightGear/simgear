@@ -53,47 +53,46 @@ SGSocketUDP::~SGSocketUDP() {
 // listening socket.  If specified as a client (out direction), open a
 // connection to a server.
 bool SGSocketUDP::open( const SGProtocolDir d ) {
-    set_dir( d );
+  set_dir(d);
 
-    if ( ! sock.open( false ) ) {	// open a UDP socket
-	SG_LOG( SG_IO, SG_ALERT, "error opening socket" );
-	return false;
+  if (!sock.open(false)) { // open a UDP socket
+    SG_LOG(SG_IO, SG_ALERT, "error opening socket");
+    return false;
+  }
+
+  if (port_str == "" || port_str == "any") {
+    port = 0;
+  } else {
+    port = std::stoul(port_str.c_str());
+  }
+
+  // client_connections.clear();
+
+  if (get_dir() == SG_IO_IN) {
+    // this means server
+
+    // bind ...
+    if (sock.bind(hostname.c_str(), port) == -1) {
+      SG_LOG(SG_IO, SG_ALERT, "error binding to port" << port_str);
+      return false;
     }
+  } else if (get_dir() == SG_IO_OUT) {
+    // this means client
 
-    if ( port_str == "" || port_str == "any" ) {
-	port = 0; 
-    } else {
-	port = atoi( port_str.c_str() );
+    // connect ...
+    if (sock.connect(hostname.c_str(), port) == -1) {
+      SG_LOG(SG_IO, SG_ALERT, "error connecting to " << hostname << port_str);
+      return false;
     }
-    
-    // client_connections.clear();
+  } else {
+    SG_LOG(SG_IO, SG_ALERT,
+           "Error:  bidirection mode not available for UDP sockets.");
+    return false;
+  }
 
-    if ( get_dir() == SG_IO_IN ) {
-	// this means server
+  set_valid(true);
 
-	// bind ...
-	if ( sock.bind( hostname.c_str(), port ) == -1 ) {
-	    SG_LOG( SG_IO, SG_ALERT, "error binding to port" << port_str );
-	    return false;
-	}
-    } else if ( get_dir() == SG_IO_OUT ) {
-	// this means client
-
-	// connect ...
-	if ( sock.connect( hostname.c_str(), port ) == -1 ) {
-	    SG_LOG( SG_IO, SG_ALERT,
-		    "error connecting to " << hostname << port_str );
-	    return false;
-	}
-    } else {
-	SG_LOG( SG_IO, SG_ALERT, 
-		"Error:  bidirection mode not available for UDP sockets." );
-	return false;
-    }
-
-    set_valid( true );
-
-    return true;
+  return true;
 }
 
 

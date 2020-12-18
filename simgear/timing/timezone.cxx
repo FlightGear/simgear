@@ -69,19 +69,20 @@ SGTimeZone::SGTimeZone(const char *infoString)
     strncpy(latlon, (&infoString[start]), size);
     latlon[size] = 0;
     char sign;
+    char* double_end;
     sign = latlon[0];
     strncpy(buffer, &latlon[1], 2);
     buffer[2] = 0;
-    lat = atof(buffer);
+    lat = std::strtod(buffer, &double_end);
     strncpy(buffer, &latlon[3], 2);
     buffer[2] = 0;
-    lat += (atof(buffer) / 60);
+    lat += (std::strtod(buffer, &double_end) / 60);
     int nextPos;
     if (strlen(latlon) > 12) {
         nextPos = 7;
         strncpy(buffer, &latlon[5], 2);
         buffer[2] = 0;
-        lat += (atof(buffer) / 3600.0);
+        lat += (std::strtod(buffer, &double_end) / 3600.0);
     } else {
         nextPos = 5;
     }
@@ -93,17 +94,17 @@ SGTimeZone::SGTimeZone(const char *infoString)
     nextPos++;
     strncpy(buffer, &latlon[nextPos], 3);
     buffer[3] = 0;
-    lon = atof(buffer);
+    lon = std::strtod(buffer, &double_end);
     nextPos += 3;
     strncpy(buffer, &latlon[nextPos], 2);
     buffer[2] = 0;
  
-    lon  += (atof(buffer) / 60);
+    lon += (std::strtod(buffer, &double_end) / 60);
     if (strlen(latlon) > 12) {
         nextPos += 2;
         strncpy(buffer, &latlon[nextPos], 2); 
         buffer[2] = 0;
-        lon +=  (atof (buffer) / 3600.00);
+        lon +=  (std::strtod(buffer, &double_end) / 3600.00);
     }
     if (sign == '-') {
         lon = -lon;

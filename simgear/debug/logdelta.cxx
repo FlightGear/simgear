@@ -88,7 +88,7 @@ struct logDelta
                         << "'\n";
                 continue;
             }
-            int delta2 = atoi(delta.c_str());
+            int delta2 = std::stoi(delta);
             
             std::string file = next_subitem(ffl, ":");
             std::string function = next_subitem(ffl, ":");
@@ -110,7 +110,7 @@ struct logDelta
                             << "'\n";
                     continue;
                 }
-                line2 = atoi(line.c_str());
+                line2 = std::stoi(line);
             }
             if (1) std::cerr << __FILE__ << ":" << __LINE__ << ": "
                     << "adding"

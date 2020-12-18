@@ -124,85 +124,70 @@ SGSocket::make_client_socket()
 bool
 SGSocket::open( SGProtocolDir direction )
 {
-    set_dir( direction );
+  set_dir(direction);
 
-    is_server = is_tcp &&
-	(direction == SG_IO_IN || direction == SG_IO_BI);
+  is_server = is_tcp && (direction == SG_IO_IN || direction == SG_IO_BI);
 
-    if ( port_str == "" || port_str == "any" ) {
-	port = 0; 
+  if (port_str == "" || port_str == "any") {
+    port = 0;
+  } else {
+    port = std::stoul(port_str);
+  }
+
+  if (direction == SG_IO_IN) {
+    // this means server for now
+
+    // Setup socket to listen on.  Set "port" before making this
+    // call.  A port of "0" indicates that we want to let the os
+    // pick any available port.
+    if (!make_server_socket()) {
+      SG_LOG(SG_IO, SG_ALERT, "SG_IO_IN socket creation failed");
+      return false;
+    }
+
+    if (!is_tcp) {
+      // Non-blocking UDP
+      nonblock();
     } else {
-	port = atoi( port_str.c_str() );
-    }
-    
-    if (direction == SG_IO_IN)
-    {
-	// this means server for now
-
-	// Setup socket to listen on.  Set "port" before making this
-	// call.  A port of "0" indicates that we want to let the os
-	// pick any available port.
-	if (!make_server_socket())
-	{
-	    SG_LOG( SG_IO, SG_ALERT, "SG_IO_IN socket creation failed" );
-	    return false;
-	}
-
-	if ( !is_tcp )
-	{
-	    // Non-blocking UDP
-	    nonblock();
-	}
-	else
-	{
-	    // Blocking TCP
-	    // Specify the maximum length of the connection queue
-	    sock.listen( SG_MAX_SOCKET_QUEUE );
-	}
-
-    }
-    else if (direction == SG_IO_OUT)
-    {
-	// this means client for now
-
-	if (!make_client_socket())
-	{
-	    SG_LOG( SG_IO, SG_ALERT, "SG_IO_OUT socket creation failed" );
-	    return false;
-	}
-
-	if ( !is_tcp )
-	{
-	    // Non-blocking UDP
-	    nonblock();
-	}
-    }
-    else if (direction == SG_IO_BI && is_tcp)
-    {
-	// this means server for TCP sockets
-
-	// Setup socket to listen on.  Set "port" before making this
-	// call.  A port of "0" indicates that we want to let the os
-	// pick any available port.
-	if (!make_server_socket())
-	{
-	    SG_LOG( SG_IO, SG_ALERT, "SG_IO_BI socket creation failed" );
-	    return false;
-	}
-	// Blocking TCP
-	// Specify the maximum length of the connection queue
-	sock.listen( SG_MAX_SOCKET_QUEUE );
-    }
-    else
-    {
-	SG_LOG( SG_IO, SG_ALERT, 
-		"Error:  bidirection mode not available for UDP sockets." );
-	return false;
+      // Blocking TCP
+      // Specify the maximum length of the connection queue
+      sock.listen(SG_MAX_SOCKET_QUEUE);
     }
 
-    first_read = false;
+  } else if (direction == SG_IO_OUT) {
+    // this means client for now
 
-    return true;
+    if (!make_client_socket()) {
+      SG_LOG(SG_IO, SG_ALERT, "SG_IO_OUT socket creation failed");
+      return false;
+    }
+
+    if (!is_tcp) {
+      // Non-blocking UDP
+      nonblock();
+    }
+  } else if (direction == SG_IO_BI && is_tcp) {
+    // this means server for TCP sockets
+
+    // Setup socket to listen on.  Set "port" before making this
+    // call.  A port of "0" indicates that we want to let the os
+    // pick any available port.
+    if (!make_server_socket()) {
+      SG_LOG(SG_IO, SG_ALERT, "SG_IO_BI socket creation failed");
+      return false;
+    }
+    // Blocking TCP
+    // Specify the maximum length of the connection queue
+    sock.listen(SG_MAX_SOCKET_QUEUE);
+  } else {
+    SG_LOG(SG_IO, SG_ALERT,
+           "Error:  bidirection mode not available for UDP sockets.");
+    return false;
+  }
+
+  first_read = false;
+
+  return true;
 }
 
 

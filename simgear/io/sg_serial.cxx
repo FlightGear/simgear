@@ -53,16 +53,16 @@ SGSerial::~SGSerial() {
 bool SGSerial::open( const SGProtocolDir d ) {
     set_dir( d );
 
-    if ( ! port.open_port( device ) ) {
-	SG_LOG( SG_IO, SG_ALERT, "Error opening device: " << device );
-	return false;
+    if (!port.open_port(device)) {
+        SG_LOG(SG_IO, SG_ALERT, "Error opening device: " << device);
+        return false;
     }
 
     // cout << "fd = " << port.fd << endl;
 
-    if ( ! port.set_baud( std::atoi( baud.c_str() ) ) ) {
-	SG_LOG( SG_IO, SG_ALERT, "Error setting baud: " << baud );
-	return false;
+    if (!port.set_baud(std::stoi(baud.c_str()))) {
+        SG_LOG(SG_IO, SG_ALERT, "Error setting baud: " << baud);
+        return false;
     }
 
     return true;

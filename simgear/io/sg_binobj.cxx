@@ -566,8 +566,10 @@ bool SGBinObject::read_bin( const SGPath& file ) {
     sgReadUInt( fp, &header );
 
     if (sgReadError()) {
+        int code = 0;
+        const char* gzErrorString = gzerror(fp, &code);
         gzclose(fp);
-        throw sg_io_exception("Unable to read BTG header: " + simgear::strutils::error_string(errno), sg_location(file));
+        throw sg_io_exception("Unable to read BTG header: " + string{gzErrorString} + ", code =" + std::to_string(code), sg_location(file));
     }
 
     if ( ((header & 0xFF000000) >> 24) == 'S' &&

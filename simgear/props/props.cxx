@@ -143,28 +143,33 @@ parse_name (const SGPropertyNode *node, const Range &path)
       i++;
     }
     if (i != max && *i != '/')
-        throw std::runtime_error("illegal character after . or .. in '" + node->getPath() + "'");
-  } else if (isalpha_c(*i) || *i == '_') {
+      throw std::runtime_error("illegal character after . or .. in '" + node->getPath() + "'");
+  }
+  else if (isalpha_c(*i) || *i == '_') {
     i++;
 
-				// The rules inside a name are a little
-				// less restrictive.
+    // The rules inside a name are a little
+    // less restrictive.
     while (i != max) {
-        if (isalpha_c(*i) || isdigit_c(*i) || isspecial_c(*i)) {
-	// name += path[i];
-      } else if (*i == '[' || *i == '/') {
-	break;
-      } else {
+      if (isalpha_c(*i) || isdigit_c(*i) || isspecial_c(*i)) {
+        // name += path[i];
+      }
+      else if (*i == '[' || *i == '/') {
+	    break;
+      }
+      else {
         std::string err = "'";
         err.push_back(*i);
-        err.append("' found in propertyname after '"+node->getPath()+"'");
-        err.append("\nname may contain only ._- and alphanumeric characters");
+        err.append("' found in propertyname after '"+node->getPath()+"'.");
+        err.append(" name may contain only ._- and alphanumeric characters.");
+        err.append(" Complete path is: '");
+        for (auto j: path) err.push_back(j);
+        err.append("'");
         throw std::runtime_error(err);
       }
       i++;
     }
   }
-
   else {
     if (path.begin() == i) {
       std::string err = "'";

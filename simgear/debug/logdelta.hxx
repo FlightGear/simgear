@@ -43,3 +43,7 @@ decremented by 1.
 sgDebugPriority logDeltaAdd(sgDebugPriority priority,
         const char* file, int line, const char* function,
         bool freeFilename);
+
+/* Resets deltas. <items> should be a string in same format as $SG_LOG_DELTAS
+as described above. */
+void logDeltaSet(const char* items);

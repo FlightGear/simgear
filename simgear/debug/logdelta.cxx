@@ -58,17 +58,24 @@ struct logDelta
 {
     logDelta()
     {
-        // We output diagnostics to std::cerr during this startup phase.
-        //
         const char* items = getenv("SG_LOG_DELTAS");
         if (!items) {
             return;
         }
-
         std::cerr << __FILE__ << ":" << __LINE__ << ": "
                 << "Parsing $SG_LOG_DELTAS: '" << items << "'"
                 << "\n";
-
+        update(items);
+    }
+    
+    void update(const char* items)
+    {
+        // We output diagnostics to std::cerr.
+        //
+        std::lock_guard<std::mutex> lock( m_mutex);
+        m_cache.clear();
+        m_items.clear();
+        
         std::string text = items;
         for(;;) {
             if (text.empty()) break;
@@ -217,9 +224,9 @@ struct logDelta
         std::vector<logDeltaItem>           m_items;
 };
 
-/* log_delta(filename, line, function) returns the logging level delta for the
-specified line of code. */
-static logDelta log_delta;
+/* s_log_delta(filename, line, function) returns the logging level delta for
+the specified line of code. */
+static logDelta s_log_delta;
 
 sgDebugPriority logDeltaAdd(sgDebugPriority priority,
         const char* file, int line, const char* function,
@@ -230,7 +237,7 @@ sgDebugPriority logDeltaAdd(sgDebugPriority priority,
         // key is unreliable and will leak memory.
         return priority;
     }
-    int priority_new = (int) priority + log_delta(file, line, function);
+    int priority_new = (int) priority + s_log_delta(file, line, function);
     
     // Don't cause new popups.
     if (priority < SG_POPUP && priority_new >= SG_POPUP) {
@@ -244,4 +251,9 @@ sgDebugPriority logDeltaAdd(sgDebugPriority priority,
         priority_new = SG_MANDATORY_INFO;
     }
     return (sgDebugPriority) priority_new;
+}
+
+void logDeltaSet(const char* items)
+{
+    s_log_delta.update(items);
 }

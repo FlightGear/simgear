@@ -70,6 +70,9 @@ protected:
     osg::ref_ptr<osg::Uniform>      _horizontal_tiles;
     osg::ref_ptr<osg::Uniform>      _vertical_tiles;
 
+    int                             _max_pointlights = 0;
+    int                             _max_spotlights = 0;
+    int                             _max_light_indices = 0;
     int                             _tile_size = 0;
     int                             _depth_slices = 0;
     int                             _num_threads = 0;
@@ -89,6 +92,7 @@ protected:
     float                           _y_step = 0.0f;
 
     osg::ref_ptr<osg::Image>        _clusters;
+    osg::ref_ptr<osg::Image>        _indices;
     osg::ref_ptr<osg::Image>        _pointlights;
     osg::ref_ptr<osg::Image>        _spotlights;
 
@@ -96,6 +100,8 @@ protected:
 
     std::vector<PointlightBound>    _point_bounds;
     std::vector<SpotlightBound>     _spot_bounds;
+
+    std::atomic<int>                _global_light_count;
 };
 
 } // namespace compositor

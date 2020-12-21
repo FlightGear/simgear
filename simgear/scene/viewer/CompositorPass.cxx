@@ -680,9 +680,11 @@ public:
         camera->setAllowEventFocus(true);
 
         const SGPropertyNode *p_clustered = root->getNode("clustered-shading");
-        ClusteredShading *clustered = 0;
-        if (p_clustered)
-            clustered = new ClusteredShading(camera, p_clustered);
+        ClusteredShading *clustered = nullptr;
+        if (p_clustered) {
+            if (checkConditional(p_clustered))
+                clustered = new ClusteredShading(camera, p_clustered);
+        }
 
         camera->setCullCallback(new SceneCullCallback(clustered));
 
@@ -714,6 +716,10 @@ public:
         osg::StateSet *ss = camera->getOrCreateStateSet();
         auto &uniforms = compositor->getUniforms();
         ss->addUniform(uniforms[Compositor::FCOEF]);
+
+        osg::ref_ptr<osg::Uniform> clustered_shading_enabled =
+            new osg::Uniform("fg_ClusteredEnabled", clustered ? true : false);
+        ss->addUniform(clustered_shading_enabled);
 
         return pass.release();
     }

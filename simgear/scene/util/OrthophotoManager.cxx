@@ -263,10 +263,11 @@ namespace simgear {
         const OrthophotoRef& some_orthophoto = orthophotos[0];
         const ImageRef& some_image = some_orthophoto->_texture->getImage();
         const OrthophotoBounds& some_bbox = some_orthophoto->getBbox();
-        const double degs_to_pixels = some_image->s() / some_bbox.getWidth();
+        const double degs_to_pixels_x = some_image->s() / some_bbox.getWidth();
+	const double degs_to_pixels_y = some_image->t() / some_bbox.getHeight();
         
-        const int total_width = degs_to_pixels * _bbox.getWidth();
-        const int total_height = degs_to_pixels * _bbox.getHeight();
+        const int total_width = degs_to_pixels_x * _bbox.getWidth();
+        const int total_height = degs_to_pixels_y * _bbox.getHeight();
 
         const int depth = some_image->r();
         GLenum pixel_format = some_image->getPixelFormat();
@@ -279,10 +280,10 @@ namespace simgear {
         for (const auto& orthophoto : orthophotos) {
             
             const OrthophotoBounds& bounds = orthophoto->getBbox();
-            const int width = degs_to_pixels * bounds.getWidth();
-            const int height = degs_to_pixels * bounds.getHeight();
-            const int s_offset = degs_to_pixels * _bbox.getLonOffset(bounds);
-            const int t_offset = degs_to_pixels * _bbox.getLatOffset(bounds);
+            const int width = degs_to_pixels_x * bounds.getWidth();
+            const int height = degs_to_pixels_y * bounds.getHeight();
+            const int s_offset = degs_to_pixels_x * _bbox.getLonOffset(bounds);
+            const int t_offset = degs_to_pixels_y * _bbox.getLatOffset(bounds);
 
             // Make a deep copy of the orthophoto's image so that we don't modify the original when scaling
             ImageRef sub_image = new osg::Image(*orthophoto->_texture->getImage(), osg::CopyOp::DEEP_COPY_ALL);

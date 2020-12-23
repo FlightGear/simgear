@@ -165,6 +165,9 @@ SGLight::SGLight() :
     _quadratic_attenuation = 0.0f;
     _spot_exponent = 0.0f;
     _spot_cutoff = 180.0f;
+    // Do not let OSG cull lights by default, we usually leave that job to
+    // other algorithms, like clustered shading.
+    setCullingActive(false);
 }
 
 SGLight::~SGLight()

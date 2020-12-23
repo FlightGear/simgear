@@ -264,7 +264,7 @@ namespace simgear {
         const ImageRef& some_image = some_orthophoto->_texture->getImage();
         const OrthophotoBounds& some_bbox = some_orthophoto->getBbox();
         const double degs_to_pixels_x = some_image->s() / some_bbox.getWidth();
-	const double degs_to_pixels_y = some_image->t() / some_bbox.getHeight();
+        const double degs_to_pixels_y = some_image->t() / some_bbox.getHeight();
         
         const int total_width = degs_to_pixels_x * _bbox.getWidth();
         const int total_height = degs_to_pixels_y * _bbox.getHeight();

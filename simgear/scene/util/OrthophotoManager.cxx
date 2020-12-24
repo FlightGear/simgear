@@ -289,19 +289,30 @@ namespace simgear {
 
             ImageRef sub_image = orthophoto->_texture->getImage();
 
-            if (sub_image->getPixelFormat() != pixel_format) {
-                SG_LOG(SG_OSG, SG_ALERT, "Pixel format mismatch. Not creating part of composite orthophoto.");
-                continue;
-            }
-
             if (sub_image->s() != width || sub_image->t() != height) {
-                SG_LOG(SG_OSG, SG_WARN, "Orthophoto resolution mismatch. Automatic scaling will be performed.");
-                // Make a deep copy of the orthophoto's image so that we don't modify the original when scaling
-                sub_image = new osg::Image(*sub_image, osg::CopyOp::DEEP_COPY_ALL);
-                sub_image->scaleImage(width, height, depth);
+                SG_LOG(SG_OSG, SG_INFO, "Orthophoto resolution mismatch. Automatic scaling will be performed.");
+                ImageRef scaled_image;
+                bool success = ImageUtils::resizeImage(sub_image, width, height, scaled_image);
+                if (success) {
+                    sub_image = scaled_image;
+                } else {
+                    SG_LOG(SG_OSG, SG_ALERT, "Failed to scale part of composite orthophoto. The image on the airport may be distorted.");
+                }
             }
 
-            composite_image->copySubImage(s_offset, t_offset, 0, sub_image);
+            if (sub_image->getPixelFormat() != pixel_format || sub_image->getDataType() != data_type) {
+                SG_LOG(SG_OSG, SG_INFO, "Pixel format or data type mismatch. Attempting to convert component of composite orthophoto.");
+                if (ImageUtils::canConvert(sub_image, pixel_format, data_type)) {
+                    sub_image = ImageUtils::convert(sub_image, pixel_format, data_type);
+                } else {
+                    SG_LOG(SG_OSG, SG_ALERT, "Failed to convert component of composite orthophoto. Part of the image on the airport may be missing.");
+                }
+            }
+
+            bool success = ImageUtils::copyAsSubImage(sub_image, composite_image, s_offset, t_offset);
+            if (!success) {
+                SG_LOG(SG_OSG, SG_ALERT, "Failed to copy part of composite orthophoto. Part of the image on the aiport may be missing.");
+            }
         }
 
         int max_texture_size = SGSceneFeatures::instance()->getMaxTextureSize();
@@ -324,7 +335,7 @@ namespace simgear {
             if (success) {
                 composite_image = scaled_image;
             } else {
-                SG_LOG(SG_OSG, SG_ALERT, "Failed to scale composite orthophoto.");
+                SG_LOG(SG_OSG, SG_ALERT, "Failed to scale composite orthophoto. You may encounter errors due to the oversize texture.");
             }
         }
 

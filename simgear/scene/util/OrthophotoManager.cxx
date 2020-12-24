@@ -231,25 +231,26 @@ namespace simgear {
             dds_path.concat(".dds");
             if (dds_path.exists()) {
                 ImageRef image = osgDB::readRefImageFile(dds_path.str());
-                if (!image) {
-                    return nullptr;
+                if (image) {
+                    if (!image->isCompressed()) {
+                        SG_LOG(SG_OSG, SG_WARN, "Loading uncompressed DDS orthophoto. This is known to cause problems on some systems.");
+                    }
+                    const Texture2DRef texture = textureFromImage(image);
+                    const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
+                    return new Orthophoto(texture, bbox);
                 }
-                const Texture2DRef texture = textureFromImage(image);
-                const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
-                return new Orthophoto(texture, bbox);
             }
             
             SGPath png_path = path;
             png_path.concat(".png");
             if (png_path.exists()) {
                 ImageRef image = osgDB::readRefImageFile(png_path.str());
-                if (!image) {
-                    return nullptr;
+                if (image) {
+                    image->flipVertical();
+                    const Texture2DRef texture = textureFromImage(image);
+                    const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
+                    return new Orthophoto(texture, bbox);
                 }
-                image->flipVertical();
-                const Texture2DRef texture = textureFromImage(image);
-                const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
-                return new Orthophoto(texture, bbox);
             }
         }
 

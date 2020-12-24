@@ -18,6 +18,7 @@
 // Boston, MA  02110-1301, USA.
 
 #include "OrthophotoManager.hxx"
+#include "SGSceneFeatures.hxx"
 #include <simgear/debug/debug_types.h>
 
 namespace simgear {
@@ -301,6 +302,30 @@ namespace simgear {
             }
 
             composite_image->copySubImage(s_offset, t_offset, 0, sub_image);
+        }
+
+        int max_texture_size = SGSceneFeatures::instance()->getMaxTextureSize();
+        int new_width = total_width;
+        int new_height = total_height;
+        if (new_width > max_texture_size) {
+            int factor = new_width / max_texture_size;
+            new_width /= factor;
+            new_height /= factor;
+        }
+        if (new_height > max_texture_size) {
+            int factor = new_height / max_texture_size;
+            new_width /= factor;
+            new_height /= factor;
+        }
+        if (total_width != new_width || total_height != new_height) {
+            SG_LOG(SG_OSG, SG_INFO, "Composite orthophoto exceeds the maximum texture size of your GPU. Automatic scaling will be performed.");
+            ImageRef scaled_image;
+            bool success = ImageUtils::resizeImage(composite_image, new_width, new_height, scaled_image);
+            if (success) {
+                composite_image = scaled_image;
+            } else {
+                SG_LOG(SG_OSG, SG_ALERT, "Failed to scale composite orthophoto.");
+            }
         }
 
         _texture = textureFromImage(composite_image);

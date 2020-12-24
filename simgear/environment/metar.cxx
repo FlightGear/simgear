@@ -46,6 +46,7 @@
 #include <sstream>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/math/sg_random.h>
 #include <simgear/structure/exception.hxx>
 
 #include "metar.hxx"
@@ -1068,9 +1069,12 @@ bool SGMetar::scanSkyCondition()
 		return false;
 	m += i;
 
-	if (!strncmp(m, "///", 3))	// vis not measurable (e.g. because of heavy snowing)
+	if (!strncmp(m, "///", 3))	{ // vis not measurable (e.g. because of heavy snowing)
 		m += 3, i = -1;
-	else if (scanBoundary(&m)) {
+		sg_srandom_time();
+		// randomize the base height to avoid the black sky issue
+		i = 50 + static_cast<int>(sg_random() * 250.0);		// range [5,000, 30,000]
+	} else if (scanBoundary(&m)) {
 		_m = m;
 		return true;				// ignore single OVC/BKN/...
 	} else if (!scanNumber(&m, &i, 3))

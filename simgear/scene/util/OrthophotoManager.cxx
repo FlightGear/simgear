@@ -238,8 +238,6 @@ namespace simgear {
                     const Texture2DRef texture = textureFromImage(image);
                     const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
                     return new Orthophoto(texture, bbox);
-                } else {
-                    SG_LOG(SG_OSG, SG_ALERT, "Failed to load orthophoto with path " << dds_path);
                 }
             }
             
@@ -252,8 +250,6 @@ namespace simgear {
                     const Texture2DRef texture = textureFromImage(image);
                     const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
                     return new Orthophoto(texture, bbox);
-                } else {
-                    SG_LOG(SG_OSG, SG_ALERT, "Failed to load orthophoto with path " << png_path);
                 }
             }
         }

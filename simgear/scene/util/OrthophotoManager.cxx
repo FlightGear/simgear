@@ -18,6 +18,7 @@
 // Boston, MA  02110-1301, USA.
 
 #include "OrthophotoManager.hxx"
+#include <simgear/debug/debug_types.h>
 
 namespace simgear {
     
@@ -285,16 +286,20 @@ namespace simgear {
             const int s_offset = degs_to_pixels_x * _bbox.getLonOffset(bounds);
             const int t_offset = degs_to_pixels_y * _bbox.getLatOffset(bounds);
 
-            // Make a deep copy of the orthophoto's image so that we don't modify the original when scaling
-            ImageRef sub_image = new osg::Image(*orthophoto->_texture->getImage(), osg::CopyOp::DEEP_COPY_ALL);
+            ImageRef sub_image = orthophoto->_texture->getImage();
 
             if (sub_image->getPixelFormat() != pixel_format) {
                 SG_LOG(SG_OSG, SG_ALERT, "Pixel format mismatch. Not creating part of composite orthophoto.");
                 continue;
             }
 
-            sub_image->scaleImage(width, height, depth);
-            
+            if (sub_image->s() != width || sub_image->t() != height) {
+                SG_LOG(SG_OSG, SG_WARN, "Orthophoto resolution mismatch. Automatic scaling will be performed.");
+                // Make a deep copy of the orthophoto's image so that we don't modify the original when scaling
+                sub_image = new osg::Image(*sub_image, osg::CopyOp::DEEP_COPY_ALL);
+                sub_image->scaleImage(width, height, depth);
+            }
+
             composite_image->copySubImage(s_offset, t_offset, 0, sub_image);
         }
 

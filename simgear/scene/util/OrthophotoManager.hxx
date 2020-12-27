@@ -36,6 +36,7 @@
 #include <simgear/math/SGLimits.hxx>
 #include "SGSceneFeatures.hxx"
 #include "OsgSingleton.hxx"
+#include "SGImageUtils.hxx"
 
 namespace simgear {
 

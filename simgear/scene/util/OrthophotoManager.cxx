@@ -18,6 +18,8 @@
 // Boston, MA  02110-1301, USA.
 
 #include "OrthophotoManager.hxx"
+#include "SGSceneFeatures.hxx"
+#include <simgear/debug/debug_types.h>
 
 namespace simgear {
     
@@ -229,25 +231,26 @@ namespace simgear {
             dds_path.concat(".dds");
             if (dds_path.exists()) {
                 ImageRef image = osgDB::readRefImageFile(dds_path.str());
-                if (!image) {
-                    return nullptr;
+                if (image) {
+                    if (!image->isCompressed()) {
+                        SG_LOG(SG_OSG, SG_WARN, "Loading uncompressed DDS orthophoto. This is known to cause problems on some systems.");
+                    }
+                    const Texture2DRef texture = textureFromImage(image);
+                    const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
+                    return new Orthophoto(texture, bbox);
                 }
-                const Texture2DRef texture = textureFromImage(image);
-                const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
-                return new Orthophoto(texture, bbox);
             }
             
             SGPath png_path = path;
             png_path.concat(".png");
             if (png_path.exists()) {
                 ImageRef image = osgDB::readRefImageFile(png_path.str());
-                if (!image) {
-                    return nullptr;
+                if (image) {
+                    image->flipVertical();
+                    const Texture2DRef texture = textureFromImage(image);
+                    const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
+                    return new Orthophoto(texture, bbox);
                 }
-                image->flipVertical();
-                const Texture2DRef texture = textureFromImage(image);
-                const OrthophotoBounds bbox = OrthophotoBounds::fromBucket(bucket);
-                return new Orthophoto(texture, bbox);
             }
         }
 
@@ -263,10 +266,11 @@ namespace simgear {
         const OrthophotoRef& some_orthophoto = orthophotos[0];
         const ImageRef& some_image = some_orthophoto->_texture->getImage();
         const OrthophotoBounds& some_bbox = some_orthophoto->getBbox();
-        const double degs_to_pixels = some_image->s() / some_bbox.getWidth();
+        const double degs_to_pixels_x = some_image->s() / some_bbox.getWidth();
+        const double degs_to_pixels_y = some_image->t() / some_bbox.getHeight();
         
-        const int total_width = degs_to_pixels * _bbox.getWidth();
-        const int total_height = degs_to_pixels * _bbox.getHeight();
+        const int total_width = degs_to_pixels_x * _bbox.getWidth();
+        const int total_height = degs_to_pixels_y * _bbox.getHeight();
 
         const int depth = some_image->r();
         GLenum pixel_format = some_image->getPixelFormat();
@@ -279,22 +283,61 @@ namespace simgear {
         for (const auto& orthophoto : orthophotos) {
             
             const OrthophotoBounds& bounds = orthophoto->getBbox();
-            const int width = degs_to_pixels * bounds.getWidth();
-            const int height = degs_to_pixels * bounds.getHeight();
-            const int s_offset = degs_to_pixels * _bbox.getLonOffset(bounds);
-            const int t_offset = degs_to_pixels * _bbox.getLatOffset(bounds);
+            const int width = degs_to_pixels_x * bounds.getWidth();
+            const int height = degs_to_pixels_y * bounds.getHeight();
+            const int s_offset = degs_to_pixels_x * _bbox.getLonOffset(bounds);
+            const int t_offset = degs_to_pixels_y * _bbox.getLatOffset(bounds);
 
-            // Make a deep copy of the orthophoto's image so that we don't modify the original when scaling
-            ImageRef sub_image = new osg::Image(*orthophoto->_texture->getImage(), osg::CopyOp::DEEP_COPY_ALL);
+            ImageRef sub_image = orthophoto->_texture->getImage();
 
-            if (sub_image->getPixelFormat() != pixel_format) {
-                SG_LOG(SG_OSG, SG_ALERT, "Pixel format mismatch. Not creating part of composite orthophoto.");
-                continue;
+            if (sub_image->s() != width || sub_image->t() != height) {
+                SG_LOG(SG_OSG, SG_INFO, "Orthophoto resolution mismatch. Automatic scaling will be performed.");
+                ImageRef scaled_image;
+                bool success = ImageUtils::resizeImage(sub_image, width, height, scaled_image);
+                if (success) {
+                    sub_image = scaled_image;
+                } else {
+                    SG_LOG(SG_OSG, SG_ALERT, "Failed to scale part of composite orthophoto. The image on the airport may be distorted.");
+                }
             }
 
-            sub_image->scaleImage(width, height, depth);
-            
-            composite_image->copySubImage(s_offset, t_offset, 0, sub_image);
+            if (sub_image->getPixelFormat() != pixel_format || sub_image->getDataType() != data_type) {
+                SG_LOG(SG_OSG, SG_INFO, "Pixel format or data type mismatch. Attempting to convert component of composite orthophoto.");
+                if (ImageUtils::canConvert(sub_image, pixel_format, data_type)) {
+                    sub_image = ImageUtils::convert(sub_image, pixel_format, data_type);
+                } else {
+                    SG_LOG(SG_OSG, SG_ALERT, "Failed to convert component of composite orthophoto. Part of the image on the airport may be missing.");
+                }
+            }
+
+            bool success = ImageUtils::copyAsSubImage(sub_image, composite_image, s_offset, t_offset);
+            if (!success) {
+                SG_LOG(SG_OSG, SG_ALERT, "Failed to copy part of composite orthophoto. Part of the image on the aiport may be missing.");
+            }
+        }
+
+        int max_texture_size = SGSceneFeatures::instance()->getMaxTextureSize();
+        int new_width = total_width;
+        int new_height = total_height;
+        if (new_width > max_texture_size) {
+            int factor = new_width / max_texture_size;
+            new_width /= factor;
+            new_height /= factor;
+        }
+        if (new_height > max_texture_size) {
+            int factor = new_height / max_texture_size;
+            new_width /= factor;
+            new_height /= factor;
+        }
+        if (total_width != new_width || total_height != new_height) {
+            SG_LOG(SG_OSG, SG_INFO, "Composite orthophoto exceeds the maximum texture size of your GPU. Automatic scaling will be performed.");
+            ImageRef scaled_image;
+            bool success = ImageUtils::resizeImage(composite_image, new_width, new_height, scaled_image);
+            if (success) {
+                composite_image = scaled_image;
+            } else {
+                SG_LOG(SG_OSG, SG_ALERT, "Failed to scale composite orthophoto. You may encounter errors due to the oversize texture.");
+            }
         }
 
         _texture = textureFromImage(composite_image);

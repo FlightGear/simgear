@@ -273,11 +273,19 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED);
     else
         options->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
-#if OSG_VERSION_LESS_THAN(3,4,2)
-    result = osgDB::readImageFile(imageName, options);
-#else
-    result = osgDB::readRefImageFile(imageName, options);
-#endif
+
+    try {
+    #if OSG_VERSION_LESS_THAN(3,4,2)
+        result = osgDB::readImageFile(imageName, options);
+    #else
+        result = osgDB::readRefImageFile(imageName, options);
+    #endif
+    } catch (std::bad_alloc& ba) {
+        SG_LOG(SG_GL, SG_ALERT, "Bad allocation loading:" << imageName);
+        // todo: report low memory warning
+        return false;
+    }
+
     options->setLoadOriginHint(origLOH);
     osg::ref_ptr<osg::Image> image;
     if (result.success())

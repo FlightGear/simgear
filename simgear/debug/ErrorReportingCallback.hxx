@@ -18,6 +18,11 @@
 #include <functional>
 #include <string>
 
+#include <simgear/structure/exception.hxx>
+
+//forward decls
+class SGPath;
+
 namespace simgear {
 
 void reportError(const std::string& msg, const std::string& more = {});
@@ -27,5 +32,71 @@ void reportFatalError(const std::string& msg, const std::string& more = {});
 using ErrorReportCallback = std::function<void(const std::string& msg, const std::string& more, bool isFatal)>;
 
 void setErrorReportCallback(ErrorReportCallback cb);
+
+enum class LoadFailure {
+    Unknown,
+    NotFound,
+    OutOfMemory,
+    BadHeader,
+    BadData,
+    Misconfigured
+};
+
+/**
+ @brief enum of the operations which can fail. This should be extended as necessary: it maps to
+ translated error messages for the user.
+ */
+enum class ErrorCode {
+    MissingShader,
+    LoadingTexture,
+    XMLModelLoad,
+    ThreeDModelLoad, // AC3D, OBJ, etc
+    BTGLoad,
+    ScenarioLoad,
+    GUIDialog,
+    AudioFX,
+    XMLLoadCommand,
+    AircraftSystems,
+    InputDeviceConfig
+};
+/**
+ @brief Define an error-reporting context value, for the duration of this
+ object's lifetime. The context value will be active for any errors occuring on the same thread, while
+ this object exists.
+ */
+class ErrorReportContext
+{
+public:
+    ErrorReportContext(const std::string& key, const std::string& value);
+    ~ErrorReportContext();
+
+private:
+    const std::string _key;
+};
+
+/**
+ * @brief Report failure to load a resource, so they can be collated for reporting
+ * to the user.
+ * 
+ * @param type - the reason for the failure, if it can be determined
+ * @param msg - an informational message about what caused the failure
+ * @param path - path on disk to the resource. In some cases this may be a relative path;
+ *  especially in the case of a resource not found, we cannot report a file path.
+ */
+
+void reportFailure(LoadFailure type, ErrorCode code, const std::string& detailedMessage = {}, sg_location loc = {});
+
+/**
+  overload taking a path as the location
+ */
+void reportFailure(LoadFailure type, ErrorCode code, const std::string& detailedMessage, const SGPath& p);
+
+using FailureCallback = std::function<void(LoadFailure type, ErrorCode code, const std::string& details, const sg_location& location)>;
+
+void setFailureCallback(FailureCallback cb);
+
+using ContextCallback = std::function<void(const std::string& key, const std::string& value)>;
+
+void setErrorContextCallback(ContextCallback cb);
 
 } // namespace simgear

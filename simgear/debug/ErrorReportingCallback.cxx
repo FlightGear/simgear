@@ -17,11 +17,15 @@
 
 #include "ErrorReportingCallback.hxx"
 
+#include <simgear/misc/sg_path.hxx>
+
 using std::string;
 
 namespace simgear {
 
 static ErrorReportCallback static_callback;
+static ContextCallback static_contextCallback;
+
 
 void setErrorReportCallback(ErrorReportCallback cb)
 {
@@ -42,6 +46,50 @@ void reportFatalError(const std::string& msg, const std::string& more)
     if (!static_callback)
         return;
     static_callback(msg, more, true);
+}
+
+static FailureCallback static_failureCallback;
+
+void reportFailure(LoadFailure type, ErrorCode code, const std::string& details, sg_location loc)
+{
+    if (!static_failureCallback) {
+        return;
+    }
+
+    static_failureCallback(type, code, details, loc);
+}
+
+void reportFailure(LoadFailure type, ErrorCode code, const std::string& details, const SGPath& path)
+{
+    if (!static_failureCallback) {
+        return;
+    }
+
+    static_failureCallback(type, code, details, sg_location{path});
+}
+
+void setFailureCallback(FailureCallback cb)
+{
+    static_failureCallback = cb;
+}
+
+void setErrorContextCallback(ContextCallback cb)
+{
+    static_contextCallback = cb;
+}
+
+ErrorReportContext::ErrorReportContext(const std::string& key, const std::string& value) : _key(key)
+{
+    if (static_contextCallback) {
+        static_contextCallback(key, value);
+    }
+}
+
+ErrorReportContext::~ErrorReportContext()
+{
+    if (static_contextCallback) {
+        static_contextCallback(_key, "POP");
+    }
 }
 
 } // namespace simgear

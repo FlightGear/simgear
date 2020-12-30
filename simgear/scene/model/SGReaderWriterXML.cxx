@@ -89,7 +89,6 @@ SGReaderWriterXML::readNode(const std::string& name,
           return ReadResult::FILE_NOT_FOUND;
         }
 
-        static std::tuple<int, osg::Node *> retval;
         int num_anims;
         std::tie(num_anims, result) = sgLoad3DModel_internal(p, options);
     } catch (const sg_exception &t) {

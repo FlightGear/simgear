@@ -82,7 +82,7 @@ inline T magnitude2(const simd4_t<T,N>& vi) {
 
 template<typename T, int N>
 inline simd4_t<T,N> interpolate(T tau, const simd4_t<T,N>& v1, const simd4_t<T,N>& v2) {
-    return (T(1)-tau)*v1 + tau*v2;
+    return v1 + tau*(v2-v1);
 }
 
 template<typename T, int N>

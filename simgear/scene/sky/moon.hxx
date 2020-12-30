@@ -65,11 +65,12 @@ public:
     bool repaint( double moon_angle );
 
     // reposition the moon at the specified right ascension and
-    // declination, offset by our current position (p) so that it
-    // appears fixed at a great distance from the viewer.  Also add in
-    // an optional rotation (i.e. for the current time of day.)
+    // declination, at moon_dist_bare*moon_dist_factor from the center
+    // of Earth. lst, lat and alt are need to estimate where is the
+    // center of Earth from the current view).
     bool reposition( double rightAscension, double declination,
-		     double moon_dist  );
+		     double moon_dist_bare, double moon_dist_factor,
+		     double lst, double lat, double alt  );
 };
 
 

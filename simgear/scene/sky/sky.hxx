@@ -63,7 +63,8 @@ struct SGSkyState
   double gst;      //!< GMT side real time.
   double sun_dist; //!< the sun's distance from the current view point
                    //   (to keep it inside your view volume).
-  double moon_dist;//!< The moon's distance from the current view point.
+  double moon_dist_bare ;//!< The moon's semi-mayor axis in the rendering (constant)
+  double moon_dist_factor ;//!< Any factor that are needed to artificially change the moon distance
   double sun_angle;
 };
 

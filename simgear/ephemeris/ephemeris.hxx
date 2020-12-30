@@ -51,7 +51,7 @@
  * Written by Durk Talsma <d.talsma@direct.a2000.nl> and Curtis Olson
  * <http://www.flightgear.org/~curt>
  *
- * Introduction 
+ * Introduction
  *
  * The SGEphemeris class computes and stores the positions of the Sun,
  * the Moon, the planets, and the brightest stars.  These positions
@@ -144,6 +144,11 @@ public:
     /** @return the declination of the Moon. */
     inline double getMoonDeclination() const {
 	return moon->getDeclination();
+    }
+
+    /** @return the geocentric distance to the Moon in unit of its semi-mayor axis. */
+    inline double getMoonDistanceInMayorAxis() const {
+      return moon->getDistanceInMayorAxis();
     }
 
     /** @return the numbers of defined planets. */

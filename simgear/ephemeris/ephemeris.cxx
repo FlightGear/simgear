@@ -68,7 +68,8 @@ SGEphemeris::~SGEphemeris( void ) {
 void SGEphemeris::update( double mjd, double lst, double lat ) {
     // update object positions
     our_sun->updatePosition( mjd );
-    moon->updatePosition( mjd, lst, lat, our_sun );
+    //    moon->updatePositionTopo( mjd, lst, lat, our_sun );
+    moon->updatePosition( mjd, our_sun );
     mercury->updatePosition( mjd, our_sun );
     venus->updatePosition( mjd, our_sun );
     mars->updatePosition( mjd, our_sun );

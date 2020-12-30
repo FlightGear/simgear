@@ -152,7 +152,7 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
     double angleRad = SGMiscd::deg2rad(angle);
 
     SGVec3f zero_elev, view_up;
-    double lon, lat, alt;
+    double lon, lat, alt, lst;
 
     SGGeod geodZeroViewPos = SGGeod::fromGeodM(st.pos_geod, 0);
     zero_elev = toVec3f( SGVec3d::fromGeod(geodZeroViewPos) );
@@ -165,7 +165,9 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
     lon = st.pos_geod.getLongitudeRad();
     lat = st.pos_geod.getLatitudeRad();
     alt = st.pos_geod.getElevationM();
-
+    // Local sidereal time
+    lst = angleRad + lon;
+    
     dome->reposition( zero_elev, alt, lon, lat, st.spin );
 
     osg::Matrix m = osg::Matrix::rotate(angleRad, osg::Vec3(0, 0, -1));
@@ -178,7 +180,12 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
 
     double moon_ra = eph.getMoonRightAscension();
     double moon_dec = eph.getMoonDeclination();
-    moon->reposition( moon_ra, moon_dec, st.moon_dist );
+    double moon_r = eph.getMoonDistanceInMayorAxis();
+
+    //this allows to render the moon closer to the viewer when the
+    //moon is closer to the center of Earth, times any articial extra factors
+    double moon_dist_factor = moon_r * st.moon_dist_factor;
+    moon->reposition( moon_ra, moon_dec, st.moon_dist_bare, moon_dist_factor, lst, lat, alt );
 
     for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
         if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ||

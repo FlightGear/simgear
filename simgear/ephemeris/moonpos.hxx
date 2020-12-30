@@ -39,6 +39,7 @@ private:
     double xg, yg;     // the moon's rectangular geocentric coordinates
     double ye, ze;     // the moon's rectangular equatorial coordinates
     double distance;   // the moon's distance to the earth
+    double distance_in_a;  // the moon's distance to the earth in unit of its semi-mayor axis a
     double age;        // the moon's age from 0 to 2pi
     double phase;      // the moon's phase
     double log_I;      // the moon's illuminance outside the atmosphere (logged)
@@ -59,8 +60,9 @@ public:
     MoonPos(double mjd);
     MoonPos();
     ~MoonPos();
-    void updatePosition(double mjd, double lst, double lat, Star *ourSun);
-    // void newImage();
+    void updatePositionTopo(double mjd, double lst, double lat, Star *ourSun);
+    void updatePosition(double mjd, Star *ourSun);
+  // void newImage();
     double getM() const;
     double getw() const;
     double getxg() const;
@@ -68,6 +70,7 @@ public:
     double getye() const;
     double getze() const;
     double getDistance() const;
+    double getDistanceInMayorAxis() const;
     double getAge() const;
     double getPhase() const;
     double getLogIlluminance() const;
@@ -107,6 +110,11 @@ inline double MoonPos::getze() const
 inline double MoonPos::getDistance() const
 {
   return distance;
+}
+
+inline double MoonPos::getDistanceInMayorAxis() const
+{
+  return distance_in_a;
 }
 
 inline double MoonPos::getAge() const

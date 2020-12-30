@@ -41,6 +41,7 @@
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/model/BoundingVolumeBuildVisitor.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
@@ -340,5 +341,10 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints, 
     transform->addChild(geode);
     transform->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
+    // Create a BVH at this point.  This is normally provided by the file loader, but as we create the 
+    // geometry programmatically, no file loader is involved.
+    BoundingVolumeBuildVisitor bvhBuilder(false);
+    transform->accept(bvhBuilder);
+    
     return transform;
 }

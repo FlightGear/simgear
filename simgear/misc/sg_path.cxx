@@ -1108,3 +1108,15 @@ bool SGPath::touch()
     _cached = false;
     return true;
 }
+
+bool SGPath::makeLink(const std::string& destination)
+{
+    #ifdef SG_WINDOWS
+    return false;
+    #else
+    if (symlink(destination.c_str(), c_str())) {
+        return false;
+    }
+    return true;
+    #endif
+}

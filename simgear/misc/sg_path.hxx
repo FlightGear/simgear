@@ -289,6 +289,11 @@ public:
      */
     bool touch();
     
+    /**
+     * Create a link with this path that points to <destination>.
+     */
+    bool makeLink(const std::string& destination);
+    
     enum StandardLocation
     {
       HOME,

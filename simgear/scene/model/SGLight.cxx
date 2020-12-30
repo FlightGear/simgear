@@ -27,6 +27,8 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 
+#include "animation.hxx"
+
 class SGLightDebugListener : public SGPropertyChangeListener {
 public:
     SGLightDebugListener(osg::Switch *sw) : _sw(sw) {}
@@ -108,6 +110,17 @@ SGLight::appendLight(const SGPropertyNode *configNode,
         }
     }
     align->setMatrix(r * t);
+
+    const SGPropertyNode *dim_factor = configNode->getChild("dim-factor");
+    if (dim_factor) {
+        const SGExpressiond *expression =
+            read_value(dim_factor, modelRoot, "", 0, 1);
+        light->setUpdateCallback(
+            new SGLight::UpdateCallback(expression,
+                                        light->getAmbient(),
+                                        light->getDiffuse(),
+                                        light->getSpecular()));
+    }
 
     osg::Shape *debug_shape = nullptr;
     if (light->getType() == SGLight::Type::POINT) {

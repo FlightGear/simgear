@@ -21,12 +21,36 @@
 #include <osg/Group>
 
 #include <simgear/props/props.hxx>
+#include <simgear/structure/SGExpression.hxx>
 
 class SGLight : public osg::Node {
 public:
     enum Type {
         POINT,
         SPOT
+    };
+
+    class UpdateCallback : public osg::NodeCallback {
+    public:
+        UpdateCallback(const SGExpressiond *expression,
+                       osg::Vec4 ambient, osg::Vec4 diffuse, osg::Vec4 specular) :
+            _expression(expression),
+            _ambient(ambient), _diffuse(diffuse), _specular(specular) {}
+        virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
+            double value = _expression->getValue();
+            if (value != _prev_value) {
+                SGLight *light = dynamic_cast<SGLight *>(node);
+                if (light) {
+                    light->setAmbient(_ambient * value);
+                    light->setDiffuse(_diffuse * value);
+                    light->setSpecular(_specular * value);
+                }
+            }
+        }
+    private:
+        SGSharedPtr<SGExpressiond const> _expression;
+        osg::Vec4 _ambient, _diffuse, _specular;
+        double _prev_value = -1.0;
     };
 
     SGLight();

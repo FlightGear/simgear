@@ -354,22 +354,7 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
-  std::string _light_type;
-  SGVec3d _position;
-  SGVec3d _direction;
-  SGVec4d _ambient;
-  SGVec4d _diffuse;
-  SGVec4d _specular;
-  SGVec3d _attenuation;
-  double _exponent;
-  double _cutoff;
-  double _near;
-  double _far;
-  std::string _key;
-  class UpdateCallback;
-  friend class UpdateCallback;
-  SGSharedPtr<SGExpressiond> _animationValue;
-  osg::ref_ptr<const osgDB::Options> _options;
+  osg::ref_ptr<osg::Node> _light;
 };
 
 #endif // _SG_ANIMATION_HXX

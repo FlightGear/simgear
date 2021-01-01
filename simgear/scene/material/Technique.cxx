@@ -5,7 +5,6 @@
 
 #include "Technique.hxx"
 #include "Pass.hxx"
-#include "EffectCullVisitor.hxx"
 
 #include <iterator>
 #include <vector>
@@ -14,8 +13,6 @@
 #include <osg/GLExtensions>
 #include <osg/GL2Extensions>
 #include <osg/Math>
-#include <osg/Texture2D>
-#include <osg/CopyOp>
 #include <osgUtil/CullVisitor>
 
 #include <osgDB/Registry>
@@ -168,36 +165,9 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
       if( isNaN(depth[i]) )
         depth[i] = FLT_MAX;
     }
-    EffectCullVisitor* ecv = dynamic_cast<EffectCullVisitor*>( cv );
     EffectGeode::DrawablesIterator drawablesEnd = itr;
     for (auto& pass : passes) {
-        osg::ref_ptr<osg::StateSet> ss = pass;
-        if (ecv && ( ! pass->getBufferUnitList().empty() || ! pass->getPositionedUniformMap().empty() ) ) {
-            ss = static_cast<osg::StateSet*>(
-                pass->clone( osg::CopyOp( ( ! pass->getBufferUnitList().empty() ?
-                                                        osg::CopyOp::DEEP_COPY_TEXTURES :
-                                                        osg::CopyOp::SHALLOW_COPY ) |
-                                           ( ! pass->getPositionedUniformMap().empty() ?
-                                                        osg::CopyOp::DEEP_COPY_UNIFORMS :
-                                                        osg::CopyOp::SHALLOW_COPY ) )
-                )
-            );
-            for (Pass::BufferUnitList::const_iterator ii = pass->getBufferUnitList().begin();
-                    ii != pass->getBufferUnitList().end();
-                    ++ii) {
-                osg::Texture2D* tex = ecv->getBuffer(ii->second);
-                if (tex != 0)
-                    ss->setTextureAttributeAndModes( ii->first, tex );
-            }
-            for (Pass::PositionedUniformMap::const_iterator ii = pass->getPositionedUniformMap().begin();
-                    ii != pass->getPositionedUniformMap().end();
-                    ++ii) {
-                osg::RefMatrix* mv = cv->getModelViewMatrix();
-                osg::Vec4 v = ii->second * *mv;
-                ss->getUniform(ii->first)->set( v );
-            }
-        }
-        cv->pushStateSet(ss);
+        cv->pushStateSet(pass.get());
         int i = 0;
         for (itr = begin; itr != drawablesEnd; ++itr, ++i) {
             if (depth[i] != FLT_MAX)

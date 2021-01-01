@@ -19,17 +19,12 @@
 #endif
 
 #include <osg/StateSet>
-#include <osg/Texture2D>
-
-#include <osg/io_utils>
 
 #include "EffectCullVisitor.hxx"
 
 #include "EffectGeode.hxx"
 #include "Effect.hxx"
 #include "Technique.hxx"
-
-#include <simgear/scene/util/RenderConstants.hxx>
 
 namespace simgear
 {
@@ -102,21 +97,6 @@ void EffectCullVisitor::reset()
     _lightList.clear();
 
     osgUtil::CullVisitor::reset();
-}
-
-void EffectCullVisitor::clearBufferList()
-{
-    _bufferList.clear();
-}
-
-void EffectCullVisitor::addBuffer(std::string b, osg::Texture2D* tex)
-{
-    _bufferList.insert(std::make_pair(b,tex));
-}
-
-osg::Texture2D* EffectCullVisitor::getBuffer(std::string b)
-{
-    return _bufferList[b];
 }
 
 }

@@ -1044,7 +1044,6 @@ struct UniformBuilder :public PassAttributeBuilder
             return;
         SGConstPropertyNode_ptr nameProp = prop->getChild("name");
         SGConstPropertyNode_ptr typeProp = prop->getChild("type");
-        SGConstPropertyNode_ptr positionedProp = prop->getChild("positioned");
         SGConstPropertyNode_ptr valProp = prop->getChild("value");
         string name;
         Uniform::Type uniformType = Uniform::FLOAT;
@@ -1105,11 +1104,6 @@ struct UniformBuilder :public PassAttributeBuilder
         // REVIEW: Memory Leak - 144,400 bytes in 38 blocks are indirectly lost
         // Leak occurs within OSG, likely caused by passing a raw pointer
         pass->addUniform(uniform.get());
-        if (positionedProp && positionedProp->getBoolValue() && uniformType == Uniform::FLOAT_VEC4) {
-            osg::Vec4 offset;
-            uniform->get(offset);
-            pass->addPositionedUniform( name, offset );
-        }
     }
 };
 

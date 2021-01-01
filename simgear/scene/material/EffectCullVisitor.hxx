@@ -19,14 +19,11 @@
 
 #include <osgUtil/CullVisitor>
 
-#include <map>
-
 #include <simgear/scene/model/SGLight.hxx>
 
 namespace osg
 {
 class Geode;
-class Texture2D;
 }
 
 namespace simgear
@@ -44,14 +41,9 @@ public:
     virtual void apply(osg::Geode& node);
     virtual void reset();
 
-    void clearBufferList();
-    void addBuffer(std::string b, osg::Texture2D* tex);
-    osg::Texture2D* getBuffer(std::string b);
-
     SGLightList getLightList() const { return _lightList; }
 
 private:
-    std::map<std::string,osg::ref_ptr<osg::Texture2D> > _bufferList;
     SGLightList _lightList;
     bool _collectLights;
     std::string _effScheme;

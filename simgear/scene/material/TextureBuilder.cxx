@@ -64,12 +64,12 @@ TexEnvCombine* buildTexEnvCombine(Effect* effect,
 TexGen* buildTexGen(Effect* Effect, const SGPropertyNode* tgenProp);
 
 // Hack to force inclusion of TextureBuilder.cxx in library
-osg::Texture* TextureBuilder::buildFromType(Effect* effect, Pass* pass, const string& type,
+osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
                                             const SGPropertyNode*props,
                                             const SGReaderWriterOptions*
                                             options)
 {
-    return EffectBuilder<Texture>::buildFromType(effect, pass, type, props, options);
+    return EffectBuilder<Texture>::buildFromType(effect, type, props, options);
 }
 
 typedef std::tuple<string, Texture::FilterMode, Texture::FilterMode,
@@ -136,7 +136,7 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
         type = pType->getStringValue();
     Texture* texture = 0;
     try {
-        texture = TextureBuilder::buildFromType(effect, pass, type, prop,
+        texture = TextureBuilder::buildFromType(effect, type, prop,
                                                 options);
     }
     catch (BuilderException& e) {
@@ -312,7 +312,7 @@ class TexBuilder : public TextureBuilder
 {
 public:
     TexBuilder(const string& texType) : _type(texType) {}
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
     typedef map<TexTuple, observer_ptr<T> > TexMap;
@@ -321,7 +321,7 @@ protected:
 };
 
 template<typename T>
-Texture* TexBuilder<T>::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+Texture* TexBuilder<T>::build(Effect* effect, const SGPropertyNode* props,
                               const SGReaderWriterOptions* options)
 {
     TexTuple attrs = makeTexTuple(effect, props, options, _type);
@@ -356,11 +356,11 @@ TextureBuilder::Registrar install2D("2d", new TexBuilder<Texture2D>("2d"));
 class WhiteTextureBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 };
 
-Texture* WhiteTextureBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*,
+Texture* WhiteTextureBuilder::build(Effect* effect, const SGPropertyNode*,
                                     const SGReaderWriterOptions* options)
 {
     return StateAttributeFactory::instance()->getWhiteTexture();
@@ -374,11 +374,11 @@ TextureBuilder::Registrar installWhite("white", new WhiteTextureBuilder);
 class TransparentTextureBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 };
 
-Texture* TransparentTextureBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*,
+Texture* TransparentTextureBuilder::build(Effect* effect, const SGPropertyNode*,
                                     const SGReaderWriterOptions* options)
 {
     return StateAttributeFactory::instance()->getTransparentTexture();
@@ -393,14 +393,14 @@ TextureBuilder::Registrar installTransparent("transparent",
 class NoiseBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
     typedef map<int, ref_ptr<Texture3D> > NoiseMap;
     NoiseMap _noises;
 };
 
-Texture* NoiseBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+Texture* NoiseBuilder::build(Effect* effect, const SGPropertyNode* props,
                              const SGReaderWriterOptions* options)
 {
     int texSize = 64;
@@ -420,7 +420,7 @@ TextureBuilder::Registrar installNoise("noise", new NoiseBuilder);
 class LightSpriteBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
     Mutex lightMutex;
@@ -429,7 +429,7 @@ protected:
     osg::Image* getPointSpriteImage(int logResolution);
 };
 
-Texture* LightSpriteBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+Texture* LightSpriteBuilder::build(Effect* effect, const SGPropertyNode* props,
                              const SGReaderWriterOptions* options)
 {
     ScopedLock<Mutex> lock(lightMutex);
@@ -547,7 +547,7 @@ CubeMapTuple makeCubeMapTuple(Effect* effect, const SGPropertyNode* props)
 class CubeMapBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
     typedef map<CubeMapTuple, observer_ptr<TextureCubeMap> > CubeMap;
@@ -570,7 +570,7 @@ void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, i
 }
 
 
-Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* props,
+Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
                                const SGReaderWriterOptions* options)
 {
     // First check that there is a <images> tag
@@ -763,14 +763,14 @@ Tex2DArraySignature makeTex2DArraySignature(Effect *effect,
 class Texture2DArrayBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
     typedef map<Tex2DArraySignature, observer_ptr<Texture2DArray>> TexMap;
     TexMap texMap;
 };
 
-Texture* Texture2DArrayBuilder::build(Effect* effect, Pass* pass,
+Texture* Texture2DArrayBuilder::build(Effect* effect,
                                       const SGPropertyNode* props,
                                       const SGReaderWriterOptions* options)
 {
@@ -823,14 +823,14 @@ TextureBuilder::Registrar install2DArray("2d-array", new Texture2DArrayBuilder);
 class Texture3DBuilder : public TextureBuilder
 {
 public:
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
+    Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
     typedef map<TexTuple, observer_ptr<Texture3D> > TexMap;
     TexMap texMap;
 };
 
-Texture* Texture3DBuilder::build(Effect* effect, Pass* pass,
+Texture* Texture3DBuilder::build(Effect* effect,
                                  const SGPropertyNode* props,
                                  const SGReaderWriterOptions* options)
 {
@@ -1129,81 +1129,6 @@ bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
     makeChild(texUnit, "wrap-t")->setStringValue(wrapT);
     makeChild(texUnit, "wrap-r")->setStringValue(wrapR);
     return true;
-}
-
-class GBufferBuilder : public TextureBuilder
-{
-public:
-    GBufferBuilder() {}
-    Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
-                   const SGReaderWriterOptions* options);
-private:
-    string buffer;
-};
-
-class BufferNameChangeListener : public SGPropertyChangeListener,
-      public DeferredPropertyListener {
-public:
-    BufferNameChangeListener(Pass* p, int u, const std::string& pn) : pass(p), unit(u)
-    {
-        propName = new std::string(pn);
-    }
-    ~BufferNameChangeListener()
-    {
-        delete propName;
-        propName = 0;
-    }
-    void valueChanged(SGPropertyNode* node)
-    {
-        const char* buffer = node->getStringValue();
-        pass->setBufferUnit(unit, buffer);
-    }
-    void activate(SGPropertyNode* propRoot)
-    {
-        SGPropertyNode* listenProp = makeNode(propRoot, *propName);
-        delete propName;
-        propName = 0;
-        if (listenProp)
-            listenProp->addChangeListener(this, true);
-    }
-
-private:
-    ref_ptr<Pass> pass;
-    int unit;
-    std::string* propName;
-};
-
-Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                                    const SGReaderWriterOptions* options)
-{
-    int unit = 0;
-    const SGPropertyNode* pUnit = prop->getChild("unit");
-    if (pUnit) {
-        unit = pUnit->getValue<int>();
-    } else {
-        SG_LOG(SG_INPUT, SG_ALERT, "no texture unit");
-    }
-    const SGPropertyNode* nameProp = getEffectPropertyChild(effect, prop,
-                                                            "name");
-    if (!nameProp)
-        return 0;
-
-    if (nameProp->nChildren() == 0) {
-        buffer = nameProp->getStringValue();
-        pass->setBufferUnit( unit, buffer );
-    } else {
-        std::string propName = getGlobalProperty(nameProp, options);
-        BufferNameChangeListener* listener = new BufferNameChangeListener(pass, unit, propName);
-        effect->addDeferredPropertyListener(listener);
-    }
-
-    // Return white for now. Would be overridden in Technique::ProcessDrawable
-    return StateAttributeFactory::instance()->getWhiteTexture();
-}
-
-namespace
-{
-    TextureBuilder::Registrar installBuffer("buffer", new GBufferBuilder);
 }
 
 }

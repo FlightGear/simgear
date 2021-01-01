@@ -48,6 +48,7 @@ class Compositor;
  */
 struct Pass : public osg::Referenced {
     Pass() :
+        collect_lights(false),
         useMastersSceneData(true),
         cull_mask(0xffffff),
         inherit_cull_mask(false),
@@ -57,6 +58,7 @@ struct Pass : public osg::Referenced {
     int                              render_order;
     std::string                      name;
     std::string                      type;
+    bool                             collect_lights;
     std::string                      effect_scheme;
     osg::ref_ptr<osg::Camera>        camera;
     bool                             useMastersSceneData;

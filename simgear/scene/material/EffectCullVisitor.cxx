@@ -54,11 +54,14 @@ CullVisitor* EffectCullVisitor::clone() const
 
 void EffectCullVisitor::apply(osg::Node &node)
 {
-    // TODO: Properly cull lights outside the viewport (override computeBounds())
     CullVisitor::apply(node);
-    SGLight *light = dynamic_cast<SGLight *>(&node);
-    if (light)
-        _lightList.push_back(light);
+    if (_collectLights) {
+        // TODO: Properly cull lights outside the viewport
+        // (override computeBounds() in SGLight)
+        SGLight *light = dynamic_cast<SGLight *>(&node);
+        if (light)
+            _lightList.push_back(light);
+    }
 }
 
 void EffectCullVisitor::apply(osg::Geode& node)

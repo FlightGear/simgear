@@ -284,7 +284,7 @@ Compositor::addPass(Pass *pass)
         identifier = sceneView->getCullVisitor()->getIdentifier();
 
         sceneView->setCullVisitor(
-            new EffectCullVisitor(false, pass->effect_scheme));
+            new EffectCullVisitor(pass->collect_lights, pass->effect_scheme));
         sceneView->getCullVisitor()->setIdentifier(identifier.get());
 
         identifier = sceneView->getCullVisitorLeft()->getIdentifier();

@@ -682,8 +682,10 @@ public:
         const SGPropertyNode *p_clustered = root->getNode("clustered-shading");
         ClusteredShading *clustered = nullptr;
         if (p_clustered) {
-            if (checkConditional(p_clustered))
+            if (checkConditional(p_clustered)) {
                 clustered = new ClusteredShading(camera, p_clustered);
+                pass->collect_lights = true;
+            }
         }
 
         camera->setCullCallback(new SceneCullCallback(clustered));

@@ -133,7 +133,9 @@ public:
 
     void fireRefreshStatus(CatalogRef catalog, Delegate::StatusCode status)
     {
-        for (auto d : delegates) {
+        // take a copy of delegates since firing this can modify the data
+        const auto currentDelegates = delegates;
+        for (auto d : currentDelegates) {
             d->catalogRefreshed(catalog, status);
         }
     }

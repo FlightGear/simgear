@@ -76,7 +76,7 @@
 #include <simgear/structure/SGExpression.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
-
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 
 namespace simgear
@@ -928,7 +928,8 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         // FIXME orig: const string& shaderName = shaderKey.first;
         string shaderName = shaderKey.first;
         Shader::Type stype = (Shader::Type)shaderKey.second;
-        if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false) &&
+        const bool compositorEnabled = getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false);
+        if (compositorEnabled &&
             shaderName.substr(0, shaderName.find("/")) == "Shaders") {
             shaderName = "Compositor/" + shaderName;
         }
@@ -936,7 +937,9 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         if (fileName.empty())
         {
             SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader" << shaderName);
-
+            if (!compositorEnabled) {
+                reportError("Missing shader", shaderName);
+            }
 
             throw BuilderException(string("couldn't find shader ") +
                 shaderName);

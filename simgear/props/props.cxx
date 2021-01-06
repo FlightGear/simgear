@@ -130,6 +130,16 @@ inline bool isspecial_c(int c)
 }
 }
 
+// Used to convert Range to std::string when generating diagnostics.
+//
+template<typename Range>
+std::string RangeToString(const Range &range)
+{
+    std::string ret;
+    for (auto c: range) ret += c;
+    return ret;
+}
+
 template<typename Range>
 inline Range
 parse_name (const SGPropertyNode *node, const Range &path)
@@ -142,8 +152,13 @@ parse_name (const SGPropertyNode *node, const Range &path)
     if (i != path.end() && *i == '.') {
       i++;
     }
-    if (i != max && *i != '/')
-      throw std::runtime_error("illegal character after . or .. in '" + node->getPath() + "'");
+    if (i != max && *i != '/') {
+      throw std::runtime_error(
+          std::string() + "Illegal character '" + *i + "'"
+          + " after initial . or .. in leaf of property path: "
+          + node->getPath() + '/' + RangeToString(path)
+          );
+    }
   }
   else if (isalpha_c(*i) || *i == '_') {
     i++;
@@ -158,25 +173,23 @@ parse_name (const SGPropertyNode *node, const Range &path)
 	    break;
       }
       else {
-        std::string err = "'";
-        err.push_back(*i);
-        err.append("' found in propertyname after '"+node->getPath()+"'.");
-        err.append(" name may contain only ._- and alphanumeric characters.");
-        err.append(" Complete path is: '");
-        for (auto j: path) err.push_back(j);
-        err.append("'");
-        throw std::runtime_error(err);
+        throw std::runtime_error(
+            std::string() + "Illegal character '" + *i + "'"
+            + " in leaf of property path"
+            + " (may contain only ._- and alphanumeric characters)"
+            + ": " + node->getPath() + '/' + RangeToString(path)
+            );
       }
       i++;
     }
   }
   else {
     if (path.begin() == i) {
-      std::string err = "'";
-      err.push_back(*i);
-      err.append("' found in propertyname after '"+node->getPath()+"'");
-      err.append("\nname must begin with alpha or '_'");
-      throw std::runtime_error(err);
+      throw std::runtime_error(
+          std::string() + "Illegal character '" + *i + "'"
+          + " at start of leaf of property path: "
+          + node->getPath() + '/' + RangeToString(path)
+          );
     }
   }
   return Range(path.begin(), i);

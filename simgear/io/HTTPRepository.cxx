@@ -266,6 +266,19 @@ public:
                 free(buf);
     }
 
+    /// helper to check and erase 'fooBar' from paths, if passed fooBar.zip, fooBar.tgz, etc.
+    void removeExtractedDirectoryFromList(PathList& paths, const std::string& tarballName)
+    {
+        const auto directoryName = SGPath::fromUtf8(tarballName).file_base();
+        auto it = std::find_if(paths.begin(), paths.end(), [directoryName](const SGPath& p) {
+            return p.isDir() && (p.file() == directoryName);
+        });
+
+        if (it != paths.end()) {
+            paths.erase(it);
+        }
+    }
+
     void updateChildrenBasedOnHash()
     {
       using SAct = HTTPRepository::SyncAction;
@@ -299,6 +312,11 @@ public:
                         orphans.end());
         }
 
+        // ensure the extracted directory corresponding to a tarball, is *not* considered an orphan
+        if (c.type == HTTPRepository::TarballType) {
+            removeExtractedDirectoryFromList(orphans, c.name);
+        }
+
         if (_repository->syncPredicate) {
           const auto pathOnDisk = isNew ? absolutePath() / c.name : *p;
           // never handle deletes here, do them at the end
@@ -321,7 +339,6 @@ public:
           toBeUpdated.push_back(c);
         } else {
           // File/Directory exists and hash is valid.
-
           if (c.type == HTTPRepository::DirectoryType) {
             // If it's a directory,perform a recursive check.
             HTTPDirectory *childDir = childDirectory(c.name);
@@ -510,42 +527,42 @@ public:
                 _repository->totalDownloaded += sz;
                 SGPath p = SGPath(absolutePath(), file);
 
-                if ((p.extension() == "tgz") || (p.extension() == "zip")) {
-                  // We require that any compressed files have the same filename as the file or directory
-                  // they expand to, so we can remove the old file/directory before extracting the new
-                  // data.
-                  SGPath removePath = SGPath(p.base());
-                  bool pathAvailable = true;
-                  if (removePath.exists()) {
-                    if (removePath.isDir()) {
-                      simgear::Dir pd(removePath);
-                    	pathAvailable = pd.removeChildren();
-                    } else {
-                      pathAvailable = removePath.remove();
+                if (it->type == HTTPRepository::TarballType) {
+                    // We require that any compressed files have the same filename as the file or directory
+                    // they expand to, so we can remove the old file/directory before extracting the new
+                    // data.
+                    SGPath removePath = SGPath(p.base());
+                    bool pathAvailable = true;
+                    if (removePath.exists()) {
+                        if (removePath.isDir()) {
+                            simgear::Dir pd(removePath);
+                            pathAvailable = pd.removeChildren();
+                        } else {
+                            pathAvailable = removePath.remove();
+                        }
                     }
-                  }
 
-                  if (pathAvailable) {
-                    // we use a Task helper to extract tarballs incrementally.
-                    // without this, archive extraction blocks here, which
-                    // prevents other repositories downloading / updating.
-                    // Unfortunately due Windows AV (Defender, etc) we cna block
-                    // here for many minutes.
+                    if (pathAvailable) {
+                        // we use a Task helper to extract tarballs incrementally.
+                        // without this, archive extraction blocks here, which
+                        // prevents other repositories downloading / updating.
+                        // Unfortunately due Windows AV (Defender, etc) we cna block
+                        // here for many minutes.
 
-                    // use a lambda to own this shared_ptr; this means when the
-                    // lambda is destroyed, the ArchiveExtraTask will get
-                    // cleaned up.
-                    ArchiveExtractTaskPtr t =
-                        std::make_shared<ArchiveExtractTask>(p, _relativePath);
-                    auto cb = [t](HTTPRepoPrivate *repo) {
-                      return t->run(repo);
-                    };
+                        // use a lambda to own this shared_ptr; this means when the
+                        // lambda is destroyed, the ArchiveExtraTask will get
+                        // cleaned up.
+                        ArchiveExtractTaskPtr t =
+                            std::make_shared<ArchiveExtractTask>(p, _relativePath);
+                        auto cb = [t](HTTPRepoPrivate* repo) {
+                            return t->run(repo);
+                        };
 
-                    _repository->addTask(cb);
-                  } else {
-                    SG_LOG(SG_TERRASYNC, SG_ALERT, "Unable to remove old file/directory " << removePath);
-                  } // of pathAvailable
-                } // of handling tgz files
+                        _repository->addTask(cb);
+                    } else {
+                        SG_LOG(SG_TERRASYNC, SG_ALERT, "Unable to remove old file/directory " << removePath);
+                    } // of pathAvailable
+                }     // of handling archive files
             } // of hash matches
         } // of found in child list
     }
@@ -737,11 +754,9 @@ private:
     std::string hashForChild(const ChildInfo& child) const
     {
       SGPath p(child.path);
-      if (child.type == HTTPRepository::DirectoryType)
-        p.append(".dirindex");
-      if (child.type == HTTPRepository::TarballType)
-        p.concat(
-            ".tgz"); // For tarballs the hash is against the tarball file itself
+      if (child.type == HTTPRepository::DirectoryType) {
+          p.append(".dirindex");
+      }
       return hashForPath(p);
     }
 

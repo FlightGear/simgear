@@ -441,6 +441,10 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       if (hash_pos != std::string::npos)
           line.resize(hash_pos);
 
+      if (line.empty()) {
+          continue; // skip blank lines
+      }
+
       // and process further
       std::stringstream in(line);
 

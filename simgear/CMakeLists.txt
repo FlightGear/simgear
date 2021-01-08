@@ -168,7 +168,9 @@ target_link_libraries(SimGearCore PRIVATE
     ${COCOA_LIBRARY}
     ${CURL_LIBRARIES}
     ${WINSOCK_LIBRARY}
-    ${SHLWAPI_LIBRARY})
+    ${SHLWAPI_LIBRARY}
+    LibLZMA::LibLZMA
+)
 
 if(SYSTEM_EXPAT)
     target_link_libraries(SimGearCore PRIVATE ${EXPAT_LIBRARIES})

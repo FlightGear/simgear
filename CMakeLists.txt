@@ -286,6 +286,7 @@ else()
     find_package(ZLIB 1.2.4 REQUIRED)
 endif()
 
+find_package(LibLZMA REQUIRED)
 find_package(CURL REQUIRED)
 
 if (SYSTEM_EXPAT)

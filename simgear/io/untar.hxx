@@ -36,15 +36,16 @@ public:
 	ArchiveExtractor(const SGPath& rootPath);
 	virtual ~ArchiveExtractor();
 
-	enum DetermineResult
-	{
-		Invalid,
-		InsufficientData,
-		TarData,
-		ZipData
-	};
+    enum DetermineResult {
+        Invalid,
+        InsufficientData,
+        TarData,
+        ZipData,
+        GZData, // Gzipped-tar
+        XZData  // XZ (aka LZMA) tar
+    };
 
-	static DetermineResult determineType(const uint8_t* bytes, size_t count);
+    static DetermineResult determineType(const uint8_t* bytes, size_t count);
 
 	/**
 	 * @brief API to extract a local zip or tar.gz 

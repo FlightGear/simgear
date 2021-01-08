@@ -38,82 +38,11 @@
 #include <simgear/package/unzip.h>
 #include <simgear/structure/exception.hxx>
 
+#include "ArchiveExtractor_private.hxx"
+
 namespace simgear
 {
 
-	class ArchiveExtractorPrivate
-	{
-	public:
-		ArchiveExtractorPrivate(ArchiveExtractor* o) :
-			outer(o)
-		{
-			assert(outer);
-		}
-
-        virtual ~ArchiveExtractorPrivate() = default;
-        
-		typedef enum {
-			INVALID = 0,
-			READING_HEADER,
-			READING_FILE,
-			READING_PADDING,
-            READING_PAX_GLOBAL_ATTRIBUTES,
-            READING_PAX_FILE_ATTRIBUTES,
-			PRE_END_OF_ARCHVE,
-			END_OF_ARCHIVE,
-			ERROR_STATE, ///< states above this are error conditions
-			BAD_ARCHIVE,
-			BAD_DATA,
-			FILTER_STOPPED
-		} State;
-
-		State state = INVALID;
-		ArchiveExtractor* outer = nullptr;
-
-		virtual void extractBytes(const uint8_t* bytes, size_t count) = 0;
-
-		virtual void flush() = 0;
-
-		SGPath extractRootPath()
-		{
-			return outer->_rootPath;
-		}
-
-		ArchiveExtractor::PathResult filterPath(std::string& pathToExtract)
-		{
-			return outer->filterPath(pathToExtract);
-		}
-
-
-		bool isSafePath(const std::string& p) const
-		{
-			if (p.empty()) {
-				return false;
-			}
-
-			// reject absolute paths
-			if (p.at(0) == '/') {
-				return false;
-			}
-
-			// reject paths containing '..'
-			size_t doubleDot = p.find("..");
-			if (doubleDot != std::string::npos) {
-				return false;
-			}
-
-			// on POSIX could use realpath to sanity check
-			return true;
-		}
-	};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
-const int ZLIB_INFLATE_WINDOW_BITS = MAX_WBITS;
-const int ZLIB_DECODE_GZIP_HEADER = 16;
-
-/* tar Header Block, from POSIX 1003.1-1990.  */
 
 typedef struct
 {
@@ -153,317 +82,407 @@ typedef struct
 #define FIFOTYPE '6'            /* FIFO special */
 #define CONTTYPE '7'            /* reserved */
 
-	const char PAX_GLOBAL_HEADER = 'g';
-	const char PAX_FILE_ATTRIBUTES = 'x';
+    const char PAX_GLOBAL_HEADER = 'g';
+    const char PAX_FILE_ATTRIBUTES = 'x';
 
 
-class TarExtractorPrivate : public ArchiveExtractorPrivate
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
+    const int ZLIB_INFLATE_WINDOW_BITS = MAX_WBITS;
+    const int ZLIB_DECODE_GZIP_HEADER = 16;
+
+    /* tar Header Block, from POSIX 1003.1-1990.  */
+
+
+    class TarExtractorPrivate : public ArchiveExtractorPrivate
+    {
+    public:
+        union {
+            UstarHeaderBlock header;
+            uint8_t headerBytes[TAR_HEADER_BLOCK_SIZE];
+        };
+
+        size_t bytesRemaining;
+        std::unique_ptr<SGFile> currentFile;
+        size_t currentFileSize;
+
+        uint8_t* headerPtr;
+        bool skipCurrentEntry = false;
+        std::string paxAttributes;
+        std::string paxPathName;
+
+        TarExtractorPrivate(ArchiveExtractor* o) : ArchiveExtractorPrivate(o)
+        {
+            setState(TarExtractorPrivate::READING_HEADER);
+        }
+
+        ~TarExtractorPrivate() = default;
+
+        void readPaddingIfRequired()
+        {
+            size_t pad = currentFileSize % TAR_HEADER_BLOCK_SIZE;
+            if (pad) {
+                bytesRemaining = TAR_HEADER_BLOCK_SIZE - pad;
+                setState(READING_PADDING);
+            } else {
+                setState(READING_HEADER);
+            }
+        }
+
+        void checkEndOfState()
+        {
+            if (bytesRemaining > 0) {
+                return;
+            }
+
+            if (state == READING_FILE) {
+                if (currentFile) {
+                    currentFile->close();
+                    currentFile.reset();
+                }
+                readPaddingIfRequired();
+            } else if (state == READING_HEADER) {
+                processHeader();
+            } else if (state == PRE_END_OF_ARCHVE) {
+                if (headerIsAllZeros()) {
+                    setState(END_OF_ARCHIVE);
+                } else {
+                    // what does the spec say here?
+                }
+            } else if (state == READING_PAX_GLOBAL_ATTRIBUTES) {
+                parsePAXAttributes(true);
+                readPaddingIfRequired();
+            } else if (state == READING_PAX_FILE_ATTRIBUTES) {
+                parsePAXAttributes(false);
+                readPaddingIfRequired();
+            } else if (state == READING_PADDING) {
+                setState(READING_HEADER);
+            }
+        }
+
+        void setState(State newState)
+        {
+            if ((newState == READING_HEADER) || (newState == PRE_END_OF_ARCHVE)) {
+                bytesRemaining = TAR_HEADER_BLOCK_SIZE;
+                headerPtr = headerBytes;
+            }
+
+            state = newState;
+        }
+
+        void extractBytes(const uint8_t* bytes, size_t count) override
+        {
+            // uncompressed, just pass through directly
+            processBytes((const char*)bytes, count);
+        }
+
+        void flush() override
+        {
+            // no-op for tar files, we process everything greedily
+        }
+
+        void processHeader()
+        {
+            if (headerIsAllZeros()) {
+                if (state == PRE_END_OF_ARCHVE) {
+                    setState(END_OF_ARCHIVE);
+                } else {
+                    setState(PRE_END_OF_ARCHVE);
+                }
+                return;
+            }
+
+            if (strncmp(header.magic, TMAGIC, TMAGLEN) != 0) {
+                SG_LOG(SG_IO, SG_WARN, "Untar: magic is wrong");
+                state = BAD_ARCHIVE;
+                return;
+            }
+
+            skipCurrentEntry = false;
+            std::string tarPath = std::string(header.prefix) + std::string(header.fileName);
+            if (!paxPathName.empty()) {
+                tarPath = paxPathName;
+                paxPathName.clear(); // clear for next file
+            }
+
+            if (!isSafePath(tarPath)) {
+                SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping::" << tarPath);
+                skipCurrentEntry = true;
+            }
+
+            auto result = filterPath(tarPath);
+            if (result == ArchiveExtractor::Stop) {
+                setState(FILTER_STOPPED);
+                return;
+            } else if (result == ArchiveExtractor::Skipped) {
+                skipCurrentEntry = true;
+            }
+
+            SGPath p = extractRootPath() / tarPath;
+            if (header.typeflag == DIRTYPE) {
+                if (!skipCurrentEntry) {
+                    Dir dir(p);
+                    dir.create(0755);
+                }
+                setState(READING_HEADER);
+            } else if ((header.typeflag == REGTYPE) || (header.typeflag == AREGTYPE)) {
+                currentFileSize = ::strtol(header.size, NULL, 8);
+                bytesRemaining = currentFileSize;
+                if (!skipCurrentEntry) {
+                    currentFile.reset(new SGBinaryFile(p));
+                    currentFile->open(SG_IO_OUT);
+                }
+                setState(READING_FILE);
+            } else if (header.typeflag == PAX_GLOBAL_HEADER) {
+                setState(READING_PAX_GLOBAL_ATTRIBUTES);
+                currentFileSize = ::strtol(header.size, NULL, 8);
+                bytesRemaining = currentFileSize;
+                paxAttributes.clear();
+            } else if (header.typeflag == PAX_FILE_ATTRIBUTES) {
+                setState(READING_PAX_FILE_ATTRIBUTES);
+                currentFileSize = ::strtol(header.size, NULL, 8);
+                bytesRemaining = currentFileSize;
+                paxAttributes.clear();
+            } else if ((header.typeflag == SYMTYPE) || (header.typeflag == LNKTYPE)) {
+                SG_LOG(SG_IO, SG_WARN, "Tarball contains a link or symlink, will be skipped:" << tarPath);
+                skipCurrentEntry = true;
+                setState(READING_HEADER);
+            } else {
+                SG_LOG(SG_IO, SG_WARN, "Unsupported tar file type:" << header.typeflag);
+                state = BAD_ARCHIVE;
+            }
+        }
+
+        void processBytes(const char* bytes, size_t count)
+        {
+            if ((state >= ERROR_STATE) || (state == END_OF_ARCHIVE)) {
+                return;
+            }
+
+            size_t curBytes = std::min(bytesRemaining, count);
+            if (state == READING_FILE) {
+                if (currentFile) {
+                    currentFile->write(bytes, curBytes);
+                }
+                bytesRemaining -= curBytes;
+            } else if ((state == READING_HEADER) || (state == PRE_END_OF_ARCHVE) || (state == END_OF_ARCHIVE)) {
+                memcpy(headerPtr, bytes, curBytes);
+                bytesRemaining -= curBytes;
+                headerPtr += curBytes;
+            } else if (state == READING_PADDING) {
+                bytesRemaining -= curBytes;
+            } else if ((state == READING_PAX_FILE_ATTRIBUTES) || (state == READING_PAX_GLOBAL_ATTRIBUTES)) {
+                bytesRemaining -= curBytes;
+                paxAttributes.append(bytes, curBytes);
+            }
+
+            checkEndOfState();
+            if (count > curBytes) {
+                // recurse with unprocessed bytes
+                processBytes(bytes + curBytes, count - curBytes);
+            }
+        }
+
+        bool headerIsAllZeros() const
+        {
+            char* headerAsChar = (char*)&header;
+            for (size_t i = 0; i < offsetof(UstarHeaderBlock, magic); ++i) {
+                if (*headerAsChar++ != 0) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.3.0/com.ibm.zos.v2r3.bpxa500/paxex.htm#paxex
+        void parsePAXAttributes(bool areGlobal)
+        {
+            auto lineStart = 0;
+            for (;;) {
+                auto firstSpace = paxAttributes.find(' ', lineStart);
+                auto firstEq = paxAttributes.find('=', lineStart);
+                if ((firstEq == std::string::npos) || (firstSpace == std::string::npos)) {
+                    SG_LOG(SG_IO, SG_WARN, "Malfroemd PAX attributes in tarfile");
+                    break;
+                }
+
+                uint32_t lengthBytes = std::stoul(paxAttributes.substr(lineStart, firstSpace));
+                uint32_t dataBytes = lengthBytes - (firstEq + 1);
+                std::string name = paxAttributes.substr(firstSpace + 1, firstEq - (firstSpace + 1));
+
+                // dataBytes - 1 here to trim off the trailing newline
+                std::string data = paxAttributes.substr(firstEq + 1, dataBytes - 1);
+
+                processPAXAttribute(areGlobal, name, data);
+
+                lineStart += lengthBytes;
+            }
+        }
+
+        void processPAXAttribute(bool isGlobalAttr, const std::string& attrName, const std::string& data)
+        {
+            if (!isGlobalAttr && (attrName == "path")) {
+                // data is UTF-8 encoded path name
+                paxPathName = data;
+            }
+        }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+class GZTarExtractor : public TarExtractorPrivate
 {
 public:
-    
-    union {
-        UstarHeaderBlock header;
-        uint8_t headerBytes[TAR_HEADER_BLOCK_SIZE];
-    };
-
-    size_t bytesRemaining;
-    std::unique_ptr<SGFile> currentFile;
-    size_t currentFileSize;
-    z_stream zlibStream;
-    uint8_t* zlibOutput;
-    bool haveInitedZLib = false;
-    bool uncompressedData = false; // set if reading a plain .tar (not tar.gz)
-    uint8_t* headerPtr;
-    bool skipCurrentEntry = false;
-    std::string paxAttributes;
-    std::string paxPathName;
-    
-    TarExtractorPrivate(ArchiveExtractor* o) :
-		ArchiveExtractorPrivate(o)
+    GZTarExtractor(ArchiveExtractor* outer) : TarExtractorPrivate(outer)
     {
-		memset(&zlibStream, 0, sizeof(z_stream));
-		zlibOutput = (unsigned char*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
-		zlibStream.zalloc = Z_NULL;
-		zlibStream.zfree = Z_NULL;
-		zlibStream.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
-		zlibStream.next_out = zlibOutput;
+        memset(&zlibStream, 0, sizeof(z_stream));
+        zlibOutput = (unsigned char*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
+        zlibStream.zalloc = Z_NULL;
+        zlibStream.zfree = Z_NULL;
+        zlibStream.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
+        zlibStream.next_out = zlibOutput;
     }
 
-    ~TarExtractorPrivate()
+    ~GZTarExtractor()
     {
         free(zlibOutput);
     }
 
-    void readPaddingIfRequired()
+    void extractBytes(const uint8_t* bytes, size_t count) override
     {
-        size_t pad = currentFileSize % TAR_HEADER_BLOCK_SIZE;
-        if (pad) {
-            bytesRemaining = TAR_HEADER_BLOCK_SIZE - pad;
-            setState(READING_PADDING);
-        } else {
-            setState(READING_HEADER);
-        }
-    }
-    
-    void checkEndOfState()
-    {
-        if (bytesRemaining > 0) {
-            return;
-        }
+        zlibStream.next_in = (uint8_t*)bytes;
+        zlibStream.avail_in = count;
 
-        if (state == READING_FILE) {
-            if (currentFile) {
-                currentFile->close();
-                currentFile.reset();
-            }
-            readPaddingIfRequired();
-        } else if (state == READING_HEADER) {
-            processHeader();
-        } else if (state == PRE_END_OF_ARCHVE) {
-            if (headerIsAllZeros()) {
-                setState(END_OF_ARCHIVE);
+        if (!haveInitedZLib) {
+            // now we have data, see if we're dealing with GZ-compressed data or not
+            if ((bytes[0] == 0x1f) && (bytes[1] == 0x8b)) {
+                // GZIP identification bytes
+                if (inflateInit2(&zlibStream, ZLIB_INFLATE_WINDOW_BITS | ZLIB_DECODE_GZIP_HEADER) != Z_OK) {
+                    SG_LOG(SG_IO, SG_WARN, "inflateInit2 failed");
+                    state = TarExtractorPrivate::BAD_DATA;
+                    return;
+                }
             } else {
-                // what does the spec say here?
+                // set error state
+                state = TarExtractorPrivate::BAD_DATA;
+                return;
             }
-        } else if (state == READING_PAX_GLOBAL_ATTRIBUTES) {
-            parsePAXAttributes(true);
-            readPaddingIfRequired();
-        } else if (state == READING_PAX_FILE_ATTRIBUTES) {
-            parsePAXAttributes(false);
-            readPaddingIfRequired();
-        } else if (state == READING_PADDING) {
-            setState(READING_HEADER);
-        }
-    }
 
-    void setState(State newState)
-    {
-        if ((newState == READING_HEADER) || (newState == PRE_END_OF_ARCHVE)) {
-            bytesRemaining = TAR_HEADER_BLOCK_SIZE;
-            headerPtr = headerBytes;
-        }
+            haveInitedZLib = true;
+            setState(TarExtractorPrivate::READING_HEADER);
+        } // of init on first-bytes case
 
-        state = newState;
-    }
+        size_t writtenSize;
+        // loop, running zlib() inflate and sending output bytes to
+        // our request body handler. Keep calling inflate until no bytes are
+        // written, and ZLIB has consumed all available input
+        do {
+            zlibStream.next_out = zlibOutput;
+            zlibStream.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
+            int result = inflate(&zlibStream, Z_NO_FLUSH);
+            if (result == Z_OK || result == Z_STREAM_END) {
+                // nothing to do
 
-	void extractBytes(const uint8_t* bytes, size_t count) override
-	{
-		zlibStream.next_in = (uint8_t*) bytes;
-		zlibStream.avail_in = count;
-
-		if (!haveInitedZLib) {
-			// now we have data, see if we're dealing with GZ-compressed data or not
-			if ((bytes[0] == 0x1f) && (bytes[1] == 0x8b)) {
-				// GZIP identification bytes
-				if (inflateInit2(&zlibStream, ZLIB_INFLATE_WINDOW_BITS | ZLIB_DECODE_GZIP_HEADER) != Z_OK) {
-					SG_LOG(SG_IO, SG_WARN, "inflateInit2 failed");
-					state = TarExtractorPrivate::BAD_DATA;
-					return;
-				}
-			} else {
-				UstarHeaderBlock* header = (UstarHeaderBlock*)bytes;
-				if (strncmp(header->magic, TMAGIC, TMAGLEN) != 0) {
-					SG_LOG(SG_IO, SG_WARN, "didn't find tar magic in header");
-					state = TarExtractorPrivate::BAD_DATA;
-					return;
-				}
-
-				uncompressedData = true;
-			}
-
-			haveInitedZLib = true;
-			setState(TarExtractorPrivate::READING_HEADER);
-		} // of init on first-bytes case
-
-		if (uncompressedData) {
-			processBytes((const char*) bytes, count);
-		} else {
-			size_t writtenSize;
-			// loop, running zlib() inflate and sending output bytes to
-			// our request body handler. Keep calling inflate until no bytes are
-			// written, and ZLIB has consumed all available input
-			do {
-				zlibStream.next_out = zlibOutput;
-				zlibStream.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
-				int result = inflate(&zlibStream, Z_NO_FLUSH);
-				if (result == Z_OK || result == Z_STREAM_END) {
-					// nothing to do
-
-				}
-				else if (result == Z_BUF_ERROR) {
-					// transient error, fall through
-				}
-				else {
-					//  _error = result;
-					SG_LOG(SG_IO, SG_WARN, "Permanent ZLib error:" << zlibStream.msg);
-					state = TarExtractorPrivate::BAD_DATA;
-					return;
-				}
-
-				writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - zlibStream.avail_out;
-				if (writtenSize > 0) {
-					processBytes((const char*) zlibOutput, writtenSize);
-				}
-
-				if (result == Z_STREAM_END) {
-					break;
-				}
-			} while ((zlibStream.avail_in > 0) || (writtenSize > 0));
-		} // of Zlib-compressed data
-	}
-
-	void flush() override
-	{
-		// no-op for tar files, we process everything greedily
-	}
-
-    void processHeader()
-    {
-        if (headerIsAllZeros()) {
-            if (state == PRE_END_OF_ARCHVE) {
-                setState(END_OF_ARCHIVE);
+            } else if (result == Z_BUF_ERROR) {
+                // transient error, fall through
             } else {
-                setState(PRE_END_OF_ARCHVE);
+                //  _error = result;
+                SG_LOG(SG_IO, SG_WARN, "Permanent ZLib error:" << zlibStream.msg);
+                state = TarExtractorPrivate::BAD_DATA;
+                return;
             }
-            return;
-        }
 
-        if (strncmp(header.magic, TMAGIC, TMAGLEN) != 0) {
-            SG_LOG(SG_IO, SG_WARN, "Untar: magic is wrong");
-            state = BAD_ARCHIVE;
-            return;
-        }
-
-        skipCurrentEntry = false;
-        std::string tarPath = std::string(header.prefix) + std::string(header.fileName);
-        if (!paxPathName.empty()) {
-            tarPath = paxPathName;
-            paxPathName.clear(); // clear for next file
-        }
-        
-        if (!isSafePath(tarPath)) {
-            SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping::" << tarPath);
-            skipCurrentEntry = true;
-        }
-
-        auto result = filterPath(tarPath);
-        if (result == ArchiveExtractor::Stop) {
-            setState(FILTER_STOPPED);
-            return;
-        } else if (result == ArchiveExtractor::Skipped) {
-            skipCurrentEntry = true;
-        }
-        
-        SGPath p = extractRootPath() / tarPath;
-        if (header.typeflag == DIRTYPE) {
-            if (!skipCurrentEntry) {
-                Dir dir(p);
-                dir.create(0755);
+            writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - zlibStream.avail_out;
+            if (writtenSize > 0) {
+                processBytes((const char*)zlibOutput, writtenSize);
             }
-            setState(READING_HEADER);
-        } else if ((header.typeflag == REGTYPE) || (header.typeflag == AREGTYPE)) {
-            currentFileSize = ::strtol(header.size, NULL, 8);
-            bytesRemaining = currentFileSize;
-            if (!skipCurrentEntry) {
-                currentFile.reset(new SGBinaryFile(p));
-                currentFile->open(SG_IO_OUT);
-            }
-            setState(READING_FILE);
-        } else if (header.typeflag == PAX_GLOBAL_HEADER) {
-            setState(READING_PAX_GLOBAL_ATTRIBUTES);
-            currentFileSize = ::strtol(header.size, NULL, 8);
-            bytesRemaining = currentFileSize;
-            paxAttributes.clear();
-        } else if (header.typeflag == PAX_FILE_ATTRIBUTES) {
-            setState(READING_PAX_FILE_ATTRIBUTES);
-            currentFileSize = ::strtol(header.size, NULL, 8);
-            bytesRemaining = currentFileSize;
-            paxAttributes.clear();
-        } else if ((header.typeflag == SYMTYPE) || (header.typeflag == LNKTYPE)) {
-            SG_LOG(SG_IO, SG_WARN, "Tarball contains a link or symlink, will be skipped:" << tarPath);
-            skipCurrentEntry = true;
-            setState(READING_HEADER);
-        } else {
-            SG_LOG(SG_IO, SG_WARN, "Unsupported tar file type:" << header.typeflag);
-            state = BAD_ARCHIVE;
-        }
-    }
 
-    void processBytes(const char* bytes, size_t count)
-    {
-        if ((state >= ERROR_STATE) || (state == END_OF_ARCHIVE)) {
-            return;
-        }
-
-        size_t curBytes = std::min(bytesRemaining, count);
-        if (state == READING_FILE) {
-            if (currentFile) {
-                currentFile->write(bytes, curBytes);
-            }
-            bytesRemaining -= curBytes;
-        } else if ((state == READING_HEADER) || (state == PRE_END_OF_ARCHVE) || (state == END_OF_ARCHIVE)) {
-            memcpy(headerPtr, bytes, curBytes);
-            bytesRemaining -= curBytes;
-            headerPtr += curBytes;
-        } else if (state == READING_PADDING) {
-            bytesRemaining -= curBytes;
-        } else if ((state == READING_PAX_FILE_ATTRIBUTES) || (state == READING_PAX_GLOBAL_ATTRIBUTES)) {
-            bytesRemaining -= curBytes;
-            paxAttributes.append(bytes, curBytes);
-        }
-
-        checkEndOfState();
-        if (count > curBytes) {
-            // recurse with unprocessed bytes
-            processBytes(bytes + curBytes, count - curBytes);
-        }
-    }
-
-    bool headerIsAllZeros() const
-    {
-        char* headerAsChar = (char*) &header;
-        for (size_t i=0; i < offsetof(UstarHeaderBlock, magic); ++i) {
-            if (*headerAsChar++ != 0) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.3.0/com.ibm.zos.v2r3.bpxa500/paxex.htm#paxex
-    void parsePAXAttributes(bool areGlobal)
-    {
-        auto lineStart = 0;
-        for (;;) {
-            auto firstSpace = paxAttributes.find(' ', lineStart);
-            auto firstEq = paxAttributes.find('=', lineStart);
-            if ((firstEq == std::string::npos) || (firstSpace == std::string::npos)) {
-                SG_LOG(SG_IO, SG_WARN, "Malfroemd PAX attributes in tarfile");
+            if (result == Z_STREAM_END) {
                 break;
             }
-            
-            uint32_t lengthBytes = std::stoul(paxAttributes.substr(lineStart, firstSpace));
-            uint32_t dataBytes = lengthBytes - (firstEq + 1);
-            std::string name = paxAttributes.substr(firstSpace+1, firstEq - (firstSpace + 1));
-            
-            // dataBytes - 1 here to trim off the trailing newline
-            std::string data = paxAttributes.substr(firstEq+1, dataBytes - 1);
-            
-            processPAXAttribute(areGlobal, name, data);
-            
-            lineStart += lengthBytes;
-        }
+        } while ((zlibStream.avail_in > 0) || (writtenSize > 0));
     }
-    
-    void processPAXAttribute(bool isGlobalAttr, const std::string& attrName, const std::string& data)
-    {
-        if (!isGlobalAttr && (attrName == "path")) {
-            // data is UTF-8 encoded path name
-            paxPathName = data;
-        }
-    }
+
+private:
+    z_stream zlibStream;
+    uint8_t* zlibOutput;
+    bool haveInitedZLib = false;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if 1 || defined(HAVE_XZ)
+
+#include <lzma.h>
+
+class XZTarExtractor : public TarExtractorPrivate
+{
+public:
+    XZTarExtractor(ArchiveExtractor* outer) : TarExtractorPrivate(outer)
+    {
+        _xzStream = LZMA_STREAM_INIT;
+        _outputBuffer = (uint8_t*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
+
+
+        auto ret = lzma_stream_decoder(&_xzStream, UINT64_MAX, LZMA_TELL_ANY_CHECK);
+        if (ret != LZMA_OK) {
+            setState(BAD_ARCHIVE);
+            return;
+        }
+    }
+
+    ~XZTarExtractor()
+    {
+        free(_outputBuffer);
+    }
+
+    void extractBytes(const uint8_t* bytes, size_t count) override
+    {
+        lzma_action action = LZMA_RUN;
+        _xzStream.next_in = bytes;
+        _xzStream.avail_in = count;
+
+        size_t writtenSize;
+        do {
+            _xzStream.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
+            _xzStream.next_out = _outputBuffer;
+
+            const auto ret = lzma_code(&_xzStream, action);
+
+            writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - _xzStream.avail_out;
+            if (writtenSize > 0) {
+                processBytes((const char*)_outputBuffer, writtenSize);
+            }
+
+            if (ret == LZMA_GET_CHECK) {
+                //
+            } else if (ret == LZMA_STREAM_END) {
+                setState(END_OF_ARCHIVE);
+                break;
+            } else if (ret != LZMA_OK) {
+                setState(BAD_ARCHIVE);
+                break;
+            }
+        } while ((_xzStream.avail_in > 0) || (writtenSize > 0));
+    }
+
+    void flush() override
+    {
+        const auto ret = lzma_code(&_xzStream, LZMA_FINISH);
+        if (ret != LZMA_STREAM_END) {
+            setState(BAD_ARCHIVE);
+        }
+    }
+
+private:
+    lzma_stream _xzStream;
+    uint8_t* _outputBuffer = nullptr;
+};
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -637,17 +656,19 @@ void ArchiveExtractor::extractBytes(const uint8_t* bytes, size_t count)
 
 		if (r == TarData) {
 			d.reset(new TarExtractorPrivate(this));
-		}
-		else if (r == ZipData) {
-			d.reset(new ZipExtractorPrivate(this));
-		}
-		else {
-			SG_LOG(SG_IO, SG_WARN, "Invalid archive type");
+        } else if (r == GZData) {
+            d.reset(new GZTarExtractor(this));
+        } else if (r == XZData) {
+            d.reset(new XZTarExtractor(this));
+        } else if (r == ZipData) {
+            d.reset(new ZipExtractorPrivate(this));
+        } else {
+            SG_LOG(SG_IO, SG_WARN, "Invalid archive type");
 			_invalidDataType = true;
 			return;
-		}
+        }
 
-		// if hit here, we created the extractor. Feed the prefbuffer
+        // if hit here, we created the extractor. Feed the prefbuffer
 		// bytes through it
 		d->extractBytes((uint8_t*) _prebuffer.data(), _prebuffer.size());
 		_prebuffer.clear();
@@ -699,9 +720,18 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::determineType(const uint8_t*
 		return ZipData;
 	}
 
-	auto r = isTarData(bytes, count);
-	if ((r == TarData) || (r == InsufficientData))
-		return r;
+    if (count < 6) {
+        return InsufficientData;
+    }
+
+    const uint8_t XZ_HEADER[6] = {0xFD, '7', 'z', 'X', 'Z', 0x00};
+    if (memcmp(bytes, XZ_HEADER, 6) == 0) {
+        return XZData;
+    }
+
+    auto r = isTarData(bytes, count);
+    if ((r == TarData) || (r == InsufficientData) || (r == GZData))
+        return r;
 
 	return Invalid;
 }
@@ -714,6 +744,8 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::isTarData(const uint8_t* byt
     }
 
     UstarHeaderBlock* header = 0;
+    DetermineResult result = InsufficientData;
+
     if ((bytes[0] == 0x1f) && (bytes[1] == 0x8b)) {
         // GZIP identification bytes
         z_stream z;
@@ -731,11 +763,11 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::isTarData(const uint8_t* byt
             return Invalid;
         }
 
-        int result = inflate(&z, Z_SYNC_FLUSH);
-        if ((result == Z_OK) || (result == Z_STREAM_END)) {
+        int zResult = inflate(&z, Z_SYNC_FLUSH);
+        if ((zResult == Z_OK) || (zResult == Z_STREAM_END)) {
             // all good
         } else {
-            SG_LOG(SG_IO, SG_WARN, "isTarData: Zlib inflate failed:" << result);
+            SG_LOG(SG_IO, SG_WARN, "isTarData: Zlib inflate failed:" << zResult);
             inflateEnd(&z);
             return Invalid; // not tar data
         }
@@ -748,6 +780,7 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::isTarData(const uint8_t* byt
 
         header = reinterpret_cast<UstarHeaderBlock*>(zlibOutput);
         inflateEnd(&z);
+        result = GZData;
     } else {
         // uncompressed tar
         if (count < TAR_HEADER_BLOCK_SIZE) {
@@ -755,13 +788,14 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::isTarData(const uint8_t* byt
         }
 
         header = (UstarHeaderBlock*) bytes;
+        result = TarData;
     }
 
     if (strncmp(header->magic, TMAGIC, TMAGLEN) != 0) {
         return Invalid;
     }
 
-    return TarData;
+    return result;
 }
 
 void ArchiveExtractor::extractLocalFile(const SGPath& archiveFile)

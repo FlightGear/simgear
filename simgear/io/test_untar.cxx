@@ -32,7 +32,7 @@ void testTarGz()
     uint8_t* buf = (uint8_t*) alloca(8192);
     size_t bufSize = f.read((char*) buf, 8192);
 
-    SG_VERIFY(ArchiveExtractor::determineType(buf, bufSize) == ArchiveExtractor::TarData);
+    SG_VERIFY(ArchiveExtractor::determineType(buf, bufSize) == ArchiveExtractor::GZData);
 
     f.close();
 }
@@ -174,6 +174,34 @@ void testPAXAttributes()
 
 }
 
+void testExtractXZ()
+{
+    SGPath p = SGPath(SRC_DIR);
+    p.append("test.tar.xz");
+
+    SGBinaryFile f(p);
+    f.open(SG_IO_IN);
+
+    SGPath extractDir = simgear::Dir::current().path() / "test_extract_xz";
+    simgear::Dir pd(extractDir);
+    pd.removeChildren();
+
+    ArchiveExtractor ex(extractDir);
+
+    uint8_t* buf = (uint8_t*)alloca(128);
+    while (!f.eof()) {
+        size_t bufSize = f.read((char*)buf, 128);
+        ex.extractBytes(buf, bufSize);
+    }
+
+    ex.flush();
+    SG_VERIFY(ex.isAtEndOfArchive());
+    SG_VERIFY(ex.hasError() == false);
+
+    SG_VERIFY((extractDir / "testDir/hello.c").exists());
+    SG_VERIFY((extractDir / "testDir/foo.txt").exists());
+}
+
 int main(int ac, char ** av)
 {
     testTarGz();
@@ -181,7 +209,8 @@ int main(int ac, char ** av)
     testFilterTar();
 	testExtractStreamed();
 	testExtractZip();
-   
+    testExtractXZ();
+
     // disabled to avoiding checking in large PAX archive
     // testPAXAttributes();
     

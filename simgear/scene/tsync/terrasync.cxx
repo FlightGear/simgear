@@ -108,13 +108,13 @@ bool hasWhitespace(string path)
 class SyncItem
 {
 public:
-    enum Type
-    {
-        Stop = 0,   ///< special item indicating to stop the SVNThread
+    enum Type {
+        Stop = 0, ///< special item indicating to stop the SVNThread
         Tile,
         AirportData,
         SharedModels,
-        AIData
+        AIData,
+        OSMTile ///< OSm2City per-Tile data
     };
 
     enum Status
@@ -170,7 +170,9 @@ public:
 static const int SYNC_SLOT_TILES = 0; ///< Terrain and Objects sync
 static const int SYNC_SLOT_SHARED_DATA = 1; /// shared Models and Airport data
 static const int SYNC_SLOT_AI_DATA = 2; /// AI traffic and models
-static const unsigned int NUM_SYNC_SLOTS = 3;
+static const int SYNC_SLOT_OSM_TILE_DATA = 3;
+
+static const unsigned int NUM_SYNC_SLOTS = 4;
 
 /**
  * @brief translate a sync item type into one of the available slots.
@@ -185,7 +187,8 @@ static unsigned int syncSlotForType(SyncItem::Type ty)
         return SYNC_SLOT_SHARED_DATA;
     case SyncItem::AIData:
         return SYNC_SLOT_AI_DATA;
-
+    case SyncItem::OSMTile:
+        return SYNC_SLOT_OSM_TILE_DATA;
     default:
         return SYNC_SLOT_SHARED_DATA;
     }
@@ -295,6 +298,11 @@ public:
      _sceneryVersion = simgear::strutils::strip(sceneryVersion);
    }
 
+   void setOSMCityVersion(const std::string& osmCityVersion)
+   {
+       _osmCityService = osmCityVersion;
+   }
+
    void   setLocalDir(string dir)           { _local_dir    = stripPath(dir);}
    string getLocalDir()                     { return _local_dir;}
 
@@ -321,10 +329,12 @@ public:
     void setCachePath(const SGPath &p) { _persistentCachePath = p; }
 
   private:
-    void incrementCacheHits()
-    {
-        std::lock_guard<std::mutex> g(_stateLock);
-        _state._cache_hits++;
+      std::string dnsSelectServerForService(const std::string& service);
+
+      void incrementCacheHits()
+      {
+          std::lock_guard<std::mutex> g(_stateLock);
+          _state._cache_hits++;
     }
 
    virtual void run();
@@ -362,6 +372,9 @@ public:
     string _local_dir;
     SGPath _persistentCachePath;
     string _httpServer;
+    string _osmCityServer;
+    string _osmCityService = "o2c";
+
     bool _isAutomaticServer;
     SGPath _installRoot;
     string _sceneryVersion;
@@ -473,8 +486,19 @@ bool SGTerraSync::WorkerThread::findServer()
 {
     if ( false == _isAutomaticServer ) return true;
 
+    _httpServer = dnsSelectServerForService(MakeQService(_protocol, _sceneryVersion));
+
+    if (!_osmCityService.empty()) {
+        _osmCityServer = dnsSelectServerForService(_osmCityService);
+    }
+
+    return !_httpServer.empty();
+}
+
+std::string SGTerraSync::WorkerThread::dnsSelectServerForService(const std::string& service)
+{
     DNS::NAPTRRequest * naptrRequest = new DNS::NAPTRRequest(_dnsdn);
-    naptrRequest->qservice = MakeQService(_protocol, _sceneryVersion);
+    naptrRequest->qservice = service;
 
     naptrRequest->qflags = "U";
     DNS::Request_ptr r(naptrRequest);
@@ -482,14 +506,15 @@ bool SGTerraSync::WorkerThread::findServer()
     DNS::Client dnsClient;
     dnsClient.makeRequest(r);
     SG_LOG(SG_TERRASYNC,SG_DEBUG,"DNS NAPTR query for '" << _dnsdn << "' '" << naptrRequest->qservice << "'" );
-    while( !r->isComplete() && !r->isTimeout() )
-      dnsClient.update(0);
+    while (!r->isComplete() && !r->isTimeout()) {
+        dnsClient.update(0);
+    }
 
     if( naptrRequest->entries.empty() ) {
         SG_LOG(SG_TERRASYNC, SG_ALERT, "Warning: no DNS entry found for '" << _dnsdn << "' '" << naptrRequest->qservice << "'" );
-        _httpServer = "";
-        return false;
+        return {};
     }
+
     // walk through responses, they are ordered by 1. order and 2. preference
     // For now, only take entries with lowest order
     // TODO: try all available servers in the order given by preferenc and order
@@ -497,38 +522,33 @@ bool SGTerraSync::WorkerThread::findServer()
 
     // get all servers with this order and the same (for now only lowest preference)
     DNS::NAPTRRequest::NAPTR_list availableServers;
-    for( DNS::NAPTRRequest::NAPTR_list::const_iterator it = naptrRequest->entries.begin();
-         it != naptrRequest->entries.end();
-         ++it ) {
-
-        if( (*it)->order != order )
+    for (const auto& entry : naptrRequest->entries) {
+        if (entry->order != order)
             continue;
 
-        string regex = (*it)->regexp;
-        if( false == simgear::strutils::starts_with( (*it)->regexp, "!^.*$!" ) ) {
-            SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
+        const string regex = entry->regexp;
+        if (false == simgear::strutils::starts_with(regex, "!^.*$!")) {
+            SG_LOG(SG_TERRASYNC, SG_WARN, "ignoring unsupported regexp: " << regex);
             continue;
         }
 
-        if( false == simgear::strutils::ends_with( (*it)->regexp, "!" ) ) {
-            SG_LOG(SG_TERRASYNC,SG_WARN, "ignoring unsupported regexp: " << (*it)->regexp );
+        if (false == simgear::strutils::ends_with(regex, "!")) {
+            SG_LOG(SG_TERRASYNC, SG_WARN, "ignoring unsupported regexp: " << regex);
             continue;
         }
 
         // always use first entry
-        if( availableServers.empty() || (*it)->preference == availableServers[0]->preference) {
-            SG_LOG(SG_TERRASYNC,SG_DEBUG, "available server regexp: " << (*it)->regexp );
-            availableServers.push_back( *it );
+        if (availableServers.empty() || entry->preference == availableServers[0]->preference) {
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "available server regexp: " << regex);
+            availableServers.push_back(entry);
         }
     }
 
     // now pick a random entry from the available servers
-    DNS::NAPTRRequest::NAPTR_list::size_type idx = sg_random() * availableServers.size();
-    _httpServer = availableServers[idx]->regexp;
-    _httpServer = _httpServer.substr( 6, _httpServer.length()-7 ); // strip search pattern and separators
-
-    SG_LOG(SG_TERRASYNC,SG_INFO, "picking entry # " << idx << ", server is " << _httpServer );
-    return true;
+    auto idx = static_cast<int>(sg_random() * availableServers.size());
+    const auto server = availableServers.at(idx)->regexp;
+    SG_LOG(SG_TERRASYNC, SG_INFO, "picking entry # " << idx << ", server is " << server.substr(6, server.length() - 7););
+    return server.substr(6, server.length() - 7);
 }
 
 void SGTerraSync::WorkerThread::run()
@@ -605,7 +625,7 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 
         if (type == SyncItem::AirportData) {
             beginSyncAirports(slot);
-        } else if (type == SyncItem::Tile) {
+        } else if ((type == SyncItem::Tile) || (type == SyncItem::OSMTile)) {
             beginSyncTile(slot);
         } else {
             beginNormalSync(slot);
@@ -676,7 +696,12 @@ void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
 
     const auto path = SGPath::fromUtf8(_local_dir) / tileCategory;
     slot.repository.reset(new HTTPRepository(path, &_http));
-    slot.repository->setBaseUrl(_httpServer + "/" + tileCategory);
+
+    if (slot.currentItem._type == SyncItem::OSMTile) {
+        slot.repository->setBaseUrl(_osmCityServer + "/" + tileCategory);
+    } else {
+        slot.repository->setBaseUrl(_httpServer + "/" + tileCategory);
+    }
 
     if (_installRoot.exists()) {
       SGPath p = _installRoot / tileCategory;
@@ -684,6 +709,7 @@ void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
     }
 
     const auto dirPrefix = tenByTenDir + "/" + oneByOneDir;
+    using simgear::strutils::starts_with;
 
     // filter callback to *only* sync the 1x1 dir we want, if it exists
     // if doesn't, we'll simply stop, which is what we want
@@ -692,7 +718,10 @@ void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
         if (item.directory.empty()) {
             return item.filename == tenByTenDir;
         } else if (item.directory == tenByTenDir) {
-            return item.filename == oneByOneDir;
+            // allow 10x10 dir to contain 1x1_dir.tgz/.zip and still be accepted
+            // this does mean we'd also download oneByOneDir_foobar but that
+            // doesn't seem unreasonable either
+            return starts_with(item.filename, oneByOneDir);
         }
 
         // allow arbitrary children below dirPrefix, including sub-dirs
@@ -1041,6 +1070,7 @@ void SGTerraSync::reinit()
         _availableNode->setBoolValue(true);
         _workerThread->setHTTPServer( _terraRoot->getStringValue("http-server","automatic") );
         _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
+        _workerThread->setOSMCityVersion(_terraRoot->getStringValue("osm2city-version", "o2c"));
         _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
 #if 1
         // leave it hardcoded for now, not sure about the security implications for now
@@ -1209,6 +1239,10 @@ string_list SGTerraSync::getSceneryPathSuffixes() const
     return scenerySuffixes;
 }
 
+bool isOSMSuffix(const std::string& suffix)
+{
+    return (suffix == "Buildings") || (suffix == "Roads") || (suffix == "Pylons") || (suffix == "Details");
+}
 
 void SGTerraSync::syncAreaByPath(const std::string& aPath)
 {
@@ -1222,7 +1256,7 @@ void SGTerraSync::syncAreaByPath(const std::string& aPath)
             continue;
         }
 
-        SyncItem w(dir, SyncItem::Tile);
+        SyncItem w(dir, isOSMSuffix(suffix) ? SyncItem::OSMTile : SyncItem::Tile);
         _workerThread->request( w );
     }
 }
@@ -1241,6 +1275,11 @@ bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
     }
 
     for (const auto& suffix : getSceneryPathSuffixes()) {
+        // don't wait on OSM dirs, even if enabled
+        if (isOSMSuffix(suffix)) {
+            continue;
+        }
+
         const auto s = suffix + "/" + sceneryDir;
         if (_workerThread->isDirActive(s)) {
             return true;

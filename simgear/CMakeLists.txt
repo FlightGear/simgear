@@ -146,6 +146,7 @@ target_link_libraries(SimGearCore PRIVATE
     CURL::libcurl
     EXPAT::EXPAT
     Udns::Udns
+    LibLZMA::LibLZMA
     ${WINSOCK_LIBRARY})
 
 if(NOT SIMGEAR_HEADLESS)

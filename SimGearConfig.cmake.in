@@ -1,6 +1,7 @@
 include(CMakeFindDependencyMacro)
 
 find_dependency(ZLIB)
+find_dependency(LibLZMA)
 find_dependency(Threads)
 find_dependency(CURL)
 

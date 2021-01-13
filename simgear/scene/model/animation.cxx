@@ -1134,16 +1134,8 @@ void SpinAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
         double intPart;
         double rot = modf(rotation, &intPart);
         double angle = rot * 2.0 * osg::PI;
-        const SGVec3d& sgcenter = transform->getCenter();
-        const SGVec3d& sgaxis = transform->getAxis();
-        Matrixd mat = Matrixd::translate(-sgcenter[0], -sgcenter[1], -sgcenter[2])
-            * Matrixd::rotate(angle, sgaxis[0], sgaxis[1], sgaxis[2])
-            * Matrixd::translate(sgcenter[0], sgcenter[1], sgcenter[2])
-            * *cv->getModelViewMatrix();
-        ref_ptr<RefMatrix> refmat = new RefMatrix(mat);
-        cv->pushModelViewMatrix(refmat.get(), transform->getReferenceFrame());
+        transform->setAngleRad(angle);
         traverse(transform, nv);
-        cv->popModelViewMatrix();
     } else {
         traverse(transform, nv);
     }

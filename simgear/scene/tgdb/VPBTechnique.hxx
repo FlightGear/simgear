@@ -19,6 +19,8 @@
 #ifndef VPBTECHNIQUE
 #define VPBTECHNIQUE 1
 
+#include <mutex>
+
 #include <osg/MatrixTransform>
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -27,6 +29,7 @@
 #include <osgTerrain/Locator>
 
 #include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/material/matlib.hxx>
 
 using namespace osgTerrain;
 
@@ -84,6 +87,9 @@ class VPBTechnique : public TerrainTechnique
         * for all graphics contexts. */
         virtual void releaseGLObjects(osg::State* = 0) const;
 
+        static void addElevationConstraint(osg::ref_ptr<osg::Node> constraint, osg::Group* terrain);
+        static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
+        static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex);
 
     protected:
 
@@ -111,7 +117,6 @@ class VPBTechnique : public TerrainTechnique
 
         virtual void applyTransparency(BufferData& buffer);
 
-
         OpenThreads::Mutex                  _writeBufferMutex;
         osg::ref_ptr<BufferData>            _currentBufferData;
         osg::ref_ptr<BufferData>            _newBufferData;
@@ -125,6 +130,9 @@ class VPBTechnique : public TerrainTechnique
         osg::ref_ptr<SGReaderWriterOptions> _options;
         osg::ref_ptr<osg::Image>            _atlas;
         osg::ref_ptr<SGMaterialCache>       _matcache;
+
+        inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();;
+        inline static std::mutex _constraint_mutex;  // protects the _constraintGroup;
 };
 
 }

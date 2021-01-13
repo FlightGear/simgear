@@ -730,10 +730,11 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::determineType(const uint8_t*
     }
 
     auto r = isTarData(bytes, count);
-    if ((r == TarData) || (r == InsufficientData) || (r == GZData))
+    if ((r == TarData) || (r == InsufficientData) || (r == GZData)) {
         return r;
+    }
 
-	return Invalid;
+    return Invalid;
 }
 
 

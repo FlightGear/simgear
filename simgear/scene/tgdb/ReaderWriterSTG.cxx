@@ -662,6 +662,19 @@ struct ReaderWriterSTG::_ModelBin {
                     SG_LOG(SG_TERRAIN, SG_INFO, "Loading: " << filename);
                 }
             }
+
+            // OBJECTs include airports
+            for (auto stgObject : _objectList) {
+                osg::ref_ptr<osg::Node> node;
+                node = osgDB::readRefNodeFile(stgObject._name, stgObject._options.get());
+
+                if (!node.valid()) {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, stgObject._errorLocation << ": Failed to load "
+                        << stgObject._token << " '" << stgObject._name << "'");
+                    continue;
+                }
+                terrainGroup->addChild(node.get());
+            }
         } else if (_foundBase) {
             for (auto stgObject : _objectList) {
                 osg::ref_ptr<osg::Node> node;

@@ -21,6 +21,8 @@
 #include <osgTerrain/TerrainTile>
 #include <osgTerrain/Terrain>
 
+#include <osgUtil/LineSegmentIntersector>
+#include <osgUtil/IntersectionVisitor>
 #include <osgUtil/MeshOptimizers>
 
 #include <osgDB/FileUtils>
@@ -57,7 +59,6 @@ VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options)
     setFilterWidth(0.1);
     setFilterMatrixAs(GAUSSIAN);
     setOptions(options);
-
 }
 
 VPBTechnique::VPBTechnique(const VPBTechnique& gt,const osg::CopyOp& copyop):
@@ -505,7 +506,11 @@ void VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, La
             if (validValue)
             {
                 osg::Vec3d model;
+                osg::Vec3d origin;
+                _masterLocator->convertLocalToModel(osg::Vec3d(ndc.x(), ndc.y(), -1000), origin);
                 _masterLocator->convertLocalToModel(ndc, model);
+
+                model = VPBTechnique::checkAgainstElevationConstraints(origin, model);
 
                 for(VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.begin();
                     itr != layerToTexCoordMap.end();
@@ -1447,6 +1452,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
                     atlas = _matcache->getAtlas();
                     SGMaterialCache::AtlasIndex atlasIndex = atlas.index;
 
+                    // Set the "g" color channel to an index into the atlas index.
                     for (int s = 0; s < image->s(); s++) {
                         for (int t = 0; t < image->t(); t++) {
                             osg::Vec4 c = image->getColor(s, t);
@@ -1614,7 +1620,6 @@ void VPBTechnique::traverse(osg::NodeVisitor& nv)
     }
 }
 
-
 void VPBTechnique::cleanSceneGraph()
 {
 }
@@ -1623,5 +1628,75 @@ void VPBTechnique::releaseGLObjects(osg::State* state) const
 {
     if (_currentBufferData.valid() && _currentBufferData->_transform.valid()) _currentBufferData->_transform->releaseGLObjects(state);
     if (_newBufferData.valid() && _newBufferData->_transform.valid()) _newBufferData->_transform->releaseGLObjects(state);
+}
+
+// Simple vistor to check for any underlying terrain meshes that contain a given constraint and therefore may need to be modified
+// (e.g elevation lowered to ensure the terrain doesn't poke through an airport mesh)
+class TerrainVisitor : public osg::NodeVisitor {
+    public:
+    osg::ref_ptr<osg::Node> _constraint; // Object to flatten the terrain under.   
+    TerrainVisitor( osg::ref_ptr<osg::Node> node) :
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _constraint(node)
+    { }
+    virtual ~TerrainVisitor()
+    { }
+
+    void apply(osg::Node& node)
+    {
+        osgTerrain::TerrainTile* tile = dynamic_cast<osgTerrain::TerrainTile*>(&node);
+        if (tile)
+        {
+            // Determine if the constraint should affect this tile.
+            const osg::BoundingSphere tileBB = tile->getBound();
+            if (tileBB.intersects(_constraint->getBound())) {
+                // Dirty any existing terrain tiles containing this constraint, which will force regeneration of the elevation mesh.
+                tile->setDirty(true); 
+                //tile->init(tile->getDirtyMask(), true);
+            }
+        } else {
+            traverse(node);
+        }
+    }
+};
+
+// Add an osg object representing a contraint on the terrain mesh.  The generated terrain mesh will not include any vertices that
+// lie above the constraint model.  (Note that geometry may result in edges intersecting the constraint model in cases where there
+// are significantly higher vertices that lie just outside the constraint model.
+void VPBTechnique::addElevationConstraint(osg::ref_ptr<osg::Node> constraint, osg::Group* terrain)
+{ 
+    const std::lock_guard<std::mutex> lock(VPBTechnique::_constraint_mutex); // Lock the _constraintGroup for this scope
+    _constraintGroup->addChild(constraint.get()); 
+
+    TerrainVisitor ftv(constraint);
+    terrain->accept(ftv);
+}
+
+// Remove a previously added constraint.  E.g on model unload.
+void VPBTechnique::removeElevationConstraint(osg::ref_ptr<osg::Node> constraint)
+{ 
+    const std::lock_guard<std::mutex> lock(VPBTechnique::_constraint_mutex); // Lock the _constraintGroup for this scope
+    _constraintGroup->removeChild(constraint.get()); 
+}
+
+// Check a given vertex against any elevation constraints  E.g. to ensure the terrain mesh doesn't
+// poke through any airport meshes.  If such a constraint exists, the function will return a replacement
+// vertex displaces such that it lies 1m below the contraint relative to the passed in origin.  
+osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex)
+{
+    const std::lock_guard<std::mutex> lock(VPBTechnique::_constraint_mutex); // Lock the _constraintGroup for this scope
+    osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
+    intersector = new osgUtil::LineSegmentIntersector(origin, vertex);
+    osgUtil::IntersectionVisitor visitor(intersector.get());
+    _constraintGroup->accept(visitor);
+
+    if (intersector->containsIntersections()) {
+        // We have an intersection with our constraints model, so move the terrain vertex to 1m below the intersection point
+        osg::Vec3d ray = intersector->getFirstIntersection().getWorldIntersectPoint() - origin;
+        ray.normalize();
+        return intersector->getFirstIntersection().getWorldIntersectPoint() - ray*1.0;
+    } else {
+        return vertex;
+    }
 }
 

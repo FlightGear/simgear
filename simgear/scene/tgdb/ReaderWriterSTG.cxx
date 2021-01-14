@@ -53,6 +53,8 @@
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/tgdb/SGBuildingBin.hxx>
 #include <simgear/scene/tgdb/TreeBin.hxx>
+#include <simgear/scene/tgdb/VPBTechnique.hxx>
+
 
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 
@@ -673,6 +675,11 @@ struct ReaderWriterSTG::_ModelBin {
                         << stgObject._token << " '" << stgObject._name << "'");
                     continue;
                 }
+
+                // Add the OBJECT to the elevation constraints of the terrain so the terrain
+                // doesn't poke through the airport
+                simgear::VPBTechnique::addElevationConstraint(node, terrainGroup);
+
                 terrainGroup->addChild(node.get());
             }
         } else if (_foundBase) {

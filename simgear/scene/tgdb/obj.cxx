@@ -55,11 +55,6 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     SGMaterialLibPtr matlib;
     osg::ref_ptr<SGMaterialCache> matcache;
     bool useVBOs = false;
-    bool simplifyDistant = false;
-    bool simplifyNear    = false;
-    double ratio       = SG_SIMPLIFIER_RATIO;
-    double maxLength   = SG_SIMPLIFIER_MAX_LENGTH;
-    double maxError    = SG_SIMPLIFIER_MAX_ERROR;
     double object_range = SG_OBJECT_RANGE_ROUGH;
     double tile_min_expiry = SG_TILE_MIN_EXPIRY;
     bool usePhotoscenery = false;
@@ -69,13 +64,6 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       useVBOs = (options->getPluginStringData("SimGear::USE_VBOS") == "ON");
       SGPropertyNode* propertyNode = options->getPropertyNode().get();
 
-      // We control whether we simplify the nearby terrain and distant terrain separatey.
-      // However, we don't allow only simplifying the near terrain!
-      simplifyNear = propertyNode->getBoolValue("/sim/rendering/terrain/simplifier/enabled-near", simplifyNear);
-      simplifyDistant = simplifyNear || propertyNode->getBoolValue("/sim/rendering/terrain/simplifier/enabled-far", simplifyDistant);
-      ratio = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/ratio", ratio);
-      maxLength = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-length", maxLength);
-      maxError = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-error", maxError);
       object_range = propertyNode->getDoubleValue("/sim/rendering/static-lod/rough", object_range);
       tile_min_expiry= propertyNode->getDoubleValue("/sim/rendering/plod-minimum-expiry-time-secs", tile_min_expiry);
       usePhotoscenery = propertyNode->getBoolValue("/sim/rendering/photoscenery/enabled", usePhotoscenery);
@@ -150,11 +138,6 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       }
     }
 
-    if (node && simplifyDistant) {
-      osgUtil::Simplifier simplifier(ratio, maxError, maxLength);
-      node->accept(simplifier);
-    }
-
     // The toplevel transform for that tile.
     osg::MatrixTransform* transform = new osg::MatrixTransform;
     transform->setName(path);
@@ -172,18 +155,10 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
       pagedLOD->setName("pagedObjectLOD");
 
-      if (simplifyNear == simplifyDistant) {
-        // Same terrain type is used for both near and far distances,
-        // so add it to the main group.
-        osg::Group* terrainGroup = new osg::Group;
-        terrainGroup->setName("BTGTerrainGroup");
-        terrainGroup->addChild(node);
-        transform->addChild(terrainGroup);
-      } else if (simplifyDistant) {
-        // Simplified terrain is only used in the distance, the
-        // call-back below will re-generate the closer version
-        pagedLOD->addChild(node, 2*object_range + SG_TILE_RADIUS, FLT_MAX);
-      }
+      osg::Group* terrainGroup = new osg::Group;
+      terrainGroup->setName("BTGTerrainGroup");
+      terrainGroup->addChild(node);
+      transform->addChild(terrainGroup);
 
       osg::ref_ptr<SGReaderWriterOptions> opt;
       opt = SGReaderWriterOptions::copyOrCreate(options);
@@ -191,7 +166,6 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       // we just need to know about the read file callback that itself holds the data
       tileDetailsCallback->_options = opt;
       tileDetailsCallback->_path = std::string(path);
-      tileDetailsCallback->_loadterrain = ! (simplifyNear == simplifyDistant);
       tileDetailsCallback->_gbs_center = center;
       tileDetailsCallback->_rootNode = node;
       tileDetailsCallback->_randomSurfaceLightsComputed = false;

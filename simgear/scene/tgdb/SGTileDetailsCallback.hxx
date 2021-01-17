@@ -27,7 +27,6 @@
 #endif
 
 #include <osg/LOD>
-#include <osgUtil/Simplifier>
 
 #include <boost/foreach.hpp>
 
@@ -52,9 +51,6 @@
 typedef std::list<SGLightBin> SGLightListBin;
 typedef std::list<SGDirectionalLightBin> SGDirectionalLightListBin;
 
-#define SG_SIMPLIFIER_RATIO         (0.001)
-#define SG_SIMPLIFIER_MAX_LENGTH    (1000.0)
-#define SG_SIMPLIFIER_MAX_ERROR     (2000.0)
 using namespace simgear;
 
 // QuadTreeBuilder is used by Random Objects Generator
@@ -123,11 +119,6 @@ public:
             matTris[i].dumpBorder(_gbs_center);
         }
 #endif
-
-        osg::Node* node = loadTerrain();
-        if (node) {
-            group->addChild(node);
-        }
 
         osg::LOD* lightLOD = generateLightingTileObjects(matTris, matcache);
         if (lightLOD) {
@@ -241,79 +232,6 @@ public:
         return true;
     }
     
-    
-    
-    // Load terrain if required
-    // todo - this is the same code as when we load a btg from the .STG - can we combine?
-    osg::Node* loadTerrain()
-    {
-      if (! _loadterrain)
-        return NULL;
-
-      SGBinObject tile;
-      if (!tile.read_bin(_path))
-        return NULL;
-
-      SGMaterialLibPtr matlib;
-      SGMaterialCache* matcache = 0;
-      bool useVBOs = false;
-      bool simplifyNear    = false;
-      double ratio       = SG_SIMPLIFIER_RATIO;
-      double maxLength   = SG_SIMPLIFIER_MAX_LENGTH;
-      double maxError    = SG_SIMPLIFIER_MAX_ERROR;
-
-      if (_options) {
-        matlib = _options->getMaterialLib();
-        useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
-        SGPropertyNode* propertyNode = _options->getPropertyNode().get();
-        simplifyNear = propertyNode->getBoolValue("/sim/rendering/terrain/simplifier/enabled-near", simplifyNear);
-        ratio = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/ratio", ratio);
-        maxLength = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-length", maxLength);
-        maxError = propertyNode->getDoubleValue("/sim/rendering/terrain/simplifier/max-error", maxError);
-      }
-
-      // PSADRO TODO : we can do this in terragear 
-      // - why not add a bitmask of flags to the btg so we can precompute this?
-      // and only do it if it hasn't been done already
-      SGVec3d center = tile.get_gbs_center();
-      SGGeod geodPos = SGGeod::fromCart(center);
-      SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
-
-      // Generate a materials cache
-      if (matlib) {
-          matcache = matlib->generateMatCache(geodPos, _options);
-      }
-      
-      // rotate the tiles so that the bounding boxes get nearly axis aligned.
-      // this will help the collision tree's bounding boxes a bit ...
-      std::vector<SGVec3d> nodes = tile.get_wgs84_nodes();
-      for (unsigned i = 0; i < nodes.size(); ++i) {
-        nodes[i] = hlOr.transform(nodes[i]);
-      }
-      tile.set_wgs84_nodes(nodes);
-
-      SGQuatf hlOrf(hlOr[0], hlOr[1], hlOr[2], hlOr[3]);
-      std::vector<SGVec3f> normals = tile.get_normals();
-      for (unsigned i = 0; i < normals.size(); ++i) {
-        normals[i] = hlOrf.transform(normals[i]);
-      }
-      tile.set_normals(normals);
-
-      osg::ref_ptr<SGTileGeometryBin> tileGeometryBin = new SGTileGeometryBin;
-
-      if (!tileGeometryBin->insertSurfaceGeometry(tile, matcache)) {
-        return NULL;
-      }
-      
-      osg::Node* node = tileGeometryBin->getSurfaceGeometry(matcache, useVBOs);
-      if (node && simplifyNear) {
-        osgUtil::Simplifier simplifier(ratio, maxError, maxLength);
-        node->accept(simplifier);
-      }
-
-      return node;
-    }
-
     float min_dist_to_seg_squared( const SGVec3f p, const SGVec3d& a, const SGVec3d& b )
     {
         const float l2 = distSqr(a, b);
@@ -1110,7 +1028,6 @@ public:
     /// The original options to use for this bunch of models
     osg::ref_ptr<SGReaderWriterOptions>     _options;
     string                                  _path;
-    bool                                    _loadterrain;
     osg::ref_ptr<osg::Node>                 _rootNode;
     SGVec3d                                 _gbs_center;
     bool                                    _randomSurfaceLightsComputed;

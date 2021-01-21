@@ -51,11 +51,236 @@ using std::stringstream;
 using namespace simgear;
 
 
+/*
+Locking support.
+
+All code that reads/writes SGPropertyNode data has to create either a
+SGPropertyLockShared or a SGPropertyLockExclusive.
+
+To avoid deadlocks, code must never lock a node when holding lock on a
+child/grandchild/... node.
+*/
+
+static bool s_property_locking_first_time = true;
+static bool s_property_locking_active = true;
+static bool s_property_locking_verbose = false;
+
+/* Abstract lock for shared/exclusive locks. We need this for code that doesn't
+care whether a lock is shared or exclusive, so it can be called by code that
+has exclusive or shared locks. */
+struct SGPropertyLock
+{
+    /* Returns true/false if environmental variable <name> is 1 or 0, otherwise
+    <default_>. */
+    static bool env_default(const char* name, bool default_)
+    {
+        bool ret;
+        const char* value = getenv(name);
+        if (!value) ret = default_;
+        else if (!strcmp(value, "0"))  ret = false;
+        else if (!strcmp(value, "1"))  ret = true;
+        else {
+            std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                    << " unrecognised " << name
+                    << " should be 0 or 1: " << value
+                    << "\n";
+            ret = default_;
+        }
+        std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                << " name=" << name
+                << " value=" << (value ? value : "<unset>")
+                << " returning: " << ret
+                << "\n";
+        return ret;
+    }
+
+    static void init_static()
+    {
+        if (s_property_locking_first_time) {
+            s_property_locking_first_time = false;
+            s_property_locking_active = env_default("SG_PROPERTY_LOCKING", true);
+            s_property_locking_verbose = env_default("SG_PROPERTY_LOCKING_VERBOSE", false);
+        }
+    }
+    
+    SGPropertyLock()
+    {
+        init_static();
+    }
+    
+    /* These are provided for the rare situations where share/non-shared
+    agnostic code needs to release/acquire a lock. */
+    virtual void acquire() = 0;
+    virtual void release() = 0;
+    
+    /* Acquires shared or exclusive lock on <mutex>, generating various
+    diagnostics depending on s_property_locking_verbose. */
+    void acquire_internal(const SGPropertyNode& node, bool shared)
+    {
+        if (!s_property_locking_active) {
+            return;
+        }
+
+        if (!s_property_locking_verbose) {
+            if (shared) node._mutex.lock_shared();
+            else node._mutex.lock();
+            return;
+        }
+
+        /* Verbose. Try non-blocking lock first. */
+        try {
+            bool ok = (shared) ? node._mutex.try_lock_shared() : node._mutex.try_lock();
+            if (ok) return;
+        }
+        catch (std::exception& e) {
+            std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                    << (shared ? "    shared" : " exclusive") << " try-lock failed."
+                    << " &node=" << &node
+                    << " _name=" << node._name
+                    << ": " << e.what()
+                    << "\n";
+            throw;
+        }
+        
+        /* Non-blocking call failed to acquire, so now do a blocking lock. */
+        std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                << (shared ? "    shared" : " exclusive") << " lock contention"
+                << " &node=" << &node
+                << " _name=" << node._name
+                << "\n";
+        try {
+            if (shared) node._mutex.lock_shared();
+            else node._mutex.lock();
+        }
+        catch (std::exception& e) {
+            std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                    << (shared ? "    shared" : " exclusive") << " lock failed:"
+                    << " &node=" << &node
+                    << " _name=" << node._name
+                    << ": " << e.what()
+                    << "\n";
+            throw;
+        }
+    }
+    
+    void release_internal(const SGPropertyNode& node, bool shared)
+    {
+        if (!s_property_locking_active) {
+            return;
+        }
+        if (shared) node._mutex.unlock_shared();
+        else node._mutex.unlock();
+    }
+};
+
+/* Scoped exclusive lock of a SGPropertyNode. */
+struct SGPropertyLockExclusive : SGPropertyLock
+{
+    SGPropertyLockExclusive()
+    :
+    SGPropertyLock()
+    {
+    }
+    
+    SGPropertyLockExclusive(const SGPropertyNode& node)
+    :
+    SGPropertyLock()
+    {
+        assign(node);
+    }
+    
+    void assign(const SGPropertyNode& node)
+    {
+        assert(!m_node);
+        m_node = &node;
+        acquire();
+    }
+    
+    void acquire() override
+    {
+        assert(m_node);
+        assert(!m_own);
+        acquire_internal(*m_node, false /*shared*/);
+        m_own = true;
+    }
+    void release() override
+    {
+        assert(m_own);
+        release_internal(*m_node, false /*shared*/);
+        m_own = false;
+    }
+    
+    ~SGPropertyLockExclusive()
+    {
+        if (m_own) release();
+    }
+    
+    const SGPropertyNode*   m_node = nullptr;
+    bool                    m_own = false;
+
+    private:
+        SGPropertyLockExclusive(const SGPropertyLockExclusive&);
+};
+
+/* Scoped shared lock of a SGPropertyNode. */
+struct SGPropertyLockShared : SGPropertyLock
+{
+    SGPropertyLockShared()
+    :
+    SGPropertyLock(),
+    m_node(nullptr)
+    {
+    }
+    
+    /* Takes out shared lock for <node>. */
+    SGPropertyLockShared(const SGPropertyNode& node)
+    :
+    SGPropertyLock()
+    {
+        assign(node);
+    }
+    
+    /* Sets our SGPropertyNode and takes out a shared lock. Can only
+    be called if we don't have a SGPropertyNode. */
+    void assign(const SGPropertyNode& node)
+    {
+        assert(!m_node);
+        m_node = &node;
+        acquire();
+    }
+    
+    void acquire() override
+    {
+        assert(m_node);
+        assert(!m_own);
+        acquire_internal(*m_node, true /*shared*/);
+        m_own = true;
+    }
+    void release() override
+    {
+        assert(m_own);
+        release_internal(*m_node, true /*shared*/);
+        m_own = false;
+    }
+    
+    ~SGPropertyLockShared()
+    {
+        if (m_own) release();
+    }
+    
+    const SGPropertyNode*   m_node = nullptr;
+    bool                    m_own = false;
+
+    private:
+        SGPropertyLockShared(const SGPropertyLockShared&);
+};
+
+
 struct SGPropertyNodeListeners
 {
   /* Protect _num_iterators and _items. We use a recursive mutex to allow
   nested access to work as normal. */
-  std::recursive_mutex  _rmutex;
+  //std::recursive_mutex  _rmutex;
 
   /* This keeps a count of the current number of nested invocations of
   forEachListener(). If non-zero, other code higher up the stack is iterating
@@ -81,13 +306,6 @@ public:
   }
 };
 
-
-////////////////////////////////////////////////////////////////////////
-// Convenience macros for value access.
-////////////////////////////////////////////////////////////////////////
-
-#define TEST_READ(dflt) if (!getAttribute(READ)) return dflt
-#define TEST_WRITE if (!getAttribute(WRITE)) return false
 
 ////////////////////////////////////////////////////////////////////////
 // Local path normalization code.
@@ -365,23 +583,24 @@ copy_string (const char * s)
 }
 
 static bool
-compare_strings (const char * s1, const char * s2)
+strings_equal (const char * s1, const char * s2)
 {
-  return !strncmp(s1, s2, SGPropertyNode::MAX_STRING_LEN);
+  return !strcmp(s1, s2);
 }
+
 
 /**
  * Locate a child node by name and index.
  */
 template<typename Itr>
 static int
-find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
+find_child(SGPropertyLock& lock, Itr begin, Itr end, int index, const PropertyList& nodes)
 {
   size_t nNodes = nodes.size();
 #if PROPS_STANDALONE
   for (int i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
-    if (node->getIndex() == index && compare_strings(node->getName(), begin))
+    if (node->getIndex() == index && strings_equal(node->getName(), begin))
       return i;
   }
 #else
@@ -402,14 +621,14 @@ find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
  * Locate the child node with the highest index of the same name
  */
 static int
-find_last_child (const char * name, const PropertyList& nodes)
+find_last_child (SGPropertyLockExclusive& exclusive, const char * name, const PropertyList& nodes)
 {
   size_t nNodes = nodes.size();
   int index = -1;
 
   for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
-    if (compare_strings(node->getName(), name))
+    if (strings_equal(node->getName(), name))
     {
       int idx = node->getIndex();
       if (idx > index) index = idx;
@@ -422,15 +641,17 @@ find_last_child (const char * name, const PropertyList& nodes)
  * Get first unused index for child nodes with the given name
  */
 static int
-first_unused_index( const char * name,
+first_unused_index( SGPropertyLockExclusive& exclusive,
+                    const char * name,
                     const PropertyList& nodes,
-                    int min_index )
+                    int min_index
+                    )
 {
   const char* nameEnd = name + strlen(name);
 
   for( int index = min_index; index < std::numeric_limits<int>::max(); ++index )
   {
-    if( find_child(name, nameEnd, index, nodes) < 0 )
+    if( find_child(exclusive, name, nameEnd, index, nodes) < 0 )
       return index;
   }
 
@@ -438,39 +659,1083 @@ first_unused_index( const char * name,
   return -1;
 }
 
-template<typename Itr>
-inline SGPropertyNode*
-SGPropertyNode::getExistingChild (Itr begin, Itr end, int index)
+/* Calls <callback> for each item in _listeners. We are careful to skip nullptr
+entries in _listeners->items[], which can be created if listeners are removed
+while we are iterating. */
+static void forEachListener(
+    SGPropertyLockExclusive& exclusive,
+    SGPropertyNode* node,
+    SGPropertyNodeListeners*& _listeners,
+    std::function<void (SGPropertyChangeListener*)> callback
+    )
 {
-  int pos = find_child(begin, end, index, _children);
-  if (pos >= 0)
-    return _children[pos];
-  return 0;
-}
+  if (!_listeners) return;
 
-template<typename Itr>
-SGPropertyNode *
-SGPropertyNode::getChildImpl (Itr begin, Itr end, int index, bool create)
-{
-    SGPropertyNode* node = getExistingChild(begin, end, index);
+  assert(_listeners->_num_iterators >= 0);
+  _listeners->_num_iterators += 1;
+  exclusive.release();
 
-    if (node) {
-      return node;
-    } else if (create) {
-      // REVIEW: Memory Leak - 2,028 (1,976 direct, 52 indirect) bytes in 13 blocks are definitely lost
-      node = new SGPropertyNode(begin, end, index, this);
-      _children.push_back(node);
-      fireChildAdded(node);
-      return node;
-    } else {
-      return 0;
+  {
+    SGPropertyLockShared  shared(*node);
+    /* We need to use an index here when iterating _listeners->_items, not an
+    iterator. This is because a listener may add new listeners, causing the
+    vector to be reallocated, which would invalidate any iterator. */
+    for (size_t i = 0; i < _listeners->_items.size(); ++i) {
+      auto listener = _listeners->_items[i];
+      if (listener) {
+        shared.release();
+        try {
+          callback(listener);
+        }
+        catch (std::exception& e) {
+          SG_LOG(SG_GENERAL, SG_ALERT, "Ignoring exception from property callback: " << e.what());
+        }
+        shared.acquire();
+      }
     }
+  }
+
+  exclusive.acquire();
+  _listeners->_num_iterators -= 1;
+  assert(_listeners->_num_iterators >= 0);
+
+  if (_listeners->_num_iterators == 0) {
+
+    /* Remove any items that have been set to nullptr. */
+    _listeners->_items.erase(
+        std::remove(
+                _listeners->_items.begin(),
+                _listeners->_items.end(),
+                (SGPropertyChangeListener*) nullptr
+                ),
+        _listeners->_items.end()
+        );
+    if (_listeners->_items.empty()) {
+      delete _listeners;
+      _listeners = nullptr;
+    }
+  }
 }
+
+
+struct SGPropertyNodeImpl
+{
+    static bool get_bool(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (node._tied)
+            return static_cast<SGRawValue<bool>*>(node._value.val)->getValue();
+        else
+            return node._local_val.bool_val;
+    }
+    
+    static int get_int(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (node._tied)
+            return static_cast<SGRawValue<int>*>(node._value.val)->getValue();
+        else
+            return node._local_val.int_val;
+    }
+    
+    static int get_long(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (node._tied)
+            return static_cast<SGRawValue<long>*>(node._value.val)->getValue();
+        else
+            return node._local_val.long_val;
+    }
+    
+    static float get_float(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (node._tied)
+            return static_cast<SGRawValue<float>*>(node._value.val)->getValue();
+        else
+            return node._local_val.float_val;
+    }
+    
+    static double get_double(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (node._tied)
+            return static_cast<SGRawValue<double>*>(node._value.val)->getValue();
+        else
+            return node._local_val.double_val;
+    }
+    
+    static const char* get_string(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (node._tied)
+            return static_cast<SGRawValue<const char*>*>(node._value.val)->getValue();
+        else
+            return node._local_val.string_val;
+    }
+    
+    static bool
+    set_bool(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, bool val)
+    {
+        bool changed = false;
+        if (node._tied) {
+            exclusive.release();
+            changed = static_cast<SGRawValue<bool>*>(node._value.val)->setValue(val);
+            exclusive.acquire();
+        }
+        else {
+            changed = true;
+            node._local_val.bool_val = val;
+        }
+        if (changed) {
+            SGPropertyNodeImpl::fireValueChanged(exclusive, node, &node);
+        }
+        return changed;
+    }
+    
+    static bool
+    set_int(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, int val)
+    {
+        bool changed = false;
+        if (node._tied) {
+            exclusive.release();
+            changed = static_cast<SGRawValue<int>*>(node._value.val)->setValue(val);
+            exclusive.acquire();
+        }
+        else {
+            changed = true;
+            node._local_val.int_val = val;
+        }
+        if (changed) {
+            SGPropertyNodeImpl::fireValueChanged(exclusive, node, &node);
+        }
+        return changed;
+    }
+    
+    static bool
+    set_long(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, long val)
+    {
+        bool changed = false;
+        if (node._tied) {
+            exclusive.release();
+            changed = static_cast<SGRawValue<long>*>(node._value.val)->setValue(val);
+            exclusive.acquire();
+        }
+        else {
+            changed = true;
+            node._local_val.long_val = val;
+        }
+        if (changed) {
+            SGPropertyNodeImpl::fireValueChanged(exclusive, node, &node);
+        }
+        return changed;
+    }
+    
+    static bool
+    set_float(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, float val)
+    {
+        bool changed = false;
+        if (node._tied) {
+            exclusive.release();
+            changed = static_cast<SGRawValue<float>*>(node._value.val)->setValue(val);
+            exclusive.acquire();
+        }
+        else {
+            changed = true;
+            node._local_val.float_val = val;
+        }
+        if (changed) {
+            SGPropertyNodeImpl::fireValueChanged(exclusive, node, &node);
+        }
+        return changed;
+    }
+    
+    static bool
+    set_double(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, double val)
+    {
+        bool changed = false;
+        if (node._tied) {
+            exclusive.release();
+            changed = static_cast<SGRawValue<double>*>(node._value.val)->setValue(val);
+            exclusive.acquire();
+        }
+        else {
+            changed = true;
+            node._local_val.double_val = val;
+        }
+        if (changed) {
+            SGPropertyNodeImpl::fireValueChanged(exclusive, node, &node);
+        }
+        return changed;
+    }
+    
+    static bool
+    set_string(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, const char* val)
+    {
+        bool changed = false;
+        if (node._tied) {
+            exclusive.release();
+            changed = static_cast<SGRawValue<const char*>*>(node._value.val)->setValue(val);
+            exclusive.acquire();
+        }
+        else {
+            changed = true;
+            delete [] node._local_val.string_val;
+            node._local_val.string_val = copy_string(val);
+        }
+        if (changed) {
+            SGPropertyNodeImpl::fireValueChanged(exclusive, node, &node);
+        }
+        return changed;
+    }
+    
+    static SGPropertyNode*
+    getChildImplCreate(SGPropertyLockExclusive& exclusive, SGPropertyNode& node0, const char* begin, const char* end, int index)
+    {
+        SGPropertyNode* node = getExistingChild(exclusive, node0, begin, end, index);
+
+        if (node) {
+            return node;
+        }
+        else {
+            // REVIEW: Memory Leak - 2,028 (1,976 direct, 52 indirect) bytes in 13 blocks are definitely lost
+            node = new SGPropertyNode(begin, end, index, &node0);
+            node0._children.push_back(node);
+            exclusive.release();
+            node0.fireChildAdded(node);
+            exclusive.acquire();
+            return node;
+        }
+    }
+    
+    static SGPropertyNode*
+    getExistingChild(SGPropertyLock& lock, SGPropertyNode& node, const char* begin, const char* end, int index)
+    {
+        int pos = find_child(lock, begin, end, index, node._children);
+        if (pos >= 0)
+            return node._children[pos];
+        return 0;
+    }
+    
+    static SGPropertyNode*
+    getChildImpl(SGPropertyLockShared& shared, SGPropertyNode& node, const char* begin, const char* end, int index)
+    {
+        return getExistingChild(shared, node, begin, end, index);
+    }
+
+    static SGPropertyNode*
+    getChildImpl(SGPropertyNode& node, const char* begin, const char* end, int index, bool create)
+    {
+        if (create) {
+            SGPropertyLockExclusive exclusive(node);
+            return getChildImplCreate(exclusive, node, begin, end, index);
+        }
+        else {
+            SGPropertyLockShared shared(node);
+            return getChildImpl(shared, node, begin, end, index);
+        }
+    }
+    
+    /* Get the value as a string. */
+    static const char *
+    make_string(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (!getAttribute(lock, node, SGPropertyNode::READ))
+            return "";
+        switch (node._type) {
+        case props::ALIAS:
+            {
+                SGPropertyNode* p = node._value.alias;
+                lock.release();
+                const char* ret = p->getStringValue();
+                lock.acquire();
+                return ret;
+            }
+        case props::BOOL:
+            return get_bool(lock, node) ? "true" : "false";
+        case props::STRING:
+        case props::UNSPECIFIED:
+            return get_string(lock, node);
+        case props::NONE:
+            return "";
+        default:
+            break;
+        }
+        stringstream sstr;
+        switch (node._type) {
+        case props::INT:
+            sstr << get_int(lock, node);
+            break;
+        case props::LONG:
+            sstr << get_long(lock, node);
+            break;
+        case props::FLOAT:
+            sstr << get_float(lock, node);
+            break;
+        case props::DOUBLE:
+            sstr << std::setprecision(10) << get_double(lock, node);
+            break;
+        case props::EXTENDED:
+        {
+            props::Type realType = node._value.val->getType();
+            // Perhaps this should be done for all types?
+            if (realType == props::VEC3D || realType == props::VEC4D)
+                sstr.precision(10);
+            static_cast<SGRawExtended*>(node._value.val)->printOn(sstr);
+        }
+            break;
+        default:
+            return "";
+        }
+        node._buffer = sstr.str();
+        return node._buffer.c_str();
+    }
+
+    /**
+     * Trace a write access for a property.
+     */
+    static void
+    trace_write (SGPropertyLockExclusive& exclusive, const SGPropertyNode& node)
+    {
+        const char* value = SGPropertyNodeImpl::make_string(exclusive, node);
+        bool own = exclusive.m_own;
+        if (own) exclusive.release();
+        {
+            SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Write node " << node.getPath()
+	                << ", value \"" << value << '"');
+        }
+        if (own) exclusive.acquire();
+    }
+
+    /**
+     * Trace a read access for a property.
+     *
+     * Note that this releases and re-acquires <lock>.
+     */
+    static void
+    trace_read(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        // This is tricky; we need to release the <lock> lock because getPath()
+        // will need to acquire locks of parent nodes, and claiming a
+        // parent/grandparent/... node's lock after a child node's lock can deadlock.
+        //
+        // So we temporarily release <lock>. But this could break calling code in
+        // subtle ways - *this could be modified by other threads.
+        //
+        // Hopefully we are only called for specific debugging purposes.
+        //
+        const char* value = SGPropertyNodeImpl::make_string(lock, node);
+        lock.release();
+        SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Read node " << node.getPath()
+                << ", value \"" << value << '"');
+        lock.acquire();
+    }
+
+    static bool getAttribute (SGPropertyLock& lock, const SGPropertyNode& node, SGPropertyNode::Attribute attr)
+    {
+        return ((node._attr & attr) != 0);
+    }
+
+    static void setAttribute(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, SGPropertyNode::Attribute attr, bool state)
+    {
+        (state ? node._attr |= attr : node._attr &= ~attr);
+    }
+
+    static void setAttributes(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, int attr)
+    {
+        node._attr = attr;
+    }
+
+    static int getAttributes(SGPropertyLock& lock, SGPropertyNode& node)
+    {
+        return node._attr;
+    }
+
+    static void
+    clearValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node)
+    {
+        if (node._type == props::ALIAS) {
+            node.put(node._value.alias);
+            node._value.alias = 0;
+        }
+        else if (node._type != props::NONE) {
+            switch (node._type) {
+            case props::BOOL:
+                node._local_val.bool_val = SGRawValue<bool>::DefaultValue();
+                break;
+            case props::INT:
+                node._local_val.int_val = SGRawValue<int>::DefaultValue();
+                break;
+            case props::LONG:
+                node._local_val.long_val = SGRawValue<long>::DefaultValue();
+                break;
+            case props::FLOAT:
+                node._local_val.float_val = SGRawValue<float>::DefaultValue();
+                break;
+            case props::DOUBLE:
+                node._local_val.double_val = SGRawValue<double>::DefaultValue();
+                break;
+            case props::STRING:
+            case props::UNSPECIFIED:
+                if (!node._tied) {
+                    delete [] node._local_val.string_val;
+                }
+                node._local_val.string_val = 0;
+                break;
+            default: // avoid compiler warning
+                break;
+            }
+            delete node._value.val;
+            node._value.val = 0;
+        }
+        node._tied = false;
+        node._type = props::NONE;
+    }
+
+    static const char *
+    getStringValue(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        // This is inherantly unsafe.
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::STRING)
+            return get_string(lock, node);
+
+        if (getAttribute(lock, node, SGPropertyNode::TRACE_READ))
+            trace_read(lock, node);
+        if (!getAttribute(lock, node, SGPropertyNode::READ))
+            return SGRawValue<const char *>::DefaultValue();
+        return make_string(lock, node);
+    }
+
+    static bool
+    getBoolValue(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::BOOL)
+            return get_bool(lock, node);
+
+        if (getAttribute(lock, node, SGPropertyNode::TRACE_READ))
+            trace_read(lock, node);   // Releases+acquire <lock>.
+        if (!getAttribute(lock, node, SGPropertyNode::READ))
+            return SGRawValue<bool>::DefaultValue();
+        switch (node._type) {
+        case props::ALIAS:
+            {
+                SGPropertyNode* p = node._value.alias;
+                lock.release();
+                return p->getBoolValue();
+            }
+        case props::BOOL:
+            return get_bool(lock, node);
+        case props::INT:
+            return get_int(lock, node) == 0 ? false : true;
+        case props::LONG:
+            return get_long(lock, node) == 0L ? false : true;
+        case props::FLOAT:
+            return get_float(lock, node) == 0.0 ? false : true;
+        case props::DOUBLE:
+            return get_double(lock, node) == 0.0L ? false : true;
+        case props::STRING:
+        case props::UNSPECIFIED:
+            return (strings_equal(get_string(lock, node), "true") || getDoubleValue(lock, node) != 0.0L);
+        case props::NONE:
+        default:
+            return SGRawValue<bool>::DefaultValue();
+        }
+    }
+
+    static int
+    getIntValue(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+         // Shortcut for common case
+         if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::INT)
+             return get_int(lock, node);
+
+         if (getAttribute(lock, node, SGPropertyNode::TRACE_READ))
+             trace_read(lock, node);
+         if (!getAttribute(lock, node, SGPropertyNode::READ))
+             return SGRawValue<int>::DefaultValue();
+         switch (node._type) {
+         case props::ALIAS:
+             {
+                 SGPropertyNode* p = node._value.alias;
+                 lock.release();
+                 return p->getIntValue();
+             }
+         case props::BOOL:
+             return int(get_bool(lock, node));
+         case props::INT:
+             return get_int(lock, node);
+         case props::LONG:
+             return int(get_long(lock, node));
+         case props::FLOAT:
+             return int(get_float(lock, node));
+         case props::DOUBLE:
+             return int(get_double(lock, node));
+         case props::STRING:
+         case props::UNSPECIFIED:
+             return atoi(get_string(lock, node));
+         case props::NONE:
+         default:
+             return SGRawValue<int>::DefaultValue();
+         }
+    }
+
+    static long
+    getLongValue(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::LONG)
+            return get_long(lock, node);
+
+        if (getAttribute(lock, node, SGPropertyNode::TRACE_READ))
+            trace_read(lock, node);
+        if (!getAttribute(lock, node, SGPropertyNode::READ))
+            return SGRawValue<long>::DefaultValue();
+        switch (node._type) {
+        case props::ALIAS:
+            {
+                SGPropertyNode* p = node._value.alias;
+                lock.release();
+                return p->getLongValue();
+            }
+        case props::BOOL:
+            return long(get_bool(lock, node));
+        case props::INT:
+            return long(get_int(lock, node));
+        case props::LONG:
+            return get_long(lock, node);
+        case props::FLOAT:
+            return long(get_float(lock, node));
+        case props::DOUBLE:
+            return long(get_double(lock, node));
+        case props::STRING:
+        case props::UNSPECIFIED:
+            return strtol(get_string(lock, node), 0, 0);
+        case props::NONE:
+        default:
+            return SGRawValue<long>::DefaultValue();
+        }
+    }
+
+    static float
+    getFloatValue(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::FLOAT)
+            return get_float(lock, node);
+
+        if (getAttribute(lock, node, SGPropertyNode::TRACE_READ))
+            trace_read(lock, node);
+        if (!getAttribute(lock, node, SGPropertyNode::READ))
+            return SGRawValue<float>::DefaultValue();
+        switch (node._type) {
+        case props::ALIAS:
+            {
+                SGPropertyNode* p = node._value.alias;
+                lock.release();
+                return p->getFloatValue();
+            }
+        case props::BOOL:
+            return float(get_bool(lock, node));
+        case props::INT:
+            return float(get_int(lock, node));
+        case props::LONG:
+            return float(get_long(lock, node));
+        case props::FLOAT:
+            return get_float(lock, node);
+        case props::DOUBLE:
+            return float(get_double(lock, node));
+        case props::STRING:
+        case props::UNSPECIFIED:
+            return atof(get_string(lock, node));
+        case props::NONE:
+        default:
+            return SGRawValue<float>::DefaultValue();
+        }
+    }
+
+    static double
+    getDoubleValue(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::DOUBLE)
+            return get_double(lock, node);
+
+        if (getAttribute(lock, node, SGPropertyNode::TRACE_READ))
+            trace_read(lock, node);
+        if (!getAttribute(lock, node, SGPropertyNode::READ))
+            return SGRawValue<double>::DefaultValue();
+
+        switch (node._type) {
+            case props::ALIAS:
+                {
+                    SGPropertyNode* p = node._value.alias;
+                    lock.release();
+                    return p->getDoubleValue();
+                }
+            case props::BOOL:
+                return double(get_bool(lock, node));
+            case props::INT:
+                return double(get_int(lock, node));
+            case props::LONG:
+                return double(get_long(lock, node));
+            case props::FLOAT:
+                return double(get_float(lock, node));
+            case props::DOUBLE:
+                return get_double(lock, node);
+            case props::STRING:
+            case props::UNSPECIFIED:
+                return strtod(get_string(lock, node), 0);
+            case props::NONE:
+            default:
+                return SGRawValue<double>::DefaultValue();
+        }
+    }
+
+    static bool
+    setBoolValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, bool value)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::BOOL)
+            return set_bool(exclusive, node, value);
+
+        bool result = false;
+        if (!getAttribute(exclusive, node, SGPropertyNode::WRITE)) return false;
+        if (node._type == props::NONE || node._type == props::UNSPECIFIED) {
+            clearValue(exclusive, node);
+            node._tied = false;
+            node._type = props::BOOL;
+        }
+
+        switch (node._type) {
+            case props::ALIAS:
+                {
+                    SGPropertyNode* p = node._value.alias;
+                    exclusive.release();
+                    result = p->setBoolValue(value);
+                    exclusive.acquire();
+                    break;
+                }
+            case props::BOOL:
+                result = set_bool(exclusive, node, value);
+                break;
+            case props::INT:
+                result = set_int(exclusive, node, int(value));
+                break;
+            case props::LONG:
+                result = set_long(exclusive, node, long(value));
+                break;
+            case props::FLOAT:
+                result = set_float(exclusive, node, float(value));
+                break;
+            case props::DOUBLE:
+                result = set_double(exclusive, node, double(value));
+                break;
+            case props::STRING:
+            case props::UNSPECIFIED:
+                result = set_string(exclusive, node, value ? "true" : "false");
+                break;
+            case props::NONE:
+            default:
+                break;
+        }
+
+        if (getAttribute(exclusive, node, SGPropertyNode::TRACE_WRITE)) {
+            trace_write(exclusive, node);
+        }
+        return result;
+    }
+
+    static bool
+    setIntValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, int value)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::INT)
+            return set_int(exclusive, node, value);
+
+        bool result = false;
+        if (!getAttribute(exclusive, node, SGPropertyNode::WRITE)) return false;
+        if (node._type == props::NONE || node._type == props::UNSPECIFIED) {
+            clearValue(exclusive, node);
+            node._type = props::INT;
+            node._local_val.int_val = 0;
+        }
+
+        switch (node._type) {
+            case props::ALIAS:
+                {
+                    SGPropertyNode* p = node._value.alias;
+                    exclusive.release();
+                    result = p->setIntValue(value);
+                    exclusive.acquire();
+                    break;
+                }
+            case props::BOOL:
+                result = set_bool(exclusive, node, value == 0 ? false : true);
+                break;
+            case props::INT:
+                result = set_int(exclusive, node, value);
+                break;
+            case props::LONG:
+                result = set_long(exclusive, node, long(value));
+                break;
+            case props::FLOAT:
+                result = set_float(exclusive, node, float(value));
+                break;
+            case props::DOUBLE:
+                result = set_double(exclusive, node, double(value));
+                break;
+            case props::STRING:
+            case props::UNSPECIFIED: {
+                char buf[128];
+                sprintf(buf, "%d", value);
+                result = set_string(exclusive, node, buf);
+                break;
+            }
+            case props::NONE:
+            default:
+                break;
+        }
+
+        if (getAttribute(exclusive, node, SGPropertyNode::TRACE_WRITE))
+            trace_write(exclusive, node);
+        return result;
+    }
+
+    static bool
+    setLongValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, long value)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::LONG)
+            return set_long(exclusive, node, value);
+
+        bool result = false;
+        if (!getAttribute(exclusive, node, SGPropertyNode::WRITE)) return false;
+        if (node._type == props::NONE || node._type == props::UNSPECIFIED) {
+            clearValue(exclusive, node);
+            node._type = props::LONG;
+            node._local_val.long_val = 0L;
+        }
+
+        switch (node._type) {
+            case props::ALIAS:
+                {
+                    SGPropertyNode* p = node._value.alias;
+                    exclusive.release();
+                    result = p->setLongValue(value);
+                    exclusive.acquire();
+                    break;
+                }
+            case props::BOOL:
+                result = set_bool(exclusive, node, value == 0L ? false : true);
+                break;
+            case props::INT:
+                result = set_int(exclusive, node, int(value));
+                break;
+            case props::LONG:
+                result = set_long(exclusive, node, value);
+                break;
+            case props::FLOAT:
+                result = set_float(exclusive, node, float(value));
+                break;
+            case props::DOUBLE:
+                result = set_double(exclusive, node, double(value));
+                break;
+            case props::STRING:
+            case props::UNSPECIFIED: {
+                char buf[128];
+                sprintf(buf, "%ld", value);
+                result = set_string(exclusive, node, buf);
+                break;
+            }
+            case props::NONE:
+            default:
+                break;
+        }
+
+        if (getAttribute(exclusive, node, SGPropertyNode::TRACE_WRITE))
+            trace_write(exclusive, node);
+        return result;
+    }
+
+    static bool
+    setFloatValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, float value)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::FLOAT)
+            return set_float(exclusive, node, value);
+
+        bool result = false;
+        if (!getAttribute(exclusive, node, SGPropertyNode::WRITE)) return false;
+        if (node._type == props::NONE || node._type == props::UNSPECIFIED) {
+            clearValue(exclusive, node);
+            node._type = props::FLOAT;
+            node._local_val.float_val = 0;
+        }
+
+        switch (node._type) {
+            case props::ALIAS:
+                {
+                    SGPropertyNode* p = node._value.alias;
+                    exclusive.release();
+                    result = p->setFloatValue(value);
+                    exclusive.acquire();
+                    break;
+                }
+            case props::BOOL:
+                result = set_bool(exclusive, node, value == 0.0 ? false : true);
+                break;
+            case props::INT:
+                result = set_int(exclusive, node, int(value));
+                break;
+            case props::LONG:
+                result = set_long(exclusive, node, long(value));
+                break;
+            case props::FLOAT:
+                result = set_float(exclusive, node, value);
+                break;
+            case props::DOUBLE:
+                result = set_double(exclusive, node, double(value));
+                break;
+            case props::STRING:
+            case props::UNSPECIFIED: {
+                char buf[128];
+                sprintf(buf, "%f", value);
+                result = set_string(exclusive, node, buf);
+                break;
+            }
+            case props::NONE:
+            default:
+                break;
+        }
+
+        if (getAttribute(exclusive, node, SGPropertyNode::TRACE_WRITE))
+            trace_write(exclusive, node);
+        return result;
+    }
+
+    static bool
+    setDoubleValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, double value)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::DOUBLE)
+            return set_double(exclusive, node, value);
+
+        bool result = false;
+        if (!getAttribute(exclusive, node, SGPropertyNode::WRITE)) return false;
+        if (node._type == props::NONE || node._type == props::UNSPECIFIED) {
+            clearValue(exclusive, node);
+            node._local_val.double_val = value;
+            node._type = props::DOUBLE;
+        }
+
+        switch (node._type) {
+            case props::ALIAS:
+                {
+                    SGPropertyNode* p = node._value.alias;
+                    exclusive.release();
+                    result = p->setDoubleValue(value);
+                    exclusive.acquire();
+                    break;
+                }
+            case props::BOOL:
+                result = set_bool(exclusive, node, value == 0.0L ? false : true);
+                break;
+            case props::INT:
+                result = set_int(exclusive, node, int(value));
+                break;
+            case props::LONG:
+                result = set_long(exclusive, node, long(value));
+                break;
+            case props::FLOAT:
+                result = set_float(exclusive, node, float(value));
+                break;
+            case props::DOUBLE:
+                result = set_double(exclusive, node, value);
+                break;
+            case props::STRING:
+            case props::UNSPECIFIED: {
+                char buf[128];
+                sprintf(buf, "%f", value);
+                result = set_string(exclusive, node, buf);
+                break;
+            }
+            case props::NONE:
+            default:
+                break;
+        }
+
+        if (getAttribute(exclusive, node, SGPropertyNode::TRACE_WRITE))
+            trace_write(exclusive, node);
+        return result;
+    }
+
+    static bool
+    setStringValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, const char * value)
+    {
+        // Shortcut for common case
+        if (node._attr == (SGPropertyNode::READ|SGPropertyNode::WRITE) && node._type == props::STRING)
+            return set_string(exclusive, node, value);
+
+        bool result = false;
+        if (!getAttribute(exclusive, node, SGPropertyNode::WRITE)) return false;
+        if (node._type == props::NONE || node._type == props::UNSPECIFIED) {
+            clearValue(exclusive, node);
+            node._type = props::STRING;
+        }
+
+        switch (node._type) {
+            case props::ALIAS:
+                {
+                    SGPropertyNode* p = node._value.alias;
+                    exclusive.release();
+                    result = p->setStringValue(value);
+                    exclusive.acquire();
+                    break;
+                }
+            case props::BOOL:
+                result = set_bool(exclusive, node, (strings_equal(value, "true")
+		                   || atoi(value)) ? true : false);
+                break;
+            case props::INT:
+                result = set_int(exclusive, node, atoi(value));
+                break;
+            case props::LONG:
+                result = set_long(exclusive, node, strtol(value, 0, 0));
+                break;
+            case props::FLOAT:
+                result = set_float(exclusive, node, atof(value));
+                break;
+            case props::DOUBLE:
+                result = set_double(exclusive, node, strtod(value, 0));
+                break;
+            case props::STRING:
+            case props::UNSPECIFIED:
+                result = set_string(exclusive, node, value);
+                break;
+            case props::EXTENDED:
+            {
+                stringstream sstr(value);
+                static_cast<SGRawExtended*>(node._value.val)->readFrom(sstr);
+            }
+            break;
+            case props::NONE:
+            default:
+                break;
+        }
+
+        if (getAttribute(exclusive, node, SGPropertyNode::TRACE_WRITE))
+            trace_write(exclusive, node);
+        return result;
+    }
+
+    static bool
+    setStringValue(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, const std::string& value)
+    {
+        return setStringValue(exclusive, node, value.c_str());
+    }
+    
+    static props::Type
+    getType(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        if (node._type == props::ALIAS) {
+            SGPropertyNode* n = node._value.alias;
+            lock.release();
+            props::Type ret = n->getType();
+            lock.acquire();
+            return ret;
+        }
+        else if (node._type == props::EXTENDED)
+            return node._value.val->getType();
+        return node._type;
+    }
+
+    static bool hasValue(SGPropertyLock& lock, const SGPropertyNode& node)
+    {
+        return node._type != simgear::props::NONE;
+    }
+
+    static void
+    fireValueChanged (SGPropertyLockExclusive& exclusive, SGPropertyNode& self, SGPropertyNode * node)
+    {
+        forEachListener(
+                exclusive,
+                &self,
+                self._listeners,
+                [&](SGPropertyChangeListener* listener) { listener->valueChanged(node);}
+                );
+        SGPropertyNode* parent = self._parent;
+        if (parent) {
+            exclusive.release();
+            {
+                SGPropertyLockExclusive parent_exclusive(*parent);
+                fireValueChanged(parent_exclusive, *parent, node);
+            }
+            exclusive.acquire();
+        }
+    }
+
+    static void
+    fireChildAdded (SGPropertyLockExclusive& exclusive, SGPropertyNode& self, SGPropertyNode* parent, SGPropertyNode* child)
+    {
+        forEachListener(
+                exclusive,
+                &self,
+                self._listeners,
+                [&](SGPropertyChangeListener* listener) { listener->childAdded(parent, child);}
+                );
+        SGPropertyNode* p = self._parent;
+        if (p) {
+            exclusive.release();
+            {
+                SGPropertyLockExclusive p_exclusive(*p);
+                fireChildAdded(p_exclusive, *p, parent, child);
+            }
+            exclusive.acquire();
+        }
+    }
+
+    static void
+    fireChildRemoved (SGPropertyLockExclusive& exclusive, SGPropertyNode& self, SGPropertyNode* parent, SGPropertyNode* child)
+    {
+        forEachListener(
+                exclusive,
+                &self,
+                self._listeners,
+                [&](SGPropertyChangeListener* listener) { listener->childRemoved(parent, child); }
+              );
+        SGPropertyNode* p = self._parent;
+        if (p) {
+            exclusive.release();
+            {
+                SGPropertyLockExclusive p_exclusive(*p);
+                fireChildRemoved(p_exclusive, *p, parent, child);
+            }
+            exclusive.acquire();
+        }
+    }
+
+    static PropertyList
+    getChildren(SGPropertyLock& lock, const SGPropertyNode& node, const char* name)
+    {
+        PropertyList children;
+        size_t max = node._children.size();
+
+        for (size_t i = 0; i < max; i++)
+            if (strings_equal(node._children[i]->getName(), name))
+                children.push_back(node._children[i]);
+
+        sort(children.begin(), children.end(), CompareIndices());
+        return children;
+    }
+
+    static simgear::PropertyList
+    getChildren(SGPropertyLock& lock, const SGPropertyNode& node, const std::string& name)
+    {
+        return getChildren(lock, node, name.c_str());
+    }
+
+};
+
 
 template<typename SplitItr>
 SGPropertyNode*
-find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
-              int last_index)
+find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_index)
 {
   typedef typename SplitItr::value_type Range;
   // Run off the end of the list
@@ -489,8 +1754,8 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
   if (equals(name, "."))
     return find_node_aux(current, ++itr, create, last_index);
   if (equals(name, "..")) {
-    SGPropertyNode * parent = current->getParent();
-    if (parent == 0) {
+    SGPropertyNode* parent = current->getParent();
+    if (!parent) {
         SG_LOG(SG_GENERAL, SG_ALERT, "attempt to move past root with '..' node " << current->getName());
         return nullptr;
     }
@@ -533,9 +1798,12 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
       }
     }
   }
-  return find_node_aux(current->getChildImpl(name.begin(), name.end(),
-                                             index, create), itr, create,
-                       last_index);
+  return find_node_aux(
+          SGPropertyNodeImpl::getChildImpl(*current, name.begin(), name.end(), index, create),
+          itr,
+          create,
+          last_index
+          );
 }
 
 // Internal function for parsing property paths. last_index provides
@@ -602,273 +1870,11 @@ SGPropertyNode *find_node(SGPropertyNode *current, const Range &path,
 // Private methods from SGPropertyNode (may be inlined for speed).
 ////////////////////////////////////////////////////////////////////////
 
-inline bool
-SGPropertyNode::get_bool () const
-{
-  if (_tied)
-    return static_cast<SGRawValue<bool>*>(_value.val)->getValue();
-  else
-    return _local_val.bool_val;
-}
-
-inline int
-SGPropertyNode::get_int () const
-{
-  if (_tied)
-      return (static_cast<SGRawValue<int>*>(_value.val))->getValue();
-  else
-    return _local_val.int_val;
-}
-
-inline long
-SGPropertyNode::get_long () const
-{
-  if (_tied)
-    return static_cast<SGRawValue<long>*>(_value.val)->getValue();
-  else
-    return _local_val.long_val;
-}
-
-inline float
-SGPropertyNode::get_float () const
-{
-  if (_tied)
-    return static_cast<SGRawValue<float>*>(_value.val)->getValue();
-  else
-    return _local_val.float_val;
-}
-
-inline double
-SGPropertyNode::get_double () const
-{
-  if (_tied)
-    return static_cast<SGRawValue<double>*>(_value.val)->getValue();
-  else
-    return _local_val.double_val;
-}
-
-inline const char *
-SGPropertyNode::get_string () const
-{
-  if (_tied)
-      return static_cast<SGRawValue<const char*>*>(_value.val)->getValue();
-  else
-    return _local_val.string_val;
-}
-
-inline bool
-SGPropertyNode::set_bool (bool val)
-{
-  if (_tied) {
-    if (static_cast<SGRawValue<bool>*>(_value.val)->setValue(val)) {
-      fireValueChanged();
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _local_val.bool_val = val;
-    fireValueChanged();
-    return true;
-  }
-}
-
-inline bool
-SGPropertyNode::set_int (int val)
-{
-  if (_tied) {
-    if (static_cast<SGRawValue<int>*>(_value.val)->setValue(val)) {
-      fireValueChanged();
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _local_val.int_val = val;
-    fireValueChanged();
-    return true;
-  }
-}
-
-inline bool
-SGPropertyNode::set_long (long val)
-{
-  if (_tied) {
-    if (static_cast<SGRawValue<long>*>(_value.val)->setValue(val)) {
-      fireValueChanged();
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _local_val.long_val = val;
-    fireValueChanged();
-    return true;
-  }
-}
-
-inline bool
-SGPropertyNode::set_float (float val)
-{
-  if (_tied) {
-    if (static_cast<SGRawValue<float>*>(_value.val)->setValue(val)) {
-      fireValueChanged();
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _local_val.float_val = val;
-    fireValueChanged();
-    return true;
-  }
-}
-
-inline bool
-SGPropertyNode::set_double (double val)
-{
-  if (_tied) {
-    if (static_cast<SGRawValue<double>*>(_value.val)->setValue(val)) {
-      fireValueChanged();
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _local_val.double_val = val;
-    fireValueChanged();
-    return true;
-  }
-}
-
-inline bool
-SGPropertyNode::set_string (const char * val)
-{
-  if (_tied) {
-      if (static_cast<SGRawValue<const char*>*>(_value.val)->setValue(val)) {
-      fireValueChanged();
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    delete [] _local_val.string_val;
-    _local_val.string_val = copy_string(val);
-    fireValueChanged();
-    return true;
-  }
-}
-
 void
 SGPropertyNode::clearValue ()
 {
-    if (_type == props::ALIAS) {
-        put(_value.alias);
-        _value.alias = 0;
-    } else if (_type != props::NONE) {
-        switch (_type) {
-        case props::BOOL:
-            _local_val.bool_val = SGRawValue<bool>::DefaultValue();
-            break;
-        case props::INT:
-            _local_val.int_val = SGRawValue<int>::DefaultValue();
-            break;
-        case props::LONG:
-            _local_val.long_val = SGRawValue<long>::DefaultValue();
-            break;
-        case props::FLOAT:
-            _local_val.float_val = SGRawValue<float>::DefaultValue();
-            break;
-        case props::DOUBLE:
-            _local_val.double_val = SGRawValue<double>::DefaultValue();
-            break;
-        case props::STRING:
-        case props::UNSPECIFIED:
-            if (!_tied) {
-                delete [] _local_val.string_val;
-            }
-            _local_val.string_val = 0;
-            break;
-        default: // avoid compiler warning
-            break;
-        }
-        delete _value.val;
-        _value.val = 0;
-    }
-    _tied = false;
-    _type = props::NONE;
-}
-
-
-/**
- * Get the value as a string.
- */
-const char *
-SGPropertyNode::make_string () const
-{
-    if (!getAttribute(READ))
-        return "";
-    switch (_type) {
-    case props::ALIAS:
-        return _value.alias->getStringValue();
-    case props::BOOL:
-        return get_bool() ? "true" : "false";
-    case props::STRING:
-    case props::UNSPECIFIED:
-        return get_string();
-    case props::NONE:
-        return "";
-    default:
-        break;
-    }
-    stringstream sstr;
-    switch (_type) {
-    case props::INT:
-        sstr << get_int();
-        break;
-    case props::LONG:
-        sstr << get_long();
-        break;
-    case props::FLOAT:
-        sstr << get_float();
-        break;
-    case props::DOUBLE:
-        sstr << std::setprecision(10) << get_double();
-        break;
-    case props::EXTENDED:
-    {
-        props::Type realType = _value.val->getType();
-        // Perhaps this should be done for all types?
-        if (realType == props::VEC3D || realType == props::VEC4D)
-            sstr.precision(10);
-        static_cast<SGRawExtended*>(_value.val)->printOn(sstr);
-    }
-        break;
-    default:
-        return "";
-    }
-    _buffer = sstr.str();
-    return _buffer.c_str();
-}
-
-/**
- * Trace a write access for a property.
- */
-void
-SGPropertyNode::trace_write () const
-{
-  SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Write node " << getPath()
-	 << ", value \"" << make_string() << '"');
-}
-
-/**
- * Trace a read access for a property.
- */
-void
-SGPropertyNode::trace_read () const
-{
-  SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Read node " << getPath()
-	 << ", value \"" << make_string() << '"');
+  SGPropertyLockExclusive exclusive(*this);
+  SGPropertyNodeImpl::clearValue(exclusive, *this);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -886,7 +1892,7 @@ const int SGPropertyNode::LAST_USED_ATTRIBUTE = LISTENER_SAFE;
  */
 SGPropertyNode::SGPropertyNode ()
   : _index(0),
-    _parent(0),
+    _parent(nullptr),
     _type(props::NONE),
     _tied(false),
     _attr(READ|WRITE),
@@ -894,6 +1900,16 @@ SGPropertyNode::SGPropertyNode ()
 {
   _local_val.string_val = 0;
   _value.val = 0;
+  if (0) std::cerr << __FILE__ << ":" << __LINE__ << ":"
+        << " SGPropertyNode()"
+        << " this=" << this
+        << " _name=" << _name
+        << " SGReferenced::count(this)=" << SGReferenced::count(this)
+        << " SGReferenced::shared(this)=" << SGReferenced::shared(this)
+        << "\n";
+ if (this == (SGPropertyNode*) 0x7fffffffd6a0) {
+    std::cerr << __FILE__ << ":" << __LINE__ << ": ***\n";
+ }
 }
 
 
@@ -901,52 +1917,62 @@ SGPropertyNode::SGPropertyNode ()
  * Copy constructor.
  */
 SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
-  : SGReferenced(node),
+  :
+    //SGWeakReferenced(node),
+    SGReferenced(node),
     _index(node._index),
     _name(node._name),
-    _parent(0),			// don't copy the parent
+    _parent(nullptr),			// don't copy the parent
     _type(node._type),
     _tied(node._tied),
     _attr(node._attr),
     _listeners(0)		// CHECK!!
 {
-  _local_val.string_val = 0;
-  _value.val = 0;
-  if (_type == props::NONE)
-    return;
-  if (_type == props::ALIAS) {
-    _value.alias = node._value.alias;
-    get(_value.alias);
-    _tied = false;
-    return;
-  }
-  if (_tied || _type == props::EXTENDED) {
-    _value.val = node._value.val->clone();
-    return;
-  }
-  switch (_type) {
-  case props::BOOL:
-    set_bool(node.get_bool());
-    break;
-  case props::INT:
-    set_int(node.get_int());
-    break;
-  case props::LONG:
-    set_long(node.get_long());
-    break;
-  case props::FLOAT:
-    set_float(node.get_float());
-    break;
-  case props::DOUBLE:
-    set_double(node.get_double());
-    break;
-  case props::STRING:
-  case props::UNSPECIFIED:
-    set_string(node.get_string());
-    break;
-  default:
-    break;
-  }
+    SGPropertyLockShared shared(node);
+    SGPropertyLockExclusive exclusive(*this);
+    _local_val.string_val = 0;
+    _value.val = 0;
+    if (0) std::cerr << __FILE__ << ":" << __LINE__ << ":"
+          << " SGPropertyNode()"
+          << " this=" << this
+          << " SGReferenced::count(this)=" << SGReferenced::count(this)
+          << " SGReferenced::shared(this)=" << SGReferenced::shared(this)
+          << "\n";
+    if (_type == props::NONE)
+        return;
+    if (_type == props::ALIAS) {
+        _value.alias = node._value.alias;
+        get(_value.alias);
+        _tied = false;
+        return;
+    }
+    if (_tied || _type == props::EXTENDED) {
+        _value.val = node._value.val->clone();
+        return;
+    }
+    switch (_type) {
+    case props::BOOL:
+        SGPropertyNodeImpl::set_bool(exclusive, *this, SGPropertyNodeImpl::get_bool(shared, node));
+        break;
+    case props::INT:
+        SGPropertyNodeImpl::set_int(exclusive, *this, SGPropertyNodeImpl::get_int(shared, node));
+        break;
+    case props::LONG:
+        SGPropertyNodeImpl::set_long(exclusive, *this, SGPropertyNodeImpl::get_long(shared, node));
+        break;
+    case props::FLOAT:
+        SGPropertyNodeImpl::set_float(exclusive, *this, SGPropertyNodeImpl::get_float(shared, node));
+        break;
+    case props::DOUBLE:
+        SGPropertyNodeImpl::set_double(exclusive, *this, SGPropertyNodeImpl::get_double(shared, node));
+        break;
+    case props::STRING:
+    case props::UNSPECIFIED:
+        SGPropertyNodeImpl::set_string(exclusive, *this, SGPropertyNodeImpl::get_string(shared, node));
+        break;
+    default:
+        break;
+    }
 }
 
 
@@ -956,7 +1982,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 template<typename Itr>
 SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
 				int index,
-				SGPropertyNode * parent)
+				SGPropertyNode* parent)
   : _index(index),
     _name(begin, end),
     _parent(parent),
@@ -969,11 +1995,18 @@ SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
   _value.val = 0;
   if (!validateName(_name))
       throw std::invalid_argument(string{"plain name expected instead of '"} + _name + '\'');
+  if (0) std::cerr << __FILE__ << ":" << __LINE__ << ":"
+        << " SGPropertyNode()"
+        << " this=" << this
+        << " _name=" << _name
+        << " SGReferenced::count(this)=" << SGReferenced::count(this)
+        << " SGReferenced::shared(this)=" << SGReferenced::shared(this)
+        << "\n";
 }
 
 SGPropertyNode::SGPropertyNode( const std::string& name,
                                 int index,
-                                SGPropertyNode * parent)
+                                SGPropertyNode* parent)
   : _index(index),
     _name(name),
     _parent(parent),
@@ -994,9 +2027,8 @@ SGPropertyNode::SGPropertyNode( const std::string& name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
-  // zero out all parent pointers, else they might be dangling
   for (unsigned i = 0; i < _children.size(); ++i)
-    _children[i]->_parent = 0;
+    _children[i]->_parent = nullptr;
   clearValue();
 
   if (_listeners) {
@@ -1016,9 +2048,11 @@ SGPropertyNode::alias (SGPropertyNode * target)
 {
   if (target && (_type != props::ALIAS) && (!_tied))
   {
-   /* loop protection: check alias chain; must not contain self */
-    for (auto p = target; p; p = ((p->_type == props::ALIAS) ? p->_value.alias : nullptr)) {
+    /* loop protection: check alias chain; must not contain self */
+    for (auto p = target; p; ) {
       if (p == this) return false;
+      SGPropertyLockShared target_shared(*p);
+      p = (p->_type == props::ALIAS) ? p->_value.alias : nullptr;
     }
 
     clearValue();
@@ -1058,11 +2092,15 @@ SGPropertyNode::alias (SGPropertyNode * target)
  * Alias to another node by path.
  */
 bool
-SGPropertyNode::alias (const char * path)
+SGPropertyNode::alias(const char * path)
 {
   return alias(getNode(path, true));
 }
 
+bool SGPropertyNode::alias (const std::string& path)
+{
+    return alias(path.c_str());
+}
 
 /**
  * Remove an alias.
@@ -1070,12 +2108,18 @@ SGPropertyNode::alias (const char * path)
 bool
 SGPropertyNode::unalias ()
 {
+  SGPropertyLockExclusive exclusive(*this);
   if (_type != props::ALIAS)
     return false;
-  clearValue();
+  SGPropertyNodeImpl::clearValue(exclusive, *this);
   return true;
 }
 
+bool SGPropertyNode::isAlias () const
+{
+    SGPropertyLockShared shared(*this);
+    return _type == simgear::props::ALIAS;
+}
 
 /**
  * Get the target of an alias.
@@ -1083,6 +2127,7 @@ SGPropertyNode::unalias ()
 SGPropertyNode *
 SGPropertyNode::getAliasTarget ()
 {
+  SGPropertyLockShared shared(*this);
   return (_type == props::ALIAS ? _value.alias : 0);
 }
 
@@ -1090,6 +2135,7 @@ SGPropertyNode::getAliasTarget ()
 const SGPropertyNode *
 SGPropertyNode::getAliasTarget () const
 {
+  SGPropertyLockShared shared(*this);
   return (_type == props::ALIAS ? _value.alias : 0);
 }
 
@@ -1099,29 +2145,37 @@ SGPropertyNode::getAliasTarget () const
 SGPropertyNode *
 SGPropertyNode::addChild(const char * name, int min_index, bool append)
 {
+  SGPropertyLockExclusive exclusive(*this);
   int pos = append
-          ? std::max(find_last_child(name, _children) + 1, min_index)
-          : first_unused_index(name, _children, min_index);
+          ? std::max(find_last_child(exclusive, name, _children) + 1, min_index)
+          : first_unused_index(exclusive, name, _children, min_index);
 
   SGPropertyNode_ptr node;
   // REVIEW: Memory Leak - 152 bytes in 1 blocks are definitely lost
   node = new SGPropertyNode(name, name + strlen(name), pos, this);
   _children.push_back(node);
-  fireChildAdded(node);
+  SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
   return node;
+}
+
+SGPropertyNode*
+SGPropertyNode::addChild(const std::string& name, int min_index, bool append)
+{
+    return addChild(name.c_str(), min_index, append);
 }
 
 SGPropertyNode_ptr SGPropertyNode::addChild(SGPropertyNode_ptr node, const std::string& name,
         int min_index, bool append)
 {
+  SGPropertyLockExclusive exclusive(*this);
   int pos = append
-          ? std::max(find_last_child(name.c_str(), _children) + 1, min_index)
-          : first_unused_index(name.c_str(), _children, min_index);
+          ? std::max(find_last_child(exclusive, name.c_str(), _children) + 1, min_index)
+          : first_unused_index(exclusive, name.c_str(), _children, min_index);
   node->_name = name;
   node->_parent = this;
   node->_index = pos;
   _children.push_back(node);
-  fireChildAdded(node);
+  SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
   return node;
 }
 
@@ -1134,6 +2188,7 @@ SGPropertyNode::addChildren( const std::string& name,
                              int min_index,
                              bool append )
 {
+  SGPropertyLockExclusive exclusive(*this);
   simgear::PropertyList nodes;
   std::set<int> used_indices;
 
@@ -1152,7 +2207,7 @@ SGPropertyNode::addChildren( const std::string& name,
   else
   {
     // If we don't want to fill the holes just find last node
-    min_index = std::max(find_last_child(name.c_str(), _children) + 1, min_index);
+    min_index = std::max(find_last_child(exclusive, name.c_str(), _children) + 1, min_index);
   }
 
   for( int index = min_index;
@@ -1178,10 +2233,11 @@ SGPropertyNode::addChildren( const std::string& name,
 SGPropertyNode *
 SGPropertyNode::getChild (int position)
 {
+  SGPropertyLockShared shared(*this);
   if (position >= 0 && position < nChildren())
     return _children[position];
   else
-    return 0;
+    return nullptr;
 }
 
 
@@ -1191,21 +2247,74 @@ SGPropertyNode::getChild (int position)
 const SGPropertyNode *
 SGPropertyNode::getChild (int position) const
 {
+  SGPropertyLockShared shared(*this);
   if (position >= 0 && position < nChildren())
     return _children[position];
   else
     return 0;
 }
 
+bool SGPropertyNode::hasValue() const
+{
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::hasValue(shared, *this);
+}
+
+
+const char * SGPropertyNode::getName () const
+{
+    SGPropertyLockShared shared(*this);
+    return _name.c_str();
+}
+
+const std::string& SGPropertyNode::getNameString () const
+{
+    SGPropertyLockShared shared(*this);
+    return _name;
+}
+int SGPropertyNode::getIndex () const
+{
+    SGPropertyLockShared shared(*this);
+    return _index;
+}
+
+
+SGPropertyNode* SGPropertyNode::getParent()
+{
+    SGPropertyLockShared shared(*this);
+    return _parent/*.lock()*/;
+}
+
+const SGPropertyNode* SGPropertyNode::getParent() const
+{
+    return _parent/*.lock()*/;
+}
+
+
 unsigned int SGPropertyNode::getPosition() const
 {
-    if (_parent == nullptr) {
-        return 0;
-    }
+    SGPropertyNode* parent = _parent/*.lock()*/;
+    if (!parent) return 0;
+    SGPropertyLockShared parent_shared(*parent);
+    auto it = std::find(parent->_children.begin(), parent->_children.end(), this);
+    assert(it != parent->_children.end());
+    return std::distance(parent->_children.begin(), it);
+}
 
-    auto it = std::find(_parent->_children.begin(), _parent->_children.end(), this);
-    assert(it != _parent->_children.end());
-    return std::distance(_parent->_children.begin(), it);
+int SGPropertyNode::nChildren () const
+{
+    SGPropertyLockShared shared(*this);
+    return (int)_children.size();
+}
+
+bool SGPropertyNode::hasChild (const char * name, int index) const
+{
+    return getChild(name, index) != nullptr;
+}
+
+bool SGPropertyNode::hasChild (const std::string& name, int index) const
+{
+    return getChild(name, index) != nullptr;
 }
 
 /**
@@ -1215,7 +2324,16 @@ unsigned int SGPropertyNode::getPosition() const
 SGPropertyNode *
 SGPropertyNode::getChild (const char * name, int index, bool create)
 {
-  return getChildImpl(name, name + strlen(name), index, create);
+  if (create)
+  {
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::getChildImplCreate(exclusive, *this, name, name + strlen(name), index);
+  }
+  else
+  {
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getChildImpl(shared, *this, name, name + strlen(name), index);
+  }
 }
 
 SGPropertyNode *
@@ -1226,21 +2344,41 @@ SGPropertyNode::getChild (const std::string& name, int index, bool create)
   int pos = find_child(n, n + strlen(n), index, _children);
   if (pos >= 0) {
     return _children[pos];
+  }
+  else if (create) {
+    // REVIEW: Memory Leak - 12,862 (11,856 direct, 1,006 indirect) bytes in 78 blocks are definitely lost
+    SGPropertyNode* node = new SGPropertyNode(name, index, this);
+    // REVIEW: Memory Leak - 104,647 (8 direct, 104,639 indirect) bytes in 1 blocks are definitely lost
+    _children.push_back(node);
+    fireChildAdded(node);
+    return node;
+  }
+  else {
+    return nullptr;
+  }
 #else
-  SGPropertyNode* node = getExistingChild(name.begin(), name.end(), index);
-  if (node) {
-      return node;
-#endif
-    } else if (create) {
-      // REVIEW: Memory Leak - 12,862 (11,856 direct, 1,006 indirect) bytes in 78 blocks are definitely lost
-      SGPropertyNode* node = new SGPropertyNode(name, index, this);
-      // REVIEW: Memory Leak - 104,647 (8 direct, 104,639 indirect) bytes in 1 blocks are definitely lost
-      _children.push_back(node);
-      fireChildAdded(node);
+  if (create)
+  {
+    SGPropertyLockExclusive exclusive(*this);
+    SGPropertyNode* node = SGPropertyNodeImpl::getExistingChild(exclusive, *this, /*name.begin(), name.end()*/ name.c_str(), name.c_str() + name.size(), index);
+    if (node) {
       return node;
     } else {
-      return 0;
+      // REVIEW: Memory Leak - 12,862 (11,856 direct, 1,006 indirect) bytes in 78 blocks are definitely lost
+      node = new SGPropertyNode(name, index, this);
+      // REVIEW: Memory Leak - 104,647 (8 direct, 104,639 indirect) bytes in 1 blocks are definitely lost
+      _children.push_back(node);
+      SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
+      return node;
     }
+  }
+  else
+  {
+    SGPropertyLockShared shared(*this);
+    SGPropertyNode* node = SGPropertyNodeImpl::getExistingChild(shared, *this, name.c_str(), name.c_str() + name.size(), index);
+    return node;
+  }
+#endif
 }
 
 /**
@@ -1249,55 +2387,78 @@ SGPropertyNode::getChild (const std::string& name, int index, bool create)
 const SGPropertyNode *
 SGPropertyNode::getChild (const char * name, int index) const
 {
-  int pos = find_child(name, name + strlen(name), index, _children);
+  SGPropertyLockShared shared(*this);  
+  int pos = find_child(shared, name, name + strlen(name), index, _children);
   if (pos >= 0)
     return _children[pos];
   else
-    return 0;
+    return nullptr;
 }
 
-
-/**
- * Get all children with the same name (but different indices).
- */
-PropertyList
-SGPropertyNode::getChildren (const char * name) const
+const SGPropertyNode * SGPropertyNode::getChild (const std::string& name, int index) const
 {
-  PropertyList children;
-  size_t max = _children.size();
+    return getChild(name.c_str(), index);
+}
 
-  for (size_t i = 0; i < max; i++)
-    if (compare_strings(_children[i]->getName(), name))
-      children.push_back(_children[i]);
+PropertyList
+SGPropertyNode::getChildren(const char * name) const
+{
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getChildren(shared, *this, name);
+}
 
-  sort(children.begin(), children.end(), CompareIndices());
-  return children;
+simgear::PropertyList SGPropertyNode::getChildren (const std::string& name) const
+{
+    return getChildren(name.c_str());
 }
 
 //------------------------------------------------------------------------------
 bool SGPropertyNode::removeChild(SGPropertyNode* node)
 {
-  if( node->_parent != this )
-    return false;
+  SGPropertyLockExclusive exclusive(*this);
+  SGPropertyLockExclusive exclusive_node(*node);
 
-  PropertyList::iterator it =
-    std::find(_children.begin(), _children.end(), node);
-  if( it == _children.end() )
+  /*SGSharedPtr<SGPropertyNode> p = node->_parent.lock();
+  if (p != this) {
+    assert(0);
     return false;
-
-  eraseChild(it);
+  }*/
+  if (node->_parent != this) {
+    assert(0);
+    return false;
+  }
+  auto it = std::find(_children.begin(), _children.end(), node);
+  if (it == _children.end()) {
+    assert(0);
+    return false;
+  }
+  SGPropertyNodeImpl::setAttribute(exclusive_node, *node, REMOVED, true);
+  SGPropertyNodeImpl::clearValue(exclusive_node, *node);
+  node->_parent = nullptr;
+  
+  exclusive_node.release();
+  SGPropertyNodeImpl::fireChildRemoved(exclusive, *this, this /*parent*/, node);
+  
+  // Need to find again because fireChildRemoved() will have temporarily
+  // released our exclusive lock.
+  it = std::find(_children.begin(), _children.end(), node);
+  _children.erase(it);
   return true;
 }
 
 //------------------------------------------------------------------------------
 SGPropertyNode_ptr SGPropertyNode::removeChild(int pos)
 {
-  if (pos < 0 || pos >= (int)_children.size())
-    return SGPropertyNode_ptr();
-
-  return eraseChild(_children.begin() + pos);
+  SGPropertyNode_ptr child;
+  {
+    SGPropertyLockShared shared(*this);
+    if (pos < 0 || pos >= (int)_children.size())
+      return SGPropertyNode_ptr();
+    child = _children[pos];
+  }
+  removeChild(child);
+  return child;
 }
-
 
 /**
  * Remove a child node
@@ -1306,10 +2467,19 @@ SGPropertyNode_ptr
 SGPropertyNode::removeChild(const char * name, int index)
 {
   SGPropertyNode_ptr ret;
-  int pos = find_child(name, name + strlen(name), index, _children);
+  int pos;
+  {
+    SGPropertyLockShared shared(*this);
+    pos = find_child(shared, name, name + strlen(name), index, _children);
+  }
   if (pos >= 0)
     ret = removeChild(pos);
   return ret;
+}
+
+SGPropertyNode_ptr SGPropertyNode::removeChild(const std::string& name, int index)
+{
+    return removeChild(name.c_str(), index);
 }
 
 
@@ -1320,34 +2490,50 @@ PropertyList
 SGPropertyNode::removeChildren(const char * name)
 {
   PropertyList children;
+  {
+    SGPropertyLockShared shared(*this);
 
-  for (int pos = static_cast<int>(_children.size() - 1); pos >= 0; pos--)
-    if (compare_strings(_children[pos]->getName(), name))
-      children.push_back(removeChild(pos));
-
-  sort(children.begin(), children.end(), CompareIndices());
+    for (int pos = static_cast<int>(_children.size() - 1); pos >= 0; pos--) {
+      if (strings_equal(_children[pos]->getName(), name)) {
+        children.push_back(_children[pos]);
+      }
+    }
+    sort(children.begin(), children.end(), CompareIndices());
+  }
+  
+  for (SGPropertyNode_ptr child: children) {
+    removeChild(child);
+  }
   return children;
+}
+
+simgear::PropertyList SGPropertyNode::removeChildren(const std::string& name)
+{
+    return removeChildren(name.c_str());
 }
 
 void
 SGPropertyNode::removeAllChildren()
 {
-  for(unsigned i = 0; i < _children.size(); ++i)
+  // Inefficient but simple and hopefully safe.
+  PropertyList  children;
   {
-    SGPropertyNode_ptr& node = _children[i];
-    node->_parent = 0;
-    node->setAttribute(REMOVED, true);
-    node->clearValue();
-    fireChildRemoved(node);
+    SGPropertyLockShared shared(*this);
+    children = _children;
   }
-
-  _children.clear();
+  for (SGPropertyNode* child: children) {
+    removeChild(child);
+  }
 }
 
 std::string
 SGPropertyNode::getDisplayName (bool simplify) const
 {
-  std::string display_name = _name;
+  std::string display_name;
+  {
+    SGPropertyLockShared shared(*this);
+    display_name = _name;
+  }
   if (_index != 0 || !simplify) {
     stringstream sstr;
     sstr << '[' << _index << ']';
@@ -1359,526 +2545,110 @@ SGPropertyNode::getDisplayName (bool simplify) const
 std::string
 SGPropertyNode::getPath (bool simplify) const
 {
-  typedef std::vector<SGConstPropertyNode_ptr> PList;
-  PList pathList;
-  for (const SGPropertyNode* node = this; node->_parent; node = node->_parent)
-    pathList.push_back(node);
+  std::vector<SGConstPropertyNode_ptr> nodes;
+  const SGPropertyNode* node = this;
+  for(;;) {
+    SGPropertyNode* parent;
+    {
+        SGPropertyLockShared shared(*node);
+        parent = node->_parent;
+    }
+    if (!parent) break;
+    nodes.push_back(node);
+    node = parent;
+  }
+  
   std::string result;
-  for (PList::reverse_iterator itr = pathList.rbegin(),
-         rend = pathList.rend();
-       itr != rend;
-       ++itr) {
+  for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
     result += '/';
-    result += (*itr)->getDisplayName(simplify);
+    result += (*it)->getDisplayName(simplify);
   }
   return result;
 }
 
-props::Type
-SGPropertyNode::getType () const
+bool SGPropertyNode::getAttribute (Attribute attr) const
 {
-  if (_type == props::ALIAS)
-    return _value.alias->getType();
-  else if (_type == props::EXTENDED)
-      return _value.val->getType();
-  else
-    return _type;
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getAttribute(shared, *this, attr);
+}
+
+void SGPropertyNode::setAttribute (Attribute attr, bool state)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    SGPropertyNodeImpl::setAttribute(exclusive, *this, attr, state);
+}
+
+int SGPropertyNode::getAttributes() const
+{
+    SGPropertyLockShared shared(*this);
+    return _attr;
+}
+
+void SGPropertyNode::setAttributes(int attr)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    SGPropertyNodeImpl::setAttributes(exclusive, *this, attr);
+}
+
+props::Type
+SGPropertyNode::getType() const
+{
+  SGPropertyLockShared shared(*this);
+  return SGPropertyNodeImpl::getType(shared, *this);
 }
 
 
 bool
-SGPropertyNode::getBoolValue () const
+SGPropertyNode::getBoolValue() const
 {
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::BOOL)
-    return get_bool();
-
-  if (getAttribute(TRACE_READ))
-    trace_read();
-  if (!getAttribute(READ))
-    return SGRawValue<bool>::DefaultValue();
-  switch (_type) {
-  case props::ALIAS:
-    return _value.alias->getBoolValue();
-  case props::BOOL:
-    return get_bool();
-  case props::INT:
-    return get_int() == 0 ? false : true;
-  case props::LONG:
-    return get_long() == 0L ? false : true;
-  case props::FLOAT:
-    return get_float() == 0.0 ? false : true;
-  case props::DOUBLE:
-    return get_double() == 0.0L ? false : true;
-  case props::STRING:
-  case props::UNSPECIFIED:
-    return (compare_strings(get_string(), "true") || getDoubleValue() != 0.0L);
-  case props::NONE:
-  default:
-    return SGRawValue<bool>::DefaultValue();
-  }
+  SGPropertyLockShared shared(*this);
+  return SGPropertyNodeImpl::getBoolValue(shared, *this);
 }
 
 int
-SGPropertyNode::getIntValue () const
+SGPropertyNode::getIntValue() const
 {
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::INT)
-    return get_int();
-
-  if (getAttribute(TRACE_READ))
-    trace_read();
-  if (!getAttribute(READ))
-    return SGRawValue<int>::DefaultValue();
-  switch (_type) {
-  case props::ALIAS:
-    return _value.alias->getIntValue();
-  case props::BOOL:
-    return int(get_bool());
-  case props::INT:
-    return get_int();
-  case props::LONG:
-    return int(get_long());
-  case props::FLOAT:
-    return int(get_float());
-  case props::DOUBLE:
-    return int(get_double());
-  case props::STRING:
-  case props::UNSPECIFIED:
-    return atoi(get_string());
-  case props::NONE:
-  default:
-    return SGRawValue<int>::DefaultValue();
-  }
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getIntValue(shared, *this);
 }
 
 long
-SGPropertyNode::getLongValue () const
+SGPropertyNode::getLongValue() const
 {
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::LONG)
-    return get_long();
-
-  if (getAttribute(TRACE_READ))
-    trace_read();
-  if (!getAttribute(READ))
-    return SGRawValue<long>::DefaultValue();
-  switch (_type) {
-  case props::ALIAS:
-    return _value.alias->getLongValue();
-  case props::BOOL:
-    return long(get_bool());
-  case props::INT:
-    return long(get_int());
-  case props::LONG:
-    return get_long();
-  case props::FLOAT:
-    return long(get_float());
-  case props::DOUBLE:
-    return long(get_double());
-  case props::STRING:
-  case props::UNSPECIFIED:
-    return strtol(get_string(), 0, 0);
-  case props::NONE:
-  default:
-    return SGRawValue<long>::DefaultValue();
-  }
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getLongValue(shared, *this);
 }
 
 float
 SGPropertyNode::getFloatValue () const
 {
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::FLOAT)
-    return get_float();
-
-  if (getAttribute(TRACE_READ))
-    trace_read();
-  if (!getAttribute(READ))
-    return SGRawValue<float>::DefaultValue();
-  switch (_type) {
-  case props::ALIAS:
-    return _value.alias->getFloatValue();
-  case props::BOOL:
-    return float(get_bool());
-  case props::INT:
-    return float(get_int());
-  case props::LONG:
-    return float(get_long());
-  case props::FLOAT:
-    return get_float();
-  case props::DOUBLE:
-    return float(get_double());
-  case props::STRING:
-  case props::UNSPECIFIED:
-    return atof(get_string());
-  case props::NONE:
-  default:
-    return SGRawValue<float>::DefaultValue();
-  }
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getFloatValue(shared, *this);
 }
 
 double
-SGPropertyNode::getDoubleValue () const
+SGPropertyNode::getDoubleValue() const
 {
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::DOUBLE)
-    return get_double();
-
-  if (getAttribute(TRACE_READ))
-    trace_read();
-  if (!getAttribute(READ))
-    return SGRawValue<double>::DefaultValue();
-
-  switch (_type) {
-  case props::ALIAS:
-    return _value.alias->getDoubleValue();
-  case props::BOOL:
-    return double(get_bool());
-  case props::INT:
-    return double(get_int());
-  case props::LONG:
-    return double(get_long());
-  case props::FLOAT:
-    return double(get_float());
-  case props::DOUBLE:
-    return get_double();
-  case props::STRING:
-  case props::UNSPECIFIED:
-    return strtod(get_string(), 0);
-  case props::NONE:
-  default:
-    return SGRawValue<double>::DefaultValue();
-  }
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getDoubleValue(shared, *this);
 }
+
 
 const char *
-SGPropertyNode::getStringValue () const
+SGPropertyNode::getStringValue() const
 {
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::STRING)
-    return get_string();
-
-  if (getAttribute(TRACE_READ))
-    trace_read();
-  if (!getAttribute(READ))
-    return SGRawValue<const char *>::DefaultValue();
-  return make_string();
-}
-
-bool
-SGPropertyNode::setBoolValue (bool value)
-{
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::BOOL)
-    return set_bool(value);
-
-  bool result = false;
-  TEST_WRITE;
-  if (_type == props::NONE || _type == props::UNSPECIFIED) {
-    clearValue();
-    _tied = false;
-    _type = props::BOOL;
-  }
-
-  switch (_type) {
-  case props::ALIAS:
-    result = _value.alias->setBoolValue(value);
-    break;
-  case props::BOOL:
-    result = set_bool(value);
-    break;
-  case props::INT:
-    result = set_int(int(value));
-    break;
-  case props::LONG:
-    result = set_long(long(value));
-    break;
-  case props::FLOAT:
-    result = set_float(float(value));
-    break;
-  case props::DOUBLE:
-    result = set_double(double(value));
-    break;
-  case props::STRING:
-  case props::UNSPECIFIED:
-    result = set_string(value ? "true" : "false");
-    break;
-  case props::NONE:
-  default:
-    break;
-  }
-
-  if (getAttribute(TRACE_WRITE))
-    trace_write();
-  return result;
-}
-
-bool
-SGPropertyNode::setIntValue (int value)
-{
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::INT)
-    return set_int(value);
-
-  bool result = false;
-  TEST_WRITE;
-  if (_type == props::NONE || _type == props::UNSPECIFIED) {
-    clearValue();
-    _type = props::INT;
-    _local_val.int_val = 0;
-  }
-
-  switch (_type) {
-  case props::ALIAS:
-    result = _value.alias->setIntValue(value);
-    break;
-  case props::BOOL:
-    result = set_bool(value == 0 ? false : true);
-    break;
-  case props::INT:
-    result = set_int(value);
-    break;
-  case props::LONG:
-    result = set_long(long(value));
-    break;
-  case props::FLOAT:
-    result = set_float(float(value));
-    break;
-  case props::DOUBLE:
-    result = set_double(double(value));
-    break;
-  case props::STRING:
-  case props::UNSPECIFIED: {
-    char buf[128];
-    sprintf(buf, "%d", value);
-    result = set_string(buf);
-    break;
-  }
-  case props::NONE:
-  default:
-    break;
-  }
-
-  if (getAttribute(TRACE_WRITE))
-    trace_write();
-  return result;
-}
-
-bool
-SGPropertyNode::setLongValue (long value)
-{
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::LONG)
-    return set_long(value);
-
-  bool result = false;
-  TEST_WRITE;
-  if (_type == props::NONE || _type == props::UNSPECIFIED) {
-    clearValue();
-    _type = props::LONG;
-    _local_val.long_val = 0L;
-  }
-
-  switch (_type) {
-  case props::ALIAS:
-    result = _value.alias->setLongValue(value);
-    break;
-  case props::BOOL:
-    result = set_bool(value == 0L ? false : true);
-    break;
-  case props::INT:
-    result = set_int(int(value));
-    break;
-  case props::LONG:
-    result = set_long(value);
-    break;
-  case props::FLOAT:
-    result = set_float(float(value));
-    break;
-  case props::DOUBLE:
-    result = set_double(double(value));
-    break;
-  case props::STRING:
-  case props::UNSPECIFIED: {
-    char buf[128];
-    sprintf(buf, "%ld", value);
-    result = set_string(buf);
-    break;
-  }
-  case props::NONE:
-  default:
-    break;
-  }
-
-  if (getAttribute(TRACE_WRITE))
-    trace_write();
-  return result;
-}
-
-bool
-SGPropertyNode::setFloatValue (float value)
-{
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::FLOAT)
-    return set_float(value);
-
-  bool result = false;
-  TEST_WRITE;
-  if (_type == props::NONE || _type == props::UNSPECIFIED) {
-    clearValue();
-    _type = props::FLOAT;
-    _local_val.float_val = 0;
-  }
-
-  switch (_type) {
-  case props::ALIAS:
-    result = _value.alias->setFloatValue(value);
-    break;
-  case props::BOOL:
-    result = set_bool(value == 0.0 ? false : true);
-    break;
-  case props::INT:
-    result = set_int(int(value));
-    break;
-  case props::LONG:
-    result = set_long(long(value));
-    break;
-  case props::FLOAT:
-    result = set_float(value);
-    break;
-  case props::DOUBLE:
-    result = set_double(double(value));
-    break;
-  case props::STRING:
-  case props::UNSPECIFIED: {
-    char buf[128];
-    sprintf(buf, "%f", value);
-    result = set_string(buf);
-    break;
-  }
-  case props::NONE:
-  default:
-    break;
-  }
-
-  if (getAttribute(TRACE_WRITE))
-    trace_write();
-  return result;
-}
-
-bool
-SGPropertyNode::setDoubleValue (double value)
-{
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::DOUBLE)
-    return set_double(value);
-
-  bool result = false;
-  TEST_WRITE;
-  if (_type == props::NONE || _type == props::UNSPECIFIED) {
-    clearValue();
-    _local_val.double_val = value;
-    _type = props::DOUBLE;
-  }
-
-  switch (_type) {
-  case props::ALIAS:
-    result = _value.alias->setDoubleValue(value);
-    break;
-  case props::BOOL:
-    result = set_bool(value == 0.0L ? false : true);
-    break;
-  case props::INT:
-    result = set_int(int(value));
-    break;
-  case props::LONG:
-    result = set_long(long(value));
-    break;
-  case props::FLOAT:
-    result = set_float(float(value));
-    break;
-  case props::DOUBLE:
-    result = set_double(value);
-    break;
-  case props::STRING:
-  case props::UNSPECIFIED: {
-    char buf[128];
-    sprintf(buf, "%f", value);
-    result = set_string(buf);
-    break;
-  }
-  case props::NONE:
-  default:
-    break;
-  }
-
-  if (getAttribute(TRACE_WRITE))
-    trace_write();
-  return result;
-}
-
-bool
-SGPropertyNode::setStringValue (const char * value)
-{
-				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == props::STRING)
-    return set_string(value);
-
-  bool result = false;
-  TEST_WRITE;
-  if (_type == props::NONE || _type == props::UNSPECIFIED) {
-    clearValue();
-    _type = props::STRING;
-  }
-
-  switch (_type) {
-  case props::ALIAS:
-    result = _value.alias->setStringValue(value);
-    break;
-  case props::BOOL:
-    result = set_bool((compare_strings(value, "true")
-		       || atoi(value)) ? true : false);
-    break;
-  case props::INT:
-    result = set_int(atoi(value));
-    break;
-  case props::LONG:
-    result = set_long(strtol(value, 0, 0));
-    break;
-  case props::FLOAT:
-    result = set_float(atof(value));
-    break;
-  case props::DOUBLE:
-    result = set_double(strtod(value, 0));
-    break;
-  case props::STRING:
-  case props::UNSPECIFIED:
-    result = set_string(value);
-    break;
-  case props::EXTENDED:
-  {
-    stringstream sstr(value);
-    static_cast<SGRawExtended*>(_value.val)->readFrom(sstr);
-  }
-  break;
-  case props::NONE:
-  default:
-    break;
-  }
-
-  if (getAttribute(TRACE_WRITE))
-    trace_write();
-  return result;
+    SGPropertyLockShared shared(*this);
+    return SGPropertyNodeImpl::getStringValue(shared, *this);
 }
 
 bool
 SGPropertyNode::setUnspecifiedValue (const char * value)
 {
+  SGPropertyLockExclusive exclusive(*this);
   bool result = false;
-  TEST_WRITE;
+  if (!SGPropertyNodeImpl::getAttribute(exclusive, *this, WRITE)) return false;
   if (_type == props::NONE) {
-    clearValue();
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::UNSPECIFIED;
   }
   props::Type type = _type;
@@ -1886,34 +2656,43 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
       type = _value.val->getType();
   switch (type) {
   case props::ALIAS:
-    result = _value.alias->setUnspecifiedValue(value);
-    break;
+    {
+      SGPropertyNode* p = _value.alias;
+      exclusive.release();
+      result = p->setUnspecifiedValue(value);
+      exclusive.acquire();
+      break;
+    }
   case props::BOOL:
-    result = set_bool((compare_strings(value, "true")
+    result = SGPropertyNodeImpl::set_bool(exclusive, *this, (strings_equal(value, "true")
 		       || atoi(value)) ? true : false);
     break;
   case props::INT:
-    result = set_int(atoi(value));
+    result = SGPropertyNodeImpl::set_int(exclusive, *this, atoi(value));
     break;
   case props::LONG:
-    result = set_long(strtol(value, 0, 0));
+    result = SGPropertyNodeImpl::set_long(exclusive, *this, strtol(value, 0, 0));
     break;
   case props::FLOAT:
-    result = set_float(atof(value));
+    result = SGPropertyNodeImpl::set_float(exclusive, *this, atof(value));
     break;
   case props::DOUBLE:
-    result = set_double(strtod(value, 0));
+    result = SGPropertyNodeImpl::set_double(exclusive, *this, strtod(value, 0));
     break;
   case props::STRING:
   case props::UNSPECIFIED:
-    result = set_string(value);
+    result = SGPropertyNodeImpl::set_string(exclusive, *this, value);
     break;
 #if !PROPS_STANDALONE
   case props::VEC3D:
+      exclusive.release();
       result = static_cast<SGRawValue<SGVec3d>*>(_value.val)->setValue(parseString<SGVec3d>(value));
+      exclusive.acquire();
       break;
   case props::VEC4D:
+      exclusive.release();
       result = static_cast<SGRawValue<SGVec4d>*>(_value.val)->setValue(parseString<SGVec4d>(value));
+      exclusive.acquire();
       break;
 #endif
   case props::NONE:
@@ -1921,10 +2700,86 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
     break;
   }
 
-  if (getAttribute(TRACE_WRITE))
-    trace_write();
+  if (SGPropertyNodeImpl::getAttribute(exclusive, *this, TRACE_WRITE))
+    SGPropertyNodeImpl::trace_write(exclusive, *this);
   return result;
 }
+
+bool SGPropertyNode::setBoolValue(bool value)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::setBoolValue(exclusive, *this, value);
+}
+
+bool SGPropertyNode::setIntValue(int value)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::setIntValue(exclusive, *this, value);
+}
+
+bool SGPropertyNode::setLongValue(long value)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::setLongValue(exclusive, *this, value);
+}
+
+bool SGPropertyNode::setFloatValue(float value)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::setFloatValue(exclusive, *this, value);
+}
+
+bool SGPropertyNode::setDoubleValue(double value)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::setDoubleValue(exclusive, *this, value);
+}
+
+bool SGPropertyNode::setStringValue(const char* value)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::setStringValue(exclusive, *this, value);
+}
+
+bool SGPropertyNode::setStringValue(const std::string& value)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return SGPropertyNodeImpl::setStringValue(exclusive, *this, value);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //------------------------------------------------------------------------------
 #if !PROPS_STANDALONE
@@ -1933,6 +2788,7 @@ bool SGPropertyNode::interpolate( const std::string& type,
                                   double duration,
                                   const std::string& easing )
 {
+  
   if( !_interpolation_mgr )
   {
     SG_LOG(SG_GENERAL, SG_WARN, "No property interpolator available");
@@ -1982,29 +2838,34 @@ simgear::PropertyInterpolationMgr* SGPropertyNode::_interpolation_mgr = 0;
 //------------------------------------------------------------------------------
 std::ostream& SGPropertyNode::printOn(std::ostream& stream) const
 {
-    if (!getAttribute(READ))
+    SGPropertyLockShared shared(*this);
+    if (!SGPropertyNodeImpl::getAttribute(shared, *this, READ))
         return stream;
     switch (_type) {
     case props::ALIAS:
-        return _value.alias->printOn(stream);
+        {
+            SGPropertyNode* p = _value.alias;
+            shared.release();
+            return p->printOn(stream);
+        }
     case props::BOOL:
-        stream << (get_bool() ? "true" : "false");
+        stream << (SGPropertyNodeImpl::get_bool(shared, *this) ? "true" : "false");
         break;
     case props::INT:
-        stream << get_int();
+        stream << SGPropertyNodeImpl::get_int(shared, *this);
         break;
     case props::LONG:
-        stream << get_long();
+        stream << SGPropertyNodeImpl::get_long(shared, *this);
         break;
     case props::FLOAT:
-        stream << get_float();
+        stream << SGPropertyNodeImpl::get_float(shared, *this);
         break;
     case props::DOUBLE:
-        stream << get_double();
+        stream << SGPropertyNodeImpl::get_double(shared, *this);
         break;
     case props::STRING:
     case props::UNSPECIFIED:
-        stream << get_string();
+        stream << SGPropertyNodeImpl::get_string(shared, *this);
         break;
     case props::EXTENDED:
         static_cast<SGRawExtended*>(_value.val)->printOn(stream);
@@ -2017,77 +2878,84 @@ std::ostream& SGPropertyNode::printOn(std::ostream& stream) const
     return stream;
 }
 
-template<>
-bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
-                          bool useDefault)
+bool SGPropertyNode::isTied () const
 {
+    return _tied;
+}
+
+template<>
+bool SGPropertyNode::tie(const SGRawValue<const char *> &rawValue, bool useDefault)
+{
+    SGPropertyLockExclusive exclusive(*this);
     if (_type == props::ALIAS || _tied)
         return false;
 
-    useDefault = useDefault && hasValue();
+    useDefault = useDefault && SGPropertyNodeImpl::hasValue(exclusive, *this);
     std::string old_val;
     if (useDefault)
-        old_val = getStringValue();
-    clearValue();
+        old_val = SGPropertyNodeImpl::getStringValue(exclusive, *this);
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::STRING;
     _tied = true;
     _value.val = rawValue.clone();
 
     if (useDefault) {
-        int save_attributes = getAttributes();
-        setAttribute( WRITE, true );
-        setStringValue(old_val.c_str());
-        setAttributes( save_attributes );
+        int save_attributes = SGPropertyNodeImpl::getAttributes(exclusive, *this);
+        SGPropertyNodeImpl::setAttribute(exclusive, *this, WRITE, true );
+        SGPropertyNodeImpl::setStringValue(exclusive, *this, old_val.c_str());
+        SGPropertyNodeImpl::setAttributes(exclusive, *this, save_attributes);
     }
 
     return true;
 }
+
 bool
-SGPropertyNode::untie ()
+SGPropertyNode::untie()
 {
+  SGPropertyLockExclusive exclusive(*this);
   if (!_tied)
     return false;
 
   switch (_type) {
   case props::BOOL: {
-    bool val = getBoolValue();
-    clearValue();
+    bool val = SGPropertyNodeImpl::getBoolValue(exclusive, *this);
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::BOOL;
     _local_val.bool_val = val;
     break;
   }
   case props::INT: {
-    int val = getIntValue();
-    clearValue();
+    int val = SGPropertyNodeImpl::getIntValue(exclusive, *this);
+    SGPropertyNodeImpl::SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::INT;
     _local_val.int_val = val;
     break;
   }
   case props::LONG: {
-    long val = getLongValue();
-    clearValue();
+    long val = SGPropertyNodeImpl::SGPropertyNodeImpl::getLongValue(exclusive, *this);
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::LONG;
     _local_val.long_val = val;
     break;
   }
   case props::FLOAT: {
-    float val = getFloatValue();
-    clearValue();
+    float val = SGPropertyNodeImpl::getFloatValue(exclusive, *this);
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::FLOAT;
     _local_val.float_val = val;
     break;
   }
   case props::DOUBLE: {
-    double val = getDoubleValue();
-    clearValue();
+    double val = SGPropertyNodeImpl::getDoubleValue(exclusive, *this);
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::DOUBLE;
     _local_val.double_val = val;
     break;
   }
   case props::STRING:
   case props::UNSPECIFIED: {
-    std::string val = getStringValue();
-    clearValue();
+    std::string val = SGPropertyNodeImpl::getStringValue(exclusive, *this);
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::STRING;
     _local_val.string_val = copy_string(val.c_str());
     break;
@@ -2095,7 +2963,7 @@ SGPropertyNode::untie ()
   case props::EXTENDED: {
     SGRawExtended* val = static_cast<SGRawExtended*>(_value.val);
     _value.val = 0;             // Prevent clearValue() from deleting
-    clearValue();
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
     _type = props::EXTENDED;
     _value.val = val->makeContainer();
     delete val;
@@ -2113,19 +2981,16 @@ SGPropertyNode::untie ()
 SGPropertyNode *
 SGPropertyNode::getRootNode ()
 {
-  if (_parent == 0)
-    return this;
-  else
-    return _parent->getRootNode();
+  SGPropertyLockShared shared(*this);
+  SGPropertyNode* parent = _parent/*.lock()*/;
+  shared.release();
+  return (parent) ? parent->getRootNode() : this;
 }
 
 const SGPropertyNode *
 SGPropertyNode::getRootNode () const
 {
-  if (_parent == 0)
-    return this;
-  else
-    return _parent->getRootNode();
+  return const_cast<SGPropertyNode*>(this)->getRootNode();
 }
 
 SGPropertyNode *
@@ -2137,10 +3002,11 @@ SGPropertyNode::getNode (const char * relative_path, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  return find_node(this,
-                   boost::make_iterator_range(relative_path,
-                                              relative_path + strlen(relative_path)),
-                   create);
+  return find_node(
+        this,
+        boost::make_iterator_range(relative_path, relative_path + strlen(relative_path)),
+        create
+        );
 #endif
 }
 
@@ -2155,23 +3021,41 @@ SGPropertyNode::getNode (const char * relative_path, int index, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  return find_node(this,
-                   boost::make_iterator_range(relative_path,
-                                              relative_path + strlen(relative_path)),
-                   create, index);
+  return find_node(
+        this,
+        boost::make_iterator_range(relative_path, relative_path + strlen(relative_path)),
+        create,
+        index
+        );
 #endif
 }
+
+SGPropertyNode * SGPropertyNode::getNode (const std::string& relative_path, int index, bool create)
+{
+    return getNode(relative_path.c_str(), index, create);
+}
+
 
 const SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path) const
 {
-  return ((SGPropertyNode *)this)->getNode(relative_path, false);
+  return const_cast<SGPropertyNode*>(this)->getNode(relative_path, false);
+}
+
+const SGPropertyNode * SGPropertyNode::getNode (const std::string& relative_path) const
+{
+    return getNode(relative_path.c_str());
 }
 
 const SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, int index) const
 {
-  return ((SGPropertyNode *)this)->getNode(relative_path, index, false);
+  return const_cast<SGPropertyNode*>(this)->getNode(relative_path, index, false);
+}
+
+const SGPropertyNode * SGPropertyNode::getNode (const std::string& relative_path, int index) const
+{
+    return getNode(relative_path.c_str(), index);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2186,9 +3070,13 @@ bool
 SGPropertyNode::hasValue (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? false : node->hasValue());
+  return (node) ? node->hasValue() : false;
 }
 
+bool SGPropertyNode::hasValue (const std::string& relative_path) const
+{
+    return hasValue(relative_path.c_str());
+}
 
 /**
  * Get the value type for another node.
@@ -2197,33 +3085,43 @@ props::Type
 SGPropertyNode::getType (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? props::UNSPECIFIED : node->getType());
+  return (node) ? node->getType() : props::UNSPECIFIED;
 }
 
+simgear::props::Type SGPropertyNode::getType (const std::string& relative_path) const
+{
+  return getType(relative_path.c_str());
+}
 
 /**
  * Get a bool value for another node.
  */
 bool
-SGPropertyNode::getBoolValue (const char * relative_path,
-			      bool defaultValue) const
+SGPropertyNode::getBoolValue (const char * relative_path, bool defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? defaultValue : node->getBoolValue());
+  return (node) ? node->getBoolValue() : defaultValue;
 }
 
+bool SGPropertyNode::getBoolValue (const std::string& relative_path, bool defaultValue) const
+{
+    return getBoolValue(relative_path.c_str(), defaultValue);
+}
 
 /**
  * Get an int value for another node.
  */
 int
-SGPropertyNode::getIntValue (const char * relative_path,
-			     int defaultValue) const
+SGPropertyNode::getIntValue (const char * relative_path, int defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? defaultValue : node->getIntValue());
+  return (node) ? node->getIntValue() : defaultValue;
 }
 
+int SGPropertyNode::getIntValue (const std::string& relative_path, int defaultValue) const
+{
+    return getIntValue(relative_path.c_str(), defaultValue);
+}
 
 /**
  * Get a long value for another node.
@@ -2233,9 +3131,13 @@ SGPropertyNode::getLongValue (const char * relative_path,
 			      long defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? defaultValue : node->getLongValue());
+  return (node) ? node->getLongValue() : defaultValue;
 }
 
+long SGPropertyNode::getLongValue (const std::string& relative_path, long defaultValue) const
+{
+    return getLongValue(relative_path.c_str(), defaultValue);
+}
 
 /**
  * Get a float value for another node.
@@ -2245,9 +3147,13 @@ SGPropertyNode::getFloatValue (const char * relative_path,
 			       float defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? defaultValue : node->getFloatValue());
+  return (node) ? node->getFloatValue() : defaultValue;
 }
 
+float SGPropertyNode::getFloatValue (const std::string& relative_path, float defaultValue) const
+{
+    return getFloatValue(relative_path.c_str(), defaultValue);
+}
 
 /**
  * Get a double value for another node.
@@ -2257,9 +3163,13 @@ SGPropertyNode::getDoubleValue (const char * relative_path,
 				double defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? defaultValue : node->getDoubleValue());
+  return (node) ? node->getDoubleValue() : defaultValue;
 }
 
+double SGPropertyNode::getDoubleValue (const std::string& relative_path, double defaultValue) const
+{
+    return getDoubleValue(relative_path.c_str(), defaultValue);
+}
 
 /**
  * Get a string value for another node.
@@ -2269,9 +3179,13 @@ SGPropertyNode::getStringValue (const char * relative_path,
 				const char * defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? defaultValue : node->getStringValue());
+  return (node) ? node->getStringValue() : defaultValue;
 }
 
+const char * SGPropertyNode::getStringValue (const std::string& relative_path, const char * defaultValue) const
+{
+    return getStringValue(relative_path.c_str(), defaultValue);
+}
 
 /**
  * Set a bool value for another node.
@@ -2282,6 +3196,10 @@ SGPropertyNode::setBoolValue (const char * relative_path, bool value)
   return getNode(relative_path, true)->setBoolValue(value);
 }
 
+bool SGPropertyNode::setBoolValue (const std::string& relative_path, bool value)
+{
+    return setBoolValue(relative_path.c_str(), value);
+}
 
 /**
  * Set an int value for another node.
@@ -2292,6 +3210,10 @@ SGPropertyNode::setIntValue (const char * relative_path, int value)
   return getNode(relative_path, true)->setIntValue(value);
 }
 
+bool SGPropertyNode::setIntValue (const std::string& relative_path, int value)
+{
+    return setIntValue(relative_path.c_str(), value);
+}
 
 /**
  * Set a long value for another node.
@@ -2302,6 +3224,10 @@ SGPropertyNode::setLongValue (const char * relative_path, long value)
   return getNode(relative_path, true)->setLongValue(value);
 }
 
+bool SGPropertyNode::setLongValue (const std::string& relative_path, long value)
+{
+    return setLongValue(relative_path.c_str(), value);
+}
 
 /**
  * Set a float value for another node.
@@ -2312,6 +3238,10 @@ SGPropertyNode::setFloatValue (const char * relative_path, float value)
   return getNode(relative_path, true)->setFloatValue(value);
 }
 
+bool SGPropertyNode::setFloatValue (const std::string& relative_path, float value)
+{
+    return setFloatValue(relative_path.c_str(), value);
+}
 
 /**
  * Set a double value for another node.
@@ -2322,6 +3252,10 @@ SGPropertyNode::setDoubleValue (const char * relative_path, double value)
   return getNode(relative_path, true)->setDoubleValue(value);
 }
 
+bool SGPropertyNode::setDoubleValue (const std::string& relative_path, double value)
+{
+    return setDoubleValue(relative_path.c_str(), value);
+}
 
 /**
  * Set a string value for another node.
@@ -2332,13 +3266,26 @@ SGPropertyNode::setStringValue (const char * relative_path, const char * value)
   return getNode(relative_path, true)->setStringValue(value);
 }
 
+bool SGPropertyNode::setStringValue(const char * relative_path, const std::string& value)
+{
+    return setStringValue(relative_path, value.c_str());
+}
+
+bool SGPropertyNode::setStringValue (const std::string& relative_path, const char * value)
+{
+    return setStringValue(relative_path.c_str(), value);
+}
+
+bool SGPropertyNode::setStringValue (const std::string& relative_path, const std::string& value)
+{
+    return setStringValue(relative_path.c_str(), value.c_str());
+}
 
 /**
  * Set an unknown value for another node.
  */
 bool
-SGPropertyNode::setUnspecifiedValue (const char * relative_path,
-				     const char * value)
+SGPropertyNode::setUnspecifiedValue (const char * relative_path, const char * value)
 {
   return getNode(relative_path, true)->setUnspecifiedValue(value);
 }
@@ -2351,101 +3298,145 @@ bool
 SGPropertyNode::isTied (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? false : node->isTied());
+  return (node) ? node->isTied() : false;
 }
 
+bool SGPropertyNode::isTied (const std::string& relative_path) const
+{
+    return isTied(relative_path.c_str());
+}
 
 /**
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const char * relative_path,
-		     const SGRawValue<bool> &rawValue,
-		     bool useDefault)
+SGPropertyNode::tie(
+        const char* relative_path,
+		const SGRawValue<bool> &rawValue,
+		bool useDefault
+        )
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
 
+bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<bool> &rawValue, bool useDefault)
+{
+    return tie(relative_path.c_str(), rawValue, useDefault);
+}
 
 /**
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const char * relative_path,
-		     const SGRawValue<int> &rawValue,
-		     bool useDefault)
+SGPropertyNode::tie(
+        const char * relative_path,
+		const SGRawValue<int> &rawValue,
+		bool useDefault
+        )
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
 
+bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<int> &rawValue, bool useDefault)
+{
+    return tie(relative_path.c_str(), rawValue, useDefault);
+}
 
 /**
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const char * relative_path,
-		     const SGRawValue<long> &rawValue,
-		     bool useDefault)
+SGPropertyNode::tie(
+        const char * relative_path,
+		const SGRawValue<long> &rawValue,
+		bool useDefault
+        )
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
 
+bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<long> &rawValue, bool useDefault)
+{
+    return tie(relative_path.c_str(), rawValue, useDefault);
+}
 
 /**
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const char * relative_path,
-		     const SGRawValue<float> &rawValue,
-		     bool useDefault)
+SGPropertyNode::tie(
+        const char* relative_path,
+		const SGRawValue<float> &rawValue,
+		bool useDefault
+        )
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
 
+bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<float> &rawValue, bool useDefault)
+{
+    return tie(relative_path.c_str(), rawValue, useDefault);
+}
 
 /**
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const char * relative_path,
-		     const SGRawValue<double> &rawValue,
-		     bool useDefault)
+SGPropertyNode::tie(
+        const char* relative_path,
+		const SGRawValue<double> &rawValue,
+		bool useDefault
+        )
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
 
+bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<double> &rawValue, bool useDefault)
+{
+    return tie(relative_path.c_str(), rawValue, useDefault);
+}
 
 /**
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const char * relative_path,
-		     const SGRawValue<const char *> &rawValue,
-		     bool useDefault)
+SGPropertyNode::tie(
+        const char * relative_path,
+		const SGRawValue<const char *> &rawValue,
+		bool useDefault
+        )
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
 
+bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<const char*> &rawValue, bool useDefault)
+{
+    return tie(relative_path.c_str(), rawValue, useDefault);
+}
 
 /**
  * Attempt to untie another node reached by a relative path.
  */
 bool
-SGPropertyNode::untie (const char * relative_path)
+SGPropertyNode::untie(const char * relative_path)
 {
-  SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? false : node->untie());
+  SGPropertyNode* node = getNode(relative_path);
+  return (node) ? node->untie() : false;
+}
+
+bool SGPropertyNode::untie (const std::string& relative_path)
+{
+    return untie(relative_path.c_str());
 }
 
 void
-SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
-                                   bool initial)
+SGPropertyNode::addChangeListener(SGPropertyChangeListener* listener, bool initial)
 {
+  SGPropertyLockExclusive exclusive(*this);
   if (_listeners == 0)
     // REVIEW: Memory Leak - 32 bytes in 1 blocks are indirectly lost
     _listeners = new SGPropertyNodeListeners;
 
-  std::lock_guard lock(_listeners->_rmutex);
   /* If there's a nullptr entry (a listener that was unregistered), we
   overwrite it. This ensures that listeners that routinely unregister+register
   themselves don't make _listeners->_items grow unnecessarily. Otherwise simply
@@ -2461,19 +3452,21 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
     *it = listener;
   }
   listener->register_property(this);
-  if (initial)
+  if (initial) {
     // REVIEW: Memory Leak - 24,928 bytes in 164 blocks are indirectly lost
+    exclusive.release();
     listener->valueChanged(this);
+  }
 }
 
 void
 SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
 {
+  SGPropertyLockExclusive exclusive(*this);
   if (_listeners == 0)
     return;
   /* We use a std::unique_lock rather than a std::lock_guard because we may
   need to unlock early. */
-  std::unique_lock lock(_listeners->_rmutex);
   vector<SGPropertyChangeListener*>::iterator it =
     find(_listeners->_items.begin(), _listeners->_items.end(), listener);
   if (it != _listeners->_items.end()) {
@@ -2496,24 +3489,25 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
       _listeners->_items.erase(it);
       listener->unregister_property(this);
       if (_listeners->_items.empty()) {
-        lock.unlock();
         delete _listeners;
-        _listeners = 0;
+        _listeners = nullptr;
       }
     }
   }
 }
 
 void
-SGPropertyNode::fireValueChanged ()
+SGPropertyNode::fireValueChanged()
 {
-  fireValueChanged(this);
+  SGPropertyLockExclusive exclusive(*this);
+  SGPropertyNodeImpl::fireValueChanged(exclusive, *this, this);
 }
 
 void
 SGPropertyNode::fireChildAdded (SGPropertyNode * child)
 {
-  fireChildAdded(this, child);
+  SGPropertyLockExclusive exclusive(*this);
+  SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, child);
 }
 
 void
@@ -2521,84 +3515,50 @@ SGPropertyNode::fireCreatedRecursive(bool fire_self)
 {
   if( fire_self )
   {
-    _parent->fireChildAdded(this);
-
-    if( _children.empty() && getType() != simgear::props::NONE )
-      return fireValueChanged();
+    SGPropertyNode* parent = _parent/*.lock()*/;
+    if (parent) {
+      parent->fireChildAdded(this);
+    }
+    SGPropertyLockExclusive exclusive(*this);
+    if( _children.empty() && SGPropertyNodeImpl::getType(exclusive, *this) != simgear::props::NONE )
+      return SGPropertyNodeImpl::fireValueChanged(exclusive, *this, this);
   }
 
-  for(size_t i = 0; i < _children.size(); ++i)
-    _children[i]->fireCreatedRecursive(true);
+  simgear::PropertyList children;
+  {
+    SGPropertyLockShared shared(*this);
+    children = _children;
+  }
+  for(size_t i = 0; i < children.size(); ++i)
+    children[i]->fireCreatedRecursive(true);
 }
 
 void
 SGPropertyNode::fireChildRemoved (SGPropertyNode * child)
 {
-  fireChildRemoved(this, child);
+  SGPropertyLockExclusive exclusive(*this);
+  SGPropertyNodeImpl::fireChildRemoved(exclusive, *this, this /*parent*/, child);
 }
 
 void
 SGPropertyNode::fireChildrenRemovedRecursive()
 {
-  for(size_t i = 0; i < _children.size(); ++i)
+  simgear::PropertyList children;
   {
-    SGPropertyNode* child = _children[i];
-    fireChildRemoved(this, child);
+    SGPropertyLockShared shared(*this);
+    children = _children;
+  }
+  for (SGPropertyNode* child: children)
+  {
+    fireChildRemoved(child);
     child->fireChildrenRemovedRecursive();
-  }
-}
-
-/* Calls <callback> for each item in _listeners. We are careful to skip nullptr
-entries in _listeners->items[], which can be created if listeners are removed
-while we are iterating. */
-static void forEachListener(
-    SGPropertyNode* node,
-    SGPropertyNodeListeners*& _listeners,
-    std::function<void (SGPropertyChangeListener*)> callback
-    )
-{
-  if (!_listeners) return;
-
-  std::lock_guard lock(_listeners->_rmutex);
-  assert(_listeners->_num_iterators >= 0);
-  _listeners->_num_iterators += 1;
-
-  /* We need to use an index here when iterating _listeners->_items, not an
-  iterator. This is because a listener may add new listeners, causing the
-  vector to be reallocated, which would invalidate any iterator. */
-  for (size_t i = 0; i < _listeners->_items.size(); ++i) {
-    auto listener = _listeners->_items[i];
-    if (listener) {
-      try {
-        callback(listener);
-      }
-      catch (std::exception& e) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "Ignoring exception from property callback: " << e.what());
-      }
-    }
-  }
-
-  _listeners->_num_iterators -= 1;
-  assert(_listeners->_num_iterators >= 0);
-
-  if (_listeners->_num_iterators == 0) {
-
-    /* Remove any items that have been set to nullptr. */
-    _listeners->_items.erase(
-        std::remove(_listeners->_items.begin(), _listeners->_items.end(), (SGPropertyChangeListener*) nullptr),
-        _listeners->_items.end()
-        );
-    if (_listeners->_items.empty()) {
-      delete _listeners;
-      _listeners = nullptr;
-    }
   }
 }
 
 int SGPropertyNode::nListeners() const
 {
+  SGPropertyLockShared shared(*this);
   if (!_listeners) return 0;
-  std::lock_guard lock(_listeners->_rmutex);
   int   n = 0;
   for (auto listener: _listeners->_items) {
     if (listener)   n += 1;
@@ -2606,48 +3566,12 @@ int SGPropertyNode::nListeners() const
   return n;
 }
 
-void
-SGPropertyNode::fireValueChanged (SGPropertyNode * node)
-{
-  forEachListener(
-      node,
-      _listeners,
-      [&](SGPropertyChangeListener* listener) { listener->valueChanged(node);}
-      );
-  if (_parent != 0)
-    _parent->fireValueChanged(node);
-}
-
-void
-SGPropertyNode::fireChildAdded (SGPropertyNode * parent,
-				SGPropertyNode * child)
-{
-  forEachListener(
-      parent,
-      _listeners,
-      [&](SGPropertyChangeListener* listener) { listener->childAdded(parent, child);}
-      );
-  if (_parent != 0)
-    _parent->fireChildAdded(parent, child);
-}
-
-void
-SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
-				  SGPropertyNode * child)
-{
-  forEachListener(
-      parent,
-      _listeners,
-      [&](SGPropertyChangeListener* listener) { listener->childRemoved(parent, child);}
-      );
-  if (_parent != 0)
-    _parent->fireChildRemoved(parent, child);
-}
-
+#if 0
 //------------------------------------------------------------------------------
 SGPropertyNode_ptr
 SGPropertyNode::eraseChild(simgear::PropertyList::iterator child)
 {
+  ProtectScope lock(this, true /*write*/);
   SGPropertyNode_ptr node = *child;
   node->setAttribute(REMOVED, true);
   node->clearValue();
@@ -2656,6 +3580,7 @@ SGPropertyNode::eraseChild(simgear::PropertyList::iterator child)
   _children.erase(child);
   return node;
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGPropertyChangeListener.
@@ -2762,7 +3687,34 @@ namespace simgear
 
     namespace
     {
+        #if 0
         bool compareNodeValue(const SGPropertyNode& lhs, const SGPropertyNode& rhs)
+        {
+            if (&lhs == &rhs) return true;
+            /* Need to find whether this is above or below <to> in the property tree so
+            we can take out locks in a safe order. */
+            SGPropertyLockShared    shared_lhs;
+            SGPropertyLockShared    shared_rhs;
+            int d = ancestor_compare(&lhs, &rhs);
+            if (d >= 0) {
+                // <lhs> is parent/grandparent/... of <rhs>.
+                shared_lhs.assign(lhs);
+                shared_rhs.assign(rhs);
+            }
+            else {
+                shared_rhs.assign(rhs);
+                shared_lhs.assign(lhs);
+            }
+            return compareNodeValue(shared_lhs, shared_rhs, lhs, rhs);
+        }
+        #endif
+        
+        bool compareNodeValue(
+                SGPropertyLockShared& shared_lhs,
+                SGPropertyLockShared& shared_rhs,
+                const SGPropertyNode& lhs,
+                const SGPropertyNode& rhs
+                )
         {
             props::Type ltype = lhs.getType();
             props::Type rtype = rhs.getType();
@@ -2799,6 +3751,30 @@ namespace simgear
     }
 }
 
+/* Returns +1 if a is parent of b, +2 if a is grandparent of b, etc. Otherwise
+returns 0. We also return 0 if a==b. */
+static int ancestor_distance(SGConstPropertyNode_ptr a, SGConstPropertyNode_ptr b)
+{
+    int distance = 0;
+    for(;;) {
+        b = b->getParent();
+        if (!b) return 0;
+        distance += 1;
+        if (a == b) return distance;
+    }
+}
+
+/* Returns +1/+2/+3/... if a is parent/grandparent/... of b. Returns
+-1/-2/-3/... if b is parent/grandparent/... of a. */
+static int ancestor_compare(SGConstPropertyNode_ptr a, SGConstPropertyNode_ptr b)
+{
+    int distance;
+    distance = ancestor_distance(a, b);
+    if (distance > 0) return distance;
+    distance = ancestor_distance(b, a);
+    if (distance > 0) return -distance;
+    return 0;
+}
 
 void SGPropertyNode::copy(SGPropertyNode *to) const
 {
@@ -2806,7 +3782,8 @@ void SGPropertyNode::copy(SGPropertyNode *to) const
     {
         for (int i = 0; i < nChildren(); i++) {
             const SGPropertyNode *child = getChild(i);
-            SGPropertyNode *to_child = to->getChild(child->getName());
+            if (!child) break;  // We don't lock child, so getChild() could return 0;
+            SGPropertyNode* to_child = to->getChild(child->getName());
             if (!to_child)
                 to_child = to->addChild(child->getName());
             if (child->nChildren())
@@ -2823,34 +3800,62 @@ void SGPropertyNode::copy(SGPropertyNode *to) const
         to->setValue(getStringValue());
 }
 
+SGPropertyNode * SGPropertyNode::getNode (const std::string& relative_path, bool create)
+{
+    return getNode(relative_path.c_str(), create);
+}
+
+
 bool SGPropertyNode::compare(const SGPropertyNode& lhs,
                              const SGPropertyNode& rhs)
 {
     if (&lhs == &rhs)
         return true;
-    int lhsChildren = lhs.nChildren();
-    int rhsChildren = rhs.nChildren();
+    /* Need to find whether this is above or below <to> in the property tree so
+    we can take out locks in a safe order. */
+    SGPropertyLockShared    shared_lhs;
+    SGPropertyLockShared    shared_rhs;
+    int d = ancestor_compare(&lhs, &rhs);
+    if (d >= 0) {
+        // <lhs> is parent/grandparent/... of <rhs>.
+        shared_lhs.assign(lhs);
+        shared_rhs.assign(rhs);
+    }
+    else {
+        shared_rhs.assign(rhs);
+        shared_lhs.assign(lhs);
+    }
+    int lhsChildren = lhs._children.size();
+    int rhsChildren = rhs._children.size();
     if (lhsChildren != rhsChildren)
         return false;
+    
     if (lhsChildren == 0)
-        return compareNodeValue(lhs, rhs);
+        return compareNodeValue(shared_lhs, shared_rhs, lhs, rhs);
+    
     for (size_t i = 0; i < lhs._children.size(); ++i) {
         const SGPropertyNode* lchild = lhs._children[i];
         const SGPropertyNode* rchild = rhs._children[i];
         // I'm guessing that the nodes will usually be in the same
         // order.
         if (lchild->getIndex() != rchild->getIndex()
-            || lchild->getNameString() != rchild->getNameString()) {
-            rchild = 0;
-            for (PropertyList::const_iterator itr = rhs._children.begin(),
-                     end = rhs._children.end();
-                 itr != end;
-                ++itr)
+                || lchild->getNameString() != rchild->getNameString()
+                )
+        {
+            /* Search for matching child in rhs. */
+            rchild = nullptr;
+            for (PropertyList::const_iterator itr = rhs._children.begin();
+                    itr != rhs._children.end();
+                    ++itr)
+            {
                 if (lchild->getIndex() == (*itr)->getIndex()
-                    && lchild->getNameString() == (*itr)->getNameString()) {
+                        && lchild->getNameString() == (*itr)->getNameString()
+                        )
+                {
                     rchild = *itr;
                     break;
                 }
+            }
             if (!rchild)
                 return false;
         }
@@ -2872,50 +3877,309 @@ struct PropertyPlaceLess {
     }
 };
 
+
+template<typename T>
+bool SGPropertyNode::tie(const SGRawValue<T> &rawValue, bool useDefault)
+{
+    SGPropertyLockExclusive exclusive(*this);
+    using namespace simgear::props;
+    if (_type == ALIAS || _tied)
+        return false;
+
+    useDefault = useDefault && SGPropertyNodeImpl::hasValue(exclusive, *this);
+    T old_val = SGRawValue<T>::DefaultValue();
+    if (useDefault)
+        old_val = getValue<T>(exclusive);
+    SGPropertyNodeImpl::clearValue(exclusive, *this);
+    if (PropertyTraits<T>::Internal)
+        _type = PropertyTraits<T>::type_tag;
+    else
+        _type = EXTENDED;
+    _tied = true;
+    _value.val = rawValue.clone();
+    if (useDefault) {
+        int save_attributes = _attr;
+        SGPropertyNodeImpl::setAttribute(exclusive, *this, WRITE, true);
+        setValue(exclusive, old_val);
+        _attr = save_attributes;
+    }
+    return true;
+    
+}
+
+
+
+
+
+template<typename T>
+T SGPropertyNode::getValue(
+        SGPropertyLock& lock,
+        typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy
+        ) const
+{
+    using namespace simgear::props;
+    if (_attr == (READ|WRITE)
+            && _type == EXTENDED
+            && _value.val->getType() == PropertyTraits<T>::type_tag)
+    {
+        return static_cast<SGRawValue<T>*>(_value.val)->getValue();
+    }
+    if (SGPropertyNodeImpl::getAttribute(lock, *this, TRACE_READ))
+        SGPropertyNodeImpl::trace_read(lock, *this);
+    if (!SGPropertyNodeImpl::getAttribute(lock, *this, READ))
+        return SGRawValue<T>::DefaultValue();
+    switch (_type) {
+        case EXTENDED:
+            if (_value.val->getType() == PropertyTraits<T>::type_tag)
+                return static_cast<SGRawValue<T>*>(_value.val)->getValue();
+            break;
+        case STRING:
+        case UNSPECIFIED:
+            return simgear::parseString<T>(SGPropertyNodeImpl::make_string(lock, *this));
+        default: // avoid compiler warning
+            break;
+    }
+    return SGRawValue<T>::DefaultValue();
+}
+
+template<typename T>
+T SGPropertyNode::getValue(
+        typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy
+        ) const
+{
+    SGPropertyLockShared shared(*this);
+    return getValue<T>(shared, dummy);
+}
+
+
+template<typename T>
+inline T
+SGPropertyNode::getValue(typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>::type* dummy) const
+{
+    return ::getValue<T>(this);
+}
+
+template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
+std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
+{
+    SGPropertyLockShared shared(*this);
+    const simgear::PropertyList& props = SGPropertyNodeImpl::getChildren(shared, *this, name);
+    std::vector<T> values( props.size() );
+
+    for( size_t i = 0; i < props.size(); ++i )
+        values[i] = props[i]->getValue<T_get>();
+
+    return values;
+}
+
+template<typename T>
+inline std::vector<T>
+SGPropertyNode::getChildValues(const std::string& name) const
+{
+    return getChildValues<T, T>(name);
+}
+
+
+template<>
+bool SGPropertyNode::setValue(SGPropertyLockExclusive& exclusive, const bool& val, void* dummy)
+{
+    return SGPropertyNodeImpl::setBoolValue(exclusive, *this, val);
+}
+
+template<>
+bool SGPropertyNode::setValue(SGPropertyLockExclusive& exclusive, const int& val, void* dummy)
+{
+    return SGPropertyNodeImpl::setIntValue(exclusive, *this, val);
+}
+
+template<>
+bool SGPropertyNode::setValue(SGPropertyLockExclusive& exclusive, const long& val, void* dummy)
+{
+    return SGPropertyNodeImpl::setLongValue(exclusive, *this, val);
+}
+
+template<>
+bool SGPropertyNode::setValue(SGPropertyLockExclusive& exclusive, const float& val, void* dummy)
+{
+    return SGPropertyNodeImpl::setFloatValue(exclusive, *this, val);
+}
+
+template<>
+bool SGPropertyNode::setValue(SGPropertyLockExclusive& exclusive, const double& val, void* dummy)
+{
+    return SGPropertyNodeImpl::setDoubleValue(exclusive, *this, val);
+}
+
+
+template<typename T>
+bool SGPropertyNode::setValue(
+        SGPropertyLockExclusive& exclusive,
+        const T& val,
+        typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy
+        )
+{
+    using namespace simgear::props;
+    if (_attr == (READ|WRITE) && _type == EXTENDED
+        && _value.val->getType() == PropertyTraits<T>::type_tag) {
+        static_cast<SGRawValue<T>*>(_value.val)->setValue(val);
+        return true;
+    }
+    if (SGPropertyNodeImpl::getAttribute(exclusive, *this, WRITE)
+        && (
+            (
+                _type == EXTENDED
+                && _value.val->getType() == PropertyTraits<T>::type_tag
+            )
+            || _type == NONE
+            || _type == UNSPECIFIED
+        ))
+    {
+        if (_type == NONE || _type == UNSPECIFIED) {
+            SGPropertyNodeImpl::clearValue(exclusive, *this);
+            _type = EXTENDED;
+            _value.val = new SGRawValueContainer<T>(val);
+        } else {
+            static_cast<SGRawValue<T>*>(_value.val)->setValue(val);
+        }
+        if (SGPropertyNodeImpl::getAttribute(exclusive, *this, TRACE_WRITE))
+            SGPropertyNodeImpl::trace_write(exclusive, *this);
+        return true;
+    }
+    return false;
+}
+
+template<typename T>
+bool SGPropertyNode::setValue(
+        const T& val,
+        typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy
+        )
+{
+    SGPropertyLockExclusive exclusive(*this);
+    return setValue(exclusive, val, dummy);
+}
+
+template<typename T>
+inline bool SGPropertyNode::setValue(
+        const T& val,
+        typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>::type* dummy
+        )
+{
+    return ::setValue(this, val);
+}
+
+
+// Explicit specialisations and instantiations.
+//
+
+template bool SGPropertyNode::getValue<bool>(void*) const;
+template int SGPropertyNode::getValue<int>(void*) const;
+template long SGPropertyNode::getValue<long>(void*) const;
+template float SGPropertyNode::getValue<float>(void*) const;
+template double SGPropertyNode::getValue<double>(void*) const;
+template const char* SGPropertyNode::getValue<const char*>(void*) const;
+template SGVec3<double> SGPropertyNode::getValue<SGVec3<double>>(void*) const;
+template SGVec4<double> SGPropertyNode::getValue<SGVec4<double>>(void*) const;
+
+template<>
+bool SGPropertyNode::getValue<bool>(SGPropertyLock& lock, void* dummy) const
+{
+    return SGPropertyNodeImpl::getBoolValue(lock, *this);
+}
+
+template<>
+int SGPropertyNode::getValue<int>(SGPropertyLock& lock, void* dummy) const
+{
+    return SGPropertyNodeImpl::getIntValue(lock, *this);
+}
+
+template<>
+long SGPropertyNode::getValue<long>(SGPropertyLock& lock, void* dummy) const
+{
+    return SGPropertyNodeImpl::getLongValue(lock, *this);
+}
+
+template<>
+float SGPropertyNode::getValue<float>(SGPropertyLock& lock, void* dummy) const
+{
+    return SGPropertyNodeImpl::getFloatValue(lock, *this);
+}
+
+template<>
+double SGPropertyNode::getValue<double>(SGPropertyLock& lock, void* dummy) const
+{
+    return SGPropertyNodeImpl::getDoubleValue(lock, *this);
+}
+
+template<>
+const char* SGPropertyNode::getValue<const char*>(SGPropertyLock& lock, void* dummy) const
+{
+    return SGPropertyNodeImpl::getStringValue(lock, *this);
+}
+
+template bool SGPropertyNode::setValue(const bool&, void*);
+template bool SGPropertyNode::setValue(const int&, void*);
+template bool SGPropertyNode::setValue(const long&, void*);
+template bool SGPropertyNode::setValue(const float&, void*);
+template bool SGPropertyNode::setValue(const double&, void*);
+template bool SGPropertyNode::setValue(const char* const&, void*);
+template bool SGPropertyNode::setValue(const SGVec3<double>&, void*);
+template bool SGPropertyNode::setValue(const SGVec4<double>&, void*);
+
+template std::vector<float> SGPropertyNode::getChildValues(const std::string& name) const;
+template std::vector<unsigned char> SGPropertyNode::getChildValues<unsigned char, int>(const std::string& name) const;
+
+template bool SGPropertyNode::tie(const SGRawValue<bool> &rawValue, bool useDefault);
+template bool SGPropertyNode::tie(const SGRawValue<int> &rawValue, bool useDefault);
+template bool SGPropertyNode::tie(const SGRawValue<long> &rawValue, bool useDefault);
+template bool SGPropertyNode::tie(const SGRawValue<float> &rawValue, bool useDefault);
+template bool SGPropertyNode::tie(const SGRawValue<double> &rawValue, bool useDefault);
+
+
 #if !PROPS_STANDALONE
 size_t hash_value(const SGPropertyNode& node)
 {
     using namespace boost;
-    if (node.nChildren() == 0) {
-        switch (node.getType()) {
-        case props::NONE:
-            return 0;
+    SGPropertyLockShared shared(node);
 
-        case props::BOOL:
-            return boost::hash_value(node.getValue<bool>());
-        case props::INT:
-            return boost::hash_value(node.getValue<int>());
-        case props::LONG:
-            return boost::hash_value(node.getValue<long>());
-        case props::FLOAT:
-            return boost::hash_value(node.getValue<float>());
-        case props::DOUBLE:
-            return boost::hash_value(node.getValue<double>());
-        case props::STRING:
-        case props::UNSPECIFIED:
-        {
-            const char *val = node.getStringValue();
-            return boost::hash_range(val, val + strlen(val));
-        }
-        case props::VEC3D:
-        {
-            const SGVec3d val = node.getValue<SGVec3d>();
-            return boost::hash_range(&val[0], &val[3]);
-        }
-        case props::VEC4D:
-        {
-            const SGVec4d val = node.getValue<SGVec4d>();
-            return hash_range(&val[0], &val[4]);
-        }
-        case props::ALIAS:      // XXX Should we look in aliases?
-        default:
-            return 0;
+    if (node._children.empty()) {
+        switch (SGPropertyNodeImpl::getType(shared, node)) {
+            case props::NONE:
+                return 0;
+            case props::BOOL:
+                return boost::hash_value(SGPropertyNodeImpl::getBoolValue(shared, node));
+            case props::INT:
+                return boost::hash_value(SGPropertyNodeImpl::getIntValue(shared, node));
+            case props::LONG:
+                return boost::hash_value(SGPropertyNodeImpl::getLongValue(shared, node));
+            case props::FLOAT:
+                return boost::hash_value(SGPropertyNodeImpl::getFloatValue(shared, node));
+            case props::DOUBLE:
+                return boost::hash_value(SGPropertyNodeImpl::getDoubleValue(shared, node));
+            case props::STRING:
+            case props::UNSPECIFIED:
+            {
+                const char *val = SGPropertyNodeImpl::getStringValue(shared, node);
+                return boost::hash_range(val, val + strlen(val));
+            }
+            case props::VEC3D:
+            {
+                const SGVec3d val = node.getValue<SGVec3d>(shared);
+                return boost::hash_range(&val[0], &val[3]);
+            }
+            case props::VEC4D:
+            {
+                const SGVec4d val = node.getValue<SGVec4d>(shared);
+                return hash_range(&val[0], &val[4]);
+            }
+            case props::ALIAS:      // XXX Should we look in aliases?
+            default:
+                return 0;
         }
     } else {
         size_t seed = 0;
-        PropertyList children(node._children.begin(), node._children.end());
+        PropertyList children = node._children; //(node._children.begin(), node._children.end());
         sort(children.begin(), children.end(), PropertyPlaceLess());
-        for (PropertyList::const_iterator itr  = children.begin(),
+        for (PropertyList::const_iterator itr = children.begin(),
                  end = children.end();
              itr != end;
              ++itr) {
@@ -2926,6 +4190,7 @@ size_t hash_value(const SGPropertyNode& node)
         return seed;
     }
 }
+
 #endif
 
 // end of props.cxx

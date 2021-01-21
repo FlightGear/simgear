@@ -21,7 +21,8 @@
 #include <iostream>
 #include <sstream>
 #include <typeinfo>
-
+#include <shared_mutex>
+		
 #include <simgear/compiler.h>
 #if PROPS_STANDALONE
 # ifndef SG_LOG
@@ -38,6 +39,7 @@
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/structure/SGWeakPtr.hxx>
 
 // XXX This whole file should be in the simgear namespace, but I don't
 // have the guts yet...
@@ -47,7 +49,7 @@ using namespace std;
 namespace simgear
 {
 
-  class PropertyInterpolationMgr;
+class PropertyInterpolationMgr;
 
 template<typename T>
 std::istream& readFrom(std::istream& stream, T& result)
@@ -164,12 +166,12 @@ DEFINTERNALPROP(int, INT);
 DEFINTERNALPROP(long, LONG);
 DEFINTERNALPROP(float, FLOAT);
 DEFINTERNALPROP(double, DOUBLE);
-DEFINTERNALPROP(const char *, STRING);
+DEFINTERNALPROP(const char*, STRING);
 DEFINTERNALPROP(const char[], STRING);
 #undef DEFINTERNALPROP
 
-}
-}
+} // namespace props
+} // namespace simgear
 
 
 
@@ -292,66 +294,61 @@ class SGRawValue : public SGRawBase<T>
 {
 public:
 
-  /**
-   * The default underlying value for this type.
-   *
-   * Every raw value has a default; the default is false for a
-   * boolean, 0 for the various numeric values, and "" for a string.
-   * If additional types of raw values are added in the future, they
-   * may need different kinds of default values (such as epoch for a
-   * date type).  The default value is used when creating new values.
-   */
-  static T DefaultValue()
-  {
-    return T();
-  }
+    /**
+     * The default underlying value for this type.
+     *
+     * Every raw value has a default; the default is false for a
+     * boolean, 0 for the various numeric values, and "" for a string.
+     * If additional types of raw values are added in the future, they
+     * may need different kinds of default values (such as epoch for a
+     * date type).  The default value is used when creating new values.
+     */
+    static T DefaultValue()
+    {
+        return T();
+    }
 
+    /**
+     * Constructor.
+     *
+     * Use the default value for this type.
+     */
+    SGRawValue() {}
 
-  /**
-   * Constructor.
-   *
-   * Use the default value for this type.
-   */
-  SGRawValue () {}
+    /**
+     * Destructor.
+     */
+    virtual ~SGRawValue() {}
 
+    /**
+     * Return the underlying value.
+     *
+     * @return The actual value for the property.
+     * @see #setValue
+     */
+    virtual T getValue() const = 0;
 
-  /**
-   * Destructor.
-   */
-  virtual ~SGRawValue () {}
+    /**
+     * Assign a new underlying value.
+     *
+     * If the new value cannot be set (because this is a read-only
+     * raw value, or because the new value is not acceptable for
+     * some reason) this method returns false and leaves the original
+     * value unchanged.
+     *
+     * @param value The actual value for the property.
+     * @return true if the value was set successfully, false otherwise.
+     * @see #getValue
+     */
+    virtual bool setValue(T value) = 0;
 
-
-  /**
-   * Return the underlying value.
-   *
-   * @return The actual value for the property.
-   * @see #setValue
-   */
-  virtual T getValue () const = 0;
-
-
-  /**
-   * Assign a new underlying value.
-   *
-   * If the new value cannot be set (because this is a read-only
-   * raw value, or because the new value is not acceptable for
-   * some reason) this method returns false and leaves the original
-   * value unchanged.
-   *
-   * @param value The actual value for the property.
-   * @return true if the value was set successfully, false otherwise.
-   * @see #getValue
-   */
-  virtual bool setValue (T value) = 0;
-
-
-  /**
-   * Return the type tag for this raw value type.
-   */
-  virtual simgear::props::Type getType() const
-  {
-    return simgear::props::PropertyTraits<T>::type_tag;
-  }
+    /**
+     * Return the type tag for this raw value type.
+     */
+    virtual simgear::props::Type getType() const
+    {
+        return simgear::props::PropertyTraits<T>::type_tag;
+    }
 };
 
 
@@ -362,12 +359,12 @@ public:
 
 template<> inline bool SGRawValue<bool>::DefaultValue()
 {
-  return false;
+    return false;
 }
 
-template<> inline const char * SGRawValue<const char *>::DefaultValue()
+template<> inline const char* SGRawValue<const char*>::DefaultValue()
 {
-  return "";
+    return "";
 }
 
 /**
@@ -385,49 +382,59 @@ class SGRawValuePointer : public SGRawValue<T>
 {
 public:
 
-  /**
-   * Explicit pointer constructor.
-   *
-   * Create a new raw value bound to the value of the variable
-   * referenced by the pointer.
-   *
-   * @param ptr The pointer to the variable to which this raw value
-   * will be bound.
-   */
-  SGRawValuePointer (T * ptr) : _ptr(ptr) {}
+    /**
+     * Explicit pointer constructor.
+     *
+     * Create a new raw value bound to the value of the variable
+     * referenced by the pointer.
+     *
+     * @param ptr The pointer to the variable to which this raw value
+     * will be bound.
+     */
+    SGRawValuePointer(T* ptr) : _ptr(ptr)
+    {}
 
-  /**
-   * Destructor.
-   */
-  virtual ~SGRawValuePointer () {}
+    /**
+     * Destructor.
+     */
+    virtual ~SGRawValuePointer()
+    {}
 
-  /**
-   * Get the underlying value.
-   *
-   * This method will dereference the pointer and return the
-   * variable's value.
-   */
-  virtual T getValue () const { return *_ptr; }
+    /**
+     * Get the underlying value.
+     *
+     * This method will dereference the pointer and return the
+     * variable's value.
+     */
+    virtual T getValue() const
+    {
+        return *_ptr;
+    }
 
-  /**
-   * Set the underlying value.
-   *
-   * This method will dereference the pointer and change the
-   * variable's value.
-   */
-  virtual bool setValue (T value) { *_ptr = value; return true; }
+    /**
+     * Set the underlying value.
+     *
+     * This method will dereference the pointer and change the
+     * variable's value.
+     */
+    virtual bool setValue(T value)
+    {
+        *_ptr = value;
+        return true;
+    }
 
-  /**
-   * Create a copy of this raw value.
-   *
-   * The copy will use the same external pointer as the original.
-   */
-  virtual SGRaw* clone () const {
-    return new SGRawValuePointer(_ptr);
-  }
+    /**
+     * Create a copy of this raw value.
+     *
+     * The copy will use the same external pointer as the original.
+     */
+    virtual SGRaw* clone() const
+    {
+      return new SGRawValuePointer(_ptr);
+    }
 
 private:
-  T * _ptr;
+    T* _ptr;
 };
 
 
@@ -442,68 +449,76 @@ class SGRawValueFunctions : public SGRawValue<T>
 {
 public:
 
-  /**
-   * The template type of a static getter function.
-   */
-  typedef T (*getter_t)();
+    /**
+     * The template type of a static getter function.
+     */
+    typedef T (*getter_t)();
 
-  /**
-   * The template type of a static setter function.
-   */
-  typedef void (*setter_t)(T);
+    /**
+     * The template type of a static setter function.
+     */
+    typedef void (*setter_t)(T);
 
-  /**
-   * Explicit constructor.
-   *
-   * Create a new raw value bound to the getter and setter supplied.
-   *
-   * @param getter A static function for getting a value, or 0
-   * to read-disable the value.
-   * @param setter A static function for setting a value, or 0
-   * to write-disable the value.
-   */
-  SGRawValueFunctions (getter_t getter = 0, setter_t setter = 0)
-    : _getter(getter), _setter(setter) {}
+    /**
+     * Explicit constructor.
+     *
+     * Create a new raw value bound to the getter and setter supplied.
+     *
+     * @param getter A static function for getting a value, or 0
+     * to read-disable the value.
+     * @param setter A static function for setting a value, or 0
+     * to write-disable the value.
+     */
+    SGRawValueFunctions(getter_t getter = 0, setter_t setter = 0)
+        : _getter(getter), _setter(setter)
+    {}
 
-  /**
-   * Destructor.
-   */
-  virtual ~SGRawValueFunctions () {}
+    /**
+     * Destructor.
+     */
+    virtual ~SGRawValueFunctions()
+    {}
 
-  /**
-   * Get the underlying value.
-   *
-   * This method will invoke the getter function to get a value.
-   * If no getter function was supplied, this method will always
-   * return the default value for the type.
-   */
-  virtual T getValue () const {
-    if (_getter) return (*_getter)();
-    else return SGRawValue<T>::DefaultValue();
-  }
+    /**
+     * Get the underlying value.
+     *
+     * This method will invoke the getter function to get a value.
+     * If no getter function was supplied, this method will always
+     * return the default value for the type.
+     */
+    virtual T getValue() const
+    {
+        if (_getter) return (*_getter)();
+        else return SGRawValue<T>::DefaultValue();
+    }
 
-  /**
-   * Set the underlying value.
-   *
-   * This method will invoke the setter function to change the
-   * underlying value.  If no setter function was supplied, this
-   * method will return false.
-   */
-  virtual bool setValue (T value) {
-    if (_setter) { (*_setter)(value); return true; }
-    else return false;
-  }
+    /**
+     * Set the underlying value.
+     *
+     * This method will invoke the setter function to change the
+     * underlying value.  If no setter function was supplied, this
+     * method will return false.
+     */
+    virtual bool setValue(T value)
+    {
+        if (_setter) {
+            (*_setter)(value);
+            return true;
+        }
+        else return false;
+    }
 
-  /**
-   * Create a copy of this raw value, bound to the same functions.
-   */
-  virtual SGRaw* clone () const {
-    return new SGRawValueFunctions(_getter,_setter);
-  }
+    /**
+     * Create a copy of this raw value, bound to the same functions.
+     */
+    virtual SGRaw* clone () const
+    {
+      return new SGRawValueFunctions(_getter,_setter);
+    }
 
 private:
-  getter_t _getter;
-  setter_t _setter;
+    getter_t _getter;
+    setter_t _setter;
 };
 
 
@@ -521,26 +536,40 @@ template <class T>
 class SGRawValueFunctionsIndexed : public SGRawValue<T>
 {
 public:
-  typedef T (*getter_t)(int);
-  typedef void (*setter_t)(int,T);
-  SGRawValueFunctionsIndexed (int index, getter_t getter = 0, setter_t setter = 0)
-    : _index(index), _getter(getter), _setter(setter) {}
-  virtual ~SGRawValueFunctionsIndexed () {}
-  virtual T getValue () const {
-    if (_getter) return (*_getter)(_index);
-    else return SGRawValue<T>::DefaultValue();
-  }
-  virtual bool setValue (T value) {
-    if (_setter) { (*_setter)(_index, value); return true; }
-    else return false;
-  }
-  virtual SGRaw* clone () const {
-    return new SGRawValueFunctionsIndexed(_index, _getter, _setter);
-  }
+    typedef T (*getter_t)(int);
+    typedef void (*setter_t)(int,T);
+
+    SGRawValueFunctionsIndexed(int index, getter_t getter = 0, setter_t setter = 0)
+        : _index(index), _getter(getter), _setter(setter)
+    {}
+
+    virtual ~SGRawValueFunctionsIndexed()
+    {}
+
+    virtual T getValue() const
+    {
+        if (_getter) return (*_getter)(_index);
+        else return SGRawValue<T>::DefaultValue();
+    }
+
+    virtual bool setValue(T value)
+    {
+        if (_setter) {
+            (*_setter)(_index, value);
+            return true;
+        }
+        else return false;
+    }
+
+    virtual SGRaw* clone() const
+    {
+        return new SGRawValueFunctionsIndexed(_index, _getter, _setter);
+    }
+  
 private:
-  int _index;
-  getter_t _getter;
-  setter_t _setter;
+    int _index;
+    getter_t _getter;
+    setter_t _setter;
 };
 
 
@@ -554,26 +583,45 @@ template <class C, class T>
 class SGRawValueMethods : public SGRawValue<T>
 {
 public:
-  typedef T (C::*getter_t)() const;
-  typedef void (C::*setter_t)(T);
-  SGRawValueMethods (C &obj, getter_t getter = 0, setter_t setter = 0)
-    : _obj(obj), _getter(getter), _setter(setter) {}
-  virtual ~SGRawValueMethods () {}
-  virtual T getValue () const {
-    if (_getter) { return (_obj.*_getter)(); }
-    else { return SGRawValue<T>::DefaultValue(); }
-  }
-  virtual bool setValue (T value) {
-    if (_setter) { (_obj.*_setter)(value); return true; }
-    else return false;
-  }
-  virtual SGRaw* clone () const {
-    return new SGRawValueMethods(_obj, _getter, _setter);
-  }
+    typedef T (C::*getter_t)() const;
+    typedef void (C::*setter_t)(T);
+
+    SGRawValueMethods(C &obj, getter_t getter = 0, setter_t setter = 0)
+        : _obj(obj), _getter(getter), _setter(setter)
+    {}
+
+    virtual ~SGRawValueMethods()
+    {}
+
+    virtual T getValue() const
+    {
+        if (_getter) {
+            return (_obj.*_getter)();
+        }
+        else {
+            return SGRawValue<T>::DefaultValue();
+        }
+    }
+
+    virtual bool setValue(T value)
+    {
+        if (_setter)
+        {
+            (_obj.*_setter)(value);
+            return true;
+        }
+        else return false;
+    }
+
+    virtual SGRaw* clone() const
+    {
+        return new SGRawValueMethods(_obj, _getter, _setter);
+    }
+  
 private:
-  C &_obj;
-  getter_t _getter;
-  setter_t _setter;
+    C &_obj;
+    getter_t _getter;
+    setter_t _setter;
 };
 
 
@@ -590,29 +638,47 @@ template <class C>
 class SGStringValueMethods : public SGRawValue<const char*>
 {
 public:
-  typedef std::string (C::*getter_t)() const;
-  typedef void (C::*setter_t)(const std::string&);
-  SGStringValueMethods (C &obj, getter_t getter = 0, setter_t setter = 0)
-  : _obj(obj), _getter(getter), _setter(setter) {}
-  virtual ~SGStringValueMethods () {}
-  virtual const char* getValue () const {
-    SGStringValueMethods* pthis = const_cast<SGStringValueMethods*>(this);
-    if (_getter) { pthis->_value = (_obj.*_getter)();
-                   return pthis->_value.c_str(); }
-    else { return SGRawValue<const char*>::DefaultValue(); }
-  }
-  virtual bool setValue (const char* value) {
-    if (_setter) { (_obj.*_setter)(value ? value : ""); return true; }
-    else return false;
-  }
-  virtual SGRaw* clone () const {
-    return new SGStringValueMethods(_obj, _getter, _setter);
-  }
+    typedef std::string (C::*getter_t)() const;
+    typedef void (C::*setter_t)(const std::string&);
+
+    SGStringValueMethods (C &obj, getter_t getter = 0, setter_t setter = 0)
+    : _obj(obj), _getter(getter), _setter(setter)
+    {}
+
+    virtual ~SGStringValueMethods()
+    {}
+
+    virtual const char* getValue() const
+    {
+        SGStringValueMethods* pthis = const_cast<SGStringValueMethods*>(this);
+        if (_getter) {
+            pthis->_value = (_obj.*_getter)();
+            return pthis->_value.c_str();
+        }
+        else {
+            return SGRawValue<const char*>::DefaultValue();
+        }
+    }
+
+    virtual bool setValue(const char* value)
+    {
+        if (_setter) {
+            (_obj.*_setter)(value ? value : "");
+            return true;
+        }
+        else return false;
+    }
+
+    virtual SGRaw* clone() const
+    {
+      return new SGStringValueMethods(_obj, _getter, _setter);
+    }
+  
 private:
-  C &_obj;
-  getter_t _getter;
-  setter_t _setter;
-  std::string _value;
+    C &_obj;
+    getter_t _getter;
+    setter_t _setter;
+    std::string _value;
 };
 
 
@@ -626,28 +692,44 @@ template <class C, class T>
 class SGRawValueMethodsIndexed : public SGRawValue<T>
 {
 public:
-  typedef T (C::*getter_t)(int) const;
-  typedef void (C::*setter_t)(int, T);
-  SGRawValueMethodsIndexed (C &obj, int index,
-		     getter_t getter = 0, setter_t setter = 0)
-    : _obj(obj), _index(index), _getter(getter), _setter(setter) {}
-  virtual ~SGRawValueMethodsIndexed () {}
-  virtual T getValue () const {
-    if (_getter) { return (_obj.*_getter)(_index); }
-    else { return SGRawValue<T>::DefaultValue(); }
-  }
-  virtual bool setValue (T value) {
-    if (_setter) { (_obj.*_setter)(_index, value); return true; }
-    else return false;
-  }
-  virtual SGRaw* clone () const {
-    return new SGRawValueMethodsIndexed(_obj, _index, _getter, _setter);
-  }
+    typedef T (C::*getter_t)(int) const;
+    typedef void (C::*setter_t)(int, T);
+    SGRawValueMethodsIndexed(C &obj, int index, getter_t getter = 0, setter_t setter = 0)
+      : _obj(obj), _index(index), _getter(getter), _setter(setter)
+    {}
+
+    virtual ~SGRawValueMethodsIndexed()
+    {}
+
+    virtual T getValue() const
+    {
+        if (_getter)
+        {
+            return (_obj.*_getter)(_index);
+        }
+        else {
+            return SGRawValue<T>::DefaultValue();
+        }
+    }
+    virtual bool setValue(T value)
+    {
+        if (_setter) {
+            (_obj.*_setter)(_index, value);
+            return true;
+        }
+        else return false;
+    }
+
+    virtual SGRaw* clone() const
+    {
+        return new SGRawValueMethodsIndexed(_obj, _index, _getter, _setter);
+    }
+  
 private:
-  C &_obj;
-  int _index;
-  getter_t _getter;
-  setter_t _setter;
+    C &_obj;
+    int _index;
+    getter_t _getter;
+    setter_t _setter;
 };
 
 /**
@@ -663,17 +745,22 @@ public:
     /**
      * Explicit constructor.
      */
-    SGRawValueContainer(const T& obj) : _obj(obj) {}
+    SGRawValueContainer(const T& obj) : _obj(obj)
+    {}
 
     /**
      * Destructor.
      */
-    virtual ~SGRawValueContainer() {}
+    virtual ~SGRawValueContainer()
+    {}
 
     /**
      * Get the underlying value.
      */
-    virtual T getValue() const { return _obj; }
+    virtual T getValue() const
+    {
+        return _obj;
+    }
 
     /**
      * Set the underlying value.
@@ -681,12 +768,17 @@ public:
      * This method will dereference the pointer and change the
      * variable's value.
      */
-    virtual bool setValue (T value) { _obj = value; return true; }
+    virtual bool setValue(T value)
+    {
+        _obj = value;
+        return true;
+    }
 
     /**
      * Create a copy of this raw value.
      */
-    virtual SGRaw* clone () const {
+    virtual SGRaw* clone() const
+    {
         return new SGRawValueContainer(_obj);
     }
 
@@ -697,8 +789,9 @@ private:
 template<typename T>
 SGRawExtended* SGRawBase<T, 0>::makeContainer() const
 {
-    return new SGRawValueContainer<T>(static_cast<const SGRawValue<T>*>(this)
-                                      ->getValue());
+    return new SGRawValueContainer<T>(
+            static_cast<const SGRawValue<T>*>(this)->getValue()
+            );
 }
 
 template<typename T>
@@ -737,30 +830,37 @@ namespace simgear
 class SGPropertyChangeListener
 {
 public:
-  virtual ~SGPropertyChangeListener ();
+    virtual ~SGPropertyChangeListener();
 
-  /// Called if value of \a node has changed.
-  virtual void valueChanged(SGPropertyNode * node);
+    /// Called if value of \a node has changed.
+    virtual void valueChanged(SGPropertyNode* node);
 
-  /// Called if \a child has been added to the given \a parent.
-  virtual void childAdded(SGPropertyNode * parent, SGPropertyNode * child);
+    /// Called if \a child has been added to the given \a parent.
+    virtual void childAdded(SGPropertyNode* parent, SGPropertyNode* child);
 
-  /// Called if \a child has been removed from its \a parent.
-  virtual void childRemoved(SGPropertyNode * parent, SGPropertyNode * child);
+    /// Called if \a child has been removed from its \a parent.
+    virtual void childRemoved(SGPropertyNode* parent, SGPropertyNode* child);
 
 protected:
     SGPropertyChangeListener(bool recursive = false);
-  friend class SGPropertyNode;
-  virtual void register_property (SGPropertyNode * node);
-  virtual void unregister_property (SGPropertyNode * node);
+    friend class SGPropertyNode;
+    virtual void register_property(SGPropertyNode* node);
+    virtual void unregister_property(SGPropertyNode* node);
 
 private:
-  std::vector<SGPropertyNode *> _properties;
+    std::vector<SGPropertyNode*> _properties;
 };
 
 
 struct SGPropertyNodeListeners;
 
+/* Forward declarations for internal locking implementation. */
+struct SGPropertyLock;
+struct SGPropertyLockShared;
+struct SGPropertyLockExclusive;
+
+/* Forward declaration for implementation details. */
+struct SGPropertyNodeImpl;
 
 /**
  * A node in a property tree.
@@ -769,1111 +869,558 @@ class SGPropertyNode : public SGReferenced
 {
 public:
 
-  /**
-   * Public constants.
-   */
-  enum {
-    MAX_STRING_LEN = 1024
-  };
-
-  /**
-   * Access mode attributes.
-   *
-   * <p>The ARCHIVE attribute is strictly advisory, and controls
-   * whether the property should normally be saved and restored.</p>
-   */
-  enum Attribute {
-    NO_ATTR = 0,
-    READ = 1,
-    WRITE = 2,
-    ARCHIVE = 4,
-    REMOVED = 8,
-    TRACE_READ = 16,
-    TRACE_WRITE = 32,
-    USERARCHIVE = 64,
-    PRESERVE = 128,
-    PROTECTED   = 1 << 8,
-    LISTENER_SAFE = 1 << 9, /// it's safe to listen to this property, even if it's tied
-    // beware: if you add another attribute here,
-    // also update value of "LAST_USED_ATTRIBUTE".
-  };
-
-
-  /**
-   * Last used attribute
-   * Update as needed when enum Attribute is changed
-   */
-  static const int LAST_USED_ATTRIBUTE;
-
-  /**
-   * Default constructor.
-   */
-  SGPropertyNode ();
-
-
-  /**
-   * Copy constructor.
-   */
-  SGPropertyNode (const SGPropertyNode &node);
-
-
-  /**
-   * Destructor.
-   */
-  virtual ~SGPropertyNode ();
-
-
-
-  //
-  // Basic properties.
-  //
-
-  /**
-   * Test whether this node contains a primitive leaf value.
-   */
-    bool hasValue () const { return (_type != simgear::props::NONE); }
-
-
-  /**
-   * Get the node's simple (XML) name.
-   */
-  const char * getName () const { return _name.c_str(); }
-
-  /**
-   * Get the node's simple name as a string.
-   */
-  const std::string& getNameString () const { return _name; }
-
-  /**
-   * Get the node's pretty display name, with subscript when needed.
-   */
-    std::string getDisplayName (bool simplify = false) const;
-
-
-  /**
-   * Get the node's integer index.
-   */
-  int getIndex () const { return _index; }
-
-
-  /**
-   * Get a non-const pointer to the node's parent.
-   */
-  SGPropertyNode * getParent () { return _parent; }
-
-
-  /**
-   * Get a const pointer to the node's parent.
-   */
-  const SGPropertyNode * getParent () const { return _parent; }
-
     /**
-     * Get node's position in parent (*NOT* index)
+     * Access mode attributes.
+     *
+     * <p>The ARCHIVE attribute is strictly advisory, and controls
+     * whether the property should normally be saved and restored.</p>
      */
+    enum Attribute {
+        NO_ATTR = 0,
+        READ = 1,
+        WRITE = 2,
+        ARCHIVE = 4,
+        REMOVED = 8,
+        TRACE_READ = 16,
+        TRACE_WRITE = 32,
+        USERARCHIVE = 64,
+        PRESERVE = 128,
+        PROTECTED   = 1 << 8,
+        LISTENER_SAFE = 1 << 9, /// it's safe to listen to this property, even if it's tied
+        // beware: if you add another attribute here,
+        // also update value of "LAST_USED_ATTRIBUTE".
+    };
+
+    /** Last used attribute. */
+    static const int LAST_USED_ATTRIBUTE;
+
+    /** Default constructor. */
+    SGPropertyNode();
+
+    /** Copy constructor. */
+    SGPropertyNode(const SGPropertyNode &node);
+
+    /** Destructor. */
+    virtual ~SGPropertyNode();
+
+    //
+    // Basic properties.
+    //
+
+    /** Test whether this node contains a primitive leaf value. */
+    bool hasValue() const;
+
+    /** Get the node's simple (XML) name. Return value is not thread-safe. */
+    const char* getName() const;
+
+    /** Get the node's simple name as a string. Return value is not thread-safe. */
+    const std::string& getNameString() const;
+
+    /** Get the node's pretty display name, with subscript when needed. */
+    std::string getDisplayName(bool simplify = false) const;
+
+    /** Get the node's integer index. */
+    int getIndex() const;
+
+    /** Get node's position (contiguous values) in parent (*NOT* index) */
     unsigned int getPosition() const;
 
-  //
-  // Children.
-  //
-
-
-  /**
-   * Get the number of child nodes.
-   */
-  int nChildren () const { return (int)_children.size(); }
-
-
-  /**
-   * Get a child node by position (*NOT* index).
-   */
-  SGPropertyNode * getChild (int position);
-
-
-  /**
-   * Get a const child node by position (*NOT* index).
-   */
-  const SGPropertyNode * getChild (int position) const;
-
-
-  /**
-   * Test whether a named child exists.
-   */
-  bool hasChild (const char * name, int index = 0) const
-  {
-    return (getChild(name, index) != 0);
-  }
-
-  /**
-   * Test whether a named child exists.
-   */
-  bool hasChild (const std::string& name, int index = 0) const
-  {
-    return (getChild(name, index) != 0);
-  }
-
-  /**
-   * Create a new child node with the given name and an unused index
-   *
-   * @param min_index Minimal index for new node (skips lower indices)
-   * @param append    Whether to simply use the index after the last used index
-   *                  or use a lower, unused index if it exists
-   */
-  SGPropertyNode * addChild ( const char* name,
-                              int min_index = 0,
-                              bool append = true );
-  SGPropertyNode * addChild ( const std::string& name,
-                              int min_index = 0,
-                              bool append = true )
-  { return addChild(name.c_str(), min_index, append); }
-  
-  /**
-   * Add existing node as child.
-   *
-   * @param min_index Minimal index for new node (skips lower indices)
-   * @param append    Whether to simply use the index after the last used index
-   *                  or use a lower, unused index if it exists
-   */
-  SGPropertyNode_ptr addChild(SGPropertyNode_ptr node, const std::string& name,
-        int min_index=0, bool append=true);
-
-  /**
-   * Create multiple child nodes with the given name an unused indices
-   *
-   * @param count     The number of nodes create
-   * @param min_index Minimal index for new nodes (skips lower indices)
-   * @param append    Whether to simply use the index after the last used index
-   *                  or use a lower, unused index if it exists
-   */
-  simgear::PropertyList addChildren ( const std::string& name,
-                                      size_t count,
-                                      int min_index = 0,
-                                      bool append = true );
-
-  /**
-   * Get a child node by name and index.
-   */
-  SGPropertyNode * getChild (const char* name, int index = 0,
-                             bool create = false);
-  SGPropertyNode * getChild (const std::string& name, int index = 0,
-                             bool create = false);
-  /**
-   * Get a const child node by name and index.
-   */
-  const SGPropertyNode * getChild (const char * name, int index = 0) const;
-
-  /**
-   * Get a const child node by name and index.
-   */
-  const SGPropertyNode * getChild (const std::string& name, int index = 0) const
-  { return getChild(name.c_str(), index); }
-
-
-  /**
-   * Get a vector of all children with the specified name.
-   */
-  simgear::PropertyList getChildren (const char * name) const;
-
-  /**
-   * Get a vector of all children with the specified name.
-   */
-  simgear::PropertyList getChildren (const std::string& name) const
-  { return getChildren(name.c_str()); }
-
-  /**
-   * Remove child by pointer (if it is a child of this node).
-   *
-   * @return true, if the node was deleted.
-   */
-  bool removeChild(SGPropertyNode* node);
-
-  // TODO do we need the removeXXX methods to return the deleted nodes?
-  /**
-   * Remove child by position.
-   */
-  SGPropertyNode_ptr removeChild(int pos);
-
-
-  /**
-   * Remove a child node
-   */
-  SGPropertyNode_ptr removeChild(const char * name, int index = 0);
-
-  /**
-   * Remove a child node
-   */
-  SGPropertyNode_ptr removeChild(const std::string& name, int index = 0)
-  { return removeChild(name.c_str(), index); }
-
-  /**
-   * Remove all children with the specified name.
-   */
-  simgear::PropertyList removeChildren(const char * name);
-
-  /**
-   * Remove all children with the specified name.
-   */
-  simgear::PropertyList removeChildren(const std::string& name)
-  { return removeChildren(name.c_str()); }
-
-  /**
-   * Remove all children (does not change the value of the node)
-   */
-  void removeAllChildren();
-
-  //
-  // Alias support.
-  //
-
-
-  /**
-   * Alias this node's leaf value to another's.
-   */
-  bool alias (SGPropertyNode * target);
-
-
-  /**
-   * Alias this node's leaf value to another's by relative path.
-   */
-  bool alias (const char * path);
-
-  /**
-   * Alias this node's leaf value to another's by relative path.
-   */
-  bool alias (const std::string& path)
-  { return alias(path.c_str()); }
-
-
-  /**
-   * Remove any alias for this node.
-   */
-  bool unalias ();
-
-
-  /**
-   * Test whether the node's leaf value is aliased to another's.
-   */
-  bool isAlias () const { return (_type == simgear::props::ALIAS); }
-
-
-  /**
-   * Get a non-const pointer to the current alias target, if any.
-   */
-  SGPropertyNode * getAliasTarget ();
-
-
-  /**
-   * Get a const pointer to the current alias target, if any.
-   */
-  const SGPropertyNode * getAliasTarget () const;
-
-
-  //
-  // Path information.
-  //
-
-
-  /**
-   * Get the path to this node from the root.
-   */
-  std::string getPath (bool simplify = false) const;
-
-
-  /**
-   * Get a pointer to the root node.
-   */
-  SGPropertyNode * getRootNode ();
-
-
-  /**
-   * Get a const pointer to the root node.
-   */
-  const SGPropertyNode * getRootNode () const;
-
-
-  /**
-   * Get a pointer to another node by relative path.
-   */
-  SGPropertyNode * getNode (const char * relative_path, bool create = false);
-
-  /**
-  * deep copy one node to another.
-  */
-  void copy(SGPropertyNode *to) const;
-
-  /**
-   * Get a pointer to another node by relative path.
-   */
-  SGPropertyNode * getNode (const std::string& relative_path, bool create = false)
-  { return getNode(relative_path.c_str(), create); }
-
-  /**
-   * Get a pointer to another node by relative path.
-   *
-   * This method leaves the index off the last member of the path,
-   * so that the user can specify it separately (and save some
-   * string building).  For example, getNode("/bar[1]/foo", 3) is
-   * exactly equivalent to getNode("bar[1]/foo[3]").  The index
-   * provided overrides any given in the path itself for the last
-   * component.
-   */
-  SGPropertyNode * getNode (const char * relative_path, int index,
-			    bool create = false);
-
-  /**
-   * Get a pointer to another node by relative path.
-   *
-   * This method leaves the index off the last member of the path,
-   * so that the user can specify it separately (and save some
-   * string building).  For example, getNode("/bar[1]/foo", 3) is
-   * exactly equivalent to getNode("bar[1]/foo[3]").  The index
-   * provided overrides any given in the path itself for the last
-   * component.
-   */
-  SGPropertyNode * getNode (const std::string& relative_path, int index,
-			    bool create = false)
-  { return getNode(relative_path.c_str(), index, create); }
-
-  /**
-   * Get a const pointer to another node by relative path.
-   */
-  const SGPropertyNode * getNode (const char * relative_path) const;
-
-  /**
-   * Get a const pointer to another node by relative path.
-   */
-  const SGPropertyNode * getNode (const std::string& relative_path) const
-  { return getNode(relative_path.c_str()); }
-
-
-  /**
-   * Get a const pointer to another node by relative path.
-   *
-   * This method leaves the index off the last member of the path,
-   * so that the user can specify it separate.
-   */
-  const SGPropertyNode * getNode (const char * relative_path,
-				  int index) const;
-
-  /**
-   * Get a const pointer to another node by relative path.
-   *
-   * This method leaves the index off the last member of the path,
-   * so that the user can specify it separate.
-   */
-  const SGPropertyNode * getNode (const std::string& relative_path,
-				  int index) const
-  { return getNode(relative_path.c_str(), index); }
-
-  //
-  // Access Mode.
-  //
-
-  /**
-   * Check a single mode attribute for the property node.
-   */
-  bool getAttribute (Attribute attr) const { return ((_attr & attr) != 0); }
-
-
-  /**
-   * Set a single mode attribute for the property node.
-   */
-  void setAttribute (Attribute attr, bool state) {
-    (state ? _attr |= attr : _attr &= ~attr);
-  }
-
-
-  /**
-   * Get all of the mode attributes for the property node.
-   */
-  int getAttributes () const { return _attr; }
-
-
-  /**
-   * Set all of the mode attributes for the property node.
-   */
-  void setAttributes (int attr) { _attr = attr; }
-  
-
-  //
-  // Leaf Value (primitive).
-  //
-
-
-  /**
-   * Get the type of leaf value, if any, for this node.
-   */
-  simgear::props::Type getType () const;
-
-
-  /**
-   * Get a bool value for this node.
-   */
-  bool getBoolValue () const;
-
-
-  /**
-   * Get an int value for this node.
-   */
-  int getIntValue () const;
-
-
-  /**
-   * Get a long int value for this node.
-   */
-  long getLongValue () const;
-
-
-  /**
-   * Get a float value for this node.
-   */
-  float getFloatValue () const;
-
-
-  /**
-   * Get a double value for this node.
-   */
-  double getDoubleValue () const;
-
-
-  /**
-   * Get a string value for this node.
-   */
-  const char * getStringValue () const;
-
-  /**
-   * Get a value from a node. If the actual type of the node doesn't
-   * match the desired type, a conversion isn't guaranteed.
-   */
-  template<typename T>
-  T getValue(typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>
-             ::type* dummy = 0) const;
-  // Getter for extended property
-  template<typename T>
-  T getValue(typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>
-             ::type* dummy = 0) const;
-
-  /**
-   * Get a list of values from all children with the given name
-   */
-  template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
-  std::vector<T> getChildValues(const std::string& name) const;
-
-  /**
-   * Get a list of values from all children with the given name
-   */
-  template<typename T>
-  std::vector<T> getChildValues(const std::string& name) const;
-
-  /**
-   * Set a bool value for this node.
-   */
-  bool setBoolValue (bool value);
-
-
-  /**
-   * Set an int value for this node.
-   */
-  bool setIntValue (int value);
-
-
-  /**
-   * Set a long int value for this node.
-   */
-  bool setLongValue (long value);
-
-
-  /**
-   * Set a float value for this node.
-   */
-  bool setFloatValue (float value);
-
-
-  /**
-   * Set a double value for this node.
-   */
-  bool setDoubleValue (double value);
-
-
-  /**
-   * Set a string value for this node.
-   */
-  bool setStringValue (const char * value);
-
-  /**
-   * Set a string value for this node.
-   */
-  bool setStringValue (const std::string& value)
-  { return setStringValue(value.c_str()); }
-
-
-  /**
-   * Set a value of unspecified type for this node.
-   */
-  bool setUnspecifiedValue (const char * value);
-
-  template<typename T>
-  bool setValue(const T& val,
-                typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>
-                ::type* dummy = 0);
-
-  template<typename T>
-  bool setValue(const T& val,
-                typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>
-                ::type* dummy = 0);
-
-  template<int N>
-  bool setValue(const char (&val)[N])
-  {
-    return setValue(&val[0]);
-  }
-  
-  /**
-   * Set relative node to given value and afterwards make read only.
-   *
-   * @param relative_path   Path to node
-   * @param value           Value to set
-   *
-   * @return whether value could be set
-   */
-  template<typename T>
-  bool setValueReadOnly(const std::string& relative_path, const T& value)
-  {
-    SGPropertyNode* node = getNode(relative_path, true);
-    bool ret = node->setValue(value);
-    node->setAttributes(READ);
-    return ret;
-  }
-
-#if !PROPS_STANDALONE
-  /**
-   * Interpolate current value to target value within given time.
-   *
-   * @param type        Type of interpolation ("numeric", "color", etc.)
-   * @param target      Node containing target value
-   * @param duration    Duration of interpolation (in seconds)
-   * @param easing      Easing function (http://easings.net/)
-   */
-  bool interpolate( const std::string& type,
-                    const SGPropertyNode& target,
-                    double duration = 0.6,
-                    const std::string& easing = "swing" );
-
-  /**
-   * Interpolate current value to a series of values within given durations.
-   *
-   * @param type        Type of interpolation ("numeric", "color", etc.)
-   * @param values      Nodes containing intermediate and target values
-   * @param deltas      Durations for each interpolation step (in seconds)
-   * @param easing      Easing function (http://easings.net/)
-   */
-  bool interpolate( const std::string& type,
-                    const simgear::PropertyList& values,
-                    const double_list& deltas,
-                    const std::string& easing = "swing" );
-
-  /**
-   * Set the interpolation manager used by the interpolate methods.
-   */
-  static void setInterpolationMgr(simgear::PropertyInterpolationMgr* mgr);
-
-  /**
-   * Get the interpolation manager
-   */
-  static simgear::PropertyInterpolationMgr* getInterpolationMgr();
-#endif
-
-  /**
-   * Print the value of the property to a stream.
-   */
-  std::ostream& printOn(std::ostream& stream) const;
-  
-  //
-  // Data binding.
-  //
-
-
-  /**
-   * Test whether this node is bound to an external data source.
-   */
-  bool isTied () const { return _tied; }
+    /** Get a pointer to the node's parent. */
+    SGPropertyNode* getParent();
+    const SGPropertyNode* getParent() const;
+
+    //
+    // Children.
+    //
+
+    /** Get the number of child nodes. */
+    int nChildren() const;
+
+    /** Get a child node by position (*NOT* index). */
+    SGPropertyNode* getChild(int position);
+    const SGPropertyNode* getChild(int position) const;
+
+    /** Test whether a named child exists. */
+    bool hasChild(const char* name, int index = 0) const;
+    bool hasChild(const std::string& name, int index = 0) const;
 
     /**
-     * Bind this node to an external source.
+     * Create a new child node with the given name and an unused index
+     *
+     * @param min_index Minimal index for new node (skips lower indices)
+     * @param append    Whether to simply use the index after the last used index
+     *                  or use a lower, unused index if it exists
      */
+    SGPropertyNode* addChild( const char* name, int min_index = 0, bool append = true );
+    SGPropertyNode* addChild( const std::string& name, int min_index = 0, bool append = true );
+
+    /**
+     * Add existing node as child.
+     *
+     * @param min_index Minimal index for new node (skips lower indices)
+     * @param append    Whether to simply use the index after the last used index
+     *                  or use a lower, unused index if it exists
+     */
+    SGPropertyNode_ptr addChild(SGPropertyNode_ptr node, const std::string& name, int min_index=0, bool append=true);
+
+    /**
+     * Create multiple child nodes with the given name an unused indices
+     *
+     * @param count     The number of nodes create
+     * @param min_index Minimal index for new nodes (skips lower indices)
+     * @param append    Whether to simply use the index after the last used index
+     *                  or use a lower, unused index if it exists
+     */
+    simgear::PropertyList addChildren( const std::string& name, size_t count, int min_index = 0, bool append = true );
+
+    /** Get a child node by name and index. */
+    SGPropertyNode* getChild(const char* name, int index = 0, bool create = false);
+    SGPropertyNode* getChild(const std::string& name, int index = 0, bool create = false);
+    const SGPropertyNode* getChild(const char* name, int index = 0) const;
+    const SGPropertyNode* getChild(const std::string& name, int index = 0) const;
+
+    /** Get a vector of all children with the specified name. */
+    simgear::PropertyList getChildren(const char* name) const;
+    simgear::PropertyList getChildren(const std::string& name) const;
+
+    /** If <node> is child of this node, remove it and return true. Otherwise return false. */
+    bool removeChild(SGPropertyNode* node);
+
+    /** Remove child by position and name. */
+    SGPropertyNode_ptr removeChild(int pos);
+    SGPropertyNode_ptr removeChild(const char* name, int index = 0);
+    SGPropertyNode_ptr removeChild(const std::string& name, int index = 0);
+
+    /** Remove all children with the specified name. */
+    simgear::PropertyList removeChildren(const char* name);
+    simgear::PropertyList removeChildren(const std::string& name);
+
+    /** Remove all children (does not change the value of the node) */
+    void removeAllChildren();
+
+    //
+    // Alias support.
+    //
+
+    /** Alias this node's leaf value to another's. */
+    bool alias(SGPropertyNode* target);
+
+    /** Alias this node's leaf value to another's by relative path. */
+    bool alias(const char* path);
+    bool alias(const std::string& path);
+
+    /** Remove any alias for this node. */
+    bool unalias();
+
+    /** Test whether the node's leaf value is aliased to another's. */
+    bool isAlias() const;
+
+    /** Get a pointer to the current alias target, if any. */
+    SGPropertyNode* getAliasTarget();
+    const SGPropertyNode* getAliasTarget() const;
+
+    //
+    // Path information.
+    //
+
+    /** Get the path to this node from the root. */
+    std::string getPath(bool simplify = false) const;
+
+    /** Get a pointer to the root node. */
+    SGPropertyNode* getRootNode();
+    const SGPropertyNode* getRootNode() const;
+
+    /** deep copy one node to another. */
+    void copy(SGPropertyNode*to) const;
+
+    /** Get a pointer to another node by relative path. */
+    SGPropertyNode* getNode(const char* relative_path, bool create = false);
+    SGPropertyNode* getNode(const std::string& relative_path, bool create = false);
+    const SGPropertyNode* getNode(const char* relative_path) const;
+    const SGPropertyNode* getNode(const std::string& relative_path) const;
+
+    /**
+     * Get a pointer to another node by relative path.
+     *
+     * This method leaves the index off the last member of the path,
+     * so that the user can specify it separately (and save some
+     * string building).  For example, getNode("/bar[1]/foo", 3) is
+     * exactly equivalent to getNode("bar[1]/foo[3]").  The index
+     * provided overrides any given in the path itself for the last
+     * component.
+     */
+    SGPropertyNode* getNode(const char* relative_path, int index, bool create = false);
+    SGPropertyNode* getNode(const std::string& relative_path, int index, bool create = false);
+    const SGPropertyNode* getNode(const char* relative_path, int index) const;
+    const SGPropertyNode* getNode(const std::string& relative_path, int index) const;
+
+    //
+    // Access Mode.
+    //
+
+    /** Get or set a single mode attribute for the property node. */
+    bool getAttribute(Attribute attr) const;
+    void setAttribute(Attribute attr, bool state);
+
+    /** Get or set all of the mode attributes for the property node. */
+    int getAttributes() const;
+    void setAttributes(int attr);
+
+    //
+    // Leaf Value (primitive).
+    //
+
+    /** Get the type of leaf value, if any, for this node. */
+    simgear::props::Type getType() const;
+
+    /** Get a value of this node. */
+    bool getBoolValue() const;
+    int getIntValue() const;
+    long getLongValue() const;
+    float getFloatValue() const;
+    double getDoubleValue() const;
+    const char* getStringValue() const;
+
+    /** Set value of this node. */
+    bool setBoolValue(bool value);
+    bool setIntValue(int value);
+    bool setLongValue(long value);
+    bool setFloatValue(float value);
+    bool setDoubleValue(double value);
+    bool setStringValue(const char* value);
+    bool setStringValue(const std::string& value);
+
+    /** Set a value of unspecified type for this node. */
+    bool setUnspecifiedValue(const char* value);
+
+    //
+    // Template methods for get/set value.
+    //
+
+    /**
+     * Get a value from a node. If the actual type of the node doesn't
+     * match the desired type, a conversion isn't guaranteed.
+     */
+    template<typename T>
+    T getValue(typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0) const;
+
+    // Getter for extended property
+    template<typename T>
+    T getValue(typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0) const;
+
+    /** Get a list of values from all children with the given name. */
+    template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
+    std::vector<T> getChildValues(const std::string& name) const;
+
+    /** Get a list of values from all children with the given name. */
+    template<typename T>
+    std::vector<T> getChildValues(const std::string& name) const;
+
+    template<typename T>
+    bool setValue(const T& val,
+                  typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0);
+
+    template<typename T>
+    bool setValue(const T& val,
+                  typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0);
+
+    template<int N>
+    bool setValue(const char(&val)[N])
+    {
+        return setValue(&val[0]);
+    }
+
+    template<typename T>
+    bool setValue(
+            SGPropertyLockExclusive& exclusive,
+            const T& val,
+            typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0
+            );
+
+    template<typename T>
+    bool setValue(
+            SGPropertyLockExclusive& exclusive,
+            const T& val,
+            typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0
+            );
+
+    /**
+     * Set relative node to given value and afterwards make read only.
+     *
+     * @param relative_path   Path to node
+     * @param value           Value to set
+     *
+     * @return whether value could be set
+     */
+    template<typename T>
+    bool setValueReadOnly(const std::string& relative_path, const T& value)
+    {
+        SGPropertyNode* node = getNode(relative_path, true);
+        bool ret = node->setValue(value);
+        node->setAttributes(READ);
+        return ret;
+    }
+
+#if !PROPS_STANDALONE
+    /**
+     * Interpolate current value to target value within given time.
+     *
+     * @param type        Type of interpolation ("numeric", "color", etc.)
+     * @param target      Node containing target value
+     * @param duration    Duration of interpolation (in seconds)
+     * @param easing      Easing function (http://easings.net/)
+     */
+    bool interpolate( const std::string& type,
+                      const SGPropertyNode& target,
+                      double duration = 0.6,
+                      const std::string& easing = "swing" );
+
+    /**
+     * Interpolate current value to a series of values within given durations.
+     *
+     * @param type        Type of interpolation ("numeric", "color", etc.)
+     * @param values      Nodes containing intermediate and target values
+     * @param deltas      Durations for each interpolation step (in seconds)
+     * @param easing      Easing function (http://easings.net/)
+     */
+    bool interpolate( const std::string& type,
+                      const simgear::PropertyList& values,
+                      const double_list& deltas,
+                      const std::string& easing = "swing" );
+
+    /** Set the interpolation manager used by the interpolate methods. */
+    static void setInterpolationMgr(simgear::PropertyInterpolationMgr* mgr);
+
+    /** Get the interpolation manager. */
+    static simgear::PropertyInterpolationMgr* getInterpolationMgr();
+#endif
+
+    /** Print the value of the property to a stream. */
+    std::ostream& printOn(std::ostream& stream) const;
+
+    //
+    // Data binding.
+    //
+
+    /** Test whether this node is bound to an external data source. */
+    bool isTied() const;
+
+    /** Bind this node to an external source. */
     template<typename T>
     bool tie(const SGRawValue<T> &rawValue, bool useDefault = true);
 
-  /**
-   * Unbind this node from any external data source.
-   */
-  bool untie ();
-
-
-  //
-  // Convenience methods using paths.
-  // TODO: add attribute methods
-  //
-
-
-  /**
-   * Get another node's type.
-   */
-  simgear::props::Type getType (const char * relative_path) const;
-
-  /**
-   * Get another node's type.
-   */
-  simgear::props::Type getType (const std::string& relative_path) const
-  { return getType(relative_path.c_str()); }
-
-  /**
-   * Test whether another node has a leaf value.
-   */
-  bool hasValue (const char * relative_path) const;
-
-  /**
-   * Test whether another node has a leaf value.
-   */
-  bool hasValue (const std::string& relative_path) const
-  { return hasValue(relative_path.c_str()); }
-
-  /**
-   * Get another node's value as a bool.
-   */
-  bool getBoolValue (const char * relative_path,
-		     bool defaultValue = false) const;
-
-  /**
-   * Get another node's value as a bool.
-   */
-  bool getBoolValue (const std::string& relative_path,
-		     bool defaultValue = false) const
-  { return getBoolValue(relative_path.c_str(), defaultValue); }
-
-  /**
-   * Get another node's value as an int.
-   */
-  int getIntValue (const char * relative_path,
-		   int defaultValue = 0) const;
-
-  /**
-   * Get another node's value as an int.
-   */
-  int getIntValue (const std::string& relative_path,
-                   int defaultValue = 0) const
-  { return getIntValue(relative_path.c_str(), defaultValue); }
-
-
-  /**
-   * Get another node's value as a long int.
-   */
-  long getLongValue (const char * relative_path,
-		     long defaultValue = 0L) const;
-
-  /**
-   * Get another node's value as a long int.
-   */
-  long getLongValue (const std::string& relative_path,
-		     long defaultValue = 0L) const
-  { return getLongValue(relative_path.c_str(), defaultValue); }
-
-  /**
-   * Get another node's value as a float.
-   */
-  float getFloatValue (const char * relative_path,
-		       float defaultValue = 0.0f) const;
-
-  /**
-   * Get another node's value as a float.
-   */
-  float getFloatValue (const std::string& relative_path,
-		       float defaultValue = 0.0f) const
-  { return getFloatValue(relative_path.c_str(), defaultValue); }
-
-
-  /**
-   * Get another node's value as a double.
-   */
-  double getDoubleValue (const char * relative_path,
-			 double defaultValue = 0.0) const;
-
-  /**
-   * Get another node's value as a double.
-   */
-  double getDoubleValue (const std::string& relative_path,
-			 double defaultValue = 0.0) const
-  { return getDoubleValue(relative_path.c_str(), defaultValue); }
-
-  /**
-   * Get another node's value as a string.
-   */
-  const char * getStringValue (const char * relative_path,
-			       const char * defaultValue = "") const;
-
-
-  /**
-   * Get another node's value as a string.
-   */
-  const char * getStringValue (const std::string& relative_path,
-			       const char * defaultValue = "") const
-  { return getStringValue(relative_path.c_str(), defaultValue); }
-
-
-  /**
-   * Set another node's value as a bool.
-   */
-  bool setBoolValue (const char * relative_path, bool value);
-
-  /**
-   * Set another node's value as a bool.
-   */
-  bool setBoolValue (const std::string& relative_path, bool value)
-  { return setBoolValue(relative_path.c_str(), value); }
-
-
-  /**
-   * Set another node's value as an int.
-   */
-  bool setIntValue (const char * relative_path, int value);
-
-  /**
-   * Set another node's value as an int.
-   */
-  bool setIntValue (const std::string& relative_path, int value)
-  { return setIntValue(relative_path.c_str(), value); }
-
-
-  /**
-   * Set another node's value as a long int.
-   */
-  bool setLongValue (const char * relative_path, long value);
-
-  /**
-   * Set another node's value as a long int.
-   */
-  bool setLongValue (const std::string& relative_path, long value)
-  { return setLongValue(relative_path.c_str(), value); }
-
-
-  /**
-   * Set another node's value as a float.
-   */
-  bool setFloatValue (const char * relative_path, float value);
-
-  /**
-   * Set another node's value as a float.
-   */
-  bool setFloatValue (const std::string& relative_path, float value)
-  { return setFloatValue(relative_path.c_str(), value); }
-
-
-  /**
-   * Set another node's value as a double.
-   */
-  bool setDoubleValue (const char * relative_path, double value);
-
-  /**
-   * Set another node's value as a double.
-   */
-  bool setDoubleValue (const std::string& relative_path, double value)
-  { return setDoubleValue(relative_path.c_str(), value); }
-
-
-  /**
-   * Set another node's value as a string.
-   */
-  bool setStringValue (const char * relative_path, const char * value);
-
-  bool setStringValue(const char * relative_path, const std::string& value)
-  { return setStringValue(relative_path, value.c_str()); }
-  /**
-   * Set another node's value as a string.
-   */
-  bool setStringValue (const std::string& relative_path, const char * value)
-  { return setStringValue(relative_path.c_str(), value); }
-
-  bool setStringValue (const std::string& relative_path,
-                       const std::string& value)
-  { return setStringValue(relative_path.c_str(), value.c_str()); }
-
-  /**
-   * Set another node's value with no specified type.
-   */
-  bool setUnspecifiedValue (const char * relative_path, const char * value);
-
-
-  /**
-   * Test whether another node is bound to an external data source.
-   */
-  bool isTied (const char * relative_path) const;
-
-  /**
-   * Test whether another node is bound to an external data source.
-   */
-  bool isTied (const std::string& relative_path) const
-  { return isTied(relative_path.c_str()); }
-
-  /**
-   * Bind another node to an external bool source.
-   */
-  bool tie (const char * relative_path, const SGRawValue<bool> &rawValue,
-	    bool useDefault = true);
-
-  /**
-   * Bind another node to an external bool source.
-   */
-  bool tie (const std::string& relative_path, const SGRawValue<bool> &rawValue,
-	    bool useDefault = true)
-  { return tie(relative_path.c_str(), rawValue, useDefault); }
-
-
-  /**
-   * Bind another node to an external int source.
-   */
-  bool tie (const char * relative_path, const SGRawValue<int> &rawValue,
-	    bool useDefault = true);
-
-  /**
-   * Bind another node to an external int source.
-   */
-  bool tie (const std::string& relative_path, const SGRawValue<int> &rawValue,
-	    bool useDefault = true)
-  { return tie(relative_path.c_str(), rawValue, useDefault); }
-
-
-  /**
-   * Bind another node to an external long int source.
-   */
-  bool tie (const char * relative_path, const SGRawValue<long> &rawValue,
-	    bool useDefault = true);
-
-  /**
-   * Bind another node to an external long int source.
-   */
-  bool tie (const std::string& relative_path, const SGRawValue<long> &rawValue,
-	    bool useDefault = true)
-  { return tie(relative_path.c_str(), rawValue, useDefault); }
-
-
-  /**
-   * Bind another node to an external float source.
-   */
-  bool tie (const char * relative_path, const SGRawValue<float> &rawValue,
-	    bool useDefault = true);
-
-  /**
-   * Bind another node to an external float source.
-   */
-  bool tie (const std::string& relative_path, const SGRawValue<float> &rawValue,
-	    bool useDefault = true)
-  { return tie(relative_path.c_str(), rawValue, useDefault); }
-
-
-  /**
-   * Bind another node to an external double source.
-   */
-  bool tie (const char * relative_path, const SGRawValue<double> &rawValue,
-	    bool useDefault = true);
-
-  /**
-   * Bind another node to an external double source.
-   */
-  bool tie (const std::string& relative_path, const SGRawValue<double> &rawValue,
-	    bool useDefault = true)
-  { return tie(relative_path.c_str(), rawValue, useDefault); }
-
-
-  /**
-   * Bind another node to an external string source.
-   */
-  bool tie (const char * relative_path, const SGRawValue<const char *> &rawValue,
-	    bool useDefault = true);
-
-  /**
-   * Bind another node to an external string source.
-   */
-  bool tie (const std::string& relative_path, const SGRawValue<const char*> &rawValue,
-	    bool useDefault = true)
-  { return tie(relative_path.c_str(), rawValue, useDefault); }
-
-
-  /**
-   * Unbind another node from any external data source.
-   */
-  bool untie (const char * relative_path);
-
-  /**
-   * Unbind another node from any external data source.
-   */
-  bool untie (const std::string& relative_path)
-  { return untie(relative_path.c_str()); }
-
-
-  /**
-   * Add a change listener to the property. If "initial" is set call the
-   * listener initially.
-   */
-  void addChangeListener (SGPropertyChangeListener * listener,
-                          bool initial = false);
-
-
-  /**
-   * Remove a change listener from the property.
-   */
-  void removeChangeListener (SGPropertyChangeListener * listener);
-
-
-  /**
-   * Get the number of listeners.
-   */
-  int nListeners () const;
-
-
-  /**
-   * Fire a value change event to all listeners.
-   */
-  void fireValueChanged ();
-
-
-  /**
-   * Fire a child-added event to all listeners.
-   */
-  void fireChildAdded (SGPropertyNode * child);
-
-  /**
-   * Trigger a child-added and value-changed event for every child (Unlimited
-   * depth).
-   *
-   * @param fire_self   Whether to trigger the events also for the node itself.
-   *
-   * It can be used to simulating the creation of a property tree, eg. for
-   * (re)initializing a subsystem which is controlled through the property tree.
-   */
-  void fireCreatedRecursive(bool fire_self = false);
-
-  /**
-   * Fire a child-removed event to all listeners.
-   */
-  void fireChildRemoved (SGPropertyNode * child);
-
-  /**
-   * Fire a child-removed event for every child of this node (Unlimited depth)
-   *
-   * Upon removal of a child node only for this single node a child-removed
-   * event is triggered. If eg. resource cleanup relies on receiving a
-   * child-removed event for every child this method can be used.
-   */
-  void fireChildrenRemovedRecursive();
-
-
-  /**
-   * Clear any existing value and set the type to NONE.
-   */
-  void clearValue ();
-
-  /**
-   * Compare two property trees. The property trees are equal if: 1)
-   * They have no children, and have the same type and the values are
-   * equal, or 2) have the same number of children, and the
-   * corresponding children in each tree are equal. "corresponding"
-   * means have the same name and index.
-   *
-   * Attributes, removed children, and aliases aren't considered.
-   */
-  static bool compare (const SGPropertyNode& lhs, const SGPropertyNode& rhs);
+    /** Unbind this node from any external data source. */
+    bool untie();
+
+    //
+    // Convenience methods using paths.
+    // TODO: add attribute methods
+    //
+
+    /** Get another node's type. */
+    simgear::props::Type getType(const char* relative_path) const;
+    simgear::props::Type getType(const std::string& relative_path) const;
+
+    /** Test whether another node has a leaf value. */
+    bool hasValue(const char* relative_path) const;
+    bool hasValue(const std::string& relative_path) const;
+
+    /** Get another node's value. */
+    bool getBoolValue(const char* relative_path, bool defaultValue = false) const;
+    int getIntValue(const char* relative_path, int defaultValue = 0) const;
+    long getLongValue(const char* relative_path, long defaultValue = 0L) const;
+    float getFloatValue(const char* relative_path, float defaultValue = 0.0f) const;
+    double getDoubleValue(const char* relative_path, double defaultValue = 0.0) const;
+    const char* getStringValue(const char* relative_path, const char* defaultValue = "") const;
+
+    bool getBoolValue(const std::string& relative_path, bool defaultValue = false) const;
+    int getIntValue(const std::string& relative_path, int defaultValue = 0) const;
+    long getLongValue(const std::string& relative_path, long defaultValue = 0L) const;
+    float getFloatValue(const std::string& relative_path, float defaultValue = 0.0f) const;
+    double getDoubleValue(const std::string& relative_path, double defaultValue = 0.0) const;
+    const char* getStringValue(const std::string& relative_path, const char* defaultValue = "") const;
+
+    /** Set another node's value. */
+    bool setBoolValue(const char* relative_path, bool value);
+    bool setIntValue(const char* relative_path, int value);
+    bool setLongValue(const char* relative_path, long value);
+    bool setFloatValue(const char* relative_path, float value);
+    bool setDoubleValue(const char* relative_path, double value);
+
+    bool setBoolValue(const std::string& relative_path, bool value);
+    bool setIntValue(const std::string& relative_path, int value);
+    bool setLongValue(const std::string& relative_path, long value);
+    bool setFloatValue(const std::string& relative_path, float value);
+    bool setDoubleValue(const std::string& relative_path, double value);
+
+    bool setStringValue(const char* relative_path, const char* value);
+    bool setStringValue(const char* relative_path, const std::string& value);
+
+    bool setStringValue(const std::string& relative_path, const char* value);
+    bool setStringValue(const std::string& relative_path, const std::string& value);
+
+    /** Set another node's value with no specified type. */
+    bool setUnspecifiedValue(const char* relative_path, const char* value);
+
+    /** Test whether another node is bound to an external data source. */
+    bool isTied(const char* relative_path) const;
+    bool isTied(const std::string& relative_path) const;
+
+    /** Bind another node to an external source. */
+    bool tie(const char* relative_path, const SGRawValue<bool> &rawValue, bool useDefault = true);
+    bool tie(const char* relative_path, const SGRawValue<int> &rawValue, bool useDefault = true);
+    bool tie(const char* relative_path, const SGRawValue<long> &rawValue, bool useDefault = true);
+    bool tie(const char* relative_path, const SGRawValue<float> &rawValue, bool useDefault = true);
+    bool tie(const char* relative_path, const SGRawValue<double> &rawValue, bool useDefault = true);
+    bool tie(const char* relative_path, const SGRawValue<const char*> &rawValue, bool useDefault = true);
+
+    bool tie(const std::string& relative_path, const SGRawValue<bool> &rawValue, bool useDefault = true);
+    bool tie(const std::string& relative_path, const SGRawValue<int> &rawValue, bool useDefault = true);
+    bool tie(const std::string& relative_path, const SGRawValue<long> &rawValue, bool useDefault = true);
+    bool tie(const std::string& relative_path, const SGRawValue<float> &rawValue, bool useDefault = true);
+    bool tie(const std::string& relative_path, const SGRawValue<double> &rawValue, bool useDefault = true);
+    bool tie(const std::string& relative_path, const SGRawValue<const char*> &rawValue, bool useDefault = true);
+
+    /** Unbind another node from any external data source. */
+    bool untie(const char* relative_path);
+    bool untie(const std::string& relative_path);
+
+    /**
+     * Add a change listener to the property. If "initial" is set call the
+     * listener initially.
+     */
+    void addChangeListener(SGPropertyChangeListener* listener, bool initial = false);
+
+    /** Remove a change listener from the property. */
+    void removeChangeListener(SGPropertyChangeListener* listener);
+
+    /** Get the number of listeners. */
+    int nListeners() const;
+
+    /** Fire a value change event to all listeners. */
+    void fireValueChanged();
+
+    /** Fire a child-added event to all listeners. */
+    void fireChildAdded(SGPropertyNode* child);
+
+    /**
+     * Trigger a child-added and value-changed event for every child (Unlimited
+     * depth).
+     *
+     * @param fire_self   Whether to trigger the events also for the node itself.
+     *
+     * It can be used to simulating the creation of a property tree, eg. for
+     * (re)initializing a subsystem which is controlled through the property tree.
+     */
+    void fireCreatedRecursive(bool fire_self = false);
+
+    /** Fire a child-removed event to all listeners. */
+    void fireChildRemoved(SGPropertyNode* child);
+
+    /**
+     * Fire a child-removed event for every child of this node (Unlimited depth)
+     *
+     * Upon removal of a child node only for this single node a child-removed
+     * event is triggered. If eg. resource cleanup relies on receiving a
+     * child-removed event for every child this method can be used.
+     */
+    void fireChildrenRemovedRecursive();
+
+    /** Clear any existing value and set the type to NONE. */
+    void clearValue();
+
+    /**
+     * Compare two property trees. The property trees are equal if: 1)
+     * They have no children, and have the same type and the values are
+     * equal, or 2) have the same number of children, and the
+     * corresponding children in each tree are equal. "corresponding"
+     * means have the same name and index.
+     *
+     * Attributes, removed children, and aliases aren't considered.
+     */
+    static bool compare(const SGPropertyNode& lhs, const SGPropertyNode& rhs);
 
 protected:
 
-  void fireValueChanged (SGPropertyNode * node);
-  void fireChildAdded (SGPropertyNode * parent, SGPropertyNode * child);
-  void fireChildRemoved (SGPropertyNode * parent, SGPropertyNode * child);
+    /* fire*() generally need to temporarily modify _listeners->_num_iterators
+    so take exclusive lock rather than shared. */
 
-  SGPropertyNode_ptr eraseChild(simgear::PropertyList::iterator child);
+    /** Protected constructor for making new nodes on demand. */
+    SGPropertyNode(const std::string& name, int index, SGPropertyNode* parent);
 
-  /**
-   * Protected constructor for making new nodes on demand.
-   */
-  SGPropertyNode (const std::string& name, int index, SGPropertyNode * parent);
-  template<typename Itr>
-  SGPropertyNode (Itr begin, Itr end, int index, SGPropertyNode * parent);
+    template<typename Itr>
+    SGPropertyNode(Itr begin, Itr end, int index, SGPropertyNode* parent);
 
-  static simgear::PropertyInterpolationMgr* _interpolation_mgr;
+    static simgear::PropertyInterpolationMgr* _interpolation_mgr;
 
 private:
 
-  // Get the raw value
-  bool get_bool () const;
-  int get_int () const;
-  long get_long () const;
-  float get_float () const;
-  double get_double () const;
-  const char * get_string () const;
+    // very internal path parsing function
+    template<typename SplitItr>
+    friend SGPropertyNode* find_node_aux(SGPropertyNode* current, SplitItr& itr, bool create, int last_index);
+    
+    // Template-style getValue when lock is already held.
+    template<typename T>
+    T getValue(
+            SGPropertyLock& lock,
+            typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0
+            ) const;
+    
+    // For SGVec3d and SGVec4d.
+    template<typename T>
+    T getValue(
+            SGPropertyLock& lock,
+            typename std::enable_if<!simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0
+            ) const;
 
-  // Set the raw value
-  bool set_bool (bool value);
-  bool set_int (int value);
-  bool set_long (long value);
-  bool set_float (float value);
-  bool set_double (double value);
-  bool set_string (const char * value);
+    // For boost
+    friend size_t hash_value(const SGPropertyNode& node);
 
+    // Allow implementation code access to _mutex.
+    //
+    friend SGPropertyLock;
+    friend SGPropertyLockShared;
+    friend SGPropertyLockExclusive;
+    
+    // Misc implementation access.
+    friend SGPropertyNodeImpl;
 
-  /**
-   * Get the value as a string.
-   */
-  const char * make_string () const;
+    // Class data.
+    //
+    
+    // Support for thread-safety.
+    //
+    mutable std::shared_mutex _mutex;
+    int _mutex_debug_shared = 0;
+    int _mutex_debug_exclusive = 0;
+    
+    // Core data.
+    //
+    int _index;
+    std::string _name;
+    SGPropertyNode* _parent;
+    simgear::PropertyList _children;
+    mutable std::string _buffer;
+    simgear::props::Type _type;
+    bool _tied;
+    int _attr = NO_ATTR;
 
-  /**
-   * Trace a read access.
-   */
-  void trace_read () const;
+    // The right kind of pointer...
+    union {
+        SGPropertyNode* alias;
+        SGRaw* val;
+    } _value;
 
+    union {
+        bool bool_val;
+        int int_val;
+        long long_val;
+        float float_val;
+        double double_val;
+        char* string_val;
+    } _local_val;
 
-  /**
-   * Trace a write access.
-   */
-  void trace_write () const;
-
-  int _index;
-  std::string _name;
-  /// To avoid cyclic reference counting loops this shall not be a reference
-  /// counted pointer
-  SGPropertyNode * _parent;
-  simgear::PropertyList _children;
-  mutable std::string _buffer;
-  simgear::props::Type _type;
-  bool _tied;
-  int _attr = NO_ATTR;
-
-  // The right kind of pointer...
-  union {
-    SGPropertyNode * alias;
-    SGRaw* val;
-  } _value;
-
-  union {
-    bool bool_val;
-    int int_val;
-    long long_val;
-    float float_val;
-    double double_val;
-    char * string_val;
-  } _local_val;
-
-  SGPropertyNodeListeners*  _listeners;
-
-  // Pass name as a pair of iterators
-  template<typename Itr>
-  SGPropertyNode * getChildImpl (Itr begin, Itr end, int index = 0, bool create = false);
-  // very internal method
-  template<typename Itr>
-  SGPropertyNode* getExistingChild (Itr begin, Itr end, int index);
-  // very internal path parsing function
-  template<typename SplitItr>
-  friend SGPropertyNode* find_node_aux(SGPropertyNode * current, SplitItr& itr,
-                                       bool create, int last_index);
-  // For boost
-  friend size_t hash_value(const SGPropertyNode& node);
+    SGPropertyNodeListeners*  _listeners;
 };
 
 // Convenience functions for use in templates
@@ -1886,13 +1433,22 @@ typename std::enable_if<!std::is_enum<T>::value, T>::type
 getValue(const SGPropertyNode*);
 
 template<>
-inline bool getValue<bool>(const SGPropertyNode* node) { return node->getBoolValue(); }
+inline bool getValue<bool>(const SGPropertyNode* node)
+{
+    return node->getBoolValue();
+}
 
 template<>
-inline int getValue<int>(const SGPropertyNode* node) { return node->getIntValue(); }
+inline int getValue<int>(const SGPropertyNode* node)
+{
+    return node->getIntValue();
+}
 
 template<>
-inline long getValue<long>(const SGPropertyNode* node) { return node->getLongValue(); }
+inline long getValue<long>(const SGPropertyNode* node)
+{
+    return node->getLongValue();
+}
 
 template<>
 inline float getValue<float>(const SGPropertyNode* node)
@@ -1907,9 +1463,9 @@ inline double getValue<double>(const SGPropertyNode* node)
 }
 
 template<>
-inline const char * getValue<const char*>(const SGPropertyNode* node)
+inline const char* getValue<const char*>(const SGPropertyNode* node)
 {
-    return node->getStringValue ();
+    return node->getStringValue();
 }
 
 template<>
@@ -1944,7 +1500,7 @@ namespace simgear
   };
 } // namespace simgear
 
-/** Extract enum from SGPropertyNode */
+/** Extract enum from SGPropertyNode. */
 template<typename T>
 #if PROPS_STANDALONE
 inline T
@@ -1998,137 +1554,13 @@ inline bool setValue(SGPropertyNode* node, const char* value)
     return node->setStringValue(value);
 }
 
-inline bool setValue (SGPropertyNode* node, const std::string& value)
+inline bool setValue(SGPropertyNode* node, const std::string& value)
 {
     return node->setStringValue(value.c_str());
 }
 
-template<typename T>
-bool SGPropertyNode::tie(const SGRawValue<T> &rawValue, bool useDefault)
-{
-    using namespace simgear::props;
-    if (_type == ALIAS || _tied)
-        return false;
-
-    useDefault = useDefault && hasValue();
-    T old_val = SGRawValue<T>::DefaultValue();
-    if (useDefault)
-        old_val = getValue<T>(this);
-    clearValue();
-    if (PropertyTraits<T>::Internal)
-        _type = PropertyTraits<T>::type_tag;
-    else
-        _type = EXTENDED;
-    _tied = true;
-    _value.val = rawValue.clone();
-    if (useDefault) {
-        int save_attributes = getAttributes();
-        setAttribute( WRITE, true );
-        setValue(old_val);
-        setAttributes( save_attributes );
-    }
-    return true;
-}
-
-template<>
-bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
-                          bool useDefault);
-
-template<typename T>
-T SGPropertyNode::getValue(typename std::enable_if<!simgear::props
-                           ::PropertyTraits<T>::Internal>::type* dummy) const
-{
-    using namespace simgear::props;
-    if (_attr == (READ|WRITE) && _type == EXTENDED
-        && _value.val->getType() == PropertyTraits<T>::type_tag) {
-        return static_cast<SGRawValue<T>*>(_value.val)->getValue();
-    }
-    if (getAttribute(TRACE_READ))
-        trace_read();
-    if (!getAttribute(READ))
-      return SGRawValue<T>::DefaultValue();
-    switch (_type) {
-    case EXTENDED:
-        if (_value.val->getType() == PropertyTraits<T>::type_tag)
-            return static_cast<SGRawValue<T>*>(_value.val)->getValue();
-        break;
-    case STRING:
-    case UNSPECIFIED:
-        return simgear::parseString<T>(make_string());
-    default: // avoid compiler warning
-        break;
-    }
-    return SGRawValue<T>::DefaultValue();
-}
-
-template<typename T>
-inline T SGPropertyNode::getValue(typename std::enable_if<simgear::props
-                                  ::PropertyTraits<T>::Internal>::type* dummy) const
-{
-  return ::getValue<T>(this);
-}
-
-template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
-std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
-{
-  const simgear::PropertyList& props = getChildren(name);
-  std::vector<T> values( props.size() );
-
-  for( size_t i = 0; i < props.size(); ++i )
-    values[i] = props[i]->getValue<T_get>();
-
-  return values;
-}
-
-template<typename T>
-inline
-std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
-{
-  return getChildValues<T, T>(name);
-}
-
-template<typename T>
-bool SGPropertyNode::setValue(const T& val,
-                              typename std::enable_if<!simgear::props
-                              ::PropertyTraits<T>::Internal>::type* dummy)
-{
-    using namespace simgear::props;
-    if (_attr == (READ|WRITE) && _type == EXTENDED
-        && _value.val->getType() == PropertyTraits<T>::type_tag) {
-        static_cast<SGRawValue<T>*>(_value.val)->setValue(val);
-        return true;
-    }
-    if (getAttribute(WRITE)
-        && ((_type == EXTENDED
-            && _value.val->getType() == PropertyTraits<T>::type_tag)
-            || _type == NONE || _type == UNSPECIFIED)) {
-        if (_type == NONE || _type == UNSPECIFIED) {
-            clearValue();
-            _type = EXTENDED;
-            _value.val = new SGRawValueContainer<T>(val);
-        } else {
-            static_cast<SGRawValue<T>*>(_value.val)->setValue(val);
-        }
-        if (getAttribute(TRACE_WRITE))
-            trace_write();
-        return true;
-    }
-    return false;
-}
-
-template<typename T>
-inline bool SGPropertyNode::setValue(const T& val,
-                                     typename std::enable_if<simgear::props
-                                     ::PropertyTraits<T>::Internal>::type* dummy)
-{
-  return ::setValue(this, val);
-}
-
-/**
- * Utility function for creation of a child property node.
- */
-inline SGPropertyNode* makeChild(SGPropertyNode* parent, const char* name,
-                                 int index = 0)
+/** Utility function for creation of a child property node. */
+inline SGPropertyNode* makeChild(SGPropertyNode* parent, const char* name, int index = 0)
 {
     return parent->getChild(name, index, true);
 }
@@ -2187,8 +1619,8 @@ struct Hash
         return hash_value(*node);
     }
 };
-}
-}
+} // namespace props
+} // namespace simgear
 
 /** Convenience class for change listener callbacks without
  * creating a derived class implementing a "valueChanged" method.
@@ -2199,16 +1631,23 @@ class SGPropertyChangeCallback
     : public SGPropertyChangeListener
 {
 public:
-    SGPropertyChangeCallback(T* obj, void (T::*method)(SGPropertyNode*),
-                             SGPropertyNode_ptr property,bool initial=false)
-        : _obj(obj), _callback(method), _property(property)
+    SGPropertyChangeCallback(T* obj,
+                             void (T::*method)(SGPropertyNode*),
+                             SGPropertyNode_ptr property,
+                             bool initial=false
+                             )
+        : _obj(obj),
+        _callback(method),
+        _property(property)
     {
         _property->addChangeListener(this,initial);
     }
 
     SGPropertyChangeCallback(const SGPropertyChangeCallback<T>& other)
         : SGPropertyChangeListener(other),
-        _obj(other._obj), _callback(other._callback), _property(other._property)
+        _obj(other._obj),
+        _callback(other._callback),
+        _property(other._property)
     {
         _property->addChangeListener(this,false);
     }
@@ -2217,10 +1656,12 @@ public:
     {
         _property->removeChangeListener(this);
     }
-    void valueChanged (SGPropertyNode * node)
+    
+    void valueChanged(SGPropertyNode* node)
     {
         (_obj->*_callback)(node);
     }
+    
 private:
     T* _obj;
     void (T::*_callback)(SGPropertyNode*);

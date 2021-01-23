@@ -145,6 +145,37 @@ public:
     Status _status;
 };
 
+std::ostream& operator << (std::ostream& out, const SyncItem::Type& t)
+{
+    if (t == SyncItem::Stop)            return out << "Stop";
+    if (t == SyncItem::Tile)            return out << "Tile";
+    if (t == SyncItem::AirportData)     return out << "AirportData";
+    if (t == SyncItem::SharedModels)    return out << "SharedModels";
+    if (t == SyncItem::AIData)          return out << "AIData";
+    if (t == SyncItem::OSMTile)         return out << "OSMTile";
+    return out << ((int) t);
+}
+
+std::ostream& operator << (std::ostream& out, const SyncItem::Status& s)
+{
+    if (s == SyncItem::Invalid)     return out << "Invalid";
+    if (s == SyncItem::Waiting)     return out << "Waiting";
+    if (s == SyncItem::Cached)      return out << "Cached";
+    if (s == SyncItem::Updated)     return out << "Updated";
+    if (s == SyncItem::NotFound)    return out << "NotFound";
+    if (s == SyncItem::Failed)      return out << "Failed";
+    return out << ((int) s);
+}
+
+std::ostream& operator << (std::ostream& out, const SyncItem& s)
+{
+    return out << "SyncItem:{_dir="
+            << s._dir << " _type="
+            << s._type << " _status="
+            << s._status
+            << "}";
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -547,8 +578,17 @@ std::string SGTerraSync::WorkerThread::dnsSelectServerForService(const std::stri
     // now pick a random entry from the available servers
     auto idx = static_cast<int>(sg_random() * availableServers.size());
     const auto server = availableServers.at(idx)->regexp;
-    SG_LOG(SG_TERRASYNC, SG_INFO, "picking entry # " << idx << ", server is " << server.substr(6, server.length() - 7););
-    return server.substr(6, server.length() - 7);
+    std::string ret = server.substr(6, server.length() - 7);
+    SG_LOG(SG_TERRASYNC, SG_INFO, "service=" << service << " returning entry # " << idx << ": " << ret);
+    {
+        std::string env = "SIMGEAR_TERRASYNC_SERVER_" + service;
+        const char* ret = getenv(env.c_str());
+        if (ret) {
+            SG_LOG(SG_TERRASYNC, SG_INFO, "service=" << service << " overriding to return " << env << " = " << ret);
+            return ret;
+        }
+    }
+    return ret;
 }
 
 void SGTerraSync::WorkerThread::run()
@@ -820,7 +860,9 @@ SyncItem::Status SGTerraSync::WorkerThread::isPathCached(const SyncItem& next) c
         ii = _notFoundItems.find( next._dir );
         // Invalid means 'not cached', otherwise we want to return to
         // higher levels the cache status
-        return (ii == _notFoundItems.end()) ? SyncItem::Invalid : SyncItem::NotFound;
+        SyncItem::Status ret = (ii == _notFoundItems.end()) ? SyncItem::Invalid : SyncItem::NotFound;
+        SG_LOG(SG_TERRASYNC, SG_DEBUG, "next=" << next << " returning ret=" << ret);
+        return ret;
     }
 
     // check if the path still physically exists. This is needed to
@@ -828,11 +870,14 @@ SyncItem::Status SGTerraSync::WorkerThread::isPathCached(const SyncItem& next) c
     SGPath p(_local_dir);
     p.append(next._dir);
     if (!p.exists()) {
+        SG_LOG(SG_TERRASYNC, SG_DEBUG, "next=" << next << " returning SyncItem::Invalid");
         return SyncItem::Invalid;
     }
 
     time_t now = time(0);
-    return (ii->second > now) ? SyncItem::Cached : SyncItem::Invalid;
+    SyncItem::Status ret = (ii->second > now) ? SyncItem::Cached : SyncItem::Invalid;
+    SG_LOG(SG_TERRASYNC, SG_DEBUG, "next=" << next << " returning ret=" << ret);
+    return ret;
 }
 
 void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
@@ -844,7 +889,7 @@ void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
     failedItem._status = SyncItem::Failed;
     _freshTiles.push_back(failedItem);
     // not we also end up here for partial syncs
-    SG_LOG(SG_TERRASYNC,SG_INFO,
+    SG_LOG(SG_TERRASYNC,SG_ALERT,
            "Failed to sync'" << failedItem._dir << "'");
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
 }
@@ -891,15 +936,20 @@ void SGTerraSync::WorkerThread::drainWaitingTiles()
     while (!waitingTiles.empty()) {
         SyncItem next = waitingTiles.pop_front();
         SyncItem::Status cacheStatus = isPathCached(next);
+        SG_LOG(SG_TERRASYNC, SG_INFO, "next._type=" << next._type
+                << " next._dir=" << next._dir
+                << " cacheStatus=" << cacheStatus
+                );
         if (cacheStatus != SyncItem::Invalid) {
             incrementCacheHits();
-            SG_LOG(SG_TERRASYNC, SG_BULK, "\nTerraSync Cache hit for: '" << next._dir << "'");
+            SG_LOG(SG_TERRASYNC, SG_BULK, "TerraSync Cache hit for: '" << next._dir << "'");
             next._status = cacheStatus;
             _freshTiles.push_back(next);
             continue;
         }
 
         const auto slot = syncSlotForType(next._type);
+        SG_LOG(SG_TERRASYNC, SG_INFO, "adding to _syncSlots slot=" << slot);
         _syncSlots[slot].queue.push_back(next);
     }
 }
@@ -956,6 +1006,12 @@ void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache() {
     bool isNotFound = (strcmp(entry->getName(), "not-found") == 0);
     string tileName = entry->getStringValue("path");
     time_t stamp = entry->getIntValue("stamp");
+    SG_LOG(SG_TERRASYNC, SG_DEBUG, "tileName=" << tileName
+            << " isNotFound=" << isNotFound
+            << " stamp=" << stamp
+            << " now=" << now
+            << " stamp<now=" << (stamp < now)
+            );
     if (stamp < now) {
       continue;
     }
@@ -971,11 +1027,13 @@ void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache() {
 void SGTerraSync::WorkerThread::writeCompletedTilesPersistentCache() const {
   // cache is disabled
   if (_persistentCachePath.isNull()) {
+    SG_LOG(SG_TERRASYNC, SG_DEBUG, "_persistentCachePath.isNull()");
     return;
   }
 
   sg_ofstream f(_persistentCachePath, std::ios::trunc);
   if (!f.is_open()) {
+    SG_LOG(SG_TERRASYNC, SG_DEBUG, "!f.is_open() _persistentCachePath=" << _persistentCachePath);
     return;
   }
 

@@ -1139,14 +1139,18 @@ HTTPRepository::failure() const
         }
 
         void onDone() override {
+          SG_LOG(SG_TERRASYNC, SG_DEBUG, "onDone(): url()=" << url() << " _directory=" << _directory
+                << " responseCode()=" << responseCode());
           if (responseCode() == 200) {
             std::string hash =
                 strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
             if (!_targetHash.empty() && (hash != _targetHash)) {
-              SG_LOG(SG_TERRASYNC, SG_WARN,
+              SG_LOG(SG_TERRASYNC, SG_ALERT,
                      "Checksum error getting dirIndex for:"
                          << _directory->relativePath() << "; expected "
-                         << _targetHash << " but received " << hash);
+                         << _targetHash << " but received " << hash
+                         << " url()=" << url()
+                         );
 
               _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM);
 
@@ -1179,8 +1183,8 @@ HTTPRepository::failure() const
               of.close();
               _directory->dirIndexUpdated(hash);
 
-              // SG_LOG(SG_TERRASYNC, SG_INFO, "updated dir index " <<
-              // _directory->absolutePath());
+              SG_LOG(SG_TERRASYNC, SG_DEBUG, "from url()=" << url() << " have updated _directory: " << _directory);
+              //SG_LOG(SG_TERRASYNC, SG_INFO, "updated dir index " << _directory->absolutePath());
             }
 
             _directory->repository()->totalDownloaded += contentSize();
@@ -1210,6 +1214,8 @@ HTTPRepository::failure() const
         }
 
         void onFail() override {
+          SG_LOG(SG_TERRASYNC, SG_ALERT, "onFail(): url()=" << url() << " _directory=" << _directory
+                << " responseCode()=" << responseCode());
           HTTPRepository::ResultCode code = HTTPRepository::REPO_ERROR_SOCKET;
           if (responseCode() == -1) {
             code = HTTPRepository::REPO_ERROR_CANCELLED;

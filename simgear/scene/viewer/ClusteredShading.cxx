@@ -191,8 +191,7 @@ ClusteredShading::update(const SGLightList &light_list)
                 // The parenthesis are very important: if the vector is
                 // multiplied by the local to world matrix first we'll have
                 // precision issues
-                (osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
-                 _camera->getViewMatrix());
+                (light->getWorldMatrices()[0] * _camera->getViewMatrix());
             point.range = light->getRange();
 
             _point_bounds.push_back(point);
@@ -200,11 +199,9 @@ ClusteredShading::update(const SGLightList &light_list)
             SpotlightBound spot;
             spot.light = light;
             spot.position = osg::Vec4f(0.0f, 0.0f, 0.0f, 1.0f) *
-                (osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
-                 _camera->getViewMatrix());
+                (light->getWorldMatrices()[0] * _camera->getViewMatrix());
             spot.direction = osg::Vec4f(0.0f, 0.0f, -1.0f, 0.0f) *
-                (osg::computeLocalToWorld(light->getParentalNodePaths()[0]) *
-                 _camera->getViewMatrix());
+                (light->getWorldMatrices()[0] * _camera->getViewMatrix());
             spot.direction.normalize();
 
             float range = light->getRange();

@@ -30,6 +30,12 @@ public:
         SPOT
     };
 
+    enum Priority {
+        LOW,
+        MEDIUM,
+        HIGH
+    };
+
     class UpdateCallback : public osg::NodeCallback {
     public:
         UpdateCallback(const SGExpressiond *expression,
@@ -106,6 +112,9 @@ public:
     void setSpotCutoff(float spot_cutoff) { _spot_cutoff = spot_cutoff; }
     float getSpotCutoff() const { return _spot_cutoff; }
 
+    void setPriority(Priority priority) { _priority = priority; }
+    Priority getPriority() const { return _priority; }
+
 protected:
     virtual ~SGLight();
 
@@ -122,6 +131,8 @@ protected:
     float _quadratic_attenuation;
     float _spot_exponent;
     float _spot_cutoff;
+
+    Priority _priority;
 };
 
 typedef std::vector<osg::ref_ptr<SGLight>> SGLightList;

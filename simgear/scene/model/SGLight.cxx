@@ -51,14 +51,22 @@ SGLight::appendLight(const SGPropertyNode *configNode,
     if((p = configNode->getNode("type")) != NULL) {
         std::string type = p->getStringValue();
         if (type == "point")
-            light->setType(SGLight::Type::POINT);
+            light->setType(SGLight::POINT);
         else if (type == "spot")
-            light->setType(SGLight::Type::SPOT);
+            light->setType(SGLight::SPOT);
         else
             SG_LOG(SG_GENERAL, SG_ALERT, "ignoring unknown light type '" << type << "'");
     }
 
     light->setRange(configNode->getFloatValue("range-m"));
+
+    std::string priority = configNode->getStringValue("priority", "low");
+    if (priority == "high")
+        light->setPriority(SGLight::HIGH);
+    else if (priority == "medium")
+        light->setPriority(SGLight::MEDIUM);
+    else
+        light->setPriority(SGLight::LOW);
 
 #define SGLIGHT_GET_COLOR_VALUE(n)                \
     osg::Vec4(configNode->getFloatValue(n "/r"),  \
@@ -166,7 +174,8 @@ SGLight::appendLight(const SGPropertyNode *configNode,
 
 SGLight::SGLight() :
     _type(Type::POINT),
-    _range(0.0f)
+    _range(0.0f),
+    _priority(Priority::LOW)
 {
     // Default values taken from osg::Light
     // They don't matter anyway as they are overwritten by the XML config values

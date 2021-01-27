@@ -89,7 +89,7 @@ class VPBTechnique : public TerrainTechnique
 
         static void addElevationConstraint(osg::ref_ptr<osg::Node> constraint, osg::Group* terrain);
         static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
-        static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex);
+        static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
 
     protected:
 

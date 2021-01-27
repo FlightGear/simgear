@@ -274,7 +274,7 @@ class VertexNormalGenerator
         typedef std::pair< osg::ref_ptr<osg::Vec2Array>, Locator* > TexCoordLocatorPair;
         typedef std::map< Layer*, TexCoordLocatorPair > LayerToTexCoordMap;
 
-        VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, bool createSkirt);
+        VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt);
 
         void populateCenter(osgTerrain::Layer* elevationLayer, LayerToTexCoordMap& layerToTexCoordMap);
         void populateLeftBoundary(osgTerrain::Layer* elevationLayer);
@@ -443,6 +443,7 @@ class VertexNormalGenerator
         int                             _numRows;
         int                             _numColumns;
         float                           _scaleHeight;
+        float                           _constraint_vtx_gap;
 
         Indices                         _indices;
 
@@ -454,12 +455,13 @@ class VertexNormalGenerator
 
 };
 
-VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColumns, float scaleHeight, bool createSkirt):
+VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColumns, float scaleHeight, float vtx_gap, bool createSkirt):
     _masterLocator(masterLocator),
     _centerModel(centerModel),
     _numRows(numRows),
     _numColumns(numColumns),
-    _scaleHeight(scaleHeight)
+    _scaleHeight(scaleHeight),
+    _constraint_vtx_gap(vtx_gap)
 {
     int numVerticesInBody = numColumns*numRows;
     int numVerticesInSkirt = createSkirt ? numColumns*2 + numRows*2 - 4 : 0;
@@ -510,7 +512,7 @@ void VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, La
                 _masterLocator->convertLocalToModel(osg::Vec3d(ndc.x(), ndc.y(), -1000), origin);
                 _masterLocator->convertLocalToModel(ndc, model);
 
-                model = VPBTechnique::checkAgainstElevationConstraints(origin, model);
+                model = VPBTechnique::checkAgainstElevationConstraints(origin, model, _constraint_vtx_gap);
 
                 for(VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.begin();
                     itr != layerToTexCoordMap.end();
@@ -845,7 +847,9 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         numRows = elevationLayer->getNumRows();
     }
 
-    float sampleRatio = terrain ? terrain->getSampleRatio() : 1.0f;
+    double scaleHeight = atof(_options->getPluginStringData("SimGear::ELEV_MESH_VERTICAL_SCALE").c_str());
+    double sampleRatio = atof(_options->getPluginStringData("SimGear::ELEV_MESH_SAMPLE_RATIO").c_str());
+    double constraint_gap = atof(_options->getPluginStringData("SimGear::ELEV_MESH_CONSTRAINT_GAP").c_str());
 
     // OSG_NOTICE<<"Sample ratio="<<sampleRatio<<std::endl;
 
@@ -875,11 +879,8 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
     bool createSkirt = skirtHeight != 0.0f;
 
-
-    float scaleHeight = terrain ? terrain->getVerticalScale() : 1.0f;
-
     // construct the VertexNormalGenerator which will manage the generation and the vertices and normals
-    VertexNormalGenerator VNG(masterLocator, centerModel, numRows, numColumns, scaleHeight, createSkirt);
+    VertexNormalGenerator VNG(masterLocator, centerModel, numRows, numColumns, scaleHeight, constraint_gap, createSkirt);
 
     unsigned int numVertices = VNG.capacity();
 
@@ -1682,7 +1683,7 @@ void VPBTechnique::removeElevationConstraint(osg::ref_ptr<osg::Node> constraint)
 // Check a given vertex against any elevation constraints  E.g. to ensure the terrain mesh doesn't
 // poke through any airport meshes.  If such a constraint exists, the function will return a replacement
 // vertex displaces such that it lies 1m below the contraint relative to the passed in origin.  
-osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex)
+osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vtx_gap)
 {
     const std::lock_guard<std::mutex> lock(VPBTechnique::_constraint_mutex); // Lock the _constraintGroup for this scope
     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
@@ -1694,7 +1695,7 @@ osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg
         // We have an intersection with our constraints model, so move the terrain vertex to 1m below the intersection point
         osg::Vec3d ray = intersector->getFirstIntersection().getWorldIntersectPoint() - origin;
         ray.normalize();
-        return intersector->getFirstIntersection().getWorldIntersectPoint() - ray*1.0;
+        return intersector->getFirstIntersection().getWorldIntersectPoint() - ray*vtx_gap;
     } else {
         return vertex;
     }

@@ -38,12 +38,20 @@ public:
 
     class UpdateCallback : public osg::NodeCallback {
     public:
-        UpdateCallback(const SGExpressiond *expression,
-                       osg::Vec4 ambient, osg::Vec4 diffuse, osg::Vec4 specular) :
-            _expression(expression),
-            _ambient(ambient), _diffuse(diffuse), _specular(specular) {}
+        UpdateCallback(const SGExpressiond *expression) : _expression(expression) {}
+        UpdateCallback() {}
+        
+        void configure(const osg::Vec4 ambient, const osg::Vec4 diffuse, const osg::Vec4 specular) {
+            _ambient = ambient;
+            _diffuse = diffuse;
+            _specular = specular;
+        }
+
         virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
-            double value = _expression->getValue();
+            double value = 1;
+            if (_expression) {
+                value = _expression->getValue();
+            } 
             if (value != _prev_value) {
                 SGLight *light = dynamic_cast<SGLight *>(node);
                 if (light) {
@@ -51,36 +59,26 @@ public:
                     light->setDiffuse(_diffuse * value);
                     light->setSpecular(_specular * value);
                 }
+                _prev_value = value;
             }
         }
     private:
-        SGSharedPtr<SGExpressiond const> _expression;
+        SGSharedPtr<SGExpressiond const> _expression {nullptr};
         osg::Vec4 _ambient, _diffuse, _specular;
         double _prev_value = -1.0;
     };
 
     SGLight();
-
-    SGLight(const SGLight& l,
-            const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
-        osg::Node(l, copyop),
-        _type(l._type),
-        _range(l._range),
-        _ambient(l._ambient),
-        _diffuse(l._diffuse),
-        _specular(l._specular),
-        _constant_attenuation(l._constant_attenuation),
-        _linear_attenuation(l._linear_attenuation),
-        _quadratic_attenuation(l._quadratic_attenuation),
-        _spot_exponent(l._spot_exponent),
-        _spot_cutoff(l._spot_cutoff)
-        {}
+    SGLight(const SGLight& l, const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
+    SGLight(osg::MatrixTransform *transform) : SGLight() { _transform = transform; };
 
     META_Node(simgear, SGLight);
 
     static osg::Node *appendLight(const SGPropertyNode *configNode,
                                   SGPropertyNode *modelRoot,
                                   const osgDB::Options *options);
+
+    void configure(const SGPropertyNode *config_root);
 
     void setType(Type type) { _type = type; }
     Type getType() const { return _type; }
@@ -118,21 +116,21 @@ public:
 protected:
     virtual ~SGLight();
 
-    Type _type;
+    Type _type {Type::POINT};
 
-    float _range;
+    float _range {0.0f};
 
     osg::Vec4 _ambient;
     osg::Vec4 _diffuse;
     osg::Vec4 _specular;
 
-    float _constant_attenuation;
-    float _linear_attenuation;
-    float _quadratic_attenuation;
-    float _spot_exponent;
-    float _spot_cutoff;
-
-    Priority _priority;
+    float _constant_attenuation {1.0f};
+    float _linear_attenuation {0.0f};
+    float _quadratic_attenuation {0.0f};
+    float _spot_exponent {0.0f};
+    float _spot_cutoff {180.0f};
+    Priority _priority {Priority::LOW};
+    osg::MatrixTransform *_transform {nullptr};
 };
 
 typedef std::vector<osg::ref_ptr<SGLight>> SGLightList;

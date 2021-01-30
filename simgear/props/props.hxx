@@ -1098,7 +1098,7 @@ public:
   /**
   * deep copy one node to another.
   */
-  void copy(SGPropertyNode *to);
+  void copy(SGPropertyNode *to) const;
 
   /**
    * Get a pointer to another node by relative path.

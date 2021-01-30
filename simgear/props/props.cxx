@@ -2800,12 +2800,12 @@ namespace simgear
 }
 
 
-void SGPropertyNode::copy(SGPropertyNode *to)
+void SGPropertyNode::copy(SGPropertyNode *to) const
 {
     if (nChildren())
     {
         for (int i = 0; i < nChildren(); i++) {
-            SGPropertyNode *child = getChild(i);
+            const SGPropertyNode *child = getChild(i);
             SGPropertyNode *to_child = to->getChild(child->getName());
             if (!to_child)
                 to_child = to->addChild(child->getName());

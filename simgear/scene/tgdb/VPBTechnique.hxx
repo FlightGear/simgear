@@ -115,8 +115,6 @@ class VPBTechnique : public TerrainTechnique
 
         virtual void applyColorLayers(BufferData& buffer, Locator* masterLocator);
 
-        virtual void applyTransparency(BufferData& buffer);
-
         OpenThreads::Mutex                  _writeBufferMutex;
         osg::ref_ptr<BufferData>            _currentBufferData;
         osg::ref_ptr<BufferData>            _newBufferData;

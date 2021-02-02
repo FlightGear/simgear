@@ -37,9 +37,10 @@
 
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/scene/util/SGSceneFeatures.hxx>
 
 #include "VPBTechnique.hxx"
 
@@ -156,14 +157,12 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         else
         {
             applyColorLayers(*buffer, masterLocator);
-            applyTransparency(*buffer);
         }
     }
     else
     {
         generateGeometry(*buffer, masterLocator, centerModel);
         applyColorLayers(*buffer, masterLocator);
-        applyTransparency(*buffer);
     }
 
     if (buffer->_transform.valid()) buffer->_transform->setThreadSafeRefUnref(true);
@@ -847,11 +846,10 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         numRows = elevationLayer->getNumRows();
     }
 
-    double scaleHeight = atof(_options->getPluginStringData("SimGear::ELEV_MESH_VERTICAL_SCALE").c_str());
-    double sampleRatio = atof(_options->getPluginStringData("SimGear::ELEV_MESH_SAMPLE_RATIO").c_str());
-    double constraint_gap = atof(_options->getPluginStringData("SimGear::ELEV_MESH_CONSTRAINT_GAP").c_str());
 
-    // OSG_NOTICE<<"Sample ratio="<<sampleRatio<<std::endl;
+    double scaleHeight = SGSceneFeatures::instance()->getVPBVerticalScale();
+    double sampleRatio = SGSceneFeatures::instance()->getVPBSampleRatio();
+    double constraint_gap = SGSceneFeatures::instance()->getVPBConstraintGap();
 
     unsigned int minimumNumColumns = 16u;
     unsigned int minimumNumRows = 16u;
@@ -864,8 +862,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         numColumns = std::max((unsigned int) (float(originalNumColumns)*sqrtf(sampleRatio)), minimumNumColumns);
         numRows = std::max((unsigned int) (float(originalNumRows)*sqrtf(sampleRatio)),minimumNumRows);
     }
-
-
 
     bool treatBoundariesToValidDataAsDefaultValue = _terrainTile->getTreatBoundariesToValidDataAsDefaultValue();
     OSG_INFO<<"TreatBoundariesToValidDataAsDefaultValue="<<treatBoundariesToValidDataAsDefaultValue<<std::endl;
@@ -1514,57 +1510,6 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
             stateset->setTextureAttributeAndModes(layerNum, texture1D, osg::StateAttribute::ON);
         }
     }
-}
-
-void VPBTechnique::applyTransparency(BufferData& buffer)
-{
-    TerrainTile::BlendingPolicy blendingPolicy = _terrainTile->getBlendingPolicy();
-    if (blendingPolicy == TerrainTile::INHERIT && _terrainTile->getTerrain())
-    {
-        OSG_INFO<<"VPBTechnique::applyTransparency() inheriting policy from Terrain"<<std::endl;
-        blendingPolicy = _terrainTile->getTerrain()->getBlendingPolicy();
-    }
-
-    if (blendingPolicy == TerrainTile::INHERIT)
-    {
-        OSG_INFO<<"VPBTechnique::applyTransparency() policy is INHERIT, defaulting to ENABLE_BLENDING_WHEN_ALPHA_PRESENT"<<std::endl;
-        blendingPolicy = TerrainTile::ENABLE_BLENDING_WHEN_ALPHA_PRESENT;
-    }
-
-    if (blendingPolicy == TerrainTile::DO_NOT_SET_BLENDING)
-    {
-        OSG_INFO<<"blendingPolicy == TerrainTile::DO_NOT_SET_BLENDING"<<std::endl;
-        return;
-    }
-
-    bool enableBlending = false;
-
-    if (blendingPolicy == TerrainTile::ENABLE_BLENDING)
-    {
-        OSG_INFO<<"blendingPolicy == TerrainTile::ENABLE_BLENDING"<<std::endl;
-        enableBlending = true;
-    }
-    else if (blendingPolicy == TerrainTile::ENABLE_BLENDING_WHEN_ALPHA_PRESENT)
-    {
-        OSG_INFO<<"blendingPolicy == TerrainTile::ENABLE_BLENDING_WHEN_ALPHA_PRESENT"<<std::endl;
-        for(unsigned int i=0; i<_terrainTile->getNumColorLayers(); ++i)
-        {
-            osg::Image* image = (_terrainTile->getColorLayer(i)!=0) ? _terrainTile->getColorLayer(i)->getImage() : 0;
-            if (image)
-            {
-                enableBlending = image->isImageTranslucent();
-                break;
-            }
-        }
-    }
-
-    if (enableBlending)
-    {
-        osg::StateSet* stateset = buffer._geode->getOrCreateStateSet();
-        stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
-        stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-    }
-
 }
 
 void VPBTechnique::update(osg::NodeVisitor& nv)

@@ -64,6 +64,21 @@ public:
     bool getVPBActive() const { return _VPBActive; }
     void setVPBActive(const bool val) { _VPBActive = val; }
 
+    float getVPBRangeFactor() const { return _VPBRangeFactor; }
+    void  setVPBRangeFactor(const float val) { _VPBRangeFactor = val; }
+
+    float getVPBMaxRange() const { return _VPBMaxRange; }
+    void  setVPBMaxRange(const float val) { _VPBMaxRange = val; }
+
+    float getVPBConstraintGap() const { return _VPBConstraintGap; }
+    void  setVPBConstraintGap(const float val) { _VPBConstraintGap = val; }
+
+    float getVPBSampleRatio() const { return _VPBSampleRatio; }
+    void  setVPBSampleRatio(const float val) { _VPBSampleRatio = val; }
+
+    float getVPBVerticalScale() const { return _VPBVerticalScale; }
+    void  setVPBVerticalScale(const float val) { _VPBVerticalScale = val; }
+
     void setEnablePointSpriteLights(bool enable)
     {
         _pointSpriteLights = enable;
@@ -150,6 +165,11 @@ private:
     bool _distanceAttenuationLights;
     int  _textureFilter;
     bool _VPBActive;
+    float _VPBConstraintGap;
+    float _VPBRangeFactor;
+    float _VPBMaxRange;
+    float _VPBSampleRatio;
+    float _VPBVerticalScale;
 };
 
 #endif

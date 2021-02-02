@@ -192,39 +192,40 @@ std::string SGBucket::gen_vpb_base() const {
 
     top_lon = lon / 10;
     main_lon = lon;
-    if ((lon < 0) && (top_lon * 10 != lon)) {
-        top_lon -= 1;
+    if ( (lon < 0) && (top_lon * 10 != lon) ) {
+	top_lon -= 1;
     }
     top_lon *= 10;
-    if (top_lon >= 0) {
-        hem = 'E';
+    if ( top_lon >= 0 ) {
+	hem = 'e';
+    } else {
+	hem = 'w';
+	top_lon *= -1;
     }
-    else {
-        hem = 'W';
-        top_lon *= -1;
+    if ( main_lon < 0 ) {
+	main_lon *= -1;
     }
-    if (main_lon < 0) {
-        main_lon *= -1;
-    }
-
+    
     top_lat = lat / 10;
     main_lat = lat;
-    if ((lat < 0) && (top_lat * 10 != lat)) {
-        top_lat -= 1;
+    if ( (lat < 0) && (top_lat * 10 != lat) ) {
+	top_lat -= 1;
     }
     top_lat *= 10;
-    if (top_lat >= 0) {
-        pole = 'N';
+    if ( top_lat >= 0 ) {
+	pole = 'n';
+    } else {
+	pole = 's';
+	top_lat *= -1;
     }
-    else {
-        pole = 'S';
-        top_lat *= -1;
-    }
-    if (main_lat < 0) {
-        main_lat *= -1;
+    if ( main_lat < 0 ) {
+	main_lat *= -1;
     }
 
-    ::snprintf(raw_path, 256, "WS_%c%d%c%2d", hem, main_lon, pole, main_lat);
+    ::snprintf(raw_path, 256, "%c%03d%c%02d/%c%03d%c%02d/ws_%c%03d%c%02d",
+	    hem, top_lon, pole, top_lat, 
+	    hem, main_lon, pole, main_lat,
+        hem, main_lon, pole, main_lat);
 
     return raw_path;
 }

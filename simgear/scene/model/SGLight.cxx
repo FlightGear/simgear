@@ -123,11 +123,13 @@ SGLight::appendLight(const SGPropertyNode *configNode,
     if (dim_factor) {
         const SGExpressiond *expression =
             read_value(dim_factor, modelRoot, "", 0, 1);
-        light->setUpdateCallback(
-            new SGLight::UpdateCallback(expression,
-                                        light->getAmbient(),
-                                        light->getDiffuse(),
-                                        light->getSpecular()));
+        if (expression) {
+            light->setUpdateCallback(
+                new SGLight::UpdateCallback(expression,
+                                            light->getAmbient(),
+                                            light->getDiffuse(),
+                                            light->getSpecular()));
+        }
     }
 
     osg::Shape *debug_shape = nullptr;

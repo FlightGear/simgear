@@ -56,11 +56,13 @@ SGLightAnimation::SGLightAnimation(simgear::SGTransientModelData &modelData) :
     if (dim_factor) {
         const SGExpressiond *expression =
             read_value(dim_factor, modelData.getModelRoot(), "", 0, 1);
-        light->setUpdateCallback(
-            new SGLight::UpdateCallback(expression,
-                                        light->getAmbient(),
-                                        light->getDiffuse(),
-                                        light->getSpecular()));
+        if (expression) {
+            light->setUpdateCallback(
+                new SGLight::UpdateCallback(expression,
+                                            light->getAmbient(),
+                                            light->getDiffuse(),
+                                            light->getSpecular()));
+        }
     }
 
     align->setName(getConfig()->getStringValue("name"));

@@ -41,7 +41,6 @@ class NodeVisitor;
 namespace osgParticle
 {
 class ParticleSystem;
-class ParticleSystemUpdater;
 }
 
 #include <simgear/scene/util/SGNodeMasks.hxx>
@@ -151,7 +150,7 @@ protected:
 class ParticlesGlobalManager
 {
 public:
-    ~ParticlesGlobalManager();
+    ~ParticlesGlobalManager() = default;
 
     static ParticlesGlobalManager* instance();
     static void clear();
@@ -161,13 +160,15 @@ public:
     osg::ref_ptr<osg::Group> appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::Options* options);
 
     osg::Group* getCommonRoot();
-
     osg::Geode* getCommonGeode();
 
-    osgParticle::ParticleSystemUpdater* getPSU();
+    void initFromMainThread();
 
     void setFrozen(bool e);
     bool isFrozen() const;
+
+    void setCurrentPosition(const SGGeod& pos);
+    void setSimTime(double dt);
 
     void setSwitchNode(const SGPropertyNode* n);
 
@@ -185,6 +186,8 @@ private:
     ParticlesGlobalManager();
 
     class ParticlesGlobalManagerPrivate;
+    class UpdaterCallback;
+    class RegistrationCallback;
 
     // because Private inherits NodeCallback, we need to own it
     // via an osg::ref_ptr

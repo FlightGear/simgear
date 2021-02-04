@@ -901,6 +901,27 @@ void testPersistentSocketFailure(HTTP::Client *cl) {
   verifyRequestCount("dirD/subdirDB/fileDBA", 1);
 }
 
+void testHashOnEmptyFile()
+{
+    std::unique_ptr<HTTPRepository> repo;
+    SGPath p(simgear::Dir::current().path());
+    p.append("sgfile_compute_hash");
+    simgear::Dir pd(p);
+    if (pd.exists()) {
+        pd.removeChildren();
+    } else {
+        pd.create(0700);
+    }
+
+    SGPath fPath = p / "test_empty_file";
+    
+    SGFile file(fPath);
+    file.open(SG_IO_OUT);
+    file.close();
+
+    const auto hash = file.computeHash();
+}
+
 int main(int argc, char* argv[])
 {
   sglog().setLogLevels( SG_ALL, SG_INFO );
@@ -950,6 +971,8 @@ int main(int argc, char* argv[])
     testCopyInstalledChildren(&cl);
     testRetryAfterSocketFailure(&cl);
     testPersistentSocketFailure(&cl);
+
+    testHashOnEmptyFile();
 
     std::cout << "all tests passed ok" << std::endl;
     return 0;

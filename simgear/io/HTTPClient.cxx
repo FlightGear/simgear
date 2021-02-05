@@ -81,21 +81,8 @@ void Client::ClientPrivate::createCurlMulti() {
 #endif
 }
 
-Client::Client() :
-    d(new ClientPrivate)
+Client::Client()
 {
-    d->proxyPort = 0;
-    d->maxConnections = 4;
-    d->maxHostConnections = 4;
-    d->bytesTransferred = 0;
-    d->lastTransferRate = 0;
-    d->timeTransferSample.stamp();
-    d->totalBytesDownloaded = 0;
-    d->maxPipelineDepth = 5;
-    setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
-
-    d->tlsCertificatePath = SGPath::fromEnv("SIMGEAR_TLS_CERT_PATH");
-
     static bool didInitCurlGlobal = false;
     static std::mutex initMutex;
 
@@ -105,7 +92,7 @@ Client::Client() :
       didInitCurlGlobal = true;
     }
 
-    d->createCurlMulti();
+    reset();
 }
 
 Client::~Client()
@@ -139,8 +126,21 @@ void Client::setMaxPipelineDepth(unsigned int depth)
 
 void Client::reset()
 {
-    curl_multi_cleanup(d->curlMulti);
+    if (d.get()) {
+        curl_multi_cleanup(d->curlMulti);
+    }
+
     d.reset(new ClientPrivate);
+
+    d->proxyPort = 0;
+    d->maxConnections = 4;
+    d->maxHostConnections = 4;
+    d->bytesTransferred = 0;
+    d->lastTransferRate = 0;
+    d->timeTransferSample.stamp();
+    d->totalBytesDownloaded = 0;
+    d->maxPipelineDepth = 5;
+    setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
     d->tlsCertificatePath = SGPath::fromEnv("SIMGEAR_TLS_CERT_PATH");
     d->createCurlMulti();
 }

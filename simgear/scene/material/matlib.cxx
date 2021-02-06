@@ -44,6 +44,7 @@
 #include <simgear/scene/model/modellib.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/scene/util/SGSceneFeatures.hxx>
 
 #include "mat.hxx"
 
@@ -304,9 +305,11 @@ SGMaterial *SGMaterialCache::find(int lc) const
 // Generate a texture atlas for this location
 SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, const simgear::SGReaderWriterOptions* options)
 {
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Getting Texture Atlas for " << center);
-
     SGMaterialCache::Atlas atlas;
+    
+    // Non-VPB does not use the Atlas, so save some both and return
+    if (! SGSceneFeatures::instance()->getVPBActive()) return atlas;
+
     std::string id;
     const_landclass_map_iterator lc_iter = landclasslib.begin();
     for (; lc_iter != landclasslib.end(); ++lc_iter) {
@@ -352,7 +355,7 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
     atlas.specular->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP);
     atlas.specular->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP);
 
-    atlas.image->setMaxAnisotropy(16.0f);
+    atlas.image->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
     atlas.image->setResizeNonPowerOfTwoHint(false);
 
     atlas.image->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
@@ -392,7 +395,10 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
             osg::ref_ptr<osg::Image> subtexture = osgDB::readRefImageFile(fullPath, options);
 
             if (subtexture && subtexture->valid()) {
-                subtexture->scaleImage(2048,2048,1);
+
+                if ((subtexture->s() != 2048) || (subtexture->t() != 2048)) {
+                    subtexture->scaleImage(2048,2048,1);
+                }
 
                 // Add other useful information, such as the texture size in m.
                 // As we pack the texture size into a texture, we need to scale to [0..1.0]

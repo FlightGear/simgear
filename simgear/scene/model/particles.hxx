@@ -167,8 +167,10 @@ public:
     void setFrozen(bool e);
     bool isFrozen() const;
 
-    void setCurrentPosition(const SGGeod& pos);
-    void setSimTime(double dt);
+    /**
+        @brief update function: call from the main thread , outside of OSG calls.
+     */
+    void update(double dt, const SGGeod& pos);
 
     void setSwitchNode(const SGPropertyNode* n);
 

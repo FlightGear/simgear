@@ -65,7 +65,7 @@ public:
 
     void updateParticleSystemsFromCullCallback(int currentFrameNumber, osg::NodeVisitor* nv);
 
-    void addParticleSystem(osgParticle::ParticleSystem* ps);
+    void addParticleSystem(osgParticle::ParticleSystem* ps, const osg::ref_ptr<osg::Group>& frame);
 
     void registerNewLocalParticleSystem(osg::Node* node, ParticleSystemRef ps);
     void registerNewWorldParticleSystem(osg::Node* node, ParticleSystemRef ps, osg::Group* frame);
@@ -90,6 +90,9 @@ public:
 
     ParticleSystemsWeakRefVec _systems;
     osg::ref_ptr<ParticlesGlobalManager::UpdaterCallback> _cullCallback;
+
+    using GroupRefVec = std::vector<osg::ref_ptr<osg::Group>>;
+    GroupRefVec _newWorldParticles;
 };
 
 /**
@@ -112,6 +115,11 @@ public:
                 _manager->updateParticleSystemsFromCullCallback(_frameNumber, nv);
             }
         }
+
+        // note, callback is responsible for scenegraph traversal so
+        // they must call traverse(node,nv) to ensure that the
+        // scene graph subtree (and associated callbacks) are traversed.
+        traverse(node, nv);
     }
 
     unsigned int _frameNumber = 0;
@@ -129,14 +137,7 @@ public:
     void operator()(osg::Node* node, osg::NodeVisitor* nv) override
     {
         auto d = ParticlesGlobalManager::instance()->d;
-        d->addParticleSystem(_system);
-
-        // for world-attached particle systems, attach the frame to the
-        // common root. This is the first safe place we can do this
-        if (_frame) {
-            d->internalGetCommonRoot()->addChild(_frame);
-        }
-
+        d->addParticleSystem(_system, _frame);
         node->removeUpdateCallback(this); // suicide
     }
 
@@ -151,10 +152,16 @@ ParticlesGlobalManager::ParticlesGlobalManagerPrivate::ParticlesGlobalManagerPri
     // this constructor might be called from an osgDB thread
 }
 
-void ParticlesGlobalManager::ParticlesGlobalManagerPrivate::addParticleSystem(osgParticle::ParticleSystem* ps)
+void ParticlesGlobalManager::ParticlesGlobalManagerPrivate::addParticleSystem(osgParticle::ParticleSystem* ps, const osg::ref_ptr<osg::Group>& frame)
 {
     std::lock_guard<std::mutex> g(_lock);
     _systems.push_back(ps);
+
+    // we're inside an update callback here, so better not modify the
+    // scene structure; defer it to later
+    if (frame.get()) {
+        _newWorldParticles.push_back(frame);
+    }
 }
 
 void ParticlesGlobalManager::ParticlesGlobalManagerPrivate::registerNewLocalParticleSystem(osg::Node* node, ParticleSystemRef ps)
@@ -182,16 +189,17 @@ void ParticlesGlobalManager::initFromMainThread()
     d->_commonRoot->addCullCallback(d->_cullCallback);
 }
 
-void ParticlesGlobalManager::setCurrentPosition(const SGGeod& pos)
-{
-    std::lock_guard<std::mutex> g(d->_lock);
-    d->_currentPosition = pos;
-}
-
-void ParticlesGlobalManager::setSimTime(double dt)
+void ParticlesGlobalManager::update(double dt, const SGGeod& pos)
 {
     std::lock_guard<std::mutex> g(d->_lock);
     d->_simulationDt = dt;
+    d->_currentPosition = pos;
+
+    for (auto f : d->_newWorldParticles) {
+        d->internalGetCommonRoot()->addChild(f);
+    }
+
+    d->_newWorldParticles.clear();
 }
 
 // this is called from the main thread, since it's an update callback

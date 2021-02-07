@@ -80,7 +80,7 @@ void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
     // be lazy and set the text only if the property has changed.
     // update() computes the glyph representation which looks 
     // more expensive than a the above string compare.
-    text->setText( buf );
+    text->setText( buf, osgText::String::ENCODING_UTF8 );
     text->update();
   }
   traverse( node, nv );

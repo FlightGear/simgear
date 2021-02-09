@@ -115,6 +115,12 @@ class VPBTechnique : public TerrainTechnique
 
         virtual void applyColorLayers(BufferData& buffer, Locator* masterLocator);
 
+        virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
+
+        static osg::Vec2d getRandomOffset(int lon, int lat);
+
+        virtual void applyTrees(BufferData& buffer, Locator* masterLocator);
+
         OpenThreads::Mutex                  _writeBufferMutex;
         osg::ref_ptr<BufferData>            _currentBufferData;
         osg::ref_ptr<BufferData>            _newBufferData;
@@ -131,6 +137,7 @@ class VPBTechnique : public TerrainTechnique
 
         inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();;
         inline static std::mutex _constraint_mutex;  // protects the _constraintGroup;
+        static osg::Vec2d*                  _randomOffsets;
 };
 
 }

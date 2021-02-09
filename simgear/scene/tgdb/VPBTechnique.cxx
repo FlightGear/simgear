@@ -35,14 +35,15 @@
 #include <osg/Math>
 #include <osg/Timer>
 
-
 #include <simgear/debug/logstream.hxx>
+#include <simgear/math/sg_random.h>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 
 #include "VPBTechnique.hxx"
+#include "TreeBin.hxx"
 
 using namespace osgTerrain;
 using namespace simgear;
@@ -157,12 +158,14 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         else
         {
             applyColorLayers(*buffer, masterLocator);
+            applyTrees(*buffer, masterLocator);
         }
     }
     else
     {
         generateGeometry(*buffer, masterLocator, centerModel);
         applyColorLayers(*buffer, masterLocator);
+        applyTrees(*buffer, masterLocator);
     }
 
     if (buffer->_transform.valid()) buffer->_transform->setThreadSafeRefUnref(true);
@@ -1510,6 +1513,229 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
             stateset->setTextureAttributeAndModes(layerNum, texture1D, osg::StateAttribute::ON);
         }
     }
+}
+
+double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
+{
+    return a.x() * b.y() - b.x() * a.y();
+}
+
+osg::Vec2d* VPBTechnique::_randomOffsets = 0;
+
+osg::Vec2d VPBTechnique::getRandomOffset(int lon, int lat)
+{
+    const unsigned initial_seed = 42;
+    const int N_rnd = 1; // 1 is a uniform random distribution, increase to 5 or
+                         // more for plantation
+    const int bits = 5;
+    const int N    = 1 << (2 * bits);
+    const int N_2  = 1 <<      bits;
+    const int mask = N_2 - 1;
+
+    if (!_randomOffsets)
+    {
+        _randomOffsets = new osg::Vec2d[N];
+        mt seed;
+        mt_init(&seed, initial_seed);
+
+        for (int i = 0; i < N; i++)
+        {
+            double x = 0.0;
+            double y = 0.0;
+
+            for (int j = 0; j < N_rnd; j++)
+            {
+                x += mt_rand(&seed);
+                y += mt_rand(&seed);
+            }
+
+            x = x / N_rnd - 0.5;
+            y = y / N_rnd - 0.5;
+            _randomOffsets[i].set(x, y);
+        }
+
+    }
+
+    return _randomOffsets[N_2 * (lat & mask) + (lon & mask)];
+}
+
+void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
+{
+    bool use_random_vegetation = false;
+    float vegetation_density = 1.0; 
+    int vegetation_lod_range = 6;
+    float randomness = 1.0;
+
+    SGPropertyNode* propertyNode = _options->getPropertyNode().get();
+
+    if (propertyNode) {
+        use_random_vegetation = propertyNode->getBoolValue("/sim/rendering/random-vegetation", use_random_vegetation);
+        vegetation_density = propertyNode->getFloatValue("/sim/rendering/vegetation-density", vegetation_density);
+        vegetation_lod_range = propertyNode->getIntValue("/sim/rendering/vegetation-lod", vegetation_lod_range);
+    }
+
+    // Do not generate vegetation for tiles too far away or if we explicitly don't generate vegetation
+    if ((!use_random_vegetation) || (_terrainTile->getTileID().level < vegetation_lod_range)) {
+        return;
+    }
+
+    SGMaterialLibPtr matlib  = _options->getMaterialLib();
+    SGMaterial* mat = 0;
+    osg::Vec3d world;
+    SGGeod loc;
+    SGGeoc cloc;
+
+    if (matlib)
+    {
+        // Determine the center of the tile, sadly non-trivial.
+        osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
+        masterLocator->convertLocalToModel(tileloc, world);
+        const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
+        loc = SGGeod::fromCart(world2);
+        cloc = SGGeoc::fromCart(world2);
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
+        SGMaterialCache* matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
+        mat = matcache->find("EvergreenForest");
+        delete matcache;
+    }
+
+    // Should probably be an error if we can't find a material, but we
+    // return for now.
+
+    if (!mat)
+    {
+        return;
+    }
+
+    TreeBin* bin = new TreeBin();
+    bin->texture = mat->get_tree_texture();
+    bin->teffect = mat->get_tree_effect();
+    bin->range   = mat->get_tree_range();
+    bin->width   = mat->get_tree_width();
+    bin->height  = mat->get_tree_height();
+    bin->texture_varieties = mat->get_tree_varieties();
+
+    const osg::Matrixd R_vert = osg::Matrixd::rotate(
+     M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
+     loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0),
+     0.0, osg::Vec3d(1.0, 0.0, 0.0));
+
+    const osg::Array* vertices = buffer._geometry->getVertexArray();
+    const osg::Array* texture_coords = buffer._geometry->getTexCoordArray(0);
+    osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
+    osg::Image* image = colorLayer->getImage();
+
+    // Just want the first primitive set, not the others which will be the "skirts" below.
+    const osg::PrimitiveSet* primSet = buffer._geometry->getPrimitiveSet(0);
+    const osg::DrawElements* drawElements = primSet->getDrawElements();
+    const unsigned int triangle_count = drawElements->getNumPrimitives();
+
+    const double lon          = loc.getLongitudeRad();
+    const double lat          = loc.getLatitudeRad();
+    const double clon         = cloc.getLongitudeRad();
+    const double clat         = cloc.getLatitudeRad();
+    const double r_E_lat      = /* 6356752.3 */ 6.375993e+06;
+    const double r_E_lon      = /* 6378137.0 */ 6.389377e+06;
+    const double C            = r_E_lon * cos(lat);
+    const double one_over_C   = (fabs(C) > 1.0e-4) ? (1.0 / C) : 0.0;
+    const double one_over_r_E = 1.0 / r_E_lat;
+    const double delta_lat = sqrt(1000.0 / vegetation_density) / r_E_lat;
+    const double delta_lon = sqrt(1000.0 / vegetation_density) / (r_E_lon * cos(loc.getLatitudeRad()));
+
+    const osg::Matrix rotation_vertices_c = osg::Matrix::rotate(
+     M_PI / 2 - clat, osg::Vec3d(0.0, 1.0, 0.0),
+     clon, osg::Vec3d(0.0, 0.0, 1.0),
+     0.0, osg::Vec3d(1.0, 0.0, 0.0));
+
+    const osg::Matrix rotation_vertices_g = osg::Matrix::rotate(
+     M_PI / 2 - lat, osg::Vec3d(0.0, 1.0, 0.0),
+     lon, osg::Vec3d(0.0, 0.0, 1.0),
+     0.0, osg::Vec3d(1.0, 0.0, 0.0));
+
+    for (unsigned int i = 0; i < triangle_count; i++)
+    {
+        const int i0 = drawElements->index(3 * i);
+        const int i1 = drawElements->index(3 * i + 1);
+        const int i2 = drawElements->index(3 * i + 2);
+
+        const osg::Vec3* v0 = (osg::Vec3*) vertices->getDataPointer(i0);
+        const osg::Vec3* v1 = (osg::Vec3*) vertices->getDataPointer(i1);
+        const osg::Vec3* v2 = (osg::Vec3*) vertices->getDataPointer(i2);
+
+        const osg::Vec3d v_0 = *v0;
+        const osg::Vec3d v_x = *v1 - *v0;
+        const osg::Vec3d v_y = *v2 - *v0;
+
+        osg::Vec3 n = v_x ^ v_y;
+        n /= n.length();
+
+        const osg::Vec3d v_0_g = R_vert * *v0;
+        const osg::Vec3d v_1_g = R_vert * *v1;
+        const osg::Vec3d v_2_g = R_vert * *v2;
+
+        const osg::Vec2d ll_0 = osg::Vec2d(v_0_g.y() * one_over_C + lon, -v_0_g.x() * one_over_r_E + lat);
+        const osg::Vec2d ll_1 = osg::Vec2d(v_1_g.y() * one_over_C + lon, -v_1_g.x() * one_over_r_E + lat);
+        const osg::Vec2d ll_2 = osg::Vec2d(v_2_g.y() * one_over_C + lon, -v_2_g.x() * one_over_r_E + lat);
+
+        const osg::Vec2d ll_O = ll_0;
+        const osg::Vec2d ll_x = osg::Vec2d((v_1_g.y() - v_0_g.y()) * one_over_C, -(v_1_g.x() - v_0_g.x()) * one_over_r_E);
+        const osg::Vec2d ll_y = osg::Vec2d((v_2_g.y() - v_0_g.y()) * one_over_C, -(v_2_g.x() - v_0_g.x()) * one_over_r_E);
+
+        const int off_x = ll_O.x() / delta_lon;
+        const int off_y = ll_O.y() / delta_lat;
+        const int min_lon = min(min(ll_0.x(), ll_1.x()), ll_2.x()) / delta_lon;
+        const int max_lon = max(max(ll_0.x(), ll_1.x()), ll_2.x()) / delta_lon;
+        const int min_lat = min(min(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
+        const int max_lat = max(max(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
+
+        const osg::Vec2* t0 = (osg::Vec2*) texture_coords->getDataPointer(i0);
+        const osg::Vec2* t1 = (osg::Vec2*) texture_coords->getDataPointer(i1);
+        const osg::Vec2* t2 = (osg::Vec2*) texture_coords->getDataPointer(i2);
+
+        const osg::Vec2d t_0 = *t0;
+        const osg::Vec2d t_x = *t1 - *t0;
+        const osg::Vec2d t_y = *t2 - *t0;
+
+        const double D = det2(ll_x, ll_y);
+
+        for (int lat_int = min_lat - 1; lat_int <= max_lat + 1; lat_int++)
+        {
+            const double lat = (lat_int - off_y) * delta_lat;
+
+            for (int lon_int = min_lon - 1; lon_int <= max_lon + 1; lon_int++)
+            {
+                const double lon = (lon_int - off_x) * delta_lon;
+                const osg::Vec2d ro = getRandomOffset(lon_int, lat_int) * randomness;
+                const osg::Vec2d p(lon + delta_lon * ro.x(), lat + delta_lat * ro.y());
+                const double x = det2(ll_x, p) / D;
+                const double y = det2(p, ll_y) / D;
+
+                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0))
+                {
+                    continue;
+                }
+
+                const osg::Vec2 tcp = t_x * x + t_y * y + t_0;
+                const osg::Vec4 tc = image->getColor(tcp);
+                const int tc_r = floor(tc.r() * 255.0 + 0.5);
+
+                if ((tc_r < 22) || (24 < tc_r))
+                {
+                    continue;
+                }
+
+                const osg::Vec3 vp = v_x * x + v_y * y + v_0;
+                bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()), SGVec3f(n.x(), n.y(), n.z()));
+            }
+
+        }
+
+    }
+
+    SGTreeBinList randomForest;
+    randomForest.push_back(bin);
+    osg::Group* trees = createForest(randomForest, R_vert,_options, 1);
+    buffer._transform->addChild(trees);
 }
 
 void VPBTechnique::update(osg::NodeVisitor& nv)

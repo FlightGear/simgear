@@ -84,6 +84,6 @@ void clearSharedTreeGeometry();
 typedef std::list<TreeBin*> SGTreeBinList;
 
 osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
-                         const SGReaderWriterOptions* options);
+                         const SGReaderWriterOptions* options, int depth=3);
 }
 #endif

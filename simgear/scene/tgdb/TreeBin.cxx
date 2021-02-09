@@ -368,7 +368,7 @@ struct QuadTreeCleaner : public osg::NodeVisitor
 // primitive tree geometry for all the forests of the same type.
 
 osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
-                         const SGReaderWriterOptions* options)
+                         const SGReaderWriterOptions* options, int depth)
 {
     Matrix transInv = Matrix::inverse(transform);
     static Matrix ident;
@@ -417,7 +417,7 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
         // Now, create a quadtree for the forest.
         ShaderGeometryQuadtree
             quadtree(GetTreeCoord(), AddTreesLeafObject(),
-                     SG_TREE_QUAD_TREE_DEPTH,
+                     depth,
                      MakeTreesLeaf(forest->range, forest->texture_varieties,
                                    forest->width, forest->height, effect));
         // Transform tree positions from the "geocentric" positions we

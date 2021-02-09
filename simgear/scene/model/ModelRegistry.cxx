@@ -993,26 +993,34 @@ struct OSGOptimizePolicy : public OptimizeModelPolicy {
             CleanTechniqueVisitor ctv;
             optimized->accept(ctv);
 
+            SGSceneFeatures* features = SGSceneFeatures::instance();
+
             // Adjust the LOD ranges as required.
-            double rangeFactor = SGSceneFeatures::instance()->getVPBRangeFactor();
-            double maxRange = SGSceneFeatures::instance()->getVPBMaxRange();
+            double rangeFactor = features->getVPBRangeFactor();
+            double maxRange = features->getVPBMaxRange();
             AdjustLODVisitor alv = AdjustLODVisitor(rangeFactor, maxRange);
             optimized->accept(alv);
 
             osg::ref_ptr<osgTerrain::Terrain> terrain = findTopMostNodeOfType<osgTerrain::Terrain>(optimized.get());
+            osg::ref_ptr<osgTerrain::TerrainTile> terrainTile = findTopMostNodeOfType<osgTerrain::TerrainTile>(optimized.get());
 
             if (terrain != NULL) {
-                // Top level
-                terrain->setSampleRatio(1.0);
-                terrain->setVerticalScale(1.0);
-                terrain->setTerrainTechniquePrototype(new VPBTechnique(sgopt));
+                // Top level.  This is likely to have the default GeometryTechnique already assigned which we need to replace with our own
+                terrain->setSampleRatio(features->getVPBSampleRatio());
+                terrain->setVerticalScale(features->getVPBVerticalScale());
+                terrain->setTerrainTechniquePrototype(new VPBTechnique(sgopt));         
+                if (terrainTile != NULL) {
+                    terrainTile->setTerrainTechnique(new VPBTechnique(sgopt));
+                    terrainTile->setDirty(true);
+                } else {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, "VPB TerrainTile not found");
+                }
             } else {
                 // no Terrain node present insert one above the loaded model.  
                 terrain = new osgTerrain::Terrain;
-                terrain->setSampleRatio(1.0);
-                terrain->setVerticalScale(1.0);
+                terrain->setSampleRatio(features->getVPBSampleRatio());
+                terrain->setVerticalScale(features->getVPBVerticalScale());
                 terrain->setTerrainTechniquePrototype(new VPBTechnique(sgopt));
-                //SG_LOG(SG_TERRAIN, SG_ALERT, "Creating Terrain Node for " << fileName);
 
                 // if CoordinateSystemNode is present copy it's contents into the Terrain, and discard it.
                 osg::CoordinateSystemNode* csn = findTopMostNodeOfType<osg::CoordinateSystemNode>(optimized.get());

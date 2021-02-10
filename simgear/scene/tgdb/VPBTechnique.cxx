@@ -1652,26 +1652,30 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
      lon, osg::Vec3d(0.0, 0.0, 1.0),
      0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
+    const osg::Vec3* vertexPtr = static_cast<const osg::Vec3*>(vertices->getDataPointer());
+    const osg::Vec2* texPtr = static_cast<const osg::Vec2*>(texture_coords->getDataPointer());
+
+    
     for (unsigned int i = 0; i < triangle_count; i++)
     {
         const int i0 = drawElements->index(3 * i);
         const int i1 = drawElements->index(3 * i + 1);
         const int i2 = drawElements->index(3 * i + 2);
 
-        const osg::Vec3* v0 = (osg::Vec3*) vertices->getDataPointer(i0);
-        const osg::Vec3* v1 = (osg::Vec3*) vertices->getDataPointer(i1);
-        const osg::Vec3* v2 = (osg::Vec3*) vertices->getDataPointer(i2);
+        const osg::Vec3 v0 = vertexPtr[i0];
+        const osg::Vec3 v1 = vertexPtr[i1];
+        const osg::Vec3 v2 = vertexPtr[i2];
 
-        const osg::Vec3d v_0 = *v0;
-        const osg::Vec3d v_x = *v1 - *v0;
-        const osg::Vec3d v_y = *v2 - *v0;
+        const osg::Vec3d v_0 = v0;
+        const osg::Vec3d v_x = v1 - v0;
+        const osg::Vec3d v_y = v2 - v0;
 
         osg::Vec3 n = v_x ^ v_y;
         n /= n.length();
 
-        const osg::Vec3d v_0_g = R_vert * *v0;
-        const osg::Vec3d v_1_g = R_vert * *v1;
-        const osg::Vec3d v_2_g = R_vert * *v2;
+        const osg::Vec3d v_0_g = R_vert * v0;
+        const osg::Vec3d v_1_g = R_vert * v1;
+        const osg::Vec3d v_2_g = R_vert * v2;
 
         const osg::Vec2d ll_0 = osg::Vec2d(v_0_g.y() * one_over_C + lon, -v_0_g.x() * one_over_r_E + lat);
         const osg::Vec2d ll_1 = osg::Vec2d(v_1_g.y() * one_over_C + lon, -v_1_g.x() * one_over_r_E + lat);
@@ -1688,13 +1692,13 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         const int min_lat = min(min(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
         const int max_lat = max(max(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
 
-        const osg::Vec2* t0 = (osg::Vec2*) texture_coords->getDataPointer(i0);
-        const osg::Vec2* t1 = (osg::Vec2*) texture_coords->getDataPointer(i1);
-        const osg::Vec2* t2 = (osg::Vec2*) texture_coords->getDataPointer(i2);
+        const osg::Vec2 t0 = texPtr[i0];
+        const osg::Vec2 t1 = texPtr[i1];
+        const osg::Vec2 t2 = texPtr[i2];
 
-        const osg::Vec2d t_0 = *t0;
-        const osg::Vec2d t_x = *t1 - *t0;
-        const osg::Vec2d t_y = *t2 - *t0;
+        const osg::Vec2d t_0 = t0;
+        const osg::Vec2d t_x = t1 - t0;
+        const osg::Vec2d t_y = t2 - t0;
 
         const double D = det2(ll_x, ll_y);
 

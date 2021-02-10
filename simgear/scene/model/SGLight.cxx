@@ -26,6 +26,7 @@
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
+#include <simgear/props/props_io.hxx>
 
 #include "animation.hxx"
 
@@ -77,7 +78,7 @@ SGLight::appendLight(const SGPropertyNode *configNode,
                      const osgDB::Options *options)
 {
     //-- create return variable
-    osg::MatrixTransform *align = new osg::MatrixTransform;
+    osg::ref_ptr<osg::MatrixTransform> align = new osg::MatrixTransform;
 
     SGLight *light = new SGLight(align);
     align->addChild(light);
@@ -85,9 +86,10 @@ SGLight::appendLight(const SGPropertyNode *configNode,
     //-- copy config to prop tree --
     const std::string propPath {"/scenery/lights"};
     const std::string propName {"light"};
-    SGPropertyNode *_pConfig = simgear::getPropertyRoot()->getNode(propPath, true)
+    SGPropertyNode_ptr _pConfig = simgear::getPropertyRoot()->getNode(propPath, true)
         ->addChild(propName);
-    configNode->copy(_pConfig); 
+    
+    copyProperties(configNode, _pConfig);
     
     //-- setup osg::NodeCallback --
     const SGPropertyNode *dim_factor = configNode->getChild("dim-factor");

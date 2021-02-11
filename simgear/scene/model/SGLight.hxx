@@ -40,28 +40,11 @@ public:
     public:
         UpdateCallback(const SGExpressiond *expression) : _expression(expression) {}
         UpdateCallback() {}
-        
-        void configure(const osg::Vec4 ambient, const osg::Vec4 diffuse, const osg::Vec4 specular) {
-            _ambient = ambient;
-            _diffuse = diffuse;
-            _specular = specular;
-        }
 
-        virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
-            double value = 1;
-            if (_expression) {
-                value = _expression->getValue();
-            } 
-            if (value != _prev_value) {
-                SGLight *light = dynamic_cast<SGLight *>(node);
-                if (light) {
-                    light->setAmbient(_ambient * value);
-                    light->setDiffuse(_diffuse * value);
-                    light->setSpecular(_specular * value);
-                }
-                _prev_value = value;
-            }
-        }
+        void configure(const osg::Vec4& ambient, const osg::Vec4& diffuse, const osg::Vec4& specular);
+
+        void operator()(osg::Node* node, osg::NodeVisitor* nv) override;
+
     private:
         SGSharedPtr<SGExpressiond const> _expression {nullptr};
         osg::Vec4 _ambient, _diffuse, _specular;
@@ -74,9 +57,9 @@ public:
 
     META_Node(simgear, SGLight);
 
-    static osg::Node *appendLight(const SGPropertyNode *configNode,
-                                  SGPropertyNode *modelRoot,
-                                  const osgDB::Options *options);
+    static osg::ref_ptr<osg::Node> appendLight(const SGPropertyNode* configNode,
+                                               SGPropertyNode* modelRoot,
+                                               const osgDB::Options* options);
 
     void configure(const SGPropertyNode *config_root);
 

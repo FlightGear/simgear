@@ -33,27 +33,58 @@
 class SGLightDebugListener : public SGPropertyChangeListener {
 public:
     SGLightDebugListener(osg::Switch *sw) : _sw(sw) {}
-    virtual void valueChanged(SGPropertyNode *node) {
+    void valueChanged(SGPropertyNode* node) override
+    {
         _sw->setValue(0, node->getBoolValue());
     }
+
 private:
     osg::ref_ptr<osg::Switch> _sw;
 };
+
+
+void SGLight::UpdateCallback::configure(const osg::Vec4& ambient,
+                                        const osg::Vec4& diffuse,
+                                        const osg::Vec4& specular)
+{
+    _ambient = ambient;
+    _diffuse = diffuse;
+    _specular = specular;
+}
+
+void SGLight::UpdateCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{
+    double value = 1.0;
+    if (_expression) {
+        value = _expression->getValue();
+    }
+    if (value != _prev_value) {
+        SGLight* light = dynamic_cast<SGLight*>(node);
+        if (light) {
+            light->setAmbient(_ambient * value);
+            light->setDiffuse(_diffuse * value);
+            light->setSpecular(_specular * value);
+        }
+        _prev_value = value;
+    }
+}
 
 class SGLightConfigListener : public SGPropertyChangeListener {
 public:
     SGLightConfigListener(SGLight *light) : _light(light) {}
 
-    virtual void valueChanged(SGPropertyNode *node) {
+    void valueChanged(SGPropertyNode* node) override
+    {
         while (strcmp(node->getName(), "light") && node->getParent()) {
             node = node->getParent();
         }
         _light->configure(node);
-        auto *cb = _light->getUpdateCallback();
-        if (cb != nullptr) {
-            dynamic_cast<SGLight::UpdateCallback*>(cb)->configure(_light->getAmbient(), _light->getDiffuse(), _light->getSpecular());
+        auto cb = dynamic_cast<SGLight::UpdateCallback*>(_light->getUpdateCallback());
+        if (cb) {
+            cb->configure(_light->getAmbient(), _light->getDiffuse(), _light->getSpecular());
         }
     }
+
 private:
     SGLight *_light;
 };
@@ -72,10 +103,10 @@ SGLight::SGLight(const SGLight& l, const osg::CopyOp& copyop) :
     _spot_cutoff(l._spot_cutoff)
 {}
 
-osg::Node *
-SGLight::appendLight(const SGPropertyNode *configNode,
-                     SGPropertyNode *modelRoot,
-                     const osgDB::Options *options)
+osg::ref_ptr<osg::Node>
+SGLight::appendLight(const SGPropertyNode* configNode,
+                     SGPropertyNode* modelRoot,
+                     const osgDB::Options* options)
 {
     //-- create return variable
     osg::ref_ptr<osg::MatrixTransform> align = new osg::MatrixTransform;
@@ -88,7 +119,7 @@ SGLight::appendLight(const SGPropertyNode *configNode,
     const std::string propName {"light"};
     SGPropertyNode_ptr _pConfig = simgear::getPropertyRoot()->getNode(propPath, true)
         ->addChild(propName);
-    
+
     copyProperties(configNode, _pConfig);
     
     //-- setup osg::NodeCallback --

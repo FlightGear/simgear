@@ -20,15 +20,16 @@
 
 #include "HTTPRepository.hxx"
 
-#include <iostream>
-#include <cassert>
 #include <algorithm>
-#include <sstream>
+#include <cassert>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <limits>
 #include <map>
 #include <set>
-#include <fstream>
-#include <limits>
-#include <cstdlib>
+#include <sstream>
 
 #include <fcntl.h>
 
@@ -144,8 +145,8 @@ class HTTPDirectory
 
         HTTPRepository::EntryType type;
         std::string name, hash;
-		size_t sizeInBytes = 0;
-		SGPath path; // absolute path on disk
+        size_t sizeInBytes = 0;
+        SGPath path; // absolute path on disk
     };
 
     typedef std::vector<ChildInfo> ChildInfoList;
@@ -219,48 +220,48 @@ public:
             return;
         }
 
-		char* buf = nullptr;
-		size_t bufSize = 0;
+        char* buf = nullptr;
+        size_t bufSize = 0;
 
-                for (auto &child : children) {
-                  if (child.type != HTTPRepository::FileType)
+        for (auto& child : children) {
+            if (child.type != HTTPRepository::FileType)
+                continue;
+
+            if (child.path.exists())
+                continue;
+
+            SGPath cp = _repository->installedCopyPath;
+            cp.append(relativePath());
+            cp.append(child.name);
+            if (!cp.exists()) {
+                continue;
+            }
+
+            SGBinaryFile src(cp);
+            SGBinaryFile dst(child.path);
+            src.open(SG_IO_IN);
+            dst.open(SG_IO_OUT);
+
+            if (bufSize < cp.sizeInBytes()) {
+                bufSize = cp.sizeInBytes();
+                free(buf);
+                buf = (char*)malloc(bufSize);
+                if (!buf) {
                     continue;
+                }
+            }
 
-                  if (child.path.exists())
-                    continue;
+            src.read(buf, cp.sizeInBytes());
+            dst.write(buf, cp.sizeInBytes());
+            src.close();
+            dst.close();
 
-                  SGPath cp = _repository->installedCopyPath;
-                  cp.append(relativePath());
-                  cp.append(child.name);
-                  if (!cp.exists()) {
-                    continue;
-                  }
+            // reset caching
+            child.path.set_cached(false);
+            child.path.set_cached(true);
 
-                  SGBinaryFile src(cp);
-                  SGBinaryFile dst(child.path);
-                  src.open(SG_IO_IN);
-                  dst.open(SG_IO_OUT);
-
-                  if (bufSize < cp.sizeInBytes()) {
-                    bufSize = cp.sizeInBytes();
-                    free(buf);
-                    buf = (char *)malloc(bufSize);
-                    if (!buf) {
-                      continue;
-                    }
-                  }
-
-                  src.read(buf, cp.sizeInBytes());
-                  dst.write(buf, cp.sizeInBytes());
-                  src.close();
-                  dst.close();
-
-                  // reset caching
-                  child.path.set_cached(false);
-                  child.path.set_cached(true);
-
-                  std::string hash = computeHashForPath(child.path);
-                  updatedFileContents(child.path, hash);
+            std::string hash = computeHashForPath(child.path);
+            updatedFileContents(child.path, hash);
                 }
 
                 free(buf);
@@ -450,6 +451,7 @@ public:
           return;
         }
 
+        compressedBytes = p.sizeInBytes();
         buffer = (uint8_t *)malloc(bufferSize);
       }
 
@@ -462,6 +464,7 @@ public:
           }
 
           size_t rd = file.read((char*)buffer, bufferSize);
+          repo->bytesExtracted += rd;
           extractor.extractBytes(buffer, rd);
 
           if (file.eof()) {
@@ -488,7 +491,13 @@ public:
           return HTTPRepoPrivate::ProcessContinue;
       }
 
+      size_t archiveSizeBytes() const
+      {
+          return compressedBytes;
+      }
+
       ~ArchiveExtractTask() { free(buffer); }
+
 
     private:
       // intentionally small so we extract incrementally on Windows
@@ -501,6 +510,7 @@ public:
       uint8_t *buffer = nullptr;
       SGBinaryFile file;
       ArchiveExtractor extractor;
+      std::size_t compressedBytes;
     };
 
     using ArchiveExtractTaskPtr = std::shared_ptr<ArchiveExtractTask>;
@@ -557,7 +567,7 @@ public:
                         auto cb = [t](HTTPRepoPrivate* repo) {
                             return t->run(repo);
                         };
-
+                        _repository->bytesToExtract += t->archiveSizeBytes();
                         _repository->addTask(cb);
                     } else {
                         SG_LOG(SG_TERRASYNC, SG_ALERT, "Unable to remove old file/directory " << removePath);
@@ -953,6 +963,11 @@ size_t HTTPRepository::bytesDownloaded() const
     return result;
 }
 
+size_t HTTPRepository::bytesToExtract() const
+{
+    return _d->bytesToExtract - _d->bytesExtracted;
+}
+
 void HTTPRepository::setInstalledCopyPath(const SGPath& copyPath)
 {
     _d->installedCopyPath = copyPath;
@@ -1315,7 +1330,7 @@ HTTPRepository::failure() const
         }
 
         Dir dir(absPath);
-		bool result = dir.remove(true);
+        bool result = dir.remove(true);
         return result;
     }
 

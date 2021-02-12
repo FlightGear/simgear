@@ -60,22 +60,23 @@ public:
   HTTPRepository::FailureVec failures;
   size_t maxPermittedFailures = 16;
 
-  HTTPRepoPrivate(HTTPRepository *parent)
-      : p(parent), isUpdating(false), status(HTTPRepository::REPO_NO_ERROR),
-        totalDownloaded(0) {
-    ;
+  HTTPRepoPrivate(HTTPRepository* parent)
+      : p(parent)
+  {
   }
 
   ~HTTPRepoPrivate();
 
   HTTPRepository *p; // link back to outer
-  HTTP::Client *http;
+  HTTP::Client* http = nullptr;
   std::string baseUrl;
   SGPath basePath;
-  bool isUpdating;
-  HTTPRepository::ResultCode status;
+  bool isUpdating = false;
+  HTTPRepository::ResultCode status = HTTPRepository::REPO_NO_ERROR;
   HTTPDirectory_ptr rootDir;
-  size_t totalDownloaded;
+  size_t totalDownloaded = 0;
+  size_t bytesToExtract = 0;
+  size_t bytesExtracted = 0;
   HTTPRepository::SyncPredicate syncPredicate;
 
   HTTP::Request_ptr updateFile(HTTPDirectory *dir, const std::string &name,

@@ -73,6 +73,8 @@ public:
 
   virtual size_t bytesDownloaded() const;
 
+  virtual size_t bytesToExtract() const;
+
   /**
    * optionally provide the location of an installer copy of this
    * repository. When a file is missing it will be copied from this tree.

@@ -107,6 +107,7 @@ private:
     SGPropertyNode_ptr _transferRateBytesSecNode;
     SGPropertyNode_ptr _pendingKbytesNode;
     SGPropertyNode_ptr _downloadedKBtesNode;
+    SGPropertyNode_ptr _extractPendingKbytesNode;
     SGPropertyNode_ptr _maxErrorsNode;
 
     // we manually bind+init TerraSync during early startup

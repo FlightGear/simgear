@@ -165,6 +165,7 @@ public:
     SGTimeStamp stamp;
     bool busy = false; ///< is the slot working or idle
     unsigned int pendingKBytes = 0;
+    unsigned int pendingExtractKBytes = 0;
     unsigned int nextWarnTimeout = 0;
 };
 
@@ -197,18 +198,18 @@ static unsigned int syncSlotForType(SyncItem::Type ty)
 
 struct TerrasyncThreadState
 {
-    TerrasyncThreadState() :
-        _busy(false),
-        _stalled(false),
-        _hasServer(false),
-        _fail_count(0),
-        _updated_tile_count(0),
-        _success_count(0),
-        _consecutive_errors(0),
-        _cache_hits(0),
-        _transfer_rate(0),
-        _total_kb_downloaded(0),
-        _totalKbPending(0)
+    TerrasyncThreadState() : _busy(false),
+                             _stalled(false),
+                             _hasServer(false),
+                             _fail_count(0),
+                             _updated_tile_count(0),
+                             _success_count(0),
+                             _consecutive_errors(0),
+                             _cache_hits(0),
+                             _transfer_rate(0),
+                             _total_kb_downloaded(0),
+                             _totalKbPending(0),
+                             _extractTotalKbPending(0)
     {}
 
     bool _busy;
@@ -223,6 +224,7 @@ struct TerrasyncThreadState
     // kbytes, not bytes, because bytes might overflow 2^31
     int _total_kb_downloaded;
     unsigned int _totalKbPending;
+    unsigned int _extractTotalKbPending;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -582,6 +584,7 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
 #endif
             // convert bytes to kbytes here
             slot.pendingKBytes = (slot.repository->bytesToDownload() >> 10);
+            slot.pendingExtractKBytes = (slot.repository->bytesToExtract() >> 10);
             return; // easy, still working
         }
 
@@ -611,6 +614,7 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         slot.busy = false;
         slot.repository.reset();
         slot.pendingKBytes = 0;
+        slot.pendingExtractKBytes = 0;
         slot.currentItem = {};
     }
 
@@ -646,7 +650,8 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         slot.nextWarnTimeout = 30 * 1000;
         slot.stamp.stamp();
         slot.busy = true;
-        slot.pendingKBytes = slot.repository->bytesToDownload();
+        slot.pendingKBytes = slot.repository->bytesToDownload() >> 10;
+        slot.pendingExtractKBytes = slot.repository->bytesToExtract() >> 10;
 
         SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
     }
@@ -791,19 +796,23 @@ void SGTerraSync::WorkerThread::runInternal()
 
         bool anySlotBusy = false;
         unsigned int newPendingCount = 0;
+        unsigned int newExtractCount = 0; // how much is left to extract
 
         // update each sync slot in turn
         for (unsigned int slot=0; slot < NUM_SYNC_SLOTS; ++slot) {
             updateSyncSlot(_syncSlots[slot]);
             newPendingCount += _syncSlots[slot].pendingKBytes;
+            newExtractCount += _syncSlots[slot].pendingExtractKBytes;
             anySlotBusy |= _syncSlots[slot].busy;
         }
 
         {
             std::lock_guard<std::mutex> g(_stateLock);
             _state._totalKbPending = newPendingCount; // approximately atomic update
+            _state._extractTotalKbPending = newExtractCount;
             _state._busy = anySlotBusy;
         }
+
 
         if (!anySlotBusy) {
             // wait on the blocking deque here, otherwise we spin
@@ -1130,6 +1139,7 @@ void SGTerraSync::bind()
     _transferRateBytesSecNode = _terraRoot->getNode("transfer-rate-bytes-sec", true);
     _pendingKbytesNode = _terraRoot->getNode("pending-kbytes", true);
     _downloadedKBtesNode = _terraRoot->getNode("downloaded-kbytes", true);
+    _extractPendingKbytesNode = _terraRoot->getNode("extract-pending-kbytes", true);
     _enabledNode = _terraRoot->getNode("enabled", true);
     _availableNode = _terraRoot->getNode("available", true);
     _maxErrorsNode = _terraRoot->getNode("max-errors", true);
@@ -1155,6 +1165,7 @@ void SGTerraSync::unbind()
     _transferRateBytesSecNode.clear();
     _pendingKbytesNode.clear();
     _downloadedKBtesNode.clear();
+    _extractPendingKbytesNode.clear();
     _enabledNode.clear();
     _availableNode.clear();
     _maxErrorsNode.clear();
@@ -1191,6 +1202,7 @@ void SGTerraSync::update(double)
     _transferRateBytesSecNode->setIntValue(copiedState._transfer_rate);
     _pendingKbytesNode->setIntValue(copiedState._totalKbPending);
     _downloadedKBtesNode->setIntValue(copiedState._total_kb_downloaded);
+    _extractPendingKbytesNode->setIntValue(copiedState._extractTotalKbPending);
 
     _stalledNode->setBoolValue(_workerThread->isStalled());
     _activeNode->setBoolValue(worker_running);

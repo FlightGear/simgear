@@ -1,9 +1,5 @@
 cmake_minimum_required (VERSION 3.10)
 
-cmake_policy(SET CMP0054 NEW)
-cmake_policy(SET CMP0042 NEW)
-cmake_policy(SET CMP0067 NEW)
-
 # OpenGL VND policy : use the old definition for now, until we can audit this
 if(POLICY CMP0072)
   cmake_policy(SET CMP0072 OLD)
@@ -12,7 +8,6 @@ endif()
 if(POLICY CMP0093)
   cmake_policy(SET CMP0093 NEW)
 endif()
-
 
 message(STATUS "CMAKE Build type: ${CMAKE_BUILD_TYPE}")
 # Set a default build type if none was specified

@@ -239,7 +239,8 @@ IPAddress::IPAddress( const IPAddress& other ) :
 {
   if (other.addr) {
     addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
-    memcpy(addr, other.addr, sizeof(struct sockaddr_in));
+    if (addr)
+      memcpy(addr, other.addr, sizeof(struct sockaddr_in));
   }
 }
 
@@ -252,7 +253,8 @@ const IPAddress& IPAddress::operator=(const IPAddress& other)
 
   if (other.addr) {
     addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
-    memcpy(addr, other.addr, sizeof(struct sockaddr_in));
+    if (addr)
+      memcpy(addr, other.addr, sizeof(struct sockaddr_in));
   }
 
   return *this;

@@ -339,10 +339,12 @@ int main(int argc, char **argv) {
       char *home = getenv("HOME");
       if (!home) home = ".";
       path = malloc(strlen(home) + 1 + sizeof(".rblcheckrc"));
-      sprintf(path, "%s/.rblcheckrc", home);
-      if (!addzonefile(path))
-        addzonefile("/etc/rblcheckrc");
-      free(path);
+      if (path) {
+        sprintf(path, "%s/.rblcheckrc", home);
+        if (!addzonefile(path))
+          addzonefile("/etc/rblcheckrc");
+        free(path);
+      }
     }
   }
   if (!nzones)

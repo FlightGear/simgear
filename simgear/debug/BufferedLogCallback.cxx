@@ -67,8 +67,10 @@ void BufferedLogCallback::operator()(sgDebugClass c, sgDebugPriority p,
     vector_cstring::value_type msg;
     if (aMessage.size() >= d->m_maxLength) {
         msg = (vector_cstring::value_type) malloc(d->m_maxLength);
-        strncpy((char*) msg, aMessage.c_str(), d->m_maxLength - 1);
-        msg[d->m_maxLength - 1] = 0; // add final NULL byte
+        if (msg) {
+            strncpy((char*) msg, aMessage.c_str(), d->m_maxLength - 1);
+            msg[d->m_maxLength - 1] = 0; // add final NULL byte
+        }
     } else {
         msg = (vector_cstring::value_type) strdup(aMessage.c_str());
     }

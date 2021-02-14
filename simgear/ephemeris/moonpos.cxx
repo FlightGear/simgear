@@ -254,7 +254,7 @@ void MoonPos::updatePosition(double mjd, Star *ourSun)
     xv, yv, v, r, xh, yh, zh, zg, xe,
     Ls, Lm, D, F, geoRa, geoDec,
     cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl, rcoslatEcl,
-    FlesstwoD, MlesstwoD, twoD, twoM, twolat, alpha;
+    FlesstwoD, MlesstwoD, twoD, twoM, alpha;
 
   double max_loglux = -0.504030345621;
   double min_loglux = -4.39964634562;

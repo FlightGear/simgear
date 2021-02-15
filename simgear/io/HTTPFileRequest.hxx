@@ -25,6 +25,8 @@
 
 #include <simgear/io/iostreams/sgstream.hxx>
 
+#include <functional>
+
 namespace simgear
 {
 namespace HTTP
@@ -42,12 +44,25 @@ namespace HTTP
        *
        * @param url     Adress to download from
        * @param path    Path to file for saving response
+       * @append        If true we assume any existing file is partial download
+       *                and use simgear::HTTP::Request::setRange() to download
+       *                and append any remaining data. We don't currently
+       *                attempt to use an If-Range validator to protect against
+       *                any existing file containing incorrect data.
        */
-      FileRequest(const std::string& url, const std::string& path);
+      FileRequest(const std::string& url, const std::string& path, bool append=false);
+      
+      /*
+       * Set callback for each chunk of data we receive. Called with (nullptr,
+       * 0) when download has completed (successfully or unsuccesfully).
+       */
+      void setCallback(std::function<void (const void* data, size_t numbytes)> callback);
 
     protected:
       SGPath _filename;
       sg_ofstream _file;
+      bool _append;
+      std::function<void(const void* data, size_t numbytes)> _callback;
 
       virtual void responseHeadersComplete();
       virtual void gotBodyData(const char* s, int n);

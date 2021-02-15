@@ -28,28 +28,64 @@ namespace HTTP
 {
 
   //----------------------------------------------------------------------------
-  FileRequest::FileRequest(const std::string& url, const std::string& path):
+  FileRequest::FileRequest(const std::string& url, const std::string& path, bool append):
     Request(url, "GET"),
-    _filename(path)
+    _filename(path),
+    _append(append),
+    _callback()
   {
+    if (append && _filename.isFile()) {
+      size_t size = _filename.sizeInBytes();
+      if (size) {
+        // Only download remaining bytes.
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%zi-", size);
+        setRange(buffer);
+      }
+    }
+  }
 
+  void FileRequest::setCallback(std::function<void(const void* data, size_t numbytes)> callback)
+  {
+    _callback = callback;
   }
 
   //----------------------------------------------------------------------------
   void FileRequest::responseHeadersComplete()
   {
     Request::responseHeadersComplete();
+    SG_LOG(SG_GENERAL, SG_BULK, "FileRequest::responseHeadersComplete()"
+        << " responseCode()=" << responseCode()
+        << " responseReason()=" << responseReason()
+        << " _append=" << _append
+        );
 
-    if( responseCode() != 200 )
+    bool ok = false;
+    if (responseCode() == 200) {
+      ok = true;
+    }
+    else if (_append && (responseCode() == 206 || responseCode() == 416)) {
+      /* See comments for simgear::HTTP::Client::setRange(). */
+      SG_LOG(SG_IO, SG_ALERT, "_append is true so treating response code as success: "
+          << responseCode());
+      ok = true;
+    }
+    if (!ok) {
+      SG_LOG(SG_GENERAL, SG_ALERT, "failure. calling setFailure()."
+          << " responseCode()=" << responseCode()
+          << " responseReason()=" << responseReason()
+          );
       return setFailure(responseCode(), responseReason());
+    }
 
     if( !_filename.isNull() )
     {
       // TODO validate path? (would require to expose fgValidatePath somehow to
       //      simgear)
       _filename.create_dir(0755);
-
-      _file.open(_filename, std::ios::binary | std::ios::trunc | std::ios::out);
+      auto flags = std::ios::binary | std::ios::out | (_append ? std::ios::app : std::ios::trunc);
+      SG_LOG(SG_GENERAL, SG_DEBUG, "attempting to open file. _append=" << _append);
+      _file.open(_filename, flags);
     }
 
     if( !_file )
@@ -57,7 +93,7 @@ namespace HTTP
       SG_LOG
       (
         SG_IO,
-        SG_WARN,
+        SG_ALERT,
         "HTTP::FileRequest: failed to open file '" << _filename << "'"
       );
     }
@@ -78,12 +114,18 @@ namespace HTTP
     }
 
     _file.write(s, n);
+    if (_callback) {
+      _callback(s, n);
+    }
   }
 
   //----------------------------------------------------------------------------
   void FileRequest::onAlways()
   {
     _file.close();
+    if (_callback) {
+      _callback(nullptr, 0);
+    }
   }
 
 } // namespace HTTP

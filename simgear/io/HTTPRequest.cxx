@@ -128,6 +128,12 @@ void Request::setUrl(const std::string& url)
 }
 
 //------------------------------------------------------------------------------
+void Request::setRange(const std::string& range)
+{
+  _range = range;
+}
+
+//------------------------------------------------------------------------------
 void Request::requestStart()
 {
   setReadyState(OPENED);

@@ -202,7 +202,17 @@ void Client::update(int waitTimeout)
           }
 
           if (doProcess) {
+            bool ok = false;
+            SG_LOG(SG_IO, SG_DEBUG, "msg->data.result=" << msg->data.result);
             if (msg->data.result == 0) {
+              ok = true;
+            }
+            else if (req->range() != "" && (msg->data.result == 206 || msg->data.result == 416)) {
+              SG_LOG(SG_IO, SG_DEBUG, "req->range() is set (to '" << req->range() << "')"
+                      << " so treating as ok: msg->data.result=" << msg->data.result);
+              ok = true;
+            }
+            if (ok) {
               req->responseComplete();
             } else {
               SG_LOG(SG_IO, SG_WARN,
@@ -255,6 +265,10 @@ void Client::makeRequest(const Request_ptr& r)
     curl_easy_setopt(curlRequest, CURLOPT_WRITEDATA, r.get());
     curl_easy_setopt(curlRequest, CURLOPT_HEADERFUNCTION, requestHeaderCallback);
     curl_easy_setopt(curlRequest, CURLOPT_HEADERDATA, r.get());
+    unsigned long bps = r->getMaxBytesPerSec();
+    if (bps != 0) {
+        curl_easy_setopt(curlRequest, CURLOPT_MAX_RECV_SPEED_LARGE, bps);
+    }
 
 #if !defined(CURL_MAX_READ_SIZE)
 	const int CURL_MAX_READ_SIZE = 512 * 1024;
@@ -283,6 +297,12 @@ void Client::makeRequest(const Request_ptr& r)
         curl_easy_setopt(curlRequest, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
         curl_easy_setopt(curlRequest, CURLOPT_PROXYUSERPWD, d->proxyAuth.c_str());
       }
+    }
+
+    std::string range = r->range();
+    if (range != "") {
+        curl_easy_setopt(curlRequest, CURLOPT_RANGE, range.c_str());
+        SG_LOG(SG_GENERAL, SG_DEBUG, "Have added CURLOPT_RANGE: '" << range << "'");
     }
 
     const std::string method = strutils::lowercase (r->method());

@@ -126,11 +126,34 @@ public:
     void setBodyData( const SGPropertyNode* data );
 
     virtual void setUrl(const std::string& url);
+    
+    /*
+     * Set Range header, e.g. "1234-" to skip first 1234 bytes.
+     *
+     * If a range is specified, we treat http response codes 206 'Partial
+     * Content' and 416 'Range Not Satisfiable' both as success.
+     *
+     * The latter is unfortunate - e.g. with range='1234-' it is returned if
+     * the remote file is exactly 1234 bytes long, which for example will occur
+     * if we are updating a file that was fully downloaded previously.
+     */
+    virtual void setRange(const std::string& range);
 
     virtual std::string method() const
         { return _method; }
     virtual std::string url() const
         { return _url; }
+    virtual std::string range() const
+        { return _range; }
+    
+    /*
+     * Limits download speed using CURLOPT_MAX_RECV_SPEED_LARGE.
+     */
+    void setMaxBytesPerSec(unsigned long maxBytesPerSec)
+        { _maxBytesPerSec = maxBytesPerSec; }
+    
+    unsigned long getMaxBytesPerSec() const
+        { return _maxBytesPerSec; }
 
     Client* http() const
     { return _client; }
@@ -245,6 +268,7 @@ public:
 
     std::string   _method;
     std::string   _url;
+    std::string   _range;
     StringMap     _request_headers;
     std::string   _request_data;
     std::string   _request_media_type;
@@ -263,6 +287,7 @@ public:
     ReadyState    _ready_state;
     bool          _willClose;
     bool          _connectionCloseHeader;
+    unsigned long _maxBytesPerSec = 0;
 };
 
 typedef SGSharedPtr<Request> Request_ptr;

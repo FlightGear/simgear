@@ -26,13 +26,13 @@ namespace simgear
 {
 namespace HTTP
 {
-
   //----------------------------------------------------------------------------
   FileRequest::FileRequest(const std::string& url, const std::string& path, bool append):
     Request(url, "GET"),
     _filename(path),
     _append(append),
-    _callback()
+    _callback(nullptr),
+    _callback_ref(nullptr)
   {
     if (append && _filename.isFile()) {
       size_t size = _filename.sizeInBytes();
@@ -45,9 +45,10 @@ namespace HTTP
     }
   }
 
-  void FileRequest::setCallback(std::function<void(const void* data, size_t numbytes)> callback)
+  void FileRequest::setCallback(Callback callback, void* ref)
   {
     _callback = callback;
+    _callback_ref = ref;
   }
 
   //----------------------------------------------------------------------------
@@ -115,7 +116,7 @@ namespace HTTP
 
     _file.write(s, n);
     if (_callback) {
-      _callback(s, n);
+      _callback(_callback_ref, s, n);
     }
   }
 
@@ -124,7 +125,7 @@ namespace HTTP
   {
     _file.close();
     if (_callback) {
-      _callback(nullptr, 0);
+      _callback(_callback_ref, nullptr, 0);
     }
   }
 

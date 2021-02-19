@@ -244,40 +244,43 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
 
 				// FIXME: get proper error string from system
     if (!input.good()) {
-      sg_io_exception ex ("Problem reading file",
-			    sg_location(path,
-					XML_GetCurrentLineNumber(parser),
-					XML_GetCurrentColumnNumber(parser)),
-			    "SimGear XML Parser");
-      visitor.setParser(0);
-      XML_ParserFree(parser);
-      throw ex;
+        sg_io_exception ex("Problem reading file",
+                           sg_location(path,
+                                       XML_GetCurrentLineNumber(parser),
+                                       XML_GetCurrentColumnNumber(parser)),
+                           "SimGear XML Parser",
+                           false /* don't report */);
+        visitor.setParser(0);
+        XML_ParserFree(parser);
+        throw ex;
     }
 
     input.read(buf,16384);
     if (!XML_Parse(parser, buf, input.gcount(), false)) {
-      sg_io_exception ex (XML_ErrorString(XML_GetErrorCode(parser)),
-			    sg_location(path,
-					XML_GetCurrentLineNumber(parser),
-					XML_GetCurrentColumnNumber(parser)),
-			    "SimGear XML Parser");
-      visitor.setParser(0);
-      XML_ParserFree(parser);
-      throw ex;
+        sg_io_exception ex(XML_ErrorString(XML_GetErrorCode(parser)),
+                           sg_location(path,
+                                       XML_GetCurrentLineNumber(parser),
+                                       XML_GetCurrentColumnNumber(parser)),
+                           "SimGear XML Parser",
+                           false /* don't report */);
+        visitor.setParser(0);
+        XML_ParserFree(parser);
+        throw ex;
     }
 
   }
 
 				// Verify end of document.
   if (!XML_Parse(parser, buf, 0, true)) {
-    sg_io_exception ex (XML_ErrorString(XML_GetErrorCode(parser)),
-			  sg_location(path,
-				      XML_GetCurrentLineNumber(parser),
-				      XML_GetCurrentColumnNumber(parser)),
-			  "SimGear XML Parser");
-    visitor.setParser(0);
-    XML_ParserFree(parser);
-    throw ex;
+      sg_io_exception ex(XML_ErrorString(XML_GetErrorCode(parser)),
+                         sg_location(path,
+                                     XML_GetCurrentLineNumber(parser),
+                                     XML_GetCurrentColumnNumber(parser)),
+                         "SimGear XML Parser",
+                         false /* don't report */);
+      visitor.setParser(0);
+      XML_ParserFree(parser);
+      throw ex;
   }
 
   visitor.setParser(0);
@@ -300,8 +303,8 @@ readXML (const SGPath &path, XMLVisitor &visitor)
       throw;
     }
   } else {
-    throw sg_io_exception("Failed to open file", sg_location(path),
-			  "SimGear XML Parser");
+      throw sg_io_exception("Failed to open file", sg_location(path),
+                            "SimGear XML Parser", false /* don't report */);
   }
   input.close();
 }
@@ -318,11 +321,12 @@ readXML (const char *buf, const int size, XMLVisitor &visitor)
   visitor.startXML();
 
   if (!XML_Parse(parser, buf, size, false)) {
-      sg_io_exception ex (XML_ErrorString(XML_GetErrorCode(parser)),
-			    sg_location("In-memory XML buffer",
-					XML_GetCurrentLineNumber(parser),
-					XML_GetCurrentColumnNumber(parser)),
-			    "SimGear XML Parser");
+      sg_io_exception ex(XML_ErrorString(XML_GetErrorCode(parser)),
+                         sg_location("In-memory XML buffer",
+                                     XML_GetCurrentLineNumber(parser),
+                                     XML_GetCurrentColumnNumber(parser)),
+                         "SimGear XML Parser",
+                         false /* don't report */);
       XML_ParserFree(parser);
       throw ex;
   }

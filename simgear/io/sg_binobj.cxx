@@ -552,10 +552,7 @@ bool SGBinObject::read_bin( const SGPath& file ) {
         withGZ.concat(".gz");
         fp = gzFileFromSGPath(withGZ, "rb");
         if (fp == nullptr) {
-            SG_LOG( SG_EVENT, SG_ALERT,
-               "ERROR: opening " << file << " or " << withGZ << " for reading!");
-
-            throw sg_io_exception("Error opening for reading (and .gz)", sg_location(file));
+            throw sg_io_exception("Error opening for reading (and .gz)", sg_location(file), {}, false);
         }
     }
 
@@ -569,7 +566,8 @@ bool SGBinObject::read_bin( const SGPath& file ) {
         int code = 0;
         const char* gzErrorString = gzerror(fp, &code);
         gzclose(fp);
-        throw sg_io_exception("Unable to read BTG header: " + string{gzErrorString} + ", code =" + std::to_string(code), sg_location(file));
+        throw sg_io_exception("Unable to read BTG header: " + string{gzErrorString} + ", code =" + std::to_string(code),
+                              sg_location(file), {}, false);
     }
 
     if ( ((header & 0xFF000000) >> 24) == 'S' &&
@@ -580,7 +578,7 @@ bool SGBinObject::read_bin( const SGPath& file ) {
     } else {
         // close the file before we return
         gzclose(fp);
-        throw sg_io_exception("Bad BTG magic/version", sg_location(file));
+        throw sg_io_exception("Bad BTG magic/version", sg_location(file), {}, false);
     }
 
     // read creation time
@@ -617,7 +615,10 @@ bool SGBinObject::read_bin( const SGPath& file ) {
     SG_LOG(SG_IO, SG_DEBUG, "SGBinObject::read_bin Total objects to read = " << nobjects);
 
     if ( sgReadError() ) {
-        throw sg_io_exception("Error reading BTG file header", sg_location(file));
+        int code = 0;
+        const char* gzErrorString = gzerror(fp, &code);
+        throw sg_io_exception("Error reading BTG file header:" + string{gzErrorString} + ", code =" + std::to_string(code),
+                              sg_location(file), {}, false);
     }
 
     // read in objects
@@ -805,7 +806,10 @@ bool SGBinObject::read_bin( const SGPath& file ) {
         }
 
         if ( sgReadError() ) {
-            throw sg_io_exception("Error while reading object", sg_location(file, i));
+            int code = 0;
+            const char* gzErrorString = gzerror(fp, &code);
+            throw sg_io_exception("Error reading BTG object:" + string{gzErrorString} + ", code =" + std::to_string(code),
+                                  sg_location(file, i), {}, false);
         }
     }
 

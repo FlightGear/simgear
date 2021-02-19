@@ -75,13 +75,13 @@ BuilderException::BuilderException()
 }
 
 BuilderException::BuilderException(const char* message, const char* origin)
-  : sg_exception(message, origin)
+    : sg_exception(message, origin, {}, false)
 {
 }
 
 BuilderException::BuilderException(const std::string& message,
                                    const std::string& origin)
-  : sg_exception(message, origin)
+    : sg_exception(message, origin, {}, false)
 {
 }
 

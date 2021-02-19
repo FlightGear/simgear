@@ -22,6 +22,7 @@
 #include <osgDB/FileNameUtils>
 #include <osgDB/Registry>
 
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/structure/exception.hxx>
@@ -62,13 +63,15 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
     const SGReaderWriterOptions* sgOptions;
     sgOptions = dynamic_cast<const SGReaderWriterOptions*>(options);
     osg::Node* result = NULL;
+    simgear::ErrorReportContext ec{"btg", fileName};
     try {
         result = SGLoadBTG(fileName, sgOptions);
         if (!result)
             return ReadResult::FILE_NOT_HANDLED;
     } catch (sg_exception& e) {
-        SG_LOG(SG_IO, SG_WARN, "error reading:" << fileName << ":" <<
-            e.getFormattedMessage());
+        simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::BTGLoad,
+                               "Failed to load BTG file:" + e.getFormattedMessage(),
+                               e.getLocation());
         return ReadResult::ERROR_IN_READING_FILE;
     }
     

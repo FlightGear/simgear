@@ -39,9 +39,11 @@
 #include <simgear/bvh/BVHGroup.hxx>
 #include <simgear/bvh/BVHLineGeometry.hxx>
 
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
+
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/EffectCullVisitor.hxx>
 #include <simgear/scene/util/DeletionManager.hxx>
@@ -455,6 +457,9 @@ SGAnimation::~SGAnimation()
       }
       if (!info.empty())
       {
+          reportFailure(LoadFailure::Misconfigured, ErrorCode::XMLModelLoad,
+                        "Could not find at least one of the following object for animation:" + info,
+                        SGPath::fromUtf8(_modelData.getPath()));
           SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following"
                   " objects for animation: " << info << " in file: " << _modelData.getPath());
       }
@@ -773,10 +778,16 @@ bool SGAnimation::setCenterAndAxisFromObject(osg::Node *rootNode, SGVec3d& cente
                     object_group->setNodeMask(0);
                 }
                 else {
+                    reportFailure(LoadFailure::Misconfigured, ErrorCode::XMLModelLoad,
+                                  "Could not find valid line segment for axis animation:" + axis_object_name,
+                                  SGPath::fromUtf8(_modelData.getPath()));
                     SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find a valid line segment for animation:  " << axis_object_name << " in file: " << _modelData.getPath());
                 }
             }
             else if (can_warn) {
+                reportFailure(LoadFailure::Misconfigured, ErrorCode::XMLModelLoad,
+                              "Could not find object for axis animation:" + axis_object_name,
+                              SGPath::fromUtf8(_modelData.getPath()));
                 SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following objects for axis animation: " << axis_object_name << " in file: " << _modelData.getPath());
             }
         }

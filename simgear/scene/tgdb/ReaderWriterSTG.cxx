@@ -38,10 +38,12 @@
 #include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
 
-#include <simgear/math/sg_random.h>
-#include <simgear/math/SGGeometry.hxx>
 #include <simgear/bucket/newbucket.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/math/SGGeometry.hxx>
+#include <simgear/math/sg_random.h>
+
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/scene/util/OptionsReadFileCallback.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
@@ -594,8 +596,9 @@ struct ReaderWriterSTG::_ModelBin {
         std::string terrain_name = string("terrain ").append(bucket.gen_index_str());
         terrainGroup->setName(terrain_name);
 
+        simgear::ErrorReportContext ec{"bucket", bucket.gen_index_str()};
+
         if (_foundBase) {
-            for (auto stgObject : _objectList) {
                 osg::ref_ptr<osg::Node> node;
 #if OSG_VERSION_LESS_THAN(3,4,0)
                 node = osgDB::readNodeFile(stgObject._name, stgObject._options.get());

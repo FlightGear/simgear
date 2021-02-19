@@ -39,12 +39,13 @@
 #include <OpenThreads/Mutex>
 #include <OpenThreads/ScopedLock>
 
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
-#include <simgear/props/vectorPropTemplates.hxx>
 
 namespace simgear
 {
@@ -280,9 +281,10 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
     #else
         result = osgDB::readRefImageFile(imageName, options);
     #endif
-    } catch (std::bad_alloc& ba) {
-        SG_LOG(SG_GL, SG_ALERT, "Bad allocation loading:" << imageName);
-        // todo: report low memory warning
+    } catch (std::exception& e) {
+        simgear::reportFailure(simgear::LoadFailure::OutOfMemory, simgear::ErrorCode::LoadingTexture,
+                               string{"osgDB::readRefImageFile failed:"} + e.what(),
+                               SGPath::fromUtf8(imageName));
         return false;
     }
 
@@ -304,6 +306,9 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
         tex->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
     } else {
         SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file " << imageName);
+        simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadingTexture,
+                               "osgDB::readRefImageFile failed:" + result.message(),
+                               SGPath::fromUtf8(imageName));
         return false;
     }
 
@@ -588,8 +593,8 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
     const SGPropertyNode* texturesProp = getEffectPropertyChild(effect, props, "images");
     const SGPropertyNode* crossProp = getEffectPropertyChild(effect, props, "image");
     if (!texturesProp && !crossProp) {
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadingTexture, "No images defined for cube map");
         throw BuilderException("no images defined for cube map");
-        return NULL; // This is redundant
     }
 
     // Using 6 separate images
@@ -770,6 +775,9 @@ Texture* CubeMapBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
             return cubeTexture.release();
 
         } else {
+            simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadingTexture,
+                                   "Could not load cube-map image:" + result.message(),
+                                   sg_location{texname});
             throw BuilderException("Could not load cube cross");
         }
     }
@@ -850,6 +858,9 @@ Texture* Texture3DBuilder::build(Effect* effect, Pass* pass,
         tex->setImage(image3d.get());
     } else {
         SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file " << imageName);
+        simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadingTexture,
+                               "osgDB::readRefImageFile failed:" + result.message(),
+                               SGPath::fromUtf8(imageName));
         return NULL;
     }
 

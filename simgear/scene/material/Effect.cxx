@@ -67,9 +67,13 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
+#include <simgear/props/props_io.hxx>
+#include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
@@ -936,10 +940,8 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         string fileName = SGModelLib::findDataFile(shaderName, options);
         if (fileName.empty())
         {
-            SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader" << shaderName);
-            if (!compositorEnabled) {
-                reportError("Missing shader", shaderName);
-            }
+            simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::MissingShader,
+                                   "Couldn't locate shader:" + shaderName, sg_location{shaderName});
 
             throw BuilderException(string("couldn't find shader ") +
                 shaderName);
@@ -1486,13 +1488,15 @@ void mergeSchemesFallbacks(Effect *effect, const SGReaderWriterOptions *options)
 // passes.
 bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
+    simgear::ErrorReportContext ec{"effect", getName()};
+
     if (getPropertyRoot()->getBoolValue("/sim/version/compositor-support", false))
         mergeSchemesFallbacks(this, options);
 
     if (_isRealized)
         return true;
+
     PropertyList tniqList = root->getChildren("technique");
-    for (PropertyList::iterator itr = tniqList.begin(), e = tniqList.end();
          itr != e;
          ++itr)
         buildTechnique(this, *itr, options);

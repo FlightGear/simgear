@@ -38,10 +38,12 @@
 #include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
 
-#include <simgear/math/sg_random.h>
-#include <simgear/math/SGGeometry.hxx>
 #include <simgear/bucket/newbucket.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/math/SGGeometry.hxx>
+#include <simgear/math/sg_random.h>
+
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/scene/util/OptionsReadFileCallback.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
@@ -649,6 +651,8 @@ struct ReaderWriterSTG::_ModelBin {
         terrainGroup->setDataVariance(osg::Object::STATIC);
         std::string terrain_name = string("terrain ").append(bucket.gen_index_str());
         terrainGroup->setName(terrain_name);
+
+        simgear::ErrorReportContext ec{"bucket", bucket.gen_index_str()};
 
         bool vpb_active = SGSceneFeatures::instance()->getVPBActive();
         if (vpb_active) {

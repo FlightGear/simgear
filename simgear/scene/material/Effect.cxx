@@ -67,17 +67,17 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
+#include <simgear/props/props_io.hxx>
+#include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 #include <simgear/structure/SGExpression.hxx>
-#include <simgear/props/props_io.hxx>
-#include <simgear/props/vectorPropTemplates.hxx>
-
-#include <simgear/io/iostreams/sgstream.hxx>
 
 namespace simgear
 {
@@ -936,7 +936,8 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         if (fileName.empty())
         {
             SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader" << shaderName);
-
+            simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::MissingShader,
+                                   "Couldn't locate shader:" + shaderName, sg_location{shaderName});
 
             throw BuilderException(string("couldn't find shader ") +
                 shaderName);
@@ -1483,6 +1484,8 @@ bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
     if (_isRealized)
         return true;
+
+    simgear::ErrorReportContext ec{"effect", getName()};
 
     mergeSchemesFallbacks(this, options);
 

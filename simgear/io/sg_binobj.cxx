@@ -41,9 +41,10 @@
 #include <bitset>
 
 #include <simgear/bucket/newbucket.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/math/SGGeometry.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
-#include <simgear/math/SGGeometry.hxx>
 #include <simgear/structure/exception.hxx>
 
 #include "lowlevel.hxx"
@@ -509,6 +510,8 @@ bool SGBinObject::read_bin( const SGPath& file ) {
     size_t j;
     unsigned int nbytes;
     sgSimpleBuffer buf( 32768 );  // 32 Kb
+
+    simgear::ErrorReportContext ec("btg", file.utf8Str());
 
     // zero out structures
     gbs_center = SGVec3d(0, 0, 0);

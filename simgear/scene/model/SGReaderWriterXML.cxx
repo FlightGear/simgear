@@ -35,12 +35,13 @@
 #include <osgDB/FileNameUtils>
 
 #include <simgear/compiler.h>
-#include <simgear/structure/exception.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
-#include <simgear/props/condition.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include "modellib.hxx"
 #include "SGReaderWriterXML.hxx"
@@ -81,6 +82,7 @@ SGReaderWriterXML::readNode(const std::string& name,
                             const osgDB::Options* options) const
 {
     std::string fileName = osgDB::findDataFile(name, options);
+    simgear::ErrorReportContext ec{"model-xml", fileName};
 
     osg::Node *result=0;
     try {
@@ -500,8 +502,10 @@ sgLoad3DModel_internal(const SGPath& path,
                        SGPropertyNode *overlay)
 {
     if (!path.exists()) {
-      SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load file: \"" << path << "\"");
-      return std::make_tuple(0, (osg::Node *) NULL);
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
+                               "Failed to load model XML: not found", path);
+        SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load file: \"" << path << "\"");
+        return std::make_tuple(0, (osg::Node*)NULL);
     }
 
     osg::ref_ptr<SGReaderWriterOptions> options;
@@ -529,6 +533,8 @@ sgLoad3DModel_internal(const SGPath& path,
        try {
            readProperties(modelpath, props);
         } catch (const sg_exception &t) {
+            simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::XMLModelLoad,
+                                   "Failed to load model XML:" + t.getFormattedMessage(), t.getLocation());
             SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load xml: "
                    << t.getFormattedMessage());
             throw;
@@ -548,9 +554,12 @@ sgLoad3DModel_internal(const SGPath& path,
         if (props->hasValue("/path")) {
             string modelPathStr = props->getStringValue("/path");
             modelpath = SGModelLib::findDataFile(modelPathStr, NULL, modelDir);
-            if (modelpath.isNull())
+            if (modelpath.isNull()) {
+                simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::ThreeDModelLoad,
+                                       "Model not found:" + modelPathStr, sg_location{modelPathStr});
                 throw sg_io_exception("Model file not found: '" + modelPathStr + "'",
-                        path);
+                                      path, {}, false);
+            }
 
             if (props->hasValue("/texture-path")) {
                 string texturePathStr = props->getStringValue("/texture-path");
@@ -583,9 +592,13 @@ sgLoad3DModel_internal(const SGPath& path,
         osgDB::ReaderWriter::ReadResult modelResult;
         modelResult = osgDB::readRefNodeFile(modelpath.utf8Str(), options.get());
 
-        if (!modelResult.validNode())
+        if (!modelResult.validNode()) {
+            simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::XMLModelLoad,
+                                   "Failed to load 3D model:" + modelResult.message(), modelpath);
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
-                                  modelpath);
+                                  modelpath, {}, false);
+        }
+
         model = copyModel(modelResult.getNode());
         // Add an extra reference to the model stored in the database.
         // That is to avoid expiring the object from the cache even if

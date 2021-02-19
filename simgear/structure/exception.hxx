@@ -28,23 +28,23 @@ class sg_location
 {
 public:
   enum {max_path = 1024};
-  sg_location ();
-  sg_location(const std::string& path, int line = -1, int column = -1);
-  sg_location(const SGPath& path, int line = -1, int column = -1);
-  explicit sg_location(const char* path, int line = -1, int column = -1);
+  sg_location() noexcept;
+  sg_location(const std::string& path, int line = -1, int column = -1) noexcept;
+  sg_location(const SGPath& path, int line = -1, int column = -1) noexcept;
+  explicit sg_location(const char* path, int line = -1, int column = -1) noexcept;
 
   ~sg_location() = default;
 
-  const char *getPath() const;
-  int getLine() const;
-  int getColumn() const;
-  int getByte() const;
+  const char* getPath() const noexcept;
+  int getLine() const noexcept;
+  int getColumn() const noexcept;
+  int getByte() const noexcept;
 
-  std::string asString() const;
-  bool isValid() const;
+  std::string asString() const noexcept;
+  bool isValid() const noexcept;
 
-private:
-  void setPath(const char *p);
+  private:
+  void setPath(const char* p) noexcept;
 
   char _path[max_path];
   int _line;
@@ -60,20 +60,26 @@ class sg_throwable : public std::exception
 {
 public:
   enum {MAX_TEXT_LEN = 1024};
-  sg_throwable ();
-  sg_throwable(const char *message, const char *origin = 0,
-               const sg_location &loc = {});
+  sg_throwable() noexcept;
+  sg_throwable(const char* message, const char* origin = 0,
+               const sg_location& loc = {}, bool report = true) noexcept;
 
-  virtual ~sg_throwable ();
-  virtual const char* getMessage () const;
-  virtual const std::string getFormattedMessage () const;
-  virtual void setMessage (const char* message);
-  virtual const char* getOrigin () const;
-  virtual void setOrigin (const char *origin);
+  virtual ~sg_throwable() noexcept = default;
+
+  virtual const char* getMessage() const noexcept;
+  std::string getFormattedMessage() const noexcept;
+  virtual void setMessage(const char* message) noexcept;
+  virtual const char* getOrigin() const noexcept;
+  virtual void setOrigin(const char* origin) noexcept;
   virtual const char* what() const noexcept;
-private:
+
+  sg_location getLocation() const noexcept;
+  void setLocation(const sg_location& location) noexcept;
+
+  private:
   char _message[MAX_TEXT_LEN];
   char _origin[MAX_TEXT_LEN];
+  sg_location _location;
 };
 
 
@@ -90,10 +96,10 @@ private:
 class sg_error : public sg_throwable
 {
 public:
-  sg_error ();
-  sg_error (const char* message, const char* origin = 0);
-  sg_error(const std::string &message, const std::string &origin = {});
-  virtual ~sg_error ();
+    sg_error() noexcept = default;
+    sg_error(const char* message, const char* origin = 0, bool report = true) noexcept;
+    sg_error(const std::string& message, const std::string& origin = {}, bool report = true) noexcept;
+    virtual ~sg_error() noexcept = default;
 };
 
 
@@ -114,12 +120,12 @@ public:
 class sg_exception : public sg_throwable
 {
 public:
-  sg_exception ();
-  sg_exception(const char *message, const char *origin = 0,
-               const sg_location &loc = {});
-  sg_exception(const std::string &message, const std::string & = {},
-               const sg_location &loc = {});
-  virtual ~sg_exception ();
+    sg_exception() noexcept = default;
+    sg_exception(const char* message, const char* origin = 0,
+                 const sg_location& loc = {}, bool report = true) noexcept;
+    sg_exception(const std::string& message, const std::string& = {},
+                 const sg_location& loc = {}, bool report = true) noexcept;
+    virtual ~sg_exception() noexcept = default;
 };
 
 
@@ -137,20 +143,15 @@ public:
 class sg_io_exception : public sg_exception
 {
 public:
-  sg_io_exception ();
-  sg_io_exception (const char* message, const char* origin = 0);
-  sg_io_exception (const char* message, const sg_location &location,
-		   const char* origin = 0);
-  sg_io_exception (const std::string &message, const std::string &origin = "");
-  sg_io_exception (const std::string &message, const sg_location &location, 
-    const std::string &origin = "");
+    sg_io_exception() noexcept = default;
+    sg_io_exception(const char* message, const char* origin = 0, bool report = true);
+    sg_io_exception(const char* message, const sg_location& location,
+                    const char* origin = 0, bool report = true);
+    sg_io_exception(const std::string& message, const std::string& origin = {}, bool report = true);
+    sg_io_exception(const std::string& message, const sg_location& location,
+                    const std::string& origin = {}, bool report = true);
 
-  virtual ~sg_io_exception ();
-  virtual const std::string getFormattedMessage () const;
-  virtual const sg_location &getLocation () const;
-  virtual void setLocation (const sg_location &location);
-private:
-  sg_location _location;
+    virtual ~sg_io_exception() noexcept = default;
 };
 
 
@@ -168,14 +169,15 @@ private:
 class sg_format_exception : public sg_exception
 {
 public:
-  sg_format_exception ();
-  sg_format_exception (const char* message, const char* text,
-		       const char* origin = 0);
-  sg_format_exception (const std::string& message, const std::string& text,
-		       const std::string& origin = "");
-  virtual ~sg_format_exception ();
-  virtual const char* getText () const;
-  virtual void setText (const char* text);
+    sg_format_exception() noexcept;
+    sg_format_exception(const char* message, const char* text,
+                        const char* origin = 0, bool report = true);
+    sg_format_exception(const std::string& message, const std::string& text,
+                        const std::string& origin = {}, bool report = true);
+
+    const char* getText() const noexcept;
+    void setText(const char* text) noexcept;
+
 private:
   char _text[MAX_TEXT_LEN];
 };
@@ -193,12 +195,14 @@ private:
 class sg_range_exception : public sg_exception
 {
 public:
-  sg_range_exception ();
-  sg_range_exception (const char* message,
-                      const char* origin = 0);
-  sg_range_exception (const std::string& message,
-                      const std::string& origin = "");
-  virtual ~sg_range_exception ();
+    sg_range_exception() noexcept = default;
+    sg_range_exception(const char* message,
+                       const char* origin = 0,
+                       bool report = true);
+    sg_range_exception(const std::string& message,
+                       const std::string& origin = {},
+                       bool report = true);
+    virtual ~sg_range_exception() noexcept = default;
 };
 
 using ThrowCallback = std::function<void(

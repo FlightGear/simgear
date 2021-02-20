@@ -30,9 +30,7 @@ namespace HTTP
   FileRequest::FileRequest(const std::string& url, const std::string& path, bool append):
     Request(url, "GET"),
     _filename(path),
-    _append(append),
-    _callback(nullptr),
-    _callback_ref(nullptr)
+    _append(append)
   {
     if (append && _filename.isFile()) {
       size_t size = _filename.sizeInBytes();
@@ -45,10 +43,13 @@ namespace HTTP
     }
   }
 
-  void FileRequest::setCallback(Callback callback, void* ref)
+  void FileRequest::setCallback(std::function<void(const void* data, size_t numbytes)> callback)
   {
     _callback = callback;
-    _callback_ref = ref;
+    if (readyState() == DONE) {
+        SG_LOG(SG_GENERAL, SG_DEBUG, "making callback because readyState() == DONE");
+        _callback(nullptr, 0);
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -67,12 +68,12 @@ namespace HTTP
     }
     else if (_append && (responseCode() == 206 || responseCode() == 416)) {
       /* See comments for simgear::HTTP::Client::setRange(). */
-      SG_LOG(SG_IO, SG_ALERT, "_append is true so treating response code as success: "
+      SG_LOG(SG_IO, SG_DEBUG, "_append is true so treating response code as success: "
           << responseCode());
       ok = true;
     }
     if (!ok) {
-      SG_LOG(SG_GENERAL, SG_ALERT, "failure. calling setFailure()."
+      SG_LOG(SG_GENERAL, SG_DEBUG, "failure. calling setFailure()."
           << " responseCode()=" << responseCode()
           << " responseReason()=" << responseReason()
           );
@@ -116,7 +117,7 @@ namespace HTTP
 
     _file.write(s, n);
     if (_callback) {
-      _callback(_callback_ref, s, n);
+        _callback(s, n);
     }
   }
 
@@ -125,7 +126,7 @@ namespace HTTP
   {
     _file.close();
     if (_callback) {
-      _callback(_callback_ref, nullptr, 0);
+        _callback(nullptr, 0);
     }
   }
 

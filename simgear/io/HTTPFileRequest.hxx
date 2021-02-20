@@ -53,23 +53,18 @@ namespace HTTP
       FileRequest(const std::string& url, const std::string& path, bool append=false);
       
       /*
-       * Function pointer type for use with setCallback().
+       * Set callback for each chunk of data we receive. Called with (nullptr,
+       * 0) when download has completed (successfully or unsuccesfully) - this
+       * will be done from inside setCallback() if the download has already
+       * finished.
        */
-      typedef void (*Callback)(void* ref, const void* data, size_t numbytes);
+      void setCallback(std::function<void(const void* data, size_t numbytes)> callbackf);
       
-      /*
-       * Set callback for each chunk of data we receive. Called with
-       * (ref, nullptr, 0) when download has completed (successfully or
-       * unsuccesfully).
-       */
-      void setCallback(Callback callback, void* ref);
-
     protected:
       SGPath _filename;
       sg_ofstream _file;
       bool _append;
-      Callback _callback;
-      void* _callback_ref;
+      std::function<void(const void* data, size_t numbytes)> _callback;
 
       virtual void responseHeadersComplete();
       virtual void gotBodyData(const char* s, int n);

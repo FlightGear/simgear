@@ -57,7 +57,9 @@ enum class ErrorCode {
     AudioFX,
     XMLLoadCommand,
     AircraftSystems,
-    InputDeviceConfig
+    InputDeviceConfig,
+    AITrafficSchedule,
+    AirportDataLoad // ground-net, jetways, etc
 };
 /**
  @brief Define an error-reporting context value, for the duration of this

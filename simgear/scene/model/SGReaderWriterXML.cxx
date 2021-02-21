@@ -566,9 +566,12 @@ sgLoad3DModel_internal(const SGPath& path,
                 if (!texturePathStr.empty())
                 {
                     texturepath = SGModelLib::findDataFile(texturePathStr, NULL, modelDir);
-                    if (texturepath.isNull())
+                    if (texturepath.isNull()) {
+                        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadingTexture,
+                                               "Texture file not found:" + texturePathStr, path);
                         throw sg_io_exception("Texture file not found: '" + texturePathStr + "'",
                                 path);
+                    }
                 }
             }
         } else {
@@ -667,6 +670,9 @@ sgLoad3DModel_internal(const SGPath& path,
 
         if (submodelPath.isNull()) {
           SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load file: \"" << subPathStr << "\"");
+          simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
+                                 "Couldn't find file for submodel:" + subPathStr,
+                                 SGPath::fromUtf8(subPathStr));
           continue;
         }
 
@@ -678,6 +684,8 @@ sgLoad3DModel_internal(const SGPath& path,
                  continue;
             }
         }
+
+        simgear::ErrorReportContext("submodel", submodelPath.utf8Str());
 
         try {
             int num_anims;

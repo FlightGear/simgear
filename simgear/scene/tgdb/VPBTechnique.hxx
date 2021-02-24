@@ -28,8 +28,10 @@
 #include <osgTerrain/TerrainTechnique>
 #include <osgTerrain/Locator>
 
+#include <simgear/bucket/newbucket.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/tgdb/LineFeatureBin.hxx>
 
 using namespace osgTerrain;
 
@@ -87,9 +89,14 @@ class VPBTechnique : public TerrainTechnique
         * for all graphics contexts. */
         virtual void releaseGLObjects(osg::State* = 0) const;
 
+        // Elevation constraints ensure that the terrain mesh is placed underneath objects such as airports
         static void addElevationConstraint(osg::ref_ptr<osg::Node> constraint, osg::Group* terrain);
         static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
+
+        // LineFeatures are draped over the underlying mesh.
+        static void addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList);
+        static void unloadLineFeatures(SGBucket bucket);
 
     protected:
 
@@ -121,6 +128,18 @@ class VPBTechnique : public TerrainTechnique
 
         virtual void applyTrees(BufferData& buffer, Locator* masterLocator);
 
+        virtual void applyLineFeatures(BufferData& buffer, Locator* masterLocator);
+        virtual void generateLineFeature(BufferData& buffer, Locator* 
+            masterLocator, LineFeatureBin::LineFeature road, 
+            osg::Vec3d modelCenter, 
+            const osg::Matrixd R_vert, 
+            osg::Vec3Array* v, 
+            osg::Vec2Array* t, 
+            osg::Vec3Array* n,
+            unsigned int xsize,
+            unsigned int ysize);
+        virtual osg::Vec3d getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt);
+
         OpenThreads::Mutex                  _writeBufferMutex;
         osg::ref_ptr<BufferData>            _currentBufferData;
         osg::ref_ptr<BufferData>            _newBufferData;
@@ -138,6 +157,12 @@ class VPBTechnique : public TerrainTechnique
         inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();;
         inline static std::mutex _constraint_mutex;  // protects the _constraintGroup;
         static osg::Vec2d*                  _randomOffsets;
+
+        typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
+
+        inline static std::list<BucketLineFeatureBinList>  _lineFeatureLists;
+        inline static std::mutex _lineFeatureLists_mutex;  // protects the _roadLists;
+
 };
 
 }

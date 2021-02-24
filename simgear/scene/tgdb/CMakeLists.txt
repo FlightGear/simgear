@@ -2,6 +2,7 @@ include (SimGearComponent)
 
 set(HEADERS 
     GroundLightManager.hxx
+    LineFeatureBin.hxx
     ReaderWriterSPT.hxx
     ReaderWriterSTG.hxx
     SGBuildingBin.hxx
@@ -28,6 +29,7 @@ set(HEADERS
 
 set(SOURCES 
     GroundLightManager.cxx
+    LineFeatureBin.cxx
     ReaderWriterSPT.cxx
     ReaderWriterSTG.cxx
     SGBuildingBin.cxx

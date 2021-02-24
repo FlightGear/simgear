@@ -78,17 +78,31 @@ void setErrorContextCallback(ContextCallback cb)
     static_contextCallback = cb;
 }
 
-ErrorReportContext::ErrorReportContext(const std::string& key, const std::string& value) : _key(key)
+ErrorReportContext::ErrorReportContext(const std::string& key, const std::string& value)
 {
     if (static_contextCallback) {
+        _keys.push_back(key);
         static_contextCallback(key, value);
+    }
+}
+
+ErrorReportContext::ErrorReportContext(const ContextMap& context)
+{
+    if (static_contextCallback) {
+        for (const auto& p : context) {
+            _keys.push_back(p.first);
+            static_contextCallback(p.first, p.second);
+        }
     }
 }
 
 ErrorReportContext::~ErrorReportContext()
 {
     if (static_contextCallback) {
-        static_contextCallback(_key, "POP");
+        // pop all our keys
+        for (const auto& k : _keys) {
+            static_contextCallback(k, "POP");
+        }
     }
 }
 

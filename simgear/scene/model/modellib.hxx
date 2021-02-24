@@ -18,12 +18,9 @@
 #ifndef _SG_MODEL_LIB_HXX
 #define _SG_MODEL_LIB_HXX 1
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <simgear/compiler.h>	// for SG_USING_STD
 
+#include <map>
 #include <string>
 
 #include <osg/Node>
@@ -112,6 +109,10 @@ public:
     virtual void modelLoaded(const std::string& path, SGPropertyNode *prop,
                              osg::Node* branch) = 0;
     virtual SGModelData* clone() const = 0;
+
+    using ErrorContext = std::map<std::string, std::string>;
+
+    virtual ErrorContext getErrorContext() const = 0;
 };
 
 /*

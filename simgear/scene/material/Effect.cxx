@@ -289,6 +289,8 @@ void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
                const SGReaderWriterOptions* options)
 {
     // REVIEW: Memory Leak - 35,712 bytes in 72 blocks are still reachable
+    simgear::ErrorReportContext ec("effect-pass", prop->getPath());
+
     Pass* pass = new Pass;
     tniq->passes.push_back(pass);
     for (int i = 0; i < prop->nChildren(); ++i) {
@@ -841,10 +843,12 @@ void reload_shaders()
         string fileName = SGModelLib::findDataFile(sitr->first.first);
         if (!fileName.empty()) {
             loadShaderFromUTF8File(shader, fileName);
-        }
-        else
+        } else {
             SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader: " << fileName);
-
+            simgear::reportFailure(simgear::LoadFailure::NotFound,
+                                   simgear::ErrorCode::MissingShader,
+                                   "Reload: couldn't find shader:" + sitr->first.first);
+        }
     }
 }
 
@@ -962,8 +966,19 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
             ref_ptr<Shader> shader = new Shader(stype);
 			shader->setName(fileName);
             if (loadShaderFromUTF8File(shader, fileName)) {
-                program->addShader(shader.get());
+                if (!program->addShader(shader.get())) {
+                    simgear::reportFailure(simgear::LoadFailure::BadData,
+                                           simgear::ErrorCode::MissingShader,
+                                           "Program::addShader failed",
+                                           SGPath::fromUtf8(fileName));
+                }
+
                 shaderMap.insert(ShaderMap::value_type(skey, shader));
+            } else {
+                simgear::reportFailure(simgear::LoadFailure::BadData,
+                                       simgear::ErrorCode::MissingShader,
+                                       "Failed to read shader source code",
+                                       SGPath::fromUtf8(fileName));
             }
         }
     }
@@ -1324,6 +1339,8 @@ InstallAttributeBuilder<DepthBuilder> installDepth("depth");
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
                     const SGReaderWriterOptions* options)
 {
+    simgear::ErrorReportContext ec("effect-technique", prop->getPath());
+
     // REVIEW: Memory Leak - 13,248 bytes in 72 blocks are indirectly lost
     Technique* tniq = new Technique;
     effect->techniques.push_back(tniq);

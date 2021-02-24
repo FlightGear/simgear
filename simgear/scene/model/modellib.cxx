@@ -29,12 +29,13 @@
 #include <osgDB/Registry>
 
 #include <simgear/constants.h>
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/misc/ResourceManager.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
-#include <simgear/scene/model/model.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
+#include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
-#include <simgear/misc/ResourceManager.hxx>
 
 #include "SGReaderWriterXML.hxx"
 
@@ -138,6 +139,10 @@ SGModelLib::loadModel(const string &path,
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
 
+    // establish the error report context so we can attribute any load
+    // errors correctly
+    simgear::ErrorReportContext ec(data->getErrorContext());
+
     if (load2DPanels) {
        opt->setLoadPanel(static_panelFunc);
     }
@@ -160,6 +165,9 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
     proxyNode->setFileName(0, path);
 
+    // establish the error report context so we can attribute any load
+    // errors correctly
+    simgear::ErrorReportContext ec(data->getErrorContext());
 
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
@@ -191,6 +199,10 @@ SGModelLib::loadPagedModel(SGPropertyNode *prop_root, SGModelData *data, SGModel
 {
     unsigned int simple_models = 0;
     osg::PagedLOD *plod = new osg::PagedLOD;
+
+    // establish the error report context so we can attribute any load
+    // errors correctly
+    simgear::ErrorReportContext ec(data->getErrorContext());
 
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());

@@ -16,7 +16,9 @@
 #pragma once
 
 #include <functional>
+#include <map>
 #include <string>
+#include <vector>
 
 #include <simgear/structure/exception.hxx>
 
@@ -70,10 +72,18 @@ class ErrorReportContext
 {
 public:
     ErrorReportContext(const std::string& key, const std::string& value);
+
+    using ContextMap = std::map<std::string, std::string>;
+
+    /**
+    Allow establishing multiple context values in a single operation
+     */
+    ErrorReportContext(const ContextMap& context);
+
     ~ErrorReportContext();
 
 private:
-    const std::string _key;
+    std::vector<std::string> _keys;
 };
 
 /**

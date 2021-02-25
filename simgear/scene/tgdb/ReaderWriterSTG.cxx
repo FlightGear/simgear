@@ -156,7 +156,7 @@ struct ReaderWriterSTG::_ModelBin {
                 proxy->setName("proxyNode");
                 proxy->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
                 proxy->setFileName(0, o._name);
-                proxy->setDatabaseOptions(o._options.get());
+                proxy->setDatabaseOptions(o._options);
 
                 // Give the node some values so the Quadtree builder has
                 // a BoundingBox to work with prior to the model being loaded.
@@ -165,6 +165,7 @@ struct ReaderWriterSTG::_ModelBin {
                 proxy->setCenterMode(osg::ProxyNode::UNION_OF_BOUNDING_SPHERE_AND_USER_DEFINED);
                 node = proxy;
             } else {
+                ErrorReportContext ec("terrain-stg", o._errorLocation.utf8Str());
 #if OSG_VERSION_LESS_THAN(3,4,0)
                 node = osgDB::readNodeFile(o._name, o._options.get());
 #else
@@ -211,6 +212,8 @@ struct ReaderWriterSTG::_ModelBin {
         virtual osgDB::ReaderWriter::ReadResult
         readNode(const std::string&, const osgDB::Options*)
         {
+            ErrorReportContext ec("terrain-bucket", _bucket.gen_index_str());
+
             STGObjectsQuadtree quadtree((GetModelLODCoord()), (AddModelLOD()));
             quadtree.buildQuadTree(_objectStaticList.begin(), _objectStaticList.end());
             osg::ref_ptr<osg::Group> group = quadtree.getRoot();
@@ -467,15 +470,15 @@ struct ReaderWriterSTG::_ModelBin {
 										else
 												opt->setInstantiateEffects(false);
 										_ObjectStatic obj;
-
-										obj._errorLocation = absoluteFileName;
-										obj._token = token;
-										obj._name = name;
-										obj._agl = (token == "OBJECT_STATIC_AGL");
-										obj._proxy = true;
-										in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
-										obj._range = range;
-										obj._options = opt;
+                                        opt->addErrorContext("terrain-stg", absoluteFileName.utf8Str());
+                                        obj._errorLocation = absoluteFileName;
+                                        obj._token = token;
+                                        obj._name = name;
+                                        obj._agl = (token == "OBJECT_STATIC_AGL");
+                                        obj._proxy = true;
+                                        in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
+                                        obj._range = range;
+                                        obj._options = opt;
                     checkInsideBucket(absoluteFileName, obj._lon, obj._lat);
                     _objectStaticList.push_back(obj);
                 } else if (token == "OBJECT_SHARED" || token == "OBJECT_SHARED_AGL") {
@@ -511,6 +514,8 @@ struct ReaderWriterSTG::_ModelBin {
                     _ObjectStatic obj;
 
                     opt->setInstantiateEffects(false);
+                    opt->addErrorContext("terrain-stg", absoluteFileName.utf8Str());
+
                     if (SGPath(name).lower_extension() == "ac") {
                       // Generate material/Effects lookups for raw models, i.e.
                       // those not wrapped in an XML while will include Effects
@@ -596,10 +601,11 @@ struct ReaderWriterSTG::_ModelBin {
         std::string terrain_name = string("terrain ").append(bucket.gen_index_str());
         terrainGroup->setName(terrain_name);
 
-        simgear::ErrorReportContext ec{"bucket", bucket.gen_index_str()};
+        simgear::ErrorReportContext ec{"terrain-bucket", bucket.gen_index_str()};
 
         if (_foundBase) {
                 osg::ref_ptr<osg::Node> node;
+
 #if OSG_VERSION_LESS_THAN(3,4,0)
                 node = osgDB::readNodeFile(stgObject._name, stgObject._options.get());
 #else
@@ -624,7 +630,6 @@ struct ReaderWriterSTG::_ModelBin {
                         "Warning: failed to generate ocean tile!" );
             }
         }
-
         for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
             if (!i->_agl)
                 continue;
@@ -720,11 +725,10 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
         return ReadResult::FILE_NOT_FOUND;
     }
 
-    osg::ref_ptr<SGReaderWriterOptions> sgOpts(SGReaderWriterOptions::copyOrCreate(options));
-    if (sgOpts->getSceneryPathSuffixes().empty()) {
+    const auto sgOpts = dynamic_cast<const SGReaderWriterOptions*>(options);
+    if (!sgOpts || sgOpts->getSceneryPathSuffixes().empty()) {
         SG_LOG(SG_TERRAIN, SG_ALERT, "Loading tile " << fileName << ", no scenery path suffixes were configured so giving up");
         return ReadResult::FILE_NOT_FOUND;
-
     }
 
     SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
@@ -749,7 +753,7 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
         }
 
         for (auto suffix : sgOpts->getSceneryPathSuffixes()) {
-            SGPath p = base / suffix / basePath / fileName;
+            const auto p = base / suffix / basePath / fileName;
             modelBin.read(p, options);
         }
     }

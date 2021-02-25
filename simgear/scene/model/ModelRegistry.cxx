@@ -56,12 +56,15 @@
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/NodeAndDrawableVisitor.hxx>
 
-#include <simgear/structure/exception.hxx>
-#include <simgear/props/props.hxx>
-#include <simgear/props/props_io.hxx>
-#include <simgear/props/condition.hxx>
+
+#include <simgear/debug/ErrorReportingCallback.hxx>
+
 #include <simgear/io/sg_file.hxx>
 #include <simgear/misc/lru_cache.hxx>
+#include <simgear/props/condition.hxx>
+#include <simgear/props/props.hxx>
+#include <simgear/props/props_io.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include "BoundingVolumeBuildVisitor.hxx"
 #include "model.hxx"
@@ -288,6 +291,11 @@ ModelRegistry::readImage(const string& fileName,
     ReaderWriter::ReadResult res;
 
     const SGReaderWriterOptions* sgoptC = dynamic_cast<const SGReaderWriterOptions*>(opt);
+
+    simgear::ErrorReportContext ec;
+    if (sgoptC && sgoptC->getModelData()) {
+        ec.addFromMap(sgoptC->getModelData()->getErrorContext());
+    }
 
     if (cache_active && (!sgoptC || sgoptC->getLoadOriginHint() != SGReaderWriterOptions::LoadOriginHint::ORIGIN_SPLASH_SCREEN)) {
         if (fileExtension != "dds" && fileExtension != "gz") {
@@ -714,6 +722,17 @@ ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const Options* opt)
 {
+    // propogate error context from the caller
+    simgear::ErrorReportContext ec;
+    auto sgopt = dynamic_cast<const SGReaderWriterOptions*>(opt);
+    if (sgopt) {
+        if (sgopt->getModelData()) {
+            ec.addFromMap(sgopt->getModelData()->getErrorContext());
+        }
+
+        ec.addFromMap(sgopt->getErrorContext());
+    }
+
     ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
         = nodeCallbackMap.find(getFileExtension(fileName));

@@ -846,7 +846,7 @@ void reload_shaders()
         } else {
             SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader: " << fileName);
             simgear::reportFailure(simgear::LoadFailure::NotFound,
-                                   simgear::ErrorCode::MissingShader,
+                                   simgear::ErrorCode::LoadEffectsShaders,
                                    "Reload: couldn't find shader:" + sitr->first.first);
         }
     }
@@ -944,7 +944,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         string fileName = SGModelLib::findDataFile(shaderName, options);
         if (fileName.empty())
         {
-            simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::MissingShader,
+            simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadEffectsShaders,
                                    "Couldn't locate shader:" + shaderName, sg_location{shaderName});
 
             throw BuilderException(string("couldn't find shader ") +
@@ -972,7 +972,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
             if (loadShaderFromUTF8File(shader, fileName)) {
                 if (!program->addShader(shader.get())) {
                     simgear::reportFailure(simgear::LoadFailure::BadData,
-                                           simgear::ErrorCode::MissingShader,
+                                           simgear::ErrorCode::LoadEffectsShaders,
                                            "Program::addShader failed",
                                            SGPath::fromUtf8(fileName));
                 }
@@ -980,7 +980,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                 shaderMap.insert(ShaderMap::value_type(skey, shader));
             } else {
                 simgear::reportFailure(simgear::LoadFailure::BadData,
-                                       simgear::ErrorCode::MissingShader,
+                                       simgear::ErrorCode::LoadEffectsShaders,
                                        "Failed to read shader source code",
                                        SGPath::fromUtf8(fileName));
             }

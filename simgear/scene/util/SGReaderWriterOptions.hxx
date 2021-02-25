@@ -76,12 +76,11 @@ public:
         _LoadOriginHint(ORIGIN_MODEL)
     { }
     SGReaderWriterOptions(const SGReaderWriterOptions& options,
-                          const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
-        osgDB::Options(options, copyop),
-        _propertyNode(options._propertyNode),
-        _materialLib(options._materialLib),
+                          const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) : osgDB::Options(options, copyop),
+                                                                                   _propertyNode(options._propertyNode),
+                                                                                   _materialLib(options._materialLib),
 #ifdef ENABLE_GDAL
-        _dem(options._dem),
+                                                                                   _dem(options._dem),
 #endif
         _load_panel(options._load_panel),
         _model_data(options._model_data),
@@ -89,7 +88,8 @@ public:
         _instantiateMaterialEffects(options._instantiateMaterialEffects),
         _materialName(options._materialName),
         _sceneryPathSuffixes(options._sceneryPathSuffixes),
-        _LoadOriginHint(ORIGIN_MODEL)
+        _LoadOriginHint(ORIGIN_MODEL),
+        _errorContext(options._errorContext)
     { }
 
     META_Object(simgear, SGReaderWriterOptions);
@@ -158,7 +158,16 @@ public:
     // any texture that is used in a shader, as these often have special values
     // encoded into the channels that aren't suitable for conversion.
     void setLoadOriginHint(LoadOriginHint _v) const { _LoadOriginHint = _v; } 
-    LoadOriginHint getLoadOriginHint() const { return _LoadOriginHint; } 
+    LoadOriginHint getLoadOriginHint() const { return _LoadOriginHint; }
+
+    using ErrorContext = std::map<std::string, std::string>;
+
+    void addErrorContext(const std::string& key, const std::string& value);
+
+    ErrorContext getErrorContext() const
+    {
+        return _errorContext;
+    }
 
 protected:
     virtual ~SGReaderWriterOptions();
@@ -179,6 +188,7 @@ private:
     string_list _sceneryPathSuffixes;
     SGGeod _geod;
     mutable LoadOriginHint _LoadOriginHint;
+    ErrorContext _errorContext;
 };
 
 }

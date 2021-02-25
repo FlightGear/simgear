@@ -88,6 +88,11 @@ ErrorReportContext::ErrorReportContext(const std::string& key, const std::string
 
 ErrorReportContext::ErrorReportContext(const ContextMap& context)
 {
+    addFromMap(context);
+}
+
+void ErrorReportContext::addFromMap(const ContextMap& context)
+{
     if (static_contextCallback) {
         for (const auto& p : context) {
             _keys.push_back(p.first);
@@ -95,6 +100,7 @@ ErrorReportContext::ErrorReportContext(const ContextMap& context)
         }
     }
 }
+
 
 ErrorReportContext::~ErrorReportContext()
 {

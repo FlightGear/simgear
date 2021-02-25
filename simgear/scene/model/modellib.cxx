@@ -141,7 +141,10 @@ SGModelLib::loadModel(const string &path,
 
     // establish the error report context so we can attribute any load
     // errors correctly
-    simgear::ErrorReportContext ec(data->getErrorContext());
+    simgear::ErrorReportContext ec;
+    if (data) {
+        ec.addFromMap(data->getErrorContext());
+    }
 
     if (load2DPanels) {
        opt->setLoadPanel(static_panelFunc);
@@ -165,9 +168,10 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
     proxyNode->setFileName(0, path);
 
-    // establish the error report context so we can attribute any load
-    // errors correctly
-    simgear::ErrorReportContext ec(data->getErrorContext());
+    simgear::ErrorReportContext ec;
+    if (data) {
+        ec.addFromMap(data->getErrorContext());
+    }
 
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
@@ -200,9 +204,10 @@ SGModelLib::loadPagedModel(SGPropertyNode *prop_root, SGModelData *data, SGModel
     unsigned int simple_models = 0;
     osg::PagedLOD *plod = new osg::PagedLOD;
 
-    // establish the error report context so we can attribute any load
-    // errors correctly
-    simgear::ErrorReportContext ec(data->getErrorContext());
+    simgear::ErrorReportContext ec;
+    if (data) {
+        ec.addFromMap(data->getErrorContext());
+    }
 
     osg::ref_ptr<SGReaderWriterOptions> opt;
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());

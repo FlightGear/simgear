@@ -78,7 +78,12 @@ public:
     /**
     Allow establishing multiple context values in a single operation
      */
-    ErrorReportContext(const ContextMap& context);
+    ErrorReportContext(const ContextMap& context = {});
+
+    /**
+     @brief allowed delayed add of values
+     */
+    void addFromMap(const ContextMap& context);
 
     ~ErrorReportContext();
 

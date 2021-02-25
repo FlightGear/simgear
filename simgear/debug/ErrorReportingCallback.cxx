@@ -80,6 +80,11 @@ void setErrorContextCallback(ContextCallback cb)
 
 ErrorReportContext::ErrorReportContext(const std::string& key, const std::string& value)
 {
+    add(key, value);
+}
+
+void ErrorReportContext::add(const std::string& key, const std::string& value)
+{
     if (static_contextCallback) {
         _keys.push_back(key);
         static_contextCallback(key, value);

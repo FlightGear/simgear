@@ -17,9 +17,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <simgear/scene/util/OsgMath.hxx>
 
@@ -54,4 +52,10 @@ SGReaderWriterOptions::fromPath(const SGPath& path)
     return options;
 }
 
+void SGReaderWriterOptions::addErrorContext(const std::string& key, const std::string& value)
+{
+    _errorContext[key] = value;
 }
+
+
+} // namespace simgear

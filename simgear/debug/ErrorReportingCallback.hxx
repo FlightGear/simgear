@@ -49,7 +49,7 @@ enum class LoadFailure {
  translated error messages for the user.
  */
 enum class ErrorCode {
-    MissingShader,
+    LoadEffectsShaders,
     LoadingTexture,
     XMLModelLoad,
     ThreeDModelLoad, // AC3D, OBJ, etc
@@ -60,8 +60,7 @@ enum class ErrorCode {
     XMLLoadCommand,
     AircraftSystems,
     InputDeviceConfig,
-    AITrafficSchedule,
-    AirportDataLoad // ground-net, jetways, etc
+    AITrafficSchedule
 };
 /**
  @brief Define an error-reporting context value, for the duration of this
@@ -79,6 +78,8 @@ public:
     Allow establishing multiple context values in a single operation
      */
     ErrorReportContext(const ContextMap& context = {});
+
+    void add(const std::string& key, const std::string& value);
 
     /**
      @brief allowed delayed add of values

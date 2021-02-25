@@ -24,11 +24,12 @@
 #include <simgear/scene/util/SplicingVisitor.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
-#include <simgear/structure/exception.hxx>
-#include <simgear/structure/Singleton.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
-#include <simgear/props/condition.hxx>
+#include <simgear/structure/Singleton.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include "model.hxx"
 
@@ -364,6 +365,8 @@ ref_ptr<Node> instantiateMaterialEffects(osg::Node* modelGroup,
       } else {
         effect = DefaultEffect::instance()->getEffect();
         SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get effect for " << options->getMaterialName());
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadEffectsShaders,
+                               "Unable to get effect for material:" + options->getMaterialName());
       }
     } else {
       effect = DefaultEffect::instance()->getEffect();

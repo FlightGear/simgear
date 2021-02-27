@@ -590,7 +590,7 @@ struct ReaderWriterSTG::_ModelBin {
                       if (token == BUILDING_ROUGH || token == BUILDING_DETAILED) {
                         opt->setMaterialName("OSM_Building");
                       } else if (token == ROAD_ROUGH || token == ROAD_DETAILED) {
-                        opt->setMaterialName("OSM_LineFeature");
+                        opt->setMaterialName("OSM_Road");
                       } else if (token == RAILWAY_ROUGH || token == RAILWAY_DETAILED) {
                         opt->setMaterialName("OSM_Railway");
                       } else {

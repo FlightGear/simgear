@@ -304,6 +304,12 @@ void Client::makeRequest(const Request_ptr& r)
         curl_easy_setopt(curlRequest, CURLOPT_RANGE, range.c_str());
         SG_LOG(SG_GENERAL, SG_DEBUG, "Have added CURLOPT_RANGE: '" << range << "'");
     }
+    
+    const char* enc = r->getAcceptEncoding();
+    if (enc) {
+        curl_easy_setopt(curlRequest, CURLOPT_ACCEPT_ENCODING, const_cast<char*>(enc));
+        SG_LOG(SG_GENERAL, SG_ALERT, "Have added CURLOPT_ACCEPT_ENCODING: '" << enc << "'");
+    }
 
     const std::string method = strutils::lowercase (r->method());
     if (method == "get") {

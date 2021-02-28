@@ -134,6 +134,24 @@ void Request::setRange(const std::string& range)
 }
 
 //------------------------------------------------------------------------------
+void Request::setAcceptEncoding(const char* enc)
+{
+  if (enc) {
+    _enc_set = true;
+    _enc = enc;
+  }
+  else {
+    _enc_set = false;
+  }
+}
+
+//------------------------------------------------------------------------------
+const char* Request::getAcceptEncoding()
+{
+  return (_enc_set) ? _enc.c_str() : nullptr;
+}
+
+//------------------------------------------------------------------------------
 void Request::requestStart()
 {
   setReadyState(OPENED);

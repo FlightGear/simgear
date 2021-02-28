@@ -138,6 +138,17 @@ public:
      * if we are updating a file that was fully downloaded previously.
      */
     virtual void setRange(const std::string& range);
+    
+    /*
+     * Control underlying curl library's automatic decompression support. <enc>
+     * is passed directly to curl_easy_setopt(CURLOPT_ACCEPT_ENCODING); see
+     * CURLOPT_ACCEPT_ENCODING(3) for details.
+     *
+     * E.g. pass env="" to allow any available compression algorithm.
+     */
+    virtual void setAcceptEncoding(const char* enc);
+    
+    const char* getAcceptEncoding();
 
     virtual std::string method() const
         { return _method; }
@@ -269,6 +280,8 @@ public:
     std::string   _method;
     std::string   _url;
     std::string   _range;
+    bool          _enc_set = false;
+    std::string   _enc;
     StringMap     _request_headers;
     std::string   _request_data;
     std::string   _request_media_type;

@@ -73,6 +73,7 @@
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGProgram.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
@@ -107,6 +108,7 @@ bool loadShaderFromUTF8File(osg::Shader* shader, const std::string& fileName)
     if (!inStream.is_open())
         return false;
 
+    shader->setFileName(fileName);
     shader->setShaderSource(inStream.read_all());
     return true;
 }
@@ -959,7 +961,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         pass->setAttributeAndModes(program);
         return;
     }
-    program = new Program;
+    program = new SGProgram;
     for (const auto& skey : resolvedKey.shaders) {
         const string& fileName = skey.first;
         Shader::Type stype = (Shader::Type)skey.second;

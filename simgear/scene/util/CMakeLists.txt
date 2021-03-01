@@ -31,6 +31,7 @@ set(HEADERS
     UpdateOnceCallback.hxx
     VectorArrayAdapter.hxx
     project.hxx
+    SGProgram.hxx
     )
 
 set(SOURCES
@@ -55,6 +56,7 @@ set(SOURCES
     StateAttributeFactory.cxx
     UpdateOnceCallback.cxx
     project.cxx
+    SGProgram.cxx
     )
 
 simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")

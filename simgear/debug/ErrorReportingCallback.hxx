@@ -35,18 +35,25 @@ using ErrorReportCallback = std::function<void(const std::string& msg, const std
 
 void setErrorReportCallback(ErrorReportCallback cb);
 
+/** kinds of failures we can report. This is *how* (or why) something failed. Extend
+  as necessary but update the correponsdings string translations if you do. More detail isn't
+ necessariyl useful here: better to provide that in the 'details' string
+ */
 enum class LoadFailure {
     Unknown,
     NotFound,
     OutOfMemory,
     BadHeader,
     BadData,
-    Misconfigured
+    Misconfigured,
+    IOError, // disk full, permissions error, etc
+    NetworkError
 };
 
 /**
  @brief enum of the operations which can fail. This should be extended as necessary: it maps to
- translated error messages for the user.
+ translated error messages for the user. This describes what failed, the enum above gives why/how. The
+ combination of what+why should be something at the user level: use details for debug-level information.
  */
 enum class ErrorCode {
     LoadEffectsShaders,
@@ -58,9 +65,10 @@ enum class ErrorCode {
     GUIDialog,
     AudioFX,
     XMLLoadCommand,
-    AircraftSystems,
+    AircraftSystems, // autopilot, hydrualics, instruments
     InputDeviceConfig,
-    AITrafficSchedule
+    AITrafficSchedule,
+    TerraSync
 };
 /**
  @brief Define an error-reporting context value, for the duration of this

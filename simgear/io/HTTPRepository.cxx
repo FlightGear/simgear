@@ -35,11 +35,12 @@
 #include "simgear/debug/logstream.hxx"
 #include "simgear/misc/strutils.hxx"
 
-#include <simgear/misc/sg_dir.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/io/HTTPClient.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/io/sg_file.hxx>
 #include <simgear/io/untar.hxx>
-#include <simgear/io/iostreams/sgstream.hxx>
+#include <simgear/misc/sg_dir.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/timing/timestamp.hxx>
 
@@ -218,8 +219,7 @@ public:
             return;
         }
 
-        char* buf = nullptr;
-        size_t bufSize = 0;
+        std::string buf;
 
         for (auto& child : children) {
             if (child.type != HTTPRepository::FileType)
@@ -240,17 +240,34 @@ public:
             src.open(SG_IO_IN);
             dst.open(SG_IO_OUT);
 
-            if (bufSize < cp.sizeInBytes()) {
-                bufSize = cp.sizeInBytes();
-                free(buf);
-                buf = (char*)malloc(bufSize);
-                if (!buf) {
-                    continue;
+            const auto sizeToCopy = cp.sizeInBytes();
+            if (buf.size() < sizeToCopy) {
+                try {
+                    buf.resize(sizeToCopy);
+                } catch (std::bad_alloc) {
+                    simgear::reportFailure(simgear::LoadFailure::OutOfMemory, simgear::ErrorCode::TerraSync,
+                                           "copyInstalledChildren: couldn't allocation copy buffer of size:" + std::to_string(sizeToCopy),
+                                           child.path);
+                    return;
                 }
             }
 
-            src.read(buf, cp.sizeInBytes());
-            dst.write(buf, cp.sizeInBytes());
+            const auto r = src.read(buf.data(), sizeToCopy);
+            if (r != sizeToCopy) {
+                simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::TerraSync,
+                                       "copyInstalledChildren: read underflow, got:" + std::to_string(r),
+                                       cp);
+                return;
+            }
+
+            const auto written = dst.write(buf.data(), sizeToCopy);
+            if (written != sizeToCopy) {
+                simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::TerraSync,
+                                       "copyInstalledChildren: write underflow, wrote:" + std::to_string(r),
+                                       child.path);
+                return;
+            }
+
             src.close();
             dst.close();
 
@@ -260,9 +277,7 @@ public:
 
             std::string hash = computeHashForPath(child.path);
             updatedFileContents(child.path, hash);
-                }
-
-                free(buf);
+        }
     }
 
     /// helper to check and erase 'fooBar' from paths, if passed fooBar.zip, fooBar.tgz, etc.
@@ -1019,13 +1034,20 @@ HTTPRepository::failure() const
             if (!file.get()) {
                 const bool ok = createOutputFile();
                 if (!ok) {
+                    ioFailureOccurred = true;
                     _directory->repository()->http->cancelRequest(
                         this, "Unable to create output file:" + pathInRepo.utf8Str());
                 }
             }
 
             sha1_write(&hashContext, s, n);
-            file->write(s, n);
+            const auto written = file->write(s, n);
+            if (written != n) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "Underflow writing to " << pathInRepo);
+                ioFailureOccurred = true;
+                _directory->repository()->http->cancelRequest(
+                    this, "Unable to write to output file:" + pathInRepo.utf8Str());
+            }
         }
 
         bool createOutputFile()
@@ -1082,8 +1104,15 @@ HTTPRepository::failure() const
 
       void onFail() override {
         HTTPRepository::ResultCode code = HTTPRepository::REPO_ERROR_SOCKET;
+
+        // -1 means request cancelled locally
         if (responseCode() == -1) {
-          code = HTTPRepository::REPO_ERROR_CANCELLED;
+            if (ioFailureOccurred) {
+                // cancelled by code above due to IO error
+                code = HTTPRepository::REPO_ERROR_IO;
+            } else {
+                code = HTTPRepository::REPO_ERROR_CANCELLED;
+            }
         }
 
         if (file) {
@@ -1120,6 +1149,10 @@ HTTPRepository::failure() const
         SGPath pathInRepo;
         simgear::sha1nfo hashContext;
         std::unique_ptr<SGBinaryFile> file;
+
+        /// becuase we cancel() in the case of an IO failure, we need to a way to distuinguish
+        /// user initated cancellation and IO-failure cancellation in onFail. This flag lets us do that
+        bool ioFailureOccurred = false;
     };
 
     class DirGetRequest : public HTTPRepoGetRequest
@@ -1373,6 +1406,9 @@ HTTPRepository::failure() const
         if (st == HTTPRepository::REPO_ERROR_FILE_NOT_FOUND) {
             status = HTTPRepository::REPO_ERROR_NOT_FOUND;
         } else {
+            simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
+                                   "failed to get TerraSync repository root:" + innerResultCodeAsString(st),
+                                   sg_location{baseUrl});
             SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl << " " << st);
             status = st;
         }
@@ -1389,6 +1425,10 @@ HTTPRepository::failure() const
                "failed to update entry:" << relativePath << " status/code: "
                                          << innerResultCodeAsString(fileStatus)
                                          << "/" << fileStatus);
+
+        simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
+                               "failed to update entry:" + innerResultCodeAsString(fileStatus),
+                               sg_location{relativePath});
       }
 
       HTTPRepository::Failure f;

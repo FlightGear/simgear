@@ -557,7 +557,13 @@ ModelRegistry::readImage(const string& fileName,
         }
     }
 
-    res = registry->readImageImplementation(absFileName, opt);
+    try {
+        res = registry->readImageImplementation(absFileName, opt);
+    } catch (std::bad_alloc&) {
+        simgear::reportFailure(simgear::LoadFailure::OutOfMemory, simgear::ErrorCode::ThreeDModelLoad,
+                               "Out of memory loading texture", sg_location{absFileName});
+        return ReaderWriter::ReadResult::INSUFFICIENT_MEMORY_TO_LOAD;
+    }
 
     if (!res.success()) {
         SG_LOG(SG_IO, SG_DEV_WARN, "Image loading failed:" << res.message());
@@ -733,7 +739,6 @@ ModelRegistry::readNode(const string& fileName,
         ec.addFromMap(sgopt->getErrorContext());
     }
 
-    ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
         = nodeCallbackMap.find(getFileExtension(fileName));
     ReaderWriter::ReadResult result;
@@ -741,6 +746,11 @@ ModelRegistry::readNode(const string& fileName,
         result = iter->second->readNode(fileName, opt);
     else
         result = _defaultCallback->readNode(fileName, opt);
+
+    if (!result.validNode()) {
+        simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::ThreeDModelLoad,
+                               "Failed to load 3D model:" + result.message(), sg_location{fileName});
+    }
 
     return result;
 }

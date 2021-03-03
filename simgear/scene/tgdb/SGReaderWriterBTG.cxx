@@ -73,8 +73,12 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
                                "Failed to load BTG file:" + e.getFormattedMessage(),
                                e.getLocation());
         return ReadResult::ERROR_IN_READING_FILE;
+    } catch (std::bad_alloc&) {
+        simgear::reportFailure(simgear::LoadFailure::OutOfMemory, simgear::ErrorCode::BTGLoad,
+                               "Out of memory loading BTG:" + fileName, sg_location{fileName});
+        return ReadResult::ERROR_IN_READING_FILE;
     }
-    
+
     return result;
 }
 

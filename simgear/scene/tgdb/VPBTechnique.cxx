@@ -46,7 +46,7 @@
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
-
+#include <simgear/scene/util/RenderConstants.hxx>
 
 #include "VPBTechnique.hxx"
 #include "TreeBin.hxx"
@@ -150,6 +150,20 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 
     osg::Vec3d centerModel = computeCenterModel(*buffer, masterLocator);
 
+    // We use TerrainTile::IMAGERY_DIRTY to (re-)generate features from a .STG file, such as line features
+    // We use TerrainTile::ELEVATION_DIRTY to regenerate the geometry
+    if (dirtyMask & TerrainTile::ELEVATION_DIRTY) {
+        generateGeometry(*buffer, masterLocator, centerModel);
+        applyColorLayers(*buffer, masterLocator);
+        applyTrees(*buffer, masterLocator);
+    }
+
+    if (dirtyMask & TerrainTile::IMAGERY_DIRTY) {
+        applyLineFeatures(*buffer, masterLocator);
+    }
+
+
+/*
     if ((dirtyMask & TerrainTile::IMAGERY_DIRTY)==0)
     {
         generateGeometry(*buffer, masterLocator, centerModel);
@@ -175,7 +189,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         applyTrees(*buffer, masterLocator);
         applyLineFeatures(*buffer, masterLocator);
     }
-
+*/
     if (buffer->_transform.valid()) buffer->_transform->setThreadSafeRefUnref(true);
 
     if (!_currentBufferData || !assumeMultiThreaded)
@@ -1749,17 +1763,16 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
 
 void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
 {
-    int roads_lod_range = 6;
+    int line_features_lod_range = 6;
 
     SGPropertyNode* propertyNode = _options->getPropertyNode().get();
 
     if (propertyNode) {
-        roads_lod_range = propertyNode->getIntValue("/sim/rendering/static-lod/roads-lod-range", roads_lod_range);
+        line_features_lod_range = propertyNode->getIntValue("/sim/rendering/static-lod/line-features-lod-range", line_features_lod_range);
     }
 
     // Do not generate vegetation for tiles too far away
-    //if (_terrainTile->getTileID().level < roads_lod_range) {
-    if (_terrainTile->getTileID().level < roads_lod_range) {
+    if (_terrainTile->getTileID().level < line_features_lod_range) {
         return;
     }
 
@@ -1835,6 +1848,7 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
 
             geode->setMaterial(mat);
             geode->setEffect(mat->get_one_effect(0));
+            geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
             buffer._transform->addChild(geode);
         }
     }
@@ -1853,6 +1867,7 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
 
     auto road_iter = road._nodes.begin();
 
+    // This is expensive.
     SGGeodesy::SGGeodToCart(SGGeod(*road_iter), tmp);
     ma = toOsg(tmp) - modelCenter;
 
@@ -1864,6 +1879,8 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
     road_iter++;
 
     for (; road_iter != road._nodes.end(); road_iter++) {
+
+        // This is expensive.
         SGGeodesy::SGGeodToCart(SGGeod(*road_iter), tmp);
         mb = toOsg(tmp) - modelCenter;
 
@@ -2029,14 +2046,16 @@ void VPBTechnique::releaseGLObjects(osg::State* state) const
     if (_newBufferData.valid() && _newBufferData->_transform.valid()) _newBufferData->_transform->releaseGLObjects(state);
 }
 
-// Simple vistor to check for any underlying terrain meshes that contain a given constraint and therefore may need to be modified
-// (e.g elevation lowered to ensure the terrain doesn't poke through an airport mesh)
+// Simple vistor to check for any underlying terrain meshes that intersect with a given constraint therefore may need to be modified
+// (e.g elevation lowered to ensure the terrain doesn't poke through an airport mesh, orn roads generated)
 class TerrainVisitor : public osg::NodeVisitor {
     public:
     osg::ref_ptr<osg::Node> _constraint; // Object to flatten the terrain under.   
-    TerrainVisitor( osg::ref_ptr<osg::Node> node) :
+    int _dirtyMask;                      // Dirty mask to apply.
+    TerrainVisitor( osg::ref_ptr<osg::Node> node, int mask) :
         osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _constraint(node)
+        _constraint(node),
+        _dirtyMask(mask)
     { }
     virtual ~TerrainVisitor()
     { }
@@ -2049,9 +2068,8 @@ class TerrainVisitor : public osg::NodeVisitor {
             // Determine if the constraint should affect this tile.
             const osg::BoundingSphere tileBB = tile->getBound();
             if (tileBB.intersects(_constraint->getBound())) {
-                // Dirty any existing terrain tiles containing this constraint, which will force regeneration of the elevation mesh.
-                tile->setDirty(true); 
-                //tile->init(tile->getDirtyMask(), true);
+                // Dirty any existing terrain tiles containing this constraint, which will force regeneration
+                tile->setDirtyMask(_dirtyMask); 
             }
         } else {
             traverse(node);
@@ -2067,7 +2085,7 @@ void VPBTechnique::addElevationConstraint(osg::ref_ptr<osg::Node> constraint, os
     const std::lock_guard<std::mutex> lock(VPBTechnique::_constraint_mutex); // Lock the _constraintGroup for this scope
     _constraintGroup->addChild(constraint.get()); 
 
-    TerrainVisitor ftv(constraint);
+    TerrainVisitor ftv(constraint, TerrainTile::ALL_DIRTY);
     terrain->accept(ftv);
 }
 
@@ -2099,10 +2117,30 @@ osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg
     }
 }
 
-void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList)
+void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList, osg::ref_ptr<osg::Node> terrainNode)
 {
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_lineFeatureLists_mutex); // Lock the _lineFeatureLists for this scope
-    _lineFeatureLists.push_back(std::pair(bucket, roadList));
+    // Block to mutex the List alone
+    {
+        const std::lock_guard<std::mutex> lock(VPBTechnique::_lineFeatureLists_mutex); // Lock the _lineFeatureLists for this scope
+        _lineFeatureLists.push_back(std::pair(bucket, roadList));
+    }
+
+    // We need to trigger a re-build of the appropriate Terrain tile, so create a pretend node and run the TerrainVisitor to
+    // "dirty" the TerrainTile that it intersects with.
+    osg::ref_ptr<osg::Node> n = new osg::Node();
+    SGVec3d coord1, coord2;
+
+    SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() -0.5*bucket.get_width(), bucket.get_center_lat() -0.5*bucket.get_height(), 0.0), coord1);
+    SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() +0.5*bucket.get_width(), bucket.get_center_lat() +0.5*bucket.get_height(), 0.0), coord2);
+    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon(), bucket.get_center_lat(), 0.0), coord);
+    //n->setInitialBound(osg::BoundingSphere(toOsg(coord), max(bucket.get_width_m(), bucket.get_height_m())));
+
+    osg::BoundingBox bbox = osg::BoundingBox(toOsg(coord1), toOsg(coord2));
+    n->setInitialBound(bbox);
+
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding line features to " << bucket.gen_index_str());
+    TerrainVisitor ftv(n, TerrainTile::IMAGERY_DIRTY);
+    terrainNode->accept(ftv);
 }
 
 void VPBTechnique::unloadLineFeatures(SGBucket bucket)

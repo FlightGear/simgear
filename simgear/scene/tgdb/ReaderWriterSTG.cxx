@@ -331,7 +331,7 @@ struct ReaderWriterSTG::_ModelBin {
                     lineFeatures.push_back(LineFeatureBin(path, b._material));
                 }
 
-                VPBTechnique::addLineFeatureList(_bucket, lineFeatures);
+                VPBTechnique::addLineFeatureList(_bucket, lineFeatures, _terrainNode);
             }
 
             return group.release();
@@ -343,6 +343,7 @@ struct ReaderWriterSTG::_ModelBin {
         std::list<_BuildingList> _buildingList;
         std::list<_TreeList> _treeList;
         std::list<_LineFeatureList> _lineFeatureList;
+        osg::ref_ptr<osg::Node> _terrainNode;
 
         /// The original options to use for this bunch of models
         osg::ref_ptr<SGReaderWriterOptions> _options;
@@ -673,11 +674,12 @@ struct ReaderWriterSTG::_ModelBin {
         return true;
     }
 
-    std::map<std::string, bool> tile_map;
+    std::map<std::string, osg::ref_ptr<osg::Node> > tile_map;
 
     osg::Node* load(const SGBucket& bucket, const osgDB::Options* opt)
     {
         osg::ref_ptr<SGReaderWriterOptions> options;
+        osg::ref_ptr<osg::Node> vpb_node;
         options = SGReaderWriterOptions::copyOrCreate(opt);
         float pagedLODExpiry = atoi(options->getPluginStringData("SimGear::PAGED_LOD_EXPIRY").c_str());
 
@@ -692,15 +694,17 @@ struct ReaderWriterSTG::_ModelBin {
         if (vpb_active) {
             std::string filename = "vpb/" + bucket.gen_vpb_base() + ".osgb";
             if (tile_map.count(filename) == 0) {
-                auto vpb_node = osgDB::readRefNodeFile(filename, options);
+                vpb_node = osgDB::readRefNodeFile(filename, options);
                 if (!vpb_node.valid()) {
                     SG_LOG(SG_TERRAIN, SG_WARN, "Failure to load: " <<filename);
                 }
                 else {
                     terrainGroup->addChild(vpb_node);
-                    tile_map[filename] = true;
+                    tile_map[filename] = vpb_node;
                     SG_LOG(SG_TERRAIN, SG_INFO, "Loading: " << filename);
                 }
+            } else {
+                vpb_node = tile_map[filename];
             }
 
             // OBJECTs include airports
@@ -777,10 +781,15 @@ struct ReaderWriterSTG::_ModelBin {
             readFileCallback->_objectStaticList = _objectStaticList;
             readFileCallback->_buildingList = _buildingListList;
             readFileCallback->_treeList = _treeListList;
-            readFileCallback->_lineFeatureList = _lineFeatureListList;
             readFileCallback->_signList = _signList;
             readFileCallback->_options = options;
             readFileCallback->_bucket = bucket;
+
+            if (vpb_active) {
+                readFileCallback->_lineFeatureList = _lineFeatureListList;
+                readFileCallback->_terrainNode = vpb_node;
+            }
+
             osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
             callbackOptions->setReadFileCallback(readFileCallback.get());
             pagedLOD->setDatabaseOptions(callbackOptions.get());

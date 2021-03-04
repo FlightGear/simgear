@@ -82,7 +82,7 @@ LineFeatureBin::LineFeatureBin(const SGPath& absoluteFileName, const std::string
         }
 
         while (true) {
-            float lon = 0.0f, lat=0.0f;
+            double lon = 0.0f, lat=0.0f;
             in >> lon >> lat;
 
             if (in.bad() || in.fail()) {

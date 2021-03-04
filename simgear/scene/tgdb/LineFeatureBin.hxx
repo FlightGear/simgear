@@ -30,7 +30,6 @@
 #include <osg/Matrix>
 
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/math/SGGeod.hxx>
 
 namespace simgear
 {
@@ -42,14 +41,14 @@ public:
     ~LineFeatureBin() = default;
 
     struct LineFeature {
-        const std::list<SGGeod> _nodes;
+        const std::list<osg::Vec3d> _nodes;
         const float _width;
         const int _attributes;
         const float _a;
         const float _b;
         const float _c;
         const float _d;
-        LineFeature(const std::list<SGGeod> nodes, const float w, const int attributes, const float a, const float b, const float c, const float d) : 
+        LineFeature(const std::list<osg::Vec3d> nodes, const float w, const int attributes, const float a, const float b, const float c, const float d) :
           _nodes(nodes), _width(w), _attributes(attributes), _a(a), _b(b), _c(c), _d(d)
         {
         }

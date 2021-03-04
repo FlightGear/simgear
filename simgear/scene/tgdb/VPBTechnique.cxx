@@ -1861,15 +1861,11 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
         return; 
     }
 
-    SGVec3d tmp;
     osg::Vec3d ma, mb;
     std::list<osg::Vec3d> roadPoints;
 
     auto road_iter = road._nodes.begin();
-
-    // This is expensive.
-    SGGeodesy::SGGeodToCart(SGGeod(*road_iter), tmp);
-    ma = toOsg(tmp) - modelCenter;
+    ma = *road_iter - modelCenter;
 
     osg::Vec3d intersect = getMeshIntersection(buffer, masterLocator, ma);
 
@@ -1879,10 +1875,7 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
     road_iter++;
 
     for (; road_iter != road._nodes.end(); road_iter++) {
-
-        // This is expensive.
-        SGGeodesy::SGGeodToCart(SGGeod(*road_iter), tmp);
-        mb = toOsg(tmp) - modelCenter;
+        mb = *road_iter - modelCenter;
 
         intersect = getMeshIntersection(buffer, masterLocator, mb);
         if (intersect != mb) roadPoints.push_back(intersect);
@@ -1960,7 +1953,6 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
 // Find the intersection of a given SGGeod with the terrain mesh
 osg::Vec3d VPBTechnique::getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt) 
 {
-    SGVec3d tmp;
     osg::Vec3d local, origin, top;
 
     // Get a vertical line segment.

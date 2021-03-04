@@ -28,6 +28,8 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
+#include <simgear/math/SGGeod.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 
 #include "LineFeatureBin.hxx"
 
@@ -72,7 +74,7 @@ LineFeatureBin::LineFeatureBin(const SGPath& absoluteFileName, const std::string
         float w = 0.0f;
         int attributes = 0;
         float a=0, b=0, c=0, d=0;
-        std::list<SGGeod> nodes;
+        std::list<osg::Vec3d> nodes;
 
         in >> w >> attributes >> a >> b >> c >> d;
 
@@ -89,8 +91,9 @@ LineFeatureBin::LineFeatureBin(const SGPath& absoluteFileName, const std::string
                 break;
             }
 
-            const SGGeod node = SGGeod::fromDeg(lon, lat);
-            nodes.push_back(node);
+            SGVec3d tmp;
+            SGGeodesy::SGGeodToCart(SGGeod::fromDeg(lon, lat), tmp);
+            nodes.push_back(toOsg(tmp));
         }
 
         if (nodes.size() > 1) {

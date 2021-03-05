@@ -49,7 +49,8 @@ enum SGProtocolDir {
 enum SGChannelType {
     sgFileType = 0,
     sgSerialType = 1,
-    sgSocketType = 2
+    sgSocketType = 2,
+    sgDDSType = 3
 };
 
 

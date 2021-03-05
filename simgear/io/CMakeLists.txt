@@ -46,6 +46,15 @@ set(SOURCES
     DNSClient.cxx
     )
 
+if (CycloneDDS_FOUND)
+    set(HEADERS ${HEADERS}
+        sg_dds.hxx
+        )
+    set(SOURCES ${SOURCES}
+        sg_dds.cxx
+        )
+endif (CycloneDDS_idlc_FOUND)
+
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)

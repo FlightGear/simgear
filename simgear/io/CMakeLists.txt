@@ -53,7 +53,7 @@ if (CycloneDDS_FOUND)
     set(SOURCES ${SOURCES}
         sg_dds.cxx
         )
-endif (CycloneDDS_idlc_FOUND)
+endif (CycloneDDS_FOUND)
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 

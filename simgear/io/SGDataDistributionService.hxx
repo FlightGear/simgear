@@ -1,5 +1,5 @@
 /**
- * \file sg_dds.hxx
+ * \file SGDataDistributionService.hxx
  * Data Distribution Service (DDS) I/O routines
  */
 

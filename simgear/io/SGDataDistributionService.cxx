@@ -1,4 +1,4 @@
-// sg_dds.cxx -- Data Distribution Service (DDS) I/O routines
+// SGDataDistributionService.cxx -- Data Distribution Service (DDS) I/O routines
 //
 // Written by Erik Hofman, started March 2021.
 //
@@ -28,7 +28,7 @@
 
 #include <simgear/debug/logstream.hxx>
 
-#include "sg_dds.hxx"
+#include "SGDataDistributionService.hxx"
 
 
 #define FG_DDS_DOMAIN		DDS_DOMAIN_DEFAULT

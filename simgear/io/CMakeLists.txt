@@ -48,10 +48,10 @@ set(SOURCES
 
 if (CycloneDDS_FOUND)
     set(HEADERS ${HEADERS}
-        sg_dds.hxx
+        SGDataDistributionService.hxx
         )
     set(SOURCES ${SOURCES}
-        sg_dds.cxx
+        SGDataDistributionService.cxx
         )
 endif (CycloneDDS_FOUND)
 

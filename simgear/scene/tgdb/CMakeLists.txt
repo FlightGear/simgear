@@ -20,6 +20,7 @@ set(HEADERS
     SGVertexArrayBin.hxx
     ShaderGeometry.hxx
     TreeBin.hxx
+    VPBElevationSlice.hxx
     VPBTechnique.hxx
     apt_signs.hxx
     obj.hxx
@@ -38,6 +39,7 @@ set(SOURCES
     SGVasiDrawable.cxx
     ShaderGeometry.cxx
     TreeBin.cxx
+    VPBElevationSlice.cxx
     VPBTechnique.cxx
     apt_signs.cxx
     obj.cxx

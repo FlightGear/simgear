@@ -132,13 +132,12 @@ class VPBTechnique : public TerrainTechnique
         virtual void generateLineFeature(BufferData& buffer, Locator* 
             masterLocator, LineFeatureBin::LineFeature road, 
             osg::Vec3d modelCenter, 
-            const osg::Matrixd R_vert, 
             osg::Vec3Array* v, 
             osg::Vec2Array* t, 
             osg::Vec3Array* n,
             unsigned int xsize,
             unsigned int ysize);
-        virtual osg::Vec3d getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt);
+        virtual osg::Vec3d getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt, osg::Vec3d up);
 
         OpenThreads::Mutex                  _writeBufferMutex;
         osg::ref_ptr<BufferData>            _currentBufferData;

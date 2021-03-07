@@ -143,8 +143,14 @@ protected:
         Dir d(m_owner->installRoot());
         SGPath p = d.file("catalog.xml");
         sg_ofstream f(p, std::ios::out | std::ios::trunc);
-        f.write(m_buffer.data(), m_buffer.size());
+        const auto sz = m_buffer.size();
+        f.write(m_buffer.data(), sz);
         f.close();
+
+        if (f.fail()) {
+            m_owner->refreshComplete(Delegate::FAIL_FILESYSTEM);
+            return;
+        }
 
         time(&m_owner->m_retrievedTime);
         m_owner->writeTimestamp();

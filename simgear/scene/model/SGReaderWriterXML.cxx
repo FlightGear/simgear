@@ -556,7 +556,7 @@ sgLoad3DModel_internal(const SGPath& path,
             modelpath = SGModelLib::findDataFile(modelPathStr, NULL, modelDir);
             if (modelpath.isNull()) {
                 simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::ThreeDModelLoad,
-                                       "Model not found:" + modelPathStr, sg_location{modelPathStr});
+                                       "Model not found:" + modelPathStr, path);
                 throw sg_io_exception("Model file not found: '" + modelPathStr + "'",
                                       path, {}, false);
             }

@@ -1848,27 +1848,17 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
 
     osg::Vec3d ma, mb;
     std::list<osg::Vec3d> roadPoints;
-
     auto road_iter = road._nodes.begin();
-    ma = *road_iter - modelCenter;
 
     // We're in Earth-centered coordinates, so "up" is simply directly away from (0,0,0)
     osg::Vec3d up = modelCenter;
     up.normalize();
 
-    osg::Vec3d intersect = getMeshIntersection(buffer, masterLocator, ma, up);
-
-    // If we've got an intersection, add it to the list
-    if (intersect != ma) roadPoints.push_back(intersect);
-
+    ma = getMeshIntersection(buffer, masterLocator, *road_iter - modelCenter, up);
     road_iter++;
 
     for (; road_iter != road._nodes.end(); road_iter++) {
-        mb = *road_iter - modelCenter;
-
-        intersect = getMeshIntersection(buffer, masterLocator, mb, up);
-        if (intersect != mb) roadPoints.push_back(intersect);
-
+        mb = getMeshIntersection(buffer, masterLocator, *road_iter - modelCenter, up);
         auto esl = VPBElevationSlice::computeVPBElevationSlice(buffer._geometry, ma, mb, up);
 
         for(auto eslitr = esl.begin(); eslitr != esl.end(); ++eslitr) {
@@ -1876,7 +1866,7 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
         }
 
         // Now traverse the next segment
-        ma = intersect;
+        ma = mb;
     }
 
     // We now have a series of points following the topography of the elevation mesh.
@@ -1890,7 +1880,13 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
     float ytex_base = 0.0f;
 
     for (; iter != roadPoints.end(); iter++) {
+
         end = *iter + up;
+
+        if ((end-start).length2() < 1.0) {
+            // Pass over any points less than 1m from the last
+            continue;
+        }
 
         // Find a spanwise vector
         osg::Vec3d spanwise = ((end-start) ^ up);

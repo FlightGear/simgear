@@ -131,6 +131,10 @@ install(TARGETS SimGearCore
 # we expose ZLib in some of our headers
 target_link_libraries(SimGearCore PUBLIC ZLIB::ZLIB)
 
+if (SG_HAVE_DDS)
+    target_link_libraries(SimGearCore PRIVATE CycloneDDS::ddsc)
+endif()
+
 if (ENABLE_RTI)
     target_sources(SimGearCore PRIVATE $<TARGET_OBJECTS:rti> $<TARGET_OBJECTS:rti13>)
     target_link_libraries(SimGearCore PRIVATE PkgConfig::RTI)

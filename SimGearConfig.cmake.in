@@ -17,6 +17,12 @@ set(SIMGEAR_SHARED @SIMGEAR_SHARED@)
 
 set(ENABLE_SIMD @ENABLE_SIMD@)
 
+# SycloneDDS support
+set(SG_HAVE_DDS @SG_HAVE_DDS@)
+if(SG_HAVE_DDS)
+    find_dependency(CycloneDDS)
+endif()
+
 # OpenRTI support
 set(ENABLE_RTI @ENABLE_RTI@)
 if(ENABLE_RTI)

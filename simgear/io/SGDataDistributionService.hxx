@@ -35,9 +35,6 @@
 #include <simgear/io/iochannel.hxx>
 
 
-#define SG_MAX_DDS_QUEUE 1
-
-
 /**
  * A socket I/O class based on SGIOChannel.
  */
@@ -54,9 +51,6 @@ private:
     dds_entity_t topic = -1;
     dds_entity_t writer = -1;
     dds_entity_t reader = -1;
-
-    dds_sample_info_t info[SG_MAX_DDS_QUEUE];
-    void *sample[SG_MAX_DDS_QUEUE];
 
 public:
 

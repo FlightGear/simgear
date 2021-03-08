@@ -86,7 +86,8 @@ SG_DDS::open( SGProtocolDir direction )
     if (direction == SG_IO_IN || direction == SG_IO_BI)
     {
         dds_qos_t *qos = dds_create_qos();
-        dds_qset_reliability(qos, DDS_RELIABILITY_RELIABLE, DDS_SECS(10));
+        dds_qset_reliability(qos, DDS_RELIABILITY_RELIABLE, DDS_MSECS(1));
+        dds_qset_history(qos, DDS_HISTORY_KEEP_LAST, 3);
     
         reader = dds_create_reader(participant, topic, qos, NULL);
         if (reader < 0) {
@@ -96,7 +97,6 @@ SG_DDS::open( SGProtocolDir direction )
         }
 
         dds_delete_qos(qos);
-        sample[0] = dds_alloc(packet_size);
     }
 
     if (direction == SG_IO_OUT || direction == SG_IO_BI)
@@ -142,16 +142,18 @@ SG_DDS::read( char *buf, int length )
 {
     int result;
     
-    if (reader < 0 || length < packet_size) {
+    if (reader < 0 || length < (int)packet_size) {
         return 0;
     }
 
-    result = dds_take(reader, sample, info, 1, 1);
-    if(result < 0)
+    dds_sample_info_t info[1];
+    result = dds_take(reader, (void**)&buf, info, 1, 1);
+    if(result < 0 || !info[0].valid_data)
     {
-      SG_LOG(SG_IO, SG_ALERT, "dds_take: " << dds_strretcode(errno));
-      errno = -result;
-      result = 0;
+        errno = -result;
+        result = 0;
+
+        SG_LOG(SG_IO, SG_ALERT, "dds_take: " << dds_strretcode(errno));
     }
 
     return result*length;
@@ -164,16 +166,17 @@ SG_DDS::write( const char *buf, const int length )
 {
     int result;
 
-    if (writer < 0 || length < packet_size) {
+    if (writer < 0 || length < (int)packet_size) {
         return 0;
     }
 
     result = dds_write(writer, buf);
     if(result != DDS_RETCODE_OK) 
     {
-        SG_LOG(SG_IO, SG_ALERT, "dds_write: " << dds_strretcode(errno));
         errno = -result;
         result = 0;
+
+        SG_LOG(SG_IO, SG_ALERT, "dds_write: " << dds_strretcode(errno));
     }
     else {
        result = length;
@@ -187,7 +190,6 @@ SG_DDS::write( const char *buf, const int length )
 bool
 SG_DDS::close()
 {
-    dds_sample_free(sample[0], descriptor, DDS_FREE_ALL);
     dds_delete(participant);
 
     reader = -1;

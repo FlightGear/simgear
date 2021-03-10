@@ -1869,55 +1869,58 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
         ma = mb;
     }
 
+    if (roadPoints.size() == 0) return;
+
     // We now have a series of points following the topography of the elevation mesh.
-    float xtex, ytex;
-    osg::Vec3d local, origin, top, start, end;
 
     auto iter = roadPoints.begin();
-    start = *iter + up;
+    osg::Vec3d start = *iter;
     iter++;
 
-    float ytex_base = 0.0f;
+    osg::Vec3d last_spanwise =  (*iter - start)^ up;
+    last_spanwise.normalize();
+
+    float yTexBaseA = 0.0f;
+    float yTexBaseB = 0.0f;
 
     for (; iter != roadPoints.end(); iter++) {
 
-        end = *iter + up;
+        osg::Vec3d end = *iter;
 
-        if ((end-start).length2() < 1.0) {
-            // Pass over any points less than 1m from the last
-            continue;
-        }
+        // Ignore tiny segments - likely artifacts of the elevation slicer
+        if ((end - start).length2() < 1.0) continue;
 
         // Find a spanwise vector
         osg::Vec3d spanwise = ((end-start) ^ up);
         spanwise.normalize();
 
         // Define the road extents
-        const osg::Vec3d a = start - spanwise * road._width * 0.5;
-        const osg::Vec3d b = start + spanwise * road._width * 0.5;
-        const osg::Vec3d c = end   - spanwise * road._width * 0.5;
-        const osg::Vec3d d = end   + spanwise * road._width * 0.5;
+        const osg::Vec3d a = start - last_spanwise * road._width * 0.5 + up;
+        const osg::Vec3d b = start + last_spanwise * road._width * 0.5 + up;
+        const osg::Vec3d c = end   - spanwise * road._width * 0.5 + up;
+        const osg::Vec3d d = end   + spanwise * road._width * 0.5 + up;
 
         // Determine the x and y texture coordinates for the edges
-        xtex = 0.5 * road._width / xsize;
-        ytex = ytex_base + (end-start).length() / ysize;
+        const float xTex = 0.5 * road._width / xsize;
+        const float yTexA = yTexBaseA + (c-a).length() / ysize;
+        const float yTexB = yTexBaseB + (d-b).length() / ysize;
 
         // Now generate two triangles, .
         v->push_back(a);
         v->push_back(b);
         v->push_back(c);
 
-        t->push_back(osg::Vec2d(0, ytex_base));
-        t->push_back(osg::Vec2d(xtex, ytex_base));
-        t->push_back(osg::Vec2d(0, ytex));
+        t->push_back(osg::Vec2d(0, yTexBaseA));
+        t->push_back(osg::Vec2d(xTex, yTexBaseB));
+        t->push_back(osg::Vec2d(0, yTexA));
 
         v->push_back(b);
         v->push_back(d);
         v->push_back(c);
 
-        t->push_back(osg::Vec2d(xtex, ytex_base));
-        t->push_back(osg::Vec2d(xtex, ytex));
-        t->push_back(osg::Vec2d(0, ytex));
+        t->push_back(osg::Vec2d(xTex, yTexBaseB));
+        t->push_back(osg::Vec2d(xTex, yTexB));
+        t->push_back(osg::Vec2d(0, yTexBaseA));
 
         // Normal is straight from the quad
         osg::Vec3d normal = (end-start)^spanwise;
@@ -1925,7 +1928,9 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
         for (unsigned int i = 0; i < 6; i++) n->push_back(normal);
 
         start = end;
-        ytex_base = ytex;
+        yTexBaseA = yTexA;
+        yTexBaseB = yTexB;
+        last_spanwise = spanwise;
     }
 }
 

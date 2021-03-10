@@ -116,19 +116,6 @@ SG_DDS::open( SGProtocolDir direction )
                                      << dds_strretcode(-rc));         
             return false;
         }
-
-        uint32_t status = 0;
-        while(!(status & DDS_PUBLICATION_MATCHED_STATUS))
-        {
-            rc = dds_get_status_changes(writer, &status);
-            if (rc != DDS_RETCODE_OK) {
-                SG_LOG(SG_IO, SG_ALERT, "dds_get_status_changes: "
-                                        << dds_strretcode(-rc));
-            }
-
-            /* Polling sleep. */
-            dds_sleepfor(DDS_MSECS(20));
-        }
     }
 
     return true;
@@ -168,6 +155,19 @@ SG_DDS::write( const char *buf, const int length )
 
     if (writer < 0 || length < (int)packet_size) {
         return 0;
+    }
+
+    dds_return_t rc;
+    uint32_t status = 0;
+    rc = dds_get_status_changes(writer, &status);
+    if (rc != DDS_RETCODE_OK) {
+        SG_LOG(SG_IO, SG_ALERT, "dds_get_status_changes: "
+                                 << dds_strretcode(-rc));
+        return 0;
+    }
+    if (!(status & DDS_PUBLICATION_MATCHED_STATUS)) {
+        SG_LOG(SG_IO, SG_INFO, "DDS skipping write: no readers.");
+        return length; // no readers yet.
     }
 
     result = dds_write(writer, buf);

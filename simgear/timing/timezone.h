@@ -97,6 +97,10 @@ public:
   SGTimeZone* getNearest(const SGGeod& ref) const;
   
 private:
+  std::string tzdb_file;
+
+  // zone.tab related
+  bool is_zone_tab = false;
   typedef std::vector<SGTimeZone*> TZVec;
   TZVec zones;
 };

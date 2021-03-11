@@ -1,0 +1,9 @@
+ZoneDetect:  BSD-3-Clause License 
+https://github.com/BertoldVdb/ZoneDetect
+
+This is a C library that allows you to find an area a point belongs to using a 
+database file. A typical example would be looking up the country or timezone 
+given a latitude and longitude. The timezone database also contains the country information.
+
+download the database files:
+  https://cdn.bertold.org/zonedetect/db/db.zip

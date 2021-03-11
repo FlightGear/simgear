@@ -84,7 +84,7 @@ void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time 
     if ( !root.isNull()) {
         if (!static_tzContainer.get()) {
             SGPath zone( root );
-            zone.append( "zone.tab" );
+            zone.append( "timezone16.bin" );
             SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: " << zone );
             std::string zs = zone.utf8Str();
             static_tzContainer.reset(new SGTimeZoneContainer( zs.c_str() ));

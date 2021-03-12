@@ -30,13 +30,8 @@
 #ifndef INCL_ZONEDETECT_H_
 #define INCL_ZONEDETECT_H_
 
-#if !defined(ZD_EXPORT)
-#if defined(_MSC_VER)
-#define ZD_EXPORT __declspec(dllimport)
-#else
+// defined to nothing, since we're linking these symbols statically
 #define ZD_EXPORT
-#endif
-#endif
 
 typedef enum {
     ZD_LOOKUP_IGNORE = -3,

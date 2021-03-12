@@ -26,9 +26,7 @@
  *
  ************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <errno.h>
 #include <string.h>
@@ -39,8 +37,13 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/io/sg_file.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include "timezone.h"
+
+#include "zonedetect.h"
+
+using std::string;
 
 SGTimeZone::SGTimeZone(const SGGeod& geod, char* cc, char* desc) :
     centerpoint(SGVec3d::fromGeod(geod))
@@ -135,35 +138,56 @@ SGTimeZone::SGTimeZone(const SGTimeZone& other)
 
 /********* Member functions for SGTimeZoneContainer class ********/
 
-SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
+class SGTimeZoneContainer::SGTimeZoneContainerPrivate
 {
-  std::string tzdb_file = filename;
-  if (tzdb_file.find("zone.tab") == std::string::npos)
-  {
-    SGPath path(filename);
-    sg_ifstream tzdb_file(path, std::ios::in);
-    if ( !tzdb_file.is_open() ) {
-      throw sg_io_exception("cannot open timezone file", filename);
+public:
+    ~SGTimeZoneContainerPrivate()
+    {
+        for (auto z : zones) {
+            delete z;
+        }
+            
+        if (cd) {
+            ZDCloseDatabase(cd);
+        }
     }
+    
+    ZoneDetect *cd = nullptr;
+    std::string tzdb_buffer;
 
-    tzdb_buffer = tzdb_file.read_all();
-    cd = ZDOpenDatabaseFromMemory((void*)tzdb_buffer.c_str(), tzdb_buffer.size());
-    if (!cd) {
-      throw sg_io_exception("timezone database read error");
+    // zone.tab related
+    bool is_zone_tab = false;
+    using TZVec = std::vector<SGTimeZone*>;
+    TZVec zones;
+};
+
+SGTimeZoneContainer::SGTimeZoneContainer(const SGPath& path) :
+    d(new SGTimeZoneContainerPrivate)
+{
+    if (path.file() != "zone.tab") {
+        sg_ifstream tzdb_file(path, std::ios::in);
+        if ( !tzdb_file.is_open() ) {
+            throw sg_io_exception("cannot open timezone file", path);
+        }
+
+        d->tzdb_buffer = tzdb_file.read_all();
+        d->cd = ZDOpenDatabaseFromMemory((void*) d->tzdb_buffer.data(), d->tzdb_buffer.size());
+        if (!d->cd) {
+          throw sg_io_exception("timezone database read error");
+        }
     }
-  }
   else // zone.tab is in filename
   {
     char buffer[256];
 #if defined(SG_WINDOWS)
-    const std::wstring wfile = simgear::strutils::convertUtf8ToWString(filename);
+      const std::wstring wfile = path.wstr();
     FILE* infile = _wfopen(wfile.c_str(), L"rb");
 #else
-    FILE* infile = fopen(filename, "rb");
+      const auto s = path.utf8Str();
+    FILE* infile = fopen(s.c_str(), "rb");
 #endif
     if (!(infile)) {
-        std::string e = "Unable to open time zone file '";
-        throw sg_exception(e + filename + '\'');
+        throw sg_exception("Unable to open time zone file", "", sg_location{path});
     }
     
     errno = 0;
@@ -181,7 +205,7 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
             }    
         }
         if (buffer[0]) {
-            zones.push_back(new SGTimeZone(buffer));
+            d->zones.push_back(new SGTimeZone(buffer));
         }
     }
     if ( errno ) {
@@ -190,44 +214,33 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
     }
     
     fclose(infile);
-    is_zone_tab = true;
+    d->is_zone_tab = true;
   }
 }
 
 SGTimeZoneContainer::~SGTimeZoneContainer()
 {
-  if (is_zone_tab)
-  {
-    TZVec::iterator it = zones.begin();
-    for (; it != zones.end(); ++it) {
-      delete *it;
-    }
-  }
-  else if (cd)
-  {
-    ZDCloseDatabase(cd);
-  }
+    
 }
 
 SGTimeZone* SGTimeZoneContainer::getNearest(const SGGeod& ref) const
 {
   SGTimeZone* match = NULL;
 
-  if (is_zone_tab)
+  if (d->is_zone_tab)
   {
     SGVec3d refCart(SGVec3d::fromGeod(ref));
     double minDist2 = HUGE_VAL;
   
-    TZVec::const_iterator it = zones.begin();
-    for (; it != zones.end(); ++it) {
-      double d2 = distSqr((*it)->cartCenterpoint(), refCart);
+    for (auto z : d->zones) {
+      double d2 = distSqr(z->cartCenterpoint(), refCart);
       if (d2 < minDist2) {
-        match = *it;
+          match = z;
         minDist2 = d2;
       }
     }
   }
-  else if (cd) // timezone16.bin
+  else if (d->cd) // timezone16.bin
   {
     char *CountryAlpha2 = nullptr;
     char *TimezoneIdPrefix = nullptr;
@@ -236,7 +249,7 @@ SGTimeZone* SGTimeZoneContainer::getNearest(const SGGeod& ref) const
     float safezone = 0;
     float lat = ref.getLatitudeDeg();
     float lon = ref.getLongitudeDeg();
-    ZoneDetectResult *results = ZDLookup(cd, lat, lon, &safezone);
+    ZoneDetectResult *results = ZDLookup(d->cd, lat, lon, &safezone);
     if (results && results[0].data)
     {
       for(unsigned i=0; i<results[0].numFields; ++i)
@@ -254,10 +267,7 @@ SGTimeZone* SGTimeZoneContainer::getNearest(const SGGeod& ref) const
         }
       }
 
-      std::string desc;
-      desc = TimezoneIdPrefix;
-      desc += TimezoneId;
-
+        const auto desc = string{TimezoneIdPrefix} + string{TimezoneId};
       match = new SGTimeZone(ref, CountryAlpha2, (char*)desc.c_str());
     }
   }

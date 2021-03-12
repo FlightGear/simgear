@@ -83,21 +83,21 @@ void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time 
 
     if ( !root.isNull()) {
         if (!static_tzContainer.get()) {
-            SGPath zone( root );
-            zone.append( "timezone16.bin" );
-            SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: " << zone );
-            std::string zs = zone.utf8Str();
-            static_tzContainer.reset(new SGTimeZoneContainer( zs.c_str() ));
+            const auto zonePath = root / "timezone16.bin";
+            SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: " << zonePath );
+            static_tzContainer.reset(new SGTimeZoneContainer(zonePath));
         }
 
         SGTimeZone* nearestTz = static_tzContainer->getNearest(location);
-
-        SGPath name( root );
-        name.append( nearestTz->getDescription() );
-        zonename = name.utf8Str();
-        SG_LOG( SG_EVENT, SG_DEBUG, "Using zonename = " << zonename );
+        if (nearestTz) {
+            SGPath name = root / nearestTz->getDescription();
+            zonename = name.utf8Str();
+            SG_LOG( SG_EVENT, SG_DEBUG, "Using zonename = " << zonename );
+        } else {
+            zonename.clear();
+        }
     } else {
-        zonename.erase();
+        zonename.clear();
     }
 }
 

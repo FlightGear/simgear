@@ -29,11 +29,10 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/math/SGGeod.hxx>
-
-#include "zonedetect.h"
 
 /**
  * SGTimeZone stores the timezone centerpoint,
@@ -41,6 +40,7 @@
  * used in order to get the local time. 
  *
  */
+class SGPath;
 
 class SGTimeZone
 {
@@ -93,19 +93,15 @@ public:
 class SGTimeZoneContainer
 {
 public:
-  SGTimeZoneContainer(const char *filename);
-  ~SGTimeZoneContainer();
+  SGTimeZoneContainer(const SGPath& path);
+    ~SGTimeZoneContainer();
   
   SGTimeZone* getNearest(const SGGeod& ref) const;
   
 private:
-  ZoneDetect *cd = nullptr;
-  std::string tzdb_buffer;
-
-  // zone.tab related
-  bool is_zone_tab = false;
-  typedef std::vector<SGTimeZone*> TZVec;
-  TZVec zones;
+    class SGTimeZoneContainerPrivate;
+    
+    std::unique_ptr<SGTimeZoneContainerPrivate> d;
 };
 
 

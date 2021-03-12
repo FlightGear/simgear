@@ -28,10 +28,6 @@
 #define _SG_TIME_HXX
 
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 
 #include <simgear/compiler.h>
 

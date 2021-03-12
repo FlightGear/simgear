@@ -33,6 +33,8 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/math/SGGeod.hxx>
 
+#include "zonedetect.h"
+
 /**
  * SGTimeZone stores the timezone centerpoint,
  * as well as the countrycode and the timezone descriptor. The latter is 
@@ -97,7 +99,8 @@ public:
   SGTimeZone* getNearest(const SGGeod& ref) const;
   
 private:
-  std::string tzdb_file;
+  ZoneDetect *cd = nullptr;
+  std::string tzdb_buffer;
 
   // zone.tab related
   bool is_zone_tab = false;

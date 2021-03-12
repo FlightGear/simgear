@@ -35,10 +35,11 @@
 #include <stdio.h>
 #include <cstdlib>
 
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/io/sg_file.hxx>
 
-#include "zonedetect.h"
 #include "timezone.h"
 
 SGTimeZone::SGTimeZone(const SGGeod& geod, char* cc, char* desc) :
@@ -134,10 +135,24 @@ SGTimeZone::SGTimeZone(const SGTimeZone& other)
 
 /********* Member functions for SGTimeZoneContainer class ********/
 
-SGTimeZoneContainer::SGTimeZoneContainer(const char *filename) :
-  tzdb_file(filename)
+SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
 {
-  if (tzdb_file.find("zone.tab") != std::string::npos)
+  std::string tzdb_file = filename;
+  if (tzdb_file.find("zone.tab") == std::string::npos)
+  {
+    SGPath path(filename);
+    sg_ifstream tzdb_file(path, std::ios::in);
+    if ( !tzdb_file.is_open() ) {
+      throw sg_io_exception("cannot open timezone file", filename);
+    }
+
+    tzdb_buffer = tzdb_file.read_all();
+    cd = ZDOpenDatabaseFromMemory((void*)tzdb_buffer.c_str(), tzdb_buffer.size());
+    if (!cd) {
+      throw sg_io_exception("timezone database read error");
+    }
+  }
+  else // zone.tab is in filename
   {
     char buffer[256];
 #if defined(SG_WINDOWS)
@@ -188,6 +203,10 @@ SGTimeZoneContainer::~SGTimeZoneContainer()
       delete *it;
     }
   }
+  else if (cd)
+  {
+    ZDCloseDatabase(cd);
+  }
 }
 
 SGTimeZone* SGTimeZoneContainer::getNearest(const SGGeod& ref) const
@@ -208,43 +227,38 @@ SGTimeZone* SGTimeZoneContainer::getNearest(const SGGeod& ref) const
       }
     }
   }
-  else if (!tzdb_file.empty())
+  else if (cd) // timezone16.bin
   {
-    ZoneDetect *const cd = ZDOpenDatabase(tzdb_file.c_str());
-    if (cd)
-    {
-      char *CountryAlpha2 = nullptr;
-      char *TimezoneIdPrefix = nullptr;
-      char *TimezoneId = nullptr;
+    char *CountryAlpha2 = nullptr;
+    char *TimezoneIdPrefix = nullptr;
+    char *TimezoneId = nullptr;
 
-      float safezone = 0;
-      float lat = ref.getLatitudeDeg();
-      float lon = ref.getLongitudeDeg();
-      ZoneDetectResult *results = ZDLookup(cd, lat, lon, &safezone);
-      if (results && results[0].data)
+    float safezone = 0;
+    float lat = ref.getLatitudeDeg();
+    float lon = ref.getLongitudeDeg();
+    ZoneDetectResult *results = ZDLookup(cd, lat, lon, &safezone);
+    if (results && results[0].data)
+    {
+      for(unsigned i=0; i<results[0].numFields; ++i)
       {
-        for(unsigned i=0; i<results[0].numFields; ++i)
+        if(results[0].fieldNames[i] && results[0].data[i])
         {
-          if(results[0].fieldNames[i] && results[0].data[i])
-          {
-            std::string fieldName = results[0].fieldNames[i];
-            if (fieldName == "CountryAlpha2") {
-              CountryAlpha2 = results[0].data[i];
-            } else if (fieldName == "TimezoneIdPrefix") {
-              TimezoneIdPrefix = results[0].data[i];
-            } else if (fieldName == "TimezoneId") {
-              TimezoneId = results[0].data[i];
-            }
+          std::string fieldName = results[0].fieldNames[i];
+          if (fieldName == "CountryAlpha2") {
+            CountryAlpha2 = results[0].data[i];
+          } else if (fieldName == "TimezoneIdPrefix") {
+            TimezoneIdPrefix = results[0].data[i];
+          } else if (fieldName == "TimezoneId") {
+            TimezoneId = results[0].data[i];
           }
         }
-
-        std::string desc;
-        desc = TimezoneIdPrefix;
-        desc += TimezoneId;
-
-        match = new SGTimeZone(ref, CountryAlpha2, (char*)desc.c_str());
       }
-      ZDCloseDatabase(cd);
+
+      std::string desc;
+      desc = TimezoneIdPrefix;
+      desc += TimezoneId;
+
+      match = new SGTimeZone(ref, CountryAlpha2, (char*)desc.c_str());
     }
   }
 

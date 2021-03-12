@@ -341,7 +341,7 @@ static void fgtzset_internal (int always, const char *tz)
   // For now, I'll leave it like this.
   else
   {
-    throw sg_exception("Timezone reading failed");
+    throw sg_exception("Timezone reading failed: ", tz);
   }
   // this emacs "comment out" function is cool!
 

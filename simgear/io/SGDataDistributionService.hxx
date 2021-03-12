@@ -45,7 +45,7 @@ private:
     const dds_topic_descriptor_t *descriptor = nullptr;
     size_t packet_size = 0;
 
-    int timeout = 0;
+    uint32_t status = 0;
 
     dds_entity_t participant = -1;
     dds_entity_t topic = -1;
@@ -75,9 +75,6 @@ public:
 
     // close the participant.
     bool close();
-
-    // set timeout (default: 0)
-    inline void set_timeout(int i) { timeout = i; }
 };
 
 

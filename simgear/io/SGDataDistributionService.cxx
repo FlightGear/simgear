@@ -157,17 +157,19 @@ SG_DDS::write( const char *buf, const int length )
         return 0;
     }
 
-    dds_return_t rc;
-    uint32_t status = 0;
-    rc = dds_get_status_changes(writer, &status);
-    if (rc != DDS_RETCODE_OK) {
-        SG_LOG(SG_IO, SG_ALERT, "dds_get_status_changes: "
-                                 << dds_strretcode(-rc));
-        return 0;
-    }
-    if (!(status & DDS_PUBLICATION_MATCHED_STATUS)) {
-        SG_LOG(SG_IO, SG_INFO, "DDS skipping write: no readers.");
-        return length; // no readers yet.
+    if (!status)
+    {
+        dds_return_t rc = dds_get_status_changes(writer, &status);
+        if (rc != DDS_RETCODE_OK) {
+            SG_LOG(SG_IO, SG_ALERT, "dds_get_status_changes: "
+                                     << dds_strretcode(-rc));
+            return 0;
+        }
+
+        if (!(status & DDS_PUBLICATION_MATCHED_STATUS)) {
+            SG_LOG(SG_IO, SG_INFO, "DDS skipping write: no readers.");
+            return length; // no readers yet.
+        }
     }
 
     result = dds_write(writer, buf);

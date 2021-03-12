@@ -280,9 +280,10 @@ public:
 
    SyncItem getNewTile() { return _freshTiles.pop_front();}
 
-   void   setHTTPServer(const std::string& server)
+   void setHTTPServer(const std::string& server, const std::string& osmServer)
    {
       _httpServer = stripPath(server);
+      _osmCityServer = stripPath(osmServer);
       _isAutomaticServer = (server == "automatic");
    }
 
@@ -346,9 +347,9 @@ public:
     void runInternal();
     void updateSyncSlot(SyncSlot& slot);
 
-    void beginSyncAirports(SyncSlot& slot);
-    void beginSyncTile(SyncSlot& slot);
-    void beginNormalSync(SyncSlot& slot);
+    bool beginSyncAirports(SyncSlot& slot);
+    bool beginSyncTile(SyncSlot& slot);
+    bool beginNormalSync(SyncSlot& slot);
 
     void drainWaitingTiles();
 
@@ -592,6 +593,9 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         HTTPRepository::ResultCode res = slot.repository->failure();
 
         if (res == HTTPRepository::REPO_ERROR_NOT_FOUND) {
+            // not founds should never happen any more (unless the server-
+            // side data is incorrect), since we now check top-down that
+            // a 1x1 dir exists or not.
             notFound(slot.currentItem);
         } else if (res != HTTPRepository::REPO_NO_ERROR) {
             fail(slot.currentItem);
@@ -628,12 +632,23 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         slot.isNewDirectory = !path.exists();
         const auto type = slot.currentItem._type;
 
+        bool ok = false;
         if (type == SyncItem::AirportData) {
-            beginSyncAirports(slot);
-        } else if ((type == SyncItem::Tile) || (type == SyncItem::OSMTile)) {
-            beginSyncTile(slot);
+            ok = beginSyncAirports(slot);
+        } else if (type == SyncItem::OSMTile) {
+            ok = beginSyncTile(slot);
+        } else if (type == SyncItem::Tile) {
+            ok = beginSyncTile(slot);
         } else {
-            beginNormalSync(slot);
+            ok = beginNormalSync(slot);
+        }
+
+        if (!ok) {
+            SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.currentItem._dir << " failed to start");
+            fail(slot.currentItem);
+            slot.busy = false;
+            slot.repository.reset();
+            return;
         }
 
         try {
@@ -653,15 +668,14 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         slot.pendingKBytes = slot.repository->bytesToDownload() >> 10;
         slot.pendingExtractKBytes = slot.repository->bytesToExtract() >> 10;
 
-        SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << " started, queue size is " << slot.queue.size());
+        SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << ":" << slot.currentItem._dir << " started, queue size is " << slot.queue.size());
     }
 }
 
-void SGTerraSync::WorkerThread::beginSyncAirports(SyncSlot& slot)
+bool SGTerraSync::WorkerThread::beginSyncAirports(SyncSlot& slot)
 {
     if (!slot.isNewDirectory) {
-        beginNormalSync(slot);
-        return;
+        return beginNormalSync(slot);
     }
 
     SG_LOG(SG_TERRASYNC, SG_INFO, "doing Airports download via tarball");
@@ -681,9 +695,10 @@ void SGTerraSync::WorkerThread::beginSyncAirports(SyncSlot& slot)
     };
 
     slot.repository->setFilter(f);
+    return true;
 }
 
-void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
+bool SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
 {
     // avoid 404 requests by doing a sync which excludes all paths
     // except our tile path. In the case of a missing 1x1 tile, we will
@@ -692,8 +707,7 @@ void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
     auto comps = strutils::split(slot.currentItem._dir, "/");
     if (comps.size() != 3) {
         SG_LOG(SG_TERRASYNC, SG_ALERT, "Bad tile path:" << slot.currentItem._dir);
-        beginNormalSync(slot);
-        return;
+        return false;
     }
 
     const auto tileCategory = comps.front();
@@ -704,6 +718,11 @@ void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
     slot.repository.reset(new HTTPRepository(path, &_http));
 
     if (slot.currentItem._type == SyncItem::OSMTile) {
+        if (_osmCityServer.empty()) {
+            SG_LOG(SG_TERRASYNC, SG_WARN, "No OSM2City server defined for:" << slot.currentItem._dir);
+            return false;
+        }
+
         slot.repository->setBaseUrl(_osmCityServer + "/" + tileCategory);
     } else {
         slot.repository->setBaseUrl(_httpServer + "/" + tileCategory);
@@ -740,9 +759,10 @@ void SGTerraSync::WorkerThread::beginSyncTile(SyncSlot& slot)
     };
 
     slot.repository->setFilter(f);
+    return true;
 }
 
-void SGTerraSync::WorkerThread::beginNormalSync(SyncSlot& slot)
+bool SGTerraSync::WorkerThread::beginNormalSync(SyncSlot& slot)
 {
     SGPath path(_local_dir);
     path.append(slot.currentItem._dir);
@@ -754,6 +774,8 @@ void SGTerraSync::WorkerThread::beginNormalSync(SyncSlot& slot)
       p.append(slot.currentItem._dir);
       slot.repository->setInstalledCopyPath(p);
     }
+
+    return true;
 }
 
 void SGTerraSync::WorkerThread::runInternal()
@@ -849,12 +871,19 @@ void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
 {
     std::lock_guard<std::mutex> g(_stateLock);
     time_t now = time(0);
-    _state._consecutive_errors++;
-    _state._fail_count++;
+
+    if (_osmCityServer.empty() && (failedItem._type == SyncItem::OSMTile)) {
+        // don't count these as errors, otherwise normla sync will keep
+        // being abandoned
+    } else {
+        _state._consecutive_errors++;
+        _state._fail_count++;
+    }
+
     failedItem._status = SyncItem::Failed;
     _freshTiles.push_back(failedItem);
     // not we also end up here for partial syncs
-    SG_LOG(SG_TERRASYNC,SG_INFO,
+    SG_LOG(SG_TERRASYNC, SG_WARN,
            "Failed to sync'" << failedItem._dir << "'");
     _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
 }
@@ -865,6 +894,8 @@ void SGTerraSync::WorkerThread::notFound(SyncItem item)
     // as succesful download. Important for MP models and similar so
     // we don't spam the server with lookups for models that don't
     // exist
+
+    SG_LOG(SG_TERRASYNC, SG_WARN, "Not found for: '" << item._dir << "'");
 
     time_t now = time(0);
     item._status = SyncItem::NotFound;
@@ -1078,7 +1109,9 @@ void SGTerraSync::reinit()
     if (enabled)
     {
         _availableNode->setBoolValue(true);
-        _workerThread->setHTTPServer( _terraRoot->getStringValue("http-server","automatic") );
+        _workerThread->setHTTPServer(
+            _terraRoot->getStringValue("http-server", "automatic"),
+            _terraRoot->getStringValue("osm2city-server", ""));
         _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
         _workerThread->setOSMCityVersion(_terraRoot->getStringValue("osm2city-version", "o2c"));
         _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
@@ -1268,7 +1301,6 @@ void SGTerraSync::syncAreaByPath(const std::string& aPath)
         if (_workerThread->isDirActive(dir)) {
             continue;
         }
-
         SyncItem w(dir, isOSMSuffix(suffix) ? SyncItem::OSMTile : SyncItem::Tile);
         _workerThread->request( w );
     }

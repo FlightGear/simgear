@@ -38,7 +38,7 @@
 // forward decls
 class SGPath;
 class SGGeod;
- 
+
 /**
  * A class to calculate and manage a variety of time parameters.
  * The SGTime class provides many real-world time values. It
@@ -63,8 +63,11 @@ class SGTime {
 
 private:
 
-    // Points to the current local timezone name;
+    // Points to the current local timezone filename
     std::string zonename;
+
+    // Points to the current local timezone description
+    std::string description;
 
     // Unix "calendar" time in seconds
     time_t cur_time;
@@ -129,9 +132,9 @@ public:
     SGTime( const SGPath& root );
 
     /** Destructor */
-    ~SGTime();
+    ~SGTime() = default;
 
-    /** 
+    /**
      * Update the time related variables.
      * The update() method requires you to pass in your position and
      * an optional time offset in seconds. The offset (or warp) allows
@@ -163,8 +166,11 @@ public:
     /** @return current system/unix time in seconds */
     inline time_t get_cur_time() const { return cur_time; };
 
-    /** @return time zone name for your current position*/
+    /** @return time zone filename for your current position */
     inline const char * get_zonename() const { return zonename.c_str(); }
+
+    /** @return time zone description for your current position */
+    inline const char * get_description() const { return description.c_str(); }
 
     /** @return GMT in a "brokent down" tm structure */
     inline struct tm* getGmt()const { return (struct tm *)&m_gmt; };
@@ -200,7 +206,7 @@ public:
  * @param second current second
  * @return unix/system time in seconds
  */
-time_t sgTimeGetGMT(int year, int month, int day, 
+time_t sgTimeGetGMT(int year, int month, int day,
 		    int hour, int minute, int second);
 
 /**

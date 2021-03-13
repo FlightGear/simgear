@@ -90,7 +90,8 @@ void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time 
 
         SGTimeZone* nearestTz = static_tzContainer->getNearest(location);
         if (nearestTz) {
-            SGPath name = root / nearestTz->getDescription();
+            description = nearestTz->getDescription();
+            SGPath name = root / description;
             zonename = name.utf8Str();
             SG_LOG( SG_EVENT, SG_DEBUG, "Using zonename = " << zonename );
         } else {
@@ -114,11 +115,6 @@ SGTime::SGTime( const SGPath& root ) {
 
 SGTime::SGTime() {
     init( SGGeod(), SGPath(), 0 );
-}
-
-
-SGTime::~SGTime()
-{
 }
 
 
@@ -231,9 +227,10 @@ void SGTime::updateLocal( const SGGeod& aLocation, const SGPath& root ) {
     time_t currGMT;
     time_t aircraftLocalTime;
     SGTimeZone* nearestTz = static_tzContainer->getNearest(location);
-    SGPath zone( root );
-    zone.append ( nearestTz->getDescription() );
+    description = nearestTz->getDescription();
+    SGPath zone = root / description;
     zonename = zone.utf8Str();
+    SG_LOG( SG_EVENT, SG_DEBUG, "Using zonename = " << zonename );
 
     //Avoid troubles when zone.tab hasn't got the right line endings
     if (zonename[zonename.size()-1] == '\r')

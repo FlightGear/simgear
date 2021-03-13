@@ -124,7 +124,7 @@ static int fgcompute_change(fgtz_rule *rule, int year);
 static struct ttinfo *fgfind_transition (time_t timer);
 static void fgcompute_tzname_max (size_t chars);
 static inline int decode (const void *ptr);
-void fgtzfile_read (const char *file);
+bool fgtzfile_read (const char *file);
 static void offtime (const time_t *t, long int offset, struct tm *tp);
 static char *tzstring (const char* string);
 
@@ -327,8 +327,7 @@ static void fgtzset_internal (int always, const char *tz)
   old_fgtz = tz ? strdup (tz) : NULL;
 
   /* Try to read a data file.  */
-  fgtzfile_read (tz);
-  if (use_fgtzfile)
+  if (fgtzfile_read(tz) && use_fgtzfile)
     return;
   // The default behaviour of the original tzset_internal (int always, char* tz)
   // function is to set up a default timezone, in any case file_read() fails
@@ -785,7 +784,7 @@ static struct ttinfo * fgfind_transition (time_t timer)
 
 
 /**************************************************************************/
-void fgtzfile_read (const char *file)
+bool fgtzfile_read (const char *file)
 {
   // static const char default_tzdir[] = TZDIR;
   size_t num_isstd, num_isgmt;
@@ -818,7 +817,7 @@ void fgtzfile_read (const char *file)
     file = TZDEFAULT;
   else if (*file == '\0')
     /* User specified the empty string; use UTC with no leap seconds.  */
-    return;
+    return true;
   else
     {
       /* We must not allow to read an arbitrary file in a setuid
@@ -866,9 +865,9 @@ void fgtzfile_read (const char *file)
 #endif
 
   if (f == NULL) {
-      perror( "fgtzfile_read(): " );
+//    perror( "fgtzfile_read(): " );
       errno = 0;
-      return;
+      return false;
   }
 
   if (fread ((void *) &tzhead, sizeof (tzhead), 1, f) != 1)
@@ -991,10 +990,11 @@ void fgtzfile_read (const char *file)
   fgcompute_tzname_max (chars);
 
   use_fgtzfile = 1;
-  return;
+  return true;
 
  lose:;
   fclose(f);
+  return false;
 }
 
 /****************************************************************************/

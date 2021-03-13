@@ -241,10 +241,16 @@ void SGTime::updateLocal( const SGGeod& aLocation, const SGPath& root ) {
 
     currGMT = sgTimeGetGMT( gmtime(&cur_time) );
     std::string zs = zone.utf8Str();
-    aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zs.c_str())) );
-    local_offset = aircraftLocalTime - currGMT;
+    struct tm *local_time = fgLocaltime(&cur_time, zs.c_str());
+    if (local_time) {
+      aircraftLocalTime = sgTimeGetGMT( local_time );
+      local_offset = aircraftLocalTime - currGMT;
     // cout << "Using " << local_offset << " as local time offset Timezone is " 
     //      << zonename << endl;
+  }
+  else {
+    SG_LOG( SG_EVENT, SG_ALERT, "Timezone file not found: " << zs );
+  }
 }
 
 

@@ -32,6 +32,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/stdint.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
 
 #include "sample.hxx"
 
@@ -56,7 +57,7 @@ namespace
     }
   };
   
-  unsigned int formatConstruct(ALint numChannels, ALint bitsPerSample, bool compressed)
+  unsigned int formatConstruct(ALint numChannels, ALint bitsPerSample, bool compressed, const SGPath& path)
   {
     unsigned int rv = 0;
     if (!compressed) {
@@ -67,7 +68,7 @@ namespace
       else {
         char msg[81];
         snprintf(msg, 80, "Unsupported audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
-        throw sg_exception(msg);
+          throw sg_exception(msg, {}, path, false);
       }
     } else {
       if (numChannels == 1 && bitsPerSample == 4) rv = SG_SAMPLE_ADPCM; 
@@ -75,7 +76,7 @@ namespace
       else {
         char msg[81];
         snprintf(msg, 80, "Unsupported compressed audio format: tracks: %i, bits/sample: %i", numChannels, bitsPerSample);
-        throw sg_exception(msg);
+          throw sg_exception(msg, {}, path, false);
       }
     }
     return rv;
@@ -275,29 +276,29 @@ namespace
     Codec *codec = codecLinear;
 
     if (!wavReadBE(fd, magic))
-      throw sg_io_exception("corrupt or truncated WAV data", b->path);
+        throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
     
     if (magic != WAV_RIFF_4CC) {
-      throw sg_io_exception("not a .wav file", b->path);
+      throw sg_io_exception("not a .wav file", b->path, {}, false);
     }
 
     if (!wavReadLE(fd, chunkLength) || !wavReadBE(fd, magic))
-      throw sg_io_exception("corrupt or truncated WAV data", b->path);
+      throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
 
     if (magic != WAV_WAVE_4CC)      /* "WAVE" */
     {
-        throw sg_io_exception("unrecognized WAV magic", b->path);
+        throw sg_io_exception("unrecognized WAV magic", b->path, {}, false);
     }
 
     while (1) {
         if (!wavReadBE(fd, magic) || !wavReadLE(fd, chunkLength))
-            throw sg_io_exception("corrupt or truncated WAV data", b->path);
+            throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
 
         if (magic == WAV_FORMAT_4CC)  /* "fmt " */
         {
             found_header = true;
             if (chunkLength < 16) {
-              throw sg_io_exception("corrupt or truncated WAV data", b->path);
+              throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
             }
 
             if (!wavReadLE (fd, audioFormat) ||
@@ -307,11 +308,11 @@ namespace
                 !wavReadLE (fd, blockAlign) ||
                 !wavReadLE (fd, bitsPerSample))
             {
-                throw sg_io_exception("corrupt or truncated WAV data", b->path);
+                throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
             }
 
             if (!gzSkip(fd, chunkLength - 16))
-                throw sg_io_exception("corrupt or truncated WAV data", b->path);
+                throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
 
             switch (audioFormat)
               {
@@ -340,33 +341,33 @@ namespace
                 }
                 break;
               default:
-                throw sg_io_exception("unsupported WAV encoding", b->path);
+                throw sg_io_exception("unsupported WAV encoding:" + std::to_string(audioFormat), b->path, {}, false);
               }
               
               b->block_align = blockAlign;
               b->frequency = samplesPerSecond;
-              b->format = formatConstruct(numChannels, bitsPerSample, compressed);
+              b->format = formatConstruct(numChannels, bitsPerSample, compressed, b->path);
         } else if (magic == WAV_DATA_4CC) {
             if (!found_header) {
                 /* ToDo: A bit wrong to check here, fmt chunk could come later... */
-                throw sg_io_exception("corrupt or truncated WAV data", b->path);
+                throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
             }
             
             b->data = malloc(chunkLength);
             b->length = chunkLength;
             size_t read = gzread(fd, b->data, chunkLength);
             if (read != chunkLength) {
-                throw sg_io_exception("insufficent data reading WAV file", b->path);
+                throw sg_io_exception("insufficent data reading WAV file", b->path, {}, false);
             }
             
             break;
         } else {
             if (!gzSkip(fd, chunkLength))
-              throw sg_io_exception("corrupt or truncated WAV data", b->path);
+              throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
         }
 
         if ((chunkLength & 1) && !gzeof(fd) && !gzSkip(fd, 1))
-          throw sg_io_exception("corrupt or truncated WAV data", b->path);
+          throw sg_io_exception("corrupt or truncated WAV data", b->path, {}, false);
       } // of file chunk parser loop
       
       codec(b); // might throw if something really bad occurs
@@ -380,7 +381,7 @@ namespace simgear
 ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size, ALfloat& freqf, unsigned int& block_align)
 {
   if (!path.exists()) {
-    SG_LOG(SG_IO, SG_DEV_ALERT, "loadWAVFromFile: file not found:" << path);
+      simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::AudioFX, "loadWAVFromFile: not found", path);
     return nullptr;
   }
 
@@ -396,14 +397,15 @@ ALvoid* loadWAVFromFile(const SGPath& path, unsigned int& format, ALsizei& size,
   fd = gzopen(ps.c_str(), "rb");
 #endif
   if (!fd) {
-    SG_LOG(SG_IO, SG_DEV_ALERT, "loadWAVFromFile: unable to open file:" << path);
+      simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::AudioFX, "loadWAVFromFile: unable to open file", path);
     return nullptr;
   }
 
   try {
       loadWavFile(fd, &b);
   } catch (sg_exception& e) {
-      SG_LOG(SG_IO, SG_DEV_ALERT, "loadWAVFromFile:" << e.getFormattedMessage() << "\nfor: " << path);
+      simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::AudioFX, "loadWAVFromFile: unable to read file:"
+                             + e.getFormattedMessage(), e.getLocation());
       return nullptr;
   }
 

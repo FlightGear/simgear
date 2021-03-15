@@ -92,6 +92,9 @@ public:
     // read a block of data of specified size
     int read( char *buf, int length );
 
+    // read a block of data of specified size
+    int read( char *buf, int length, int num );
+
     // read a line of data, length is max size of input buffer
     int readline( char *buf, int length );
 
@@ -99,7 +102,11 @@ public:
     // note: this really defeats the purpose of mmapping a file
     std::string read_all();
 
-    inline const char* get() { return buffer; }
+    // get the pointer to the start of the buffer
+    inline const char *get() { return buffer; }
+
+    // get the pointer at the current offset and increase the offset by len
+    const char* advance(size_t len);
 
     inline size_t get_size() { return size; }
 

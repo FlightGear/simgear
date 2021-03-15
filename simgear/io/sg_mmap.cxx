@@ -180,6 +180,23 @@ int SGMMapFile::read( char *buf, int length ) {
     return result;
 }
 
+const char* SGMMapFile::advance(size_t len) {
+   if (len >= size - offset)
+      return nullptr;
+
+   const char *ptr = buffer + offset;
+   offset += len;
+
+   return ptr;
+}
+
+int SGMMapFile::read( char *buf, int length, int num ) {
+    if (length == 0)
+        return 0;
+
+    size_t size = num*length;
+    return read(buf, size)/length;
+}
 
 // read a line of data, length is max size of input buffer
 int SGMMapFile::readline( char *buf, int length ) {

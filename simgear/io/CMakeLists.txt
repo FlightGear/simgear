@@ -8,6 +8,7 @@ set(HEADERS
     raw_socket.hxx
     sg_binobj.hxx
     sg_file.hxx
+    sg_mmap.hxx
     sg_netBuffer.hxx
     sg_netChannel.hxx
     sg_netChat.hxx
@@ -29,6 +30,7 @@ set(SOURCES
     raw_socket.cxx
     sg_binobj.cxx
     sg_file.cxx
+    sg_mmap.cxx
     sg_netBuffer.cxx
     sg_netChannel.cxx
     sg_netChat.cxx

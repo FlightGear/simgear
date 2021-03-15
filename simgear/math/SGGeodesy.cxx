@@ -15,15 +15,14 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <cmath>
 
+#include <simgear/debug/logstream.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/sg_inlines.h>
 #include <simgear/structure/exception.hxx>
-#include <simgear/debug/logstream.hxx>
 
 #include "SGMath.hxx"
 
@@ -70,6 +69,8 @@ static double e4 = E2*E2;
 #undef _STRETCH
 #undef _POLRAD
 #undef E2
+
+using namespace std::string_literals;
 
 void
 SGGeodesy::SGCartToGeod(const SGVec3<double>& cart, SGGeod& geod)
@@ -474,7 +475,10 @@ SGGeodesy::courseDeg(const SGGeod& p1, const SGGeod& p2)
                                 p2.getLatitudeDeg(), p2.getLongitudeDeg(),
                                 &course1, &course2, &distance);
   if (r != 0) {
-    throw sg_exception("SGGeodesy::courseDeg, unable to compute course");
+      const auto p1Str = simgear::strutils::formatGeodAsString(p1);
+      const auto p2Str = simgear::strutils::formatGeodAsString(p2);
+
+      throw sg_exception("SGGeodesy::courseDeg, unable to compute course:" + p1Str + " -> "s + p2Str);
   }
   
   return course1;
@@ -488,7 +492,10 @@ SGGeodesy::distanceM(const SGGeod& p1, const SGGeod& p2)
                                 p2.getLatitudeDeg(), p2.getLongitudeDeg(),
                                 &course1, &course2, &distance);
   if (r != 0) {
-    throw sg_exception("SGGeodesy::distanceM, unable to compute distance");
+      const auto p1Str = simgear::strutils::formatGeodAsString(p1);
+      const auto p2Str = simgear::strutils::formatGeodAsString(p2);
+
+      throw sg_exception("SGGeodesy::distanceM, unable to compute distance:" + p1Str + " -> "s + p2Str);
   }
   
   return distance;

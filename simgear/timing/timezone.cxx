@@ -36,7 +36,7 @@
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/strutils.hxx>
-#include <simgear/io/sg_file.hxx>
+#include <simgear/io/sg_mmap.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #include "timezone.h"
@@ -152,8 +152,10 @@ public:
         }
     }
     
+    SGMMapFile file;
     ZoneDetect *cd = nullptr;
-    std::string tzdb_buffer;
+    const char* buffer = nullptr;
+    size_t size = 0;
 
     // zone.tab related
     bool is_zone_tab = false;
@@ -165,13 +167,13 @@ SGTimeZoneContainer::SGTimeZoneContainer(const SGPath& path) :
     d(new SGTimeZoneContainerPrivate)
 {
     if (path.file() != "zone.tab") {
-        sg_ifstream tzdb_file(path, std::ios::in);
-        if ( !tzdb_file.is_open() ) {
+        if ( !d->file.open(path, SG_IO_IN) ) {
             throw sg_io_exception("cannot open timezone file", path);
         }
 
-        d->tzdb_buffer = tzdb_file.read_all();
-        d->cd = ZDOpenDatabaseFromMemory((void*) d->tzdb_buffer.data(), d->tzdb_buffer.size());
+        d->buffer = d->file.get();
+        d->size = d->file.get_size();
+        d->cd = ZDOpenDatabaseFromMemory((void*) d->buffer, d->size);
         if (!d->cd) {
           throw sg_io_exception("timezone database read error");
         }

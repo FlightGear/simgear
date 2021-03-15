@@ -53,6 +53,14 @@ SG_DDS::setup( const char *topic, const dds_topic_descriptor_t *desc, const size
     packet_size = size;
 }
 
+void
+SG_DDS::setup(const dds_topic_descriptor_t *desc, const size_t size)
+{
+    topic_name = desc->m_typename;
+    descriptor = desc;
+    packet_size = size;
+}
+
 // If specified as a server (in direction) create a subscriber.
 // If specified as a client (out direction), create a publisher.
 bool

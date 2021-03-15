@@ -60,7 +60,12 @@ public:
     /** Destructor */
     ~SG_DDS();
 
-    // Set the paramaters which weren't available at creation time.
+    // Set the paramaters which weren't available at creation time and use
+    // the descrtors typename as topic name.
+    void setup(const dds_topic_descriptor_t *desc, size_t size);
+
+    // Set the paramaters which weren't available at creation time and use
+    // a custom topic name.
     void setup(const char* topic, const dds_topic_descriptor_t *desc, size_t size);
 
     // If specified as a server start a publishing participant.

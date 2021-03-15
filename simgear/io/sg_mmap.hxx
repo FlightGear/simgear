@@ -68,7 +68,7 @@ class SGMMapFile : public SGIOChannel {
  * map 'filename' and return a pointer to it.
  */
     static void *simple_mmap(int, size_t, SIMPLE_UNMMAP *);
-    static void simple_unmmap(void*, size_t, IMPLE_UNMMAP *);
+    static void simple_unmmap(void*, size_t, SIMPLE_UNMMAP *);
 #else
 # define simple_mmap(a, b, c)   mmap(0, (b), PROT_READ, MAP_PRIVATE, (a), 0L)
 # define simple_unmmap(a, b, c) munmap((a), (b))

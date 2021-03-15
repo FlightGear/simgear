@@ -46,18 +46,6 @@
 
 #include "sg_mmap.hxx"
 
-
-#ifdef WIN32
-/*
- * map 'filename' and return a pointer to it.
- */
-static void *simple_mmap(int, size_t, SIMPLE_UNMMAP *);
-static void simple_unmmap(void*, size_t, SIMPLE_UNMMAP *);
-#else
-# define simple_mmap(a, b, c)   mmap(0, (b), PROT_READ, MAP_PRIVATE, (a), 0L)
-# define simple_unmmap(a, b, c) munmap((a), (b))
-#endif
-
 SGMMapFile::SGMMapFile( )
 {
     set_type( sgFileType );
@@ -304,7 +292,7 @@ bool SGMMapFile::close() {
  */
 
 void *
-simple_mmap(int fd, size_t length, SIMPLE_UNMMAP *un)
+SGMMapFile::simple_mmap(int fd, size_t length, SIMPLE_UNMMAP *un)
 {
     HANDLE f;
     HANDLE m;
@@ -333,7 +321,7 @@ simple_mmap(int fd, size_t length, SIMPLE_UNMMAP *un)
 }
 
 void
-simple_unmmap(void *addr, size_t len, SIMPLE_UNMMAP *un)
+SGMMapFile::simple_unmmap(void *addr, size_t len, SIMPLE_UNMMAP *un)
 {
     UnmapViewOfFile(un->p);
     CloseHandle(un->m);

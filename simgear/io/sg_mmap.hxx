@@ -115,6 +115,9 @@ public:
     // get the pointer to the start of the buffer
     inline const char *get() { return buffer; }
 
+    // get the pointer to the current offset of the buffer
+    inline const char *ptr() { return buffer + offset; }
+
     // get the pointer at the current offset and increase the offset by amount
     // returns nullptr if the offset pointer would end up beyond the mmap
     // buffer size

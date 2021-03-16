@@ -131,6 +131,10 @@ off_t SGMMapFile::forward(off_t amount) {
         amount = size - offset;
     }
     offset += amount;
+
+    if (amount == 0)
+        eof_flag = true;
+
     return amount;
 }
 
@@ -138,8 +142,10 @@ const char* SGMMapFile::advance(off_t amount) {
    const char *ptr = buffer + offset;
 
    off_t advanced = forward(amount);
-   if (advanced != amount)
+   if (advanced != amount) {
+      eof_flag = true;
       return nullptr;
+   }
 
    return ptr;
 }

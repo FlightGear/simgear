@@ -150,7 +150,7 @@ const char* SGMMapFile::advance(off_t amount) {
    return ptr;
 }
 
-ssize_t SGMMapFile::_read(void *buf, size_t count) {
+ssize_t SGMMapFile::mmap_read(void *buf, size_t count) {
     const char *ptr = buffer + offset;
     size_t result = forward(count);
 
@@ -159,7 +159,7 @@ ssize_t SGMMapFile::_read(void *buf, size_t count) {
     return result;
 }
 
-ssize_t SGMMapFile::_write(const void *buf, size_t count) {
+ssize_t SGMMapFile::mmap_write(const void *buf, size_t count) {
     char *ptr = buffer + offset;
     size_t result = forward(count);
 
@@ -172,7 +172,7 @@ ssize_t SGMMapFile::_write(const void *buf, size_t count) {
 // read a block of data of specified size
 int SGMMapFile::read( char *buf, int length ) {
     // read a chunk
-    ssize_t result = _read(buf, length);
+    ssize_t result = mmap_read(buf, length);
     if ( length > 0 && result == 0 ) {
         if (repeat < 0 || iteration < repeat - 1) {
             iteration++;
@@ -183,7 +183,7 @@ int SGMMapFile::read( char *buf, int length ) {
                 return 0;
             } else {
                 offset = 0;			// lseek(0, SEEK_SET)
-                return _read(buf, length);
+                return mmap_read(buf, length);
             }
         } else {
             eof_flag = true;
@@ -193,7 +193,7 @@ int SGMMapFile::read( char *buf, int length ) {
 }
 
 int SGMMapFile::read( char *buf, int length, int num ) {
-    return _read(buf, num*length)/length;
+    return mmap_read(buf, num*length)/length;
 }
 
 // read a line of data, length is max size of input buffer
@@ -201,13 +201,13 @@ int SGMMapFile::readline( char *buf, int length ) {
     int pos = offset;				// pos = lseek(0, SEEK_CUR)
 
     // read a chunk
-    ssize_t result = _read(buf, length);
+    ssize_t result = mmap_read(buf, length);
     if ( length > 0 && result == 0 ) {
         if ((repeat < 0 || iteration < repeat - 1) && pos != 0) {
             iteration++;
 
             pos = offset = 0;			// pos = lseek(0, SEEK_SET)
-            result = _read(buf, length);
+            result = mmap_read(buf, length);
         } else {
             eof_flag = true;
         }
@@ -235,7 +235,7 @@ std::string SGMMapFile::read_all() {
 
 // write data to a file
 int SGMMapFile::write( const char *buf, const int length ) {
-    int result = _write(buf, length);
+    int result = mmap_write(buf, length);
 
     if ( result != length ) {
         SG_LOG( SG_IO, SG_ALERT, "Error writing data: " << file_name );

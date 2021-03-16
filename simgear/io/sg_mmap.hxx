@@ -70,8 +70,8 @@ class SGMMapFile : public SGIOChannel {
 # define simple_unmmap(a, b, c) munmap((a), (b))
 #endif
 
-   ssize_t _read(void *buf, size_t count);
-   ssize_t _write(const void *buf, size_t count);
+   ssize_t mmap_read(void *buf, size_t count);
+   ssize_t mmap_write(const void *buf, size_t count);
 
 public:
 

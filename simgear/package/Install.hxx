@@ -20,9 +20,10 @@
 
 #include <vector>
 
-#include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/package/Delegate.hxx>
+#include <simgear/package/PackageCommon.hxx>
 
 #include <simgear/structure/function_list.hxx>
 #include <simgear/structure/SGReferenced.hxx>
@@ -35,15 +36,6 @@ namespace simgear
 namespace pkg
 {
 
-// forward decls
-class Package;
-class Catalog;
-class Install;
-  
-typedef SGSharedPtr<Package> PackageRef;
-typedef SGSharedPtr<Catalog> CatalogRef;  
-typedef SGSharedPtr<Install> InstallRef;
-  
 /**
  *
  */

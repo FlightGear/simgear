@@ -295,21 +295,27 @@ bool Catalog::removeDirectory()
     return d.remove(true /* recursive */);
 }
 
-PackageList const&
-Catalog::packages() const
+PackageList
+Catalog::packages(Type ty) const
 {
-  return m_packages;
+    PackageList r;
+    std::copy_if(m_packages.begin(), m_packages.end(),
+                 std::back_inserter(r),
+                 [ty](const PackageRef& p) {
+                     return p->type() == ty;
+                 });
+    return r;
 }
 
 PackageList
 Catalog::packagesMatching(const SGPropertyNode* aFilter) const
 {
     PackageList r;
-    for (auto p : m_packages) {
-        if (p->matches(aFilter)) {
-            r.push_back(p);
-        }
-    }
+    std::copy_if(m_packages.begin(), m_packages.end(),
+                 std::back_inserter(r),
+                 [aFilter](const PackageRef& p) {
+                     return p->matches(aFilter);
+                 });
     return r;
 }
 
@@ -317,27 +323,23 @@ PackageList
 Catalog::packagesNeedingUpdate() const
 {
     PackageList r;
-    for (auto p : m_packages) {
-        if (!p->isInstalled()) {
-            continue;
-        }
-
-        if (p->install()->hasUpdate()) {
-            r.push_back(p);
-        }
-    }
+    std::copy_if(m_packages.begin(), m_packages.end(),
+                 std::back_inserter(r),
+                 [](const PackageRef& p) {
+                     return p->isInstalled() && p->install()->hasUpdate();
+                 });
     return r;
 }
 
 PackageList
-Catalog::installedPackages() const
+Catalog::installedPackages(Type ty) const
 {
   PackageList r;
-  for (auto p : m_packages) {
-    if (p->isInstalled()) {
-      r.push_back(p);
-    }
-  }
+  std::copy_if(m_packages.begin(), m_packages.end(),
+               std::back_inserter(r),
+               [ty](const PackageRef& p) {
+                   return p->isInstalled() && p->type() == ty;
+               });
   return r;
 }
 

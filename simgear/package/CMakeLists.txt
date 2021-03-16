@@ -7,6 +7,7 @@ set(HEADERS
     Install.hxx
     Root.hxx
     Delegate.hxx
+    PackageCommon.hxx
     )
 
 set(SOURCES

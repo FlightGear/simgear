@@ -28,6 +28,8 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
+#include <simgear/package/PackageCommon.hxx>
+
 typedef std::set<std::string> string_set;
 
 namespace simgear
@@ -35,19 +37,7 @@ namespace simgear
 
 namespace pkg
 {
-
-// forward decls
-class Install;
-class Catalog;
-class Package;
-
-typedef SGSharedPtr<Package> PackageRef;
-typedef SGSharedPtr<Catalog> CatalogRef;
-typedef SGSharedPtr<Install> InstallRef;
-
-typedef std::vector<PackageRef> PackageList;
-
-  class Package : public SGReferenced
+class Package : public SGReferenced
 {
 public:
 
@@ -214,6 +204,11 @@ public:
      * (parents and children)
      */
     std::string parentIdForVariant(unsigned int variantIndex) const;
+
+    Type type() const;
+
+    static std::string directoryForType(Type type);
+
 private:
     SGPath pathOnDisk() const;
 
@@ -240,6 +235,7 @@ private:
     bool matchesDescription(const std::string &search) const;
     
     SGPropertyNode_ptr m_props;
+    Type m_type;
     std::string m_id;
     string_set m_tags;
     Catalog* m_catalog = nullptr; // non-owning ref, explicitly

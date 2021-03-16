@@ -534,13 +534,13 @@ CatalogList Root::allCatalogs() const
 }
 
 PackageList
-Root::allPackages() const
+Root::allPackages(Type ty) const
 {
     PackageList r;
 
     CatalogDict::const_iterator it = d->catalogs.begin();
     for (; it != d->catalogs.end(); ++it) {
-        const PackageList& r2(it->second->packages());
+        const PackageList& r2(it->second->packages(ty));
         r.insert(r.end(), r2.begin(), r2.end());
     }
 

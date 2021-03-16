@@ -23,6 +23,7 @@
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/package/Delegate.hxx>
+#include <simgear/package/PackageCommon.hxx>
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
@@ -39,18 +40,6 @@ namespace HTTP {
     
 namespace pkg
 {
-
-// forward decls
-class Package;
-class Catalog;
-class Install;
-  
-typedef SGSharedPtr<Package> PackageRef;
-typedef SGSharedPtr<Catalog> CatalogRef;
-typedef SGSharedPtr<Install> InstallRef;
-  
-typedef std::vector<PackageRef> PackageList;
-typedef std::vector<CatalogRef> CatalogList;
 
 class Root : public SGReferenced
 {
@@ -114,8 +103,8 @@ public:
     /**
      *
      */
-    PackageList allPackages() const;
-    
+    PackageList allPackages(Type ty = AircraftPackage) const;
+
     /**
      * retrieve packages matching a filter.
      * filter consists of required / minimum values, AND-ed together.

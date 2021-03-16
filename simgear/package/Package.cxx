@@ -29,9 +29,29 @@
 #include <simgear/package/Install.hxx>
 #include <simgear/package/Root.hxx>
 
+namespace {
+
+const string_list static_typeNames = {
+    "aircraft",
+    "ai-model",
+    "add-on"};
+
+}
+
 namespace simgear {
 
 namespace pkg {
+
+Type typeFromString(const std::string& s)
+{
+    const auto l = strutils::lowercase(s);
+    const auto it = std::find(static_typeNames.begin(), static_typeNames.end(), l);
+    if (it != static_typeNames.end()) {
+        return static_cast<Type>(std::distance(static_typeNames.begin(), it));
+    }
+
+    return AircraftPackage; // for backwards-compat
+}
 
 Package::Package(const SGPropertyNode* aProps, CatalogRef aCatalog) :
     m_catalog(aCatalog.get())
@@ -52,6 +72,12 @@ void Package::initWithProps(const SGPropertyNode* aProps)
     m_variants.push_back(m_id);
     for (auto var : m_props->getChildren("variant")) {
         m_variants.push_back(var->getStringValue("id"));
+    }
+
+    if (aProps->hasChild("type")) {
+        m_type = typeFromString(m_props->getStringValue("type"));
+    } else {
+        m_type = AircraftPackage;
     }
 }
 
@@ -133,6 +159,12 @@ bool Package::matches(const SGPropertyNode* aFilter) const
         }
     }
 
+    if (filter_name == "type") {
+        handled = true;
+        const auto n = strutils::lowercase(aFilter->getStringValue());
+        return (n == static_typeNames.at(static_cast<int>(m_type)));
+    }
+
     if (!handled) {
       SG_LOG(SG_GENERAL, SG_WARN, "unknown filter term:" << filter_name);
     }
@@ -186,10 +218,23 @@ bool Package::isInstalled() const
     return pathOnDisk().exists();
 }
 
+std::string Package::directoryForType(Type type)
+{
+    switch (type) {
+    case AircraftPackage:
+    default:
+        return "Aircraft";
+    case AIModelPackage:
+        return "AI/Aircraft";
+    case AddOnPackage:
+        return "Add-On";
+    }
+}
+
 SGPath Package::pathOnDisk() const
 {
     SGPath p(m_catalog->installRoot());
-    p.append("Aircraft");
+    p.append(directoryForType(m_type));
     p.append(dirName());
     return p;
 }
@@ -585,6 +630,10 @@ bool Package::validate() const
     return true;
 }
 
+Type Package::type() const
+{
+    return m_type;
+}
 
 } // of namespace pkg
 

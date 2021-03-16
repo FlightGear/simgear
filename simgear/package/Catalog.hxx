@@ -32,6 +32,7 @@
 #include <simgear/io/HTTPRequest.hxx>
 
 #include <simgear/package/Delegate.hxx>
+#include <simgear/package/PackageCommon.hxx>
 
 namespace simgear
 {
@@ -40,20 +41,6 @@ namespace HTTP { class Client; }
 
 namespace pkg
 {
-
-// forward decls
-class Package;
-class Catalog;
-class Root;
-class Install;
-
-typedef SGSharedPtr<Package> PackageRef;
-typedef SGSharedPtr<Catalog> CatalogRef;
-typedef SGSharedPtr<Install> InstallRef;
-
-typedef std::vector<PackageRef> PackageList;
-typedef std::vector<CatalogRef> CatalogList;
-
 class Catalog : public SGReferenced
 {
 public:
@@ -79,7 +66,7 @@ public:
     /**
      * Get all packages in this catalog.
      */
-    PackageList const& packages() const;
+    PackageList packages(Type ty = AircraftPackage) const;
 
     /**
      * retrieve packages in this catalog matching a filter.
@@ -90,7 +77,7 @@ public:
     /**
      * packages which are locally installed
      */
-    PackageList installedPackages() const;
+    PackageList installedPackages(Type ty = AircraftPackage) const;
 
     /**
      * retrieve all the packages in the catalog which are installed

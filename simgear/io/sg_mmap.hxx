@@ -50,7 +50,7 @@ class SGMMapFile : public SGIOChannel {
     int extraoflags = 0;
 
     char *buffer = nullptr;
-    size_t offset = 0;
+    off_t offset = 0;
     size_t size = 0;
 #ifdef WIN32
     typedef struct
@@ -59,20 +59,19 @@ class SGMMapFile : public SGIOChannel {
         void *p;
     } SIMPLE_UNMMAP;
     SIMPLE_UNMMAP un;
-#else
-    int un;			// referenced but not used
-#endif
 
-#ifdef WIN32
-/*
- * map 'filename' and return a pointer to it.
- */
+    // map the file descriptor and return a pointer to the buffer.
     static void *simple_mmap(int, size_t, SIMPLE_UNMMAP *);
     static void simple_unmmap(void*, size_t, SIMPLE_UNMMAP *);
 #else
+    int un;			// referenced but not used
+
 # define simple_mmap(a, b, c)   mmap(0, (b), PROT_READ, MAP_PRIVATE, (a), 0L)
 # define simple_unmmap(a, b, c) munmap((a), (b))
 #endif
+
+   ssize_t _read(void *buf, size_t count);
+   ssize_t _write(const void *buf, size_t count);
 
 public:
 
@@ -116,10 +115,21 @@ public:
     // get the pointer to the start of the buffer
     inline const char *get() { return buffer; }
 
-    // get the pointer at the current offset and increase the offset by len
-    const char* advance(size_t len);
+    // get the pointer at the current offset and increase the offset by amount
+    // returns nullptr if the offset pointer would end up beyond the mmap
+    // buffer size
+    const char* advance(off_t amount);
 
+    // return the size of the mmaped area
     inline size_t get_size() { return size; }
+
+    // forward by amount, returns the amount which could be forwarded
+    // without the offset getting beyond the mmap buffer size.
+     // returns 0 on end of file.
+    off_t forward(off_t amount);
+
+    // rewind the offset pointer
+    inline void rewind() { offset = 0; }
 
     // write data to a file
     int write( const char *buf, const int length );

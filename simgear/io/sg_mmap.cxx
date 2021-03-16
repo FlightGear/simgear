@@ -126,40 +126,58 @@ bool SGMMapFile::open( const SGProtocolDir d ) {
     return true;
 }
 
+off_t SGMMapFile::forward(off_t amount) {
+    if ((size_t)amount > size - offset) {
+        amount = size - offset;
+    }
+    offset += amount;
+    return amount;
+}
+
+const char* SGMMapFile::advance(off_t amount) {
+   const char *ptr = buffer + offset;
+
+   off_t advanced = forward(amount);
+   if (advanced != amount)
+      return nullptr;
+
+   return ptr;
+}
+
+ssize_t SGMMapFile::_read(void *buf, size_t count) {
+    const char *ptr = buffer + offset;
+    size_t result = forward(count);
+
+    memcpy(buf, ptr, result);
+
+    return result;
+}
+
+ssize_t SGMMapFile::_write(const void *buf, size_t count) {
+    char *ptr = buffer + offset;
+    size_t result = forward(count);
+
+    memcpy(ptr, buf, result);
+
+    return result;
+}
+
 
 // read a block of data of specified size
 int SGMMapFile::read( char *buf, int length ) {
-    size_t read_size = length;
-    size_t result = length;
-    size_t pos = offset;
-
-    if (read_size > size - offset) {
-        read_size = size - offset;
-        result = 0; // eof
-    }
-
     // read a chunk
-    memcpy(buf, buffer+offset, read_size);
-    offset += read_size;
-
+    ssize_t result = _read(buf, length);
     if ( length > 0 && result == 0 ) {
         if (repeat < 0 || iteration < repeat - 1) {
             iteration++;
             // loop reading the file, unless it is empty
-            
-            off_t fileLen = pos;
+            off_t fileLen = offset;		// lseek(0, SEEK_CUR)
             if (fileLen == 0) {
                 eof_flag = true;
                 return 0;
             } else {
-                offset = 0;
-                if (read_size > size) {
-                    read_size = size;
-                    result = 0; // eof
-                }
-                memcpy(buf, buffer, read_size);
-                offset += read_size;
-                return result;
+                offset = 0;			// lseek(0, SEEK_SET)
+                return _read(buf, length);
             }
         } else {
             eof_flag = true;
@@ -168,67 +186,36 @@ int SGMMapFile::read( char *buf, int length ) {
     return result;
 }
 
-const char* SGMMapFile::advance(size_t len) {
-   if (len >= size - offset)
-      return nullptr;
-
-   const char *ptr = buffer + offset;
-   offset += len;
-
-   return ptr;
-}
-
 int SGMMapFile::read( char *buf, int length, int num ) {
-    if (length == 0)
-        return 0;
-
-    size_t size = num*length;
-    return read(buf, size)/length;
+    return _read(buf, num*length)/length;
 }
 
 // read a line of data, length is max size of input buffer
 int SGMMapFile::readline( char *buf, int length ) {
-    size_t read_size = length;
-    size_t result = length;
-    size_t pos = offset;
-
-    if (read_size > size - offset) {
-        read_size = size - offset;
-        result = 0; // eof
-    }
+    int pos = offset;				// pos = lseek(0, SEEK_CUR)
 
     // read a chunk
-    memcpy(buf, buffer+offset, read_size);
-    offset += read_size;
-
+    ssize_t result = _read(buf, length);
     if ( length > 0 && result == 0 ) {
         if ((repeat < 0 || iteration < repeat - 1) && pos != 0) {
             iteration++;
 
-            pos = 0;
-            result = length;
-            read_size = length;
-            if (read_size > size) {
-                read_size = size;
-                result = 0; // eof
-            }
-            
-            memcpy(buf, buffer, read_size);
-            offset += read_size;
+            pos = offset = 0;			// pos = lseek(0, SEEK_SET)
+            result = _read(buf, length);
         } else {
             eof_flag = true;
         }
     }
 
     // find the end of line and reset position
-    size_t i;
+    int i;
     for ( i = 0; i < result && buf[i] != '\n'; ++i );
     if ( buf[i] == '\n' ) {
 	result = i + 1;
     } else {
 	result = i;
     }
-    offset = pos + result;
+    offset = pos + result;			// lseek(pos+result, SEEK_SET)
 
     // just in case ...
     buf[ result ] = '\0';
@@ -236,39 +223,26 @@ int SGMMapFile::readline( char *buf, int length ) {
     return result;
 }
 
-std::string SGMMapFile::read_all()
-{
+std::string SGMMapFile::read_all() {
     return std::string(buffer, size);
 }
 
 // write data to a file
 int SGMMapFile::write( const char *buf, const int length ) {
-     size_t write_size = length;
+    int result = _write(buf, length);
 
-     if (write_size > size - offset) {
-        SG_LOG( SG_IO, SG_ALERT, "Attempting to write beyond the mmap buffer size: " << file_name );
-        write_size = size - offset;
+    if ( result != length ) {
+        SG_LOG( SG_IO, SG_ALERT, "Error writing data: " << file_name );
     }
 
-    memcpy(buffer+offset, buf, write_size);
-    offset += write_size;
-
-    return write_size;
+    return result;
 }
 
 
 // write null terminated string to a file
 int SGMMapFile::writestring( const char *str ) {
-    size_t write_size = std::strlen( str );
-    if (write_size > size - offset) {
-        SG_LOG( SG_IO, SG_ALERT, "Attempting to write beyond the mmap buffer size: " << file_name );
-        write_size = size - offset;
-    }
-
-    memcpy(buffer+offset, str, write_size);
-    offset += write_size;
-
-    return write_size;
+    int length = std::strlen( str );
+    return write( str, length );
 }
 
 

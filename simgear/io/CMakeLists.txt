@@ -75,4 +75,8 @@ add_simgear_autotest(test_untar test_untar.cxx)
 set_target_properties(test_untar PROPERTIES
   COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
 
+add_simgear_autotest(test_mmap test_mmap.cxx)
+set_target_properties(test_mmap PROPERTIES
+  COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
+
 endif(ENABLE_TESTS)

@@ -29,8 +29,8 @@ void testTarGz()
     SGMMapFile f(p);
     f.open(SG_IO_IN);
 
-    uint8_t* buf = (uint8_t*) alloca(8192);
-    size_t bufSize = f.read((char*) buf, 8192);
+    const uint8_t* buf = (const uint8_t*)f.get();
+    size_t bufSize = f.forward(8192);
 
     SG_VERIFY(ArchiveExtractor::determineType(buf, bufSize) == ArchiveExtractor::GZData);
 
@@ -45,8 +45,8 @@ void testPlainTar()
     SGMMapFile f(p);
     f.open(SG_IO_IN);
 
-	uint8_t* buf = (uint8_t*)alloca(8192);
-	size_t bufSize = f.read((char*) buf, 8192);
+        const uint8_t* buf = (const uint8_t*)f.get();
+        size_t bufSize = f.forward(8192);
 
 	SG_VERIFY(ArchiveExtractor::determineType(buf, bufSize) == ArchiveExtractor::TarData);
 
@@ -67,9 +67,9 @@ void testExtractStreamed()
 
 	ArchiveExtractor ex(extractDir);
 
-	uint8_t* buf = (uint8_t*) alloca(128);
 	while (!f.eof()) {
-		size_t bufSize = f.read((char*) buf, 128);
+                const uint8_t* buf = (const uint8_t*)f.ptr();
+                size_t bufSize = f.forward(128);
 		ex.extractBytes(buf, bufSize);
 	}
 
@@ -100,9 +100,9 @@ void testFilterTar()
     
     ArchiveExtractor ex(extractDir);
     
-    uint8_t* buf = (uint8_t*) alloca(128);
     while (!f.eof()) {
-        size_t bufSize = f.read((char*) buf, 128);
+        const uint8_t* buf = (const uint8_t*)f.ptr();
+        size_t bufSize = f.forward(128);
         ex.extractBytes(buf, bufSize);
     }
     
@@ -133,9 +133,9 @@ void testExtractZip()
 
 	ArchiveExtractor ex(extractDir);
 
-	uint8_t* buf = (uint8_t*)alloca(128);
 	while (!f.eof()) {
-		size_t bufSize = f.read((char*)buf, 128);
+                const uint8_t* buf = (const uint8_t*)f.ptr();
+                size_t bufSize = f.forward(128);
 		ex.extractBytes(buf, bufSize);
 	}
 
@@ -162,9 +162,9 @@ void testPAXAttributes()
     
     ArchiveExtractor ex(extractDir);
     
-    uint8_t* buf = (uint8_t*) alloca(128);
     while (!f.eof()) {
-        size_t bufSize = f.read((char*) buf, 128);
+        const uint8_t* buf = (const uint8_t*)f.ptr();
+        size_t bufSize = f.forward(128);
         ex.extractBytes(buf, bufSize);
     }
     
@@ -188,9 +188,9 @@ void testExtractXZ()
 
     ArchiveExtractor ex(extractDir);
 
-    uint8_t* buf = (uint8_t*)alloca(128);
     while (!f.eof()) {
-        size_t bufSize = f.read((char*)buf, 128);
+        const uint8_t* buf = (const uint8_t*)f.ptr();
+        size_t bufSize = f.forward(128);
         ex.extractBytes(buf, bufSize);
     }
 

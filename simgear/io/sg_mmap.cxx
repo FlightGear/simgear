@@ -71,6 +71,7 @@ public:
 };
 
 SGMMapFile::SGMMapFile( )
+    : d(new SGMMapFilePrivate)
 {
     set_type( sgFileType );
 }

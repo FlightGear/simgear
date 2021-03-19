@@ -51,6 +51,9 @@ public:
 
   RequestList pendingRequests;
 
+  bool curlPerformActive = false;
+  RequestList pendingCancelRequests;
+
   SGTimeStamp timeTransferSample;
   unsigned int bytesTransferred;
   unsigned int lastTransferRate;

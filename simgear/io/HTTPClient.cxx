@@ -140,6 +140,7 @@ void Client::reset()
     d->timeTransferSample.stamp();
     d->totalBytesDownloaded = 0;
     d->maxPipelineDepth = 5;
+    d->curlPerformActive = false;
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
     d->tlsCertificatePath = SGPath::fromEnv("SIMGEAR_TLS_CERT_PATH");
     d->createCurlMulti();
@@ -162,15 +163,22 @@ void Client::update(int waitTimeout)
         return;
     }
 
+    d->curlPerformActive = true;
     mc = curl_multi_perform(d->curlMulti, &remainingActive);
     if (mc == CURLM_CALL_MULTI_PERFORM) {
         // we could loop here, but don't want to get blocked
         // also this shouldn't  ocurr in any modern libCurl
         curl_multi_perform(d->curlMulti, &remainingActive);
     } else if (mc != CURLM_OK) {
+        d->curlPerformActive = false;
         SG_LOG(SG_IO, SG_WARN, "curl_multi_perform failed:" << curl_multi_strerror(mc));
         return;
     }
+
+    d->curlPerformActive = false;
+    for (auto r : d->pendingCancelRequests) {
+        cancelRequest(r, "deferred cancellation");
+    };
 
     CURLMsg* msg;
     while ((msg = curl_multi_info_read(d->curlMulti, &messagesInQueue))) {
@@ -369,9 +377,16 @@ void Client::cancelRequest(const Request_ptr &r, std::string reason)
         return;
     }
 
+    // don't cancel from inside curl_multi_perform, causes
+    // everything to melt. Defer until after it's done
+    if (d->curlPerformActive) {
+        d->pendingCancelRequests.push_back(r);
+        return;
+    }
+
     CURLMcode err = curl_multi_remove_handle(d->curlMulti, it->second);
     if (err != CURLM_OK) {
-      SG_LOG(SG_IO, SG_WARN, "curl_multi_remove_handle failed:" << err);
+        SG_LOG(SG_IO, SG_WARN, "cancelRequest: curl_multi_remove_handle failed:" << err);
     }
 
     // clear the request pointer form the curl-easy object

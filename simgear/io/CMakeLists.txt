@@ -55,6 +55,7 @@ if (CycloneDDS_FOUND)
     set(SOURCES ${SOURCES}
         SGDataDistributionService.cxx
         )
+    add_simgear_test(test_dds test_dds.cxx)
 endif (CycloneDDS_FOUND)
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")

@@ -24,21 +24,22 @@
 // $Id$
 
 
-#ifndef _SG_DDS_HXX
-#define _SG_DDS_HXX
+#ifndef _SG_DDS_Topic_HXX
+#define _SG_DDS_Topic_HXX
 
 #include <string>
+#include <vector>
+
 #include <dds/dds.h>
 
 #include <simgear/compiler.h>
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>
 
+#define FG_DDS_DOMAIN           DDS_DOMAIN_DEFAULT
 
-/**
- * A socket I/O class based on SGIOChannel.
- */
-class SG_DDS : public SGIOChannel {
+// Data Distribution Service (DDS) class based on SGIOChannel.
+class SG_DDS_Topic : public SGIOChannel {
 private:
 
     std::string topic_name;
@@ -47,22 +48,20 @@ private:
 
     uint32_t status = 0;
 
+    bool shared_participant = true;
     dds_entity_t participant = -1;
     dds_entity_t topic = -1;
-    dds_entity_t writer = -1;
-    dds_entity_t reader = -1;
+    dds_entity_t entry = -1;
 
 public:
 
-    /** Create an instance of SG_DDS. */
-    SG_DDS();
+    /** Create an instance of SG_DDS_Topic. */
+    SG_DDS_Topic();
+
+    SG_DDS_Topic(const char* topic, const dds_topic_descriptor_t *desc, size_t size);
 
     /** Destructor */
-    ~SG_DDS();
-
-    // Set the paramaters which weren't available at creation time and use
-    // the descrtors typename as topic name.
-    void setup(const dds_topic_descriptor_t *desc, size_t size);
+    ~SG_DDS_Topic();
 
     // Set the paramaters which weren't available at creation time and use
     // a custom topic name.
@@ -70,17 +69,44 @@ public:
 
     // If specified as a server start a publishing participant.
     // If specified as a client start a subscribing participant.
-    bool open( const SGProtocolDir d );
+    bool open(const SGProtocolDir d);
+
+    // If specified as a server start publishing to a participant.
+    // If specified as a client start subscribing to a participant.
+    bool open(dds_entity_t p, const SGProtocolDir d);
 
     // read data from the topic.
-    int read( char *buf, int length );
+    int read(char *buf, int length);
 
     // write data to the topic.
-    int write( const char *buf, const int length );
+    int write(const char *buf, const int length);
 
     // close the participant.
     bool close();
+
+    dds_entity_t get() { return entry; }
+};
+
+// a class to manage multiple DDS topics
+class SG_DDS {
+private:
+    dds_entity_t participant = -1;
+    dds_domainid_t domain = FG_DDS_DOMAIN;
+
+    dds_entity_t waitset = -1;
+
+    std::vector<SG_DDS_Topic*> readers;
+    std::vector<SG_DDS_Topic*> writers;
+
+public:
+    SG_DDS(dds_domainid_t d = FG_DDS_DOMAIN);
+    ~SG_DDS();
+
+    bool add(SG_DDS_Topic *topic, const SGProtocolDir d);
+    bool close();
+
+    bool wait(float dt = 0.0f);
 };
 
 
-#endif // _SG_DDS_HXX
+#endif // _SG_DDS_Topic_HXX

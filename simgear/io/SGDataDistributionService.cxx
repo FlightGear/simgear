@@ -24,6 +24,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <algorithm>
+
 #include <simgear/compiler.h>
 
 #include <simgear/debug/logstream.hxx>
@@ -31,40 +33,37 @@
 #include "SGDataDistributionService.hxx"
 
 
-#define FG_DDS_DOMAIN		DDS_DOMAIN_DEFAULT
-
-SG_DDS::SG_DDS()
+SG_DDS_Topic::SG_DDS_Topic()
 {
-    set_type( sgDDSType );
+    set_type(sgDDSType);
 }
 
-
-SG_DDS::~SG_DDS()
+SG_DDS_Topic::~SG_DDS_Topic()
 {
     this->close();
 }
 
+
+SG_DDS_Topic::SG_DDS_Topic(const char *topic, const dds_topic_descriptor_t *desc, size_t size)
+{
+    set_type(sgDDSType);
+    setup(topic, desc, size);
+}
+
 // Set the paramaters which weren't available at creation time.
 void
-SG_DDS::setup( const char *topic, const dds_topic_descriptor_t *desc, const size_t size)
+SG_DDS_Topic::setup(const char *topic, const dds_topic_descriptor_t *desc, size_t size)
 {
     topic_name = topic;
     descriptor = desc;
     packet_size = size;
 }
 
-void
-SG_DDS::setup(const dds_topic_descriptor_t *desc, const size_t size)
-{
-    topic_name = desc->m_typename;
-    descriptor = desc;
-    packet_size = size;
-}
 
 // If specified as a server (in direction) create a subscriber.
 // If specified as a client (out direction), create a publisher.
 bool
-SG_DDS::open( SGProtocolDir direction )
+SG_DDS_Topic::open(SGProtocolDir direction)
 {
     set_dir(direction);
 
@@ -77,8 +76,15 @@ SG_DDS::open( SGProtocolDir direction )
                                      << dds_strretcode(-participant));
             return false;
         }
+        shared_participant = false;
     }
+    return open(participant, direction);
+}
 
+bool
+SG_DDS_Topic::open(dds_entity_t p, SGProtocolDir direction)
+{
+    participant = p;
     if (topic < 0)
     {
         topic = dds_create_topic(participant, descriptor,
@@ -97,10 +103,10 @@ SG_DDS::open( SGProtocolDir direction )
         dds_qset_reliability(qos, DDS_RELIABILITY_RELIABLE, DDS_MSECS(1));
         dds_qset_history(qos, DDS_HISTORY_KEEP_LAST, 3);
     
-        reader = dds_create_reader(participant, topic, qos, NULL);
-        if (reader < 0) {
+        entry = dds_create_reader(participant, topic, qos, NULL);
+        if (entry < 0) {
            SG_LOG(SG_IO, SG_ALERT, "dds_create_reader: "
-                                    << dds_strretcode(-reader));
+                                    << dds_strretcode(-entry));
            return false;
         }
 
@@ -111,14 +117,14 @@ SG_DDS::open( SGProtocolDir direction )
     {
         dds_return_t rc; 
 
-        writer = dds_create_writer(participant, topic, NULL, NULL);
-        if (writer < 0) {
+        entry = dds_create_writer(participant, topic, NULL, NULL);
+        if (entry < 0) {
             SG_LOG(SG_IO, SG_ALERT, "dds_create_writer: "
-                                     << dds_strretcode(-writer));
+                                     << dds_strretcode(-entry));
             return false;
         }
 
-        rc = dds_set_status_mask(writer, DDS_PUBLICATION_MATCHED_STATUS);
+        rc = dds_set_status_mask(entry, DDS_PUBLICATION_MATCHED_STATUS);
         if (rc != DDS_RETCODE_OK) {
             SG_LOG(SG_IO, SG_ALERT, "dds_set_status_mask: "
                                      << dds_strretcode(-rc));         
@@ -133,16 +139,16 @@ SG_DDS::open( SGProtocolDir direction )
 // read data from topic (server)
 // read a block of data of specified size
 int
-SG_DDS::read( char *buf, int length )
+SG_DDS_Topic::read(char *buf, int length)
 {
     int result;
     
-    if (reader < 0 || length < (int)packet_size) {
+    if (entry < 0 || length < (int)packet_size) {
         return 0;
     }
 
     dds_sample_info_t info[1];
-    result = dds_take(reader, (void**)&buf, info, 1, 1);
+    result = dds_take(entry, (void**)&buf, info, 1, 1);
     if(result < 0 || !info[0].valid_data)
     {
         errno = -result;
@@ -157,17 +163,17 @@ SG_DDS::read( char *buf, int length )
 
 // write data to topic (client)
 int
-SG_DDS::write( const char *buf, const int length )
+SG_DDS_Topic::write(const char *buf, const int length)
 {
     int result;
 
-    if (writer < 0 || length < (int)packet_size) {
+    if (entry < 0 || length < (int)packet_size) {
         return 0;
     }
 
     if (!status)
     {
-        dds_return_t rc = dds_get_status_changes(writer, &status);
+        dds_return_t rc = dds_get_status_changes(entry, &status);
         if (rc != DDS_RETCODE_OK) {
             SG_LOG(SG_IO, SG_ALERT, "dds_get_status_changes: "
                                      << dds_strretcode(-rc));
@@ -180,7 +186,7 @@ SG_DDS::write( const char *buf, const int length )
         }
     }
 
-    result = dds_write(writer, buf);
+    result = dds_write(entry, buf);
     if(result != DDS_RETCODE_OK) 
     {
         errno = -result;
@@ -198,15 +204,102 @@ SG_DDS::write( const char *buf, const int length )
 
 // close the port
 bool
-SG_DDS::close()
+SG_DDS_Topic::close()
 {
-    dds_delete(participant);
+    if (!shared_participant)
+        dds_delete(participant);
 
-    reader = -1;
-    writer = -1;
-    topic = -1;
+    shared_participant = true;
     participant = -1;
+    topic = -1;
+    entry = -1;
 
     return true;
 }
 
+
+// participant
+SG_DDS::SG_DDS(dds_domainid_t d) :
+    domain(d)
+{
+    if (participant < 0)
+    {
+        participant = dds_create_participant(domain, NULL, NULL);
+
+        if (participant < 0) {
+            SG_LOG(SG_IO, SG_ALERT, "dds_create_participant: "
+                                     << dds_strretcode(-participant));
+            return;
+        }
+    }
+
+    waitset = dds_create_waitset(participant);
+}
+
+SG_DDS::~SG_DDS()
+{
+    this->close();
+    dds_delete(participant);
+}
+
+bool
+SG_DDS::add(SG_DDS_Topic *topic, const SGProtocolDir d)
+{
+    bool result = topic->open(participant, d);
+    if (result)
+    {
+        if (d == SG_IO_OUT || d == SG_IO_BI)
+            writers.push_back(topic);
+        else if (d == SG_IO_IN || d == SG_IO_BI)
+        {
+            readers.push_back(topic);
+
+            dds_entity_t entry = topic->get();
+            dds_entity_t rdcond = dds_create_readcondition(entry,
+                                                     DDS_NOT_READ_SAMPLE_STATE);
+            int status = dds_waitset_attach(waitset, rdcond, entry);
+            if (status < 0)
+                SG_LOG(SG_IO, SG_ALERT, "ds_waitset_attach: "
+                                         << dds_strretcode(-status));
+        }
+    }
+
+    return result;
+}
+
+bool
+SG_DDS::close()
+{
+    for (auto it : readers)
+        it->close();
+
+    for (auto it : writers)
+        it->close();
+
+    readers.clear();
+    writers.clear();
+
+    return true;
+}
+
+bool
+SG_DDS::wait(float dt)
+{
+    size_t num = readers.size();
+    if (!num) return false;
+
+    dds_duration_t timeout = DDS_INFINITY;
+    dds_attach_t results[num];
+
+    if (dt > 0.0)
+        timeout = dt*1e9f * DDS_NSECS_IN_SEC;
+
+    int status = dds_waitset_wait(waitset, results, num, timeout);
+    if (status < 0) {
+        SG_LOG(SG_IO, SG_ALERT, "dds_waitset_wait: "
+                                 << dds_strretcode(-status));
+        return false;
+    }
+
+    return true;
+}

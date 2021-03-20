@@ -32,6 +32,7 @@
 #include <string.h>
 #include <string>
 #include <mutex>
+#include <utility>
 
 #include <osgDB/ReadFile>
 
@@ -157,13 +158,14 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
     	SGPropertyNode_ptr node = lc_iter->get();
 		int lc = node->getIntValue("landclass");
 		const std::string mat = node->getStringValue("material-name");
+		const bool water = node->getBoolValue("water");
         
         // Verify that the landclass mapping exists before creating the mapping
         const_material_map_iterator it = matlib.find( mat );
         if ( it == end() ) {
             SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find material " << mat << " for landclass " << lc);
         } else {
-            landclasslib[lc] = mat;
+            landclasslib[lc] = std::pair(mat, water);
         }
     }
 
@@ -197,7 +199,7 @@ SGMaterial *SGMaterialLib::find( int lc, const SGVec2f center ) const
 {
     const_landclass_map_iterator it = landclasslib.find( lc );
     if (it != landclasslib.end()) {
-        return find(it->second, center);
+        return find(it->second.first, center);
     } else {
         return NULL;
     }
@@ -215,7 +217,7 @@ SGMaterial *SGMaterialLib::find( int lc, const SGGeod& center ) const
 {
     const_landclass_map_iterator it = landclasslib.find( lc );
     if (it != landclasslib.end()) {
-        return find(it->second, center);
+        return find(it->second.first, center);
     } else {
         return NULL;
     }
@@ -234,7 +236,7 @@ SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center, const simgear::
     // Collapse down the mapping from landclasses to materials.
     const_landclass_map_iterator lc_iter = landclasslib.begin();
     for (; lc_iter != landclasslib.end(); ++lc_iter) {
-        newCache->insert(lc_iter->first, find(lc_iter->second, center));
+        newCache->insert(lc_iter->first, find(lc_iter->second.first, center));
     }
 
     return newCache;
@@ -313,7 +315,7 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
     std::string id;
     const_landclass_map_iterator lc_iter = landclasslib.begin();
     for (; lc_iter != landclasslib.end(); ++lc_iter) {
-        SGMaterial* mat = find(lc_iter->second, center);
+        SGMaterial* mat = find(lc_iter->second.first, center);
         const std::string texture = mat->get_one_texture(0,0);
         id.append(texture);
         id.append(";");        
@@ -371,8 +373,9 @@ SGMaterialCache::Atlas SGMaterialLib::getMaterialTextureAtlas(SGVec2f center, co
         // mapping based on the lanclassList, even if we fail to process the texture.
         ++index;
         int i = lc_iter->first;
-        SGMaterial* mat = find(lc_iter->second, center);
+        SGMaterial* mat = find(lc_iter->second.first, center);
         atlas.index[i] = index;
+        atlas.waterAtlas[i] = lc_iter->second.second;
 
         if (mat == NULL) continue;
 

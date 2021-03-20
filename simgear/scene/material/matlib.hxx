@@ -54,6 +54,7 @@ public:
     // of texture1D containing further data
     typedef std::map<int, int> AtlasIndex;
     typedef osg::ref_ptr<osg::Texture2DArray> AtlasImage;
+    typedef std::map<int, bool> WaterAtlas;
 
     typedef struct {
         AtlasIndex index;
@@ -61,6 +62,7 @@ public:
         osg::ref_ptr<osg::Texture1D> dimensions;
         osg::ref_ptr<osg::Texture1D> diffuse;
         osg::ref_ptr<osg::Texture1D> specular;
+        WaterAtlas waterAtlas;
     } Atlas;
 
     // Constructor
@@ -105,7 +107,7 @@ private:
     typedef material_map::iterator material_map_iterator;
     typedef material_map::const_iterator const_material_map_iterator;
 
-    typedef std::map < int, std::string> landclass_map;
+    typedef std::map < int, std::pair<std::string, bool> > landclass_map;
     typedef landclass_map::iterator landclass_map_iterator;
     typedef landclass_map::const_iterator const_landclass_map_iterator;
 

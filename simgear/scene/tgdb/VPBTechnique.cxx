@@ -157,10 +157,10 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 
         osg::ref_ptr<BufferData> read_buffer = _currentBufferData;
 
-        osg::StateSet* stateset = read_buffer->_geode->getStateSet();
+        osg::StateSet* stateset = read_buffer->_landGeode->getStateSet();
         if (stateset)
         {
-            buffer->_geode->setStateSet(stateset);
+            buffer->_landGeode->setStateSet(stateset);
         }
         else
         {
@@ -287,7 +287,7 @@ class VertexNormalGenerator
 
         VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt);
 
-        void populateCenter(osgTerrain::Layer* elevationLayer, LayerToTexCoordMap& layerToTexCoordMap);
+        void populateCenter(osgTerrain::Layer* elevationLayer, osg::Vec2Array* texcoords);
         void populateLeftBoundary(osgTerrain::Layer* elevationLayer);
         void populateRightBoundary(osgTerrain::Layer* elevationLayer);
         void populateAboveBoundary(osgTerrain::Layer* elevationLayer);
@@ -493,7 +493,7 @@ VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocator, const osg::
     _boundaryVertices->reserve(_numRows*2 + _numColumns*2 + 4);
 }
 
-void VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, LayerToTexCoordMap& layerToTexCoordMap)
+void VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, osg::Vec2Array* texcoords)
 {
     // OSG_NOTICE<<std::endl<<"VertexNormalGenerator::populateCenter("<<elevationLayer<<")"<<std::endl;
 
@@ -525,65 +525,7 @@ void VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, La
 
                 model = VPBTechnique::checkAgainstElevationConstraints(origin, model, _constraint_vtx_gap);
 
-                for(VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.begin();
-                    itr != layerToTexCoordMap.end();
-                    ++itr)
-                {
-                    osg::Vec2Array* texcoords = itr->second.first.get();
-                    osgTerrain::ImageLayer* imageLayer(dynamic_cast<osgTerrain::ImageLayer*>(itr->first));
-
-                    if (imageLayer != NULL)
-                    {
-                        Locator* colorLocator = itr->second.second;
-                        if (colorLocator != _masterLocator)
-                        {
-                            osg::Vec3d color_ndc;
-                            Locator::convertLocalCoordBetween(*_masterLocator, ndc, *colorLocator, color_ndc);
-                            (*texcoords).push_back(osg::Vec2(color_ndc.x(), color_ndc.y()));
-                        }
-                        else
-                        {
-                            (*texcoords).push_back(osg::Vec2(ndc.x(), ndc.y()));
-                        }
-                    }
-                    else
-                    {
-                        osgTerrain::ContourLayer* contourLayer(dynamic_cast<osgTerrain::ContourLayer*>(itr->first));
-
-                        bool texCoordSet = false;
-                        if (contourLayer)
-                        {
-                            osg::TransferFunction1D* transferFunction = contourLayer->getTransferFunction();
-                            if (transferFunction)
-                            {
-                                float difference = transferFunction->getMaximum()-transferFunction->getMinimum();
-                                if (difference != 0.0f)
-                                {
-                                    osg::Vec3d           color_ndc;
-                                    osgTerrain::Locator* colorLocator(itr->second.second);
-
-                                    if (colorLocator != _masterLocator)
-                                    {
-                                        Locator::convertLocalCoordBetween(*_masterLocator,ndc,*colorLocator,color_ndc);
-                                    }
-                                    else
-                                    {
-                                        color_ndc = ndc;
-                                    }
-
-                                    color_ndc[2] /= _scaleHeight;
-
-                                    (*texcoords).push_back(osg::Vec2((color_ndc[2]-transferFunction->getMinimum())/difference,0.0f));
-                                    texCoordSet = true;
-                                }
-                            }
-                        }
-                        if (!texCoordSet)
-                        {
-                            (*texcoords).push_back(osg::Vec2(0.0f,0.0f));
-                        }
-                    }
-                }
+                texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
 
                 if (_elevations.valid())
                 {
@@ -598,6 +540,8 @@ void VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, La
                 model_one.normalize();
 
                 setVertex(i, j, osg::Vec3(model-_centerModel), model_one);
+            } else {
+                SG_LOG(SG_TERRAIN, SG_ALERT, "Invalid elevation value found");
             }
         }
     }
@@ -801,51 +745,67 @@ void VertexNormalGenerator::computeNormals()
 
 void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, const osg::Vec3d& centerModel)
 {
+    osg::Image* landclassImage = 0;
+    SGMaterialCache::Atlas atlas;
+
     Terrain* terrain = _terrainTile->getTerrain();
     osgTerrain::Layer* elevationLayer = _terrainTile->getElevationLayer();
+    osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
+    if (colorLayer) landclassImage = colorLayer->getImage();
 
     // Determine the correct Effect for this, based on a material lookup taking into account
     // the lat/lon of the center.
-    SGPropertyNode_ptr effectProp;
     SGMaterialLibPtr matlib  = _options->getMaterialLib();
+    osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
+    osg::Vec3d world;
+    masterLocator->convertLocalToModel(tileloc, world);
+    const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
+    const SGGeod loc = SGGeod::fromCart(world2);
+
+    SGPropertyNode_ptr landEffectProp = new SGPropertyNode();
+    SGPropertyNode_ptr waterEffectProp = new SGPropertyNode();
 
     if (matlib) {
         // Determine the center of the tile, sadly non-trivial.
-      osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
-      osg::Vec3d world;
-      masterLocator->convertLocalToModel(tileloc, world);
-      const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
-      const SGGeod loc = SGGeod::fromCart(world2);
       SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
       SGMaterialCache* matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
-      SGMaterial* mat = matcache->find("ws30");
+      atlas = matcache->getAtlas();
+      SGMaterial* landmat = matcache->find("ws30land");
+      SGMaterial* watermat = matcache->find("ws30water");
       delete matcache;
 
-      if (mat) {
-        effectProp = new SGPropertyNode();
-        makeChild(effectProp, "inherits-from")->setStringValue(mat->get_effect_name());
+      if (landmat && watermat) {
+        makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue(landmat->get_effect_name());
+        makeChild(waterEffectProp.ptr(), "inherits-from")->setStringValue(watermat->get_effect_name());
       } else {
         SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get effect for VPB - no matching material in library");
-        effectProp = new SGPropertyNode;
-        makeChild(effectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+        makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+        makeChild(waterEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
       }
     } else {
         SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get effect for VPB - no material library available");
-        effectProp = new SGPropertyNode;
-        makeChild(effectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+        makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+        makeChild(waterEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
     }
 
-    buffer._geode = new EffectGeode();
-    if(buffer._transform.valid())
-        buffer._transform->addChild(buffer._geode.get());
+    buffer._landGeode = new EffectGeode();
+    buffer._waterGeode = new EffectGeode();
+    if(buffer._transform.valid()) {
+        buffer._transform->addChild(buffer._landGeode.get());
+        buffer._transform->addChild(buffer._waterGeode.get());
+    }
 
-    buffer._geometry = new osg::Geometry;
-    buffer._geode->addDrawable(buffer._geometry.get());
+    buffer._landGeometry = new osg::Geometry;
+    buffer._landGeode->addDrawable(buffer._landGeometry.get());
   
-    osg::ref_ptr<Effect> effect = makeEffect(effectProp, true, _options);
-    buffer._geode->setEffect(effect.get());
+    osg::ref_ptr<Effect> landEffect = makeEffect(landEffectProp, true, _options);
+    buffer._landGeode->setEffect(landEffect.get());
 
-    osg::Geometry* geometry = buffer._geometry.get();
+    buffer._waterGeometry = new osg::Geometry;
+    buffer._waterGeode->addDrawable(buffer._waterGeometry.get());
+  
+    osg::ref_ptr<Effect> waterEffect = makeEffect(waterEffectProp, true, _options);
+    buffer._waterGeode->setEffect(waterEffect.get());
 
     unsigned int numRows = 20;
     unsigned int numColumns = 20;
@@ -855,7 +815,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         numColumns = elevationLayer->getNumColumns();
         numRows = elevationLayer->getNumRows();
     }
-
 
     double scaleHeight = SGSceneFeatures::instance()->getVPBVerticalScale();
     double sampleRatio = SGSceneFeatures::instance()->getVPBSampleRatio();
@@ -891,64 +850,25 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
     unsigned int numVertices = VNG.capacity();
 
     // allocate and assign vertices
-    geometry->setVertexArray(VNG._vertices.get());
+    buffer._landGeometry->setVertexArray(VNG._vertices.get());
+    buffer._waterGeometry->setVertexArray(VNG._vertices.get());
 
     // allocate and assign normals
-    geometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
-
-
-    // allocate and assign tex coords
-    // typedef std::pair< osg::ref_ptr<osg::Vec2Array>, Locator* > TexCoordLocatorPair;
-    // typedef std::map< Layer*, TexCoordLocatorPair > LayerToTexCoordMap;
-
-    VertexNormalGenerator::LayerToTexCoordMap layerToTexCoordMap;
-    for(unsigned int layerNum=0; layerNum<_terrainTile->getNumColorLayers(); ++layerNum)
-    {
-        osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(layerNum);
-        if (colorLayer)
-        {
-            VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.find(colorLayer);
-            if (itr!=layerToTexCoordMap.end())
-            {
-                geometry->setTexCoordArray(layerNum, itr->second.first.get());
-            }
-            else
-            {
-
-                Locator* locator = colorLayer->getLocator();
-                if (!locator)
-                {
-                    osgTerrain::SwitchLayer* switchLayer = dynamic_cast<osgTerrain::SwitchLayer*>(colorLayer);
-                    if (switchLayer)
-                    {
-                        if (switchLayer->getActiveLayer()>=0 &&
-                            static_cast<unsigned int>(switchLayer->getActiveLayer())<switchLayer->getNumLayers() &&
-                            switchLayer->getLayer(switchLayer->getActiveLayer()))
-                        {
-                            locator = switchLayer->getLayer(switchLayer->getActiveLayer())->getLocator();
-                        }
-                    }
-                }
-
-                VertexNormalGenerator::TexCoordLocatorPair& tclp = layerToTexCoordMap[colorLayer];
-                tclp.first = new osg::Vec2Array;
-                tclp.first->reserve(numVertices);
-                tclp.second = locator ? locator : masterLocator;
-                geometry->setTexCoordArray(layerNum, tclp.first.get());
-            }
-        }
-    }
+    buffer._landGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
+    buffer._waterGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
 
     // allocate and assign color
     osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array(1);
     (*colors)[0].set(1.0f,1.0f,1.0f,1.0f);
 
-    geometry->setColorArray(colors.get(), osg::Array::BIND_OVERALL);
+    buffer._landGeometry->setColorArray(colors.get(), osg::Array::BIND_OVERALL);
+    buffer._waterGeometry->setColorArray(colors.get(), osg::Array::BIND_OVERALL);
 
-    //
-    // populate vertex and tex coord arrays
-    //
-    VNG.populateCenter(elevationLayer, layerToTexCoordMap);
+    // allocate and assign texture coordinates
+    auto texcoords = new osg::Vec2Array;
+    VNG.populateCenter(elevationLayer, texcoords);
+    buffer._landGeometry->setTexCoordArray(0, texcoords);
+    buffer._waterGeometry->setTexCoordArray(0, texcoords);
 
     if (terrain && terrain->getEqualizeBoundaries())
     {
@@ -959,12 +879,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         osg::ref_ptr<TerrainTile> top_tile = terrain->getTile(TileID(tileID.level, tileID.x, tileID.y+1));
         osg::ref_ptr<TerrainTile> bottom_tile = terrain->getTile(TileID(tileID.level, tileID.x, tileID.y-1));
 
-#if 0
-        osg::ref_ptr<TerrainTile> top_left_tile  = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y+1));
-        osg::ref_ptr<TerrainTile> top_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y+1));
-        osg::ref_ptr<TerrainTile> bottom_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y-1));
-        osg::ref_ptr<TerrainTile> bottom_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y-1));
-#endif
         VNG.populateLeftBoundary(left_tile.valid() ? left_tile->getElevationLayer() : 0);
         VNG.populateRightBoundary(right_tile.valid() ? right_tile->getElevationLayer() : 0);
         VNG.populateAboveBoundary(top_tile.valid() ? top_tile->getElevationLayer() : 0);
@@ -978,13 +892,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         if (right_tile.valid())  addNeighbour(right_tile.get());
         if (top_tile.valid())    addNeighbour(top_tile.get());
         if (bottom_tile.valid()) addNeighbour(bottom_tile.get());
-
-#if 0
-        if (bottom_left_tile.valid()) addNeighbour(bottom_left_tile.get());
-        if (bottom_right_tile.valid()) addNeighbour(bottom_right_tile.get());
-        if (top_left_tile.valid()) addNeighbour(top_left_tile.get());
-        if (top_right_tile.valid()) addNeighbour(top_right_tile.get());
-#endif
 
         if (left_tile.valid())
         {
@@ -1023,48 +930,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
                 else bottom_tile->setDirtyMask(dirtyMask);
             }
         }
-
-#if 0
-        if (bottom_left_tile.valid())
-        {
-            if (!(bottom_left_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
-            {
-                int dirtyMask = bottom_left_tile->getDirtyMask() | TerrainTile::BOTTOM_LEFT_CORNER_DIRTY;
-                if (updateNeighboursImmediately) bottom_left_tile->init(dirtyMask, true);
-                else bottom_left_tile->setDirtyMask(dirtyMask);
-            }
-        }
-
-        if (bottom_right_tile.valid())
-        {
-            if (!(bottom_right_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
-            {
-                int dirtyMask = bottom_right_tile->getDirtyMask() | TerrainTile::BOTTOM_RIGHT_CORNER_DIRTY;
-                if (updateNeighboursImmediately) bottom_right_tile->init(dirtyMask, true);
-                else bottom_right_tile->setDirtyMask(dirtyMask);
-            }
-        }
-
-        if (top_right_tile.valid())
-        {
-            if (!(top_right_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
-            {
-                int dirtyMask = top_right_tile->getDirtyMask() | TerrainTile::TOP_RIGHT_CORNER_DIRTY;
-                if (updateNeighboursImmediately) top_right_tile->init(dirtyMask, true);
-                else top_right_tile->setDirtyMask(dirtyMask);
-            }
-        }
-
-        if (top_left_tile.valid())
-        {
-            if (!(top_left_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
-            {
-                int dirtyMask = top_left_tile->getDirtyMask() | TerrainTile::TOP_LEFT_CORNER_DIRTY;
-                if (updateNeighboursImmediately) top_left_tile->init(dirtyMask, true);
-                else top_left_tile->setDirtyMask(dirtyMask);
-            }
-        }
-#endif
     }
 
     osg::ref_ptr<osg::Vec3Array> skirtVectors = new osg::Vec3Array((*VNG._normals));
@@ -1078,13 +943,18 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
     // OSG_NOTICE<<"smallTile = "<<smallTile<<std::endl;
 
-    osg::ref_ptr<osg::DrawElements> elements = smallTile ?
+    osg::ref_ptr<osg::DrawElements> landElements = smallTile ?
         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+    landElements->reserveElements((numRows-1) * (numColumns-1) * 6);
 
-    elements->reserveElements((numRows-1) * (numColumns-1) * 6);
+    buffer._landGeometry->addPrimitiveSet(landElements.get());
 
-    geometry->addPrimitiveSet(elements.get());
+    osg::ref_ptr<osg::DrawElements> waterElements = smallTile ?
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+    waterElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+    buffer._waterGeometry->addPrimitiveSet(waterElements.get());
 
     unsigned int i, j;
     for(j=0; j<numRows-1; ++j)
@@ -1103,6 +973,19 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
                 std::swap(i10,i11);
             }
 
+            // Determine if this quad or triangle should be water or not, and therefore which geometry to add it to.
+            bool w00 = false;
+            bool w01 = false;
+            bool w10 = false;
+            bool w11 = false;
+            
+            if (landclassImage && matlib) {
+                if (i00>=0) w00 = atlas.waterAtlas[int(round(landclassImage->getColor((*texcoords)[i00]).r() * 255.0))];
+                if (i01>=0) w01 = atlas.waterAtlas[int(round(landclassImage->getColor((*texcoords)[i01]).r() * 255.0))];
+                if (i10>=0) w10 = atlas.waterAtlas[int(round(landclassImage->getColor((*texcoords)[i10]).r() * 255.0))];
+                if (i11>=0) w11 = atlas.waterAtlas[int(round(landclassImage->getColor((*texcoords)[i11]).r() * 255.0))];
+            }
+
             unsigned int numValid = 0;
             if (i00>=0) ++numValid;
             if (i01>=0) ++numValid;
@@ -1111,27 +994,34 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
             if (numValid==4)
             {
+                osg::ref_ptr<osg::DrawElements> elements;
+
                 // optimize which way to put the diagonal by choosing to
                 // place it between the two corners that have the least curvature
                 // relative to each other.
                 float dot_00_11 = (*VNG._normals)[i00] * (*VNG._normals)[i11];
                 float dot_01_10 = (*VNG._normals)[i01] * (*VNG._normals)[i10];
+
                 if (dot_00_11 > dot_01_10)
                 {
+                    elements = (w01 && w00 && w11) ? waterElements : landElements;
                     elements->addElement(i01);
                     elements->addElement(i00);
                     elements->addElement(i11);
 
+                    elements = (w00 && w10 && w11) ? waterElements : landElements;
                     elements->addElement(i00);
                     elements->addElement(i10);
                     elements->addElement(i11);
                 }
                 else
                 {
+                    elements = (w01 && w00 && w10) ? waterElements : landElements;
                     elements->addElement(i01);
                     elements->addElement(i00);
                     elements->addElement(i10);
 
+                    elements = (w01 && w10 && w11) ? waterElements : landElements;
                     elements->addElement(i01);
                     elements->addElement(i10);
                     elements->addElement(i11);
@@ -1139,6 +1029,15 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
             }
             else if (numValid==3)
             {
+                // If this is a triangle, we need to look for exactly 3 our of the four
+                // vertices to be in water, as the fourth will be fales, as above.
+                unsigned int water_count = 0;
+                if (w00) water_count++;
+                if (w01) water_count++;
+                if (w10) water_count++;
+                if (w11) water_count++;
+
+                osg::ref_ptr<osg::DrawElements> elements = (water_count == 3) ? waterElements : landElements;
                 if (i00>=0) elements->addElement(i00);
                 if (i01>=0) elements->addElement(i01);
                 if (i11>=0) elements->addElement(i11);
@@ -1170,12 +1069,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
 
-                for(VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.begin();
-                    itr != layerToTexCoordMap.end();
-                    ++itr)
-                {
-                    itr->second.first->push_back((*itr->second.first)[orig_i]);
-                }
+                texcoords->push_back((*texcoords)[orig_i]);
 
                 skirtDrawElements->addElement(orig_i);
                 skirtDrawElements->addElement(new_i);
@@ -1184,7 +1078,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
             {
                 if (skirtDrawElements->getNumIndices()!=0)
                 {
-                    geometry->addPrimitiveSet(skirtDrawElements.get());
+                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
                     skirtDrawElements = smallTile ?
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
@@ -1195,7 +1089,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
         if (skirtDrawElements->getNumIndices()!=0)
         {
-            geometry->addPrimitiveSet(skirtDrawElements.get());
+            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
             skirtDrawElements = smallTile ?
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
@@ -1212,12 +1106,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
                 osg::Vec3 new_v = (*vertices)[orig_i] - ((*skirtVectors)[orig_i])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
-                for(VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.begin();
-                    itr != layerToTexCoordMap.end();
-                    ++itr)
-                {
-                    itr->second.first->push_back((*itr->second.first)[orig_i]);
-                }
+                texcoords->push_back((*texcoords)[orig_i]);
 
                 skirtDrawElements->addElement(orig_i);
                 skirtDrawElements->addElement(new_i);
@@ -1226,7 +1115,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
             {
                 if (skirtDrawElements->getNumIndices()!=0)
                 {
-                    geometry->addPrimitiveSet(skirtDrawElements.get());
+                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
                     skirtDrawElements = smallTile ?
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
@@ -1237,7 +1126,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
         if (skirtDrawElements->getNumIndices()!=0)
         {
-            geometry->addPrimitiveSet(skirtDrawElements.get());
+            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
             skirtDrawElements = smallTile ?
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
@@ -1254,12 +1143,8 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
                 osg::Vec3 new_v = (*vertices)[orig_i] - ((*skirtVectors)[orig_i])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
-                for(VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.begin();
-                    itr != layerToTexCoordMap.end();
-                    ++itr)
-                {
-                    itr->second.first->push_back((*itr->second.first)[orig_i]);
-                }
+
+                texcoords->push_back((*texcoords)[orig_i]);
 
                 skirtDrawElements->addElement(orig_i);
                 skirtDrawElements->addElement(new_i);
@@ -1268,7 +1153,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
             {
                 if (skirtDrawElements->getNumIndices()!=0)
                 {
-                    geometry->addPrimitiveSet(skirtDrawElements.get());
+                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
                     skirtDrawElements = smallTile ?
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
@@ -1279,7 +1164,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
         if (skirtDrawElements->getNumIndices()!=0)
         {
-            geometry->addPrimitiveSet(skirtDrawElements.get());
+            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
             skirtDrawElements = smallTile ?
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
                         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
@@ -1296,12 +1181,8 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
                 osg::Vec3 new_v = (*vertices)[orig_i] - ((*skirtVectors)[orig_i])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
-                for(VertexNormalGenerator::LayerToTexCoordMap::iterator itr = layerToTexCoordMap.begin();
-                    itr != layerToTexCoordMap.end();
-                    ++itr)
-                {
-                    itr->second.first->push_back((*itr->second.first)[orig_i]);
-                }
+
+                texcoords->push_back((*texcoords)[orig_i]);
 
                 skirtDrawElements->addElement(orig_i);
                 skirtDrawElements->addElement(new_i);
@@ -1310,7 +1191,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
             {
                 if (skirtDrawElements->getNumIndices()!=0)
                 {
-                    geometry->addPrimitiveSet(skirtDrawElements.get());
+                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
                     skirtDrawElements = new osg::DrawElementsUShort(GL_QUAD_STRIP);
                 }
             }
@@ -1318,38 +1199,24 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
         if (skirtDrawElements->getNumIndices()!=0)
         {
-            geometry->addPrimitiveSet(skirtDrawElements.get());
+            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
         }
     }
 
+    waterElements->resizeElements(waterElements->getNumIndices());
+    landElements->resizeElements(landElements->getNumIndices());
 
-    geometry->setUseDisplayList(false);
-    geometry->setUseVertexBufferObjects(true);
-
-#if 0
-    {
-        osgUtil::VertexCacheMissVisitor vcmv_before;
-        osgUtil::VertexCacheMissVisitor vcmv_after;
-        osgUtil::VertexCacheVisitor vcv;
-        osgUtil::VertexAccessOrderVisitor vaov;
-
-        vcmv_before.doGeometry(*geometry);
-        vcv.optimizeVertices(*geometry);
-        vaov.optimizeOrder(*geometry);
-        vcmv_after.doGeometry(*geometry);
-#if 0
-        OSG_NOTICE<<"vcmv_before.triangles="<<vcmv_before.triangles<<std::endl;
-        OSG_NOTICE<<"vcmv_before.misses="<<vcmv_before.misses<<std::endl;
-        OSG_NOTICE<<"vcmv_after.misses="<<vcmv_after.misses<<std::endl;
-        OSG_NOTICE<<std::endl;
-#endif
-    }
-#endif
+    buffer._landGeometry->setUseDisplayList(false);
+    buffer._landGeometry->setUseVertexBufferObjects(true);
+    buffer._waterGeometry->setUseDisplayList(false);
+    buffer._waterGeometry->setUseVertexBufferObjects(true);
 
     // Tile-specific information for the shaders
-    osg::StateSet *ss = buffer._geode->getOrCreateStateSet();
+    osg::StateSet *landStateSet = buffer._landGeode->getOrCreateStateSet();
+    osg::StateSet *waterStateSet = buffer._waterGeode->getOrCreateStateSet();
     osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
-    ss->addUniform(level);
+    landStateSet->addUniform(level);
+    waterStateSet->addUniform(level);
 
     // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
     // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
@@ -1376,9 +1243,11 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Tile Level " << _terrainTile->getTileID().level << " width " << tile_width << " height " << tile_height);
 
     osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("tile_width", tile_width);
-    ss->addUniform(twu);
+    landStateSet->addUniform(twu);
+    waterStateSet->addUniform(twu);
     osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("tile_height", tile_height);
-    ss->addUniform(thu);
+    landStateSet->addUniform(thu);
+    waterStateSet->addUniform(thu);
 
     // Force build of KD trees?
     if (osgDB::Registry::instance()->getBuildKdTreesHint()==osgDB::ReaderWriter::Options::BUILD_KDTREES &&
@@ -1388,7 +1257,8 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         //osg::Timer_t before = osg::Timer::instance()->tick();
         //OSG_NOTICE<<"osgTerrain::VPBTechnique::build kd tree"<<std::endl;
         osg::ref_ptr<osg::KdTreeBuilder> builder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
-        buffer._geode->accept(*builder);
+        buffer._landGeode->accept(*builder);
+        buffer._waterGeode->accept(*builder);
         //osg::Timer_t after = osg::Timer::instance()->tick();
         //OSG_NOTICE<<"KdTree build time "<<osg::Timer::instance()->delta_m(before, after)<<std::endl;
     }
@@ -1396,130 +1266,67 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
 
 void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
 {   
-    typedef std::map<osgTerrain::Layer*, SGMaterialCache::Atlas> LayerToAtlasMap;
-    typedef std::map<osgTerrain::Layer*, osg::ref_ptr<osg::Texture2D>> LayerToTexture2DMap;
-    typedef std::map<osgTerrain::Layer*, osg::ref_ptr<osg::Texture1D>> LayerToTexture1DMap;
-    LayerToAtlasMap layerToAtlasMap;
-    LayerToTexture2DMap layerToTextureMap; 
-    LayerToTexture1DMap layerToContourMap;
+    SGMaterialLibPtr matlib  = _options->getMaterialLib();
+    if (!matlib) return;
 
-    for(unsigned int layerNum=0; layerNum<_terrainTile->getNumColorLayers(); ++layerNum)
-    {
-        osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(layerNum);
-        if (!colorLayer) continue;
+    osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
+    if (!colorLayer) return;
 
-        osgTerrain::SwitchLayer* switchLayer = dynamic_cast<osgTerrain::SwitchLayer*>(colorLayer);
-        if (switchLayer)
-        {
-            if (switchLayer->getActiveLayer()<0 ||
-                static_cast<unsigned int>(switchLayer->getActiveLayer())>=switchLayer->getNumLayers())
-            {
-                continue;
-            }
+    osg::Image* image = colorLayer->getImage();
+    if (!image) return;
 
-            colorLayer = switchLayer->getLayer(switchLayer->getActiveLayer());
-            if (!colorLayer) continue;
-        }
+    // First time generating this texture, so process to change landclass IDs to texure indexes.
+    SGPropertyNode_ptr landEffectProp;
+    osg::Vec3d world;
+    SGGeod loc;
 
-        osg::Image* image = colorLayer->getImage();
-        if (!image) continue;
+    // Determine the center of the tile, sadly non-trivial.
+    osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
+    masterLocator->convertLocalToModel(tileloc, world);
+    const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
+    loc = SGGeod::fromCart(world2);
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
 
-        osgTerrain::ImageLayer* imageLayer = dynamic_cast<osgTerrain::ImageLayer*>(colorLayer);
-        osgTerrain::ContourLayer* contourLayer = dynamic_cast<osgTerrain::ContourLayer*>(colorLayer);
-        SGMaterialCache::Atlas atlas = layerToAtlasMap[colorLayer];
-        if (imageLayer)
-        {
-            osg::StateSet* stateset = buffer._geode->getOrCreateStateSet();
+    SGMaterialCache::Atlas atlas = matlib->generateMatCache(loc, _options)->getAtlas();
+    SGMaterialCache::AtlasIndex atlasIndex = atlas.index;
 
-            osg::ref_ptr<osg::Texture2D> texture2D  = layerToTextureMap[colorLayer];
-            SGMaterialCache::Atlas atlas = layerToAtlasMap[colorLayer];
-
-            if (!texture2D)
-            {
-                texture2D  = new osg::Texture2D;
-
-                // First time generating this texture, so process to change landclass IDs to texure indexes.
-                SGPropertyNode_ptr effectProp;
-                SGMaterialLibPtr matlib  = _options->getMaterialLib();
-                osg::Vec3d world;
-                SGGeod loc;
-
-                if (matlib)                    
-                {
-                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Generating texture atlas for " << image->getName());
-                    // Determine the center of the tile, sadly non-trivial.
-                    osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
-                    masterLocator->convertLocalToModel(tileloc, world);
-                    const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
-                    loc = SGGeod::fromCart(world2);
-                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
-
-                    if (_matcache ==0) _matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
-                    
-                    atlas = _matcache->getAtlas();
-                    SGMaterialCache::AtlasIndex atlasIndex = atlas.index;
-
-                    // Set the "g" color channel to an index into the atlas index.
-                    for (int s = 0; s < image->s(); s++) {
-                        for (int t = 0; t < image->t(); t++) {
-                            osg::Vec4 c = image->getColor(s, t);
-                            int i = int(round(c.x() * 255.0));
-                            c.set(c.x(), (float) (atlasIndex[i] / 255.0), c.z(), c.w() );
-                            image->setColor(c, s, t);
-                        }
-                    }
-
-                }
-
-                texture2D->setImage(image);
-                texture2D->setMaxAnisotropy(16.0f);
-                texture2D->setResizeNonPowerOfTwoHint(false);
-
-                texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
-                texture2D->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
-
-                texture2D->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
-                texture2D->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
-
-                bool mipMapping = !(texture2D->getFilter(osg::Texture::MIN_FILTER)==osg::Texture::LINEAR || texture2D->getFilter(osg::Texture::MIN_FILTER)==osg::Texture::NEAREST);
-                bool s_NotPowerOfTwo = image->s()==0 || (image->s() & (image->s() - 1));
-                bool t_NotPowerOfTwo = image->t()==0 || (image->t() & (image->t() - 1));
-
-                if (mipMapping && (s_NotPowerOfTwo || t_NotPowerOfTwo))
-                {
-                    SG_LOG(SG_TERRAIN, SG_ALERT, "Disabling mipmapping for non power of two tile size("<<image->s()<<", "<<image->t()<<")");
-                    texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
-                }
-
-                layerToTextureMap[colorLayer] = texture2D;
-                layerToAtlasMap[colorLayer] = atlas;
-            }
-
-            stateset->setTextureAttributeAndModes(5*layerNum, texture2D, osg::StateAttribute::ON);
-            stateset->setTextureAttributeAndModes(5*layerNum + 1, atlas.image, osg::StateAttribute::ON);
-            stateset->setTextureAttributeAndModes(5*layerNum + 2, atlas.dimensions, osg::StateAttribute::ON);
-            stateset->setTextureAttributeAndModes(5*layerNum + 3, atlas.diffuse, osg::StateAttribute::ON);
-            stateset->setTextureAttributeAndModes(5*layerNum + 4, atlas.specular, osg::StateAttribute::ON);
-        }
-        else if (contourLayer)
-        {
-            osg::StateSet* stateset = buffer._geode->getOrCreateStateSet();
-
-            osg::ref_ptr< osg::Texture1D> texture1D = layerToContourMap[colorLayer];
-            if (!texture1D)
-            {
-                texture1D = new osg::Texture1D;
-                texture1D->setImage(image);
-                texture1D->setResizeNonPowerOfTwoHint(false);
-                texture1D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
-                texture1D->setFilter(osg::Texture::MAG_FILTER, colorLayer->getMagFilter());
-
-                layerToContourMap[colorLayer] = texture1D;
-            }
-
-            stateset->setTextureAttributeAndModes(layerNum, texture1D, osg::StateAttribute::ON);
+    // Set the "g" color channel to an index into the atlas index.
+    for (int s = 0; s < image->s(); s++) {
+        for (int t = 0; t < image->t(); t++) {
+            osg::Vec4 c = image->getColor(s, t);
+            int i = int(round(c.x() * 255.0));
+            c.set(c.x(), (float) (atlasIndex[i] / 255.0), c.z(), c.w() );
+            image->setColor(c, s, t);
         }
     }
+
+    osg::ref_ptr<osg::Texture2D> texture2D  = new osg::Texture2D;
+    texture2D->setImage(image);
+    texture2D->setMaxAnisotropy(16.0f);
+    texture2D->setResizeNonPowerOfTwoHint(false);
+
+    texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
+    texture2D->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
+
+    texture2D->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
+    texture2D->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
+
+    bool mipMapping = !(texture2D->getFilter(osg::Texture::MIN_FILTER)==osg::Texture::LINEAR || texture2D->getFilter(osg::Texture::MIN_FILTER)==osg::Texture::NEAREST);
+    bool s_NotPowerOfTwo = image->s()==0 || (image->s() & (image->s() - 1));
+    bool t_NotPowerOfTwo = image->t()==0 || (image->t() & (image->t() - 1));
+
+    if (mipMapping && (s_NotPowerOfTwo || t_NotPowerOfTwo))
+    {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Disabling mipmapping for non power of two tile size("<<image->s()<<", "<<image->t()<<")");
+        texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
+    }
+
+    osg::StateSet* stateset = buffer._landGeode->getOrCreateStateSet();
+    stateset->setTextureAttributeAndModes(0, texture2D, osg::StateAttribute::ON);
+    stateset->setTextureAttributeAndModes(1, atlas.image, osg::StateAttribute::ON);
+    stateset->setTextureAttributeAndModes(2, atlas.dimensions, osg::StateAttribute::ON);
+    stateset->setTextureAttributeAndModes(3, atlas.diffuse, osg::StateAttribute::ON);
+    stateset->setTextureAttributeAndModes(4, atlas.specular, osg::StateAttribute::ON);
 }
 
 double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
@@ -1624,13 +1431,13 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
      loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0),
      0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
-    const osg::Array* vertices = buffer._geometry->getVertexArray();
-    const osg::Array* texture_coords = buffer._geometry->getTexCoordArray(0);
+    const osg::Array* vertices = buffer._landGeometry->getVertexArray();
+    const osg::Array* texture_coords = buffer._landGeometry->getTexCoordArray(0);
     osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
     osg::Image* image = colorLayer->getImage();
 
     // Just want the first primitive set, not the others which will be the "skirts" below.
-    const osg::PrimitiveSet* primSet = buffer._geometry->getPrimitiveSet(0);
+    const osg::PrimitiveSet* primSet = buffer._landGeometry->getPrimitiveSet(0);
     const osg::DrawElements* drawElements = primSet->getDrawElements();
     const unsigned int triangle_count = drawElements->getNumPrimitives();
 
@@ -1859,7 +1666,7 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
 
     for (; road_iter != road._nodes.end(); road_iter++) {
         mb = getMeshIntersection(buffer, masterLocator, *road_iter - modelCenter, up);
-        auto esl = VPBElevationSlice::computeVPBElevationSlice(buffer._geometry, ma, mb, up);
+        auto esl = VPBElevationSlice::computeVPBElevationSlice(buffer._landGeometry, ma, mb, up);
 
         for(auto eslitr = esl.begin(); eslitr != esl.end(); ++eslitr) {
             roadPoints.push_back(*eslitr);
@@ -1940,7 +1747,7 @@ osg::Vec3d VPBTechnique::getMeshIntersection(BufferData& buffer, Locator* master
     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
     intersector = new osgUtil::LineSegmentIntersector(pt - up*100.0, pt + up*8000.0);
     osgUtil::IntersectionVisitor visitor(intersector.get());
-    buffer._geometry->accept(visitor);
+    buffer._landGeometry->accept(visitor);
 
     if (intersector->containsIntersections()) {
         // We have an intersection with the terrain model, so return it

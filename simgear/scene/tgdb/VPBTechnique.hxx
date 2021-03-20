@@ -108,8 +108,10 @@ class VPBTechnique : public TerrainTechnique
             BufferData() {}
 
             osg::ref_ptr<osg::MatrixTransform>  _transform;
-            osg::ref_ptr<EffectGeode>           _geode;
-            osg::ref_ptr<osg::Geometry>         _geometry;
+            osg::ref_ptr<EffectGeode>           _landGeode;
+            osg::ref_ptr<EffectGeode>           _waterGeode;
+            osg::ref_ptr<osg::Geometry>         _landGeometry;
+            osg::ref_ptr<osg::Geometry>         _waterGeometry;
 
         protected:
             ~BufferData() {}
@@ -150,8 +152,6 @@ class VPBTechnique : public TerrainTechnique
         osg::Matrix3                        _filterMatrix;
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
-        osg::ref_ptr<osg::Image>            _atlas;
-        osg::ref_ptr<SGMaterialCache>       _matcache;
 
         inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();;
         inline static std::mutex _constraint_mutex;  // protects the _constraintGroup;

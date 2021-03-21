@@ -159,7 +159,22 @@ public:
      */
     string_list explicitlyRemovedCatalogs() const;
 
-  private:
+    /**
+     * @brief Given a relative path to a file, return the packages which provide it.
+     * If the path starts with a type-based prefix (eg 'Aircraft' or 'AI/Aircraft'), the
+     * corresponding package type will be considered. The next item must correspond to
+     * the package directory name.
+     * 
+     * If the path contains components more specific than this, they will be checked
+     * against matching packkages 'provides' list. If the path does not contain such
+     * components, a match of the type+directory name will be considered sufficient.
+     * 
+     * @param path 
+     * @return PackageList 
+     */
+    PackageList packagesProviding(const std::string& path, bool onlyInstalled) const;
+
+private:
     friend class Install;
     friend class Catalog;    
     friend class Package;

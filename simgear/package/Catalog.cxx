@@ -298,6 +298,9 @@ bool Catalog::removeDirectory()
 PackageList
 Catalog::packages(Type ty) const
 {
+    if (ty == AnyPackageType)
+        return m_packages;
+
     PackageList r;
     std::copy_if(m_packages.begin(), m_packages.end(),
                  std::back_inserter(r),
@@ -338,7 +341,9 @@ Catalog::installedPackages(Type ty) const
   std::copy_if(m_packages.begin(), m_packages.end(),
                std::back_inserter(r),
                [ty](const PackageRef& p) {
-                   return p->isInstalled() && p->type() == ty;
+                   if (ty != AnyPackageType && (p->type() != ty))
+                       return false;
+                   return p->isInstalled();
                });
   return r;
 }
@@ -725,6 +730,32 @@ int Catalog::markPackagesForInstallation(const string_list &packageIds) {
 }
 
 CatalogRef Catalog::migratedFrom() const { return m_migratedFrom; }
+
+PackageList Catalog::packagesProviding(const Type inferredType, const std::string& directory, const std::string& subpath) const
+{
+    PackageList p;
+    copy_if(m_packages.begin(), m_packages.end(), std::back_inserter(p),
+            [inferredType, &directory, &subpath](const PackageRef& pkg) {
+                // if we detected a package type, it needs to match, so the resulting
+                // path matches as well
+                if (inferredType != AnyPackageType) {
+                    if (inferredType != pkg->type()) {
+                        return false;
+                    }
+                }
+
+                if (directory != pkg->dirName())
+                    return false;
+
+                if (subpath.empty()) {
+                    return true; // we're done, success
+                }
+
+                return pkg->doesProvidePath(subpath);
+            });
+    return p;
+}
+
 
 } // of namespace pkg
 

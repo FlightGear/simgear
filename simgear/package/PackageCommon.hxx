@@ -28,10 +28,13 @@ namespace pkg {
 enum Type {
     AircraftPackage = 0,
     AIModelPackage,
-    AddOnPackage
+    AddOnPackage,
+    LibraryPackage, ///< common files for use by other package(s) (eg, the DavePack)
 
     // if you extend this enum, extend the static_typeNames string array
     // in Package.cxx file as well.
+
+    AnyPackageType = 9999
 };
 
 // forward decls

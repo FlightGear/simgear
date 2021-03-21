@@ -177,7 +177,9 @@ int parseTest()
     SG_CHECK_EQUAL(cat->description(), "First test catalog");
 
 // check the packages too
-    SG_CHECK_EQUAL(cat->packages().size(), 6);
+    SG_CHECK_EQUAL(cat->packages().size(), 4);
+    SG_CHECK_EQUAL(cat->packages(simgear::pkg::LibraryPackage).size(), 2);
+    SG_CHECK_EQUAL(cat->packages(simgear::pkg::AIModelPackage).size(), 1);
 
     pkg::PackageRef p1 = cat->packages().front();
     SG_CHECK_EQUAL(p1->catalog(), cat.ptr());
@@ -187,6 +189,7 @@ int parseTest()
     SG_CHECK_EQUAL(p1->name(), "Alpha package");
     SG_CHECK_EQUAL(p1->revision(), 8);
     SG_CHECK_EQUAL(p1->fileSizeBytes(), 593);
+    SG_CHECK_EQUAL(p1->type(), simgear::pkg::AircraftPackage);
 
 
     pkg::PackageRef p2 = cat->getPackageById("c172p");
@@ -370,7 +373,7 @@ void testAddCatalog(HTTP::Client* cl)
     p.append("org.flightgear.test.catalog1");
     p.append("catalog.xml");
     SG_VERIFY(p.exists());
-    SG_CHECK_EQUAL(root->allPackages().size(), 6);
+    SG_CHECK_EQUAL(root->allPackages().size(), 4);
     SG_CHECK_EQUAL(root->catalogs().size(), 1);
 
     pkg::PackageRef p1 = root->getPackageById("alpha");
@@ -1219,8 +1222,8 @@ void testMigrateInstalled(HTTP::Client *cl) {
     waitForUpdateComplete(cl, root);
 
     string_list existing;
-    for (const auto &pack : oldCatalog->installedPackages()) {
-      existing.push_back(pack->id());
+    for (const auto& pack : oldCatalog->installedPackages(simgear::pkg::AnyPackageType)) {
+        existing.push_back(pack->id());
     }
 
     SG_CHECK_EQUAL(4, existing.size());
@@ -1309,6 +1312,31 @@ void testDontMigrateRemoved(HTTP::Client *cl) {
   }
 }
 
+void testProvides(HTTP::Client* cl)
+{
+    SGPath rootPath(simgear::Dir::current().path());
+    rootPath.append("pkg_check_provides");
+    simgear::Dir pd(rootPath);
+    pd.removeChildren();
+    global_catalogVersion = 0;
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
+    // specify a test dir
+    root->setHTTPClient(cl);
+
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    waitForUpdateComplete(cl, root);
+
+    // query
+    auto packages = root->packagesProviding("Aircraft/b744", false);
+    SG_CHECK_EQUAL(packages.size(), 1);
+    SG_CHECK_EQUAL(packages.front()->qualifiedId(), "org.flightgear.test.catalog1.b747-400");
+
+    packages = root->packagesProviding("movies/Foo/intro.mov", false);
+    SG_CHECK_EQUAL(packages.size(), 1);
+    SG_CHECK_EQUAL(packages.front()->qualifiedId(), "org.flightgear.test.catalog1.movies");
+}
+
 int main(int argc, char* argv[])
 {
     sglog().setLogLevels( SG_ALL, SG_WARN );
@@ -1357,6 +1385,8 @@ int main(int argc, char* argv[])
     testMigrateInstalled(&cl);
 
     testDontMigrateRemoved(&cl);
+
+    testProvides(&cl);
 
     cerr << "Successfully passed all tests!" << endl;
     return EXIT_SUCCESS;

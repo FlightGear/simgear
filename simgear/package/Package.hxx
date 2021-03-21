@@ -209,6 +209,14 @@ public:
 
     static std::string directoryForType(Type type);
 
+    /**
+     @brief key files provided by this package. Optional list of externally interesting files
+     within this package, relative to the package root.
+     */
+    string_list providesPaths() const;
+
+    bool doesProvidePath(const std::string& p) const;
+
 private:
     SGPath pathOnDisk() const;
 
@@ -240,6 +248,7 @@ private:
     string_set m_tags;
     Catalog* m_catalog = nullptr; // non-owning ref, explicitly
     string_list m_variants;
+    string_list m_provides;
 
     mutable function_list<InstallCallback> _install_cb;
 };

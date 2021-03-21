@@ -194,7 +194,9 @@ public:
     void changeStatus(Delegate::StatusCode newStatus);
 
     void processAlternate(SGPropertyNode_ptr alt);
-    
+
+    PackageList packagesProviding(const Type inferredType, const std::string& path, const std::string& subpath) const;
+
     Root* m_root;
     SGPropertyNode_ptr m_props;
     SGPath m_installRoot;

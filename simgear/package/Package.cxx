@@ -34,9 +34,10 @@ namespace {
 const string_list static_typeNames = {
     "aircraft",
     "ai-model",
-    "add-on"};
+    "add-on",
+    "library"};
 
-}
+} // namespace
 
 namespace simgear {
 
@@ -78,6 +79,10 @@ void Package::initWithProps(const SGPropertyNode* aProps)
         m_type = typeFromString(m_props->getStringValue("type"));
     } else {
         m_type = AircraftPackage;
+    }
+
+    for (auto p : m_props->getChildren("provides")) {
+        m_provides.push_back(p->getStringValue());
     }
 }
 
@@ -221,7 +226,10 @@ bool Package::isInstalled() const
 std::string Package::directoryForType(Type type)
 {
     switch (type) {
+    case AnyPackageType:
+        throw sg_range_exception("Package::directoryForType: passed 'AnyPackage'");
     case AircraftPackage:
+    case LibraryPackage:
     default:
         return "Aircraft";
     case AIModelPackage:
@@ -353,7 +361,7 @@ unsigned int Package::revision() const
 
 std::string Package::name() const
 {
-    return m_props->getStringValue("name");
+    return getLocalisedProp("name", 0);
 }
 
 size_t Package::fileSizeBytes() const
@@ -482,14 +490,8 @@ std::string Package::nameForVariant(const std::string& vid) const
         return name();
     }
 
-    for (auto var : m_props->getChildren("variant")) {
-        if (vid == var->getStringValue("id")) {
-            return var->getStringValue("name");
-        }
-    }
-
-
-    throw sg_exception("Unknow variant +" + vid + " in package " + id());
+    const int index = indexOfVariant(vid);
+    return nameForVariant(index);
 }
 
 unsigned int Package::indexOfVariant(const std::string& vid) const
@@ -515,7 +517,7 @@ unsigned int Package::indexOfVariant(const std::string& vid) const
 
 std::string Package::nameForVariant(const unsigned int vIndex) const
 {
-    return propsForVariant(vIndex, "name")->getStringValue("name");
+    return getLocalisedProp("name", vIndex);
 }
 
 SGPropertyNode_ptr Package::propsForVariant(const unsigned int vIndex, const char* propName) const
@@ -633,6 +635,17 @@ bool Package::validate() const
 Type Package::type() const
 {
     return m_type;
+}
+
+string_list Package::providesPaths() const
+{
+    return m_provides;
+}
+
+bool Package::doesProvidePath(const std::string& p) const
+{
+    auto it = std::find(m_provides.begin(), m_provides.end(), p);
+    return it != m_provides.end();
 }
 
 } // of namespace pkg

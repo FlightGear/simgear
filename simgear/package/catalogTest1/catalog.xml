@@ -230,6 +230,9 @@
         <url>http://localhost:2000/catalogTest1/common-sounds.zip</url>
         <file-size-bytes>360</file-size-bytes>
         <md5>acf9eb89cf396eb42f8823d9cdf17584</md5>
+        <type>library</type>
+        <provides>engine1.wav</provides>
+        <provides>engine3.wav</provides>
     </package>
 
 
@@ -244,5 +247,22 @@
         <archive-path>movies_6789</archive-path>
         <file-size-bytes>232</file-size-bytes>
         <md5>e5f89c3f1ed1bdda16174c868f3c7b30</md5>
+        <type>library</type>
+        <provides>Foo/intro.mov</provides>
     </package>
+
+    <package>
+        <id>b737-ng-ai</id>
+        <name>Boeing 737 NG AI Model</name>
+        <dir>b737NG</dir>
+        <description>AI Model for the 737-NG</description>
+        <revision type="int">111</revision>
+        <file-size-bytes type="int">860</file-size-bytes>
+        <type>ai-model</type>
+        <provides>737NG/Models/BritishAirways-738.xml</provides>
+        <md5>a94ca5704f305b90767f40617d194ed6</md5>
+        <url>http://localhost:2000/mirrorA/b737.tar.gz</url>
+        <url>http://localhost:2000/mirrorB/b737.tar.gz</url>
+        <url>http://localhost:2000/mirrorC/b737.tar.gz</url>
+      </package>
 </PropertyList>

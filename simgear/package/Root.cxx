@@ -906,6 +906,42 @@ string_list Root::explicitlyRemovedCatalogs() const {
   return d->manuallyRemovedCatalogs;
 }
 
+
+PackageList Root::packagesProviding(const std::string& path, bool onlyInstalled) const
+{
+    string modPath = path;
+    auto inferredType = AnyPackageType;
+    if (strutils::starts_with(path, "Aircraft/")) {
+        inferredType = AircraftPackage;
+        modPath = path.substr(9);
+    } else if (strutils::starts_with(path, "AI/Aircraft/")) {
+        inferredType = AIModelPackage;
+        modPath = path.substr(12);
+    }
+
+    string subPath;
+    const auto firstSeperatorPos = modPath.find('/');
+    if (firstSeperatorPos != std::string::npos) {
+        subPath = modPath.substr(firstSeperatorPos + 1);
+        modPath.resize(firstSeperatorPos);
+    }
+
+    PackageList r;
+    for (auto cat : d->catalogs) {
+        const auto p = cat.second->packagesProviding(inferredType, modPath, subPath);
+        r.insert(r.end(), p.begin(), p.end());
+    } // catalog iteratrion
+
+    if (onlyInstalled) {
+        auto it = std::remove_if(r.begin(), r.end(), [](const PackageRef& p) {
+            return p->isInstalled();
+        });
+        r.erase(it, r.end());
+    }
+
+    return r;
+}
+
 } // of namespace pkg
 
 } // of namespace simgear

@@ -187,6 +187,7 @@ void ParticlesGlobalManager::initFromMainThread()
     std::lock_guard<std::mutex> g(d->_lock);
     d->internalGetCommonRoot();
     d->_commonRoot->addUpdateCallback(d.get());
+    d->_commonRoot->setCullingActive(false);
     d->_commonRoot->addCullCallback(d->_cullCallback);
 }
 

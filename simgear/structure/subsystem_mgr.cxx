@@ -340,6 +340,11 @@ SGSubsystemGroup::reinit ()
 void
 SGSubsystemGroup::shutdown ()
 {
+    if (_state < State::INIT) {
+        SG_LOG(SG_EVENT, SG_ALERT, "Shutdown of non-init-ed group:" << _name);
+        return;
+    }
+
     reverseForEach([this](SGSubsystem* s){
         this->notifyWillChange(s, State::SHUTDOWN);
         s->shutdown();
@@ -363,6 +368,11 @@ SGSubsystemGroup::bind ()
 void
 SGSubsystemGroup::unbind ()
 {
+    if (_state < State::BIND) {
+        SG_LOG(SG_EVENT, SG_ALERT, "Unbind of non-bound group:" << _name);
+        return;
+    }
+
     reverseForEach([this](SGSubsystem* s){
         this->notifyWillChange(s, State::UNBIND);
         s->unbind();

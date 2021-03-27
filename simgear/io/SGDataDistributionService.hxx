@@ -105,6 +105,9 @@ public:
     bool add(SG_DDS_Topic *topic, const SGProtocolDir d);
     bool close();
 
+    const std::vector<SG_DDS_Topic*>& get_readers() { return readers; }
+    const std::vector<SG_DDS_Topic*>& get_writers() { return writers; }
+
     bool wait(float dt = 0.0f);
 };
 

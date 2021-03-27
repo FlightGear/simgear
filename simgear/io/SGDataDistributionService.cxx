@@ -149,12 +149,15 @@ SG_DDS_Topic::read(char *buf, int length)
 
     dds_sample_info_t info[1];
     result = dds_take(entry, (void**)&buf, info, 1, 1);
-    if(result < 0 || !info[0].valid_data)
+    if(result < 0)
     {
         errno = -result;
         result = 0;
 
         SG_LOG(SG_IO, SG_ALERT, "dds_take: " << dds_strretcode(errno));
+    }
+    else if (result > 0 && !info[0].valid_data) {
+        SG_LOG(SG_IO, SG_ALERT, "dds_take: invalid data");
     }
 
     return result*length;
@@ -292,7 +295,7 @@ SG_DDS::wait(float dt)
     dds_attach_t results[num];
 
     if (dt > 0.0)
-        timeout = dt*1e9f * DDS_NSECS_IN_SEC;
+        timeout = dt * DDS_NSECS_IN_SEC;
 
     int status = dds_waitset_wait(waitset, results, num, timeout);
     if (status < 0) {

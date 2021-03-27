@@ -35,6 +35,7 @@
 #include <simgear/compiler.h>
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>
+#include <simgear/structure/intern.hxx>
 
 #define FG_DDS_DOMAIN           DDS_DOMAIN_DEFAULT
 
@@ -66,6 +67,12 @@ public:
     // Set the paramaters which weren't available at creation time and use
     // a custom topic name.
     void setup(const char* topic, const dds_topic_descriptor_t *desc, size_t size);
+
+    template<typename T>
+    void setup(const dds_topic_descriptor_t *desc) {
+        std::string type = simgear::getTypeName<T>();
+        setup(type.c_str(), desc, sizeof(T));
+    }
 
     // If specified as a server start a publishing participant.
     // If specified as a client start a subscribing participant.

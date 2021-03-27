@@ -78,8 +78,18 @@ public:
     // read data from the topic.
     int read(char *buf, int length);
 
+    template<typename T>
+    bool read(T& sample) {
+        return (read((char*)&sample, sizeof(T)) == sizeof(T)) ? true : false;
+    }
+
     // write data to the topic.
     int write(const char *buf, const int length);
+
+    template<typename T>
+    bool write(const T& sample) {
+        return (write((char*)&sample, sizeof(T)) == sizeof(T)) ? true : false;
+    }
 
     // close the participant.
     bool close();

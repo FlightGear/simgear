@@ -61,6 +61,11 @@ public:
 
     SG_DDS_Topic(const char* topic, const dds_topic_descriptor_t *desc, size_t size);
 
+    template<typename T>
+    SG_DDS_Topic(T& type, const dds_topic_descriptor_t *desc) : SG_DDS_Topic() {
+        setup<T>(desc);
+    }
+
     /** Destructor */
     ~SG_DDS_Topic();
 

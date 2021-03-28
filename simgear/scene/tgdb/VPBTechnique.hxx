@@ -112,6 +112,8 @@ class VPBTechnique : public TerrainTechnique
             osg::ref_ptr<EffectGeode>           _waterGeode;
             osg::ref_ptr<osg::Geometry>         _landGeometry;
             osg::ref_ptr<osg::Geometry>         _waterGeometry;
+            float                               _width;
+            float                               _height;
 
         protected:
             ~BufferData() {}
@@ -119,6 +121,7 @@ class VPBTechnique : public TerrainTechnique
 
         virtual osg::Vec3d computeCenter(BufferData& buffer, Locator* masterLocator);
         virtual osg::Vec3d computeCenterModel(BufferData& buffer, Locator* masterLocator);
+        const virtual SGGeod computeCenterGeod(BufferData& buffer, Locator* masterLocator);
 
         virtual void generateGeometry(BufferData& buffer, Locator* masterLocator, const osg::Vec3d& centerModel);
 
@@ -126,7 +129,7 @@ class VPBTechnique : public TerrainTechnique
 
         virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
 
-        static osg::Vec2d getRandomOffset(int lon, int lat);
+        static osg::Vec2d getRandomOffset();
 
         virtual void applyTrees(BufferData& buffer, Locator* masterLocator);
 

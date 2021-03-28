@@ -277,6 +277,12 @@ osg::Vec3d VPBTechnique::computeCenterModel(BufferData& buffer, Locator* masterL
     return centerModel;
 }
 
+const SGGeod VPBTechnique::computeCenterGeod(BufferData& buffer, Locator* masterLocator)
+{
+    const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
+    return SGGeod::fromCart(toSG(world));
+}
+
 class VertexNormalGenerator
 {
     public:
@@ -756,17 +762,12 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
     // Determine the correct Effect for this, based on a material lookup taking into account
     // the lat/lon of the center.
     SGMaterialLibPtr matlib  = _options->getMaterialLib();
-    osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
-    osg::Vec3d world;
-    masterLocator->convertLocalToModel(tileloc, world);
-    const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
-    const SGGeod loc = SGGeod::fromCart(world2);
+    const SGGeod loc = computeCenterGeod(buffer, masterLocator);
 
     SGPropertyNode_ptr landEffectProp = new SGPropertyNode();
     SGPropertyNode_ptr waterEffectProp = new SGPropertyNode();
 
     if (matlib) {
-        // Determine the center of the tile, sadly non-trivial.
       SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
       SGMaterialCache* matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
       atlas = matcache->getAtlas();
@@ -1030,7 +1031,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
             else if (numValid==3)
             {
                 // If this is a triangle, we need to look for exactly 3 our of the four
-                // vertices to be in water, as the fourth will be fales, as above.
+                // vertices to be in water, as the fourth will be false, as above.
                 unsigned int water_count = 0;
                 if (w00) water_count++;
                 if (w01) water_count++;
@@ -1236,16 +1237,16 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
         auto t = top_left - bottom_left;
         auto u = top_right - top_left;
         auto v = top_right - bottom_right;
-        tile_width = 0.5 * (s.length() + u.length());
-        tile_height = 0.5 * (t.length() + v.length());
+        buffer._width = 0.5 * (s.length() + u.length());
+        buffer._height = 0.5 * (t.length() + v.length());
     }
 
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Tile Level " << _terrainTile->getTileID().level << " width " << tile_width << " height " << tile_height);
 
-    osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("tile_width", tile_width);
+    osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("tile_width", buffer._width);
     landStateSet->addUniform(twu);
     waterStateSet->addUniform(twu);
-    osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("tile_height", tile_height);
+    osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("tile_height", buffer._height);
     landStateSet->addUniform(thu);
     waterStateSet->addUniform(thu);
 
@@ -1273,29 +1274,23 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
     if (!colorLayer) return;
 
     osg::Image* image = colorLayer->getImage();
-    if (!image) return;
+    if (!image || ! image->valid()) return;
 
     // First time generating this texture, so process to change landclass IDs to texure indexes.
     SGPropertyNode_ptr landEffectProp;
-    osg::Vec3d world;
-    SGGeod loc;
 
-    // Determine the center of the tile, sadly non-trivial.
-    osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
-    masterLocator->convertLocalToModel(tileloc, world);
-    const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
-    loc = SGGeod::fromCart(world2);
+    const SGGeod loc = computeCenterGeod(buffer, masterLocator);
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
 
     SGMaterialCache::Atlas atlas = matlib->generateMatCache(loc, _options)->getAtlas();
     SGMaterialCache::AtlasIndex atlasIndex = atlas.index;
 
     // Set the "g" color channel to an index into the atlas index.
-    for (int s = 0; s < image->s(); s++) {
-        for (int t = 0; t < image->t(); t++) {
-            osg::Vec4 c = image->getColor(s, t);
+    for (unsigned int s = 0; s < (unsigned int) image->s(); s++) {
+        for (unsigned int t = 0; t < (unsigned int) image->t(); t++) {
+            osg::Vec4d c = image->getColor(s, t);
             int i = int(round(c.x() * 255.0));
-            c.set(c.x(), (float) (atlasIndex[i] / 255.0), c.z(), c.w() );
+            c.set(c.x(), (double) (atlasIndex[i] / 255.0), c.z(), c.w() );
             image->setColor(c, s, t);
         }
     }
@@ -1335,16 +1330,12 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
 }
 
 osg::Vec2d* VPBTechnique::_randomOffsets = 0;
+int idx =0;
 
-osg::Vec2d VPBTechnique::getRandomOffset(int lon, int lat)
+osg::Vec2d VPBTechnique::getRandomOffset()
 {
     const unsigned initial_seed = 42;
-    const int N_rnd = 1; // 1 is a uniform random distribution, increase to 5 or
-                         // more for plantation
-    const int bits = 5;
-    const int N    = 1 << (2 * bits);
-    const int N_2  = 1 <<      bits;
-    const int mask = N_2 - 1;
+    const int N = 100;
 
     if (!_randomOffsets)
     {
@@ -1354,31 +1345,20 @@ osg::Vec2d VPBTechnique::getRandomOffset(int lon, int lat)
 
         for (int i = 0; i < N; i++)
         {
-            double x = 0.0;
-            double y = 0.0;
-
-            for (int j = 0; j < N_rnd; j++)
-            {
-                x += mt_rand(&seed);
-                y += mt_rand(&seed);
-            }
-
-            x = x / N_rnd - 0.5;
-            y = y / N_rnd - 0.5;
-            _randomOffsets[i].set(x, y);
+            _randomOffsets[i].set(mt_rand(&seed), mt_rand(&seed));
         }
-
     }
 
-    return _randomOffsets[N_2 * (lat & mask) + (lon & mask)];
+    idx = (idx + 1) % N;
+    return _randomOffsets[idx];
 }
+
 
 void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
 {
     bool use_random_vegetation = false;
     float vegetation_density = 1.0; 
     int vegetation_lod_level = 6;
-    float randomness = 1.0;
 
     SGPropertyNode* propertyNode = _options->getPropertyNode().get();
 
@@ -1393,80 +1373,39 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         return;
     }
 
+    // Determine tree spacing, assuming base density of 1 tree per 100m^2, though spacing
+    // is linear here, as is the /sim/rendering/vegetation-density property.
+    float spacing = 10.0 / vegetation_density;
+
     SGMaterialLibPtr matlib  = _options->getMaterialLib();
     SGMaterial* mat = 0;
-    osg::Vec3d world;
-    SGGeod loc;
-    SGGeoc cloc;
 
-    if (matlib)
-    {
-        // Determine the center of the tile, sadly non-trivial.
-        osg::Vec3d tileloc = computeCenter(buffer, masterLocator);
-        masterLocator->convertLocalToModel(tileloc, world);
-        const SGVec3d world2 = SGVec3d(world.x(), world.y(), world.z());
-        loc = SGGeod::fromCart(world2);
-        cloc = SGGeoc::fromCart(world2);
-        SG_LOG(SG_TERRAIN, SG_DEBUG, "Applying VPB material " << loc);
-        SGMaterialCache* matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
-        mat = matcache->find("EvergreenForest");
-        delete matcache;
-    }
+    if (!matlib) return;
 
-    if (!mat) {
-        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find EvergreenForestmaterial at " << loc);
-        return;
-    }    
+    const SGGeod loc = computeCenterGeod(buffer, masterLocator);
+    SGMaterialCache* matcache = matlib->generateMatCache(loc, _options);
 
-    TreeBin* bin = new TreeBin();
-    bin->texture = mat->get_tree_texture();
-    bin->teffect = mat->get_tree_effect();
-    bin->range   = mat->get_tree_range();
-    bin->width   = mat->get_tree_width();
-    bin->height  = mat->get_tree_height();
-    bin->texture_varieties = mat->get_tree_varieties();
-
-    const osg::Matrixd R_vert = osg::Matrixd::rotate(
-     M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
-     loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0),
-     0.0, osg::Vec3d(1.0, 0.0, 0.0));
+    if (!matcache) return;
 
     const osg::Array* vertices = buffer._landGeometry->getVertexArray();
     const osg::Array* texture_coords = buffer._landGeometry->getTexCoordArray(0);
     osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
     osg::Image* image = colorLayer->getImage();
 
-    // Just want the first primitive set, not the others which will be the "skirts" below.
-    const osg::PrimitiveSet* primSet = buffer._landGeometry->getPrimitiveSet(0);
-    const osg::DrawElements* drawElements = primSet->getDrawElements();
-    const unsigned int triangle_count = drawElements->getNumPrimitives();
+    if (!image || ! image->valid()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << _terrainTile->getTileID().x << " " << _terrainTile->getTileID().y << " " << _terrainTile->getTileID().level);
+        return;
+    }
 
-    const double lon          = loc.getLongitudeRad();
-    const double lat          = loc.getLatitudeRad();
-    const double clon         = cloc.getLongitudeRad();
-    const double clat         = cloc.getLatitudeRad();
-    const double r_E_lat      = /* 6356752.3 */ 6.375993e+06;
-    const double r_E_lon      = /* 6378137.0 */ 6.389377e+06;
-    const double C            = r_E_lon * cos(lat);
-    const double one_over_C   = (fabs(C) > 1.0e-4) ? (1.0 / C) : 0.0;
-    const double one_over_r_E = 1.0 / r_E_lat;
-    const double delta_lat = sqrt(1000.0 / vegetation_density) / r_E_lat;
-    const double delta_lon = sqrt(1000.0 / vegetation_density) / (r_E_lon * cos(loc.getLatitudeRad()));
-
-    const osg::Matrix rotation_vertices_c = osg::Matrix::rotate(
-     M_PI / 2 - clat, osg::Vec3d(0.0, 1.0, 0.0),
-     clon, osg::Vec3d(0.0, 0.0, 1.0),
-     0.0, osg::Vec3d(1.0, 0.0, 0.0));
-
-    const osg::Matrix rotation_vertices_g = osg::Matrix::rotate(
-     M_PI / 2 - lat, osg::Vec3d(0.0, 1.0, 0.0),
-     lon, osg::Vec3d(0.0, 0.0, 1.0),
-     0.0, osg::Vec3d(1.0, 0.0, 0.0));
+    SGTreeBinList randomForest;
 
     const osg::Vec3* vertexPtr = static_cast<const osg::Vec3*>(vertices->getDataPointer());
     const osg::Vec2* texPtr = static_cast<const osg::Vec2*>(texture_coords->getDataPointer());
 
-    
+    const osg::PrimitiveSet* primSet = buffer._landGeometry->getPrimitiveSet(0);
+    const osg::DrawElements* drawElements = primSet->getDrawElements();
+    const unsigned int triangle_count = drawElements->getNumPrimitives();
+
     for (unsigned int i = 0; i < triangle_count; i++)
     {
         const int i0 = drawElements->index(3 * i);
@@ -1478,30 +1417,8 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         const osg::Vec3 v2 = vertexPtr[i2];
 
         const osg::Vec3d v_0 = v0;
-        const osg::Vec3d v_x = v1 - v0;
-        const osg::Vec3d v_y = v2 - v0;
-
-        osg::Vec3 n = v_x ^ v_y;
-        n /= n.length();
-
-        const osg::Vec3d v_0_g = R_vert * v0;
-        const osg::Vec3d v_1_g = R_vert * v1;
-        const osg::Vec3d v_2_g = R_vert * v2;
-
-        const osg::Vec2d ll_0 = osg::Vec2d(v_0_g.y() * one_over_C + lon, -v_0_g.x() * one_over_r_E + lat);
-        const osg::Vec2d ll_1 = osg::Vec2d(v_1_g.y() * one_over_C + lon, -v_1_g.x() * one_over_r_E + lat);
-        const osg::Vec2d ll_2 = osg::Vec2d(v_2_g.y() * one_over_C + lon, -v_2_g.x() * one_over_r_E + lat);
-
-        const osg::Vec2d ll_O = ll_0;
-        const osg::Vec2d ll_x = osg::Vec2d((v_1_g.y() - v_0_g.y()) * one_over_C, -(v_1_g.x() - v_0_g.x()) * one_over_r_E);
-        const osg::Vec2d ll_y = osg::Vec2d((v_2_g.y() - v_0_g.y()) * one_over_C, -(v_2_g.x() - v_0_g.x()) * one_over_r_E);
-
-        const int off_x = ll_O.x() / delta_lon;
-        const int off_y = ll_O.y() / delta_lat;
-        const int min_lon = min(min(ll_0.x(), ll_1.x()), ll_2.x()) / delta_lon;
-        const int max_lon = max(max(ll_0.x(), ll_1.x()), ll_2.x()) / delta_lon;
-        const int min_lat = min(min(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
-        const int max_lat = max(max(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
+        osg::Vec3d v_x = v1 - v0;
+        osg::Vec3d v_y = v2 - v0;
 
         const osg::Vec2 t0 = texPtr[i0];
         const osg::Vec2 t1 = texPtr[i1];
@@ -1511,46 +1428,162 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         const osg::Vec2d t_x = t1 - t0;
         const osg::Vec2d t_y = t2 - t0;
 
-        const double D = det2(ll_x, ll_y);
+        osg::Vec3 n = v_x ^ v_y;
+        n.normalize();
 
-        for (int lat_int = min_lat - 1; lat_int <= max_lat + 1; lat_int++)
-        {
-            const double lat = (lat_int - off_y) * delta_lat;
+        osg::Vec3 up = buffer._transform->getMatrix().getTrans();
+        up.normalize();
 
-            for (int lon_int = min_lon - 1; lon_int <= max_lon + 1; lon_int++)
-            {
-                const double lon = (lon_int - off_x) * delta_lon;
-                const osg::Vec2d ro = getRandomOffset(lon_int, lat_int) * randomness;
-                const osg::Vec2d p(lon + delta_lon * ro.x(), lat + delta_lat * ro.y());
-                const double x = det2(ll_x, p) / D;
-                const double y = det2(p, ll_y) / D;
+        double step_x = spacing / v_x.length();
+        double step_y = spacing / v_y.length();
 
-                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0))
-                {
+        for (float x = 0; x < 1.0; x += step_x) {
+            for (float y = 0; y < 1.0; y += step_y) {
+                
+                // If outside the triangle, ignore
+                if ((x + y) > 1.0) continue;
+
+                osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
+                unsigned int tx = (unsigned int) (image->s() * t.x()) % image->s();
+                unsigned int ty = (unsigned int) (image->t() * t.y()) % image->t();
+
+                if (!image) {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, "Image disappeared under my feet.");
                     continue;
                 }
 
-                const osg::Vec2 tcp = t_x * x + t_y * y + t_0;
-                const osg::Vec4 tc = image->getColor(tcp);
-                const int tc_r = floor(tc.r() * 255.0 + 0.5);
+                const osg::Vec4 tc = image->getColor(tx, ty);
+                const int land_class = int(round(tc.x() * 255.0));
+                mat = matcache->find(land_class);
 
-                if ((tc_r < 22) || (24 < tc_r))
-                {
+                if ((land_class == 26) || (land_class == 27)) {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, "Placing trees for " << land_class << " " << mat->get_one_texture(0,0) << " " << mat->get_names()[0]);
+                }
+
+                if (!mat) {
+                    //SG_LOG(SG_TERRAIN, SG_ALERT, "Failed to find material for landclass " << land_class << " (" << tc.r() << ")");
                     continue;
                 }
 
-                const osg::Vec3 vp = v_x * x + v_y * y + v_0;
-                bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()), SGVec3f(n.x(), n.y(), n.z()));
+                // Check vegetation density against the material, noting we assumed 100m^2 above
+                if (mat->get_wood_coverage() <= 0) continue;
+
+                float wood_coverage = 100.0 / mat->get_wood_coverage();
+                if (getRandomOffset().x() > wood_coverage) continue;
+
+                osg::Vec3 p = v_0 + v_x*x + v_y*y;
+
+
+                if (! mat->get_is_plantation()) {
+                    // Add some randomness
+                    osg::Vec2 offset = getRandomOffset();
+                    float new_x = x + step_x * (offset.x() - 0.5);
+                    float new_y = y + step_y * (offset.y() - 0.5);
+
+                    // Another check to ensure we're not outside the triangle
+                    if ((new_x + new_y) > 1.0) continue;
+
+
+                    // Update both position and texture coords to account for the new position. 
+                    p = v_0 + v_x*new_x + v_y*new_y;
+                    t = osg::Vec2(t_0 + t_x * new_x + t_y * new_y);
+                }
+
+                // Check against any object mask
+                osg::Texture2D* object_mask = mat->get_one_object_mask(0);
+                if (object_mask != NULL) {
+                    osg::Image* img = object_mask->getImage();
+                    if (!img || ! img->valid()) continue;
+
+                    // Texture coordinates run [0..1][0..1] across the entire tile whereas
+                    // the texure itself has defined dimensions in m.
+                    // We therefore need to use the tile width and height to determine the correct
+                    // texture coordinate transformation.
+                    float x_scale = buffer._width / 1000.0;
+                    float y_scale = buffer._height / 1000.0;
+
+                    if (mat->get_xsize() > 0.0) { x_scale = buffer._width / mat->get_xsize(); }
+                    if (mat->get_ysize() > 0.0) { y_scale = buffer._height / mat->get_ysize(); }
+
+                    unsigned int x = (unsigned int) (img->s() * t.x() * x_scale) % img->s();
+                    unsigned int y = (unsigned int) (img->t() * t.y() * y_scale) % img->t();
+
+                    // green (for trees) channel
+                    if (getRandomOffset().y() > img->getColor(x, y).g()) {
+                        continue;
+                    }
+                }
+
+                // Ensure the slope isn't too steep by checking the
+                // cos of the angle between the slope normal and the
+                // vertical, conveniently just the dot product of the up and normal
+                float alpha = n * up;
+                float cos_zero_density_angle = mat->get_cos_tree_zero_density_slope_angle();
+                float cos_max_density_angle = mat->get_cos_tree_max_density_slope_angle();
+
+                if (alpha < cos_zero_density_angle) {
+                    continue; // Too steep for any vegetation
+                }
+
+                if (alpha < cos_max_density_angle) {
+                    // Reduce density on steep slopes
+                    float slope_density = (alpha - cos_zero_density_angle) / (cos_max_density_angle - cos_zero_density_angle);
+                    if (getRandomOffset().y() > slope_density) continue;
+                }
+
+                // It's a hard life being a possible tree! But we now have a valid tree position.
+                // So put it in the correct bin.
+                TreeBin* bin = NULL;
+                bool found = false;
+
+                for (SGTreeBinList::iterator iter = randomForest.begin(); iter != randomForest.end(); iter++) {
+
+                    bin = *iter;
+
+                    if ((bin->texture           == mat->get_tree_texture()  ) &&
+                        (bin->teffect           == mat->get_tree_effect()   ) &&
+                        (bin->texture_varieties == mat->get_tree_varieties()) &&
+                        (bin->range             == mat->get_tree_range()    ) &&
+                        (bin->width             == mat->get_tree_width()    ) &&
+                        (bin->height            == mat->get_tree_height()   )   ) {
+                            found = true;
+                            break;
+                    }
+                }
+                
+                if (!found) {
+                    bin = new TreeBin();
+                    bin->texture = mat->get_tree_texture();
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree texture " << bin->texture);
+                    bin->teffect = mat->get_tree_effect();
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree effect " << bin->teffect);
+                    bin->range   = mat->get_tree_range();
+                    bin->width   = mat->get_tree_width();
+                    bin->height  = mat->get_tree_height();
+                    bin->texture_varieties = mat->get_tree_varieties();
+                    randomForest.push_back(bin);
+                }
+                
+                bin->insert(SGVec3f(p.x(), p.y(), p.z()), SGVec3f(n.x(), n.y(), n.z()));
             }
-
         }
-
     }
 
-    SGTreeBinList randomForest;
-    randomForest.push_back(bin);
-    osg::Group* trees = createForest(randomForest, R_vert,_options, 1);
-    buffer._transform->addChild(trees);
+    if (randomForest.size() > 0) {
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding Random Forest " << randomForest.size());
+        for (auto iter = randomForest.begin(); iter != randomForest.end(); iter++) {
+            TreeBin* treeBin = *iter;
+            SG_LOG(SG_TERRAIN, SG_DEBUG, "  " << treeBin->texture << " " << treeBin->getNumTrees());
+        }
+
+        const osg::Matrixd R_vert = osg::Matrixd::rotate(
+        M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
+        loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0),
+        0.0, osg::Vec3d(1.0, 0.0, 0.0));
+
+        osg::Group* trees = createForest(randomForest, R_vert,_options, 1);
+        buffer._transform->addChild(trees);
+    }
 }
 
 void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
@@ -1578,7 +1611,6 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
 
     const SGMaterialLibPtr matlib  = _options->getMaterialLib();
     SGMaterial* mat = 0;
-    const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
 
     if (! matlib) {
         SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to get materials library to generate roads");
@@ -1586,6 +1618,7 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
     }    
 
     // Get all appropriate roads.  We assume that the VPB terrain tile is smaller than a Bucket size.
+    const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
     const SGGeod loc = SGGeod::fromCart(toSG(world));
     const SGBucket bucket = SGBucket(loc);
     auto roads = std::find_if(_lineFeatureLists.begin(), _lineFeatureLists.end(), [bucket](BucketLineFeatureBinList b){return (b.first == bucket);});
@@ -1789,7 +1822,7 @@ void VPBTechnique::traverse(osg::NodeVisitor& nv)
     // if app traversal update the frame count.
     if (nv.getVisitorType()==osg::NodeVisitor::UPDATE_VISITOR)
     {
-        if (_terrainTile->getDirty()) _terrainTile->init(_terrainTile->getDirtyMask(), false);
+        //if (_terrainTile->getDirty()) _terrainTile->init(_terrainTile->getDirtyMask(), false);
         update(nv);
         return;
     }
@@ -1803,7 +1836,7 @@ void VPBTechnique::traverse(osg::NodeVisitor& nv)
     if (_terrainTile->getDirty())
     {
         OSG_INFO<<"******* Doing init ***********"<<std::endl;
-        _terrainTile->init(_terrainTile->getDirtyMask(), false);
+        //_terrainTile->init(_terrainTile->getDirtyMask(), false);
     }
 
     if (_currentBufferData.valid())
@@ -1901,6 +1934,8 @@ osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg
 
 void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList, osg::ref_ptr<osg::Node> terrainNode)
 {
+    if (roadList.empty()) return;
+
     // Block to mutex the List alone
     {
         const std::lock_guard<std::mutex> lock(VPBTechnique::_lineFeatureLists_mutex); // Lock the _lineFeatureLists for this scope

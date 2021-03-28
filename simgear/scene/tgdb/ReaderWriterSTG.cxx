@@ -785,7 +785,7 @@ struct ReaderWriterSTG::_ModelBin {
             readFileCallback->_options = options;
             readFileCallback->_bucket = bucket;
 
-            if (vpb_active) {
+            if (vpb_active && vpb_node) {
                 readFileCallback->_lineFeatureList = _lineFeatureListList;
                 readFileCallback->_terrainNode = vpb_node;
             }

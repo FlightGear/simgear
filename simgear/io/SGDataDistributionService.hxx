@@ -67,7 +67,7 @@ public:
     }
 
     /** Destructor */
-    ~SG_DDS_Topic();
+    virtual ~SG_DDS_Topic();
 
     // Set the paramaters which weren't available at creation time and use
     // a custom topic name.

@@ -274,10 +274,10 @@ bool
 SG_DDS::close()
 {
     for (auto it : readers)
-        it->close();
+        delete it;
 
     for (auto it : writers)
-        it->close();
+        delete it;
 
     readers.clear();
     writers.clear();

@@ -4,7 +4,7 @@
 #include <string>
 
 #include <typeinfo>
-#if __linux__
+#ifndef _MSC_VER
 #include <cxxabi.h>
 #endif
 
@@ -15,8 +15,10 @@ namespace simgear
 template <typename T>
 std::string getTypeName(void)
 {
-#ifdef _WIN32
-  std::string name = typeid(T).name();
+#ifdef _MSC_VER
+  const char *type = typeid(T).name();
+  const char *tn = strchr(type, ' ');
+  std::string name = tn ? tn+1 : type;
 #else // __linux__
   int error = 0;
   char *type = abi::__cxa_demangle(typeid(T).name(), 0, 0, &error);

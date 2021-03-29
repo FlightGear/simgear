@@ -50,6 +50,7 @@ if(ENABLE_TESTS)
   add_simgear_autotest(test_expressions expression_test.cxx)
   add_simgear_autotest(test_shared_ptr shared_ptr_test.cpp)
   add_simgear_autotest(test_commands test_commands.cxx)
+  add_simgear_autotest(test_typeid test_typeid.cxx)
 endif(ENABLE_TESTS)
 
 add_boost_test(function_list

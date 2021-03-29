@@ -712,7 +712,7 @@ void logstream::setStartupLoggingEnabled(bool enabled)
     d->setStartupLoggingEnabled(enabled);
 }
 
-void logstream::requestConsole()
+void logstream::requestConsole(bool ignoreErrors)
 {
 #if defined (SG_WINDOWS)
     const bool stderrAlreadyRedirected = d->m_stderr_isRedirectedAlready;
@@ -751,7 +751,8 @@ void logstream::requestConsole()
             std::cerr.clear();
         }
     } else {
-        MessageBox(0, "--console ignored because stdout or stderr redirected with > or 2>", "Simgear Error", MB_OK | MB_ICONERROR);
+        if (!ignoreErrors)
+            MessageBox(0, "--console ignored because stdout or stderr redirected with > or 2>", "Simgear Error", MB_OK | MB_ICONERROR);
     }
 #endif
 }
@@ -767,9 +768,9 @@ logstream::setTestingMode( bool testMode )
 namespace simgear
 {
 
-void requestConsole()
-{
-    sglog().requestConsole();
+void requestConsole(bool ignoreErrors)
+{ 
+    sglog().requestConsole(ignoreErrors);
 }
 
 

@@ -44,7 +44,7 @@ class LogCallback;
  * we need to show a console. This basically means Windows at the
  * moment - on other plaforms it's a no-op
  */
-void requestConsole();
+void requestConsole(bool ignoreErrors);
 
 void shutdownLogging();
 
@@ -65,7 +65,7 @@ public:
      * we need to show a console. This basically means Windows at the
      * moment - on other plaforms it's a no-op
      */
-    void requestConsole();
+    void requestConsole(bool ignoreErrors);
 
     /**
      * Set the global log class and priority level.

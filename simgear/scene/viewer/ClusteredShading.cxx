@@ -28,6 +28,8 @@
 #include <simgear/constants.h>
 #include <simgear/structure/exception.hxx>
 
+#include "CompositorUtil.hxx"
+
 namespace simgear {
 namespace compositor {
 
@@ -35,8 +37,13 @@ ClusteredShading::ClusteredShading(osg::Camera *camera,
                                    const SGPropertyNode *config) :
     _camera(camera)
 {
-    _max_pointlights = config->getIntValue("max-pointlights", 1024);
-    _max_spotlights = config->getIntValue("max-spotlights", 1024);
+    const SGPropertyNode *p_max_pointlights =
+        getPropertyChild(config, "max-pointlights");
+    _max_pointlights = p_max_pointlights ? p_max_pointlights->getIntValue() : 1024;
+    const SGPropertyNode *p_max_spotlights =
+        getPropertyChild(config, "max-spotlights");
+    _max_spotlights = p_max_spotlights ? p_max_spotlights->getIntValue() : 1024;
+
     _max_light_indices = config->getIntValue("max-light-indices", 256);
     _tile_size = config->getIntValue("tile-size", 128);
     _depth_slices = config->getIntValue("depth-slices", 1);
@@ -220,9 +227,28 @@ ClusteredShading::update(const SGLightList &light_list)
             _spot_bounds.push_back(spot);
         }
     }
-    if (_point_bounds.size() > static_cast<unsigned int>(_max_pointlights) ||
-        _spot_bounds.size()  > static_cast<unsigned int>(_max_spotlights)) {
-        throw sg_range_exception("Maximum amount of visible lights surpassed");
+
+    if (_point_bounds.size() > static_cast<unsigned int>(_max_pointlights)) {
+        // We prefer to render higher priority lights and lights that are close
+        // to the viewer
+        std::sort(_point_bounds.begin(), _point_bounds.end(),
+                  [](auto &a, auto &b) {
+                      if (a.light->getPriority() != b.light->getPriority())
+                          return a.light->getPriority() < b.light->getPriority();
+                      return a.position.length() < b.position.length();
+                  });
+        _point_bounds.resize(_max_pointlights);
+    }
+
+    if (_spot_bounds.size() > static_cast<unsigned int>(_max_spotlights)) {
+        std::sort(_spot_bounds.begin(), _spot_bounds.end(),
+                  [](auto &a, auto &b) {
+                      if (a.light->getPriority() != b.light->getPriority())
+                          return a.light->getPriority() < b.light->getPriority();
+                      return a.bounding_sphere.center.length() <
+                          b.bounding_sphere.center.length();
+                  });
+        _spot_bounds.resize(_max_spotlights);
     }
 
     float l = 0.f, r = 0.f, b = 0.f, t = 0.f;

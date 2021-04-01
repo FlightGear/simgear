@@ -31,9 +31,9 @@ public:
     };
 
     enum Priority {
-        LOW,
+        HIGH,
         MEDIUM,
-        HIGH
+        LOW
     };
 
     class UpdateCallback : public osg::NodeCallback {

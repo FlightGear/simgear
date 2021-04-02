@@ -91,6 +91,9 @@ protected:
     class WorkerThread;
 
 private:
+    void writeWarningFile(const SGPath& sceneryDir);
+
+private:
     WorkerThread* _workerThread;
     SGPropertyNode_ptr _terraRoot;
     SGPropertyNode_ptr _renderingRoot;

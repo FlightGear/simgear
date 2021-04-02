@@ -1124,6 +1124,9 @@ void SGTerraSync::reinit()
 
         SGPath sceneryRoot{_terraRoot->getStringValue("scenery-dir", "")};
         _workerThread->setLocalDir(sceneryRoot.utf8Str());
+        if (sceneryRoot.exists()) {
+            writeWarningFile(sceneryRoot);
+        }
 
         SGPath installPath(_terraRoot->getStringValue("installation-dir"));
         _workerThread->setInstalledDir(installPath);
@@ -1360,6 +1363,23 @@ bool SGTerraSync::isDataDirPending(const std::string& dataDir) const
 void SGTerraSync::reposition()
 {
     // stub, remove
+}
+
+void SGTerraSync::writeWarningFile(const SGPath& sceneryDir)
+{
+    SGPath p = sceneryDir / "TerraSync-WARNING.txt";
+    if (p.exists())
+        return;
+
+    sg_ofstream os(p, std::ios::out | std::ios::trunc);
+    os << "This folder is managed by FlightGear's download system.\n";
+    os << "Any changes you make here or in sub-folders will be overwritten when TerraSync\n";
+    os << "downloads updates.\n";
+    os << "\n";
+    os << "To use custom scenery or data with FlightGear, put it in a differnet location\n";
+    os << "on your computer, then add the location using either the launcher 'Add-ons' page, or by\n";
+    os << "passing '--fg-scenery=<location>' on the command line.";
+    os << endl;
 }
 
 

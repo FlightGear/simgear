@@ -377,7 +377,12 @@ public:
 
       // We now have a list of entries that need to be updated, and a list
       // of orphan files that should be removed.
-      removeOrphans(orphans);
+      try {
+          removeOrphans(orphans);
+      } catch (sg_exception& e) {
+          _repository->failedToUpdateChild(_relativePath, HTTPRepository::ResultCode::REPO_ERROR_IO);
+      }
+
       scheduleUpdates(toBeUpdated);
     }
 
@@ -389,11 +394,10 @@ public:
 
     void removeOrphans(const PathList orphans)
     {
-        PathList::const_iterator it;
-        for (it = orphans.begin(); it != orphans.end(); ++it) {
-            if (it->file() == ".dirindex") continue;
-            if (it->file() == ".hash") continue;
-            removeChild(*it);
+        for (const auto& o : orphans) {
+            if (o.file() == ".dirindex") continue;
+            if (o.file() == ".hash") continue;
+            removeChild(o);
         }
     }
 

@@ -17,6 +17,7 @@
 #include "ClusteredShading.hxx"
 
 #include <thread>
+#include <algorithm>
 
 #include <osg/RenderInfo>
 #include <osg/Texture2D>

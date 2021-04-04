@@ -71,6 +71,7 @@
 #define BUILDING_LIST "BUILDING_LIST"
 #define TREE_LIST "TREE_LIST"
 #define LINE_FEATURE_LIST "LINE_FEATURE_LIST"
+#define AREA_FEATURE_LIST "AREA_FEATURE_LIST"
 
 namespace simgear {
 
@@ -159,7 +160,12 @@ struct ReaderWriterSTG::_ModelBin {
       std::string _material;
       SGBucket _bucket;
     };
-
+    struct _AreaFeatureList {
+      _AreaFeatureList() { }
+      std::string _filename;
+      std::string _material;
+      SGBucket _bucket;
+    };
 
     class DelayLoadReadFileCallback : public OptionsReadFileCallback {
 
@@ -334,6 +340,19 @@ struct ReaderWriterSTG::_ModelBin {
                 VPBTechnique::addLineFeatureList(_bucket, lineFeatures, _terrainNode);
             }
 
+            if (!_areaFeatureList.empty()) {
+
+                AreaFeatureBinList areaFeatures;
+
+                for (const auto& b : _areaFeatureList) {
+                    // add the lineFeatures to the list
+                    const auto path = SGPath(b._filename);
+                    areaFeatures.push_back(AreaFeatureBin(path, b._material));
+                }
+
+                VPBTechnique::addAreaFeatureList(_bucket, areaFeatures, _terrainNode);
+            }
+
             return group.release();
         }
 
@@ -343,6 +362,7 @@ struct ReaderWriterSTG::_ModelBin {
         std::list<_BuildingList> _buildingList;
         std::list<_TreeList> _treeList;
         std::list<_LineFeatureList> _lineFeatureList;
+        std::list<_AreaFeatureList> _areaFeatureList;
         osg::ref_ptr<osg::Node> _terrainNode;
 
         /// The original options to use for this bunch of models
@@ -646,6 +666,12 @@ struct ReaderWriterSTG::_ModelBin {
                   in >> lineFeaturelist._material;
                   lineFeaturelist._bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
                   _lineFeatureListList.push_back(lineFeaturelist);
+                } else if (token == AREA_FEATURE_LIST) {
+                  _AreaFeatureList areaFeaturelist;
+                  areaFeaturelist._filename = path.utf8Str();
+                  in >> areaFeaturelist._material;
+                  areaFeaturelist._bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
+                  _areaFeatureListList.push_back(areaFeaturelist);
                 } else {
                     // Check registered callback for token. Keep lock until callback completed to make sure it will not be
                     // executed after a thread successfully executed removeSTGObjectHandler()
@@ -762,7 +788,7 @@ struct ReaderWriterSTG::_ModelBin {
             i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
 
-        if (_objectStaticList.empty() && _signList.empty() && _buildingListList.empty() && _treeListList.empty() && _lineFeatureListList.empty()) {
+        if (_objectStaticList.empty() && _signList.empty() && _buildingListList.empty() && _treeListList.empty() && _lineFeatureListList.empty() && _areaFeatureListList.empty()) {
             // The simple case, just return the terrain group
             return terrainGroup.release();
         } else {
@@ -787,6 +813,7 @@ struct ReaderWriterSTG::_ModelBin {
 
             if (vpb_active && vpb_node) {
                 readFileCallback->_lineFeatureList = _lineFeatureListList;
+                readFileCallback->_areaFeatureList = _areaFeatureListList;
                 readFileCallback->_terrainNode = vpb_node;
             }
 
@@ -817,6 +844,7 @@ struct ReaderWriterSTG::_ModelBin {
     std::list<_BuildingList> _buildingListList;
     std::list<_TreeList> _treeListList;
     std::list<_LineFeatureList> _lineFeatureListList;
+    std::list<_AreaFeatureList> _areaFeatureListList;
 };
 
 ReaderWriterSTG::ReaderWriterSTG()

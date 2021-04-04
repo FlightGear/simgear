@@ -25,6 +25,7 @@
 #include <osgUtil/LineSegmentIntersector>
 #include <osgUtil/IntersectionVisitor>
 #include <osgUtil/MeshOptimizers>
+#include <osgUtil/Tessellator>
 
 #include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
@@ -167,6 +168,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
             applyColorLayers(*buffer, masterLocator);
             applyTrees(*buffer, masterLocator);
             applyLineFeatures(*buffer, masterLocator);
+            applyAreaFeatures(*buffer, masterLocator);
         }
     }
     else
@@ -175,6 +177,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         applyColorLayers(*buffer, masterLocator);
         applyTrees(*buffer, masterLocator);
         applyLineFeatures(*buffer, masterLocator);
+        applyAreaFeatures(*buffer, masterLocator);
     }
 
     if (buffer->_transform.valid()) buffer->_transform->setThreadSafeRefUnref(true);
@@ -1456,10 +1459,6 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
                 const int land_class = int(round(tc.x() * 255.0));
                 mat = matcache->find(land_class);
 
-                if ((land_class == 26) || (land_class == 27)) {
-                    SG_LOG(SG_TERRAIN, SG_ALERT, "Placing trees for " << land_class << " " << mat->get_one_texture(0,0) << " " << mat->get_names()[0]);
-                }
-
                 if (!mat) {
                     //SG_LOG(SG_TERRAIN, SG_ALERT, "Failed to find material for landclass " << land_class << " (" << tc.r() << ")");
                     continue;
@@ -1774,6 +1773,162 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
     }
 }
 
+void VPBTechnique::applyAreaFeatures(BufferData& buffer, Locator* masterLocator)
+{
+    unsigned int area_features_lod_range = 6;
+    float minArea = 1000.0;
+
+    const unsigned int tileLevel = _terrainTile->getTileID().level;
+    const SGPropertyNode* propertyNode = _options->getPropertyNode().get();
+
+    if (propertyNode) {
+        const SGPropertyNode* static_lod = propertyNode->getNode("/sim/rendering/static-lod");
+        area_features_lod_range = static_lod->getIntValue("area-features-lod-level", area_features_lod_range);
+        if (static_lod->getChildren("lod-level").size() > tileLevel) {
+            minArea = static_lod->getChildren("lod-level")[tileLevel]->getFloatValue("area-features-min-width", minArea);
+            minArea *= minArea;
+        }
+    }
+
+    if (tileLevel < area_features_lod_range) {
+        // Do not generate areas for tiles too far away
+        return;
+    }
+
+    const SGMaterialLibPtr matlib  = _options->getMaterialLib();
+    SGMaterial* mat = 0;
+
+    if (! matlib) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to get materials library to generate areas");
+        return;
+    }    
+
+
+    // Get all appropriate areas.  We assume that the VPB terrain tile is smaller than a Bucket size.
+    const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
+    const SGGeod loc = SGGeod::fromCart(toSG(world));
+    const SGBucket bucket = SGBucket(loc);
+    auto areas = std::find_if(_areaFeatureLists.begin(), _areaFeatureLists.end(), [bucket](BucketAreaFeatureBinList b){return (b.first == bucket);});
+
+    if (areas == _areaFeatureLists.end()) return;
+
+    SGMaterialCache* matcache = _options->getMaterialLib()->generateMatCache(loc, _options);
+
+    for (; areas != _areaFeatureLists.end(); ++areas) {
+        const AreaFeatureBinList areaBins = areas->second;
+
+        for (auto rb = areaBins.begin(); rb != areaBins.end(); ++rb)
+        {
+            mat = matcache->find(rb->getMaterial());
+
+            if (!mat) {
+                SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find material " << rb->getMaterial() << " at " << loc << " " << bucket);
+                continue;
+            }    
+
+            unsigned int xsize = mat->get_xsize();
+            unsigned int ysize = mat->get_ysize();
+
+            //  Generate a geometry for this set of areas.
+            osg::Vec3Array* v = new osg::Vec3Array;
+            osg::Vec2Array* t = new osg::Vec2Array;
+            osg::Vec3Array* n = new osg::Vec3Array;
+            osg::Vec4Array* c = new osg::Vec4Array;
+
+            osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry;
+            geometry->setVertexArray(v);
+            geometry->setTexCoordArray(0, t, osg::Array::BIND_PER_VERTEX);
+            geometry->setTexCoordArray(1, t, osg::Array::BIND_PER_VERTEX);
+            geometry->setNormalArray(n, osg::Array::BIND_PER_VERTEX);
+            geometry->setColorArray(c, osg::Array::BIND_OVERALL);
+            geometry->setUseDisplayList( false );
+            geometry->setUseVertexBufferObjects( true );
+
+            auto areaFeatures = rb->getAreaFeatures();
+
+            for (auto r = areaFeatures.begin(); r != areaFeatures.end(); ++r) {
+                if (r->_area > minArea) generateAreaFeature(buffer, masterLocator, *r, world, geometry, v, t, n, xsize, ysize);
+            }
+
+            if (v->size() == 0) continue;
+            c->push_back(osg::Vec4(1.0,1.0,1.0,1.0));
+
+            EffectGeode* geode = new EffectGeode;
+            geode->addDrawable(geometry);
+
+            geode->setMaterial(mat);
+            geode->setEffect(mat->get_one_effect(0));
+            geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+            buffer._transform->addChild(geode);
+        }
+    }
+}
+
+void VPBTechnique::generateAreaFeature(BufferData& buffer, Locator* masterLocator, AreaFeatureBin::AreaFeature area, osg::Vec3d modelCenter, osg::Geometry* geometry, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, unsigned int xsize, unsigned int ysize)
+{
+    if (area._nodes.size() < 3) { 
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Coding error - AreaFeatureBin::LineFeature with fewer than three nodes"); 
+        return; 
+    }
+
+    osg::Vec3d ma;
+
+    // We're in Earth-centered coordinates, so "up" is simply directly away from (0,0,0)
+    osg::Vec3d up = modelCenter;
+    up.normalize();
+
+    osg::ref_ptr<osgUtil::Tessellator> tessellator = new osgUtil::Tessellator;
+    tessellator->setBoundaryOnly(false);
+    tessellator->setTessellationNormal(up);
+    tessellator->beginTessellation();
+    tessellator->beginContour();
+
+    // Build up the tesselator while also determining the correct elevation for the feature.
+    double elev = 0;
+    unsigned int elev_count = 0;
+
+    auto area_iter = area._nodes.begin();
+    osg::Vec3d pt = *area_iter - modelCenter;
+    ma = getMeshIntersection(buffer, masterLocator, pt, up);
+
+    // Only build this area if the first vertex is on the mesh.  This ensures that the
+    // area is only generated once, no matter how many tiles it spans.
+    if (ma == pt) return;
+
+    for (; area_iter != area._nodes.end(); area_iter++) {
+        pt = *area_iter - modelCenter;
+        ma = getMeshIntersection(buffer, masterLocator, pt, up);
+        if (ma !=pt) {
+            elev += up*ma;
+            elev_count++;
+        }
+        tessellator->addVertex(new osg::Vec3f(*area_iter - modelCenter));
+    }
+
+    tessellator->endContour();
+    tessellator->endTessellation();
+
+    auto primList = tessellator->getPrimList();
+    if (primList.size() == 0) return;
+
+    unsigned int idx = 0;
+
+    auto primItr = primList.begin();
+    for (; primItr < primList.end(); ++ primItr) {
+        auto vertices = (*primItr)->_vertices;
+        std::for_each( vertices.begin(),
+                        vertices.end(),
+                        [v, t, n, up, elev, elev_count](auto vtx) {
+                            v->push_back(*vtx + up * (elev / elev_count));
+                            t->push_back(osg::Vec2f(vtx->x(), vtx->y()));
+                            n->push_back(up);
+                        }
+                        );
+        geometry->addPrimitiveSet(new osg::DrawArrays((*primItr)->_mode, idx, vertices.size()));
+        idx += vertices.size();
+    }
+}
+
 // Find the intersection of a given SGGeod with the terrain mesh
 osg::Vec3d VPBTechnique::getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt, osg::Vec3d up) 
 {
@@ -1961,12 +2116,42 @@ void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadLi
     terrainNode->accept(ftv);
 }
 
-void VPBTechnique::unloadLineFeatures(SGBucket bucket)
+void VPBTechnique::addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaList, osg::ref_ptr<osg::Node> terrainNode)
+{
+    if (areaList.empty()) return;
+
+    // Block to mutex the List alone
+    {
+        const std::lock_guard<std::mutex> lock(VPBTechnique::_areaFeatureLists_mutex); // Lock the _lineFeatureLists for this scope
+        _areaFeatureLists.push_back(std::pair(bucket, areaList));
+    }
+
+    // We need to trigger a re-build of the appropriate Terrain tile, so create a pretend node and run the TerrainVisitor to
+    // "dirty" the TerrainTile that it intersects with.
+    osg::ref_ptr<osg::Node> n = new osg::Node();
+    
+    //SGVec3d coord1, coord2;
+    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() -0.5*bucket.get_width(), bucket.get_center_lat() -0.5*bucket.get_height(), 0.0), coord1);
+    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() +0.5*bucket.get_width(), bucket.get_center_lat() +0.5*bucket.get_height(), 0.0), coord2);
+    //osg::BoundingBox bbox = osg::BoundingBox(toOsg(coord1), toOsg(coord2));
+    //n->setInitialBound(bbox);
+
+    SGVec3d coord;
+    SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon(), bucket.get_center_lat(), 0.0), coord);
+    n->setInitialBound(osg::BoundingSphere(toOsg(coord), max(bucket.get_width_m(), bucket.get_height_m())));
+
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding line features to " << bucket.gen_index_str());
+    TerrainVisitor ftv(n, TerrainTile::ALL_DIRTY, 0);
+    terrainNode->accept(ftv);
+}
+
+void VPBTechnique::unloadFeatures(SGBucket bucket)
 {
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Erasing all roads with entry " << bucket);
     const std::lock_guard<std::mutex> lock(VPBTechnique::_lineFeatureLists_mutex); // Lock the _lineFeatureLists for this scope
     // C++ 20...
     //std::erase_if(_lineFeatureLists, [bucket](BucketLineFeatureBinList p) { return p.first == bucket; } );
+    //std::erase_if(_lineFeatureLists, [bucket](BucketAreaFeatureBinList p) { return p.first == bucket; } );
 }
 
  

@@ -31,18 +31,18 @@
 #include <simgear/math/SGGeod.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 
-#include "LineFeatureBin.hxx"
+#include "AreaFeatureBin.hxx"
 
 using namespace osg;
 
 namespace simgear
 {
 
-LineFeatureBin::LineFeatureBin(const SGPath& absoluteFileName, const std::string material) :
+AreaFeatureBin::AreaFeatureBin(const SGPath& absoluteFileName, const std::string material) :
   _material(material)
 {
     if (!absoluteFileName.exists()) {
-        SG_LOG(SG_TERRAIN, SG_ALERT, "LineFeature list file " << absoluteFileName << " does not exist.");
+        SG_LOG(SG_TERRAIN, SG_ALERT, "AreaFeature list file " << absoluteFileName << " does not exist.");
         return;
     }
 
@@ -66,21 +66,19 @@ LineFeatureBin::LineFeatureBin(const SGPath& absoluteFileName, const std::string
         // and process further
         std::stringstream in(line);
 
-        // Line format is W attr A B C D lon0 lat0 lon1 lat1 lon2 lat2 lon3 lat4....
+        // Area format is Area A B C D lon0 lat0 lon1 lat1 lon2 lat2 lon3 lat4....
         // where:
-        // W is the width in m
-        // attr is an integer attribute set
+        // Area is the area of the feature in m^2
         // A, B, C, D are generic attributes.  Their interpretation may vary by feature type
         // lon[n], lat[n] are pairs of lon/lat defining straight road segments
-        float w = 0.0f;
         int attributes = 0;
-        float a=0, b=0, c=0, d=0;
+        float area=0, a=0, b=0, c=0, d=0;
         std::list<osg::Vec3d> nodes;
 
-        in >> w >> attributes >> a >> b >> c >> d;
+        in >> area >> attributes >> a >> b >> c >> d;
 
         if (in.bad() || in.fail()) {
-            SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing road entry in: " << absoluteFileName << " line: \"" << line << "\"");
+            SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing area entry in: " << absoluteFileName << " line: \"" << line << "\"");
             continue;
         }
 
@@ -97,10 +95,10 @@ LineFeatureBin::LineFeatureBin(const SGPath& absoluteFileName, const std::string
             nodes.push_back(toOsg(tmp));
         }
 
-        if (nodes.size() > 1) {
-            insert(LineFeature(nodes, w, attributes, a, b, c, d));
+        if (nodes.size() > 2) {
+            insert(AreaFeature(nodes, area, attributes, a, b, c, d));
         } else {
-            SG_LOG(SG_TERRAIN, SG_WARN, "LineFeature definition with fewer than two lon/lat nodes : " << absoluteFileName << " line: \"" << line << "\"");
+            SG_LOG(SG_TERRAIN, SG_WARN, "AreaFeature definition with fewer than three lon/lat nodes : " << absoluteFileName << " line: \"" << line << "\"");
         }
     }
 

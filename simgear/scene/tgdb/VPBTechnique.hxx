@@ -31,6 +31,7 @@
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/tgdb/AreaFeatureBin.hxx>
 #include <simgear/scene/tgdb/LineFeatureBin.hxx>
 
 using namespace osgTerrain;
@@ -94,9 +95,10 @@ class VPBTechnique : public TerrainTechnique
         static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
 
-        // LineFeatures are draped over the underlying mesh.
+        // LineFeatures and AreaFeaturesare draped over the underlying mesh.
         static void addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList, osg::ref_ptr<osg::Node> terrainNode);
-        static void unloadLineFeatures(SGBucket bucket);
+        static void addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaList, osg::ref_ptr<osg::Node> terrainNode);
+        static void unloadFeatures(SGBucket bucket);
 
     protected:
 
@@ -142,6 +144,18 @@ class VPBTechnique : public TerrainTechnique
             osg::Vec3Array* n,
             unsigned int xsize,
             unsigned int ysize);
+
+        virtual void applyAreaFeatures(BufferData& buffer, Locator* masterLocator);
+        virtual void generateAreaFeature(BufferData& buffer, Locator* 
+            masterLocator, AreaFeatureBin::AreaFeature area, 
+            osg::Vec3d modelCenter, 
+            osg::Geometry* geometry,
+            osg::Vec3Array* v, 
+            osg::Vec2Array* t, 
+            osg::Vec3Array* n,
+            unsigned int xsize,
+            unsigned int ysize);
+
         virtual osg::Vec3d getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt, osg::Vec3d up);
 
         OpenThreads::Mutex                  _writeBufferMutex;
@@ -161,9 +175,13 @@ class VPBTechnique : public TerrainTechnique
         static osg::Vec2d*                  _randomOffsets;
 
         typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
+        typedef std::pair<SGBucket, AreaFeatureBinList> BucketAreaFeatureBinList;
 
         inline static std::list<BucketLineFeatureBinList>  _lineFeatureLists;
-        inline static std::mutex _lineFeatureLists_mutex;  // protects the _roadLists;
+        inline static std::mutex _lineFeatureLists_mutex;  // protects the _lineFeatureLists;
+
+        inline static std::list<BucketAreaFeatureBinList>  _areaFeatureLists;
+        inline static std::mutex _areaFeatureLists_mutex;  // protects the _areaFeatureLists;
 
 };
 

@@ -27,6 +27,7 @@
 #ifndef _SG_DDS_Topic_HXX
 #define _SG_DDS_Topic_HXX
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -45,6 +46,8 @@ private:
 
     std::string topic_name;
     const dds_topic_descriptor_t *descriptor = nullptr;
+
+    char *buffer = nullptr;
     size_t packet_size = 0;
 
     uint32_t status = 0;
@@ -63,6 +66,7 @@ public:
 
     template<typename T>
     SG_DDS_Topic(T& type, const dds_topic_descriptor_t *desc) : SG_DDS_Topic() {
+        buffer = (char*)(&type);
         setup<T>(desc);
     }
 
@@ -90,6 +94,10 @@ public:
     // read data from the topic.
     int read(char *buf, int length);
 
+    int read() {
+        return buffer ? read(buffer, packet_size) : 0;
+    }
+
     template<typename T>
     bool read(T& sample) {
         return (read((char*)&sample, sizeof(T)) == sizeof(T)) ? true : false;
@@ -112,16 +120,21 @@ public:
 // a class to manage multiple DDS topics
 class SG_DDS {
 private:
+    dds_entity_t domain = -1;
     dds_entity_t participant = -1;
-    dds_domainid_t domain = FG_DDS_DOMAIN;
+    dds_domainid_t domain_id = FG_DDS_DOMAIN;
 
+    dds_entity_t guard = -1;
     dds_entity_t waitset = -1;
 
     std::vector<SG_DDS_Topic*> readers;
     std::vector<SG_DDS_Topic*> writers;
 
 public:
-    SG_DDS(dds_domainid_t d = FG_DDS_DOMAIN);
+    SG_DDS(dds_domainid_t d = FG_DDS_DOMAIN, const char *c = "");
+
+    SG_DDS(dds_domainid_t d, std::string& c) : SG_DDS(d, c.c_str()) {};
+
     ~SG_DDS();
 
     bool add(SG_DDS_Topic *topic, const SGProtocolDir d);
@@ -130,7 +143,7 @@ public:
     const std::vector<SG_DDS_Topic*>& get_readers() { return readers; }
     const std::vector<SG_DDS_Topic*>& get_writers() { return writers; }
 
-    bool wait(float dt = 0.0f);
+    bool wait(float dt = std::numeric_limits<float>::max());
 };
 
 

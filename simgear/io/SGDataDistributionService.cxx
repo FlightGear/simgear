@@ -101,7 +101,7 @@ SG_DDS_Topic::open(dds_entity_t p, SGProtocolDir direction)
     {
         dds_qos_t *qos = dds_create_qos();
         dds_qset_reliability(qos, DDS_RELIABILITY_RELIABLE, DDS_MSECS(1));
-        dds_qset_history(qos, DDS_HISTORY_KEEP_LAST, 3);
+        dds_qset_history(qos, DDS_HISTORY_KEEP_LAST, 1);
     
         entry = dds_create_reader(participant, topic, qos, NULL);
         if (entry < 0) {
@@ -222,12 +222,21 @@ SG_DDS_Topic::close()
 
 
 // participant
-SG_DDS::SG_DDS(dds_domainid_t d) :
-    domain(d)
+SG_DDS::SG_DDS(dds_domainid_t domain_id, const char *config)
 {
+    if (domain < 0 && domain_id != DDS_DOMAIN_DEFAULT)
+    {
+        domain = dds_create_domain(domain_id, config);
+        if (domain < 0) {
+            SG_LOG(SG_IO, SG_ALERT, "dds_create_domain: "
+                                     << dds_strretcode(-domain));
+            return;
+        }
+    }
+
     if (participant < 0)
     {
-        participant = dds_create_participant(domain, NULL, NULL);
+        participant = dds_create_participant(domain_id, NULL, NULL);
 
         if (participant < 0) {
             SG_LOG(SG_IO, SG_ALERT, "dds_create_participant: "
@@ -237,6 +246,12 @@ SG_DDS::SG_DDS(dds_domainid_t d) :
     }
 
     waitset = dds_create_waitset(participant);
+
+    // a guard condition is able to wakeup the waitset at destruction.
+    guard = dds_create_guardcondition(participant);
+    if (guard < 0)
+        SG_LOG(SG_IO, SG_ALERT, "dds_create_guardcondition: "
+                                 << dds_strretcode(-guard));
 }
 
 SG_DDS::~SG_DDS()
@@ -273,6 +288,10 @@ SG_DDS::add(SG_DDS_Topic *topic, const SGProtocolDir d)
 bool
 SG_DDS::close()
 {
+    // wakeup the waitset.
+    if (guard >= 0)
+        dds_set_guardcondition(guard, true);
+
     for (auto it : readers)
         delete it;
 
@@ -291,13 +310,16 @@ SG_DDS::wait(float dt)
     size_t num = readers.size();
     if (!num) return false;
 
-    dds_duration_t timeout = DDS_INFINITY;
+    dds_duration_t timeout = dt * DDS_NSECS_IN_SEC;
+    if (dt == std::numeric_limits<float>::max())
+        timeout = DDS_INFINITY;
+
+    bool triggered;
+    int status = dds_read_guardcondition(guard, &triggered);
+    if (triggered) return true;
+
     dds_attach_t results[num];
-
-    if (dt > 0.0)
-        timeout = dt * DDS_NSECS_IN_SEC;
-
-    int status = dds_waitset_wait(waitset, results, num, timeout);
+    status = dds_waitset_wait(waitset, results, num, timeout);
     if (status < 0) {
         SG_LOG(SG_IO, SG_ALERT, "dds_waitset_wait: "
                                  << dds_strretcode(-status));

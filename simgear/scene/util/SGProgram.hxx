@@ -18,6 +18,8 @@
 
 #include <osg/Program>
 
+#include <simgear/misc/sg_path.hxx>
+
 /**
  * @brief wrapper around osg::Program to allow detecting shader/link
  * errors in the GLSL code at runtime, and reporting of them
@@ -26,7 +28,7 @@
 class SGProgram : public osg::Program
 {
 public:
-    SGProgram() = default;
+    SGProgram();
 
     SGProgram(const SGProgram& rhs, const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
 
@@ -40,6 +42,9 @@ public:
         FailedToApply
     };
 
+    void setEffectFilePath(const SGPath& p);
+
 private:
+    SGPath _effectFilePath;
     mutable ErrorCheckState _checkState = NotApplied;
 };

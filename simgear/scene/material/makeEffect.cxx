@@ -26,8 +26,9 @@
 #include <osgDB/Registry>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SplicingVisitor.hxx>
 #include <simgear/structure/SGExpression.hxx>
@@ -139,7 +140,7 @@ Effect* makeEffect(const string& name,
         return 0;
     }
     ref_ptr<Effect> result = makeEffect(effectProps.ptr(), realizeTechniques,
-                                        options);
+                                        options, SGPath::fromUtf8(absFileName));
     if (result.valid()) {
         OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
         pair<EffectMap::iterator, bool> irslt
@@ -156,7 +157,8 @@ Effect* makeEffect(const string& name,
 
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
-                   const SGReaderWriterOptions* options)
+                   const SGReaderWriterOptions* options,
+                   const SGPath& filePath)
 {
     // Give default names to techniques and passes
     vector<SGPropertyNode_ptr> techniques = prop->getChildren("technique");
@@ -217,6 +219,7 @@ Effect* makeEffect(SGPropertyNode* prop,
             if (!effect.valid()) {
                 effect = new Effect;
                 effect->setName(nameProp->getStringValue());
+                effect->setFilePath(filePath.isNull() ? parent->filePath() : filePath);
                 effect->root = new SGPropertyNode;
                 mergePropertyTrees(effect->root, prop, parent->root);
                 effect->parametersProp = effect->root->getChild("parameters");
@@ -240,6 +243,7 @@ Effect* makeEffect(SGPropertyNode* prop,
         }
     } else {
         effect = new Effect;
+        effect->setFilePath(filePath);
         effect->setName(nameProp->getStringValue());
         effect->root = prop;
         effect->parametersProp = effect->root->getChild("parameters");

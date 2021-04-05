@@ -29,10 +29,11 @@
 #include <osg/observer_ptr>
 #include <osgDB/ReaderWriter>
 
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/scene/util/UpdateOnceCallback.hxx>
-#include <simgear/threads/SGThread.hxx>
 #include <simgear/structure/Singleton.hxx>
+#include <simgear/threads/SGThread.hxx>
 
 namespace osg
 {
@@ -106,6 +107,10 @@ public:
 
     std::string getName(){return _name;}
     void setName(std::string name){_name = name;}
+
+    void setFilePath(const SGPath& path);
+    SGPath filePath() const;
+
 protected:
     ~Effect();
     // Support for a cache of effects that inherit from this one, so
@@ -142,10 +147,13 @@ protected:
     Cache* _cache;
     friend size_t hash_value(const Key& key);
     friend Effect* makeEffect(SGPropertyNode* prop, bool realizeTechniques,
-                              const SGReaderWriterOptions* options);
+                              const SGReaderWriterOptions* options,
+                              const SGPath& path);
     bool _isRealized;
     std::string _name;
+    SGPath _effectFilePath;
 };
+
 // Automatic support for boost hash function
 size_t hash_value(const Effect::Key&);
 
@@ -156,7 +164,8 @@ Effect* makeEffect(const std::string& name,
 
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
-                   const SGReaderWriterOptions* options);
+                   const SGReaderWriterOptions* options,
+                   const SGPath& path = SGPath{});
 
 bool makeParametersFromStateSet(SGPropertyNode* paramRoot,
                                 const osg::StateSet* ss);

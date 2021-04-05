@@ -224,8 +224,9 @@ Effect::Effect()
 }
 
 Effect::Effect(const Effect& rhs, const CopyOp& copyop)
-    : osg::Object(rhs,copyop), root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
-      _isRealized(rhs._isRealized)
+    : osg::Object(rhs, copyop), root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
+      _isRealized(rhs._isRealized),
+      _effectFilePath(rhs._effectFilePath)
 {
     typedef vector<ref_ptr<Technique> > TechniqueList;
     for (TechniqueList::const_iterator itr = rhs.techniques.begin(),
@@ -957,7 +958,11 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         pass->setAttributeAndModes(program);
         return;
     }
-    program = new SGProgram;
+
+    auto sgprogram = new SGProgram;
+    program = sgprogram;
+    sgprogram->setEffectFilePath(effect->filePath());
+
     for (const auto& skey : resolvedKey.shaders) {
         const string& fileName = skey.first;
         Shader::Type stype = (Shader::Type)skey.second;
@@ -1647,4 +1652,16 @@ expression::ExpParserRegistrar propertyRegistrar("property",
 expression::ExpParserRegistrar propvalueRegistrar("float-property",
                                                  propertyExpressionParser<float>);
 
+}
+
+using namespace simgear;
+
+void Effect::setFilePath(const SGPath& path)
+{
+    _effectFilePath = path;
+}
+
+SGPath Effect::filePath() const
+{
+    return _effectFilePath;
 }

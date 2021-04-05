@@ -20,11 +20,23 @@
 #include "SGProgram.hxx"
 
 #include <osg/State>
+#include <sstream>
 
 #include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/debug/logstream.hxx>
 
-SGProgram::SGProgram(const SGProgram& rhs, const osg::CopyOp& copyop) : osg::Program(rhs, copyop)
+SGProgram::SGProgram()
 {
+}
+
+SGProgram::SGProgram(const SGProgram& rhs, const osg::CopyOp& copyop) : osg::Program(rhs, copyop),
+                                                                        _effectFilePath(rhs._effectFilePath)
+{
+}
+
+void SGProgram::setEffectFilePath(const SGPath& p)
+{
+    _effectFilePath = p;
 }
 
 void SGProgram::apply(osg::State& state) const
@@ -41,8 +53,17 @@ void SGProgram::apply(osg::State& state) const
         _checkState = FailedToApply;
         getPCP(state)->getInfoLog(infoLog);
 
+        // log all the shader source file names, to help in debugging link errors
+        std::ostringstream os;
+        for (int i = 0; i < getNumShaders(); ++i) {
+            const auto shader = getShader(i);
+            os << "\t" << shader->getFileName() << "\n";
+        }
+
         simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadEffectsShaders,
-                               "Shader program errors: " + infoLog, sg_location());
+                               "Shader program errors: " + infoLog +
+                                   "\n\nShader sources:\n" + os.str(),
+                               _effectFilePath);
 
         for (int i = 0; i < getNumShaders(); ++i) {
             const auto shader = getShader(i);

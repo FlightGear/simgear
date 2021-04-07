@@ -63,24 +63,25 @@ const dds_topic_descriptor_t DDSMessageData_Msg_desc =
 
 void testSendReceive()
 {
+    DDSMessageData_Msg out = { 0, (char*)"testSendReceive" };
+    DDSMessageData_Msg in;
+
     SG_DDS participant;
 
-    SG_DDS_Topic *writer = new SG_DDS_Topic();
-    SG_DDS_Topic *reader = new SG_DDS_Topic();
-
-    writer->setup("DDS", &DDSMessageData_Msg_desc, sizeof(DDSMessageData_Msg));
-    reader->setup("DDS", &DDSMessageData_Msg_desc, sizeof(DDSMessageData_Msg));
+    // writer and reader store the pointer to the parsed buffers, so it knows
+    // the buffer location and buffer size making it possible to call read()
+    // and write() without any parameters if the buffers remains available
+    // during it's lifetime.
+    SG_DDS_Topic *writer = new SG_DDS_Topic(out, &DDSMessageData_Msg_desc);
+    SG_DDS_Topic *reader = new SG_DDS_Topic(in, &DDSMessageData_Msg_desc);
 
     participant.add(writer, SG_IO_OUT);
     participant.add(reader, SG_IO_IN);
 
-    DDSMessageData_Msg out = { 0, (char*)"testSendReceive" };
-    DDSMessageData_Msg in;
-
-    writer->write((char*)&out, sizeof(out));
+    writer->write();
 
     participant.wait();
-    reader->read((char*)&in, sizeof(in));
+    reader->read();
 
     SG_VERIFY(in.userID == out.userID);
     SG_VERIFY(!strcmp(in.message, out.message));

@@ -57,6 +57,8 @@ private:
     dds_entity_t topic = -1;
     dds_entity_t entry = -1;
 
+    dds_guid_t guid;
+
 public:
 
     /** Create an instance of SG_DDS_Topic. */
@@ -64,9 +66,14 @@ public:
 
     SG_DDS_Topic(const char* topic, const dds_topic_descriptor_t *desc, size_t size);
 
+    // Store the pointer to the buffer to be able to call read() without
+    // any paramaters. Make sure the buffer is always available and of
+    // sufficient size to store a type T otherwise a segmentation fault
+    // will occur.
     template<typename T>
-    SG_DDS_Topic(T& type, const dds_topic_descriptor_t *desc) : SG_DDS_Topic() {
-        buffer = (char*)(&type);
+    SG_DDS_Topic(T& buf, const dds_topic_descriptor_t *desc) : SG_DDS_Topic()
+    {
+        buffer = reinterpret_cast<char*>(&buf);
         setup<T>(desc);
     }
 
@@ -77,6 +84,17 @@ public:
     // a custom topic name.
     void setup(const char* topic, const dds_topic_descriptor_t *desc, size_t size);
 
+    // Store the pointer to the buffer to be able to call read() without
+    // any paramaters. Make sure the buffer is always available and of
+    // sufficient size to store a type T otherwise a segmentation fault
+    // will occur.
+    template<typename T>
+    void setup(T& buf, const dds_topic_descriptor_t *desc) {
+        buffer = reinterpret_cast<char*>(&buf);
+        std::string type = simgear::getTypeName<T>();
+        setup(type.c_str(), desc, sizeof(T));
+    }
+
     template<typename T>
     void setup(const dds_topic_descriptor_t *desc) {
         std::string type = simgear::getTypeName<T>();
@@ -85,22 +103,28 @@ public:
 
     // If specified as a server start a publishing participant.
     // If specified as a client start a subscribing participant.
+    // Create a new partipant and unique identifier and establish a connection.
     bool open(const SGProtocolDir d);
 
-    // If specified as a server start publishing to a participant.
-    // If specified as a client start subscribing to a participant.
+    // Establish the connection using a shared participant.
+    // Create the unique identifier (GUID) from the shared participant.
     bool open(dds_entity_t p, const SGProtocolDir d);
+
+    // Establish the connection using a shared participant and shared GUID.
+    bool open(dds_entity_t p, dds_guid_t& g, const SGProtocolDir d);
 
     // read data from the topic.
     int read(char *buf, int length);
 
+    // Calling read without any parameters requires to use de constructor
+    // with a buffer type.
     int read() {
         return buffer ? read(buffer, packet_size) : 0;
     }
 
     template<typename T>
     bool read(T& sample) {
-        return (read((char*)&sample, sizeof(T)) == sizeof(T)) ? true : false;
+        return (read(reinterpret_cast<char*>(&sample), sizeof(T)) == sizeof(T)) ? true : false;
     }
 
     // write data to the topic.
@@ -108,13 +132,20 @@ public:
 
     template<typename T>
     bool write(const T& sample) {
-        return (write((char*)&sample, sizeof(T)) == sizeof(T)) ? true : false;
+        return (write(reinterpret_cast<char*>(&sample), sizeof(T)) == sizeof(T)) ? true : false;
+    }
+
+    // Calling write without any parameters requires to use de constructor
+    // with a buffer type.
+    int write() {
+        return buffer ? write(buffer, packet_size) : 0;
     }
 
     // close the participant.
     bool close();
 
     dds_entity_t get() { return entry; }
+    const dds_guid_t& get_guid() { return guid; }
 };
 
 // a class to manage multiple DDS topics
@@ -130,6 +161,8 @@ private:
     std::vector<SG_DDS_Topic*> readers;
     std::vector<SG_DDS_Topic*> writers;
 
+    dds_guid_t guid;
+
 public:
     SG_DDS(dds_domainid_t d = FG_DDS_DOMAIN, const char *c = "");
 
@@ -144,6 +177,8 @@ public:
     const std::vector<SG_DDS_Topic*>& get_writers() { return writers; }
 
     bool wait(float dt = std::numeric_limits<float>::max());
+
+    const dds_guid_t& get_guid() { return guid; }
 };
 
 

@@ -84,7 +84,21 @@ SG_DDS_Topic::open(SGProtocolDir direction)
 bool
 SG_DDS_Topic::open(dds_entity_t p, SGProtocolDir direction)
 {
+    dds_guid_t g;
+    int status = dds_get_guid(p, &g);
+    if (status < 0) {
+        SG_LOG(SG_IO, SG_ALERT, "dds_get_guid: "
+                                << dds_strretcode(-status));
+    }
+    return open(p, g, direction);
+}
+
+bool
+SG_DDS_Topic::open(dds_entity_t p, dds_guid_t& g, SGProtocolDir direction)
+{
+    guid = g;
     participant = p;
+
     if (topic < 0)
     {
         topic = dds_create_topic(participant, descriptor,
@@ -96,13 +110,13 @@ SG_DDS_Topic::open(dds_entity_t p, SGProtocolDir direction)
             return false;
         }
     }
-    
+
     if (direction == SG_IO_IN || direction == SG_IO_BI)
     {
         dds_qos_t *qos = dds_create_qos();
         dds_qset_reliability(qos, DDS_RELIABILITY_RELIABLE, DDS_MSECS(1));
         dds_qset_history(qos, DDS_HISTORY_KEEP_LAST, 1);
-    
+
         entry = dds_create_reader(participant, topic, qos, NULL);
         if (entry < 0) {
            SG_LOG(SG_IO, SG_ALERT, "dds_create_reader: "
@@ -115,7 +129,7 @@ SG_DDS_Topic::open(dds_entity_t p, SGProtocolDir direction)
 
     if (direction == SG_IO_OUT || direction == SG_IO_BI)
     {
-        dds_return_t rc; 
+        dds_return_t rc;
 
         entry = dds_create_writer(participant, topic, NULL, NULL);
         if (entry < 0) {
@@ -127,7 +141,7 @@ SG_DDS_Topic::open(dds_entity_t p, SGProtocolDir direction)
         rc = dds_set_status_mask(entry, DDS_PUBLICATION_MATCHED_STATUS);
         if (rc != DDS_RETCODE_OK) {
             SG_LOG(SG_IO, SG_ALERT, "dds_set_status_mask: "
-                                     << dds_strretcode(-rc));         
+                                     << dds_strretcode(-rc));
             return false;
         }
     }
@@ -142,7 +156,7 @@ int
 SG_DDS_Topic::read(char *buf, int length)
 {
     int result;
-    
+
     if (entry < 0 || length < (int)packet_size) {
         return 0;
     }
@@ -190,7 +204,7 @@ SG_DDS_Topic::write(const char *buf, const int length)
     }
 
     result = dds_write(entry, buf);
-    if(result != DDS_RETCODE_OK) 
+    if(result != DDS_RETCODE_OK)
     {
         errno = -result;
         result = 0;
@@ -243,6 +257,12 @@ SG_DDS::SG_DDS(dds_domainid_t domain_id, const char *config)
                                      << dds_strretcode(-participant));
             return;
         }
+
+        int status = dds_get_guid(participant, &guid);
+        if (status < 0) {
+            SG_LOG(SG_IO, SG_ALERT, "dds_get_guid: "
+                                    << dds_strretcode(-status));
+        }
     }
 
     waitset = dds_create_waitset(participant);
@@ -263,7 +283,7 @@ SG_DDS::~SG_DDS()
 bool
 SG_DDS::add(SG_DDS_Topic *topic, const SGProtocolDir d)
 {
-    bool result = topic->open(participant, d);
+    bool result = topic->open(participant, guid, d);
     if (result)
     {
         if (d == SG_IO_OUT || d == SG_IO_BI)

@@ -64,10 +64,10 @@ namespace nasal
     class NasalMainLoopRecipient : public simgear::Emesary::IReceiver {
     public:
         NasalMainLoopRecipient() : receiveCount(0), CanWait(false), Active(false) {
-            simgear::Emesary::GlobalTransmitter::instance()->Register(*this);
+            simgear::Emesary::GlobalTransmitter::instance()->Register(this);
         }
         virtual ~NasalMainLoopRecipient() {
-            simgear::Emesary::GlobalTransmitter::instance()->DeRegister(*this);
+            simgear::Emesary::GlobalTransmitter::instance()->DeRegister(this);
         }
 
         std::atomic<int> receiveCount;
@@ -99,16 +99,16 @@ namespace nasal
                     gct.terminate();
                     break;
                 }
-                return simgear::Emesary::ReceiptStatusOK;
+                return simgear::Emesary::ReceiptStatus::OK;
             }
 
             auto *gccn = dynamic_cast<simgear::Notifications::NasalGarbageCollectionConfigurationNotification *>(&n);
             if (gccn) {
                 CanWait = gccn->GetCanWait();
                 Active = gccn->GetActive();
-                return simgear::Emesary::ReceiptStatusOK;
+                return simgear::Emesary::ReceiptStatus::OK;
             }
-            return simgear::Emesary::ReceiptStatusNotProcessed;
+            return simgear::Emesary::ReceiptStatus::NotProcessed;
         }
     protected:
         bool CanWait;

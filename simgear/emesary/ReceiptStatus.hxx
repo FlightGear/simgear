@@ -24,30 +24,30 @@ namespace simgear
 {
     namespace Emesary
     {
-        enum ReceiptStatus
+    enum class ReceiptStatus
         {
             /// Processing completed successfully
-            ReceiptStatusOK = 0,
+        OK = 0,
 
             /// Individual item failure
-            ReceiptStatusFail = 1,
+        Fail = 1,
 
             /// Fatal error; stop processing any further recipieints of this message. Implicitly fail
-            ReceiptStatusAbort = 2,
+        Abort = 2,
 
             /// Definitive completion - do not send message to any further recipieints
-            ReceiptStatusFinished = 3,
+        Finished = 3,
 
             /// Return value when method doesn't process a message.
-            ReceiptStatusNotProcessed = 4,
+        NotProcessed = 4,
 
             /// Message has been sent but the return status cannot be determined as it has not been processed by the recipient. 
             /// e.g. a queue or outgoing bridge
-            ReceiptStatusPending = 5,
+        Pending = 5,
 
             /// Message has been definitively handled but the return value cannot be determined. The message will not be sent any further
             /// e.g. a point to point forwarding bridge
-            ReceiptStatusPendingFinished = 6,
+        PendingFinished = 6,
         };
     }
 }

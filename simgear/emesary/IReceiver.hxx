@@ -19,25 +19,28 @@
 *  Copyright (C)2019 Richard Harrison            Licenced under GPL2 or later.
 *
 *---------------------------------------------------------------------------*/
+
+#include <simgear/structure/SGReferenced.hxx>
+
 namespace simgear
 {
     namespace Emesary
     {
 
         /// Interface (base class) for a recipeint.
-        class IReceiver
+        class IReceiver : public SGReferenced
         {
         public:
             /// Receive notification - must be implemented
             virtual ReceiptStatus Receive(INotification& message) = 0;
 
             /// Called when registered at a transmitter
-            virtual void OnRegisteredAtTransmitter(class Transmitter *p)
+            virtual void OnRegisteredAtTransmitter(class Transmitter* p)
             {
             }
 
             /// Called when de-registered at a transmitter
-            virtual void OnDeRegisteredAtTransmitter(class Transmitter *p)
+            virtual void OnDeRegisteredAtTransmitter(class Transmitter* p)
             {
             }
         };

@@ -5,6 +5,7 @@
 #include <simgear_config.h>
 #include <simgear/compiler.h>
 
+#include <list>
 #include <iostream>
 
 #include <simgear/threads/SGThread.hxx>
@@ -47,10 +48,10 @@ public:
             TestThreadNotification onwardNotification("AL");
             simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(onwardNotification);
             
-            return simgear::Emesary::ReceiptStatusOK;
+            return simgear::Emesary::ReceiptStatus::OK;
         }
 
-        return simgear::Emesary::ReceiptStatusOK;
+        return simgear::Emesary::ReceiptStatus::OK;
     }
 };
 
@@ -69,9 +70,10 @@ protected:
         TestThreadNotification tn((const char*)&r);
         for (int i = 0; i < MaxIterations; i++)
         {
-            simgear::Emesary::GlobalTransmitter::instance()->Register(r);
+            simgear::Emesary::IReceiverPtr ir(&r);
+            simgear::Emesary::GlobalTransmitter::instance()->Register(ir);
             simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(tn);
-            simgear::Emesary::GlobalTransmitter::instance()->DeRegister(r);
+            simgear::Emesary::GlobalTransmitter::instance()->DeRegister(ir);
             //System.Threading.Thread.Sleep(rng.Next(MaxSleep));
             noperations++;
         }
@@ -105,15 +107,16 @@ public:
 void testEmesaryThreaded()
 {
     TestThreadRecipient r;
+    simgear::Emesary::IReceiverPtr ir(&r);
     TestThreadNotification tn((const char*)&r);
-    simgear::Emesary::GlobalTransmitter::instance()->Register(r);
+    simgear::Emesary::GlobalTransmitter::instance()->Register(ir);
     for (int i = 0; i < MaxIterations*MaxIterations; i++)
     {
         simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(tn);
         //System.Threading.Thread.Sleep(rng.Next(MaxSleep));
         noperations++;
     }
-    simgear::Emesary::GlobalTransmitter::instance()->DeRegister(r);
+    simgear::Emesary::GlobalTransmitter::instance()->DeRegister(ir);
     printf("invocations %d\n", simgear::Emesary::GlobalTransmitter::instance()->SentMessageCount());
 
     EmesaryTest t;

@@ -55,7 +55,8 @@ private:
     bool shared_participant = true;
     dds_entity_t participant = -1;
     dds_entity_t topic = -1;
-    dds_entity_t entry = -1;
+    dds_entity_t reader = -1;
+    dds_entity_t writer = -1;
 
     dds_guid_t guid;
 
@@ -144,7 +145,12 @@ public:
     // close the participant.
     bool close();
 
-    dds_entity_t get() { return entry; }
+    dds_entity_t get_reader() { return reader; }
+    dds_entity_t get_writer() { return writer; }
+    dds_entity_t get(const SGProtocolDir d = SG_IO_IN) {
+        return (d == SG_IO_OUT) ? writer : reader;
+    }
+
     const dds_guid_t& get_guid() { return guid; }
 };
 

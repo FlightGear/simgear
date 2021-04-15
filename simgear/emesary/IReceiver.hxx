@@ -31,6 +31,8 @@ namespace simgear
         class IReceiver : public SGReferenced
         {
         public:
+            virtual ~IReceiver() = default;
+
             /// Receive notification - must be implemented
             virtual ReceiptStatus Receive(INotification& message) = 0;
 

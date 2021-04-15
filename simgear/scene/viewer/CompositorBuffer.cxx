@@ -16,6 +16,7 @@
 
 #include "CompositorBuffer.hxx"
 
+#include <osg/GL>
 #include <osg/Texture1D>
 #include <osg/Texture2D>
 #include <osg/Texture2DArray>
@@ -23,7 +24,6 @@
 #include <osg/Texture3D>
 #include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
-#include <osg/FrameBufferObject>
 
 #include <simgear/props/props.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
@@ -45,13 +45,18 @@ struct BufferFormat {
 PropStringMap<BufferFormat> buffer_format_map {
     {"rgb8", {GL_RGB8, GL_RGBA, GL_UNSIGNED_BYTE}},
     {"rgba8", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}},
-    {"rgb16f", {GL_RGB16F_ARB, GL_RGBA, GL_FLOAT}},
+    {"rgb16f", {GL_RGB16F_ARB, GL_RGBA, GL_HALF_FLOAT}},
     {"rgb32f", {GL_RGB32F_ARB, GL_RGBA, GL_FLOAT}},
-    {"rgba16f", {GL_RGBA16F_ARB, GL_RGBA, GL_FLOAT}},
+    {"rgba16f", {GL_RGBA16F_ARB, GL_RGBA, GL_HALF_FLOAT}},
     {"rgba32f", {GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT}},
+    {"r8", {GL_R8, GL_RED, GL_UNSIGNED_BYTE}},
+    {"r16f", {GL_R16F, GL_RED, GL_HALF_FLOAT}},
     {"r32f", {GL_R32F, GL_RED, GL_FLOAT}},
-    {"rg16f", {GL_RG16F, GL_RG, GL_FLOAT}},
+    {"rg16f", {GL_RG16F, GL_RG, GL_HALF_FLOAT}},
     {"rg32f", {GL_RG32F, GL_RG, GL_FLOAT}},
+#if defined(OSG_GL3_FEATURES)
+    {"r11g11b10f", {GL_R11F_G11F_B10F, GL_RGB, GL_FLOAT}},
+#endif
     {"depth16", {GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT}},
     {"depth24", {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT}},
     {"depth32f", {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}},
@@ -136,17 +141,32 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
     if (p_depth)
         depth = p_depth->getIntValue();
 
+    auto get_mipmap_levels = [&]() -> int {
+        int mipmap_levels = 0;
+        const SGPropertyNode *p_mipmap_levels = node->getNode("mipmap-levels");
+        if (p_mipmap_levels) {
+            if (p_mipmap_levels->getStringValue() == std::string("auto"))
+                mipmap_levels = 1 + floor(log2((float)max(max(width, height), depth)));
+            else
+                mipmap_levels = p_mipmap_levels->getIntValue();
+        }
+        return mipmap_levels;
+    };
+
     if (type == "1d") {
         osg::Texture1D *tex1D = new osg::Texture1D;
         tex1D->setTextureWidth(width);
+        tex1D->setNumMipmapLevels(get_mipmap_levels());
         texture = tex1D;
     } else if (type == "2d") {
         osg::Texture2D *tex2D = new osg::Texture2D;
         tex2D->setTextureSize(width, height);
+        tex2D->setNumMipmapLevels(get_mipmap_levels());
         texture = tex2D;
     } else if (type == "2d-array") {
         osg::Texture2DArray *tex2D_array = new osg::Texture2DArray;
         tex2D_array->setTextureSize(width, height, depth);
+        tex2D_array->setNumMipmapLevels(get_mipmap_levels());
         texture = tex2D_array;
     } else if (type == "2d-multisample") {
         osg::Texture2DMultisample *tex2DMS = new osg::Texture2DMultisample;
@@ -156,6 +176,7 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
     } else if (type == "3d") {
         osg::Texture3D *tex3D = new osg::Texture3D;
         tex3D->setTextureSize(width, height, depth);
+        tex3D->setNumMipmapLevels(get_mipmap_levels());
         texture = tex3D;
     } else if (type == "rect") {
         osg::TextureRectangle *tex_rect = new osg::TextureRectangle;
@@ -164,6 +185,7 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
     } else if (type == "cubemap") {
         osg::TextureCubeMap *tex_cubemap = new osg::TextureCubeMap;
         tex_cubemap->setTextureSize(width, height);
+        tex_cubemap->setNumMipmapLevels(get_mipmap_levels());
         texture = tex_cubemap;
     } else {
         SG_LOG(SG_INPUT, SG_ALERT, "Unknown texture type '" << type << "'");
@@ -181,7 +203,8 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
         texture->setSourceType(format.source_type);
     } else {
         texture->setInternalFormat(GL_RGBA);
-        SG_LOG(SG_INPUT, SG_WARN, "Unknown buffer format specified, using RGBA");
+        SG_LOG(SG_INPUT, SG_WARN, "Unknown buffer format '"
+               << node->getStringValue("format") << "', using RGBA");
     }
 
     osg::Texture::FilterMode filter_mode = osg::Texture::LINEAR;

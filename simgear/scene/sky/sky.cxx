@@ -96,10 +96,10 @@ void SGSky::build( double h_radius_m,
 
     pre_transform->addChild(_ephTransform.get());
     planets = new SGStars;
-    _ephTransform->addChild( planets->build(eph.getNumPlanets(), eph.getPlanets(), h_radius_m) );
+    _ephTransform->addChild( planets->build(eph.getNumPlanets(), eph.getPlanets(), h_radius_m, options) );
 
     stars = new SGStars(property_tree_node);
-    _ephTransform->addChild( stars->build(eph.getNumStars(), eph.getStars(), h_radius_m) );
+    _ephTransform->addChild( stars->build(eph.getNumStars(), eph.getStars(), h_radius_m, options) );
     
     moon = new SGMoon;
     _ephTransform->addChild( moon->build(tex_path, moon_size) );

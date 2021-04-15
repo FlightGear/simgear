@@ -34,7 +34,7 @@
 #include "CompositorUtil.hxx"
 
 
-class LightDirectionCallback : public osg::Uniform::Callback {
+class SunDirectionCallback : public osg::Uniform::Callback {
 public:
     virtual void operator()(osg::Uniform *uniform, osg::NodeVisitor *nv) {
         SGUpdateVisitor *uv = dynamic_cast<SGUpdateVisitor *>(nv);
@@ -140,10 +140,10 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
     new osg::Uniform("fg_NearFarPlanes", osg::Vec3f()),
     new osg::Uniform("fg_Fcoef", 0.0f),
-    new osg::Uniform("fg_LightDirection", osg::Vec3f())
+    new osg::Uniform("fg_SunDirection", osg::Vec3f())
     }
 {
-    _uniforms[LIGHT_DIRECTION]->setUpdateCallback(new LightDirectionCallback);
+    _uniforms[SUN_DIRECTION]->setUpdateCallback(new SunDirectionCallback);
 }
 
 Compositor::~Compositor()

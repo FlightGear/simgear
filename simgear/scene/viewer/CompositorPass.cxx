@@ -55,6 +55,76 @@ PropStringMap<osg::Camera::BufferComponent> buffer_component_map = {
     {"packed-depth-stencil", osg::Camera::PACKED_DEPTH_STENCIL_BUFFER}
 };
 
+class CSMCullCallback : public osg::NodeCallback {
+public:
+    CSMCullCallback(const std::string &suffix) {
+        _light_matrix_uniform = new osg::Uniform(
+            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix);
+    }
+
+    virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
+        osg::Camera *camera = static_cast<osg::Camera *>(node);
+
+        traverse(node, nv);
+
+        // The light matrix uniform is updated after the traverse in case the
+        // OSG near/far plane calculations were enabled
+        osg::Matrixf light_matrix =
+            // Include the real camera inverse view matrix because if the shader
+            // used world coordinates, there would be precision issues.
+            _real_inverse_view *
+            camera->getViewMatrix() *
+            camera->getProjectionMatrix() *
+            // Bias matrices
+            osg::Matrix::translate(1.0, 1.0, 1.0) *
+            osg::Matrix::scale(0.5, 0.5, 0.5);
+        _light_matrix_uniform->set(light_matrix);
+    }
+
+    void setRealInverseViewMatrix(const osg::Matrix &matrix) {
+        _real_inverse_view = matrix;
+    }
+
+    osg::Uniform *getLightMatrixUniform() const {
+        return _light_matrix_uniform.get();
+    }
+
+protected:
+    osg::Matrix                _real_inverse_view;
+    osg::ref_ptr<osg::Uniform> _light_matrix_uniform;
+};
+
+class LightFinder : public osg::NodeVisitor {
+public:
+    LightFinder(const std::string &name) :
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _name(name) {}
+    virtual void apply(osg::Node &node) {
+        // Only traverse the scene graph if we haven't found a light yet (or if
+        // the one we found earlier is no longer valid).
+        if (getLight().valid())
+            return;
+
+        if (node.getName() == _name) {
+            osg::LightSource *light_source =
+                dynamic_cast<osg::LightSource *>(&node);
+            if (light_source)
+                _light = light_source->getLight();
+        }
+
+        traverse(node);
+    }
+    osg::ref_ptr<osg::Light> getLight() const {
+        osg::ref_ptr<osg::Light> light_ref;
+        _light.lock(light_ref);
+        return light_ref;
+    }
+protected:
+    std::string _name;
+    osg::observer_ptr<osg::Light> _light;
+};
+
+//------------------------------------------------------------------------------
 
 Pass *
 PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
@@ -128,13 +198,38 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     osg::DisplaySettings::ImplicitBufferAttachmentMask implicit_attachments = 0;
     std::stringstream att_ss;
     std::string att_bit;
-    att_ss << root->getStringValue("implicit-attachment-mask", "color depth");
+    // No implicit attachments by default
+    att_ss << root->getStringValue("implicit-attachment-mask", "");
     while (att_ss >> att_bit) {
         if (att_bit == "color")        implicit_attachments |= osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT;
         else if (att_bit == "depth")   implicit_attachments |= osg::DisplaySettings::IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
         else if (att_bit == "stencil") implicit_attachments |= osg::DisplaySettings::IMPLICIT_STENCIL_BUFFER_ATTACHMENT;
     }
     camera->setImplicitBufferAttachmentMask(implicit_attachments, implicit_attachments);
+
+    // Set some global state
+    camera->getOrCreateStateSet()->setMode(GL_TEXTURE_CUBE_MAP_SEAMLESS,
+                                           osg::StateAttribute::ON);
+
+    PropertyList p_shadow_passes = root->getChildren("use-shadow-pass");
+    for (const auto &p_shadow_pass : p_shadow_passes) {
+        std::string shadow_pass_name = p_shadow_pass->getStringValue();
+        if (!shadow_pass_name.empty()) {
+            Pass *shadow_pass = compositor->getPass(shadow_pass_name);
+            if (shadow_pass) {
+                CSMCullCallback *cullcb =
+                    dynamic_cast<CSMCullCallback *>(
+                        shadow_pass->camera->getCullCallback());
+                if (cullcb) {
+                    camera->getOrCreateStateSet()->addUniform(
+                        cullcb->getLightMatrixUniform());
+                } else {
+                    SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Pass '"
+                           << shadow_pass_name << "is not a shadow pass");
+                }
+            }
+        }
+    }
 
     PropertyList p_bindings = root->getChildren("binding");
     for (auto const &p_binding : p_bindings) {
@@ -242,6 +337,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                                multisample_samples,
                                multisample_color_samples);
 
+                float mipmap_resize_factor = 1.0f / pow(2.0f, float(level));
                 if (!viewport_absolute &&
                     (p_attachment->getIndex() == viewport_attachment)) {
                     if ((buffer->width_scale  == 0.0f) &&
@@ -250,8 +346,10 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                         // relative coordinates to shape the viewport.
                         float x      = p_viewport->getFloatValue("x",      0.0f);
                         float y      = p_viewport->getFloatValue("y",      0.0f);
-                        float width  = p_viewport->getFloatValue("width",  1.0f);
-                        float height = p_viewport->getFloatValue("height", 1.0f);
+                        float width  = p_viewport->getFloatValue("width",  1.0f)
+                            * mipmap_resize_factor;
+                        float height = p_viewport->getFloatValue("height", 1.0f)
+                            * mipmap_resize_factor;
                         camera->setViewport(x      * texture->getTextureWidth(),
                                             y      * texture->getTextureHeight(),
                                             width  * texture->getTextureWidth(),
@@ -260,13 +358,15 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                         // This is a pass that should match the physical viewport
                         // size. Store the scales so we can resize the pass later
                         // if the physical viewport changes size.
-                        pass->viewport_width_scale  = buffer->width_scale;
-                        pass->viewport_height_scale = buffer->height_scale;
+                        pass->viewport_width_scale  = buffer->width_scale
+                            * mipmap_resize_factor;
+                        pass->viewport_height_scale = buffer->height_scale
+                            * mipmap_resize_factor;
                         camera->setViewport(
                             0,
                             0,
-                            buffer->width_scale  * compositor->getViewport()->width(),
-                            buffer->height_scale * compositor->getViewport()->height());
+                            pass->viewport_width_scale  * compositor->getViewport()->width(),
+                            pass->viewport_height_scale * compositor->getViewport()->height());
                     }
                 }
             } catch (sg_exception &e) {
@@ -332,6 +432,10 @@ public:
         for (const auto &uniform : compositor->getUniforms())
             ss->addUniform(uniform);
 
+        int cubemap_face = root->getIntValue("cubemap-face", -1);
+        if (cubemap_face >= 0)
+            ss->addUniform(new osg::Uniform("fg_CubemapFace", cubemap_face));
+
         return pass.release();
     }
 protected:
@@ -387,75 +491,6 @@ protected:
 RegisterPassBuilder<QuadPassBuilder> registerQuadPass("quad");
 
 //------------------------------------------------------------------------------
-
-class CSMCullCallback : public osg::NodeCallback {
-public:
-    CSMCullCallback(const std::string &suffix) {
-        _light_matrix_uniform = new osg::Uniform(
-            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix);
-    }
-
-    virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
-        osg::Camera *camera = static_cast<osg::Camera *>(node);
-
-        traverse(node, nv);
-
-        // The light matrix uniform is updated after the traverse in case the
-        // OSG near/far plane calculations were enabled
-        osg::Matrixf light_matrix =
-            // Include the real camera inverse view matrix because if the shader
-            // used world coordinates, there would be precision issues.
-            _real_inverse_view *
-            camera->getViewMatrix() *
-            camera->getProjectionMatrix() *
-            // Bias matrices
-            osg::Matrix::translate(1.0, 1.0, 1.0) *
-            osg::Matrix::scale(0.5, 0.5, 0.5);
-        _light_matrix_uniform->set(light_matrix);
-    }
-
-    void setRealInverseViewMatrix(const osg::Matrix &matrix) {
-        _real_inverse_view = matrix;
-    }
-
-    osg::Uniform *getLightMatrixUniform() const {
-        return _light_matrix_uniform.get();
-    }
-
-protected:
-    osg::Matrix                _real_inverse_view;
-    osg::ref_ptr<osg::Uniform> _light_matrix_uniform;
-};
-
-class LightFinder : public osg::NodeVisitor {
-public:
-    LightFinder(const std::string &name) :
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _name(name) {}
-    virtual void apply(osg::Node &node) {
-        // Only traverse the scene graph if we haven't found a light yet (or if
-        // the one we found earlier is no longer valid).
-        if (getLight().valid())
-            return;
-
-        if (node.getName() == _name) {
-            osg::LightSource *light_source =
-                dynamic_cast<osg::LightSource *>(&node);
-            if (light_source)
-                _light = light_source->getLight();
-        }
-
-        traverse(node);
-    }
-    osg::ref_ptr<osg::Light> getLight() const {
-        osg::ref_ptr<osg::Light> light_ref;
-        _light.lock(light_ref);
-        return light_ref;
-    }
-protected:
-    std::string _name;
-    osg::observer_ptr<osg::Light> _light;
-};
 
 struct CSMUpdateCallback : public Pass::PassUpdateCallback {
 public:
@@ -631,26 +666,26 @@ public:
             camera->setViewMatrix(view_matrix);
             camera->setProjectionMatrix(new_proj_matrix);
         } else {
-            osg::Vec3 camera_pos = osg::Vec3(0.0, 0.0, 0.0) *
-                osg::Matrix::inverse(view_matrix);
+            osg::Vec4d camera_pos4 = osg::Vec4d(0.0, 0.0, 0.0, 1.0) *
+                osg::Matrixd::inverse(view_matrix);
+            osg::Vec3d camera_pos(camera_pos4.x(), camera_pos4.y(), camera_pos4.z());
 
-            typedef std::pair<osg::Vec3, osg::Vec3> CubemapFace;
+            typedef std::pair<osg::Vec3d, osg::Vec3d> CubemapFace;
             const CubemapFace id[] = {
-                CubemapFace(osg::Vec3( 1,  0,  0), osg::Vec3( 0, -1,  0)), // +X
-                CubemapFace(osg::Vec3(-1,  0,  0), osg::Vec3( 0, -1,  0)), // -X
-                CubemapFace(osg::Vec3( 0,  1,  0), osg::Vec3( 0,  0,  1)), // +Y
-                CubemapFace(osg::Vec3( 0, -1,  0), osg::Vec3( 0,  0, -1)), // -Y
-                CubemapFace(osg::Vec3( 0,  0,  1), osg::Vec3( 0, -1,  0)), // +Z
-                CubemapFace(osg::Vec3( 0,  0, -1), osg::Vec3( 0, -1,  0))  // -Z
+                CubemapFace(osg::Vec3d( 1.0,  0.0,  0.0), osg::Vec3d( 0.0, -1.0,  0.0)), // +X
+                CubemapFace(osg::Vec3d(-1.0,  0.0,  0.0), osg::Vec3d( 0.0, -1.0,  0.0)), // -X
+                CubemapFace(osg::Vec3d( 0.0,  1.0,  0.0), osg::Vec3d( 0.0,  0.0,  1.0)), // +Y
+                CubemapFace(osg::Vec3d( 0.0, -1.0,  0.0), osg::Vec3d( 0.0,  0.0, -1.0)), // -Y
+                CubemapFace(osg::Vec3d( 0.0,  0.0,  1.0), osg::Vec3d( 0.0, -1.0,  0.0)), // +Z
+                CubemapFace(osg::Vec3d( 0.0,  0.0, -1.0), osg::Vec3d( 0.0, -1.0,  0.0))  // -Z
             };
 
-            osg::Matrix cubemap_view_matrix;
+            osg::Matrixd cubemap_view_matrix;
             cubemap_view_matrix.makeLookAt(camera_pos,
                                            camera_pos + id[_cubemap_face].first,
-                                           camera_pos + id[_cubemap_face].second);
+                                           id[_cubemap_face].second);
             camera->setViewMatrix(cubemap_view_matrix);
-            camera->setProjectionMatrixAsFrustum(-1.0, 1.0, -1.0, 1.0,
-                                                 znear, zfar);
+            camera->setProjectionMatrixAsPerspective(90.0, 1.0, znear, zfar);
         }
     }
 protected:
@@ -706,29 +741,10 @@ public:
         float zFar  = root->getFloatValue("z-far",  0.0f);
         pass->update_callback = new SceneUpdateCallback(cubemap_face, zNear, zFar);
 
-        PropertyList p_shadow_passes = root->getChildren("use-shadow-pass");
-        for (const auto &p_shadow_pass : p_shadow_passes) {
-            std::string shadow_pass_name = p_shadow_pass->getStringValue();
-            if (!shadow_pass_name.empty()) {
-                Pass *shadow_pass = compositor->getPass(shadow_pass_name);
-                if (shadow_pass) {
-                    CSMCullCallback *cullcb =
-                        dynamic_cast<CSMCullCallback *>(
-                            shadow_pass->camera->getCullCallback());
-                    if (cullcb) {
-                        camera->getOrCreateStateSet()->addUniform(
-                            cullcb->getLightMatrixUniform());
-                    } else {
-                        SG_LOG(SG_INPUT, SG_WARN, "ScenePassBuilder::build: Pass '"
-                               << shadow_pass_name << "is not a shadow pass");
-                    }
-                }
-            }
-        }
-
         osg::StateSet *ss = camera->getOrCreateStateSet();
         auto &uniforms = compositor->getUniforms();
         ss->addUniform(uniforms[Compositor::FCOEF]);
+        ss->addUniform(uniforms[Compositor::SUN_DIRECTION]);
 
         osg::ref_ptr<osg::Uniform> clustered_shading_enabled =
             new osg::Uniform("fg_ClusteredEnabled", clustered ? true : false);

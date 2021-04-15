@@ -35,6 +35,10 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/props/propsfwd.hxx>
 
+namespace simgear {
+class SGReaderWriterOptions;
+}
+
 class SGStars : public SGReferenced {
 
     osg::ref_ptr<osg::Vec4Array> cl;
@@ -52,7 +56,8 @@ public:
     ~SGStars( void );
 
     // initialize the stars structure
-    osg::Node* build( int num, const SGVec3d star_data[], double star_dist );
+    osg::Node* build( int num, const SGVec3d star_data[], double star_dist,
+                      simgear::SGReaderWriterOptions* options );
 
     // repaint the planet magnitudes based on current value of
     // sun_angle in degrees relative to verticle (so we can make them

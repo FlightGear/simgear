@@ -59,7 +59,7 @@ public:
         CAMERA_POSITION_GEOD,
         NEAR_FAR_PLANES,
         FCOEF,
-        LIGHT_DIRECTION,
+        SUN_DIRECTION,
         TOTAL_BUILTIN_UNIFORMS
     };
 

@@ -31,6 +31,9 @@
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include <stdio.h>
 #include <iostream>
@@ -47,6 +50,8 @@
 #include <osg/Node>
 
 #include "stars.hxx"
+
+using namespace simgear;
 
 // Constructor
 SGStars::SGStars( SGPropertyNode* props ) :
@@ -67,8 +72,15 @@ SGStars::~SGStars( void ) {
 
 // initialize the stars object and connect it into our scene graph root
 osg::Node*
-SGStars::build( int num, const SGVec3d star_data[], double star_dist ) {
-    osg::Geode* geode = new osg::Geode;
+SGStars::build( int num, const SGVec3d star_data[], double star_dist,
+                SGReaderWriterOptions* options ) {
+    EffectGeode* geode = new EffectGeode;
+    geode->setName("Stars");
+
+    Effect* effect = makeEffect("Effects/stars", true, options);
+    if (effect)
+        geode->setEffect(effect);
+
     osg::StateSet* stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-9, "RenderBin");
 

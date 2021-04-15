@@ -63,21 +63,21 @@ protected:
 
         //System.Threading.Interlocked.Increment(ref nthread);
         //var rng = new Random();
-        TestThreadRecipient r;
+        SGSharedPtr<TestThreadRecipient> r = new TestThreadRecipient;
         char temp[100];
         sprintf(temp, "Notif %d", threadId);
         printf("starting thread %s\n", temp);
         TestThreadNotification tn((const char*)&r);
         for (int i = 0; i < MaxIterations; i++)
         {
-            simgear::Emesary::IReceiverPtr ir(&r);
+            simgear::Emesary::IReceiverPtr ir(r);
             simgear::Emesary::GlobalTransmitter::instance()->Register(ir);
             simgear::Emesary::GlobalTransmitter::instance()->NotifyAll(tn);
             simgear::Emesary::GlobalTransmitter::instance()->DeRegister(ir);
             //System.Threading.Thread.Sleep(rng.Next(MaxSleep));
             noperations++;
         }
-        printf("%s invocations %d\n", temp, (int)r.receiveCount);
+        printf("%s invocations %d\n", temp, (int)r->receiveCount);
         printf("finish thread %s\n", temp);
     }
 };
@@ -106,9 +106,9 @@ public:
 
 void testEmesaryThreaded()
 {
-    TestThreadRecipient r;
-    simgear::Emesary::IReceiverPtr ir(&r);
-    TestThreadNotification tn((const char*)&r);
+    SGSharedPtr<TestThreadRecipient> r = new TestThreadRecipient;
+    simgear::Emesary::IReceiverPtr ir(r);
+    TestThreadNotification tn((const char*)r.ptr());
     simgear::Emesary::GlobalTransmitter::instance()->Register(ir);
     for (int i = 0; i < MaxIterations*MaxIterations; i++)
     {

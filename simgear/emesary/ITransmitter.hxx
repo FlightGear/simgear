@@ -20,6 +20,7 @@
 *
 *---------------------------------------------------------------------------*/
 
+#include <cstddef>
 #include <simgear/structure/SGSharedPtr.hxx>
 namespace simgear
 {

@@ -38,7 +38,7 @@ namespace nasal
     //    }
     //    virtual ~NasalMainLoopRecipientSingleton() {}
     //};
-  NasalMainLoopRecipient mrl;  
+  SGSharedPtr<NasalMainLoopRecipient> mrl;
 
   //----------------------------------------------------------------------------
   naRef to_nasal_helper(naContext c, const std::string& str)

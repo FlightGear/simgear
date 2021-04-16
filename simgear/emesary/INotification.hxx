@@ -21,14 +21,20 @@
 *  Copyright (C)2019 Richard Harrison            Licenced under GPL2 or later.
 *
 *---------------------------------------------------------------------------*/
+#include <simgear/structure/SGSharedPtr.hxx>
+
 namespace simgear
 {
     namespace Emesary
     {
         /// Interface (base class) for all notifications. 
-        class INotification
+        class INotification: public SGReferenced
         {
         public:
+            virtual ~INotification()
+            {
+                
+            }
             // text representation of notification type. must be unique across all notifications
             virtual const char *GetType() = 0;
 
@@ -49,6 +55,7 @@ namespace simgear
             /// is returned as the status.
             virtual bool IsComplete() { return true; }
         };
+        typedef SGSharedPtr<INotification> INotificationPtr;
     }
 }
 #endif

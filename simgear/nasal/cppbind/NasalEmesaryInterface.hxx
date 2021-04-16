@@ -71,10 +71,9 @@ namespace nasal
         }
 
         std::atomic<int> receiveCount;
-        virtual simgear::Emesary::ReceiptStatus Receive(simgear::Emesary::INotification &n)
+        virtual simgear::Emesary::ReceiptStatus Receive(simgear::Emesary::INotificationPtr n)
         {
-
-            simgear::Notifications::MainLoopNotification *mln = dynamic_cast<simgear::Notifications::MainLoopNotification *>(&n);
+            auto mln = dynamic_pointer_cast<simgear::Notifications::MainLoopNotification>(n);
 
             if (mln) {
                 switch (mln->GetValue()) {
@@ -101,8 +100,8 @@ namespace nasal
                 }
                 return simgear::Emesary::ReceiptStatus::OK;
             }
+            auto gccn = dynamic_pointer_cast<simgear::Notifications::NasalGarbageCollectionConfigurationNotification>(n);
 
-            auto *gccn = dynamic_cast<simgear::Notifications::NasalGarbageCollectionConfigurationNotification *>(&n);
             if (gccn) {
                 CanWait = gccn->GetCanWait();
                 Active = gccn->GetActive();

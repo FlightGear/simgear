@@ -44,7 +44,7 @@ class SGWeakPtr;
 /// ordinary pointers or SGWeakPtr's.
 /// There is a very good description of OpenSceneGraphs ref_ptr which is
 /// pretty much the same than this one at
-/// http://dburns.dhs.org/OSG/Articles/RefPointers/RefPointers.html
+/// https://web.archive.org/web/20061012014801/http://dburns.dhs.org/OSG/Articles/RefPointers/RefPointers.html
 
 template<typename T>
 class SGSharedPtr {
@@ -156,6 +156,12 @@ template<class T, class U>
 SGSharedPtr<T> static_pointer_cast(SGSharedPtr<U> const & r)
 {
   return SGSharedPtr<T>( static_cast<T*>(r.get()) );
+}
+
+template<class T, class U>
+SGSharedPtr<T> dynamic_pointer_cast(SGSharedPtr<U> const& r)
+{
+    return SGSharedPtr<T>(dynamic_cast<T*>(r.get()));
 }
 
 /**

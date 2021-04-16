@@ -29,7 +29,7 @@ namespace simgear
         class MainLoopNotification : public simgear::Emesary::INotification
         {
         public:
-            enum Type { Started, Stopped, Begin, End };
+            enum class Type { Started, Stopped, Begin, End };
             MainLoopNotification(Type v) : _type(v) {}
 
             virtual Type GetValue() { return _type; }

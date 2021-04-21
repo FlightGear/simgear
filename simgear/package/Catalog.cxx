@@ -632,6 +632,8 @@ void Catalog::setUserEnabled(bool b)
 
 void Catalog::processAlternate(SGPropertyNode_ptr alt)
 {
+    m_refreshRequest.reset();
+
     std::string altId;
     const auto idPtr = alt->getStringValue("id");
     if (idPtr) {
@@ -707,8 +709,8 @@ void Catalog::processAlternate(SGPropertyNode_ptr alt)
 
     SG_LOG(SG_GENERAL, SG_INFO, "Migrating catalog " << id() << " to new URL:" << altUrl);
     setUrl(altUrl);
-    Downloader* dl = new Downloader(this, altUrl);
-    root()->makeHTTPRequest(dl);
+    m_refreshRequest = new Downloader(this, altUrl);
+    root()->makeHTTPRequest(m_refreshRequest);
 }
 
 int Catalog::markPackagesForInstallation(const string_list &packageIds) {

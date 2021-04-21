@@ -17,9 +17,11 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "to_nasal_helper.hxx"
+
+#include <memory>
+
 #include <simgear/nasal/cppbind/NasalHash.hxx>
 #include <simgear/nasal/cppbind/Ghost.hxx>
-#include <simgear/nasal/cppbind/NasalEmesaryInterface.hxx>
 
 #include <simgear/structure/exception.hxx>
 #include <simgear/math/SGMath.hxx>
@@ -27,10 +29,7 @@
 
 namespace nasal
 {
-    // create single instance of the main loop recipient for Nasal - this will self register at the 
-    // global transmitter - and that's all that is needed to link up the background GC to the main 
-    // loop in FG that will send out the MainLoop notifications.
-  NasalMainLoopRecipient mrl;
+
 
   //----------------------------------------------------------------------------
   naRef to_nasal_helper(naContext c, const std::string& str)

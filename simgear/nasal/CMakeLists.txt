@@ -5,6 +5,7 @@ set(HEADERS
     naref.h
     nasal.h
     iolib.h
+    NasalEmesaryInterface.hxx
     )
 
 set(SOURCES 
@@ -28,6 +29,7 @@ set(SOURCES
     code.h
     data.h
     parse.h
+    NasalEmesaryInterface.cxx
     )
 
 simgear_component(nasal nasal "${SOURCES}" "${HEADERS}")

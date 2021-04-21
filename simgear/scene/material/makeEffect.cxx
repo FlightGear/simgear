@@ -25,6 +25,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props_io.hxx>
@@ -127,17 +128,17 @@ Effect* makeEffect(const string& name,
     string absFileName
         = SGModelLib::findDataFile(effectFileName, options);
     if (absFileName.empty()) {
-        SG_LOG(SG_INPUT, SG_ALERT, "can't find \"" << effectFileName << "\"");
-        return 0;
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadEffectsShaders, "Couldn't find Effect:" + effectFileName);
+        return nullptr;
     }
     SGPropertyNode_ptr effectProps = new SGPropertyNode();
     try {
         readProperties(absFileName, effectProps.ptr(), 0, true);
     }
     catch (sg_io_exception& e) {
-        SG_LOG(SG_INPUT, SG_ALERT, "error reading \"" << absFileName << "\": "
-               << e.getFormattedMessage());
-        return 0;
+        simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadEffectsShaders, e.getFormattedMessage(),
+                               e.getLocation());
+        return nullptr;
     }
     ref_ptr<Effect> result = makeEffect(effectProps.ptr(), realizeTechniques,
                                         options, SGPath::fromUtf8(absFileName));
@@ -237,9 +238,9 @@ Effect* makeEffect(SGPropertyNode* prop,
                 effect->generator = parent->generator;  // Copy the generators
             }
         } else {
-            SG_LOG(SG_INPUT, SG_ALERT, "can't find base effect " <<
-                   inheritProp->getStringValue());
-            return 0;
+            simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadEffectsShaders,
+                                   string{"couldn't find base effect to inherit from:"} + inheritProp->getStringValue(), filePath);
+            return nullptr;
         }
     } else {
         effect = new Effect;
@@ -270,9 +271,9 @@ Effect* makeEffect(SGPropertyNode* prop,
             effect->realizeTechniques(options);
         }
         catch (BuilderException& e) {
-            SG_LOG(SG_INPUT, SG_ALERT, "Error building technique: "
-                   << e.getFormattedMessage());
-            return 0;
+            simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::LoadEffectsShaders,
+                                   "Failed to build technique:" + e.getFormattedMessage(), filePath);
+            return nullptr;
         }
     }
     return effect.release();

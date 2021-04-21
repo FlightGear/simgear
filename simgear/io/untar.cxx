@@ -348,6 +348,9 @@ public:
 
     ~GZTarExtractor()
     {
+        if (haveInitedZLib) {
+            inflateEnd(&zlibStream);
+        }
         free(zlibOutput);
     }
 

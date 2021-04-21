@@ -166,7 +166,8 @@ int parseTest()
 {
     SGPath rootPath = simgear::Dir::current().path();
     rootPath.append("testRoot");
-    pkg::Root* root = new pkg::Root(rootPath, "8.1.12");
+
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setLocale("de");
     pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath(SRC_DIR "/catalogTest1"));
 
@@ -344,7 +345,6 @@ int parseTest()
     SG_CHECK_EQUAL(urls.size(), 3);
     SG_CHECK_EQUAL(urls.at(1), "http://localhost:2000/mirrorB/b737.tar.gz");
 
-    delete root;
     return EXIT_SUCCESS;
 }
 
@@ -953,7 +953,7 @@ int parseInvalidTest()
 {
     SGPath rootPath = simgear::Dir::current().path();
     rootPath.append("testRoot");
-    pkg::Root* root = new pkg::Root(rootPath, "8.1.12");
+    pkg::RootRef root(new pkg::Root(rootPath, "8.1.12"));
     pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath(SRC_DIR "/catalogTestInvalid"));
     SG_VERIFY(cat.valid());
 
@@ -1333,25 +1333,25 @@ int main(int argc, char* argv[])
     testRefreshCatalog(&cl);
 
     testInstallTarPackage(&cl);
-    
+
     testInstallArchiveType(&cl);
-    
+
     testDisableDueToVersion(&cl);
-    
+
     testOfflineMode(&cl);
-    
+
     testVersionMigrate(&cl);
-    
+
     updateInvalidToValid(&cl);
     updateValidToInvalid(&cl);
     updateInvalidToInvalid(&cl);
-    
+
     removeInvalidCatalog(&cl);
-    
+
     testVersionMigrateToId(&cl);
 
     testInstallBadPackage(&cl);
-    
+
     testMirrorsFailure(&cl);
 
     testMigrateInstalled(&cl);

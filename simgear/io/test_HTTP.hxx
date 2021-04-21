@@ -201,6 +201,7 @@ public:
 
     virtual ~TestServer()
     {
+        disconnectAll();
         _poller.removeChannel(this);
     }
 

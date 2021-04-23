@@ -71,6 +71,7 @@ public:
     void registerNewWorldParticleSystem(osg::Node* node, ParticleSystemRef ps, osg::Group* frame);
 
     std::mutex _lock;
+    bool _inited = false;
     bool _frozen = false;
     double _simulationDt = 0.0;
     osg::ref_ptr<osg::Group> _commonRoot;
@@ -184,6 +185,10 @@ void ParticlesGlobalManager::ParticlesGlobalManagerPrivate::registerNewWorldPart
 void ParticlesGlobalManager::initFromMainThread()
 {
     std::lock_guard<std::mutex> g(d->_lock);
+    if (d->_inited)
+        return;
+
+    d->_inited = true;
     d->internalGetCommonRoot();
     d->_commonRoot->addUpdateCallback(d.get());
     d->_commonRoot->setCullingActive(false);

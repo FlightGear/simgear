@@ -16,6 +16,7 @@
 #include <simgear_config.h>
 
 #include "ErrorReportingCallback.hxx"
+#include "logstream.hxx"
 
 #include <simgear/misc/sg_path.hxx>
 
@@ -26,6 +27,31 @@ namespace simgear {
 static ErrorReportCallback static_callback;
 static ContextCallback static_contextCallback;
 
+
+string_list static_errorNames = {
+    "shader/effect",
+    "loading texture",
+    "XML/animation load",
+    "3D model load",
+    "loading BTG",
+    "sceanrio load",
+    "UI dialog load",
+    "loading Audio/FX",
+    "Nasal/commnad load of XML",
+    "aircraft-systems",
+    "loading input/joystick config",
+    "load AI/traffic",
+    "from TerraSync"};
+
+string_list static_errorTypeNames = {
+    "unknown",
+    "not found",
+    "out of memory",
+    "bad header",
+    "bad data",
+    "misconfigured",
+    "disk IO/permissions",
+    "network IO"};
 
 void setErrorReportCallback(ErrorReportCallback cb)
 {
@@ -53,6 +79,7 @@ static FailureCallback static_failureCallback;
 void reportFailure(LoadFailure type, ErrorCode code, const std::string& details, sg_location loc)
 {
     if (!static_failureCallback) {
+        SG_LOG(SG_GENERAL, SG_WARN, "Error:" << static_errorTypeNames.at(static_cast<int>(type)) << " from " << static_errorNames.at(static_cast<int>(code)) << "::" << details << "\n\t" << loc.asString());
         return;
     }
 
@@ -62,6 +89,9 @@ void reportFailure(LoadFailure type, ErrorCode code, const std::string& details,
 void reportFailure(LoadFailure type, ErrorCode code, const std::string& details, const SGPath& path)
 {
     if (!static_failureCallback) {
+        // if no callback is registered, log here instead
+        SG_LOG(SG_GENERAL, SG_WARN, "Error:" << static_errorTypeNames.at(static_cast<int>(type)) << " from " << static_errorNames.at(static_cast<int>(code)) << "::" << details << "\n\t" << path);
+
         return;
     }
 

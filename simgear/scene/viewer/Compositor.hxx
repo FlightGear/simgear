@@ -100,6 +100,8 @@ public:
 
     void               resized();
 
+    void               setCullMask(osg::Node::NodeMask cull_mask);
+
     osg::View         *getView() const { return _view; }
 
     osg::GraphicsContext *getGraphicsContext() const { return _gc; }

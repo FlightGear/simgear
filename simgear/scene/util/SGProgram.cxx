@@ -52,18 +52,19 @@ void SGProgram::apply(osg::State& state) const
         std::string infoLog;
         _checkState = FailedToApply;
         getPCP(state)->getInfoLog(infoLog);
+        if (!infoLog.empty()) {
+            // log all the shader source file names, to help in debugging link errors
+            std::ostringstream os;
+            for (int i = 0; i < getNumShaders(); ++i) {
+                const auto shader = getShader(i);
+                os << "\t" << shader->getFileName() << "\n";
+            }
 
-        // log all the shader source file names, to help in debugging link errors
-        std::ostringstream os;
-        for (int i = 0; i < getNumShaders(); ++i) {
-            const auto shader = getShader(i);
-            os << "\t" << shader->getFileName() << "\n";
+            simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadEffectsShaders,
+                                   "Shader program errors: " + infoLog +
+                                       "\n\nShader sources:\n" + os.str(),
+                                   _effectFilePath);
         }
-
-        simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadEffectsShaders,
-                               "Shader program errors: " + infoLog +
-                                   "\n\nShader sources:\n" + os.str(),
-                               _effectFilePath);
 
         for (int i = 0; i < getNumShaders(); ++i) {
             const auto shader = getShader(i);

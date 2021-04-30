@@ -690,7 +690,9 @@ struct ReaderWriterSTG::_ModelBin {
                             }
                             callback(token,name, SGGeod::fromDegM(obj._lon, obj._lat, obj._elev), obj._hdg,restofline);
                         } else {
-                            SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName << ": Unknown token '" << token << "'" );
+                            // SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName << ": Unknown token '" << token << "'" );
+                            simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::BTGLoad,
+                                                   "Unknown STG token:" + token, absoluteFileName);
                         }
                     }
                 }
@@ -866,6 +868,7 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
 {
     _ModelBin modelBin;
     SGBucket bucket(bucketIndexFromFileName(fileName));
+    simgear::ErrorReportContext ec("terrain-bucket", bucket.gen_index_str());
 
     // We treat 123.stg different than ./123.stg.
     // The difference is that ./123.stg as well as any absolute path
@@ -873,6 +876,7 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
     // In contrast 123.stg uses the search paths to load a set of stg
     // files spread across the scenery directories.
     if (osgDB::getSimpleFileName(fileName) != fileName) {
+        simgear::ErrorReportContext ec("terrain-stg", fileName);
         if (!modelBin.read(fileName, options))
             return ReadResult::FILE_NOT_FOUND;
     }
@@ -913,6 +917,7 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
 
         for (auto suffix : sgOpts->getSceneryPathSuffixes()) {
             const auto p = base / suffix / basePath / fileName;
+            simgear::ErrorReportContext ec("terrain-stg", p.utf8Str());
             modelBin.read(p, options);
         }
     }

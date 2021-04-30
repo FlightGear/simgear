@@ -989,6 +989,14 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
             }
         }
     }
+
+    if (sgprogram->getNumShaders() == 0) {
+        simgear::reportFailure(simgear::LoadFailure::BadData,
+                               simgear::ErrorCode::LoadEffectsShaders,
+                               "No shader source code defined for effect",
+                               effect->filePath());
+    }
+
     for (const auto& key : prgKey.attributes) {
         program->addBindAttribLocation(key.first, key.second);
     }

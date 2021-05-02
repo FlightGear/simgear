@@ -38,7 +38,8 @@ namespace simgear
             {
             }
 
-            /// Called when de-registered at a transmitter
+            /// Called when de-registered at a transmitter; i.e. as a result of 
+            /// Transmitter::DeRegister.
             virtual void OnDeRegisteredAtTransmitter(class Transmitter *p)
             {
             }

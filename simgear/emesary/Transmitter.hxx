@@ -89,7 +89,9 @@ namespace simgear
 				}
 			}
 
-			//  Removes an object from receving message from this transmitter
+			///  Removes an object from receving message from this transmitter. 
+			/// NOTES: OnDeRegisteredAtTransmitter will be called as a result of this method
+			///        If recipient is in the list of new recipients it will be removed from that list
 			virtual void DeRegister(IReceiverPtr r)
 			{
 				std::lock_guard<std::mutex> scopeLock(_lock);
@@ -102,6 +104,7 @@ namespace simgear
 						new_recipient_list.erase(location);
 				}
 				deleted_recipient_list.push_back(r);
+				r->OnDeRegisteredAtTransmitter(this);
 				pendingDeletions++;
 			}
 
@@ -125,7 +128,6 @@ namespace simgear
 
 						RecipientList::iterator location = std::find(recipient_list.begin(), recipient_list.end(), r);
 						if (location != recipient_list.end()) {
-							r->OnDeRegisteredAtTransmitter(this);
 							recipient_list.erase(location);
 						}
 					});

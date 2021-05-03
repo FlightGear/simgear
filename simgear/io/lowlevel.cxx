@@ -23,28 +23,41 @@
 // $Id$
 
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <string.h>		// for memcpy()
+#include <errno.h>
 
-#include "lowlevel.hxx" 
+#include <simgear/structure/exception.hxx>
+#include <simgear/misc/strutils.hxx>
+#include <simgear/misc/sg_path.hxx>
 
+#include "lowlevel.hxx"
 
-static int  read_error = false ;
-static int write_error = false ;
+thread_local SGPath thread_gzPath;
 
-void sgClearReadError() { read_error = false; }
-void sgClearWriteError() { write_error = false; }
-int sgReadError() { return  read_error ; }
-int sgWriteError() { return write_error ; }
+void setThreadLocalSimgearReadPath(const SGPath& path)
+{
+    thread_gzPath = path;
+}
 
+static std::string gzErrorMessage(gzFile fd)
+{
+    int errNum = 0;
+    const char *gzMsg = gzerror(fd, &errNum);
+
+    if (errNum == Z_ERRNO) {
+        return simgear::strutils::error_string(errno);
+    } else {
+        return {gzMsg};
+    }
+}
 
 void sgReadChar ( gzFile fd, char *var )
 {
     if ( gzread ( fd, var, sizeof(char) ) != sizeof(char) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadChar: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
 }
 
@@ -52,7 +65,7 @@ void sgReadChar ( gzFile fd, char *var )
 void sgWriteChar ( gzFile fd, const char var )
 {
     if ( gzwrite ( fd, (void *)(&var), sizeof(char) ) != sizeof(char) ) {
-        write_error = true ;
+        throw sg_io_exception("sgWriteChar: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -61,7 +74,8 @@ void sgReadFloat ( gzFile fd, float *var )
 {
     union { float v; uint32_t u; } buf;
     if ( gzread ( fd, &buf.u, sizeof(float) ) != sizeof(float) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadFloat: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( &buf.u );
@@ -78,7 +92,7 @@ void sgWriteFloat ( gzFile fd, const float var )
         sgEndianSwap( &buf.u );
     }
     if ( gzwrite ( fd, (void *)(&buf.u), sizeof(float) ) != sizeof(float) ) {
-        write_error = true ;
+        throw sg_io_exception("sgWriteFloat: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -87,7 +101,8 @@ void sgReadDouble ( gzFile fd, double *var )
 {
     union { double v; uint64_t u; } buf;
     if ( gzread ( fd, &buf.u, sizeof(double) ) != sizeof(double) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadDouble: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( &buf.u );
@@ -104,7 +119,7 @@ void sgWriteDouble ( gzFile fd, const double var )
         sgEndianSwap( &buf.u );
     }
     if ( gzwrite ( fd, (void *)(&buf.u), sizeof(double) ) != sizeof(double) ) {
-        write_error = true ;
+        throw sg_io_exception("sgWriteDouble: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -112,7 +127,8 @@ void sgWriteDouble ( gzFile fd, const double var )
 void sgReadUInt ( gzFile fd, unsigned int *var )
 {
     if ( gzread ( fd, var, sizeof(unsigned int) ) != sizeof(unsigned int) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadUInt: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( (uint32_t *)var);
@@ -128,7 +144,7 @@ void sgWriteUInt ( gzFile fd, const unsigned int var )
     if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned int) )
 	 != sizeof(unsigned int) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteUInt: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -136,7 +152,8 @@ void sgWriteUInt ( gzFile fd, const unsigned int var )
 void sgReadInt ( gzFile fd, int *var )
 {
     if ( gzread ( fd, var, sizeof(int) ) != sizeof(int) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadInt: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( (uint32_t *)var);
@@ -150,7 +167,7 @@ void sgWriteInt ( gzFile fd, const int var )
         sgEndianSwap( (uint32_t *)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(int) ) != sizeof(int) ) {
-        write_error = true ;
+        throw sg_io_exception("sgWriteInt: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -158,7 +175,8 @@ void sgWriteInt ( gzFile fd, const int var )
 void sgReadLong ( gzFile fd, int32_t *var )
 {
     if ( gzread ( fd, var, sizeof(int32_t) ) != sizeof(int32_t) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadLong: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( (uint32_t *)var);
@@ -174,7 +192,7 @@ void sgWriteLong ( gzFile fd, const int32_t var )
     if ( gzwrite ( fd, (void *)(&var), sizeof(int32_t) )
          != sizeof(int32_t) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteLong: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -182,7 +200,8 @@ void sgWriteLong ( gzFile fd, const int32_t var )
 void sgReadLongLong ( gzFile fd, int64_t *var )
 {
     if ( gzread ( fd, var, sizeof(int64_t) ) != sizeof(int64_t) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadLongLong: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( (uint64_t *)var);
@@ -198,7 +217,7 @@ void sgWriteLongLong ( gzFile fd, const int64_t var )
     if ( gzwrite ( fd, (void *)(&var), sizeof(int64_t) )
          != sizeof(int64_t) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteLongLong: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -206,7 +225,8 @@ void sgWriteLongLong ( gzFile fd, const int64_t var )
 void sgReadUShort ( gzFile fd, unsigned short *var )
 {
     if ( gzread ( fd, var, sizeof(unsigned short) ) != sizeof(unsigned short) ){
-        read_error = true ;
+        throw sg_io_exception("sgReadUShort: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( (uint16_t *)var);
@@ -222,7 +242,7 @@ void sgWriteUShort ( gzFile fd, const unsigned short var )
     if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned short) )
 	 != sizeof(unsigned short) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteUShort: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -230,7 +250,8 @@ void sgWriteUShort ( gzFile fd, const unsigned short var )
 void sgReadShort ( gzFile fd, short *var )
 {
     if ( gzread ( fd, var, sizeof(short) ) != sizeof(short) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadShort: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         sgEndianSwap( (uint16_t *)var);
@@ -244,7 +265,7 @@ void sgWriteShort ( gzFile fd, const short var )
         sgEndianSwap( (uint16_t *)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(short) ) != sizeof(short) ) {
-        write_error = true ;
+        throw sg_io_exception("sgWriteShort: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -252,7 +273,8 @@ void sgWriteShort ( gzFile fd, const short var )
 void sgReadFloat ( gzFile fd, const unsigned int n, float *var )
 {
     if ( gzread ( fd, var, sizeof(float) * n ) != (int)(sizeof(float) * n) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadFloat array: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
@@ -276,14 +298,15 @@ void sgWriteFloat ( gzFile fd, const unsigned int n, const float *var )
     if ( gzwrite ( fd, (void *)var, sizeof(float) * n )
 	 != (int)(sizeof(float) * n) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteFloat array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
 void sgReadDouble ( gzFile fd, const unsigned int n, double *var )
 {
     if ( gzread ( fd, var, sizeof(double) * n ) != (int)(sizeof(double) * n) ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadDouble array: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
@@ -307,7 +330,7 @@ void sgWriteDouble ( gzFile fd, const unsigned int n, const double *var )
     if ( gzwrite ( fd, (void *)var, sizeof(double) * n )
 	 != (int)(sizeof(double) * n) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteDouble array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -315,7 +338,8 @@ void sgReadBytes ( gzFile fd, const unsigned int n, void *var )
 {
     if ( n == 0) return;
     if ( gzread ( fd, var, n ) != (int)n ) {
-        read_error = true ;
+        throw sg_io_exception("sgReadBytes: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
 }
 
@@ -323,7 +347,7 @@ void sgWriteBytes ( gzFile fd, const unsigned int n, const void *var )
 {
     if ( n == 0) return;
     if ( gzwrite ( fd, (void *)var, n ) != (int)n ) {
-        write_error = true ;
+        throw sg_io_exception("sgWriteBytes: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -333,7 +357,8 @@ void sgReadUShort ( gzFile fd, const unsigned int n, unsigned short *var )
     if ( gzread ( fd, var, sizeof(unsigned short) * n )
 	 != (int)(sizeof(unsigned short) * n) )
     {
-        read_error = true ;
+        throw sg_io_exception("sgReadUShort array: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
@@ -357,7 +382,7 @@ void sgWriteUShort ( gzFile fd, const unsigned int n, const unsigned short *var 
     if ( gzwrite ( fd, (void *)var, sizeof(unsigned short) * n )
 	 != (int)(sizeof(unsigned short) * n) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteUShort array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -368,7 +393,8 @@ void sgReadShort ( gzFile fd, const unsigned int n, short *var )
     if ( gzread ( fd, var, sizeof(short) * n )
 	 != (int)(sizeof(short) * n) )
     {
-        read_error = true ;
+        throw sg_io_exception("sgReadShort array: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
@@ -392,7 +418,7 @@ void sgWriteShort ( gzFile fd, const unsigned int n, const short *var )
     if ( gzwrite ( fd, (void *)var, sizeof(short) * n )
 	 != (int)(sizeof(short) * n) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteShort array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -402,7 +428,8 @@ void sgReadUInt ( gzFile fd, const unsigned int n, unsigned int *var )
     if ( gzread ( fd, var, sizeof(unsigned int) * n )
 	 != (int)(sizeof(unsigned int) * n) )
     {
-        read_error = true ;
+        throw sg_io_exception("sgReadUInt array: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
@@ -426,7 +453,7 @@ void sgWriteUInt ( gzFile fd, const unsigned int n, const unsigned int *var )
     if ( gzwrite ( fd, (void *)var, sizeof(unsigned int) * n )
 	 != (int)(sizeof(unsigned int) * n) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteUInt array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 
@@ -437,7 +464,8 @@ void sgReadInt ( gzFile fd, const unsigned int n, int *var )
     if ( gzread ( fd, var, sizeof(int) * n )
 	 != (int)(sizeof(int) * n) )
     {
-        read_error = true ;
+        throw sg_io_exception("sgReadInt array: GZRead failed:" + gzErrorMessage(fd),
+                              sg_location{thread_gzPath}, nullptr, false);
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
@@ -461,7 +489,7 @@ void sgWriteInt ( gzFile fd, const unsigned int n, const int *var )
     if ( gzwrite ( fd, (void *)var, sizeof(int) * n )
 	 != (int)(sizeof(int) * n) )
     {
-        write_error = true ;
+        throw sg_io_exception("sgWriteInt array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
 

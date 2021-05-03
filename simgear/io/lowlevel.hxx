@@ -35,6 +35,9 @@
 
 #include <simgear/math/SGMath.hxx>
 
+// forward decls
+class SGPath;
+
 // Note that output is written in little endian form (and converted as
 // necessary for big endian machines)
 
@@ -121,9 +124,10 @@ inline void sgWriteGeod ( gzFile fd, const SGGeod& var ) {
     sgWriteDouble( fd, var.getElevationM() );
 }
 
-void sgClearReadError();
-void sgClearWriteError();
-int sgReadError();
-int sgWriteError();
+/**
+    @ error aid: allow calling code to specify which file path we're reading from, so that erros we
+ throw from sgReadXXXX can have a valid location set.
+ */
+void setThreadLocalSimgearReadPath(const SGPath& path);
 
 #endif // _SG_LOWLEVEL_HXX

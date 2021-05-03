@@ -151,7 +151,7 @@ class OptimizeModelPolicy {
 public:
     OptimizeModelPolicy(const std::string& extension);
     osg::Node* optimize(osg::Node* node, const std::string& fileName,
-                        const osgDB::Options* opt);
+                        const osgDB::Options* opt, const bool compressTextures=true);
 protected:
     unsigned _osgOptions;
 };

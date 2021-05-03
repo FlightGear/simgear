@@ -656,7 +656,8 @@ OptimizeModelPolicy::OptimizeModelPolicy(const string& extension) :
 
 osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
                                          const string& fileName,
-                                         const osgDB::Options* opt)
+                                         const osgDB::Options* opt,
+                                         const bool compressTextures)
 {
     osgUtil::Optimizer optimizer;
     optimizer.optimize(node, _osgOptions);
@@ -666,8 +667,11 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
     SGTexDataVarianceVisitor dataVarianceVisitor;
     node->accept(dataVarianceVisitor);
 
-    SGTexCompressionVisitor texComp;
-    node->accept(texComp);
+    if (compressTextures) {
+        SGTexCompressionVisitor texComp;
+        node->accept(texComp);
+    }
+
     return node;
 }
 
@@ -1065,9 +1069,14 @@ struct OSGOptimizePolicy : public OptimizeModelPolicy {
                     terrain->addChild(optimized.get());
                 }
             }
+
+            // We don't want any textures compressed, as these contain landclass information that doesn't
+            // interpolate well.
+            optimized = OptimizeModelPolicy::optimize(optimized, fileName, opt, false);
+        } else {
+            optimized = OptimizeModelPolicy::optimize(optimized, fileName, opt, true);
         }
 
-        optimized = OptimizeModelPolicy::optimize(optimized, fileName, opt);
         Group* group = dynamic_cast<Group*>(optimized.get());
         MatrixTransform* transform
             = dynamic_cast<MatrixTransform*>(optimized.get());

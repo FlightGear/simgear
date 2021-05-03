@@ -72,6 +72,7 @@
 #define TREE_LIST "TREE_LIST"
 #define LINE_FEATURE_LIST "LINE_FEATURE_LIST"
 #define AREA_FEATURE_LIST "AREA_FEATURE_LIST"
+#define COASTLINE_LIST "COASTLINE_LIST"
 
 namespace simgear {
 
@@ -164,6 +165,12 @@ struct ReaderWriterSTG::_ModelBin {
       _AreaFeatureList() { }
       std::string _filename;
       std::string _material;
+      SGBucket _bucket;
+    };
+
+    struct _CoastlineList {
+      _CoastlineList() { }
+      std::string _filename;
       SGBucket _bucket;
     };
 
@@ -353,6 +360,20 @@ struct ReaderWriterSTG::_ModelBin {
                 VPBTechnique::addAreaFeatureList(_bucket, areaFeatures, _terrainNode);
             }
 
+            if (!_coastFeatureList.empty()) {
+
+                CoastlineBinList coastFeatures;
+
+                for (const auto& b : _coastFeatureList) {
+                    // add the lineFeatures to the list
+                    const auto path = SGPath(b._filename);
+                    coastFeatures.push_back(CoastlineBin(path));
+                }
+
+                VPBTechnique::addCoastlineList(_bucket, coastFeatures, _terrainNode);
+            }
+
+
             return group.release();
         }
 
@@ -363,6 +384,7 @@ struct ReaderWriterSTG::_ModelBin {
         std::list<_TreeList> _treeList;
         std::list<_LineFeatureList> _lineFeatureList;
         std::list<_AreaFeatureList> _areaFeatureList;
+        std::list<_CoastlineList> _coastFeatureList;
         osg::ref_ptr<osg::Node> _terrainNode;
 
         /// The original options to use for this bunch of models
@@ -672,6 +694,11 @@ struct ReaderWriterSTG::_ModelBin {
                   in >> areaFeaturelist._material;
                   areaFeaturelist._bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
                   _areaFeatureListList.push_back(areaFeaturelist);
+                } else if (token == COASTLINE_LIST) {
+                  _CoastlineList coastFeaturelist;
+                  coastFeaturelist._filename = path.utf8Str();
+                  coastFeaturelist._bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
+                  _coastFeatureListList.push_back(coastFeaturelist);
                 } else {
                     // Check registered callback for token. Keep lock until callback completed to make sure it will not be
                     // executed after a thread successfully executed removeSTGObjectHandler()
@@ -790,50 +817,58 @@ struct ReaderWriterSTG::_ModelBin {
             i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
 
-        if (_objectStaticList.empty() && _signList.empty() && _buildingListList.empty() && _treeListList.empty() && _lineFeatureListList.empty() && _areaFeatureListList.empty()) {
+        if (_objectStaticList.empty() && 
+            _signList.empty() && 
+            _buildingListList.empty() && 
+            _treeListList.empty() && 
+            _lineFeatureListList.empty() && 
+            _areaFeatureListList.empty() && 
+            _coastFeatureListList.empty()) 
+        {
             // The simple case, just return the terrain group
             return terrainGroup.release();
-        } else {
-            osg::PagedLOD* pagedLOD = new osg::PagedLOD;
-            pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
-            std::string name = string("pagedObjectLOD ").append(bucket.gen_index_str());
-            pagedLOD->setName(name);
-
-            // This should be visible in any case.
-            // If this is replaced by some lower level of detail, the parent LOD node handles this.
-            pagedLOD->addChild(terrainGroup, 0, std::numeric_limits<float>::max());
-            pagedLOD->setMinimumExpiryTime(0, pagedLODExpiry);
-
-            // we just need to know about the read file callback that itself holds the data
-            osg::ref_ptr<DelayLoadReadFileCallback> readFileCallback = new DelayLoadReadFileCallback;
-            readFileCallback->_objectStaticList = _objectStaticList;
-            readFileCallback->_buildingList = _buildingListList;
-            readFileCallback->_treeList = _treeListList;
-            readFileCallback->_signList = _signList;
-            readFileCallback->_options = options;
-            readFileCallback->_bucket = bucket;
-
-            if (vpb_active && vpb_node) {
-                readFileCallback->_lineFeatureList = _lineFeatureListList;
-                readFileCallback->_areaFeatureList = _areaFeatureListList;
-                readFileCallback->_terrainNode = vpb_node;
-            }
-
-            osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
-            callbackOptions->setReadFileCallback(readFileCallback.get());
-            pagedLOD->setDatabaseOptions(callbackOptions.get());
-
-            pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
-
-            // Objects may end up displayed up to 2x the object range.
-            pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough);
-            pagedLOD->setMinimumExpiryTime(pagedLOD->getNumChildren(), pagedLODExpiry);
-            pagedLOD->setRadius(SG_TILE_RADIUS);
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Center: " << pagedLOD->getCenter().x() << "," << pagedLOD->getCenter().y() << "," << pagedLOD->getCenter().z() );
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Range: " << (2.0 * _object_range_rough));
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Radius: " << SG_TILE_RADIUS);
-            return pagedLOD;
         }
+        
+        osg::PagedLOD* pagedLOD = new osg::PagedLOD;
+        pagedLOD->setCenterMode(osg::PagedLOD::USE_BOUNDING_SPHERE_CENTER);
+        std::string name = string("pagedObjectLOD ").append(bucket.gen_index_str());
+        pagedLOD->setName(name);
+
+        // This should be visible in any case.
+        // If this is replaced by some lower level of detail, the parent LOD node handles this.
+        pagedLOD->addChild(terrainGroup, 0, std::numeric_limits<float>::max());
+        pagedLOD->setMinimumExpiryTime(0, pagedLODExpiry);
+
+        // we just need to know about the read file callback that itself holds the data
+        osg::ref_ptr<DelayLoadReadFileCallback> readFileCallback = new DelayLoadReadFileCallback;
+        readFileCallback->_objectStaticList = _objectStaticList;
+        readFileCallback->_buildingList = _buildingListList;
+        readFileCallback->_treeList = _treeListList;
+        readFileCallback->_signList = _signList;
+        readFileCallback->_options = options;
+        readFileCallback->_bucket = bucket;
+
+        if (vpb_active && vpb_node) {
+            readFileCallback->_lineFeatureList = _lineFeatureListList;
+            readFileCallback->_areaFeatureList = _areaFeatureListList;
+            readFileCallback->_coastFeatureList = _coastFeatureListList;
+            readFileCallback->_terrainNode = vpb_node;
+        }
+
+        osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
+        callbackOptions->setReadFileCallback(readFileCallback.get());
+        pagedLOD->setDatabaseOptions(callbackOptions.get());
+
+        pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
+
+        // Objects may end up displayed up to 2x the object range.
+        pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough);
+        pagedLOD->setMinimumExpiryTime(pagedLOD->getNumChildren(), pagedLODExpiry);
+        pagedLOD->setRadius(SG_TILE_RADIUS);
+        SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Center: " << pagedLOD->getCenter().x() << "," << pagedLOD->getCenter().y() << "," << pagedLOD->getCenter().z() );
+        SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Range: " << (2.0 * _object_range_rough));
+        SG_LOG( SG_TERRAIN, SG_DEBUG, "Tile " << bucket.gen_index_str() << " PagedLOD Radius: " << SG_TILE_RADIUS);
+        return pagedLOD;
     }
 
     double _object_range_bare;
@@ -847,6 +882,7 @@ struct ReaderWriterSTG::_ModelBin {
     std::list<_TreeList> _treeListList;
     std::list<_LineFeatureList> _lineFeatureListList;
     std::list<_AreaFeatureList> _areaFeatureListList;
+    std::list<_CoastlineList> _coastFeatureListList;
 };
 
 ReaderWriterSTG::ReaderWriterSTG()

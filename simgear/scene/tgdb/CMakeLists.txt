@@ -1,8 +1,9 @@
 include (SimGearComponent)
 
 set(HEADERS 
-    GroundLightManager.hxx
     AreaFeatureBin.hxx
+    CoastlineBin.hxx
+    GroundLightManager.hxx
     LineFeatureBin.hxx
     ReaderWriterSPT.hxx
     ReaderWriterSTG.hxx
@@ -22,6 +23,7 @@ set(HEADERS
     ShaderGeometry.hxx
     TreeBin.hxx
     VPBElevationSlice.hxx
+    VPBTileBounds.hxx
     VPBTechnique.hxx
     apt_signs.hxx
     obj.hxx
@@ -30,8 +32,9 @@ set(HEADERS
     )
 
 set(SOURCES 
-    GroundLightManager.cxx
     AreaFeatureBin.cxx
+    CoastlineBin.cxx
+    GroundLightManager.cxx
     LineFeatureBin.cxx
     ReaderWriterSPT.cxx
     ReaderWriterSTG.cxx
@@ -42,6 +45,7 @@ set(SOURCES
     ShaderGeometry.cxx
     TreeBin.cxx
     VPBElevationSlice.cxx
+    VPBTileBounds.cxx
     VPBTechnique.cxx
     apt_signs.cxx
     obj.cxx

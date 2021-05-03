@@ -33,6 +33,7 @@
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/tgdb/AreaFeatureBin.hxx>
 #include <simgear/scene/tgdb/LineFeatureBin.hxx>
+#include <simgear/scene/tgdb/CoastlineBin.hxx>
 
 using namespace osgTerrain;
 
@@ -95,9 +96,10 @@ class VPBTechnique : public TerrainTechnique
         static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
 
-        // LineFeatures and AreaFeaturesare draped over the underlying mesh.
+        // LineFeatures and AreaFeatures are draped over the underlying mesh.
         static void addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList, osg::ref_ptr<osg::Node> terrainNode);
         static void addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaList, osg::ref_ptr<osg::Node> terrainNode);
+        static void addCoastlineList(SGBucket bucket, CoastlineBinList areaList, osg::ref_ptr<osg::Node> terrainNode);
         static void unloadFeatures(SGBucket bucket);
 
     protected:
@@ -136,8 +138,9 @@ class VPBTechnique : public TerrainTechnique
         virtual void applyTrees(BufferData& buffer, Locator* masterLocator);
 
         virtual void applyLineFeatures(BufferData& buffer, Locator* masterLocator);
-        virtual void generateLineFeature(BufferData& buffer, Locator* 
-            masterLocator, LineFeatureBin::LineFeature road, 
+        virtual void generateLineFeature(BufferData& buffer, 
+            Locator* masterLocator, 
+            LineFeatureBin::LineFeature road, 
             osg::Vec3d modelCenter, 
             osg::Vec3Array* v, 
             osg::Vec2Array* t, 
@@ -146,14 +149,26 @@ class VPBTechnique : public TerrainTechnique
             unsigned int ysize);
 
         virtual void applyAreaFeatures(BufferData& buffer, Locator* masterLocator);
-        virtual void generateAreaFeature(BufferData& buffer, Locator* 
-            masterLocator, AreaFeatureBin::AreaFeature area, 
+        virtual void generateAreaFeature(BufferData& buffer, 
+            Locator* masterLocator, 
+            AreaFeatureBin::AreaFeature area, 
             osg::Vec3d modelCenter, 
             osg::Geometry* geometry,
             osg::Vec3Array* v, 
             osg::Vec2Array* t, 
             osg::Vec3Array* n,
             unsigned int xsize,
+            unsigned int ysize);
+
+        virtual void applyCoastline(BufferData& buffer, Locator* masterLocator);
+        virtual void generateCoastlineFeature(BufferData& buffer, 
+            Locator* masterLocator, 
+            LineFeatureBin::LineFeature coastLine, 
+            osg::Vec3d modelCenter, 
+            osg::Vec3Array* v, 
+            osg::Vec2Array* t, 
+            osg::Vec3Array* n, 
+            unsigned int xsize, 
             unsigned int ysize);
 
         virtual osg::Vec3d getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt, osg::Vec3d up);
@@ -176,6 +191,7 @@ class VPBTechnique : public TerrainTechnique
 
         typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
         typedef std::pair<SGBucket, AreaFeatureBinList> BucketAreaFeatureBinList;
+        typedef std::pair<SGBucket, CoastlineBinList> BucketCoastlineBinList;
 
         inline static std::list<BucketLineFeatureBinList>  _lineFeatureLists;
         inline static std::mutex _lineFeatureLists_mutex;  // protects the _lineFeatureLists;
@@ -183,8 +199,12 @@ class VPBTechnique : public TerrainTechnique
         inline static std::list<BucketAreaFeatureBinList>  _areaFeatureLists;
         inline static std::mutex _areaFeatureLists_mutex;  // protects the _areaFeatureLists;
 
+        inline static std::list<BucketCoastlineBinList>  _coastFeatureLists;
+        inline static std::mutex _coastFeatureLists_mutex;  // protects the _areaFeatureLists;
+
 };
 
-}
+};
+
 
 #endif

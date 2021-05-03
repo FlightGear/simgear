@@ -48,7 +48,7 @@ public:
         const float _b;
         const float _c;
         const float _d;
-        LineFeature(const std::list<osg::Vec3d> nodes, const float w, const int attributes, const float a, const float b, const float c, const float d) :
+        LineFeature(const std::list<osg::Vec3d> nodes, const float w, const int attributes=0, const float a=0.0, const float b=0.0, const float c=0.0, const float d=0.0) :
           _nodes(nodes), _width(w), _attributes(attributes), _a(a), _b(b), _c(c), _d(d)
         {
         }

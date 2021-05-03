@@ -45,6 +45,7 @@
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/tgdb/VPBElevationSlice.hxx>
+#include <simgear/scene/tgdb/VPBTileBounds.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
@@ -169,6 +170,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
             applyTrees(*buffer, masterLocator);
             applyLineFeatures(*buffer, masterLocator);
             applyAreaFeatures(*buffer, masterLocator);
+            applyCoastline(*buffer, masterLocator);
         }
     }
     else
@@ -177,7 +179,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         applyColorLayers(*buffer, masterLocator);
         applyTrees(*buffer, masterLocator);
         applyLineFeatures(*buffer, masterLocator);
-        applyAreaFeatures(*buffer, masterLocator);
+        applyCoastline(*buffer, masterLocator);
     }
 
     if (buffer->_transform.valid()) buffer->_transform->setThreadSafeRefUnref(true);
@@ -1298,6 +1300,8 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
         }
     }
 
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "VPB Image level:" << _terrainTile->getTileID().level << " " << image->s() << "x" << image->t() << " mipmaps:" << image->getNumMipmapLevels() << " format:" << image->getInternalTextureFormat());
+
     osg::ref_ptr<osg::Texture2D> texture2D  = new osg::Texture2D;
     texture2D->setImage(image);
     texture2D->setMaxAnisotropy(16.0f);
@@ -1308,16 +1312,6 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, Locator* masterLocator)
 
     texture2D->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
     texture2D->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
-
-    bool mipMapping = !(texture2D->getFilter(osg::Texture::MIN_FILTER)==osg::Texture::LINEAR || texture2D->getFilter(osg::Texture::MIN_FILTER)==osg::Texture::NEAREST);
-    bool s_NotPowerOfTwo = image->s()==0 || (image->s() & (image->s() - 1));
-    bool t_NotPowerOfTwo = image->t()==0 || (image->t() & (image->t() - 1));
-
-    if (mipMapping && (s_NotPowerOfTwo || t_NotPowerOfTwo))
-    {
-        SG_LOG(SG_TERRAIN, SG_ALERT, "Disabling mipmapping for non power of two tile size("<<image->s()<<", "<<image->t()<<")");
-        texture2D->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
-    }
 
     osg::StateSet* stateset = buffer._landGeode->getOrCreateStateSet();
     stateset->setTextureAttributeAndModes(0, texture2D, osg::StateAttribute::ON);
@@ -1680,23 +1674,24 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
 
 void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocator, LineFeatureBin::LineFeature road, osg::Vec3d modelCenter, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, unsigned int xsize, unsigned int ysize)
 {
-    if (road._nodes.size() < 2) { 
-        SG_LOG(SG_TERRAIN, SG_ALERT, "Coding error - LineFeatureBin::LineFeature with fewer than two nodes"); 
-        return; 
-    }
-
-    osg::Vec3d ma, mb;
-    std::list<osg::Vec3d> roadPoints;
-    auto road_iter = road._nodes.begin();
-
     // We're in Earth-centered coordinates, so "up" is simply directly away from (0,0,0)
     osg::Vec3d up = modelCenter;
     up.normalize();
+    TileBounds tileBounds(masterLocator, up);
+
+    std::list<osg::Vec3d> nodes = tileBounds.clipToTile(road._nodes);
+
+    // We need at least two node to make a road.
+    if (nodes.size() < 2) return; 
+
+    osg::Vec3d ma, mb;
+    std::list<osg::Vec3d> roadPoints;
+    auto road_iter = nodes.begin();
 
     ma = getMeshIntersection(buffer, masterLocator, *road_iter - modelCenter, up);
     road_iter++;
 
-    for (; road_iter != road._nodes.end(); road_iter++) {
+    for (; road_iter != nodes.end(); road_iter++) {
         mb = getMeshIntersection(buffer, masterLocator, *road_iter - modelCenter, up);
         auto esl = VPBElevationSlice::computeVPBElevationSlice(buffer._landGeometry, ma, mb, up);
 
@@ -1929,6 +1924,203 @@ void VPBTechnique::generateAreaFeature(BufferData& buffer, Locator* masterLocato
     }
 }
 
+void VPBTechnique::applyCoastline(BufferData& buffer, Locator* masterLocator)
+{
+    unsigned int coast_features_lod_range = 4;
+    float coastWidth = 40.0;
+
+    const unsigned int tileLevel = _terrainTile->getTileID().level;
+    const SGPropertyNode* propertyNode = _options->getPropertyNode().get();
+
+    if (propertyNode) {
+        const SGPropertyNode* static_lod = propertyNode->getNode("/sim/rendering/static-lod");
+        coast_features_lod_range = static_lod->getIntValue("coastline-lod-level", coast_features_lod_range);
+        coastWidth = static_lod->getIntValue("coastline-width", coastWidth);
+    }
+
+    if (tileLevel < coast_features_lod_range) {
+        // Do not generate coasts for tiles too far away
+        return;
+    }
+
+    const SGMaterialLibPtr matlib  = _options->getMaterialLib();
+    if (! matlib) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to get materials library to generate areas");
+        return;
+    }    
+
+    // Get all appropriate coasts.  We assume that the VPB terrain tile is smaller than a Bucket size.
+    const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
+    const SGGeod loc = SGGeod::fromCart(toSG(world));
+    const SGBucket bucket = SGBucket(loc);
+    auto coasts = std::find_if(_coastFeatureLists.begin(), _coastFeatureLists.end(), [bucket](BucketCoastlineBinList b){return (b.first == bucket);});
+
+    if (coasts == _coastFeatureLists.end()) return;
+
+    // We're in Earth-centered coordinates, so "up" is simply directly away from (0,0,0)
+    osg::Vec3d up = world;
+    up.normalize();
+
+    TileBounds tileBounds(masterLocator, up);
+
+    SGMaterialCache* matcache = matlib->generateMatCache(loc, _options);
+    SGMaterial* mat = matcache->find("ws30coastline");
+
+    if (!mat) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find material ws30coastline at " << loc << " " << bucket);
+        return;
+    }    
+
+    unsigned int xsize = mat->get_xsize();
+    unsigned int ysize = mat->get_ysize();
+
+    //  Generate a geometry for this set of coasts.
+    osg::Vec3Array* v = new osg::Vec3Array;
+    osg::Vec2Array* t = new osg::Vec2Array;
+    osg::Vec3Array* n = new osg::Vec3Array;
+    osg::Vec4Array* c = new osg::Vec4Array;
+
+    for (; coasts != _coastFeatureLists.end(); ++coasts) {
+        const CoastlineBinList coastBins = coasts->second;
+
+        for (auto rb = coastBins.begin(); rb != coastBins.end(); ++rb)
+        {
+            auto coastFeatures = rb->getCoastlines();
+
+            for (auto r = coastFeatures.begin(); r != coastFeatures.end(); ++r) {
+                auto clipped = tileBounds.clipToTile(r->_nodes);
+                if (clipped.size() > 1) {                    
+                    // We need at least two points to render a line.
+                    LineFeatureBin::LineFeature line = LineFeatureBin::LineFeature(clipped, coastWidth);
+                    generateCoastlineFeature(buffer, masterLocator, line, world, v, t, n, xsize, ysize);
+                }
+            }
+        }
+    }
+
+    if (v->size() == 0) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No vertices for coastline! " << loc << " " << bucket);
+        return;
+    }
+
+    SG_LOG(SG_TERRAIN, SG_ALERT, "Generating coastline of " << v->size() << " vertices."); 
+
+    c->push_back(osg::Vec4(1.0,1.0,1.0,1.0));
+
+    osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry;
+    geometry->setVertexArray(v);
+    geometry->setTexCoordArray(0, t, osg::Array::BIND_PER_VERTEX);
+    geometry->setTexCoordArray(1, t, osg::Array::BIND_PER_VERTEX);
+    geometry->setNormalArray(n, osg::Array::BIND_PER_VERTEX);
+    geometry->setColorArray(c, osg::Array::BIND_OVERALL);
+    geometry->setUseDisplayList( false );
+    geometry->setUseVertexBufferObjects( true );
+    geometry->addPrimitiveSet( new osg::DrawArrays( GL_TRIANGLES, 0, v->size()) );
+
+    EffectGeode* geode = new EffectGeode;
+    geode->addDrawable(geometry);
+
+    geode->setMaterial(mat);
+    geode->setEffect(mat->get_one_effect(0));
+    geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+    buffer._transform->addChild(geode);
+}
+
+void VPBTechnique::generateCoastlineFeature(BufferData& buffer, Locator* masterLocator, LineFeatureBin::LineFeature coastline, osg::Vec3d modelCenter, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, unsigned int xsize, unsigned int ysize)
+{
+    if (coastline._nodes.size() < 2) { 
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Coding error - LineFeatureBin::LineFeature with fewer than two nodes"); 
+        return; 
+    }
+
+    osg::Vec3d ma, mb;
+    std::list<osg::Vec3d> coastlinePoints;
+    auto coastline_iter = coastline._nodes.begin();
+
+    // We're in Earth-centered coordinates, so "up" is simply directly away from (0,0,0)
+    osg::Vec3d up = modelCenter;
+    up.normalize();
+
+    ma = getMeshIntersection(buffer, masterLocator, *coastline_iter - modelCenter, up);
+    coastline_iter++;
+
+    for (; coastline_iter != coastline._nodes.end(); coastline_iter++) {
+        mb = getMeshIntersection(buffer, masterLocator, *coastline_iter - modelCenter, up);
+        auto esl = VPBElevationSlice::computeVPBElevationSlice(buffer._landGeometry, ma, mb, up);
+
+        for(auto eslitr = esl.begin(); eslitr != esl.end(); ++eslitr) {
+            coastlinePoints.push_back(*eslitr);
+        }
+
+        // Now traverse the next segment
+        ma = mb;
+    }
+
+    if (coastlinePoints.size() == 0) return;
+
+    // We now have a series of points following the topography of the elevation mesh.
+
+    auto iter = coastlinePoints.begin();
+    osg::Vec3d start = *iter;
+    iter++;
+
+    osg::Vec3d last_spanwise =  (*iter - start)^ up;
+    last_spanwise.normalize();
+
+    float yTexBaseA = 0.0f;
+    float yTexBaseB = 0.0f;
+
+    for (; iter != coastlinePoints.end(); iter++) {
+
+        osg::Vec3d end = *iter;
+
+        // Ignore tiny segments - likely artifacts of the elevation slicer
+        if ((end - start).length2() < 5.0) continue;
+
+        // Find a spanwise vector
+        osg::Vec3d spanwise = ((end-start) ^ up);
+        spanwise.normalize();
+
+        // Define the coastline extents. Angle it in slightly on the seaward side
+        const osg::Vec3d a = start + up;
+        const osg::Vec3d b = start + last_spanwise * coastline._width;
+        const osg::Vec3d c = end   + up;
+        const osg::Vec3d d = end   + spanwise * coastline._width;
+
+        // Determine the x and y texture coordinates for the edges
+        const float xTex = 0.5 * coastline._width / xsize;
+        const float yTexA = yTexBaseA + (c-a).length() / ysize;
+        const float yTexB = yTexBaseB + (d-b).length() / ysize;
+
+        // Now generate two triangles, .
+        v->push_back(a);
+        v->push_back(b);
+        v->push_back(c);
+
+        t->push_back(osg::Vec2d(0, yTexBaseA));
+        t->push_back(osg::Vec2d(xTex, yTexBaseB));
+        t->push_back(osg::Vec2d(0, yTexA));
+
+        v->push_back(b);
+        v->push_back(d);
+        v->push_back(c);
+
+        t->push_back(osg::Vec2d(xTex, yTexBaseB));
+        t->push_back(osg::Vec2d(xTex, yTexB));
+        t->push_back(osg::Vec2d(0, yTexBaseA));
+
+        // Normal is straight from the quad
+        osg::Vec3d normal = (end-start)^spanwise;
+        normal.normalize();
+        for (unsigned int i = 0; i < 6; i++) n->push_back(normal);
+
+        start = end;
+        yTexBaseA = yTexA;
+        yTexBaseB = yTexB;
+        last_spanwise = spanwise;
+    }
+}
+
 // Find the intersection of a given SGGeod with the terrain mesh
 osg::Vec3d VPBTechnique::getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt, osg::Vec3d up) 
 {
@@ -2145,6 +2337,35 @@ void VPBTechnique::addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaLi
     terrainNode->accept(ftv);
 }
 
+void VPBTechnique::addCoastlineList(SGBucket bucket, CoastlineBinList coastline, osg::ref_ptr<osg::Node> terrainNode)
+{
+    if (coastline.empty()) return;
+
+    // Block to mutex the List alone
+    {
+        const std::lock_guard<std::mutex> lock(VPBTechnique::_coastFeatureLists_mutex); // Lock the _lineFeatureLists for this scope
+        _coastFeatureLists.push_back(std::pair(bucket, coastline));
+    }
+
+    // We need to trigger a re-build of the appropriate Terrain tile, so create a pretend node and run the TerrainVisitor to
+    // "dirty" the TerrainTile that it intersects with.
+    osg::ref_ptr<osg::Node> n = new osg::Node();
+    
+    //SGVec3d coord1, coord2;
+    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() -0.5*bucket.get_width(), bucket.get_center_lat() -0.5*bucket.get_height(), 0.0), coord1);
+    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() +0.5*bucket.get_width(), bucket.get_center_lat() +0.5*bucket.get_height(), 0.0), coord2);
+    //osg::BoundingBox bbox = osg::BoundingBox(toOsg(coord1), toOsg(coord2));
+    //n->setInitialBound(bbox);
+
+    SGVec3d coord;
+    SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon(), bucket.get_center_lat(), 0.0), coord);
+    n->setInitialBound(osg::BoundingSphere(toOsg(coord), max(bucket.get_width_m(), bucket.get_height_m())));
+
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding line features to " << bucket.gen_index_str());
+    TerrainVisitor ftv(n, TerrainTile::ALL_DIRTY, 0);
+    terrainNode->accept(ftv);
+}
+
 void VPBTechnique::unloadFeatures(SGBucket bucket)
 {
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Erasing all roads with entry " << bucket);
@@ -2152,8 +2373,7 @@ void VPBTechnique::unloadFeatures(SGBucket bucket)
     // C++ 20...
     //std::erase_if(_lineFeatureLists, [bucket](BucketLineFeatureBinList p) { return p.first == bucket; } );
     //std::erase_if(_lineFeatureLists, [bucket](BucketAreaFeatureBinList p) { return p.first == bucket; } );
+    //std::erase_if(_coastFeatureLists, [bucket](BucketCoastlineBinList p) { return p.first == bucket; } );
 }
-
- 
 
 

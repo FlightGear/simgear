@@ -49,89 +49,166 @@ class SGWeakPtr;
 template<typename T>
 class SGSharedPtr {
 public:
-  typedef T element_type;
+    typedef T element_type;
 
-  SGSharedPtr(void) noexcept
+    SGSharedPtr(void) noexcept
     : _ptr(0)
-  {}
-  SGSharedPtr(T* ptr) : _ptr(ptr)
-  { get(_ptr); }
-  SGSharedPtr(const SGSharedPtr& p) : _ptr(p.get())
-  { get(_ptr); }
-  SGSharedPtr(SGSharedPtr&& other) noexcept
-    : SGSharedPtr()
-  { swap(other); }
-  template<typename U>
-  SGSharedPtr(const SGSharedPtr<U>& p) : _ptr(p.get())
-  { get(_ptr); }
-  template<typename U>
-  explicit SGSharedPtr(const SGWeakPtr<U>& p): _ptr(0)
-  { reset(p.lock().get()); }
-  ~SGSharedPtr(void)
-  { reset(); }
+    {}
 
-  SGSharedPtr& operator=(const SGSharedPtr& p)
-  { reset(p.get()); return *this; }
-
-  SGSharedPtr& operator=(SGSharedPtr&& p) noexcept
-  { // Whether self-move is to be supported at all is controversial, let's
-    // take the conservative approach for now
-    if (this != &p) {
-      swap(p);
-      p.reset();
+    SGSharedPtr(T* ptr) : _ptr(ptr)
+    {
+        get(_ptr);
     }
-    return *this;
-  }
 
-  template<typename U>
-  SGSharedPtr& operator=(const SGSharedPtr<U>& p)
-  { reset(p.get()); return *this; }
-  template<typename U>
-  SGSharedPtr& operator=(U* p)
-  { reset(p); return *this; }
+    SGSharedPtr(const SGSharedPtr& p)
+    : _ptr(p.get())
+    {
+        get(_ptr);
+    }
 
-  T* operator->(void) const
-  { return _ptr; }
-  T& operator*(void) const
-  { return *_ptr; }
-  operator T*(void) const
-  { return _ptr; }
-  T* ptr(void) const
-  { return _ptr; }
-  T* get(void) const
-  { return _ptr; }
-  T* release()
-  { T* tmp = _ptr; _ptr = 0; T::put(tmp); return tmp; }
-  void reset() noexcept
-  { if (!T::put(_ptr)) delete _ptr; _ptr = 0; }
-  void reset(T* p)
-  { SGSharedPtr(p).swap(*this); }
+    SGSharedPtr(SGSharedPtr&& other) noexcept
+    : SGSharedPtr()
+    {
+        swap(other);
+    }
 
-  bool isShared(void) const
-  { return T::shared(_ptr); }
-  unsigned getNumRefs(void) const
-  { return T::count(_ptr); }
+    template<typename U>
+    SGSharedPtr(const SGSharedPtr<U>& p)
+    : _ptr(p.get())
+    {
+        get(_ptr);
+    }
 
-  bool valid(void) const
-  { return _ptr != (T*)0; }
+    template<typename U>
+    explicit SGSharedPtr(const SGWeakPtr<U>& p)
+    : _ptr(0)
+    {
+        reset(p.lock().get());
+    }
 
-  void clear()
-  { reset(); }
-  void swap(SGSharedPtr& other) noexcept
-  { simgear::noexceptSwap(_ptr, other._ptr); }
+    ~SGSharedPtr(void)
+    {
+        reset();
+    }
+
+    SGSharedPtr& operator=(const SGSharedPtr& p)
+    {
+        reset(p.get());
+        return *this;
+    }
+
+    SGSharedPtr& operator=(SGSharedPtr&& p) noexcept
+    {
+        // Whether self-move is to be supported at all is controversial, let's
+        // take the conservative approach for now
+        if (this != &p) {
+            swap(p);
+            p.reset();
+        }
+        return *this;
+    }
+
+    template<typename U>
+    SGSharedPtr& operator=(const SGSharedPtr<U>& p)
+    {
+      reset(p.get());
+      return *this;
+    }
+    
+    template<typename U>
+    SGSharedPtr& operator=(U* p)
+    {
+        reset(p);
+        return *this;
+    }
+
+    T* operator->(void) const
+    {
+        return _ptr;
+    }
+    
+    T& operator*(void) const
+    {
+        return *_ptr;
+    }
+    
+    operator T*(void) const
+    {
+        return _ptr;
+    }
+    
+    T* ptr(void) const
+    {
+        return _ptr;
+    }
+    
+    T* get(void) const
+    {
+        return _ptr;
+    }
+    
+    T* release()
+    {
+        T* tmp = _ptr;
+        _ptr = 0;
+        T::put(tmp);
+        return tmp;
+    }
+    
+    void reset() noexcept
+    {
+        if (!T::put(_ptr)) delete _ptr;
+        _ptr = 0;
+    }
+    
+    void reset(T* p)
+    {
+        SGSharedPtr(p).swap(*this);
+    }
+
+    bool isShared(void) const
+    {
+        return T::shared(_ptr);
+    }
+    
+    unsigned getNumRefs(void) const
+    {
+        return T::count(_ptr);
+    }
+
+    bool valid(void) const
+    {
+        return _ptr != (T*)0;
+    }
+
+    void clear()
+    {
+        reset();
+    }
+    
+    void swap(SGSharedPtr& other) noexcept
+    {
+        simgear::noexceptSwap(_ptr, other._ptr);
+    }
 
 private:
-  void assignNonRef(T* p)
-  { reset(); _ptr = p; }
+    
+    void assignNonRef(T* p)
+    {
+        reset();
+        _ptr = p;
+    }
 
-  void get(const T* p) const
-  { T::get(p); }
-  
-  // The reference itself.
-  T* _ptr;
+    void get(const T* p) const
+    {
+        T::get(p);
+    }
 
-  template<typename U>
-  friend class SGWeakPtr;
+    // The reference itself.
+    T* _ptr;
+
+    template<typename U>
+    friend class SGWeakPtr;
 };
 
 template<class T>

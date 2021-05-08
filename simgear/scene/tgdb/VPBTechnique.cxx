@@ -1757,7 +1757,7 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
         t->push_back(osg::Vec2d(0, yTexBaseA));
 
         // Normal is straight from the quad
-        osg::Vec3d normal = (end-start)^spanwise;
+        osg::Vec3d normal = -(end-start)^spanwise;
         normal.normalize();
         for (unsigned int i = 0; i < 6; i++) n->push_back(normal);
 
@@ -1935,7 +1935,7 @@ void VPBTechnique::applyCoastline(BufferData& buffer, Locator* masterLocator)
     if (propertyNode) {
         const SGPropertyNode* static_lod = propertyNode->getNode("/sim/rendering/static-lod");
         coast_features_lod_range = static_lod->getIntValue("coastline-lod-level", coast_features_lod_range);
-        coastWidth = static_lod->getIntValue("coastline-width", coastWidth);
+        coastWidth = static_lod->getFloatValue("coastline-width", coastWidth);
     }
 
     if (tileLevel < coast_features_lod_range) {
@@ -1998,12 +1998,9 @@ void VPBTechnique::applyCoastline(BufferData& buffer, Locator* masterLocator)
         }
     }
 
-    if (v->size() == 0) {
-        SG_LOG(SG_TERRAIN, SG_ALERT, "No vertices for coastline! " << loc << " " << bucket);
-        return;
-    }
+    if (v->size() == 0) return;
 
-    SG_LOG(SG_TERRAIN, SG_ALERT, "Generating coastline of " << v->size() << " vertices."); 
+    //SG_LOG(SG_TERRAIN, SG_ALERT, "Generating coastline of " << v->size() << " vertices."); 
 
     c->push_back(osg::Vec4(1.0,1.0,1.0,1.0));
 
@@ -2074,21 +2071,22 @@ void VPBTechnique::generateCoastlineFeature(BufferData& buffer, Locator* masterL
 
         osg::Vec3d end = *iter;
 
-        // Ignore tiny segments - likely artifacts of the elevation slicer
-        if ((end - start).length2() < 5.0) continue;
+        // Ignore small segments - we really don't need resolution less than 10m
+        if ((end - start).length2() < 100.0) continue;
 
         // Find a spanwise vector
         osg::Vec3d spanwise = ((end-start) ^ up);
         spanwise.normalize();
 
-        // Define the coastline extents. Angle it in slightly on the seaward side
+        // Define the coastline extents. Angle it down slightly on the seaward side (b->d).
+        // OSM coastlines are always with the 
         const osg::Vec3d a = start + up;
         const osg::Vec3d b = start + last_spanwise * coastline._width;
         const osg::Vec3d c = end   + up;
         const osg::Vec3d d = end   + spanwise * coastline._width;
 
         // Determine the x and y texture coordinates for the edges
-        const float xTex = 0.5 * coastline._width / xsize;
+        const float xTex = coastline._width / xsize;
         const float yTexA = yTexBaseA + (c-a).length() / ysize;
         const float yTexB = yTexBaseB + (d-b).length() / ysize;
 
@@ -2110,7 +2108,7 @@ void VPBTechnique::generateCoastlineFeature(BufferData& buffer, Locator* masterL
         t->push_back(osg::Vec2d(0, yTexBaseA));
 
         // Normal is straight from the quad
-        osg::Vec3d normal = (end-start)^spanwise;
+        osg::Vec3d normal = -(end-start)^spanwise;
         normal.normalize();
         for (unsigned int i = 0; i < 6; i++) n->push_back(normal);
 

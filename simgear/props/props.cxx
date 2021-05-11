@@ -1,3 +1,12 @@
+#ifdef SG_PROPS_UNTHREADSAFE
+
+    #include "props-unsafe.cxx"
+
+    void SGPropertyLockControl(SGPropertyNode* active, SGPropertyNode* verbose, SGPropertyNode* timing)
+    {
+    }
+    
+#else
 // props.cxx - implementation of a property list.
 // Started Fall 2000 by David Megginson, david@megginson.com
 // This code is released into the Public Domain.
@@ -61,13 +70,185 @@ To avoid deadlocks, code must never lock a node when holding lock on a
 child/grandchild/... node.
 */
 
-static bool s_property_locking_first_time = true;
-static bool s_property_locking_active = true;
-static bool s_property_locking_verbose = false;
+static bool         s_property_locking_first_time = true;
+static bool         s_property_locking_active = true;
+static bool         s_property_locking_verbose = false;
+static bool         s_property_timing_active = false;
 
-/* Abstract lock for shared/exclusive locks. We need this for code that doesn't
-care whether a lock is shared or exclusive, so it can be called by code that
-has exclusive or shared locks. */
+struct SGPropertyLockListener : SGPropertyChangeListener
+{
+    SGPropertyLockListener(bool& out, const char* name)
+    :
+    m_out(out),
+    m_name(name)
+    {}
+    
+    void valueChanged(SGPropertyNode* node)
+    {
+        m_out = node->getBoolValue();
+        std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                << " " << m_name << ":"
+                << " m_out=" << m_out
+                << "\n";
+    }
+    bool&       m_out;
+    std::string m_name;
+};
+
+void SGPropertyLockControl(SGPropertyNode* active, SGPropertyNode* verbose, SGPropertyNode* timing)
+{
+        std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                << " active: " << active->getPath()
+                << " verbose: " << verbose->getPath()
+                << " timing: " << timing->getPath()
+                << "\n";
+    
+    active->setBoolValue(s_property_locking_active);
+    active->addChangeListener(new SGPropertyLockListener(s_property_locking_active, "active"));
+    
+    verbose->setBoolValue(s_property_locking_verbose);
+    verbose->addChangeListener(new SGPropertyLockListener(s_property_locking_verbose, "verbose"));
+    
+    timing->setBoolValue(s_property_timing_active);
+    timing->addChangeListener(new SGPropertyLockListener(s_property_timing_active, "timing"));
+}
+
+#undef SG_PROPS_GATHER_TIMING
+
+#ifdef SG_PROPS_GATHER_TIMING
+
+// Code for gathering timing information about use of locks. Unfortunately the
+// act of measuring gives small but noticable overheads (e.g. 17.7 fps to 18.6
+// fps), so it's macro-ed out by default.
+//
+static double       s_property_locking_time_acquire = 0;
+static double       s_property_locking_time_release = 0;
+static double       s_property_locking_time_acquire_shared = 0;
+static double       s_property_locking_time_release_shared = 0;
+static long         s_property_locking_n_acquire = 0;
+static long         s_property_locking_n_release = 0;
+static long         s_property_locking_n_acquire_shared = 0;
+static long         s_property_locking_n_release_shared = 0;
+
+static long         ScopedTime_count = 0;
+static const int    ScopedTime_sampling = 1000*1000+1;
+static double       ScopedTime_t0 = 0;
+
+// This is a copy of flightgear/src/Time/TimeManager.cxx:TimeUTC().
+//
+// SGTimeStamp() doesn't return UTC time on some systems, e.g. Linux with
+// _POSIX_TIMERS > 0 uses _POSIX_MONOTONIC_CLOCK if available.
+//
+// So we define our own time function here.
+//
+static double TimeUTC()
+{
+    time_t      sec;
+    unsigned    nsec;
+    
+    #ifdef _WIN32
+        static bool qpc_init = false;
+        static LARGE_INTEGER s_frequency;
+        static BOOL s_use_qpc;
+        if (!qpc_init) {
+            s_use_qpc = QueryPerformanceFrequency(&s_frequency);
+            qpc_init = true;
+        }
+        if (qpc_init && s_use_qpc) {
+            LARGE_INTEGER now;
+            QueryPerformanceCounter(&now);
+            sec = now.QuadPart / s_frequency.QuadPart;
+            nsec = (1000000000LL * (now.QuadPart - sec * s_frequency.QuadPart)) / s_frequency.QuadPart;
+        }
+        else {
+            unsigned int msec = timeGetTime();
+            sec = msec / 1000;
+            nsec = (msec - sec * 1000) * 1000 * 1000;
+        }
+    #elif defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        sec = ts.tv_sec;
+        nsec = ts.tv_nsec;
+    #elif defined( HAVE_GETTIMEOFDAY ) // openbsd
+        struct timeval current;
+        gettimeofday(&current, NULL);
+        sec = current.tv_sec;
+        nsec = current.tv_usec * 1000;
+    #elif defined( HAVE_GETLOCALTIME )
+        SYSTEMTIME current;
+        GetLocalTime(&current);
+        sec = current.wSecond;
+        nsec = current.wMilliseconds * 1000 * 1000;
+    #else
+        #error Unable to find UTC time.
+    #endif
+    return sec + nsec * 1.0e-9;
+}
+
+// Gathers timing information for a scoped block.
+struct ScopedTime
+{
+    ScopedTime( bool shared, const char* name, double& total, long& n)
+    {
+        if (!s_property_timing_active) {
+            m_total = nullptr;
+            return;
+        }
+        ScopedTime_count += 1;
+        if (ScopedTime_count % ScopedTime_sampling == 0) {
+            m_time_start = TimeUTC();
+            m_total = &total;
+            m_n = &n;
+            m_name = name;
+            m_shared = shared;
+        }
+        else {
+            m_total = nullptr;
+        }
+    }
+    
+    ~ScopedTime()
+    {
+        if (!m_total) {
+            return;
+        }
+        double t = TimeUTC();
+        double dt = t - m_time_start;
+        *m_total += dt;
+        *m_n += 1;
+        int diagnosic_interval = 100;
+        if (((*m_n) % diagnosic_interval) == 0) {
+            if (ScopedTime_t0 == 0) {
+                ScopedTime_t0 = t;
+            }
+            double t_projected = (*m_total) * ScopedTime_sampling;
+            double t_projected_fraction = t_projected / (t - ScopedTime_t0);
+            double n_per_sec_projected = (*m_n) * ScopedTime_sampling / (t - ScopedTime_t0);
+            std::cerr << __FILE__ << ":" << __LINE__ << ":"
+                    << " " << m_name << (m_shared ? "    shared" : " exclusive")
+                    << ":"
+                    << " n=" << *m_n
+                    << " t=" << *m_total
+                    << " average time=" << (*m_total) / (*m_n)
+                    << " t_projected=" << t_projected << " (" << t_projected_fraction * 100 << "%)"
+                    << " n_per_sec_projected=" << n_per_sec_projected
+                    << "\n";
+        }
+    }
+    
+    double m_time_start;
+    double* m_total;
+    long* m_n;
+    const char* m_name;
+    bool m_shared;
+
+};
+#endif
+
+/* Abstract lock for shared/exclusive locks. This base API is used by code that
+doesn't care whether a lock is shared or exclusive, so it can be called by code
+that has exclusive or shared locks. */
 struct SGPropertyLock
 {
     /* Returns true/false if environmental variable <name> is 1 or 0, otherwise
@@ -117,6 +298,14 @@ struct SGPropertyLock
     diagnostics depending on s_property_locking_verbose. */
     void acquire_internal(const SGPropertyNode& node, bool shared)
     {
+        #ifdef SG_PROPS_GATHER_TIMING
+        ScopedTime  t(
+                shared,
+                "acquire",
+                shared ? s_property_locking_time_acquire_shared : s_property_locking_time_acquire,
+                shared ? s_property_locking_n_acquire_shared : s_property_locking_n_acquire
+                );
+        #endif
         if (!s_property_locking_active) {
             return;
         }
@@ -165,6 +354,12 @@ struct SGPropertyLock
     
     void release_internal(const SGPropertyNode& node, bool shared)
     {
+        #ifdef SG_PROPS_GATHER_TIMING
+        ScopedTime  t(shared, "release",
+                shared ? s_property_locking_time_release_shared : s_property_locking_time_release,
+                shared ? s_property_locking_n_release_shared : s_property_locking_n_release
+                );
+        #endif
         if (!s_property_locking_active) {
             return;
         }
@@ -697,7 +892,15 @@ static void forEachListener(
 
   exclusive.acquire();
   _listeners->_num_iterators -= 1;
+  #ifdef __openbsd__
+  if (_listeners->_num_iterators < 0) {
+    std::cerr << __FILE__ << ":" << __LINE__ << ": _listeners->_num_iterators=" << _listeners->_num_iterators << "\n";
+    _listeners->_num_iterators = 0;
+    return;
+  }
+  #else
   assert(_listeners->_num_iterators >= 0);
+  #endif
 
   if (_listeners->_num_iterators == 0) {
 
@@ -4194,3 +4397,5 @@ size_t hash_value(const SGPropertyNode& node)
 #endif
 
 // end of props.cxx
+
+#endif

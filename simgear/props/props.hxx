@@ -8,6 +8,9 @@
  *
  * $Id$
  */
+#ifdef SG_PROPS_UNTHREADSAFE
+    #include "props-unsafe.hxx"
+#else
 
 #ifndef __PROPS_HXX
 #define __PROPS_HXX
@@ -1668,6 +1671,17 @@ private:
     SGPropertyNode_ptr _property;
 };
 
+
 #endif // __PROPS_HXX
+
+// Sets property nodes that control property locking.
+//
+// active: whether we use locking.
+// verbose: whether we detect and report on lock contention.
+// timing: whether we gather timing information (compiled-out by default).
+//
+void SGPropertyLockControl(SGPropertyNode* active, SGPropertyNode* verbose, SGPropertyNode* timing);
+
+#endif // SG_PROPS_UNTHREADSAFE
 
 // end of props.hxx

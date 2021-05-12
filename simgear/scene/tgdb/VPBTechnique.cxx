@@ -176,9 +176,11 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
     else
     {
         generateGeometry(*buffer, masterLocator, centerModel);
+        
         applyColorLayers(*buffer, masterLocator);
         applyTrees(*buffer, masterLocator);
         applyLineFeatures(*buffer, masterLocator);
+        applyAreaFeatures(*buffer, masterLocator);
         applyCoastline(*buffer, masterLocator);
     }
 
@@ -1848,6 +1850,8 @@ void VPBTechnique::applyAreaFeatures(BufferData& buffer, Locator* masterLocator)
             if (v->size() == 0) continue;
             c->push_back(osg::Vec4(1.0,1.0,1.0,1.0));
 
+            geometry->dirtyBound();
+
             EffectGeode* geode = new EffectGeode;
             geode->addDrawable(geometry);
 
@@ -1881,6 +1885,7 @@ void VPBTechnique::generateAreaFeature(BufferData& buffer, Locator* masterLocato
     // Build up the tesselator while also determining the correct elevation for the feature.
     double elev = 0;
     unsigned int elev_count = 0;
+    osg::Vec3d last_pt;
 
     auto area_iter = area._nodes.begin();
     osg::Vec3d pt = *area_iter - modelCenter;
@@ -1892,12 +1897,21 @@ void VPBTechnique::generateAreaFeature(BufferData& buffer, Locator* masterLocato
 
     for (; area_iter != area._nodes.end(); area_iter++) {
         pt = *area_iter - modelCenter;
+
+        // Ignore small segments - we really don't need resolution less than 10m
+        if ((pt - last_pt).length2() < 100.0) continue;
+
         ma = getMeshIntersection(buffer, masterLocator, pt, up);
         if (ma !=pt) {
             elev += up*ma;
             elev_count++;
         }
-        tessellator->addVertex(new osg::Vec3f(*area_iter - modelCenter));
+
+        // To handle the case where the feature overlaps the edge of this particular mesh,
+        // we always add vertices, even if they don't intersect the edge of the mesh.
+        tessellator->addVertex(new osg::Vec3f(pt));
+
+        last_pt = pt;
     }
 
     tessellator->endContour();

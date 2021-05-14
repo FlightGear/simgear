@@ -23,6 +23,13 @@
 #include "SGText.hxx"
 
 
+#include <simgear/math/SGMath.hxx>
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/strutils.hxx>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
+
 #include <osg/Geode>
 #include <osg/MatrixTransform>
 #include <osgText/Text>
@@ -96,8 +103,15 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
   SGConstPropertyNode_ptr p;
 
   osgText::Text * text = new osgText::Text();
-  osg::Geode * g = new osg::Geode;
+  simgear::EffectGeode * g = new simgear::EffectGeode;
   g->addDrawable( text );
+
+  SGPropertyNode_ptr effectProp = new SGPropertyNode;
+  makeChild(effectProp, "inherits-from")->setStringValue("Effects/text-default");
+  simgear::Effect* effect = simgear::makeEffect(
+    effectProp, true, dynamic_cast<const simgear::SGReaderWriterOptions*>(options));
+  if (effect)
+    g->setEffect(effect);
 
   const std::string requestedFont = configNode->getStringValue("font","Helvetica");
   const SGPath fontPath = simgear::ResourceManager::instance()->findPath("Fonts/" + requestedFont);

@@ -181,6 +181,11 @@ public:
     }
     ~simd4x4_t(void) {}
 
+    simd4x4_t& operator=(const simd4x4_t& rhs) {
+        std::memcpy(array, rhs.array, sizeof(array));
+        return *this;
+    }
+
     inline T (&m4x4(void))[4][4] {
         return _m4x4;
     }

@@ -213,7 +213,7 @@ std::ostream& operator << (std::ostream& out, const Tab& t)
     }
     
     auto nl = s.rfind('\n');
-    if (nl < 0) nl = 0;
+    if (nl == std::string::npos) nl = 0;
     int column = 0;
     for (auto i = nl+1; i != s.size(); ++i) {
         if (s[i] == '\t')

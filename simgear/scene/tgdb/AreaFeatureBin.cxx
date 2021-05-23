@@ -58,6 +58,8 @@ AreaFeatureBin::AreaFeatureBin(const SGPath& absoluteFileName, const std::string
         std::string line;
         std::getline(stream, line);
 
+        if (line.length() == 0) continue;
+
         // strip comments
         std::string::size_type hash_pos = line.find('#');
         if (hash_pos != std::string::npos)

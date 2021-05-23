@@ -62,6 +62,8 @@ CoastlineBin::CoastlineBin(const SGPath& absoluteFileName)
         if (hash_pos != std::string::npos)
             line.resize(hash_pos);
 
+        if (line.length() == 0) continue;
+
         // and process further
         std::stringstream in(line);
 

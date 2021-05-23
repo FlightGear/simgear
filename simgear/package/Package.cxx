@@ -552,7 +552,6 @@ std::string Package::parentIdForVariant(unsigned int variantIndex) const
         return m_variants.front();
     }
 
-    assert(indexOfVariant(parentId) >= 0);
     return parentId;
 }
 

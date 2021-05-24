@@ -4329,6 +4329,8 @@ template bool SGPropertyNode::setValue(const SGVec3<double>&, void*);
 template bool SGPropertyNode::setValue(const SGVec4<double>&, void*);
 
 template std::vector<float> SGPropertyNode::getChildValues(const std::string& name) const;
+template std::vector<float> SGPropertyNode::getChildValues<float, float>(const std::string& name) const;
+
 template std::vector<unsigned char> SGPropertyNode::getChildValues<unsigned char, int>(const std::string& name) const;
 
 template bool SGPropertyNode::tie(const SGRawValue<bool> &rawValue, bool useDefault);

@@ -114,16 +114,27 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     camera->setClearStencil(root->getIntValue("clear-stencil", 0));
 
     GLbitfield clear_mask = 0;
-    std::stringstream ss;
-    std::string bit;
+    std::stringstream mask_ss;
+    std::string mask_bit;
     // Default clear mask as in OSG
-    ss << root->getStringValue("clear-mask", "color depth");
-    while (ss >> bit) {
-        if (bit == "color")        clear_mask |= GL_COLOR_BUFFER_BIT;
-        else if (bit == "depth")   clear_mask |= GL_DEPTH_BUFFER_BIT;
-        else if (bit == "stencil") clear_mask |= GL_STENCIL_BUFFER_BIT;
+    mask_ss << root->getStringValue("clear-mask", "color depth");
+    while (mask_ss >> mask_bit) {
+        if (mask_bit == "color")        clear_mask |= GL_COLOR_BUFFER_BIT;
+        else if (mask_bit == "depth")   clear_mask |= GL_DEPTH_BUFFER_BIT;
+        else if (mask_bit == "stencil") clear_mask |= GL_STENCIL_BUFFER_BIT;
     }
     camera->setClearMask(clear_mask);
+
+    osg::DisplaySettings::ImplicitBufferAttachmentMask implicit_attachments = 0;
+    std::stringstream att_ss;
+    std::string att_bit;
+    att_ss << root->getStringValue("implicit-attachment-mask", "color depth");
+    while (att_ss >> att_bit) {
+        if (att_bit == "color")        implicit_attachments |= osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT;
+        else if (att_bit == "depth")   implicit_attachments |= osg::DisplaySettings::IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
+        else if (att_bit == "stencil") implicit_attachments |= osg::DisplaySettings::IMPLICIT_STENCIL_BUFFER_ATTACHMENT;
+    }
+    camera->setImplicitBufferAttachmentMask(implicit_attachments, implicit_attachments);
 
     PropertyList p_bindings = root->getChildren("binding");
     for (auto const &p_binding : p_bindings) {

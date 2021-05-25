@@ -31,7 +31,7 @@
 #include <osg/ref_ptr>
 #include <stdio.h>
 
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include "SGTriangleBin.hxx"
 

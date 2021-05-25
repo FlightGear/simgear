@@ -23,7 +23,7 @@
 #include <iostream>
 
 #include "SGGeometry.hxx"
-#include "sg_random.h"
+#include "sg_random.hxx"
 
 template<typename T>
 SGVec3<T> rndVec3(void)

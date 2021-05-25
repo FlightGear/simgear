@@ -45,7 +45,7 @@
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/math/SGLimits.hxx>
 #include <simgear/math/SGMisc.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/props/props.hxx>
@@ -656,69 +656,68 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
     int roof_orientation;
 
     // Generate a random seed for the building generation.
-    mt seed;
-    mt_init(&seed, unsigned(p.x() + p.y() + p.z()));
+    pc_init(unsigned(p.x() + p.y() + p.z()));
 
     if (buildingtype == SGBuildingBin::SMALL) {
       // Small building
       // Maximum number of floors is 3, and maximum width/depth is 192m.
-      width = _material->get_building_small_min_width() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_small_max_width() - _material->get_building_small_min_width());
-      depth = _material->get_building_small_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_small_max_depth() - _material->get_building_small_min_depth());
-      floors = SGMisc<double>::round(_material->get_building_small_min_floors() + mt_rand(&seed) * (_material->get_building_small_max_floors() - _material->get_building_small_min_floors()));
-      height = floors * (2.8 + mt_rand(&seed));
+      width = _material->get_building_small_min_width() + pc_rand() * pc_rand() * (_material->get_building_small_max_width() - _material->get_building_small_min_width());
+      depth = _material->get_building_small_min_depth() + pc_rand() * pc_rand() * (_material->get_building_small_max_depth() - _material->get_building_small_min_depth());
+      floors = SGMisc<double>::round(_material->get_building_small_min_floors() + pc_rand() * (_material->get_building_small_max_floors() - _material->get_building_small_min_floors()));
+      height = floors * (2.8 + pc_rand());
 
       // Small buildings are never deeper than they are wide.
       if (depth > width) { depth = width; }
 
-      pitch_height = (mt_rand(&seed) < _material->get_building_small_pitch()) ? 3.0 : 0.0;
+      pitch_height = (pc_rand() < _material->get_building_small_pitch()) ? 3.0 : 0.0;
 
       if (pitch_height == 0.0) {
         roof_shape = 0;
         roof_orientation = 0;
       } else {
-        roof_shape = (int) (mt_rand(&seed) * 10.0);
-        roof_orientation = (int) std::round((float) mt_rand(&seed));
+        roof_shape = (int) (pc_rand() * 10.0);
+        roof_orientation = (int) std::round((float) pc_rand());
       }
     } else if (buildingtype == SGBuildingBin::MEDIUM) {
       // MEDIUM BUILDING
-      width = _material->get_building_medium_min_width() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_medium_max_width() - _material->get_building_medium_min_width());
-      depth = _material->get_building_medium_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (_material->get_building_medium_max_depth() - _material->get_building_medium_min_depth());
-      floors = SGMisc<double>::round(_material->get_building_medium_min_floors() + mt_rand(&seed) * (_material->get_building_medium_max_floors() - _material->get_building_medium_min_floors()));
-      height = floors * (2.8 + mt_rand(&seed));
+      width = _material->get_building_medium_min_width() + pc_rand() * pc_rand() * (_material->get_building_medium_max_width() - _material->get_building_medium_min_width());
+      depth = _material->get_building_medium_min_depth() + pc_rand() * pc_rand() * (_material->get_building_medium_max_depth() - _material->get_building_medium_min_depth());
+      floors = SGMisc<double>::round(_material->get_building_medium_min_floors() + pc_rand() * (_material->get_building_medium_max_floors() - _material->get_building_medium_min_floors()));
+      height = floors * (2.8 + pc_rand());
 
       while ((height > width) && (floors > _material->get_building_medium_min_floors())) {
           // Ensure that medium buildings aren't taller than they are wide
           floors--;
-          height = floors * (2.8 + mt_rand(&seed));
+          height = floors * (2.8 + pc_rand());
       }
 
-      pitch_height = (mt_rand(&seed) < _material->get_building_medium_pitch()) ? 3.0 : 0.0;
+      pitch_height = (pc_rand() < _material->get_building_medium_pitch()) ? 3.0 : 0.0;
 
       if (pitch_height == 0.0) {
         roof_shape = 0;
         roof_orientation = 0;
       } else {
-        roof_shape = (int) (mt_rand(&seed) * 10.0);
-        roof_orientation = (int) std::round((float) mt_rand(&seed));
+        roof_shape = (int) (pc_rand() * 10.0);
+        roof_orientation = (int) std::round((float) pc_rand());
       }
     } else {
       // LARGE BUILDING
-      width = _material->get_building_large_min_width() + mt_rand(&seed) * (_material->get_building_large_max_width() - _material->get_building_large_min_width());
-      depth = _material->get_building_large_min_depth() + mt_rand(&seed) * (_material->get_building_large_max_depth() - _material->get_building_large_min_depth());
-      floors = SGMisc<double>::round(_material->get_building_large_min_floors() + mt_rand(&seed) * (_material->get_building_large_max_floors() - _material->get_building_large_min_floors()));
-      height = floors * (2.8 + mt_rand(&seed));
-      pitch_height = (mt_rand(&seed) < _material->get_building_large_pitch()) ? 3.0 : 0.0;
+      width = _material->get_building_large_min_width() + pc_rand() * (_material->get_building_large_max_width() - _material->get_building_large_min_width());
+      depth = _material->get_building_large_min_depth() + pc_rand() * (_material->get_building_large_max_depth() - _material->get_building_large_min_depth());
+      floors = SGMisc<double>::round(_material->get_building_large_min_floors() + pc_rand() * (_material->get_building_large_max_floors() - _material->get_building_large_min_floors()));
+      height = floors * (2.8 + pc_rand());
+      pitch_height = (pc_rand() < _material->get_building_large_pitch()) ? 3.0 : 0.0;
 
       if (pitch_height == 0.0) {
         roof_shape = 0;
         roof_orientation = 0;
       } else {
-        roof_shape = (int) (mt_rand(&seed) * 10.0);
-        roof_orientation = (int) std::round((float) mt_rand(&seed));
+        roof_shape = (int) (pc_rand() * 10.0);
+        roof_orientation = (int) std::round((float) pc_rand());
       }
     }
 
-    insert(p, r, buildingtype, width, depth, height, pitch_height, floors, roof_shape, roof_orientation, (int) (mt_rand(&seed) * 1000.0), (int) (mt_rand(&seed) * 1000.0));
+    insert(p, r, buildingtype, width, depth, height, pitch_height, floors, roof_shape, roof_orientation, (int) (pc_rand() * 1000.0), (int) (pc_rand() * 1000.0));
   }
 
   int SGBuildingBin::getNumBuildings() {

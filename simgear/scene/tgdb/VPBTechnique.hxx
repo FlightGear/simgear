@@ -133,8 +133,6 @@ class VPBTechnique : public TerrainTechnique
 
         virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
 
-        static osg::Vec2d getRandomOffset();
-
         virtual void applyTrees(BufferData& buffer, Locator* masterLocator);
 
         virtual void applyLineFeatures(BufferData& buffer, Locator* masterLocator);
@@ -187,7 +185,6 @@ class VPBTechnique : public TerrainTechnique
 
         inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();;
         inline static std::mutex _constraint_mutex;  // protects the _constraintGroup;
-        static osg::Vec2d*                  _randomOffsets;
 
         typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
         typedef std::pair<SGBucket, AreaFeatureBinList> BucketAreaFeatureBinList;

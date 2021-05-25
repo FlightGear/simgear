@@ -29,7 +29,7 @@
 
 #include <simgear/sg_inlines.h>
 #include <simgear/math/sg_geodesy.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matmodel.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>

@@ -37,7 +37,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/structure/exception.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #include "sample_group.hxx"

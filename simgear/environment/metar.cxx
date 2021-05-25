@@ -46,7 +46,7 @@
 #include <sstream>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/structure/exception.hxx>
 
 #include "metar.hxx"

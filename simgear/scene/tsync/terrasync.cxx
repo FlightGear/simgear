@@ -65,7 +65,7 @@
 #include <simgear/io/HTTPRepository.hxx>
 #include <simgear/io/DNSClient.hxx>
 #include <simgear/structure/exception.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 
 using namespace simgear;
 using namespace std;

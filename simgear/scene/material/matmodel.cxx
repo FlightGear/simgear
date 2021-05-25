@@ -37,7 +37,7 @@
 #include <osg/Transform>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/scene/model/modellib.hxx>

@@ -5,7 +5,7 @@
 #ifndef _SG_PERSPARAM_HXX
 #define _SG_PERSPARAM_HXX 1
 
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 
 
 template <class T>

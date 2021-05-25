@@ -91,6 +91,56 @@ void sg_srandom(unsigned int seed );
  */
 double sg_random();
 
+/**
+ * Initialize current state with a given seed.
+ */
+void pc_init(unsigned int seed);
+
+/**
+ * Initialize current state with a seed that only
+ * changes every 10 minutes.  Used to synchronize
+ * multi-process deployments.
+ */
+void pc_init_time_10();
+
+/**
+ * Return a 32-bit random number based on the current state.
+ */
+unsigned int pc_rand32();
+
+/**
+ * Return a double precision floating point random number
+ * between [0.0, 1.0) based on the current state.
+ */
+double pc_rand();
+
+/**
+ * Return a double precision floating point random number
+ * between [-10.0, 10.0] with a normal distribution of
+ * average zero and standard deviation of one based on the
+ * current state.
+ */
+double pc_norm();
+
+/**
+ * Return a 32-bit random number from a noise map.
+ */
+unsigned int pc_map_rand32(const int x, const int y, const int idx);
+
+/**
+ * Return a double precision floating point random number
+ * between [0.0, 1.0) from a noise map.
+ */
+double pc_map_rand(const int x, const int y, const int idx);
+
+/**
+ * Return a double precision floating point random number
+ * between [-10.0, 10.0] with a normal distribution of
+ * average zero and standard deviation of one from a noise
+ * map.
+ */
+double pc_map_norm(const int x, const int y, const int idx);
+
 
 #ifdef __cplusplus
 }

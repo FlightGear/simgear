@@ -42,7 +42,7 @@
 #include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/SGGeometry.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/scene/util/OptionsReadFileCallback.hxx>
@@ -506,9 +506,7 @@ struct ReaderWriterSTG::_ModelBin {
 
         // Bucket provides a consistent seed
         // so we have consistent set of pseudo-random numbers for each STG file
-        mt seed;
-        int bucket = atoi(absoluteFileName.file_base().c_str());
-        mt_init(&seed, bucket);
+        pc_init(std::stoi(absoluteFileName.file_base()));
 
         bool vpb_active = SGSceneFeatures::instance()->getVPBActive();
 
@@ -572,7 +570,7 @@ struct ReaderWriterSTG::_ModelBin {
 
                 // Determine an appropriate range for the object, which has some randomness
                 double range = _object_range_rough;
-                double lrand = mt_rand(&seed);
+                double lrand = pc_rand();
                 if      (lrand < 0.1) range = range * 2.0;
                 else if (lrand < 0.4) range = range * 1.5;
 
@@ -660,7 +658,7 @@ struct ReaderWriterSTG::_ModelBin {
                     if (token == BUILDING_DETAILED || token == ROAD_DETAILED || token == RAILWAY_DETAILED ) {
                         // Apply a lower LOD range if this is a detailed mesh.
                         range = _object_range_detailed;
-                        double lrand = mt_rand(&seed);
+                        double lrand = pc_rand();
                         if      (lrand < 0.1) range = range * 2.0;
                         else if (lrand < 0.4) range = range * 1.5;                                        
                     }

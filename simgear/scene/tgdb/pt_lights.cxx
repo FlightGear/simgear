@@ -53,7 +53,7 @@
 #include <OpenThreads/Mutex>
 #include <OpenThreads/ScopedLock>
 
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGEnlargeBoundingBox.hxx>

@@ -42,7 +42,7 @@
 #include <osg/TexMat>
 #include <osg/Fog>
 
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/model/model.hxx>

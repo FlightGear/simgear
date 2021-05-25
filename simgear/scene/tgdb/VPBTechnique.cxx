@@ -39,7 +39,7 @@
 #include <osg/Timer>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/math/SGMath.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
@@ -1328,33 +1328,10 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
     return a.x() * b.y() - b.x() * a.y();
 }
 
-osg::Vec2d* VPBTechnique::_randomOffsets = 0;
-int idx =0;
-
-osg::Vec2d VPBTechnique::getRandomOffset()
-{
-    const unsigned initial_seed = 42;
-    const int N = 100;
-
-    if (!_randomOffsets)
-    {
-        _randomOffsets = new osg::Vec2d[N];
-        mt seed;
-        mt_init(&seed, initial_seed);
-
-        for (int i = 0; i < N; i++)
-        {
-            _randomOffsets[i].set(mt_rand(&seed), mt_rand(&seed));
-        }
-    }
-
-    idx = (idx + 1) % N;
-    return _randomOffsets[idx];
-}
-
-
 void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
 {
+    pc_init(2718281);
+
     bool use_random_vegetation = false;
     float vegetation_density = 1.0; 
     int vegetation_lod_level = 6;
@@ -1374,7 +1351,6 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
 
     // Determine tree spacing, assuming base density of 1 tree per 100m^2, though spacing
     // is linear here, as is the /sim/rendering/vegetation-density property.
-    float spacing = 10.0 / vegetation_density;
 
     SGMaterialLibPtr matlib  = _options->getMaterialLib();
     SGMaterial* mat = 0;
@@ -1384,7 +1360,15 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
     const SGGeod loc = computeCenterGeod(buffer, masterLocator);
     SGMaterialCache* matcache = matlib->generateMatCache(loc, _options);
 
+    const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
+    const SGGeoc cloc = SGGeoc::fromCart(toSG(world));
+
     if (!matcache) return;
+
+    const osg::Matrixd R_vert = osg::Matrixd::rotate(
+     M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
+     loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0),
+     0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
     const osg::Array* vertices = buffer._landGeometry->getVertexArray();
     const osg::Array* texture_coords = buffer._landGeometry->getTexCoordArray(0);
@@ -1405,6 +1389,28 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
     const osg::DrawElements* drawElements = primSet->getDrawElements();
     const unsigned int triangle_count = drawElements->getNumPrimitives();
 
+    const double lon          = loc.getLongitudeRad();
+    const double lat          = loc.getLatitudeRad();
+    const double clon         = cloc.getLongitudeRad();
+    const double clat         = cloc.getLatitudeRad();
+    const double r_E_lat      = /* 6356752.3 */ 6.375993e+06;
+    const double r_E_lon      = /* 6378137.0 */ 6.389377e+06;
+    const double C            = r_E_lon * cos(lat);
+    const double one_over_C   = (fabs(C) > 1.0e-4) ? (1.0 / C) : 0.0;
+    const double one_over_r_E = 1.0 / r_E_lat;
+    const double delta_lat    = sqrt(100.0 / vegetation_density) / r_E_lat;
+    const double delta_lon    = sqrt(100.0 / vegetation_density) / (r_E_lon * cos(loc.getLatitudeRad()));
+
+    const osg::Matrix rotation_vertices_c = osg::Matrix::rotate(
+     M_PI / 2 - clat, osg::Vec3d(0.0, 1.0, 0.0),
+     clon, osg::Vec3d(0.0, 0.0, 1.0),
+     0.0, osg::Vec3d(1.0, 0.0, 0.0));
+
+    const osg::Matrix rotation_vertices_g = osg::Matrix::rotate(
+     M_PI / 2 - lat, osg::Vec3d(0.0, 1.0, 0.0),
+     lon, osg::Vec3d(0.0, 0.0, 1.0),
+     0.0, osg::Vec3d(1.0, 0.0, 0.0));
+
     for (unsigned int i = 0; i < triangle_count; i++)
     {
         const int i0 = drawElements->index(3 * i);
@@ -1416,8 +1422,30 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         const osg::Vec3 v2 = vertexPtr[i2];
 
         const osg::Vec3d v_0 = v0;
-        osg::Vec3d v_x = v1 - v0;
-        osg::Vec3d v_y = v2 - v0;
+        const osg::Vec3d v_x = v1 - v0;
+        const osg::Vec3d v_y = v2 - v0;
+
+        osg::Vec3 n = v_x ^ v_y;
+        n.normalize();
+
+        const osg::Vec3d v_0_g = R_vert * v0;
+        const osg::Vec3d v_1_g = R_vert * v1;
+        const osg::Vec3d v_2_g = R_vert * v2;
+
+        const osg::Vec2d ll_0 = osg::Vec2d(v_0_g.y() * one_over_C + lon, -v_0_g.x() * one_over_r_E + lat);
+        const osg::Vec2d ll_1 = osg::Vec2d(v_1_g.y() * one_over_C + lon, -v_1_g.x() * one_over_r_E + lat);
+        const osg::Vec2d ll_2 = osg::Vec2d(v_2_g.y() * one_over_C + lon, -v_2_g.x() * one_over_r_E + lat);
+
+        const osg::Vec2d ll_O = ll_0;
+        const osg::Vec2d ll_x = osg::Vec2d((v_1_g.y() - v_0_g.y()) * one_over_C, -(v_1_g.x() - v_0_g.x()) * one_over_r_E);
+        const osg::Vec2d ll_y = osg::Vec2d((v_2_g.y() - v_0_g.y()) * one_over_C, -(v_2_g.x() - v_0_g.x()) * one_over_r_E);
+
+        const int off_x = ll_O.x() / delta_lon;
+        const int off_y = ll_O.y() / delta_lat;
+        const int min_lon = min(min(ll_0.x(), ll_1.x()), ll_2.x()) / delta_lon;
+        const int max_lon = max(max(ll_0.x(), ll_1.x()), ll_2.x()) / delta_lon;
+        const int min_lat = min(min(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
+        const int max_lat = max(max(ll_0.y(), ll_1.y()), ll_2.y()) / delta_lat;
 
         const osg::Vec2 t0 = texPtr[i0];
         const osg::Vec2 t1 = texPtr[i1];
@@ -1427,30 +1455,33 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         const osg::Vec2d t_x = t1 - t0;
         const osg::Vec2d t_y = t2 - t0;
 
-        osg::Vec3 n = v_x ^ v_y;
-        n.normalize();
+        const double D = det2(ll_x, ll_y);
 
-        osg::Vec3 up = buffer._transform->getMatrix().getTrans();
-        up.normalize();
+        for (int lat_int = min_lat - 1; lat_int <= max_lat + 1; lat_int++)
+        {
+            const double lat = (lat_int - off_y) * delta_lat;
 
-        double step_x = spacing / v_x.length();
-        double step_y = spacing / v_y.length();
+            for (int lon_int = min_lon - 1; lon_int <= max_lon + 1; lon_int++)
+            {
+                const double lon = (lon_int - off_x) * delta_lon;
+                osg::Vec2d p(lon, lat);
+                double x = det2(ll_x, p) / D;
+                double y = det2(p, ll_y) / D;
 
-        for (float x = 0; x < 1.0; x += step_x) {
-            for (float y = 0; y < 1.0; y += step_y) {
-                
-                // If outside the triangle, ignore
-                if ((x + y) > 1.0) continue;
+                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0))
+                {
+                    continue;
+                }
 
                 osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
-                unsigned int tx = (unsigned int) (image->s() * t.x()) % image->s();
-                unsigned int ty = (unsigned int) (image->t() * t.y()) % image->t();
 
                 if (!image) {
                     SG_LOG(SG_TERRAIN, SG_ALERT, "Image disappeared under my feet.");
                     continue;
                 }
 
+                unsigned int tx = (unsigned int) (image->s() * t.x()) % image->s();
+                unsigned int ty = (unsigned int) (image->t() * t.y()) % image->t();
                 const osg::Vec4 tc = image->getColor(tx, ty);
                 const int land_class = int(round(tc.x() * 255.0));
                 mat = matcache->find(land_class);
@@ -1460,32 +1491,33 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
                     continue;
                 }
 
-                // Check vegetation density against the material, noting we assumed 100m^2 above
                 if (mat->get_wood_coverage() <= 0) continue;
 
-                float wood_coverage = 100.0 / mat->get_wood_coverage();
-                if (getRandomOffset().x() > wood_coverage) continue;
+                float wood_coverage = 2000.0 / mat->get_wood_coverage();
 
-                osg::Vec3 p = v_0 + v_x*x + v_y*y;
+                if (pc_map_rand(lon_int, lat_int, 2) > wood_coverage) continue;
 
-
-                if (! mat->get_is_plantation()) {
-                    // Add some randomness
-                    osg::Vec2 offset = getRandomOffset();
-                    float new_x = x + step_x * (offset.x() - 0.5);
-                    float new_y = y + step_y * (offset.y() - 0.5);
-
-                    // Another check to ensure we're not outside the triangle
-                    if ((new_x + new_y) > 1.0) continue;
-
-
-                    // Update both position and texture coords to account for the new position. 
-                    p = v_0 + v_x*new_x + v_y*new_y;
-                    t = osg::Vec2(t_0 + t_x * new_x + t_y * new_y);
+                if (mat->get_is_plantation()) {
+                    p = osg::Vec2d(lon + 0.1 * delta_lon * pc_map_norm(lon_int, lat_int, 0),
+                                   lat + 0.1 * delta_lat * pc_map_norm(lon_int, lat_int, 1));
+                } else {
+                    p = osg::Vec2d(lon + delta_lon * pc_map_rand(lon_int, lat_int, 0),
+                                   lat + delta_lat * pc_map_rand(lon_int, lat_int, 1));
                 }
+
+                x = det2(ll_x, p) / D;
+                y = det2(p, ll_y) / D;
+
+                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0))
+                {
+                    continue;
+                }
+
+                t = osg::Vec2(t_0 + t_x * x + t_y * y);
 
                 // Check against any object mask
                 osg::Texture2D* object_mask = mat->get_one_object_mask(0);
+
                 if (object_mask != NULL) {
                     osg::Image* img = object_mask->getImage();
                     if (!img || ! img->valid()) continue;
@@ -1504,30 +1536,13 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
                     unsigned int y = (unsigned int) (img->t() * t.y() * y_scale) % img->t();
 
                     // green (for trees) channel
-                    if (getRandomOffset().y() > img->getColor(x, y).g()) {
+
+                    if (pc_map_rand(lon_int, lat_int, 3) > img->getColor(x, y).g()) {
                         continue;
                     }
+
                 }
 
-                // Ensure the slope isn't too steep by checking the
-                // cos of the angle between the slope normal and the
-                // vertical, conveniently just the dot product of the up and normal
-                float alpha = n * up;
-                float cos_zero_density_angle = mat->get_cos_tree_zero_density_slope_angle();
-                float cos_max_density_angle = mat->get_cos_tree_max_density_slope_angle();
-
-                if (alpha < cos_zero_density_angle) {
-                    continue; // Too steep for any vegetation
-                }
-
-                if (alpha < cos_max_density_angle) {
-                    // Reduce density on steep slopes
-                    float slope_density = (alpha - cos_zero_density_angle) / (cos_max_density_angle - cos_zero_density_angle);
-                    if (getRandomOffset().y() > slope_density) continue;
-                }
-
-                // It's a hard life being a possible tree! But we now have a valid tree position.
-                // So put it in the correct bin.
                 TreeBin* bin = NULL;
                 bool found = false;
 
@@ -1559,9 +1574,12 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
                     randomForest.push_back(bin);
                 }
                 
-                bin->insert(SGVec3f(p.x(), p.y(), p.z()), SGVec3f(n.x(), n.y(), n.z()));
+                const osg::Vec3 vp = v_x * x + v_y * y + v_0;
+                bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()), SGVec3f(n.x(), n.y(), n.z()));
             }
+
         }
+
     }
 
     if (randomForest.size() > 0) {
@@ -1576,9 +1594,10 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0),
         0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
-        osg::Group* trees = createForest(randomForest, R_vert,_options, 1);
+        osg::Group* trees = createForest(randomForest, R_vert, _options, 1);
         buffer._transform->addChild(trees);
     }
+
 }
 
 void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)

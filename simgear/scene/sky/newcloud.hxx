@@ -28,7 +28,7 @@
 #include <vector>
 #include <osg/Fog>
 
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 

@@ -40,7 +40,7 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
@@ -119,8 +119,7 @@ TreesBoundingBoxCallback::computeBound(const Drawable& drawable) const
 Geometry* makeSharedTreeGeometry(int numQuads)
 {
     // generate a repeatable random seed
-    mt seed;
-    mt_init(&seed, unsigned(123));
+    pc_init(123);
     // set up the coords
     osg::Vec3Array* v = new osg::Vec3Array;
     osg::Vec2Array* t = new osg::Vec2Array;
@@ -128,7 +127,7 @@ Geometry* makeSharedTreeGeometry(int numQuads)
     t->reserve(numQuads * 4);
     for (int i = 0; i < numQuads; ++i) {
         // Apply a random scaling factor and texture index.
-        float h = (mt_rand(&seed) + mt_rand(&seed)) / 2.0f + 0.5f;
+        float h = (pc_rand() + pc_rand()) / 2.0f + 0.5f;
         float cw = h * .5;
         v->push_back(Vec3(0.0f, -cw, 0.0f));
         v->push_back(Vec3(0.0f, cw, 0.0f));
@@ -138,7 +137,7 @@ Geometry* makeSharedTreeGeometry(int numQuads)
         // space, as the texture has a number of different trees on
         // it. Here we assign random coordinates and let the shader
         // choose the variety.
-        float variety = mt_rand(&seed);
+        float variety = pc_rand();
         t->push_back(Vec2(variety, 0.0f));
         t->push_back(Vec2(variety + 1.0f, 0.0f));
         t->push_back(Vec2(variety + 1.0f, 0.234f));

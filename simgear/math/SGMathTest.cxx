@@ -26,7 +26,7 @@
 
 #include "SGMath.hxx"
 #include "SGRect.hxx"
-#include "sg_random.h"
+#include "sg_random.hxx"
 
 int lineno = 0;
 

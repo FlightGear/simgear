@@ -241,11 +241,11 @@ public:
             src.open(SG_IO_IN);
             dst.open(SG_IO_OUT);
 
-            const auto sizeToCopy = cp.sizeInBytes();
+            const size_t sizeToCopy = cp.sizeInBytes();
             if (buf.size() < sizeToCopy) {
                 try {
                     buf.resize(sizeToCopy);
-                } catch (std::bad_alloc) {
+                } catch (std::bad_alloc&) {
                     simgear::reportFailure(simgear::LoadFailure::OutOfMemory, simgear::ErrorCode::TerraSync,
                                            "copyInstalledChildren: couldn't allocation copy buffer of size:" + std::to_string(sizeToCopy),
                                            child.path);
@@ -253,7 +253,7 @@ public:
                 }
             }
 
-            const auto r = src.read(buf.data(), sizeToCopy);
+            const size_t r = (size_t) src.read(buf.data(), sizeToCopy);
             if (r != sizeToCopy) {
                 simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::TerraSync,
                                        "copyInstalledChildren: read underflow, got:" + std::to_string(r),
@@ -261,7 +261,7 @@ public:
                 return;
             }
 
-            const auto written = dst.write(buf.data(), sizeToCopy);
+            const size_t written = dst.write(buf.data(), sizeToCopy);
             if (written != sizeToCopy) {
                 simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::TerraSync,
                                        "copyInstalledChildren: write underflow, wrote:" + std::to_string(r),

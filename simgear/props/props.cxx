@@ -2,10 +2,6 @@
 
     #include "props-unsafe.cxx"
 
-    void SGPropertyLockControl(SGPropertyNode* active, SGPropertyNode* verbose, SGPropertyNode* timing)
-    {
-    }
-    
 #else
 // props.cxx - implementation of a property list.
 // Started Fall 2000 by David Megginson, david@megginson.com
@@ -74,6 +70,11 @@ static bool         s_property_locking_first_time = true;
 static bool         s_property_locking_active = true;
 static bool         s_property_locking_verbose = false;
 static bool         s_property_timing_active = false;
+static bool         s_property_change_parent_listeners = false;
+
+static SGPropertyNode* s_main_tree_root = nullptr;
+
+#include "props_io.hxx"
 
 struct SGPropertyLockListener : SGPropertyChangeListener
 {
@@ -95,14 +96,21 @@ struct SGPropertyLockListener : SGPropertyChangeListener
     std::string m_name;
 };
 
-void SGPropertyLockControl(SGPropertyNode* active, SGPropertyNode* verbose, SGPropertyNode* timing)
+void SGPropertyLockControl(
+        SGPropertyNode* active,
+        SGPropertyNode* verbose,
+        SGPropertyNode* timing,
+        SGPropertyNode* parent_listeners
+        )
 {
         std::cerr << __FILE__ << ":" << __LINE__ << ":"
                 << " active: " << active->getPath()
                 << " verbose: " << verbose->getPath()
                 << " timing: " << timing->getPath()
+                << " parent_listeners: " << parent_listeners->getPath()
                 << "\n";
     
+    s_main_tree_root = active->getRootNode();
     active->setBoolValue(s_property_locking_active);
     active->addChangeListener(new SGPropertyLockListener(s_property_locking_active, "active"));
     
@@ -111,6 +119,9 @@ void SGPropertyLockControl(SGPropertyNode* active, SGPropertyNode* verbose, SGPr
     
     timing->setBoolValue(s_property_timing_active);
     timing->addChangeListener(new SGPropertyLockListener(s_property_timing_active, "timing"));
+    
+    parent_listeners->setBoolValue(s_property_change_parent_listeners);
+    parent_listeners->addChangeListener(new SGPropertyLockListener(s_property_change_parent_listeners, "parent-listeners"));
 }
 
 #undef SG_PROPS_GATHER_TIMING
@@ -233,6 +244,10 @@ struct ScopedTime
                     << " average time=" << (*m_total) / (*m_n)
                     << " t_projected=" << t_projected << " (" << t_projected_fraction * 100 << "%)"
                     << " n_per_sec_projected=" << n_per_sec_projected
+                    << " raw:"
+                    << " t=" << (t - ScopedTime_t0)
+                    << " ScopedTime_count=" << ScopedTime_count
+                    << " ScopedTime_count/(t - ScopedTime_t0)=" << (ScopedTime_count / (t - ScopedTime_t0))
                     << "\n";
         }
     }
@@ -1086,6 +1101,18 @@ struct SGPropertyNodeImpl
         return changed;
     }
     
+    static void
+    appendNode(SGPropertyLockExclusive& exclusive, SGPropertyNode& parent, SGPropertyNode* child)
+    {
+        if (parent._attr & SGPropertyNode::VALUE_CHANGED_DOWN)
+        {
+            // Propogate to child nodea.
+            child->setAttribute(SGPropertyNode::VALUE_CHANGED_DOWN, true);
+            child->setAttribute(SGPropertyNode::VALUE_CHANGED_UP, true);
+        }
+        parent._children.push_back(child);
+    }
+    
     static SGPropertyNode*
     getChildImplCreate(SGPropertyLockExclusive& exclusive, SGPropertyNode& node0, const char* begin, const char* end, int index)
     {
@@ -1097,7 +1124,7 @@ struct SGPropertyNodeImpl
         else {
             // REVIEW: Memory Leak - 2,028 (1,976 direct, 52 indirect) bytes in 13 blocks are definitely lost
             node = new SGPropertyNode(begin, end, index, &node0);
-            node0._children.push_back(node);
+            SGPropertyNodeImpl::appendNode(exclusive, node0, node);
             exclusive.release();
             node0.fireChildAdded(node);
             exclusive.acquire();
@@ -1232,15 +1259,42 @@ struct SGPropertyNodeImpl
     {
         return ((node._attr & attr) != 0);
     }
-
-    static void setAttribute(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, SGPropertyNode::Attribute attr, bool state)
+    
+    static void setChildrenUpDown(SGPropertyLockExclusive& exclusive, SGPropertyNode& node)
     {
-        (state ? node._attr |= attr : node._attr &= ~attr);
+        for (SGPropertyNode* child: node._children) {
+            SGPropertyLockExclusive exclusive_child(*child);
+            setAttributes(
+                    exclusive_child,
+                    *child,
+                    child->_attr | SGPropertyNode::VALUE_CHANGED_UP | SGPropertyNode::VALUE_CHANGED_DOWN
+                    );
+        }
     }
 
     static void setAttributes(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, int attr)
     {
+        // Preserve VALUE_CHANGED_UP and VALUE_CHANGED_DOWN if they are already
+        // set.
+        //
+        if (node._attr & SGPropertyNode::VALUE_CHANGED_UP)      attr |= SGPropertyNode::VALUE_CHANGED_UP;
+        if (node._attr & SGPropertyNode::VALUE_CHANGED_DOWN)    attr |= SGPropertyNode::VALUE_CHANGED_DOWN;
+        
+        if ((attr & SGPropertyNode::VALUE_CHANGED_DOWN) && !(node._attr & SGPropertyNode::VALUE_CHANGED_DOWN)) {
+            // We are changing VALUE_CHANGED_DOWN flag from 0 to 1, so set
+            // VALUE_CHANGED_UP and VALUE_CHANGED_DOWN flags in all child
+            // nodes.
+            //
+            setChildrenUpDown(exclusive, node);
+        }
+        
         node._attr = attr;
+    }
+
+    static void setAttribute(SGPropertyLockExclusive& exclusive, SGPropertyNode& node, SGPropertyNode::Attribute attr, bool state)
+    {
+        int attr_new = (state) ? (node._attr | attr) : (node._attr & ~attr);
+        setAttributes(exclusive, node, attr_new);
     }
 
     static int getAttributes(SGPropertyLock& lock, SGPropertyNode& node)
@@ -1862,14 +1916,18 @@ struct SGPropertyNodeImpl
                 self._listeners,
                 [&](SGPropertyChangeListener* listener) { listener->valueChanged(node);}
                 );
-        SGPropertyNode* parent = self._parent;
-        if (parent) {
-            exclusive.release();
+        if (s_property_change_parent_listeners || (self._attr & SGPropertyNode::VALUE_CHANGED_UP))
+        {
+            SGPropertyNode* parent = self._parent;
+            if (parent)
             {
-                SGPropertyLockExclusive parent_exclusive(*parent);
-                fireValueChanged(parent_exclusive, *parent, node);
+                exclusive.release();
+                {
+                    SGPropertyLockExclusive parent_exclusive(*parent);
+                    fireValueChanged(parent_exclusive, *parent, node);
+                }
+                exclusive.acquire();
             }
-            exclusive.acquire();
         }
     }
 
@@ -2088,7 +2146,7 @@ SGPropertyNode::clearValue ()
  * Last used attribute
  * Update as needed when enum Attribute is changed
  */
-const int SGPropertyNode::LAST_USED_ATTRIBUTE = LISTENER_SAFE;
+const int SGPropertyNode::LAST_USED_ATTRIBUTE = VALUE_CHANGED_DOWN;
 
 /**
  * Default constructor: always creates a root node.
@@ -2356,7 +2414,7 @@ SGPropertyNode::addChild(const char * name, int min_index, bool append)
   SGPropertyNode_ptr node;
   // REVIEW: Memory Leak - 152 bytes in 1 blocks are definitely lost
   node = new SGPropertyNode(name, name + strlen(name), pos, this);
-  _children.push_back(node);
+  SGPropertyNodeImpl::appendNode(exclusive, *this, node);
   SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
   return node;
 }
@@ -2377,7 +2435,7 @@ SGPropertyNode_ptr SGPropertyNode::addChild(SGPropertyNode_ptr node, const std::
   node->_name = name;
   node->_parent = this;
   node->_index = pos;
-  _children.push_back(node);
+  SGPropertyNodeImpl::appendNode(exclusive, *this, node);
   SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
   return node;
 }
@@ -2421,7 +2479,7 @@ SGPropertyNode::addChildren( const std::string& name,
     {
       SGPropertyNode_ptr node;
       node = new SGPropertyNode(name, index, this);
-      _children.push_back(node);
+      SGPropertyNodeImpl::appendNode(exclusive, *this, node);
       fireChildAdded(node);
       nodes.push_back(node);
     }
@@ -2552,7 +2610,7 @@ SGPropertyNode::getChild (const std::string& name, int index, bool create)
     // REVIEW: Memory Leak - 12,862 (11,856 direct, 1,006 indirect) bytes in 78 blocks are definitely lost
     SGPropertyNode* node = new SGPropertyNode(name, index, this);
     // REVIEW: Memory Leak - 104,647 (8 direct, 104,639 indirect) bytes in 1 blocks are definitely lost
-    _children.push_back(node);
+    SGPropertyNodeImpl::appendNode(*this, node);
     fireChildAdded(node);
     return node;
   }
@@ -2570,7 +2628,7 @@ SGPropertyNode::getChild (const std::string& name, int index, bool create)
       // REVIEW: Memory Leak - 12,862 (11,856 direct, 1,006 indirect) bytes in 78 blocks are definitely lost
       node = new SGPropertyNode(name, index, this);
       // REVIEW: Memory Leak - 104,647 (8 direct, 104,639 indirect) bytes in 1 blocks are definitely lost
-      _children.push_back(node);
+      SGPropertyNodeImpl::appendNode(exclusive, *this, node);
       SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
       return node;
     }

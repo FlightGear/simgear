@@ -8,12 +8,12 @@
  *
  * $Id$
  */
+#ifndef __PROPS_HXX
+#define __PROPS_HXX
+
 #ifdef SG_PROPS_UNTHREADSAFE
     #include "props-unsafe.hxx"
 #else
-
-#ifndef __PROPS_HXX
-#define __PROPS_HXX
 
 #ifndef PROPS_STANDALONE
 #define PROPS_STANDALONE 0
@@ -890,6 +890,8 @@ public:
         PRESERVE = 128,
         PROTECTED   = 1 << 8,
         LISTENER_SAFE = 1 << 9, /// it's safe to listen to this property, even if it's tied
+        VALUE_CHANGED_UP = 1 << 10, // If true, value changes are propogated to parent's listeners.
+        VALUE_CHANGED_DOWN = 1 << 11,   // If true, sets new child nodes' VALUE_CHANGED_DOWN and VALUE_CHANGED_UP.
         // beware: if you add another attribute here,
         // also update value of "LAST_USED_ATTRIBUTE".
     };
@@ -1672,16 +1674,20 @@ private:
 };
 
 
-#endif // __PROPS_HXX
+#endif // SG_PROPS_UNTHREADSAFE
 
 // Sets property nodes that control property locking.
 //
 // active: whether we use locking.
 // verbose: whether we detect and report on lock contention.
 // timing: whether we gather timing information (compiled-out by default).
+// parent_listeners: whether to call parent nodes' listeners when property values change.
 //
-void SGPropertyLockControl(SGPropertyNode* active, SGPropertyNode* verbose, SGPropertyNode* timing);
+void SGPropertyLockControl(
+        SGPropertyNode* active,
+        SGPropertyNode* verbose,
+        SGPropertyNode* timing,
+        SGPropertyNode* parent_listeners
+        );
 
-#endif // SG_PROPS_UNTHREADSAFE
-
-// end of props.hxx
+#endif // __PROPS_HXX

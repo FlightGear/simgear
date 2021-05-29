@@ -2621,11 +2621,6 @@ bool SGPropertyNode::removeChild(SGPropertyNode* node)
   SGPropertyLockExclusive exclusive(*this);
   SGPropertyLockExclusive exclusive_node(*node);
 
-  /*SGSharedPtr<SGPropertyNode> p = node->_parent.lock();
-  if (p != this) {
-    assert(0);
-    return false;
-  }*/
   if (node->_parent != this) {
     assert(0);
     return false;
@@ -2637,8 +2632,6 @@ bool SGPropertyNode::removeChild(SGPropertyNode* node)
   }
   SGPropertyNodeImpl::setAttribute(exclusive_node, *node, REMOVED, true);
   SGPropertyNodeImpl::clearValue(exclusive_node, *node);
-  node->_parent = nullptr;
-  
   exclusive_node.release();
   SGPropertyNodeImpl::fireChildRemoved(exclusive, *this, this /*parent*/, node);
   
@@ -2646,6 +2639,9 @@ bool SGPropertyNode::removeChild(SGPropertyNode* node)
   // released our exclusive lock.
   it = std::find(_children.begin(), _children.end(), node);
   _children.erase(it);
+
+  // fixme: should probably set node->_parent to null here. this was not done
+  // in previous (non-locking) props code.
   return true;
 }
 

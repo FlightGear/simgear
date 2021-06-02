@@ -137,6 +137,11 @@ namespace canvas
     _status(node, "status"),
     _status_msg(node, "status-msg")
   {
+    SG_LOG(SG_GENERAL, SG_ALERT, "Canvas constructor:"
+            " node=" << node->getPath(true /*simplify*/)
+            );
+    // Looks like we need to propogate value changes upwards.
+    node->setAttribute(SGPropertyNode::VALUE_CHANGED_DOWN, true);
     _status = 0;
     setStatusFlags(MISSING_SIZE_X | MISSING_SIZE_Y);
 

@@ -660,6 +660,7 @@ void testListener()
     // recursive listen
     {
         TestListener l(tree.get(), true /* recursive */);
+        tree->setAttribute(SGPropertyNode::VALUE_CHANGED_DOWN, true);
         tree->getNode("position/body")->addChangeListener(&l);
         tree->getNode("controls/")->addChangeListener(&l);
 
@@ -919,7 +920,7 @@ void testDeleterListener()
 {
     SGPropertyNode_ptr tree = new SGPropertyNode;
     defineSamplePropertyTree(tree);
-
+    tree->setAttribute(SGPropertyNode::VALUE_CHANGED_DOWN, true);
 
     // recursive listen
     {

@@ -299,6 +299,10 @@ public:
             m_consoleCallbacks.push_back(m_callbacks.back());
         }
 #endif
+        const char* fl = getenv("SG_LOG_FILE_LINE");
+        if (fl && !strcmp(fl, "1")) {
+            m_fileLine = true;
+        }
     }
 
     ~LogStreamPrivate()

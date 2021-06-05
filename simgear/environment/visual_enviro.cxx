@@ -26,7 +26,7 @@
 #include <simgear/constants.h>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/math/sg_random.h>
+#include <simgear/math/sg_random.hxx>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/sound/sample_group.hxx>
 #include <simgear/scene/sky/cloudfield.hxx>

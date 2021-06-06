@@ -97,9 +97,9 @@ class VPBTechnique : public TerrainTechnique
         static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
 
         // LineFeatures and AreaFeatures are draped over the underlying mesh.
-        static void addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList, osg::ref_ptr<osg::Node> terrainNode);
-        static void addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaList, osg::ref_ptr<osg::Node> terrainNode);
-        static void addCoastlineList(SGBucket bucket, CoastlineBinList areaList, osg::ref_ptr<osg::Node> terrainNode);
+        static void addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList);
+        static void addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaList);
+        static void addCoastlineList(SGBucket bucket, CoastlineBinList areaList);
         static void unloadFeatures(SGBucket bucket);
 
     protected:

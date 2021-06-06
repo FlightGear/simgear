@@ -334,46 +334,6 @@ struct ReaderWriterSTG::_ModelBin {
                 }
             }
 
-            if (!_lineFeatureList.empty()) {
-
-                LineFeatureBinList lineFeatures;
-
-                for (const auto& b : _lineFeatureList) {
-                    // add the lineFeatures to the list
-                    const auto path = SGPath(b._filename);
-                    lineFeatures.push_back(LineFeatureBin(path, b._material));
-                }
-
-                VPBTechnique::addLineFeatureList(_bucket, lineFeatures, _terrainNode);
-            }
-
-            if (!_areaFeatureList.empty()) {
-
-                AreaFeatureBinList areaFeatures;
-
-                for (const auto& b : _areaFeatureList) {
-                    // add the lineFeatures to the list
-                    const auto path = SGPath(b._filename);
-                    areaFeatures.push_back(AreaFeatureBin(path, b._material));
-                }
-
-                VPBTechnique::addAreaFeatureList(_bucket, areaFeatures, _terrainNode);
-            }
-
-            if (!_coastFeatureList.empty()) {
-
-                CoastlineBinList coastFeatures;
-
-                for (const auto& b : _coastFeatureList) {
-                    // add the lineFeatures to the list
-                    const auto path = SGPath(b._filename);
-                    coastFeatures.push_back(CoastlineBin(path));
-                }
-
-                VPBTechnique::addCoastlineList(_bucket, coastFeatures, _terrainNode);
-            }
-
-
             return group.release();
         }
 
@@ -382,10 +342,6 @@ struct ReaderWriterSTG::_ModelBin {
         std::list<_Sign> _signList;
         std::list<_BuildingList> _buildingList;
         std::list<_TreeList> _treeList;
-        std::list<_LineFeatureList> _lineFeatureList;
-        std::list<_AreaFeatureList> _areaFeatureList;
-        std::list<_CoastlineList> _coastFeatureList;
-        osg::ref_ptr<osg::Node> _terrainNode;
 
         /// The original options to use for this bunch of models
         osg::ref_ptr<SGReaderWriterOptions> _options;
@@ -745,6 +701,47 @@ struct ReaderWriterSTG::_ModelBin {
 
         bool vpb_active = SGSceneFeatures::instance()->getVPBActive();
         if (vpb_active) {
+
+            // Load any line area or coastline features, which we will need before we generate the tile.
+            if (!_lineFeatureListList.empty()) {
+
+                LineFeatureBinList lineFeatures;
+
+                for (const auto& b : _lineFeatureListList) {
+                    // add the lineFeatures to the list
+                    const auto path = SGPath(b._filename);
+                    lineFeatures.push_back(LineFeatureBin(path, b._material));
+                }
+
+                VPBTechnique::addLineFeatureList(bucket, lineFeatures);
+            }
+
+            if (!_areaFeatureListList.empty()) {
+
+                AreaFeatureBinList areaFeatures;
+
+                for (const auto& b : _areaFeatureListList) {
+                    // add the lineFeatures to the list
+                    const auto path = SGPath(b._filename);
+                    areaFeatures.push_back(AreaFeatureBin(path, b._material));
+                }
+
+                VPBTechnique::addAreaFeatureList(bucket, areaFeatures);
+            }
+
+            if (!_coastFeatureListList.empty()) {
+
+                CoastlineBinList coastFeatures;
+
+                for (const auto& b : _coastFeatureListList) {
+                    // add the lineFeatures to the list
+                    const auto path = SGPath(b._filename);
+                    coastFeatures.push_back(CoastlineBin(path));
+                }
+
+                VPBTechnique::addCoastlineList(bucket, coastFeatures);
+            }
+
             std::string filename = "vpb/" + bucket.gen_vpb_base() + ".osgb";
             if (tile_map.count(filename) == 0) {
                 vpb_node = osgDB::readRefNodeFile(filename, options);
@@ -845,13 +842,6 @@ struct ReaderWriterSTG::_ModelBin {
         readFileCallback->_signList = _signList;
         readFileCallback->_options = options;
         readFileCallback->_bucket = bucket;
-
-        if (vpb_active && vpb_node) {
-            readFileCallback->_lineFeatureList = _lineFeatureListList;
-            readFileCallback->_areaFeatureList = _areaFeatureListList;
-            readFileCallback->_coastFeatureList = _coastFeatureListList;
-            readFileCallback->_terrainNode = vpb_node;
-        }
 
         osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
         callbackOptions->setReadFileCallback(readFileCallback.get());

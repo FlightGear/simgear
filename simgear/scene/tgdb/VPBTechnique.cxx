@@ -137,12 +137,11 @@ void VPBTechnique::setFilterMatrixAs(FilterType filterType)
 void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 {
     if (!_terrainTile) return;
+    if (dirtyMask==0) return;
 
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_writeBufferMutex);
 
     osg::ref_ptr<TerrainTile> tile = _terrainTile;
-
-    if (dirtyMask==0) return;
 
     osgTerrain::TileID tileID = tile->getTileID();
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Init of tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << dirtyMask);
@@ -2233,43 +2232,6 @@ void VPBTechnique::releaseGLObjects(osg::State* state) const
     if (_newBufferData.valid() && _newBufferData->_transform.valid()) _newBufferData->_transform->releaseGLObjects(state);
 }
 
-// Simple vistor to check for any underlying terrain meshes that intersect with a given constraint therefore may need to be modified
-// (e.g elevation lowered to ensure the terrain doesn't poke through an airport mesh, or line features generated)
-class TerrainVisitor : public osg::NodeVisitor {
-    public:
-    osg::ref_ptr<osg::Node> _constraint; // Object describing the volume to be modified.   
-    int _dirtyMask;                      // Dirty mask to apply.
-    int _minLevel;                       // Minimum LoD level to modify.
-    TerrainVisitor( osg::ref_ptr<osg::Node> node, int mask, int minLevel) :
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _constraint(node),
-        _dirtyMask(mask),
-        _minLevel(minLevel)
-    { }
-    virtual ~TerrainVisitor()
-    { }
-
-    void apply(osg::Node& node)
-    {
-        osgTerrain::TerrainTile* tile = dynamic_cast<osgTerrain::TerrainTile*>(&node);
-        if (tile) {
-            // Determine if the constraint should affect this tile.
-            const int level = tile->getTileID().level;
-            const osg::BoundingSphere tileBB = tile->getBound();
-            if ((level >= _minLevel) && tileBB.intersects(_constraint->getBound())) {
-                // Dirty any existing terrain tiles containing this constraint, which will force regeneration
-                osgTerrain::TileID tileID = tile->getTileID();
-                SG_LOG(SG_TERRAIN, SG_DEBUG, "Setting dirty mask for tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << _dirtyMask);
-                tile->setDirtyMask(_dirtyMask); 
-            } else if (tileBB.intersects(_constraint->getBound())) {
-                traverse(node);
-            }
-        } else {
-            traverse(node);
-        }
-    }
-};
-
 // Add an osg object representing a contraint on the terrain mesh.  The generated terrain mesh will not include any vertices that
 // lie above the constraint model.  (Note that geometry may result in edges intersecting the constraint model in cases where there
 // are significantly higher vertices that lie just outside the constraint model.
@@ -2277,9 +2239,6 @@ void VPBTechnique::addElevationConstraint(osg::ref_ptr<osg::Node> constraint, os
 { 
     const std::lock_guard<std::mutex> lock(VPBTechnique::_constraint_mutex); // Lock the _constraintGroup for this scope
     _constraintGroup->addChild(constraint.get()); 
-
-    TerrainVisitor ftv(constraint, TerrainTile::ALL_DIRTY, 0);
-    terrain->accept(ftv);
 }
 
 // Remove a previously added constraint.  E.g on model unload.
@@ -2310,7 +2269,7 @@ osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg
     }
 }
 
-void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList, osg::ref_ptr<osg::Node> terrainNode)
+void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList)
 {
     if (roadList.empty()) return;
 
@@ -2320,26 +2279,9 @@ void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadLi
         _lineFeatureLists.push_back(std::pair(bucket, roadList));
     }
 
-    // We need to trigger a re-build of the appropriate Terrain tile, so create a pretend node and run the TerrainVisitor to
-    // "dirty" the TerrainTile that it intersects with.
-    osg::ref_ptr<osg::Node> n = new osg::Node();
-    
-    //SGVec3d coord1, coord2;
-    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() -0.5*bucket.get_width(), bucket.get_center_lat() -0.5*bucket.get_height(), 0.0), coord1);
-    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() +0.5*bucket.get_width(), bucket.get_center_lat() +0.5*bucket.get_height(), 0.0), coord2);
-    //osg::BoundingBox bbox = osg::BoundingBox(toOsg(coord1), toOsg(coord2));
-    //n->setInitialBound(bbox);
-
-    SGVec3d coord;
-    SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon(), bucket.get_center_lat(), 0.0), coord);
-    n->setInitialBound(osg::BoundingSphere(toOsg(coord), max(bucket.get_width_m(), bucket.get_height_m())));
-
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding line features to " << bucket.gen_index_str());
-    TerrainVisitor ftv(n, TerrainTile::ALL_DIRTY, 0);
-    terrainNode->accept(ftv);
 }
 
-void VPBTechnique::addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaList, osg::ref_ptr<osg::Node> terrainNode)
+void VPBTechnique::addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaList)
 {
     if (areaList.empty()) return;
 
@@ -2348,27 +2290,9 @@ void VPBTechnique::addAreaFeatureList(SGBucket bucket, AreaFeatureBinList areaLi
         const std::lock_guard<std::mutex> lock(VPBTechnique::_areaFeatureLists_mutex); // Lock the _lineFeatureLists for this scope
         _areaFeatureLists.push_back(std::pair(bucket, areaList));
     }
-
-    // We need to trigger a re-build of the appropriate Terrain tile, so create a pretend node and run the TerrainVisitor to
-    // "dirty" the TerrainTile that it intersects with.
-    osg::ref_ptr<osg::Node> n = new osg::Node();
-    
-    //SGVec3d coord1, coord2;
-    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() -0.5*bucket.get_width(), bucket.get_center_lat() -0.5*bucket.get_height(), 0.0), coord1);
-    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() +0.5*bucket.get_width(), bucket.get_center_lat() +0.5*bucket.get_height(), 0.0), coord2);
-    //osg::BoundingBox bbox = osg::BoundingBox(toOsg(coord1), toOsg(coord2));
-    //n->setInitialBound(bbox);
-
-    SGVec3d coord;
-    SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon(), bucket.get_center_lat(), 0.0), coord);
-    n->setInitialBound(osg::BoundingSphere(toOsg(coord), max(bucket.get_width_m(), bucket.get_height_m())));
-
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding line features to " << bucket.gen_index_str());
-    TerrainVisitor ftv(n, TerrainTile::ALL_DIRTY, 0);
-    terrainNode->accept(ftv);
 }
 
-void VPBTechnique::addCoastlineList(SGBucket bucket, CoastlineBinList coastline, osg::ref_ptr<osg::Node> terrainNode)
+void VPBTechnique::addCoastlineList(SGBucket bucket, CoastlineBinList coastline)
 {
     if (coastline.empty()) return;
 
@@ -2378,28 +2302,11 @@ void VPBTechnique::addCoastlineList(SGBucket bucket, CoastlineBinList coastline,
         _coastFeatureLists.push_back(std::pair(bucket, coastline));
     }
 
-    // We need to trigger a re-build of the appropriate Terrain tile, so create a pretend node and run the TerrainVisitor to
-    // "dirty" the TerrainTile that it intersects with.
-    osg::ref_ptr<osg::Node> n = new osg::Node();
-    
-    //SGVec3d coord1, coord2;
-    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() -0.5*bucket.get_width(), bucket.get_center_lat() -0.5*bucket.get_height(), 0.0), coord1);
-    //SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon() +0.5*bucket.get_width(), bucket.get_center_lat() +0.5*bucket.get_height(), 0.0), coord2);
-    //osg::BoundingBox bbox = osg::BoundingBox(toOsg(coord1), toOsg(coord2));
-    //n->setInitialBound(bbox);
-
-    SGVec3d coord;
-    SGGeodesy::SGGeodToCart(SGGeod::fromDegM(bucket.get_center_lon(), bucket.get_center_lat(), 0.0), coord);
-    n->setInitialBound(osg::BoundingSphere(toOsg(coord), max(bucket.get_width_m(), bucket.get_height_m())));
-
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Adding line features to " << bucket.gen_index_str());
-    TerrainVisitor ftv(n, TerrainTile::ALL_DIRTY, 0);
-    terrainNode->accept(ftv);
 }
 
 void VPBTechnique::unloadFeatures(SGBucket bucket)
 {
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Erasing all roads with entry " << bucket);
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Erasing all features with entry " << bucket);
     const std::lock_guard<std::mutex> lock(VPBTechnique::_lineFeatureLists_mutex); // Lock the _lineFeatureLists for this scope
     // C++ 20...
     //std::erase_if(_lineFeatureLists, [bucket](BucketLineFeatureBinList p) { return p.first == bucket; } );

@@ -1,5 +1,7 @@
 #include "parse.h"
 
+#include <stdio.h>
+
 // Static table of recognized lexemes in the language
 static const struct Lexeme {
     char* str;
@@ -391,6 +393,21 @@ void naLex(struct Parser* p)
                 newToken(p, i, TOK_SYMBOL, p->buf+i, symlen, 0);
                 i += symlen;
             } else {
+                //const char* line_begin = p->buf;
+                int line = 1;
+                int column = 0;
+                for (int j=0; j<i; ++j) {
+                    if (p->buf[j] == '\n') {
+                        line += 1;
+                        column = 0;
+                        //line_begin = p->buf + j + 1;
+                    }
+                    else {
+                        column += 1;
+                    }
+                }
+                fprintf(stderr, "%s:%i: illegal character 0x%x at line=%i column=%i.\n",
+                        __FILE__, __LINE__, c, line, column);
                 error(p, "illegal character", i);
             }
         }

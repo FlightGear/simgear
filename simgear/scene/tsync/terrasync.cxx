@@ -1124,12 +1124,10 @@ void SGTerraSync::setRoot(SGPropertyNode_ptr root)
 {
     if (!root) {
         _terraRoot.clear();
-        _renderingRoot.clear();
         return;
     }
 
     _terraRoot = root->getNode("/sim/terrasync",true);
-    _renderingRoot = root->getNode("/sim/rendering", true);
 }
 
 void SGTerraSync::init()
@@ -1249,7 +1247,6 @@ void SGTerraSync::unbind()
     _stalledNode.clear();
     _activeNode.clear();
     _cacheHits.clear();
-    _renderingRoot.clear();
     _busyNode.clear();
     _updateCountNode.clear();
     _errorCountNode.clear();
@@ -1327,24 +1324,6 @@ void SGTerraSync::syncAirportsModels()
   _workerThread->request(a);
 }
 
-string_list SGTerraSync::getSceneryPathSuffixes() const
-{
-    string_list scenerySuffixes;
-
-    for (auto node : _renderingRoot->getChildren("scenery-path-suffix")) {
-        if (node->getBoolValue("enabled", true) && node->hasValue("name")) {
-            scenerySuffixes.push_back(node->getStringValue("name"));
-        }
-    }
-
-    if (scenerySuffixes.empty()) {
-        // if preferences didn't load, use some default
-        scenerySuffixes = {"Objects", "Terrain"}; // default values
-    }
-
-    return scenerySuffixes;
-}
-
 bool isOSMSuffix(const std::string& suffix)
 {
     return (suffix == "Buildings") || (suffix == "Roads") || (suffix == "Pylons") || (suffix == "Details");
@@ -1356,7 +1335,11 @@ void SGTerraSync::syncAreaByPath(const std::string& aPath)
         return;
     }
 
-    for (const auto& suffix : getSceneryPathSuffixes()) {
+    if (_sceneryPathSuffixes.empty()) {
+        throw sg_exception("SGTerraSync::syncAreaByPath called before scenery suffixes were defined.");
+    }
+
+    for (const auto& suffix : _sceneryPathSuffixes) {
         const auto dir = suffix + "/" + aPath;
         if (_workerThread->isDirActive(dir)) {
             continue;
@@ -1373,13 +1356,18 @@ bool SGTerraSync::scheduleTile(const SGBucket& bucket)
     return true;
 }
 
+void SGTerraSync::setSceneryPathSuffixes(const string_list& suffixes)
+{
+    _sceneryPathSuffixes = suffixes;
+}
+
 bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
 {
     if (!_workerThread->isRunning()) {
         return false;
     }
 
-    for (const auto& suffix : getSceneryPathSuffixes()) {
+    for (const auto& suffix : _sceneryPathSuffixes) {
         // don't wait on OSM dirs, even if enabled
         if (isOSMSuffix(suffix)) {
             continue;

@@ -66,6 +66,8 @@ public:
 
     void setRoot(SGPropertyNode_ptr root);
 
+    void setSceneryPathSuffixes(const string_list& suffixes);
+
     /// retrive the associated log object, for displaying log
     /// output somewhere (a UI, presumably)
     BufferedLogCallback* log() const
@@ -86,7 +88,6 @@ public:
 
 protected:
     void syncAirportsModels();
-    string_list getSceneryPathSuffixes() const;
 
     class WorkerThread;
 
@@ -96,7 +97,6 @@ private:
 private:
     WorkerThread* _workerThread;
     SGPropertyNode_ptr _terraRoot;
-    SGPropertyNode_ptr _renderingRoot;
     SGPropertyNode_ptr _stalledNode;
     SGPropertyNode_ptr _cacheHits;
     SGPropertyNode_ptr _busyNode;
@@ -112,6 +112,8 @@ private:
     SGPropertyNode_ptr _downloadedKBtesNode;
     SGPropertyNode_ptr _extractPendingKbytesNode;
     SGPropertyNode_ptr _maxErrorsNode;
+
+    string_list _sceneryPathSuffixes;
 
     // we manually bind+init TerraSync during early startup
     // to get better overlap of slow operations (Shared Models sync

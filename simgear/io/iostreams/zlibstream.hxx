@@ -103,7 +103,8 @@ namespace simgear
 enum class ZLibCompressionFormat {
   ZLIB = 0,
   GZIP,
-  AUTODETECT
+  AUTODETECT,
+  ZLIB_RAW, // No zlib header or trailer.
 };
 
 enum class ZLibMemoryStrategy {
@@ -196,6 +197,13 @@ private:
   // Callback whose role is to refill the output buffer when it's empty and
   // the “client” tries to read more.
   virtual int underflow() override;
+
+  // We only support seeking forwards, with way==std::ios_base::cur and
+  // off>=0, returning 0. Otherwise we return -1.
+  std::streampos seekoff(std::streamoff off,
+                         std::ios_base::seekdir way,
+                         std::ios_base::openmode which) override;
+
   // Optional override when subclassing std::streambuf. This is the most
   // efficient way of reading several characters (as soon as we've emptied the
   // output buffer, data is written by zlib directly to the destination

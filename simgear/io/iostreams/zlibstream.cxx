@@ -157,7 +157,6 @@ ZlibAbstractIStreambuf::ZlibAbstractIStreambuf(std::istream& iStream,
     _putbackSize(putbackSize)
 {
   assert(_inBufSize > 0);
-  assert(_putbackSize >= 0);    // guaranteed unless the type is changed...
   assert(_putbackSize < _outBufSize);
 
   if (_inBuf == nullptr) {
@@ -249,6 +248,28 @@ int ZlibAbstractIStreambuf::underflow()
   return (gptr() == egptr()) ? traits::eof() : traits::to_int_type(*gptr());
 }
 
+std::streampos ZlibAbstractIStreambuf::seekoff(std::streamoff off,
+                                               std::ios_base::seekdir way,
+                                               std::ios_base::openmode which)
+{
+    if (way != std::ios_base::cur || off < 0)    return -1;
+    for(;;) {
+        if (!off) break;
+        char*   g = gptr();
+        char*   eg = egptr();
+        if (eg > g) {
+            size_t  delta = (off < eg - g) ? off : eg - g;
+            setg(g + delta, g + delta, eg);
+            off -= delta;
+        }
+        else {
+            if (underflow() == EOF) return -1;
+        }
+    }
+    return 0;
+}
+
+
 // Simple utility method for fillOutputBuffer(), used to improve readability.
 // Return the remaining space available in the output buffer, where zlib can
 // write.
@@ -320,7 +341,7 @@ char* ZlibAbstractIStreambuf::fillOutputBuffer()
     if (retCode == Z_BUF_ERROR) {
       handleZ_BUF_ERROR();            // doesn't return
     } else if (retCode == Z_STREAM_END) {
-      assert(_zstream.avail_in == 0); // all of _inBuf must have been used
+      //assert(_zstream.avail_in == 0); // all of _inBuf must have been used
       _allFinished = true;
       break;
     } else if (retCode < 0) {         // negative codes are errors
@@ -481,7 +502,7 @@ std::streamsize ZlibAbstractIStreambuf::xsgetn(char* dest, std::streamsize n)
     if (retCode == Z_BUF_ERROR) {
       handleZ_BUF_ERROR();            // doesn't return
     } else if (retCode == Z_STREAM_END) {
-      assert(_zstream.avail_in == 0); // all of _inBuf must have been used
+      //assert(_zstream.avail_in == 0); // all of _inBuf must have been used
       _allFinished = true;
       break;
     } else if (retCode < 0) {   // negative codes are errors
@@ -729,6 +750,9 @@ void ZlibDecompressorIStreambuf::zStreamInit(ZLibCompressionFormat format)
     break;
   case ZLibCompressionFormat::AUTODETECT:
     windowBits = 47;            // 47 = 32 + 15
+    break;
+  case ZLibCompressionFormat::ZLIB_RAW:
+    windowBits = -15;
     break;
   default:
     throw std::logic_error("Unexpected compression format: " +

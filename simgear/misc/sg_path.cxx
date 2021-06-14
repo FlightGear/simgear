@@ -48,6 +48,7 @@
 #endif
 
 #include "sg_path.hxx"
+#include <simgear/misc/sg_dir.hxx>
 
 using std::string;
 using simgear::strutils::starts_with;
@@ -995,8 +996,9 @@ SGPath SGPath::realpath() const
               // (needed for fgValidatePath security)
     {
         if (path.empty()) {
-            return SGPath(".").realpath(); // current directory
+            return simgear::Dir::current().path();
         }
+
         std::string this_dir = dir();
         if (isAbsolute() && this_dir.empty()) { // top level
             this_dir = "/";

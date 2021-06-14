@@ -82,9 +82,7 @@ std::string SGFile::computeHash()
         [](char* p) { free(p); }};
 
     if (!buf) {
-        // @TODO report out of memory error
-        SG_LOG(SG_IO, SG_ALERT, "Failed to malloc buffer for SHA1 check:" << file_name);
-        return {};
+        throw sg_exception("Malloc of SHA buffer failed", {}, file_name);
     }
 
     size_t readLen;

@@ -606,7 +606,9 @@ struct ReaderWriterSTG::_ModelBin {
         simgear::ErrorReportContext ec{"terrain-bucket", bucket.gen_index_str()};
 
         if (_foundBase) {
+            for (auto stgObject : _objectList) {
                 osg::ref_ptr<osg::Node> node;
+                simgear::ErrorReportContext ec("terrain-stg", stgObject._errorLocation.utf8Str());
 
 #if OSG_VERSION_LESS_THAN(3,4,0)
                 node = osgDB::readNodeFile(stgObject._name, stgObject._options.get());

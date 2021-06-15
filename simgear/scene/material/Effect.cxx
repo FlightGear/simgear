@@ -1529,9 +1529,10 @@ bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
         return true;
 
     PropertyList tniqList = root->getChildren("technique");
-         itr != e;
-         ++itr)
-        buildTechnique(this, *itr, options);
+    for (const auto& tniq : tniqList) {
+        buildTechnique(this, tniq, options);
+    }
+
     _isRealized = true;
     return true;
 }

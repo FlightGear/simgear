@@ -219,7 +219,7 @@ public:
             return;
         }
 
-        std::string buf;
+        std::vector<char> buf;
 
         for (auto& child : children) {
             if (child.type != HTTPRepository::FileType)

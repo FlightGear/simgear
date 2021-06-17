@@ -128,5 +128,11 @@ void initMainLoopRecipient()
     static_nasalMainLoopRecipient.reset(new NasalMainLoopRecipient);
 }
 
+void shutdownMainLoopRecipient()
+{
+    static_nasalMainLoopRecipient.reset();
+}
+
+
 } // namespace nasal
 

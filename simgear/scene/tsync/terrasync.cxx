@@ -1363,13 +1363,17 @@ void SGTerraSync::setSceneryPathSuffixes(const string_list& suffixes)
 
 bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
 {
+    return innerIsTileDirPending(sceneryDir, false);
+}
+
+bool SGTerraSync::innerIsTileDirPending(const std::string& sceneryDir, bool isOSM) const
+{
     if (!_workerThread->isRunning()) {
         return false;
     }
 
     for (const auto& suffix : _sceneryPathSuffixes) {
-        // don't wait on OSM dirs, even if enabled
-        if (isOSMSuffix(suffix)) {
+        if (isOSM != isOSMSuffix(suffix)) {
             continue;
         }
 
@@ -1380,6 +1384,11 @@ bool SGTerraSync::isTileDirPending(const std::string& sceneryDir) const
     }
 
     return false;
+}
+
+bool SGTerraSync::isTileDirPendingOSM(const std::string& sceneryDir) const
+{
+    return innerIsTileDirPending(sceneryDir, true);
 }
 
 void SGTerraSync::scheduleDataDir(const std::string& dataDir)

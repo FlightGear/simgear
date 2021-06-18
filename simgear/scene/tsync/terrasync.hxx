@@ -81,6 +81,7 @@ public:
      */
     bool isTileDirPending(const std::string& sceneryDir) const;
 
+    bool isTileDirPendingOSM(const std::string& sceneryDir) const;
 
     void scheduleDataDir(const std::string& dataDir);
 
@@ -93,6 +94,8 @@ protected:
 
 private:
     void writeWarningFile(const SGPath& sceneryDir);
+
+    bool innerIsTileDirPending(const std::string& sceneryDir, bool isOSM) const;
 
 private:
     WorkerThread* _workerThread;

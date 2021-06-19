@@ -1397,8 +1397,8 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
     const double C            = r_E_lon * cos(lat);
     const double one_over_C   = (fabs(C) > 1.0e-4) ? (1.0 / C) : 0.0;
     const double one_over_r_E = 1.0 / r_E_lat;
-    const double delta_lat    = sqrt(100.0 / vegetation_density) / r_E_lat;
-    const double delta_lon    = sqrt(100.0 / vegetation_density) / (r_E_lon * cos(loc.getLatitudeRad()));
+    const double delta_lat    = sqrt(1000.0 / vegetation_density) / r_E_lat;
+    const double delta_lon    = sqrt(1000.0 / vegetation_density) / (r_E_lon * cos(loc.getLatitudeRad()));
 
     const osg::Matrix rotation_vertices_c = osg::Matrix::rotate(
      M_PI / 2 - clat, osg::Vec3d(0.0, 1.0, 0.0),

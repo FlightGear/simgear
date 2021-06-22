@@ -57,7 +57,11 @@ namespace nasal
 class ThreadedGarbageCollector : public SGExclusiveThread {
 public:
     ThreadedGarbageCollector() : SGExclusiveThread() {}
-    virtual ~ThreadedGarbageCollector() {}
+
+    virtual ~ThreadedGarbageCollector() 
+    {
+        terminate();
+    }
 
     int process() override{
         return naGarbageCollect();

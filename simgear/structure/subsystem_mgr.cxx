@@ -250,10 +250,15 @@ void
 SGSubsystemGroup::init ()
 {
     assert(_state == State::BIND);
-    forEach([this](SGSubsystem* s){
-        this->notifyWillChange(s, State::INIT);
-        s->init();
-        this->notifyDidChange(s, State::INIT);
+    forEach([this](SGSubsystem* s) {
+        try {
+            this->notifyWillChange(s, State::INIT);
+            s->init();
+            this->notifyDidChange(s, State::INIT);
+        } catch (std::exception& e) {
+            simgear::reportError("Caught exception init-ing subsystem " + s->subsystemId() + "\n\t" + e.what());
+            throw;
+        }
     });
     _state = State::INIT;
 }
@@ -283,7 +288,15 @@ SGSubsystemGroup::incrementalInit()
     const auto m = _members[_initPosition]; 
     SGTimeStamp st;
     st.stamp();
-    const InitStatus memberStatus = m->subsystem->incrementalInit();
+    InitStatus memberStatus;
+
+    try {
+        memberStatus = m->subsystem->incrementalInit();
+    } catch (std::exception& e) {
+        simgear::reportError("Caught exception init-ing subsystem " + m->subsystem->subsystemId() + "\n\t" + e.what());
+        throw;
+    }
+
     m->initTime += st.elapsedMSec();
   
     if (memberStatus == INIT_DONE) {
@@ -351,10 +364,15 @@ SGSubsystemGroup::shutdown ()
 void
 SGSubsystemGroup::bind ()
 {
-    forEach([this](SGSubsystem* s){
-        this->notifyWillChange(s, State::BIND);
-        s->bind();
-        this->notifyDidChange(s, State::BIND);
+    forEach([this](SGSubsystem* s) {
+        try {
+            this->notifyWillChange(s, State::BIND);
+            s->bind();
+            this->notifyDidChange(s, State::BIND);
+        } catch (std::exception& e) {
+            simgear::reportError("Caught exception binding subsystem " + s->subsystemId() + "\n\t" + e.what());
+            throw;
+        }
     });
     _state = State::BIND;
 }

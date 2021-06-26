@@ -535,7 +535,8 @@ readComparison( SGPropertyNode *prop_root,
 {
   SGComparisonCondition * condition = new SGComparisonCondition(type, reverse);
   if (node->nChildren() < 2 || node->nChildren() > 3 ) {
-    throw sg_exception("condition: comparison without two or three children");
+    throw sg_exception("condition: comparison without two or three children",
+                       {}, {}, false);
   }
   
   const SGPropertyNode* left = node->getChild(0), 
@@ -551,7 +552,8 @@ readComparison( SGPropertyNode *prop_root,
       SGExpressiond* exp = SGReadDoubleExpression(prop_root, left->getChild(0));
       condition->setLeftDExpression(exp);
     } else {
-      throw sg_exception("Unknown condition comparison left child:" + leftName);
+      throw sg_exception("Unknown condition comparison left child:" + leftName,
+                         {}, {}, false);
     }
   }
     
@@ -565,7 +567,8 @@ readComparison( SGPropertyNode *prop_root,
       SGExpressiond* exp = SGReadDoubleExpression(prop_root, right->getChild(0));
       condition->setRightDExpression(exp);
     } else {
-      throw sg_exception("Unknown condition comparison right child:" + rightName);
+      throw sg_exception("Unknown condition comparison right child:" + rightName,
+                         {}, {}, false);
     }
   }
   
@@ -580,7 +583,8 @@ readComparison( SGPropertyNode *prop_root,
       SGExpressiond* exp = SGReadDoubleExpression(prop_root, n->getChild(0));
       condition->setPrecisionDExpression(exp);
     } else {
-      throw sg_exception("Unknown condition comparison precision child:" + name );
+      throw sg_exception("Unknown condition comparison precision child:" + name,
+                         {}, {}, false);
     }
   }
   

@@ -815,13 +815,22 @@ sgLoad3DModel_internal(const SGPath& path,
             } // of object-names in the animation
             continue;
         }
-        /*
-         * Setup the model data for the node currently being animated.
-         */
-        modelData.LoadAnimationValuesForElement(animation_nodes[i], i);
+        
+        try {
+            /*
+             * Setup the model data for the node currently being animated.
+             */
+            modelData.LoadAnimationValuesForElement(animation_nodes[i], i);
 
-        /// OSGFIXME: duh, why not only model?????
-        SGAnimation::animate(modelData);
+            /// OSGFIXME: duh, why not only model?????
+            SGAnimation::animate(modelData);
+        } catch (sg_exception& e) {
+            simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
+                                   "Couldn't load animation " + animation_nodes[i]->getNameString()
+                                    + ":" + e.getFormattedMessage(),
+                                   modelpath);
+            throw;
+        }
     }
 
     animationcount += animation_nodes.size();

@@ -56,6 +56,7 @@ if (CycloneDDS_FOUND)
         SGDataDistributionService.cxx
         )
     add_simgear_test(test_dds test_dds.cxx)
+    target_link_libraries(test_dds CycloneDDS::ddsc)
 endif (CycloneDDS_FOUND)
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")

@@ -130,4 +130,10 @@ namespace nasal
     return _keys;
   }
 
+  //----------------------------------------------------------------------------
+  bool Hash::isNil() const
+  {
+      return naIsNil(_hash);
+  }
+
 } // namespace nasal

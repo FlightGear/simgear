@@ -137,6 +137,8 @@ namespace nasal
        */
       int size() const;
 
+      bool isNil() const;
+
       /**
        * Get a list of all keys
        */

@@ -48,9 +48,11 @@ static std::string gzErrorMessage(gzFile fd)
 
     if (errNum == Z_ERRNO) {
         return simgear::strutils::error_string(errno);
-    } else {
+    } else if (gzMsg) {
         return {gzMsg};
     }
+
+    return {"GZError: no string code for code:" + std::to_string(errNum)};
 }
 
 void sgReadChar ( gzFile fd, char *var )

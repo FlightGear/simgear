@@ -774,7 +774,7 @@ private:
 
         if (!ok) {
             SG_LOG(SG_TERRASYNC, SG_WARN, "removal failed for:" << path);
-            throw sg_io_exception("Failed to remove existing file/dir:", path);
+            throw sg_io_exception("Failed to remove existing file/dir:", path, false);
         }
     }
 

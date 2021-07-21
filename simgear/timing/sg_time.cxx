@@ -32,6 +32,7 @@
 #include <cstring>
 
 #include <string>
+#include <unordered_map>
 
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
@@ -61,6 +62,9 @@ static const double SIDRATE = 0.9972695677;
 
 // tzContainer stores all the current Timezone control points/
 std::unique_ptr<SGTimeZoneContainer> static_tzContainer;
+
+using StartTimeByYearHash = std::unordered_map<int, time_t>;
+static StartTimeByYearHash global_yearToGMTHash;
 
 void SGTime::init( const SGGeod& location, const SGPath& root, time_t init_time )
 {
@@ -143,12 +147,19 @@ static double sidereal_precise( double mjd, double lng )
 // return a courser but cheaper estimate of sidereal time
 static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng )
 {
-    time_t start_gmt, now;
+    time_t now;
     double diff, part, days, hours, lstTmp;
   
     now = cur_time;
-    start_gmt = sgTimeGetGMT(gmt->tm_year, 2, 21, 12, 0, 0);
-  
+
+    // sgTimeGetGMT is expensive when called frequently, so cache the
+    // result.
+    time_t start_gmt = global_yearToGMTHash[gmt->tm_year];
+    if (start_gmt == 0) {
+        start_gmt = sgTimeGetGMT(gmt->tm_year, 2, 21, 12, 0, 0);
+        global_yearToGMTHash[gmt->tm_year] = start_gmt;
+    }
+
     diff = (now - start_gmt) / (3600.0 * 24.0);
   
     part = fmod(diff, 1.0);

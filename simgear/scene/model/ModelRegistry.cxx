@@ -733,6 +733,10 @@ ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const Options* opt)
 {
+    if (fileName.empty()) {
+        return osgDB::ReaderWriter::ReadResult::FILE_NOT_HANDLED;
+    }
+
     // propogate error context from the caller
     simgear::ErrorReportContext ec;
     auto sgopt = dynamic_cast<const SGReaderWriterOptions*>(opt);

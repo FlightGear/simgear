@@ -199,7 +199,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     std::stringstream att_ss;
     std::string att_bit;
     // No implicit attachments by default
-    att_ss << root->getStringValue("implicit-attachment-mask", "");
+    att_ss << root->getStringValue("implicit-attachment-mask", "color depth");
     while (att_ss >> att_bit) {
         if (att_bit == "color")        implicit_attachments |= osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT;
         else if (att_bit == "depth")   implicit_attachments |= osg::DisplaySettings::IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
@@ -393,6 +393,11 @@ public:
         camera->setAllowEventFocus(false);
         camera->setViewMatrix(osg::Matrix::identity());
         camera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
+
+        // Do not automatically add a depth buffer
+        camera->setImplicitBufferAttachmentMask(
+            osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT,
+            osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT);
 
         float left = 0.0f, bottom = 0.0f, width = 1.0f, height = 1.0f, scale = 1.0f;
         const SGPropertyNode *p_geometry = root->getNode("geometry");

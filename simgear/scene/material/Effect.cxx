@@ -240,11 +240,19 @@ Effect::Effect(const Effect& rhs, const CopyOp& copyop)
     _name += " clone";
 }
 
-// Assume that the last technique is always valid.
+// Try to use the state set of the last technique without a scheme.
 StateSet* Effect::getDefaultStateSet()
 {
-    Technique* tniq = techniques.back().get();
-    if (!tniq)
+    if (techniques.empty())
+        return 0;
+    auto it = std::find_if(techniques.rbegin(), techniques.rend(),
+                           [](const osg::ref_ptr<Technique> &t) {
+                               return t && t->getScheme().empty();
+                           });
+    if (it == techniques.rend())
+        return 0;
+    Technique* tniq = (*it);
+    if (tniq->passes.empty())
         return 0;
     Pass* pass = tniq->passes.front().get();
     return pass;

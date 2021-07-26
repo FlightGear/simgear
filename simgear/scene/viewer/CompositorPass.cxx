@@ -186,8 +186,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     GLbitfield clear_mask = 0;
     std::stringstream mask_ss;
     std::string mask_bit;
-    // Default clear mask as in OSG
-    mask_ss << root->getStringValue("clear-mask", "color depth");
+    // Do not clear by default
+    mask_ss << root->getStringValue("clear-mask", "");
     while (mask_ss >> mask_bit) {
         if (mask_bit == "color")        clear_mask |= GL_COLOR_BUFFER_BIT;
         else if (mask_bit == "depth")   clear_mask |= GL_DEPTH_BUFFER_BIT;
@@ -394,7 +394,7 @@ public:
         camera->setViewMatrix(osg::Matrix::identity());
         camera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
 
-        // Do not automatically add a depth buffer
+        // Do not automatically add a depth renderbuffer
         camera->setImplicitBufferAttachmentMask(
             osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT,
             osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT);
@@ -425,13 +425,8 @@ public:
         quad->addDrawable(geom);
 
         osg::ref_ptr<osg::StateSet> quad_state = quad->getOrCreateStateSet();
-        int values = osg::StateAttribute::OFF | osg::StateAttribute::PROTECTED;
-        quad_state->setAttribute(new osg::PolygonMode(
-                                     osg::PolygonMode::FRONT_AND_BACK,
-                                     osg::PolygonMode::FILL),
-                                 values);
-        quad_state->setMode(GL_LIGHTING,   values);
-        quad_state->setMode(GL_DEPTH_TEST, values);
+        quad_state->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF
+                            | osg::StateAttribute::PROTECTED);
 
         osg::StateSet *ss = camera->getOrCreateStateSet();
         for (const auto &uniform : compositor->getUniforms())

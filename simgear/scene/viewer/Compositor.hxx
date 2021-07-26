@@ -57,9 +57,11 @@ public:
         PREV_PROJECTION_MATRIX_INV,
         CAMERA_POSITION_CART,
         CAMERA_POSITION_GEOD,
-        NEAR_FAR_PLANES,
+        NEAR_FAR,
+        PLANES,
         FCOEF,
         SUN_DIRECTION,
+        SUN_DIRECTION_WORLD,
         TOTAL_BUILTIN_UNIFORMS
     };
 

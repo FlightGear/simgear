@@ -34,11 +34,13 @@
 #include "CompositorUtil.hxx"
 
 
-class SunDirectionCallback : public osg::Uniform::Callback {
+class SunDirectionWorldCallback : public osg::Uniform::Callback {
 public:
     virtual void operator()(osg::Uniform *uniform, osg::NodeVisitor *nv) {
         SGUpdateVisitor *uv = dynamic_cast<SGUpdateVisitor *>(nv);
-        uniform->set(toOsg(uv->getLightDirection()));
+        osg::Vec3f l = toOsg(uv->getLightDirection());
+        l.normalize();
+        uniform->set(l);
     }
 };
 
@@ -138,12 +140,14 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_PrevProjectionMatrixInverse", osg::Matrixf()),
     new osg::Uniform("fg_CameraPositionCart", osg::Vec3f()),
     new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
-    new osg::Uniform("fg_NearFarPlanes", osg::Vec3f()),
+    new osg::Uniform("fg_NearFar", osg::Vec2f()),
+    new osg::Uniform("fg_Planes", osg::Vec3f()),
     new osg::Uniform("fg_Fcoef", 0.0f),
-    new osg::Uniform("fg_SunDirection", osg::Vec3f())
+    new osg::Uniform("fg_SunDirection", osg::Vec3f()),
+    new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
     }
 {
-    _uniforms[SUN_DIRECTION]->setUpdateCallback(new SunDirectionCallback);
+    _uniforms[SUN_DIRECTION_WORLD]->setUpdateCallback(new SunDirectionWorldCallback);
 }
 
 Compositor::~Compositor()
@@ -186,6 +190,11 @@ Compositor::update(const osg::Matrix &view_matrix,
     _uniforms[PREV_PROJECTION_MATRIX]->set(prev_proj_matrix);
     _uniforms[PREV_PROJECTION_MATRIX_INV]->set(prev_proj_matrix_inv);
 
+    osg::Vec3f sun_dir_world;
+    _uniforms[SUN_DIRECTION_WORLD]->get(sun_dir_world);
+    osg::Vec4f sun_dir_view = osg::Vec4f(
+        sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) * view_matrix;
+
     for (int i = 0; i < TOTAL_BUILTIN_UNIFORMS; ++i) {
         osg::ref_ptr<osg::Uniform> u = _uniforms[i];
         switch (i) {
@@ -212,8 +221,14 @@ Compositor::update(const osg::Matrix &view_matrix,
                               camera_pos_geod.getLatitudeRad(),
                               camera_pos_geod.getElevationM()));
             break;
-        case NEAR_FAR_PLANES:
+        case NEAR_FAR:
+            u->set(osg::Vec2f(zNear, zFar));
+            break;
+        case PLANES:
             u->set(osg::Vec3f(-zFar, -zFar * zNear, zFar - zNear));
+            break;
+        case SUN_DIRECTION:
+            u->set(osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));
             break;
         case FCOEF:
             if (zFar != 0.0)

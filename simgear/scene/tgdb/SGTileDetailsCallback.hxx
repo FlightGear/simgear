@@ -36,6 +36,7 @@
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/OptionsReadFileCallback.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
 
 #include "SGNodeTriangles.hxx"
 #include "GroundLightManager.hxx"
@@ -52,6 +53,8 @@ typedef std::list<SGLightBin> SGLightListBin;
 typedef std::list<SGDirectionalLightBin> SGDirectionalLightListBin;
 
 using namespace simgear;
+
+using ReadResult = osgDB::ReaderWriter::ReadResult;
 
 // QuadTreeBuilder is used by Random Objects Generator
 typedef std::pair<osg::Node*, int> ModelLOD;
@@ -92,42 +95,55 @@ public:
         SG_LOG( SG_TERRAIN, SG_DEBUG, "SGTileDetailsCallback::~SGTileDetailsCallback() num cbs left " << num_tdcb  );
     }
     
-    virtual osgDB::ReaderWriter::ReadResult readNode(
-        const std::string&, const osgDB::Options*)
+    ReadResult readNode(const std::string&, const osgDB::Options*) override
     {
-        SGMaterialLibPtr matlib;
-        osg::ref_ptr<SGMaterialCache> matcache; 
-        
-        osg::ref_ptr<osg::Group> group = new osg::Group;
-        group->setDataVariance(osg::Object::STATIC);
+        osg::ref_ptr<osg::Group> group;
+        simgear::ErrorReportContext ec{"btg", _path};
 
-        // generate textured triangle list
-        std::vector<SGTriangleInfo> matTris;
-        GetNodeTriangles nodeTris(_gbs_center, &matTris);
-        _rootNode->accept( nodeTris );
+        try {
+            group = new osg::Group;
+            SGMaterialLibPtr matlib;
+            osg::ref_ptr<SGMaterialCache> matcache; 
+            
+            group->setDataVariance(osg::Object::STATIC);
 
-        // build matcache
-        matlib = _options->getMaterialLib();
-        if (matlib) {
-            SGGeod geodPos = SGGeod::fromCart(_gbs_center);            
-            matcache = matlib->generateMatCache(geodPos, _options);
-        }
-        
-#if 0
-        // TEST : See if we can regenerate landclass shapes from node
-        for ( unsigned int i=0; i<matTris.size(); i++ ) {
-            matTris[i].dumpBorder(_gbs_center);
-        }
-#endif
+            // generate textured triangle list
+            std::vector<SGTriangleInfo> matTris;
+            GetNodeTriangles nodeTris(_gbs_center, &matTris);
+            _rootNode->accept( nodeTris );
 
-        osg::LOD* lightLOD = generateLightingTileObjects(matTris, matcache);
-        if (lightLOD) {
-            group->addChild(lightLOD);
-        }
+            // build matcache
+            matlib = _options->getMaterialLib();
+            if (matlib) {
+                SGGeod geodPos = SGGeod::fromCart(_gbs_center);            
+                matcache = matlib->generateMatCache(geodPos, _options);
+            }
+            
+    #if 0
+            // TEST : See if we can regenerate landclass shapes from node
+            for ( unsigned int i=0; i<matTris.size(); i++ ) {
+                matTris[i].dumpBorder(_gbs_center);
+            }
+    #endif
 
-        osg::LOD* objectLOD = generateRandomTileObjects(matTris, matcache);
-        if (objectLOD) {
-            group->addChild(objectLOD);
+            osg::LOD* lightLOD = generateLightingTileObjects(matTris, matcache);
+            if (lightLOD) {
+                group->addChild(lightLOD);
+            }
+
+            osg::LOD* objectLOD = generateRandomTileObjects(matTris, matcache);
+            if (objectLOD) {
+                group->addChild(objectLOD);
+            }
+        } catch (sg_exception& sge) {
+            simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::BTGLoad,
+                                "Failed to load BTG file:" + sge.getFormattedMessage(),
+                                sge.getLocation());
+            return ReadResult::ERROR_IN_READING_FILE;
+        } catch (std::bad_alloc &e) {
+            simgear::reportFailure(simgear::LoadFailure::OutOfMemory, simgear::ErrorCode::BTGLoad,
+                                "Out of memory loading tile details", sg_location{_path});
+            return ReadResult::INSUFFICIENT_MEMORY_TO_LOAD;
         }
         
         return group.release();

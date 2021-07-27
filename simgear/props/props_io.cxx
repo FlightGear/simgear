@@ -161,7 +161,7 @@ setFlag( int& mode,
     string message = "Unrecognized flag value '";
     message += flag;
     message += '\'';
-    throw sg_io_exception(message, location, SG_ORIGIN);
+    throw sg_io_exception(message, location, SG_ORIGIN, false);
   }
 }
 
@@ -176,7 +176,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       string message = "Root element name is ";
       message += name;
       message += "; expected PropertyList";
-      throw sg_io_exception(message, location, SG_ORIGIN);
+      throw sg_io_exception(message, location, SG_ORIGIN, false);
     }
 
     // Check for an include.
@@ -188,7 +188,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
           {
               string message ="Cannot open file ";
               message += attval;
-              throw sg_io_exception(message, location, SG_ORIGIN);
+              throw sg_io_exception(message, location, SG_ORIGIN, false);
           }
           readProperties(path, _root, 0, _extended);
       } catch (sg_io_exception &e) {
@@ -278,7 +278,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
           {
             string message ="Cannot open file ";
             message += val;
-            throw sg_io_exception(message, location, SG_ORIGIN);
+            throw sg_io_exception(message, location, SG_ORIGIN, false);
           }
           readProperties(path, node, 0, _extended);
         }
@@ -353,7 +353,7 @@ PropsVisitor::endElement (const char * name)
       string message = "Unrecognized data type '";
       message += st.type;
       message += '\'';
-      throw sg_io_exception(message, location, SG_ORIGIN);
+      throw sg_io_exception(message, location, SG_ORIGIN, false);
     }
     if( !ret )
       SG_LOG
@@ -701,7 +701,7 @@ writeProperties (const SGPath &path, const SGPropertyNode * start_node,
   if (output.good()) {
     writeProperties(output, start_node, write_all, archive_flag);
   } else {
-    throw sg_io_exception("Cannot open file", sg_location(path.utf8Str()));
+    throw sg_io_exception("Cannot open file", sg_location(path.utf8Str()), "", false);
   }
 }
 
@@ -770,7 +770,7 @@ copyPropertyValue(const SGPropertyNode *in, SGPropertyNode *out)
                 break;
             string message = "Unknown internal SGPropertyNode type";
             message += in->getType();
-            throw sg_error(message, SG_ORIGIN);
+            throw sg_error(message, SG_ORIGIN, false);
     }
     
     return retval;

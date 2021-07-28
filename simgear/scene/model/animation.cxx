@@ -457,9 +457,6 @@ SGAnimation::~SGAnimation()
       }
       if (!info.empty())
       {
-          reportFailure(LoadFailure::Misconfigured, ErrorCode::XMLModelLoad,
-                        "Could not find at least one of the following object for animation:" + info,
-                        SGPath::fromUtf8(_modelData.getPath()));
           SG_LOG(SG_IO, SG_DEV_ALERT, "Could not find at least one of the following"
                   " objects for animation: " << info << " in file: " << _modelData.getPath());
       }

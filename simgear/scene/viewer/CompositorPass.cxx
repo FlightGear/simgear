@@ -743,8 +743,9 @@ public:
 
         osg::StateSet *ss = camera->getOrCreateStateSet();
         auto &uniforms = compositor->getUniforms();
-        ss->addUniform(uniforms[Compositor::FCOEF]);
-        ss->addUniform(uniforms[Compositor::SUN_DIRECTION]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_FCOEF]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION_WORLD]);
 
         osg::ref_ptr<osg::Uniform> clustered_shading_enabled =
             new osg::Uniform("fg_ClusteredEnabled", clustered ? true : false);

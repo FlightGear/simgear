@@ -46,23 +46,23 @@ namespace compositor {
 class Compositor {
 public:
     enum BuiltinUniform {
-        VIEWPORT_SIZE = 0,
-        VIEW_MATRIX,
-        VIEW_MATRIX_INV,
-        PROJECTION_MATRIX,
-        PROJECTION_MATRIX_INV,
-        PREV_VIEW_MATRIX,
-        PREV_VIEW_MATRIX_INV,
-        PREV_PROJECTION_MATRIX,
-        PREV_PROJECTION_MATRIX_INV,
-        CAMERA_POSITION_CART,
-        CAMERA_POSITION_GEOD,
-        NEAR_FAR,
-        PLANES,
-        FCOEF,
-        SUN_DIRECTION,
-        SUN_DIRECTION_WORLD,
-        TOTAL_BUILTIN_UNIFORMS
+        SG_UNIFORM_VIEWPORT_SIZE = 0,
+        SG_UNIFORM_VIEW_MATRIX,
+        SG_UNIFORM_VIEW_MATRIX_INV,
+        SG_UNIFORM_PROJECTION_MATRIX,
+        SG_UNIFORM_PROJECTION_MATRIX_INV,
+        SG_UNIFORM_PREV_VIEW_MATRIX,
+        SG_UNIFORM_PREV_VIEW_MATRIX_INV,
+        SG_UNIFORM_PREV_PROJECTION_MATRIX,
+        SG_UNIFORM_PREV_PROJECTION_MATRIX_INV,
+        SG_UNIFORM_CAMERA_POSITION_CART,
+        SG_UNIFORM_CAMERA_POSITION_GEOD,
+        SG_UNIFORM_NEAR_FAR,
+        SG_UNIFORM_PLANES,
+        SG_UNIFORM_FCOEF,
+        SG_UNIFORM_SUN_DIRECTION,
+        SG_UNIFORM_SUN_DIRECTION_WORLD,
+        SG_TOTAL_BUILTIN_UNIFORMS
     };
 
     Compositor(osg::View *view,
@@ -112,7 +112,7 @@ public:
 
     typedef std::array<
         osg::ref_ptr<osg::Uniform>,
-        TOTAL_BUILTIN_UNIFORMS> BuiltinUniforms;
+        SG_TOTAL_BUILTIN_UNIFORMS> BuiltinUniforms;
     const BuiltinUniforms &getUniforms() const { return _uniforms; }
 
     void               addBuffer(const std::string &name, Buffer *buffer);

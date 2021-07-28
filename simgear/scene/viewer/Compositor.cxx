@@ -147,7 +147,8 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
     }
 {
-    _uniforms[SUN_DIRECTION_WORLD]->setUpdateCallback(new SunDirectionWorldCallback);
+    _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->setUpdateCallback(
+        new SunDirectionWorldCallback);
 }
 
 Compositor::~Compositor()
@@ -179,58 +180,58 @@ Compositor::update(const osg::Matrix &view_matrix,
     proj_matrix.getFrustum(left, right, bottom, top, zNear, zFar);
 
     osg::Matrixf prev_view_matrix, prev_view_matrix_inv;
-    _uniforms[VIEW_MATRIX]->get(prev_view_matrix);
-    _uniforms[VIEW_MATRIX_INV]->get(prev_view_matrix_inv);
+    _uniforms[SG_UNIFORM_VIEW_MATRIX]->get(prev_view_matrix);
+    _uniforms[SG_UNIFORM_VIEW_MATRIX_INV]->get(prev_view_matrix_inv);
     osg::Matrixf prev_proj_matrix, prev_proj_matrix_inv;
-    _uniforms[PROJECTION_MATRIX]->get(prev_proj_matrix);
-    _uniforms[PROJECTION_MATRIX_INV]->get(prev_proj_matrix_inv);
+    _uniforms[SG_UNIFORM_PROJECTION_MATRIX]->get(prev_proj_matrix);
+    _uniforms[SG_UNIFORM_PROJECTION_MATRIX_INV]->get(prev_proj_matrix_inv);
 
-    _uniforms[PREV_VIEW_MATRIX]->set(prev_view_matrix);
-    _uniforms[PREV_VIEW_MATRIX_INV]->set(prev_view_matrix_inv);
-    _uniforms[PREV_PROJECTION_MATRIX]->set(prev_proj_matrix);
-    _uniforms[PREV_PROJECTION_MATRIX_INV]->set(prev_proj_matrix_inv);
+    _uniforms[SG_UNIFORM_PREV_VIEW_MATRIX]->set(prev_view_matrix);
+    _uniforms[SG_UNIFORM_PREV_VIEW_MATRIX_INV]->set(prev_view_matrix_inv);
+    _uniforms[SG_UNIFORM_PREV_PROJECTION_MATRIX]->set(prev_proj_matrix);
+    _uniforms[SG_UNIFORM_PREV_PROJECTION_MATRIX_INV]->set(prev_proj_matrix_inv);
 
     osg::Vec3f sun_dir_world;
-    _uniforms[SUN_DIRECTION_WORLD]->get(sun_dir_world);
+    _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->get(sun_dir_world);
     osg::Vec4f sun_dir_view = osg::Vec4f(
         sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) * view_matrix;
 
-    for (int i = 0; i < TOTAL_BUILTIN_UNIFORMS; ++i) {
+    for (int i = 0; i < SG_TOTAL_BUILTIN_UNIFORMS; ++i) {
         osg::ref_ptr<osg::Uniform> u = _uniforms[i];
         switch (i) {
-        case VIEWPORT_SIZE:
+        case SG_UNIFORM_VIEWPORT_SIZE:
             u->set(osg::Vec2f(_viewport->width(), _viewport->height()));
             break;
-        case VIEW_MATRIX:
+        case SG_UNIFORM_VIEW_MATRIX:
             u->set(view_matrix);
             break;
-        case VIEW_MATRIX_INV:
+        case SG_UNIFORM_VIEW_MATRIX_INV:
             u->set(view_inverse);
             break;
-        case PROJECTION_MATRIX:
+        case SG_UNIFORM_PROJECTION_MATRIX:
             u->set(proj_matrix);
             break;
-        case PROJECTION_MATRIX_INV:
+        case SG_UNIFORM_PROJECTION_MATRIX_INV:
             u->set(osg::Matrix::inverse(proj_matrix));
             break;
-        case CAMERA_POSITION_CART:
+        case SG_UNIFORM_CAMERA_POSITION_CART:
             u->set(osg::Vec3f(camera_pos.x(), camera_pos.y(), camera_pos.z()));
             break;
-        case CAMERA_POSITION_GEOD:
+        case SG_UNIFORM_CAMERA_POSITION_GEOD:
             u->set(osg::Vec3f(camera_pos_geod.getLongitudeRad(),
                               camera_pos_geod.getLatitudeRad(),
                               camera_pos_geod.getElevationM()));
             break;
-        case NEAR_FAR:
+        case SG_UNIFORM_NEAR_FAR:
             u->set(osg::Vec2f(zNear, zFar));
             break;
-        case PLANES:
+        case SG_UNIFORM_PLANES:
             u->set(osg::Vec3f(-zFar, -zFar * zNear, zFar - zNear));
             break;
-        case SUN_DIRECTION:
+        case SG_UNIFORM_SUN_DIRECTION:
             u->set(osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));
             break;
-        case FCOEF:
+        case SG_UNIFORM_FCOEF:
             if (zFar != 0.0)
                 u->set(2.0f / log2(float(zFar) + 1.0f));
             break;

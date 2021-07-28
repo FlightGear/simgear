@@ -46,9 +46,9 @@
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/tgdb/VPBElevationSlice.hxx>
 #include <simgear/scene/tgdb/VPBTileBounds.hxx>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
-#include <simgear/scene/util/RenderConstants.hxx>
 
 #include "VPBTechnique.hxx"
 #include "TreeBin.hxx"
@@ -807,12 +807,14 @@ void VPBTechnique::generateGeometry(BufferData& buffer, Locator* masterLocator, 
   
     osg::ref_ptr<Effect> landEffect = makeEffect(landEffectProp, true, _options);
     buffer._landGeode->setEffect(landEffect.get());
+    buffer._landGeode->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
 
     buffer._waterGeometry = new osg::Geometry;
     buffer._waterGeode->addDrawable(buffer._waterGeometry.get());
   
     osg::ref_ptr<Effect> waterEffect = makeEffect(waterEffectProp, true, _options);
     buffer._waterGeode->setEffect(waterEffect.get());
+    buffer._waterGeode->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
 
     unsigned int numRows = 20;
     unsigned int numColumns = 20;
@@ -1594,6 +1596,7 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
         0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
         osg::Group* trees = createForest(randomForest, R_vert, _options, 1);
+        trees->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
         buffer._transform->addChild(trees);
     }
 
@@ -1686,7 +1689,7 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
 
             geode->setMaterial(mat);
             geode->setEffect(mat->get_one_effect(0));
-            geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+            geode->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
             buffer._transform->addChild(geode);
         }
     }
@@ -1875,7 +1878,7 @@ void VPBTechnique::applyAreaFeatures(BufferData& buffer, Locator* masterLocator)
 
             geode->setMaterial(mat);
             geode->setEffect(mat->get_one_effect(0));
-            geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+            geode->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
             buffer._transform->addChild(geode);
         }
     }
@@ -2051,7 +2054,7 @@ void VPBTechnique::applyCoastline(BufferData& buffer, Locator* masterLocator)
 
     geode->setMaterial(mat);
     geode->setEffect(mat->get_one_effect(0));
-    geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+    geode->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
     buffer._transform->addChild(geode);
 }
 

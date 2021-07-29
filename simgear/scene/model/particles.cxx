@@ -516,6 +516,14 @@ void Particles::setupStaticColorComponent(float r1, float g1, float b1, float a1
     staticColorComponents[7] = a2;
 }
 
+ParticlesGlobalManager::~ParticlesGlobalManager()
+{
+    // break a ref-counting cycle
+    if (d->_commonRoot) {
+        d->_commonRoot->removeUpdateCallback(d.get());
+    }
+}
+
 void ParticlesGlobalManager::setWindVector(const osg::Vec3& wind)
 {
     std::lock_guard<std::mutex> g(d->_lock);

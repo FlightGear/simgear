@@ -105,6 +105,7 @@ public:
             SGMaterialLibPtr matlib;
             osg::ref_ptr<SGMaterialCache> matcache; 
             
+            group->setName("TileDetails_Group_" + _path);
             group->setDataVariance(osg::Object::STATIC);
 
             // generate textured triangle list
@@ -1036,6 +1037,7 @@ public:
 
         unsigned nodeMask = SG_NODEMASK_RECEIVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
         objectLOD->setNodeMask(nodeMask);
+          objectLOD->setName("Tile_details_LOD_" + _path);
       }
 
       return objectLOD;

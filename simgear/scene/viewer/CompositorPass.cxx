@@ -199,7 +199,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     std::stringstream att_ss;
     std::string att_bit;
     // No implicit attachments by default
-    att_ss << root->getStringValue("implicit-attachment-mask", "color depth");
+    att_ss << root->getStringValue("implicit-attachment-mask", "");
     while (att_ss >> att_bit) {
         if (att_bit == "color")        implicit_attachments |= osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT;
         else if (att_bit == "depth")   implicit_attachments |= osg::DisplaySettings::IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
@@ -302,6 +302,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
             }
         }
 
+        bool color_buffer_present = false;
         for (auto const &p_attachment : p_attachments) {
             if (!checkConditional(p_attachment))
                 continue;
@@ -319,6 +320,21 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
 
                 osg::Camera::BufferComponent component = osg::Camera::COLOR_BUFFER;
                 findPropString(p_attachment, "component", component, buffer_component_map);
+                switch(component) {
+                case osg::Camera::COLOR_BUFFER:
+                case osg::Camera::COLOR_BUFFER0:
+                case osg::Camera::COLOR_BUFFER1:
+                case osg::Camera::COLOR_BUFFER2:
+                case osg::Camera::COLOR_BUFFER3:
+                case osg::Camera::COLOR_BUFFER4:
+                case osg::Camera::COLOR_BUFFER5:
+                case osg::Camera::COLOR_BUFFER6:
+                case osg::Camera::COLOR_BUFFER7:
+                    color_buffer_present = true;
+                    break;
+                default:
+                    break;
+                };
 
                 unsigned int level = p_attachment->getIntValue("level", 0);
                 unsigned int face = p_attachment->getIntValue("face", 0);
@@ -375,6 +391,12 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                        << ": " << e.what());
             }
         }
+
+        // Explicitly let OpenGL know that there are no color buffers attached.
+        // This is required on GL <4.2 contexts or the framebuffer will be
+        // considered incomplete.
+        if (!color_buffer_present)
+            camera->setDrawBuffer(GL_NONE);
     }
 
     return pass.release();

@@ -18,8 +18,14 @@
 
 #include <algorithm>
 
+#include <osg/Texture1D>
+#include <osg/Texture2D>
+#include <osg/Texture2DArray>
+#include <osg/Texture2DMultisample>
+#include <osg/Texture3D>
+#include <osg/TextureRectangle>
+#include <osg/TextureCubeMap>
 #include <osgUtil/IntersectionVisitor>
-
 #include <osgViewer/Renderer>
 #include <osgViewer/Viewer>
 
@@ -251,14 +257,78 @@ Compositor::resized()
     // viewport size.
     for (const auto &pass : _passes) {
         osg::Camera *camera = pass->camera;
-        if (!camera->isRenderToTextureCamera()  ||
-            pass->viewport_width_scale  == 0.0f ||
-            pass->viewport_height_scale == 0.0f)
-            continue;
+        if (camera && camera->isRenderToTextureCamera()
+            && pass->viewport_width_scale  != 0.0f
+            && pass->viewport_height_scale != 0.0f) {
 
-        // Resize both the viewport and its texture attachments
-        camera->resize(pass->viewport_width_scale  * _viewport->width(),
-                       pass->viewport_height_scale * _viewport->height());
+            // Resize the viewport
+            camera->setViewport(0, 0,
+                                pass->viewport_width_scale  * _viewport->width(),
+                                pass->viewport_height_scale * _viewport->height());
+            // Force the OSG rendering backend to handle the new sizes
+            camera->dirtyAttachmentMap();
+        }
+    }
+
+    // Resize buffers that must be a multiple of the screen size
+    for (const auto &buffer : _buffers) {
+        osg::Texture *texture = buffer.second->texture;
+        if (texture
+            && buffer.second->width_scale  != 0.0f
+            && buffer.second->height_scale != 0.0f) {
+
+            int width  = buffer.second->width_scale  * _viewport->width();
+            int height = buffer.second->height_scale * _viewport->height();
+            {
+                auto tex = dynamic_cast<osg::Texture1D *>(texture);
+                if (tex) {
+                    tex->setTextureWidth(width);
+                    tex->dirtyTextureObject();
+                }
+            }
+            {
+                auto tex = dynamic_cast<osg::Texture2D *>(texture);
+                if (tex) {
+                    tex->setTextureSize(width, height);
+                    tex->dirtyTextureObject();
+                }
+            }
+            {
+                auto tex = dynamic_cast<osg::Texture2DArray *>(texture);
+                if (tex) {
+                    tex->setTextureSize(width, height, tex->getTextureDepth());
+                    tex->dirtyTextureObject();
+                }
+            }
+            {
+                auto tex = dynamic_cast<osg::Texture2DMultisample *>(texture);
+                if (tex) {
+                    tex->setTextureSize(width, height);
+                    tex->dirtyTextureObject();
+                }
+            }
+            {
+                auto tex = dynamic_cast<osg::Texture3D *>(texture);
+                if (tex) {
+                    tex->setTextureSize(width, height, tex->getTextureDepth());
+                    tex->dirtyTextureObject();
+                }
+            }
+            {
+                auto tex = dynamic_cast<osg::TextureRectangle *>(texture);
+                if (tex) {
+                    tex->setTextureSize(width, height);
+                    tex->dirtyTextureObject();
+                }
+            }
+            {
+                auto tex = dynamic_cast<osg::TextureCubeMap *>(texture);
+                if (tex) {
+                    tex->setTextureSize(width, height);
+                    tex->dirtyTextureObject();
+                }
+            }
+        }
     }
 }
 

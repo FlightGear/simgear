@@ -395,9 +395,7 @@ public:
         camera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
 
         // Do not automatically add a depth renderbuffer
-        camera->setImplicitBufferAttachmentMask(
-            osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT,
-            osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT);
+        camera->setImplicitBufferAttachmentMask(0, 0);
 
         float left = 0.0f, bottom = 0.0f, width = 1.0f, height = 1.0f, scale = 1.0f;
         const SGPropertyNode *p_geometry = root->getNode("geometry");
@@ -431,10 +429,6 @@ public:
         osg::StateSet *ss = camera->getOrCreateStateSet();
         for (const auto &uniform : compositor->getUniforms())
             ss->addUniform(uniform);
-
-        int cubemap_face = root->getIntValue("cubemap-face", -1);
-        if (cubemap_face >= 0)
-            ss->addUniform(new osg::Uniform("fg_CubemapFace", cubemap_face));
 
         return pass.release();
     }

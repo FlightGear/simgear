@@ -81,7 +81,10 @@ private:
     typedef material_map::const_iterator const_material_map_iterator;
 
     material_map matlib;
-    
+
+
+    SGMaterial* internalFind(const std::string& material, const SGVec2f center) const;
+
 public:
 
     // Constructor

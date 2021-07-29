@@ -83,6 +83,8 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
     options->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     options->setDatabasePath(fg_root.utf8Str());
 
+    std::lock_guard<std::mutex> g(d->mutex);
+
     simgear::PropertyList blocks = materialblocks.getChildren("region");
     simgear::PropertyList::const_iterator block_iter = blocks.begin();
 
@@ -154,13 +156,19 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
 // find a material record by material name and tile center
 SGMaterial *SGMaterialLib::find( const string& material, const SGVec2f center ) const
 {
+    std::lock_guard<std::mutex> g(d->mutex);
+    return internalFind(material, center);
+}
+
+SGMaterial* SGMaterialLib::internalFind(const string& material, const SGVec2f center) const
+{
     SGMaterial *result = NULL;
     const_material_map_iterator it = matlib.find( material );
-    if ( it != end() ) {            
+    if (it != end()) {
         // We now have a list of materials that match this
         // name. Find the first one that matches.
-    	// We start at the end of the list, as the materials
-    	// list is ordered with the smallest regions at the end.
+        // We start at the end of the list, as the materials
+        // list is ordered with the smallest regions at the end.
         material_list::const_reverse_iterator iter = it->second.rbegin();
         while (iter != it->second.rend()) {
             result = *iter;
@@ -184,11 +192,12 @@ SGMaterial *SGMaterialLib::find( const string& material, const SGGeod& center ) 
 SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center)
 {
 	SGMaterialCache* newCache = new SGMaterialCache();
+    std::lock_guard<std::mutex> g(d->mutex);
+
     material_map::const_reverse_iterator it = matlib.rbegin();
     for (; it != matlib.rend(); ++it) {
-        newCache->insert(it->first, find(it->first, center));
+        newCache->insert(it->first, internalFind(it->first, center));
     }
-    
     return newCache;
 }
 

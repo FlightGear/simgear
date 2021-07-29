@@ -87,6 +87,8 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
     options->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     options->setDatabasePath(fg_root.utf8Str());
 
+    std::lock_guard<std::mutex> g(d->mutex);
+
     simgear::PropertyList blocks = materialblocks.getChildren("region");
     simgear::PropertyList::const_iterator block_iter = blocks.begin();
 
@@ -175,13 +177,19 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
 // find a material record by material name and tile center
 SGMaterial *SGMaterialLib::find( const string& material, const SGVec2f center ) const
 {
+    std::lock_guard<std::mutex> g(d->mutex);
+    return internalFind(material, center);
+}
+
+SGMaterial* SGMaterialLib::internalFind(const string& material, const SGVec2f center) const
+{
     SGMaterial *result = NULL;
     const_material_map_iterator it = matlib.find( material );
-    if ( it != end() ) {            
+    if (it != end()) {
         // We now have a list of materials that match this
         // name. Find the first one that matches.
-    	// We start at the end of the list, as the materials
-    	// list is ordered with the smallest regions at the end.
+        // We start at the end of the list, as the materials
+        // list is ordered with the smallest regions at the end.
         material_list::const_reverse_iterator iter = it->second.rbegin();
         while (iter != it->second.rend()) {
             result = *iter;
@@ -197,12 +205,18 @@ SGMaterial *SGMaterialLib::find( const string& material, const SGVec2f center ) 
 
 SGMaterial *SGMaterialLib::find( int lc, const SGVec2f center ) const
 {
-    const_landclass_map_iterator it = landclasslib.find( lc );
-    if (it != landclasslib.end()) {
-        return find(it->second.first, center);
-    } else {
-        return NULL;
+    std::string materialName;
+    {
+        std::lock_guard<std::mutex> g(d->mutex);
+        const_landclass_map_iterator it = landclasslib.find(lc);
+        if (it == landclasslib.end()) {
+            return nullptr;
+        }
+
+        materialName = it->second.first;
     }
+
+    return find(materialName, center);
 }
 
 // find a material record by material name and tile center
@@ -215,28 +229,35 @@ SGMaterial *SGMaterialLib::find( const string& material, const SGGeod& center ) 
 // find a material record by material name and tile center
 SGMaterial *SGMaterialLib::find( int lc, const SGGeod& center ) const
 {
-    const_landclass_map_iterator it = landclasslib.find( lc );
-    if (it != landclasslib.end()) {
-        return find(it->second.first, center);
-    } else {
-        return NULL;
+    std::string materialName;
+    {
+        std::lock_guard<std::mutex> g(d->mutex);
+        const_landclass_map_iterator it = landclasslib.find(lc);
+        if (it == landclasslib.end()) {
+            return nullptr;
+        }
+
+        materialName = it->second.first;
     }
+
+    return find(materialName, center);
 }
 
 SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center, const simgear::SGReaderWriterOptions* options)
 {
+    std::lock_guard<std::mutex> g(d->mutex);
 
 
-	SGMaterialCache* newCache = new SGMaterialCache(getMaterialTextureAtlas(center, options));
+    SGMaterialCache* newCache = new SGMaterialCache(getMaterialTextureAtlas(center, options));
     material_map::const_reverse_iterator it = matlib.rbegin();
     for (; it != matlib.rend(); ++it) {
-        newCache->insert(it->first, find(it->first, center));
+        newCache->insert(it->first, internalFind(it->first, center));
     }
 
     // Collapse down the mapping from landclasses to materials.
     const_landclass_map_iterator lc_iter = landclasslib.begin();
     for (; lc_iter != landclasslib.end(); ++lc_iter) {
-        newCache->insert(lc_iter->first, find(lc_iter->second.first, center));
+        newCache->insert(lc_iter->first, internalFind(lc_iter->second.first, center));
     }
 
     return newCache;

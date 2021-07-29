@@ -120,6 +120,8 @@ private:
     // Get a (cached) texture atlas for this material cache
     SGMaterialCache::Atlas getMaterialTextureAtlas(SGVec2f center, const simgear::SGReaderWriterOptions* options);
 
+    SGMaterial* internalFind(const std::string& material, const SGVec2f center) const;
+
 public:
 
     // Constructor

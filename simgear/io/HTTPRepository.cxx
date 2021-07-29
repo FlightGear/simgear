@@ -1424,7 +1424,8 @@ HTTPRepository::failure() const
         SG_LOG(SG_TERRASYNC, SG_WARN,
                "failed to update entry:" << relativePath << " status/code: "
                                          << innerResultCodeAsString(fileStatus)
-                                         << "/" << fileStatus);
+                                         << "/" << fileStatus
+                                         << "\nrepo:" << rootDir);
 
         simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
                                "failed to update entry:" + innerResultCodeAsString(fileStatus),

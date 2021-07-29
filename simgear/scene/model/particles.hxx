@@ -150,7 +150,7 @@ protected:
 class ParticlesGlobalManager
 {
 public:
-    ~ParticlesGlobalManager() = default;
+    ~ParticlesGlobalManager();
 
     static ParticlesGlobalManager* instance();
     static void clear();

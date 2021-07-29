@@ -120,7 +120,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     if (!tileGeometryBin->insertSurfaceGeometry(tile, matcache))
       return NULL;
 
-    osg::Node* node = tileGeometryBin->getSurfaceGeometry(matcache, useVBOs);
+    osg::ref_ptr<osg::Node> node = tileGeometryBin->getSurfaceGeometry(matcache, useVBOs);
 
     if (node) {
       // Get base node stateset

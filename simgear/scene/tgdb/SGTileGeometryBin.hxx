@@ -274,13 +274,13 @@ public:
     return true;
   }
 
-  osg::Node* getSurfaceGeometry(SGMaterialCache* matcache, bool useVBOs) const
+  osg::ref_ptr<osg::Node> getSurfaceGeometry(SGMaterialCache* matcache, bool useVBOs) const
   {
     if (materialTriangleMap.empty())
       return 0;
 
-    EffectGeode* eg = NULL;
-    osg::Group* group = (materialTriangleMap.size() > 1 ? new osg::Group : NULL);
+    osg::ref_ptr<EffectGeode> eg = NULL;
+    osg::ref_ptr<osg::Group> group = (materialTriangleMap.size() > 1 ? new osg::Group : NULL);
     if (group) {
         group->setName("surfaceGeometryGroup");
     }

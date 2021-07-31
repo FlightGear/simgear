@@ -36,6 +36,8 @@
 #include "simgear/misc/strutils.hxx"
 
 #include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/debug/Reporting.hxx>
+
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/io/sg_file.hxx>
@@ -244,6 +246,7 @@ public:
             const size_t sizeToCopy = cp.sizeInBytes();
             if (buf.size() < sizeToCopy) {
                 try {
+                    simgear::ReportBadAllocGuard g;
                     buf.resize(sizeToCopy);
                 } catch (std::bad_alloc&) {
                     simgear::reportFailure(simgear::LoadFailure::OutOfMemory, simgear::ErrorCode::TerraSync,

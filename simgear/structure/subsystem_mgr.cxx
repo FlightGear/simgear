@@ -32,6 +32,7 @@
 
 #include "SGSmplstat.hxx"
 #include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/debug/Reporting.hxx>
 #include <simgear/math/SGMath.hxx>
 #include <simgear/props/props.hxx>
 
@@ -840,6 +841,7 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
         return;
     }
 
+    simgear::ReportBadAllocGuard bg;
     SGTimeStamp oTimer;
     try {
         oTimer.stamp();

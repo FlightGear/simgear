@@ -23,6 +23,7 @@
 #include <osgDB/Registry>
 
 #include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/debug/Reporting.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/structure/exception.hxx>
@@ -65,6 +66,7 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
     osg::Node* result = NULL;
     simgear::ErrorReportContext ec{"btg", fileName};
     try {
+        simgear::ReportBadAllocGuard g;
         result = SGLoadBTG(fileName, sgOptions);
         if (!result)
             return ReadResult::FILE_NOT_HANDLED;

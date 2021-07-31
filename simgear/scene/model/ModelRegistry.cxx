@@ -57,6 +57,7 @@
 #include <simgear/scene/util/SGTextureStateAttributeVisitor.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/NodeAndDrawableVisitor.hxx>
+#include <simgear/debug/Reporting.hxx>
 
 #include <simgear/scene/tgdb/VPBTechnique.hxx>
 
@@ -560,6 +561,7 @@ ModelRegistry::readImage(const string& fileName,
     }
 
     try {
+        simgear::ReportBadAllocGuard g;
         // REVIEW: Memory Leak - 262,144 bytes in 1 blocks are indirectly lost
         // The leak occurs with OSG, but may be related to opt being a raw pointer
         res = registry->readImageImplementation(absFileName, opt);

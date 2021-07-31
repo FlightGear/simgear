@@ -405,6 +405,13 @@ namespace canvas
       _sampling_dirty = false;
       _render_dirty = true;
     }
+	
+    if( _anisotropy_dirty )
+    {
+      _texture.setMaxAnisotropy( _node->getFloatValue("anisotropy") );
+      _anisotropy_dirty = false;
+      _render_dirty = true;
+    }
 
     while( !_dirty_placements.empty() )
     {
@@ -698,7 +705,7 @@ namespace canvas
       }
       else if( name == "anisotropy" )
       {
-        _texture.setMaxAnisotropy( node->getFloatValue() );
+        _anisotropy_dirty = true;
       }
       else if( name == "additive-blend" )
       {

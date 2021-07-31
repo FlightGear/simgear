@@ -238,6 +238,7 @@ namespace canvas
       PropertyObject<std::string>   _status_msg;
 
       bool _sampling_dirty {false},
+           _anisotropy_dirty {false},
            _render_dirty {true},
            _visible {true};
 

@@ -2251,6 +2251,13 @@ void VPBTechnique::removeElevationConstraint(osg::ref_ptr<osg::Node> constraint)
     _constraintGroup->removeChild(constraint.get()); 
 }
 
+void VPBTechnique::clearElevationConstraints()
+{
+    const std::lock_guard<std::mutex> lock(VPBTechnique::_constraint_mutex); // Lock the _constraintGroup for this scope
+    _constraintGroup = new osg::Group();
+}
+
+
 // Check a given vertex against any elevation constraints  E.g. to ensure the terrain mesh doesn't
 // poke through any airport meshes.  If such a constraint exists, the function will return a replacement
 // vertex displaces such that it lies 1m below the contraint relative to the passed in origin.  

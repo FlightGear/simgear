@@ -95,6 +95,7 @@ class VPBTechnique : public TerrainTechnique
         static void addElevationConstraint(osg::ref_ptr<osg::Node> constraint, osg::Group* terrain);
         static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
+        static void clearElevationConstraints();
 
         // LineFeatures and AreaFeatures are draped over the underlying mesh.
         static void addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList);
@@ -183,7 +184,7 @@ class VPBTechnique : public TerrainTechnique
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
 
-        inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();;
+        inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();
         inline static std::mutex _constraint_mutex;  // protects the _constraintGroup;
 
         typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
@@ -198,10 +199,8 @@ class VPBTechnique : public TerrainTechnique
 
         inline static std::list<BucketCoastlineBinList>  _coastFeatureLists;
         inline static std::mutex _coastFeatureLists_mutex;  // protects the _areaFeatureLists;
-
 };
 
 };
-
 
 #endif

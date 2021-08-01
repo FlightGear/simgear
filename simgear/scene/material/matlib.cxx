@@ -245,10 +245,11 @@ SGMaterial *SGMaterialLib::find( int lc, const SGGeod& center ) const
 
 SGMaterialCache *SGMaterialLib::generateMatCache(SGVec2f center, const simgear::SGReaderWriterOptions* options)
 {
-    std::lock_guard<std::mutex> g(d->mutex);
-
 
     SGMaterialCache* newCache = new SGMaterialCache(getMaterialTextureAtlas(center, options));
+
+    std::lock_guard<std::mutex> g(d->mutex);
+
     material_map::const_reverse_iterator it = matlib.rbegin();
     for (; it != matlib.rend(); ++it) {
         newCache->insert(it->first, internalFind(it->first, center));

@@ -395,8 +395,10 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
         // Explicitly let OpenGL know that there are no color buffers attached.
         // This is required on GL <4.2 contexts or the framebuffer will be
         // considered incomplete.
-        if (!color_buffer_present)
+        if (!color_buffer_present) {
             camera->setDrawBuffer(GL_NONE);
+            camera->setReadBuffer(GL_NONE);
+        }
     }
 
     return pass.release();

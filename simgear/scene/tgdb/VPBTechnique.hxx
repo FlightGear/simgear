@@ -92,10 +92,16 @@ class VPBTechnique : public TerrainTechnique
         virtual void releaseGLObjects(osg::State* = 0) const;
 
         // Elevation constraints ensure that the terrain mesh is placed underneath objects such as airports
-        static void addElevationConstraint(osg::ref_ptr<osg::Node> constraint, osg::Group* terrain);
+        static void addElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
-        static void clearElevationConstraints();
+
+        // Vegetation constraints ensure that trees don't grow in roads
+        static void addVegetationConstraint(osg::ref_ptr<osg::Node> constraint);
+        static void removeVegetationConstraint(osg::ref_ptr<osg::Node> constraint);
+        static bool checkAgainstVegetationConstraints(osg::Vec3d origin, osg::Vec3d vertex);
+
+        static void clearConstraints();
 
         // LineFeatures and AreaFeatures are draped over the underlying mesh.
         static void addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList);
@@ -184,8 +190,11 @@ class VPBTechnique : public TerrainTechnique
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
 
-        inline static osg::ref_ptr<osg::Group>  _constraintGroup = new osg::Group();
-        inline static std::mutex _constraint_mutex;  // protects the _constraintGroup;
+        inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
+        inline static std::mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
+
+        inline static osg::ref_ptr<osg::Group>  _vegetationConstraintGroup = new osg::Group();
+        inline static std::mutex _vegetationConstraintMutex;  // protects the _vegetationConstraintGroup;
 
         typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
         typedef std::pair<SGBucket, AreaFeatureBinList> BucketAreaFeatureBinList;

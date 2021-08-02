@@ -770,7 +770,7 @@ struct ReaderWriterSTG::_ModelBin {
 
                 // Add the OBJECT to the elevation constraints of the terrain so the terrain
                 // doesn't poke through the airport
-                simgear::VPBTechnique::addElevationConstraint(node, terrainGroup);
+                simgear::VPBTechnique::addElevationConstraint(node);
 
                 terrainGroup->addChild(node.get());
             }

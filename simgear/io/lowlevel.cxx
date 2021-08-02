@@ -57,7 +57,7 @@ void sgReadChar ( gzFile fd, char *var )
 {
     if ( gzread ( fd, var, sizeof(char) ) != sizeof(char) ) {
         throw sg_io_exception("sgReadChar: GZRead failed:" + gzErrorMessage(fd),
-                              sg_location{thread_gzPath}, nullptr, false);
+                              sg_location{thread_gzPath}, {}, false);
     }
 }
 

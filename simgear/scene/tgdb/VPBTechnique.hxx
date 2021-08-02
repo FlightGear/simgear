@@ -91,15 +91,11 @@ class VPBTechnique : public TerrainTechnique
         * for all graphics contexts. */
         virtual void releaseGLObjects(osg::State* = 0) const;
 
-        // Elevation constraints ensure that the terrain mesh is placed underneath objects such as airports
+        // Elevation constraints ensure that the terrain mesh is placed underneath objects such as airports.
+        // As airports are generated in a separate loading thread, these are static.
         static void addElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static void removeElevationConstraint(osg::ref_ptr<osg::Node> constraint);
         static osg::Vec3d checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex, float vertex_gap);
-
-        // Vegetation constraints ensure that trees don't grow in roads
-        static void addVegetationConstraint(osg::ref_ptr<osg::Node> constraint);
-        static void removeVegetationConstraint(osg::ref_ptr<osg::Node> constraint);
-        static bool checkAgainstVegetationConstraints(osg::Vec3d origin, osg::Vec3d vertex);
 
         static void clearConstraints();
 
@@ -178,6 +174,13 @@ class VPBTechnique : public TerrainTechnique
 
         virtual osg::Vec3d getMeshIntersection(BufferData& buffer, Locator* masterLocator, osg::Vec3d pt, osg::Vec3d up);
 
+        // Vegetation constraints ensure that trees don't grow in roads.  Unlike the elevation constraints, 
+        // we only use these internally and during generation of this particular tile.
+        virtual void addVegetationConstraint(osg::ref_ptr<osg::Node> constraint);
+        virtual void removeVegetationConstraint(osg::ref_ptr<osg::Node> constraint);
+        virtual bool checkAgainstVegetationConstraints(osg::Vec3d origin, osg::Vec3d vertex);
+        virtual void clearVegetationConstraints();
+
         OpenThreads::Mutex                  _writeBufferMutex;
         osg::ref_ptr<BufferData>            _currentBufferData;
         osg::ref_ptr<BufferData>            _newBufferData;
@@ -189,12 +192,11 @@ class VPBTechnique : public TerrainTechnique
         osg::Matrix3                        _filterMatrix;
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
+        osg::ref_ptr<osg::Group>            _vegetationConstraintGroup;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
         inline static std::mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
 
-        inline static osg::ref_ptr<osg::Group>  _vegetationConstraintGroup = new osg::Group();
-        inline static std::mutex _vegetationConstraintMutex;  // protects the _vegetationConstraintGroup;
 
         typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
         typedef std::pair<SGBucket, AreaFeatureBinList> BucketAreaFeatureBinList;

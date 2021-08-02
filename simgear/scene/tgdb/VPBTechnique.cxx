@@ -61,6 +61,7 @@ VPBTechnique::VPBTechnique()
     setFilterBias(0);
     setFilterWidth(0.1);
     setFilterMatrixAs(GAUSSIAN);
+    _vegetationConstraintGroup = new osg::Group();
 }
 
 VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options)
@@ -69,6 +70,7 @@ VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options)
     setFilterWidth(0.1);
     setFilterMatrixAs(GAUSSIAN);
     setOptions(options);
+    _vegetationConstraintGroup = new osg::Group();
 }
 
 VPBTechnique::VPBTechnique(const VPBTechnique& gt,const osg::CopyOp& copyop):
@@ -78,6 +80,7 @@ VPBTechnique::VPBTechnique(const VPBTechnique& gt,const osg::CopyOp& copyop):
     setFilterWidth(gt._filterWidth);
     setFilterMatrix(gt._filterMatrix);
     setOptions(gt._options);
+    _vegetationConstraintGroup = new osg::Group();
 }
 
 VPBTechnique::~VPBTechnique()
@@ -2283,21 +2286,24 @@ osg::Vec3d VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg
 // intersection with the constraint model.
 void VPBTechnique::addVegetationConstraint(osg::ref_ptr<osg::Node> constraint)
 { 
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_vegetationConstraintMutex); // Lock the _vegetationConstraintGroup for this scope
     _vegetationConstraintGroup->addChild(constraint.get()); 
 }
 
 // Remove a previously added constraint.  E.g on model unload.
 void VPBTechnique::removeVegetationConstraint(osg::ref_ptr<osg::Node> constraint)
 { 
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_vegetationConstraintMutex); // Lock the _vegetationConstraintGroup for this scope
     _vegetationConstraintGroup->removeChild(constraint.get()); 
+}
+
+// Remove all the constraints, which will still be referenced by the terrain tile itself.
+void VPBTechnique::clearVegetationConstraints()
+{ 
+    _vegetationConstraintGroup->removeChildren(0, _vegetationConstraintGroup->getNumChildren());
 }
 
 // Check a given vertex against any vegetation constraints  E.g. to ensure we don't get trees sprouting from roads or runways.  
 bool VPBTechnique::checkAgainstVegetationConstraints(osg::Vec3d origin, osg::Vec3d vertex)
 {
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_vegetationConstraintMutex); // Lock the _vegetationConstraintGroup for this scope
     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
     intersector = new osgUtil::LineSegmentIntersector(origin, vertex);
     osgUtil::IntersectionVisitor visitor(intersector.get());
@@ -2308,9 +2314,7 @@ bool VPBTechnique::checkAgainstVegetationConstraints(osg::Vec3d origin, osg::Vec
 void VPBTechnique::clearConstraints()
 {
     const std::lock_guard<std::mutex> elock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
-    const std::lock_guard<std::mutex> vlock(VPBTechnique::_vegetationConstraintMutex); // Lock the _vegetationConstraintGroup for this scope
     _elevationConstraintGroup = new osg::Group();
-    _vegetationConstraintGroup = new osg::Group();
 }
 
 void VPBTechnique::addLineFeatureList(SGBucket bucket, LineFeatureBinList roadList)

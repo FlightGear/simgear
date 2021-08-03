@@ -1464,6 +1464,19 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
 
         const double D = det2(ll_x, ll_y);
 
+        // At the detailed tile level we are generating vegetation, and
+        // as we walk across the tile in a scanline, the landclass doesn't
+        // change regularly from point to point.  Cache the required
+        // material information for the current landclass to reduce the
+        // number of lookups into the material cache.
+        int current_land_class = -1;
+        osg::Texture2D* object_mask = NULL;
+        osg::Image* img = NULL;
+        float x_scale = 1000.0;
+        float y_scale = 1000.0;
+        TreeBin* bin = NULL;
+        float wood_coverage = 0.0;
+
         for (int lat_int = min_lat - 1; lat_int <= max_lat + 1; lat_int++)
         {
             const double lat = (lat_int - off_y) * delta_lat;
@@ -1480,28 +1493,78 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
                     continue;
                 }
 
-                osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
 
                 if (!image) {
                     SG_LOG(SG_TERRAIN, SG_ALERT, "Image disappeared under my feet.");
                     continue;
                 }
 
+                osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
                 unsigned int tx = (unsigned int) (image->s() * t.x()) % image->s();
                 unsigned int ty = (unsigned int) (image->t() * t.y()) % image->t();
                 const osg::Vec4 tc = image->getColor(tx, ty);
                 const int land_class = int(round(tc.x() * 255.0));
-                mat = matcache->find(land_class);
 
-                if (!mat) {
-                    //SG_LOG(SG_TERRAIN, SG_ALERT, "Failed to find material for landclass " << land_class << " (" << tc.r() << ")");
-                    continue;
+                if (land_class != current_land_class) {
+                    // Use temporal locality to reduce material lookup by caching
+                    // some elements for future lookups against the same landclass.
+                    mat = matcache->find(land_class);
+                    if (!mat) continue;
+
+                    current_land_class = land_class;
+
+                    if (mat->get_wood_coverage() <= 0) continue;
+
+                    wood_coverage = 2000.0 / mat->get_wood_coverage();
+                    object_mask = mat->get_one_object_mask(0);
+                    if (object_mask != NULL) {
+                        img = object_mask->getImage();
+                        if (!img || ! img->valid()) continue;
+
+                        // Texture coordinates run [0..1][0..1] across the entire tile whereas
+                        // the texure itself has defined dimensions in m.
+                        // We therefore need to use the tile width and height to determine the correct
+                        // texture coordinate transformation.
+                        x_scale = buffer._width / 1000.0;
+                        y_scale = buffer._height / 1000.0;
+
+                        if (mat->get_xsize() > 0.0) { x_scale = buffer._width / mat->get_xsize(); }
+                        if (mat->get_ysize() > 0.0) { y_scale = buffer._height / mat->get_ysize(); }
+                    }
+
+                    bool found = false;
+
+                    for (SGTreeBinList::iterator iter = randomForest.begin(); iter != randomForest.end(); iter++) {
+
+                        bin = *iter;
+
+                        if ((bin->texture           == mat->get_tree_texture()  ) &&
+                            (bin->teffect           == mat->get_tree_effect()   ) &&
+                            (bin->texture_varieties == mat->get_tree_varieties()) &&
+                            (bin->range             == mat->get_tree_range()    ) &&
+                            (bin->width             == mat->get_tree_width()    ) &&
+                            (bin->height            == mat->get_tree_height()   )   ) {
+                                found = true;
+                                break;
+                        }
+                    }
+                    
+                    if (!found) {
+                        bin = new TreeBin();
+                        bin->texture = mat->get_tree_texture();
+                        SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree texture " << bin->texture);
+                        bin->teffect = mat->get_tree_effect();
+                        SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree effect " << bin->teffect);
+                        bin->range   = mat->get_tree_range();
+                        bin->width   = mat->get_tree_width();
+                        bin->height  = mat->get_tree_height();
+                        bin->texture_varieties = mat->get_tree_varieties();
+                        randomForest.push_back(bin);
+                    }
                 }
 
+                if (!mat) continue;
                 if (mat->get_wood_coverage() <= 0) continue;
-
-                float wood_coverage = 2000.0 / mat->get_wood_coverage();
-
                 if (pc_map_rand(lon_int, lat_int, 2) > wood_coverage) continue;
 
                 if (mat->get_is_plantation()) {
@@ -1515,81 +1578,26 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
                 x = det2(ll_x, p) / D;
                 y = det2(p, ll_y) / D;
 
-                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0))
-                {
-                    continue;
-                }
-
-                t = osg::Vec2(t_0 + t_x * x + t_y * y);
+                // Check for invalid triangle coordinates.
+                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0)) continue;
 
                 // Check against any object mask
-                osg::Texture2D* object_mask = mat->get_one_object_mask(0);
-
                 if (object_mask != NULL) {
-                    osg::Image* img = object_mask->getImage();
-                    if (!img || ! img->valid()) continue;
-
-                    // Texture coordinates run [0..1][0..1] across the entire tile whereas
-                    // the texure itself has defined dimensions in m.
-                    // We therefore need to use the tile width and height to determine the correct
-                    // texture coordinate transformation.
-                    float x_scale = buffer._width / 1000.0;
-                    float y_scale = buffer._height / 1000.0;
-
-                    if (mat->get_xsize() > 0.0) { x_scale = buffer._width / mat->get_xsize(); }
-                    if (mat->get_ysize() > 0.0) { y_scale = buffer._height / mat->get_ysize(); }
-
+                    t = osg::Vec2(t_0 + t_x * x + t_y * y);
                     unsigned int x = (unsigned int) (img->s() * t.x() * x_scale) % img->s();
                     unsigned int y = (unsigned int) (img->t() * t.y() * y_scale) % img->t();
 
                     // green (for trees) channel
-
-                    if (pc_map_rand(lon_int, lat_int, 3) > img->getColor(x, y).g()) {
-                        continue;
-                    }
-
-                }
-
-                TreeBin* bin = NULL;
-                bool found = false;
-
-                for (SGTreeBinList::iterator iter = randomForest.begin(); iter != randomForest.end(); iter++) {
-
-                    bin = *iter;
-
-                    if ((bin->texture           == mat->get_tree_texture()  ) &&
-                        (bin->teffect           == mat->get_tree_effect()   ) &&
-                        (bin->texture_varieties == mat->get_tree_varieties()) &&
-                        (bin->range             == mat->get_tree_range()    ) &&
-                        (bin->width             == mat->get_tree_width()    ) &&
-                        (bin->height            == mat->get_tree_height()   )   ) {
-                            found = true;
-                            break;
-                    }
+                    if (pc_map_rand(lon_int, lat_int, 3) > img->getColor(x, y).g()) continue;
                 }
                 
-                if (!found) {
-                    bin = new TreeBin();
-                    bin->texture = mat->get_tree_texture();
-                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree texture " << bin->texture);
-                    bin->teffect = mat->get_tree_effect();
-                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree effect " << bin->teffect);
-                    bin->range   = mat->get_tree_range();
-                    bin->width   = mat->get_tree_width();
-                    bin->height  = mat->get_tree_height();
-                    bin->texture_varieties = mat->get_tree_varieties();
-                    randomForest.push_back(bin);
-                }
-                
+                // Check against constraints to stop trees growing from roads;
                 const osg::Vec3 vp = v_x * x + v_y * y + v_0;
+                if (checkAgainstVegetationConstraints(vp - up*100, vp + up*100)) continue;
 
-                if (! checkAgainstVegetationConstraints(vp - up*100, vp + up*100)) {
-                    bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()), SGVec3f(n.x(), n.y(), n.z()));
-                }
+                bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()), SGVec3f(n.x(), n.y(), n.z()));
             }
-
         }
-
     }
 
     if (randomForest.size() > 0) {

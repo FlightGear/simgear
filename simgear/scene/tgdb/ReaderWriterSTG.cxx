@@ -56,7 +56,7 @@
 #include <simgear/scene/tgdb/SGBuildingBin.hxx>
 #include <simgear/scene/tgdb/TreeBin.hxx>
 #include <simgear/scene/tgdb/VPBTechnique.hxx>
-
+#include <simgear/scene/tgdb/LightBin.hxx>
 
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 
@@ -73,6 +73,8 @@
 #define LINE_FEATURE_LIST "LINE_FEATURE_LIST"
 #define AREA_FEATURE_LIST "AREA_FEATURE_LIST"
 #define COASTLINE_LIST "COASTLINE_LIST"
+#define OBJECT_LIGHT "OBJECT_LIGHT"
+#define LIGHT_LIST "LIGHT_LIST"
 
 namespace simgear {
 
@@ -152,6 +154,21 @@ struct ReaderWriterSTG::_ModelBin {
       _TreeList() : _lon(0), _lat(0), _elev(0) { }
       std::string _filename;
       std::string _material_name;
+      double _lon, _lat, _elev;
+    };
+    struct _Light {
+        _Light() : _lon(0), _lat(0), _elev(0), _size(0), _intensity(0), _on_period(0), _horizontal_angle(0), _vertical_angle(0) { }
+        double _lon, _lat, _elev;
+        double _size, _intensity;
+        int _on_period;
+        SGVec4f _color;
+        SGVec3f _direction;
+        double _horizontal_angle, _vertical_angle;
+        SGVec4f _animation_params;
+    };
+    struct _LightList {
+      _LightList() : _lon(0), _lat(0), _elev(0) { }
+      std::string _filename;
       double _lon, _lat, _elev;
     };
 
@@ -334,6 +351,49 @@ struct ReaderWriterSTG::_ModelBin {
                 }
             }
 
+            // Add lights
+            if (!_lightList.empty()) {
+                // Transform lights frame of ref for better precision
+                osg::MatrixTransform* matrixTransform;
+                matrixTransform = new osg::MatrixTransform(makeZUpFrame(_bucket.get_center()));
+                matrixTransform->setName("rotateLights");
+                matrixTransform->setDataVariance(osg::Object::STATIC);
+
+                LightBin lightList;
+                for (const auto& light : _lightList) {
+                    osg::Matrix _position_frame(makeZUpFrame(SGGeod::fromDegM(light._lon, light._lat, light._elev)));
+                    SGVec3f _position(_position_frame(3,0), _position_frame(3,1), _position_frame(3,2));
+
+                    lightList.insert(
+                        _position,
+                        light._size, light._intensity,
+                        light._on_period,
+                        light._color,
+                        light._direction,
+                        light._horizontal_angle, light._vertical_angle,
+                        light._animation_params
+                    );
+                }
+
+                matrixTransform->addChild(createLights(lightList, matrixTransform->getInverseMatrix(), _options));
+                group->addChild(matrixTransform);
+            }
+
+            if (!_lightListList.empty()) {
+                for (const auto& ll : _lightListList) {
+                    osg::MatrixTransform* matrixTransform;
+                    matrixTransform = new osg::MatrixTransform(makeZUpFrame(SGGeod::fromDegM(ll._lon, ll._lat, ll._elev)));
+                    matrixTransform->setName("rotateLights");
+                    matrixTransform->setDataVariance(osg::Object::STATIC);
+
+                    const auto path = SGPath(ll._filename);
+                    LightBin lightList(path);
+
+                    matrixTransform->addChild(createLights(lightList, osg::Matrix::identity(), _options));
+                    group->addChild(matrixTransform);
+                }
+            }
+
             return group.release();
         }
 
@@ -342,6 +402,8 @@ struct ReaderWriterSTG::_ModelBin {
         std::list<_Sign> _signList;
         std::list<_BuildingList> _buildingList;
         std::list<_TreeList> _treeList;
+        std::list<_Light> _lightList;
+        std::list<_LightList> _lightListList;
 
         /// The original options to use for this bunch of models
         osg::ref_ptr<SGReaderWriterOptions> _options;
@@ -653,6 +715,23 @@ struct ReaderWriterSTG::_ModelBin {
                   coastFeaturelist._filename = path.utf8Str();
                   coastFeaturelist._bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
                   _coastFeatureListList.push_back(coastFeaturelist);
+                } else if (token == OBJECT_LIGHT) {
+                    _Light light;
+                    in >> light._lon >> light._lat >> light._elev
+                        >> light._size >> light._intensity
+                        >> light._on_period
+                        >> light._color[0] >> light._color[1] >> light._color[2] >> light._color[3]
+                        >> light._direction[0] >> light._direction[1] >> light._direction[2]
+                        >> light._horizontal_angle >> light._vertical_angle
+                        >> light._animation_params[0] >> light._animation_params[1] >> light._animation_params[2] >> light._animation_params[3];
+                    checkInsideBucket(absoluteFileName, light._lon, light._lat);
+                    _lightList.push_back(light);
+                } else if (token == LIGHT_LIST) {
+                    _LightList lightList;
+                    lightList._filename = path.utf8Str();
+                    in >> lightList._lon >> lightList._lat >> lightList._elev;
+                    checkInsideBucket(absoluteFileName, lightList._lon, lightList._lat);
+                    _lightListList.push_back(lightList);
                 } else {
                     // Check registered callback for token. Keep lock until callback completed to make sure it will not be
                     // executed after a thread successfully executed removeSTGObjectHandler()
@@ -818,7 +897,9 @@ struct ReaderWriterSTG::_ModelBin {
             _treeListList.empty() && 
             _lineFeatureListList.empty() && 
             _areaFeatureListList.empty() && 
-            _coastFeatureListList.empty()) 
+            _coastFeatureListList.empty() &&
+            _lightList.empty() &&
+            _lightListList.empty())
         {
             // The simple case, just return the terrain group
             return terrainGroup.release();
@@ -839,6 +920,8 @@ struct ReaderWriterSTG::_ModelBin {
         readFileCallback->_objectStaticList = _objectStaticList;
         readFileCallback->_buildingList = _buildingListList;
         readFileCallback->_treeList = _treeListList;
+        readFileCallback->_lightList = _lightList;
+        readFileCallback->_lightListList = _lightListList;
         readFileCallback->_signList = _signList;
         readFileCallback->_options = options;
         readFileCallback->_bucket = bucket;
@@ -871,6 +954,8 @@ struct ReaderWriterSTG::_ModelBin {
     std::list<_LineFeatureList> _lineFeatureListList;
     std::list<_AreaFeatureList> _areaFeatureListList;
     std::list<_CoastlineList> _coastFeatureListList;
+    std::list<_Light> _lightList;
+    std::list<_LightList> _lightListList;
 };
 
 ReaderWriterSTG::ReaderWriterSTG()

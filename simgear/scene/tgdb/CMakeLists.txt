@@ -5,6 +5,7 @@ set(HEADERS
     CoastlineBin.hxx
     GroundLightManager.hxx
     LineFeatureBin.hxx
+    LightBin.hxx
     ReaderWriterSPT.hxx
     ReaderWriterSTG.hxx
     SGBuildingBin.hxx
@@ -36,6 +37,7 @@ set(SOURCES
     CoastlineBin.cxx
     GroundLightManager.cxx
     LineFeatureBin.cxx
+    LightBin.cxx
     ReaderWriterSPT.cxx
     ReaderWriterSTG.cxx
     SGBuildingBin.cxx

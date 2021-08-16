@@ -403,6 +403,25 @@ TextureBuilder::Registrar installTransparent("transparent",
                                              new TransparentTextureBuilder);
 }
 
+class NullNormalmapTextureBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+};
+
+Texture* NullNormalmapTextureBuilder::build(Effect* effect, const SGPropertyNode*,
+                                            const SGReaderWriterOptions* options)
+{
+    return StateAttributeFactory::instance()->getNullNormalmapTexture();
+}
+
+namespace
+{
+TextureBuilder::Registrar installNullNormalmap("null-normalmap",
+                                               new NullNormalmapTextureBuilder);
+}
+
 class NoiseBuilder : public TextureBuilder
 {
 public:

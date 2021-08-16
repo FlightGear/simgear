@@ -66,6 +66,8 @@ public:
     {
         return _transparentTexture.get();
     }
+    // Null normalmap texture vec3(0.5, 0.5, 1.0)
+    osg::Texture2D* getNullNormalmapTexture() { return _nullNormalmapTexture.get(); }
     // cull front and back facing polygons
     osg::CullFace* getCullFaceFront() { return _cullFaceFront.get(); }
     osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
@@ -81,6 +83,7 @@ protected:
     osg::ref_ptr<osg::TexEnv> _standardTexEnv;
     osg::ref_ptr<osg::Texture2D> _whiteTexture;
     osg::ref_ptr<osg::Texture2D> _transparentTexture;
+    osg::ref_ptr<osg::Texture2D> _nullNormalmapTexture;
     osg::ref_ptr<osg::Vec4Array> _white;
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;

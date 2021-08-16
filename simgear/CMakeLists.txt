@@ -169,7 +169,8 @@ if(NOT SIMGEAR_HEADLESS)
     target_link_libraries(SimGearScene PRIVATE
         ZLIB::ZLIB
         ${OPENGL_LIBRARY}
-        ${JPEG_LIBRARY})
+        ${JPEG_LIBRARY}
+        FGTinyGLTF)
 
     # ToDo: define an ALIAS target for the sound backend, to get
     # rid of this logic here

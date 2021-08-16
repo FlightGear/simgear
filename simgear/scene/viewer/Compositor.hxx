@@ -59,7 +59,6 @@ public:
         SG_UNIFORM_CAMERA_POSITION_GEOD,
         SG_UNIFORM_NEAR_FAR,
         SG_UNIFORM_PLANES,
-        SG_UNIFORM_FCOEF,
         SG_UNIFORM_SUN_DIRECTION,
         SG_UNIFORM_SUN_DIRECTION_WORLD,
         SG_TOTAL_BUILTIN_UNIFORMS
@@ -113,7 +112,7 @@ public:
     typedef std::array<
         osg::ref_ptr<osg::Uniform>,
         SG_TOTAL_BUILTIN_UNIFORMS> BuiltinUniforms;
-    const BuiltinUniforms &getUniforms() const { return _uniforms; }
+    const BuiltinUniforms &getBuiltinUniforms() const { return _uniforms; }
 
     void               addBuffer(const std::string &name, Buffer *buffer);
     void               addPass(Pass *pass);

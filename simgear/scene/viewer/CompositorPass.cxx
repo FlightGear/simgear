@@ -451,7 +451,7 @@ public:
                             | osg::StateAttribute::PROTECTED);
 
         osg::StateSet *ss = camera->getOrCreateStateSet();
-        for (const auto &uniform : compositor->getUniforms())
+        for (const auto &uniform : compositor->getBuiltinUniforms())
             ss->addUniform(uniform);
 
         return pass.release();
@@ -743,6 +743,10 @@ public:
         osg::Camera *camera = pass->camera;
         camera->setAllowEventFocus(true);
 
+        const SGPropertyNode *p_lod_scale = root->getNode("lod-scale");
+        if (p_lod_scale)
+            camera->setLODScale(p_lod_scale->getFloatValue());
+
         const SGPropertyNode *p_clustered = root->getNode("clustered-shading");
         ClusteredShading *clustered = nullptr;
         if (p_clustered) {
@@ -760,8 +764,7 @@ public:
         pass->update_callback = new SceneUpdateCallback(cubemap_face, zNear, zFar);
 
         osg::StateSet *ss = camera->getOrCreateStateSet();
-        auto &uniforms = compositor->getUniforms();
-        ss->addUniform(uniforms[Compositor::SG_UNIFORM_FCOEF]);
+        auto &uniforms = compositor->getBuiltinUniforms();
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION_WORLD]);
 

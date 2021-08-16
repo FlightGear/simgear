@@ -148,7 +148,6 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
     new osg::Uniform("fg_NearFar", osg::Vec2f()),
     new osg::Uniform("fg_Planes", osg::Vec3f()),
-    new osg::Uniform("fg_Fcoef", 0.0f),
     new osg::Uniform("fg_SunDirection", osg::Vec3f()),
     new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
     }
@@ -236,10 +235,6 @@ Compositor::update(const osg::Matrix &view_matrix,
             break;
         case SG_UNIFORM_SUN_DIRECTION:
             u->set(osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));
-            break;
-        case SG_UNIFORM_FCOEF:
-            if (zFar != 0.0)
-                u->set(2.0f / log2(float(zFar) + 1.0f));
             break;
         default:
             // Unknown uniform

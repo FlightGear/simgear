@@ -5,8 +5,6 @@ target_include_directories(FGTinyGLTF
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include>)
 
-set_target_properties(FGTinyGLTF PROPERTIES LINKER_LANGUAGE CXX)
-
 # in the non-shared case, we need to export these as well
 if (NOT SIMGEAR_SHARED)
   install(TARGETS FGTinyGLTF

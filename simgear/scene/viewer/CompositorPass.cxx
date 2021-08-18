@@ -765,8 +765,15 @@ public:
 
         osg::StateSet *ss = camera->getOrCreateStateSet();
         auto &uniforms = compositor->getBuiltinUniforms();
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_VIEWPORT]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_POSITION_CART]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_POSITION_GEOD]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_DISTANCE_TO_EARTH_CENTER]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION_WORLD]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_ZENITH_COSTHETA]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_EARTH_RADIUS]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_WORLD_UP]);
 
         osg::ref_ptr<osg::Uniform> clustered_shading_enabled =
             new osg::Uniform("fg_ClusteredEnabled", clustered ? true : false);

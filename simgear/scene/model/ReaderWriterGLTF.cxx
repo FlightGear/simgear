@@ -135,12 +135,12 @@ struct GLTFBuilder {
             group->addChild(geode);
 
             SGPropertyNode_ptr effectRoot = new SGPropertyNode;
+            // Material is OPAQUE by default, so inherit from model-pbr
             makeChild(effectRoot, "inherits-from")->setStringValue("Effects/model-pbr");
             if (primitive.material >= 0) {
                 // We have a material assigned to the primitive, add all the
                 // required material info as parameters to the Effect.
-                makeMaterialParameters(makeChild(effectRoot, "parameters"),
-                                       model.materials[primitive.material]);
+                makeMaterialParameters(effectRoot, model.materials[primitive.material]);
             }
             Effect *effect = makeEffect(effectRoot, true, opts);
             if (effect)
@@ -212,9 +212,23 @@ struct GLTFBuilder {
         return group;
     }
 
-    bool makeMaterialParameters(SGPropertyNode *params,
+    bool makeMaterialParameters(SGPropertyNode *effectRoot,
                                 const tinygltf::Material &material) const {
+        SGPropertyNode *params = makeChild(effectRoot, "parameters");
         const tinygltf::PbrMetallicRoughness &pbr = material.pbrMetallicRoughness;
+
+        // Handle transparent modes
+        // We have a separate Effect for transparent objects, so inherit from
+        // that instead.
+        if (material.alphaMode == "MASK") {
+            effectRoot->setStringValue("inherits-from", "Effects/model-pbr-transparent");
+            makeChild(params, "blend")->setValue(0);
+            makeChild(params, "alpha-cutoff")->setValue(material.alphaCutoff);
+        } else if (material.alphaMode == "BLEND") {
+            effectRoot->setStringValue("inherits-from", "Effects/model-pbr-transparent");
+            makeChild(params, "blend")->setValue(1);
+            makeChild(params, "alpha-cutoff")->setValue(-1.0);
+        }
 
         makeChild(params, "base-color-factor")->setValue(
             SGVec4d(pbr.baseColorFactor[0],
@@ -227,21 +241,6 @@ struct GLTFBuilder {
             SGVec3d(material.emissiveFactor[0],
                     material.emissiveFactor[1],
                     material.emissiveFactor[2]));
-
-        SGPropertyNode *blendNode = makeChild(params, "blend");
-        if (material.alphaMode == "OPAQUE") {
-            makeChild(blendNode, "active")->setValue(false);
-            makeChild(params, "rendering-hint")->setStringValue("opaque");
-            makeChild(params, "alpha-cutoff")->setValue(-1.0);
-        } else if (material.alphaMode == "MASK") {
-            makeChild(blendNode, "active")->setValue(false);
-            makeChild(params, "rendering-hint")->setStringValue("opaque");
-            makeChild(params, "alpha-cutoff")->setValue(material.alphaCutoff);
-        } else if (material.alphaMode == "BLEND") {
-            makeChild(blendNode, "active")->setValue(true);
-            makeChild(params, "rendering-hint")->setStringValue("transparent");
-            makeChild(params, "alpha-cutoff")->setValue(-1.0);
-        }
 
         std::string cullFaceString;
         if (material.doubleSided) {

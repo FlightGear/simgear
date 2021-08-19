@@ -190,7 +190,7 @@ Compositor::update(const osg::Matrix &view_matrix,
 
     osg::Vec3d world_up = camera_pos;
     world_up.normalize();
-    osg::Vec3d view_up = world_up * view_inverse;
+    osg::Vec3d view_up = world_up * view_matrix;
     view_up.normalize();
 
     double left = 0.0, right = 0.0, bottom = 0.0, top = 0.0,

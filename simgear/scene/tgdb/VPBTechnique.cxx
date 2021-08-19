@@ -169,10 +169,10 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         else
         {
             applyColorLayers(*buffer, masterLocator);
-            applyTrees(*buffer, masterLocator);
             applyLineFeatures(*buffer, masterLocator);
             applyAreaFeatures(*buffer, masterLocator);
             applyCoastline(*buffer, masterLocator);
+            applyTrees(*buffer, masterLocator);
         }
     }
     else
@@ -1418,6 +1418,19 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
      lon, osg::Vec3d(0.0, 0.0, 1.0),
      0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
+    // At the detailed tile level we are generating vegetation, and
+    // as we walk across the tile in a scanline, the landclass doesn't
+    // change regularly from point to point.  Cache the required
+    // material information for the current landclass to reduce the
+    // number of lookups into the material cache.
+    int current_land_class = -1;
+    osg::Texture2D* object_mask = NULL;
+    osg::Image* img = NULL;
+    float x_scale = 1000.0;
+    float y_scale = 1000.0;
+    TreeBin* bin = NULL;
+    float wood_coverage = 0.0;
+
     for (unsigned int i = 0; i < triangle_count; i++)
     {
         const int i0 = drawElements->index(3 * i);
@@ -1464,19 +1477,6 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
 
         const double D = det2(ll_x, ll_y);
 
-        // At the detailed tile level we are generating vegetation, and
-        // as we walk across the tile in a scanline, the landclass doesn't
-        // change regularly from point to point.  Cache the required
-        // material information for the current landclass to reduce the
-        // number of lookups into the material cache.
-        int current_land_class = -1;
-        osg::Texture2D* object_mask = NULL;
-        osg::Image* img = NULL;
-        float x_scale = 1000.0;
-        float y_scale = 1000.0;
-        TreeBin* bin = NULL;
-        float wood_coverage = 0.0;
-
         for (int lat_int = min_lat - 1; lat_int <= max_lat + 1; lat_int++)
         {
             const double lat = (lat_int - off_y) * delta_lat;
@@ -1488,11 +1488,7 @@ void VPBTechnique::applyTrees(BufferData& buffer, Locator* masterLocator)
                 double x = det2(ll_x, p) / D;
                 double y = det2(p, ll_y) / D;
 
-                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0))
-                {
-                    continue;
-                }
-
+                if ((x < 0.0) || (y < 0.0) || (x + y > 1.0)) continue;
 
                 if (!image) {
                     SG_LOG(SG_TERRAIN, SG_ALERT, "Image disappeared under my feet.");

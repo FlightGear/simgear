@@ -147,13 +147,14 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_CameraPositionCart", osg::Vec3f()),
     new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
     new osg::Uniform("fg_CameraDistanceToEarthCenter", 0.0f),
+    new osg::Uniform("fg_CameraWorldUp", osg::Vec3f()),
+    new osg::Uniform("fg_CameraViewUp", osg::Vec3f()),
     new osg::Uniform("fg_NearFar", osg::Vec2f()),
     new osg::Uniform("fg_Planes", osg::Vec3f()),
     new osg::Uniform("fg_SunDirection", osg::Vec3f()),
     new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
     new osg::Uniform("fg_SunZenithCosTheta", 0.0f),
     new osg::Uniform("fg_EarthRadius", 0.0f),
-    new osg::Uniform("fg_WorldUp", osg::Vec3f()),
     }
 {
     _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->setUpdateCallback(
@@ -189,6 +190,8 @@ Compositor::update(const osg::Matrix &view_matrix,
 
     osg::Vec3d world_up = camera_pos;
     world_up.normalize();
+    osg::Vec3d view_up = world_up * view_inverse;
+    view_up.normalize();
 
     double left = 0.0, right = 0.0, bottom = 0.0, top = 0.0,
         zNear = 0.0, zFar = 0.0;
@@ -241,6 +244,12 @@ Compositor::update(const osg::Matrix &view_matrix,
         case SG_UNIFORM_CAMERA_DISTANCE_TO_EARTH_CENTER:
             u->set(float(camera_pos.length()));
             break;
+        case SG_UNIFORM_CAMERA_WORLD_UP:
+            u->set(osg::Vec3f(world_up));
+            break;
+        case SG_UNIFORM_CAMERA_VIEW_UP:
+            u->set(osg::Vec3f(view_up));
+            break;
         case SG_UNIFORM_NEAR_FAR:
             u->set(osg::Vec2f(zNear, zFar));
             break;
@@ -255,9 +264,6 @@ Compositor::update(const osg::Matrix &view_matrix,
             break;
         case SG_UNIFORM_EARTH_RADIUS:
             u->set(float(camera_pos.length() - camera_pos_geod.getElevationM()));
-            break;
-        case SG_UNIFORM_WORLD_UP:
-            u->set(osg::Vec3f(world_up));
             break;
         default:
             // Unknown uniform

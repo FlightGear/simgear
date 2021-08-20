@@ -343,7 +343,7 @@ public:
      * Schedule this audio sample to stop (or start) playing.
      */
     inline void set_out_of_range(bool oor = true) {
-        _out_of_range = oor; _playing = (!oor && _loop); _changed = true;
+        _out_of_range = oor; _changed = true;
     }
 
     /**

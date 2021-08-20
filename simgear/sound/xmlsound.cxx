@@ -347,7 +347,9 @@ SGXmlSound::update (double dt)
    // else
    //   if a property is defined then test if it's value is FALSE
    //      or if the mode is IN_TRANSIT then
-   //            test whether the current value matches the previous value.
+   //            test whether the current value matches the previous value,
+   // else
+   //   check if out of range.
    if ( 							// Lisp, anyone?
        (_condition && !_condition->test()) ||
        (!_condition && _property &&
@@ -355,7 +357,8 @@ SGXmlSound::update (double dt)
          !curr_value ||
          ( (_mode == SGXmlSound::IN_TRANSIT) && (curr_value == _prev_value) )
          )
-        )
+        ) ||
+        _sample->test_out_of_range()
        )
    {
        if ((_mode != SGXmlSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME))

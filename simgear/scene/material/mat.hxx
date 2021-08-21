@@ -176,6 +176,19 @@ public:
   inline double get_light_coverage () const { return light_coverage; }
 
   /**
+   * Get the edge lighting for Roads etc.
+   *
+   * @return The spacing (in m) between individual lights
+   */
+  inline double get_light_edge_spacing_m () const { return light_edge_spacing_m; }
+  inline double get_light_edge_size_cm() const { return light_edge_size_cm; };
+  inline double get_light_edge_height_m() const { return light_edge_height_m; };
+  inline double get_light_edge_intensity_cd() const { return light_edge_intensity_cd; };
+  inline double get_light_edge_angle_horizontal_deg() const { return light_edge_angle_horizontal_deg; };
+  inline double get_light_edge_angle_vertical_deg() const { return light_edge_angle_vertical_deg; };
+  inline SGVec4f get_light_edge_colour() const { return light_edge_colour; };
+
+  /**
    * Get the building coverage.
    *
    * A smaller number means more generated buildings.
@@ -430,6 +443,15 @@ private:
 
   // coverage of night lighting.
   double light_coverage;
+  
+  // Edge lighting
+  double light_edge_spacing_m;
+  double light_edge_size_cm;
+  double light_edge_height_m;
+  double light_edge_intensity_cd;
+  double light_edge_angle_horizontal_deg;
+  double light_edge_angle_vertical_deg;
+  SGVec4f light_edge_colour; 
 
   // coverage of buildings
   double building_coverage;

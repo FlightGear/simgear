@@ -32,6 +32,7 @@
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/tgdb/AreaFeatureBin.hxx>
+#include <simgear/scene/tgdb/LightBin.hxx>
 #include <simgear/scene/tgdb/LineFeatureBin.hxx>
 #include <simgear/scene/tgdb/CoastlineBin.hxx>
 
@@ -146,8 +147,11 @@ class VPBTechnique : public TerrainTechnique
             osg::Vec3Array* v, 
             osg::Vec2Array* t, 
             osg::Vec3Array* n,
+            osg::Vec3Array* lights,            
             unsigned int xsize,
-            unsigned int ysize);
+            unsigned int ysize,
+            double light_edge_spacing,
+            double light_edge_height);
 
         virtual void applyAreaFeatures(BufferData& buffer, Locator* masterLocator);
         virtual void generateAreaFeature(BufferData& buffer, 

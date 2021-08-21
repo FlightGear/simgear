@@ -271,6 +271,18 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     mipmap = props->getBoolValue("mipmap", true);
     light_coverage = props->getDoubleValue("light-coverage", 0.0);
 
+    light_edge_spacing_m = props->getDoubleValue("light-edge-spacing-m", 0.0);
+    light_edge_size_cm = props->getDoubleValue("light-edge-size-cm", 40.0);
+    light_edge_height_m = props->getDoubleValue("light-edge-height-m", 5.0);
+    light_edge_intensity_cd = props->getDoubleValue("light-edge-intensity-cd", 50.0);
+    light_edge_angle_horizontal_deg = props->getDoubleValue("light-edge-angle-horizontal-deg", 360.0);
+    light_edge_angle_vertical_deg = props->getDoubleValue("light-edge-angle-vertical-deg", 360.0);
+
+    light_edge_colour[0] = props->getDoubleValue("light-edge-color/r", 1.0);
+    light_edge_colour[1] = props->getDoubleValue("light-edge-color/g", 1.0);
+    light_edge_colour[2] = props->getDoubleValue("light-edge-color/b", 1.0);
+    light_edge_colour[3] = props->getDoubleValue("light-edge-color/a", 1.0);
+
     // Building properties
     building_coverage = props->getDoubleValue("building-coverage", 0.0);
     building_spacing = props->getDoubleValue("building-spacing-m", 5.0);
@@ -437,6 +449,15 @@ SGMaterial::init ()
 
     mipmap = true;
     light_coverage = 0.0;
+
+    light_edge_spacing_m = 0.0;
+    light_edge_size_cm = 50.0;
+    light_edge_height_m = 5.0;
+    light_edge_intensity_cd = 100.0;
+    light_edge_angle_horizontal_deg = 360.0;
+    light_edge_angle_vertical_deg = 360.0;
+    light_edge_colour = SGVec4f(1.0,1.0,1.0,1.0); 
+
     building_coverage = 0.0;
 
     shininess = 1.0;

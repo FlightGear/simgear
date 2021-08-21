@@ -213,7 +213,7 @@ osg::Drawable* createDrawable(LightBin& lightList, const osg::Matrix& transform)
     osg::Vec3Array* direction_params_1 = new osg::Vec3Array;
     osg::Vec2Array* direction_params_2 = new osg::Vec2Array;
 
-    for (int lightIdx = 0; lightIdx < lightList.getNumLights(); lightIdx++) {
+    for (unsigned int lightIdx = 0; lightIdx < lightList.getNumLights(); lightIdx++) {
         const auto l = lightList.getLight(lightIdx);
         vertices->push_back(toOsg(l.position) * transform);
         light_params->push_back(toOsg(SGVec3f(l.size, l.intensity, l.on_period)));

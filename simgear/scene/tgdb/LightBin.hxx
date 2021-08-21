@@ -26,6 +26,7 @@
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/tgdb/LightBin.hxx>
 
 namespace simgear
 {

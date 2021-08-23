@@ -42,6 +42,9 @@
 #ifndef GL_DEPTH32F_STENCIL8
 #define GL_DEPTH32F_STENCIL8              0x8CAD
 #endif
+#ifndef GL_DEPTH_STENCIL
+#define GL_DEPTH_STENCIL                  0x84F9
+#endif
 #ifndef GL_FLOAT_32_UNSIGNED_INT_24_8_REV
 #define GL_FLOAT_32_UNSIGNED_INT_24_8_REV 0x8DAD
 #endif

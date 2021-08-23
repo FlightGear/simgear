@@ -33,6 +33,19 @@
 #include "Compositor.hxx"
 #include "CompositorUtil.hxx"
 
+#ifndef GL_R11F_G11F_B10F
+#define GL_R11F_G11F_B10F                 0x8C3A
+#endif
+#ifndef GL_UNSIGNED_INT_10F_11F_11F_REV
+#define GL_UNSIGNED_INT_10F_11F_11F_REV   0x8C3B
+#endif
+#ifndef GL_DEPTH32F_STENCIL8
+#define GL_DEPTH32F_STENCIL8              0x8CAD
+#endif
+#ifndef GL_FLOAT_32_UNSIGNED_INT_24_8_REV
+#define GL_FLOAT_32_UNSIGNED_INT_24_8_REV 0x8DAD
+#endif
+
 namespace simgear {
 namespace compositor {
 
@@ -54,9 +67,11 @@ PropStringMap<BufferFormat> buffer_format_map {
     {"r32f", {GL_R32F, GL_RED, GL_FLOAT}},
     {"rg16f", {GL_RG16F, GL_RG, GL_HALF_FLOAT}},
     {"rg32f", {GL_RG32F, GL_RG, GL_FLOAT}},
+    {"r11f-g11f-b10f", {GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV}},
     {"depth16", {GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT}},
     {"depth24", {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT}},
-    {"depth32f", {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}}
+    {"depth32f", {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}},
+    {"depth32f-stencil", {GL_DEPTH32F_STENCIL8, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV}}
 };
 
 PropStringMap<osg::Texture::WrapMode> wrap_mode_map = {

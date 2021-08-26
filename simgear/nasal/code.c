@@ -24,6 +24,8 @@ struct Globals* globals = 0;
 
 static naRef bindFunction(naContext ctx, struct Frame* f, naRef code);
 
+static void logError(naContext ctx);
+
 #define ERR(c, msg) naRuntimeError((c),(msg))
 void naRuntimeError(naContext c, const char* fmt, ...)
 {
@@ -31,6 +33,11 @@ void naRuntimeError(naContext c, const char* fmt, ...)
     va_start(ap, fmt);
     vsnprintf(c->error, sizeof(c->error), fmt, ap);
     va_end(ap);
+
+    /* Shows error and backtrace. Not usually useful because Flightgear
+    callback already shows this information. */
+    //logError(c);
+
     longjmp(c->jumpHandle, 1);
 }
 

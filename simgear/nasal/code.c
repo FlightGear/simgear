@@ -328,6 +328,24 @@ static void checkNamedArgs(naContext ctx, struct naCode* c, struct naHash* h)
     }
 }
 
+
+/* This is a C equivalent to NasalRefDescription() in
+flightgear/src/Scripting/NasalSys_private.hxx. */
+static char* NasalRefDescription(naRef val)
+{
+    if (naIsNil(val))           return dosprintf("nil");
+    else if (naIsNum(val))      return dosprintf("num: %f", naNumValue(val).num);
+    else if (naIsString(val))   return dosprintf("string: %s", naStr_data(val));
+    else if (naIsScalar(val))   return dosprintf("scalar");
+    else if (naIsVector(val))   return dosprintf("vector");
+    else if (naIsHash(val))     return dosprintf("hash");
+    else if (naIsFunc(val))     return dosprintf("func");
+    else if (naIsCode(val))     return dosprintf("code");
+    else if (naIsCCode(val))    return dosprintf("ccode");
+    else if (naIsGhost(val))    return dosprintf("ghost");
+    else return dosprintf("?");
+}
+
 static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named)
 {
     naRef *args, func, code, obj = naNil();
@@ -336,7 +354,13 @@ static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named
 
     args = &ctx->opStack[opf];
     func = ctx->opStack[--opf];
-    if(!IS_FUNC(func)) ERR(ctx, "function/method call on uncallable object");
+    if(!IS_FUNC(func)) {
+        char* func_description = NasalRefDescription(func);
+        char* description = dosprintf("function/method call on uncallable object: %s", func_description);
+        ERR(ctx, description);
+        naFree(description);
+        naFree(func_description);
+    }
     code = PTR(func).func->code;
     if(mcall) obj = ctx->opStack[--opf];
     ctx->opFrame = opf;

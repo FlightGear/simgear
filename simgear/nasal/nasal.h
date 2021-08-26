@@ -152,6 +152,12 @@ void naRethrowError(naContext subc);
 int naMember_get(naContext c, naRef obj, naRef field, naRef* out);
 int naMember_cget(naContext c, naRef obj, const char* field, naRef* out);
 
+// Wrapper around vsnprintf that will allocate the required size
+// by calling vsnprintf with NULL and 0 - and vsnsprintf will measure the
+// required amount of characters which we then allocate and return
+// Returned buffer should be freed by the caller with naFree().
+char* dosprintf(char* f, ...);
+
 // Returns a hash containing functions from the Nasal standard library
 // Useful for passing as a namespace to an initial function call
 naRef naInit_std(naContext c);

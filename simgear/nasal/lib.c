@@ -375,11 +375,7 @@ static naRef f_die(naContext c, naRef me, int argc, naRef* args)
     return naNil(); // never executes
 }
 
-// Wrapper around vsnprintf that will allocate the required size
-// by calling vsnprintf with NULL and 0 - and vsnsprintf will measure the
-// required amount of characters which we then allocate and return
-// Returned buffer should be freed by the caller.
-static char* dosprintf(char* f, ...)
+char* dosprintf(char* f, ...)
 {
     char* buf;
 

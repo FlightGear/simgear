@@ -983,16 +983,14 @@ naRef naContinue(naContext ctx)
 
 static void logError(naContext ctx)
 {
-    int i, stack_depth = naStackDepth(ctx);
     printf("Nasal runtime error: %s\n", naGetError(ctx));
-    if( stack_depth < 1 )
-        return;
-    printf("  at %s\n", naStr_data(naGetSourceFile(ctx, 0)));
-    printf(", line %d\n", naGetLine(ctx, 0));
-    for(i = 1; i < stack_depth; ++i )
-        printf( "  called from: %s, line %d",
+    int stack_depth = naStackDepth(ctx);
+    for (int i=0; i<stack_depth; ++i) {
+        printf("    %s: %s, line %d\n",
+                i ? "called from" : "at",
                 naStr_data(naGetSourceFile(ctx, i)),
                 naGetLine(ctx, i));
+    }
 }
 
 static naErrorHandler error_handler = &logError;

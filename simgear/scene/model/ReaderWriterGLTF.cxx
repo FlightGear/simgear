@@ -256,13 +256,10 @@ struct GLTFBuilder {
         SGPropertyNode *normalTexNode = makeChild(params, "texture", 1);
         if (!makeTextureParameters(normalTexNode, material.normalTexture.index))
             makeChild(normalTexNode, "type")->setValue("null-normalmap");
-        SGPropertyNode *metRoughTexNode = makeChild(params, "texture", 2);
-        if (!makeTextureParameters(metRoughTexNode, pbr.metallicRoughnessTexture.index))
-            makeChild(metRoughTexNode, "type")->setValue("white");
-        SGPropertyNode *occlusionTexNode = makeChild(params, "texture", 3);
-        if (!makeTextureParameters(occlusionTexNode, material.occlusionTexture.index))
-            makeChild(occlusionTexNode, "type")->setValue("white");
-        SGPropertyNode *emissiveTexNode = makeChild(params, "texture", 4);
+        SGPropertyNode *ormTexNode = makeChild(params, "texture", 2);
+        if (!makeTextureParameters(ormTexNode, pbr.metallicRoughnessTexture.index))
+            makeChild(ormTexNode, "type")->setValue("white");
+        SGPropertyNode *emissiveTexNode = makeChild(params, "texture", 3);
         if (!makeTextureParameters(emissiveTexNode,  material.emissiveTexture.index))
             makeChild(emissiveTexNode, "type")->setValue("white");
 

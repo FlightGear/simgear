@@ -210,8 +210,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void ODGauge::setRender(bool render)
   {
-    // Only the far camera should trigger this texture to be rendered.
-    camera->setNodeMask(render ? simgear::BACKGROUND_BIT : 0);
+    camera->setNodeMask(render ? 0xffffffff : 0);
   }
 
   //----------------------------------------------------------------------------

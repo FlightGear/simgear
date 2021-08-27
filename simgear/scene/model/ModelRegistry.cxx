@@ -17,9 +17,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include "ModelRegistry.hxx"
 #include <simgear/scene/util/SGImageUtils.hxx>
@@ -64,6 +62,7 @@
 #include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/io/sg_file.hxx>
 #include <simgear/misc/lru_cache.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
@@ -731,6 +730,16 @@ ModelRegistry::addNodeCallbackForExtension(const string& extension,
     nodeCallbackMap.insert(CallbackMap::value_type(extension, callback));
 }
 
+static bool fileNameIsFGDataModelXML(const std::string& fileName)
+{
+    if (!simgear::strutils::ends_with(fileName, ".xml")) {
+        return false;
+    }
+
+    // we could instead white-list all the renamed files here?
+    return simgear::strutils::starts_with(fileName, "Models/");
+}
+
 ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const Options* opt)
@@ -750,8 +759,7 @@ ModelRegistry::readNode(const string& fileName,
         ec.addFromMap(sgopt->getErrorContext());
     }
 
-    CallbackMap::iterator iter
-        = nodeCallbackMap.find(getFileExtension(fileName));
+    auto iter = nodeCallbackMap.find(getFileExtension(fileName));
     ReaderWriter::ReadResult result;
     if (iter != nodeCallbackMap.end() && iter->second.valid())
         result = iter->second->readNode(fileName, opt);
@@ -759,6 +767,19 @@ ModelRegistry::readNode(const string& fileName,
         result = _defaultCallback->readNode(fileName, opt);
 
     if (!result.validNode()) {
+        if (fileNameIsFGDataModelXML(fileName)) {
+            const auto finalDotPos = fileName.rfind(".");
+            const auto plainModelFileName = fileName.substr(0, finalDotPos) + ".ac";
+
+            // try this AC reader; if it succeeds, we can use that.
+            auto iter = nodeCallbackMap.find("ac");
+            result = iter->second->readNode(fileName, opt);
+            if (result.validNode()) {
+                SG_LOG(SG_IO, SG_DEV_WARN, "Couldn't find XML model, found via .AC instead:" << fileName);
+                return result;
+            }
+        }
+
         simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::ThreeDModelLoad,
                                "Failed to load 3D model:" + result.message(), sg_location{fileName});
     }

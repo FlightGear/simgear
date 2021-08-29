@@ -1647,6 +1647,7 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
     }    
 
     // Get all appropriate roads.  We assume that the VPB terrain tile is smaller than a Bucket size.
+    LightBin lightbin;
     const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
     const SGGeod loc = SGGeod::fromCart(toSG(world));
     const SGBucket bucket = SGBucket(loc);
@@ -1673,10 +1674,11 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
                 continue;
             }    
 
-            unsigned int xsize = mat->get_xsize();
-            unsigned int ysize = mat->get_ysize();
-            double light_edge_spacing = mat->get_light_edge_spacing_m();
-            double light_edge_height = mat->get_light_edge_height_m();
+            const unsigned int xsize = mat->get_xsize();
+            const unsigned int ysize = mat->get_ysize();
+            const bool   light_edge_offset = mat->get_light_edge_offset();
+            const double light_edge_spacing = mat->get_light_edge_spacing_m();
+            const double light_edge_height = mat->get_light_edge_height_m();
 
             //  Generate a geometry for this set of roads.
             osg::Vec3Array* v = new osg::Vec3Array;
@@ -1688,7 +1690,7 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
             auto lineFeatures = rb->getLineFeatures();
 
             for (auto r = lineFeatures.begin(); r != lineFeatures.end(); ++r) {
-                if (r->_width > minWidth) generateLineFeature(buffer, masterLocator, *r, world, v, t, n, lights, xsize, ysize, light_edge_spacing, light_edge_height);
+                if (r->_width > minWidth) generateLineFeature(buffer, masterLocator, *r, world, v, t, n, lights, xsize, ysize, light_edge_spacing, light_edge_height, light_edge_offset);
             }
 
             if (v->size() == 0) continue;
@@ -1715,7 +1717,6 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
             addVegetationConstraint(geode);
 
             if (lights->size() > 0) {
-                LightBin lightbin;
                 const double size = mat->get_light_edge_size_cm();
                 const double intensity = mat->get_light_edge_intensity_cd();
                 const SGVec4f color = mat->get_light_edge_colour();
@@ -1728,14 +1729,14 @@ void VPBTechnique::applyLineFeatures(BufferData& buffer, Locator* masterLocator)
 
                 std::for_each(lights->begin(), lights->end(), 
                     [&, size, intensity, color, direction, horiz, vertical] (osg::Vec3f p) { lightbin.insert(toSG(p), size, intensity, 1, color, direction, horiz, vertical); } );
-
-                buffer._transform->addChild(createLights(lightbin, osg::Matrix::identity(), _options));
             }
         }
     }
+
+    if (lightbin.getNumLights() > 0) buffer._transform->addChild(createLights(lightbin, osg::Matrix::identity(), _options));
 }
 
-void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocator, LineFeatureBin::LineFeature road, osg::Vec3d modelCenter, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, osg::Vec3Array* lights, unsigned int xsize, unsigned int ysize, double light_edge_spacing, double light_edge_height)
+void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocator, LineFeatureBin::LineFeature road, osg::Vec3d modelCenter, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, osg::Vec3Array* lights, unsigned int xsize, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset)
 {
     // We're in Earth-centered coordinates, so "up" is simply directly away from (0,0,0)
     osg::Vec3d up = modelCenter;
@@ -1829,34 +1830,34 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
         yTexBaseA = yTexA;
         yTexBaseB = yTexB;
         last_spanwise = spanwise;
-        float edge_length = (c-a).length() + last_light_distance;
+        float edge_length = (c-a).length();
+        float start_a = last_light_distance;
+        float start_b = start_a;
 
         if ((road._attributes == 1) && (light_edge_spacing > 0.0)) {
             // We have some edge lighting.  Traverse edges a-c and b-d adding lights as appropriate.
-            if (edge_length > light_edge_spacing) {
-                int num_lights = (int) floor(edge_length / light_edge_spacing);
+            
+            // Handle the case where lights are on alternate sides of the road rather than in pairs
+            if (light_edge_offset) start_b = fmodf(start_b + light_edge_spacing * 0.5, light_edge_spacing);
 
-                // Get a pair of vector to travel along the edges
-                osg::Vec3f p1 = (c-a);
-                p1.normalize();
-                p1 = p1 * light_edge_spacing;
+            osg::Vec3f p1 = (c-a);
+            p1.normalize();
 
-                osg::Vec3f p2 = (d-b);
-                p2.normalize();
-                p2 = p2 * light_edge_spacing;
-
-                for (int i = 1; i <= num_lights; i++) {
-                    // Place the lights, 5m above the road itself on either side.
-                    lights->push_back((osg::Vec3f) a + p1 * (i - last_light_distance / light_edge_spacing) + up * (light_edge_height + 1.0));
-                    lights->push_back((osg::Vec3f) b + p2 * (i - last_light_distance / light_edge_spacing) + up * (light_edge_height + 1.0));
-                }
-
-                last_light_distance = fmodf(edge_length, light_edge_spacing);
-            } else {
-                // For small road segments, keep track of the distance since the last light so we generate
-                // some lights on curves.
-                last_light_distance += edge_length;
+            while (start_a < edge_length) {
+                lights->push_back(a + (osg::Vec3f) p1 * start_a + up * (light_edge_height + 1.0));
+                start_a += light_edge_spacing;
             }
+
+            osg::Vec3f p2 = (d-b);
+            p2.normalize();
+
+            while (start_b < edge_length) {
+                lights->push_back(b + (osg::Vec3f) p2 * start_b + up * (light_edge_height + 1.0));
+                start_b += light_edge_spacing;
+            }
+
+            // Determine the position for the first light on the next road segment.
+            last_light_distance = fmodf(start_a + edge_length, light_edge_spacing);
         }
     }
 }

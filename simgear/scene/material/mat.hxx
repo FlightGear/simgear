@@ -187,6 +187,7 @@ public:
   inline double get_light_edge_angle_horizontal_deg() const { return light_edge_angle_horizontal_deg; };
   inline double get_light_edge_angle_vertical_deg() const { return light_edge_angle_vertical_deg; };
   inline SGVec4f get_light_edge_colour() const { return light_edge_colour; };
+  inline bool   get_light_edge_offset() const { return light_edge_offset; };
 
   /**
    * Get the building coverage.
@@ -452,6 +453,7 @@ private:
   double light_edge_angle_horizontal_deg;
   double light_edge_angle_vertical_deg;
   SGVec4f light_edge_colour; 
+  bool   light_edge_offset;
 
   // coverage of buildings
   double building_coverage;

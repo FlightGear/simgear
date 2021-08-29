@@ -151,7 +151,8 @@ class VPBTechnique : public TerrainTechnique
             unsigned int xsize,
             unsigned int ysize,
             double light_edge_spacing,
-            double light_edge_height);
+            double light_edge_height,
+            bool light_edge_offset);
 
         virtual void applyAreaFeatures(BufferData& buffer, Locator* masterLocator);
         virtual void generateAreaFeature(BufferData& buffer, 

@@ -277,6 +277,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     light_edge_intensity_cd = props->getDoubleValue("light-edge-intensity-cd", 50.0);
     light_edge_angle_horizontal_deg = props->getDoubleValue("light-edge-angle-horizontal-deg", 360.0);
     light_edge_angle_vertical_deg = props->getDoubleValue("light-edge-angle-vertical-deg", 360.0);
+    light_edge_offset = props->getBoolValue("light-edge-offset", true);
 
     light_edge_colour[0] = props->getDoubleValue("light-edge-color/r", 1.0);
     light_edge_colour[1] = props->getDoubleValue("light-edge-color/g", 1.0);
@@ -457,6 +458,7 @@ SGMaterial::init ()
     light_edge_angle_horizontal_deg = 360.0;
     light_edge_angle_vertical_deg = 360.0;
     light_edge_colour = SGVec4f(1.0,1.0,1.0,1.0); 
+    light_edge_offset = true;
 
     building_coverage = 0.0;
 

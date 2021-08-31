@@ -330,7 +330,7 @@ namespace canvas
         if (!_screenshotCallback) {
           // no draw callback yet
           osg::Image* shot = new osg::Image();
-          shot->allocateImage(getSizeX(), getSizeY(), 24, GL_RGB, GL_UNSIGNED_BYTE);
+          shot->allocateImage(getSizeX(), getSizeY(), 1, GL_RGB, GL_UNSIGNED_BYTE);
           camera->attach(osg::Camera::COLOR_BUFFER, shot);
           camera->setFinalDrawCallback(new CanvasImageCallback(shot));
           SG_LOG(SG_GENERAL,SG_INFO,"CanvasImage: attached image and draw callback to camera " << camera << " for canvas " << canvasname << ". Ready for subscriber now.");

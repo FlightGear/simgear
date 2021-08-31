@@ -297,8 +297,8 @@ namespace canvas
   {
     if( camera.valid() && Canvas::getSystemAdapter() )
       Canvas::getSystemAdapter()->removeCamera(camera.get());
-    camera.release();
-    texture.release();
+    camera = nullptr;
+    texture = nullptr;
 
     _flags &= ~AVAILABLE;
   }

@@ -47,6 +47,7 @@ class Compositor {
 public:
     enum BuiltinUniform {
         SG_UNIFORM_VIEWPORT = 0,
+        SG_UNIFORM_PIXEL_SIZE,
         SG_UNIFORM_VIEW_MATRIX,
         SG_UNIFORM_VIEW_MATRIX_INV,
         SG_UNIFORM_PROJECTION_MATRIX,

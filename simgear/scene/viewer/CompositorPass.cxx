@@ -401,6 +401,17 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
         }
     }
 
+    osg::Viewport *viewport = camera->getViewport();
+    auto &uniforms = compositor->getBuiltinUniforms();
+    uniforms[Compositor::SG_UNIFORM_VIEWPORT]->set(
+        osg::Vec4f(viewport->x(),
+                   viewport->y(),
+                   viewport->width(),
+                   viewport->height()));
+    uniforms[Compositor::SG_UNIFORM_PIXEL_SIZE]->set(
+        osg::Vec2f(1.0f / viewport->width(),
+                   1.0f / viewport->height()));
+
     return pass.release();
 }
 

@@ -136,6 +136,7 @@ Compositor::Compositor(osg::View *view,
     _viewport(viewport),
     _uniforms{
     new osg::Uniform("fg_Viewport", osg::Vec4f()),
+    new osg::Uniform("fg_PixelSize", osg::Vec2f()),
     new osg::Uniform("fg_ViewMatrix", osg::Matrixf()),
     new osg::Uniform("fg_ViewMatrixInverse", osg::Matrixf()),
     new osg::Uniform("fg_ProjectionMatrix", osg::Matrixf()),
@@ -217,10 +218,6 @@ Compositor::update(const osg::Matrix &view_matrix,
     for (int i = 0; i < SG_TOTAL_BUILTIN_UNIFORMS; ++i) {
         osg::ref_ptr<osg::Uniform> u = _uniforms[i];
         switch (i) {
-        case SG_UNIFORM_VIEWPORT:
-            u->set(osg::Vec4f(_viewport->x(), _viewport->y(),
-                              _viewport->width(), _viewport->height()));
-            break;
         case SG_UNIFORM_VIEW_MATRIX:
             u->set(view_matrix);
             break;
@@ -281,7 +278,10 @@ Compositor::resized()
     // viewport size.
     for (const auto &pass : _passes) {
         osg::Camera *camera = pass->camera;
-        if (camera && camera->isRenderToTextureCamera()
+        if (!camera)
+            continue;
+
+        if (camera->isRenderToTextureCamera()
             && pass->viewport_width_scale  != 0.0f
             && pass->viewport_height_scale != 0.0f) {
 
@@ -292,6 +292,17 @@ Compositor::resized()
             // Force the OSG rendering backend to handle the new sizes
             camera->dirtyAttachmentMap();
         }
+
+        // Update the uniforms even if it isn't a RTT camera
+        osg::Viewport *viewport = camera->getViewport();
+        _uniforms[SG_UNIFORM_VIEWPORT]->set(
+            osg::Vec4f(viewport->x(),
+                       viewport->y(),
+                       viewport->width(),
+                       viewport->height()));
+        _uniforms[Compositor::SG_UNIFORM_PIXEL_SIZE]->set(
+            osg::Vec2f(1.0f / viewport->width(),
+                       1.0f / viewport->height()));
     }
 
     // Resize buffers that must be a multiple of the screen size

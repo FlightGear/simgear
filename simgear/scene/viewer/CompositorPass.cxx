@@ -588,8 +588,8 @@ public:
         bs.expandBy(osg::Vec3(left,  bottom, -zNear) * (_far_m  / zNear));
         bs.expandBy(osg::Vec3(right, top,    -zNear) * (_near_m / zNear));
 
-        osg::Vec4 aim4 = osg::Vec4(bs.center(), 1.0) * view_inverse;
-        osg::Vec3 aim(aim4.x(), aim4.y(), aim4.z());
+        osg::Vec4d aim4 = osg::Vec4d(bs.center(), 1.0) * view_inverse;
+        osg::Vec3d aim(aim4.x(), aim4.y(), aim4.z());
 
         osg::Matrixd &light_view_matrix = camera->getViewMatrix();
         light_view_matrix.makeLookAt(

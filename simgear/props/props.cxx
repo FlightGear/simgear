@@ -282,7 +282,7 @@ struct SGPropertyLock
                     << "\n";
             ret = default_;
         }
-        std::cerr << __FILE__ << ":" << __LINE__ << ":"
+        if (0) std::cerr << __FILE__ << ":" << __LINE__ << ":"
                 << " name=" << name
                 << " value=" << (value ? value : "<unset>")
                 << " returning: " << ret
@@ -2480,7 +2480,7 @@ SGPropertyNode::addChildren( const std::string& name,
       SGPropertyNode_ptr node;
       node = new SGPropertyNode(name, index, this);
       SGPropertyNodeImpl::appendNode(exclusive, *this, node);
-      fireChildAdded(node);
+      SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
       nodes.push_back(node);
     }
   }

@@ -137,6 +137,7 @@ public:
     Pass *             getPass(const std::string &name) const;
 
     int                getOrderOffset() const { return _order_offset; }
+    static void        resetOrderOffset() { _order_offset = 0; }
 protected:
     osg::View                   *_view;
     osg::GraphicsContext        *_gc;

@@ -1800,7 +1800,7 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
         const osg::Vec3d d = end   + spanwise * road._width * 0.5 + up;
 
         // Determine the x and y texture coordinates for the edges
-        const float xTex = 0.5 * road._width / xsize;
+        const float xTex = 1.0 / xsize;
         const float yTexA = yTexBaseA + (c-a).length() / ysize;
         const float yTexB = yTexBaseB + (d-b).length() / ysize;
 
@@ -1819,7 +1819,7 @@ void VPBTechnique::generateLineFeature(BufferData& buffer, Locator* masterLocato
 
         t->push_back(osg::Vec2d(xTex, yTexBaseB));
         t->push_back(osg::Vec2d(xTex, yTexB));
-        t->push_back(osg::Vec2d(0, yTexBaseA));
+        t->push_back(osg::Vec2d(0, yTexA));
 
         // Normal is straight from the quad
         osg::Vec3d normal = -(end-start)^spanwise;

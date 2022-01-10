@@ -160,7 +160,8 @@ size_t hash_value(const Effect::Key&);
 
 Effect* makeEffect(const std::string& name,
                    bool realizeTechniques,
-                   const SGReaderWriterOptions* options);
+                   const SGReaderWriterOptions* options,
+                   const SGPath& modelPath = SGPath{});
 
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,

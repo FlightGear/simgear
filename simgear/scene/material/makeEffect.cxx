@@ -114,7 +114,8 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
 
 Effect* makeEffect(const string& name,
                    bool realizeTechniques,
-                   const SGReaderWriterOptions* options)
+                   const SGReaderWriterOptions* options,
+                   const SGPath& modelPath)
 {
     {
         OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
@@ -125,8 +126,7 @@ Effect* makeEffect(const string& name,
     }
     string effectFileName(name);
     effectFileName += ".eff";
-    string absFileName
-        = SGModelLib::findDataFile(effectFileName, options);
+    string absFileName = SGModelLib::findDataFile(effectFileName, options, modelPath);
     if (absFileName.empty()) {
         simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadEffectsShaders, "Couldn't find Effect:" + effectFileName);
         return nullptr;
@@ -197,7 +197,7 @@ Effect* makeEffect(SGPropertyNode* prop,
     Effect* parent = 0;
     if (inheritProp) {
         //prop->removeChild("inherits-from");
-        parent = makeEffect(inheritProp->getStringValue(), false, options);
+        parent = makeEffect(inheritProp->getStringValue(), false, options, filePath);
         if (parent) {
             Effect::Key key;
             key.unmerged = prop;

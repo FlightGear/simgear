@@ -234,7 +234,7 @@ public:
     typedef std::map<string, SGPropertyNode_ptr> EffectMap;
     using SplicingVisitor::apply;
     MakeEffectVisitor(const SGReaderWriterOptions* options = 0)
-        : _options(options)
+        : _options(options), _modelPath(SGPath{})
     {
     }
     virtual void apply(osg::Group& node);
@@ -246,10 +246,17 @@ public:
         _currentEffectParent = effect;
     }
     SGPropertyNode* getDefaultEffect() { return _currentEffectParent; }
+
+    void setModelPath(const SGPath& p)
+    {
+        _modelPath = p;
+    }
+
 protected:
     EffectMap _effectMap;
     SGPropertyNode_ptr _currentEffectParent;
     osg::ref_ptr<const SGReaderWriterOptions> _options;
+    SGPath _modelPath;
 };
 
 void MakeEffectVisitor::apply(osg::Group& node)
@@ -287,7 +294,7 @@ void MakeEffectVisitor::apply(osg::Geode& geode)
     makeParametersFromStateSet(ssRoot, ss);
     SGPropertyNode_ptr effectRoot = new SGPropertyNode;
     effect::mergePropertyTrees(effectRoot, ssRoot, _currentEffectParent);
-    Effect* effect = makeEffect(effectRoot, true, _options.get());
+    Effect* effect = makeEffect(effectRoot, true, _options.get(), _modelPath);
     EffectGeode* eg = dynamic_cast<EffectGeode*>(&geode);
     if (eg) {
         eg->setEffect(effect);
@@ -332,7 +339,8 @@ protected:
 
 ref_ptr<Node> instantiateEffects(osg::Node* modelGroup,
                                  PropertyList& effectProps,
-                                 const SGReaderWriterOptions* options)
+                                 const SGReaderWriterOptions* options,
+                                 const SGPath& modelPath)
 {
     SGPropertyNode_ptr defaultEffectPropRoot;
     MakeEffectVisitor visitor(options);
@@ -357,13 +365,15 @@ ref_ptr<Node> instantiateEffects(osg::Node* modelGroup,
     if (!defaultEffectPropRoot)
         defaultEffectPropRoot = DefaultEffect::instance()->getEffect();
     visitor.setDefaultEffect(defaultEffectPropRoot.ptr());
+    visitor.setModelPath(modelPath);
     modelGroup->accept(visitor);
     osg::NodeList& result = visitor.getResults();
     return ref_ptr<Node>(result[0].get());
 }
 
 ref_ptr<Node> instantiateMaterialEffects(osg::Node* modelGroup,
-                                        const SGReaderWriterOptions* options)
+                                         const SGReaderWriterOptions* options,
+                                         const SGPath& modelPath)
 {
 
     SGPropertyNode_ptr effect;
@@ -390,7 +400,7 @@ ref_ptr<Node> instantiateMaterialEffects(osg::Node* modelGroup,
 
     effect->addChild("default")->setBoolValue(true);
     effectProps.push_back(effect);
-    return instantiateEffects(modelGroup, effectProps, options);
+    return instantiateEffects(modelGroup, effectProps, options, modelPath);
 }
 
 }

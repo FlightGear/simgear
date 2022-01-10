@@ -559,8 +559,8 @@ sgLoad3DModel_internal(const SGPath& path,
     // Some material animations (eventually all) are actually effects.
     makeEffectAnimations(animation_nodes, effect_nodes);
     {
-        ref_ptr<Node> modelWithEffects
-            = instantiateEffects(group.get(), effect_nodes, options.get());
+        ref_ptr<Node> modelWithEffects = instantiateEffects(group.get(), effect_nodes, options.get(),
+                                                            path.dirPath());
         group = static_cast<Group*>(modelWithEffects.get());
     }
 

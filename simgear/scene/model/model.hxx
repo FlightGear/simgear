@@ -102,7 +102,8 @@ public:
 osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
                    PropertyList& effectProps,
-                   const SGReaderWriterOptions* options);
+                   const SGReaderWriterOptions* options,
+                   const SGPath& currentDir = SGPath{});
 
 /**
  * Apply a set of material-defined effects to a model
@@ -114,7 +115,8 @@ instantiateEffects(osg::Node* model,
  */
  osg::ref_ptr<osg::Node>
  instantiateMaterialEffects(osg::Node* model,
-                    const SGReaderWriterOptions* options);
+                    const SGReaderWriterOptions* options,
+                    const SGPath& modelPath = SGPath{});
 
 /**
  * Transform an OSG subgraph by substituting the Effects and
@@ -127,10 +129,11 @@ instantiateEffects(osg::Node* model,
 
 inline osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
-                   const SGReaderWriterOptions* options)
+                   const SGReaderWriterOptions* options,
+                   const SGPath& currentDir = SGPath{})
 {
     PropertyList effectProps;
-    return instantiateEffects(model, effectProps, options);
+    return instantiateEffects(model, effectProps, options, currentDir);
 }
 }
 #endif // __MODEL_HXX

@@ -74,6 +74,22 @@ public:
         return _value;
     }
 
+    const T& value_or(const T& defaultValue) const
+    {
+        if (!_haveValue) {
+            return defaultValue;
+        }
+        return _value;
+    }
+
+    T& value_or(T& defaultValue) const
+    {
+        if (!_haveValue) {
+            return defaultValue;
+        }
+        return _value;
+    }
+
     T& value()
     {
         if (!_haveValue) {

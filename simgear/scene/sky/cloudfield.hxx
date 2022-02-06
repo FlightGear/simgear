@@ -86,6 +86,7 @@ private:
   osg::ref_ptr<osg::LOD> field_lod;
 
   osg::Vec3f old_pos;
+  osg::Vec3f old_pos_accumulated;
   CloudHash cloud_hash;
 
   struct CloudFog : public simgear::Singleton<CloudFog>
@@ -95,9 +96,9 @@ private:
   };
 
   void removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform);
-  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, float lon, float lat, float alt, float x, float y);
-  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, SGGeod loc, float x, float y);
-  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, SGGeod loc);
+  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, float lon, float lat, float alt, float x, float y, bool auto_reposition = false);
+  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, SGGeod loc, float x, float y, bool auto_reposition = false);
+  void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, SGGeod loc, bool auto_reposition = false);
   void applyVisRangeAndCoverage(void);
 
 public:

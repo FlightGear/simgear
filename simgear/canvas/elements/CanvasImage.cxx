@@ -35,6 +35,7 @@
 #include <osg/PrimitiveSet>
 #include <osgDB/Registry>
 #include <osg/Version>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 namespace simgear
 {
@@ -824,8 +825,12 @@ namespace canvas
   {
     SG_LOG(SG_IO, SG_DEBUG, "use image reader detected by " << type);
 
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
+    opt->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_CANVAS);
+
     std::istringstream data_strm(data);
-    osgDB::ReaderWriter::ReadResult result = reader.readImage(data_strm);
+    osgDB::ReaderWriter::ReadResult result = reader.readImage(data_strm, opt);
     if( result.success() )
     {
       setImage( result.takeImage() );

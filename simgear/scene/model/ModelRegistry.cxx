@@ -297,265 +297,265 @@ ModelRegistry::readImage(const string& fileName,
         ec.addFromMap(sgoptC->getModelData()->getErrorContext());
     }
 
-    if (cache_active && (!sgoptC || sgoptC->getLoadOriginHint() != SGReaderWriterOptions::LoadOriginHint::ORIGIN_SPLASH_SCREEN)) {
-        if (fileExtension != "dds" && fileExtension != "gz") {
+    // only do this if the cache is active, the filename isn't already in dds or compressed with gzip
+    // and providing that the load origin hint permits the usage of the cache.
+    if (cache_active && fileExtension != "dds" && fileExtension != "gz" &&
+        (!sgoptC
+            || (sgoptC->getLoadOriginHint() != SGReaderWriterOptions::LoadOriginHint::ORIGIN_SPLASH_SCREEN
+                && sgoptC->getLoadOriginHint() != SGReaderWriterOptions::LoadOriginHint::ORIGIN_CANVAS))) {
+        std::string root = getPathRoot(absFileName);
+        std::string prr = getPathRelative(root, absFileName);
+        std::string cache_root = SGSceneFeatures::instance()->getTextureCompressionPath().c_str();
+        std::string newName = cache_root + "/" + prr;
 
-            std::string root = getPathRoot(absFileName);
-            std::string prr = getPathRelative(root, absFileName);
-            std::string cache_root = SGSceneFeatures::instance()->getTextureCompressionPath().c_str();
-            std::string newName = cache_root + "/" + prr;
+        SGPath file(absFileName);
+        std::stringstream tstream;
 
-            SGPath file(absFileName);
-            std::stringstream tstream;
+        // calucate and use hash for storing cached image. This also
+        // helps with sharing of identical images between models.
+        if (fileExists(absFileName)) {
+            SGFile f(absFileName);
+            std::string hash;
 
-            // calucate and use hash for storing cached image. This also
-            // helps with sharing of identical images between models.
-            if (fileExists(absFileName)) {
-                SGFile f(absFileName);
-                std::string hash;
-
-//                std::string attr = "";
-//                if (sgoptC && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED) {
-//                    attr += " effnorm";
-//                }
-//                else if (sgoptC && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
-//                    attr += " eff";
-//                    //                        can_compress = false;
-//                }
-//                SG_LOG(SG_IO, SG_INFO, absFileName << attr);
-                boost::optional<std::string> cachehash = filename_hash_cache.get(absFileName);
-                if (cachehash) {
-                    hash = *cachehash;
-                }
-                else {
-                    try {
-                        hash = f.computeHash();
-                    }
-                    catch (sg_io_exception &e) {
-                        SG_LOG(SG_IO, SG_DEV_ALERT, "Modelregistry::failed to compute filehash '" << absFileName << "' " << e.getFormattedMessage());
-                        hash = std::string();
-                    }
-                }
-                if (hash != std::string()) {
-                    filename_hash_cache.insert(absFileName, hash);
-                    boost::optional<std::string> cacheFilename = filename_hash_cache.findValue(hash);
-
-                    // possibly a shared texture - but warn the user to allow investigation.
-                    if (cacheFilename && *cacheFilename != absFileName) {
-                        SG_LOG(SG_IO, SG_INFO, " Already have " + hash + " : " + *cacheFilename + " not " + absFileName);
-                    }
-                }
-                newName = cache_root + "/" + hash.substr(0, 2) + "/" + hash + ".cache.dds";
-            }
-            else
-            {
-                tstream << std::hex << file.modTime();
-                newName += "." + tstream.str();
-                newName += ".cache.dds";
-            }
-            //bool doRefresh = refreshCache;
-            //if (newName != std::string() && fileExists(newName) && doRefresh) {
-            //    if (!filesCleaned.contains(newName)) {
-            //        SG_LOG(SG_IO, SG_INFO, "Removing previously cached effects image " + newName);
-            //        SGPath(newName).remove();
-            //        filesCleaned.insert(newName, true);
-            //    }
-            //}
-
-            if (newName != std::string() && !fileExists(newName)) {
-                res = registry->readImageImplementation(absFileName, opt);
-                if (res.validImage()) {
-                    osg::ref_ptr<osg::Image> srcImage = res.getImage();
-                    int width = srcImage->s();
-                    //int packing = srcImage->getPacking();
-                    //printf("packing %d format %x pixel size %d InternalTextureFormat %x\n", packing, srcImage->getPixelFormat(), srcImage->getPixelSizeInBits(), srcImage->getInternalTextureFormat() );
-                    bool transparent = srcImage->isImageTranslucent();
-                    bool isNormalMap = false;
-                    bool isEffect = false;
-                    /*
-                    * decide if we need to compress this.
-                    */
-                    bool can_compress = (transparent && compress_transparent) || (!transparent && compress_solid);
-
-                    if (srcImage->getPixelSizeInBits() <= 16) {
-                        SG_LOG(SG_IO, SG_INFO, "Ignoring " + absFileName + " for inclusion into the texture cache because pixel density too low at " << srcImage->getPixelSizeInBits() << " bits per pixek");
-                        can_compress = false;
-                    }
-
-                    int height = srcImage->t();
-
-                    // use the new file origin to determine any special processing
-                    // we handle the following
-                    // - normal maps
-                    // - images loaded from effects
-                    if (sgoptC && transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED) {
-                        isNormalMap = true;
-                    }
-                    else if (sgoptC && transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
-                        SG_LOG(SG_IO, SG_INFO, "From effects transparent " + absFileName + " will generate mipmap only");
-                        isEffect = true;
-                        can_compress = false;
-                    }
-                    else if (sgoptC && !transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
-                        SG_LOG(SG_IO, SG_INFO, "From effects " + absFileName + " will generate mipmap only");
-                        isEffect = true;
-//                        can_compress = false;
-                    }
-                    else if (sgoptC && !transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_CANVAS) {
-                        SG_LOG(SG_IO, SG_INFO, "From Canvas " + absFileName + " will generate mipmap only");
-                        can_compress = false;
-                    }
-                    if (can_compress)
-                    {
-                        std::string pot_message;
-                        bool resize = false;
-                        if (!isPowerOfTwo(width)) {
-                            width = nearestPowerOfTwo(width);
-                            resize = true;
-                            pot_message += std::string(" not POT: resized width to ") + std::to_string(width);
-                        }
-                        if (!isPowerOfTwo(height)) {
-                            height = nearestPowerOfTwo(height);
-                            resize = true;
-                            pot_message += std::string(" not POT: resized height to ") + std::to_string(height);
-                        }
-
-                        if (pot_message.size())
-                            SG_LOG(SG_IO, SG_DEV_WARN, pot_message << " " << absFileName);
-
-                        // unlikely that after resizing in height the width will still be outside of the max texture size.
-                        if (height > max_texture_size)
-                        {
-                            SG_LOG(SG_IO, SG_DEV_WARN, "Image texture too high (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
-                            int factor = height / max_texture_size;
-                            height /= factor;
-                            width /= factor;
-                            resize = true;
-                        }
-                        if (width > max_texture_size)
-                        {
-                            SG_LOG(SG_IO, SG_DEV_WARN, "Image texture too wide (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
-                            int factor = width / max_texture_size;
-                            height /= factor;
-                            width /= factor;
-                            resize = true;
-                        }
-                        
-                        if (resize) {
-                            osg::ref_ptr<osg::Image> resizedImage;
-
-                            if (ImageUtils::resizeImage(srcImage, width, height, resizedImage))
-                                srcImage = resizedImage;
-                        }
-
-                        //
-                        // only cache power of two textures that are of a reasonable size
-                        if (width >= 4 && height >= 4) {
-
-                            simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
-
-                            SGPath filePath(newName);
-                            filePath.create_dir();
-
-                            // setup the options string for saving the texture as we don't want OSG to auto flip the texture
-                            // as this complicates loading as it requires a flag to flip it back which will preclude the
-                            // image from being cached because we will have to clone the options to set the flag and thus lose
-                            // the link to the cache in the options from the caller.
-                            osg::ref_ptr<Options> nopt;
-                            nopt = opt->cloneOptions();
-                            std::string optionstring = nopt->getOptionString();
-
-                            if (!optionstring.empty())
-                                optionstring += " ";
-
-                            nopt->setOptionString(optionstring + "ddsNoAutoFlipWrite");
-
-                            //GLenum srcImageType = srcImage->getDataType();
-                            //                            printf("--- %-80s --> f=%8x t=%8x\n", newName.c_str(), srcImage->getPixelFormat(), srcImageType);
-
-                            try
-                            {
-                                if (can_compress) {
-                                    osg::Texture::InternalFormatMode targetFormat = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
-                                    if (isNormalMap) {
-                                        if (transparent) {
-                                            targetFormat = osg::Texture::USE_S3TC_DXT5_COMPRESSION;
-                                        }
-                                        else
-                                            targetFormat = osg::Texture::USE_S3TC_DXT5_COMPRESSION;
-                                    }
-                                    else if (isEffect)
-                                    {
-                                        if (transparent) {
-                                            targetFormat = osg::Texture::USE_S3TC_DXT5_COMPRESSION;
-                                        }
-                                        else
-                                            targetFormat = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
-                                    }
-                                    else{
-                                        if (transparent) {
-                                            targetFormat = osg::Texture::USE_S3TC_DXT3_COMPRESSION;
-                                        }
-                                        else
-                                            targetFormat = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
-                                    }
-
-                                    if (processor)
-                                    {
-                                        SG_LOG(SG_IO, SG_DEV_ALERT, "Creating " << targetFormat << " for " + absFileName);
-                                        // normal maps:
-                                        // nvdxt.exe - quality_highest - rescaleKaiser - Kaiser - dxt5nm - norm
-                                        processor->compress(*srcImage, targetFormat, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
-                                        SG_LOG(SG_IO, SG_INFO, "-- finished creating DDS: " + newName);
-                                        //processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
-                                    }
-                                    else {
-                                        simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
-                                        SG_LOG(SG_IO, SG_INFO, "Texture compression plugin (osg_nvtt) not available; storing uncompressed image: " << absFileName);
-                                        srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
-                                    }
-                                    }
-                                else {
-                                    SG_LOG(SG_IO, SG_INFO, "Creating uncompressed DDS for " + absFileName);
-                                    //if (processor) {
-                                    //    processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
-                                    //}
-                                    //else 
-                                    {
-                                        simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
-                                        srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
-                                    }
-                                }
-                                //}
-                                //else
-                                //    printf("--- no compress or mipmap of format %s\n", newName.c_str());
-                                registry->writeImage(*srcImage, newName, nopt);
-                                {
-                                    std::string mdlDirectory = cache_root + "/cache-index.txt";
-                                    FILE *f = ::fopen(mdlDirectory.c_str(), "a");
-                                    if (f)
-                                    {
-                                        ::fprintf(f, "%s, %s\n", absFileName.c_str(), newName.c_str());
-                                        ::fclose(f);
-                                    }
-                                }
-                                absFileName = newName;
-                            }
-                            catch (...) {
-                                SG_LOG(SG_IO, SG_DEV_ALERT, "Exception processing " << absFileName << " may be corrupted");
-                            }
-                        }
-                        else
-                            SG_LOG(SG_IO, SG_DEV_WARN, absFileName + " too small " << width << "," << height);
-                    }
-                }
+            //                std::string attr = "";
+            //                if (sgoptC && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED) {
+            //                    attr += " effnorm";
+            //                }
+            //                else if (sgoptC && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
+            //                    attr += " eff";
+            //                    //                        can_compress = false;
+            //                }
+            //                SG_LOG(SG_IO, SG_INFO, absFileName << attr);
+            boost::optional<std::string> cachehash = filename_hash_cache.get(absFileName);
+            if (cachehash) {
+                hash = *cachehash;
             }
             else {
-                if (newName != std::string())
-                    absFileName = newName;
+                try {
+                    hash = f.computeHash();
+                }
+                catch (sg_io_exception& e) {
+                    SG_LOG(SG_IO, SG_DEV_ALERT, "Modelregistry::failed to compute filehash '" << absFileName << "' " << e.getFormattedMessage());
+                    hash = std::string();
+                }
+            }
+            if (hash != std::string()) {
+                filename_hash_cache.insert(absFileName, hash);
+                boost::optional<std::string> cacheFilename = filename_hash_cache.findValue(hash);
+
+                // possibly a shared texture - but warn the user to allow investigation.
+                if (cacheFilename && *cacheFilename != absFileName) {
+                    SG_LOG(SG_IO, SG_INFO, " Already have " + hash + " : " + *cacheFilename + " not " + absFileName);
+                }
+            }
+            newName = cache_root + "/" + hash.substr(0, 2) + "/" + hash + ".cache.dds";
+        }
+        else
+        {
+            tstream << std::hex << file.modTime();
+            newName += "." + tstream.str();
+            newName += ".cache.dds";
+        }
+        //bool doRefresh = refreshCache;
+        //if (newName != std::string() && fileExists(newName) && doRefresh) {
+        //    if (!filesCleaned.contains(newName)) {
+        //        SG_LOG(SG_IO, SG_INFO, "Removing previously cached effects image " + newName);
+        //        SGPath(newName).remove();
+        //        filesCleaned.insert(newName, true);
+        //    }
+        //}
+
+        if (newName != std::string() && !fileExists(newName)) {
+            res = registry->readImageImplementation(absFileName, opt);
+            if (res.validImage()) {
+                osg::ref_ptr<osg::Image> srcImage = res.getImage();
+                int width = srcImage->s();
+                //int packing = srcImage->getPacking();
+                //printf("packing %d format %x pixel size %d InternalTextureFormat %x\n", packing, srcImage->getPixelFormat(), srcImage->getPixelSizeInBits(), srcImage->getInternalTextureFormat() );
+                bool transparent = srcImage->isImageTranslucent();
+                bool isNormalMap = false;
+                bool isEffect = false;
+                /*
+                * decide if we need to compress this.
+                */
+                bool can_compress = (transparent && compress_transparent) || (!transparent && compress_solid);
+
+                if (srcImage->getPixelSizeInBits() <= 16) {
+                    SG_LOG(SG_IO, SG_INFO, "Ignoring " + absFileName + " for inclusion into the texture cache because pixel density too low at " << srcImage->getPixelSizeInBits() << " bits per pixek");
+                    can_compress = false;
+                }
+
+                int height = srcImage->t();
+
+                // use the new file origin to determine any special processing
+                // we handle the following
+                // - normal maps
+                // - images loaded from effects
+                if (sgoptC && transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS_NORMALIZED) {
+                    isNormalMap = true;
+                }
+                else if (sgoptC && transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
+                    SG_LOG(SG_IO, SG_INFO, "From effects transparent " + absFileName + " will generate mipmap only");
+                    isEffect = true;
+                    can_compress = false;
+                }
+                else if (sgoptC && !transparent && sgoptC->getLoadOriginHint() == SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS) {
+                    SG_LOG(SG_IO, SG_INFO, "From effects " + absFileName + " will generate mipmap only");
+                    isEffect = true;
+                    //                        can_compress = false;
+                }
+                if (can_compress)
+                {
+                    std::string pot_message;
+                    bool resize = false;
+                    if (!isPowerOfTwo(width)) {
+                        width = nearestPowerOfTwo(width);
+                        resize = true;
+                        pot_message += std::string(" not POT: resized width to ") + std::to_string(width);
+                    }
+                    if (!isPowerOfTwo(height)) {
+                        height = nearestPowerOfTwo(height);
+                        resize = true;
+                        pot_message += std::string(" not POT: resized height to ") + std::to_string(height);
+                    }
+
+                    if (pot_message.size())
+                        SG_LOG(SG_IO, SG_DEV_WARN, pot_message << " " << absFileName);
+
+                    // unlikely that after resizing in height the width will still be outside of the max texture size.
+                    if (height > max_texture_size)
+                    {
+                        SG_LOG(SG_IO, SG_DEV_WARN, "Image texture too high (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
+                        int factor = height / max_texture_size;
+                        height /= factor;
+                        width /= factor;
+                        resize = true;
+                    }
+                    if (width > max_texture_size)
+                    {
+                        SG_LOG(SG_IO, SG_DEV_WARN, "Image texture too wide (max " << max_texture_size << ") " << width << "," << height << " " << absFileName);
+                        int factor = width / max_texture_size;
+                        height /= factor;
+                        width /= factor;
+                        resize = true;
+                    }
+
+                    if (resize) {
+                        osg::ref_ptr<osg::Image> resizedImage;
+
+                        if (ImageUtils::resizeImage(srcImage, width, height, resizedImage))
+                            srcImage = resizedImage;
+                    }
+
+                    //
+                    // only cache power of two textures that are of a reasonable size
+                    if (width >= 4 && height >= 4) {
+
+                        simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
+
+                        SGPath filePath(newName);
+                        filePath.create_dir();
+
+                        // setup the options string for saving the texture as we don't want OSG to auto flip the texture
+                        // as this complicates loading as it requires a flag to flip it back which will preclude the
+                        // image from being cached because we will have to clone the options to set the flag and thus lose
+                        // the link to the cache in the options from the caller.
+                        osg::ref_ptr<Options> nopt;
+                        nopt = opt->cloneOptions();
+                        std::string optionstring = nopt->getOptionString();
+
+                        if (!optionstring.empty())
+                            optionstring += " ";
+
+                        nopt->setOptionString(optionstring + "ddsNoAutoFlipWrite");
+
+                        //GLenum srcImageType = srcImage->getDataType();
+                        //                            printf("--- %-80s --> f=%8x t=%8x\n", newName.c_str(), srcImage->getPixelFormat(), srcImageType);
+
+                        try
+                        {
+                            if (can_compress) {
+                                osg::Texture::InternalFormatMode targetFormat = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+                                if (isNormalMap) {
+                                    if (transparent) {
+                                        targetFormat = osg::Texture::USE_S3TC_DXT5_COMPRESSION;
+                                    }
+                                    else
+                                        targetFormat = osg::Texture::USE_S3TC_DXT5_COMPRESSION;
+                                }
+                                else if (isEffect)
+                                {
+                                    if (transparent) {
+                                        targetFormat = osg::Texture::USE_S3TC_DXT5_COMPRESSION;
+                                    }
+                                    else
+                                        targetFormat = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+                                }
+                                else {
+                                    if (transparent) {
+                                        targetFormat = osg::Texture::USE_S3TC_DXT3_COMPRESSION;
+                                    }
+                                    else
+                                        targetFormat = osg::Texture::USE_S3TC_DXT1_COMPRESSION;
+                                }
+
+                                if (processor)
+                                {
+                                    SG_LOG(SG_IO, SG_DEV_ALERT, "Creating " << targetFormat << " for " + absFileName);
+                                    // normal maps:
+                                    // nvdxt.exe - quality_highest - rescaleKaiser - Kaiser - dxt5nm - norm
+                                    processor->compress(*srcImage, targetFormat, true, true, osgDB::ImageProcessor::USE_CPU, osgDB::ImageProcessor::PRODUCTION);
+                                    SG_LOG(SG_IO, SG_INFO, "-- finished creating DDS: " + newName);
+                                    //processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
+                                }
+                                else {
+                                    simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
+                                    SG_LOG(SG_IO, SG_INFO, "Texture compression plugin (osg_nvtt) not available; storing uncompressed image: " << absFileName);
+                                    srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
+                                }
+                            }
+                            else {
+                                SG_LOG(SG_IO, SG_INFO, "Creating uncompressed DDS for " + absFileName);
+                                //if (processor) {
+                                //    processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
+                                //}
+                                //else 
+                                {
+                                    simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
+                                    srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
+                                }
+                            }
+                            //}
+                            //else
+                            //    printf("--- no compress or mipmap of format %s\n", newName.c_str());
+                            registry->writeImage(*srcImage, newName, nopt);
+                            {
+                                std::string mdlDirectory = cache_root + "/cache-index.txt";
+                                FILE* f = ::fopen(mdlDirectory.c_str(), "a");
+                                if (f)
+                                {
+                                    ::fprintf(f, "%s, %s\n", absFileName.c_str(), newName.c_str());
+                                    ::fclose(f);
+                                }
+                            }
+                            absFileName = newName;
+                        }
+                        catch (...) {
+                            SG_LOG(SG_IO, SG_DEV_ALERT, "Exception processing " << absFileName << " may be corrupted");
+                        }
+                    }
+                    else
+                        SG_LOG(SG_IO, SG_DEV_WARN, absFileName + " too small " << width << "," << height);
+                }
             }
         }
+        else {
+            if (newName != std::string())
+                absFileName = newName;
+        }
     }
+//    SG_LOG(SG_IO, SG_ALERT, "Loading image file "<< absFileName);
+
 
     try {
         res = registry->readImageImplementation(absFileName, opt);

@@ -37,8 +37,8 @@ namespace DNS {
 
 class Client::ClientPrivate {
 public:
-    ClientPrivate() {
-
+    ClientPrivate(const std::string& nameserver)
+    {
         if( instanceCounter++ == 0 )
           if (dns_init(NULL, 0) < 0)
               SG_LOG(SG_IO, SG_ALERT, "Can't init udns library" );
@@ -47,6 +47,11 @@ public:
 
         if (dns_init(ctx, 0) < 0)
             SG_LOG(SG_IO, SG_ALERT, "Can't create udns context" );
+
+        if (!nameserver.empty()) {
+            dns_add_serv(ctx, nullptr);
+            dns_add_serv(ctx, nameserver.c_str());
+        }
 
         if( dns_open(ctx) < 0 )
             SG_LOG(SG_IO, SG_ALERT, "Can't open udns context" );
@@ -254,13 +259,11 @@ void NAPTRRequest::submit( Client * client )
     _query = q;
 }
 
-
-Client::~Client()
+Client::Client(const std::string& nameserver) : d(new ClientPrivate{nameserver})
 {
 }
 
-Client::Client() :
-    d(new ClientPrivate)
+Client::~Client()
 {
 }
 

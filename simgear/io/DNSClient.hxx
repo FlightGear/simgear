@@ -133,7 +133,7 @@ public:
 class Client
 {
 public:
-    Client();
+    Client(const std::string& nameserver = {});
     ~Client();
 
     void update(int waitTimeout = 0);

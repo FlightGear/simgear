@@ -287,6 +287,11 @@ public:
       _isAutomaticServer = (server == "automatic");
    }
 
+   void setDNSServer(const std::string& nameserver)
+   {
+       _dnsNameserver = nameserver;
+   }
+
    void setDNSDN( const std::string & dn )
    {
      _dnsdn = simgear::strutils::strip(dn);
@@ -384,6 +389,7 @@ public:
     string _sceneryVersion;
     string _protocol;
     string _dnsdn;
+    string _dnsNameserver;
 
     TerrasyncThreadState _state;
     mutable std::mutex _stateLock;
@@ -507,7 +513,7 @@ std::string SGTerraSync::WorkerThread::dnsSelectServerForService(const std::stri
     naptrRequest->qflags = "U";
     DNS::Request_ptr r(naptrRequest);
 
-    DNS::Client dnsClient;
+    DNS::Client dnsClient{_dnsNameserver};
     dnsClient.makeRequest(r);
     SG_LOG(SG_TERRASYNC,SG_DEBUG,"DNS NAPTR query for '" << _dnsdn << "' '" << naptrRequest->qservice << "'" );
     while (!r->isComplete() && !r->isTimeout()) {
@@ -1115,6 +1121,16 @@ void SGTerraSync::reinit()
         _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
         _workerThread->setOSMCityVersion(_terraRoot->getStringValue("osm2city-version", "o2c"));
         _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
+
+        if (_terraRoot->hasChild("dns-server")) {
+            auto ns = _terraRoot->getStringValue("dns-server");
+            if (ns == "google") {
+                ns = "8.8.8.8";
+            }
+            
+            SG_LOG(SG_TERRASYNC,SG_INFO,"DNS server override:" << ns);
+            _workerThread->setDNSServer(ns);
+        }
 #if 1
         // leave it hardcoded for now, not sure about the security implications for now
         _workerThread->setDNSDN( "terrasync.flightgear.org");

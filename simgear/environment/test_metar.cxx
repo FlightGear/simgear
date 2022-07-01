@@ -100,6 +100,29 @@ void test_wind_unit_not_specified()
     SG_CHECK_EQUAL_EP2(m1.getGustSpeed_kt(), 14.0, TEST_EPSILON);
 }
 
+void test_clouds_without_height()
+{
+    // apparently EGPF has a faulty automated cloud sensor? :)
+    SGMetar m1("EGPF 111420Z AUTO 24013KT 9000 -RA SCT019/// BKN023/// BKN030/// //////TCU 13/11 Q1011 RERA");
+}
+
+void test_GLRB_failure()
+{
+    // Haze entered backwards, genuinely invalid
+#if 0
+    SGMetar m1("2022/04/04 11:00 GLRB 041100Z 29012KT 8000 HZVC NSC 29/21 Q1012 NOSIG");
+#endif
+}
+
+void test_LOWK_failure()
+{
+    // surface winds specification won't parse, looks invalid 
+#if 0
+    SGMetar m3("LOWK 051526Z AUTO 217G33KT 10SM VCTS FEW017 BKN023 OVC041 23/21 A2970 "
+    "RMK AO2 PK WND 21037/1458 LTG DSNT ALQDS RAE09 P0000 T02330206");
+#endif
+}
+
 int main(int argc, char* argv[])
 {
     try {
@@ -108,6 +131,9 @@ int main(int argc, char* argv[])
         test_sensor_failure_cloud();
         test_sensor_failure_wind();
         test_wind_unit_not_specified();
+        test_clouds_without_height();
+        test_GLRB_failure();
+        test_LOWK_failure();
     } catch (sg_exception& e) {
         cerr << "got exception:" << e.getMessage() << endl;
         return -1;

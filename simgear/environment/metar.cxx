@@ -1029,11 +1029,11 @@ bool SGMetar::scanSkyCondition()
 	SGMetarCloud cl;
 
 	if (!strncmp(m, "//////", 6)) {
-		m += 6;
-		if (!scanBoundary(&m))
-			return false;
-		_m = m;
-		return true;
+		char* m2 = m+6;
+		if (scanBoundary(&m2)) {
+			_m = m2;
+			return true;
+		}
 	}
 
 	if (!strncmp(m, "CLR", i = 3)				// clear
@@ -1055,9 +1055,10 @@ bool SGMetar::scanSkyCondition()
 		return true;
 	}
 
-	if (!strncmp(m, "VV", i = 2))				// vertical visibility
-		;
-	else if (!strncmp(m, "FEW", i = 3))
+	bool verticalVisibility = false;
+	if (!strncmp(m, "VV", i = 2)) {				// vertical visibility
+		verticalVisibility = true;
+	} else if (!strncmp(m, "FEW", i = 3))
         cl._coverage = SGMetarCloud::COVERAGE_FEW;
 	else if (!strncmp(m, "SCT", i = 3))
         cl._coverage = SGMetarCloud::COVERAGE_SCATTERED;
@@ -1065,6 +1066,8 @@ bool SGMetar::scanSkyCondition()
         cl._coverage = SGMetarCloud::COVERAGE_BROKEN;
 	else if (!strncmp(m, "OVC", i = 3))
         cl._coverage = SGMetarCloud::COVERAGE_OVERCAST;
+	else if (!strncmp(m, "///", i = 3))
+		cl._coverage = SGMetarCloud::COVERAGE_NIL; // should we add 'unknown'?
 	else
 		return false;
 	m += i;
@@ -1080,9 +1083,9 @@ bool SGMetar::scanSkyCondition()
 	} else if (!scanNumber(&m, &i, 3))
 		i = -1;
 
-	if (cl._coverage == SGMetarCloud::COVERAGE_NIL) {
-		if (!scanBoundary(&m))
-			return false;
+	if (verticalVisibility) {
+		 if (!scanBoundary(&m))
+		 	return false;
 		if (i == -1)			// 'VV///'
 			_vert_visibility._modifier = SGMetarVisibility::NOGO;
 		else

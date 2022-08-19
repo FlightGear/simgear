@@ -30,6 +30,8 @@
 #ifndef _SG_SAMPLE_HXX
 #define _SG_SAMPLE_HXX 1
 
+#include <string>
+
 #include <simgear/math/SGMath.hxx>
 #include <simgear/props/props.hxx>
 #include "soundmgr.hxx"
@@ -259,11 +261,19 @@ public:
     virtual ~SGSoundSample () = default;
 
     /**
-     * Constructor
-     * @param file File name of sound
+     * Constructor that uses the specified path as is
+     * @param file Path to sound file
        Buffer data is freed by the sample group
      */
-    SGSoundSample(const char *file, const SGPath& currentDir);
+    explicit SGSoundSample(const SGPath& file);
+
+    /**
+     * Constructor that goes through ResourceManager::findPath()
+     * @param file File name of sound
+       @param dir “Context” argument for ResourceManager::findPath()
+       Buffer data is freed by the sample group
+     */
+    SGSoundSample(const std::string& file, const SGPath& dir);
 
     /**
      * Constructor.

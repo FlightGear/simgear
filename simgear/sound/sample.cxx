@@ -79,13 +79,18 @@ std::string SGSoundSampleInfo::random_string()
 // SGSoundSample
 //
 
-// constructor
-SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
+// Constructor
+SGSoundSample::SGSoundSample(const SGPath& file) :
     _is_file(true)
 {
-    SGPath p = simgear::ResourceManager::instance()->findPath(file, currentDir);
-    _refname = p.utf8Str();
+    _refname = file.utf8Str();
 }
+
+// Delegating constructor that goes through the ResourceManager
+SGSoundSample::SGSoundSample(const string& file, const SGPath& dir) :
+    SGSoundSample(
+        simgear::ResourceManager::instance()->findPath(file, dir))
+{ }
 
 // constructor
 SGSoundSample::SGSoundSample( std::unique_ptr<unsigned char, decltype(free)*>& data,

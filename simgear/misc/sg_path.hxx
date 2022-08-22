@@ -340,7 +340,7 @@ private:
 
     void fix();
 
-    void validate() const;
+    void updateAttrsIfNull() const;
     void checkAccess() const;
 
     bool permissionsAllowsWrite() const;

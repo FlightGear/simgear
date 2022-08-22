@@ -423,7 +423,7 @@ string SGPath::complete_lower_extension() const
 }
 
 //------------------------------------------------------------------------------
-void SGPath::validate() const
+void SGPath::updateAttrsIfNull() const
 {
   if (_cached && _cacheEnabled) {
     return;
@@ -509,7 +509,7 @@ void SGPath::checkAccess() const
     return;
   }
 
-  validate();
+  updateAttrsIfNull();
   _rwCached = true;
 }
 
@@ -528,7 +528,7 @@ bool SGPath::exists() const
     return _exists;
   }
 #endif
-  validate();
+  updateAttrsIfNull();
   return _exists;
 }
 
@@ -548,13 +548,13 @@ bool SGPath::canWrite() const
 
 bool SGPath::isDir() const
 {
-  validate();
+  updateAttrsIfNull();
   return _exists && _isDir;
 }
 
 bool SGPath::isFile() const
 {
-  validate();
+  updateAttrsIfNull();
   return _exists && _isFile;
 }
 
@@ -746,13 +746,13 @@ bool SGPath::remove()
 
 time_t SGPath::modTime() const
 {
-    validate();
+    updateAttrsIfNull();
     return _modTime;
 }
 
 size_t SGPath::sizeInBytes() const
 {
-    validate();
+    updateAttrsIfNull();
     return _size;
 }
 

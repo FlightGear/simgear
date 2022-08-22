@@ -391,6 +391,10 @@ private:
     mutable bool _existsCached : 1; ///< only used on Windows
     mutable time_t _modTime;
     mutable size_t _size;
+
+    // For addAllowedPathPattern(), validate(), etc.
+    static string_list read_allowed_paths;
+    static string_list write_allowed_paths;
 };
 
 // Other comparison operators are in the class definition block

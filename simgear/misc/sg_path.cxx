@@ -53,9 +53,10 @@
 using std::string;
 using simgear::strutils::starts_with;
 
-// For SGPath::validate()
-static string_list read_allowed_paths;
-static string_list write_allowed_paths;
+// Static data members used by SGPath::addAllowedPathPattern(),
+// SGPath::validate(), etc.
+string_list SGPath::read_allowed_paths;
+string_list SGPath::write_allowed_paths;
 
 /**
  * define directory path separators

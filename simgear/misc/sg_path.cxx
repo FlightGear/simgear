@@ -53,6 +53,10 @@
 using std::string;
 using simgear::strutils::starts_with;
 
+// For SGPath::validate()
+static string_list read_allowed_paths;
+static string_list write_allowed_paths;
+
 /**
  * define directory path separators
  */
@@ -277,6 +281,62 @@ void SGPath::set_cached(bool cached)
 {
   _cacheEnabled = cached;
   _cached = false;
+}
+
+// ***************************************************************************
+// *                    Access permissions for Nasal code                    *
+// ***************************************************************************
+
+// Static member function
+void SGPath::clearListOfAllowedPaths(bool write)
+{
+    string_list& allowed_paths(write ? write_allowed_paths : read_allowed_paths);
+    allowed_paths.clear();
+}
+
+// Static member function
+void SGPath::addAllowedPathPattern(const string& pattern, bool write)
+{
+    string_list& allowed_paths(write ? write_allowed_paths : read_allowed_paths);
+    allowed_paths.push_back(pattern);
+}
+
+// Static member function
+const string_list& SGPath::getListOfAllowedPaths(bool write)
+{
+    return write ? write_allowed_paths : read_allowed_paths;
+}
+
+SGPath SGPath::validate(bool write) const
+{
+    // Normalize the path (prevents ../../.. or symlink trickery)
+    const string normed_path = realpath().utf8Str();
+
+    const string_list& allowed_paths{
+        write ? write_allowed_paths : read_allowed_paths};
+    string::size_type star_pos;
+
+    // Check against each allowed pattern
+    for (const auto& path: allowed_paths) {
+        star_pos = path.find('*');
+        if (star_pos == string::npos) {
+            if (!(path.compare(normed_path))) {
+                return fromUtf8(normed_path);
+            }
+        } else {
+            if ((path.size()-1 <= normed_path.size()) /* long enough to be a potential match */
+                && !(path.substr(0, star_pos)
+                     .compare(normed_path.substr(0, star_pos))) /* before-star parts match */
+                && !(path.substr(star_pos+1, path.size()-star_pos-1)
+                     .compare(normed_path.substr(star_pos+1+normed_path.size()-path.size(),
+                                                 path.size()-star_pos-1))) /* after-star parts match */) {
+                return fromUtf8(normed_path);
+            }
+        }
+    }
+
+    // No match found
+    return SGPath();
 }
 
 // append another piece to the existing path
@@ -993,7 +1053,7 @@ SGPath SGPath::realpath() const
     char* buf = ::realpath(path.c_str(), NULL);
 #endif
     if (!buf) // File does not exist: return the realpath it would have if created now
-              // (needed for fgValidatePath security)
+              // (needed for SGPath::validate() security)
     {
         if (path.empty()) {
             return simgear::Dir::current().path();

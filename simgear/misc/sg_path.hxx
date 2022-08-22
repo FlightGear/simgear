@@ -104,7 +104,39 @@ public:
      * retrieved each time it is queried. Caching is enabled by default
      */
     void set_cached(bool cached);
-    
+
+    /**
+     * Clear a list of allowed paths patterns for access by Nasal and fgcommands.
+     * @param write True for write operations, false for read operations
+     *
+     * There are two lists of patterns: one for read operations and the other
+     * for write operations. The 'write' argument tells which list to act on.
+     * These lists are used by validate(), which determines whether access is
+     * allowed for a given path.
+     */
+    static void clearListOfAllowedPaths(bool write);
+    /**
+     * Add a path pattern to the specified access control list.
+     * @param write True for write operations, false for read operations
+     */
+    static void addAllowedPathPattern(const std::string& pattern, bool write);
+    /**
+     * Get a const reference to the specified access control list.
+     * @param write True for write operations, false for read operations
+     */
+    static const string_list& getListOfAllowedPaths(bool write);
+    /**
+     * File access control, used by Nasal and fgcommands.
+     * @param write True for write operations, false for read operations
+     * @return The validated path on success, or empty if access is denied
+     *
+     * Warning: because this always (not just on Windows) treats both \ and /
+     * as path separators, and accepts relative paths (check-to-use race if
+     * the current directory changes), always use the returned path---not the
+     * original one.
+     */
+    SGPath validate(bool write) const;
+
     /**
      * Append another piece to the existing path.  Inserts a path
      * separator between the existing component and the new component.

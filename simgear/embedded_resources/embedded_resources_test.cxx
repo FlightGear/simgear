@@ -314,7 +314,7 @@ void test_addAlreadyExistingResource()
     "add an already existing resource" << endl;
   const auto& resMgr = EmbeddedResourceManager::instance();
 
-  for (const string& locale: {"", "fr", "fr_FR"}) {
+  for (const string locale: {"", "fr", "fr_FR"}) {
     // For these tests, we don't care about the resource contents -> no need
     // to substract 1 from the result of sizeof() as we did above.
     unique_ptr<const RawEmbeddedResource> someRes(
@@ -390,7 +390,7 @@ void test_getLocaleAndSelectLocale()
     "EmbeddedResourceManager" << endl;
   const auto& resMgr = EmbeddedResourceManager::instance();
 
-  for (const string& locale: {"", "fr", "fr_FR", "de_DE"}) {
+  for (const string locale: {"", "fr", "fr_FR", "de_DE"}) {
     // The important effects of setLocale() are tested in
     // test_localeDependencyOfResourceFetching()
     resMgr->selectLocale(locale);

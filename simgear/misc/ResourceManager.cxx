@@ -127,20 +127,32 @@ void ResourceManager::removeProvider(ResourceProvider* aProvider)
 
 SGPath ResourceManager::findPath(const std::string& aResource, SGPath aContext)
 {
-    if (!aContext.isNull()) {
-        SGPath r(aContext, aResource);
-        if (r.exists()) {
-            return r;
+    const SGPath completePath(aContext, aResource);
+
+    if (!aContext.isNull() && completePath.exists()) {
+        return completePath;
+    }
+
+    // Absolute, existing path and SGPath::validate() grants read access -> OK
+    if (completePath.isAbsolute()) {
+        const auto authorizedPath = completePath.validate(false);
+        if (!authorizedPath.isNull() && authorizedPath.exists()) {
+            return authorizedPath;
         }
     }
-    
-    for (auto provider : _providers) {
-      SGPath path = provider->resolve(aResource, aContext);
-      if (!path.isNull()) {
-        return path;
-      }
+
+    // Loop over the resource providers even if 'completePath' is absolute.
+    // For instance, when readProperties() processes 'include' attributes, it
+    // is expected that 'aResource' be interpreted relatively to 'aContext'
+    // or, if this doesn't lead to an existing file, a data path like
+    // $FG_ROOT. In the latter case, BasePathProvider will do the job.
+    for (const auto& provider : _providers) {
+        const SGPath path = provider->resolve(aResource, aContext);
+        if (!path.isNull()) {
+            return path;
+        }
     }
-    
+
     return SGPath();
 }
 

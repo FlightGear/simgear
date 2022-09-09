@@ -285,12 +285,19 @@ void Client::update(int waitTimeout)
     // and cancel any which timed out
     auto it = std::remove_if(d->_activeRequests.begin(), d->_activeRequests.end(),
                              [this](const Request_ptr& r) {
+                                 // check complete-ness before timeout,
+                                 // since both can be true, but cancelling
+                                 // a completed request breaks udns
+                                 if (r->isComplete()) {
+                                     return true;
+                                 }
+
                                  if (r->isTimeout()) {
                                      dns_cancel(d->ctx, reinterpret_cast<struct dns_query*>(r->_query));
                                      return true;
                                  }
 
-                                 return r->isComplete();
+                                 return false;
                              });
     d->_activeRequests.erase(it, d->_activeRequests.end());
 }

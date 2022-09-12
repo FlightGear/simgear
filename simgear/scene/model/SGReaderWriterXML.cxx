@@ -430,7 +430,7 @@ sgLoad3DModel_internal(const SGPath& path,
         if (submodelPath.isNull()) {
           SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load file: \"" << subPathStr << "\"");
           simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
-                                 "Couldn't find file for submodel:" + subPathStr,
+                                 "Couldn't find file for submodel '" + string{sub_props->getStringValue("name")} + "': " + subPathStr,
                                  SGPath::fromUtf8(subPathStr));
           continue;
         }

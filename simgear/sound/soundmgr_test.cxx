@@ -25,7 +25,10 @@ int main( int argc, char *argv[] ) {
 
     smgr->bind();
     smgr->init();
+
     sgr = smgr->find("default", true);
+    sgr->tie_to_listener();
+
     smgr->set_volume(0.9);
     smgr->activate();
 
@@ -33,9 +36,12 @@ int main( int argc, char *argv[] ) {
     smgr->set_position( SGVec3d(0, 0, 0), SGGeod::fromDegFt(0, 0, 0) );
     smgr->set_orientation( SGQuatd::fromYawPitchRollDeg(0, 0, 0) );
 
+    // Move the samples to the listener
+    smgr->update(0.0);
+
     SGPath srcDir(SRC_DIR);
 
-    SGSoundSample *sample1 = new SGSoundSample("jet.wav", srcDir);
+    SGSoundSample *sample1 = new SGSoundSample("jet_ulaw.wav", srcDir);
     sample1->set_volume(1.0);
     sample1->set_pitch(1.0);
     sample1->play_looped();

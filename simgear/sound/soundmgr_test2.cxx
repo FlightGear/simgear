@@ -24,7 +24,10 @@ int main( int argc, char *argv[] ) {
 
     smgr->bind();
     smgr->init();
+
     sgr = smgr->find("default", true);
+    sgr->tie_to_listener();
+
     smgr->set_volume(0.9);
     smgr->activate();
 
@@ -33,6 +36,9 @@ int main( int argc, char *argv[] ) {
     // prevent NaNs
     smgr->set_position( SGVec3d(0, 0, 0), SGGeod::fromDegFt(0, 0, 0) );
     smgr->set_orientation( SGQuatd::fromYawPitchRollDeg(0, 0, 0) );
+
+    // Move the samples to the listenee
+    smgr->update(0.0);
 
     printf("default position and orientation\n");
     SGSoundSample *sample1 = new SGSoundSample("jet.wav", srcDir);

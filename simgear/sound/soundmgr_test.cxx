@@ -31,6 +31,7 @@ int main( int argc, char *argv[] ) {
 
     // prevent NaNs
     smgr->set_position( SGVec3d(0, 0, 0), SGGeod::fromDegFt(0, 0, 0) );
+    smgr->set_orientation( SGQuatd::fromYawPitchRollDeg(0, 0, 0) );
 
     SGPath srcDir(SRC_DIR);
 
@@ -52,6 +53,7 @@ int main( int argc, char *argv[] ) {
     printf("playing sample2\n");
     sleep(1);
 
+    printf("Note: OpenAL-Soft does not have native support for IMA4 encoded audio.\n");
     SGSoundSample *sample3 = new SGSoundSample("jet_ima4.wav", srcDir);
     sample3->set_volume(0.5);
     sample3->set_pitch(0.8);

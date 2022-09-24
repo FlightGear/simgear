@@ -219,7 +219,8 @@ protected:
 private:
     void cleanup_removed_samples();
     void start_playing_sample(SGSoundSample *sample);
-    void check_playing_sample(SGSoundSample *sample);
+    bool check_playing_sample(sample_map::iterator& sample_it );
+    sample_map::iterator remove( sample_map::iterator sample_it );
 
     bool _changed = false;
     bool _pause = false;

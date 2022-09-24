@@ -85,8 +85,11 @@ void SGSampleGroup::start_playing_sample(SGSoundSample *sample)
     _smgr->sample_play( sample );
 }
 
-void SGSampleGroup::check_playing_sample(SGSoundSample *sample)
+bool SGSampleGroup::check_playing_sample(sample_map::iterator& sample_it)
 {
+    SGSoundSample *sample = sample_it->second;
+    bool rv = true;
+
     // check if the sound has stopped by itself
     if (_smgr->is_sample_stopped(sample)) {
         // sample is stopped because it wasn't looping
@@ -94,7 +97,8 @@ void SGSampleGroup::check_playing_sample(SGSoundSample *sample)
         sample->no_valid_source();
         _smgr->release_source( sample->get_source() );
         _smgr->release_buffer( sample );
-        remove( sample->get_sample_name() );
+        sample_it = remove( sample_it );
+        rv = false;
     } else if ( sample->has_changed() ) {
         if ( !sample->is_playing() ) {
             // a request to stop playing the sound has been filed.
@@ -105,6 +109,7 @@ void SGSampleGroup::check_playing_sample(SGSoundSample *sample)
             update_sample_config( sample );
         }
     }
+    return rv;
 }
 
 void SGSampleGroup::update( double dt ) {
@@ -121,15 +126,21 @@ void SGSampleGroup::update( double dt ) {
         _changed = false;
     }
 
-    for (auto current : _samples) {
-        SGSoundSample *sample = current.second;
+    for (auto current = _samples.begin(); current != _samples.end(); ) {
+        SGSoundSample *sample = current->second;
+        bool increment = true;
 
         if ( !sample->is_valid_source() && sample->is_playing() && !sample->test_out_of_range()) {
             start_playing_sample(sample);
 
         } else if ( sample->is_valid_source() ) {
-            check_playing_sample(sample);
+            increment = check_playing_sample(current);
         }
+
+        if (increment) {
+            ++current;
+        }
+
         testForMgrError("update");
     }
 }
@@ -164,6 +175,13 @@ bool SGSampleGroup::remove( const std::string &refname ) {
     _samples.erase( sample_it );
 
     return true;
+}
+
+sample_map::iterator SGSampleGroup::remove( sample_map::iterator sample_it ) {
+    if ( sample_it->second->is_valid_buffer() )
+        _removed_samples.push_back( sample_it->second );
+
+    return _samples.erase( sample_it );
 }
 
 

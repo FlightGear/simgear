@@ -94,7 +94,8 @@ void SGSampleGroup::check_playing_sample(SGSoundSample *sample)
         sample->no_valid_source();
         _smgr->release_source( sample->get_source() );
         _smgr->release_buffer( sample );
-        remove( sample->get_sample_name() );
+        // Delayed removal because this is called while iterating over _samples
+        remove( sample->get_sample_name(), true );
     } else if ( sample->has_changed() ) {
         if ( !sample->is_playing() ) {
             // a request to stop playing the sound has been filed.
@@ -133,15 +134,10 @@ void SGSampleGroup::update( double dt ) {
         testForMgrError("update");
     }
 
-    for (auto current : _removed_samples) {
-        for (auto sample = _samples.begin(); sample != _samples.end(); ) {
-            if (sample->second == current) {
-                sample = _samples.erase(sample);
-            } else {
-                ++sample;
-            }
-        }
+    for (const auto& refname : _refsToRemoveFromSamplesMap) {
+        _samples.erase(refname);
     }
+    _refsToRemoveFromSamplesMap.clear();
 }
 
 // add a sound effect, return true if successful
@@ -160,8 +156,14 @@ bool SGSampleGroup::add( SGSharedPtr<SGSoundSample> sound,
 
 
 // remove a sound effect, return true if successful
-bool SGSampleGroup::remove( const std::string &refname ) {
-
+//
+// TODO: the 'delayedRemoval' boolean parameter has been specifically added
+// for check_playing_sample() which is only called while update() is iterating
+// over _samples. It may be better style to remove this parameter and add a
+// separate member function for use in check_playing_sample(), whose behavior
+// would be the same as when passing delayedRemoval=true here.
+bool SGSampleGroup::remove( const std::string &refname, bool delayedRemoval )
+{
     auto sample_it = _samples.find( refname );
     if ( sample_it == _samples.end() ) {
         // sample was not found
@@ -171,8 +173,12 @@ bool SGSampleGroup::remove( const std::string &refname ) {
     if ( sample_it->second->is_valid_buffer() )
         _removed_samples.push_back( sample_it->second );
 
-    // Do not erase within the loop
-//  _samples.erase( sample_it );
+    // Do not erase within the loop in update()
+    if (delayedRemoval) {
+        _refsToRemoveFromSamplesMap.push_back(refname);
+    } else {
+        _samples.erase(refname);
+    }
 
     return true;
 }

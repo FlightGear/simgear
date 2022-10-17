@@ -91,9 +91,11 @@ public:
     /**
      * Remove an audio sample from this group.
      * @param refname Reference name of the audio sample to remove
+     * @param delayedRemoval If true, don't modify _samples before the main
+     *        loop in update() is finished
      * @return return true if successful
      */
-    bool remove( const std::string& refname );
+    bool remove( const std::string& refname, bool delayedRemoval = false );
 
     /**
      * Test if a specified audio sample is registered at this sample group
@@ -236,6 +238,7 @@ private:
 
     sample_map _samples;
     std::vector< SGSharedPtr<SGSoundSample> > _removed_samples;
+    std::vector<std::string> _refsToRemoveFromSamplesMap;
 
     bool testForMgrError(std::string s);
     bool testForError(void *p, std::string s);

@@ -52,7 +52,6 @@ SGSampleGroup::~SGSampleGroup ()
     _smgr = nullptr;
 }
 
-#include <stdio.h>
 void SGSampleGroup::cleanup_removed_samples()
 {
     // Delete any buffers that might still be in use.

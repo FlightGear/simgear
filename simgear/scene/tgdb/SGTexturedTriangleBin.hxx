@@ -89,10 +89,15 @@ struct SGVertNormTex {
   }
   const SGVec2f& GetTexCoord( unsigned idx ) const { return texCoord[idx]; }
 
+  void SetOverlayCoord( const SGVec2f& ovc )  { overlayCoord = ovc; }
+  const SGVec2f& GetOverlayCoord() const { return overlayCoord; }
+
+
 private:  
   SGVec3f vertex;
   SGVec3f normal;
   SGVec2f texCoord[4];
+  SGVec2f overlayCoord;
   
   unsigned tc_mask;
 };
@@ -432,6 +437,8 @@ public:
     osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
     osg::ref_ptr<osg::Vec2Array> priTexCoords = new osg::Vec2Array;
     osg::ref_ptr<osg::Vec2Array> secTexCoords = new osg::Vec2Array;
+    osg::ref_ptr<osg::Vec2Array> overlayCoords = new osg::Vec2Array;
+
 
     osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
     colors->push_back(osg::Vec4(1, 1, 1, 1));
@@ -453,7 +460,9 @@ public:
         geometry->setTexCoordArray(1, secTexCoords);
     } else {
         geometry->setTexCoordArray(0, priTexCoords);
-    }        
+    }
+    geometry->setVertexAttribArray(14, overlayCoords.get(), osg::Array::BIND_PER_VERTEX);
+
 
     const unsigned invalid = ~unsigned(0);
     std::vector<unsigned> indexMap(getNumVertices(), invalid);
@@ -469,6 +478,7 @@ public:
         if ( has_sec_tcs ) {
             secTexCoords->push_back(toOsg(getVertex(triangle[0]).GetTexCoord(1)));
         }
+        overlayCoords->push_back(toOsg(getVertex(triangle[0]).GetOverlayCoord()));
       }
       deFacade.push_back(indexMap[triangle[0]]);
 
@@ -480,6 +490,7 @@ public:
         if ( has_sec_tcs ) {
             secTexCoords->push_back(toOsg(getVertex(triangle[1]).GetTexCoord(1)));
         }
+        overlayCoords->push_back(toOsg(getVertex(triangle[1]).GetOverlayCoord()));
       }
       deFacade.push_back(indexMap[triangle[1]]);
 
@@ -491,6 +502,7 @@ public:
         if ( has_sec_tcs ) {
             secTexCoords->push_back(toOsg(getVertex(triangle[2]).GetTexCoord(1)));
         }
+        overlayCoords->push_back(toOsg(getVertex(triangle[2]).GetOverlayCoord()));
       }
       deFacade.push_back(indexMap[triangle[2]]);
     }

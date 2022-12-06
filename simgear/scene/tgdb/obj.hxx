@@ -29,6 +29,8 @@
 # error This library requires C++
 #endif
 
+#include <boost/lexical_cast.hpp>
+
 #include <simgear/compiler.h>
 
 #include <string>
@@ -37,6 +39,9 @@
 #include <osg/Group>
 
 using std::string;
+
+using boost::lexical_cast;
+using boost::bad_lexical_cast;
 
 class SGMaterialLib;
 namespace simgear {

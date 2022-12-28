@@ -123,6 +123,14 @@ void test_LOWK_failure()
 #endif
 }
 
+void test_EDQM_failure()
+{
+    // 
+
+    SGMetar m1("2022/12/11 19:50 EDQM 111950Z AUTO VRB03KT 2700 // ///026/// M06/M07 Q1006");
+
+}
+
 int main(int argc, char* argv[])
 {
     try {
@@ -134,6 +142,7 @@ int main(int argc, char* argv[])
         test_clouds_without_height();
         test_GLRB_failure();
         test_LOWK_failure();
+        test_EDQM_failure();
     } catch (sg_exception& e) {
         cerr << "got exception:" << e.getMessage() << endl;
         return -1;

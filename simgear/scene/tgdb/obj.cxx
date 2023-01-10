@@ -147,7 +147,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
         stateSet->setTextureAttributeAndModes(15, orthophoto->getTexture(), osg::StateAttribute::ON);
         orthophotoAvailable->set(true);
 
-        SG_LOG(SG_OSG, SG_INFO, "Applying satellite orthophoto to terrain object with path " << path);
+        SG_LOG(SG_OSG, SG_DEBUG, "Applying satellite orthophoto to terrain object with path " << path);
       }
     }
 

@@ -484,7 +484,7 @@ string SGPath::complete_lower_extension() const
 }
 
 //------------------------------------------------------------------------------
-void SGPath::updateAttrsIfNull() const
+void SGPath::updateCachedAttributes() const
 {
   if (_cached && _cacheEnabled) {
     return;
@@ -570,7 +570,7 @@ void SGPath::checkAccess() const
     return;
   }
 
-  updateAttrsIfNull();
+  updateCachedAttributes();
   _rwCached = true;
 }
 
@@ -589,7 +589,7 @@ bool SGPath::exists() const
     return _exists;
   }
 #endif
-  updateAttrsIfNull();
+  updateCachedAttributes();
   return _exists;
 }
 
@@ -609,13 +609,13 @@ bool SGPath::canWrite() const
 
 bool SGPath::isDir() const
 {
-  updateAttrsIfNull();
+  updateCachedAttributes();
   return _exists && _isDir;
 }
 
 bool SGPath::isFile() const
 {
-  updateAttrsIfNull();
+  updateCachedAttributes();
   return _exists && _isFile;
 }
 
@@ -807,13 +807,13 @@ bool SGPath::remove()
 
 time_t SGPath::modTime() const
 {
-    updateAttrsIfNull();
+    updateCachedAttributes();
     return _modTime;
 }
 
 size_t SGPath::sizeInBytes() const
 {
-    updateAttrsIfNull();
+    updateCachedAttributes();
     return _size;
 }
 

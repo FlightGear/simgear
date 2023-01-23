@@ -372,7 +372,7 @@ private:
 
     void fix();
 
-    void updateAttrsIfNull() const;
+    void updateCachedAttributes() const;
     void checkAccess() const;
 
     bool permissionsAllowsWrite() const;

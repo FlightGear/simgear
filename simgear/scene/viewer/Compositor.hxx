@@ -19,6 +19,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <array>
 
 // For osgUtil::LineSegmentIntersector::Intersections, which is a typedef.
 #include <osgUtil/LineSegmentIntersector>

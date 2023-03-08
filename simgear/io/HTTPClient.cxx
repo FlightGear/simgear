@@ -212,10 +212,10 @@ void Client::update(int waitTimeout)
           if (doProcess) {
             bool ok = false;
             SG_LOG(SG_IO, SG_DEBUG, "msg->data.result=" << msg->data.result);
-            if (msg->data.result == 0) {
+            if (msg->data.result == CURLE_OK) {
               ok = true;
             }
-            else if (req->range() != "" && (msg->data.result == 206 || msg->data.result == 416)) {
+            else if (req->range() != "" && (responseCode == 206 || responseCode == 416)) {
               SG_LOG(SG_IO, SG_DEBUG, "req->range() is set (to '" << req->range() << "')"
                       << " so treating as ok: msg->data.result=" << msg->data.result);
               ok = true;

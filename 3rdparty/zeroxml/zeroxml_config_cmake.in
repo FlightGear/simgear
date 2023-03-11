@@ -1,0 +1,59 @@
+/* include/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Version number of package */
+#undef VERSION
+
+/* use rmalloc */
+#undef USE_RMALLOC
+#cmakedefine USE_RMALLOC @USE_RMALLOC@
+
+#if 0
+/* Handled by compiler flags */
+/* Define to include enable memory debugging. */
+#undef MALLOC_DEBUG
+#cmakedefine MALLOC_DEBUG @MALLOC_DEBUG@
+#endif
+
+/* define if unistd.h is available */
+#undef HAVE_UNISTD_H
+#cmakedefine HAVE_UNISTD_H @HAVE_UNISTD_H@
+
+/* define if strings.h is available */
+#undef HAVE_STRINGS_H
+#cmakedefine HAVE_STRINGS_H @HAVE_STRINGS_H@
+
+/* define if locale.h is available */
+#undef HAVE_LOCALE_H
+#cmakedefine HAVE_LOCALE_H @HAVE_LOCALE_H@
+
+/* define if langinfo.h is available */
+#undef HAVE_LANGINFO_H
+#cmakedefine HAVE_LANGINFO_H @HAVE_LANGINFO_H@
+
+/* define if iconv.h is available */
+#undef HAVE_ICONV_H
+#cmakedefine HAVE_ICONV_H @HAVE_ICONV_H@

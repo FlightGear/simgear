@@ -8,16 +8,16 @@
 #ifndef __EASYXML_HXX
 #define __EASYXML_HXX
 
-#include <simgear/compiler.h>
-#include <simgear/structure/exception.hxx>
-
 #include <iosfwd>
 #include <string>
 #include <vector>
 
+#include <xml.h>
+
+#include <simgear/structure/exception.hxx>
+
 class SGPath;
 
-typedef struct XML_ParserStruct* XML_Parser;
 
 /**
  * Interface for XML attributes.
@@ -223,21 +223,34 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////
-// Attribute list wrapper for Expat.
+// Attribute list wrapper for ZeroXML.
 ////////////////////////////////////////////////////////////////////////
 
-class ExpatAtts : public XMLAttributes
+class ZXMLAttributes : public XMLAttributes
 {
 public:
-  ExpatAtts (const char ** atts) : _atts(atts) {}
+  ZXMLAttributes () = default;
+  virtual ~ZXMLAttributes () = default;
 
-  virtual int size () const;
-  virtual const char * getName (int i) const;
-  virtual const char * getValue (int i) const;
+  virtual int size () const { return names.size(); };
+  virtual const char * getName (int i) const {
+    return names[i].c_str();
+  }
+  virtual const char * getValue (int i) const {
+    return values[i].c_str();
+   }
 
-  virtual const char * getValue (const char * name) const;
+  virtual const char * getValue (const char * name) const {
+    return XMLAttributes::getValue(name);
+  }
+
+  void add (const char * name, const char * value) {
+    names.push_back(name); values.push_back(value);
+  }
+
 private:
-  const char ** _atts;
+  std::vector<std::string> names;
+  std::vector<std::string> values;
 };
 
 
@@ -261,7 +274,7 @@ public:
   /**
    * Virtual destructor.
    */
-  virtual ~XMLVisitor () {}
+  virtual ~XMLVisitor () { xmlClose(parser); }
 
 
   /**
@@ -443,9 +456,9 @@ public:
    *
    * @param _parser the XML parser
    */
-  void setParser(XML_Parser _parser) { parser = _parser; }
+  void setParser(xmlId* xid) { parser = xid; }
 private:
-  XML_Parser parser;
+  xmlId* parser;
   std::string path;
   int line, column;
 };
@@ -466,12 +479,11 @@ private:
  * @param visitor An object that contains callbacks for XML parsing
  * events.
  * @param path A string describing the original path of the resource.
- * @exception Throws sg_io_exception or sg_xml_exception if there
- * is a problem reading the file.
+ * @exception Throws std::exception if there is a problem reading the file.
  * @see XMLVisitor
  */
-extern void readXML (std::istream &input, XMLVisitor &visitor,
-		     const std::string &path="");
+XML_API void XML_APIENTRY readXML (std::istream &input, XMLVisitor &visitor,
+		                   const std::string &path="");
 
 
 /**
@@ -488,11 +500,10 @@ extern void readXML (std::istream &input, XMLVisitor &visitor,
  * @param path The file name of the XML resource.
  * @param visitor An object that contains callbacks for XML parsing
  * events.
- * @exception Throws sg_io_exception or sg_xml_exception if there
- * is a problem reading the file.
+ * @exception Throws std::exception if there is a problem reading the file.
  * @see XMLVisitor
  */
-extern void readXML (const SGPath &path, XMLVisitor &visitor);
+XML_API void XML_APIENTRY readXML (const SGPath &path, XMLVisitor &visitor);
 
 
 /**
@@ -510,11 +521,11 @@ extern void readXML (const SGPath &path, XMLVisitor &visitor);
  * @param size The size of the data buffer in bytes
  * @param visitor An object that contains callbacks for XML parsing
  * events.
- * @exception Throws sg_io_exception or sg_xml_exception if there
- * is a problem reading the file.
+ * @exception Throws std::exception if there is a problem reading the file.
  * @see XMLVisitor
  */
-extern void readXML (const char *buf, const int size, XMLVisitor &visitor);
+XML_API void XML_APIENTRY readXML (const char *buf, const int size,
+                                   XMLVisitor &visitor);
 
 
 #endif // __EASYXML_HXX

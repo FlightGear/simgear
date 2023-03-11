@@ -24,7 +24,6 @@
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
 
 #cmakedefine OPENVG
-#cmakedefine SYSTEM_EXPAT
 #cmakedefine ENABLE_SOUND
 #cmakedefine USE_AEONWAVE
 #cmakedefine SG_SOUND_USES_OPENALSOFT

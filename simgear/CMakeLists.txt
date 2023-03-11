@@ -148,7 +148,7 @@ target_link_libraries(SimGearCore PRIVATE
     Threads::Threads
     ${COCOA_LIBRARY}
     CURL::libcurl
-    EXPAT::EXPAT
+    ZeroXML::ZeroXML
     Udns::Udns
     LibLZMA::LibLZMA
     ${WINSOCK_LIBRARY})

@@ -79,13 +79,11 @@ message(STATUS "Library installation directory: ${CMAKE_INSTALL_LIBDIR}")
 
 if (NOT MSVC)
 option(SIMGEAR_SHARED   "Set to ON to build SimGear as a shared library/framework" OFF)
-option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system expat library" OFF)
 option(SYSTEM_UDNS      "Set to ON to build SimGear using the system udns library" OFF)
 else()
 # Building SimGear DLLs is currently not supported for MSVC.
 set(SIMGEAR_SHARED OFF)
 # Using external 3rd party libraries is currently not supported for MSVC - it would require shared simgear (DLL).
-set(SYSTEM_EXPAT OFF)
 set(SYSTEM_UDNS OFF)
 endif()
 
@@ -211,14 +209,7 @@ endif()
 find_package(LibLZMA REQUIRED)
 find_package(CURL REQUIRED)
 
-if (SYSTEM_EXPAT)
-    message(STATUS "Requested to use system Expat library, forcing SIMGEAR_SHARED to true")
-    set(SIMGEAR_SHARED ON)
-    find_package(EXPAT REQUIRED)
-
-else()
-    message(STATUS "Using built-in expat code")
-endif(SYSTEM_EXPAT)
+message(STATUS "Using built-in zeroxml code")
 
 if(ENABLE_RTI)
     find_package(PkgConfig)

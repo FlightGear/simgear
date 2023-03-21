@@ -130,7 +130,7 @@ void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 #  define PRINT_INFO(a, b, c) \
     if (0 <= (c) && (c) < XML_MAX_ERROR) { \
         int i, last = 0, nl = 1; \
-        for (i=0; i<(b)-(a)->root->start; ++i) { \
+        if (a) for (i=0; i<(b)-(a)->root->start; ++i) { \
             if ((a)->root->start[i] == '\n') { last = i+1; nl++; } \
         } \
         snprintf(__zeroxml_strerror, BUF_LEN, "%s:\n\t%s at line %i offset %i\n", __zeroxml_filename, __zeroxml_error_str[(c)], nl, i-last); \
@@ -140,12 +140,12 @@ void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
                         __zeroxml_filename, __func__, __LINE__, c); \
     }
 
-#  define SET_ERROR(a, b, c) do { \
-     __zeroxml_set_error(a, b, c); PRINT_INFO(a, (char*)b, c); \
+#  define SET_ERROR(a, d, b, c) do { \
+     __zeroxml_set_error_debug((a), (d), (b), (c), __func__, __LINE__); PRINT_INFO((a), (char*)(b), (c)); \
    } while(0)
 
 # else /* NDEBUG */
-#  define SET_ERROR(a, b, c) __zeroxml_set_error(a, b, c);
+#  define SET_ERROR(a, d, b, c) __zeroxml_set_error(a, d, b, c);
 #  define PRINT_INFO(a, b, c)
 
 # endif /* NDEBUG */
@@ -208,8 +208,13 @@ enum _xml_flags
 #ifndef XML_NONVALIDATING
 struct _zeroxml_error
 {
+    const char *start;
     const char *pos;
-    size_t err_no;
+    int column;
+    int line;
+    int err_no;
+    int line_no;
+    const char *func;
 };
 #endif
 

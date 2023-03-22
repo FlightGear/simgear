@@ -381,9 +381,9 @@ xmlSetFlags(const xmlId *id, enum xmlFlags flags)
     }
 
     if (flags & XML_COMMENT_AS_NODE) {
-        rid->flags |= XML_COMMENT_AS_NODE;
+        rid->flags |= __XML_COMMENT_AS_NODE;
     } else if (flags & XML_IGNORE_COMMENT) {
-        rid->flags &= ~XML_COMMENT_AS_NODE;
+        rid->flags &= ~__XML_COMMENT_AS_NODE;
     }
 
     if (flags & XML_VALIDATING) {
@@ -1841,7 +1841,11 @@ static int level = 0;
         cur = new;
         assert(cur+restlen == end);
 
-        if (cur[0] == '!') /* comment: "<!---->" or CDATA: "<![CDATA[]]>" */
+        /*
+         * processing instructions: "<?target ?>", comment: "<!---->",
+         * CDATA: "<![CDATA[]]>" or DOCTYPE: "<!DOCTYPE element []>"
+         */
+        if (cur[0] == '!' || cur[0] == '?')
         {
             const char *start = cur;
             int blocklen = restlen;
@@ -1861,6 +1865,7 @@ static int level = 0;
             DECR_LEN(restlen, new, cur);
             cur = new;
             assert(cur+restlen == end);
+            elementlen = 0;
             continue;
         }
 
@@ -1889,7 +1894,7 @@ static int level = 0;
                         start_tag = element;
                     }
                     else start_tag = 0;
-                    restlen--;
+                    DECR_LEN(restlen, new, cur);
                     cur = new;
                     assert(cur+restlen == end);
                 }
@@ -1904,13 +1909,9 @@ static int level = 0;
                 {
                     cacheDataSet(nnc, element, elementlen, rptr, 0);
 
-                    new++; /* Skip '/' */
-                    if (new[0] != '>') {
-                        SET_ERROR_AND_RETURN(new, XML_ELEMENT_NO_CLOSING_TAG);
-                    }
-
-                    restlen -= 2;
-                    cur = ++new; /* Skip '>  */
+                    new += 2; /* Skip "/>" */
+                    DECR_LEN(restlen, new, cur);
+                    cur = new; /* Skip '>  */
                     assert(cur+restlen == end);
 
                     if (found == num || num == -1)
@@ -1925,6 +1926,7 @@ static int level = 0;
                         }
                     }
                     found++;
+                    elementlen = 0;
                     continue;
                 }
 
@@ -1945,7 +1947,9 @@ static int level = 0;
                 new = cur;
                 assert(cur+restlen == end);
 
-                if (restlen >= 2 && *(cur-2) == '/') { /* e.g. <test n="1"/> */
+                if (restlen >= 2 && *(cur-2) == '/') /* e.g. <test n="1"/> */
+                {
+                    elementlen = 0;
                     continue;
                 }
             }
@@ -2003,6 +2007,7 @@ static int level = 0;
                 cur = new;
                 assert(cur+restlen == end);
 
+                elementlen = 0;
                 continue;
             }
             /* protected from buffer overflow by DECR_LEN above */
@@ -2280,7 +2285,8 @@ __zeroxml_get_string(const xmlId *id, char mode)
 }
 
 /*
- * Skip an XML comment section or a CDATA section.
+ * Skip processing instructions, doctype declarations, XML comment sections
+ * or CDATA sections.
  *
  * If mode is set to XML_TRUE then the result will include the XML comment
  * indicators or XML CDATA indicators.
@@ -2304,15 +2310,15 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
     /* comment: "<!---->" */
     if ((restlen >= 7) && (MEMCMP(cur, "!--", 3) == 0))
     {
+        *start = cur;
         cur += 3;
         restlen -= 3;
-        *start = cur;
         *len = 0;
 
         new = __zeroxml_memmem(cur, restlen, "-->", 3);
         if (new)
         {
-           *len = new - *start;
+           *len = new+2 - *start;
            new += 3;
         }
     }
@@ -2330,6 +2336,47 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
         {
            if (mode == RAW) new += 3;
            *len = new - *start;
+        }
+    }
+
+    /* DOCTYPE: "<!DOCTYPE element []>" */
+    else if (restlen >= 15 && (MEMCMP(cur, "!DOCTYPE ", 9) == 0))
+    {
+        cur += 9;
+        restlen -= 9;
+        if (mode == STRIPPED) *start = cur;
+        *len = 0;
+
+        do
+        {
+            new = __zeroxml_memmem(cur, restlen, "]>", 2);
+            if (new && *(new-1) != ']')
+            {
+               if (mode == RAW) new += 2;
+               *len = new-1 - *start;
+               break;
+            }
+
+            new += 2;
+            restlen -= (new-cur);
+            cur = new;
+        }
+        while(restlen);
+    }
+
+    /* Processing Instructions: "<?target ?>" */
+    else if (restlen >= 6 && cur[0] == '?')
+    {
+        cur += 6;
+        restlen -= 6;
+        if (mode == STRIPPED) *start = cur;
+        *len = 0;
+
+        new = __zeroxml_memmem(cur, restlen, "?>", 2);
+        if (new)
+        {
+           if (mode == RAW) new += 2;
+           *len = new-1 - *start;
         }
     }
     else {

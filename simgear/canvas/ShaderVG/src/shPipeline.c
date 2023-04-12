@@ -29,6 +29,9 @@
 #include "shPaint.h"
 #include "shCommons.h"
 
+#define USE_MODELVIEW_MATRIX    0
+
+#if 0
 static void
 shPremultiplyFramebuffer(void)
 {
@@ -41,7 +44,7 @@ shUnpremultiplyFramebuffer(void)
 {
    /* TODO: hmmmm..... any idea? */
 }
-
+#endif
 
 /*-----------------------------------------------------------
  * Set the render quality.
@@ -345,7 +348,7 @@ shDrawPaintMesh(VGContext * c, SHVector2 * min, SHVector2 * max,
       }                         /* else behave as a color paint */
 
    case VG_PAINT_TYPE_COLOR:
-      shLoadOneColorMesh(p);
+//    shLoadOneColorMesh(p);
       break;
    }
 
@@ -440,7 +443,9 @@ shIsStrokeCacheValid(VGContext * restrict c, SHPath * restrict p)
 VG_API_CALL void
 vgDrawPath(VGPath path, VGbitfield paintModes)
 {
+#if USE_MODELVIEW_MATRIX
    SHfloat mgl[16];
+#endif
 
    VG_GETCONTEXT(VG_NO_RETVAL);
 
@@ -487,11 +492,13 @@ vgDrawPath(VGPath path, VGbitfield paintModes)
       (context->strokePaint ? context->strokePaint : &context->defaultPaint);
 
    /* Apply transformation */
+#if USE_MODELVIEW_MATRIX
    shMatrixToGL(&context->pathTransform, mgl);
    glUseProgram(context->progDraw);
    glUniformMatrix4fv(context->locationDraw.model, 1, GL_FALSE, mgl);
    glUniform1i(context->locationDraw.drawMode, 0); /* drawMode: path */
    GL_CHECK_ERROR;
+#endif
 
    // TODO: bisogna capire se serve sempre abilitare la scrittura nello stencil (sembra crei problemi a test_composition)
    if (paintModes & VG_FILL_PATH) {
@@ -585,8 +592,10 @@ vgDrawPath(VGPath path, VGbitfield paintModes)
 VG_API_CALL void
 vgDrawImage(VGImage image)
 {
+#if USE_MODELVIEW_MATRIX
    SHfloat mgl[16];
-   SHVector2 min, max;
+#endif
+// SHVector2 min, max;
 
    VG_GETCONTEXT(VG_NO_RETVAL);
 
@@ -609,11 +618,13 @@ vgDrawImage(VGImage image)
 
    /* Apply image-user-to-surface transformation */
    SHImage *i = (SHImage *) image;
+#if USE_MODELVIEW_MATRIX
    shMatrixToGL(&context->imageTransform, mgl);
    glUseProgram(context->progDraw);
    glUniformMatrix4fv(context->locationDraw.model, 1, GL_FALSE, mgl);
    glUniform1i(context->locationDraw.drawMode, 1); /* drawMode: image */
    GL_CHECK_ERROR;
+#endif
 
    /* Clamp to edge for proper filtering, modulate for multiply mode */
    glActiveTexture(GL_TEXTURE0);

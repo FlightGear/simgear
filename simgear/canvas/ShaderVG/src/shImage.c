@@ -1753,7 +1753,7 @@ vgGaussianBlur(VGImage dst, VGImage src,
       VG_NO_RETVAL);
 
    // TODO: mask color with channelMask
-   VGbitfield channelMask = context->filterChannelMask;
+// VGbitfield channelMask = context->filterChannelMask;
 
    // gaussian blur only of the images intersection
    SHint w = SH_MIN(d->width, s->width);

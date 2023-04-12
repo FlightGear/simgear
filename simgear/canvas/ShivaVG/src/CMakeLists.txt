@@ -12,6 +12,8 @@ set(SOURCES
   shContext.h
   shExtensions.c
   shExtensions.h
+  shCommons.c
+  shCommons.h
   shGeometry.c
   shGeometry.h
   shImage.c
@@ -21,10 +23,12 @@ set(SOURCES
   shParams.c
   shPath.c
   shPath.h
+  shMath.c
+  shMath.h
   shPipeline.c
   shVectors.c
   shVectors.h
   shVgu.c
 )
 
-simgear_scene_component(ShivaVG canvas/ShivaVG "${SOURCES}" "${HEADERS}")
+simgear_scene_component(ShivaVG canvas/ShivaVG "${SOURCES}" "${HEADERS}" GLEW::GLEW)

@@ -19,15 +19,18 @@
  */
 
 #ifndef __SH_GEOMETRY_H
+#define __SH_GEOMETRY_H
 
 #include "shDefs.h"
 #include "shContext.h"
 #include "shVectors.h"
 #include "shPath.h"
 
-void shFlattenPath(SHPath *p, SHint surfaceSpace);
-void shStrokePath(VGContext* c, SHPath *p);
-void shTransformVertices(SHMatrix3x3 *m, SHPath *p);
-void shFindBoundbox(SHPath *p);
+#define SH_PATH_ESTIMATE_QUALITY 1.0f
+
+void shFlattenPath(SHPath * p, SHint surfaceSpace);
+void shStrokePath(VGContext * c, SHPath * p);
+void shTransformVertices(SHMatrix3x3 * m, SHPath * p);
+void shFindBoundbox(SHPath * p);
 
 #endif /* __SH_GEOMETRY_H */

@@ -27,9 +27,9 @@
 
 typedef struct
 {
-  float offset;
-  SHColor color;
-  
+   SHColor color;
+   SHfloat offset;
+
 } SHStop;
 
 #define _ITEM_T SHStop
@@ -40,23 +40,22 @@ typedef struct
 
 typedef struct
 {
-  VGPaintType type;
-  SHColor color;
-  SHColorArray colors;
-  SHStopArray instops;
-  SHStopArray stops;
-  VGboolean premultiplied;
-  VGColorRampSpreadMode spreadMode;
-  VGTilingMode tilingMode;
-  SHfloat linearGradient[4];
-  SHfloat radialGradient[5];
-  GLuint texture;
-  VGImage pattern;
-  
+   VGImage pattern;
+   SHColor color;
+   SHColorArray colors;
+   SHStopArray instops;
+   SHStopArray stops;
+   SHfloat linearGradient[4];
+   SHfloat radialGradient[5];
+   VGPaintType type;
+   VGColorRampSpreadMode spreadMode;
+   VGTilingMode tilingMode;
+   GLuint texture;
+   VGboolean premultiplied;
 } SHPaint;
 
-void SHPaint_ctor(SHPaint *p);
-void SHPaint_dtor(SHPaint *p);
+void SHPaint_ctor(SHPaint * p);
+void SHPaint_dtor(SHPaint * p);
 
 #define _ITEM_T SHPaint*
 #define _ARRAY_T SHPaintArray
@@ -64,13 +63,12 @@ void SHPaint_dtor(SHPaint *p);
 #define _ARRAY_DECLARE
 #include "shArrayBase.h"
 
-void shValidateInputStops(SHPaint *p);
-void shSetGradientTexGLState(SHPaint *p);
+void shValidateInputStops(SHPaint * p);
 
 int shLoadLinearGradientMesh(SHPaint *p, VGPaintMode mode, VGMatrixMode matrixMode);
 int shLoadRadialGradientMesh(SHPaint *p, VGPaintMode mode, VGMatrixMode matrixMode);
 int shLoadPatternMesh(SHPaint *p, VGPaintMode mode, VGMatrixMode matrixMode);
 int shLoadOneColorMesh(SHPaint *p);
-  
+
 
 #endif /* __SHPAINT_H */

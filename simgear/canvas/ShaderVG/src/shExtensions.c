@@ -5,12 +5,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library in the file COPYING;
  * if not, write to the Free Software Foundation, Inc.,
@@ -19,10 +19,13 @@
  */
 
 #define VG_API_EXPORT
-#include "shExtensions.h"
+#include <vg/openvg.h>
 #include <stdio.h>
 #include <string.h>
-#include <GL/glcorearb.h>
+#include "shDefs.h"
+#include "shExtensions.h"
+#include "shContext.h"
+
 
 /*-----------------------------------------------------
  * OpenGL core profile
@@ -59,78 +62,104 @@
    PFNGLACTIVETEXTUREPROC            glActiveTexture;
 #endif
 
-/*-----------------------------------------------------
- * Extensions check
- *-----------------------------------------------------*/
-static int checkExtension(const char *extensions, const char *name)
+typedef void (*PFVOID) (void);
+
+PFVOID
+shGetProcAddress(const char *name)
 {
-	int nlen = (int)strlen(name);
-	int elen = (int)strlen(extensions);
-	const char *e = extensions;
-	if(nlen <= 0) return 0;
-
-	while (1) {
-
-		/* Try to find sub-string */
-		e = strstr(e, name);
-    if (e == NULL) return 0;
-		/* Check if last */
-		if (e == extensions + elen - nlen)
-			return 1;
-		/* Check if space follows (avoid same names with a suffix) */
-    if (*(e + nlen) == ' ')
-      return 1;
-    
-    e += nlen;
-	}
-
-  return 0;
+   SH_ASSERT(name != NULL);
+#if defined(_WIN32)
+   return (PFVOID) wglGetProcAddress(name);
+#elif defined(__APPLE__)
+   /* TODO: Mac OS glGetProcAddress implementation */
+   return (PFVOID) NULL;
+#else
+   return (PFVOID) glXGetProcAddress((const unsigned char *) name);
+#endif
 }
 
-typedef void (*PFVOID)();
 
-PFVOID shGetProcAddress(const char *name)
+
+void shLoadExtensions(VGContext *c)
 {
-  #if defined(_WIN32)
-  return (PFVOID)wglGetProcAddress(name);
-  #else
-  return (PFVOID)NULL;
-  #endif
-}
+   SH_ASSERT(c != NULL);
 
-void shLoadExtensions(void *c)
-{
-    if(shGetProcAddress == NULL) return;
+#if defined(_WIN32)
+   wglMakeCurrent(NULL, NULL);
+#endif
 
-  #if defined(_WIN32)
-    glUniform1i                = shGetProcAddress("glUniform1i");
-    glUniform2fv               = shGetProcAddress("glUniform2fv");
-    glUniformMatrix3fv         = shGetProcAddress("glUniformMatrix3fv");
-    glUniform2f                = shGetProcAddress("glUniform2f");
-    glUniform4fv               = shGetProcAddress("glUniform4fv");
-    glEnableVertexAttribArray  = shGetProcAddress("glEnableVertexAttribArray");
-    glVertexAttribPointer      = shGetProcAddress("glVertexAttribPointer");
-    glDisableVertexAttribArray = shGetProcAddress("glDisableVertexAttribArray");
-    glUseProgram               = shGetProcAddress("glUseProgram");
-    glUniformMatrix4fv         = shGetProcAddress("glUniformMatrix4fv");
-    glCreateShader             = shGetProcAddress("glCreateShader");
-    glShaderSource             = shGetProcAddress("glShaderSource");
-    glCompileShader            = shGetProcAddress("glCompileShader");
-    glGetShaderiv              = shGetProcAddress("glGetShaderiv");
-    glAttachShader             = shGetProcAddress("glAttachShader");
-    glLinkProgram              = shGetProcAddress("glLinkProgram");
-    glGetAttribLocation        = shGetProcAddress("glGetAttribLocation");
-    glGetUniformLocation       = shGetProcAddress("glGetUniformLocation");
-    glDeleteShader             = shGetProcAddress("glDeleteShader");
-    glDeleteProgram            = shGetProcAddress("glDeleteProgram");
-    glUniform1f                = shGetProcAddress("glUniform1f");
-    glUniform3f                = shGetProcAddress("glUniform3f");
-    glUniform4f                = shGetProcAddress("glUniform4f");
-    glUniform1fv               = shGetProcAddress("glUniform1fv");
-    glUniform3fv               = shGetProcAddress("glUniform3fv");
-    glUniformMatrix2fv         = shGetProcAddress("glUniformMatrix2fv");
-    glGetUniformfv             = shGetProcAddress("glGetUniformfv");
-    glCreateProgram            = shGetProcAddress("glCreateProgram");
-    glActiveTexture            = shGetProcAddress("glActiveTexture");
-  #endif
+   glewInit();
+
+   if (!GL_VERSION_2_1) {
+      SH_LOG_ERR("ShivaVG require OpenGL 2.1");
+      exit(EXIT_FAILURE);
+   }
+
+   /* GL_TEXTURE_CLAMP_TO_EDGE */
+   if (glewIsSupported("GL_VERSION_2_1 GL_EXT_texture_edge_clamp")
+       || glewIsSupported("GL_VERSION_2_1 GL_SGIS_texture_edge_clamp"))
+      c->isGLAvailable_ClampToEdge = 1;
+   else                         /* Unavailable */
+      c->isGLAvailable_ClampToEdge = 0;
+
+   SH_DEBUG("Clamp to Edge extension  = %d", c->isGLAvailable_ClampToEdge);
+
+   /* GL_TEXTURE_MIRRORED_REPEAT */
+   if (glewIsSupported("GL_VERSION_2_1 GL_ARB_texture_mirrored_repeat")
+      || glewIsSupported("GL_VERSION_2_1 GL_IBM_texture_mirrored_repeat"))
+      c->isGLAvailable_MirroredRepeat = 1;
+   else                         /* Unavailable */
+      c->isGLAvailable_MirroredRepeat = 0;
+
+   SH_DEBUG("Mirrored Repeat extension  = %d", c->isGLAvailable_MirroredRepeat);
+
+   /* Non-power-of-two textures */
+   if (glewIsSupported("GL_VERSION_2_1 GL_ARB_texture_non_power_of_two"))
+      c->isGLAvailable_TextureNonPowerOfTwo = 1;
+   else
+      c->isGLAvailable_TextureNonPowerOfTwo = 0;
+
+   SH_DEBUG("Texture Non Power of two = %d", c->isGLAvailable_TextureNonPowerOfTwo);
+
+   /* GL_EXT_pixel_buffer_object */
+   if (glewIsSupported("GL_EXT_pixel_buffer_object") || glewIsSupported("GL_ARB_pixel_buffer_object") || glewIsSupported("GL_NV_pixel_buffer_object"))
+      c->isGLAvailable_PixelBufferObject = 1;
+   else
+      c->isGLAvailable_PixelBufferObject = 0;
+
+   SH_DEBUG("Pixel Buffer Object extension = %d", c->isGLAvailable_PixelBufferObject);
+
+   if(shGetProcAddress == NULL) return;
+ 
+   #if defined(_WIN32)
+     glUniform1i                = shGetProcAddress("glUniform1i");
+     glUniform2fv               = shGetProcAddress("glUniform2fv");
+     glUniformMatrix3fv         = shGetProcAddress("glUniformMatrix3fv");
+     glUniform2f                = shGetProcAddress("glUniform2f");
+     glUniform4fv               = shGetProcAddress("glUniform4fv");
+     glEnableVertexAttribArray  = shGetProcAddress("glEnableVertexAttribArray");
+     glVertexAttribPointer      = shGetProcAddress("glVertexAttribPointer");
+     glDisableVertexAttribArray = shGetProcAddress("glDisableVertexAttribArray");
+     glUseProgram               = shGetProcAddress("glUseProgram");
+     glUniformMatrix4fv         = shGetProcAddress("glUniformMatrix4fv");
+     glCreateShader             = shGetProcAddress("glCreateShader");
+     glShaderSource             = shGetProcAddress("glShaderSource");
+     glCompileShader            = shGetProcAddress("glCompileShader");
+     glGetShaderiv              = shGetProcAddress("glGetShaderiv");
+     glAttachShader             = shGetProcAddress("glAttachShader");
+     glLinkProgram              = shGetProcAddress("glLinkProgram");
+     glGetAttribLocation        = shGetProcAddress("glGetAttribLocation");
+     glGetUniformLocation       = shGetProcAddress("glGetUniformLocation");
+     glDeleteShader             = shGetProcAddress("glDeleteShader");
+     glDeleteProgram            = shGetProcAddress("glDeleteProgram");
+     glUniform1f                = shGetProcAddress("glUniform1f");
+     glUniform3f                = shGetProcAddress("glUniform3f");
+     glUniform4f                = shGetProcAddress("glUniform4f");
+     glUniform1fv               = shGetProcAddress("glUniform1fv");
+     glUniform3fv               = shGetProcAddress("glUniform3fv");
+     glUniformMatrix2fv         = shGetProcAddress("glUniformMatrix2fv");
+     glGetUniformfv             = shGetProcAddress("glGetUniformfv");
+     glCreateProgram            = shGetProcAddress("glCreateProgram");
+     glActiveTexture            = shGetProcAddress("glActiveTexture");
+   #endif
 }

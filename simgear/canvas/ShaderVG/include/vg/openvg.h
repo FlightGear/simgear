@@ -406,8 +406,6 @@ typedef enum {
 
 /* Function Prototypes */
 
-#if 0 // We are including ShivaVG directly into libSimGearScene and only using
-      // inside the library so there is no need for any dll import/export stuff
 #if defined(_WIN32) || defined(__VC32__)
 #	if defined(VG_API_EXPORT)
 #		define VG_API_CALL __declspec(dllexport)
@@ -416,9 +414,6 @@ typedef enum {
 #	endif
 #else
 #	define VG_API_CALL extern
-#endif
-#else
-#   define VG_API_CALL
 #endif
 
 #if defined (__cplusplus)
@@ -668,8 +663,8 @@ VG_API_CALL void  vgUniformMatrix2fvSH (VGint location, VGint count, VGboolean t
 VG_API_CALL void  vgUniformMatrix3fvSH (VGint location, VGint count, VGboolean transpose, const VGfloat *value);
 VG_API_CALL void  vgUniformMatrix4fvSH (VGint location, VGint count, VGboolean transpose, const VGfloat *value);
 VG_API_CALL void  vgBindImageSH(VGImage image, VGImageUnitSH unit);
-VG_API_CALL VGint vgGetUniformLocationSH(const VGbyte *name);        
-VG_API_CALL void  vgGetUniformfvSH(VGint location, VGfloat *params);  
+VG_API_CALL VGint vgGetUniformLocationSH(const VGbyte *name);
+VG_API_CALL void  vgGetUniformfvSH(VGint location, VGfloat *params);
 
 #if defined (__cplusplus)
 } /* extern "C" */

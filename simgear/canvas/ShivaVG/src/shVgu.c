@@ -20,8 +20,8 @@
  */
 
 #define VG_API_EXPORT
-#include <VG/openvg.h>
-#include <VG/vgu.h>
+#include <vg/openvg.h>
+#include <vg/vgu.h>
 #include "shDefs.h"
 #include "shContext.h"
 #include <stdio.h>

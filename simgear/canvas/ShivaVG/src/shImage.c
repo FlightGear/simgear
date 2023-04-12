@@ -19,7 +19,7 @@
  */
 
 #define VG_API_EXPORT
-#include <VG/openvg.h>
+#include <vg/openvg.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>

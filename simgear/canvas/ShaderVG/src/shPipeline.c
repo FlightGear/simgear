@@ -28,7 +28,7 @@
 #include "shGeometry.h"
 #include "shPaint.h"
 
-#define USE_MODELVIEW_MATRIX	0
+#define USE_MODELVIEW_MATRIX	1
 
 void shPremultiplyFramebuffer()
 {
@@ -323,6 +323,9 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
   glUniformMatrix4fv(context->locationDraw.model, 1, GL_FALSE, mgl);
   glUniform1i(context->locationDraw.drawMode, 0); /* drawMode: path */
   GL_CHECK_ERROR;
+#else
+  glUseProgram(context->progDraw);
+  GL_CHECK_ERROR;
 #endif
   
   if (paintModes & VG_FILL_PATH) {
@@ -452,6 +455,9 @@ VG_API_CALL void vgDrawImage(VGImage image)
   shMatrixToGL(&context->imageTransform, mgl);
   glUseProgram(context->progDraw);
   glUniformMatrix4fv(context->locationDraw.model, 1, GL_FALSE, mgl);
+  GL_CHECK_ERROR;
+#else
+  glUseProgram(context->progDraw);
   GL_CHECK_ERROR;
 #endif
 

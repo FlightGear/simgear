@@ -23,7 +23,7 @@
 
 #include "shDefs.h"
 #include <stdbool.h>
-#include <VG/openvg.h>
+#include <vg/openvg.h>
 
 /*-----------------------------------------------------------
  * ColorFormat holds the data necessary to pack/unpack color

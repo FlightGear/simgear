@@ -22,7 +22,7 @@
 #define __SH_MATH_H
 
 #include "shDefs.h"
-#include <VG/openvg.h>
+#include <vg/openvg.h>
 
 VGint shAddSaturate(VGint a, VGint b);
 

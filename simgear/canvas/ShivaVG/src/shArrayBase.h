@@ -37,7 +37,7 @@
 #define __SHARRAYBASE_H
 
 #include "shDefs.h"
-#include <VG/openvg.h>
+#include <vg/openvg.h>
 #include <string.h>
 
 #define VAL(x,y) x ## y

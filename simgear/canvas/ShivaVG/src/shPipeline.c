@@ -29,6 +29,8 @@
 #include "shPaint.h"
 #include "shCommons.h"
 
+#define USE_MODELVIEW_MATRIX	0
+
 static void
 shPremultiplyFramebuffer(void)
 {
@@ -492,11 +494,13 @@ vgDrawPath(VGPath path, VGbitfield paintModes)
       (context->strokePaint ? context->strokePaint : &context->defaultPaint);
 
    /* Apply transformation */
+#if USE_MODELVIEW_MATRIX
    SHfloat mgl[16];
    shMatrixToGL(&context->pathTransform, mgl);
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
    glMultMatrixf(mgl);
+#endif
 
    // TODO: bisogna capire se serve sempre abilitare la scrittura nello stencil (sembra crei problemi a test_composition)
    if (paintModes & VG_FILL_PATH) {
@@ -601,7 +605,9 @@ vgDrawPath(VGPath path, VGbitfield paintModes)
       }
    }
 
+#if USE_MODELVIEW_MATRIX
    glPopMatrix();
+#endif
 
    if (context->scissoring == VG_TRUE)
       glDisable(GL_SCISSOR_TEST);
@@ -612,7 +618,9 @@ vgDrawPath(VGPath path, VGbitfield paintModes)
 VG_API_CALL void
 vgDrawImage(VGImage image)
 {
+#if USE_MODELVIEW_MATRIX
    SHfloat mgl[16];
+#endif
    SHfloat texGenS[4] = { 0, 0, 0, 0 };
    SHfloat texGenT[4] = { 0, 0, 0, 0 };
    SHVector2 min, max;
@@ -638,10 +646,12 @@ vgDrawImage(VGImage image)
 
    /* Apply image-user-to-surface transformation */
    SHImage *i = (SHImage *) image;
+#if USE_MODELVIEW_MATRIX
    shMatrixToGL(&context->imageTransform, mgl);
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
    glMultMatrixf(mgl);
+#endif
 
    /* Clamp to edge for proper filtering, modulate for multiply mode */
    glActiveTexture(GL_TEXTURE0);
@@ -774,7 +784,9 @@ vgDrawImage(VGImage image)
 
    glDisable(GL_TEXTURE_GEN_S);
    glDisable(GL_TEXTURE_GEN_T);
+#if USE_MODELVIEW_MATRIX
    glPopMatrix();
+#endif
 
    if (context->scissoring == VG_TRUE)
       glDisable(GL_SCISSOR_TEST);

@@ -39,71 +39,126 @@ namespace {
  * Get a color from properties.
  */
 struct ColorSpec {
-  float red, green, blue;
-  float factor;
-  float offset;
-  SGPropertyNode_ptr red_prop;
-  SGPropertyNode_ptr green_prop;
-  SGPropertyNode_ptr blue_prop;
-  SGPropertyNode_ptr factor_prop;
-  SGPropertyNode_ptr offset_prop;
+  SGSharedPtr<SGExpressiond> redex, greenex, blueex;
+  SGSharedPtr<SGExpressiond> factorex;
+  SGSharedPtr<SGExpressiond> offsetex;
   SGVec4f v;
   
   ColorSpec(const SGPropertyNode* configNode, SGPropertyNode* modelRoot)
   {
-    red = -1.0;
-    green = -1.0;
-    blue = -1.0;
     if (!configNode)
       return;
-    
-    red = configNode->getFloatValue("red", -1.0);
-    green = configNode->getFloatValue("green", -1.0);
-    blue = configNode->getFloatValue("blue", -1.0);
-    factor = configNode->getFloatValue("factor", 1.0);
-    offset = configNode->getFloatValue("offset", 0.0);
-    
+
     if (!modelRoot)
       return;
     const SGPropertyNode *node;
+    const SGPropertyNode *expNode;
+
+    node = configNode->getNode("red");
+    if (node) {
+      expNode = node->getNode("expression");
+      if (expNode) {
+        redex = SGReadDoubleExpression(modelRoot, expNode->getChild(0));
+        if (redex) {
+          redex = redex->simplify();
+        }
+      } else {
+        redex = new SGConstExpression<double>(node->getFloatValue(-1.0));
+      }
+    }
+    node = configNode->getNode("green");
+    if (node) {
+      expNode = node->getNode("expression");
+      if (expNode) {
+        greenex = SGReadDoubleExpression(modelRoot, expNode->getChild(0));
+        if (greenex) {
+          greenex->simplify();
+        }
+      } else {
+        greenex = new SGConstExpression<double>(node->getFloatValue(-1.0));
+      }
+    }
+    node = configNode->getNode("blue");
+    if (node) {
+      expNode = node->getNode("expression");
+      if (expNode) {
+        blueex = SGReadDoubleExpression(modelRoot, expNode->getChild(0));
+        if (blueex) {
+          blueex = blueex->simplify();
+        }
+      } else {
+        blueex = new SGConstExpression<double>(node->getFloatValue(-1.0));
+      }
+    }
+    node = configNode->getNode("factor");
+    if (node) {
+      expNode = node->getNode("expression");
+      if (expNode) {
+        factorex = SGReadDoubleExpression(modelRoot, expNode->getChild(0));
+        if (factorex) {
+          factorex = factorex->simplify();
+        }
+      } else {
+        factorex = new SGConstExpression<double>(node->getFloatValue(1.0));
+      }
+    }
+    node = configNode->getNode("offset");
+    if (node) {
+      expNode = node->getNode("expression");
+      if (expNode) {
+        offsetex = SGReadDoubleExpression(modelRoot, expNode->getChild(0));
+        if (offsetex) {
+          offsetex = offsetex->simplify();
+        }
+      } else {
+        offsetex = new SGConstExpression<double>(node->getFloatValue(0.0));
+      }
+    }
+
     node = configNode->getChild("red-prop");
     if (node)
-      red_prop = modelRoot->getNode(node->getStringValue(), true);
+      redex = new SGPropertyExpression<double>(modelRoot->getNode(node->getStringValue(), true));
     node = configNode->getChild("green-prop");
     if (node)
-      green_prop = modelRoot->getNode(node->getStringValue(), true);
+      greenex = new SGPropertyExpression<double>(modelRoot->getNode(node->getStringValue(), true));
     node = configNode->getChild("blue-prop");
     if (node)
-      blue_prop = modelRoot->getNode(node->getStringValue(), true);
+      blueex = new SGPropertyExpression<double>(modelRoot->getNode(node->getStringValue(), true));
     node = configNode->getChild("factor-prop");
     if (node)
-      factor_prop = modelRoot->getNode(node->getStringValue(), true);
+      factorex = new SGPropertyExpression<double>(modelRoot->getNode(node->getStringValue(), true));
     node = configNode->getChild("offset-prop");
     if (node)
-      offset_prop = modelRoot->getNode(node->getStringValue(), true);
+      offsetex = new SGPropertyExpression<double>(modelRoot->getNode(node->getStringValue(), true));
   }
   
   bool dirty() {
-    return red >= 0 || green >= 0 || blue >= 0;
+    return redex->getValue() >= 0 || greenex->getValue() >= 0 || blueex->getValue() >= 0;
   }
   bool live() {
-    return red_prop || green_prop || blue_prop
-      || factor_prop || offset_prop;
+    return !(
+      (redex && redex->isConst()) &&
+      (greenex && greenex->isConst()) &&
+      (blueex &&blueex->isConst()) &&
+      (factorex && factorex->isConst()) &&
+      (offsetex && offsetex->isConst())
+    );
   }
   SGVec4f &rgba() {
-    if (red_prop)
-      red = red_prop->getFloatValue();
-    if (green_prop)
-      green = green_prop->getFloatValue();
-    if (blue_prop)
-      blue = blue_prop->getFloatValue();
-    if (factor_prop)
-      factor = factor_prop->getFloatValue();
-    if (offset_prop)
-      offset = offset_prop->getFloatValue();
-    v[0] = SGMiscf::clip(red*factor + offset, 0, 1);
-    v[1] = SGMiscf::clip(green*factor + offset, 0, 1);
-    v[2] = SGMiscf::clip(blue*factor + offset, 0, 1);
+    float red = 0.0, green = 0.0, blue = 0.0, factor = 1.0, offset = 0.0;
+    if (redex)
+      red = redex->getValue();
+    if (greenex)
+      green = greenex->getValue();
+    if (blueex)
+      blue = blueex->getValue();
+    if (factorex)
+      factor = factorex->getValue();
+    if (offsetex)
+      offset = offsetex->getValue();
+    v[0] = SGMiscf::clip(red * factor + offset, 0, 1);
+    v[1] = SGMiscf::clip(green * factor + offset, 0, 1);
+    v[2] = SGMiscf::clip(blue * factor + offset, 0, 1);
     v[3] = 1;
     return v;
   }
@@ -111,14 +166,6 @@ struct ColorSpec {
   osg::Vec4 rgbaVec4()
   {
     return toOsg(rgba());
-  }
-  
-  SGVec4f &initialRgba() {
-    v[0] = SGMiscf::clip(red*factor + offset, 0, 1);
-    v[1] = SGMiscf::clip(green*factor + offset, 0, 1);
-    v[2] = SGMiscf::clip(blue*factor + offset, 0, 1);
-    v[3] = 1;
-    return v;
   }
 };
 

@@ -1,5 +1,6 @@
 include(CMakeFindDependencyMacro)
 
+find_dependency(GLEW)
 find_dependency(ZLIB)
 find_dependency(LibLZMA)
 find_dependency(Threads)

@@ -40,21 +40,20 @@ SGBinding::clear()
     _setting.clear();
 }
 
-void
-SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
+void SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
 {
-  const SGPropertyNode * conditionNode = node->getChild("condition");
-  if (conditionNode != 0)
-    setCondition(sgReadCondition(root, conditionNode));
+    const SGPropertyNode* conditionNode = node->getChild("condition");
+    if (conditionNode != 0)
+        setCondition(sgReadCondition(root, conditionNode));
 
-  _command_name = node->getStringValue("command", "");
-  if (_command_name.empty()) {
-      SG_LOG(SG_INPUT, SG_DEV_ALERT, "No command supplied for binding.");
-  }
+    _command_name = node->getStringValue("command", "");
+    if (_command_name.empty()) {
+        SG_LOG(SG_INPUT, SG_DEV_ALERT, "No command supplied for binding { " << node->getPath() << " }.");
+    }
 
-  _arg = const_cast<SGPropertyNode*>(node);
-  _root = const_cast<SGPropertyNode*>(root);
-  _setting.clear();
+    _arg = const_cast<SGPropertyNode*>(node);
+    _root = const_cast<SGPropertyNode*>(root);
+    _setting.clear();
 }
 
 void

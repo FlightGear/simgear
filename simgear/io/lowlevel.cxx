@@ -336,14 +336,18 @@ void sgWriteDouble ( gzFile fd, const unsigned int n, const double *var )
     }
 }
 
-void sgReadBytes ( gzFile fd, const unsigned int n, void *var ) 
+
+void sgReadBytes(gzFile fd, const unsigned int n, void* var)
 {
-    if ( n == 0) return;
-    if ( gzread ( fd, var, n ) != (int)n ) {
-        throw sg_io_exception("sgReadBytes: GZRead failed:" + gzErrorMessage(fd),
-                              sg_location{thread_gzPath}, nullptr, false);
-    }
+    if (n == 0) return;
+
+    if (gzread(fd, var, n) != -1)
+        return;
+
+    throw sg_io_exception("sgReadBytes: GZRead failed:" + gzErrorMessage(fd),
+                          sg_location{thread_gzPath}, nullptr, false);
 }
+
 
 void sgWriteBytes ( gzFile fd, const unsigned int n, const void *var ) 
 {
@@ -387,7 +391,6 @@ void sgWriteUShort ( gzFile fd, const unsigned int n, const unsigned short *var 
         throw sg_io_exception("sgWriteUShort array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
-
 
 
 void sgReadShort ( gzFile fd, const unsigned int n, short *var )
@@ -460,7 +463,6 @@ void sgWriteUInt ( gzFile fd, const unsigned int n, const unsigned int *var )
 }
 
 
-
 void sgReadInt ( gzFile fd, const unsigned int n, int *var )
 {
     if ( gzread ( fd, var, sizeof(int) * n )
@@ -494,7 +496,6 @@ void sgWriteInt ( gzFile fd, const unsigned int n, const int *var )
         throw sg_io_exception("sgWriteInt array: gzwrite failed:" + gzErrorMessage(fd), {} /* origin */, false);
     }
 }
-
 
 
 #define MAX_ENTITY_NAME_LENGTH 1024
@@ -535,5 +536,3 @@ void sgWriteString ( gzFile fd, const char *var )
 	gzputc( fd, 0 );
     }
 }
-
-

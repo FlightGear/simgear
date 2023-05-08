@@ -38,6 +38,7 @@
 #  include <simgear_config.h>
 #endif
 
+#include <iostream>
 #include <iomanip>
 #include <string>
 #include <time.h>
@@ -52,6 +53,7 @@
 #include "metar.hxx"
 
 #define NaN SGMetarNaN
+#define TRACE 0
 
 using std::string;
 using std::map;
@@ -628,6 +630,10 @@ bool SGMetar::scanModifier()
 // (\d{3}|VRB)\d{1,3}(G\d{2,3})?(KT|KMH|MPS)
 bool SGMetar::scanWind()
 {
+#if TRACE
+    std::cout << "metar wind: " << _m << std::endl;
+#endif
+
 	char *m = _m;
 	int dir;
 	if (!strncmp(m, "VRB", 3))
@@ -635,7 +641,7 @@ bool SGMetar::scanWind()
 	else if (!strncmp(m, "///", 3))	// direction not measurable
 		m += 3, dir = -1;
 	else if (!scanNumber(&m, &dir, 3))
-		return false;
+		dir = -1;
 
 	int i;
 	if (!strncmp(m, "//", 2))	// speed not measurable
@@ -644,19 +650,21 @@ bool SGMetar::scanWind()
 		i = -1;					// not spec compliant
 	double speed = i;
 
-	double gust = NaN;
-	if (*m == 'G') {
-		m++;
-		if (!strncmp(m, "//", 2))	// speed not measurable
-			m += 2, i = -1;
-		else if (!scanNumber(&m, &i, 2, 3))
-			return false;
+    double gust = NaN;
+    if (*m == ' ' && *(m + 1) == 'G') // space between direction/velocity and gusts - not spec compliant
+        m++;
+    if (*m == 'G') {
+        m++;
+        if (!strncmp(m, "//", 2)) // speed not measurable
+            m += 2, i = -1;
+        else if (!scanNumber(&m, &i, 2, 3))
+            return false;
 
-		if (i != -1)
-			gust = i;
-	}
+        if (i != -1)
+            gust = i;
+    }
 
-	double factor;
+    double factor;
 	if (!strncmp(m, "KT", 2))
 		m += 2, factor = SG_KT_TO_MPS;
 	else if (!strncmp(m, "KMH", 3))		// invalid Km/h
@@ -669,11 +677,13 @@ bool SGMetar::scanWind()
 		factor = SG_KT_TO_MPS;
 	else
 		return false;
+
 	if (!scanBoundary(&m))
 		return false;
+
 	_m = m;
-	_wind_dir = dir;
-	_wind_speed = speed * factor;
+	_wind_dir = dir == -1 ? 0 : dir;
+	_wind_speed = speed < 0.0 ? 0.0 : speed * factor;
 	if (gust != NaN)
 		_gust_speed = gust * factor;
 	_grpcount++;
@@ -684,6 +694,10 @@ bool SGMetar::scanWind()
 // \d{3}V\d{3}
 bool SGMetar::scanVariability()
 {
+#if TRACE
+    std::cout << "metar variability: " << _m << std::endl;
+#endif
+
 	char *m = _m;
 	int from, to;
 
@@ -715,6 +729,10 @@ bool SGMetar::scanVariability()
 bool SGMetar::scanVisibility()
 // TODO: if only directed vis are given, do still set min/max
 {
+#if TRACE
+    std::cout << "metar visibility: " << _m << std::endl;
+#endif
+
 	if (!strncmp(_m, "//// ", 5)) {         // spec compliant?
 		_m += 5;
 		_grpcount++;
@@ -811,6 +829,10 @@ bool SGMetar::scanVisibility()
 // R\d\d[LCR]?/([PM]?\d{4}V)?[PM]?\d{4}(FT)?[DNU]?
 bool SGMetar::scanRwyVisRange()
 {
+#if TRACE
+    std::cout << "metar runway range: " << _m << std::endl;
+#endif
+
 	char *m = _m;
 	int i;
 	SGMetarRunway r;
@@ -928,6 +950,10 @@ static const struct Token phenomenon[] = {
 // (+|-|VC)?(NSW|MI|PR|BC|DR|BL|SH|TS|FZ)?((DZ|RA|SN|SG|IC|PE|GR|GS|UP){0,3})(BR|FG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS){0,3}
 bool SGMetar::scanWeather()
 {
+#if TRACE
+    std::cout << "metar weather: " << _m << std::endl;
+#endif
+
 	char *m = _m;
 	string weather;
 	const struct Token *a;
@@ -1024,6 +1050,10 @@ static const struct Token cloud_types[] = {
 // (FEW|SCT|BKN|OVC|SKC|CLR|CAVOK|VV)([0-9]{3}|///)?[:cloud_type:]?
 bool SGMetar::scanSkyCondition()
 {
+#if TRACE
+    std::cout << "metar sky condition: " << _m << std::endl;
+#endif
+
 	char *m = _m;
 	int i;
 	SGMetarCloud cl;
@@ -1121,9 +1151,18 @@ bool SGMetar::scanSkyCondition()
 // (M?[0-9]{2}|XX)/(M?[0-9]{2}|XX)?    (Namibia)
 bool SGMetar::scanTemperature()
 {
+#if TRACE
+    std::cout << "metar temp: " << _m << std::endl;
+#endif
+
 	char *m = _m;
 	int sign = 1, temp, dew;
-	if (!strncmp(m, "XX/XX", 5)) {		// not spec compliant!
+
+    // sniff test to confirm that this is a temperature element
+	if ((m[0] == 'M' && (m[1] > '9' || m[3] != '/')) || ((m[0] != 'M' && (m[0] > '9' || m[2] != '/'))))    
+		return true;					            // nope, bail
+
+	if (!strncmp(m, "XX/XX", 5)) {		            // not spec compliant!
 		_m += 5;
 		return scanBoundary(&_m);
 	}
@@ -1137,7 +1176,7 @@ bool SGMetar::scanTemperature()
 	if (*m++ != '/')
 		return false;
 	if (!scanBoundary(&m)) {
-		if (!strncmp(m, "XX", 2))	// not spec compliant!
+		if (!strncmp(m, "XX", 2))	                // not spec compliant!
 			m += 2, sign = 0, dew = temp;
 		else {
 			sign = 1;
@@ -1172,6 +1211,10 @@ double SGMetar::getRelHumidity() const
 // [AQ]\d{2}(\d{2}|//)   (Namibia)
 bool SGMetar::scanPressure()
 {
+#if TRACE
+    std::cout << "metar pressure: " << _m << std::endl;
+#endif
+
 	char *m = _m;
 	double factor;
 	int press, i;
@@ -1182,9 +1225,11 @@ bool SGMetar::scanPressure()
 		factor = 100;
 	else
 		return false;
+
 	m++;
 	if (!scanNumber(&m, &press, 2))
 		return false;
+
 	press *= 100;
 	if (!strncmp(m, "//", 2))	// not spec compliant!
 		m += 2;
@@ -1192,8 +1237,10 @@ bool SGMetar::scanPressure()
 		press += i;
 	else
 		return false;
+
 	if (!scanBoundary(&m))
 		return false;
+
 	_pressure = press * factor;
 	_m = m;
 	_grpcount++;

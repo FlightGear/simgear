@@ -48,9 +48,17 @@ void test_basic()
     SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1025, TEST_EPSILON);
 
     // negative temperature and negative dew point
+    // wind provides direction, but not velocity
     SGMetar m2("XXXX 012345Z 150KT 9999 -SN OVC060CB SCT050TCU M20/M30 Q1005");
     SG_CHECK_EQUAL_EP2(m2.getTemperature_C(), -20.0, TEST_EPSILON);
     SG_CHECK_EQUAL_EP2(m2.getDewpoint_C(), -30.0, TEST_EPSILON);
+
+    // wind contains a space between direction-velocity and gusts
+    // temperature is absent
+    SGMetar m3("2023/05/08 14:46 KSCH 081446Z 28012 G15KT 15SM CLR A2981 RMK TEMP AND DP MISSING; FIRST");
+    SG_CHECK_EQUAL(m3.getWindDir(), 280);
+    SG_CHECK_EQUAL_EP2(m3.getWindSpeed_kt(), 12.0, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m3.getGustSpeed_kt(), 15.0, TEST_EPSILON);
 }
 
 void test_sensor_failure_weather()
@@ -84,12 +92,12 @@ void test_sensor_failure_cloud()
 void test_sensor_failure_wind()
 {
     SGMetar m1("2020/10/23 16:55 LIVD 231655Z /////KT 9999 OVC025 10/08 Q1020 RMK OVC VIS MIN 9999 BLU");
-    SG_CHECK_EQUAL(m1.getWindDir(), -1);
-    SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), -1, TEST_EPSILON);
+    SG_CHECK_EQUAL(m1.getWindDir(), 0);
+    SG_CHECK_EQUAL_EP2(m1.getWindSpeed_kt(), 0.0, TEST_EPSILON);
 
     SGMetar m2("2020/10/21 16:55 LIVD 211655Z /////KT CAVOK 07/03 Q1023 RMK SKC VIS MIN 9999 BLU");
-    SG_CHECK_EQUAL(m2.getWindDir(), -1);
-    SG_CHECK_EQUAL_EP2(m2.getWindSpeed_kt(), -1, TEST_EPSILON);
+    SG_CHECK_EQUAL(m2.getWindDir(), 0);
+    SG_CHECK_EQUAL_EP2(m2.getWindSpeed_kt(), 0.0, TEST_EPSILON);
 
     SGMetar m3("2020/11/17 16:00 CYAZ 171600Z 14040G//KT 10SM -RA OVC012 12/11 A2895 RMK NS8 VIA CYXY SLP806 DENSITY ALT 900FT");
     SG_CHECK_EQUAL(m3.getWindDir(), 140);

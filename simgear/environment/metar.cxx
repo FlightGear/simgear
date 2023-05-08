@@ -1226,19 +1226,28 @@ bool SGMetar::scanPressure()
 	else
 		return false;
 
-	m++;
-	if (!scanNumber(&m, &press, 2))
-		return false;
+    m++;
+    if (!strncmp(m, "////", 4)) {
+        // sensor failure... assume standard pressure
+        if (*(m - 1) == 'A')
+            press = 2992;
+        else if (*(m - 1) == 'Q')
+            press = 1013;
+        m += 4;
+    } else {
+        if (!scanNumber(&m, &press, 2))
+            return false;
 
-	press *= 100;
-	if (!strncmp(m, "//", 2))	// not spec compliant!
-		m += 2;
-	else if (scanNumber(&m, &i, 2))
-		press += i;
-	else
-		return false;
+        press *= 100;
+        if (!strncmp(m, "//", 2)) // not spec compliant!
+            m += 2;
+        else if (scanNumber(&m, &i, 2))
+            press += i;
+        else
+            return false;
+    }
 
-	if (!scanBoundary(&m))
+    if (!scanBoundary(&m))
 		return false;
 
 	_pressure = press * factor;

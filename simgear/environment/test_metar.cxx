@@ -105,6 +105,12 @@ void test_sensor_failure_wind()
     SG_CHECK_EQUAL_EP2(m3.getGustSpeed_kt(), SGMetarNaN, TEST_EPSILON);
 }
 
+void test_sensor_failure_pressure()
+{
+    SGMetar m1("2023/05/07 09:00 FOOK 070900Z /////KT 9000 SCT010TCU BKN018 26/22 Q////");
+    SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1013.0, TEST_EPSILON);
+}
+
 void test_wind_unit_not_specified()
 {
     SGMetar m1("2020/10/23 11:58 KLSV 231158Z 05010G14 10SM CLR 16/M04 A2992 RMK SLPNO WND DATA ESTMD ALSTG/SLP ESTMD 10320 20124 5//// $");
@@ -151,6 +157,7 @@ int main(int argc, char* argv[])
         test_sensor_failure_weather();
         test_sensor_failure_cloud();
         test_sensor_failure_wind();
+        test_sensor_failure_pressure();
         test_wind_unit_not_specified();
         test_clouds_without_height();
         test_GLRB_failure();

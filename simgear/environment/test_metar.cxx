@@ -46,6 +46,11 @@ void test_basic()
     SG_CHECK_EQUAL_EP2(m1.getTemperature_C(), 10, TEST_EPSILON);
     SG_CHECK_EQUAL_EP2(m1.getDewpoint_C(), 5, TEST_EPSILON);
     SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1025, TEST_EPSILON);
+
+    // negative temperature and negative dew point
+    SGMetar m2("XXXX 012345Z 150KT 9999 -SN OVC060CB SCT050TCU M20/M30 Q1005");
+    SG_CHECK_EQUAL_EP2(m2.getTemperature_C(), -20.0, TEST_EPSILON);
+    SG_CHECK_EQUAL_EP2(m2.getDewpoint_C(), -30.0, TEST_EPSILON);
 }
 
 void test_sensor_failure_weather()

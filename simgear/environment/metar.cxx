@@ -641,7 +641,7 @@ bool SGMetar::scanWind()
 	if (!strncmp(m, "//", 2))	// speed not measurable
 		m += 2, i = -1;
 	else if (!scanNumber(&m, &i, 2, 3))
-		return false;
+		i = -1;					// not spec compliant
 	double speed = i;
 
 	double gust = NaN;

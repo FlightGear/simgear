@@ -1166,6 +1166,13 @@ bool SGMetar::scanTemperature()
 		_m += 5;
 		return scanBoundary(&_m);
 	}
+	if (!strncmp(m, "/////", 5)) {
+		// sensor failure... assume standard temperature
+		_temp = 15.0;
+		_dewp = 3.0;
+		_m += 5;
+		return scanBoundary(&_m);
+	}
 
 	if (*m == 'M')
 		m++, sign = -1;
@@ -1177,7 +1184,9 @@ bool SGMetar::scanTemperature()
 		return false;
 	if (!scanBoundary(&m)) {
 		if (!strncmp(m, "XX", 2))	                // not spec compliant!
-			m += 2, sign = 0, dew = temp;
+			m += 2, sign = 0, dew = temp - 10;
+		else if (!strncmp(m, "//", 2))	                // sensor failure... assume relative dew point
+			m += 2, sign = 0, dew = temp - 10;
 		else {
 			sign = 1;
 			if (*m == 'M')

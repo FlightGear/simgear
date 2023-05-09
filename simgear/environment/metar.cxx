@@ -636,14 +636,17 @@ bool SGMetar::scanWind()
 
 	char *m = _m;
 	int dir;
-	if (!strncmp(m, "VRB", 3))
-		m += 3, dir = -1;
-	else if (!strncmp(m, "///", 3))	// direction not measurable
-		m += 3, dir = -1;
-	else if (!scanNumber(&m, &dir, 3))
-		dir = -1;
 
-	int i;
+    if (*m == '?')                  // not spec compliant
+        m++;
+    if (!strncmp(m, "VRB", 3))
+        m += 3, dir = -1;
+    else if (!strncmp(m, "///", 3)) // direction not measurable
+        m += 3, dir = -1;
+    else if (!scanNumber(&m, &dir, 3))
+        dir = -1;
+
+    int i;
 	if (!strncmp(m, "//", 2))	// speed not measurable
 		m += 2, i = -1;
 	else if (!scanNumber(&m, &i, 2, 3))
@@ -746,7 +749,7 @@ bool SGMetar::scanVisibility()
 // \d{4}(N|NE|E|SE|S|SW|W|NW)?
 	if (scanNumber(&m, &i, 4)) {
 		if( strncmp( m, "NDV",3 ) == 0 ) {
-			m+=3; // tolerate NDV (no directional validation)
+			m+=3; // tolerate NDV (non-directional variation)
 		} else if (*m == 'E') {
 			m++, dir = 90;
 		} else if (*m == 'W') {
@@ -778,7 +781,7 @@ bool SGMetar::scanVisibility()
 		if (*m == 'M')
 			m++, modifier = SGMetarVisibility::LESS_THAN;
 
-		if (!scanNumber(&m, &i, 1, 2))
+		if (!scanNumber(&m, &i, 1, 3))
 			return false;
 		distance = i;
 

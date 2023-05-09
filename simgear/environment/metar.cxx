@@ -637,7 +637,7 @@ bool SGMetar::scanWind()
 	char *m = _m;
 	int dir;
 
-    if (*m == '?')                  // not spec compliant
+    if (*m == '?' || *m == 'E')     // not spec compliant
         m++;
     if (!strncmp(m, "VRB", 3))
         m += 3, dir = -1;
@@ -649,7 +649,7 @@ bool SGMetar::scanWind()
     int i;
 	if (!strncmp(m, "//", 2))	// speed not measurable
 		m += 2, i = -1;
-	else if (!scanNumber(&m, &i, 2, 3))
+	else if (!scanNumber(&m, &i, 1, 3))
 		i = -1;					// not spec compliant
 	double speed = i;
 

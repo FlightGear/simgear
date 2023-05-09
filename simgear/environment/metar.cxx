@@ -1229,6 +1229,11 @@ bool SGMetar::scanPressure()
     bool unitProvided = true;
 	int press, i;
 
+	if (*m == '\0') {
+		_pressure = 101300.0;	// pressure not provided... assume standard pressure
+		return true;
+	}
+
 	if (*m == 'A') {
 		factor = SG_INHG_TO_PA / 100.0;
         m++;
@@ -1240,6 +1245,8 @@ bool SGMetar::scanPressure()
 	else
         unitProvided = false;
 
+	if (*m == ' ')	// ignore space
+		m++;
     if (!strncmp(m, "////", 4)) {
         // sensor failure... assume standard pressure
         if (*(m - 1) == 'A')
@@ -1248,17 +1255,25 @@ bool SGMetar::scanPressure()
             press = 1013;
         m += 4;
     } else {
-        if (!scanNumber(&m, &press, 2))
-            return false;
+        if (!scanNumber(&m, &press, 2, 4)) {
+			// sensor failure... assume standard pressure
+			if (*(m - 1) == 'A')
+				press = 2992;
+			else
+				press = 1013;
+		}
 
-        press *= 100;
-        if (!strncmp(m, "//", 2)) // not spec compliant!
-            m += 2;
-        else if (scanNumber(&m, &i, 2))
-            press += i;
-        else
-            return false;
+		if (press < 100) {				// 2-digit pressure may have further data following
+        	press *= 100;
+        	if (!strncmp(m, "//", 2)) 	// not spec compliant!
+        	    m += 2;
+        	else if (scanNumber(&m, &i, 2))
+        	    press += i;
+		}
     }
+
+	if (*m == ',')	// ignore trailing comma
+		m++;
 
     if (!scanBoundary(&m))
         return false;

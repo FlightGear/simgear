@@ -851,6 +851,12 @@ bool SGMetar::scanRwyVisRange()
 	if (*m++ != '/')
 		return false;
 
+	if (!strncmp(m, "////", 4)) {
+		// sensor failure... ignore
+		_m = m + 4;
+		return scanBoundary(&_m);
+	}
+
 	int from, to;
 	if (*m == 'P')
 		m++, r._min_visibility._modifier = SGMetarVisibility::GREATER_THAN;

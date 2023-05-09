@@ -242,7 +242,6 @@ public:
 
 protected:
 	std::string	_url;
-	int	_grpcount;
 	bool	_x_proxy;
 	char	*_data;
 	char	*_m;

@@ -77,7 +77,6 @@ using std::vector;
  * @endcode
  */
 SGMetar::SGMetar(const string& m) :
-	_grpcount(0),
 	_x_proxy(false),
 	_year(-1),
 	_month(-1),
@@ -140,12 +139,7 @@ SGMetar::SGMetar(const string& m) :
 	scanRemainder();
 	scanRemark();
 
-	if (_grpcount < 4) {
-		delete[] _data;
-		throw sg_io_exception("metar data incomplete ", sg_location(_url));
-	}
-
-	_url = "";
+    _url.clear();
 }
 
 
@@ -555,7 +549,6 @@ bool SGMetar::scanType()
 	if (strncmp(_m, "METAR ", 6) && strncmp(_m, "SPECI ", 6))
 		return false;
 	_m += 6;
-	_grpcount++;
 	return true;
 }
 
@@ -572,7 +565,6 @@ bool SGMetar::scanId()
 	strncpy(_icao, _m, 4);
 	_icao[4] = '\0';
 	_m = m;
-	_grpcount++;
 	return true;
 }
 
@@ -596,7 +588,6 @@ bool SGMetar::scanDate()
 	_hour = hour;
 	_minute = minute;
 	_m = m;
-	_grpcount++;
 	return true;
 }
 
@@ -622,7 +613,6 @@ bool SGMetar::scanModifier()
 		return false;
 	_report_type = type;
 	_m = m;
-	_grpcount++;
 	return true;
 }
 
@@ -689,7 +679,6 @@ bool SGMetar::scanWind()
 	_wind_speed = speed < 0.0 ? 0.0 : speed * factor;
 	if (gust != NaN)
 		_gust_speed = gust * factor;
-	_grpcount++;
 	return true;
 }
 
@@ -723,7 +712,6 @@ bool SGMetar::scanVariability()
 	_m = m;
 	_wind_range_from = from;
 	_wind_range_to = to;
-	_grpcount++;
 
 	return true;
 }
@@ -738,7 +726,6 @@ bool SGMetar::scanVisibility()
 
 	if (!strncmp(_m, "//// ", 5)) {         // spec compliant?
 		_m += 5;
-		_grpcount++;
 		return true;
 	}
 
@@ -824,7 +811,6 @@ bool SGMetar::scanVisibility()
 	v->_modifier = modifier;
 	v->_direction = dir;
 	_m = m;
-	_grpcount++;
 	return true;
 }
 
@@ -901,7 +887,6 @@ bool SGMetar::scanRwyVisRange()
 
 	_runways[id]._min_visibility = r._min_visibility;
 	_runways[id]._max_visibility = r._max_visibility;
-	_grpcount++;
 	return true;
 }
 
@@ -972,7 +957,6 @@ bool SGMetar::scanWeather()
 	// Denotes a temporary failure of the sensor
 	if (!strncmp(m, "// ", 3)) {
 		_m += 3;
-		_grpcount++;
 		return false;
 	}
 
@@ -1034,7 +1018,6 @@ bool SGMetar::scanWeather()
     if( ! w.phenomena.empty() ) {
         _weather2.push_back( w );
     }
-    _grpcount++;
     return true;
 }
 
@@ -1158,7 +1141,6 @@ bool SGMetar::scanSkyCondition()
 	_clouds.push_back(cl);
 
 	_m = m;
-	_grpcount++;
 	return true;
 }
 
@@ -1217,7 +1199,6 @@ bool SGMetar::scanTemperature()
 	}
 	_temp = temp;
 	_m = m;
-	_grpcount++;
 	return true;
 }
 
@@ -1285,7 +1266,6 @@ bool SGMetar::scanPressure()
 
     _pressure = press * factor;
 	_m = m;
-	_grpcount++;
 	return true;
 }
 
@@ -1401,7 +1381,6 @@ bool SGMetar::scanRunwayReport()
 	_runways[id]._friction_string = r._friction_string;
 	_runways[id]._comment = r._comment;
 	_m = m;
-	_grpcount++;
 	return true;
 }
 

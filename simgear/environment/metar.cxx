@@ -1138,7 +1138,10 @@ bool SGMetar::scanSkyCondition()
 		m += 3;
 	if (!scanBoundary(&m))
 		return false;
-	_clouds.push_back(cl);
+
+	// require known coverage and base-height
+	if (i != -1 && cl._coverage != SGMetarCloud::COVERAGE_NIL)
+		_clouds.push_back(cl);
 
 	_m = m;
 	return true;

@@ -19,11 +19,6 @@
 
 #include "metar.hxx"
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::string;
-
 
 const double TEST_EPSILON = 1e-9;
 
@@ -187,6 +182,14 @@ void bulk_from_sentry()
     { SGMetar m1("2023/02/08 16:48 BIIS 081648Z 18004KT 9999 SCT025 M06/// Q0980"); }
 }
 
+void bulk_from_tickets()
+{
+    { SGMetar m1("EGPF 111420Z AUTO 24013KT 9000 -RA SCT019/// BKN023/// BKN030TCU/// 13/11 Q1011 RERA"); }
+    { SGMetar m1("EGPF 111420Z AUTO 24013KT 9000 -RA SCT019/// BKN023/// BKN030/// //////TCU 13/11 Q1011 RERA"); }
+    { SGMetar m1("LYBE 131800Z 26008KT 3500 -RA BR OVC003 04/04 Q1019 TEMPO OVC002"); }
+    { SGMetar m1("LFMO 031330Z AUTO VRB02KT 9000 -RA SCT015/// OVC024/// ///CB 13/13 Q1012 TEMPO VRB20G30KT 2000 TSRA BKN010 BKN025CB"); }
+}
+
 int main(int argc, char* argv[])
 {
     try {
@@ -202,8 +205,9 @@ int main(int argc, char* argv[])
         test_EDQM_failure();
         test_LFBT_failure();
         bulk_from_sentry();
+        bulk_from_tickets();
     } catch (sg_exception& e) {
-        cerr << "got exception:" << e.getMessage() << endl;
+        std::cerr << "Exception: " << e.getMessage() << std::endl;
         return -1;
     }
     

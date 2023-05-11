@@ -605,6 +605,8 @@ bool SGMetar::scanModifier()
 		m += 4, type = AUTO;
 	else if (!strncmp(m, "COR", 3))			// manually corrected
 		m += 3, type = COR;
+	else if (!strncmp(m, "CC", 2) && *(m+2) >= 'A' && *(m+2) <= 'B')    // correction
+		m += 3, type = COR;
 	else if (!strncmp(m, "RTD", 3))			// routine delayed
 		m += 3, type = RTD;
 	else

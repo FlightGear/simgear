@@ -1243,6 +1243,7 @@ bool SGMetar::scanPressure()
 	char *m = _m;
 	double factor;
     bool unitProvided = true;
+    bool valueProvided = true;
 	int press, i;
 
 	if (*m == '\0') {
@@ -1272,6 +1273,8 @@ bool SGMetar::scanPressure()
         m += 4;
     } else {
         if (!scanNumber(&m, &press, 2, 4)) {
+			valueProvided = false;
+
 			// sensor failure... assume standard pressure
 			if (*(m - 1) == 'A')
 				press = 2992;
@@ -1291,7 +1294,7 @@ bool SGMetar::scanPressure()
 	if (*m == ',')	// ignore trailing comma
 		m++;
 
-    if (!scanBoundary(&m))
+    if ((unitProvided || valueProvided) && !scanBoundary(&m))
         return false;
 
     // derive unit when not explicitly provided

@@ -624,10 +624,10 @@ bool SGMetar::scanWind()
     std::cout << "metar wind: " << _m << std::endl;
 #endif
 
-	char *m = _m;
-	int dir;
+    char* m = _m;
+    int dir;
 
-    if (*m == '?' || *m == 'E')     // not spec compliant
+    if (*m == '?' || *m == 'E') // not spec compliant
         m++;
     if (!strncmp(m, "VRB", 3))
         m += 3, dir = -1;
@@ -636,12 +636,15 @@ bool SGMetar::scanWind()
     else if (!scanNumber(&m, &dir, 3))
         dir = -1;
 
+    if (*m == '/' && *(m + 1) != '/') // ignore single slash
+        m++;
+
     int i;
-	if (!strncmp(m, "//", 2))	// speed not measurable
-		m += 2, i = -1;
-	else if (!scanNumber(&m, &i, 1, 3))
-		i = -1;					// not spec compliant
-	double speed = i;
+    if (!strncmp(m, "//", 2)) // speed not measurable
+        m += 2, i = -1;
+    else if (!scanNumber(&m, &i, 1, 3))
+        i = -1; // not spec compliant
+    double speed = i;
 
     double gust = NaN;
     if (*m == ' ' && *(m + 1) == 'G') // space between direction/velocity and gusts - not spec compliant
@@ -658,28 +661,28 @@ bool SGMetar::scanWind()
     }
 
     double factor;
-	if (!strncmp(m, "KT", 2))
-		m += 2, factor = SG_KT_TO_MPS;
-	else if (!strncmp(m, "KMH", 3))		// invalid Km/h
-		m += 3, factor = SG_KMH_TO_MPS;
-	else if (!strncmp(m, "KPH", 3))		// invalid Km/h
-		m += 3, factor = SG_KMH_TO_MPS;
-	else if (!strncmp(m, "MPS", 3))
-		m += 3, factor = 1.0;
-	else if (!strncmp(m, " ", 1))		// default to Knots
-		factor = SG_KT_TO_MPS;
-	else
-		return false;
+    if (!strncmp(m, "KT", 2))
+        m += 2, factor = SG_KT_TO_MPS;
+    else if (!strncmp(m, "KMH", 3)) // invalid Km/h
+        m += 3, factor = SG_KMH_TO_MPS;
+    else if (!strncmp(m, "KPH", 3)) // invalid Km/h
+        m += 3, factor = SG_KMH_TO_MPS;
+    else if (!strncmp(m, "MPS", 3))
+        m += 3, factor = 1.0;
+    else if (!strncmp(m, " ", 1)) // default to Knots
+        factor = SG_KT_TO_MPS;
+    else
+        return false;
 
-	if (!scanBoundary(&m))
-		return false;
+    if (!scanBoundary(&m))
+        return false;
 
-	_m = m;
-	_wind_dir = dir == -1 ? 0 : dir;
-	_wind_speed = speed < 0.0 ? 0.0 : speed * factor;
-	if (gust != NaN)
-		_gust_speed = gust * factor;
-	return true;
+    _m = m;
+    _wind_dir = dir == -1 ? 0 : dir;
+    _wind_speed = speed < 0.0 ? 0.0 : speed * factor;
+    if (gust != NaN)
+        _gust_speed = gust * factor;
+    return true;
 }
 
 

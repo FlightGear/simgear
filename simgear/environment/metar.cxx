@@ -1165,8 +1165,13 @@ bool SGMetar::scanTemperature()
 	int sign = 1, temp, dew;
 
     // sniff test to confirm that this is a temperature element
-	if ((m[0] == 'M' && (m[1] > '9' || m[3] != '/')) || ((m[0] != 'M' && (m[0] > '9' || m[2] != '/'))))    
-		return true;					            // nope, bail
+    std::string s = "M/0123456789";
+    for (int i=0; i<7; ++i) {
+        if (*(m+i) == ' ')
+            break;
+        if (s.find(*(m+i)) == std::string::npos)
+            return true;        // nope, bail
+    }
 
 	if (!strncmp(m, "XX/XX", 5)) {		            // not spec compliant!
 		_m += 5;
@@ -1182,7 +1187,7 @@ bool SGMetar::scanTemperature()
 
 	if (*m == 'M')
 		m++, sign = -1;
-	if (!scanNumber(&m, &temp, 2))
+	if (!scanNumber(&m, &temp, 1, 2))
 		return false;
 	temp *= sign;
 
@@ -1197,7 +1202,7 @@ bool SGMetar::scanTemperature()
 			sign = 1;
 			if (*m == 'M')
 				m++, sign = -1;
-			if (!scanNumber(&m, &dew, 2))
+			if (!scanNumber(&m, &dew, 1, 2))
 				return false;
 		}
 		if (!scanBoundary(&m))

@@ -572,23 +572,29 @@ bool SGMetar::scanId()
 // \d{6}Z
 bool SGMetar::scanDate()
 {
-	char *m = _m;
-	int day, hour, minute;
-	if (!scanNumber(&m, &day, 2))
-		return false;
-	if (!scanNumber(&m, &hour, 2))
-		return false;
-	if (!scanNumber(&m, &minute, 2))
-		return false;
-	if (*m++ != 'Z')
-		return false;
-	if (!scanBoundary(&m))
-		return false;
-	_day = day;
-	_hour = hour;
-	_minute = minute;
-	_m = m;
-	return true;
+    char* m = _m;
+    int day, hour, minute;
+
+    if (!scanNumber(&m, &day, 2))
+        return false;
+    if (!scanNumber(&m, &hour, 2))
+        return false;
+    if (!scanNumber(&m, &minute, 2))
+        return false;
+
+    if (*m == 'Z')
+        m++;
+    else if (*m != ' ')
+        return false;
+
+    if (!scanBoundary(&m))
+        return false;
+
+    _day = day;
+    _hour = hour;
+    _minute = minute;
+    _m = m;
+    return true;
 }
 
 

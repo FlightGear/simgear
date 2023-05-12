@@ -735,12 +735,21 @@ bool SGMetar::scanVisibility()
     std::cout << "metar visibility: " << _m << std::endl;
 #endif
 
-	if (!strncmp(_m, "//// ", 5)) {         // spec compliant?
-		_m += 5;
-		return true;
-	}
+    if (!strncmp(_m, "/////", 5))
+        return false;       // not a visibility element (e.g. temperature)
 
-	char *m = _m;
+    if (!strncmp(_m, "////", 4)) {
+        _m += 4;
+
+        if (!strncmp(_m, "SM", 2))
+            _m += 2;
+        else if (!strncmp(_m, "KM", 2))
+            _m += 2;
+
+        return scanBoundary(&_m);
+    }
+
+    char *m = _m;
 	double distance;
 	int i, dir = -1;
 	int modifier = SGMetarVisibility::EQUALS;

@@ -1082,6 +1082,7 @@ bool SGMetar::scanSkyCondition()
 	char *m = _m;
 	int i;
 	SGMetarCloud cl;
+    static SGMetarCloud::Coverage priorCoverage;
 
 	if (!strncmp(m, "//////", 6)) {
 		char* m2 = m+6;
@@ -1110,24 +1111,37 @@ bool SGMetar::scanSkyCondition()
 		return true;
 	}
 
-	bool verticalVisibility = false;
-	if (!strncmp(m, "VV", i = 2)) {				// vertical visibility
-		verticalVisibility = true;
-	} else if (!strncmp(m, "FEW", i = 3))
+    bool verticalVisibility = false;
+    if (!strncmp(m, "VV", i = 2)) {             // vertical visibility
+        verticalVisibility = true;
+    } else if (!strncmp(m, "FEW", i = 3)) {
         cl._coverage = SGMetarCloud::COVERAGE_FEW;
-	else if (!strncmp(m, "SCT", i = 3))
+        priorCoverage = cl._coverage;
+    } else if (!strncmp(m, "SCT", i = 3)) {
         cl._coverage = SGMetarCloud::COVERAGE_SCATTERED;
-	else if (!strncmp(m, "BKN", i = 3))
+        priorCoverage = cl._coverage;
+    } else if (!strncmp(m, "BKN", i = 3)) {
         cl._coverage = SGMetarCloud::COVERAGE_BROKEN;
-	else if (!strncmp(m, "OVC", i = 3))
+        priorCoverage = cl._coverage;
+    } else if (!strncmp(m, "OVC", i = 3)) {
         cl._coverage = SGMetarCloud::COVERAGE_OVERCAST;
-	else if (!strncmp(m, "///", i = 3))
-		cl._coverage = SGMetarCloud::COVERAGE_NIL; // should we add 'unknown'?
-	else
-		return false;
-	m += i;
+        priorCoverage = cl._coverage;
+    } else if (!strncmp(m, "///", i = 3))
+        cl._coverage = SGMetarCloud::COVERAGE_NIL; // should we add 'unknown'?
+    else {
+        // check for an implied coverage element
+        if (*m >= '0' && *m <= '9' &&
+            *(m+1) >= '0' && *(m+1) <= '9' &&
+            *(m+2) >= '0' && *(m+2) <= '9' &&
+            *(m+3) == ' ') {
+            cl._coverage = priorCoverage;
+            i = 0;
+        } else
+            return false;
+    }
+    m += i;
 
-	if (!strncmp(m, "///", 3))	{ // vis not measurable (e.g. because of heavy snowing)
+    if (!strncmp(m, "///", 3)) { // vis not measurable (e.g. because of heavy snowing)
 		m += 3, i = -1;
 		sg_srandom_time();
 		// randomize the base height to avoid the black sky issue

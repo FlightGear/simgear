@@ -203,6 +203,7 @@ void bulk_from_sentry()
     // { SGMetar m1("2023/05/10 20:15 KSTF 102015Z AUTO RMK AO2 PNO PWINO TSNO"); }     valid error, nothing of value
     { SGMetar m1("2023/05/10 17:51 KHSE 101751Z AUTO A3014 RMK AO2 SLP208 6//// 10283 20172 51003 PWINO FZRANO PNO $"); }
     { SGMetar m1("2023/05/07 12:30 SAAV 071230 05004KT 9000 11/11 Q1015 RMK PP///"); }
+    { SGMetar m1("2023/05/11 19:53 KETH 111953Z AUTO 14014KT 10SM SCT049 120 24/15 A2995 RMK AO2"); }
 }
 
 void bulk_from_tickets()
@@ -211,6 +212,19 @@ void bulk_from_tickets()
     { SGMetar m1("EGPF 111420Z AUTO 24013KT 9000 -RA SCT019/// BKN023/// BKN030/// //////TCU 13/11 Q1011 RERA"); }
     { SGMetar m1("LYBE 131800Z 26008KT 3500 -RA BR OVC003 04/04 Q1019 TEMPO OVC002"); }
     { SGMetar m1("LFMO 031330Z AUTO VRB02KT 9000 -RA SCT015/// OVC024/// ///CB 13/13 Q1012 TEMPO VRB20G30KT 2000 TSRA BKN010 BKN025CB"); }
+}
+
+void bulk_stress()
+{
+    // { SGMetar m1("2023/05/11 19:50 KJAU 111950Z AUTO 11.96000012KT 10SM CLR 25/14 A3017 RMK A01"); }                                 valid error, 11.96000012KT
+    // { SGMetar m1("2023/05/11 20:00 MGQZ 112000Z 14010KT 8000 TS BKN018 FEW025CB 21/13 QFE 772.3 HZ CB/TS N"); }                      valid error, QFE
+    // { SGMetar m1("2023/05/11 20:00 MGCB 112000Z 07004KT 9999 SCT018 SCT200 31/18 QFE 868.7"); }                                      valid error, QFE
+    // { SGMetar m1("2023/05/11 20:00 MGZA 112000Z 30008KT 9999 FEW025 38/19 QFE 981.8 CB DIST WSW/NNW"); }                             valid error, QFE
+    // { SGMetar m1("2023/05/11 20:00 MGES 112000Z 00000KT 7000 SCT022TCU FEW025CB 31/17 QFE 907.4 HZ FEW090 CB SE/NW TCU NE/E"); }     valid error, QFE
+    // { SGMetar m1("2023/05/11 20:00 MGQZ 112000Z 14010KT 8000 TS BKN018 FEW025CB 21/13 QFE 772/3 HZ CB/TS N"); }                      valid error, QFE
+    // { SGMetar m1("2023/05/11 20:00 MGZA 112000Z 30008KT 9999 FEW025 38/19 QFE 981/8 CB DIST WSW/NNW"); }                             valid error, QFE
+    // { SGMetar m1("2023/05/11 19:55 LIMH 111955Z AUTO /////KT //// ///// Q////"); }                                                   nothing useful
+    // { SGMetar m1("2023/05/11 20:00 SKMR 112000Z 00000KT 9999 FEW020 35/23 Q10006 RMK A2973"); }                                      valid error, Q10006
 }
 
 int main(int argc, char* argv[])
@@ -229,6 +243,7 @@ int main(int argc, char* argv[])
         test_LFBT_failure();
         bulk_from_sentry();
         bulk_from_tickets();
+        bulk_stress();
     } catch (sg_exception& e) {
         std::cerr << "Exception: " << e.getMessage() << std::endl;
         return -1;

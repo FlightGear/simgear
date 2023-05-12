@@ -701,30 +701,30 @@ bool SGMetar::scanVariability()
     std::cout << "metar variability: " << _m << std::endl;
 #endif
 
-	char *m = _m;
-	int from, to;
+    char* m = _m;
+    int from, to;
 
-	if (!strncmp(m, "///", 3))	// direction not measurable
-		m += 3, from = -1;
-	else if (!scanNumber(&m, &from, 3))
-		return false;
+    if (!strncmp(m, "///", 3)) // direction not measurable
+        m += 3, from = -1;
+    else if (!scanNumber(&m, &from, 1, 3))
+        return false;
 
-	if (*m++ != 'V')
-		return false;
+    if (*m++ != 'V')
+        return false;
 
-	if (!strncmp(m, "///", 3))	// direction not measurable
-		m += 3, to = -1;
-	else if (!scanNumber(&m, &to, 3))
-		return false;
+    if (!strncmp(m, "///", 3)) // direction not measurable
+        m += 3, to = -1;
+    else if (!scanNumber(&m, &to, 1, 3))
+        return false;
 
-	if (!scanBoundary(&m))
-		return false;
+    if (!scanBoundary(&m))
+        return false;
 
-	_m = m;
-	_wind_range_from = from;
-	_wind_range_to = to;
+    _m = m;
+    _wind_range_from = from;
+    _wind_range_to = to;
 
-	return true;
+    return true;
 }
 
 

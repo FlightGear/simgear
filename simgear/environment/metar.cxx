@@ -1200,6 +1200,12 @@ bool SGMetar::scanTemperature()
 		return scanBoundary(&_m);
 	}
 
+    // maintenance flag
+    if (*m == 'M' && *(m+1) == ' ') {
+        _m++;
+        return scanBoundary(&_m);
+    }
+
 	if (*m == 'M')
 		m++, sign = -1;
 	if (!scanNumber(&m, &temp, 1, 2))

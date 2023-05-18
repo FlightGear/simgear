@@ -145,6 +145,12 @@ void test_EDQM_failure()
 
 }
 
+void test_LFBT_failure()
+{
+    // https://sourceforge.net/p/flightgear/codetickets/2765/
+    SGMetar m1("2022/09/15 17:00 LFBT 151700Z AUTO 21008KT 9999 -RA FEW060/// SCT076/// OVC088/// ///CB 20/16 Q1014 TEMPO 27015G25KT 4000 -TSRA");
+}
+
 void bulk_from_sentry()
 {
     { SGMetar m1("2023/03/01 06:00 FNDU 010600Z 00000KT 9999 BKN023 ///// Q////"); SG_CHECK_EQUAL_EP2(m1.getPressure_hPa(), 1013.0, TEST_EPSILON); }

@@ -47,6 +47,7 @@ windows-build:
   # CMake gets sad.
     - Move-Item -Path $CI_PROJECT_DIR\boost $WIN_FG_DIR\boost
     - Move-Item -Path $CI_PROJECT_DIR\msvc140 $WIN_FG_DIR\msvc140
+    - ls
   script:
     - cmake -B $env:BUILD_DIR -S $env:CI_PROJECT_DIR -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -80,6 +81,7 @@ macos-build:
       - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
       - export HOMEBREW_NO_INSTALL_CLEANUP=1
       - brew install ninja cmake boost
+      - ls
   script:
     - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo 
@@ -111,6 +113,7 @@ macos-x64-build:
       - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
       - export HOMEBREW_NO_INSTALL_CLEANUP=1
       - brew install ninja cmake boost
+      - ls
   script:
   # we build with tests disabled becuase they need cross-compiled Boost test
   # libs, but that would mean installing x86_64 version of Boost via Homebrew in

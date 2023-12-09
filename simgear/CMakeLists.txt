@@ -185,7 +185,15 @@ if(NOT SIMGEAR_HEADLESS)
 
     target_link_libraries(SimGearScene PUBLIC         
         SimGearCore
-        ${OPENSCENEGRAPH_LIBRARIES}
+        OSG::OSG 
+        OSG::osgText 
+        OSG::osgDB 
+        OSG::osgSim 
+        OSG::osgGA 
+        OSG::osgUtil 
+        OSG::osgTerrain 
+        OSG::osgParticle
+        OSG::osgViewer
     )
 
     target_link_libraries(SimGearScene PRIVATE
@@ -200,6 +208,24 @@ if(NOT SIMGEAR_HEADLESS)
 
     # only actually needed by canvas/KeyboardEvent.cxx
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/utf8/source)
+
+    install(TARGETS SimGearScene
+        EXPORT SimGearTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+    target_include_directories(SimGearScene BEFORE PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>)
+
+    # for simgear_config.h
+    target_include_directories(SimGearScene PRIVATE ${PROJECT_BINARY_DIR}/simgear)
+
+    if (USE_AEONWAVE)
+        target_include_directories(SimGearScene PRIVATE ${AAX_INCLUDE_DIR} )
+    else()
+        target_include_directories(SimGearScene PRIVATE ${OPENAL_INCLUDE_DIR} )
+    endif()
 endif()
 
 if(ENABLE_RTI)

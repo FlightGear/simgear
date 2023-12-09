@@ -260,22 +260,7 @@ else()
         endif()
     endif(ENABLE_SOUND)
 
-    find_package(OpenSceneGraph 3.2.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgViewer osgUtil)
-
-    if (MSVC)
-      set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})
-      # ensure OSG was compiled with OSG_USE_UTF8_FILENAME set
-      check_cxx_source_compiles(
-         "#include <osg/Config>
-         #if !defined(OSG_USE_UTF8_FILENAME)
-          #error OSG UTF8 support not enabled
-         #endif
-         int main() { return 0; }"
-         SIMGEAR_OSG_USE_UTF8_FILENAME)
-      if (NOT SIMGEAR_OSG_USE_UTF8_FILENAME)
-        message(FATAL_ERROR "Please rebuild OSG with OSG_USE_UTF8_FILENAME set to ON")
-      endif()
-    endif()
+    include(CreateOSGImportedTargets)
 endif(SIMGEAR_HEADLESS)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
@@ -603,6 +588,8 @@ add_subdirectory(simgear)
 ### Export stuff, see https://cmake.org/cmake/help/v3.2/manual/cmake-packages.7.html#creating-packages
 #-----------------------------------------------------------------------------
 
+set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/SimGear)
+
 generate_export_header(SimGearCore)
 if(NOT SIMGEAR_HEADLESS)
   generate_export_header(SimGearScene)
@@ -616,12 +603,12 @@ write_basic_package_version_file(
   COMPATIBILITY AnyNewerVersion
 )
 
-configure_file(SimGearConfig.cmake.in
+configure_package_config_file(
+  SimGearConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/SimGear/SimGearConfig.cmake"
-  @ONLY
+  INSTALL_DESTINATION ${ConfigPackageLocation}
 )
 
-set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/SimGear)
 install(EXPORT SimGearTargets
   DESTINATION ${ConfigPackageLocation}
 )
@@ -632,6 +619,9 @@ install(
   DESTINATION ${ConfigPackageLocation}
   COMPONENT Devel
 )
+
+install (FILES CMakeModules/CreateOSGImportedTargets.cmake  DESTINATION ${ConfigPackageLocation})
+
 
 #-----------------------------------------------------------------------------
 ### uninstall target

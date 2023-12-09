@@ -1,3 +1,6 @@
+# required by configure_package_config_file()
+@PACKAGE_INIT@
+
 include(CMakeFindDependencyMacro)
 
 find_dependency(ZLIB)
@@ -5,19 +8,33 @@ find_dependency(LibLZMA)
 find_dependency(Threads)
 
 # OSG
+if (NOT SIMGEAR_HEADLESS)
+  # this does a find_package on OpenSceneGraph,
+  # then creates imported targets for OSG
+  include(${CMAKE_CURRENT_LIST_DIR}/CreateOSGImportedTargets.cmake)
+endif()
 
 set(SIMGEAR_HEADLESS @SIMGEAR_HEADLESS@)
 set(SIMGEAR_SOUND @ENABLE_SOUND@)
 set(USE_AEONWAVE @USE_AEONWAVE@)
 
-# OpenAL isn't a public dependency, so maybe not needed
-#if (SIMGEAR_SOUND)
-#  find_dependency(OpenAL)
-#endif()
-
 # SSE/SSE2 support
 
 set(ENABLE_SIMD @ENABLE_SIMD@)
+
+if (SIMGEAR_SOUND)
+  # find the sound dependency
+  if (USE_AEONWAVE)
+    find_dependency(AAX)
+  elseif(SG_SOUND_USES_OPENALSOFT)
+    # must force CONFIG mode when using OpenAL soft, to avoid picking
+    # the CMake supplied FindOpenAL and hence defaults to the system
+    # framework on macOS
+    find_dependency(OpenAL CONFIG)
+  else()
+    find_dependency(OpenAL)
+  endif()
+endif()
 
 # OpenRTI support
 set(ENABLE_RTI @ENABLE_RTI@)
@@ -35,3 +52,6 @@ set(ENABLE_GDAL @ENABLE_GDAL@)
 set(ENABLE_OPENMP @ENABLE_OPENMP@)
 
 include("${CMAKE_CURRENT_LIST_DIR}/SimGearTargets.cmake")
+
+check_required_components(SimGear)
+

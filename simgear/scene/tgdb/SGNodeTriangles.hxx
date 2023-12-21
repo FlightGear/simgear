@@ -269,8 +269,8 @@ public:
                             // Check this random point against the object mask
                             // blue channel.
                             osg::Image* img = object_mask->getImage();            
-                            unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
-                            unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+                            const uint32_t x = static_cast<uint32_t>(img->s() * texCoord.x()) % img->s();
+                            const uint32_t y = static_cast<uint32_t>(img->t() * texCoord.y()) % img->t();
                     
                             if (mt_rand(&seed) < img->getColor(x, y).b()) {
                                 points.push_back(randomPoint);        
@@ -413,8 +413,8 @@ public:
                                 // Check this random point against the object mask
                                 // green (for trees) channel.
                                 osg::Image* img = object_mask->getImage();       
-                                unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
-                                unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+                                const uint32_t x = static_cast<uint32_t>(img->s() * texCoord.x()) % img->s();
+                                const uint32_t y = static_cast<uint32_t>(img->t() * texCoord.y()) % img->t();
 
                                 if (mt_rand(&seed) < img->getColor(x, y).g()) {
                                     // The red channel contains the rotation for this object
@@ -424,7 +424,6 @@ public:
                             } else {
                                 points.push_back(randomPoint);
                                 normals.push_back(normalize(normal));
-
                             }
                         }
                     }

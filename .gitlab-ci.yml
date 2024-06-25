@@ -4,10 +4,10 @@
 
 
 variables:
-  BUILD_DIR: "$CI_PROJECT_DIR/build"
-  PREFIX_DIR: "$CI_PROJECT_DIR/simgear-dist"
-  GIT_CLONE_PATH: "$CI_PROJECT_DIR/src"
-  WIN_FG_DIR: "$CI_PROJECT_DIR/windows-dist"
+  BUILD_DIR: "$CI_BUILDS_DIR/build"
+  PREFIX_DIR: "$CI_BUILDS_DIR/simgear-dist"
+  GIT_CLONE_PATH: "$CI_BUILDS_DIR/src"
+  WIN_FG_DIR: "$CI_BUILDS_DIR/windows-dist"
   
   # FIXME detect this using vswhere 
   VS160COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools"
@@ -23,6 +23,7 @@ linux-build:
     - if: $CI_PIPELINE_SOURCE != "schedule"
   script:
     - echo $GIT_CLONE_PATH
+    - echo $CI_BUILDS_DIR
     - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
       -DCMAKE_BUILD_TYPE=RelWithDebInfo 
       -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR

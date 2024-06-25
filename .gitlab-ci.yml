@@ -6,9 +6,9 @@
 variables:
   BUILD_DIR: "$CI_BUILDS_DIR/build"
   PREFIX_DIR: "$CI_BUILDS_DIR/simgear-dist"
-  GIT_CLONE_PATH: "$CI_BUILDS_DIR/src"
   WIN_FG_DIR: "$CI_BUILDS_DIR/windows-dist"
-  
+  SRC_DIR: $CI_BUILDS_DIR
+
   # FIXME detect this using vswhere 
   VS160COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools"
   VCVARSALL: "${VS160COMNTOOLS}\\..\\..\\VC\\Auxiliary\\Build\\vcvarsall.bat"
@@ -24,7 +24,7 @@ linux-build:
   script:
     - echo $GIT_CLONE_PATH
     - echo $CI_BUILDS_DIR
-    - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
+    - cmake -B $BUILD_DIR -S $SRC_DIR -G Ninja 
       -DCMAKE_BUILD_TYPE=RelWithDebInfo 
       -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR
     - cmake --build $BUILD_DIR
@@ -39,7 +39,7 @@ linux-build:
 windows-build:
   stage: build
   tags:
-    - windows
+    - saas-windows-medium-amd64
   before_script:
     - Invoke-Expression -Command .gitlab\vcvarsall.ps1
 
@@ -48,7 +48,7 @@ windows-build:
     - Move-Item -Path $CI_PROJECT_DIR\boost $WIN_FG_DIR\boost
     - Move-Item -Path $CI_PROJECT_DIR\msvc140 $WIN_FG_DIR\msvc140
   script:
-    - cmake -B $env:BUILD_DIR -S $env:GIT_CLONE_PATH 
+    - cmake -B $env:BUILD_DIR -S $env:SRC_DIR 
       -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo
       -D CMAKE_INSTALL_PREFIX=$env:PREFIX_DIR
@@ -82,7 +82,7 @@ macos-build:
       - export HOMEBREW_NO_INSTALL_CLEANUP=1
       - brew install ninja cmake boost
   script:
-    - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
+    - cmake -B $BUILD_DIR -S $SRC_DIR -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo 
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist
@@ -116,7 +116,7 @@ macos-x64-build:
   # we build with tests disabled because they need cross-compiled Boost test
   # libs, but that would mean installing x86_64 version of Boost via Homebrew in
   # the 'other' prefix (/usr/local), which gets messy.
-    - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
+    - cmake -B $BUILD_DIR -S $SRC_DIR -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo 
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist

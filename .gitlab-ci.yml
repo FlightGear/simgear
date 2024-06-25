@@ -7,7 +7,7 @@ variables:
   BUILD_DIR: "$CI_BUILDS_DIR/build"
   PREFIX_DIR: "$CI_BUILDS_DIR/simgear-dist"
   WIN_FG_DIR: "$CI_BUILDS_DIR/windows-dist"
-  SRC_DIR: $CI_BUILDS_DIR
+  SRC_DIR: $CI_PROJECT_DIR
 
   # FIXME detect this using vswhere 
   VS160COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools"

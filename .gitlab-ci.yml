@@ -22,6 +22,7 @@ linux-build:
   rules:
     - if: $CI_PIPELINE_SOURCE != "schedule"
   script:
+    - echo $GIT_CLONE_PATH
     - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
       -DCMAKE_BUILD_TYPE=RelWithDebInfo 
       -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR

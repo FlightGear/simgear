@@ -6,11 +6,9 @@
 variables:
   BUILD_DIR: "$CI_PROJECT_DIR/build"
   PREFIX_DIR: "$CI_PROJECT_DIR/simgear-dist"
+  GIT_CLONE_PATH: "$CI_PROJECT_DIR/src"
+  WIN_FG_DIR: "$CI_PROJECT_DIR/windows-dist"
   
-  # create a root dir *above* the Simgear checkout, otherwise CMake
-  # complains about INTERFACE_INCLUDE_DIRECTORIES being the source dir
-  WIN_FG_DIR: $CI_BUILDS_DIR\flightgear
-
   # FIXME detect this using vswhere 
   VS160COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools"
   VCVARSALL: "${VS160COMNTOOLS}\\..\\..\\VC\\Auxiliary\\Build\\vcvarsall.bat"
@@ -24,7 +22,7 @@ linux-build:
   rules:
     - if: $CI_PIPELINE_SOURCE != "schedule"
   script:
-    - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
+    - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
       -DCMAKE_BUILD_TYPE=RelWithDebInfo 
       -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR
     - cmake --build $BUILD_DIR
@@ -48,7 +46,8 @@ windows-build:
     - Move-Item -Path $CI_PROJECT_DIR\boost $WIN_FG_DIR\boost
     - Move-Item -Path $CI_PROJECT_DIR\msvc140 $WIN_FG_DIR\msvc140
   script:
-    - cmake -B $env:BUILD_DIR -S $env:CI_PROJECT_DIR -G Ninja 
+    - cmake -B $env:BUILD_DIR -S $env:GIT_CLONE_PATH 
+      -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo
       -D CMAKE_INSTALL_PREFIX=$env:PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$env:CI_PROJECT_DIR/osg-dist
@@ -81,7 +80,7 @@ macos-build:
       - export HOMEBREW_NO_INSTALL_CLEANUP=1
       - brew install ninja cmake boost
   script:
-    - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
+    - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo 
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist
@@ -115,7 +114,7 @@ macos-x64-build:
   # we build with tests disabled because they need cross-compiled Boost test
   # libs, but that would mean installing x86_64 version of Boost via Homebrew in
   # the 'other' prefix (/usr/local), which gets messy.
-    - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
+    - cmake -B $BUILD_DIR -S $GIT_CLONE_PATH -G Ninja 
       -D CMAKE_BUILD_TYPE=RelWithDebInfo 
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist

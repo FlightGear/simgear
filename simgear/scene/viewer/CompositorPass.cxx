@@ -50,9 +50,12 @@ PropStringMap<osg::Camera::BufferComponent> buffer_component_map = {
 
 class CSMCullCallback : public osg::NodeCallback {
 public:
-    CSMCullCallback(const std::string &suffix) {
+    CSMCullCallback(Compositor *compositor, const std::string &suffix) :
+        _real_inverse_view(compositor->getMVRViews())
+    {
         _light_matrix_uniform = new osg::Uniform(
-            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix);
+            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix,
+            compositor->getMVRViews());
     }
 
     virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
@@ -60,22 +63,27 @@ public:
 
         traverse(node, nv);
 
-        // The light matrix uniform is updated after the traverse in case the
-        // OSG near/far plane calculations were enabled
-        osg::Matrixf light_matrix =
-            // Include the real camera inverse view matrix because if the shader
-            // used world coordinates, there would be precision issues.
-            _real_inverse_view *
-            camera->getViewMatrix() *
-            camera->getProjectionMatrix() *
-            // Bias matrices
-            osg::Matrix::translate(1.0, 1.0, 1.0) *
-            osg::Matrix::scale(0.5, 0.5, 0.5);
-        _light_matrix_uniform->set(light_matrix);
+        for (unsigned int i = 0; i < _real_inverse_view.size(); ++i) {
+            // The light matrix uniform is updated after the traverse in case
+            // the OSG near/far plane calculations were enabled
+            osg::Matrixf light_matrix =
+                // Include the real camera inverse view matrix because if the
+                // shader used world coordinates, there would be precision
+                // issues.
+                _real_inverse_view[i] *
+                camera->getViewMatrix() *
+                camera->getProjectionMatrix() *
+                // Bias matrices
+                osg::Matrix::translate(1.0, 1.0, 1.0) *
+                osg::Matrix::scale(0.5, 0.5, 0.5);
+            _light_matrix_uniform->setElement(i, light_matrix);
+        }
     }
 
-    void setRealInverseViewMatrix(const osg::Matrix &matrix) {
-        _real_inverse_view = matrix;
+    void setRealInverseViewMatrix(unsigned int sub_view_index,
+                                  const osg::Matrix& matrix)
+    {
+        _real_inverse_view[sub_view_index] = matrix;
     }
 
     osg::Uniform *getLightMatrixUniform() const {
@@ -83,7 +91,7 @@ public:
     }
 
 protected:
-    osg::Matrix                _real_inverse_view;
+    std::vector<osg::Matrix>   _real_inverse_view;
     osg::ref_ptr<osg::Uniform> _light_matrix_uniform;
 };
 
@@ -558,7 +566,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
 
     osg::Viewport *viewport = camera->getViewport();
     auto &uniforms = compositor->getBuiltinUniforms();
-    uniforms[Compositor::SG_UNIFORM_VIEWPORT]->set(
+    uniforms[Compositor::SG_UNIFORM_VIEWPORT]->setElement(0,
         osg::Vec4f(viewport->x(),
                    viewport->y(),
                    viewport->width(),
@@ -829,7 +837,7 @@ public:
         }
 
         osg::Matrix view_inverse = osg::Matrix::inverse(view_matrix);
-        _cull_callback->setRealInverseViewMatrix(view_inverse);
+        _cull_callback->setRealInverseViewMatrix(0, view_inverse);
 
         if (!_render_at_night) {
             osg::Vec3 camera_pos = osg::Vec3(0.0f, 0.0f, 0.0f) * view_inverse;
@@ -891,6 +899,15 @@ public:
         light_proj_matrix *= round_matrix;
     }
 
+    virtual void updateSubView(Pass& pass, unsigned int sub_view_index,
+                               const osg::Matrix& view_matrix,
+                               const osg::Matrix& proj_matrix)
+    {
+        // Allow cull callback to update per-subview uniforms
+        osg::Matrix view_inverse = osg::Matrix::inverse(view_matrix);
+        _cull_callback->setRealInverseViewMatrix(sub_view_index, view_inverse);
+    }
+
 protected:
     osg::observer_ptr<CSMCullCallback> _cull_callback;
     const osg::Uniform*           _sundir_uniform;
@@ -911,7 +928,7 @@ struct CSMPassBuilder : public PassBuilder {
         //camera->setComputeNearFarMode(
         //    osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
 
-        CSMCullCallback *cull_callback = new CSMCullCallback(pass->name);
+        CSMCullCallback* cull_callback = new CSMCullCallback(compositor, pass->name);
         camera->setCullCallback(cull_callback);
 
         auto builtin_uniforms = compositor->getBuiltinUniforms();

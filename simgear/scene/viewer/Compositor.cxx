@@ -144,13 +144,13 @@ Compositor::Compositor(osg::View *view,
     _mvr{ .views = mvrInfo ? mvrInfo->views : 1 },
     _uniforms{
     new osg::Uniform("fg_TextureMatrix", osg::Matrixf()),
-    new osg::Uniform("fg_Viewport", osg::Vec4f()),
+    new osg::Uniform(osg::Uniform::FLOAT_VEC4, "fg_Viewport", _mvr.views),
     new osg::Uniform("fg_PixelSize", osg::Vec2f()),
     new osg::Uniform("fg_AspectRatio", 0.0f),
-    new osg::Uniform("fg_ViewMatrix", osg::Matrixf()),
-    new osg::Uniform("fg_ViewMatrixInverse", osg::Matrixf()),
-    new osg::Uniform("fg_ProjectionMatrix", osg::Matrixf()),
-    new osg::Uniform("fg_ProjectionMatrixInverse", osg::Matrixf()),
+    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ViewMatrix", _mvr.views),
+    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ViewMatrixInverse", _mvr.views),
+    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ProjectionMatrix", _mvr.views),
+    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ProjectionMatrixInverse", _mvr.views),
     new osg::Uniform("fg_PrevViewMatrix", osg::Matrixf()),
     new osg::Uniform("fg_PrevViewMatrixInverse", osg::Matrixf()),
     new osg::Uniform("fg_PrevProjectionMatrix", osg::Matrixf()),
@@ -159,14 +159,14 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
     new osg::Uniform("fg_CameraDistanceToEarthCenter", 0.0f),
     new osg::Uniform("fg_CameraWorldUp", osg::Vec3f()),
-    new osg::Uniform("fg_CameraViewUp", osg::Vec3f()),
+    new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_CameraViewUp", _mvr.views),
     new osg::Uniform("fg_NearFar", osg::Vec2f()),
     new osg::Uniform("fg_Fcoef", 0.0f),
-    new osg::Uniform("fg_FOVScale", osg::Vec2f()),
-    new osg::Uniform("fg_SunDirection", osg::Vec3f()),
+    new osg::Uniform(osg::Uniform::FLOAT_VEC2, "fg_FOVScale", _mvr.views),
+    new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_SunDirection", _mvr.views),
     new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
     new osg::Uniform("fg_SunZenithCosTheta", 0.0f),
-    new osg::Uniform("fg_MoonDirection", osg::Vec3f()),
+    new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_MoonDirection", _mvr.views),
     new osg::Uniform("fg_MoonDirectionWorld", osg::Vec3f()),
     new osg::Uniform("fg_MoonZenithCosTheta", 0.0f),
     new osg::Uniform("fg_EarthRadius", 0.0f),
@@ -204,6 +204,57 @@ void Compositor::updateSubView(unsigned int sub_view_index,
         if (pass->update_callback.valid())
             pass->update_callback->updateSubView(*pass.get(), sub_view_index, view_matrix, proj_matrix);
     }
+
+    // Update uniforms
+    osg::Matrixd view_inverse = osg::Matrix::inverse(view_matrix);
+    osg::Vec4d camera_pos4 = osg::Vec4d(0.0, 0.0, 0.0, 1.0) * view_inverse;
+    osg::Vec3d camera_pos = osg::Vec3d(camera_pos4.x(),
+                                       camera_pos4.y(),
+                                       camera_pos4.z());
+
+    osg::Vec3d world_up = camera_pos;
+    world_up.normalize();
+    osg::Vec3d view_up = world_up * view_matrix;
+    view_up.normalize();
+
+    _uniforms[SG_UNIFORM_VIEWPORT]->setElement(sub_view_index,
+                                               osg::Vec4f(viewport.x(),
+                                                          viewport.y(),
+                                                          viewport.z(),
+                                                          viewport.w()));
+    _uniforms[SG_UNIFORM_VIEW_MATRIX]->setElement(sub_view_index, view_matrix);
+    _uniforms[SG_UNIFORM_VIEW_MATRIX_INV]->setElement(sub_view_index, view_inverse);
+    _uniforms[SG_UNIFORM_PROJECTION_MATRIX]->setElement(sub_view_index, proj_matrix);
+    _uniforms[SG_UNIFORM_PROJECTION_MATRIX_INV]->setElement(sub_view_index, osg::Matrix::inverse(proj_matrix));
+
+    _uniforms[SG_UNIFORM_CAMERA_VIEW_UP]->setElement(sub_view_index, osg::Vec3f(view_up));
+
+    float aspect_ratio = proj_matrix(1, 1) / proj_matrix(0, 0);
+    float tan_fov_y = 1.0f / proj_matrix(1, 1);
+    float tan_fov_x = tan_fov_y * aspect_ratio;
+    // The forward vector UV coordinate may not be at 0.5 due to side-by-side
+    // multiview viewports, and also asymmetric FOV (especially for VR HMDs).
+    if (_mvr.views > 1) {
+        _uniforms[SG_UNIFORM_FOV_SCALE]->setElement(sub_view_index, osg::Vec2f(
+            tan_fov_x * _viewport->width() / viewport.z(),
+            tan_fov_y * _viewport->height() / viewport.w()) * 2.0f);
+    } else {
+        _uniforms[SG_UNIFORM_FOV_SCALE]->setElement(sub_view_index, osg::Vec2f(
+            tan_fov_x,
+            tan_fov_y) * 2.0f);
+    }
+
+    osg::Vec3f sun_dir_world;
+    _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->get(sun_dir_world);
+    osg::Vec4f sun_dir_view = osg::Vec4f(
+        sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) * view_matrix;
+    _uniforms[SG_UNIFORM_SUN_DIRECTION]->setElement(sub_view_index, osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));
+
+    osg::Vec3f moon_dir_world;
+    _uniforms[SG_UNIFORM_MOON_DIRECTION_WORLD]->get(moon_dir_world);
+    osg::Vec4f moon_dir_view = osg::Vec4f(
+        moon_dir_world.x(), moon_dir_world.y(), moon_dir_world.z(), 0.0f) * view_matrix;
+    _uniforms[SG_UNIFORM_MOON_DIRECTION]->setElement(sub_view_index, osg::Vec3f(moon_dir_view.x(), moon_dir_view.y(), moon_dir_view.z()));
 }
 
 void
@@ -256,8 +307,8 @@ Compositor::update(const osg::Matrix &view_matrix,
     proj_matrix.getFrustum(left, right, bottom, top, zNear, zFar);
 
     osg::Matrixf prev_view_matrix, prev_view_matrix_inv;
-    _uniforms[SG_UNIFORM_VIEW_MATRIX]->get(prev_view_matrix);
-    _uniforms[SG_UNIFORM_VIEW_MATRIX_INV]->get(prev_view_matrix_inv);
+    _uniforms[SG_UNIFORM_VIEW_MATRIX]->getElement(0, prev_view_matrix);
+    _uniforms[SG_UNIFORM_VIEW_MATRIX_INV]->getElement(0, prev_view_matrix_inv);
     osg::Matrixf prev_proj_matrix, prev_proj_matrix_inv;
     _uniforms[SG_UNIFORM_PROJECTION_MATRIX]->get(prev_proj_matrix);
     _uniforms[SG_UNIFORM_PROJECTION_MATRIX_INV]->get(prev_proj_matrix_inv);
@@ -285,16 +336,16 @@ Compositor::update(const osg::Matrix &view_matrix,
         osg::ref_ptr<osg::Uniform> u = _uniforms[i];
         switch (i) {
         case SG_UNIFORM_VIEW_MATRIX:
-            u->set(view_matrix);
+            u->setElement(0, view_matrix);
             break;
         case SG_UNIFORM_VIEW_MATRIX_INV:
-            u->set(view_inverse);
+            u->setElement(0, view_inverse);
             break;
         case SG_UNIFORM_PROJECTION_MATRIX:
-            u->set(proj_matrix);
+            u->setElement(0, proj_matrix);
             break;
         case SG_UNIFORM_PROJECTION_MATRIX_INV:
-            u->set(osg::Matrix::inverse(proj_matrix));
+            u->setElement(0, osg::Matrix::inverse(proj_matrix));
             break;
         case SG_UNIFORM_CAMERA_POSITION_CART:
             u->set(osg::Vec3f(camera_pos));
@@ -311,7 +362,7 @@ Compositor::update(const osg::Matrix &view_matrix,
             u->set(osg::Vec3f(world_up));
             break;
         case SG_UNIFORM_CAMERA_VIEW_UP:
-            u->set(osg::Vec3f(view_up));
+            u->setElement(0, osg::Vec3f(view_up));
             break;
         case SG_UNIFORM_NEAR_FAR:
             u->set(osg::Vec2f(zNear, zFar));
@@ -320,16 +371,16 @@ Compositor::update(const osg::Matrix &view_matrix,
             u->set(float(2.0 / log2(zFar + 1.0)));
             break;
         case SG_UNIFORM_FOV_SCALE:
-            u->set(osg::Vec2f(tan_fov_x, tan_fov_y) * 2.0f);
+            u->setElement(0, osg::Vec2f(tan_fov_x, tan_fov_y) * 2.0f);
             break;
         case SG_UNIFORM_SUN_DIRECTION:
-            u->set(osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));
+            u->setElement(0, osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));
             break;
         case SG_UNIFORM_SUN_ZENITH_COSTHETA:
-            u->set(float(sun_dir_world * world_up));
+            u->setElement(0, float(sun_dir_world * world_up));
             break;
         case SG_UNIFORM_MOON_DIRECTION:
-            u->set(osg::Vec3f(moon_dir_view.x(), moon_dir_view.y(), moon_dir_view.z()));
+            u->setElement(0, osg::Vec3f(moon_dir_view.x(), moon_dir_view.y(), moon_dir_view.z()));
             break;
         case SG_UNIFORM_MOON_ZENITH_COSTHETA:
             u->set(float(moon_dir_world * world_up));
@@ -403,7 +454,7 @@ Compositor::resized()
         }
 
         // Update the uniforms even if it isn't a RTT camera
-        _uniforms[SG_UNIFORM_VIEWPORT]->set(
+        _uniforms[SG_UNIFORM_VIEWPORT]->setElement(0,
             osg::Vec4f(viewport->x(),
                        viewport->y(),
                        viewport->width(),

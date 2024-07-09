@@ -163,6 +163,7 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_NearFar", osg::Vec2f()),
     new osg::Uniform("fg_Fcoef", 0.0f),
     new osg::Uniform(osg::Uniform::FLOAT_VEC2, "fg_FOVScale", _mvr.views),
+    new osg::Uniform(osg::Uniform::FLOAT_VEC2, "fg_FOVCenter", _mvr.views),
     new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_SunDirection", _mvr.views),
     new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
     new osg::Uniform("fg_SunZenithCosTheta", 0.0f),
@@ -217,6 +218,10 @@ void Compositor::updateSubView(unsigned int sub_view_index,
     osg::Vec3d view_up = world_up * view_matrix;
     view_up.normalize();
 
+    double left = -1.0, right = 1.0, bottom = -1.0, top = 1.0,
+           zNear = -1.0, zFar = 1.0;
+    proj_matrix.getFrustum(left, right, bottom, top, zNear, zFar);
+
     _uniforms[SG_UNIFORM_VIEWPORT]->setElement(sub_view_index,
                                                osg::Vec4f(viewport.x(),
                                                           viewport.y(),
@@ -238,10 +243,16 @@ void Compositor::updateSubView(unsigned int sub_view_index,
         _uniforms[SG_UNIFORM_FOV_SCALE]->setElement(sub_view_index, osg::Vec2f(
             tan_fov_x * _viewport->width() / viewport.z(),
             tan_fov_y * _viewport->height() / viewport.w()) * 2.0f);
+        _uniforms[SG_UNIFORM_FOV_CENTER]->setElement(sub_view_index, osg::Vec2f(
+            (viewport.x() + viewport.z() * (-left / (right - left))) / _viewport->width(),
+            (viewport.y() + viewport.w() * (-bottom / (top - bottom))) / _viewport->height()));
     } else {
         _uniforms[SG_UNIFORM_FOV_SCALE]->setElement(sub_view_index, osg::Vec2f(
             tan_fov_x,
             tan_fov_y) * 2.0f);
+        _uniforms[SG_UNIFORM_FOV_CENTER]->setElement(sub_view_index, osg::Vec2f(
+            -left / (right - left),
+            -bottom / (top - bottom)));
     }
 
     osg::Vec3f sun_dir_world;
@@ -372,6 +383,10 @@ Compositor::update(const osg::Matrix &view_matrix,
             break;
         case SG_UNIFORM_FOV_SCALE:
             u->setElement(0, osg::Vec2f(tan_fov_x, tan_fov_y) * 2.0f);
+            break;
+        case SG_UNIFORM_FOV_CENTER:
+            u->setElement(0, osg::Vec2f(-left / (right - left),
+                                        -bottom / (top - bottom)));
             break;
         case SG_UNIFORM_SUN_DIRECTION:
             u->setElement(0, osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));

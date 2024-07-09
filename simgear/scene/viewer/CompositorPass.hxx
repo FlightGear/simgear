@@ -63,6 +63,7 @@ struct Pass : public osg::Referenced {
     float                            viewport_width_scale;
     float                            viewport_height_scale;
     SGSharedPtr<SGCondition>         render_condition;
+    std::string                      multiview;
 
     osg::ref_ptr<osg::Drawable>      compute_node;
     osg::Vec2i                       compute_wg_size;

@@ -131,6 +131,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                << pass->name << ") uses unknown Effect scheme \"" << pass->effect_scheme << "\"");
     }
     pass->render_once = root->getBoolValue("render-once", false);
+    pass->multiview = root->getStringValue("multiview");
 
     const SGPropertyNode *p_render_condition = root->getChild("render-condition");
     if (p_render_condition)

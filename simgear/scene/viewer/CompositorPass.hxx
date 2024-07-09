@@ -74,6 +74,9 @@ struct Pass : public osg::Referenced {
         virtual void updatePass(Pass &pass,
                                 const osg::Matrix &view_matrix,
                                 const osg::Matrix &proj_matrix) = 0;
+        virtual void updateSubView(Pass& pass, unsigned int sub_view_index,
+                                   const osg::Matrix& view_matrix,
+                                   const osg::Matrix& proj_matrix) {}
     };
 
     osg::ref_ptr<PassUpdateCallback> update_callback;

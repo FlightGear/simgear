@@ -57,9 +57,10 @@ Compositor::create(osg::View *view,
                    osg::GraphicsContext *gc,
                    osg::Viewport *viewport,
                    const SGPropertyNode *property_list,
-                   const SGReaderWriterOptions *options)
+                   const SGReaderWriterOptions *options,
+                   const Compositor::MVRInfo *mvrInfo)
 {
-    Compositor *compositor = new Compositor(view, gc, viewport);
+    Compositor *compositor = new Compositor(view, gc, viewport, mvrInfo);
     compositor->_name = property_list->getStringValue("name");
 
     gc->getState()->setUseModelViewAndProjectionUniforms(
@@ -102,12 +103,13 @@ Compositor::create(osg::View *view,
                    osg::GraphicsContext *gc,
                    osg::Viewport *viewport,
                    const std::string &name,
-                   const SGReaderWriterOptions *options)
+                   const SGReaderWriterOptions *options,
+                   const Compositor::MVRInfo *mvrInfo)
 {
     SGPropertyNode_ptr property_list = loadPropertyList(name);
     if (!property_list.valid())
         return 0;
-    return create(view, gc, viewport, property_list, options);
+    return create(view, gc, viewport, property_list, options, mvrInfo);
 }
 
 SGPropertyNode_ptr Compositor::loadPropertyList(const std::string &name)
@@ -134,10 +136,12 @@ SGPropertyNode_ptr Compositor::loadPropertyList(const std::string &name)
 
 Compositor::Compositor(osg::View *view,
                        osg::GraphicsContext *gc,
-                       osg::Viewport *viewport) :
+                       osg::Viewport *viewport,
+                       const Compositor::MVRInfo *mvrInfo) :
     _view(view),
     _gc(gc),
     _viewport(viewport),
+    _mvr{ .views = mvrInfo ? mvrInfo->views : 1 },
     _uniforms{
     new osg::Uniform("fg_TextureMatrix", osg::Matrixf()),
     new osg::Uniform("fg_Viewport", osg::Vec4f()),
@@ -168,6 +172,9 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_EarthRadius", 0.0f),
     }
 {
+    if (mvrInfo) {
+        _mvr = *mvrInfo;
+    }
     _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->setUpdateCallback(
         new SunDirectionWorldCallback);
     _uniforms[SG_UNIFORM_MOON_DIRECTION_WORLD]->setUpdateCallback(
@@ -185,6 +192,17 @@ Compositor::~Compositor()
 
         unsigned int index = _view->findSlaveIndexForCamera(camera);
         _view->removeSlave(index);
+    }
+}
+
+void Compositor::updateSubView(unsigned int sub_view_index,
+                               const osg::Matrix& view_matrix,
+                               const osg::Matrix& proj_matrix,
+                               const osg::Vec4& viewport)
+{
+    for (auto& pass : _passes) {
+        if (pass->update_callback.valid())
+            pass->update_callback->updateSubView(*pass.get(), sub_view_index, view_matrix, proj_matrix);
     }
 }
 

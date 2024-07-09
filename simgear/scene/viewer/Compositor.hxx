@@ -63,9 +63,16 @@ public:
         SG_TOTAL_BUILTIN_UNIFORMS
     };
 
+    struct MVRInfo {
+        unsigned int views = 1;
+        std::string viewIdGlobalStr = "";
+        std::string viewIdStr[3] = {"0", "0", "0"};
+    };
+
     Compositor(osg::View *view,
                osg::GraphicsContext *gc,
-               osg::Viewport *viewport);
+               osg::Viewport *viewport,
+               const MVRInfo *mvrInfo = nullptr);
     ~Compositor();
 
     /**
@@ -75,13 +82,15 @@ public:
      * @param gc The context where the internal osg::Cameras will draw on.
      * @param viewport The viewport position and size inside the window.
      * @param property_list A valid property list that describes the Compositor.
+     * @param mvrInfo Multiview rendering information.
      * @return A Compositor or a null pointer if there was an error.
      */
     static Compositor *create(osg::View *view,
                               osg::GraphicsContext *gc,
                               osg::Viewport *viewport,
                               const SGPropertyNode *property_list,
-                              const SGReaderWriterOptions *options);
+                              const SGReaderWriterOptions *options,
+                              const MVRInfo *mvrInfo = nullptr);
     /**
      * \overload
      * \brief Create a Compositor from a file.
@@ -93,9 +102,15 @@ public:
                               osg::GraphicsContext *gc,
                               osg::Viewport *viewport,
                               const std::string &name,
-                              const SGReaderWriterOptions *options);
+                              const SGReaderWriterOptions *options,
+                              const MVRInfo *mvrInfo = nullptr);
 
     static SGPropertyNode_ptr loadPropertyList(const std::string &name);
+
+    void updateSubView(unsigned int sub_view_index,
+                       const osg::Matrix& view_matrix,
+                       const osg::Matrix& proj_matrix,
+                       const osg::Vec4& viewport);
 
     void               update(const osg::Matrix &view_matrix,
                               const osg::Matrix &proj_matrix);
@@ -121,6 +136,10 @@ public:
     void               setName(const std::string &name) { _name = name; }
     const std::string &getName() const { return _name; }
 
+    unsigned int getMVRViews() const { return _mvr.views; }
+    const std::string& getMVRViewIdGlobalStr() const { return _mvr.viewIdGlobalStr; }
+    const std::string& getMVRViewIdStr(unsigned int index) const { return _mvr.viewIdStr[index]; }
+
     typedef std::unordered_map<std::string, osg::ref_ptr<Buffer>> BufferMap;
     const BufferMap &  getBufferMap() const { return _buffers; }
     Buffer *           getBuffer(const std::string &name) const;
@@ -138,6 +157,7 @@ protected:
     osg::GraphicsContext        *_gc;
     osg::ref_ptr<osg::Viewport>  _viewport;
     std::string                  _name;
+    MVRInfo                      _mvr;
     BufferMap                    _buffers;
     PassList                     _passes;
     BuiltinUniforms              _uniforms;

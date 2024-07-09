@@ -191,6 +191,15 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     }
     camera->setClearMask(clear_mask);
 
+    // Single-pass rendering of multiple views
+    // These allow easy indexing of per-view FG uniforms
+    camera->getOrCreateStateSet()->setDefine("FG_NUM_VIEWS", std::to_string(compositor->getMVRViews()));
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_GLOBAL", compositor->getMVRViewIdGlobalStr());
+    // auto-imported on shader load
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*VERT*/", compositor->getMVRViewIdStr(0));
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*GEOM*/", compositor->getMVRViewIdStr(1));
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*FRAG*/", compositor->getMVRViewIdStr(2));
+
     osg::DisplaySettings::ImplicitBufferAttachmentMask implicit_attachments = 0;
     std::stringstream att_ss;
     std::string att_bit;

@@ -144,7 +144,7 @@ add_library(OSG::OSG ALIAS imported_OSG)
 foreach (comp ${Simgear_OSG_Components})
     string(TOUPPER ${comp} _osg_module_UC)
     set(tgt imported_${_osg_module_UC})
-    add_library(${tgt} SHARED IMPORTED)
+    add_library(${tgt} SHARED IMPORTED GLOBAL)
     add_library(OSG::${comp} ALIAS ${tgt})
 
     set_property(TARGET ${tgt} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${${_osg_module_UC}_INCLUDE_DIR})

@@ -95,6 +95,8 @@ public:
                               const std::string &name,
                               const SGReaderWriterOptions *options);
 
+    static SGPropertyNode_ptr loadPropertyList(const std::string &name);
+
     void               update(const osg::Matrix &view_matrix,
                               const osg::Matrix &proj_matrix);
 

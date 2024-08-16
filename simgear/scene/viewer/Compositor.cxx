@@ -104,6 +104,14 @@ Compositor::create(osg::View *view,
                    const std::string &name,
                    const SGReaderWriterOptions *options)
 {
+    SGPropertyNode_ptr property_list = loadPropertyList(name);
+    if (!property_list.valid())
+        return 0;
+    return create(view, gc, viewport, property_list, options);
+}
+
+SGPropertyNode_ptr Compositor::loadPropertyList(const std::string &name)
+{
     std::string filename(name);
     filename += ".xml";
     std::string abs_filename = SGModelLib::findDataFile(filename);
@@ -116,13 +124,12 @@ Compositor::create(osg::View *view,
     SGPropertyNode_ptr property_list = new SGPropertyNode;
     try {
         readProperties(abs_filename, property_list.ptr(), 0, true);
+        return property_list;
     } catch (sg_io_exception &e) {
         SG_LOG(SG_INPUT, SG_ALERT, "Compositor::build: Failed to parse file '"
                << abs_filename << "'. " << e.getFormattedMessage());
         return 0;
     }
-
-    return create(view, gc, viewport, property_list, options);
 }
 
 Compositor::Compositor(osg::View *view,

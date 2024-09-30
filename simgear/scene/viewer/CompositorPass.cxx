@@ -229,6 +229,15 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
         else if (att_bit == "depth")   implicit_attachments |= osg::DisplaySettings::IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
         else if (att_bit == "stencil") implicit_attachments |= osg::DisplaySettings::IMPLICIT_STENCIL_BUFFER_ATTACHMENT;
     }
+#ifdef __APPLE__
+    // MacOS doesn't like when we don't attach a color buffer, so add it if
+    // it wasn't set.
+    if ((implicit_attachments & osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT) == 0) {
+        implicit_attachments |= osg::DisplaySettings::IMPLICIT_COLOR_BUFFER_ATTACHMENT;
+        SG_LOG(SG_INPUT, SG_INFO, "Compositor: MacOS fix: Implicit color buffer added to pass '"
+               << pass->name << "'");
+    }
+#endif
     camera->setImplicitBufferAttachmentMask(implicit_attachments, implicit_attachments);
 
     // Set some global state
@@ -614,9 +623,6 @@ public:
         camera->setViewMatrix(osg::Matrix::identity());
         camera->setProjectionMatrix(osg::Matrix::ortho2D(0, 1, 0, 1));
 
-        // Do not automatically add a depth renderbuffer
-        camera->setImplicitBufferAttachmentMask(0, 0);
-
         float left = 0.0f, bottom = 0.0f, width = 1.0f, height = 1.0f, scale = 1.0f;
         const SGPropertyNode *p_geometry = root->getNode("geometry");
         if (p_geometry) {
@@ -715,9 +721,6 @@ public:
 
         osg::Camera* camera = pass->camera;
         camera->setAllowEventFocus(false);
-
-        // Do not automatically add a depth renderbuffer
-        camera->setImplicitBufferAttachmentMask(0, 0);
 
         osg::ref_ptr<EffectGeode> compute = new EffectGeode;
         camera->addChild(compute);

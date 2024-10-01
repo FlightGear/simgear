@@ -388,6 +388,9 @@ if(WIN32)
     set( WINSOCK_LIBRARY "ws2_32.lib" )
     set( SHLWAPI_LIBRARY "Shlwapi.lib" )
     set( RT_LIBRARY "winmm" )
+
+    set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}/pdbs)
+    set(CMAKE_PDB_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX}/pdbs)
 endif(WIN32)
 
 message(STATUS "SIMD flags are ${SIMD_COMPILER_FLAGS}")

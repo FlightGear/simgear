@@ -20,23 +20,7 @@ variables:
   # VCVARSVERSION: "14.29.30133"
 
 
-linux-build:
-  image: registry.gitlab.com/flightgear/flightgear
-  stage: build
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule"
-  script:
-    - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo 
-      -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR
-    - cmake --build $BUILD_DIR
-    - cmake --build $BUILD_DIR --target install
-  artifacts:
-    paths:
-      - $PREFIX_DIR
-  cache:
-    paths:
-      - $BUILD_DIR
+
 
 windows-build:
   stage: build
@@ -44,8 +28,6 @@ windows-build:
     - saas-windows-medium-amd64
   before_script:
     - C:\"Program Files (x86)\Microsoft Visual Studio"\2022\BuildTools\Common7\Tools\Launch-VsDevShell -SkipAutomaticLocation -Arch amd64
-    - cmake --version
-    - ninja --version
 
   # relocate our upstream deps outside the source dir, otherwise
   # CMake gets sad.
@@ -71,99 +53,6 @@ windows-build:
       artifacts: true
   artifacts:
     paths:
-      - $PREFIX_DIR
-
-macos-build:
-  stage: build
-  tags:
-    - saas-macos-medium-m1
-  image: $MAC_IMAGE
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule"
-  before_script:
-      - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-      - export HOMEBREW_NO_INSTALL_CLEANUP=1
-      - brew install ninja cmake boost
-  script:
-    - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
-      -D CMAKE_BUILD_TYPE=RelWithDebInfo 
-      -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
-      -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist
-      -D CMAKE_OSX_ARCHITECTURES=arm64
-    - cmake --build $BUILD_DIR
-    - cmake --build $BUILD_DIR --target install
-  needs:
-    - project: flightgear/openscenegraph
-      job: macos-build
-      ref: fgfs-osg-36-2
-      artifacts: true
-  artifacts:
-    paths:
-      - $PREFIX_DIR
-  cache:
-    paths:
       - $BUILD_DIR
+    when: always
 
-macos-x64-build:
-  stage: build
-  tags:
-    - saas-macos-medium-m1
-  image: $MAC_IMAGE
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule"
-  before_script:
-      - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-      - export HOMEBREW_NO_INSTALL_CLEANUP=1
-      - brew install ninja cmake boost
-  script:
-  # we build with tests disabled because they need cross-compiled Boost test
-  # libs, but that would mean installing x86_64 version of Boost via Homebrew in
-  # the 'other' prefix (/usr/local), which gets messy.
-    - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
-      -D CMAKE_BUILD_TYPE=RelWithDebInfo 
-      -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
-      -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist
-      -D CMAKE_OSX_ARCHITECTURES=x86_64
-      -DENABLE_TESTS:BOOL=OFF
-    - cmake --build $BUILD_DIR
-    - cmake --build $BUILD_DIR --target install
-  needs:
-    - project: flightgear/openscenegraph
-      job: macos-build
-      ref: fgfs-osg-36-2
-      artifacts: true
-  artifacts:
-    paths:
-      - $PREFIX_DIR
-  cache:
-    paths:
-      - $BUILD_DIR
-
-# test:doc:
-#   image: registry.gitlab.com/ahayzen/home-dash-alpha-g1
-#   stage: test
-#   rules:
-#     - if: $CI_PIPELINE_SOURCE != "schedule"
-#   script:
-#     - cargo test --all-features --doc
-#     - cargo test --all-features --all-targets
-#   cache:
-#     paths:
-#       - .cargo
-#     policy: pull
-#   dependencies:
-#     - build
-
-
-# run tests using the binary built before
-test:
-  image: registry.gitlab.com/flightgear/flightgear
-  stage: test
-  needs:
-    - job: linux-build
-  script:
-    - cd $BUILD_DIR
-    - ctest
-  cache:
-    paths:
-      - $BUILD_DIR

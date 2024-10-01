@@ -8,10 +8,10 @@ add_custom_target(
 function(export_debug_symbols target)
 
     if (MSVC)
-        set_property(TARGET ${target} PROPERTY COMPILE_PDB_NAME ${target}.pdb)
+        set_property(TARGET ${target} PROPERTY COMPILE_PDB_NAME ${target})
         set_property(TARGET ${target} PROPERTY COMPILE_PDB_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-        install(FILE ${CMAKE_CURRENT_BINARY_DIR}/${target}.pdb DESTINATION symbols OPTIONAL)
+        install(FILE ${CMAKE_CURRENT_BINARY_DIR}/${target}.pdb DESTINATION pdbs OPTIONAL)
     endif()
 
     if (NOT SIMGEAR_SHARED)

@@ -53,6 +53,6 @@ windows-build:
       artifacts: true
   artifacts:
     paths:
-      - $BUILD_DIR
+      - $CI_PROJECT_DIR
     when: always
 

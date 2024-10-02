@@ -53,6 +53,7 @@ windows-build:
       artifacts: true
   artifacts:
     paths:
-      - $CI_PROJECT_DIR
+      - builds/
+      - simgear-dist/
     when: always
 

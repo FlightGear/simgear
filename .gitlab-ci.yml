@@ -53,7 +53,7 @@ windows-build:
       artifacts: true
   artifacts:
     paths:
-      - builds/
+      - build/
       - simgear-dist/
     when: always
 

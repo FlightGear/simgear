@@ -33,7 +33,7 @@ public:
                                [&msg](const std::string& s) {
                                    return msg.find(s) != std::string::npos;
                                });
-        if (it != end(osg_ignored_messages)) {
+        if (it != std::end(osg_ignored_messages)) {
             return;
         }
 

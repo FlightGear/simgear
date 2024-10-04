@@ -14,6 +14,7 @@ set(HEADERS
     OsgMath.hxx
     OsgSingleton.hxx
     OsgUtils.hxx
+    OsgIoCapture.hxx
     parse_color.hxx
     PrimitiveUtils.hxx
     ProjectionMatrix.hxx

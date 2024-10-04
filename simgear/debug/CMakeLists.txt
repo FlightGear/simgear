@@ -2,7 +2,7 @@
 include (SimGearComponent)
 
 set(HEADERS debug_types.h 
-    logstream.hxx BufferedLogCallback.hxx OsgIoCapture.hxx
+    logstream.hxx BufferedLogCallback.hxx
     LogCallback.hxx LogEntry.hxx
     ErrorReportingCallback.hxx logdelta.hxx
     Reporting.hxx)

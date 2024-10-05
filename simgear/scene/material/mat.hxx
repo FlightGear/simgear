@@ -229,6 +229,24 @@ public:
    */
   inline std::string get_building_lightmap () const { return building_lightmap; }
 
+  /**
+   * Get the building normalmap.
+   *
+   * This is the normalmap used for auto-generated buildings.
+   *
+   * @return The normalmap for auto-generated buildings.
+   */
+  inline std::string get_building_normalmap () const { return building_normalmap; }
+
+  /**
+   * Get the building reflectionmap.
+   *
+   * This is the reflectionmap used for auto-generated buildings.
+   *
+   * @return The reflectionmap for auto-generated buildings.
+   */
+  inline std::string get_building_reflectionmap () const { return building_reflectionmap; }
+
   // Ratio of the 3 random building sizes
   inline double get_building_small_fraction () const { return building_small_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
   inline double get_building_medium_fraction () const { return building_medium_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
@@ -474,6 +492,8 @@ private:
   // building texture & lightmap
   std::string building_texture;
   std::string building_lightmap;
+  std::string building_normalmap;
+  std::string building_reflectionmap;
 
   // Ratio of the 3 random building sizes
   double building_small_ratio;

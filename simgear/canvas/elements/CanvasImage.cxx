@@ -27,15 +27,17 @@
 #include <simgear/canvas/events/KeyboardEvent.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/load_shader.hxx>
 #include <simgear/scene/util/parse_color.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #include <osg/Array>
 #include <osg/Geometry>
 #include <osg/PrimitiveSet>
+#include <osg/Shader>
 #include <osgDB/Registry>
 #include <osg/Version>
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 namespace simgear
 {
@@ -94,6 +96,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   const std::string Image::TYPE_NAME = "image";
+  osg::ref_ptr<SGProgram> Image::_program;
 
   //----------------------------------------------------------------------------
   void Image::staticInit()
@@ -111,6 +114,20 @@ namespace canvas
     osgDB::Registry* reg = osgDB::Registry::instance();
     if( !reg->getReaderWriterForExtension("png") )
       SG_LOG(SG_GL, SG_ALERT, "canvas::Image: Missing 'png' image reader");
+
+    _program = new SGProgram;
+    auto vs = new osg::Shader(osg::Shader::VERTEX);
+    if (loadShaderFromDataFile(vs, "Shaders/Canvas/image.vert")) {
+      _program->addShader(vs);
+    } else {
+      SG_LOG(SG_GL, SG_ALERT, "canvas::Image: Failed to load vertex shader");
+    }
+    auto fs = new osg::Shader(osg::Shader::FRAGMENT);
+    if (loadShaderFromDataFile(fs, "Shaders/Canvas/image.frag")) {
+      _program->addShader(fs);
+    } else {
+      SG_LOG(SG_GL, SG_ALERT, "canvas::Image: Failed to load fragment shader");
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -135,8 +152,10 @@ namespace canvas
     _geom->setUseVertexBufferObjects(true);
 
     osg::StateSet *stateSet = _geom->getOrCreateStateSet();
-    stateSet->setTextureAttributeAndModes(0, _texture.get());
     stateSet->setDataVariance(osg::Object::STATIC);
+    stateSet->setTextureAttributeAndModes(0, _texture.get());
+    stateSet->setAttributeAndModes(_program);
+    stateSet->addUniform(new osg::Uniform("tex", 0));
 
     // allocate arrays for the image
     _vertices = new osg::Vec3Array(6);

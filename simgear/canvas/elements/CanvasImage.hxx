@@ -26,6 +26,7 @@
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/misc/CSSBorder.hxx>
 #include <simgear/misc/SVGpreserveAspectRatio.hxx>
+#include <simgear/scene/util/SGProgram.hxx>
 #include <osg/Texture2D>
 
 namespace simgear
@@ -149,7 +150,9 @@ namespace canvas
                       const std::string& type );
 
       void allocateImage();
-      
+
+      static osg::ref_ptr<SGProgram> _program;
+
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas
       CanvasWeakPtr _src_canvas;

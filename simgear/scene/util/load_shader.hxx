@@ -11,10 +11,12 @@ class Shader;
 
 namespace simgear {
 
-// Load a shader from a UTF-8 filename.
+// Load a shader from an UTF-8 path.
 // This is a workaround for osg::Shader::loadShaderFromSourceFile not respecting
 // UTF-8 paths, even when OSG_USE_UTF8_FILENAME is set.
 bool loadShaderFromUTF8File(osg::Shader *shader, const std::string &filename);
+// Load a shader from a data file in $FG_ROOT.
+bool loadShaderFromDataFile(osg::Shader *shader, const std::string &filename);
 
 } // namespace simgear
 

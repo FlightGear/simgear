@@ -20,9 +20,15 @@
 #include <simgear_config.h>
 
 #include "CanvasText.hxx"
+
+#include <sstream>
+#include <iomanip>
+
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
 #include <simgear/scene/util/parse_color.hxx>
+#include <simgear/scene/util/load_shader.hxx>
+#include <simgear/scene/util/SGProgram.hxx>
 #include <osg/Version>
 #include <osgDB/Registry>
 #include <osgText/Text>
@@ -68,7 +74,8 @@ namespace canvas
 
       canvas::Text *_text_element;
 
-     void computePositionsImplementation() override;
+      osg::StateSet *createStateSet() override;
+      void computePositionsImplementation() override;
 };
 
   class TextLine
@@ -631,12 +638,109 @@ namespace canvas
     return bb;
   }
 
+  //----------------------------------------------------------------------------
   void Text::TextOSG::computePositionsImplementation()
   {
     TextBase::computePositionsImplementation();
   }
 
- //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  osg::StateSet *Text::TextOSG::createStateSet()
+  {
+    osgText::Font *activeFont = getActiveFont();
+    if (!activeFont) {
+      return 0;
+    }
+    osgText::Font::StateSets &statesets = activeFont->getCachedStateSets();
+
+    std::stringstream ss;
+    ss.imbue(std::locale::classic());
+    ss << std::fixed << std::setprecision(3);
+
+    osg::StateSet::DefineList defineList;
+    if (_backdropType != NONE) {
+      ss.str("");
+      ss << "vec4(" << _backdropColor.r()
+         << ", "    << _backdropColor.g()
+         << ", "    << _backdropColor.b()
+         << ", "    << _backdropColor.a()
+         << ")";
+      defineList["BACKDROP_COLOR"] = osg::StateSet::DefinePair(ss.str(), osg::StateAttribute::ON);
+
+      if (_backdropType == OUTLINE) {
+        ss.str("");
+        ss << _backdropHorizontalOffset;
+        defineList["OUTLINE"] = osg::StateSet::DefinePair(ss.str(), osg::StateAttribute::ON);
+      } else {
+        osg::Vec2f offset(_backdropHorizontalOffset, _backdropVerticalOffset);
+        switch(_backdropType) {
+        case(DROP_SHADOW_BOTTOM_RIGHT) :    offset.set(_backdropHorizontalOffset, -_backdropVerticalOffset);  break;
+        case(DROP_SHADOW_CENTER_RIGHT) :    offset.set(_backdropHorizontalOffset, 0.0f);                      break;
+        case(DROP_SHADOW_TOP_RIGHT) :       offset.set(_backdropHorizontalOffset, _backdropVerticalOffset);   break;
+        case(DROP_SHADOW_BOTTOM_CENTER) :   offset.set(0.0f, -_backdropVerticalOffset);                       break;
+        case(DROP_SHADOW_TOP_CENTER) :      offset.set(0.0f, _backdropVerticalOffset);                        break;
+        case(DROP_SHADOW_BOTTOM_LEFT) :     offset.set(-_backdropHorizontalOffset, -_backdropVerticalOffset); break;
+        case(DROP_SHADOW_CENTER_LEFT) :     offset.set(-_backdropHorizontalOffset, 0.0f);                     break;
+        case(DROP_SHADOW_TOP_LEFT) :        offset.set(-_backdropHorizontalOffset, _backdropVerticalOffset);  break;
+        default: break;
+        }
+        ss.str("");
+        ss << "vec2(" << offset.x() << ", " << offset.y() << ")";
+        defineList["SHADOW"] = osg::StateSet::DefinePair(ss.str(), osg::StateAttribute::ON);
+      }
+    }
+
+    {
+      ss<<std::fixed<<std::setprecision(1);
+      ss.str("");
+      ss << float(_fontSize.second);
+      defineList["GLYPH_DIMENSION"] = osg::StateSet::DefinePair(ss.str(), osg::StateAttribute::ON);
+      ss.str("");
+      ss << float(activeFont->getTextureWidthHint());
+      defineList["TEXTURE_DIMENSION"] = osg::StateSet::DefinePair(ss.str(), osg::StateAttribute::ON);
+    }
+
+    if (_shaderTechnique > osgText::GREYSCALE) {
+      defineList["SIGNED_DISTANCE_FIELD"] = osg::StateSet::DefinePair("1", osg::StateAttribute::ON);
+    }
+
+    // Return a cached stateset if it already exists
+    if (!statesets.empty()) {
+      for (auto itr = statesets.begin(); itr != statesets.end(); ++itr) {
+        if ((*itr)->getDefineList() == defineList) {
+          return itr->get();
+        }
+      }
+    }
+
+    // No matching cached stateset, create one from scratch
+    osg::ref_ptr<osg::StateSet> stateSet = new osg::StateSet;
+    stateSet->setDefineList(defineList);
+    // Cache it
+    statesets.push_back(stateSet.get());
+
+    stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+    stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+
+    stateSet->addUniform(new osg::Uniform("glyphTexture", 0));
+
+    auto program = new SGProgram;
+    auto vs = new osg::Shader(osg::Shader::VERTEX);
+    if (loadShaderFromDataFile(vs, "Shaders/Canvas/text.vert")) {
+      program->addShader(vs);
+    } else {
+      SG_LOG(SG_GL, SG_ALERT, "canvas::Text: Failed to load vertex shader");
+    }
+    auto fs = new osg::Shader(osg::Shader::FRAGMENT);
+    if (loadShaderFromDataFile(fs, "Shaders/Canvas/text.frag")) {
+      program->addShader(fs);
+    } else {
+      SG_LOG(SG_GL, SG_ALERT, "canvas::Text: Failed to load fragment shader");
+    }
+    stateSet->setAttributeAndModes(program);
+
+    return stateSet.release();
+  }
 
   //----------------------------------------------------------------------------
   const std::string Text::TYPE_NAME = "text";

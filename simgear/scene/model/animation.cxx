@@ -557,9 +557,6 @@ SGAnimation::animate(simgear::SGTransientModelData &modelData)
   } else if (type == "select") {
     SGSelectAnimation anim(modelData);
     anim.apply(modelData);
-  } else if (type == "shader") {
-    SGShaderAnimation anim(modelData);
-    anim.apply(modelData);
   } else if (type == "textranslate" || type == "texrotate" ||
              type == "textrapezoid" || type == "texmultiple") {
     SGTexTransformAnimation anim(modelData);

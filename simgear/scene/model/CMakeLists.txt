@@ -57,7 +57,6 @@ set(SOURCES
     particles.cxx
     persparam.cxx
     placement.cxx    
-    shadanim.cxx
     )
 
 simgear_scene_component(model scene/model "${SOURCES}" "${HEADERS}")

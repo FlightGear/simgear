@@ -506,10 +506,7 @@ bool
 SGAnimation::animate(simgear::SGTransientModelData &modelData)
 {
   std::string type = modelData.getConfigNode()->getStringValue("type", "none");
-  if (type == "alpha-test") {
-    SGAlphaTestAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "billboard") {
+  if (type == "billboard") {
     SGBillboardAnimation anim(modelData);
     anim.apply(modelData);
   } else if (type == "blend") {
@@ -1955,76 +1952,6 @@ SGSelectAnimation::createAnimationGroup(osg::Group& parent)
   cn->addChild(grp);
   parent.addChild(cn);
   return grp;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of alpha test animation
-////////////////////////////////////////////////////////////////////////
-
-SGAlphaTestAnimation::SGAlphaTestAnimation(simgear::SGTransientModelData &modelData) :
-    SGAnimation(modelData)
-{
-}
-
-namespace
-{
-// Keep one copy of the most common alpha test its state set.
-ReentrantMutex alphaTestMutex;
-osg::ref_ptr<osg::AlphaFunc> standardAlphaFunc;
-osg::ref_ptr<osg::StateSet> alphaFuncStateSet;
-
-osg::AlphaFunc* makeAlphaFunc(float clamp)
-{
-    ScopedLock<ReentrantMutex> lock(alphaTestMutex);
-    if (osg::equivalent(clamp, 0.01f)) {
-        if (standardAlphaFunc.valid())
-            return standardAlphaFunc.get();
-        clamp = .01;
-    }
-    osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-    alphaFunc->setFunction(osg::AlphaFunc::GREATER);
-    alphaFunc->setReferenceValue(clamp);
-    alphaFunc->setDataVariance(osg::Object::STATIC);
-    if (osg::equivalent(clamp, 0.01f))
-        standardAlphaFunc = alphaFunc;
-    return alphaFunc;
-}
-
-osg::StateSet* makeAlphaTestStateSet(float clamp)
-{
-    using namespace OpenThreads;
-    ScopedLock<ReentrantMutex> lock(alphaTestMutex);
-    if (osg::equivalent(clamp, 0.01f)) {
-        if (alphaFuncStateSet.valid())
-            return alphaFuncStateSet.get();
-    }
-    osg::AlphaFunc* alphaFunc = makeAlphaFunc(clamp);
-    osg::StateSet* stateSet = new osg::StateSet;
-    stateSet->setAttributeAndModes(alphaFunc,
-                                   (osg::StateAttribute::ON
-                                    | osg::StateAttribute::OVERRIDE));
-    stateSet->setDataVariance(osg::Object::STATIC);
-    if (osg::equivalent(clamp, 0.01f))
-        alphaFuncStateSet = stateSet;
-    return stateSet;
-}
-}
-void
-SGAlphaTestAnimation::install(osg::Node& node)
-{
-  SGAnimation::install(node);
-
-  float alphaClamp = getConfig()->getFloatValue("alpha-factor", 0);
-  osg::StateSet* stateSet = node.getStateSet();
-  if (!stateSet) {
-      node.setStateSet(makeAlphaTestStateSet(alphaClamp));
-  } else {
-      stateSet->setAttributeAndModes(makeAlphaFunc(alphaClamp),
-                                     (osg::StateAttribute::ON
-                                      | osg::StateAttribute::OVERRIDE));
-  }
 }
 
 

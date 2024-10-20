@@ -61,7 +61,6 @@
 #include "model.hxx"
 
 #include "SGTranslateTransform.hxx"
-#include "SGMaterialAnimation.hxx"
 #include "SGPBRAnimation.hxx"
 #include "SGRotateTransform.hxx"
 #include "SGScaleTransform.hxx"
@@ -520,9 +519,6 @@ SGAnimation::animate(simgear::SGTransientModelData &modelData)
     anim.apply(modelData);
   } else if (type == "interaction") {
     SGInteractionAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "material") {
-    SGMaterialAnimation anim(modelData);
     anim.apply(modelData);
   } else if (type == "pbr") {
     SGPBRAnimation anim(modelData);

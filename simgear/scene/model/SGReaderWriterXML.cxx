@@ -51,7 +51,6 @@
 #include "model.hxx"
 #include "SGLight.hxx"
 #include "SGText.hxx"
-#include "SGMaterialAnimation.hxx"
 
 using namespace std;
 using namespace simgear;
@@ -152,56 +151,6 @@ private:
     osg::ref_ptr<osg::Referenced> mReferenced;
 };
 
-void makeEffectAnimations(PropertyList& animation_nodes,
-                          PropertyList& effect_nodes)
-{
-    for (PropertyList::iterator itr = animation_nodes.begin();
-         itr != animation_nodes.end();
-         ++itr) {
-        SGPropertyNode_ptr effectProp;
-        SGPropertyNode* animProp = itr->ptr();
-        SGPropertyNode* typeProp = animProp->getChild("type");
-        if (!typeProp)
-            continue;
-
-        std::string typeString = typeProp->getStringValue();
-        if (typeString == "material") {
-            effectProp
-                = SGMaterialAnimation::makeEffectProperties(animProp);
-        } else if (typeString == "shader") {
-
-            SGPropertyNode* shaderProp = animProp->getChild("shader");
-            if (!shaderProp || shaderProp->getStringValue() != "chrome")
-                continue;
-            *itr = 0;           // effect replaces animation
-            SGPropertyNode* textureProp = animProp->getChild("texture");
-            if (!textureProp)
-                continue;
-            effectProp = new SGPropertyNode();
-            makeChild(effectProp.ptr(), "inherits-from")
-                ->setValue("Effects/chrome");
-            SGPropertyNode* paramsProp = makeChild(effectProp.get(), "parameters");
-            makeChild(paramsProp, "chrome-texture")
-                ->setValue(textureProp->getStringValue().c_str());
-        }
-        if (effectProp.valid()) {
-            PropertyList objectNameNodes = animProp->getChildren("object-name");
-            for (PropertyList::iterator objItr = objectNameNodes.begin(),
-                     end = objectNameNodes.end();
-                 objItr != end;
-                 ++objItr)
-                effectProp->addChild("object-name")
-                    ->setStringValue((*objItr)->getStringValue());
-            effect_nodes.push_back(effectProp);
-
-        }
-    }
-    animation_nodes.erase(std::remove_if(animation_nodes.begin(),
-                                         animation_nodes.end(),
-                                         [] (const SGPropertyNode_ptr& ptr) {
-                                             return !ptr.valid(); }),
-                          animation_nodes.end());
-}
 }
 
 namespace simgear {
@@ -851,11 +800,8 @@ sgLoad3DModel_internal(const SGPath& path,
         animation_nodes.erase(it, animation_nodes.end());
     }
 
-    // Some material animations (eventually all) are actually effects.
-    makeEffectAnimations(animation_nodes, effect_nodes);
     {
-        ref_ptr<Node> modelWithEffects = instantiateEffects(group.get(), effect_nodes, options.get(),
-                                                            path);
+        ref_ptr<Node> modelWithEffects = instantiateEffects(group.get(), effect_nodes, options.get(), path);
         group = static_cast<Group*>(modelWithEffects.get());
     }
 

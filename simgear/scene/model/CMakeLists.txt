@@ -13,7 +13,6 @@ set(HEADERS
     SGInteractionAnimation.hxx
     SGLight.hxx
     SGPBRAnimation.hxx
-    SGMaterialAnimation.hxx
     SGPickAnimation.hxx
     SGOffsetTransform.hxx
     SGReaderWriterXML.hxx
@@ -43,7 +42,6 @@ set(SOURCES
     SGLightAnimation.cxx
     SGPickAnimation.cxx
     SGPBRAnimation.cxx
-    SGMaterialAnimation.cxx
     SGOffsetTransform.cxx
     SGReaderWriterXML.cxx
     SGRotateTransform.cxx

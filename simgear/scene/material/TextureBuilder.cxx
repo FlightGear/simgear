@@ -25,9 +25,6 @@
 
 #include <osg/Version>
 #include <osg/PointSprite>
-#include <osg/TexEnv>
-#include <osg/TexEnvCombine>
-#include <osg/TexGen>
 #include <osg/Texture1D>
 #include <osg/Texture2D>
 #include <osg/Texture2DArray>
@@ -59,11 +56,6 @@ using namespace osg;
 
 using namespace effect;
 
-TexEnvCombine* buildTexEnvCombine(Effect* effect,
-                                  const SGPropertyNode* envProp,
-                                  const SGReaderWriterOptions* options);
-TexGen* buildTexGen(Effect* Effect, const SGPropertyNode* tgenProp);
-
 // Hack to force inclusion of TextureBuilder.cxx in library
 osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
                                             const SGPropertyNode*props,
@@ -76,36 +68,6 @@ osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
 typedef std::tuple<string, Texture::FilterMode, Texture::FilterMode,
                    Texture::WrapMode, Texture::WrapMode, Texture::WrapMode,
                    string, MipMapTuple, ImageInternalFormat> TexTuple;
-
-EffectNameValue<TexEnv::Mode> texEnvModesInit[] =
-{
-    {"add", TexEnv::ADD},
-    {"blend", TexEnv::BLEND},
-    {"decal", TexEnv::DECAL},
-    {"modulate", TexEnv::MODULATE},
-    {"replace", TexEnv::REPLACE}
-};
-EffectPropertyMap<TexEnv::Mode> texEnvModes(texEnvModesInit);
-
-TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
-{
-    const SGPropertyNode* modeProp = getEffectPropertyChild(effect, prop,
-                                                            "mode");
-    const SGPropertyNode* colorProp = getEffectPropertyChild(effect, prop,
-                                                             "color");
-    if (!modeProp)
-        return 0;
-    TexEnv::Mode mode = TexEnv::MODULATE;
-    findAttr(texEnvModes, modeProp, mode);
-    if (mode == TexEnv::MODULATE) {
-        return StateAttributeFactory::instance()->getStandardTexEnv();
-    }
-    TexEnv* env = new TexEnv(mode);
-    if (colorProp)
-        env->setColor(toOsg(colorProp->getValue<SGVec4d>()));
-    return env;
-}
-
 
 void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                         const SGPropertyNode* prop,
@@ -154,22 +116,6 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
     }
 
     pass->setTextureAttributeAndModes(unit, texture);
-
-    const SGPropertyNode* envProp = prop->getChild("environment");
-    if (envProp) {
-        TexEnv* env = buildTexEnv(effect, envProp);
-        if (env)
-            pass->setTextureAttributeAndModes(unit, env);
-    }
-    const SGPropertyNode* combineProp = prop->getChild("texenv-combine");
-    TexEnvCombine* combiner = 0;
-    if (combineProp && ((combiner = buildTexEnvCombine(effect, combineProp,
-                                                       options))))
-        pass->setTextureAttributeAndModes(unit, combiner);
-    const SGPropertyNode* tgenProp = prop->getChild("texgen");
-    TexGen* tgen = 0;
-    if (tgenProp && (tgen = buildTexGen(effect, tgenProp)))
-        pass->setTextureAttributeAndModes(unit, tgen);
 }
 
 // InstallAttributeBuilder call is in Effect.cxx to force this file to
@@ -943,195 +889,6 @@ Texture* Texture3DBuilder::build(Effect* effect,
 
 namespace {
 TextureBuilder::Registrar install3D("3d", new Texture3DBuilder);
-}
-
-
-EffectNameValue<TexEnvCombine::CombineParam> combineParamInit[] =
-{
-    {"replace", TexEnvCombine::REPLACE},
-    {"modulate", TexEnvCombine::MODULATE},
-    {"add", TexEnvCombine::ADD},
-    {"add-signed", TexEnvCombine::ADD_SIGNED},
-    {"interpolate", TexEnvCombine::INTERPOLATE},
-    {"subtract", TexEnvCombine::SUBTRACT},
-    {"dot3-rgb", TexEnvCombine::DOT3_RGB},
-    {"dot3-rgba", TexEnvCombine::DOT3_RGBA}
-};
-
-EffectPropertyMap<TexEnvCombine::CombineParam> combineParams(combineParamInit);
-
-EffectNameValue<TexEnvCombine::SourceParam> sourceParamInit[] =
-{
-    {"constant", TexEnvCombine::CONSTANT},
-    {"primary_color", TexEnvCombine::PRIMARY_COLOR},
-    {"previous", TexEnvCombine::PREVIOUS},
-    {"texture", TexEnvCombine::TEXTURE},
-    {"texture0", TexEnvCombine::TEXTURE0},
-    {"texture1", TexEnvCombine::TEXTURE1},
-    {"texture2", TexEnvCombine::TEXTURE2},
-    {"texture3", TexEnvCombine::TEXTURE3},
-    {"texture4", TexEnvCombine::TEXTURE4},
-    {"texture5", TexEnvCombine::TEXTURE5},
-    {"texture6", TexEnvCombine::TEXTURE6},
-    {"texture7", TexEnvCombine::TEXTURE7}
-};
-
-EffectPropertyMap<TexEnvCombine::SourceParam> sourceParams(sourceParamInit);
-
-EffectNameValue<TexEnvCombine::OperandParam> opParamInit[] =
-{
-    {"src-color", TexEnvCombine::SRC_COLOR},
-    {"one-minus-src-color", TexEnvCombine::ONE_MINUS_SRC_COLOR},
-    {"src-alpha", TexEnvCombine::SRC_ALPHA},
-    {"one-minus-src-alpha", TexEnvCombine::ONE_MINUS_SRC_ALPHA}
-};
-
-EffectPropertyMap<TexEnvCombine::OperandParam> operandParams(opParamInit);
-
-TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp,
-                                  const SGReaderWriterOptions* options)
-{
-    if (!isAttributeActive(effect, envProp))
-        return 0;
-    TexEnvCombine* result = new TexEnvCombine;
-    const SGPropertyNode* p = 0;
-    if ((p = getEffectPropertyChild(effect, envProp, "combine-rgb"))) {
-        TexEnvCombine::CombineParam crgb = TexEnvCombine::MODULATE;
-        findAttr(combineParams, p, crgb);
-        result->setCombine_RGB(crgb);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "combine-alpha"))) {
-        TexEnvCombine::CombineParam calpha = TexEnvCombine::MODULATE;
-        findAttr(combineParams, p, calpha);
-        result->setCombine_Alpha(calpha);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "source0-rgb"))) {
-        TexEnvCombine::SourceParam source = TexEnvCombine::TEXTURE;
-        findAttr(sourceParams, p, source);
-        result->setSource0_RGB(source);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "source1-rgb"))) {
-        TexEnvCombine::SourceParam source = TexEnvCombine::PREVIOUS;
-        findAttr(sourceParams, p, source);
-        result->setSource1_RGB(source);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "source2-rgb"))) {
-        TexEnvCombine::SourceParam source = TexEnvCombine::CONSTANT;
-        findAttr(sourceParams, p, source);
-        result->setSource2_RGB(source);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "source0-alpha"))) {
-        TexEnvCombine::SourceParam source = TexEnvCombine::TEXTURE;
-        findAttr(sourceParams, p, source);
-        result->setSource0_Alpha(source);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "source1-alpha"))) {
-        TexEnvCombine::SourceParam source = TexEnvCombine::PREVIOUS;
-        findAttr(sourceParams, p, source);
-        result->setSource1_Alpha(source);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "source2-alpha"))) {
-        TexEnvCombine::SourceParam source = TexEnvCombine::CONSTANT;
-        findAttr(sourceParams, p, source);
-        result->setSource2_Alpha(source);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "operand0-rgb"))) {
-        TexEnvCombine::OperandParam op = TexEnvCombine::SRC_COLOR;
-        findAttr(operandParams, p, op);
-        result->setOperand0_RGB(op);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "operand1-rgb"))) {
-        TexEnvCombine::OperandParam op = TexEnvCombine::SRC_COLOR;
-        findAttr(operandParams, p, op);
-        result->setOperand1_RGB(op);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "operand2-rgb"))) {
-        TexEnvCombine::OperandParam op = TexEnvCombine::SRC_ALPHA;
-        findAttr(operandParams, p, op);
-        result->setOperand2_RGB(op);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "operand0-alpha"))) {
-        TexEnvCombine::OperandParam op = TexEnvCombine::SRC_ALPHA;
-        findAttr(operandParams, p, op);
-        result->setOperand0_Alpha(op);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "operand1-alpha"))) {
-        TexEnvCombine::OperandParam op = TexEnvCombine::SRC_ALPHA;
-        findAttr(operandParams, p, op);
-        result->setOperand1_Alpha(op);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "operand2-alpha"))) {
-        TexEnvCombine::OperandParam op = TexEnvCombine::SRC_ALPHA;
-        findAttr(operandParams, p, op);
-        result->setOperand2_Alpha(op);
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "scale-rgb"))) {
-        result->setScale_RGB(p->getValue<float>());
-    }
-    if ((p = getEffectPropertyChild(effect, envProp, "scale-alpha"))) {
-        result->setScale_Alpha(p->getValue<float>());
-    }
-#if 0
-    if ((p = getEffectPropertyChild(effect, envProp, "constant-color"))) {
-        SGVec4d color = p->getValue<SGVec4d>();
-        result->setConstantColor(toOsg(color));
-    } else if ((p = getEffectPropertyChild(effect, envProp,
-                                           "light-direction"))) {
-        SGVec3d direction = p->getValue<SGVec3d>();
-        result->setConstantColorAsLightDirection(toOsg(direction));
-    }
-#endif
-    const SGPropertyNode* colorNode = envProp->getChild("constant-color");
-    if (colorNode) {
-    	initFromParameters(effect, colorNode, result,
-                           &TexEnvCombine::setConstantColor, colorFields,
-                           options);
-    }
-    return result;
-}
-
-EffectNameValue<TexGen::Mode> tgenModeInit[] =
-{
-    { "object-linear", TexGen::OBJECT_LINEAR},
-    { "eye-linear", TexGen::EYE_LINEAR},
-    { "sphere-map", TexGen::SPHERE_MAP},
-    { "normal-map", TexGen::NORMAL_MAP},
-    { "reflection-map", TexGen::REFLECTION_MAP}
-};
-
-EffectPropertyMap<TexGen::Mode> tgenModes(tgenModeInit);
-
-EffectNameValue<TexGen::Coord> tgenCoordInit[] =
-{
-    {"s", TexGen::S},
-    {"t", TexGen::T},
-    {"r", TexGen::R},
-    {"q", TexGen::Q}
-};
-
-EffectPropertyMap<TexGen::Coord> tgenCoords(tgenCoordInit);
-
-TexGen* buildTexGen(Effect* effect, const SGPropertyNode* tgenProp)
-{
-    if (!isAttributeActive(effect, tgenProp))
-        return 0;
-    TexGen* result = new TexGen;
-    TexGen::Mode mode = TexGen::OBJECT_LINEAR;
-    findAttr(tgenModes, getEffectPropertyChild(effect, tgenProp, "mode"), mode);
-    result->setMode(mode);
-    const SGPropertyNode* planesNode = tgenProp->getChild("planes");
-    if (planesNode) {
-        for (int i = 0; i < planesNode->nChildren(); ++i) {
-            const SGPropertyNode* planeNode = planesNode->getChild(i);
-            TexGen::Coord coord;
-            findAttr(tgenCoords, planeNode->getNameString(), coord);
-            const SGPropertyNode* realNode
-                = getEffectPropertyNode(effect, planeNode);
-            SGVec4d plane = realNode->getValue<SGVec4d>();
-            result->setPlane(coord, toOsg(plane));
-        }
-    }
-    return result;
 }
 
 bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)

@@ -53,7 +53,6 @@
 #include <osg/ShadeModel>
 #include <osg/StateSet>
 #include <osg/Stencil>
-#include <osg/TexEnv>
 #include <osg/Texture1D>
 #include <osg/Texture2D>
 #include <osg/Texture3D>

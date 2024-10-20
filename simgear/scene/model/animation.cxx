@@ -508,9 +508,6 @@ SGAnimation::animate(simgear::SGTransientModelData &modelData)
   if (type == "billboard") {
     SGBillboardAnimation anim(modelData);
     anim.apply(modelData);
-  } else if (type == "blend") {
-    SGBlendAnimation anim(modelData);
-    anim.apply(modelData);
   } else if (type == "dist-scale") {
     SGDistScaleAnimation anim(modelData);
     anim.apply(modelData);
@@ -1948,126 +1945,6 @@ SGSelectAnimation::createAnimationGroup(osg::Group& parent)
   cn->addChild(grp);
   parent.addChild(cn);
   return grp;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-// Blend animation installer
-//////////////////////////////////////////////////////////////////////
-
-// XXX This needs to be replaced by something using TexEnvCombine to
-// change the blend factor. Changing the alpha values in the geometry
-// is bogus.
-class SGBlendAnimation::BlendVisitor : public osg::NodeVisitor {
-public:
-  BlendVisitor(float blend) :
-    osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-    _blend(blend)
-  { setVisitorType(osg::NodeVisitor::NODE_VISITOR); }
-  virtual void apply(osg::Node& node)
-  {
-    updateStateSet(node.getStateSet());
-    traverse(node);
-  }
-  virtual void apply(osg::Geode& node)
-  {
-    apply((osg::Node&)node);
-    unsigned nDrawables = node.getNumDrawables();
-    for (unsigned i = 0; i < nDrawables; ++i) {
-      osg::Drawable* drawable = node.getDrawable(i);
-      osg::Geometry* geometry = drawable->asGeometry();
-      if (!geometry)
-        continue;
-      osg::Array* array = geometry->getColorArray();
-      if (!array)
-        continue;
-      osg::Vec4Array* vec4Array = dynamic_cast<osg::Vec4Array*>(array);
-      if (!vec4Array)
-        continue;
-      for (unsigned k = 0; k < vec4Array->size(); ++k) {
-        (*vec4Array)[k][3] = _blend;
-      }
-      vec4Array->dirty();
-      updateStateSet(drawable->getStateSet());
-    }
-  }
-  void updateStateSet(osg::StateSet* stateSet)
-  {
-    if (!stateSet)
-      return;
-    osg::StateAttribute* stateAttribute;
-    stateAttribute = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
-    if (!stateAttribute)
-      return;
-    osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
-    if (!material)
-      return;
-    material->setAlpha(osg::Material::FRONT_AND_BACK, _blend);
-    if (_blend < 1) {
-      stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-      stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-    } else {
-      stateSet->setRenderingHint(osg::StateSet::DEFAULT_BIN);
-    }
-  }
-private:
-  float _blend;
-};
-
-class SGBlendAnimation::UpdateCallback : public osg::NodeCallback {
-public:
-  UpdateCallback(const SGPropertyNode* configNode, const SGExpressiond* v) :
-    _prev_value(-1),
-    _animationValue(v)
-  {
-      setName("SGBlendAnimation::UpdateCallback");
-  }
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  {
-    double blend = _animationValue->getValue();
-    if (blend != _prev_value) {
-      _prev_value = blend;
-      BlendVisitor visitor(1-blend);
-      node->accept(visitor);
-    }
-    traverse(node, nv);
-  }
-public:
-  double _prev_value;
-  SGSharedPtr<SGExpressiond const> _animationValue;
-};
-
-
-SGBlendAnimation::SGBlendAnimation(simgear::SGTransientModelData &modelData) :
-    SGAnimation(modelData), _animationValue(read_value(modelData.getConfigNode(), modelData.getModelRoot(), "", 0, 1))
-{
-    if (!_animationValue) {
-        throw sg_format_exception("Invalid blend expression", "Invalid value");
-    }
-}
-
-osg::Group*
-SGBlendAnimation::createAnimationGroup(osg::Group& parent)
-{
-  if (!_animationValue)
-    return 0;
-
-  osg::Group* group = new osg::Switch;
-  group->setName("blend animation node");
-  group->setUpdateCallback(new UpdateCallback(getConfig(), _animationValue));
-  parent.addChild(group);
-  return group;
-}
-
-void
-SGBlendAnimation::install(osg::Node& node)
-{
-  SGAnimation::install(node);
-  // make sure we do not change common geometries,
-  // that also creates new display lists for these subgeometries.
-  cloneDrawables(node);
-  DoDrawArraysVisitor visitor;
-  node.accept(visitor);
 }
 
 

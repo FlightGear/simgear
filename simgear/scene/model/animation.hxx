@@ -263,22 +263,6 @@ public:
 
 
 //////////////////////////////////////////////////////////////////////
-// Blend animation installer
-//////////////////////////////////////////////////////////////////////
-
-class SGBlendAnimation : public SGAnimation {
-public:
-  SGBlendAnimation(simgear::SGTransientModelData &modelData);
-  virtual osg::Group* createAnimationGroup(osg::Group& parent);
-  virtual void install(osg::Node& node);
-private:
-  class BlendVisitor;
-  class UpdateCallback;
-  SGSharedPtr<SGExpressiond> _animationValue;
-};
-
-
-//////////////////////////////////////////////////////////////////////
 // Timed animation installer
 //////////////////////////////////////////////////////////////////////
 

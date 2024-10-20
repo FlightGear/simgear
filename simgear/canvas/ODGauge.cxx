@@ -262,17 +262,6 @@ namespace canvas
                            osg::PolygonMode::FILL),
       osg::StateAttribute::ON);
 
-    //--------------------------------------------------------------------------
-    // XXX: Fixed-function pipeline stuff. Should go away when we go
-    // core-profile only.
-    stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
-    stateSet->setAttributeAndModes(
-      new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.001f),
-      osg::StateAttribute::ON);
-    stateSet->setAttribute(new osg::ShadeModel(osg::ShadeModel::FLAT));
-    //--------------------------------------------------------------------------
-
     texture = new osg::Texture2D;
     texture->setUseHardwareMipMapGeneration(true);
     texture->setResizeNonPowerOfTwoHint(false);

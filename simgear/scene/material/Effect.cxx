@@ -427,47 +427,6 @@ osg::Vec4f getColor(const SGPropertyNode* prop)
     }
 }
 
-struct LightingBuilder : public PassAttributeBuilder
-{
-    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterOptions* options);
-};
-
-void LightingBuilder::buildAttribute(Effect* effect, Pass* pass,
-                                     const SGPropertyNode* prop,
-                                     const SGReaderWriterOptions* options)
-{
-    const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
-    if (!realProp)
-        return;
-    pass->setMode(GL_LIGHTING, (realProp->getValue<bool>() ? StateAttribute::ON
-                                : StateAttribute::OFF));
-}
-
-InstallAttributeBuilder<LightingBuilder> installLighting("lighting");
-
-struct ShadeModelBuilder : public PassAttributeBuilder
-{
-    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterOptions* options)
-    {
-        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
-        if (!realProp)
-            return;
-        StateAttributeFactory *attrFact = StateAttributeFactory::instance();
-        string propVal = realProp->getStringValue();
-        if (propVal == "flat")
-            pass->setAttribute(attrFact->getFlatShadeModel());
-        else if (propVal == "smooth")
-            pass->setAttribute(attrFact->getSmoothShadeModel());
-        else
-            SG_LOG(SG_INPUT, SG_ALERT,
-                   "invalid shade model property " << propVal);
-    }
-};
-
-InstallAttributeBuilder<ShadeModelBuilder> installShadeModel("shade-model");
-
 struct CullFaceBuilder : PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
@@ -565,74 +524,6 @@ struct RenderBinBuilder : public PassAttributeBuilder
 };
 
 InstallAttributeBuilder<RenderBinBuilder> installRenderBin("render-bin");
-
-struct MaterialBuilder : public PassAttributeBuilder
-{
-    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterOptions* options);
-};
-
-EffectNameValue<Material::ColorMode> colorModeInit[] =
-{
-    { "ambient", Material::AMBIENT },
-    { "ambient-and-diffuse", Material::AMBIENT_AND_DIFFUSE },
-    { "diffuse", Material::DIFFUSE },
-    { "emissive", Material::EMISSION },
-    { "specular", Material::SPECULAR },
-    { "off", Material::OFF }
-};
-EffectPropertyMap<Material::ColorMode> colorModes(colorModeInit);
-
-void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
-                                     const SGPropertyNode* prop,
-                                     const SGReaderWriterOptions* options)
-{
-    if (!isAttributeActive(effect, prop))
-        return;
-
-    // REVIEW: Memory Leak - 20,160 bytes in 72 blocks are still reachable
-    Material* mat = new Material;
-    const SGPropertyNode* color = 0;
-    if ((color = getEffectPropertyChild(effect, prop, "ambient")))
-        mat->setAmbient(Material::FRONT_AND_BACK, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "ambient-front")))
-        mat->setAmbient(Material::FRONT, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "ambient-back")))
-        mat->setAmbient(Material::BACK, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "diffuse")))
-        mat->setDiffuse(Material::FRONT_AND_BACK, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "diffuse-front")))
-        mat->setDiffuse(Material::FRONT, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "diffuse-back")))
-        mat->setDiffuse(Material::BACK, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "specular")))
-        mat->setSpecular(Material::FRONT_AND_BACK, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "specular-front")))
-        mat->setSpecular(Material::FRONT, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "specular-back")))
-        mat->setSpecular(Material::BACK, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "emissive")))
-        mat->setEmission(Material::FRONT_AND_BACK, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "emissive-front")))
-        mat->setEmission(Material::FRONT, getColor(color));
-    if ((color = getEffectPropertyChild(effect, prop, "emissive-back")))
-        mat->setEmission(Material::BACK, getColor(color));
-    const SGPropertyNode* shininess = 0;
-    mat->setShininess(Material::FRONT_AND_BACK, 0.0f);
-    if ((shininess = getEffectPropertyChild(effect, prop, "shininess")))
-        mat->setShininess(Material::FRONT_AND_BACK, shininess->getFloatValue());
-    if ((shininess = getEffectPropertyChild(effect, prop, "shininess-front")))
-        mat->setShininess(Material::FRONT, shininess->getFloatValue());
-    if ((shininess = getEffectPropertyChild(effect, prop, "shininess-back")))
-        mat->setShininess(Material::BACK, shininess->getFloatValue());
-    Material::ColorMode colorMode = Material::OFF;
-    findAttr(colorModes, getEffectPropertyChild(effect, prop, "color-mode"),
-             colorMode);
-    mat->setColorMode(colorMode);
-    pass->setAttribute(mat);
-}
-
-InstallAttributeBuilder<MaterialBuilder> installMaterial("material");
 
 EffectNameValue<BlendFunc::BlendFuncMode> blendFuncModesInit[] =
 {
@@ -824,58 +715,6 @@ EffectNameValue<AlphaFunc::ComparisonFunction> alphaComparisonInit[] =
 };
 EffectPropertyMap<AlphaFunc::ComparisonFunction>
 alphaComparison(alphaComparisonInit);
-
-struct AlphaTestBuilder : public PassAttributeBuilder
-{
-    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterOptions* options)
-    {
-        if (!isAttributeActive(effect, prop))
-            return;
-        // XXX Compatibility with early <alpha-test> syntax; should go away
-        // before a release
-        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
-        if (!realProp)
-            return;
-        if (realProp->nChildren() == 0) {
-            pass->setMode(GL_ALPHA_TEST, (realProp->getBoolValue()
-                                     ? StateAttribute::ON
-                                     : StateAttribute::OFF));
-            return;
-        }
-
-        const SGPropertyNode* pmode = getEffectPropertyChild(effect, prop,
-                                                             "mode");
-        // XXX When dynamic parameters are supported, this code should
-        // create the blend function even if the mode is off.
-        if (pmode && !pmode->getValue<bool>()) {
-            pass->setMode(GL_ALPHA_TEST, StateAttribute::OFF);
-            return;
-        }
-        const SGPropertyNode* pComp = getEffectPropertyChild(effect, prop,
-                                                             "comparison");
-        const SGPropertyNode* pRef = getEffectPropertyChild(effect, prop,
-                                                             "reference");
-
-        AlphaFunc::ComparisonFunction func = AlphaFunc::ALWAYS;
-        float refValue = 1.0f;
-        if (pComp)
-            findAttr(alphaComparison, pComp, func);
-        if (pRef)
-            refValue = pRef->getValue<float>();
-        if (func == AlphaFunc::GREATER && osg::equivalent(refValue, 1.0f)) {
-            pass->setAttributeAndModes(StateAttributeFactory::instance()
-                                       ->getStandardAlphaFunc());
-        } else {
-            AlphaFunc* alphaFunc = new AlphaFunc;
-            alphaFunc->setFunction(func);
-            alphaFunc->setReferenceValue(refValue);
-            pass->setAttributeAndModes(alphaFunc);
-        }
-    }
-};
-
-InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
 
 InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 

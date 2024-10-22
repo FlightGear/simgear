@@ -51,6 +51,8 @@
 #include "galaxy.hxx"
 
 using namespace simgear;
+using std::max;
+using std::min;
 
 // Constructor
 SGGalaxy::SGGalaxy( SGPropertyNode* props )

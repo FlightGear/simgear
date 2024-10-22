@@ -248,7 +248,7 @@ private:
 
     
     InstallRef m_owner;
-    string m_activeURL;
+    std::string m_activeURL;
     string_list m_urls;
     SG_MD5_CTX m_md5;
     SGPath m_extractPath;

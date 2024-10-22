@@ -281,7 +281,7 @@ public:
         }
 
         sg_ifstream thumbnailStream(path, std::ios::in | std::ios::binary);
-        string bytes = thumbnailStream.read_all();
+        std::string bytes = thumbnailStream.read_all();
         fireDataForThumbnail(url, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
     }
 
@@ -909,7 +909,7 @@ string_list Root::explicitlyRemovedCatalogs() const {
 
 PackageList Root::packagesProviding(const std::string& path, bool onlyInstalled) const
 {
-    string modPath = path;
+    std::string modPath = path;
     auto inferredType = AnyPackageType;
     if (strutils::starts_with(path, "Aircraft/")) {
         inferredType = AircraftPackage;
@@ -919,7 +919,7 @@ PackageList Root::packagesProviding(const std::string& path, bool onlyInstalled)
         modPath = path.substr(12);
     }
 
-    string subPath;
+    std::string subPath;
     const auto firstSeperatorPos = modPath.find('/');
     if (firstSeperatorPos != std::string::npos) {
         subPath = modPath.substr(firstSeperatorPos + 1);

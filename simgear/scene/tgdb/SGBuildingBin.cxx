@@ -54,6 +54,8 @@
 #include "SGBuildingBin.hxx"
 
 using namespace osg;
+using std::max;
+using std::min;
 
 namespace simgear
 {

@@ -102,7 +102,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
     const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
     const SGGeod loc = SGGeod::fromCart(toSG(world));
     const SGBucket bucket = SGBucket(loc);
-    string material_name = "";
+    std::string material_name = "";
     for (auto roads = _lineFeatureLists.begin(); roads != _lineFeatureLists.end(); ++roads) {
         auto r = *roads;
         if (r.first != bucket) continue;

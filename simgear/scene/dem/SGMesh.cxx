@@ -54,7 +54,7 @@ For raw point clouds, fits plane to k nearest neighbors.
 #define SKIP_TEST        SKIP_MULT_LVL2
 
 
-using namespace std;
+using std::string;
 
 SGMesh::SGMesh( const SGDemPtr dem,
                 unsigned wo, unsigned so,

@@ -42,6 +42,9 @@
 #define GL_FLOAT_32_UNSIGNED_INT_24_8_REV 0x8DAD
 #endif
 
+using std::max;
+using std::min;
+
 namespace simgear {
 namespace compositor {
 

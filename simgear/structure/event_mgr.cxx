@@ -186,7 +186,8 @@ void SGTimerQueue::dump()
     }
 }
 
-bool SGTimerQueue::removeByName(const string &name) {
+bool SGTimerQueue::removeByName(const std::string& name)
+{
     for (size_t i=0; i < _table.size(); ++i) {
         if (_table[i].timer->name == name) {
             std::pop_heap(_table.begin()+i, _table.end(), std::greater<>());

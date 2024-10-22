@@ -185,11 +185,11 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
 
 class UniformFactoryImpl {
 public:
-    osg::ref_ptr<osg::Uniform> getUniform( Effect * effect,
-                                 const string & name,
-                                 osg::Uniform::Type uniformType,
-                                 SGConstPropertyNode_ptr valProp,
-                                 const SGReaderWriterOptions* options );
+    osg::ref_ptr<osg::Uniform> getUniform(Effect* effect,
+                                          const std::string& name,
+                                          osg::Uniform::Type uniformType,
+                                          SGConstPropertyNode_ptr valProp,
+                                          const SGReaderWriterOptions* options);
     void updateListeners( SGPropertyNode* propRoot );
     void addListener(DeferredPropertyListener* listener);
     void reset();

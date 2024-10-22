@@ -59,6 +59,8 @@
 
 using namespace osgTerrain;
 using namespace simgear;
+using std::max;
+using std::min;
 
 VPBTechnique::VPBTechnique()
 {
@@ -69,8 +71,7 @@ VPBTechnique::VPBTechnique()
     setOptions(SGReaderWriterOptions::copyOrCreate(NULL));
 }
 
-VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const string fileName):
-    _fileName(fileName)
+VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName) : _fileName(fileName)
 {
     setFilterBias(0);
     setFilterWidth(0.1);
@@ -1462,9 +1463,9 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
         const double D = det2(ll_x, ll_y);
 
         for(auto const &point : scan_points) {
-            const double lon = get<0>(point);
-            const double lat = get<1>(point);
-            VPBMaterialHandler *handler = get<2>(point);
+            const double lon = std::get<0>(point);
+            const double lat = std::get<1>(point);
+            VPBMaterialHandler *handler = std::get<2>(point);
 
             osg::Vec2d p(lon, lat);
             double x = det2(ll_x, p) / D;

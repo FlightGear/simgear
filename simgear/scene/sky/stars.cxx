@@ -57,6 +57,8 @@
 #include "stars.hxx"
 
 using namespace simgear;
+using std::max;
+using std::min;
 
 // Constructor
 SGStars::SGStars( SGPropertyNode* props ) :

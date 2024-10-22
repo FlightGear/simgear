@@ -104,7 +104,7 @@ namespace canvas
     }
   private:
     osg::Texture2D *_texture;
-    mutable list<CanvasImageReadyListener*> _subscribers;
+    mutable std::list<CanvasImageReadyListener*> _subscribers;
     mutable OpenThreads::Mutex _lock;
     mutable double _previousFrameTick;
     double _min_delta_tick = 1.0 / 8.0;

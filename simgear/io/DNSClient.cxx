@@ -109,10 +109,9 @@ SRVRequest::SRVRequest( const std::string & dn ) :
     _type = DNS_T_SRV;
 }
 
-SRVRequest::SRVRequest( const std::string & dn, const string & service, const string & protocol ) :
-        Request(dn),
-        _service(service),
-        _protocol(protocol)
+SRVRequest::SRVRequest(const std::string& dn, const std::string& service, const std::string& protocol) : Request(dn),
+                                                                                                         _service(service),
+                                                                                                         _protocol(protocol)
 {
     _type = DNS_T_SRV;
 }
@@ -183,7 +182,7 @@ static void dnscbTXT(struct dns_ctx *ctx, struct dns_rr_txt *result, void *data)
                     continue;
                 }
 
-                const string txt{rawTxt};
+                const std::string txt{rawTxt};
                 r->entries.push_back(txt);
                 string_list tokens = simgear::strutils::split(txt, "=", 1);
                 if (tokens.size() == 2) {

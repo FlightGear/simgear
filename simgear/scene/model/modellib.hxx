@@ -79,9 +79,9 @@ public:
                                      SGPropertyNode *prop_root = NULL,
                                      SGModelData *data=0);
 
-   static osg::PagedLOD* loadPagedModel(std::vector<string> paths,
-                                    SGPropertyNode *prop_root = NULL,
-                                    SGModelData *data=0);
+    static osg::PagedLOD* loadPagedModel(std::vector<std::string> paths,
+                                         SGPropertyNode* prop_root = NULL,
+                                         SGModelData* data = 0);
 
     static std::string findDataFile(const std::string& file,
       const osgDB::Options* opts = nullptr,
@@ -124,12 +124,11 @@ public:
 class SGModelLOD {
 public:
   struct ModelLOD {
-    ModelLOD(const string &p, float minrange, float maxrange) :
-      path(p), min_range(minrange), max_range(maxrange)
+      ModelLOD(const std::string& p, float minrange, float maxrange) : path(p), min_range(minrange), max_range(maxrange)
       { }
-    const string &path;
-    float min_range;
-    float max_range;
+      const std::string path;
+      float min_range;
+      float max_range;
   };
 typedef std::vector<ModelLOD> ModelLODList;
 
@@ -138,7 +137,7 @@ void insert(const ModelLOD& model)
   _models.push_back(model);
 }
 
-void insert(const string &p, float minrange, float maxrange)
+void insert(const std::string& p, float minrange, float maxrange)
 {
   insert(ModelLOD(p, minrange, maxrange));
 }

@@ -147,9 +147,9 @@ public:
     void setInstantiateMaterialEffects(bool instantiateMaterialEffects)
     { _instantiateMaterialEffects = instantiateMaterialEffects; }
 
-    string getMaterialName() const
+    std::string getMaterialName() const
     { return _materialName; }
-    void setMaterialName(string materialName)
+    void setMaterialName(const std::string& materialName)
     { _materialName = materialName; }
 
     const string_list& getSceneryPathSuffixes() const
@@ -222,7 +222,7 @@ private:
     
     bool _instantiateEffects;
     bool _instantiateMaterialEffects;
-    string _materialName;
+    std::string _materialName;
     string_list _sceneryPathSuffixes;
     bool _autoTooltipsMaster;
     int _autoTooltipsMasterMax;

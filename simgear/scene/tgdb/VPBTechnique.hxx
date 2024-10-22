@@ -50,7 +50,7 @@ class VPBTechnique : public TerrainTechnique
     public:
 
         VPBTechnique();
-        VPBTechnique(const SGReaderWriterOptions* options, const string fileName);
+        VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName);
 
         /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
         VPBTechnique(const VPBTechnique&,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY);
@@ -325,7 +325,7 @@ class VPBTechnique : public TerrainTechnique
         osg::Matrix3                        _filterMatrix;
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
-        const string                        _fileName;
+        const std::string _fileName;
         osg::ref_ptr<osg::Group>            _randomObjectsConstraintGroup;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();

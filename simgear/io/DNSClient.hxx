@@ -101,7 +101,7 @@ class SRVRequest : public Request
 {
 public:
     SRVRequest( const std::string & dn );
-    SRVRequest( const std::string & dn, const string & service, const string & protocol );
+    SRVRequest(const std::string& dn, const std::string& service, const std::string& protocol);
     void submit(Client* client) override;
 
     struct SRV : SGReferenced {
@@ -124,7 +124,7 @@ public:
     TXTRequest( const std::string & dn );
     void submit(Client* client) override;
 
-    typedef std::vector<string> TXT_list;
+    typedef std::vector<std::string> TXT_list;
     typedef std::map<std::string,std::string> TXT_Attribute_map;
     TXT_list entries;
     TXT_Attribute_map attributes;

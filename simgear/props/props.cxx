@@ -849,10 +849,9 @@ find_last_child (SGPropertyLockExclusive& exclusive, const char * name, const Pr
 
   for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
-    if (node->getNameString() == string(name))
-    {
-      int idx = node->getIndex();
-      if (idx > index) index = idx;
+    if (node->getNameString() == name) {
+        int idx = node->getIndex();
+        if (idx > index) index = idx;
     }
   }
   return index;
@@ -2076,8 +2075,7 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
         if (i == token.end() || *i != ']')
           throw std::runtime_error("unterminated index (looking for ']')");
       } else {
-          throw std::runtime_error(string{"illegal characters in token: "}
-          + std::string(name.begin(), name.end()));
+          throw std::runtime_error(std::string{"illegal characters in token: "} + std::string(name.begin(), name.end()));
       }
     }
   }
@@ -2303,7 +2301,7 @@ SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(_name))
-      throw std::invalid_argument(string{"plain name expected instead of '"} + _name + '\'');
+      throw std::invalid_argument(std::string{"plain name expected instead of '"} + _name + '\'');
   if (0) std::cerr << __FILE__ << ":" << __LINE__ << ":"
         << " SGPropertyNode()"
         << " this=" << this
@@ -2328,7 +2326,7 @@ SGPropertyNode::SGPropertyNode( const std::string& name,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(name))
-    throw std::invalid_argument(string{"plain name expected instead of '"} + _name + '\'');
+      throw std::invalid_argument(std::string{"plain name expected instead of '"} + _name + '\'');
 }
 
 /**

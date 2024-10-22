@@ -56,6 +56,9 @@
 
 using namespace osgTerrain;
 using namespace simgear;
+using std::max;
+using std::min;
+
 
 VPBRasterRenderer::VPBRasterRenderer(const SGPropertyNode* propertyNode, osg::ref_ptr<TerrainTile> tile, const osg::Vec3d world, unsigned int tile_width, unsigned int tile_height) :
 _tile(tile),_world(world),_tile_width(tile_width),_tile_height(tile_height)

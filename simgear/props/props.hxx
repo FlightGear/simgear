@@ -45,11 +45,6 @@
 #include <simgear/structure/SGSourceLocation.hxx>
 #include <simgear/structure/SGWeakPtr.hxx>
 
-// XXX This whole file should be in the simgear namespace, but I don't
-// have the guts yet...
-
-using namespace std;
-
 namespace simgear
 {
 

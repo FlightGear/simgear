@@ -385,7 +385,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     }
 
     // surface values for use with ground reactions
-    string propval = props->getStringValue("solid/property", "");
+    auto propval = props->getStringValue("solid/property", "");
     if (propval != "") {
         _solid_property = prop_root->getNode(propval, true);
         _solid_is_prop  =true;

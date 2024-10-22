@@ -187,10 +187,10 @@ Effect* getLightEffect(double average_size, double average_intensity, const SGRe
      */
 
     // Clamp intensity between 0 and 50000 candelas
-    average_intensity = min(max(0.0, average_intensity), 50000.0);
+    average_intensity = std::clamp(average_intensity, 0.0, 50000.0);
 
     // Scale size from cm to what OpenGL extensions expects
-    average_size = 1 + 50 * min(max(0.0, average_size), 500.0)/500.0;
+    average_size = 1 + 50 * std::clamp(average_size, 0.0, 500.0) / 500.0;
 
     SGPropertyNode* params = makeChild(effectProp, "parameters");
     params->getNode("size",true)->setValue(average_size);

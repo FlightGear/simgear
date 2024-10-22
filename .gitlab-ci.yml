@@ -11,6 +11,7 @@ variables:
   MAC_IMAGE: macos-14-xcode-15
   OSG_REF: fgfs-osg-36-2
   BRANCH_REF: next
+  HOMEBREW_NO_AUTO_UPDATE: 1
 
 linux-build:
   image: registry.gitlab.com/flightgear/flightgear
@@ -136,4 +137,7 @@ staging:
   stage: deploy
   trigger:
     project: flightgear/flightgear
-    branch: next
+    branch: $CI_COMMIT_BRANCH
+    strategy: depend
+  inherit: 
+    variables: false

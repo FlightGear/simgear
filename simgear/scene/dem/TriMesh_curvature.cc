@@ -14,7 +14,7 @@ Uses algorithm from
 #include "TriMesh.h"
 #include "TriMesh_algo.h"
 #include "lineqn.h"
-using namespace std;
+using std::string;
 
 
 // i+1 and i-1 modulo 3

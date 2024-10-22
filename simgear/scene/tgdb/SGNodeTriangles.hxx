@@ -1,3 +1,5 @@
+#pragma once
+
 // future API - just run through once to convert from OSG to SG
 // then we can use these triangle lists for random 
 // trees/lights/buildings/objects
@@ -295,6 +297,9 @@ public:
                              std::vector<SGVec3f>& points,
 			     std::vector<SGVec3f>& normals)
     {
+        using std::max;
+        using std::min;
+
         if ( !geometries.empty() ) {
             const osg::Vec3Array* vertices  = dynamic_cast<osg::Vec3Array*>(geometries[0]->getVertexArray());
             const osg::Vec2Array* texcoords = dynamic_cast<osg::Vec2Array*>(geometries[0]->getTexCoordArray(0));

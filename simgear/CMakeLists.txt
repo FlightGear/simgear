@@ -137,6 +137,11 @@ if (NOT SYSTEM_EXPAT)
     target_compile_definitions(SimGearCore PRIVATE HAVE_SIMGEAR_EXPAT_CONFIG_H XML_STATIC)
 endif()
 
+if (MSVC)
+    message(WARNING "FIXME: setting _HAS_STD_BYTE=0 for SimGear build, this needs to be fixed.")
+    target_compile_definitions(SimGearCore PRIVATE _HAS_STD_BYTE=0)
+endif()
+
 install(TARGETS SimGearCore
         EXPORT SimGearTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

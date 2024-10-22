@@ -28,7 +28,10 @@
 #include <cstring>
 
 using namespace simgear;
-using namespace std;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::string;
 
 bool keepRunning = true;
 

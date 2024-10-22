@@ -38,6 +38,9 @@
 #include <simgear/structure/exception.hxx>
 
 using namespace simgear;
+using std::cerr;
+using std::cout;
+using std::endl;
 
 std::string readFileIntoString(const SGPath& path)
 {

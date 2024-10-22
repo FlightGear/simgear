@@ -508,8 +508,7 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
         if (i == token.end() || *i != ']')
           throw std::string("unterminated index (looking for ']')");
       } else {
-        throw std::string("illegal characters in token: ")
-          + std::string(name.begin(), name.end());
+          throw std::runtime_error(std::string{"illegal characters in token: "} + std::string(name.begin(), name.end()));
       }
     }
   }
@@ -948,7 +947,14 @@ SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(_name))
-    throw std::string("plain name expected instead of '") + _name + '\'';
+      throw std::invalid_argument(std::string{"plain name expected instead of '"} + _name + '\'');
+  if (0) std::cerr << __FILE__ << ":" << __LINE__ << ":"
+        << " SGPropertyNode()"
+        << " this=" << this
+        << " _name=" << _name
+        << " SGReferenced::count(this)=" << SGReferenced::count(this)
+        << " SGReferenced::shared(this)=" << SGReferenced::shared(this)
+        << "\n";
 }
 
 SGPropertyNode::SGPropertyNode( const std::string& name,
@@ -965,7 +971,7 @@ SGPropertyNode::SGPropertyNode( const std::string& name,
   _local_val.string_val = 0;
   _value.val = 0;
   if (!validateName(name))
-    throw std::string("plain name expected instead of '") + _name + '\'';
+      throw std::invalid_argument(std::string{"plain name expected instead of '"} + _name + '\'');
 }
 
 /**

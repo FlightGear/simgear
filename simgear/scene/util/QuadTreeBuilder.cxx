@@ -20,7 +20,7 @@
 
 #include "QuadTreeBuilder.hxx"
 
-using namespace std;
+using std::string;
 using namespace osg;
 
 namespace simgear

@@ -281,7 +281,7 @@ public:
         }
 
         sg_ifstream thumbnailStream(path, std::ios::in | std::ios::binary);
-        string bytes = thumbnailStream.read_all();
+        std::string bytes = thumbnailStream.read_all();
         fireDataForThumbnail(url, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
     }
 

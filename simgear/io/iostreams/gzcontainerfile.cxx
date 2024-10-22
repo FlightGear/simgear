@@ -51,7 +51,7 @@
 
 #include <string.h>
 
-using namespace std;
+using std::string;
 using namespace simgear;
 
 #if 1
@@ -129,7 +129,7 @@ gzContainerWriter::writeContainer(ContainerType Type, const char* stringBuffer)
 bool
 gzContainerWriter::writeContainer(ContainerType Type, SGPropertyNode* root)
 {
-    stringstream oss;
+    std::stringstream oss;
     writeProperties(oss, root, true);
     return writeContainer(Type, oss.str().c_str());
 }
@@ -173,10 +173,7 @@ gzContainerReader::gzContainerReader(const SGPath& name,
         {
             SG_LOG(SG_IO, SG_ALERT, "File format not recognized. Missing file header: " << filename);
             ok = false;
-        }
-        else
-        if ((HeaderType != Type)||(strcmp(FileHeader, fileMagic.c_str())))
-        {
+        } else if ((HeaderType != Type) || (strcmp(FileHeader, fileMagic.c_str()))) {
             SG_LOG(SG_IO, MY_SG_DEBUG, "Invalid header. Container type " << Type << ", Header " <<
                    ((FileHeader) ? FileHeader : "(none)"));
             SG_LOG(SG_IO, SG_ALERT, "File not recognized. This is not a valid '" << fileMagic << "' file: " << filename);

@@ -16,7 +16,7 @@ For raw point clouds, fits plane to k nearest neighbors.
 #include "TriMesh.h"
 #include "KDtree.h"
 #include "lineqn.h"
-using namespace std;
+using std::string;
 
 
 namespace trimesh {

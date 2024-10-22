@@ -1,7 +1,5 @@
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include "AtomicChangeListener.hxx"
 
@@ -13,7 +11,7 @@
 
 namespace simgear
 {
-using namespace std;
+using std::string;
 
 MultiChangeListener::MultiChangeListener()
 {
@@ -38,8 +36,7 @@ void AtomicChangeListener::unregister_property(SGPropertyNode* node)
 {
     _valid = false;
     // not necessary, but good hygine
-    vector<SGPropertyNode*>::iterator itr
-        = find(_watched.begin(), _watched.end(), node);
+    auto itr = find(_watched.begin(), _watched.end(), node);
     if (itr != _watched.end())
         *itr = 0;
     MultiChangeListener::unregister_property(node);
@@ -47,12 +44,8 @@ void AtomicChangeListener::unregister_property(SGPropertyNode* node)
 
 void AtomicChangeListener::fireChangeListeners()
 {
-    vector<SGSharedPtr<AtomicChangeListener> >& listeners
-        = ListenerListSingleton::instance()->listeners;
-    for (vector<SGSharedPtr<AtomicChangeListener> >::iterator itr = listeners.begin(),
-             end = listeners.end();
-         itr != end;
-         ++itr) {
+    auto& listeners = ListenerListSingleton::instance()->listeners;
+    for (auto itr = listeners.begin(), end = listeners.end(); itr != end; ++itr) {
         (*itr)->valuesChanged();
         (*itr)->_dirty = false;
     }

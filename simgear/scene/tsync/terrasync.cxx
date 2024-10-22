@@ -69,7 +69,7 @@
 #include <simgear/math/sg_random.h>
 
 using namespace simgear;
-using namespace std;
+using std::string;
 
 namespace UpdateInterval
 {
@@ -79,7 +79,7 @@ namespace UpdateInterval
     static const double FailedAttempt     = 10*60;
 }
 
-typedef map<string,time_t> TileAgeCache;
+typedef std::map<std::string, time_t> TileAgeCache;
 
 ///////////////////////////////////////////////////////////////////////////////
 // helper functions ///////////////////////////////////////////////////////////
@@ -1395,7 +1395,7 @@ void SGTerraSync::writeWarningFile(const SGPath& sceneryDir)
     os << "To use custom scenery or data with FlightGear, put it in a differnet location\n";
     os << "on your computer, then add the location using either the launcher 'Add-ons' page, or by\n";
     os << "passing '--fg-scenery=<location>' on the command line.";
-    os << endl;
+    os << std::endl;
 }
 
 

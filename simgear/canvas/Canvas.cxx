@@ -102,7 +102,7 @@ namespace canvas
     }
 
     private:
-      mutable list<CanvasImageReadyListener*> _subscribers;
+      mutable std::list<CanvasImageReadyListener*> _subscribers;
       mutable OpenThreads::Mutex _lock;
       mutable double _previousFrameTick;
       double _min_delta_tick;
@@ -317,7 +317,7 @@ namespace canvas
 
       osg::Camera* camera = _texture.getCamera();
 
-      string canvasname = _node->getStringValue("name");
+      std::string canvasname = _node->getStringValue("name");
       int renderToImage = _node->getBoolValue("render-to-image");
 
       if (renderToImage){
@@ -433,7 +433,7 @@ namespace canvas
 
   int Canvas::subscribe(CanvasImageReadyListener * subscriber) {
     osg::Camera* camera = _texture.getCamera();
-    const string canvasname = _node->getStringValue("name");
+    const std::string canvasname = _node->getStringValue("name");
 
     SG_LOG(SG_GENERAL,SG_DEBUG,"CanvasImage: subscribe to canvas " << canvasname.c_str() << ", camera ="<< camera);
 

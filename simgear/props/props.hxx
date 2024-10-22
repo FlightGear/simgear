@@ -39,11 +39,6 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
-// XXX This whole file should be in the simgear namespace, but I don't
-// have the guts yet...
-
-using namespace std;
-
 namespace simgear
 {
 

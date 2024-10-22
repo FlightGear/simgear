@@ -1,24 +1,13 @@
 #ifndef NOTIFICATIONS_hxx
 #define NOTIFICATIONS_hxx
-/*---------------------------------------------------------------------------
-*
-*	Title                : Emesary - class based inter-object communication
-*
-*	File Type            : Implementation File
-*
-*	Description          : simgear notifications
-*
-*  References           : http://www.chateau-logic.com/content/class-based-inter-object-communication
-*
-*	Author               : Richard Harrison (richard@zaretto.com)
-*
-*	Creation Date        : 18 March 2002, rewrite 2017
-*
-*	Version              : $Header: $
-*
-*  Copyright � 2002 - 2017 Richard Harrison           All Rights Reserved.
-*
-*---------------------------------------------------------------------------*/
+
+// SPDX-FileCopyrightText: 2002-2019 Richard Harrison <richard@zaretto.com>
+
+/**
+ * @file
+ * @brief SimGear notification
+ * @see http://www.chateau-logic.com/content/class-based-inter-object-communication
+ */
 
 #include "INotification.hxx"
 

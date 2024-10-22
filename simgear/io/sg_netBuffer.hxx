@@ -1,79 +1,46 @@
-/*
-    Copied from PLIB into SimGear
-    
-     PLIB - A Suite of Portable Game Libraries
-     Copyright (C) 1998,2002  Steve Baker
- 
-     This library is free software; you can redistribute it and/or
-     modify it under the terms of the GNU Library General Public
-     License as published by the Free Software Foundation; either
-     version 2 of the License, or (at your option) any later version.
- 
-     This library is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-     Library General Public License for more details.
- 
-     You should have received a copy of the GNU Library General Public
-     License along with this library; if not, write to the Free Software
-     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
- 
-     For further information visit http://plib.sourceforge.net
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1998, 2002 Steve Baker
 
-     $Id: netBuffer.h 1901 2004-03-21 18:19:11Z sjbaker $
+/**
+ * @file
+ * @brief Network buffer class (copied from PLIB into SimGear)
+ *
+ * Clients and servers built on top of netBufferChannel
+ * automatically support pipelining.
+ *
+ * Pipelining refers to a protocol capability. Normally,
+ * a conversation with a server has a back-and-forth
+ * quality to it.  The client sends a command, and
+ * waits for the response. If a client needs to send
+ * many commands over a high-latency connection,
+ * waiting for each response can take a long time.
+ *
+ * For example, when sending a mail message to many recipients
+ * with SMTP, the client will send a series of RCPT commands, one
+ * for each recipient. For each of these commands, the server will
+ * send back a reply indicating whether the mailbox specified is
+ * valid. If you want to send a message to several hundred recipients,
+ * this can be rather tedious if the round-trip time for each command
+ * is long. You'd like to be able to send a bunch of RCPT commands
+ * in one batch, and then count off the responses to them as they come.
+ *
+ * I have a favorite visual when explaining the advantages of
+ * pipelining. Imagine each request to the server is a boxcar on a train.
+ * The client is in Los Angeles, and the server is in New York.
+ * Pipelining lets you hook all your cars in one long chain; send
+ * them to New York, where they are filled and sent back to you.
+ * Without pipelining you have to send one car at a time.
+ *
+ * Not all protocols allow pipelining. Not all servers support it;
+ * Sendmail, for example, does not support pipelining because it tends
+ * to fork unpredictably, leaving buffered data in a questionable state.
+ * A recent extension to the SMTP protocol allows a server to specify
+ * whether it supports pipelining. HTTP/1.1 explicitly requires that
+ * a server support pipelining.
+ *
+ * @note When a user passes in a buffer object, it belongs to the user.
+ * When the library gives a buffer to the user, the user should copy it.
 */
-
-/****
-* NAME
-*   netBuffer - network buffer class
-*
-* DESCRIPTION
-*   Clients and servers built on top of netBufferChannel
-*   automatically support pipelining.
-*
-*   Pipelining refers to a protocol capability. Normally,
-*   a conversation with a server has a back-and-forth
-*   quality to it.  The client sends a command, and
-*   waits for the response. If a client needs to send
-*   many commands over a high-latency connection,
-*   waiting for each response can take a long time. 
-*
-*   For example, when sending a mail message to many recipients
-*   with SMTP, the client will send a series of RCPT commands, one
-*   for each recipient. For each of these commands, the server will
-*   send back a reply indicating whether the mailbox specified is
-*   valid. If you want to send a message to several hundred recipients,
-*   this can be rather tedious if the round-trip time for each command
-*   is long. You'd like to be able to send a bunch of RCPT commands
-*   in one batch, and then count off the responses to them as they come. 
-*
-*   I have a favorite visual when explaining the advantages of
-*   pipelining. Imagine each request to the server is a boxcar on a train.
-*   The client is in Los Angeles, and the server is in New York.
-*   Pipelining lets you hook all your cars in one long chain; send
-*   them to New York, where they are filled and sent back to you.
-*   Without pipelining you have to send one car at a time. 
-*
-*   Not all protocols allow pipelining. Not all servers support it;
-*   Sendmail, for example, does not support pipelining because it tends
-*   to fork unpredictably, leaving buffered data in a questionable state.
-*   A recent extension to the SMTP protocol allows a server to specify
-*   whether it supports pipelining. HTTP/1.1 explicitly requires that
-*   a server support pipelining. 
-*
-* NOTES
-*   When a user passes in a buffer object, it belongs to
-*   the user.  When the library gives a buffer to the user,
-*   the user should copy it.
-*
-* AUTHORS
-*   Sam Rushing <rushing@nightmare.com> - original version for Medusa
-*   Dave McClurg <dpm@efn.org> - modified for use in PLIB
-*
-* CREATION DATE
-*   Dec-2000
-*
-****/
 
 #ifndef SG_NET_BUFFER_H
 #define SG_NET_BUFFER_H

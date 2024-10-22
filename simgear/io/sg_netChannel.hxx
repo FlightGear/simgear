@@ -1,54 +1,23 @@
-/*
-    NetChannel -  copied from PLIB
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1998, 2002 Steve Baker
 
-     PLIB - A Suite of Portable Game Libraries
-     Copyright (C) 1998,2002  Steve Baker
- 
-     This library is free software; you can redistribute it and/or
-     modify it under the terms of the GNU Library General Public
-     License as published by the Free Software Foundation; either
-     version 2 of the License, or (at your option) any later version.
- 
-     This library is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-     Library General Public License for more details.
- 
-     You should have received a copy of the GNU Library General Public
-     License along with this library; if not, write to the Free Software
-     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
- 
-     For further information visit http://plib.sourceforge.net
-
-     $Id: netChannel.h 1899 2004-03-21 17:41:07Z sjbaker $
+/**
+ * @file
+ * @brief Network channel class
+ *
+ * netChannel is adds event-handling to the low-level
+ * netSocket class.  Otherwise, it can be treated as
+ * a normal non-blocking socket object.
+ *
+ * The direct interface between the netPoll() loop and
+ * the channel object are the handleReadEvent and
+ * handleWriteEvent methods. These are called
+ * whenever a channel object 'fires' that event.
+ *
+ * The firing of these low-level events can tell us whether
+ * certain higher-level events have taken place, depending on
+ * the timing and state of the connection.
 */
-
-/****
-* NAME
-*   netChannel - network channel class
-*
-* DESCRIPTION
-*   netChannel is adds event-handling to the low-level
-*   netSocket class.  Otherwise, it can be treated as
-*   a normal non-blocking socket object.
-*
-*   The direct interface between the netPoll() loop and
-*   the channel object are the handleReadEvent and
-*   handleWriteEvent methods. These are called
-*   whenever a channel object 'fires' that event.
-*
-*   The firing of these low-level events can tell us whether
-*   certain higher-level events have taken place, depending on
-*   the timing and state of the connection.
-*
-* AUTHORS
-*   Sam Rushing <rushing@nightmare.com> - original version for Medusa
-*   Dave McClurg <dpm@efn.org> - modified for use in PLIB
-*
-* CREATION DATE
-*   Dec-2000
-*
-****/
 
 #ifndef SG_NET_CHANNEL_H
 #define SG_NET_CHANNEL_H

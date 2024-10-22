@@ -1,6 +1,10 @@
-// SPDX-FileName: condition.cxx
-// SPDX-License-Identifier: LGPL-2.1-only
-// SPDX-FileComment: Declarations and inline methods for property conditions
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 David Megginson
+
+/**
+ * @file
+ * @brief Declarations and inline methods for property conditions
+ */
 
 #include <simgear_config.h>
 

@@ -1,7 +1,10 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1999 Curtis L. Olson - http://www.flightgear.org/~curt
+
 /**
- * \file sg_path.hxx
- * Routines to abstract out path separator differences between MacOS
- * and the rest of the world.
+ * @file
+ * @brief  Routines to abstract out path separator differences
+ *         between MacOS and the rest of the world
  */
 
 // Written by Curtis L. Olson, started April 1999.

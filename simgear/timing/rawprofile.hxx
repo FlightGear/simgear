@@ -1,3 +1,22 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022 Julian Smith
+
+/**
+ * @brief Simple profiling support for hard-coded regions of code.
+ *
+ * To use, create a static RawProfile instance, and place calls to RawProfile.start() and
+ * RawProfile.stop() around the code to be profiled. Each time RawProfile.stop() is called,
+ * we update a rolling average time and periodically write out to `SG_LOG` and/or a property.
+ *
+ * @code
+ * static RawProfile prof;
+ * ...
+ * prof.start();
+ * ...
+ * prof.stop();
+ * @endcode
+*/
+
 #pragma once
 
 #include <simgear/debug/logstream.hxx>
@@ -8,18 +27,6 @@
 #include <math.h>
 
 
-/* Simple profiling support for hard-coded regions of code.
-
-To use, create a static RawProfile instance, and place calls to .start() and
-.stop() around the code to be profiled. Each time .stop() is called, we update
-a rolling average time and periodically write out to SG_LOG and/or a property.
-
-    static RawProfile prof;
-    ...
-    prof.start();
-    ...
-    prof.stop();
-*/
 struct RawProfile
 {
     /*

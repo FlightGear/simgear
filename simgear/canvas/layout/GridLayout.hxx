@@ -1,7 +1,10 @@
-// GridLayout.hxx - grid layout for Canvas, closely
-// modelled on the equivalent layouts in Gtk/Qt
-// Copyright (C) 2022 James Turner
-// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022 James Turner
+
+/**
+ * @file
+ * @brief Grid layout for Canvas, closely modelled on the equivalent layouts in Gtk/Qt
+ */
 
 #pragma once
 

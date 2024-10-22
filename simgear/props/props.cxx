@@ -1,15 +1,18 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 David Megginson <david@megginson.com>
+
+/**
+ * @file
+ * @brief Implementation of a property list
+ *
+ * See props.html for documentation [replace with URL when available].
+ */
+
 #ifdef SG_PROPS_UNTHREADSAFE
 
     #include "props-unsafe.cxx"
 
 #else
-// props.cxx - implementation of a property list.
-// Started Fall 2000 by David Megginson, david@megginson.com
-// This code is released into the Public Domain.
-//
-// See props.html for documentation [replace with URL when available].
-//
-// $Id$
 
 #include <simgear_config.h>
 

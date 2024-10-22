@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: 2006 Matthias Kretz <kretz@kde.org>
+# SPDX-FileCopyrightText: 2008 Alexander Neundorf <neundorf@kde.org>
+# SPDX-FileCopyrightText: 2011 Michael Jansen <kde@michael-jansen.biz>
+# SPDX-FileCopyrightText: 2021 Stefan Brüns <stefan.bruens@rwth-aachen.de>
+
 # vim: ts=2 sw=2
 # - Try to find the required ffmpeg components(default: AVFORMAT, AVUTIL, AVCODEC)
 #
@@ -29,11 +35,6 @@
 # find_package(FFmpeg 57.40 COMPONENTS AVFORMAT)
 # find_package(FFmpeg 55.27 COMPONENTS AVUTIL)
 #
-# SPDX-FileCopyrightText: 2006 Matthias Kretz <kretz@kde.org>
-# SPDX-FileCopyrightText: 2008 Alexander Neundorf <neundorf@kde.org>
-# SPDX-FileCopyrightText: 2011 Michael Jansen <kde@michael-jansen.biz>
-# SPDX-FileCopyrightText: 2021 Stefan Brüns <stefan.bruens@rwth-aachen.de>
-# SPDX-License-Identifier: BSD-3-Clause
 
 include(FindPackageHandleStandardArgs)
 

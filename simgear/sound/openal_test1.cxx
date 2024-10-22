@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: Copyright 2010 by Tim Moore
+
+/**
+ * @file
+ * @brief Tests for OpenAl usage
+ */
+
 #include <simgear_config.h>
 
 #include <stdio.h>

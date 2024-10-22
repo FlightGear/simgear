@@ -1,24 +1,14 @@
 #ifndef ITRANSMITTER_hxx
 #define ITRANSMITTER_hxx
-/*---------------------------------------------------------------------------
-*
-*  Title                : Emesary - Transmitter base class
-*
-*  File Type            : Implementation File
-*
-*  Description          : Base class for all transmitters.
-*
-*  References           : http://www.chateau-logic.com/content/class-based-inter-object-communication
-*
-*  Author               : Richard Harrison (richard@zaretto.com)
-*
-*  Creation Date        : 18 March 2002, rewrite 2017, simgear version 2019
-*
-*  Version              : $Header: $
-*
-*  Copyright (C)2019 Richard Harrison            Licenced under GPL2 or later.
-*
-*---------------------------------------------------------------------------*/
+
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2019 Richard Harrison <richard@zaretto.com>
+
+/**
+ * @file
+ * @brief Base class for all transmitters.
+ * @see http://www.chateau-logic.com/content/class-based-inter-object-communication
+ */
 
 #include <cstddef>
 

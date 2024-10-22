@@ -1,16 +1,8 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1999 Curtis L. Olson - http://www.flightgear.org/~curt
 
 #ifndef _STDINT_HXX
 #define _STDINT_HXX 1
-
-// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// Written by Curtis Olson - http://www.flightgear.org/~curt
-// Started September 2001.
-//
-// This file is in the Public Domain, and comes with no warranty.
-//
-// $Id$
-
 
 #include <cstdint>
 #include <cstdlib> // for _byteswap_foo on Win32

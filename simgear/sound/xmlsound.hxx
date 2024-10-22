@@ -1,26 +1,14 @@
-///@file
-/// Sound class implementation
-///
-/// Provides a class to manage a single sound event including things like
-/// looping, volume and pitch changes.
-//
-// Started by Erik Hofman, February 2002
-//
-// Copyright (C) 2002  Erik Hofman - erik@ehofman.com
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2002 Erik Hofman <erik@ehofman.com>
+
+/**
+ * @file
+ * @brief  Provides a class to manage a single sound event including things like
+           looping, volume and pitch changes.
+ * @note   Started by Erik Hofman, February 2002
+ * @note   Reuses some code from  fg_fx.cxx created by David Megginson
+ */
+
 
 #ifndef _SG_SOUND_HXX
 #define _SG_SOUND_HXX 1

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 /* 2/14/00 fixed help message- dip angle (down positive), variation (E positive) */
 
 #include <stdio.h>

@@ -1,5 +1,9 @@
-// Template for defining an XML parser based on an element type and
-// builder classes
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+/**
+ * @file
+ * @brief Template for defining an XML parser based on an element type and builder classes
+ */
 
 #ifndef SIMGEAR_XMLSTATICPARSER_HXX
 #define SIMGEAR_XMLSTATICPARSER_HXX 1

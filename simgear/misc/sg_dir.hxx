@@ -1,24 +1,6 @@
-
-// Written by James Turner, started July 2010.
-//
-// Copyright (C) 2010  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2010 James Turner
+// SPDX-FileCopyrightText: 2010 Curtis L. Olson
 
 #ifndef _SG_DIR_HXX
 #define _SG_DIR_HXX
@@ -44,30 +26,31 @@ namespace simgear
   public:
     Dir();
     ~Dir();   // non-virtual intentional
-    
+
     /**
      * when this directory object is destroyed, remove the corresponding
      * directory (and its contents) from the disk. Often used with temporary
      * directories to ensure they are cleaned up.
      */
     void setRemoveOnDestroy();
-    
+
     static Dir current();
-    
+
     /**
      * Create a temporary directory, using the supplied name.
      * The return value 'd' is such that d.isNull() in case this failed.
      */
     static Dir tempDir(const std::string& templ);
-      
+
     Dir(const SGPath& path);
     Dir(const Dir& rel, const SGPath& relPath);
 
-    enum FileTypes {
-        TYPE_FILE = 1,
-        TYPE_DIR = 2,
-        NO_DOT_OR_DOTDOT = 1 << 12,
-        INCLUDE_HIDDEN = 1 << 13
+    enum FileTypes
+    {
+      TYPE_FILE = 1,
+      TYPE_DIR = 2,
+      NO_DOT_OR_DOTDOT = 1 << 12,
+      INCLUDE_HIDDEN = 1 << 13
     };
 
     PathList children(int types = 0, const std::string& nameGlob = "") const;
@@ -83,36 +66,36 @@ namespace simgear
      * test if the directory contains no children (except '.' and '..')
      */
     bool isEmpty() const;
-    
+
     SGPath file(const std::string& name) const;
-    
+
     SGPath path() const
         { return _path; }
-    
+
     /**
      * create the directory (and any parents as required) with the
      * request mode, or return failure
      */
     bool create(mode_t mode);
-    
+
     /**
-     * remove the directory. 
+     * remove the directory.
      * If recursive is true, contained files and directories are
      * recursively removed
      */
     bool remove(bool recursive = false);
-    
+
     /**
      * remove our children but not us
      */
     bool removeChildren() const;
-    
-    
+
+
     /**
      * Check that the directory at the path exists (and is a directory!)
      */
     bool exists() const;
-    
+
     /**
      * parent directory, if one exists
      */

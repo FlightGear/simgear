@@ -1,25 +1,14 @@
 #ifndef TRANSMITTER_hxx
 #define TRANSMITTER_hxx
-/*---------------------------------------------------------------------------
-*
-*  Title                : Emesary - Transmitter base class
-*
-*  File Type            : Implementation File
-*
-*  Description          : Defines the receipt status that can be returned from
-*                       : a receive method.
-*
-*  References           : http://www.chateau-logic.com/content/class-based-inter-object-communication
-*
-*  Author               : Richard Harrison (richard@zaretto.com)
-*
-*  Creation Date        : 18 March 2002, rewrite 2017, simgear version 2019
-*
-*  Version              : $Header: $
-*
-*  Copyright (C)2019 Richard Harrison            Licenced under GPL2 or later.
-*
-*---------------------------------------------------------------------------*/
+
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2019 Richard Harrison <richard@zaretto.com>
+
+/**
+ * @file
+ * @brief Defines the receipt status that can be returned from a receive method.
+ * @see http://www.chateau-logic.com/content/class-based-inter-object-communication
+ */
 
 #include <algorithm>
 #include <string>

@@ -1,7 +1,11 @@
-// -*- coding: utf-8 -*-
-//
-// Unit tests for functions inside the strutils package
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2011 James Turner
 
+/**
+ * @file
+ * @brief Unit tests for strutils functions
+ */
+ 
 #include <string>
 #include <vector>
 #include <utility>              // std::move()

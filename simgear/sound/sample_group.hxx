@@ -1,26 +1,15 @@
-///@file
-/// Manage a group of samples relative to a base position
-///
-/// Sample groups contain all sounds related to one specific object and
-/// have to be added to the sound manager, otherwise they won't get processed.
-//
-// Written for the new SoundSystem by Erik Hofman, October 2009
-//
-// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2009-2019 Erik Hofman <erik@ehofman.com>
+
+/**
+ * @file
+ * @brief Manage a group of samples relative to a base position
+ *        written for the new SoundSystem by Erik Hofman, October 2009
+ * @note  Sample groups contain all sounds related to one specific object and
+ *        have to be added to the sound manager, otherwise they won't get processed.
+ *        Written for the new SoundSystem by Erik Hofman, October 2009
+ */
+
 
 #ifndef _SG_SAMPLE_GROUP_HXX
 #define _SG_SAMPLE_GROUP_HXX 1

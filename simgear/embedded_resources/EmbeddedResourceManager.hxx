@@ -1,8 +1,10 @@
-// -*- coding: utf-8 -*-
-//
-// SPDX-FileComment: Manager class for resources embedded in an executable
-// SPDX-FileCopyrightText: Copyright (C) 2017  Florent Rougon
-// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2017 Florent Rougon
+
+/**
+ * @file
+ * @brief Manager class for resources embedded in an executable
+ */
 
 #ifndef FG_EMBEDDEDRESOURCEMANAGER_HXX
 #define FG_EMBEDDEDRESOURCEMANAGER_HXX

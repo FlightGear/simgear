@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LGPL-2.1-only
-// Copyright (C) 2010 Torsten Dreyer
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2010 Torsten Dreyer
 
 #pragma once
 
@@ -10,12 +10,14 @@ namespace simgear {
 using Value_ptr = SGSharedPtr<class Value>;
 using PeriodicalValue_ptr = SGSharedPtr<class PeriodicalValue>;
 
+
 /**
  * @brief Model a periodical value like angular values
  *
  * Most common use for periodical values are angular values.
  * If y = f(x) = f(x + n*period), this is a periodical function
  */
+
 class PeriodicalValue : public SGReferenced {
 private:
     Value_ptr minPeriod; // The minimum value of the period

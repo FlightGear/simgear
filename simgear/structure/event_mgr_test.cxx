@@ -1,6 +1,10 @@
-// Unit tests for SGTimer and SGTimerQueue
+// SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: (C) 2022 Lars Toenning <dev@ltoenning.de>
-// SPDX-License-Identifier: LGPL-2.0-or-later
+
+/**
+ * @file
+ * @brief Unit tests for SGTimer and SGTimerQueue
+ */
 
 #include <cstdlib>
 

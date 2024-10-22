@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// SPDX-FileCopyrightText: Copyright (C) 2016 James Turner <james@flightgear.org>
+// SPDX-FileCopyrightText: 2016 James Turner <james@flightgear.org>
 
 #include <simgear_config.h>
 

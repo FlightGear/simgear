@@ -1,4 +1,12 @@
-/// Unit tests for SVGpreserveAspectRatio
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer <tomgey@gmail.com>
+
+/**
+ * @file
+ * @brief  Unit Test Parse and represent SVG preserveAspectRatio attribute
+ */
+
+
 #define BOOST_TEST_MODULE misc
 #include <BoostTestTargetConfig.h>
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 /// Unit tests for reference counting and smart pointer classes
 #define BOOST_TEST_MODULE structure
 #include <BoostTestTargetConfig.h>

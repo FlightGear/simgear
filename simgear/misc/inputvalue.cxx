@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LGPL-2.1-only
-// Copyright (C) 2010 Torsten Dreyer
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2010 Torsten Dreyer
 
 #include <simgear_config.h>
 

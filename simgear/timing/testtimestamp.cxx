@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2006 Fred B.
+
+/**
+ * @file
+ * @brief Simple program to benchmark SGTimeStamp::stamp()
+ */
 
 #include <iostream>
 #include <simgear/timing/timestamp.hxx>

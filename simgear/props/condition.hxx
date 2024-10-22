@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 David Megginson
+
 /**
- * \file condition.hxx
- * Declarations and inline methods for property conditions.
- * Written by David Megginson, started 2000.
- * CLO May 2003 - Split out condition specific code.
- *
- * This file is in the Public Domain, and comes with no warranty.
+ * @file
+ * @brief Declarations and inline methods for property conditions
  */
 
 #ifndef __SG_CONDITION_HXX

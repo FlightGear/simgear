@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSL-1.0
+# SPDX-File-Copyright: 2016 Maciej Mrozowski <reavertm@gmail.com>
+
 # - Try to find UDNS library
 # Once done this will define
 #
@@ -5,13 +8,6 @@
 #  UDNS_INCLUDE_DIRS - the UDNS include directory
 #  UDNS_LIBRARIES - Link these to use UDNS
 #  UDNS_DEFINITIONS - Compiler switches required for using UDNS
-#
-#  Copyright (c) 2016 Maciej Mrozowski <reavertm@gmail.com>
-#
-# Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or copy at
-# http://www.boost.org/LICENSE_1_0.txt)
-
 
 if (UDNS_LIBRARIES AND UDNS_INCLUDE_DIRS)
   # in cache already

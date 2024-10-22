@@ -1,4 +1,10 @@
-// -*- coding: utf-8 -*-
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2013 James Turner
+
+/**
+ * @file
+ * @brief SimGear testing macros
+ */
 
 #ifndef SG_MISC_TEST_MACROS_HXX
 #define SG_MISC_TEST_MACROS_HXX

@@ -1,31 +1,15 @@
-///@file
-/// Sound effect management class
-///
-/// Provides a sound manager class to keep track of multiple sounds and manage
-/// playing them with different effects and timings.
-//
-// Sound manager initially written by David Findlay
-// <david_j_findlay@yahoo.com.au> 2001
-//
-// C++-ified by Curtis Olson, started March 2001.
-// Modified for the new SoundSystem by Erik Hofman, October 2009
-//
-// Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
-// Copyright (C) 2009-2019 Erik Hofman <erik@ehofman.com>
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2001 Curtis L. Olson - http://www.flightgear.org/~curt
+// SPDX-FileCopyrightText: 2009-2019 Erik Hofman <erik@ehofman.com>
+
+/**
+ * @file
+ * @brief  Provides a sound effect manager class to keep track of multiple sounds and manage
+ *         playing them with different effects and timings.
+ * @note   Sound manager initially written by David Findlay <david_j_findlay@yahoo.com.au> 2001
+ * @note   C++-ified by Curtis Olson, started March 2001.
+ * @note   Modified for the new SoundSystem by Erik Hofman, October 2009
+ */
 
 #ifndef _SG_SOUNDMGR_HXX
 #define _SG_SOUNDMGR_HXX 1

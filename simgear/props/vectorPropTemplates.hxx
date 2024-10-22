@@ -1,6 +1,12 @@
-// vectorPropTemplates.hxx -- Templates Requiring Vector Properties
-//
-// Separate header file for any templates requiring SGVecXX vector types.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2010 Torsten Dreyer <torsten@t3r.de>
+
+/**
+ * @file
+ * @brief Templates Requiring Vector Properties
+ *
+ * Separate header file for any templates requiring SGVecXX vector types.
+ */
 
 #ifndef __VECTORPROPTEMPLATES_HXX
 #define __VECTORPROPTEMPLATES_HXX

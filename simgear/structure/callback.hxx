@@ -1,5 +1,9 @@
-// Declaration for simgear callback
-// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+/**
+ * @file
+ * @brief Declaration for simgear callback
+*/
 
 #include <functional>
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 /// Unit tests for canvas::Element
 #define BOOST_TEST_MODULE canvas
 #include <BoostTestTargetConfig.h>

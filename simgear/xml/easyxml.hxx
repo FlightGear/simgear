@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000-2001 David Megginson
+
 /**
- * \file easyxml.hxx
- * Declarations for the SimGear XML parser.
- * Written by David Megginson, 2000-2001
- * This file is in the Public Domain, and comes with NO WARRANTY of any kind.
+ * @file
+ * @brief Declarations for the SimGear XML parser.
  */
 
 #ifndef __EASYXML_HXX

@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000-2001 David Megginson
+
 /**
- * \file easyxml.cxx - implementation of EasyXML interfaces.
- * Written by David Megginson, 2000-2001
- * This file is in the Public Domain, and comes with NO WARRANTY of any kind.
+ * @file
+ * @brief implementation of EasyXML interfaces.
  */
 
 #ifdef HAVE_CONFIG_H

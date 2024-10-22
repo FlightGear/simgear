@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2010 James Turner
+// SPDX-FileCopyrightText: 2010 Curtis L. Olson
+
 #include <simgear_config.h>
 
 #include <cstdlib>
@@ -93,3 +97,5 @@ int main(int argc, char **argv)
 
     return EXIT_SUCCESS;
 }
+
+

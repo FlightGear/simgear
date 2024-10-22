@@ -1,4 +1,11 @@
-/// Unit tests for simple markdown parser
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer <tomgey@gmail.com>
+
+/**
+ * @file
+ * @brief Unit tests for SimpleMarkdown
+ */
+
 #define BOOST_TEST_MODULE misc
 #include <BoostTestTargetConfig.h>
 

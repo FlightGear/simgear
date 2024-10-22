@@ -1,6 +1,8 @@
-// -*- coding: utf-8 -*-
-//
-// Unit tests for reference counting and smart pointer classes
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+/**
+ * @brief Unit tests for reference counting and smart pointer classes
+ */
 
 #include <iostream>
 #include <utility>

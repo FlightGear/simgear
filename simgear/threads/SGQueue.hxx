@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 #ifndef SGQUEUE_HXX_INCLUDED
 #define SGQUEUE_HXX_INCLUDED 1
 

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// SPDX-FileCopyrightText: Copyright (C) 2016 James Turner <james@flightgear.org>
+// SPDX-FileCopyrightText: 2016 James Turner <james@flightgear.org>
 
-#pragma once
+/**
+ * @file
+ * @brief  manage finding resources by names/paths
+ */
+
 
 #include <stdint.h>
 #include <sys/types.h>

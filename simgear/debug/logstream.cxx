@@ -1,8 +1,10 @@
-// SPDX-FileName: logstream.cxx
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// SPDX-FileComment: Stream based logging mechanism.
-// SPDX-FileCopyrightText: Copyright (C) 1998  Bernie Bright - bbright@c031.aone.net.au
-// SPDX-FileContributor: James Turner
+// SPDX-FileCopyrightText: 1998 Bernie Bright <bbright@c031.aone.net.au>
+
+/**
+ * @file
+ * @brief Stream based logging mechanism.
+ */
 
 #include <simgear_config.h>
 

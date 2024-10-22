@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2016-2018 Erik Hofman
+# SPDX-FileCopyrightText: 2016-2018 Adalin B.V
+
+# This file is Public Domain (www.unlicense.org)
+# This is free and unencumbered software released into the public domain.
+
 # Try to find AAX (AeonWave)
 # This module defines
 #
@@ -5,15 +12,10 @@
 # AAX_INCLUDE_DIR - where to find the headers
 # AAX_LIBRARY - Link these to use AAX
 #
-# Copyright (C) 2016-2018 by Erik Hofman.
-# Copyright (C) 2016-2018 by Adalin B.V.
-#
 # $AAXDIR is an environment variable that would
 # correspond to the ./configure --prefix=$AAXDIR
 # used in building AAX.
 #
-# This file is Public Domain (www.unlicense.org)
-# This is free and unencumbered software released into the public domain.
 
 if (AAX_LIBRARY AND AAX_INCLUDE_DIR)
   # in cache already

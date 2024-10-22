@@ -1,34 +1,9 @@
-/**
- * \file stopwatch.hxx
- * Timer class, for use in benchmarking
- * Based on blitz/Timer.h
- *
- * Copyright (C) 1997,1998 Todd Veldhuizen <tveldhui@seurat.uwaterloo.ca>
- *
- * Suggestions:          blitz-suggest@cybervision.com
- * Bugs:                 blitz-bugs@cybervision.com
- *
- * For more information, please see the Blitz++ Home Page:
- *    http://seurat.uwaterloo.ca/blitz/
- */
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1997-1998 Todd Veldhuizen <tveldhui@seurat.uwaterloo.ca>
 
-/*
- * $Id$
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
+/**
+ * @file
+ * @brief  Timer class, for use in benchmarking
  */
 
 // This class is not portable to non System V platforms.
@@ -57,7 +32,7 @@
 #if defined( HAVE_GETRUSAGE )
 #  if defined( __FreeBSD__ )
 #    include <sys/types.h>
-#  endif 
+#  endif
 #  include <sys/time.h>
 #  include <sys/resource.h>
 #  include <unistd.h>
@@ -74,12 +49,12 @@ class StopWatch {
 
 public:
     /** Constructor */
-    StopWatch() { 
+    StopWatch() {
 	// state_ = uninitialized;
     }
 
     /** Start counting time */
-    void start() { 
+    void start() {
 	// state_ = running;
         t1_ = systemTime();
     }
@@ -106,9 +81,9 @@ private:
     {
 #if defined( HAVE_GETRUSAGE )
         getrusage(RUSAGE_SELF, &resourceUsage_);
-        double seconds = resourceUsage_.ru_utime.tv_sec 
+        double seconds = resourceUsage_.ru_utime.tv_sec
             + resourceUsage_.ru_stime.tv_sec;
-        double micros  = resourceUsage_.ru_utime.tv_usec 
+        double micros  = resourceUsage_.ru_utime.tv_usec
             + resourceUsage_.ru_stime.tv_usec;
         return seconds + micros/1.0e6;
 #elif defined( WIN32 )

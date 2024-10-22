@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 James Turner
+
+/**
+ * @file
+ * @brief Cocoa-related helpers for macOS
+ */
+
 #include <Cocoa/Cocoa.h>
 #include <Foundation/NSAutoreleasePool.h>
 

@@ -1,6 +1,12 @@
-///@file
-/// Compare lists and get differences
-//---------------------------------------------------------------------------//
+// SPDX-License-Identifer: BSL-1.0
+// SPDX-FileCopyrightText: 2013 Kyle Lutz <kyle.r.lutz@gmail.com>
+// SPDX-FileCopyrightText: 2019 Richar Harrison <rjh@zaretto.com>
+
+/**
+ * @file
+ * @brief Compare lists and get differences
+ */
+//------------------------------------------------------------------------//
 // Copyright (c) 2013 Kyle Lutz <kyle.r.lutz@gmail.com>
 //
 // Distributed under the Boost Software License, Version 1.0

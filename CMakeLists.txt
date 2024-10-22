@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 3.20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(POLICY CMP0145)
   cmake_policy(SET CMP0145 NEW)

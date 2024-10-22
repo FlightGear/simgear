@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2013 Thomas Geymayer
+
+/**
+ * @file
+ * @brief tests for CSS border definitions and parser (eg. margin, border-image-width)
+ */
+
+
 #include <simgear/compiler.h>
 
 #include "CSSBorder.hxx"

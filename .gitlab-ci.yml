@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: James Turner <james@flightgear.org>
-#
-# SPDX-License-Identifier: GPL-2.0
 
 variables:
   BUILD_DIR: "$CI_PROJECT_DIR/build"

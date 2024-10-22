@@ -1,12 +1,11 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 David Megginson <david@megginson.com>
+
 /**
- * \file props_io.hxx
- * Interface definition for property list io.
- * Started Fall 2000 by David Megginson, david@megginson.com
- * This code is released into the Public Domain.
+ * @file
+ * @brief Interface definition for property list io.
  *
  * See props.html for documentation [replace with URL when available].
- *
- * $Id$
  */
 
 #ifndef __PROPS_IO_HXX

@@ -1,25 +1,10 @@
-/**
- * \file DNSClient.hxx - simple DNS resolver client for SimGear
- */
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2016 Torsten Dreyer <torsten@t3r.de>
 
-// Written by Torsten Dreyer
-//
-// Copyright (C) 2016 Torsten Dreyer - torsten (at) t3r (dot) de
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+/**
+ * @file
+ * @brief Simple DNS resolver client engine for SimGear
+ */
 
 #ifndef SG_DNS_CLIENT_HXX
 #define SG_DNS_CLIENT_HXX

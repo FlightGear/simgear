@@ -1,4 +1,11 @@
-/// Unit tests for utf8ToLatin1 conversion function
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Rebecca Palmer
+
+/**
+ * @file
+ * @brief Unit tests for utf8ToLatin1 conversion function
+ */
+
 #define BOOST_TEST_MODULE misc
 #include <BoostTestTargetConfig.h>
 

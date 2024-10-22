@@ -1,7 +1,11 @@
-// SPDX-FileComment: various constant definitions
-// SPDX-FileCopyrightText: Copyright (C) 2000  Curtis L. Olson - http://www.flightgear.org/~curt/
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 Curtis L. Olson - http://www.flightgear.org/~curt/
 // SPDX-FileContributor: Last change by Eric van den Berg, Feb 2013
-// SPDX-License-Identifier: LGPL-2.0-or-later
+
+/**
+ * @file
+ * @brief Various constant definitions
+ */
 
 #pragma once
 

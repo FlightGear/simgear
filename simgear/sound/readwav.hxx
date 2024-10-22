@@ -1,4 +1,11 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2012 James Turner <zakalawe@mac.com>
 
+/**
+ * @file
+ * @brief adapted from the freealut sources, especially alutBufferData.c, alutLoader.c
+ *        and alutCodec.c (freealut is also LGPL licensed)
+ */
 
 #ifndef SG_SOUND_READWAV_HXX
 #define SG_SOUND_READWAV_HXX

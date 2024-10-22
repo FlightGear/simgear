@@ -1,10 +1,9 @@
-/*
- * easing_functions_test.cxx
- *
- * Output values of all easing functions for plotting and some simple tests.
- *
- *  Created on: 15.03.2013
- *      Author: tom
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2013 Thomas Geymayer <tomgey@gmail.com>
+
+/**
+ * @file
+ * @brief Output values of all easing functions for plotting and some simple tests.
  */
 
 #include "easing_functions.hxx"

@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2011 James Turner <james@flightgear.org>
+
+/**
+ * @file
+ * @brief  Tests for sg_path & sg_dir path & permissions
+ */
+
 #include <simgear_config.h>
 
 #include <simgear/compiler.h>

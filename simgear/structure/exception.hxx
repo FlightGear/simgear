@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2001 David Megginson <david@megginson.com>
+
 /**
- * \file exception.hxx
- * Interface definition for SimGear base exceptions.
- * Started Spring 2001 by David Megginson, david@megginson.com
- * This code is released into the Public Domain.
- *
- * $Id$
+ * @file
+ * @brief Implementation of SimGear base exceptions
  */
 
 #pragma once

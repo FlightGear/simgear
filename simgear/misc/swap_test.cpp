@@ -1,8 +1,14 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2005 Erik Hofman
 
+/**
+ * @file
+ * @brief  endian swap
+ */
 #include <stdio.h>
 #include "stdint.hxx"
 
-int main() 
+int main()
 {
    uint16_t sui16, ui16 = 0x0123;
    uint32_t sui32, ui32 = 0x01234567;

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// SPDX-FileComment: Base class for log callbacks
-// SPDX-FileCopyrightText: Copyright (C) 2020 James Turner 
+// SPDX-FileCopyrightText: 2020 James Turner
+
+/**
+ * @file
+ * @brief Base class for log callbacks
+ */
 
 #pragma once
 

@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2016 Erik Hofman
+
+/**
+ * @file
+ * @brief Test AeonWave features
+ */
 #include <stdio.h>
 #include <cstdlib> // EXIT_FAILURE
 #include <string>

@@ -1,7 +1,7 @@
 #pragma once
 
-// SPDX-License-Identifier: LGPL-2.1-only
-// Copyright (C) 2023 James Turner <james@flightgear.org>
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2023 James Turner <james@flightgear.org>
 
 #include <vector>
 

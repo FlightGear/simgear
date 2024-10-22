@@ -1,11 +1,12 @@
-// coremag.hxx -- compute local magnetic variation given position,
-//                altitude, and date
-//
-// This is an implimentation of the NIMA WMM 2000
-//
-//    http://www.nima.mil/GandG/ngdc-wmm2000.html
-//
-// Copyright (C) 2000  Edward A Williams <Ed_Williams@compuserve.com>
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 Edward A Williams <Ed_Williams@compuserve.com>
+
+/**
+ * @file
+ * @brief Compute local magnetic variation given position, altitude, and date
+ * This is an implementation of the NIMA WMM 2000: http://www.nima.mil/GandG/ngdc-wmm2000.html
+ */
+
 //
 // Adapted from Excel 3.0 version 3/27/94 EAW
 // Recoded in C++ by Starry Chan
@@ -15,27 +16,9 @@
 // WMM2000 IGR2000 added 2/00 EAW
 // Released under GPL 3/26/00 EAW
 // Adaptions and modifications for the SimGear project  3/27/2000 CLO
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
 
 #ifndef SG_MAGVAR_HXX
 #define SG_MAGVAR_HXX
-
 
 /* Convert date to Julian day    1950-2049 */
 unsigned long int yymmdd_to_julian_days( int yy, int mm, int dd );

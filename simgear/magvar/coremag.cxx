@@ -1,12 +1,37 @@
-// coremag.cxx -- compute local magnetic variation given position,
-//                altitude, and date
-//
-// This is an implementation of the NIMA (formerly DMA) WMM2000
-//
-//    http://www.nima.mil/GandG/ngdc-wmm2000.html
-//
-// Copyright (C) 2000  Edward A Williams <Ed_Williams@compuserve.com>
-//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 Edward A Williams <Ed_Williams@compuserve.com>
+// SPDX-FileCopyrightText: 2006 Wim Van Hoydonck <wim.van.hoydonck@gmail.com>
+// SPDX-FileCopyrightText: 2015, 2020 Jean-Paul Anceaux <j.p.r.anceaux@gmail.com>
+
+/**
+ * @file
+ * @brief Compute local magnetic variation given position, altitude, and date
+ *
+ * This is an implementation of the NIMA (formerly DMA) WMM2000: http://www.nima.mil/GandG/ngdc-wmm2000.html
+ *
+ * The routine uses a spherical harmonic expansion of the magnetic
+ * potential up to twelfth order, together with its time variation, as
+ * described in Chapter 4 of "Geomagnetism, Vol 1, Ed. J.A.Jacobs,
+ * Academic Press (London 1987)". The program first converts geodetic
+ * coordinates (lat/long on elliptic earth and altitude) to spherical
+ * geocentric (spherical lat/long and radius) coordinates. Using this,
+ * the spherical (B_r, B_theta, B_phi) magnetic field components are
+ * computed from the model. These are finally referred to surface (X, Y,
+ * Z) coordinates.
+ *
+ * Fields are accurate to better than 200nT, variation and dip to
+ * better than 0.5 degrees, with the exception of the declination near
+ * the magnetic poles (where it is ill-defined) where the error may reach
+ * 4 degrees or more.
+ *
+ * Variation is undefined at both the geographic and
+ * magnetic poles, even though the field itself is well-behaved. To
+ * avoid the routine blowing up, latitude entries corresponding to
+ * the geographic poles are slightly offset. At the magnetic poles,
+ * the routine returns zero variation.
+ *
+*/
+
 // Adapted from Excel 3.0 version 3/27/94 EAW
 // Recoded in C++ by Starry Chan
 // WMM95 added and rearranged in ANSI-C EAW 7/9/95
@@ -63,47 +88,6 @@
 //     NOAA Technical Report WMM2020_Report.pdf
 //
 // 23/06/2020  Jean-Paul Anceaux -- j.p.r.anceaux@gmail.com
-
-
-//  The routine uses a spherical harmonic expansion of the magnetic
-// potential up to twelfth order, together with its time variation, as
-// described in Chapter 4 of "Geomagnetism, Vol 1, Ed. J.A.Jacobs,
-// Academic Press (London 1987)". The program first converts geodetic
-// coordinates (lat/long on elliptic earth and altitude) to spherical
-// geocentric (spherical lat/long and radius) coordinates. Using this,
-// the spherical (B_r, B_theta, B_phi) magnetic field components are
-// computed from the model. These are finally referred to surface (X, Y,
-// Z) coordinates.
-//
-//   Fields are accurate to better than 200nT, variation and dip to
-// better than 0.5 degrees, with the exception of the declination near
-// the magnetic poles (where it is ill-defined) where the error may reach
-// 4 degrees or more.
-//
-//   Variation is undefined at both the geographic and
-// magnetic poles, even though the field itself is well-behaved. To
-// avoid the routine blowing up, latitude entries corresponding to
-// the geographic poles are slightly offset. At the magnetic poles,
-// the routine returns zero variation.
-
-
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
 
 #include <stdio.h>
 #include <stdlib.h>

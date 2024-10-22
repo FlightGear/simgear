@@ -1,6 +1,10 @@
-// SPDX-FileComment: precompiled headet
-// SPDX-FileCopyrightText: Copyright (C) 2024  James Turner james@flightgear.org
-// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2024 James Turner <james@flightgear.org>
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+/**
+ * @file
+ * @brief Precompiled header
+ */
 
 #pragma once
 

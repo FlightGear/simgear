@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 #ifndef SIMGEAR_IO_TEST_DNS_HXX
 #define SIMGEAR_IO_TEST_DNS_HXX
 

@@ -1,26 +1,19 @@
 #ifndef INOTIFICATION_hxx
 #define INOTIFICATION_hxx
-/*---------------------------------------------------------------------------
-*
-*  Title                : Emesary - Notification base class
-*
-*  File Type            : Implementation File
-*
-*  Description          : Base class (interface) for all Notifications.
-*                       : This is also compatible with the usual implementation of how we
-*                       : implement queued notifications.
-*
-*  References           : http://www.chateau-logic.com/content/class-based-inter-object-communication
-*
-*  Author               : Richard Harrison (richard@zaretto.com)
-*
-*  Creation Date        : 18 March 2002, rewrite 2017, simgear version 2019
-*
-*  Version              : $Header: $
-*
-*  Copyright (C)2019 Richard Harrison            Licenced under GPL2 or later.
-*
-*---------------------------------------------------------------------------*/
+
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2019 Richard Harrison <richard@zaretto.com>
+
+/**
+ * @file
+ * @brief Base class (interface) for all Notifications.
+ *
+ * This is also compatible with the usual implementation of how we
+ * implement queued notifications.
+ *
+ * @see http://www.chateau-logic.com/content/class-based-inter-object-communication
+ */
+
 #include <simgear/structure/SGSharedPtr.hxx>
 
 namespace simgear

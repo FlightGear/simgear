@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2010 James Turner <zakalawe@mac.com>
+
+/**
+ * @file
+ * @brief Unit tests for sound manager
+ */
+
 #include <simgear_config.h>
 
 #include <stdio.h>

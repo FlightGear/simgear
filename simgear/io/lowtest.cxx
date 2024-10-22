@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2000 Curtis L. Olson - http://www.flightgear.org/~curt
+
+/**
+ * @file
+ * @brief Routines to handle lowlevel compressed binary IO of various datatypes
+ */
+
 #include <simgear/compiler.h>
 
 #include <iostream>

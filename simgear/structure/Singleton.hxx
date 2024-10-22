@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 #ifndef SIMGEAR_SINGLETON_HXX
 #define SIMGEAR_SINGLETON_HXX 1
 

@@ -1,30 +1,15 @@
-// Copyright (C) 2016  James Turner - <zakalawe@mac.com>
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: Copyright (C) 2016 James Turner <james@flightgear.org>
 
 #include <simgear_config.h>
 
 #include "untar.hxx"
 
-#include <cstdlib>
-#include <cassert>
-#include <stdint.h>
-#include <cstring>
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <stdint.h>
 
 #include <zlib.h>
 
@@ -139,6 +124,7 @@ typedef struct
             if (state == READING_FILE) {
                 if (currentFile) {
                     currentFile->close();
+                    writeDirHashEntry();
                     currentFile.reset();
                 }
                 readPaddingIfRequired();
@@ -180,6 +166,26 @@ typedef struct
         void flush() override
         {
             // no-op for tar files, we process everything greedily
+        }
+
+        void writeDirHashEntry()
+        {
+            if (!doCreateDirHashes) {
+                return;
+            }
+
+            std::string hashBytes((char*)sha1_result(&hashState), HASH_LENGTH);
+            SGPath path = currentFile->get_path();
+
+            // force a stat call
+            path.set_cached(false);
+            path.set_cached(true);
+
+            // this code has to match the main version in HTTPRepository.cxx
+            SGPath cachePath = path.dirPath() / ".dirhash";
+            sg_ofstream stream(cachePath, std::ios::out | std::ios::app | std::ios::binary);
+            stream << path.utf8Str() << "*" << path.modTime() << "*"
+                   << path.sizeInBytes() << "*" << strutils::encodeHex(hashBytes) << "\n";
         }
 
         void processHeader()
@@ -232,6 +238,7 @@ typedef struct
                 if (!skipCurrentEntry) {
                     currentFile.reset(new SGBinaryFile(p));
                     currentFile->open(SG_IO_OUT);
+                    sha1_init(&hashState);
                 }
                 setState(READING_FILE);
             } else if (header.typeflag == PAX_GLOBAL_HEADER) {
@@ -264,6 +271,7 @@ typedef struct
             if (state == READING_FILE) {
                 if (currentFile) {
                     currentFile->write(bytes, curBytes);
+                    sha1_write(&hashState, bytes, curBytes);
                 }
                 bytesRemaining -= curBytes;
             } else if ((state == READING_HEADER) || (state == PRE_END_OF_ARCHVE) || (state == END_OF_ARCHIVE)) {
@@ -813,5 +821,14 @@ auto ArchiveExtractor::filterPath(std::string& pathToExtract)
     SG_UNUSED(pathToExtract);
     return Accepted;
 }
+
+void ArchiveExtractor::setCreateDirHashEntries(bool doCreate)
+{
+    if (!d)
+        return;
+
+    d->doCreateDirHashes = doCreate;
+}
+
 
 } // of simgear

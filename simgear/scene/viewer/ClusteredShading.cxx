@@ -333,8 +333,8 @@ ClusteredShading::updateUniforms()
     float l = 0.f, r = 0.f, b = 0.f, t = 0.f;
     _camera->getProjectionMatrix().getFrustum(l, r, b, t, _zNear, _zFar);
 
-    _slice_scale->set(_depth_slices / log2(_zFar / _zNear));
-    _slice_bias->set(-_depth_slices * log2(_zNear) / log2(_zFar / _zNear));
+    _slice_scale->set(_depth_slices / std::log2(_zFar / _zNear));
+    _slice_bias->set(-_depth_slices * std::log2(_zNear) / std::log2(_zFar / _zNear));
 
     _horizontal_tiles->set(_n_htiles);
     _vertical_tiles->set(_n_vtiles);

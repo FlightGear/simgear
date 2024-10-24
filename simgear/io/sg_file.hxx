@@ -85,6 +85,8 @@ public:
     /** @return the name of the file being manipulated. */
     std::string get_file_name() const { return file_name.utf8Str(); }
 
+    const SGPath& get_path() const { return file_name; }
+
     /** @return true of eof conditions exists */
     virtual bool eof() const { return eof_flag; };
 

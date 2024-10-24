@@ -639,6 +639,9 @@ public:
 
         hashCacheDirty = false;
 
+        // this code has to match the equivalent code in untar.cxx, otherwise pre-populating the
+        // hash cache when extracting a tarball won't work.
+
         SGPath cachePath = absolutePath() / ".dirhash";
         sg_ofstream stream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
         for (const auto& e : hashes) {

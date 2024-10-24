@@ -37,6 +37,19 @@
 //////////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+static const std::vector<std::string> global_priorityNames = {
+    "UNKN",
+    "BULK",
+    "DBUG",
+    "INFO",
+    "WARN",
+    "ALRT",
+    "POPU",
+    "WARN",
+    "ALRT",
+    "INFO"};
+
 struct LogClassMapping {
     const sgDebugClass c;
     const std::string name;
@@ -98,23 +111,11 @@ const std::string& debugClassToString(sgDebugClass c)
 
 const std::string& debugPriorityToString(sgDebugPriority p)
 {
-    static const std::vector<std::string> priorityNames = {
-        "UNKN",
-        "BULK",
-        "DBUG",
-        "INFO",
-        "WARN",
-        "ALRT",
-        "POPU",
-        "WARN",
-        "ALRT",
-        "INFO"};
-
-    if (static_cast<int>(p) >= priorityNames.size()) {
-        return priorityNames.at(0);
+    if (static_cast<int>(p) >= global_priorityNames.size()) {
+        return global_priorityNames.at(0);
     }
 
-    return priorityNames.at(static_cast<int>(p));
+    return global_priorityNames.at(static_cast<int>(p));
 }
 
 const sgDebugClass debugClassFromString(const std::string& s)

@@ -24,67 +24,36 @@
 //
 // $Id$
 
+#pragma once
 
-#ifndef _SG_SUN_HXX_
-#define _SG_SUN_HXX_
-
-#include <osg/Array>
-#include <osg/Node>
 #include <osg/MatrixTransform>
 
 #include <simgear/structure/SGReferenced.hxx>
+#include <simgear/props/propsfwd.hxx>
 
-#include <simgear/misc/sg_path.hxx>
-#include <simgear/props/props.hxx>
+namespace simgear {
+class SGReaderWriterOptions;
+}
 
 class SGSun : public SGReferenced {
-
-    osg::ref_ptr<osg::MatrixTransform> sun_transform;
-
-    osg::ref_ptr<osg::Vec4Array> sun_cl;
-    osg::ref_ptr<osg::Vec4Array> scene_cl;
-    osg::ref_ptr<osg::Vec4Array> ihalo_cl;
-    osg::ref_ptr<osg::Vec4Array> ohalo_cl;
-    osg::ref_ptr<osg::Vec4Array> brilliance_cl;
-
-    double visibility;
-    double prev_sun_angle;
-    // distance of light traveling through the atmosphere
-    double path_distance;
-    double sun_exp2_punch_through;
-    double horizon_angle;
-
-    SGPropertyNode_ptr env_node;
-
 public:
-
-    // Constructor
-    SGSun( void );
-
-    // Destructor
-    virtual ~SGSun( void );
+    SGSun() = default;
 
     // return the sun object
-    osg::Node* build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node );
+    osg::Node* build(double sun_size, SGPropertyNode* property_tree_Node,
+                     const simgear::SGReaderWriterOptions* options);
 
-    // repaint the sun colors based on current value of sun_anglein
-    // degrees relative to verticle
-    // 0 degrees = high noon
-    // 90 degrees = sun rise/set
-    // 180 degrees = darkest midnight
-    bool repaint( double sun_angle, double new_visibility );
+    /*
+     * Reposition the sun at the specified right ascension and declination,
+     * offset by our current position (p) so that it appears fixed at a great
+     * distance from the viewer. Also add in an optional rotation (i.e. for the
+     * current time of day).
+     */
+    bool reposition(double rightAscension, double declination,
+                    double sun_dist, double lat, double alt_asl, double sun_angle);
 
-    // reposition the sun at the specified right ascension and
-    // declination, offset by our current position (p) so that it
-    // appears fixed at a great distance from the viewer.  Also add in
-    // an optional rotation (i.e. for the current time of day.)
-    bool reposition( double rightAscension, double declination,
-		     double sun_dist, double lat, double alt_asl, double sun_angle );
-
-    // retrun the current color of the sun
-    SGVec4f get_color();
-    SGVec4f get_scene_color();
+private:
+    double prev_sun_angle{-9999.0};
+    osg::ref_ptr<osg::MatrixTransform> sun_transform;
+    SGPropertyNode_ptr env_node;
 };
-
-
-#endif // _SG_SUN_HXX_

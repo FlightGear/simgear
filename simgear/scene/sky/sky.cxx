@@ -92,25 +92,25 @@ void SGSky::build( double h_radius_m,
                    simgear::SGReaderWriterOptions* options )
 {
     dome = new SGSkyDome;
-    pre_transform->addChild( dome->build( h_radius_m, v_radius_m, options ) );
+    pre_transform->addChild(dome->build(h_radius_m, v_radius_m, options));
 
     pre_transform->addChild(_ephTransform.get());
     planets = new SGStars;
-    _ephTransform->addChild( planets->build(eph.getNumPlanets(), eph.getPlanets(), h_radius_m, options) );
+    _ephTransform->addChild(planets->build(eph.getNumPlanets(), eph.getPlanets(), h_radius_m, options));
 
     stars = new SGStars(property_tree_node);
-    _ephTransform->addChild( stars->build(eph.getNumStars(), eph.getStars(), h_radius_m, options) );
+    _ephTransform->addChild(stars->build(eph.getNumStars(), eph.getStars(), h_radius_m, options));
 
     galaxy = new SGGalaxy(property_tree_node);
-    _ephTransform->addChild( galaxy->build(tex_path, h_radius_m, options) );
+    _ephTransform->addChild( galaxy->build(h_radius_m, options));
     
     moon = new SGMoon;
-    _ephTransform->addChild( moon->build(tex_path, moon_size, options) );
+    _ephTransform->addChild(moon->build(moon_size, options));
 
     oursun = new SGSun;
-    _ephTransform->addChild( oursun->build(tex_path, sun_size, property_tree_node ) );
+    _ephTransform->addChild(oursun->build(sun_size, property_tree_node, options));
    
-    pre_root->addChild( pre_transform.get() );
+    pre_root->addChild(pre_transform.get());
 }
 
 
@@ -123,20 +123,15 @@ void SGSky::build( double h_radius_m,
 // 180 degrees = darkest midnight
 bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 {
-	dome->repaint( sc.adj_sky_color, sc.sky_color, sc.fog_color,
-                       sc.sun_angle, effective_visibility );
+    stars->repaint(sc.sun_angle, sc.altitude_m, eph.getNumStars(), eph.getStars());
+    planets->repaint(sc.sun_angle, sc.altitude_m, eph.getNumPlanets(), eph.getPlanets());
+    galaxy->repaint(sc.sun_angle, sc.altitude_m);
 
-        stars->repaint( sc.sun_angle, sc.altitude_m, eph.getNumStars(), eph.getStars() );
-        planets->repaint( sc.sun_angle,  sc.altitude_m, eph.getNumPlanets(), eph.getPlanets() );
-	oursun->repaint( sc.sun_angle, effective_visibility );
-	moon->repaint( sc.moon_angle );
-	galaxy->repaint( sc.sun_angle, sc.altitude_m );
-
-	for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
-            if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
-                cloud_layers[i]->repaint( sc.cloud_color );
-            }
-	}
+    for (unsigned i = 0; i < cloud_layers.size(); ++i) {
+        if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
+            cloud_layers[i]->repaint(sc.cloud_color);
+        }
+    }
 
     SGCloudField::updateFog((double)effective_visibility,
                             osg::Vec4f(toOsg(sc.fog_color), 1.0f));

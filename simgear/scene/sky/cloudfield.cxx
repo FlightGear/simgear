@@ -24,7 +24,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <osg/Fog>
 #include <osg/Texture2D>
 #include <osg/PositionAttitudeTransform>
 #include <osg/Vec4f>
@@ -174,7 +173,6 @@ SGCloudField::SGCloudField() :
     field_root->setName("3D Cloud field root");
     osg::StateSet *rootSet = field_root->getOrCreateStateSet();
     rootSet->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
-    rootSet->setAttributeAndModes(getFog());
 
     field_transform->addChild(altitude_transform.get());
     placed_root = new osg::Group();
@@ -425,17 +423,4 @@ bool SGCloudField::repositionCloud(int identifier, float lon, float lat, float a
 
 bool SGCloudField::isDefined3D(void) {
     return (! cloud_hash.empty());
-}
-
-SGCloudField::CloudFog::CloudFog() {
-    fog = new osg::Fog;
-    fog->setMode(osg::Fog::EXP2);
-    fog->setDataVariance(osg::Object::DYNAMIC);
-}
-
-void SGCloudField::updateFog(double visibility, const osg::Vec4f& color) {
-    const double sqrt_m_log01 = sqrt(-log(0.01));
-    osg::Fog* fog = CloudFog::instance()->fog.get();
-    fog->setColor(color);
-    fog->setDensity(sqrt_m_log01 / visibility);
 }

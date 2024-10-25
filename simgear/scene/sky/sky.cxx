@@ -132,9 +132,6 @@ bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
             cloud_layers[i]->repaint(sc.cloud_color);
         }
     }
-
-    SGCloudField::updateFog((double)effective_visibility,
-                            osg::Vec4f(toOsg(sc.fog_color), 1.0f));
     return true;
 }
 

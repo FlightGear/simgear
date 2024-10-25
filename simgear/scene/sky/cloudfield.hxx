@@ -37,7 +37,6 @@
 
 namespace osg
 {
-        class Fog;
         class StateSet;
         class Vec4f;
 }
@@ -88,12 +87,6 @@ private:
   osg::Vec3f old_pos;
   osg::Vec3f old_pos_accumulated;
   CloudHash cloud_hash;
-
-  struct CloudFog : public simgear::Singleton<CloudFog>
-  {
-    CloudFog();
-    osg::ref_ptr<osg::Fog> fog;
-  };
 
   void removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform);
   void addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform, float lon, float lat, float alt, float x, float y, bool auto_reposition = false);
@@ -170,12 +163,6 @@ public:
   static float getVisRange(void) { return view_distance; }
   static void setVisRange(float d) { view_distance = d; }
   void applyVisAndLoDRange(void);
-
-  static osg::Fog* getFog()
-  {
-          return CloudFog::instance()->fog.get();
-  }
-  static void updateFog(double visibility, const osg::Vec4f& color);
 };
 
 #endif // _CLOUDFIELD_HXX

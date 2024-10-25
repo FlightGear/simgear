@@ -1430,26 +1430,6 @@ SGScaleAnimation::createAnimationGroup(osg::Group& parent)
   return transform;
 }
 
-
-// Don't create a new state state everytime we need GL_NORMALIZE!
-
-namespace
-{
-Mutex normalizeMutex;
-
-osg::StateSet* getNormalizeStateSet()
-{
-    static osg::ref_ptr<osg::StateSet> normalizeStateSet;
-    ScopedLock<Mutex> lock(normalizeMutex);
-    if (!normalizeStateSet.valid()) {
-        normalizeStateSet = new osg::StateSet;
-        normalizeStateSet->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
-        normalizeStateSet->setDataVariance(osg::Object::STATIC);
-    }
-    return normalizeStateSet.get();
-}
-}
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of dist scale animation
 ////////////////////////////////////////////////////////////////////////
@@ -1469,7 +1449,6 @@ public:
   {
     setName(configNode->getStringValue("name", "dist scale animation"));
     setReferenceFrame(RELATIVE_RF);
-    setStateSet(getNormalizeStateSet());
     _factor = configNode->getFloatValue("factor", 1);
     _offset = configNode->getFloatValue("offset", 0);
     _min_v = configNode->getFloatValue("min", SGLimitsf::epsilon());
@@ -1599,7 +1578,6 @@ public:
   {
     setReferenceFrame(RELATIVE_RF);
     setName(configNode->getStringValue("name", "flash animation"));
-    setStateSet(getNormalizeStateSet());
 
     _axis[0] = configNode->getFloatValue("axis/x", 0);
     _axis[1] = configNode->getFloatValue("axis/y", 0);

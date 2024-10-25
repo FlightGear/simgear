@@ -156,7 +156,6 @@ SGLight::appendLight(const SGPropertyNode* configNode,
     debug_ss->setAttributeAndModes(
         new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE),
         osg::StateAttribute::ON);
-    debug_ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
     osg::Switch *debug_switch = new osg::Switch;
     debug_switch->addChild(debug_geode);

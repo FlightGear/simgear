@@ -9,7 +9,6 @@ set(HEADERS
     ModelRegistry.hxx
     PrimitiveCollector.hxx
     ReaderWriterGLTF.hxx
-    SGClipGroup.hxx
     SGInteractionAnimation.hxx
     SGLight.hxx
     SGPBRAnimation.hxx
@@ -36,7 +35,6 @@ set(SOURCES
     ModelRegistry.cxx
     PrimitiveCollector.cxx
     ReaderWriterGLTF.cxx
-    SGClipGroup.cxx
     SGInteractionAnimation.cxx
     SGLight.cxx
     SGLightAnimation.cxx

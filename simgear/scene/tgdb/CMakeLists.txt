@@ -22,7 +22,6 @@ set(HEADERS
     SGTriangleBin.hxx
     SGVasiDrawable.hxx
     SGVertexArrayBin.hxx
-    ShaderGeometry.hxx
     TreeBin.hxx
     VPBBufferData.hxx
     VPBElevationSlice.hxx
@@ -50,7 +49,6 @@ set(SOURCES
     SGOceanTile.cxx
     SGReaderWriterBTG.cxx
     SGVasiDrawable.cxx
-    ShaderGeometry.cxx
     TreeBin.cxx
     VPBElevationSlice.cxx
     VPBMaterialHandler.cxx

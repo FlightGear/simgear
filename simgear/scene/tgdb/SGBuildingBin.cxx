@@ -50,7 +50,6 @@
 #include <simgear/scene/model/model.hxx>
 #include <simgear/props/props.hxx>
 
-#include "ShaderGeometry.hxx"
 #include "SGBuildingBin.hxx"
 
 using namespace osg;

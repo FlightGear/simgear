@@ -39,11 +39,12 @@ struct SGVasiDrawable::LightData {
   
   void draw(const SGVec4f& color) const
   {
-    glBegin(GL_POINTS);
-    glColor4fv(color.data());
-    glNormal3fv(normal.data());
-    glVertex3fv(position.data());
-    glEnd();
+    // XXX: glcore
+    // glBegin(GL_POINTS);
+    // glColor4fv(color.data());
+    // glNormal3fv(normal.data());
+    // glVertex3fv(position.data());
+    // glEnd();
   }
   
   SGVec3f position;

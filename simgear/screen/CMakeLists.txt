@@ -4,7 +4,6 @@ set(HEADERS
     colors.hxx
     extensions.hxx
     screen-dump.hxx
-	tr.h
     video-encoder.hxx
     )
 
@@ -12,7 +11,6 @@ set(HEADERS
 set(SOURCES 
     extensions.cxx
     screen-dump.cxx
-	tr.cxx
     video-encoder.cxx
     )
 

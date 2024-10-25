@@ -278,31 +278,11 @@ SGMesh::SGMesh( const SGDemPtr dem,
             osg::StateSet* stateSet = geode->getOrCreateStateSet();
             stateSet->setRenderBinDetails(-10, "RenderBin");
 
-            osg::ShadeModel* shadeModel = new osg::ShadeModel;
-            shadeModel->setMode(osg::ShadeModel::SMOOTH);
-            stateSet->setAttributeAndModes(shadeModel);
-
-            stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
-            stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
             stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
             stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
             stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
-            stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
 
             stateSet->setAttribute(new osg::CullFace(osg::CullFace::BACK));
-
-            osg::Material* material = new osg::Material;
-            material->setColorMode(osg::Material::DIFFUSE);
-            material->setDiffuse(osg::Material::FRONT_AND_BACK,
-                                osg::Vec4(1, 1, 1, 1));
-            material->setAmbient(osg::Material::FRONT_AND_BACK,
-                                osg::Vec4(0, 0, 0, 1));
-            material->setEmission(osg::Material::FRONT_AND_BACK,
-                                osg::Vec4(0, 0, 0, 1));
-            material->setSpecular(osg::Material::FRONT_AND_BACK,
-                                osg::Vec4(0, 0, 0, 1));
-            material->setShininess(osg::Material::FRONT_AND_BACK, 0);
-            stateSet->setAttribute(material);
 
             geode->setStateSet(stateSet);
         } else if ( tm == SGMesh::TEXTURE_BLUEMARBLE ) {

@@ -62,15 +62,14 @@ namespace simgear
       
     Dir(const SGPath& path);
     Dir(const Dir& rel, const SGPath& relPath);
-    
-    enum FileTypes
-    {
-      TYPE_FILE = 1,
-      TYPE_DIR = 2,
-      NO_DOT_OR_DOTDOT = 1 << 12,
-      INCLUDE_HIDDEN = 1 << 13
+
+    enum FileTypes {
+        TYPE_FILE = 1,
+        TYPE_DIR = 2,
+        NO_DOT_OR_DOTDOT = 1 << 12,
+        INCLUDE_HIDDEN = 1 << 13
     };
-    
+
     PathList children(int types = 0, const std::string& nameGlob = "") const;
 
     /**

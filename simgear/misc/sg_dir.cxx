@@ -183,11 +183,11 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 
 	std::string utf8File = simgear::strutils::convertWStringToUtf8(fData.cFileName);
     if (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-	  if (types & NO_DOT_OR_DOTDOT) {
-		if ((utf8File == ".") || (utf8File == "..")) {
-		  continue;
-		}
-	  }
+        if (types & NO_DOT_OR_DOTDOT) {
+            if ((utf8File == ".") || (utf8File == "..")) {
+                continue;
+            }
+        }
 
       if (!(types & TYPE_DIR)) {
         continue;
@@ -198,6 +198,14 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 		continue; // always ignore device files
     } else if (!(types & TYPE_FILE)) {
        continue;
+    } else {
+        // regular file
+
+        // skip .foo files even on Windows. We use this in terraSync and other places
+        // to tread .dirindex files as hidden
+        if (!(types & INCLUDE_HIDDEN) && (utf8File.front() == '.')) {
+            continue;
+        }
     }
 
     result.push_back(file(utf8File));
@@ -286,6 +294,13 @@ bool Dir::isNull() const
 bool Dir::isEmpty() const
 {
 #if defined(SG_WINDOWS)
+    // PathIsDirectoryEmptyW returns false for a missing / non-directory path,
+    // but our POSIX implementation below returns *true* for a non-existing
+    // directory, so let's be consistent.
+    if (!_path.exists()) {
+        return true;
+    }
+
   std::wstring ps = _path.wstr();
   return PathIsDirectoryEmptyW( ps.c_str() );
 #else

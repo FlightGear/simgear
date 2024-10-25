@@ -55,7 +55,32 @@ void test_isEmpty()
     SG_VERIFY(d.isEmpty());
 
     d.remove();
+    SG_VERIFY(!d.exists());
     SG_VERIFY(d.isEmpty());     // eek, but that's how it is
+}
+
+void test_hiddenChildren()
+{
+    simgear::Dir d = simgear::Dir::tempDir("FlightGear");
+    SG_VERIFY(!d.isNull() && d.exists() && d.isEmpty());
+
+    {
+        sg_ofstream file(d.file(".hiddenFile"));
+    }
+    {
+        sg_ofstream file(d.file("regularFile"));
+    }
+
+
+    const auto c1 = d.children();
+    SG_VERIFY(c1.size() == 1);
+    SG_VERIFY(c1.front() == d.file("regularFile"));
+
+    const auto c2 = d.children(simgear::Dir::INCLUDE_HIDDEN | simgear::Dir::TYPE_FILE | simgear::Dir::TYPE_DIR | simgear::Dir::NO_DOT_OR_DOTDOT);
+    SG_VERIFY(c2.size() == 2);
+
+    const auto c3 = d.children(simgear::Dir::INCLUDE_HIDDEN | simgear::Dir::TYPE_FILE | simgear::Dir::TYPE_DIR);
+    SG_VERIFY(c3.size() == 4);
 }
 
 int main(int argc, char **argv)
@@ -64,6 +89,7 @@ int main(int argc, char **argv)
     test_setRemoveOnDestroy();
     test_tempDir();
     test_isEmpty();
+    test_hiddenChildren();
 
     return EXIT_SUCCESS;
 }

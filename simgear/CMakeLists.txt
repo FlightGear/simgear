@@ -112,6 +112,13 @@ target_link_libraries(SimGearCore PRIVATE
     ${WINSOCK_LIBRARY})
 
 if(NOT SIMGEAR_HEADLESS)
+    # On Windows FindOpenGL only gives us support for OpenGL 1.2, so we need to
+    # manually include a more modern header.
+    # OpenGL is only used by ShaderVG.
+    if(WIN32)
+        target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/glcore)
+    endif()
+
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShaderVG/include)
 
     target_link_libraries(SimGearScene PUBLIC         

@@ -274,7 +274,7 @@ public:
     return true;
   }
 
-  osg::ref_ptr<osg::Node> getSurfaceGeometry(SGMaterialCache* matcache, bool useVBOs) const
+  osg::ref_ptr<osg::Node> getSurfaceGeometry(SGMaterialCache* matcache) const
   {
     if (materialTriangleMap.empty())
       return 0;
@@ -312,7 +312,7 @@ public:
               include_normals = false;
       }
 
-      osg::Geometry* geometry = i->second.buildGeometry(useVBOs, include_normals);
+      osg::Geometry* geometry = i->second.buildGeometry(include_normals);
       eg->runGenerators(geometry);  // Generate extra data needed by effect
       eg->addDrawable(geometry);
       if (group) {

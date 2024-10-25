@@ -55,14 +55,12 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
 
     SGMaterialLibPtr matlib;
     osg::ref_ptr<SGMaterialCache> matcache;
-    bool useVBOs = false;
     double object_range = SG_OBJECT_RANGE_ROUGH;
     double tile_min_expiry = SG_TILE_MIN_EXPIRY;
     bool usePhotoscenery = false;
 
     if (options) {
       matlib = options->getMaterialLib();
-      useVBOs = (options->getPluginStringData("SimGear::USE_VBOS") == "ON");
       SGPropertyNode* propertyNode = options->getPropertyNode().get();
 
       object_range = propertyNode->getDoubleValue("/sim/rendering/static-lod/rough", object_range);
@@ -121,7 +119,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     if (!tileGeometryBin->insertSurfaceGeometry(tile, matcache))
       return NULL;
 
-    osg::ref_ptr<osg::Node> node = tileGeometryBin->getSurfaceGeometry(matcache, useVBOs);
+    osg::ref_ptr<osg::Node> node = tileGeometryBin->getSurfaceGeometry(matcache);
 
     if (node) {
       // Get base node stateset

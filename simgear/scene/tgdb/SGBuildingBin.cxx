@@ -495,8 +495,8 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
 
   // Set up a BuildingBin from a file containing a list of individual building
   // positions.
-  SGBuildingBin::SGBuildingBin(const SGPath& absoluteFileName, const SGMaterial *mat, bool useVBOs) :
-    SGBuildingBin::SGBuildingBin(mat, useVBOs)
+  SGBuildingBin::SGBuildingBin(const SGPath& absoluteFileName, const SGMaterial *mat) :
+    SGBuildingBin::SGBuildingBin(mat)
   {
     sg_gzifstream stream(absoluteFileName);
     if (!stream.is_open()) {
@@ -575,7 +575,7 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
   };
 
   // Set up the building set based on the material definitions
-  SGBuildingBin::SGBuildingBin(const SGMaterial* mat, bool useVBOs) : _material(const_cast<SGMaterial*>(mat))
+  SGBuildingBin::SGBuildingBin(const SGMaterial* mat) : _material(const_cast<SGMaterial*>(mat))
   {
       const auto& materialNames = mat->get_names();
       if (materialNames.empty()) {

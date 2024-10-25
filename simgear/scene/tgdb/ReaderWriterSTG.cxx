@@ -283,7 +283,6 @@ struct ReaderWriterSTG::_ModelBin {
 
             if (!_buildingList.empty()) {
                 SGMaterialLibPtr matlib = _options->getMaterialLib();
-                bool useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
 
                 if (!matlib) {
                     SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get materials definition for buildings");
@@ -301,7 +300,7 @@ struct ReaderWriterSTG::_ModelBin {
                         }
 
                         const auto path = SGPath(b._filename);
-                        SGBuildingBin* buildingBin = new SGBuildingBin(path, mat, useVBOs);
+                        SGBuildingBin* buildingBin = new SGBuildingBin(path, mat);
 
                         SGBuildingBinList bbList;
                         bbList.push_back(buildingBin);

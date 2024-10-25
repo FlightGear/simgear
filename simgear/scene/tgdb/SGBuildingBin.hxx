@@ -181,8 +181,8 @@ private:
 
 public:
 
-  SGBuildingBin(const SGMaterial *mat, bool useVBOs);
-  SGBuildingBin(const SGPath& absoluteFileName, const SGMaterial *mat, bool useVBOs);
+  SGBuildingBin(const SGMaterial *mat);
+  SGBuildingBin(const SGPath& absoluteFileName, const SGMaterial *mat);
 
   ~SGBuildingBin();   // non-virtual intentional
 

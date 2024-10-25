@@ -292,7 +292,6 @@ public:
         float building_density,
         bool use_random_objects,
         bool use_random_buildings,
-        bool useVBOs,
         SGMatModelBin&     randomModels,
         SGBuildingBinList& randomBuildings )
     {
@@ -327,7 +326,7 @@ public:
             
             if (building_coverage > 0) {
                 // REVIEW: Memory Leak - 317,405 (544 direct, 316,861 indirect) bytes in 4 blocks are definitely lost
-                bin = new SGBuildingBin(mat, useVBOs);                
+                bin = new SGBuildingBin(mat);
                 randomBuildings.push_back(bin);
             }
             
@@ -906,8 +905,7 @@ public:
       float vegetation_density = 1.0f;
       float building_density = 1.0f;
       float object_range = SG_OBJECT_RANGE_ROUGH;
-      bool useVBOs = false;
-      
+
       osg::ref_ptr<osg::Group> randomObjects;
       osg::ref_ptr<osg::Group> forestNode;
       osg::ref_ptr<osg::Group> buildingNode;
@@ -935,8 +933,6 @@ public:
                 = propertyNode->getFloatValue("/sim/rendering/static-lod/rough",
                                               object_range);
         }
-        
-        useVBOs = (_options->getPluginStringData("SimGear::USE_VBOS") == "ON");
       }
 
       SGMatModelBin     randomModels;
@@ -948,7 +944,6 @@ public:
                                             building_density,
                                             use_random_objects,
                                             use_random_buildings,
-                                            useVBOs,
                                             randomModels,
                                             randomBuildings
                                           );

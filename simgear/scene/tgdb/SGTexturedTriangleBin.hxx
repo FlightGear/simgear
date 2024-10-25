@@ -431,7 +431,7 @@ public:
 
   // If include_norms is true, normals from the input vertices are added to the geometry. If false,
   // they should be generated during geometry initialisation.
-  osg::Geometry* buildGeometry(const TriangleVector& triangles, bool useVBOs, bool include_norms) const
+  osg::Geometry* buildGeometry(const TriangleVector& triangles, bool include_norms) const
   {
     // Do not build anything if there is nothing in here ...
     if (empty() || triangles.empty())
@@ -448,11 +448,9 @@ public:
     colors->push_back(osg::Vec4(1, 1, 1, 1));
 
     osg::Geometry* geometry = new osg::Geometry;
-    if (useVBOs) {
-        geometry->setUseDisplayList(false);
-        geometry->setUseVertexBufferObjects(true);
-    }
-    
+    geometry->setUseDisplayList(false);
+    geometry->setUseVertexBufferObjects(true);
+
     geometry->setDataVariance(osg::Object::STATIC);
     geometry->setVertexArray(vertices.get());
     if (include_norms) { 
@@ -516,8 +514,8 @@ public:
     return geometry;
   }
 
-  osg::Geometry* buildGeometry(bool useVBOs, bool include_norms) const
-  { return buildGeometry(getTriangles(), useVBOs, include_norms); }
+  osg::Geometry* buildGeometry(bool include_norms) const
+  { return buildGeometry(getTriangles(), include_norms); }
   
   int getTextureIndex() const
   {

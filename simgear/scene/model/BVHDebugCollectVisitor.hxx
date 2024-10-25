@@ -64,7 +64,6 @@ public:
     {
         osg::StateSet* stateSet = _group->getOrCreateStateSet();
         stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-        stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
         stateSet->setAttribute(new osg::Depth(osg::Depth::LESS, 0, 1, false));
         osg::BlendFunc *blendFunc;
         blendFunc = new osg::BlendFunc(osg::BlendFunc::SRC_ALPHA,

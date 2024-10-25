@@ -30,14 +30,6 @@ class StateAttributeFactory : public ReferencedSingleton<StateAttributeFactory> 
 public:
     virtual ~StateAttributeFactory();
 
-    // XXX: Fixed-pipeline, should go again once we go core profile
-    // Alpha test > .01
-    osg::AlphaFunc* getStandardAlphaFunc() { return _standardAlphaFunc.get(); }
-    // modulate
-    osg::TexEnv* getStandardTexEnv() { return _standardTexEnv.get(); }
-    osg::ShadeModel* getSmoothShadeModel() { return _smooth.get(); }
-    osg::ShadeModel* getFlatShadeModel() { return _flat.get(); }
-
     // alpha source, 1 - alpha destination
     osg::BlendFunc* getStandardBlendFunc() { return _standardBlendFunc.get(); }
     // White color
@@ -59,12 +51,6 @@ public:
 
     StateAttributeFactory();    
 protected:
-    // XXX: Legacy stuff, should be removed
-    osg::ref_ptr<osg::AlphaFunc> _standardAlphaFunc;
-    osg::ref_ptr<osg::ShadeModel> _smooth;
-    osg::ref_ptr<osg::ShadeModel> _flat;
-    osg::ref_ptr<osg::TexEnv> _standardTexEnv;
-
     osg::ref_ptr<osg::BlendFunc> _standardBlendFunc;
     osg::ref_ptr<osg::Vec4Array> _white;
     osg::ref_ptr<osg::Texture2D> _whiteTexture;

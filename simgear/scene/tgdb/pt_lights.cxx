@@ -233,9 +233,7 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
       StateAttributeFactory *attrFact = StateAttributeFactory::instance();
       simpleLightSS = new StateSet;
       simpleLightSS->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-      simpleLightSS->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       simpleLightSS->setAttributeAndModes(attrFact->getStandardBlendFunc());
-      simpleLightSS->setAttributeAndModes(attrFact->getStandardAlphaFunc());
     }
   }
   geometry->setStateSet(simpleLightSS.get());

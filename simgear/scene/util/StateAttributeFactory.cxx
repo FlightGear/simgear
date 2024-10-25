@@ -26,20 +26,6 @@ namespace simgear
 {
 StateAttributeFactory::StateAttributeFactory()
 {
-    // XXX: Legacy stuff, should be removed
-    _standardAlphaFunc = new AlphaFunc;
-    _standardAlphaFunc->setFunction(osg::AlphaFunc::GREATER);
-    _standardAlphaFunc->setReferenceValue(0.01f);
-    _standardAlphaFunc->setDataVariance(Object::STATIC);
-    _smooth = new ShadeModel;
-    _smooth->setMode(ShadeModel::SMOOTH);
-    _smooth->setDataVariance(Object::STATIC);
-    _flat = new ShadeModel(ShadeModel::FLAT);
-    _flat->setDataVariance(Object::STATIC);
-    _standardTexEnv = new TexEnv;
-    _standardTexEnv->setMode(TexEnv::MODULATE);
-    _standardTexEnv->setDataVariance(Object::STATIC);
-
     // Standard blend function
     _standardBlendFunc = new BlendFunc;
     _standardBlendFunc->setSource(BlendFunc::SRC_ALPHA);

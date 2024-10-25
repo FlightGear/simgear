@@ -78,15 +78,10 @@ SGMakeState(const SGPath &path, const char* colorTexture,
 
     osg::ref_ptr<SGReaderWriterOptions> options;
     options = SGReaderWriterOptions::fromPath(path);
-    stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture,
-                                                     options.get()));
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
+    stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture, options.get()));
     StateAttributeFactory* attribFactory = StateAttributeFactory::instance();
-    stateSet->setAttributeAndModes(attribFactory->getSmoothShadeModel());
-    stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    stateSet->setAttributeAndModes(attribFactory->getStandardAlphaFunc());
     stateSet->setAttributeAndModes(attribFactory->getStandardBlendFunc());
-    stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
 
     return stateSet;
 }

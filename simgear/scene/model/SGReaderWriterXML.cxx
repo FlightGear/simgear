@@ -742,19 +742,6 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     } // end of submodel loading
 
-    osg::Node *(*load_panel)(SGPropertyNode *) = options->getLoadPanel();
-    if ( load_panel ) {
-        // Load panels
-        vector<SGPropertyNode_ptr> panel_nodes = props->getChildren("panel");
-        for (unsigned i = 0; i < panel_nodes.size(); i++) {
-            SG_LOG(SG_IO, SG_DEBUG, "Loading a panel");
-            osg::ref_ptr<osg::Node> panel = load_panel(panel_nodes[i]);
-            if (panel_nodes[i]->hasValue("name"))
-                panel->setName(panel_nodes[i]->getStringValue("name"));
-            group->addChild(panel.get());
-        }
-    }
-
     auto particlesManager = ParticlesGlobalManager::instance();
     if (particlesManager->isEnabled()) { //dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
         std::vector<SGPropertyNode_ptr> particle_nodes;

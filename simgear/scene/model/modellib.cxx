@@ -48,7 +48,6 @@ osgDB::RegisterReaderWriterProxy<SGReaderWriterXML> g_readerWriter_XML_Proxy;
 ModelRegistryCallbackProxy<LoadOnlyCallback> g_xmlCallbackProxy("xml");
 
 SGPropertyNode_ptr SGModelLib::static_propRoot;
-SGModelLib::panel_func SGModelLib::static_panelFunc = NULL;
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGModelLib.
@@ -63,11 +62,6 @@ void SGModelLib::init(const string &root_dir, SGPropertyNode* root)
 void SGModelLib::resetPropertyRoot()
 {
     static_propRoot.clear();
-}
-
-void SGModelLib::setPanelFunc(panel_func pf)
-{
-  static_panelFunc = pf;
 }
 
 std::string SGModelLib::findDataFile(const std::string& file,
@@ -129,7 +123,6 @@ osg::Node*
 SGModelLib::loadModel(const string &path,
                        SGPropertyNode *prop_root,
                        SGModelData *data,
-                       bool load2DPanels,
                        bool autoTooltipsMaster,
                        int autoTooltipsMasterMax)
 {
@@ -138,10 +131,6 @@ SGModelLib::loadModel(const string &path,
     opt->getDatabasePathList().push_front( osgDB::getFilePath(path) );
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
-
-    if (load2DPanels) {
-       opt->setLoadPanel(static_panelFunc);
-    }
 
     opt->setAutoTooltipsMaster(autoTooltipsMaster);
     opt->setAutoTooltipsMasterMax(autoTooltipsMasterMax);
@@ -166,7 +155,6 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     opt->getDatabasePathList().push_front( osgDB::getFilePath(path) );
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
-    opt->setLoadPanel(static_panelFunc);
     std::string lext = SGPath(path).lower_extension();
     if ((lext == "ac") || (lext == "obj")) {
         opt->setInstantiateEffects(true);
@@ -196,7 +184,6 @@ SGModelLib::loadPagedModel(SGPropertyNode *prop_root, SGModelData *data, SGModel
     opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
-    opt->setLoadPanel(static_panelFunc);
     if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
         opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     else

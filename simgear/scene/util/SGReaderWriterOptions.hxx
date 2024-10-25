@@ -53,7 +53,6 @@ public:
     //SGReaderWriterOptions* cloneOptions(const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) const { return static_cast<SGReaderWriterOptions*>(clone(copyop)); }
 
     SGReaderWriterOptions() : _materialLib(0),
-                              _load_panel(0),
                               _instantiateEffects(false),
                               _instantiateMaterialEffects(false),
                               _autoTooltipsMaster(false),
@@ -64,7 +63,6 @@ public:
     { }
     SGReaderWriterOptions(const std::string& str) : osgDB::Options(str),
                                                     _materialLib(0),
-                                                    _load_panel(0),
                                                     _instantiateEffects(false),
                                                     _instantiateMaterialEffects(false),
                                                     _autoTooltipsMaster(false),
@@ -76,7 +74,6 @@ public:
     SGReaderWriterOptions(const osgDB::Options& options,
                           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) : osgDB::Options(options, copyop),
                                                                                    _materialLib(0),
-                                                                                   _load_panel(0),
                                                                                    _instantiateEffects(false),
                                                                                    _instantiateMaterialEffects(false),
                                                                                    _autoTooltipsMaster(false),
@@ -92,7 +89,6 @@ public:
 #ifdef ENABLE_GDAL
                                                                                    _dem(options._dem),
 #endif
-                                                                                   _load_panel(options._load_panel),
                                                                                    _model_data(options._model_data),
                                                                                    _instantiateEffects(options._instantiateEffects),
                                                                                    _instantiateMaterialEffects(options._instantiateMaterialEffects),
@@ -124,13 +120,6 @@ public:
     void setDem(SGDem* dem)
     { _dem = dem; }
 #endif
-
-    typedef osg::Node *(*panel_func)(SGPropertyNode *);
-
-    panel_func getLoadPanel() const
-    { return _load_panel; }
-    void setLoadPanel(panel_func pf)
-    { _load_panel=pf; }
 
     SGModelData *getModelData() const
     { return _model_data.get(); }
@@ -217,7 +206,6 @@ private:
     SGSharedPtr<SGDem> _dem;
 #endif
 
-    osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
     
     bool _instantiateEffects;

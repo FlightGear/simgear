@@ -44,19 +44,15 @@ class SGModelLOD;  // defined below
 class SGModelLib final
 {
 public:
-    typedef osg::Node *(*panel_func)(SGPropertyNode *);
-
     static void init(const std::string &root_dir, SGPropertyNode* root);
 
     static void resetPropertyRoot();
-
-    static void setPanelFunc(panel_func pf);
 
     // Load a 3D model (any format)
     // data->modelLoaded() will be called after the model is loaded
     static osg::Node* loadModel(const std::string &path,
                                 SGPropertyNode *prop_root = NULL,
-                                SGModelData *data=0, bool load2DPanels=false,
+                                SGModelData *data=0,
                                 bool autoTooltipsMaster=false,
                                 int autoTooltipsMasterMax=0);
 
@@ -96,7 +92,6 @@ protected:
 
 private:
   static SGPropertyNode_ptr static_propRoot;
-  static panel_func static_panelFunc;
 };
 
 

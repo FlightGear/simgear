@@ -244,18 +244,6 @@ osg::Drawable* createDrawable(LightBin& lightList, const osg::Matrix& transform)
                                     0, vertices->size());
     geometry->addPrimitiveSet(drawArrays);
 
-    osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-    stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-    stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    osg::BlendFunc* blendFunc = new osg::BlendFunc;
-    stateSet->setAttribute(blendFunc);
-    stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-
-    osg::AlphaFunc* alphaFunc;
-    alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
-    stateSet->setAttribute(alphaFunc);
-    stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-    
     return geometry;
 }
 

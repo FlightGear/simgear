@@ -9,6 +9,7 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/PolygonMode>
+#include <osg/Uniform>
 #include <osg/io_utils>
 
 #include <osgUtil/CullVisitor>
@@ -107,36 +108,6 @@ public:
     ClusteredShading *getClusteredShading() const { return _clustered.get(); }
 protected:
     osg::ref_ptr<ClusteredShading> _clustered;
-};
-
-class LightFinder : public osg::NodeVisitor {
-public:
-    LightFinder(const std::string &name) :
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _name(name) {}
-    virtual void apply(osg::Node &node) {
-        // Only traverse the scene graph if we haven't found a light yet (or if
-        // the one we found earlier is no longer valid).
-        if (getLight().valid())
-            return;
-
-        if (node.getName() == _name) {
-            osg::LightSource *light_source =
-                dynamic_cast<osg::LightSource *>(&node);
-            if (light_source)
-                _light = light_source->getLight();
-        }
-
-        traverse(node);
-    }
-    osg::ref_ptr<osg::Light> getLight() const {
-        osg::ref_ptr<osg::Light> light_ref;
-        _light.lock(light_ref);
-        return light_ref;
-    }
-protected:
-    std::string _name;
-    osg::observer_ptr<osg::Light> _light;
 };
 
 //------------------------------------------------------------------------------
@@ -807,41 +778,30 @@ RegisterPassBuilder<ComputePassBuilder> registerComputePass("compute");
 struct CSMUpdateCallback : public Pass::PassUpdateCallback {
 public:
     CSMUpdateCallback(CSMCullCallback *cull_callback,
-                      const std::string &light_name,
+                      const osg::Uniform *sundir_uniform,
                       bool render_at_night,
                       float near_m, float far_m,
                       int sm_width, int sm_height) :
         _cull_callback(cull_callback),
-        _light_finder(new LightFinder(light_name)),
+        _sundir_uniform(sundir_uniform),
         _render_at_night(render_at_night),
         _near_m(near_m),
-        _far_m(far_m) {
+        _far_m(far_m)
+    {
         _half_sm_size = osg::Vec2d((double)sm_width, (double)sm_height) * 0.5;
     }
+
     virtual void updatePass(Pass &pass,
                             const osg::Matrix &view_matrix,
-                            const osg::Matrix &proj_matrix) {
+                            const osg::Matrix &proj_matrix)
+    {
         osg::Camera *camera = pass.camera;
-        // Look for the light
-        camera->accept(*_light_finder);
-        osg::ref_ptr<osg::Light> light = _light_finder->getLight();
-        if (!light) {
-            // We could not find any light
-            return;
-        }
-        osg::Vec4 light_pos = light->getPosition();
-        if (light_pos.w() != 0.0) {
-            // We only support directional light sources for now
-            return;
-        }
-        osg::Vec3 light_dir =
-            osg::Vec3(light_pos.x(), light_pos.y(), light_pos.z());
 
-        // The light direction we've just queried is from the previous frame.
-        // This is because the position of the osg::LightSource gets updated
-        // during the update traversal, and this function happens before that
-        // in the SubsystemMgr update.
-        // This is not a problem though (for now).
+        // HACK: Get the light direction from the fg_SunDirection uniform
+        osg::Vec3 light_dir;
+        if (_sundir_uniform) {
+            _sundir_uniform->get(light_dir);
+        }
 
         osg::Matrix view_inverse = osg::Matrix::inverse(view_matrix);
         _cull_callback->setRealInverseViewMatrix(view_inverse);
@@ -908,7 +868,7 @@ public:
 
 protected:
     osg::observer_ptr<CSMCullCallback> _cull_callback;
-    osg::ref_ptr<LightFinder>     _light_finder;
+    const osg::Uniform*           _sundir_uniform;
     bool                          _render_at_night;
     float                         _near_m;
     float                         _far_m;
@@ -929,8 +889,9 @@ struct CSMPassBuilder : public PassBuilder {
         CSMCullCallback *cull_callback = new CSMCullCallback(pass->name);
         camera->setCullCallback(cull_callback);
 
-        // Use the Sun as the default light source
-        std::string light_name = root->getStringValue("light-name", "FGLightSource");
+        auto builtin_uniforms = compositor->getBuiltinUniforms();
+        const osg::Uniform* sundir_uniform = builtin_uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION_WORLD];
+
         bool render_at_night = root->getBoolValue("render-at-night", true);
         float near_m = root->getFloatValue("near-m");
         float far_m  = root->getFloatValue("far-m");
@@ -938,7 +899,7 @@ struct CSMPassBuilder : public PassBuilder {
         int sm_height = camera->getViewport()->height();
         pass->update_callback = new CSMUpdateCallback(
             cull_callback,
-            light_name,
+            sundir_uniform,
             render_at_night,
             near_m, far_m,
             sm_width, sm_height);

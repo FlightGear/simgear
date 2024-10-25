@@ -23,7 +23,6 @@
 
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
 
-#cmakedefine OPENVG
 #cmakedefine SYSTEM_EXPAT
 #cmakedefine ENABLE_SOUND
 #cmakedefine USE_AEONWAVE

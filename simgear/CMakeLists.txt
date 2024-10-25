@@ -112,7 +112,7 @@ target_link_libraries(SimGearCore PRIVATE
     ${WINSOCK_LIBRARY})
 
 if(NOT SIMGEAR_HEADLESS)
-    target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/${OPENVG}/include)
+    target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShaderVG/include)
 
     target_link_libraries(SimGearScene PUBLIC         
         SimGearCore
@@ -133,7 +133,7 @@ if(NOT SIMGEAR_HEADLESS)
     )
 
     if(HAVE_INTTYPES_H)
-        # ShivaVG/ShaderVG needs inttypes.h
+        # ShaderVG needs inttypes.h
         target_compile_definitions(SimGearScene PRIVATE HAVE_INTTYPES_H)
     endif()
 

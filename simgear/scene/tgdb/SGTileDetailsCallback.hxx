@@ -39,7 +39,6 @@
 #include <simgear/debug/ErrorReportingCallback.hxx>
 
 #include "SGNodeTriangles.hxx"
-#include "GroundLightManager.hxx"
 #include "SGLightBin.hxx"
 #include "SGDirectionalLightBin.hxx"
 #include "SGModelBin.hxx"
@@ -763,14 +762,11 @@ public:
       SGLightBin randomTileLights;
       computeRandomSurfaceLights(matTris, randomTileLights);
       
-      GroundLightManager* lightManager = GroundLightManager::instance();
       osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
       SGVec3f up(0, 0, 1);
 
       if (tileLights.getNumLights() > 0 || randomTileLights.getNumLights() > 0) {
         osg::ref_ptr<osg::Group> groundLights0 = new osg::Group;
-
-        groundLights0->setStateSet(lightManager->getGroundLightStateSet());
         groundLights0->setNodeMask(GROUNDLIGHTS0_BIT);
 
         osg::ref_ptr<EffectGeode> geode = new EffectGeode;        
@@ -785,11 +781,9 @@ public:
 
       if (randomTileLights.getNumLights() > 0) {
         osg::ref_ptr<osg::Group> groundLights1 = new osg::Group;
-        groundLights1->setStateSet(lightManager->getGroundLightStateSet());
         groundLights1->setNodeMask(GROUNDLIGHTS1_BIT);
         
         osg::ref_ptr<osg::Group> groundLights2 = new osg::Group;
-        groundLights2->setStateSet(lightManager->getGroundLightStateSet());
         groundLights2->setNodeMask(GROUNDLIGHTS2_BIT);
 
         osg::ref_ptr<EffectGeode> geode1 = new EffectGeode;
@@ -833,8 +827,6 @@ public:
             osg::Drawable* vasiDraw = SGLightFactory::getVasi(up, *i, red, white);
             vasiGeode->addDrawable( vasiDraw );
         }
-        osg::StateSet* ss = lightManager->getRunwayLightStateSet();
-        vasiGeode->setStateSet( ss );
         lightGroup->addChild(vasiGeode);
       }
 
@@ -851,7 +843,6 @@ public:
           || !guardLights.empty()) {
 
         osg::Group* rwyLightsGroup = new osg::Group;
-        rwyLightsGroup->setStateSet(lightManager->getRunwayLightStateSet());
         rwyLightsGroup->setNodeMask(RUNWAYLIGHTS_BIT);
 
         SGDirectionalLightListBin::const_iterator i;
@@ -885,7 +876,6 @@ public:
 
       if (taxiLights.getNumLights() > 0) {
         osg::Group* taxiLightsGroup = new osg::Group;
-        taxiLightsGroup->setStateSet(lightManager->getTaxiLightStateSet());
         taxiLightsGroup->setNodeMask(RUNWAYLIGHTS_BIT);
         EffectGeode* geode = new EffectGeode;
         geode->setEffect(runwayEffect);

@@ -1,26 +1,9 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2006-2009 Mathias Froehlich 
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- *
+/*
+ * SPDX-FileCopyrightText: Copyright (C) 2006-2009 Mathias Froehlich
+ * SPDX-License-Identifier: LGPL-2.0-or-later
  */
 
-#ifndef SG_SCENE_UPDATEVISITOR_HXX
-#define SG_SCENE_UPDATEVISITOR_HXX
+#pragma once
 
 #include <osg/NodeVisitor>
 #include <osg/PagedLOD>
@@ -108,17 +91,12 @@ public:
   const SGVec3d& getHorizLocalDown() const
   { return mHorizLocalDown; }
 
-  void setLight(const SGVec3f& sundirection, const SGVec3f& moondirection,
-		const SGVec4f& ambient,
-                const SGVec4f& diffuse, const SGVec4f& specular,
-                const SGVec4f& fogColor, double sunAngleDeg)
+  void setLight(const SGVec3f& sundirection,
+                const SGVec3f& moondirection,
+                double sunAngleDeg)
   {
     mLightDirection = sundirection;
     mSecondLightDirection = moondirection;
-    mAmbientLight = ambient;
-    mDiffuseLight = diffuse;
-    mSpecularLight = specular;
-    mFogColor = fogColor;
     mSunAngleDeg = sunAngleDeg;
   }
 
@@ -126,15 +104,6 @@ public:
   { return mLightDirection; }
   const SGVec3f& getSecondLightDirection() const
   { return mSecondLightDirection; }
-  const SGVec4f& getAmbientLight() const
-  { return mAmbientLight; }
-  const SGVec4f& getDiffuseLight() const
-  { return mDiffuseLight; }
-  const SGVec4f& getSpecularLight() const
-  { return mSpecularLight; }
-  const SGVec4f& getFogColor() const
-  { return mFogColor; }
-
   double getSunAngleDeg() const
   { return mSunAngleDeg; }
 
@@ -222,12 +191,6 @@ private:
 
   SGVec3f mLightDirection;
   SGVec3f mSecondLightDirection;
-  SGVec4f mAmbientLight;
-  SGVec4f mDiffuseLight;
-  SGVec4f mSpecularLight;
-  SGVec4f mFogColor;
 
   double mSunAngleDeg;
 };
-
-#endif

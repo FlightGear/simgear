@@ -1,51 +1,14 @@
-#include <osg/Fog>
+/*
+ * SPDX-FileCopyrightText: Copyright (C) 2007  Tim Moore timoore@redhat.com
+ * SPDX-FileCopyrightText: Copyright (C) 2006-2007 Mathias Froehlich
+ * SPDX-License-Identifier: LGPL-2.0-or-later
+ */
 
-#include <simgear/scene/util/RenderConstants.hxx>
 #include "GroundLightManager.hxx"
 
+#include <simgear/scene/util/RenderConstants.hxx>
 
-
-using namespace osg;
-
-namespace
-{
-StateSet* makeLightSS()
-{
-    StateSet* ss = new StateSet;
-    Fog* fog = new Fog;
-    fog->setMode(Fog::EXP2);
-    ss->setAttribute(fog);
-    ss->setDataVariance(Object::DYNAMIC);
-    return ss;
-}
-}
-
-namespace simgear
-{
-GroundLightManager::GroundLightManager()
-{
-    runwayLightSS = makeLightSS();
-    taxiLightSS = makeLightSS();
-    groundLightSS = makeLightSS();
-}
-
-void GroundLightManager::update(const SGUpdateVisitor* updateVisitor)
-{
-    osg::Fog* fog;
-    SGVec4f fogColor = updateVisitor->getFogColor();
-    fog = static_cast<osg::Fog*>(runwayLightSS
-                                 ->getAttribute(StateAttribute::FOG));
-    fog->setColor(toOsg(fogColor));
-    fog->setDensity(updateVisitor->getRunwayFogExp2Density());
-    fog = static_cast<osg::Fog*>(taxiLightSS
-                                 ->getAttribute(StateAttribute::FOG));
-    fog->setColor(toOsg(fogColor));
-    fog->setDensity(updateVisitor->getTaxiFogExp2Density());
-    fog = static_cast<osg::Fog*>(groundLightSS
-                                 ->getAttribute(StateAttribute::FOG));
-    fog->setColor(toOsg(fogColor));
-    fog->setDensity(updateVisitor->getGroundLightsFogExp2Density());
-}
+namespace simgear {
 
 unsigned GroundLightManager::getLightNodeMask(const SGUpdateVisitor* updateVisitor)
 {
@@ -63,4 +26,5 @@ unsigned GroundLightManager::getLightNodeMask(const SGUpdateVisitor* updateVisit
         mask |= GROUNDLIGHTS0_BIT;
     return mask;
 }
-}
+
+} // namespace simgear

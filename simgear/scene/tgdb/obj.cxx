@@ -29,6 +29,7 @@
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
+#include <osg/PagedLOD>
 #include <osg/Texture2D>
 #include <osg/TexEnv>
 

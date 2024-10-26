@@ -178,7 +178,7 @@ struct GLTFBuilder {
                 } else if (attr.first == "COLOR_0") {
                     geom->setColorArray(arrays[attr.second].get());
                 } else {
-                    SG_LOG(SG_INPUT, SG_WARN, "glTF loader: Skipping vertex attribute '"
+                    SG_LOG(SG_INPUT, SG_DEBUG, "glTF loader: Skipping vertex attribute '"
                            << attr.first << "'");
                 }
             }

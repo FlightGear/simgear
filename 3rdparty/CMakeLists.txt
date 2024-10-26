@@ -3,7 +3,9 @@ if (NOT SYSTEM_EXPAT)
 endif()
 
 if (NOT SYSTEM_UDNS)
-	add_subdirectory(udns)
+	if(NOT c-ares_FOUND)
+		add_subdirectory(udns)
+	endif()
 endif()
 
 add_subdirectory(tiny_gltf)

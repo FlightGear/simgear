@@ -67,7 +67,7 @@ target_include_directories(SimGearCore BEFORE PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
-target_precompile_headers(SimGearCore PRIVATE 
+target_precompile_headers(SimGearCore PRIVATE
         "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_precompile.h>")
 # for simgear_config.h
 target_include_directories(SimGearCore PRIVATE ${PROJECT_BINARY_DIR}/simgear)
@@ -107,9 +107,14 @@ target_link_libraries(SimGearCore PRIVATE
     ${COCOA_LIBRARY}
     CURL::libcurl
     EXPAT::EXPAT
-    Udns::Udns
     LibLZMA::LibLZMA
     ${WINSOCK_LIBRARY})
+
+if(NOT c-ares_FOUND)
+    target_link_libraries(SimGearCore PRIVATE Udns::Udns)
+else()
+    target_link_libraries(SimGearCore PRIVATE c-ares::cares)
+endif()
 
 if(NOT SIMGEAR_HEADLESS)
     # On Windows FindOpenGL only gives us support for OpenGL 1.2, so we need to
@@ -121,20 +126,20 @@ if(NOT SIMGEAR_HEADLESS)
 
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShaderVG/include)
 
-    target_link_libraries(SimGearScene PUBLIC         
+    target_link_libraries(SimGearScene PUBLIC
         SimGearCore
-        OSG::OSG 
-        OSG::osgText 
-        OSG::osgDB 
-        OSG::osgSim 
-        OSG::osgGA 
-        OSG::osgUtil 
-        OSG::osgTerrain 
+        OSG::OSG
+        OSG::osgText
+        OSG::osgDB
+        OSG::osgSim
+        OSG::osgGA
+        OSG::osgUtil
+        OSG::osgTerrain
         OSG::osgParticle
         OSG::osgViewer
     )
 
-    target_precompile_headers(SimGearScene PRIVATE 
+    target_precompile_headers(SimGearScene PRIVATE
         "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_precompile.h>"
         "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_scene_precompile.h>"
     )

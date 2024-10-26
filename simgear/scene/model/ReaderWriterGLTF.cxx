@@ -1,11 +1,15 @@
-// Copyright (C) 2021 - 2024 Fernando García Liñán
-// SPDX-License-Identifier: LGPL-2.0-or-later
+/*
+ * SPDX-FileCopyrightText: Copyright (C) 2021 - 2024 Fernando García Liñán
+ * SPDX-License-Identifier: LGPL-2.0-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
 #endif
 
 #include "ReaderWriterGLTF.hxx"
+
+#include <map>
 
 #include <osg/Texture2D>
 #include <osg/MatrixTransform>
@@ -29,27 +33,49 @@
 #define TINYGLTF_USE_CPP14
 #include "tiny_gltf.h"
 
+
+namespace {
+
+const std::map<int, std::string> k_sampler_filter_map {
+    {TINYGLTF_TEXTURE_FILTER_NEAREST, "nearest"},
+    {TINYGLTF_TEXTURE_FILTER_LINEAR, "linear"},
+    {TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST, "nearest-mipmap-nearest"},
+    {TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST, "linear-mipmap-nearest"},
+    {TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR, "nearest-mipmap-linear"},
+    {TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR, "linear-mipmap-linear"},
+};
+
+const std::map<int, std::string> k_sampler_wrap_map {
+    {TINYGLTF_TEXTURE_WRAP_REPEAT, "repeat"},
+    {TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE, "clamp-to-edge"},
+    {TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT, "mirror"},
+};
+
+} // anonymous namespace
+
 namespace simgear {
 
 struct GLTFBuilder {
     const tinygltf::Model &model;
-    const SGReaderWriterOptions *opts;
+    const SGReaderWriterOptions* opts;
     std::vector<osg::ref_ptr<osg::Array>> arrays;
 
-    GLTFBuilder(const tinygltf::Model &model_,
-                const SGReaderWriterOptions *opts_) :
+    GLTFBuilder(const tinygltf::Model& model_,
+                const SGReaderWriterOptions* opts_) :
         model(model_),
-        opts(opts_) {
+        opts(opts_)
+    {
         extractArrays();
     }
 
-    osg::Node *makeModel() const {
-        osg::Group *group = new osg::Group;
+    osg::Node* makeModel() const
+    {
+        osg::Group* group = new osg::Group;
         // Load all glTF nodes contained in every glTF scene and add them to the
         // same osg::Group.
-        for (const auto &scene : model.scenes) {
+        for (const auto& scene : model.scenes) {
             for (const int nodeIndex : scene.nodes) {
-                osg::Node *node = makeNode(model.nodes[nodeIndex]);
+                osg::Node* node = makeNode(model.nodes[nodeIndex]);
                 if (node) {
                     group->addChild(node);
                 }
@@ -58,10 +84,11 @@ struct GLTFBuilder {
         return group;
     }
 
-    osg::Node *makeNode(const tinygltf::Node &node) const {
+    osg::Node* makeNode(const tinygltf::Node& node) const
+    {
         // We need to create a named osg::Group for animations. Naming the
         // MatrixTransform directly does not work.
-        osg::Group *group = new osg::Group;
+        osg::Group* group = new osg::Group;
         group->setName(node.name);
 
         // Assume that the glTF node has a single mesh
@@ -71,7 +98,7 @@ struct GLTFBuilder {
 
         // Add all children by recursively reading referenced nodes
         for (const int nodeIndex : node.children) {
-            osg::Node *child = makeNode(model.nodes[nodeIndex]);
+            osg::Node* child = makeNode(model.nodes[nodeIndex]);
             if (child) {
                 group->addChild(child);
             }
@@ -85,6 +112,7 @@ struct GLTFBuilder {
             mat.set(node.matrix.data());
             mt->setMatrix(mat);
         }
+
         if (mt->getMatrix().isIdentity()) {
             osg::Matrixd scale, translation, rotation;
             if (node.scale.size() == 3) {
@@ -110,11 +138,12 @@ struct GLTFBuilder {
         return mt;
     }
 
-    void makeMesh(osg::Group *parent, const tinygltf::Mesh &mesh) const {
+    void makeMesh(osg::Group* parent, const tinygltf::Mesh& mesh) const
+    {
         // A glTF mesh can contain several primitives
-        for (const auto &primitive : mesh.primitives) {
+        for (const auto& primitive : mesh.primitives) {
             // A glTF primitive corresponds to a single EffectGeode
-            EffectGeode *eg = new EffectGeode;
+            EffectGeode* eg = new EffectGeode;
 
             // Read the material information from the glTF by creating an Effect
             SGPropertyNode_ptr effectRoot = new SGPropertyNode;
@@ -125,19 +154,19 @@ struct GLTFBuilder {
                 // required material info as parameters to the Effect.
                 makeMaterialParameters(effectRoot, model.materials[primitive.material]);
             }
-            Effect *effect = makeEffect(effectRoot, true, opts);
+            Effect* effect = makeEffect(effectRoot, true, opts);
             if (effect) {
                 eg->setEffect(effect);
             }
 
-            osg::Geometry *geom = new osg::Geometry;
+            osg::Geometry* geom = new osg::Geometry;
             eg->addDrawable(geom);
             geom->setDataVariance(osg::Object::STATIC);
             geom->setUseDisplayList(false);
             geom->setUseVertexBufferObjects(true);
 
             // Set vertex attributes
-            for (const auto &attr : primitive.attributes) {
+            for (const auto& attr : primitive.attributes) {
                 if (attr.first == "POSITION") {
                     geom->setVertexArray(arrays[attr.second].get());
                 } else if (attr.first == "NORMAL") {
@@ -148,11 +177,14 @@ struct GLTFBuilder {
                     geom->setTexCoordArray(1, arrays[attr.second].get());
                 } else if (attr.first == "COLOR_0") {
                     geom->setColorArray(arrays[attr.second].get());
+                } else {
+                    SG_LOG(SG_INPUT, SG_WARN, "glTF loader: Skipping vertex attribute '"
+                           << attr.first << "'");
                 }
             }
 
             // Get the kind of primitives to render
-            int mode = -1;
+            int mode = GL_TRIANGLES;
             switch (primitive.mode) {
             case TINYGLTF_MODE_TRIANGLES:      mode = GL_TRIANGLES;      break;
             case TINYGLTF_MODE_TRIANGLE_STRIP: mode = GL_TRIANGLE_STRIP; break;
@@ -160,30 +192,32 @@ struct GLTFBuilder {
             case TINYGLTF_MODE_POINTS:         mode = GL_POINTS;         break;
             case TINYGLTF_MODE_LINE:           mode = GL_LINES;          break;
             case TINYGLTF_MODE_LINE_LOOP:      mode = GL_LINE_LOOP;      break;
-            default: break;
+            default:
+                SG_LOG(SG_INPUT, SG_ALERT, "glTF loader: Invalid primitive mode '"
+                       << primitive.mode << "', using GL_TRIANGLES");
             }
 
             if (primitive.indices < 0) {
                 // This primitive does not contain index data, use drawArrays
-                osg::Array *vertices = geom->getVertexArray();
+                osg::Array* vertices = geom->getVertexArray();
                 if (vertices) {
-                    auto *drawArrays = new osg::DrawArrays(mode, 0, vertices->getNumElements());
+                    auto* drawArrays = new osg::DrawArrays(mode, 0, vertices->getNumElements());
                     geom->addPrimitiveSet(drawArrays);
                 }
             } else {
                 // This primitive contains index data, use drawElements
-                const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
+                const tinygltf::Accessor& indexAccessor = model.accessors[primitive.indices];
                 if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-                    auto *indices = static_cast<osg::UShortArray *>(arrays[primitive.indices].get());
-                    auto *drawElements = new osg::DrawElementsUShort(mode, indices->begin(), indices->end());
+                    auto* indices = static_cast<osg::UShortArray*>(arrays[primitive.indices].get());
+                    auto* drawElements = new osg::DrawElementsUShort(mode, indices->begin(), indices->end());
                     geom->addPrimitiveSet(drawElements);
                 } else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
-                    auto *indices = static_cast<osg::UIntArray *>(arrays[primitive.indices].get());
-                    auto *drawElements = new osg::DrawElementsUInt(mode, indices->begin(), indices->end());
+                    auto* indices = static_cast<osg::UIntArray*>(arrays[primitive.indices].get());
+                    auto* drawElements = new osg::DrawElementsUInt(mode, indices->begin(), indices->end());
                     geom->addPrimitiveSet(drawElements);
                 } else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
-                    auto *indices = static_cast<osg::UByteArray *>(arrays[primitive.indices].get());
-                    auto *drawElements = new osg::DrawElementsUByte(mode, indexAccessor.count);
+                    auto* indices = static_cast<osg::UByteArray*>(arrays[primitive.indices].get());
+                    auto* drawElements = new osg::DrawElementsUByte(mode, indexAccessor.count);
                     std::copy(indices->begin(), indices->end(), drawElements->begin());
                     geom->addPrimitiveSet(drawElements);
                 } else {
@@ -204,10 +238,11 @@ struct GLTFBuilder {
         }
     }
 
-    bool makeMaterialParameters(SGPropertyNode *effectRoot,
-                                const tinygltf::Material &material) const {
-        SGPropertyNode *params = makeChild(effectRoot, "parameters");
-        const tinygltf::PbrMetallicRoughness &pbr = material.pbrMetallicRoughness;
+    bool makeMaterialParameters(SGPropertyNode* effectRoot,
+                                const tinygltf::Material& material) const
+    {
+        SGPropertyNode* params = makeChild(effectRoot, "parameters");
+        const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
 
         // Handle transparent modes
         // We have a separate Effect for transparent objects, so inherit from
@@ -234,29 +269,23 @@ struct GLTFBuilder {
                     material.emissiveFactor[1],
                     material.emissiveFactor[2]));
 
-        std::string cullFaceString;
-        if (material.doubleSided) {
-            cullFaceString = "off";
-        } else {
-            cullFaceString = "back";
-        }
-        makeChild(params, "cull-face")->setStringValue(cullFaceString);
+        makeChild(params, "cull-face")->setStringValue(material.doubleSided ? "off" : "back");
 
         // NOTE: The texture units that correspond to each texture type (e.g.
         // 0 for base color, 1 for normal map, etc.) must match the ones in:
         //  1. PBR Effect: $FG_ROOT/Effects/model-pbr.eff
         //  2. glTF loader: simgear/scene/model/ReaderWriterGLTF.cxx
         //  3. PBR animations: simgear/scene/model/SGPBRAnimation.cxx
-        SGPropertyNode *baseColorTexNode = makeChild(params, "texture", 0);
+        SGPropertyNode* baseColorTexNode = makeChild(params, "texture", 0);
         if (!makeTextureParameters(baseColorTexNode, pbr.baseColorTexture.index))
             makeChild(baseColorTexNode, "type")->setValue("white");
-        SGPropertyNode *normalTexNode = makeChild(params, "texture", 1);
+        SGPropertyNode* normalTexNode = makeChild(params, "texture", 1);
         if (!makeTextureParameters(normalTexNode, material.normalTexture.index))
             makeChild(normalTexNode, "type")->setValue("null-normalmap");
-        SGPropertyNode *ormTexNode = makeChild(params, "texture", 2);
+        SGPropertyNode* ormTexNode = makeChild(params, "texture", 2);
         if (!makeTextureParameters(ormTexNode, pbr.metallicRoughnessTexture.index))
             makeChild(ormTexNode, "type")->setValue("white");
-        SGPropertyNode *emissiveTexNode = makeChild(params, "texture", 3);
+        SGPropertyNode* emissiveTexNode = makeChild(params, "texture", 3);
         if (!makeTextureParameters(emissiveTexNode,  material.emissiveTexture.index))
             makeChild(emissiveTexNode, "type")->setValue("white");
 
@@ -265,14 +294,15 @@ struct GLTFBuilder {
         return true;
     }
 
-    bool makeTextureParameters(SGPropertyNode *texNode, int textureIndex) const {
+    bool makeTextureParameters(SGPropertyNode* texNode, int textureIndex) const
+    {
         if (textureIndex < 0) {
             // The material doesn't define this texture
             return false;
         }
 
-        const tinygltf::Texture &texture = model.textures[textureIndex];
-        const tinygltf::Image &image = model.images[texture.source];
+        const tinygltf::Texture& texture = model.textures[textureIndex];
+        const tinygltf::Image& image = model.images[texture.source];
 
         if (tinygltf::IsDataURI(image.uri) || image.image.size() > 0) {
             // This is an embedded image
@@ -292,11 +322,40 @@ struct GLTFBuilder {
 
         makeChild(texNode, "type")->setValue("2d");
         makeChild(texNode, "image")->setStringValue(absFileName);
-        // Use default sampler settings
-        makeChild(texNode, "filter")->setStringValue("linear-mipmap-linear");
-        makeChild(texNode, "mag-filter")->setStringValue("linear");
-        makeChild(texNode, "wrap-s")->setStringValue("repeat");
-        makeChild(texNode, "wrap-t")->setStringValue("repeat");
+
+        if (texture.sampler >= 0 && texture.sampler < model.samplers.size()) {
+            const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
+
+            // Build a single sampler property
+            auto make_sampler_prop = [&texNode](int value,
+                                                const std::map<int, std::string>& map,
+                                                const char* prop_name,
+                                                const char* default_string)
+            {
+                SGPropertyNode* param = makeChild(texNode, prop_name);
+                if (value == -1) {
+                    param->setStringValue(default_string);
+                } else {
+                    auto itr = map.find(value);
+                    if (itr == map.end()) {
+                        param->setStringValue(default_string);
+                    } else {
+                        param->setStringValue(itr->second);
+                    }
+                }
+            };
+
+            make_sampler_prop(sampler.minFilter, k_sampler_filter_map, "filter", "linear-mipmap-linear");
+            make_sampler_prop(sampler.magFilter, k_sampler_filter_map, "mag-filter", "linear");
+            make_sampler_prop(sampler.wrapS, k_sampler_wrap_map, "wrap-s", "repeat");
+            make_sampler_prop(sampler.wrapT, k_sampler_wrap_map, "wrap-t", "repeat");
+        } else {
+            // No sampler found, use the default settings
+            makeChild(texNode, "filter")->setStringValue("linear-mipmap-linear");
+            makeChild(texNode, "mag-filter")->setStringValue("linear");
+            makeChild(texNode, "wrap-s")->setStringValue("repeat");
+            makeChild(texNode, "wrap-t")->setStringValue("repeat");
+        }
 
         return true;
     }
@@ -340,7 +399,8 @@ struct GLTFBuilder {
 
     // Take all of the accessors and turn them into arrays
     // Copied from osgEarth's glTF reader plugin
-    void extractArrays() {
+    void extractArrays()
+    {
         for (const auto &accessor : model.accessors) {
             const auto &bufferView = model.bufferViews[accessor.bufferView];
             const auto &buffer = model.buffers[bufferView.buffer];
@@ -551,24 +611,25 @@ ReaderWriterGLTF::~ReaderWriterGLTF()
 {
 }
 
-const char *ReaderWriterGLTF::className() const
+const char* ReaderWriterGLTF::className() const
 {
     return "glTF loader";
 }
 
 osgDB::ReaderWriter::ReadResult
-ReaderWriterGLTF::readNode(const std::string &location,
-                           const osgDB::Options *options) const
+ReaderWriterGLTF::readNode(const std::string& location,
+                           const osgDB::Options* options) const
 {
     std::string ext = osgDB::getFileExtension(location);
-    if (!acceptsExtension(ext))
+    if (!acceptsExtension(ext)) {
         return ReadResult::FILE_NOT_HANDLED;
+    }
 
-    const auto sgOpts = dynamic_cast<const SGReaderWriterOptions *>(options);
+    // We need a SGReaderWriterOptions for Effects
+    const auto sgOpts = dynamic_cast<const SGReaderWriterOptions*>(options);
     if (!sgOpts) {
-        // We need a SGReaderWriterOptions for Effects, so we can't parse this
-        // properly. I'm not sure if this can happen at all though.
-        return ReadResult::FILE_NOT_FOUND;
+        SG_LOG(SG_INPUT, SG_DEV_WARN, "glTF loader: required a SGReaderWriterOptions");
+        return ReadResult::NOT_IMPLEMENTED;
     }
 
     tinygltf::Model model;
@@ -576,19 +637,25 @@ ReaderWriterGLTF::readNode(const std::string &location,
     std::string err, warn;
     bool ret;
 
-    if (ext == "gltf")
+    if (ext == "gltf") {
         ret = loader.LoadASCIIFromFile(&model, &err, &warn, location);
-    else if (ext == "glb")
+    } else if (ext == "glb") {
         ret = loader.LoadBinaryFromFile(&model, &err, &warn, location);
-    else
+    } else {
         return ReadResult::FILE_NOT_HANDLED;
+    }
 
-    if (!warn.empty())
-        SG_LOG(SG_INPUT, SG_WARN, "glTF loader: " << warn);
-    if (!err.empty())
-        SG_LOG(SG_INPUT, SG_ALERT, "glTF loader: " << err);
-    if (!ret)
-        return osgDB::ReaderWriter::ReadResult::ERROR_IN_READING_FILE;
+    if (!warn.empty()) {
+        SG_LOG(SG_INPUT, SG_WARN, "glTF loader: TinyGLTF warning while reading '" << location << "'");
+        SG_LOG(SG_INPUT, SG_WARN, "  " << warn);
+    }
+    if (!err.empty()) {
+        SG_LOG(SG_INPUT, SG_ALERT, "glTF loader: TinyGLTF error while reading '" << location << "'");
+        SG_LOG(SG_INPUT, SG_ALERT, "  " << err);
+    }
+    if (!ret) {
+        return ReadResult::ERROR_IN_READING_FILE;
+    }
 
     GLTFBuilder builder(model, sgOpts);
     return builder.makeModel();

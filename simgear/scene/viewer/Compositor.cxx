@@ -182,9 +182,31 @@ void
 Compositor::update(const osg::Matrix &view_matrix,
                    const osg::Matrix &proj_matrix)
 {
+    // Get the current frame number. Used for render_once passes
+    int frame_number = 0;
+    const osg::FrameStamp *frame_stamp = _view->getFrameStamp();
+    if (frame_stamp) {
+        frame_number = frame_stamp->getFrameNumber();
+    }
+
+    // Enable/disable passes by setting or unsetting their graphics context.
+    // XXX: Check if this causes threading-related crashes.
+    // Also run the update callback for enabled passes.
     for (auto &pass : _passes) {
-        if (pass->update_callback.valid())
-            pass->update_callback->updatePass(*pass.get(), view_matrix, proj_matrix);
+        osg::Camera* camera = pass->camera;
+        bool should_render = (!pass->render_condition || pass->render_condition->test())
+            && (!pass->render_once || frame_number == 0);
+        if (should_render) {
+            // Pass is enabled
+            camera->setGraphicsContext(_gc);
+            if (pass->update_callback.valid()) {
+                pass->update_callback->updatePass(*pass.get(), view_matrix, proj_matrix);
+            }
+        } else {
+            // Pass is disabled
+            camera->setGraphicsContext(nullptr);
+        }
+
     }
 
     // Update uniforms
@@ -464,31 +486,16 @@ Compositor::resized()
 void
 Compositor::setCullMask(osg::Node::NodeMask cull_mask)
 {
-    int frame_number = 0;
-    const osg::FrameStamp *frame_stamp = _view->getFrameStamp();
-    if (frame_stamp) {
-        frame_number = frame_stamp->getFrameNumber();
-    }
-
     for (auto &pass : _passes) {
         osg::Camera *camera = pass->camera;
-        bool should_render = !pass->render_condition || pass->render_condition->test();
-        bool first_frame = !pass->render_once || frame_number == 0;
-
-        if (should_render && first_frame) {
-            if (pass->inherit_cull_mask) {
-                camera->setCullMask(pass->cull_mask & cull_mask);
-                camera->setCullMaskLeft(pass->cull_mask & cull_mask & ~RIGHT_BIT);
-                camera->setCullMaskRight(pass->cull_mask & cull_mask & ~LEFT_BIT);
-            } else {
-                camera->setCullMask(pass->cull_mask);
-                camera->setCullMaskLeft(pass->cull_mask & ~RIGHT_BIT);
-                camera->setCullMaskRight(pass->cull_mask & ~LEFT_BIT);
-            }
+        if (pass->inherit_cull_mask) {
+            camera->setCullMask(pass->cull_mask & cull_mask);
+            camera->setCullMaskLeft(pass->cull_mask & cull_mask & ~RIGHT_BIT);
+            camera->setCullMaskRight(pass->cull_mask & cull_mask & ~LEFT_BIT);
         } else {
-            camera->setCullMask(0);
-            camera->setCullMaskLeft(0);
-            camera->setCullMaskRight(0);
+            camera->setCullMask(pass->cull_mask);
+            camera->setCullMaskLeft(pass->cull_mask & ~RIGHT_BIT);
+            camera->setCullMaskRight(pass->cull_mask & ~LEFT_BIT);
         }
     }
 }

@@ -1,0 +1,30 @@
+{
+    "version": 9,
+    "configurePresets": [
+        {
+            "name": "configure-base",
+            "generator": "Ninja Multi-Config"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "build-debug",
+            "displayName": "Debug",
+            "configurePreset": "configure-base",
+            "configuration": "Debug"
+        },
+        {
+            "name": "build-release",
+            "displayName": "Release (with synbols)",
+            "configurePreset": "configure-base",
+            "configuration": "RelWithDebInfo"
+        }
+    ],
+    "testPresets": [{
+            "name": "default",
+            "configurePreset": "configure-base",
+            "environment": {
+                "CTEST_OUTPUT_ON_FAILURE": "1"
+            }
+        }]
+}

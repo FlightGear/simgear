@@ -630,20 +630,24 @@ public:
         return pass.release();
     }
 protected:
+    osg::ref_ptr<osg::Geometry> _fullscreen_triangle_geom;
+
     osg::Geometry *createFullscreenQuadGeom(float left,
                                             float bottom,
                                             float width,
                                             float height,
-                                            float scale) {
-        osg::Geometry *geom = new osg::Geometry;
-        geom->setSupportsDisplayList(false);
-
+                                            float scale)
+    {
         // When the quad is fullscreen, it can be optimized by using a
         // a fullscreen triangle instead of a quad to avoid discarding pixels
         // in the diagonal. If the desired geometry does not occupy the entire
         // viewport, this optimization does not occur and a normal quad is drawn
         // instead.
         if (left != 0.0f || bottom != 0.0f || width != 1.0f || height != 1.0f || scale != 1.0f) {
+            // Normal quad geometry
+            osg::Geometry *geom = new osg::Geometry;
+            geom->setSupportsDisplayList(false);
+
             osg::Vec3Array *vertices = new osg::Vec3Array(4);
             (*vertices)[0].set(left,       bottom+height, 0.0f);
             (*vertices)[1].set(left,       bottom,        0.0f);
@@ -659,23 +663,23 @@ protected:
             geom->setTexCoordArray(0, texcoords);
 
             geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLE_STRIP, 0, 4));
+
+            return geom;
         } else {
-            osg::Vec3Array *vertices = new osg::Vec3Array(3);
-            (*vertices)[0].set(0.0f, 2.0f, 0.0f);
-            (*vertices)[1].set(0.0f, 0.0f, 0.0f);
-            (*vertices)[2].set(2.0f, 0.0f, 0.0f);
-            geom->setVertexArray(vertices);
+            // Create an optimized fullscreen triangle if it wasn't created yet
+            if (!_fullscreen_triangle_geom) {
+                _fullscreen_triangle_geom = new osg::Geometry;
+                _fullscreen_triangle_geom->setSupportsDisplayList(false);
+                // No need to add a vertex/texture arrays. The shaders use
+                // gl_VertexID to generate the correct coordinates.
+                // OSG also takes care of creating a VAO as the core profile
+                // requires one to exist.
+                _fullscreen_triangle_geom->addPrimitiveSet(
+                    new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, 0, 3));
+            }
 
-            osg::Vec2Array *texcoords = new osg::Vec2Array(3);
-            (*texcoords)[0].set(0.0f, 2.0f);
-            (*texcoords)[1].set(0.0f, 0.0f);
-            (*texcoords)[2].set(2.0f, 0.0f);
-            geom->setTexCoordArray(0, texcoords);
-
-            geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, 0, 3));
+            return _fullscreen_triangle_geom.get();
         }
-
-        return geom;
     }
 };
 RegisterPassBuilder<QuadPassBuilder> registerQuadPass("quad");

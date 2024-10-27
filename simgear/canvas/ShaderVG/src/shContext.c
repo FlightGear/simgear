@@ -61,6 +61,10 @@ VG_API_CALL VGboolean vgCreateContextSH(VGint width, VGint height)
     /* Setup shaders for making color ramp */
     shInitRampShaders();
 
+    /* FlightGear: core profile requires a VAO and an associated VBO */
+    glGenVertexArrays(1, &g_context->vao);
+    glGenBuffers(1, &g_context->vbo);
+
     return VG_TRUE;
 }
 
@@ -91,19 +95,19 @@ VG_API_CALL void vgResizeSurfaceSH(VGint width, VGint height)
     VG_RETURN(VG_NO_RETVAL);
 }
 
-VG_API_CALL void vgSetModelViewProjectionMatSH(float *mat)
+VG_API_CALL void vgSetModelViewProjectionMatSH(SHfloat mat[16])
 {
     VG_GETCONTEXT(VG_NO_RETVAL);
-
-    glUseProgram(context->progDraw);
-    glUniformMatrix4fv(context->locationDraw.mvp, 1, GL_FALSE, mat);
-    GL_CHECK_ERROR;
-
+    memcpy(context->mvpMatrix, mat, 16 * sizeof(SHfloat));
     VG_RETURN(VG_NO_RETVAL);
 }
 
 VG_API_CALL void vgDestroyContextSH()
 {
+    /* FlightGear: Delete the VAO and VBO */
+    glDeleteBuffers(1, &g_context->vbo);
+    glDeleteVertexArrays(1, &g_context->vao);
+
     /* return if already released */
     if (!g_context) return;
 

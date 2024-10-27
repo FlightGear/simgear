@@ -91,6 +91,9 @@ typedef struct
     SHMatrix3x3 imageTransform;
     SHMatrix3x3 fillTransform;
     SHMatrix3x3 strokeTransform;
+    /* FlightGear: This one is written directly by OSG and passed along as an
+       uniform to the shaders. */
+    SHfloat mvpMatrix[16];
 
     /* Paints */
     SHPaint* fillPaint;
@@ -141,6 +144,9 @@ typedef struct
     GLint vs;
     GLint fs;
 
+    /* FlightGear: GL VBO and VAO, required by the core profile */
+    GLuint vao;
+    GLuint vbo;
 } VGContext;
 
 void VGContext_ctor(VGContext* c);

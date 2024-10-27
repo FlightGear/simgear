@@ -109,8 +109,9 @@ void updateBlendingStateGL(VGContext* c, int alphaIsOne)
 static void shDrawStroke(SHPath* p)
 {
     VG_GETCONTEXT(VG_NO_RETVAL);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(SHVector2) * p->stroke.size, p->stroke.items, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(context->locationDraw.pos, 2, GL_FLOAT, GL_FALSE, sizeof(SHVector2), NULL);
     glEnableVertexAttribArray(context->locationDraw.pos);
-    glVertexAttribPointer(context->locationDraw.pos, 2, GL_FLOAT, GL_FALSE, 0, p->stroke.items);
     glDrawArrays(GL_TRIANGLES, 0, p->stroke.size);
     glDisableVertexAttribArray(context->locationDraw.pos);
     GL_CHECK_ERROR;
@@ -129,8 +130,10 @@ static void shDrawVertices(SHPath* p, GLenum mode)
     /* We separate vertex arrays by contours to properly
      handle the fill modes */
     VG_GETCONTEXT(VG_NO_RETVAL);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(SHVertex) * p->vertices.size, p->vertices.items, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(context->locationDraw.pos, 2, GL_FLOAT, GL_FALSE, sizeof(SHVertex), NULL);
     glEnableVertexAttribArray(context->locationDraw.pos);
-    glVertexAttribPointer(context->locationDraw.pos, 2, GL_FLOAT, GL_FALSE, sizeof(SHVertex), p->vertices.items);
 
     while (start < p->vertices.size) {
         size = p->vertices.items[start].flags;
@@ -197,8 +200,10 @@ static void shDrawPaintMesh(VGContext* c, SHVector2* min, SHVector2* max,
                    pmax.x, pmin.y,
                    pmin.x, pmax.y,
                    pmax.x, pmax.y};
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(v), v, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(c->locationDraw.pos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), NULL);
     glEnableVertexAttribArray(c->locationDraw.pos);
-    glVertexAttribPointer(c->locationDraw.pos, 2, GL_FLOAT, GL_FALSE, 0, v);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glDisableVertexAttribArray(c->locationDraw.pos);
     GL_CHECK_ERROR;
@@ -293,6 +298,12 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
     VG_RETURN_ERR_IF(paintModes & (~(VG_STROKE_PATH | VG_FILL_PATH)),
                      VG_ILLEGAL_ARGUMENT_ERROR, VG_NO_RETVAL);
 
+    /* FlightGear: we need to bind a VAO before we are allowed to draw when
+       using the core profile. */
+    glBindVertexArray(context->vao);
+    /* Also bind the VBO because we are reusing it */
+    glBindBuffer(GL_ARRAY_BUFFER, context->vbo);
+
     /* Check whether scissoring is enabled and scissor
        rectangle is valid */
     if (context->scissoring == VG_TRUE) {
@@ -326,6 +337,8 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
     shMatrixToGL(&context->pathTransform, mgl);
     glUniformMatrix4fv(context->locationDraw.model, 1, GL_FALSE, mgl);
 #endif
+    /* FlightGear: Get the model view projection matrix written by OSG */
+    glUniformMatrix4fv(context->locationDraw.mvp, 1, GL_FALSE, context->mvpMatrix);
     glUniform1i(context->locationDraw.drawMode, 0); /* drawMode: path */
     GL_CHECK_ERROR;
 
@@ -415,11 +428,21 @@ VG_API_CALL void vgDrawPath(VGPath path, VGbitfield paintModes)
     if (context->scissoring == VG_TRUE)
         glDisable(GL_SCISSOR_TEST);
 
+    /* Unbind the VBO and VAO. The VAO cannot actually be unbound, but we just
+       set it to 0 and let OSG do its thing later. */
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
     VG_RETURN(VG_NO_RETVAL);
 }
 
 VG_API_CALL void vgDrawImage(VGImage image)
 {
+// FlightGear: We don't use OpenVG's image drawing stuff
+// NOTE: If we ever end up using it, this function has not been adapted to use
+// VAOs and VBOs, so some extra work is required.
+#if 0
+
     SHImage* i;
 #if USE_MODELVIEW_MATRIX
     SHfloat mgl[16];
@@ -530,4 +553,6 @@ VG_API_CALL void vgDrawImage(VGImage image)
         glDisable(GL_SCISSOR_TEST);
 
     VG_RETURN(VG_NO_RETVAL);
+
+#endif
 }

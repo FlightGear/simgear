@@ -119,24 +119,31 @@ namespace canvas
                 const Style& parent_style,
                 ElementWeakPtr parent ):
     Element(canvas, node, parent_style, parent),
-    _texture(new osg::Texture2D),
     _node_src_rect( node->getNode("source", 0, true) )
   {
     staticInit();
 
+    _texture = new osg::Texture2D;
+    _texture->setResizeNonPowerOfTwoHint(false);
+
     _geom = new osg::Geometry;
-    _geom->setUseDisplayList(false);
+    // Vertex attributes are empty on creation, and are later filled by
+    // setQuad() and setQuadUV().
+    // Geometry must be set to DYNAMIC, otherwise OSG will optimize out
+    // subsequent glBufferData calls to the VBO.
+    _geom->setDataVariance(osg::Object::DYNAMIC);
+    _geom->setUseVertexBufferObjects(true);
 
     osg::StateSet *stateSet = _geom->getOrCreateStateSet();
     stateSet->setTextureAttributeAndModes(0, _texture.get());
     stateSet->setDataVariance(osg::Object::STATIC);
 
     // allocate arrays for the image
-    _vertices = new osg::Vec3Array(6);
+    _vertices = new osg::Vec3Array(4);
     _vertices->setDataVariance(osg::Object::DYNAMIC);
     _geom->setVertexArray(_vertices);
 
-    _texCoords = new osg::Vec2Array(6);
+    _texCoords = new osg::Vec2Array(4);
     _texCoords->setDataVariance(osg::Object::DYNAMIC);
     _geom->setTexCoordArray(0, _texCoords, osg::Array::BIND_PER_VERTEX);
 
@@ -144,8 +151,7 @@ namespace canvas
     _colors->setDataVariance(osg::Object::DYNAMIC);
     _geom->setColorArray(_colors, osg::Array::BIND_OVERALL);
 
-    _prim = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES);
-    _prim->set(osg::PrimitiveSet::TRIANGLES, 0, 6);
+    _prim = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLE_STRIP, 0, 4);
     _prim->setDataVariance(osg::Object::DYNAMIC);
     _geom->addPrimitiveSet(_prim);
 
@@ -229,7 +235,6 @@ namespace canvas
     // remove canvas...
     setSrcCanvas( CanvasPtr() );
 
-    _texture->setResizeNonPowerOfTwoHint(false);
     _texture->setImage(img);
     _texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
     _texture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
@@ -385,7 +390,7 @@ namespace canvas
 
     if( _attributes_dirty & DEST_SIZE )
     {
-      size_t num_vertices = (_slice.isValid() ? (fill ? 9 : 8) : 1) * 6;
+      size_t num_vertices = (_slice.isValid() ? (fill ? 9 : 8) : 1) * 4;
 
       if( num_vertices != _prim->getNumPrimitives() )
       {
@@ -764,25 +769,28 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Image::setQuad(size_t index, const SGVec2f& tl, const SGVec2f& br)
   {
-    int i = index * 6;
-    (*_vertices)[i + 0].set(tl.x(), br.y(), 0.0f);
-    (*_vertices)[i + 1].set(tl.x(), tl.y(), 0.0f);
+    /*
+     *  0 +---+ 2
+     *    |  /|     This vertex order is used to produce the correct winding
+     *    | / |     order when drawing the quad using a triangle strip.
+     *    |/  |
+     *  1 +---+ 3
+     */
+    int i = index * 4;
+    (*_vertices)[i + 0].set(tl.x(), tl.y(), 0.0f);
+    (*_vertices)[i + 1].set(tl.x(), br.y(), 0.0f);
     (*_vertices)[i + 2].set(br.x(), tl.y(), 0.0f);
-    (*_vertices)[i + 3].set(tl.x(), br.y(), 0.0f);
-    (*_vertices)[i + 4].set(br.x(), tl.y(), 0.0f);
-    (*_vertices)[i + 5].set(br.x(), br.y(), 0.0f);
+    (*_vertices)[i + 3].set(br.x(), br.y(), 0.0f);
   }
 
   //----------------------------------------------------------------------------
   void Image::setQuadUV(size_t index, const SGVec2f& tl, const SGVec2f& br)
   {
-    int i = index * 6;
-    (*_texCoords)[i + 0].set(tl.x(), br.y());
-    (*_texCoords)[i + 1].set(tl.x(), tl.y());
+    int i = index * 4;
+    (*_texCoords)[i + 0].set(tl.x(), tl.y());
+    (*_texCoords)[i + 1].set(tl.x(), br.y());
     (*_texCoords)[i + 2].set(br.x(), tl.y());
-    (*_texCoords)[i + 3].set(tl.x(), br.y());
-    (*_texCoords)[i + 4].set(br.x(), tl.y());
-    (*_texCoords)[i + 5].set(br.x(), br.y());
+    (*_texCoords)[i + 3].set(br.x(), br.y());
   }
 
   //----------------------------------------------------------------------------

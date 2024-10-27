@@ -20,7 +20,15 @@ public:
     // fortunately our Simgear logging implementation already handles
     // that internally, so we simply pass the message on.
     virtual void notify(osg::NotifySeverity severity, const char* message) {
+        // avoid asserts when message is NULL or empty
+        // https://gitlab.com/flightgear/flightgear/-/issues/3
+        if (!message)
+            return;
+
         std::string msg(message);
+        if (msg.empty()) {
+            return;
+        }
 
         // Remove the newline character, if any. SG_LOG already adds its own
         if (msg.back() == '\n') {

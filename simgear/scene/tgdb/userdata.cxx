@@ -40,6 +40,7 @@
 #include "ReaderWriterSTG.hxx"
 #include <simgear/scene/dem/ReaderWriterPGT.hxx>
 #include <simgear/scene/model/ReaderWriterGLTF.hxx>
+#include <simgear/scene/model/ReaderWriterAC3D.hxx>
 
 // the following are static values needed by the runtime object
 // loader.  However, the loading is done via a call back so these
@@ -72,6 +73,9 @@ simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_pgtCallbackProx
 
 osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterGLTF> g_readerWriterGLTFProxy;
 simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_gltfCallbackProxy("gltf");
+
+osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterAC3D> g_readerWriterAC3DProxy;
+simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_ac3dCallbackProxy("ac3d");
 }
 
 void sgUserDataInit( SGPropertyNode *p ) {

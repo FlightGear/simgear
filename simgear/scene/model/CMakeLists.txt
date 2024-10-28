@@ -8,6 +8,7 @@ set(HEADERS
     ConditionNode.hxx
     ModelRegistry.hxx
     PrimitiveCollector.hxx
+    ReaderWriterAC3D.hxx
     ReaderWriterGLTF.hxx
     SGInteractionAnimation.hxx
     SGLight.hxx
@@ -34,6 +35,7 @@ set(SOURCES
     ConditionNode.cxx
     ModelRegistry.cxx
     PrimitiveCollector.cxx
+    ReaderWriterAC3D.cxx
     ReaderWriterGLTF.cxx
     SGInteractionAnimation.cxx
     SGLight.cxx

@@ -221,8 +221,7 @@ public:
                            float cos_max_density_angle,
                            float cos_zero_density_angle,
                            bool is_plantation,
-                           std::vector<SGVec3f>& points,
-			   std::vector<SGVec3f>& normals)
+                           std::vector<SGVec3f>& points)
   {
       using std::max;
       using std::min;
@@ -302,11 +301,9 @@ public:
                           if (mt_rand(&seed) < img->getColor(x, y).g()) {
                               // The red channel contains the rotation for this object
                               points.push_back(randomPoint);
-                              normals.push_back(normalize(normal));
                           }
                       } else {
                           points.push_back(randomPoint);
-                          normals.push_back(normalize(normal));
                       }
                   }
               }
@@ -345,11 +342,9 @@ public:
                       if (mt_rand(&seed) < img->getColor(x, y).g()) {
                           // The red channel contains the rotation for this object
                           points.push_back(randomPoint);
-                          normals.push_back(normalize(normal));
                       }
                   } else {
                       points.push_back(randomPoint);
-                      normals.push_back(normalize(normal));
                   }
               }
           }

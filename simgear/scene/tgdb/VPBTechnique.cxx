@@ -1559,7 +1559,7 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
                 if (checkAgainstElevationConstraints(lowerPoint * localToGeocentricTransform, upperPoint * localToGeocentricTransform))
                     continue;
 
-                handler->placeObject(vp, up, n);
+                handler->placeObject(vp, up);
             }
         }
     }

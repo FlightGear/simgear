@@ -42,11 +42,10 @@ public:
     ~TreeBin() = default;   // non-virtual intentional
 
     struct Tree {
+        Tree(const SGVec3f& p) :
+            position(p)
+        { }
         SGVec3f position;
-        SGVec3f tnormal;
-        Tree(const SGVec3f& p, const SGVec3f& t) : position(p), tnormal(t)
-        {
-        }
   };
 
     typedef std::vector<Tree> TreeList;
@@ -61,10 +60,8 @@ public:
     void insert(const Tree& t)
     { _trees.push_back(t); }
 
-    void insert(const SGVec3f& p, const SGVec3f& tnorm)
-    {
-        _trees.emplace_back(p, tnorm);
-    }
+    void insert(const SGVec3f& p, int t, float s)
+    { insert(Tree(p)); }
 
     unsigned getNumTrees() const
     { return _trees.size(); }

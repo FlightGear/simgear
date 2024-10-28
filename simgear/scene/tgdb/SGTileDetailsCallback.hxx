@@ -680,20 +680,17 @@ public:
             }
             
             std::vector<SGVec3f> randomPoints;
-            std::vector<SGVec3f> randomPointNormals;
             matTris[i].addRandomTreePoints(wood_coverage,
                                            mat->get_one_object_mask(matTris[i].getTextureIndex()),
                                            vegetation_density,
                                            mat->get_cos_tree_max_density_slope_angle(),
                                            mat->get_cos_tree_zero_density_slope_angle(),
                                            mat->get_is_plantation(),
-                                           randomPoints,
-                                           randomPointNormals);
-            
+                                           randomPoints);
+
             std::vector<SGVec3f>::iterator k;
-            std::vector<SGVec3f>::iterator j;
-            for (k = randomPoints.begin(), j = randomPointNormals.begin(); k != randomPoints.end(); ++k, ++j) {
-	              bin->insert(*k, *j);
+            for (k = randomPoints.begin(); k != randomPoints.end(); ++k) {
+                bin->insert(*k);
             }
         }
     }

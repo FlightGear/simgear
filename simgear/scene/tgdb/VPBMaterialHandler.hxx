@@ -88,7 +88,7 @@ class VPBMaterialHandler {
                                  osg::Vec2f& pointInTriangle) = 0;
 
     // Place an object at the point given by vp
-    virtual void placeObject(const osg::Vec3 vp, const osg::Vec3d up, const osg::Vec3 n) = 0;
+    virtual void placeObject(const osg::Vec3 vp, const osg::Vec3d up) = 0;
 
     // Function that is called after the scanline is complete
     virtual void finish(osg::ref_ptr<SGReaderWriterOptions> options,
@@ -121,7 +121,7 @@ class VegetationHandler : public VPBMaterialHandler {
                          const osg::Vec2d ll_x, const osg::Vec2d ll_y,
                          const osg::Vec2d t_0, osg::Vec2d t_x, osg::Vec2d t_y,
                          float x_scale, float y_scale, osg::Vec2f& pointInTriangle);
-    void placeObject(const osg::Vec3 vp, const osg::Vec3d up, const osg::Vec3 n);
+    void placeObject(const osg::Vec3 vp, const osg::Vec3d up);
     void finish(osg::ref_ptr<SGReaderWriterOptions> options,
                 osg::ref_ptr<osg::MatrixTransform> transform, const SGGeod loc);
 
@@ -154,7 +154,7 @@ class RandomLightsHandler : public VPBMaterialHandler {
                          const osg::Vec2d ll_x, const osg::Vec2d ll_y,
                          const osg::Vec2d t_0, osg::Vec2d t_x, osg::Vec2d t_y,
                          float x_scale, float y_scale, osg::Vec2f& pointInTriangle);
-    void placeObject(const osg::Vec3 vp, const osg::Vec3d up, const osg::Vec3 n);
+    void placeObject(const osg::Vec3 vp, const osg::Vec3d up);
     void finish(osg::ref_ptr<SGReaderWriterOptions> options,
                 osg::ref_ptr<osg::MatrixTransform> transform, const SGGeod loc);
 

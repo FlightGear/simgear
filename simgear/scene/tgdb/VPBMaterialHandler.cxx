@@ -190,8 +190,8 @@ bool VegetationHandler::handleIteration(
     return true;
 }
 
-void VegetationHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up, const osg::Vec3 n) {
-    bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()), SGVec3f(n.x(), n.y(), n.z()));
+void VegetationHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up) {
+    bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()));
 }
 
 void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
@@ -320,7 +320,7 @@ bool RandomLightsHandler::handleIteration(
     return true;
 }
 
-void RandomLightsHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up, const osg::Vec3 n)
+void RandomLightsHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up)
 {
     float zombie = pc_map_rand(vp.x(), vp.y() + vp.z(), 6);
     float factor = pc_map_rand(vp.x(), vp.y() + vp.z(), 7);

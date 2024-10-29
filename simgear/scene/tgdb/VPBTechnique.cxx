@@ -917,148 +917,152 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         osg::ref_ptr<osg::Vec3Array> normals = VNG._normals.get();
 
         osg::ref_ptr<osg::DrawElements> skirtDrawElements = smallTile ?
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
 
         // create bottom skirt vertices
         int r,c;
         r=0;
-        for(c=0;c<static_cast<int>(numColumns);++c)
+        for(c=0;c<static_cast<int>(numColumns -1);++c)
         {
-            int orig_i = VNG.vertex_index(c,r);
-            if (orig_i>=0)
-            {
-                unsigned int new_i = vertices->size(); // index of new index of added skirt point
-                osg::Vec3 new_v = (*vertices)[orig_i] - ((*skirtVectors)[orig_i])*skirtHeight;
-                (*vertices).push_back(new_v);
-                if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
+            // remap indices to final vertex positions
+            int i00 = VNG.vertex_index(c,   r);
+            int i01 = VNG.vertex_index(c+1, r);
 
-                texcoords->push_back((*texcoords)[orig_i]);
+            // Generate two additional skirt points below the edge
+            int i10 = vertices->size(); // index of new index of added skirt point
+            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i00]);
+            texcoords->push_back((*texcoords)[i00]);
 
-                skirtDrawElements->addElement(orig_i);
-                skirtDrawElements->addElement(new_i);
-            }
-            else
-            {
-                if (skirtDrawElements->getNumIndices()!=0)
-                {
-                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-                    skirtDrawElements = smallTile ?
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
-                }
+            int i11 = vertices->size(); // index of new index of added skirt point
+            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i01]);
+            texcoords->push_back((*texcoords)[i01]);
 
-            }
+            skirtDrawElements->addElement(i01);
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i11);
+
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i10);
+            skirtDrawElements->addElement(i11);
         }
 
         if (skirtDrawElements->getNumIndices()!=0)
         {
             buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
             skirtDrawElements = smallTile ?
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
         }
 
         // create right skirt vertices
         c=numColumns-1;
-        for(r=0;r<static_cast<int>(numRows);++r)
+        for(r=0;r<static_cast<int>(numRows-1);++r)
         {
-            int orig_i = VNG.vertex_index(c,r); // index of original vertex of grid
-            if (orig_i>=0)
-            {
-                unsigned int new_i = vertices->size(); // index of new index of added skirt point
-                osg::Vec3 new_v = (*vertices)[orig_i] - ((*skirtVectors)[orig_i])*skirtHeight;
-                (*vertices).push_back(new_v);
-                if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
-                texcoords->push_back((*texcoords)[orig_i]);
+            // remap indices to final vertex positions
+            int i00 = VNG.vertex_index(c,   r);
+            int i01 = VNG.vertex_index(c, r+1);
 
-                skirtDrawElements->addElement(orig_i);
-                skirtDrawElements->addElement(new_i);
-            }
-            else
-            {
-                if (skirtDrawElements->getNumIndices()!=0)
-                {
-                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-                    skirtDrawElements = smallTile ?
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
-                }
+            // Generate two additional skirt points below the edge
+            int i10 = vertices->size(); // index of new index of added skirt point
+            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i00]);
+            texcoords->push_back((*texcoords)[i00]);
 
-            }
+            int i11 = vertices->size(); // index of new index of added skirt point
+            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i01]);
+            texcoords->push_back((*texcoords)[i01]);
+
+            skirtDrawElements->addElement(i01);
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i11);
+
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i10);
+            skirtDrawElements->addElement(i11);
         }
 
         if (skirtDrawElements->getNumIndices()!=0)
         {
             buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
             skirtDrawElements = smallTile ?
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
         }
 
         // create top skirt vertices
         r=numRows-1;
-        for(c=numColumns-1;c>=0;--c)
+        for(c=numColumns-2;c>=0;--c)
         {
-            int orig_i = VNG.vertex_index(c,r); // index of original vertex of grid
-            if (orig_i>=0)
-            {
-                unsigned int new_i = vertices->size(); // index of new index of added skirt point
-                osg::Vec3 new_v = (*vertices)[orig_i] - ((*skirtVectors)[orig_i])*skirtHeight;
-                (*vertices).push_back(new_v);
-                if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
+            // remap indices to final vertex positions
+            int i00 = VNG.vertex_index(c,   r);
+            int i01 = VNG.vertex_index(c+1, r);
 
-                texcoords->push_back((*texcoords)[orig_i]);
+            // Generate two additional skirt points below the edge
+            int i10 = vertices->size(); // index of new index of added skirt point
+            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i00]);
+            texcoords->push_back((*texcoords)[i00]);
 
-                skirtDrawElements->addElement(orig_i);
-                skirtDrawElements->addElement(new_i);
-            }
-            else
-            {
-                if (skirtDrawElements->getNumIndices()!=0)
-                {
-                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-                    skirtDrawElements = smallTile ?
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
-                }
+            int i11 = vertices->size(); // index of new index of added skirt point
+            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i01]);
+            texcoords->push_back((*texcoords)[i01]);
 
-            }
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i01);
+            skirtDrawElements->addElement(i11);
+
+            skirtDrawElements->addElement(i10);
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i11);
         }
 
         if (skirtDrawElements->getNumIndices()!=0)
         {
             buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
             skirtDrawElements = smallTile ?
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_QUAD_STRIP)) :
-                        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_QUAD_STRIP));
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
         }
 
         // create left skirt vertices
         c=0;
-        for(r=numRows-1;r>=0;--r)
+        for(r=numRows-2;r>=0;--r)
         {
-            int orig_i = VNG.vertex_index(c,r); // index of original vertex of grid
-            if (orig_i>=0)
-            {
-                unsigned int new_i = vertices->size(); // index of new index of added skirt point
-                osg::Vec3 new_v = (*vertices)[orig_i] - ((*skirtVectors)[orig_i])*skirtHeight;
-                (*vertices).push_back(new_v);
-                if (normals.valid()) (*normals).push_back((*normals)[orig_i]);
+            // remap indices to final vertex positions
+            int i00 = VNG.vertex_index(c,   r);
+            int i01 = VNG.vertex_index(c, r+1);
 
-                texcoords->push_back((*texcoords)[orig_i]);
+            // Generate two additional skirt points below the edge
+            int i10 = vertices->size(); // index of new index of added skirt point
+            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i00]);
+            texcoords->push_back((*texcoords)[i00]);
 
-                skirtDrawElements->addElement(orig_i);
-                skirtDrawElements->addElement(new_i);
-            }
-            else
-            {
-                if (skirtDrawElements->getNumIndices()!=0)
-                {
-                    buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-                    skirtDrawElements = new osg::DrawElementsUShort(GL_QUAD_STRIP);
-                }
-            }
+            int i11 = vertices->size(); // index of new index of added skirt point
+            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+            (*vertices).push_back(new_v);
+            if (normals.valid()) (*normals).push_back((*normals)[i01]);
+            texcoords->push_back((*texcoords)[i01]);
+
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i01);
+            skirtDrawElements->addElement(i11);
+
+            skirtDrawElements->addElement(i10);
+            skirtDrawElements->addElement(i00);
+            skirtDrawElements->addElement(i11);
         }
 
         if (skirtDrawElements->getNumIndices()!=0)

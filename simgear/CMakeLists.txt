@@ -134,29 +134,10 @@ if (NOT SYSTEM_EXPAT)
     target_compile_definitions(SimGearCore PRIVATE HAVE_SIMGEAR_EXPAT_CONFIG_H XML_STATIC)
 endif()
 
-    install(TARGETS SimGearCore
-            EXPORT SimGearTargets
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-if (NOT SIMGEAR_HEADLESS)
-  install(TARGETS SimGearScene
-          EXPORT SimGearTargets
-          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-  target_include_directories(SimGearScene BEFORE PUBLIC
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>)
-
-    target_include_directories(SimGearScene PUBLIC ${OPENSCENEGRAPH_INCLUDE_DIRS})
-
-    if (USE_AEONWAVE)
-      target_include_directories(SimGearScene PRIVATE ${AAX_INCLUDE_DIR} )
-    else()
-      target_include_directories(SimGearScene PRIVATE ${OPENAL_INCLUDE_DIR} )
-    endif()
-endif()
+install(TARGETS SimGearCore
+        EXPORT SimGearTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # we expose ZLib in some of our headers
 target_link_libraries(SimGearCore PUBLIC ${ZLIB_LIBRARY})
@@ -226,6 +207,7 @@ if(NOT SIMGEAR_HEADLESS)
     else()
         target_include_directories(SimGearScene PRIVATE ${OPENAL_INCLUDE_DIR} )
     endif()
+
 endif()
 
 if(ENABLE_RTI)

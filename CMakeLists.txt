@@ -41,7 +41,7 @@ include (GenerateExportHeader)
 
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum OS X deployment version")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
@@ -231,7 +231,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD
 endif()
 
 find_package(Boost REQUIRED)
-set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG")
+set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG -DBOOST_NO_AUTO_PTR -DBOOST_NO_CXX98_BINDERS")
+
 include(BoostTestTargets)
 
 if(SIMGEAR_HEADLESS)
@@ -248,7 +249,14 @@ else()
 
         if(NOT AAX_FOUND)
             set(USE_AEONWAVE FALSE)
-            find_package(OpenAL REQUIRED)
+
+            # on macOS, force CONFIG mode to ensure we use OpenAL-soft and not the (deprecated)
+            # system OpenAL
+            if (APPLE)
+               find_package(OpenAL CONFIG REQUIRED)
+            else()
+              find_package(OpenAL REQUIRED)
+            endif()
         endif()
 
         if(AAX_FOUND)
@@ -432,7 +440,8 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if (CLANG)
     # Boost redeclares class members
-    set(WARNING_FLAGS_CXX "-Wall -fPIC -Wno-overloaded-virtual -Wno-redeclared-class-member")
+    # OSG doesn't use override correctly
+    set(WARNING_FLAGS_CXX "-Wall -fPIC -Wno-overloaded-virtual -Wno-redeclared-class-member -Wno-inconsistent-missing-override")
     set(WARNING_FLAGS_C   "-Wall -fPIC")
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
     # fix Boost compilation :(

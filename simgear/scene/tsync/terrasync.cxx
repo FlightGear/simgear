@@ -1123,7 +1123,7 @@ void SGTerraSync::reinit()
         _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
 
         if (_terraRoot->hasChild("dns-server")) {
-            auto ns = _terraRoot->getStringValue("dns-server");
+            auto ns = std::string(_terraRoot->getStringValue("dns-server"));
             if (ns == "google") {
                 ns = "8.8.8.8";
             }

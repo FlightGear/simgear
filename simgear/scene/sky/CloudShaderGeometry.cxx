@@ -63,24 +63,24 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
     // checking again. In this way, only clouds that are changing regularly
     // are sorted.        
     osg::Vec3Array* v = dynamic_cast<osg::Vec3Array*>(g->getVertexArray());
-    if ((v->size() > 4) && 
+    if ((v->size() > 6) &&
         (frameNumber - sortData.skip_limit >= sortData.frameSorted)) {
         Matrix mvp = state.getModelViewMatrix() * state.getProjectionMatrix();
         
         osg::Vec4Array* c = dynamic_cast<osg::Vec4Array*>(g->getColorArray());
         osg::Vec2Array* t = dynamic_cast<osg::Vec2Array*>(g->getTexCoordArray(0));
-        Vec3f av[4];
-        Vec4f ac[4];
-        Vec2f at[4];        
+        Vec3f av[6];
+        Vec4f ac[6];
+        Vec2f at[6];
         
         // Perform a single pass bubble sort of the array, 
         // keeping track of whether we've had to make any changes
         bool sorted = true;                      
-        for (unsigned int i = 4; i < v->size(); i = i + 4) {
+        for (unsigned int i = 6; i < v->size(); i += 6) {
             // The position of the sprite is stored in the colour
             // array, with the exception of the w() coordinate
             // which is the z-scaling parameter.
-            Vec4f a = (*c)[i-4];
+            Vec4f a = (*c)[i-6];
             Vec4f aPos = Vec4f(a.x(), a.y(), a.z(), 1.0f) * mvp;
             Vec4f b = (*c)[i];
             Vec4f bPos = Vec4f(b.x(), b.y(), b.z(), 1.0f) * mvp;
@@ -88,14 +88,14 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
             if ((aPos.z()/aPos.w()) < (bPos.z()/bPos.w() - 0.0001)) {
                 // a is non-trivially closer than b, so should be rendered
                 // later. Swap them around
-                for (int j = 0; j < 4; j++) {
-                    av[j] = (*v)[i+j-4];
-                    ac[j] = (*c)[i+j-4];
-                    at[j] = (*t)[i+j-4];
+                for (int j = 0; j < 6; j++) {
+                    av[j] = (*v)[i+j-6];
+                    ac[j] = (*c)[i+j-6];
+                    at[j] = (*t)[i+j-6];
                     
-                    (*v)[i+j -4] = (*v)[i+j];
-                    (*c)[i+j -4] = (*c)[i+j];
-                    (*t)[i+j -4] = (*t)[i+j];
+                    (*v)[i+j -6] = (*v)[i+j];
+                    (*c)[i+j -6] = (*c)[i+j];
+                    (*t)[i+j -6] = (*t)[i+j];
                     
                     (*v)[i+j] = av[j];
                     (*c)[i+j] = ac[j];
@@ -128,6 +128,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         sortData.frameSorted = frameNumber;
     }
 
+    // XXX: Move this to OSG
     const GLExtensions* extensions = GLExtensions::Get(state.getContextID(), true);
     GLfloat ua1[3] = { (GLfloat) alpha_factor,
                        (GLfloat) shade_factor,
@@ -162,66 +163,70 @@ void CloudShaderGeometry::addSprite(const SGVec3f& p, int tx, int ty,
 
 void CloudShaderGeometry::generateGeometry()
 {
-    // Generate a set of geometries as a QuadStrip based on the list of sprites
     int numsprites = _cloudsprites.size();
     
     // Create front and back polygons so we don't need to screw around
     // with two-sided lighting in the shader.
     osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
-    osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
     osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
     osg::ref_ptr<osg::Vec2Array> t = new osg::Vec2Array;
-    
+    v->setDataVariance(osg::Object::DYNAMIC);
+    c->setDataVariance(osg::Object::DYNAMIC);
+    t->setDataVariance(osg::Object::DYNAMIC);
+    // We need 2 triangles (6 vertices) per sprite
+    v->reserve(numsprites * 6);
+    c->reserve(numsprites * 6);
+    t->reserve(numsprites * 6);
+
     for (CloudShaderGeometry::CloudSpriteList::iterator iter = _cloudsprites.begin();
          iter != _cloudsprites.end();
          ++iter) 
     {
-    
         float cw = 0.5f * iter->width;
         float ch = 0.5f * iter->height;        
         
         // Create the vertices
-        v->push_back(osg::Vec3(0.0f, -cw, -ch));
-        v->push_back(osg::Vec3(0.0f,  cw, -ch));
-        v->push_back(osg::Vec3(0.0f,  cw, ch));
-        v->push_back(osg::Vec3(0.0f, -cw, ch));
-        
-        // The normals aren't actually used in lighting,
-        // but we set them per vertex as this is more
-        // efficient than an overall binding on some
-        // graphics cards.
-        n->push_back(osg::Vec3(1.0f, -1.0f, -1.0f));
-        n->push_back(osg::Vec3(1.0f,  1.0f, -1.0f));
-        n->push_back(osg::Vec3(1.0f,  1.0f,  1.0f));
-        n->push_back(osg::Vec3(1.0f, -1.0f,  1.0f));
+        osg::Vec3 v0(0.0f, -cw, -ch);
+        osg::Vec3 v1(0.0f,  cw, -ch);
+        osg::Vec3 v2(0.0f,  cw,  ch);
+        osg::Vec3 v3(0.0f, -cw,  ch);
+        v->push_back(v0); v->push_back(v1); v->push_back(v2); // 1st triangle
+        v->push_back(v0); v->push_back(v2); v->push_back(v3); // 2nd triangle
 
         // Set the texture coords for each vertex
         // from the texture index, and the number
         // of textures in the image    
         int x = iter->texture_index_x;
         int y = iter->texture_index_y;
+
+        osg::Vec2 t0( (float) x       / varieties_x, (float) y / varieties_y);
+        osg::Vec2 t1( (float) (x + 1) / varieties_x, (float) y / varieties_y);
+        osg::Vec2 t2( (float) (x + 1) / varieties_x, (float) (y + 1) / varieties_y);
+        osg::Vec2 t3( (float) x       / varieties_x, (float) (y + 1) / varieties_y);
+        t->push_back(t0); t->push_back(t1); t->push_back(t2); // 1st triangle
+        t->push_back(t0); t->push_back(t2); t->push_back(t3); // 2nd triangle
         
-        t->push_back(osg::Vec2( (float) x       / varieties_x, (float) y / varieties_y));
-        t->push_back(osg::Vec2( (float) (x + 1) / varieties_x, (float) y / varieties_y));
-        t->push_back(osg::Vec2( (float) (x + 1) / varieties_x, (float) (y + 1) / varieties_y));
-        t->push_back(osg::Vec2( (float) x       / varieties_x, (float) (y + 1) / varieties_y));
-        
-        // The color isn't actually use in lighting, but instead to indicate the center of rotation
-        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
-        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
-        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
-        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));    
+        // The color isn't actually used in lighting, but instead to indicate
+        // the center of rotation, and is shared across the sprite.
+        osg::Vec4 c0(iter->position.x(), iter->position.y(), iter->position.z(), zscale);
+        for (int i = 0; i < 6; ++i) {
+            c->push_back(c0);
+        }
     }
     
-    //Quads now created, add it to the geometry.
+    // Quads now created, add it to the geometry.
+    // GLcore: We could use glDrawElements instead of glDrawArrays so that the
+    // triangles that form the quad share one edge (2 vertices). In practice,
+    // glDrawArrays still performs better in most cases.
     osg::Geometry* geom = new osg::Geometry;
+    geom->setUseVertexBufferObjects(true);
+    // Set the data variance to DYNAMIC because we will be modifying the vertex
+    // data later when ordering the sprites.
+    geom->setDataVariance(osg::Object::DYNAMIC);
     geom->setVertexArray(v);
-    geom->setTexCoordArray(0, t);
-    geom->setNormalArray(n);
-    geom->setNormalBinding(Geometry::BIND_PER_VERTEX);
-    geom->setColorArray(c);
-    geom->setColorBinding(Geometry::BIND_PER_VERTEX);
-    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,numsprites*4));
+    geom->setTexCoordArray(0, t, osg::Array::BIND_PER_VERTEX);
+    geom->setColorArray(c, osg::Array::BIND_PER_VERTEX);
+    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, 0, numsprites*6));
     _geometry = geom;
 }
 

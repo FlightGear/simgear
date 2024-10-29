@@ -136,7 +136,6 @@ EffectPropertyMap<Texture::FilterMode> filterModes(filterModesInit);
 
 EffectNameValue<Texture::WrapMode> wrapModesInit[] =
 {
-    {"clamp", Texture::CLAMP},
     {"clamp-to-border", Texture::CLAMP_TO_BORDER},
     {"clamp-to-edge", Texture::CLAMP_TO_EDGE},
     {"mirror", Texture::MIRROR},
@@ -157,17 +156,17 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
         findAttr(filterModes, ep, magFilter);
     const SGPropertyNode* pWrapS
         = getEffectPropertyChild(effect, props, "wrap-s");
-    Texture::WrapMode sWrap = Texture::CLAMP;
+    Texture::WrapMode sWrap = Texture::CLAMP_TO_EDGE;
     if (pWrapS)
         findAttr(wrapModes, pWrapS, sWrap);
     const SGPropertyNode* pWrapT
         = getEffectPropertyChild(effect, props, "wrap-t");
-    Texture::WrapMode tWrap = Texture::CLAMP;
+    Texture::WrapMode tWrap = Texture::CLAMP_TO_EDGE;
     if (pWrapT)
         findAttr(wrapModes, pWrapT, tWrap);
     const SGPropertyNode* pWrapR
         = getEffectPropertyChild(effect, props, "wrap-r");
-    Texture::WrapMode rWrap = Texture::CLAMP;
+    Texture::WrapMode rWrap = Texture::CLAMP_TO_EDGE;
     if (pWrapR)
         findAttr(wrapModes, pWrapR, rWrap);
     const SGPropertyNode* pImage
@@ -420,8 +419,8 @@ Texture* LightSpriteBuilder::build(Effect* effect, const SGPropertyNode* props,
 
     texture = new osg::Texture2D;
     texture->setImage(getPointSpriteImage(6));
-    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP);
-    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP);
+    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 
     return texture.get();
 }

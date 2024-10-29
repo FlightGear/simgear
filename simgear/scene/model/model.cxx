@@ -55,11 +55,11 @@ SGLoadTexture2D(bool staticTexture, const std::string& path,
   if (wrapu)
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
   else
-    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP);
+    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
   if (wrapv)
     texture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
   else
-    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP);
+    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 
   if (image) {
     int s = image->s();

@@ -300,7 +300,7 @@ SGMesh::SGMesh( const SGDemPtr dem,
                 osg::Texture2D* texture = new osg::Texture2D;
                 texture->setImage(image);
                 texture->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);
-                texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP);
+                texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_EDGE);
                 stateSet->setTextureAttributeAndModes(0, texture);
             }
 

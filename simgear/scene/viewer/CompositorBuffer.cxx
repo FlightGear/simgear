@@ -79,7 +79,6 @@ PropStringMap<BufferFormat> buffer_format_map {
 };
 
 PropStringMap<osg::Texture::WrapMode> wrap_mode_map = {
-    {"clamp", osg::Texture::CLAMP},
     {"clamp-to-edge", osg::Texture::CLAMP_TO_EDGE},
     {"clamp-to-border", osg::Texture::CLAMP_TO_BORDER},
     {"repeat", osg::Texture::REPEAT},
@@ -228,7 +227,7 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
     findPropString(node, "mag-filter", filter_mode, filter_mode_map);
     texture->setFilter(osg::Texture::MAG_FILTER, filter_mode);
 
-    osg::Texture::WrapMode wrap_mode = osg::Texture::CLAMP_TO_BORDER;
+    osg::Texture::WrapMode wrap_mode = osg::Texture::CLAMP_TO_EDGE;
     findPropString(node, "wrap-s", wrap_mode, wrap_mode_map);
     texture->setWrap(osg::Texture::WRAP_S, wrap_mode);
     findPropString(node, "wrap-t", wrap_mode, wrap_mode_map);

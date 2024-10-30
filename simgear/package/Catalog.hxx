@@ -204,5 +204,3 @@ public:
 } // of namespace pkg
 
 } // of namespace simgear
-
-#endif // of SG_PACKAGE_CATALOG_HXX

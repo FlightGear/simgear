@@ -405,22 +405,16 @@ struct MakeBuildingLeaf
         geom->setUseVertexBufferObjects( true );
         geom->setComputeBoundingBoxCallback(new BuildingBoundingBoxCallback);
 
-        geom->setVertexAttribArray(BUILDING_POSITION_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
-        geom->setVertexAttribArray(BUILDING_SCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX);
-        geom->setVertexAttribArray(BUILDING_ATTR1, new osg::Vec3Array, Array::BIND_PER_VERTEX);
-        geom->setVertexAttribArray(BUILDING_ATTR2, new osg::Vec3Array, Array::BIND_PER_VERTEX);
+        geom->setVertexAttribArray(BUILDING_POSITION_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX, 1);
+        geom->setVertexAttribArray(BUILDING_SCALE_ATTR, new osg::Vec3Array, Array::BIND_PER_VERTEX, 1);
+        geom->setVertexAttribArray(BUILDING_ATTR1, new osg::Vec3Array, Array::BIND_PER_VERTEX, 1);
+        geom->setVertexAttribArray(BUILDING_ATTR2, new osg::Vec3Array, Array::BIND_PER_VERTEX, 1);
 
         geom->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLES, 0, 78, 0));
 
         EffectGeode* geode = new EffectGeode;
         geode->addDrawable(geom);
         geode->setEffect(_effect.get());
-
-        StateSet* ss = geode->getOrCreateStateSet();
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_POSITION_ATTR, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_SCALE_ATTR, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ATTR1, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(BUILDING_ATTR2, 1));
 
         LOD* result = new LOD;
         result->addChild(geode, 0, _range);

@@ -100,10 +100,10 @@ public:
         geometry->setDataVariance(osg::Object::STATIC);
         geometry->setComputeBoundingBoxCallback(new ObjectInstanceBoundingBoxCallback);
 
-        geometry->setVertexAttribArray(INSTANCE_POSITIONS, _positions, Array::BIND_PER_VERTEX);
-        geometry->setVertexAttribArray(INSTANCE_ROTATIONS_AND_SCALES, _rotationsAndScales, Array::BIND_PER_VERTEX);
+        geometry->setVertexAttribArray(INSTANCE_POSITIONS, _positions, Array::BIND_PER_VERTEX, 1);
+        geometry->setVertexAttribArray(INSTANCE_ROTATIONS_AND_SCALES, _rotationsAndScales, Array::BIND_PER_VERTEX, 1);
         if (_customAttribs != NULL) {
-            geometry->setVertexAttribArray(INSTANCE_CUSTOM_ATTRIBS, _customAttribs, Array::BIND_PER_VERTEX);
+            geometry->setVertexAttribArray(INSTANCE_CUSTOM_ATTRIBS, _customAttribs, Array::BIND_PER_VERTEX, 1);
         }
 
         if (geometry->getNumPrimitiveSets() > 0) {
@@ -111,16 +111,6 @@ public:
                 osg::DrawArrays* drawArrays = static_cast<DrawArrays*>(geometry->getPrimitiveSet(i));
                 drawArrays->setNumInstances(_positions->size());
             }
-        }
-    }
-
-    void setPropsOnEffectGeode(EffectGeode* effectGeode)
-    {
-        StateSet* ss = effectGeode->getOrCreateStateSet();
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(INSTANCE_POSITIONS, 1));
-        ss->setAttributeAndModes(new osg::VertexAttribDivisor(INSTANCE_ROTATIONS_AND_SCALES, 1));
-        if (_customAttribs != NULL) {
-            ss->setAttributeAndModes(new osg::VertexAttribDivisor(INSTANCE_CUSTOM_ATTRIBS, 1));
         }
     }
 
@@ -143,7 +133,6 @@ public:
             }
 
             _effectGeodeSet.insert(eg);
-            setPropsOnEffectGeode(eg);
         }
 
         traverse(node);

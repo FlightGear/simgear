@@ -25,6 +25,8 @@
 
 #include "LightBin.hxx"
 
+#include <algorithm> // for std::clamp
+
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/Geometry>

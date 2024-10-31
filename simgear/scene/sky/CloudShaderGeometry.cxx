@@ -128,17 +128,6 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         sortData.frameSorted = frameNumber;
     }
 
-    // XXX: Move this to OSG
-    const GLExtensions* extensions = GLExtensions::Get(state.getContextID(), true);
-    GLfloat ua1[3] = { (GLfloat) alpha_factor,
-                       (GLfloat) shade_factor,
-                       (GLfloat) cloud_height };
-    GLfloat ua2[3] = { (GLfloat) bottom_factor,
-                       (GLfloat) middle_factor,
-                       (GLfloat) top_factor };
-                       
-    extensions->glVertexAttrib3fv(USR_ATTR_1, ua1 );
-    extensions->glVertexAttrib3fv(USR_ATTR_2, ua2 );
     _geometry->draw(renderInfo);    
 }
 
@@ -213,7 +202,12 @@ void CloudShaderGeometry::generateGeometry()
             c->push_back(c0);
         }
     }
-    
+
+    osg::ref_ptr<osg::Vec3Array> ua1 = new osg::Vec3Array(1);
+    (*ua1)[0] = osg::Vec3(alpha_factor, shade_factor, cloud_height);
+    osg::ref_ptr<osg::Vec3Array> ua2 = new osg::Vec3Array(1);
+    (*ua2)[0] = osg::Vec3(bottom_factor, middle_factor, top_factor);
+
     // Quads now created, add it to the geometry.
     // GLcore: We could use glDrawElements instead of glDrawArrays so that the
     // triangles that form the quad share one edge (2 vertices). In practice,
@@ -226,6 +220,8 @@ void CloudShaderGeometry::generateGeometry()
     geom->setVertexArray(v);
     geom->setTexCoordArray(0, t, osg::Array::BIND_PER_VERTEX);
     geom->setColorArray(c, osg::Array::BIND_PER_VERTEX);
+    geom->setVertexAttribArray(USR_ATTR_1, ua1, osg::Array::BIND_OVERALL);
+    geom->setVertexAttribArray(USR_ATTR_2, ua2, osg::Array::BIND_OVERALL);
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, 0, numsprites*6));
     _geometry = geom;
 }

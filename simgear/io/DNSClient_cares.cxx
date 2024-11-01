@@ -141,6 +141,7 @@ public:
             if (a->order < b->order) return true;
             return a->preference < b->preference;
         });
+        ares_free_data(naptr_out);
     }
 
     static void parse_SRV(unsigned char* abuf, int alen, SRVRequest* record)
@@ -166,6 +167,7 @@ public:
             if (a->priority < b->priority) return true;
             return a->weight > b->weight;
         });
+        ares_free_data(srv_out);
     }
 
     static void parse_TXT(unsigned char* abuf, int alen, TXTRequest* record)
@@ -193,6 +195,7 @@ public:
             }
 
         }
+        ares_free_data(txt_out);
     }
 
     ares_channel_t* channel = NULL;

@@ -654,9 +654,9 @@ void SGSoundMgr::update_sample_config( SGSoundSample *sample, SGVec3d& position,
 }
 
 
-vector<std::string> SGSoundMgr::get_available_devices()
+std::vector<std::string> SGSoundMgr::get_available_devices()
 {
-    vector<std::string> devices;
+    std::vector<std::string> devices;
 #ifdef ENABLE_SOUND
     std::string on = " on ";
     std::string colon = ": ";

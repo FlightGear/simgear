@@ -127,11 +127,6 @@ bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
     planets->repaint(sc.sun_angle, sc.altitude_m, eph.getNumPlanets(), eph.getPlanets());
     galaxy->repaint(sc.sun_angle, sc.altitude_m);
 
-    for (unsigned i = 0; i < cloud_layers.size(); ++i) {
-        if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
-            cloud_layers[i]->repaint(sc.cloud_color);
-        }
-    }
     return true;
 }
 
@@ -189,7 +184,7 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
             cloud_layers[i]->reposition( zero_elev, view_up, lon, lat, alt, dt);
         } else {
           cloud_layers[i]->getNode()->setAllChildrenOff();
-    }
+        }
     }
 
     return true;

@@ -198,17 +198,8 @@ public:
         return max_alpha;
     }
 
-    /** build the cloud object */
-    void rebuild();
-
     /** Enable/disable 3D clouds in this layer */
     void set_enable3dClouds(bool enable);
-
-    /**
-     * repaint the cloud colors based on the specified fog_color
-     * @param fog_color the fog color
-     */
-    bool repaint( const SGVec3f& fog_color );
 
     /**
      * reposition the cloud layer at the specified origin and
@@ -230,22 +221,11 @@ public:
     /** return the 3D layer cloud associated with this 2D layer */
     SGCloudField *get_layer3D(void) { return layer3D; }
 
-protected:
-    void setTextureOffset(const osg::Vec2& offset);
 private:
 
     osg::ref_ptr<osg::Switch> cloud_root;
-    osg::ref_ptr<osg::Switch> layer_root;
-    osg::ref_ptr<osg::Group> group_top, group_bottom;
-    osg::ref_ptr<osg::MatrixTransform> layer_transform;
-    osg::ref_ptr<osg::Geode> layer[4];
 
     float cloud_alpha;          // 1.0 = drawn fully, 0.0 faded out completely
-
-    osg::ref_ptr<osg::Vec4Array> cl[4];
-    osg::ref_ptr<osg::Vec3Array> vl[4];
-    osg::ref_ptr<osg::Vec2Array> tl[4];
-    osg::ref_ptr<osg::Vec3Array> tl2[4];
 
     // height above sea level (meters)
     SGPath texture_path;

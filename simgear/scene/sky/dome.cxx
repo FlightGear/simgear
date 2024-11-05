@@ -16,7 +16,6 @@
 
 #include "dome.hxx"
 
-using namespace osg;
 using namespace simgear;
 
 namespace {
@@ -24,8 +23,8 @@ namespace {
 // proportions of max dimensions fed to the build() routine
 const float center_elev = 1.0f;
 
-const int numRings = 64; //sizeof(domeParams) / sizeof(domeParams[0]);
-const int numBands = 64; // 12
+const int numRings = 16;
+const int numBands = 32;
 
 // Make dome a bit over half sphere
 const float domeAngle = 120.0f;
@@ -38,9 +37,9 @@ const float ringDelta = domeAngle / (numRings + 1);
 // the array that holds its location.
 struct GridIndex
 {
-    VectorArrayAdapter<Vec3Array> gridAdapter;
-    Vec3Array& grid;
-    GridIndex(Vec3Array& array, int rowStride, int baseOffset) :
+    VectorArrayAdapter<osg::Vec3Array> gridAdapter;
+    osg::Vec3Array& grid;
+    GridIndex(osg::Vec3Array& array, int rowStride, int baseOffset) :
         gridAdapter(array, rowStride, baseOffset), grid(array)
     {
     }
@@ -53,7 +52,8 @@ struct GridIndex
 } // anonymous namespace
 
 
-osg::Node* SGSkyDome::build(double hscale, double vscale, SGReaderWriterOptions* options)
+osg::Node* SGSkyDome::build(double hscale, double vscale,
+                            const SGReaderWriterOptions* options)
 {
     EffectGeode* geode = new EffectGeode;
     geode->setName("Skydome");
@@ -69,27 +69,27 @@ osg::Node* SGSkyDome::build(double hscale, double vscale, SGReaderWriterOptions*
     // generate the raw vertex data
     (*dome_vl)[0].set(0.0, 0.0,  center_elev * vscale);
     (*dome_vl)[1].set(0.0, 0.0, -center_elev * vscale);
-    simgear::VectorArrayAdapter<Vec3Array> vertices(*dome_vl, numBands, 2);
+    simgear::VectorArrayAdapter<osg::Vec3Array> vertices(*dome_vl, numBands, 2);
 
     for (int i = 0; i < numBands; ++i) {
         double theta = (i * bandDelta) * SGD_DEGREES_TO_RADIANS;
-        double sTheta = hscale*sin(theta);
-        double cTheta = hscale*cos(theta);
+        double sTheta = hscale * std::sin(theta);
+        double cTheta = hscale * std::cos(theta);
         for (int j = 0; j < numRings; ++j) {
-            vertices(j, i).set(cTheta * sin((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS), //domeParams[j].radius,
-                               sTheta * sin((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS),// domeParams[j].radius,
-                               vscale * cos((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS)); //domeParams[j].elev * vscale);
+            vertices(j, i).set(cTheta * std::sin((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS),
+                               sTheta * std::sin((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS),
+                               vscale * std::cos((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS));
         }
     }
 
-    DrawElementsUShort* domeElements = new osg::DrawElementsUShort(GL_TRIANGLES);
+    osg::ref_ptr<osg::DrawElementsUShort> domeElements =
+        new osg::DrawElementsUShort(GL_TRIANGLES);
     makeDome(numRings, numBands, *domeElements);
 
-    osg::Geometry* geom = new Geometry;
+    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
     geom->setName("Dome Elements");
     geom->setUseVertexBufferObjects(true);
-    geom->setVertexArray(dome_vl.get());
-    geom->setNormalBinding(osg::Geometry::BIND_OFF);
+    geom->setVertexArray(dome_vl);
     geom->addPrimitiveSet(domeElements);
 
     geode->addDrawable(geom);
@@ -123,9 +123,9 @@ bool SGSkyDome::reposition(const SGVec3f& p, double _asl,
  * rings of vertices. Each ring's vertices are stored together. An
  * even number of longitudinal bands are assumed.
  */
-void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
+void SGSkyDome::makeDome(int rings, int bands, osg::DrawElementsUShort& elements)
 {
-    std::back_insert_iterator<DrawElementsUShort> pusher
+    std::back_insert_iterator<osg::DrawElementsUShort> pusher
         = std::back_inserter(elements);
     GridIndex grid(*dome_vl, numBands, 2);
     for (int i = 0; i < bands; i++) {

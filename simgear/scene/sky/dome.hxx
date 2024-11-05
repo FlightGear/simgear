@@ -30,7 +30,7 @@ public:
      * Initialize the sky object and connect it into our scene graph root.
      */
     osg::Node* build(double hscale = 80000.0, double vscale = 80000.0,
-                     simgear::SGReaderWriterOptions* options = nullptr);
+                     const simgear::SGReaderWriterOptions* options = nullptr);
 
     /*
      * Reposition the sky at the specified origin and orientation
@@ -39,8 +39,8 @@ public:
      * spin specifies a rotation about the new Z axis (and orients the
      * sunrise/set effects).
      */
-    bool reposition( const SGVec3f& p, double asl,
-                     double lon, double lat, double spin );
+    bool reposition(const SGVec3f& p, double asl,
+                    double lon, double lat, double spin);
 private:
     void makeDome(int rings, int bands, osg::DrawElementsUShort& elements);
 

@@ -102,7 +102,7 @@ ALuint createBufferFromFile(const SGPath& path)
   alGenBuffers(1, &buffer);
   if ((err = alGetError()) != AL_NO_ERROR) {
     free(data);
-    throw sg_io_exception("OpenAL buffer allocation failed" + std::string(alGetString(err)), sg_location(path.str()));
+    throw sg_io_exception("OpenAL buffer allocation failed" + std::string((char*)alGetString(err)), sg_location(path.str()));
   }
 
 printf("format: %x\n", format);
@@ -110,7 +110,7 @@ printf("format: %x\n", format);
   if ((err = alGetError()) != AL_NO_ERROR) {
     alDeleteBuffers(1, &buffer);
     free(data);
-    throw sg_io_exception("OpenAL setting buffer data failed: " + std::string(alGetString(err)), sg_location(path.str()));
+    throw sg_io_exception("OpenAL setting buffer data failed: " + std::string((char*)alGetString(err)), sg_location(path.str()));
   }
 #endif
   return buffer;

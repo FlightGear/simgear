@@ -851,22 +851,16 @@ vector<std::string> SGSoundMgr::get_available_devices()
     const ALCchar *s;
 
     if (alcIsExtensionPresent(nullptr, "ALC_enumerate_all_EXT") == AL_TRUE) {
-        // REVIEW: Memory Leak - 4,136 bytes in 1 blocks are still reachable
         s = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
     } else {
         s = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
     }
 
-    if (s) {
-        ALCchar *nptr, *ptr = (ALCchar *)s;
-
-        nptr = ptr;
-        while (*(nptr += strlen(ptr)+1) != 0)
-        {
-            devices.push_back(ptr);
-            ptr = nptr;
-        }
+    char *ptr = (char*)s;
+    while (ptr && ptr[0] != '\0')
+    {
         devices.push_back(ptr);
+        ptr += strlen(ptr)+1;
     }
 #endif
     return devices;

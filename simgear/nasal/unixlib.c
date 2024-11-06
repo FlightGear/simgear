@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2003  Andy Ross  andy@plausible.org
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>

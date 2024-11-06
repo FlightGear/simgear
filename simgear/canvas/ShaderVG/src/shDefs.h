@@ -184,7 +184,7 @@ SHfloat getMaxFloat();
 /* OpenGL headers */
 
 #if defined(VG_API_MACOSX)
-#include <OpenGL/gl.h>
+#include <OpenGL/gl3.h>
 #elif defined(VG_API_WINDOWS)
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glcorearb.h>

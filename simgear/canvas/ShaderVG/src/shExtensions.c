@@ -63,6 +63,14 @@ PFNGLUNIFORMMATRIX2FVPROC glUniformMatrix2fv;
 PFNGLGETUNIFORMFVPROC glGetUniformfv;
 PFNGLCREATEPROGRAMPROC glCreateProgram;
 PFNGLACTIVETEXTUREPROC glActiveTexture;
+/* FlightGear additions to use VAOs and VBOs */
+PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
+PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
+PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
+PFNGLGENBUFFERSPROC glGenBuffers;
+PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+PFNGLBINDBUFFERPROC glBindBuffer;
+PFNGLBUFFERDATAPROC glBufferData;
 #endif
 
 // FlightGear: Extension checking is not needed for the OpenGL core profile
@@ -138,5 +146,13 @@ void shLoadExtensions(void* c)
     glGetUniformfv = shGetProcAddress("glGetUniformfv");
     glCreateProgram = shGetProcAddress("glCreateProgram");
     glActiveTexture = shGetProcAddress("glActiveTexture");
+    /* FlightGear additions to use VAOs and VBOs */
+    glGenVertexArrays = shGetProcAddress("glGenVertexArrays");
+    glDeleteVertexArrays = shGetProcAddress("glDeleteVertexArrays");
+    glBindVertexArray = shGetProcAddress("glBindVertexArray");
+    glGenBuffers = shGetProcAddress("glGenBuffers");
+    glDeleteBuffers = shGetProcAddress("glDeleteBuffers");
+    glBindBuffer = shGetProcAddress("glBindBuffer");
+    glBufferData = shGetProcAddress("glBufferData");
 #endif
 }

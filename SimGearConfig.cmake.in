@@ -37,6 +37,12 @@ if(SG_HAVE_DDS)
     find_dependency(CycloneDDS)
 endif()
 
+# if we're a static build, we still need to link against this, even though
+# it's a PRIVATE dependency
+if (NOT SIMGEAR_SHARED AND @SIMGEAR_USING_CARES_DNS@)
+  find_dependency(c-ares 1.27)
+endif()
+
 
 if (SIMGEAR_SOUND)
   # find the sound dependency

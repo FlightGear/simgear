@@ -412,6 +412,9 @@ install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION inclu
 
 find_package(c-ares 1.27)
 if(c-ares_FOUND)
+    # needed for SimGearConfig.cmaake generation
+    set(SIMGEAR_USING_CARES_DNS 1)
+
     message(STATUS "Found c-ares, not using UDNS")
 else()
   message(STATUS "NOT found c-ares, using UDNS, unit-tests disabled. Expect missing terrasync sources.")

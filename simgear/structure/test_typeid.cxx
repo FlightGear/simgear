@@ -28,7 +28,7 @@ int main(int ac, char ** av)
     Base& b1 = d1;
     Derived2 d2;
     Base2& b2 = d2;
-    int i;
+    int i = 0;
 
     SG_VERIFY(Type(d1) == "Derived");
     SG_VERIFY(Type(b1) == "Base");

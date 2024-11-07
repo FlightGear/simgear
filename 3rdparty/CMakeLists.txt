@@ -9,3 +9,4 @@ if (NOT SYSTEM_UDNS)
 endif()
 
 add_subdirectory(tiny_gltf)
+add_subdirectory(glcore)

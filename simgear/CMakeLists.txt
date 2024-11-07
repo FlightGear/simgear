@@ -121,7 +121,9 @@ if(NOT SIMGEAR_HEADLESS)
     # manually include a more modern header.
     # OpenGL is only used by ShaderVG.
     if(WIN32)
-        target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/3rdparty/glcore)
+        target_include_directories(SimGearScene BEFORE PUBLIC 
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdparty/glcore>
+        )
     endif()
 
     target_include_directories(SimGearScene PRIVATE ${PROJECT_SOURCE_DIR}/simgear/canvas/ShaderVG/include)

@@ -64,6 +64,20 @@ PFNGLGENBUFFERSPROC glGenBuffers;
 PFNGLDELETEBUFFERSPROC glDeleteBuffers;
 PFNGLBINDBUFFERPROC glBindBuffer;
 PFNGLBUFFERDATAPROC glBufferData;
+
+// James aditions to fix linkage
+
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+
+PFNGLUNIFORM2IPROC glUniform2i;
+PFNGLUNIFORM3IPROC glUniform3i;
+PFNGLUNIFORM4IPROC glUniform4i;
+
+PFNGLUNIFORM1IVPROC glUniform1iv;
+PFNGLUNIFORM2IVPROC glUniform2iv;
+PFNGLUNIFORM3IVPROC glUniform3iv;
+PFNGLUNIFORM4IVPROC glUniform4iv;
+
 #endif
 
 void shLoadExtensions(void* c)
@@ -106,5 +120,18 @@ void shLoadExtensions(void* c)
     glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers");
     glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
     glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
+
+
+    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
+
+    glUniform2i = (PFNGLUNIFORM2IPROC)wglGetProcAddress("glUniform2i");
+    glUniform3i = (PFNGLUNIFORM3IPROC)wglGetProcAddress("glUniform3i");
+    glUniform4i = (PFNGLUNIFORM4IPROC)wglGetProcAddress("glUniform4i");
+
+    glUniform1iv = (PFNGLUNIFORM1IVPROC)wglGetProcAddress("glUniform1iv");
+    glUniform2iv = (PFNGLUNIFORM2IVPROC)wglGetProcAddress("glUniform2iv");
+    glUniform3iv = (PFNGLUNIFORM3IVPROC)wglGetProcAddress("glUniform3iv");
+    glUniform4iv = (PFNGLUNIFORM4IVPROC)wglGetProcAddress("glUniform4iv");
+
 #endif
 }

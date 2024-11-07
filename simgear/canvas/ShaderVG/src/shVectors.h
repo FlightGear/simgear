@@ -482,6 +482,6 @@ SHfloat shVectorOrientation(SHVector2* v);
 int shLineLineXsection(SHVector2* o1, SHVector2* v1,
                        SHVector2* o2, SHVector2* v2,
                        SHVector2* xsection);
-void shCalcOrtho2D(float* mat, float left, float right, float bottom, float top, float near, float far);
+void shCalcOrtho2D(float* mat, float left, float right, float bottom, float top, float aNear, float aFar);
 void shMatrixToVG(SHMatrix3x3* m, SHfloat mvg[9]);
 void shIdMatrixGL(SHfloat mgl[16]);

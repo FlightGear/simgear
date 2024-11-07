@@ -36,6 +36,8 @@ linux-build:
     paths:
       - $PREFIX_DIR
   cache:
+    key: "linux-x64-$CI_COMMIT_REF_SLUG"
+    policy: push
     paths:
       - $BUILD_DIR
 
@@ -130,6 +132,8 @@ test:
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
     - ctest --output-on-failure
   cache:
+    key: "linux-x64-$CI_COMMIT_REF_SLUG"
+    policy: pull
     paths:
       - $BUILD_DIR
 

@@ -4,10 +4,12 @@
 
 #include <simgear/debug/logstream.hxx>
 
+#if defined(IGNORE_OSG_MESSAGES)
 const std::string osg_ignored_messages[] = {
-//    "0xde1",
-//    "0x806f",
+   "0xde1",
+   "0x806f",
 };
+#endif
 
 /**
 * merge OSG output into our logging system, so it gets recorded to file,
@@ -36,15 +38,17 @@ public:
         }
 
         // Detect if this is an ignored message
-        // auto it = std::find_if(std::begin(osg_ignored_messages),
-        //                        std::end(osg_ignored_messages),
-        //                        [&msg](const std::string& s) {
-        //                            return msg.find(s) != std::string::npos;
-        //                        });
-        // if (it != std::end(osg_ignored_messages)) {
-        //     return;
-        // }
-
+    #if defined(IGNORE_OSG_MESSAGES)
+        auto it = std::find_if(std::begin(osg_ignored_messages),
+                               std::end(osg_ignored_messages),
+                               [&msg](const std::string& s) {
+                                   return msg.find(s) != std::string::npos;
+                               });
+        if (it != std::end(osg_ignored_messages)) {
+            return;
+        }
+    #endif
+    
         // Detect whether a osg::Reference derived object is deleted with a non-zero
         // reference count. In this case trigger a segfault to get a stack trace.
         if (msg.find("the final reference count was") != std::string::npos) {

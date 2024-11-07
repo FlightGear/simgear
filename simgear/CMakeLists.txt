@@ -160,10 +160,10 @@ target_link_libraries(SimGearCore PRIVATE
     LibLZMA::LibLZMA
     ${WINSOCK_LIBRARY})
 
-if(NOT c-ares_FOUND)
-    target_link_libraries(SimGearCore PRIVATE Udns::Udns)
-else()
+if(TARGET c-ares::cares)
     target_link_libraries(SimGearCore PRIVATE c-ares::cares)
+else()
+    target_link_libraries(SimGearCore PRIVATE Udns::Udns)
 endif()
 
 if(NOT SIMGEAR_HEADLESS)

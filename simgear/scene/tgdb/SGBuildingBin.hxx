@@ -170,6 +170,8 @@ private:
     std::string _materialName;
     std::string _textureName;
     std::string _lightMapName;
+    std::string _normalMapName;
+    std::string _reflectionMapName;
 
     // Visibility range for buildings
     float buildingRange;

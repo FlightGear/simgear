@@ -587,7 +587,9 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       }
 
       _textureName = mat->get_building_texture();
+      _normalMapName = mat->get_building_normalmap();
       _lightMapName = mat->get_building_lightmap();
+      _reflectionMapName = mat->get_building_reflectionmap();
       buildingRange = mat->get_building_range();
       SG_LOG(SG_TERRAIN, SG_DEBUG, "Building texture " << _textureName);
   }
@@ -852,8 +854,14 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
         // Main texture - n=0
         params->getChild("texture", 0, true)->getChild("image", 0, true)->setStringValue(_textureName);
 
+        // Normal map - n=2
+        params->getChild("texture", 2, true)->getChild("image", 0, true)->setStringValue(_normalMapName);
+
         // Light map - n=3
         params->getChild("texture", 3, true)->getChild("image", 0, true)->setStringValue(_lightMapName);
+
+        // Normal map - n=4
+        params->getChild("texture", 4, true)->getChild("image", 0, true)->setStringValue(_normalMapName);
 
         effect = makeEffect(effectProp, true, options);
         if (iter == buildingEffectMap.end())

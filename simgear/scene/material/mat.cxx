@@ -293,18 +293,31 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_coverage = props->getDoubleValue("building-coverage", 0.0);
     building_spacing = props->getDoubleValue("building-spacing-m", 5.0);
 
-    std::string bt = props->getStringValue( "building-texture",
-                                            "Textures/buildings.png" );
+    std::string bt = props->getStringValue("building-texture", "Textures/Buildings/buildings.png");
     building_texture = SGModelLib::findDataFile(bt, options);
 
     if (building_texture.empty()) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
     }
 
-    bt = props->getStringValue("building-lightmap", "Textures/buildings-lightmap.png");
+    bt = props->getStringValue("building-lightmap", "Textures/Buildings/buildings-lightmap.png");
     building_lightmap = SGModelLib::findDataFile(bt, options);
 
     if (building_lightmap.empty()) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
+    }
+
+    bt = props->getStringValue("building-normalmap", "Textures/Buildings/buildings-normalmap.png");
+    building_normalmap = SGModelLib::findDataFile(bt, options);
+
+    if (building_normalmap.empty()) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
+    }
+
+    bt = props->getStringValue("building-reflectionmap", "Textures/Buildings/buildings-reflectionmap.png");
+    building_reflectionmap = SGModelLib::findDataFile(bt, options);
+
+    if (building_reflectionmap.empty()) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
     }
 

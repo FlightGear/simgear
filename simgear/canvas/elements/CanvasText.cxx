@@ -26,8 +26,8 @@
 
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
+#include <simgear/scene/util/LoadShader.hxx>
 #include <simgear/scene/util/parse_color.hxx>
-#include <simgear/scene/util/load_shader.hxx>
 #include <simgear/scene/util/SGProgram.hxx>
 #include <osg/Version>
 #include <osgDB/Registry>

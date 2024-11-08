@@ -26,8 +26,8 @@
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
 #include <simgear/canvas/events/KeyboardEvent.hxx>
 #include <simgear/canvas/events/MouseEvent.hxx>
+#include <simgear/scene/util/LoadShader.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
-#include <simgear/scene/util/load_shader.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/misc/sg_path.hxx>

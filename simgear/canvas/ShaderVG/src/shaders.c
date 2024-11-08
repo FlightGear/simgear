@@ -32,9 +32,9 @@ static const char* vgShaderFragmentPipeline = "pipeline.frag";
 static const char* vgShaderVertexColorRamp = "color_ramp.vert";
 static const char* vgShaderFragmentColorRamp = "color_ramp.frag";
 
-// Defined in simgear/scene/util/load_shader.hxx
-void *simgearShaderOpen(const char *filename, const char **buf, int *size);
-void  simgearShaderClose(void *ptr);
+// Defined in simgear/scene/util/LoadShader.hxx
+void *sgShaderVGShaderOpen(const char *filename, const char **buf, int *size);
+void sgShaderVGShaderClose(void *ptr);
 
 void shInitPiplelineShaders(void)
 {
@@ -45,21 +45,21 @@ void shInitPiplelineShaders(void)
     void *shader;
 
     context->vs = glCreateShader(GL_VERTEX_SHADER);
-    shader = simgearShaderOpen(vgShaderVertexPipeline, &buf, &size);
+    shader = sgShaderVGShaderOpen(vgShaderVertexPipeline, &buf, &size);
     if (shader) {
         glShaderSource(context->vs, 1, &buf, &size);
         glCompileShader(context->vs);
         GL_CHECK_SHADER(context->vs, vgShaderVertexPipeline);
-        simgearShaderClose(shader);
+        sgShaderVGShaderClose(shader);
     }
 
     context->fs = glCreateShader(GL_FRAGMENT_SHADER);
-    shader = simgearShaderOpen(vgShaderFragmentPipeline, &buf, &size);
+    shader = sgShaderVGShaderOpen(vgShaderFragmentPipeline, &buf, &size);
     if (shader) {
         glShaderSource(context->fs, 1, &buf, &size);
         glCompileShader(context->fs);
         GL_CHECK_SHADER(context->fs, vgShaderFragmentPipeline);
-        simgearShaderClose(shader);
+        sgShaderVGShaderClose(shader);
     }
 
     context->progDraw = glCreateProgram();
@@ -120,21 +120,21 @@ void shInitRampShaders(void)
     void *shader;
 
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    shader = simgearShaderOpen(vgShaderVertexColorRamp, &buf, &size);
+    shader = sgShaderVGShaderOpen(vgShaderVertexColorRamp, &buf, &size);
     if (shader) {
         glShaderSource(vs, 1, &buf, &size);
         glCompileShader(vs);
         GL_CHECK_SHADER(vs, vgShaderVertexColorRamp);
-        simgearShaderClose(shader);
+        sgShaderVGShaderClose(shader);
     }
 
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    shader = simgearShaderOpen(vgShaderFragmentColorRamp, &buf, &size);
+    shader = sgShaderVGShaderOpen(vgShaderFragmentColorRamp, &buf, &size);
     if (shader) {
         glShaderSource(fs, 1, &buf, &size);
         glCompileShader(fs);
         GL_CHECK_SHADER(fs, vgShaderFragmentColorRamp);
-        simgearShaderClose(shader);
+        sgShaderVGShaderClose(shader);
     }
 
     context->progColorRamp = glCreateProgram();

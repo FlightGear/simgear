@@ -72,11 +72,11 @@
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/LoadShader.hxx>
 #include <simgear/scene/util/SGProgram.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
-#include <simgear/scene/util/load_shader.hxx>
 #include <simgear/scene/util/OsgUtils.hxx>
 #include <simgear/structure/SGExpression.hxx>
 
@@ -772,17 +772,9 @@ ShaderMap shaderMap;
 
 void reload_shaders()
 {
-    for(ShaderMap::iterator sitr = shaderMap.begin(); sitr != shaderMap.end(); ++sitr)
-    {
-        Shader *shader = sitr->second.get();
-        string fileName = SGModelLib::findDataFile(sitr->first.first);
-        if (!fileName.empty()) {
-            simgear::loadShaderFromUTF8File(shader, fileName);
-        } else {
-            SG_LOG(SG_INPUT, SG_ALERT, "Could not locate shader: " << fileName);
-            simgear::reportFailure(simgear::LoadFailure::NotFound,
-                                   simgear::ErrorCode::LoadEffectsShaders,
-                                   "Reload: couldn't find shader:" + sitr->first.first);
+    for (auto& shader_pair : shaderMap) {
+        if (!simgear::loadShaderFromDataFile(shader_pair.second.get(), shader_pair.first.first)) {
+            SG_LOG(SG_INPUT, SG_WARN, "Failed to reload shader " << shader_pair.first.first);
         }
     }
 }
@@ -910,7 +902,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         } else {
             ref_ptr<Shader> shader = new Shader(stype);
             shader->setName(fileName);
-            if (simgear::loadShaderFromUTF8File(shader, fileName)) {
+            if (simgear::loadShaderFromUTF8Path(shader, fileName)) {
                 if (!program->addShader(shader.get())) {
                     simgear::reportFailure(simgear::LoadFailure::BadData,
                                            simgear::ErrorCode::LoadEffectsShaders,
@@ -919,11 +911,6 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                 }
 
                 shaderMap.insert(ShaderMap::value_type(skey, shader));
-            } else {
-                simgear::reportFailure(simgear::LoadFailure::BadData,
-                                       simgear::ErrorCode::LoadEffectsShaders,
-                                       "Failed to read shader source code",
-                                       SGPath::fromUtf8(fileName));
             }
         }
     }

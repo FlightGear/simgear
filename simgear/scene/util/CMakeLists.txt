@@ -38,7 +38,7 @@ set(HEADERS
     VectorArrayAdapter.hxx
     project.hxx
     SGProgram.hxx
-    load_shader.hxx
+    LoadShader.hxx
     )
 
 set(SOURCES
@@ -68,7 +68,7 @@ set(SOURCES
     UpdateOnceCallback.cxx
     project.cxx
     SGProgram.cxx
-    load_shader.cxx
+    LoadShader.cxx
     )
 
 simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")

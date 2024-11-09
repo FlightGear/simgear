@@ -103,13 +103,6 @@ void SGPropertyLockControl(
         SGPropertyNode* parent_listeners
         )
 {
-        std::cerr << __FILE__ << ":" << __LINE__ << ":"
-                << " active: " << active->getPath()
-                << " verbose: " << verbose->getPath()
-                << " timing: " << timing->getPath()
-                << " parent_listeners: " << parent_listeners->getPath()
-                << "\n";
-
     s_main_tree_root = active->getRootNode();
     active->setBoolValue(s_property_locking_active);
     active->addChangeListener(new SGPropertyLockListener(s_property_locking_active, "active"));

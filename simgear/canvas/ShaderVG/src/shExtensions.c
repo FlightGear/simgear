@@ -5,12 +5,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library in the file COPYING;
  * if not, write to the Free Software Foundation, Inc.,
@@ -18,15 +18,9 @@
  *
  */
 
-#define VG_API_EXPORT
 #include "shExtensions.h"
 
-/*-----------------------------------------------------
- * OpenGL core profile
- *-----------------------------------------------------*/
-#if defined(_WIN32)
-#include <GL/glcorearb.h>
-
+#if defined(VG_API_WINDOWS)
 PFNGLUNIFORM1IPROC glUniform1i;
 PFNGLUNIFORM2FVPROC glUniform2fv;
 PFNGLUNIFORMMATRIX3FVPROC glUniformMatrix3fv;
@@ -41,6 +35,7 @@ PFNGLCREATESHADERPROC glCreateShader;
 PFNGLSHADERSOURCEPROC glShaderSource;
 PFNGLCOMPILESHADERPROC glCompileShader;
 PFNGLGETSHADERIVPROC glGetShaderiv;
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
 PFNGLATTACHSHADERPROC glAttachShader;
 PFNGLLINKPROGRAMPROC glLinkProgram;
 PFNGLGETATTRIBLOCATIONPROC glGetAttribLocation;
@@ -52,6 +47,13 @@ PFNGLUNIFORM3FPROC glUniform3f;
 PFNGLUNIFORM4FPROC glUniform4f;
 PFNGLUNIFORM1FVPROC glUniform1fv;
 PFNGLUNIFORM3FVPROC glUniform3fv;
+PFNGLUNIFORM2IPROC glUniform2i;
+PFNGLUNIFORM3IPROC glUniform3i;
+PFNGLUNIFORM4IPROC glUniform4i;
+PFNGLUNIFORM1IVPROC glUniform1iv;
+PFNGLUNIFORM2IVPROC glUniform2iv;
+PFNGLUNIFORM3IVPROC glUniform3iv;
+PFNGLUNIFORM4IVPROC glUniform4iv;
 PFNGLUNIFORMMATRIX2FVPROC glUniformMatrix2fv;
 PFNGLGETUNIFORMFVPROC glGetUniformfv;
 PFNGLCREATEPROGRAMPROC glCreateProgram;
@@ -65,73 +67,73 @@ PFNGLDELETEBUFFERSPROC glDeleteBuffers;
 PFNGLBINDBUFFERPROC glBindBuffer;
 PFNGLBUFFERDATAPROC glBufferData;
 
-// James aditions to fix linkage
-
-PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
-
-PFNGLUNIFORM2IPROC glUniform2i;
-PFNGLUNIFORM3IPROC glUniform3i;
-PFNGLUNIFORM4IPROC glUniform4i;
-
-PFNGLUNIFORM1IVPROC glUniform1iv;
-PFNGLUNIFORM2IVPROC glUniform2iv;
-PFNGLUNIFORM3IVPROC glUniform3iv;
-PFNGLUNIFORM4IVPROC glUniform4iv;
+/*
+ * Query a function pointer on Windows.
+ *
+ * This only works in the presence of a valid OpenGL context.
+ * wglGetProcAddress() will not return function pointers from any OpenGL
+ * functions that are directly exported by opengl32.dll. Use GetProcAddress()
+ * for those when wglGetProcAddress() fails.
+ */
+static void* shGetProcAddress(const char* name)
+{
+    void* p = (void*)wglGetProcAddress(name);
+    if (p == 0 || (p == (void*)0x1) || (p == (void*)0x2) || (p == (void*)0x3) || (p == (void*)-1)) {
+        HMODULE module = LoadLibraryA("opengl32.dll");
+        p = (void*)GetProcAddress(module, name);
+    }
+    return p;
+}
 
 #endif
 
-void shLoadExtensions(void* c)
+void shLoadExtensions()
 {
-#if defined(_WIN32)
-    glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
-    glUniform2fv = (PFNGLUNIFORM2FVPROC)wglGetProcAddress("glUniform2fv");
-    glUniformMatrix3fv = (PFNGLUNIFORMMATRIX3FVPROC)wglGetProcAddress("glUniformMatrix3fv");
-    glUniform2f = (PFNGLUNIFORM2FPROC)wglGetProcAddress("glUniform2f");
-    glUniform4fv = (PFNGLUNIFORM4FVPROC)wglGetProcAddress("glUniform4fv");
-    glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glEnableVertexAttribArray");
-    glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
-    glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glDisableVertexAttribArray");
-    glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
-    glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)wglGetProcAddress("glUniformMatrix4fv");
-    glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
-    glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
-    glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
-    glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");
-    glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
-    glLinkProgram = (PFNGLLINKPROGRAMPROC)wglGetProcAddress("glLinkProgram");
-    glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)wglGetProcAddress("glGetAttribLocation");
-    glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
-    glDeleteShader = (PFNGLDELETESHADERPROC)wglGetProcAddress("glDeleteShader");
-    glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
-    glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
-    glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
-    glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
-    glUniform1fv = (PFNGLUNIFORM1FVPROC)wglGetProcAddress("glUniform1fv");
-    glUniform3fv = (PFNGLUNIFORM3FVPROC)wglGetProcAddress("glUniform3fv");
-    glUniformMatrix2fv = (PFNGLUNIFORMMATRIX2FVPROC)wglGetProcAddress("glUniformMatrix2fv");
-    glGetUniformfv = (PFNGLGETUNIFORMFVPROC)wglGetProcAddress("glGetUniformfv");
-    glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
-    glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
+#if defined(VG_API_WINDOWS)
+    glUniform1i = (PFNGLUNIFORM1IPROC)shGetProcAddress("glUniform1i");
+    glUniform2fv = (PFNGLUNIFORM2FVPROC)shGetProcAddress("glUniform2fv");
+    glUniformMatrix3fv = (PFNGLUNIFORMMATRIX3FVPROC)shGetProcAddress("glUniformMatrix3fv");
+    glUniform2f = (PFNGLUNIFORM2FPROC)shGetProcAddress("glUniform2f");
+    glUniform4fv = (PFNGLUNIFORM4FVPROC)shGetProcAddress("glUniform4fv");
+    glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)shGetProcAddress("glEnableVertexAttribArray");
+    glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)shGetProcAddress("glVertexAttribPointer");
+    glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC)shGetProcAddress("glDisableVertexAttribArray");
+    glUseProgram = (PFNGLUSEPROGRAMPROC)shGetProcAddress("glUseProgram");
+    glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)shGetProcAddress("glUniformMatrix4fv");
+    glCreateShader = (PFNGLCREATESHADERPROC)shGetProcAddress("glCreateShader");
+    glShaderSource = (PFNGLSHADERSOURCEPROC)shGetProcAddress("glShaderSource");
+    glCompileShader = (PFNGLCOMPILESHADERPROC)shGetProcAddress("glCompileShader");
+    glGetShaderiv = (PFNGLGETSHADERIVPROC)shGetProcAddress("glGetShaderiv");
+    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)shGetProcAddress("glGetShaderInfoLog");
+    glAttachShader = (PFNGLATTACHSHADERPROC)shGetProcAddress("glAttachShader");
+    glLinkProgram = (PFNGLLINKPROGRAMPROC)shGetProcAddress("glLinkProgram");
+    glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)shGetProcAddress("glGetAttribLocation");
+    glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)shGetProcAddress("glGetUniformLocation");
+    glDeleteShader = (PFNGLDELETESHADERPROC)shGetProcAddress("glDeleteShader");
+    glDeleteProgram = (PFNGLDELETEPROGRAMPROC)shGetProcAddress("glDeleteProgram");
+    glUniform1f = (PFNGLUNIFORM1FPROC)shGetProcAddress("glUniform1f");
+    glUniform3f = (PFNGLUNIFORM3FPROC)shGetProcAddress("glUniform3f");
+    glUniform4f = (PFNGLUNIFORM4FPROC)shGetProcAddress("glUniform4f");
+    glUniform1fv = (PFNGLUNIFORM1FVPROC)shGetProcAddress("glUniform1fv");
+    glUniform3fv = (PFNGLUNIFORM3FVPROC)shGetProcAddress("glUniform3fv");
+    glUniform2i = (PFNGLUNIFORM2IPROC)shGetProcAddress("glUniform2i");
+    glUniform3i = (PFNGLUNIFORM3IPROC)shGetProcAddress("glUniform3i");
+    glUniform4i = (PFNGLUNIFORM4IPROC)shGetProcAddress("glUniform4i");
+    glUniform1iv = (PFNGLUNIFORM1IVPROC)shGetProcAddress("glUniform1iv");
+    glUniform2iv = (PFNGLUNIFORM2IVPROC)shGetProcAddress("glUniform2iv");
+    glUniform3iv = (PFNGLUNIFORM3IVPROC)shGetProcAddress("glUniform3iv");
+    glUniform4iv = (PFNGLUNIFORM4IVPROC)shGetProcAddress("glUniform4iv");
+    glUniformMatrix2fv = (PFNGLUNIFORMMATRIX2FVPROC)shGetProcAddress("glUniformMatrix2fv");
+    glGetUniformfv = (PFNGLGETUNIFORMFVPROC)shGetProcAddress("glGetUniformfv");
+    glCreateProgram = (PFNGLCREATEPROGRAMPROC)shGetProcAddress("glCreateProgram");
+    glActiveTexture = (PFNGLACTIVETEXTUREPROC)shGetProcAddress("glActiveTexture");
     /* FlightGear additions to use VAOs and VBOs */
-    glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)wglGetProcAddress("glGenVertexArrays");
-    glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYSPROC)wglGetProcAddress("glDeleteVertexArrays");
-    glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
-    glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers");
-    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers");
-    glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
-    glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
-
-
-    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
-
-    glUniform2i = (PFNGLUNIFORM2IPROC)wglGetProcAddress("glUniform2i");
-    glUniform3i = (PFNGLUNIFORM3IPROC)wglGetProcAddress("glUniform3i");
-    glUniform4i = (PFNGLUNIFORM4IPROC)wglGetProcAddress("glUniform4i");
-
-    glUniform1iv = (PFNGLUNIFORM1IVPROC)wglGetProcAddress("glUniform1iv");
-    glUniform2iv = (PFNGLUNIFORM2IVPROC)wglGetProcAddress("glUniform2iv");
-    glUniform3iv = (PFNGLUNIFORM3IVPROC)wglGetProcAddress("glUniform3iv");
-    glUniform4iv = (PFNGLUNIFORM4IVPROC)wglGetProcAddress("glUniform4iv");
-
+    glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)shGetProcAddress("glGenVertexArrays");
+    glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYSPROC)shGetProcAddress("glDeleteVertexArrays");
+    glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)shGetProcAddress("glBindVertexArray");
+    glGenBuffers = (PFNGLGENBUFFERSPROC)shGetProcAddress("glGenBuffers");
+    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)shGetProcAddress("glDeleteBuffers");
+    glBindBuffer = (PFNGLBINDBUFFERPROC)shGetProcAddress("glBindBuffer");
+    glBufferData = (PFNGLBUFFERDATAPROC)shGetProcAddress("glBufferData");
 #endif
 }

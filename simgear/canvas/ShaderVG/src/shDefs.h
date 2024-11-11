@@ -182,17 +182,6 @@ SHfloat getMaxFloat();
 #define SH_GRADIENT_TEX_COORDSIZE   4096 /* 1024 * RGBA */
 
 /* OpenGL headers */
-
-#if defined(VG_API_MACOSX)
-#include <OpenGL/gl3.h>
-#elif defined(VG_API_WINDOWS)
-#define GL_GLEXT_PROTOTYPES
-#include <GL/glcorearb.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#include <GL/glcorearb.h>
-#endif
-
 #include "shExtensions.h"
 
 #define GL_GET_ERROR printf("glGetError() -> %d line:%d file:%s\r\n", glGetError(), __LINE__, __FILE__)

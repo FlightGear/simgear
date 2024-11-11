@@ -126,8 +126,6 @@ VGContext* shGetContext()
  * VGContext constructor
  *-----------------------------------------------------*/
 
-void shLoadExtensions(void* c);
-
 void VGContext_ctor(VGContext* c)
 {
     /* Surface info */
@@ -195,7 +193,7 @@ void VGContext_ctor(VGContext* c)
     SH_INITOBJ(SHPaintArray, c->paints);
     SH_INITOBJ(SHImageArray, c->images);
 
-    shLoadExtensions(c);
+    shLoadExtensions();
 }
 
 /*-----------------------------------------------------

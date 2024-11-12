@@ -24,6 +24,7 @@
 #include <simgear/structure/exception.hxx>
 
 #include "ArchiveExtractor_private.hxx"
+#include "simgear/debug/debug_types.h"
 
 namespace simgear
 {
@@ -73,7 +74,7 @@ typedef struct
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
+    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 1024 * 1024;
     const int ZLIB_INFLATE_WINDOW_BITS = MAX_WBITS;
     const int ZLIB_DECODE_GZIP_HEADER = 16;
 
@@ -170,7 +171,7 @@ typedef struct
 
         void writeDirHashEntry()
         {
-            if (!doCreateDirHashes) {
+            if (!doCreateDirHashes()) {
                 return;
             }
 
@@ -212,6 +213,11 @@ typedef struct
                 paxPathName.clear(); // clear for next file
             }
 
+            if (doRemoveTopmostDir()) {
+                const auto firstDir = tarPath.find('/');
+                tarPath.erase(0, firstDir + 1);
+            }
+
             if (!isSafePath(tarPath)) {
                 SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping::" << tarPath);
                 skipCurrentEntry = true;
@@ -241,6 +247,7 @@ typedef struct
                     sha1_init(&hashState);
                 }
                 setState(READING_FILE);
+                SG_LOG(SG_IO, SG_INFO, "Will extract" << p);
             } else if (header.typeflag == PAX_GLOBAL_HEADER) {
                 setState(READING_PAX_GLOBAL_ATTRIBUTES);
                 currentFileSize = ::strtol(header.size, NULL, 8);
@@ -435,7 +442,7 @@ public:
     XZTarExtractor(ArchiveExtractor* outer) : TarExtractorPrivate(outer)
     {
         _xzStream = LZMA_STREAM_INIT;
-        _outputBuffer = (uint8_t*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
+        _outputBuffer = (uint8_t*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE * 8);
 
 
         auto ret = lzma_stream_decoder(&_xzStream, UINT64_MAX, LZMA_TELL_ANY_CHECK);
@@ -824,11 +831,12 @@ auto ArchiveExtractor::filterPath(std::string& pathToExtract)
 
 void ArchiveExtractor::setCreateDirHashEntries(bool doCreate)
 {
-    if (!d)
-        return;
-
-    d->doCreateDirHashes = doCreate;
+    _doCreateDirHashes = doCreate;
 }
 
+void ArchiveExtractor::setRemoveTopmostDirectory(bool doRemove)
+{
+    _removeTopmostDir = doRemove;
+}
 
 } // of simgear

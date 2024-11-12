@@ -56,6 +56,10 @@ public:
 		Stop
 	};
 
+    // ignore the top-level directory, extracting the contents
+    // directly into root-path. Needs for TerraSync archive extraction
+    void setRemoveTopmostDirectory(bool doRemove);
+
     SGPath rootPath() const
     {
         return _rootPath;
@@ -78,6 +82,8 @@ private:
 	SGPath _rootPath;
 	std::string _prebuffer; // store bytes before type is determined
 	bool _invalidDataType = false;
+    bool _doCreateDirHashes = false;
+    bool _removeTopmostDir = false;
 };
 
 } // of namespace simgear

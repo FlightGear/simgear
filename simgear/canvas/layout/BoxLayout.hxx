@@ -11,9 +11,7 @@
 
 #include "Layout.hxx"
 
-namespace simgear
-{
-namespace canvas
+namespace simgear::canvas
 {
 
   /**
@@ -35,7 +33,7 @@ namespace canvas
       };
 
       BoxLayout(Direction dir);
-      ~BoxLayout();
+      virtual ~BoxLayout();
 
       virtual void addItem(const LayoutItemRef& item);
 
@@ -184,8 +182,7 @@ namespace canvas
 
   typedef SGSharedPtr<BoxLayout> BoxLayoutRef;
 
-} // namespace canvas
-} // namespace simgear
+} // namespace simgear::canvas
 
 
 #endif /* SG_CANVAS_BOX_LAYOUT_HXX_ */

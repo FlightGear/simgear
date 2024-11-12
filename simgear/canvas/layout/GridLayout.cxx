@@ -12,8 +12,7 @@
 #include "SpacerItem.hxx"
 #include <simgear/canvas/Canvas.hxx>
 
-namespace simgear {
-namespace canvas {
+namespace simgear::canvas {
 
 // see https://code.qt.io/cgit/qt/qtbase.git/tree/src/widgets/kernel/qgridlayout.cpp?h=dev
 // for similar code :)
@@ -328,7 +327,7 @@ void GridLayout::setRowStretch(size_t index, int stretch)
         throw sg_range_exception("GridLayout: negative stretch values are forbidden");
     }
 
-    // becuase we lazily update the rows data, we'd have nowhere to store the
+    // because we lazily update the rows data, we'd have nowhere to store the
     // new stretch value, so actively resize it now.
     if (index >= _rows.size()) {
         _rows.resize(_dimensions.y());
@@ -350,7 +349,7 @@ void GridLayout::setColumnStretch(size_t index, int stretch)
         throw sg_range_exception("GridLayout: negative stretch values are forbidden");
     }
 
-    // becuase we lazily update the columns data, we'd have nowhere to store the
+    // because we lazily update the columns data, we'd have nowhere to store the
     // new stretch value, so actively resize it now.
     if (index >= _columns.size()) {
         _columns.resize(_dimensions.x());
@@ -523,7 +522,7 @@ void GridLayout::updateSizeHints() const
                 }
             }
         }
-    } // of second items iteratio
+    } // of second items iteration
 
     _min_size = {0, 0};
     _max_size = MAX_SIZE;
@@ -694,5 +693,5 @@ bool GridLayout::hasHeightForWidth() const
 }
 
 
-} // namespace canvas
-} // namespace simgear
+} // namespace simgear::canvas
+

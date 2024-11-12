@@ -116,7 +116,7 @@ public:
     /**
      * Get the orientation vector of this sound.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
-     * @return Orientaton vector
+     * @return Orientation vector
      */
     inline SGVec3f& get_orientation() { return _orivec; }
 
@@ -353,7 +353,7 @@ public:
 
     /**
      * Set the data associated with this audio sample
-     * @param data Pointer to a memory block containg this audio sample data.
+     * @param data Pointer to a memory block containing this audio sample data.
        This pointer will be set to nullptr after calling this function.
      */
     inline void set_data( std::unique_ptr<unsigned char, decltype(free)*> data ) {
@@ -466,7 +466,7 @@ public:
     inline void set_compressed( bool c ) { _compressed = c; }
 
     /**
-     * Set the block alignament for compressed audio.
+     * Set the block alignment for compressed audio.
      * @param block the block alignment in bytes
      */
     inline void set_block_align( int block ) {
@@ -474,7 +474,7 @@ public:
     }
 
     /**
-     * Set the frequency (in Herz) of this audio sample.
+     * Set the frequency (in Hertz) of this audio sample.
      * @param freq Frequency
      */
     inline void set_frequency( int freq ) { _frequency = freq; }
@@ -606,5 +606,4 @@ private:
 };
 
 #endif // _SG_SAMPLE_HXX
-
 

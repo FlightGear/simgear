@@ -23,7 +23,7 @@ class SGGeod;
  *
  * The SGMagVar class calculates the magnetic variation and dip for
  * any position, altitude, and time. It is a complete
- * re-implimentation of the NIMA WMM 2000 (not derived from their demo
+ * re-implementation of the NIMA WMM 2000 (not derived from their demo
  * code.)
  *
  * The SGMagVar class is really a simple wrapper around the core Ed

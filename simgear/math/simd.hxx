@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <simgear/simgear_config.h>
-
 #include <cstdint>
 #include <cstring>
 #include <cassert>

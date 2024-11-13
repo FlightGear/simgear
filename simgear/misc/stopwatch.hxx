@@ -17,10 +17,6 @@
 # error This library requires C++
 #endif
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
-
 #if defined(__linux__) && ! defined(HAVE_GETRUSAGE)
 #  define HAVE_GETRUSAGE
 #endif

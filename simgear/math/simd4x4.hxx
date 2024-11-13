@@ -6,10 +6,6 @@
 
 #include <cstring>
 
-#ifdef HAVE_CONFIG_H
-# include <simgear/simgear_config.h>
-#endif
-
 template <typename T, int N>
 class simd4x4_t;
 

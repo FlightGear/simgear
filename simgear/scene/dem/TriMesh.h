@@ -1,8 +1,6 @@
 #ifndef TRIMESH_H
 #define TRIMESH_H
 
-#include <simgear_config.h>
-
 /*
 Szymon Rusinkiewicz
 Princeton University

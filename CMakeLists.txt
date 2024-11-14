@@ -176,6 +176,54 @@ else()
     include(CreateOSGImportedTargets)
 endif(SIMGEAR_HEADLESS)
 
+# Ensure that we are using the right version of OSG
+# This should probably be done by modifying FindOpenSceneGraph.cmake, but this
+# is easier/faster and only requires minimal changes to OSG.
+set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})
+
+# Force CMake to rerun the compile tests
+unset(SIMGEAR_OSG_USE_FG_FORK CACHE)
+unset(SIMGEAR_OSG_CORRECT_VERSION CACHE)
+
+check_cxx_source_compiles(
+    "
+    #include <osg/Version>
+    #if !defined(OPENSCENEGRAPH_FG_MAJOR_VERSION)
+    #error Found upstream OSG
+    #endif
+    int main() { return 0; }
+    "
+    SIMGEAR_OSG_USE_FG_FORK
+)
+if (NOT SIMGEAR_OSG_USE_FG_FORK)
+    message(
+        FATAL_ERROR
+        "Upstream version of OpenSceneGraph found, but a forked version for FlightGear is required.\n"
+        "Please download from https://gitlab.com/flightgear/openscenegraph"
+    )
+endif()
+
+# For now do an exact version match
+check_cxx_source_compiles(
+    "
+    #include <osg/Version>
+    #if !(OPENSCENEGRAPH_FG_MAJOR_VERSION == ${SIMGEAR_MAJOR_VERSION} && \
+          OPENSCENEGRAPH_FG_MINOR_VERSION == ${SIMGEAR_MINOR_VERSION} && \
+          OPENSCENEGRAPH_FG_PATCH_VERSION == ${SIMGEAR_PATCH_VERSION})
+    #error Incorrect OSG version
+    #endif
+    int main() { return 0; }
+    "
+    SIMGEAR_OSG_CORRECT_VERSION
+)
+if (NOT SIMGEAR_OSG_CORRECT_VERSION)
+    message(
+        FATAL_ERROR
+        "OpenSceneGraph was compiled for another version of FlightGear.\n"
+        "Please ensure that you are using the correct branch of the OSG fork."
+    )
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
     # As of 2020-08-01, OpenBSD's system zlib is slightly old, but it's usable
     # with a workaround in simgear/io/iostreams/gzfstream.cxx.

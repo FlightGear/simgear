@@ -119,7 +119,7 @@ if (MSVC)
     message(FATAL_ERROR "Please rebuild OSG with OSG_USE_UTF8_FILENAME set to ON")
   endif()
 endif()
- 
+
 ###############################################################################
 # OpenThreads library
 

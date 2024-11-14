@@ -40,6 +40,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 file(READ simgear-version versionFile)
 string(STRIP ${versionFile} SIMGEAR_VERSION)
 
+# split version string into components, note CMAKE_MATCH_0 is the entire regexp match
+string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" VERSION_REGEX ${SIMGEAR_VERSION})
+set(SIMGEAR_MAJOR_VERSION ${CMAKE_MATCH_1})
+set(SIMGEAR_MINOR_VERSION ${CMAKE_MATCH_2})
+set(SIMGEAR_PATCH_VERSION ${CMAKE_MATCH_3})
+
 project(SimGear VERSION ${SIMGEAR_VERSION} LANGUAGES C CXX)
 
 # add a dependency on the version file
@@ -405,6 +411,11 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/simgear/simgear_config_cmake.h.in"
   "${PROJECT_BINARY_DIR}/simgear/simgear_config.h"
   )
+# Do the same thing to pass the version string
+configure_file(
+  "${PROJECT_SOURCE_DIR}/simgear/version.h.in"
+  "${PROJECT_BINARY_DIR}/simgear/version.h"
+)
 
 enable_testing()
 include(AddSimGearTest) # helper to setup a test

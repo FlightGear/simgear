@@ -1,6 +1,3 @@
-
-file(WRITE ${PROJECT_BINARY_DIR}/simgear/version.h "#define SIMGEAR_VERSION ${SIMGEAR_VERSION}")
-
 if(SIMGEAR_SHARED)
     add_library(SimGearCore SHARED ${localExpatSources})
 

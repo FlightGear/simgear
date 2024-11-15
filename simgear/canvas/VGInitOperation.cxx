@@ -33,5 +33,11 @@ namespace canvas
     vgCreateContextSH(vp[2], vp[3]);
   }
 
+  //----------------------------------------------------------------------------
+  void vgShutdown()
+  {
+    vgDestroyContextSH();
+  }
+
 } // namespace canvas
 } // namespace simgear

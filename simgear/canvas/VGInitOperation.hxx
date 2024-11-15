@@ -30,6 +30,10 @@ namespace canvas
       virtual void operator()(osg::GraphicsContext* context);
   };
 
+  /// No need to defer the destruction of the OpenVG context with an
+  /// osg::GraphicsOperation. This function can be called directly.
+  void vgShutdown();
+
 } // namespace canvas
 } // namespace simgear
 

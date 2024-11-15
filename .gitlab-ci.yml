@@ -8,7 +8,7 @@ variables:
   # complains about INTERFACE_INCLUDE_DIRECTORIES being the source dir
   WIN_FG_DIR: $CI_BUILDS_DIR\flightgear
   MAC_IMAGE: macos-14-xcode-15
-  OSG_REF: fgfs-osg-36-2
+  OSG_REF: next
   BRANCH_REF: next
   HOMEBREW_NO_AUTO_UPDATE: 1
 

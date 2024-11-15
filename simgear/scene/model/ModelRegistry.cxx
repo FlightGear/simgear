@@ -925,25 +925,6 @@ typedef ModelRegistryCallback<ACProcessPolicy,
                               BuildLeafBVHPolicy>
 ACCallback;
 
-struct OBJProcessPolicy {
-    OBJProcessPolicy(const string& extension) {}
-    Node* process(Node* node, const string& filename,
-                  const Options* opt)
-    {
-        SG_UNUSED(filename);
-        SG_UNUSED(opt);
-        return node;
-    }
-};
-
-
-typedef ModelRegistryCallback<OBJProcessPolicy,
-                              DefaultCachePolicy,
-                              ACOptimizePolicy,
-                              OSGSubstitutePolicy,
-                              BuildLeafBVHPolicy>
-OBJCallback;
-
 
 // we get optimal geometry from the loader (Hah!).
 struct IVEOptimizePolicy : public OptimizeModelPolicy {
@@ -1134,12 +1115,15 @@ typedef ModelRegistryCallback<IVEProcessPolicy, NoCachePolicy,
     BuildLeafBVHPolicy>
     OSGCallback;
 
-namespace
-{
-ModelRegistryCallbackProxy<ACCallback> g_acRegister("ac");
-ModelRegistryCallbackProxy<OBJCallback> g_objRegister("obj");
+namespace {
+
+// The AC3D model loader used to come from OSG, that's why the
+// ModelRegistryCallback is placed here.
+ModelRegistryCallbackProxy<ACCallback>  g_acRegister("ac");
+
+// Native OSG formats
 ModelRegistryCallbackProxy<IVECallback> g_iveRegister("ive");
 ModelRegistryCallbackProxy<OSGCallback> g_osgtRegister("osgt");
 ModelRegistryCallbackProxy<OSGCallback> g_osgbRegister("osgb");
 
-}
+} // anonymous namespace

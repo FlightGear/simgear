@@ -107,7 +107,7 @@ osg::Node* loadFile(const string& path, SGReaderWriterOptions* options)
 {
     using namespace osg;
     using namespace osgDB;
-    if (boost::iends_with(path, ".ac") || boost::iends_with(path, ".obj")) {
+    if (boost::iends_with(path, ".ac")) {
         options->setInstantiateEffects(true);
     }
 

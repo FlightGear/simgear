@@ -413,6 +413,12 @@ ReaderWriterPGT::getLowLODStateSet(const LocalOptions& options) const
     return static_cast<osg::StateSet*>(object.get());
 }
 
-} // namespace simgear
+// Register the ModelRegistry callback
+namespace {
+ModelRegistryCallbackProxy<LoadOnlyCallback> g_pgtCallbackProxy("pgt");
+} // anonymous namespace
 
-// simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_pgtCallbackProxy("pgt");
+// Register the ReaderWriter
+REGISTER_OSGPLUGIN(pgt, ReaderWriterPGT)
+
+} // namespace simgear

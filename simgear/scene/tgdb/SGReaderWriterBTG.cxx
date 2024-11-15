@@ -84,13 +84,17 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
     return result;
 }
 
-
-typedef ModelRegistryCallback<DefaultProcessPolicy, NoCachePolicy,
+// Register the ModelRegistry callback
+typedef ModelRegistryCallback<DefaultProcessPolicy,
+                              NoCachePolicy,
                               NoOptimizePolicy,
-                              NoSubstitutePolicy, BuildGroupBVHPolicy>
+                              NoSubstitutePolicy,
+                              BuildGroupBVHPolicy>
 BTGCallback;
 
-namespace
-{
+namespace {
 ModelRegistryCallbackProxy<BTGCallback> g_btgCallbackProxy("btg");
-}
+} // anonymous namespace
+
+// Register the ReaderWriter
+REGISTER_OSGPLUGIN(btg, SGReaderWriterBTG)

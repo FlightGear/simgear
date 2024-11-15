@@ -1235,4 +1235,9 @@ ReaderWriterAC3D::readNode(std::istream& fin, const Options* options) const
     return ac3d::readFile(fin, options);
 }
 
+// NOTE: The ModelRegistry callback is defined in ModelRegistry.cxx
+
+// Register the ReaderWriter
+REGISTER_OSGPLUGIN(ac, ReaderWriterAC3D)
+
 } // namespace simgear

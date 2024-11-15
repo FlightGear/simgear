@@ -46,6 +46,7 @@
 
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/tgdb/LightBin.hxx>
 #include <simgear/scene/tgdb/ObjectInstanceBin.hxx>
 #include <simgear/scene/tgdb/SGBuildingBin.hxx>
@@ -1058,4 +1059,13 @@ void ReaderWriterSTG::removeSTGObjectHandler(const std::string &token, STGObject
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(globalStgObjectCallbackLock);
     globalStgObjectCallbacks.erase(token);
 }
-}
+
+// Register the ModelRegistry callback
+namespace {
+ModelRegistryCallbackProxy<LoadOnlyCallback> g_stgCallbackProxy("stg");
+} // anonymous namespace
+
+// Register the ReaderWriter
+REGISTER_OSGPLUGIN(stg, ReaderWriterSTG)
+
+} // namespace simgear

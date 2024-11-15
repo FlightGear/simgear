@@ -25,22 +25,13 @@
 #  include <simgear_config.h>
 #endif
 
-#include <osgDB/Registry>
-
 #include <simgear/sg_inlines.h>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/sg_random.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matmodel.hxx>
-#include <simgear/scene/model/ModelRegistry.hxx>
 
 #include "userdata.hxx"
-#include "SGReaderWriterBTG.hxx"
-#include "ReaderWriterSPT.hxx"
-#include "ReaderWriterSTG.hxx"
-#include <simgear/scene/dem/ReaderWriterPGT.hxx>
-#include <simgear/scene/model/ReaderWriterGLTF.hxx>
-#include <simgear/scene/model/ReaderWriterAC3D.hxx>
 
 // the following are static values needed by the runtime object
 // loader.  However, the loading is done via a call back so these
@@ -50,33 +41,6 @@
 
 static bool _inited = false;
 static SGPropertyNode *root_props = NULL;
-
-// Because BTG files are now loaded through the osgDB::Registry, there
-// are no symbols referenced by FlightGear in this library other than
-// sgUserDataInit. But the libraries are all statically linked, so
-// none of the other object files in this library would be included in
-// the executable! Sticking the static proxy here forces the BTG code
-// to be sucked in.
-namespace {
-osgDB::RegisterReaderWriterProxy<SGReaderWriterBTG> g_readerWriter_BTG_Proxy;
-
-osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterSTG> g_readerWriterSTGProxy;
-simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_stgCallbackProxy("stg");
-
-osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterSPT> g_readerWriterSPTProxy;
-simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_sptCallbackProxy("spt");
-
-#ifdef ENABLE_GDAL
-osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterPGT> g_readerWriterPGTProxy;
-simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_pgtCallbackProxy("pgt");
-#endif
-
-osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterGLTF> g_readerWriterGLTFProxy;
-simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_gltfCallbackProxy("gltf");
-
-osgDB::RegisterReaderWriterProxy<simgear::ReaderWriterAC3D> g_readerWriterAC3DProxy;
-simgear::ModelRegistryCallbackProxy<simgear::LoadOnlyCallback> g_ac3dCallbackProxy("ac3d");
-}
 
 void sgUserDataInit( SGPropertyNode *p ) {
     _inited = true;

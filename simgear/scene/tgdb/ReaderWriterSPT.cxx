@@ -35,6 +35,7 @@
 #include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
 
+#include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 
 #include "BucketBox.hxx"
@@ -420,6 +421,14 @@ ReaderWriterSPT::getLowLODStateSet(const LocalOptions& options) const
 
     return static_cast<osg::StateSet*>(object.get());
 }
+
+// Register the ModelRegistry callback
+namespace {
+ModelRegistryCallbackProxy<LoadOnlyCallback> g_sptCallbackProxy("spt");
+} // anonymous namespace
+
+// Register the ReaderWriter
+REGISTER_OSGPLUGIN(spt, ReaderWriterSPT)
 
 } // namespace simgear
 

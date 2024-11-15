@@ -21,6 +21,7 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #define TINYGLTF_IMPLEMENTATION
@@ -660,5 +661,22 @@ ReaderWriterGLTF::readNode(const std::string& location,
     GLTFBuilder builder(model, sgOpts);
     return builder.makeModel();
 }
+
+
+// Register the ModelRegistry callback
+typedef ModelRegistryCallback<DefaultProcessPolicy,
+                              DefaultCachePolicy,
+                              NoOptimizePolicy,
+                              NoSubstitutePolicy,
+                              BuildLeafBVHPolicy>
+GLTFCallback;
+
+namespace {
+ModelRegistryCallbackProxy<GLTFCallback> g_gltfCallbackProxy("gltf");
+ModelRegistryCallbackProxy<GLTFCallback> g_glbCallbackProxy("glb");
+} // anonymous namespace
+
+// Register the ReaderWriter
+REGISTER_OSGPLUGIN(gltf, ReaderWriterGLTF)
 
 } // namespace simgear

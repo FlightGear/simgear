@@ -120,7 +120,7 @@ namespace canvas
     const auto lineHeight = text->getCharacterHeight() + _text->getLineSpacing();
 
     bool foundBegin = false;
-    for (size_t i = 0; i <= coords.size(); i += 4) {
+    for (size_t i = 0; i < coords.size(); i += 4) {
       const auto lineIndex = static_cast<size_t>(floorf(coords[i].y() / lineHeight));
       if (lineIndex == _line) {
         if (!foundBegin) {

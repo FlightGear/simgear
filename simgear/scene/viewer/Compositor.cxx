@@ -28,7 +28,8 @@
 class SunDirectionWorldCallback : public osg::Uniform::Callback {
 public:
     virtual void operator()(osg::Uniform *uniform, osg::NodeVisitor *nv) {
-        SGUpdateVisitor *uv = dynamic_cast<SGUpdateVisitor *>(nv);
+        assert(dynamic_cast<SGUpdateVisitor*>(nv));
+        SGUpdateVisitor* uv = static_cast<SGUpdateVisitor*>(nv);
         osg::Vec3f l = toOsg(uv->getLightDirection());
         l.normalize();
         uniform->set(l);
@@ -38,7 +39,8 @@ public:
 class MoonDirectionWorldCallback : public osg::Uniform::Callback {
 public:
     virtual void operator()(osg::Uniform *uniform, osg::NodeVisitor *nv) {
-        SGUpdateVisitor *uv = dynamic_cast<SGUpdateVisitor *>(nv);
+        assert(dynamic_cast<SGUpdateVisitor*>(nv));
+        SGUpdateVisitor* uv = static_cast<SGUpdateVisitor*>(nv);
         osg::Vec3f l = toOsg(uv->getSecondLightDirection());
         l.normalize();
         uniform->set(l);

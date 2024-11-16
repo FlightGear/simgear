@@ -385,10 +385,6 @@ namespace canvas
         osg::GLExtensions* extensions = state->get<osg::GLExtensions>();
         assert(extensions);
 
-        state->setActiveTextureUnit(0);
-        state->setClientActiveTextureUnit(0);
-        state->disableAllVertexArrays();
-
         bool was_blend_enabled = state->getLastAppliedMode(GL_BLEND);
         bool was_stencil_enabled = state->getLastAppliedMode(GL_STENCIL_TEST);
         bool was_scissor_enabled = state->getLastAppliedMode(GL_SCISSOR_TEST);

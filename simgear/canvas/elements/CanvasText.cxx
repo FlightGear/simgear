@@ -783,6 +783,7 @@ namespace canvas
     staticInit();
 
     setDrawable(_text);
+    _text->setDataVariance(osg::Object::DYNAMIC);
     _text->setCharacterSizeMode(osgText::Text::OBJECT_COORDS);
     _text->setAxisAlignment(osgText::Text::USER_DEFINED_ROTATION);
     _text->setRotation(osg::Quat(osg::PI, osg::X_AXIS));

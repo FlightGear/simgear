@@ -48,13 +48,8 @@ namespace canvas
       TextLine lineAt(size_t i) const;
 
       /// Get nearest line to given y-coordinate
-#if OSG_VERSION_LESS_THAN(3,6,5)
-      TextLine nearestLine(float pos_y) const;
-      SGVec2i sizeForWidth(int w) const;
-#else
       TextLine nearestLine(float pos_y);
       SGVec2i sizeForWidth(int w);
-#endif
 
       osg::BoundingBox computeBoundingBox() const override;
 
@@ -296,15 +291,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-#if OSG_VERSION_LESS_THAN(3,6,5)
-  TextLine Text::TextOSG::nearestLine(float pos_y) const
-  {
-    osgText::Font const* font = getActiveFont();
-#else
   TextLine Text::TextOSG::nearestLine(float pos_y)
   {
     auto font = getActiveFont();
-#endif
 
     if( !font || lineCount() <= 0 )
       return TextLine(0, this);
@@ -327,20 +316,12 @@ namespace canvas
   // simplified version of osgText::Text::computeGlyphRepresentation() to
   // just calculate the size for a given weight. Glpyh calculations/creating
   // is not necessary for this...
-#if OSG_VERSION_LESS_THAN(3,6,5)
-  SGVec2i Text::TextOSG::sizeForWidth(int w) const
-#else
   SGVec2i Text::TextOSG::sizeForWidth(int w)
-#endif
   {
     if( _text.empty() )
       return SGVec2i(0, 0);
 
-#if OSG_VERSION_LESS_THAN(3,6,5)
-    osgText::Font* activefont = const_cast<osgText::Font*>(getActiveFont());
-#else
     auto activefont = getActiveFont();
-#endif
 
     if( !activefont )
       return SGVec2i(-1, -1);
@@ -507,31 +488,19 @@ namespace canvas
               {
                 case LEFT_TO_RIGHT:
                 {
-#if OSG_VERSION_LESS_THAN(3,5,2)
-                    osg::Vec2 delta(activefont->getKerning(previous_charcode,
-                        charcode,
-                        _kerningType));
-#else
-                    osg::Vec2 delta(activefont->getKerning(_fontSize,
-                        previous_charcode,
-                        charcode,
-                        _kerningType));
-#endif
+                  osg::Vec2 delta(activefont->getKerning(_fontSize,
+                      previous_charcode,
+                      charcode,
+                      _kerningType));
                   cursor.x() += delta.x() * wr;
                   cursor.y() += delta.y() * hr;
                   break;
                 }
                 case RIGHT_TO_LEFT:
                 {
-#if OSG_VERSION_LESS_THAN(3,5,2)
-                    osg::Vec2 delta(activefont->getKerning(charcode,
-                        previous_charcode,
-                        _kerningType));
-#else
-                    osg::Vec2 delta(activefont->getKerning(_fontSize, charcode,
-                        previous_charcode,
-                        _kerningType));
-#endif
+                  osg::Vec2 delta(activefont->getKerning(_fontSize, charcode,
+                      previous_charcode,
+                      _kerningType));
                   cursor.x() -= delta.x() * wr;
                   cursor.y() -= delta.y() * hr;
                   break;

@@ -6,8 +6,7 @@
  * @brief Forward declarations for properties (and related structures)
  */
 
-#ifndef SG_PROPS_FWD_HXX
-#define SG_PROPS_FWD_HXX
+#pragma once
 
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <vector>
@@ -24,4 +23,6 @@ namespace simgear
 
 class SGCondition; 
 
-#endif // of SG_PROPS_FWD_HXX
+typedef SGSharedPtr<SGCondition> SGConditionRef;
+
+

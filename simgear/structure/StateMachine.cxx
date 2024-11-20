@@ -274,7 +274,7 @@ void StateMachine::innerChangeState(State_ptr aState, Transition_ptr aTrans)
         d->_currentState->fireExitBindings();
         SG_LOG(SG_GENERAL, SG_INFO, "Changing from state " << d->_currentState->name() << " to state:" << aState->name());
     } else {
-        SG_LOG(SG_GENERAL, SG_INFO, "Initializing to state:" << aState->name());      
+        SG_LOG(SG_GENERAL, SG_INFO, "Initializing to state:" << aState->name());
     }
 
 // fire bindings before we change the state, hmmmm
@@ -298,28 +298,28 @@ void StateMachine::innerChangeState(State_ptr aState, Transition_ptr aTrans)
     d->computeEligibleTransitions();
 }
 
-void StateMachine::changeToState(State_ptr aState, bool aOnlyIfDifferent)
+void StateMachine::changeToState(State_ptr targetState, bool onlyIfDifferent)
 {
-    assert(aState != NULL);
-    if (std::find(d->_states.begin(), d->_states.end(), aState) == d->_states.end()) {
+    assert(targetState != NULL);
+    if (std::find(d->_states.begin(), d->_states.end(), targetState) == d->_states.end()) {
         throw sg_exception("Requested change to state not in machine");
     }
 
-    if (aOnlyIfDifferent && (aState == d->_currentState)) {
+    if (onlyIfDifferent && (targetState == d->_currentState)) {
         return;
     }
 
-    innerChangeState(aState, NULL);
+    innerChangeState(targetState, NULL);
 }
 
-void StateMachine::changeToStateName(const std::string& aName, bool aOnlyIfDifferent)
+void StateMachine::changeToStateName(const std::string& stateName, bool onlyIfDifferent)
 {
-    State_ptr st = findStateByName(aName);
+    State_ptr st = findStateByName(stateName);
     if (!st) {
-        throw sg_range_exception("unknown state:" + aName);
+        throw sg_range_exception("Unknown state:" + stateName);
     }
 
-    changeToState(st, aOnlyIfDifferent);
+    changeToState(st, onlyIfDifferent);
 }
 
 StateMachine::State_ptr StateMachine::state() const

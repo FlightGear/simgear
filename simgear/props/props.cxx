@@ -2189,13 +2189,10 @@ static NodeOriginMap* nodeOrigins;
 /**
  * Default constructor: always creates a root node.
  */
-SGPropertyNode::SGPropertyNode ()
-  : _index(0),
-    _parent(nullptr),
-    _type(props::NONE),
-    _tied(false),
-    _attr(READ|WRITE),
-    _listeners(0)
+SGPropertyNode::SGPropertyNode()
+    : _index(0),
+      _parent(nullptr),
+      _attr(READ | WRITE)
 {
   _local_val.string_val = 0;
   _value.val = 0;
@@ -2215,17 +2212,15 @@ SGPropertyNode::SGPropertyNode ()
 /**
  * Copy constructor.
  */
-SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
-  :
-    //SGWeakReferenced(node),
-    SGReferenced(node),
-    _index(node._index),
-    _name(node._name),
-    _parent(nullptr),			// don't copy the parent
-    _type(node._type),
-    _tied(node._tied),
-    _attr(node._attr),
-    _listeners(0)		// CHECK!!
+SGPropertyNode::SGPropertyNode(const SGPropertyNode& node)
+    : //SGWeakReferenced(node),
+      SGReferenced(node),
+      _index(node._index),
+      _name(node._name),
+      _parent(nullptr), // don't copy the parent
+      _type(node._type),
+      _tied(node._tied),
+      _attr(node._attr)
 {
     setLocation(node.getLocation());
 
@@ -2286,17 +2281,14 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 /**
  * Convenience constructor.
  */
-template<typename Itr>
-SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
-				int index,
-				SGPropertyNode* parent)
-  : _index(index),
-    _name(begin, end),
-    _parent(parent),
-    _type(props::NONE),
-    _tied(false),
-    _attr(READ|WRITE),
-    _listeners(0)
+template <typename Itr>
+SGPropertyNode::SGPropertyNode(Itr begin, Itr end,
+                               int index,
+                               SGPropertyNode* parent)
+    : _index(index),
+      _name(begin, end),
+      _parent(parent),
+      _attr(READ | WRITE)
 {
   _local_val.string_val = 0;
   _value.val = 0;
@@ -2311,17 +2303,13 @@ SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
         << "\n";
 }
 
-SGPropertyNode::SGPropertyNode( const std::string& name,
-                                int index,
-                                SGPropertyNode* parent)
-  : _index(index),
-    _name(name),
-    _parent(parent),
-    _type(props::NONE),
-    _tied(false),
-    _attr(READ|WRITE),
-    // REVIEW: Memory Leak - 662 bytes in 32 blocks are indirectly lost
-    _listeners(0)
+SGPropertyNode::SGPropertyNode(const std::string& name,
+                               int index,
+                               SGPropertyNode* parent)
+    : _index(index),
+      _name(name),
+      _parent(parent),
+      _attr(READ | WRITE)
 {
   _local_val.string_val = 0;
   _value.val = 0;
@@ -2487,21 +2475,6 @@ SGPropertyNode::addChild(const std::string& name, int min_index, bool append)
     return addChild(name.c_str(), min_index, append);
 }
 
-SGPropertyNode_ptr SGPropertyNode::addChild(SGPropertyNode_ptr node, const std::string& name,
-        int min_index, bool append)
-{
-  SGPropertyLockExclusive exclusive(*this);
-  int pos = append
-          ? std::max(find_last_child(exclusive, name.c_str(), _children) + 1, min_index)
-          : first_unused_index(exclusive, name.c_str(), _children, min_index);
-  node->_name = name;
-  node->_parent = this;
-  node->_index = pos;
-  SGPropertyNodeImpl::appendNode(exclusive, *this, node);
-  SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
-  return node;
-}
-
 /**
  * Create multiple children with unused indices
  */
@@ -2585,12 +2558,12 @@ bool SGPropertyNode::hasValue() const
 
 const std::string& SGPropertyNode::getNameString () const
 {
-    SGPropertyLockShared shared(*this);
+    // no locking: _name is const
     return _name;
 }
 int SGPropertyNode::getIndex () const
 {
-    SGPropertyLockShared shared(*this);
+    // mo locking: _index is const
     return _index;
 }
 

@@ -298,28 +298,28 @@ void StateMachine::innerChangeState(State_ptr aState, Transition_ptr aTrans)
     d->computeEligibleTransitions();
 }
 
-void StateMachine::changeToState(State_ptr targetState, bool onlyIfDifferent)
+void StateMachine::changeToState(State_ptr aState, bool aOnlyIfDifferent)
 {
-    assert(targetState != NULL);
-    if (std::find(d->_states.begin(), d->_states.end(), targetState) == d->_states.end()) {
+    assert(aState != NULL);
+    if (std::find(d->_states.begin(), d->_states.end(), aState) == d->_states.end()) {
         throw sg_exception("Requested change to state not in machine");
     }
 
-    if (onlyIfDifferent && (targetState == d->_currentState)) {
+    if (aOnlyIfDifferent && (aState == d->_currentState)) {
         return;
     }
 
-    innerChangeState(targetState, NULL);
+    innerChangeState(aState, NULL);
 }
 
-void StateMachine::changeToStateName(const std::string& stateName, bool onlyIfDifferent)
+void StateMachine::changeToStateName(const std::string& aName, bool aOnlyIfDifferent)
 {
-    State_ptr st = findStateByName(stateName);
+    State_ptr st = findStateByName(aName);
     if (!st) {
-        throw sg_range_exception("Unknown state:" + stateName);
+        throw sg_range_exception("Unknown state:" + aName);
     }
 
-    changeToState(st, onlyIfDifferent);
+    changeToState(st, aOnlyIfDifferent);
 }
 
 StateMachine::State_ptr StateMachine::state() const

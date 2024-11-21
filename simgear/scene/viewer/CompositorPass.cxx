@@ -547,6 +547,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     uniforms[Compositor::SG_UNIFORM_PIXEL_SIZE]->set(
         osg::Vec2f(1.0f / viewport->width(),
                    1.0f / viewport->height()));
+    uniforms[Compositor::SG_UNIFORM_ASPECT_RATIO]->set(
+        float(viewport->width() / viewport->height()));
 
     const SGPropertyNode* p_clustered = root->getChild("use-clustered-uniforms");
     if (p_clustered) {

@@ -176,12 +176,14 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       pagedLOD->setDatabaseOptions(callbackOptions.get());
 
       // Ensure that the random objects aren't expired too quickly
-      pagedLOD->setMinimumExpiryTime(pagedLOD->getNumChildren(), tile_min_expiry);
-      pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy filename for random objects callback");
+      unsigned i = pagedLOD->getNumChildren();
+      pagedLOD->setMinimumExpiryTime(i, tile_min_expiry);
+      pagedLOD->setFileName(i, std::string("Dummy filename for random objects callback for ") + path);
 
       // LOD Range is 2x the object range plus the tile radius because we display some objects up to 2x the
       // range to reduce popping.
-      pagedLOD->setRange(pagedLOD->getNumChildren(), 0,  2 *object_range + SG_TILE_RADIUS);
+      pagedLOD->setRangeMode(osg::LOD::RangeMode::DISTANCE_FROM_EYE_POINT);
+      pagedLOD->setRange(i, 0,  2 *object_range + SG_TILE_RADIUS);
       transform->addChild(pagedLOD);
     }
 

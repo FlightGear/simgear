@@ -954,15 +954,6 @@ public:
     SGPropertyNode* addChild( const std::string& name, int min_index = 0, bool append = true );
 
     /**
-     * Add existing node as child.
-     *
-     * @param min_index Minimal index for new node (skips lower indices)
-     * @param append    Whether to simply use the index after the last used index
-     *                  or use a lower, unused index if it exists
-     */
-    SGPropertyNode_ptr addChild(SGPropertyNode_ptr node, const std::string& name, int min_index=0, bool append=true);
-
-    /**
      * Create multiple child nodes with the given name an unused indices
      *
      * @param count     The number of nodes create
@@ -1399,12 +1390,12 @@ private:
     
     // Core data.
     //
-    int _index;
-    std::string _name;
+    const int _index;
+    const std::string _name;
     SGPropertyNode* _parent;
     simgear::PropertyList _children;
-    simgear::props::Type _type;
-    bool _tied;
+    simgear::props::Type _type = simgear::props::NONE;
+    bool _tied = false;
     int _attr = NO_ATTR;
 
     /**
@@ -1434,7 +1425,7 @@ private:
         char* string_val;
     } _local_val;
 
-    SGPropertyNodeListeners*  _listeners;
+    SGPropertyNodeListeners* _listeners = nullptr;
 };
 
 // Convenience functions for use in templates

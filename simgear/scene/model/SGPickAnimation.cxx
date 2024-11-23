@@ -348,61 +348,6 @@ void SGPickAnimation::apply(osg::Node* node)
     SGAnimation::apply(node);
 }
 
-namespace
-{
-OpenThreads::Mutex highlightStateSetMutex;
-osg::ref_ptr<osg::StateSet> static_highlightStateSet;
-}
-
-
-
-
-osg::StateSet* sharedHighlightStateSet()
-{
-  ScopedLock<Mutex> lock(highlightStateSetMutex);
-  if (!static_highlightStateSet.valid()) {
-    static_highlightStateSet = new osg::StateSet;
-    
-    osg::Texture2D* white = StateAttributeFactory::instance()->getWhiteTexture();
-    static_highlightStateSet->setTextureAttributeAndModes(0, white,
-                                          (osg::StateAttribute::ON
-                                           | osg::StateAttribute::OVERRIDE
-                                           | osg::StateAttribute::PROTECTED));
-    osg::PolygonOffset* polygonOffset = new osg::PolygonOffset;
-    polygonOffset->setFactor(-1);
-    polygonOffset->setUnits(-1);
-    static_highlightStateSet->setAttribute(polygonOffset, osg::StateAttribute::OVERRIDE);
-    static_highlightStateSet->setMode(GL_POLYGON_OFFSET_LINE,
-                      osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-    osg::PolygonMode* polygonMode = new osg::PolygonMode;
-    polygonMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
-                         osg::PolygonMode::LINE);
-    static_highlightStateSet->setAttribute(polygonMode, osg::StateAttribute::OVERRIDE);
-    osg::Material* material = new osg::Material;
-    material->setColorMode(osg::Material::OFF);
-    material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 1));
-    // XXX Alpha < 1.0 in the diffuse material value is a signal to the
-    // default shader to take the alpha value from the material value
-    // and not the glColor. In many cases the pick animation geometry is
-    // transparent, so the outline would not be visible without this hack.
-    material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, .95));
-    material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
-    material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 0));
-    static_highlightStateSet->setAttribute(
-                           material, osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
-    // The default shader has a colorMode uniform that mimics the
-    // behavior of Material color mode.
- 
-    osg::Uniform* colorModeUniform = new osg::Uniform(osg::Uniform::INT, "colorMode");
-    colorModeUniform->set(0); // MODE_OFF
-    colorModeUniform->setDataVariance(osg::Object::STATIC);
-    static_highlightStateSet->addUniform(colorModeUniform,
-                         osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-  }
-  
-  return static_highlightStateSet.get();
-}
-
 void
 SGPickAnimation::apply(osg::Group& group)
 {
@@ -510,7 +455,6 @@ SGPickAnimation::apply(osg::Group& group)
       pickGroup->setName("pick highlight group");
       SGSceneUserData::getOrCreateSceneUserData(pickGroup)->setLocation(getConfig()->getLocation());
       pickGroup->setNodeMask(simgear::PICK_BIT);
-      pickGroup->setStateSet(sharedHighlightStateSet());
       mainGroup->addChild(pickGroup);
       
       setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(mainGroup), mainGroup);
@@ -528,7 +472,6 @@ SGPickAnimation::apply(osg::Group& group)
     _proxyNames.erase(j);
     osg::ref_ptr<osg::Group> proxyGroup = new osg::Group;
     group.addChild(proxyGroup);
-    proxyGroup->setStateSet(sharedHighlightStateSet());
     proxyGroup->setNodeMask(simgear::PICK_BIT);
       
     setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(proxyGroup), proxyGroup);

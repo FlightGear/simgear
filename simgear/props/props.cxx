@@ -2162,7 +2162,7 @@ SGPropertyNode::clearValue ()
  * Last used attribute
  * Update as needed when enum Attribute is changed
  */
-const int SGPropertyNode::LAST_USED_ATTRIBUTE = VALUE_CHANGED_DOWN;
+const int SGPropertyNode::LAST_USED_ATTRIBUTE = TRANSLATE;
 
 /**
  * Mutex to protect access to nodeOrigins.

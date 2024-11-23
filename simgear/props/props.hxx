@@ -889,6 +889,12 @@ public:
         LISTENER_SAFE = 1 << 9,       // it's safe to listen to this property, even if it's tied
         VALUE_CHANGED_UP = 1 << 10,   // If true, value changes are propogated to parent's listeners.
         VALUE_CHANGED_DOWN = 1 << 11, // If true, sets new child nodes' VALUE_CHANGED_DOWN and VALUE_CHANGED_UP.
+        
+        /// advisory: treat string value as a translation key. This is not handled by the property code,
+        /// but exists to allow syntactically convenient marking of some properties in XMLs as 'to be
+        /// translated.
+        TRANSLATE = 1 << 12,           
+
         // beware: if you add another attribute here,
         // also update value of "LAST_USED_ATTRIBUTE".
     };

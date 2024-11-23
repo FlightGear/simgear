@@ -13,8 +13,8 @@
 
 class SGPropertyNode;
 
-typedef SGSharedPtr<SGPropertyNode> SGPropertyNode_ptr;
-typedef SGSharedPtr<const SGPropertyNode> SGConstPropertyNode_ptr;
+using SGPropertyNode_ptr = SGSharedPtr<SGPropertyNode>;
+using SGConstPropertyNode_ptr = SGSharedPtr<const SGPropertyNode>;
 
 namespace simgear
 {
@@ -23,6 +23,6 @@ namespace simgear
 
 class SGCondition; 
 
-typedef SGSharedPtr<SGCondition> SGConditionRef;
+using SGConditionRef = SGSharedPtr<SGCondition> ;
 
 

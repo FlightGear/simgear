@@ -76,10 +76,8 @@ SGCloudLayer::SGCloudLayer( const SGPath &tex_path ) :
     layer_transition(0.0),
     layer_visibility(25.0),
     layer_coverage(SG_CLOUD_CLEAR),
-    scale(4000.0),
     speed(0.0),
     direction(0.0),
-    last_course(0.0),
     max_alpha(1.0)
 {
   layer3D = new SGCloudField();

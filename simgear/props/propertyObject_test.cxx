@@ -204,7 +204,7 @@ void testCreate()
   PropertyObject<std::string> d(PropertyObject<std::string>::create(n, "grape", "xyz"));
   assert(testRoot->getStringValue("b/grape") == "xyz");
   
-  
+  SG_UNUSED(d);
 }
 
 void testDeclare()

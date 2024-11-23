@@ -5,13 +5,14 @@ set(HEADERS
     cloud.hxx
     cloudfield.hxx
     dome.hxx
+    galaxy.hxx
     moon.hxx
     newcloud.hxx
     oursun.hxx
+    planets.hxx
     sky.hxx
     sphere.hxx
     stars.hxx
-    galaxy.hxx
     )
 
 set(SOURCES 
@@ -19,13 +20,14 @@ set(SOURCES
     cloud.cxx
     cloudfield.cxx
     dome.cxx
+    galaxy.cxx
     moon.cxx
     newcloud.cxx
     oursun.cxx
+    planets.cxx
     sky.cxx
     sphere.cxx
     stars.cxx
-    galaxy.cxx
     )
 
 simgear_scene_component(sky scene/sky "${SOURCES}" "${HEADERS}")

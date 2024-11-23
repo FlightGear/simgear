@@ -10,35 +10,101 @@
 
 #include "stars.hxx"
 
-#include <simgear_config.h>
-#include <simgear/constants.h>
+#include <unordered_map>
 
 #include <osg/Geometry>
 
-#include <simgear/debug/logstream.hxx>
-#include <simgear/props/props.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 using namespace simgear;
-using std::max;
-using std::min;
 
-SGStars::SGStars(SGPropertyNode* props)
+namespace {
+
+// Star surface temperature in K associated to a given spectral type
+// https://sites.uni.edu/morgans/astro/course/Notes/section2/spectraltemps.html
+const std::unordered_map<char, double> k_star_temperature_map = {
+    {'W', 70000},
+    {'O', 50000},
+    {'B', 21000},
+    {'p', 21000},
+    {'A', 8650},
+    {'F', 6650},
+    {'G', 5650},
+    {'K', 4600},
+    {'M', 3000},
+    {'C', 3000},
+    {'S', 3000},
+    {'N', 3000},
+};
+
+/*
+ * Implements Planck's law.
+ * Returns the spectral irradiance in W * m^-2 * m^-1 emitted by a black body in
+ * thermal equilibrium at a temperature T in Kelvin and for a given wavelength
+ * in meters.
+ */
+constexpr double plancks_law(double lambda, double T)
 {
-    if (props) {
-        // don't create here - if it's not defined, we won't use the value
-        // from a property
-        _magDarkSkyProperty = props->getNode("darksky-brightness-magnitude");
-    }
+    constexpr double pi = 3.14159265358979323846; // Can't use SGD_PI, we need constexpr
+    constexpr double c  = 299'792'458.0;   // Speed of light, m * s^-1
+    constexpr double h  = 6.626070040e-34; // Planck's constant, J * s
+    constexpr double kb = 1.380649e-23;    // Boltzmann constant, J * K^-1
+    return (8.0 * pi * h * c*c)
+        / (std::pow(lambda, 5) * (std::exp(h * c / (lambda * kb * T)) - 1.0));
 }
 
-osg::Node*
-SGStars::build(int num, const SGVec3d star_data[], double star_dist,
-                SGReaderWriterOptions* options)
+/*
+ * Implements Stefan-Boltzmann's law.
+ * Returns the irradiance in W * m^-2 emitted by a black body at a temperature T.
+ */
+constexpr double stefan_boltzmann_law(double T)
 {
-    EffectGeode* geode = new EffectGeode;
+    constexpr double sigma = 5.670374419e-8; // Stefan-Boltzmann constant, W * m^-2 * K^-4
+    return sigma * std::pow(T, 4);
+}
+
+/*
+ * For a black body at a temperature T emitting an irradiance in W * m^-2,
+ * return four spectral irradiance samples corresponding to the wavelengths used
+ * by HDR's atmospheric scattering approximation (630, 560, 490 and 430 nm).
+ */
+constexpr std::array<double, 4> spectral_radiance_vec4(double irradiance, double T)
+{
+    std::array<double, 4> result{};
+    constexpr double wavelengths[4] = {630e-9, 560e-9, 490e-9, 430e-9}; // meters
+    for (auto i = 0; i < 4; ++i) {
+        // Normalize the spectral irradiance obtained with Planck's law by
+        // dividing by the total irradiance obtained through Stefan-Boltzmann's
+        // law.
+        //
+        // The normalized values are then multiplied by the given irradiance,
+        // obtaining an spectral irradiance in W * m^-2 * nm^-1.
+        //
+        // This irradiance is then converted to radiance with an empirical
+        // conversion factor.
+        result[i] = irradiance * plancks_law(wavelengths[i], T)
+            * 1e-9 / stefan_boltzmann_law(T);
+    }
+    return result;
+}
+
+/*
+ * Return the irradiance at the Earth in W * m^-2 for a given a stellar visual
+ * magnitude. This calculation already discounts atmospheric absorption (0.4).
+ */
+constexpr double irradiance_from_magnitude(double magnitude)
+{
+    return std::pow(10, 0.4 * (-magnitude - 19.0 + 0.4));
+}
+
+} // anonymous namespace
+
+osg::Node* SGStars::build(int num, const SGStarData::Star* star_data, double star_dist,
+                          const SGReaderWriterOptions* options)
+{
+    osg::ref_ptr<EffectGeode> geode = new EffectGeode;
     geode->setName("Stars");
 
     Effect* effect = makeEffect("Effects/stars", true, options);
@@ -46,218 +112,40 @@ SGStars::build(int num, const SGVec3d star_data[], double star_dist,
         geode->setEffect(effect);
     }
 
-    cl = new osg::Vec4Array;
-    osg::Vec3Array* vl = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> vl = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec4Array> il = new osg::Vec4Array;
+    vl->reserve(num);
+    il->reserve(num);
 
-    // Build scenegraph structure
     for (int i = 0; i < num; ++i) {
-        // position seeded to arbitrary values
-        vl->push_back(osg::Vec3(star_dist * cos(star_data[i][0]) * cos(star_data[i][1]),
-                                star_dist * sin(star_data[i][0]) * cos(star_data[i][1]),
-                                star_dist * sin(star_data[i][1])));
-        // color (magnitude)
-        cl->push_back(osg::Vec4(1, 1, 1, 1));
+        // Position the star arbitrarily far away
+        osg::Vec3 pos(star_dist * std::cos(star_data[i].ra) * std::cos(star_data[i].dec),
+                      star_dist * std::sin(star_data[i].ra) * std::cos(star_data[i].dec),
+                      star_dist * std::sin(star_data[i].dec));
+        vl->push_back(pos);
+
+        // Get the star's surface temperature based on the spectral type
+        double temperature = 5800.0;
+        auto itr = k_star_temperature_map.find(star_data[i].spec[0]);
+        if (itr != k_star_temperature_map.end()) {
+            temperature = itr->second;
+        } else {
+            SG_LOG(SG_ASTRO, SG_WARN, "Found star with unknown spectral type "
+                  << star_data[i].spec);
+        }
+
+        double irradiance = irradiance_from_magnitude(star_data[i].mag);
+        std::array<double, 4> si = spectral_radiance_vec4(irradiance, temperature);
+        il->push_back(osg::Vec4(si[0], si[1], si[2], si[3]));
     }
 
-    osg::Geometry* geometry = new osg::Geometry;
-    geometry->setUseDisplayList(false);
+    osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry;
+    geometry->setUseVertexBufferObjects(true);
     geometry->setVertexArray(vl);
-    geometry->setColorArray(cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, vl->size()));
+    geometry->setVertexAttribArray(1, il, osg::Array::BIND_PER_VERTEX);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, num));
 
     geode->addDrawable(geometry);
 
-    return geode;
-}
-
-bool
-SGStars::repaint(double sun_angle, double altitude_m, int num,
-                 const SGVec3d star_data[])
-{
-    double mag, nmag, alpha, factor, cutoff;
-
-    double magmax;
-    double sundeg, mindeg;
-    double musky, mudarksky;
-
-    //observer visual acuity in the model used below (F=2)
-    const double logF = 0.30;
-
-    // same as moon.cxx
-    const double earth_radius_in_meters = 6371000.0;
- 
-    //sundeg is elevation above the horizon
-    sundeg = 90.0 - sun_angle * SGD_RADIANS_TO_DEGREES;
-
-    // mindeg is the elevation above the horizon at which the sun is
-    // no longer obstructed by the Earth (mindeg <= 0)
-    mindeg = 0.0;
-    if (altitude_m >=0) {
-        mindeg = -90.0 + SGD_RADIANS_TO_DEGREES * asin(earth_radius_in_meters/(altitude_m + earth_radius_in_meters));
-    }
-    // if the prop exists, let's use its value, can be real time changed
-    // due to lighting conditions. Otherwise, we use the default
-    if (_magDarkSkyProperty) {
-        mudarksky = _magDarkSkyProperty->getDoubleValue();
-    }
-    else {
-        mudarksky = _magDarkSkyDefault;
-    }
-  
-    // initializing sky brightness to a lot
-    musky = 0.0;
-
-    // same as in galaxy.cxx
-    // in space, we either have the sun in the face or not. If sundeg >= mindeg,
-    // the sun is visible, we see nothing. Otherwise we have:
-    if (sundeg <= mindeg) {
-
-        // same little model as galaxy.cxx, sun illumination of the
-        // atmosphere at zenith (fit to SQM zenital measurements) from
-        // http://www.hnsky.org/sqm_twilight.htm, slightly modified to be
-        // continuous at 0deg, -12deg and -18deg musky is in magV /
-        // arcsec^2
-    
-        if ( (sundeg >= -12.0) && (sundeg < 0.0) ) {
-            musky =  - 1.057*sundeg + mudarksky - 14.7528;
-        }
-      
-        if ( (sundeg >= -18.0 ) && (sundeg < -12.0) ) {
-            musky = -0.0744*sundeg*sundeg - 2.5768*sundeg + mudarksky - 22.2768;
-            musky = min(musky,mudarksky);
-        }
-
-        if ( sundeg < -18.0) {
-            musky = mudarksky;
-        }
-
-    }
-
-    //  Simple relation between maximal star magnitudes visible by the
-    //  naked eye on Earth, from Eq.(90) and (91) of astro-ph/1405.4209
-    //
-    // For 19.5 < musky < 22
-    // mmax = 0.3834 musky - 1.4400 - 2.5 * log(F)
-    //
-    // For 18 <  musky < 20
-    // mmax = 0.270 musky _0.8 - 2.5 * log(F)
-    //
-    // Typical values, let's take F = 2 for healthy pilot. With mudarksky ~ 22
-    // mag/arcsec^2 => mmax=6.2
-    //
-    // We use these linear formulae and switch from one to the other at
-    // their intersection point
-      
-    if (musky >= 19.823) {
-        magmax = 0.383 * musky - 1.44 - 2.5 * logF;
-    }
-    else {
-        //extrapolated to all bright (small) musky values
-        magmax = 0.270 * musky + 0.80 - 2.5 * logF;
-    }
-    
-    // sirius, brightest star (not brightest object)
-    const double mag_min = -1.46;
-    
-    int phase;
-
-    //continously changed at each call to repaint, but we use "phase"
-    //to actually check for repainting, not magmax
-    
-    cutoff = magmax;
-        
-    // determine which star structure to draw when the sun is not
-    // directly visible
-    if (sundeg <= mindeg) {
-        if ( sun_angle > (SGD_PI_2 + 18.0 * SGD_DEGREES_TO_RADIANS ) ) {
-            // deep night, atmosphere is not lighten by the sun
-            factor = 1.0;
-            phase = 0;
-        } else if ( sun_angle > (SGD_PI_2 + 12.0 * SGD_DEGREES_TO_RADIANS ) ) {
-            // less than 18deg and more than 12deg is astronomical twilight
-            factor = 1.0;
-            phase = 1;
-        } else if ( sun_angle > (SGD_PI_2 + 9.0 * SGD_DEGREES_TO_RADIANS ) ) {
-            // less 12deg and more than 6deg is is nautical twilight
-            factor = 1.0;
-            phase = 2;
-        } else if ( sun_angle > (SGD_PI_2 + 7.5 * SGD_DEGREES_TO_RADIANS ) ) {
-            factor = 0.95;
-            phase = 3;
-        } else if ( sun_angle > (SGD_PI_2 + 7.0 * SGD_DEGREES_TO_RADIANS ) ) {
-            factor = 0.9;
-            phase = 4;
-        } else if ( sun_angle > (SGD_PI_2 + 6.5 * SGD_DEGREES_TO_RADIANS ) ) {
-            factor = 0.85;
-            phase = 5;
-        } else if ( sun_angle > (SGD_PI_2 + 6.0 * SGD_DEGREES_TO_RADIANS ) ) {
-            factor = 0.8;
-            phase = 6;
-        } else if ( sun_angle > (SGD_PI_2 + 5.5 * SGD_DEGREES_TO_RADIANS ) ) {
-            factor = 0.75;
-            phase = 7;
-        } else {
-            // early dusk or late dawn
-            factor = 0.7;
-            cutoff = 0.0;
-            phase = 8;
-        }
-    } else {
-        // at large altitudes (in space), this conditional is triggered
-        // for sun >=mindeg, the sun is directly visible, let's call it
-        // phase 9
-        factor = 1.0;
-        cutoff = 0.0;
-        phase = 9;
-    }
-    
-    // repaint only for change of phase or if darksky property has been changed
-    
-    if ((phase != old_phase) || (mudarksky != _cachedMagDarkSky)) {
-        old_phase = phase;
-        _cachedMagDarkSky = mudarksky;
-
-        //cout << "  phase change -> repainting stars, num = " << num << endl;
-        //cout << "mudarksky= musky= cutoff= " << mudarksky << " " << musky << " " << cutoff << endl;
-
-        for ( int i = 0; i < num; ++i ) {
-            // if ( star_data[i][2] < min ) { min = star_data[i][2]; }
-            // if ( star_data[i][2] > max ) { max = star_data[i][2]; }
-
-            // magnitude ranges from -1 (bright) to 6 (dim).  The
-            // range of star and planet magnitudes can actually go
-            // outside of this, but for our purpose, if it is brighter
-            // that magmin, we'll color it full white/alpha anyway
-
-            // color (magnitude)
-            mag = star_data[i][2];
-            if ( mag < cutoff ) {
-                nmag = ( cutoff - mag ) / (cutoff - mag_min); // translate to 0 ... 1.0 scale
-                //with Milky Way on, it is more realistic to make the
-                //stars fainting to total darkness when matching the
-                //background sky brightness
-                //
-                //alpha = nmag * 0.85 + 0.15; //
-                //translate to a 0.15 ... 1.0 scale
-                //
-                alpha = nmag;
-                alpha *= factor;          // dim when the sun is brighter
-            } else {
-                alpha = 0.0;
-            }
-
-            if (alpha > 1.0) { alpha = 1.0; }
-            if (alpha < 0.0) { alpha = 0.0; }
-
-            (*cl)[i] = osg::Vec4(1, 1, 1, alpha);
-        }
-        cl->dirty();
-    }
-
-    // cout << "min = " << min << " max = " << max << " count = " << num
-    //      << endl;
-
-    return true;
+    return geode.release();
 }

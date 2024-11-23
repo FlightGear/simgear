@@ -10,12 +10,18 @@
 #define _SG_STARDATA_HXX
 
 #include <vector>
-#include <simgear/math/SGMath.hxx>
 
 class SGPath;
 
 class SGStarData final {
 public:
+    struct Star {
+        double ra;
+        double dec;
+        double mag;
+        std::string spec;
+    };
+
     // Constructor
     SGStarData( const SGPath& path );
 
@@ -27,10 +33,10 @@ public:
 
     // stars
     inline int getNumStars() const { return static_cast<int>(_stars.size()); }
-    inline SGVec3d *getStars() { return &(_stars[0]); }
+    inline Star *getStars() { return &(_stars[0]); }
 
 private:
-    std::vector<SGVec3d> _stars;
+    std::vector<Star> _stars;
 };
 
 

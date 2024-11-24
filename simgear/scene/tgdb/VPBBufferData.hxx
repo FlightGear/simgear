@@ -37,7 +37,9 @@ public:
 
     osg::ref_ptr<osg::MatrixTransform>  _transform;
     osg::ref_ptr<simgear::EffectGeode>  _landGeode;
+    osg::ref_ptr<simgear::EffectGeode>  _seaGeode;
     osg::ref_ptr<osg::Geometry>         _landGeometry;
+    osg::ref_ptr<osg::Geometry>         _seaGeometry;
     osg::ref_ptr<osg::Group>            _lineFeatures;
     float                               _width;
     float                               _height;

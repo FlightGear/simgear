@@ -128,6 +128,7 @@ class VPBTechnique : public TerrainTechnique
             VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt);
 
             void populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osg::Vec2Array* texcoords);
+            void populateSeaLevel();
             void populateLeftBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
             void populateRightBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
             void populateAboveBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
@@ -157,6 +158,7 @@ class VPBTechnique : public TerrainTechnique
                     (*_normals)[i-1] = n;
                 }
             }
+
 
             inline int& index(int c, int r) { return _indices[(r+1)*(_numColumns+2)+c+1]; }
 
@@ -284,6 +286,10 @@ class VPBTechnique : public TerrainTechnique
 
             osg::ref_ptr<osg::Vec3Array>    _vertices;
             osg::ref_ptr<osg::Vec3Array>    _normals;
+
+            osg::ref_ptr<osg::Vec3Array>    _sea_vertices;
+            osg::ref_ptr<osg::Vec3Array>    _sea_normals;
+
             std::vector<float>                _elevationConstraints;
 
             osg::ref_ptr<osg::Vec3Array>    _boundaryVertices;

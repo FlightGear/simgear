@@ -188,10 +188,12 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 
         osg::ref_ptr<BufferData> read_buffer = _currentBufferData;
 
-        osg::StateSet* stateset = read_buffer->_landGeode->getStateSet();
-        if (stateset)
+        osg::StateSet* landStateset = read_buffer->_landGeode->getStateSet();
+        if (landStateset)
         {
-            buffer->_landGeode->setStateSet(stateset);
+            buffer->_landGeode->setStateSet(landStateset);
+            osg::StateSet* seaStateset = read_buffer->_seaGeode->getStateSet();
+            buffer->_seaGeode->setStateSet(seaStateset);
         }
         else
         {
@@ -342,6 +344,12 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _normals = new osg::Vec3Array;
     _normals->reserve(numVertices);
 
+    _sea_vertices = new osg::Vec3Array;
+    _sea_vertices->reserve(numVertices);
+
+    _sea_normals = new osg::Vec3Array;
+    _sea_normals->reserve(numVertices);
+
     // Initialize the elevation constraints to a suitably high number such
     // that any vertex or valid constraint will always fall below it
     _elevationConstraints.assign(numVertices, 9999.0f);
@@ -364,7 +372,7 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
     // In the first pass we calculate the x/y location and if there are any elevation constraints at that point.
     // In the second pass we determine the elevation of the mesh as the lowest of
     //   - the elevation of the location base on the elevation layer
-    //   - 0.0 (in the case of sea level)
+    //   - -10.0 (in the case of sea level)
     //   - any constraints for this point and the surrounding 8 points
 
     for(int j=0; j<_numRows; ++j) {
@@ -395,12 +403,12 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 }
             }
 
-            // Check against the sea
+            // Check against the sea.
             if (landclassImage) {
                 osg::Vec4d c = landclassImage->getColor(osg::Vec2d(ndc.x(), ndc.y()));
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
-                    ndc.z() = 0.0;
+                    ndc.z() = -10.0;
                 }
             }
 
@@ -429,6 +437,29 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
 
             setVertex(i, j, osg::Vec3(model-_centerModel), model_up);
             texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
+        }
+    }
+}
+
+// Generate a set of vertices at sea level
+void VPBTechnique::VertexNormalGenerator::populateSeaLevel()
+{
+    // OSG_NOTICE<<std::endl<<"VertexNormalGenerator::populateCenter("<<elevationLayer<<")"<<std::endl;
+
+    for(int j=0; j<_numRows; ++j) {
+        for(int i=0; i<_numColumns; ++i) {
+            osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), 0.0);
+
+            // compute the model coordinates and the local normal
+            osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
+            osg::Vec3d model, model_up;
+            _masterLocator->convertLocalToModel(ndc, model);
+            _masterLocator->convertLocalToModel(ndc_up, model_up);
+            model_up = model_up - model;
+            model_up.normalize();
+
+            _sea_vertices->push_back(osg::Vec3(model-_centerModel));
+            _sea_normals->push_back(model_up);
         }
     }
 }
@@ -683,20 +714,31 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     // Determine the correct Effect for this, based on a material lookup taking into account
     // the lat/lon of the center.
     SGPropertyNode_ptr landEffectProp = new SGPropertyNode();
+    SGPropertyNode_ptr seaEffectProp = new SGPropertyNode();
 
     if (matcache) {
       atlas = matcache->getAtlas();
       SGMaterial* landmat = matcache->find("ws30land");
+      SGMaterial* seamat = matcache->find("ws30sea");
 
       if (landmat) {
         makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue(landmat->get_effect_name());
       } else {
-        SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get effect for VPB - no matching material in library");
+        SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get ws30land Material for VPB - no matching material in library");
         makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
       }
+
+      if (seamat) {
+        makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue(seamat->get_effect_name());
+      } else {
+        SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get ws30sea Material for VPB - no matching material in library");
+        makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+      }
+
     } else {
-        SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get effect for VPB - no material library available");
+        SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get ws30land/ws30sea effect for VPB - no material library available");
         makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+        makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
     }
 
     buffer._landGeode = new EffectGeode();
@@ -708,6 +750,16 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     osg::ref_ptr<Effect> landEffect = makeEffect(landEffectProp, true, _options);
     buffer._landGeode->setEffect(landEffect.get());
     buffer._landGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+
+    buffer._seaGeode = new EffectGeode();
+    if (buffer._transform.valid()) buffer._transform->addChild(buffer._seaGeode.get());
+
+    buffer._seaGeometry = new osg::Geometry;
+    buffer._seaGeode->addDrawable(buffer._seaGeometry.get());
+  
+    osg::ref_ptr<Effect> seaEffect = makeEffect(seaEffectProp, true, _options);
+    buffer._seaGeode->setEffect(seaEffect.get());
+    buffer._seaGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
     unsigned int numRows = 20;
     unsigned int numColumns = 20;
@@ -751,22 +803,29 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     unsigned int numVertices = VNG.capacity();
 
-    // allocate and assign vertices
+    // allocate and assign vertices and normals
     buffer._landGeometry->setVertexArray(VNG._vertices.get());
-
-    // allocate and assign normals
     buffer._landGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
+
+    buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
+    buffer._seaGeometry->setNormalArray(VNG._sea_normals.get(), osg::Array::BIND_PER_VERTEX);
 
     // allocate and assign color
     osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array(1);
     (*colors)[0].set(1.0f,1.0f,1.0f,1.0f);
 
     buffer._landGeometry->setColorArray(colors.get(), osg::Array::BIND_OVERALL);
+    buffer._seaGeometry->setColorArray(colors.get(), osg::Array::BIND_OVERALL);
 
     // allocate and assign texture coordinates
     auto texcoords = new osg::Vec2Array;
     VNG.populateCenter(elevationLayer, colorLayer, atlas, texcoords);
     buffer._landGeometry->setTexCoordArray(0, texcoords);
+
+    // The Sea level mesh is identical to the main center mesh, except that it is at sea level
+    // Therefore we can use the same texture coordinates calculated above.
+    VNG.populateSeaLevel();
+    buffer._seaGeometry->setTexCoordArray(0, texcoords);
 
     if (terrain && terrain->getEqualizeBoundaries())
     {
@@ -784,8 +843,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
         _neighbours.clear();
 
-        bool updateNeighboursImmediately = false;
-
         if (left_tile.valid())   addNeighbour(left_tile.get());
         if (right_tile.valid())  addNeighbour(right_tile.get());
         if (top_tile.valid())    addNeighbour(top_tile.get());
@@ -796,8 +853,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             if (left_tile->getTerrainTechnique()==0 || !(left_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
             {
                 int dirtyMask = left_tile->getDirtyMask() | TerrainTile::LEFT_EDGE_DIRTY;
-                if (updateNeighboursImmediately) left_tile->init(dirtyMask, true);
-                else left_tile->setDirtyMask(dirtyMask);
+                left_tile->setDirtyMask(dirtyMask);
             }
         }
         if (right_tile.valid())
@@ -805,8 +861,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             if (right_tile->getTerrainTechnique()==0 || !(right_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
             {
                 int dirtyMask = right_tile->getDirtyMask() | TerrainTile::RIGHT_EDGE_DIRTY;
-                if (updateNeighboursImmediately) right_tile->init(dirtyMask, true);
-                else right_tile->setDirtyMask(dirtyMask);
+                right_tile->setDirtyMask(dirtyMask);
             }
         }
         if (top_tile.valid())
@@ -814,8 +869,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             if (top_tile->getTerrainTechnique()==0 || !(top_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
             {
                 int dirtyMask = top_tile->getDirtyMask() | TerrainTile::TOP_EDGE_DIRTY;
-                if (updateNeighboursImmediately) top_tile->init(dirtyMask, true);
-                else top_tile->setDirtyMask(dirtyMask);
+                top_tile->setDirtyMask(dirtyMask);
             }
         }
 
@@ -824,8 +878,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             if (bottom_tile->getTerrainTechnique()==0 || !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
             {
                 int dirtyMask = bottom_tile->getDirtyMask() | TerrainTile::BOTTOM_EDGE_DIRTY;
-                if (updateNeighboursImmediately) bottom_tile->init(dirtyMask, true);
-                else bottom_tile->setDirtyMask(dirtyMask);
+                bottom_tile->setDirtyMask(dirtyMask);
             }
         }
     }
@@ -845,7 +898,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
         static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
     landElements->reserveElements((numRows-1) * (numColumns-1) * 6);
-
     buffer._landGeometry->addPrimitiveSet(landElements.get());
 
     unsigned int i, j;
@@ -910,6 +962,75 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         }
     }
 
+    osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+    seaElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+    buffer._seaGeometry->addPrimitiveSet(seaElements.get());
+
+    for(j=0; j<numRows-1; ++j)
+    {
+        for(i=0; i<numColumns-1; ++i)
+        {
+            // remap sea indices to final vertex positions.  We're relying on
+            // the indices for both the land and sea geometry to be identical.
+            // That should be the case as long as the number of rows and columns
+            // stays identical.
+            int i00 = VNG.vertex_index(i,   j);
+            int i01 = VNG.vertex_index(i,   j+1);
+            int i10 = VNG.vertex_index(i+1, j);
+            int i11 = VNG.vertex_index(i+1, j+1);
+
+            if (swapOrientation)
+            {
+                std::swap(i00,i01);
+                std::swap(i10,i11);
+            }
+
+            unsigned int numValid = 0;
+            if (i00>=0) ++numValid;
+            if (i01>=0) ++numValid;
+            if (i10>=0) ++numValid;
+            if (i11>=0) ++numValid;
+
+            if (numValid==4)
+            {
+                // optimize which way to put the diagonal by choosing to
+                // place it between the two corners that have the least curvature
+                // relative to each other.
+                float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
+                float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
+
+                if (dot_00_11 > dot_01_10)
+                {
+                    seaElements->addElement(i01);
+                    seaElements->addElement(i00);
+                    seaElements->addElement(i11);
+
+                    seaElements->addElement(i00);
+                    seaElements->addElement(i10);
+                    seaElements->addElement(i11);
+                }
+                else
+                {
+                    seaElements->addElement(i01);
+                    seaElements->addElement(i00);
+                    seaElements->addElement(i10);
+
+                    seaElements->addElement(i01);
+                    seaElements->addElement(i10);
+                    seaElements->addElement(i11);
+                }
+            }
+            else if (numValid==3)
+            {
+                if (i00>=0) seaElements->addElement(i00);
+                if (i01>=0) seaElements->addElement(i01);
+                if (i11>=0) seaElements->addElement(i11);
+                if (i10>=0) seaElements->addElement(i10);
+            }
+        }
+    }
 
     if (createSkirt)
     {
@@ -1078,10 +1199,17 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     buffer._landGeometry->computeBoundingBox();
     buffer._landGeode->runGenerators(buffer._landGeometry);
 
+    buffer._seaGeometry->setUseDisplayList(false);
+    buffer._seaGeometry->setUseVertexBufferObjects(true);
+    buffer._seaGeometry->computeBoundingBox();
+    buffer._seaGeode->runGenerators(buffer._seaGeometry);
+
     // Tile-specific information for the shaders
     osg::StateSet *landStateSet = buffer._landGeode->getOrCreateStateSet();
     osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
     landStateSet->addUniform(level);
+    osg::StateSet *seaStateSet = buffer._seaGeode->getOrCreateStateSet();
+    seaStateSet->addUniform(level);
 
     // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
     // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
@@ -1107,8 +1235,10 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("fg_tileWidth", buffer._width);
     landStateSet->addUniform(twu);
+    seaStateSet->addUniform(twu);
     osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("fg_tileHeight", buffer._height);
     landStateSet->addUniform(thu);
+    seaStateSet->addUniform(thu);
 
     // Force build of KD trees?
     if (osgDB::Registry::instance()->getBuildKdTreesHint()==osgDB::ReaderWriter::Options::BUILD_KDTREES &&
@@ -1119,6 +1249,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         //OSG_NOTICE<<"osgTerrain::VPBTechnique::build kd tree"<<std::endl;
         osg::ref_ptr<osg::KdTreeBuilder> builder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
         buffer._landGeode->accept(*builder);
+        buffer._seaGeode->accept(*builder);
         //osg::Timer_t after = osg::Timer::instance()->tick();
         //OSG_NOTICE<<"KdTree build time "<<osg::Timer::instance()->delta_m(before, after)<<std::endl;
     }
@@ -1167,14 +1298,14 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
 
         if (found) {
 
-            osg::StateSet* stateset = buffer._landGeode->getOrCreateStateSet();
+            osg::StateSet* landStateset = buffer._landGeode->getOrCreateStateSet();
 
             // Set up the texture with wrapping of UV to reduce black edges at tile boundaries.
             osg::Texture2D* texture = SGLoadTexture2D(SGPath(orthotexture), _options, true, true);
             texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
             texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
-            stateset->setTextureAttributeAndModes(0, texture);
-            stateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
+            landStateset->setTextureAttributeAndModes(0, texture);
+            landStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
 
             // Generate a water texture so we can use the water shader
             osg::ref_ptr<osg::Texture2D> waterTexture  = new osg::Texture2D;
@@ -1186,13 +1317,22 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             waterTexture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
             waterTexture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
             // Overload of the coast texture
-            stateset->setTextureAttributeAndModes(7, waterTexture);
+            landStateset->setTextureAttributeAndModes(7, waterTexture);
+            
+            
+            landStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, true));
+            landStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
+            landStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
+            atlas->addUniforms(landStateset);
 
-            stateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, true));
-            stateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
-            stateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
-            atlas->addUniforms(stateset);
-
+            osg::StateSet* seaStateset = buffer._seaGeode->getOrCreateStateSet();
+            seaStateset->setTextureAttributeAndModes(0, texture);
+            seaStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
+            seaStateset->setTextureAttributeAndModes(7, waterTexture);
+            seaStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, true));
+            seaStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
+            seaStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
+            atlas->addUniforms(seaStateset);
         } else {
             SG_LOG(SG_TERRAIN, SG_DEBUG, "Unable to find " << orthotexture);
             photoScenery = false;
@@ -1255,7 +1395,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         // Look for a pre-generated coastline texture.  There are two possible locations
         //  - Inside the vpb directory adjacent to this tile file.
         //  - Inside a 1x1 degree zipped file, which we can access using OSGs archive loader.
-        osg::StateSet* stateset = buffer._landGeode->getOrCreateStateSet();
+        osg::StateSet* landStateset = buffer._landGeode->getOrCreateStateSet();
         std::string filePath = "vpb/" + bucket.gen_vpb_filename(tileID.level, tileID.x, tileID.y, "coastline") + ".png";
         std::string archiveFilePath = "vpb/" + bucket.gen_vpb_archive_filename(tileID.level, tileID.x, tileID.y, "coastline") + ".png";
         SG_LOG(SG_TERRAIN, SG_DEBUG, "Looking for coastline texture in " << filePath << " and " << archiveFilePath);
@@ -1285,14 +1425,23 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             buffer._waterRasterTexture = renderer.generateCoastTexture();
         }
 
-        stateset->setTextureAttributeAndModes(0, texture2D, osg::StateAttribute::ON);
-        stateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
-        stateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
-        stateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, false));
-        stateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
-        stateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
-        atlas->addUniforms(stateset);
+        landStateset->setTextureAttributeAndModes(0, texture2D, osg::StateAttribute::ON);
+        landStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
+        landStateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
+        landStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, false));
+        landStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
+        landStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
+        atlas->addUniforms(landStateset);
         //SG_LOG(SG_TERRAIN, SG_ALERT, "modeOffset:" << buffer._transform->getMatrix().getTrans().length() << " " << buffer._transform->getMatrix().getTrans());
+
+        osg::StateSet* seaStateset = buffer._seaGeode->getOrCreateStateSet();
+        seaStateset->setTextureAttributeAndModes(0, texture2D, osg::StateAttribute::ON);
+        seaStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
+        seaStateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
+        seaStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, false));
+        seaStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
+        seaStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
+        atlas->addUniforms(seaStateset);
     }
 }
 

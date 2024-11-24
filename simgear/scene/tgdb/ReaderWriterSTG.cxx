@@ -938,13 +938,16 @@ struct ReaderWriterSTG::_ModelBin {
         callbackOptions->setReadFileCallback(readFileCallback.get());
         pagedLOD->setDatabaseOptions(callbackOptions.get());
 
-        pagedLOD->setFileName(pagedLOD->getNumChildren(), "Dummy name - use the stored data in the read file callback");
+        unsigned index = pagedLOD->getNumChildren();
+        pagedLOD->setFileName(index, std::string("DelayLoadReadFileCallback for ") + bucket.gen_index_str());
 
         // Objects may end up displayed up to 2x the object range.
-        pagedLOD->setRange(pagedLOD->getNumChildren(), 0, 2.0 * _object_range_rough);
-        pagedLOD->setMinimumExpiryTime(pagedLOD->getNumChildren(), pagedLODExpiry);
+        pagedLOD->setRange(index, 0, 2.0 * _object_range_rough);
+        pagedLOD->setMinimumExpiryTime(index, pagedLODExpiry);
+        pagedLOD->setPriorityScale(index, 0.2);
         pagedLOD->setRadius(SG_TILE_RADIUS);
         pagedLOD->setCenterMode(osg::PagedLOD::USER_DEFINED_CENTER);
+        pagedLOD->setRangeMode(osg::LOD::RangeMode::DISTANCE_FROM_EYE_POINT);
 
         SGVec3d coord;
         SGGeodesy::SGGeodToCart(bucket.get_center(), coord);

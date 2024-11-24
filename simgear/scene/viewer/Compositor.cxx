@@ -135,6 +135,7 @@ Compositor::Compositor(osg::View *view,
     new osg::Uniform("fg_TextureMatrix", osg::Matrixf()),
     new osg::Uniform("fg_Viewport", osg::Vec4f()),
     new osg::Uniform("fg_PixelSize", osg::Vec2f()),
+    new osg::Uniform("fg_AspectRatio", 0.0f),
     new osg::Uniform("fg_ViewMatrix", osg::Matrixf()),
     new osg::Uniform("fg_ViewMatrixInverse", osg::Matrixf()),
     new osg::Uniform("fg_ProjectionMatrix", osg::Matrixf()),
@@ -385,6 +386,8 @@ Compositor::resized()
         _uniforms[SG_UNIFORM_PIXEL_SIZE]->set(
             osg::Vec2f(1.0f / viewport->width(),
                        1.0f / viewport->height()));
+        _uniforms[SG_UNIFORM_ASPECT_RATIO]->set(
+            float(viewport->width() / viewport->height()));
     }
 
     // Resize buffers that must be a multiple of the screen size

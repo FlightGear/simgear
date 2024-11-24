@@ -20,31 +20,6 @@
 #include "Compositor.hxx"
 #include "CompositorUtil.hxx"
 
-#ifndef GL_R11F_G11F_B10F
-#define GL_R11F_G11F_B10F                 0x8C3A
-#endif
-#ifndef GL_UNSIGNED_INT_10F_11F_11F_REV
-#define GL_UNSIGNED_INT_10F_11F_11F_REV   0x8C3B
-#endif
-#ifndef GL_DEPTH24_STENCIL8
-#define GL_DEPTH24_STENCIL8               0x88F0
-#endif
-#ifndef GL_DEPTH32F_STENCIL8
-#define GL_DEPTH32F_STENCIL8              0x8CAD
-#endif
-#ifndef GL_DEPTH_STENCIL
-#define GL_DEPTH_STENCIL                  0x84F9
-#endif
-#ifndef GL_UNSIGNED_INT_24_8
-#define GL_UNSIGNED_INT_24_8              0x84FA
-#endif
-#ifndef GL_FLOAT_32_UNSIGNED_INT_24_8_REV
-#define GL_FLOAT_32_UNSIGNED_INT_24_8_REV 0x8DAD
-#endif
-
-using std::max;
-using std::min;
-
 namespace simgear {
 namespace compositor {
 
@@ -55,27 +30,42 @@ struct BufferFormat {
 };
 
 PropStringMap<BufferFormat> buffer_format_map {
+    // Unsigned normalized integer formats
+    {"r8", {GL_R8, GL_RED, GL_UNSIGNED_BYTE}},
+    {"rg8", {GL_RG8, GL_RG, GL_UNSIGNED_BYTE}},
     {"rgb8", {GL_RGB8, GL_RGBA, GL_UNSIGNED_BYTE}},
     {"rgba8", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}},
-    {"rgb16f", {GL_RGB16F_ARB, GL_RGBA, GL_HALF_FLOAT}},
-    {"rgb32f", {GL_RGB32F_ARB, GL_RGBA, GL_FLOAT}},
-    {"rgba16f", {GL_RGBA16F_ARB, GL_RGBA, GL_HALF_FLOAT}},
-    {"rgba32f", {GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT}},
-    {"r8", {GL_R8, GL_RED, GL_UNSIGNED_BYTE}},
-    {"r16f", {GL_R16F, GL_RED, GL_HALF_FLOAT}},
-    {"r32f", {GL_R32F, GL_RED, GL_FLOAT}},
-    {"rg16f", {GL_RG16F, GL_RG, GL_HALF_FLOAT}},
-    {"rg32f", {GL_RG32F, GL_RG, GL_FLOAT}},
-    {"rgb10-a2", {GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_10_10_10_2}},
-    {"r11f-g11f-b10f", {GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV}},
-    {"depth16", {GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT}},
-    {"depth24", {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT}},
-    {"depth24-stencil8", {GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8}},
-    {"depth32f", {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}},
-    {"depth32f-stencil8", {GL_DEPTH32F_STENCIL8, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV}},
+
+    // Unsigned non-normalized integer formats
     {"r8ui", {GL_R8UI, GL_RED, GL_UNSIGNED_BYTE}},
     {"r16ui", {GL_R16UI, GL_RED, GL_UNSIGNED_SHORT}},
-    {"r32ui", {GL_R32UI, GL_RED, GL_UNSIGNED_INT}}
+    {"r32ui", {GL_R32UI, GL_RED, GL_UNSIGNED_INT}},
+
+    // Floating point formats
+    // Half precision
+    {"r16f", {GL_R16F, GL_RED, GL_HALF_FLOAT}},
+    {"rg16f", {GL_RG16F, GL_RG, GL_HALF_FLOAT}},
+    {"rgb16f", {GL_RGB16F, GL_RGBA, GL_HALF_FLOAT}},
+    {"rgba16f", {GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT}},
+    // Full precision
+    {"r32f", {GL_R32F, GL_RED, GL_FLOAT}},
+    {"rg32f", {GL_RG32F, GL_RG, GL_FLOAT}},
+    {"rgb32f", {GL_RGB32F, GL_RGBA, GL_FLOAT}},
+    {"rgba32f", {GL_RGBA32F, GL_RGBA, GL_FLOAT}},
+
+    // Special formats
+    {"r11f-g11f-b10f", {GL_R11F_G11F_B10F, GL_RGB, GL_HALF_FLOAT}},
+    {"rgb10-a2", {GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_10_10_10_2}},
+
+    // Depth formats
+    {"depth16", {GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT}},
+    {"depth24", {GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT}},
+    {"depth32", {GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT}},
+    {"depth32f", {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}},
+
+    // Depth stencil formats
+    {"depth24-stencil8", {GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8}},
+    {"depth32f-stencil8", {GL_DEPTH32F_STENCIL8, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV}},
 };
 
 PropStringMap<osg::Texture::WrapMode> wrap_mode_map = {
@@ -160,7 +150,7 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
         const SGPropertyNode *p_mipmap_levels = node->getNode("mipmap-levels");
         if (p_mipmap_levels) {
             if (p_mipmap_levels->getStringValue() == std::string("auto"))
-                mipmap_levels = 1 + floor(log2((float)max(max(width, height), depth)));
+                mipmap_levels = 1 + std::floor(std::log2((float)std::max(std::max(width, height), depth)));
             else
                 mipmap_levels = p_mipmap_levels->getIntValue();
         }

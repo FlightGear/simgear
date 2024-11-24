@@ -67,7 +67,7 @@ public:
         /**
          * Adds a new binding to the list of entry bindings for this state.
          *
-         * An exit binding will be fired (evaluated and triggered) upon exiting
+         * An exit binding will be fired (evaluated and triggered) upon entering 
          * a state.
          *
          * @param aBinding A pointer to the binding to be added.
@@ -177,14 +177,20 @@ public:
     /**
      * Initializes the state machine from a property list description, while handling initialization.
      *
+     * @param desc The property list description for the state machine.
+     * @param root The root node of the property list description.
      * @note Creating a state machine with this function does not require calling the `init()` function.
+     * @throw sg_exception If the property list description is invalid or describes an impossible state machine.
      */
     void initFromPlist(SGPropertyNode* desc, SGPropertyNode* root);
 
     /**
      * Create a new state machine from a property list description, while handling initialization.
      *
+     * @param desc The property list description for the state machine.
+     * @param root The root node of the property list description.
      * @note Creating a state machine with this function does not require calling the `init()` function.
+     * @throw sg_exception If the property list description is invalid or describes an impossible state machine.
      */
     static StateMachine* createFromPlist(SGPropertyNode* desc, SGPropertyNode* root);
 

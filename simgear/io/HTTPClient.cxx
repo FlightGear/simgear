@@ -209,7 +209,7 @@ void Client::update(int waitTimeout)
               req->responseComplete();
             } else {
               SG_LOG(SG_IO, SG_WARN,
-                     "CURL Result:" << msg->data.result << " "
+                     "CURL request " << req->url() << " Result:" << msg->data.result << " "
                                     << curl_easy_strerror(msg->data.result));
               req->setFailure(msg->data.result,
                               curl_easy_strerror(msg->data.result));

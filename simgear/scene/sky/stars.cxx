@@ -45,7 +45,7 @@ const std::unordered_map<char, double> k_star_temperature_map = {
  * thermal equilibrium at a temperature T in Kelvin and for a given wavelength
  * in meters.
  */
-constexpr double plancks_law(double lambda, double T)
+double plancks_law(double lambda, double T)
 {
     constexpr double pi = 3.14159265358979323846; // Can't use SGD_PI, we need constexpr
     constexpr double c  = 299'792'458.0;   // Speed of light, m * s^-1
@@ -59,7 +59,7 @@ constexpr double plancks_law(double lambda, double T)
  * Implements Stefan-Boltzmann's law.
  * Returns the irradiance in W * m^-2 emitted by a black body at a temperature T.
  */
-constexpr double stefan_boltzmann_law(double T)
+double stefan_boltzmann_law(double T)
 {
     constexpr double sigma = 5.670374419e-8; // Stefan-Boltzmann constant, W * m^-2 * K^-4
     return sigma * std::pow(T, 4);
@@ -70,7 +70,7 @@ constexpr double stefan_boltzmann_law(double T)
  * return four spectral irradiance samples corresponding to the wavelengths used
  * by HDR's atmospheric scattering approximation (630, 560, 490 and 430 nm).
  */
-constexpr std::array<double, 4> spectral_radiance_vec4(double irradiance, double T)
+std::array<double, 4> spectral_radiance_vec4(double irradiance, double T)
 {
     std::array<double, 4> result{};
     constexpr double wavelengths[4] = {630e-9, 560e-9, 490e-9, 430e-9}; // meters
@@ -94,7 +94,7 @@ constexpr std::array<double, 4> spectral_radiance_vec4(double irradiance, double
  * Return the irradiance at the Earth in W * m^-2 for a given a stellar visual
  * magnitude. This calculation already discounts atmospheric absorption (0.4).
  */
-constexpr double irradiance_from_magnitude(double magnitude)
+double irradiance_from_magnitude(double magnitude)
 {
     return std::pow(10, 0.4 * (-magnitude - 19.0 + 0.4));
 }

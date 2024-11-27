@@ -20,11 +20,6 @@
 #include <string>
 #include <vector>
 
-/** STL vector list of ints */
-typedef std::vector < int > int_list;
-typedef int_list::iterator int_list_iterator;
-typedef int_list::const_iterator const_int_list_iterator;
-
 /** STL vector list of doubles */
 typedef std::vector < double > double_list;
 typedef double_list::iterator double_list_iterator;

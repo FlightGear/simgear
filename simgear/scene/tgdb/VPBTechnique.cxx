@@ -34,6 +34,7 @@
 #include <osg/Texture2D>
 #include <osg/Texture2DArray>
 #include <osg/Texture1D>
+#include <osg/PatchParameter>
 #include <osg/Program>
 #include <osg/Math>
 #include <osg/Timer>
@@ -333,29 +334,21 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _constraint_vtx_gap(vtx_gap)
 {
     int numVerticesInBody = numColumns*numRows;
-    int numVerticesInSkirt = createSkirt ? numColumns*2 + numRows*2 - 4 : 0;
-    int numVertices = numVerticesInBody+numVerticesInSkirt;
+    int numVerticesInBoundary = _numRows*2 + _numColumns*2 + 4;
+    // int numVerticesInSkirt = createSkirt ? numColumns*2 + numRows*2 - 4 : 0;
+    int numVertices = numVerticesInBody + numVerticesInBoundary;
 
-    _indices.resize((_numRows+2)*(_numColumns+2),0);
+    _indices.resize((_numRows+2)*(_numColumns+2), 0);
 
     _vertices = new osg::Vec3Array;
     _vertices->reserve(numVertices);
 
-    _normals = new osg::Vec3Array;
-    _normals->reserve(numVertices);
-
     _sea_vertices = new osg::Vec3Array;
     _sea_vertices->reserve(numVertices);
-
-    _sea_normals = new osg::Vec3Array;
-    _sea_normals->reserve(numVertices);
 
     // Initialize the elevation constraints to a suitably high number such
     // that any vertex or valid constraint will always fall below it
     _elevationConstraints.assign(numVertices, 9999.0f);
-
-    _boundaryVertices = new osg::Vec3Array;
-    _boundaryVertices->reserve(_numRows*2 + _numColumns*2 + 4);
 }
 
 void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osg::Vec2Array* texcoords)
@@ -427,15 +420,10 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 }
             }
 
-            // compute the model coordinates and the local normal
-            osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
-            osg::Vec3d model, model_up;
+            // compute the model coordinates
+            osg::Vec3d model;
             _masterLocator->convertLocalToModel(ndc, model);
-            _masterLocator->convertLocalToModel(ndc_up, model_up);
-            model_up = model_up - model;
-            model_up.normalize();
-
-            setVertex(i, j, osg::Vec3(model-_centerModel), model_up);
+            setVertex(i, j, osg::Vec3(model-_centerModel));
             texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
         }
     }
@@ -449,17 +437,10 @@ void VPBTechnique::VertexNormalGenerator::populateSeaLevel()
     for(int j=0; j<_numRows; ++j) {
         for(int i=0; i<_numColumns; ++i) {
             osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), 0.0);
-
-            // compute the model coordinates and the local normal
-            osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
-            osg::Vec3d model, model_up;
+            osg::Vec3d model;
             _masterLocator->convertLocalToModel(ndc, model);
-            _masterLocator->convertLocalToModel(ndc_up, model_up);
-            model_up = model_up - model;
-            model_up.normalize();
 
             _sea_vertices->push_back(osg::Vec3(model-_centerModel));
-            _sea_normals->push_back(model_up);
         }
     }
 }
@@ -505,15 +486,7 @@ void VPBTechnique::VertexNormalGenerator::populateLeftBoundary(osgTerrain::Layer
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-
-                // compute the local normal
-                osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                osg::Vec3d model_one;
-                _masterLocator->convertLocalToModel(ndc_one, model_one);
-                model_one = model_one - model;
-                model_one.normalize();
-
-                setVertex(i, j, osg::Vec3(model-_centerModel), model_one);
+                setVertex(i, j, osg::Vec3(model-_centerModel));
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
@@ -561,15 +534,7 @@ void VPBTechnique::VertexNormalGenerator::populateRightBoundary(osgTerrain::Laye
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-
-                // compute the local normal
-                osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                osg::Vec3d model_one;
-                _masterLocator->convertLocalToModel(ndc_one, model_one);
-                model_one = model_one - model;
-                model_one.normalize();
-
-                setVertex(i, j, osg::Vec3(model-_centerModel), model_one);
+                setVertex(i, j, osg::Vec3(model-_centerModel));
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
@@ -617,15 +582,7 @@ void VPBTechnique::VertexNormalGenerator::populateAboveBoundary(osgTerrain::Laye
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-
-                // compute the local normal
-                osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                osg::Vec3d model_one;
-                _masterLocator->convertLocalToModel(ndc_one, model_one);
-                model_one = model_one - model;
-                model_one.normalize();
-
-                setVertex(i, j, osg::Vec3(model-_centerModel), model_one);
+                setVertex(i, j, osg::Vec3(model-_centerModel));
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
@@ -673,33 +630,77 @@ void VPBTechnique::VertexNormalGenerator::populateBelowBoundary(osgTerrain::Laye
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-
-                // compute the local normal
-                osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                osg::Vec3d model_one;
-                _masterLocator->convertLocalToModel(ndc_one, model_one);
-                model_one = model_one - model;
-                model_one.normalize();
-
-                setVertex(i, j, osg::Vec3(model-_centerModel), model_one);
+                setVertex(i, j, osg::Vec3(model-_centerModel));
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
     }
 }
 
-
-void VPBTechnique::VertexNormalGenerator::computeNormals()
+void VPBTechnique::VertexNormalGenerator::populateCorner(
+    osgTerrain::Layer* elevationLayer,
+    osgTerrain::Layer* colorLayer,
+    osg::ref_ptr<Atlas> atlas,
+    Corner corner)
 {
-    // compute normals for the center section
-    for(int j=0; j<_numRows; ++j)
-    {
-        for(int i=0; i<_numColumns; ++i)
-        {
-            int vi = vertex_index(i, j);
-            if (vi>=0) computeNormal(i, j, (*_normals)[vi]);
-            else OSG_NOTICE<<"Not computing normal, vi="<<vi<<std::endl;
+    if (!elevationLayer)
+        return;
+
+    bool sampled =
+        (elevationLayer->getNumRows() != static_cast<unsigned int>(_numRows)) ||
+        (elevationLayer->getNumColumns() != static_cast<unsigned int>(_numColumns));
+
+    osg::Image* landclassImage = colorLayer->getImage();
+
+    int i, j;
+    switch (corner) {
+    case Corner::BOTTOM_LEFT:  i = -1;          j =       -1; break;
+    case Corner::BOTTOM_RIGHT: i = _numColumns; j =       -1; break;
+    case Corner::TOP_LEFT:     i = -1;          j = _numRows; break;
+    case Corner::TOP_RIGHT:    i = _numColumns; j = _numRows; break;
+    }
+
+    osg::Vec3d ndc(double(i) / double(_numColumns-1), double(j) / double(_numRows-1), 0.0);
+
+    bool validValue = true;
+    float value = 0.0f;
+
+    if (sampled) {
+        osg::Vec2d ndcOffset;
+        switch (corner) {
+        case Corner::BOTTOM_LEFT:  ndcOffset.set( 1.0,  1.0); break;
+        case Corner::BOTTOM_RIGHT: ndcOffset.set(-1.0,  1.0); break;
+        case Corner::TOP_LEFT:     ndcOffset.set( 1.0, -1.0); break;
+        case Corner::TOP_RIGHT:    ndcOffset.set(-1.0, -1.0); break;
         }
+        validValue = elevationLayer->getInterpolatedValidValue(
+            ndc.x() + ndcOffset.x(), ndc.y() + ndcOffset.y(), value);
+    } else {
+        int layer_i, layer_j;
+        switch (corner) {
+        case Corner::BOTTOM_LEFT:  layer_i = _numColumns-2; layer_j = _numRows-2; break;
+        case Corner::BOTTOM_RIGHT: layer_i =             1; layer_j = _numRows-2; break;
+        case Corner::TOP_LEFT:     layer_i = _numColumns-2; layer_j =          1; break;
+        case Corner::TOP_RIGHT:    layer_i =             1; layer_j =          1; break;
+        }
+        validValue = elevationLayer->getValidValue(layer_i, layer_j, value);
+    }
+
+    ndc.z() = value * _scaleHeight;
+
+    if (landclassImage) {
+        osg::Vec4d c = landclassImage->getColor(osg::Vec2d(ndc.x(), ndc.y()));
+        unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
+        if (atlas->isSea(lc)) {
+            ndc.set(ndc.x(), ndc.y(), 0.0f);
+        }
+    }
+
+    if (validValue) {
+        osg::Vec3d model;
+        _masterLocator->convertLocalToModel(ndc, model);
+        setVertex(i, j, osg::Vec3(model-_centerModel));
+        // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
     }
 }
 
@@ -755,7 +756,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     if (buffer._transform.valid()) buffer._transform->addChild(buffer._seaGeode.get());
 
     buffer._seaGeometry = new osg::Geometry;
-    buffer._seaGeode->addDrawable(buffer._seaGeometry.get());
+    // buffer._seaGeode->addDrawable(buffer._seaGeometry.get());
   
     osg::ref_ptr<Effect> seaEffect = makeEffect(seaEffectProp, true, _options);
     buffer._seaGeode->setEffect(seaEffect.get());
@@ -803,19 +804,9 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     unsigned int numVertices = VNG.capacity();
 
-    // allocate and assign vertices and normals
+    // allocate and assign vertices
     buffer._landGeometry->setVertexArray(VNG._vertices.get());
-    buffer._landGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
-
     buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
-    buffer._seaGeometry->setNormalArray(VNG._sea_normals.get(), osg::Array::BIND_PER_VERTEX);
-
-    // allocate and assign color
-    osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array(1);
-    (*colors)[0].set(1.0f,1.0f,1.0f,1.0f);
-
-    buffer._landGeometry->setColorArray(colors.get(), osg::Array::BIND_OVERALL);
-    buffer._seaGeometry->setColorArray(colors.get(), osg::Array::BIND_OVERALL);
 
     // allocate and assign texture coordinates
     auto texcoords = new osg::Vec2Array;
@@ -827,7 +818,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     VNG.populateSeaLevel();
     buffer._seaGeometry->setTexCoordArray(0, texcoords);
 
-    if (terrain && terrain->getEqualizeBoundaries())
+    if (terrain/* && terrain->getEqualizeBoundaries() assume this is true */)
     {
         TileID tileID = _terrainTile->getTileID();
 
@@ -840,6 +831,16 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         VNG.populateRightBoundary(right_tile.valid() ? right_tile->getElevationLayer() : 0, colorLayer, atlas);
         VNG.populateAboveBoundary(top_tile.valid() ? top_tile->getElevationLayer() : 0, colorLayer, atlas);
         VNG.populateBelowBoundary(bottom_tile.valid() ? bottom_tile->getElevationLayer() : 0, colorLayer, atlas);
+
+        osg::ref_ptr<TerrainTile> bottom_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y-1));
+        osg::ref_ptr<TerrainTile> bottom_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y-1));
+        osg::ref_ptr<TerrainTile> top_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y+1));
+        osg::ref_ptr<TerrainTile> top_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y+1));
+
+        VNG.populateCorner(bottom_left_tile.valid() ? bottom_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_LEFT);
+        VNG.populateCorner(bottom_right_tile.valid() ? bottom_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_RIGHT);
+        VNG.populateCorner(top_left_tile.valid() ? top_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_LEFT);
+        VNG.populateCorner(top_right_tile.valid() ? top_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_RIGHT);
 
         _neighbours.clear();
 
@@ -872,7 +873,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
                 top_tile->setDirtyMask(dirtyMask);
             }
         }
-
         if (bottom_tile.valid())
         {
             if (bottom_tile->getTerrainTechnique()==0 || !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
@@ -883,89 +883,45 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         }
     }
 
-    osg::ref_ptr<osg::Vec3Array> skirtVectors = new osg::Vec3Array((*VNG._normals));
-    VNG.computeNormals();
-
     //
     // populate the primitive data
     //
-    bool swapOrientation = !(buffer._masterLocator->orientationOpenGL());
     bool smallTile = numVertices < 65536;
 
-    // OSG_NOTICE<<"smallTile = "<<smallTile<<std::endl;
-
     osg::ref_ptr<osg::DrawElements> landElements = smallTile ?
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-    landElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_PATCHES)) :
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_PATCHES));
+    landElements->reserveElements((numRows-1) * (numColumns-1) * 16);
     buffer._landGeometry->addPrimitiveSet(landElements.get());
 
-    unsigned int i, j;
-    for(j=0; j<numRows-1; ++j)
-    {
-        for(i=0; i<numColumns-1; ++i)
-        {
-            // remap indices to final vertex positions
-            int i00 = VNG.vertex_index(i,   j);
-            int i01 = VNG.vertex_index(i,   j+1);
-            int i10 = VNG.vertex_index(i+1, j);
-            int i11 = VNG.vertex_index(i+1, j+1);
+    int i, j;
+    for (j = 0; j < numRows-1; ++j) {
+        for (i = 0; i < numColumns-1; ++i) {
+            std::vector<int> vertex_indices;
+            vertex_indices.reserve(16);
 
-            if (swapOrientation)
-            {
-                std::swap(i00,i01);
-                std::swap(i10,i11);
-            }
-
-            unsigned int numValid = 0;
-            if (i00>=0) ++numValid;
-            if (i01>=0) ++numValid;
-            if (i10>=0) ++numValid;
-            if (i11>=0) ++numValid;
-
-            if (numValid==4)
-            {
-                // optimize which way to put the diagonal by choosing to
-                // place it between the two corners that have the least curvature
-                // relative to each other.
-                float dot_00_11 = (*VNG._normals)[i00] * (*VNG._normals)[i11];
-                float dot_01_10 = (*VNG._normals)[i01] * (*VNG._normals)[i10];
-
-                if (dot_00_11 > dot_01_10)
-                {
-                    landElements->addElement(i01);
-                    landElements->addElement(i00);
-                    landElements->addElement(i11);
-
-                    landElements->addElement(i00);
-                    landElements->addElement(i10);
-                    landElements->addElement(i11);
-                }
-                else
-                {
-                    landElements->addElement(i01);
-                    landElements->addElement(i00);
-                    landElements->addElement(i10);
-
-                    landElements->addElement(i01);
-                    landElements->addElement(i10);
-                    landElements->addElement(i11);
+            for (int y = -1; y < 3; ++y) {
+                for (int x = -1; x < 3; ++x) {
+                    int vertex_index = VNG.vertex_index(i+x, j+y);
+                    if (vertex_index >= 0) {
+                        vertex_indices.push_back(vertex_index);
+                    }
                 }
             }
-            else if (numValid==3)
-            {
-                if (i00>=0) landElements->addElement(i00);
-                if (i01>=0) landElements->addElement(i01);
-                if (i11>=0) landElements->addElement(i11);
-                if (i10>=0) landElements->addElement(i10);
+
+            if (vertex_indices.size() == 16) {
+                for (auto index : vertex_indices) {
+                    landElements->addElement(index);
+                }
             }
         }
     }
 
+#if 0
     osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-    seaElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_PATCHES)) :
+        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_PATCHES));
+    seaElements->reserveElements((numRows-1) * (numColumns-1) * 4);
     buffer._seaGeometry->addPrimitiveSet(seaElements.get());
 
     for(j=0; j<numRows-1; ++j)
@@ -988,50 +944,57 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             }
 
             unsigned int numValid = 0;
-            if (i00>=0) ++numValid;
-            if (i01>=0) ++numValid;
-            if (i10>=0) ++numValid;
-            if (i11>=0) ++numValid;
+            if (i00 >= 0) ++numValid;
+            if (i01 >= 0) ++numValid;
+            if (i10 >= 0) ++numValid;
+            if (i11 >= 0) ++numValid;
 
             if (numValid==4)
             {
                 // optimize which way to put the diagonal by choosing to
                 // place it between the two corners that have the least curvature
                 // relative to each other.
-                float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
-                float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
+                // float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
+                // float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
 
-                if (dot_00_11 > dot_01_10)
-                {
-                    seaElements->addElement(i01);
-                    seaElements->addElement(i00);
-                    seaElements->addElement(i11);
+                // if (dot_00_11 > dot_01_10)
+                // {
+                //     seaElements->addElement(i01);
+                //     seaElements->addElement(i00);
+                //     seaElements->addElement(i11);
 
-                    seaElements->addElement(i00);
-                    seaElements->addElement(i10);
-                    seaElements->addElement(i11);
-                }
-                else
-                {
-                    seaElements->addElement(i01);
-                    seaElements->addElement(i00);
-                    seaElements->addElement(i10);
+                //     seaElements->addElement(i00);
+                //     seaElements->addElement(i10);
+                //     seaElements->addElement(i11);
+                // }
+                // else
+                // {
+                //     seaElements->addElement(i01);
+                //     seaElements->addElement(i00);
+                //     seaElements->addElement(i10);
 
-                    seaElements->addElement(i01);
-                    seaElements->addElement(i10);
-                    seaElements->addElement(i11);
-                }
+                //     seaElements->addElement(i01);
+                //     seaElements->addElement(i10);
+                //     seaElements->addElement(i11);
+                // }
+                seaElements->addElement(i00);
+                seaElements->addElement(i01);
+                seaElements->addElement(i10);
+                seaElements->addElement(i11);
             }
-            else if (numValid==3)
-            {
-                if (i00>=0) seaElements->addElement(i00);
-                if (i01>=0) seaElements->addElement(i01);
-                if (i11>=0) seaElements->addElement(i11);
-                if (i10>=0) seaElements->addElement(i10);
-            }
+            // else if (numValid==3)
+            // {
+            //     if (i00>=0) seaElements->addElement(i00);
+            //     if (i01>=0) seaElements->addElement(i01);
+            //     if (i11>=0) seaElements->addElement(i11);
+            //     if (i10>=0) seaElements->addElement(i10);
+            // }
         }
     }
+#endif
 
+    // XXX: Do we need skirts now?
+#if 0
     if (createSkirt)
     {
         osg::ref_ptr<osg::Vec3Array> vertices = VNG._vertices.get();
@@ -1191,25 +1154,27 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
         }
     }
+#endif
 
     landElements->resizeElements(landElements->getNumIndices());
 
     buffer._landGeometry->setUseDisplayList(false);
     buffer._landGeometry->setUseVertexBufferObjects(true);
     buffer._landGeometry->computeBoundingBox();
-    buffer._landGeode->runGenerators(buffer._landGeometry);
 
-    buffer._seaGeometry->setUseDisplayList(false);
-    buffer._seaGeometry->setUseVertexBufferObjects(true);
-    buffer._seaGeometry->computeBoundingBox();
-    buffer._seaGeode->runGenerators(buffer._seaGeometry);
+    // buffer._seaGeometry->setUseDisplayList(false);
+    // buffer._seaGeometry->setUseVertexBufferObjects(true);
+    // buffer._seaGeometry->computeBoundingBox();
+    // buffer._seaGeode->runGenerators(buffer._seaGeometry);
 
     // Tile-specific information for the shaders
     osg::StateSet *landStateSet = buffer._landGeode->getOrCreateStateSet();
     osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
     landStateSet->addUniform(level);
+    landStateSet->setAttribute(new osg::PatchParameter(16));
     osg::StateSet *seaStateSet = buffer._seaGeode->getOrCreateStateSet();
     seaStateSet->addUniform(level);
+    seaStateSet->setAttribute(new osg::PatchParameter(16));
 
     // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
     // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
@@ -1452,6 +1417,8 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
 
 void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache)
 {
+    // XXX: This assumes we use triangles, but we use GL_PATCHES now
+#if 0
     if (!matcache) return;
     pc_init(2718281);
 
@@ -1716,6 +1683,7 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
     for (const auto handler : handlers) {
         handler->finish(_options, buffer._transform, loc);
     }
+#endif
 }
 
 osg::Image* VPBTechnique::generateWaterTexture(Atlas* atlas) {  
@@ -1772,7 +1740,7 @@ void VPBTechnique::traverse(osg::NodeVisitor& nv)
     // if app traversal update the frame count.
     if (nv.getVisitorType()==osg::NodeVisitor::UPDATE_VISITOR)
     {
-        //if (_terrainTile->getDirty()) _terrainTile->init(_terrainTile->getDirtyMask(), false);
+        if (_terrainTile->getDirty()) _terrainTile->init(_terrainTile->getDirtyMask(), false);
         update(nv);
         return;
     }

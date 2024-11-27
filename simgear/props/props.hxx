@@ -1187,7 +1187,7 @@ public:
      */
     bool interpolate( const std::string& type,
                       const simgear::PropertyList& values,
-                      const double_list& deltas,
+                      const std::vector<double>& deltas,
                       const std::string& easing = "swing" );
 
     /** Set the interpolation manager used by the interpolate methods. */

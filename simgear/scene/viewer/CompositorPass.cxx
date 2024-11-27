@@ -458,7 +458,12 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                 };
 
                 unsigned int level = p_attachment->getIntValue("level", 0);
-                unsigned int face = p_attachment->getIntValue("face", 0);
+                unsigned int face;
+                if (p_attachment->getStringValue("face") == "controlled-by-geometry-shader") {
+                    face = osg::Camera::FACE_CONTROLLED_BY_GEOMETRY_SHADER;
+                } else {
+                    face = p_attachment->getIntValue("face", 0);
+                }
                 bool mipmap_generation =
                     p_attachment->getBoolValue("mipmap-generation", false);
                 unsigned int multisample_samples =

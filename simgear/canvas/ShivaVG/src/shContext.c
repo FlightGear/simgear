@@ -90,7 +90,7 @@ VG_API_CALL void vgResizeSurfaceSH(VGint width, VGint height)
 
 VG_API_CALL void vgSetModelViewProjectionMatSH(float *mat)
 {
-  // Empty function. Used only by ShaderVG
+  // Empty function.
 }
 
 VG_API_CALL void vgDestroyContextSH()

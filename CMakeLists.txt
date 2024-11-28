@@ -103,7 +103,6 @@ option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_GDAL      "Set to ON to build SimGear with GDAL support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
-option(USE_SHADERVG     "Set to ON to use SHaderVG instead of ShivaVG" OFF)
 option(USE_AEONWAVE     "Set to ON to use AeonWave instead of OpenAL" ON)
 option(USE_OPENALSOFT   "Set to ON to use OpenAL from OpenAL-soft" OFF)
 
@@ -113,18 +112,14 @@ option(ENABLE_ASAN      "Set to ON to build SimGear with LLVM AddressSanitizer (
 option(ENABLE_TSAN      "Set to ON to build SimGear with LLVM ThreadSanitizer (TSan) support. Incompatile with ENABLE_ASAN." OFF)
 option(ENABLE_VIDEO_RECORD "Set to ON to build SimGear with video recording" ON)
 
-if (USE_SHADERVG)
-  set(OPENVG ShaderVG)
-else()
-  set(OPENVG ShivaVG)
-endif()
+set(OPENVG ShivaVG)
 message(STATUS "OpenVG: ${OPENVG}")
 
 include (DetectArch)
 include (ExportDebugSymbols)
 
 # until the fstream fix is applied and generally available in OSG,
-# keep the compatability link option as the default
+# keep the compatibility link option as the default
 option(OSG_FSTREAM_EXPORT_FIXED "Set to ON if the osgDB fstream export patch is applied" OFF)
 
 if (MSVC)
@@ -245,7 +240,7 @@ if (ENABLE_VIDEO_RECORD)
   # set this so it's picked up in simgear_config.h
     set(SG_FFMPEG 1)
   else()
-    message(STATUS "Video recording was requested, but required FFmpeg/avcodec libaries not found")
+    message(STATUS "Video recording was requested, but required FFmpeg/avcodec libraries not found")
   endif()
 endif()
 

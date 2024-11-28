@@ -175,7 +175,7 @@ if(NOT SIMGEAR_HEADLESS)
     )
 
     if(HAVE_INTTYPES_H)
-        # ShivaVG/ShaderVG needs inttypes.h
+        # ShivaVG needs inttypes.h
         target_compile_definitions(SimGearScene PRIVATE HAVE_INTTYPES_H)
     endif()
 

@@ -17,11 +17,3 @@ namespace simgear {
 bool loadShaderFromUTF8File(osg::Shader *shader, const std::string &filename);
 
 } // namespace simgear
-
-extern "C" {
-
-// Used by ShaderVG to find the shader source files in $FG_ROOT
-void *simgearShaderOpen(const char *filename, const char **buf, int *size);
-void  simgearShaderClose(void *ptr);
-
-} // extern "C"

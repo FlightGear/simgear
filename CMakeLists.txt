@@ -134,6 +134,7 @@ include( ConfigureMsvc3rdParty )
 
 if(APPLE)
   find_library(COCOA_LIBRARY Cocoa)
+  add_compile_definitions(GL_SILENCE_DEPRECATION)
 endif()
 
 find_package(Threads REQUIRED)
@@ -479,5 +480,5 @@ CONFIGURE_FILE(
   "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/cmake_uninstall.cmake.in"
   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
   IMMEDIATE @ONLY)
-ADD_CUSTOM_TARGET(uninstall
+ADD_CUSTOM_TARGET(sg_uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")

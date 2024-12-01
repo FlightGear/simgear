@@ -397,28 +397,28 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     _bumpiness = props->getDoubleValue("bumpiness", _bumpiness);
     _load_resistance = props->getDoubleValue("load-resistance", _load_resistance);
 
-    // Taken from default values as used in ac3d
-    ambient[0] = props->getDoubleValue("ambient/r", 0.2);
-    ambient[1] = props->getDoubleValue("ambient/g", 0.2);
-    ambient[2] = props->getDoubleValue("ambient/b", 0.2);
-    ambient[3] = props->getDoubleValue("ambient/a", 1.0);
+    // PBR Materials
+    const SGPropertyNode* pbrNode = props->getChild("pbr");
+    if (pbrNode) {
+        metallic = pbrNode->getDoubleValue("metallic", 0.0);
+        roughness = pbrNode->getDoubleValue("roughness", 0.95);
+        occlusion = pbrNode->getDoubleValue("occlusion", 1.0);
+        emission[0] = pbrNode->getDoubleValue("emissive/r", 0.0);
+        emission[1] = pbrNode->getDoubleValue("emissive/g", 0.0);
+        emission[2] = pbrNode->getDoubleValue("emissive/b", 0.0);
+    }
 
-    diffuse[0] = props->getDoubleValue("diffuse/r", 0.8);
-    diffuse[1] = props->getDoubleValue("diffuse/g", 0.8);
-    diffuse[2] = props->getDoubleValue("diffuse/b", 0.8);
-    diffuse[3] = props->getDoubleValue("diffuse/a", 1.0);
+    // Noise amplitudes for heightmap
+    const SGPropertyNode* heightNode = props->getChild("height-amplitude");
+    if (heightNode) {
+        height_amplitude = heightNode->getValue<SGVec4d>();
+    }
 
-    specular[0] = props->getDoubleValue("specular/r", 0.0);
-    specular[1] = props->getDoubleValue("specular/g", 0.0);
-    specular[2] = props->getDoubleValue("specular/b", 0.0);
-    specular[3] = props->getDoubleValue("specular/a", 1.0);
-
-    emission[0] = props->getDoubleValue("emissive/r", 0.0);
-    emission[1] = props->getDoubleValue("emissive/g", 0.0);
-    emission[2] = props->getDoubleValue("emissive/b", 0.0);
-    emission[3] = props->getDoubleValue("emissive/a", 1.0);
-
-    shininess = props->getDoubleValue("shininess", 1.0);
+    // Noise amplitudes for bumpmap
+    const SGPropertyNode* bumpmapNode = props->getChild("bumpmap-amplitude");
+    if (bumpmapNode) {
+        bumpmap_amplitude = bumpmapNode->getValue<SGVec4d>();
+    }
 
     if (props->hasChild("effect"))
         effect = props->getStringValue("effect");
@@ -471,13 +471,16 @@ SGMaterial::init ()
 
     building_coverage = 0.0;
 
-    shininess = 1.0;
     for (int i = 0; i < 4; i++) {
-        ambient[i]  = (i < 3) ? 0.2 : 1.0;
-        specular[i] = (i < 3) ? 0.0 : 1.0;
-        diffuse[i]  = (i < 3) ? 0.8 : 1.0;
         emission[i] = (i < 3) ? 0.0 : 1.0;
+        height_amplitude[i] = 0.0;
+        bumpmap_amplitude[i] = 0.0;
     }
+
+    roughness = 0.98;
+    metallic = 0.0;
+    occlusion = 1.0;
+
     effect = "Effects/terrain-default";
 }
 
@@ -572,13 +575,8 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
     copyProperties(parameters, paramProp);
 
     SGPropertyNode* materialProp = makeChild(paramProp, "material");
-    makeChild(materialProp, "ambient")->setValue(SGVec4d(ambient));
-    makeChild(materialProp, "diffuse")->setValue(SGVec4d(diffuse));
-    makeChild(materialProp, "specular")->setValue(SGVec4d(specular));
     makeChild(materialProp, "emissive")->setValue(SGVec4d(emission));
-    makeChild(materialProp, "shininess")->setFloatValue(shininess);
-    if (ambient[3] < 1 || diffuse[3] < 1 ||
-        specular[3] < 1 || emission[3] < 1) {
+    if (emission[3] < 1) {
         makeChild(paramProp, "transparent")->setBoolValue(true);
         SGPropertyNode* binProp = makeChild(paramProp, "render-bin");
         makeChild(binProp, "bin-number")->setIntValue(TRANSPARENT_BIN);

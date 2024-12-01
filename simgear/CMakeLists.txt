@@ -123,6 +123,9 @@ target_include_directories(SimGearCore BEFORE PUBLIC
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>)
 
+# needed for include of <simgear/simgear_config.h> in superbuild
+target_include_directories(SimGearCore INTERFACE $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
+
 target_include_directories(SimGearCore PUBLIC
   ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR})
 target_include_directories(SimGearCore PRIVATE

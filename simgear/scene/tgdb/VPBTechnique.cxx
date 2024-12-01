@@ -894,17 +894,22 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     landElements->reserveElements((numRows-1) * (numColumns-1) * 16);
     buffer._landGeometry->addPrimitiveSet(landElements.get());
 
-    int i, j;
+    unsigned int i, j;
     for (j = 0; j < numRows-1; ++j) {
         for (i = 0; i < numColumns-1; ++i) {
             std::vector<int> vertex_indices;
             vertex_indices.reserve(16);
+
+            // Backup vertex index so we can handle edges with something reasonable.
+            int last_vertex_index = VNG.vertex_index(i, j);
 
             for (int y = -1; y < 3; ++y) {
                 for (int x = -1; x < 3; ++x) {
                     int vertex_index = VNG.vertex_index(i+x, j+y);
                     if (vertex_index >= 0) {
                         vertex_indices.push_back(vertex_index);
+                    } else {
+                        vertex_indices.push_back(last_vertex_index);
                     }
                 }
             }

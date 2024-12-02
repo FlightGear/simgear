@@ -125,7 +125,7 @@ class VPBTechnique : public TerrainTechnique
             typedef std::pair< osg::ref_ptr<osg::Vec2Array>, Locator* > TexCoordLocatorPair;
             typedef std::map< Layer*, TexCoordLocatorPair > LayerToTexCoordMap;
 
-            VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt);
+            VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTesselation);
 
             void populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osg::Vec2Array* texcoords);
             void populateSeaLevel();
@@ -146,6 +146,7 @@ class VPBTechnique : public TerrainTechnique
 
             unsigned int capacity() const { return _vertices->capacity(); }
 
+            // Tesselation case - no normal required
             inline void setVertex(int c, int r, const osg::Vec3& v)
             {
                 int& i = index(c,r);
@@ -162,6 +163,127 @@ class VPBTechnique : public TerrainTechnique
                 }
             }
 
+            // Non-tesselation case - normal and boundaries required
+            inline void setVertex(int c, int r, const osg::Vec3& v, const osg::Vec3& n)
+            {
+                int& i = index(c,r);
+                if (i==0) {
+                    if (r<0 || r>=_numRows || c<0 || c>=_numColumns) {
+                        i = -(1+static_cast<int>(_boundaryVertices->size()));
+                        _boundaryVertices->push_back(v);
+                    } else {
+                        i = _vertices->size() + 1;
+                        _vertices->push_back(v);
+                        _normals->push_back(n);
+                    }
+                } else if (i<0) {
+                    (*_boundaryVertices)[-i-1] = v;
+                } else {
+                    // average the vertex positions
+                    (*_vertices)[i-1] = ((*_vertices)[i-1] + v)*0.5f;
+                    (*_normals)[i-1] = n;
+                }
+            }
+
+            inline bool computeNormal(int c, int r, osg::Vec3& n) const
+            {
+#if 1
+                return computeNormalWithNoDiagonals(c,r,n);
+#else
+                return computeNormalWithDiagonals(c,r,n);
+#endif
+            }
+
+            inline bool computeNormalWithNoDiagonals(int c, int r, osg::Vec3& n) const
+            {
+                osg::Vec3 center;
+                bool center_valid  = vertex(c, r,  center);
+                if (!center_valid) return false;
+
+                osg::Vec3 left, right, top,  bottom;
+                bool left_valid  = vertex(c-1, r,  left);
+                bool right_valid = vertex(c+1, r,   right);
+                bool bottom_valid = vertex(c,   r-1, bottom);
+                bool top_valid = vertex(c,   r+1, top);
+
+                osg::Vec3 dx(0.0f,0.0f,0.0f);
+                osg::Vec3 dy(0.0f,0.0f,0.0f);
+                osg::Vec3 zero(0.0f,0.0f,0.0f);
+                if (left_valid)
+                {
+                    dx += center-left;
+                }
+                if (right_valid)
+                {
+                    dx += right-center;
+                }
+                if (bottom_valid)
+                {
+                    dy += center-bottom;
+                }
+                if (top_valid)
+                {
+                    dy += top-center;
+                }
+
+                if (dx==zero || dy==zero) return false;
+
+                n = dx ^ dy;
+                return n.normalize() != 0.0f;
+            }
+
+            inline bool computeNormalWithDiagonals(int c, int r, osg::Vec3& n) const
+            {
+                osg::Vec3 center;
+                bool center_valid  = vertex(c, r,  center);
+                if (!center_valid) return false;
+
+                osg::Vec3 top_left, top_right, bottom_left, bottom_right;
+                bool top_left_valid  = vertex(c-1, r+1,  top_left);
+                bool top_right_valid  = vertex(c+1, r+1,  top_right);
+                bool bottom_left_valid  = vertex(c-1, r-1,  bottom_left);
+                bool bottom_right_valid  = vertex(c+1, r-1,  bottom_right);
+
+                osg::Vec3 left, right, top,  bottom;
+                bool left_valid  = vertex(c-1, r,  left);
+                bool right_valid = vertex(c+1, r,   right);
+                bool bottom_valid = vertex(c,   r-1, bottom);
+                bool top_valid = vertex(c,   r+1, top);
+
+                osg::Vec3 dx(0.0f,0.0f,0.0f);
+                osg::Vec3 dy(0.0f,0.0f,0.0f);
+                osg::Vec3 zero(0.0f,0.0f,0.0f);
+                const float ratio = 0.5f;
+                if (left_valid)
+                {
+                    dx = center-left;
+                    if (top_left_valid) dy += (top_left-left)*ratio;
+                    if (bottom_left_valid) dy += (left-bottom_left)*ratio;
+                }
+                if (right_valid)
+                {
+                    dx = right-center;
+                    if (top_right_valid) dy += (top_right-right)*ratio;
+                    if (bottom_right_valid) dy += (right-bottom_right)*ratio;
+                }
+                if (bottom_valid)
+                {
+                    dy += center-bottom;
+                    if (bottom_left_valid) dx += (bottom-bottom_left)*ratio;
+                    if (bottom_right_valid) dx += (bottom_right-bottom)*ratio;
+                }
+                if (top_valid)
+                {
+                    dy += top-center;
+                    if (top_left_valid) dx += (top-top_left)*ratio;
+                    if (top_right_valid) dx += (top_right-top)*ratio;
+                }
+
+                if (dx==zero || dy==zero) return false;
+
+                n = dx ^ dy;
+                return n.normalize() != 0.0f;
+            }
 
             inline int& index(int c, int r) { return _indices[(r+1)*(_numColumns+2)+c+1]; }
 
@@ -173,6 +295,7 @@ class VPBTechnique : public TerrainTechnique
             {
                 int i = index(c,r);
                 if (i==0) return false;
+                if (i<0) v = (*_boundaryVertices)[-i-1];
                 else v = (*_vertices)[i-1];
                 return true;
             }
@@ -187,10 +310,15 @@ class VPBTechnique : public TerrainTechnique
             Indices                         _indices;
 
             osg::ref_ptr<osg::Vec3Array>    _vertices;
+            osg::ref_ptr<osg::Vec3Array>    _normals;
 
             osg::ref_ptr<osg::Vec3Array>    _sea_vertices;
+            osg::ref_ptr<osg::Vec3Array>    _sea_normals;
 
             std::vector<float>              _elevationConstraints;
+
+            osg::ref_ptr<osg::Vec3Array>    _boundaryVertices;
+            bool                            _useTesselation;
         };
 
 
@@ -229,17 +357,18 @@ class VPBTechnique : public TerrainTechnique
         osg::Matrix3                        _filterMatrix;
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
-        const std::string _fileName;
+        const std::string                   _fileName;
         osg::ref_ptr<osg::Group>            _randomObjectsConstraintGroup;
+        bool                                _useTesselation;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
         inline static std::mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
 
-        inline static std::mutex _stats_mutex; // Protects the loading statistics
+        inline static std::mutex _stats_mutex; // Protects the loading statistics and other static properties
         typedef std::pair<unsigned int, float> LoadStat;
         inline static std::map<int, LoadStat> _loadStats;
         inline static SGPropertyNode* _statsPropertyNode;
-
+        inline static SGPropertyNode* _useTesselationPropNode;
 };
 
 };

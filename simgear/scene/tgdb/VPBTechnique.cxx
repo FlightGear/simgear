@@ -126,6 +126,7 @@ void VPBTechnique::setOptions(const SGReaderWriterOptions* options)
     if (! _statsPropertyNode) {
         const std::lock_guard<std::mutex> lock(VPBTechnique::_stats_mutex); // Lock the _stats_mutex for this scope
         _statsPropertyNode = _options->getPropertyNode()->getNode("/sim/rendering/statistics/ws30/loading", true);
+        _useTesselationPropNode = _options->getPropertyNode()->getNode("/sim/rendering/shaders/tesselation", true);
     }    
 }
 
@@ -155,7 +156,15 @@ void VPBTechnique::setFilterMatrixAs(FilterType filterType)
 void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 {
     if (!_terrainTile) return;
-    if (dirtyMask==0) return;
+    
+    // Don't regenerate if the tile is not dirty AND we haven't switched between tesselation
+    // and non-tesselation mode.  A cleaned way to do this would be to have a listener on the
+    // property that dirties all tiles.
+    bool b = _useTesselationPropNode->getBoolValue();
+    if ((dirtyMask == 0) && (_useTesselation == b)) return;
+
+    // Indicate whether to use tesselation for this tile
+    _useTesselation = b;
 
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_writeBufferMutex);
 
@@ -325,26 +334,46 @@ const SGGeod VPBTechnique::computeCenterGeod(BufferData& buffer)
 }
 
 
-VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColumns, float scaleHeight, float vtx_gap, bool createSkirt):
+VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColumns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTesselation):
     _masterLocator(masterLocator),
     _centerModel(centerModel),
     _numRows(numRows),
     _numColumns(numColumns),
     _scaleHeight(scaleHeight),
-    _constraint_vtx_gap(vtx_gap)
+    _constraint_vtx_gap(vtx_gap),
+    _useTesselation(useTesselation)
 {
     int numVerticesInBody = numColumns*numRows;
-    int numVerticesInBoundary = _numRows*2 + _numColumns*2 + 4;
-    // int numVerticesInSkirt = createSkirt ? numColumns*2 + numRows*2 - 4 : 0;
-    int numVertices = numVerticesInBody + numVerticesInBoundary;
+    int numVertices;
+
+    if (_useTesselation) {
+        // If we're using tesselation then we have the main body plus a boundary around the edge
+        int numVerticesInBoundary = _numRows*2 + _numColumns*2 + 4;
+        numVertices = numVerticesInBody + numVerticesInBoundary;
+    } else {
+        // If we're not using tesselation then we may instead have a skirt.
+        int numVerticesInSkirt = createSkirt ? numColumns*2 + numRows*2 - 4 : 0;
+        numVertices = numVerticesInBody + numVerticesInSkirt;
+    }
 
     _indices.resize((_numRows+2)*(_numColumns+2), 0);
 
     _vertices = new osg::Vec3Array;
     _vertices->reserve(numVertices);
 
-    _sea_vertices = new osg::Vec3Array;
-    _sea_vertices->reserve(numVertices);
+    if (! _useTesselation) {
+        // If we're not using Tesselation then we will have both a sea-level mesh and also generate normals ourselves.
+        _sea_vertices = new osg::Vec3Array;
+        _sea_vertices->reserve(numVertices);
+
+        _normals = new osg::Vec3Array;
+        _normals->reserve(numVertices);        
+        _sea_normals = new osg::Vec3Array;
+        _sea_normals->reserve(numVertices);        
+
+        _boundaryVertices = new osg::Vec3Array;
+        _boundaryVertices->reserve(_numRows*2 + _numColumns*2 + 4);        
+    }
 
     // Initialize the elevation constraints to a suitably high number such
     // that any vertex or valid constraint will always fall below it
@@ -419,28 +448,49 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                     }
                 }
             }
+            
+            if (_useTesselation) {
+                // compute the model coordinates            
+                osg::Vec3d model;
+                _masterLocator->convertLocalToModel(ndc, model);
+                setVertex(i, j, osg::Vec3(model-_centerModel));
+                texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
+            } else {
+                // compute the model coordinates and the local normal
+                osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
+                osg::Vec3d model, model_up;
+                _masterLocator->convertLocalToModel(ndc, model);
+                _masterLocator->convertLocalToModel(ndc_up, model_up);
+                model_up = model_up - model;
+                model_up.normalize();
 
-            // compute the model coordinates
-            osg::Vec3d model;
-            _masterLocator->convertLocalToModel(ndc, model);
-            setVertex(i, j, osg::Vec3(model-_centerModel));
-            texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
+                setVertex(i, j, osg::Vec3(model-_centerModel), model_up);
+                texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
+            }
         }
     }
 }
 
-// Generate a set of vertices at sea level
+// Generate a set of vertices at sea level - only valid for non-tesselated terrain
 void VPBTechnique::VertexNormalGenerator::populateSeaLevel()
 {
+    assert(! _useTesselation);
     // OSG_NOTICE<<std::endl<<"VertexNormalGenerator::populateCenter("<<elevationLayer<<")"<<std::endl;
 
     for(int j=0; j<_numRows; ++j) {
         for(int i=0; i<_numColumns; ++i) {
             osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), 0.0);
-            osg::Vec3d model;
+
+           // compute the model coordinates and the local normal
+            osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
+            osg::Vec3d model, model_up;
             _masterLocator->convertLocalToModel(ndc, model);
+            _masterLocator->convertLocalToModel(ndc_up, model_up);
+            model_up = model_up - model;
+            model_up.normalize();
 
             _sea_vertices->push_back(osg::Vec3(model-_centerModel));
+            _sea_normals->push_back(model_up);
         }
     }
 }
@@ -486,7 +536,19 @@ void VPBTechnique::VertexNormalGenerator::populateLeftBoundary(osgTerrain::Layer
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-                setVertex(i, j, osg::Vec3(model-_centerModel));
+
+                if (_useTesselation) {
+                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                } else {
+                    // compute the local normal
+                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
+                    osg::Vec3d model_one;
+                    _masterLocator->convertLocalToModel(ndc_one, model_one);
+                    model_one = model_one - model;
+                    model_one.normalize();
+
+                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
@@ -534,7 +596,19 @@ void VPBTechnique::VertexNormalGenerator::populateRightBoundary(osgTerrain::Laye
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-                setVertex(i, j, osg::Vec3(model-_centerModel));
+
+                if (_useTesselation) {
+                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                } else {
+                    // compute the local normal
+                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
+                    osg::Vec3d model_one;
+                    _masterLocator->convertLocalToModel(ndc_one, model_one);
+                    model_one = model_one - model;
+                    model_one.normalize();
+
+                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
@@ -582,7 +656,19 @@ void VPBTechnique::VertexNormalGenerator::populateAboveBoundary(osgTerrain::Laye
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-                setVertex(i, j, osg::Vec3(model-_centerModel));
+
+                if (_useTesselation) {
+                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                } else {
+                    // compute the local normal
+                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
+                    osg::Vec3d model_one;
+                    _masterLocator->convertLocalToModel(ndc_one, model_one);
+                    model_one = model_one - model;
+                    model_one.normalize();
+
+                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
@@ -630,19 +716,33 @@ void VPBTechnique::VertexNormalGenerator::populateBelowBoundary(osgTerrain::Laye
             {
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
-                setVertex(i, j, osg::Vec3(model-_centerModel));
+
+                if (_useTesselation) {
+                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                } else {
+                    // compute the local normal
+                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
+                    osg::Vec3d model_one;
+                    _masterLocator->convertLocalToModel(ndc_one, model_one);
+                    model_one = model_one - model;
+                    model_one.normalize();
+
+                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
         }
     }
 }
 
+// Only valid with tesselation
 void VPBTechnique::VertexNormalGenerator::populateCorner(
     osgTerrain::Layer* elevationLayer,
     osgTerrain::Layer* colorLayer,
     osg::ref_ptr<Atlas> atlas,
     Corner corner)
 {
+    assert(_useTesselation);
     if (!elevationLayer)
         return;
 
@@ -704,6 +804,21 @@ void VPBTechnique::VertexNormalGenerator::populateCorner(
     }
 }
 
+void VPBTechnique::VertexNormalGenerator::computeNormals()
+{
+    assert(! _useTesselation);
+    // compute normals for the center section
+    for(int j=0; j<_numRows; ++j)
+    {
+        for(int i=0; i<_numColumns; ++i)
+        {
+            int vi = vertex_index(i, j);
+            if (vi>=0) computeNormal(i, j, (*_normals)[vi]);
+            else OSG_NOTICE<<"Not computing normal, vi="<<vi<<std::endl;
+        }
+    }
+}
+
 void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& centerModel, osg::ref_ptr<SGMaterialCache> matcache)
 {
     osg::ref_ptr<Atlas> atlas;
@@ -715,12 +830,10 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     // Determine the correct Effect for this, based on a material lookup taking into account
     // the lat/lon of the center.
     SGPropertyNode_ptr landEffectProp = new SGPropertyNode();
-    SGPropertyNode_ptr seaEffectProp = new SGPropertyNode();
 
     if (matcache) {
       atlas = matcache->getAtlas();
       SGMaterial* landmat = matcache->find("ws30land");
-      SGMaterial* seamat = matcache->find("ws30sea");
 
       if (landmat) {
         makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue(landmat->get_effect_name());
@@ -729,20 +842,14 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
       }
 
-      if (seamat) {
-        makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue(seamat->get_effect_name());
-      } else {
-        SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get ws30sea Material for VPB - no matching material in library");
-        makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
-      }
-
     } else {
         SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get ws30land/ws30sea effect for VPB - no material library available");
         makeChild(landEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
-        makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
     }
 
     buffer._landGeode = new EffectGeode();
+    buffer._seaGeode = new EffectGeode();
+
     if (buffer._transform.valid()) buffer._transform->addChild(buffer._landGeode.get());
 
     buffer._landGeometry = new osg::Geometry;
@@ -752,15 +859,32 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     buffer._landGeode->setEffect(landEffect.get());
     buffer._landGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
-    buffer._seaGeode = new EffectGeode();
-    if (buffer._transform.valid()) buffer._transform->addChild(buffer._seaGeode.get());
+    if (! _useTesselation) {
+        // Generate a sea-level mesh if we're not using tesselation.
+        SGPropertyNode_ptr seaEffectProp = new SGPropertyNode();
 
-    buffer._seaGeometry = new osg::Geometry;
-    // buffer._seaGeode->addDrawable(buffer._seaGeometry.get());
-  
-    osg::ref_ptr<Effect> seaEffect = makeEffect(seaEffectProp, true, _options);
-    buffer._seaGeode->setEffect(seaEffect.get());
-    buffer._seaGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+        if (matcache) {
+            SGMaterial* seamat = matcache->find("ws30sea");
+            if (seamat) {
+                makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue(seamat->get_effect_name());
+            } else {
+                SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get ws30sea Material for VPB - no matching material in library");
+                makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+            }
+        } else {
+            SG_LOG( SG_TERRAIN, SG_ALERT, "Unable to get ws30land/ws30sea effect for VPB - no material library available");
+            makeChild(seaEffectProp.ptr(), "inherits-from")->setStringValue("Effects/model-default");
+        }
+
+        if (buffer._transform.valid()) buffer._transform->addChild(buffer._seaGeode.get());
+
+        buffer._seaGeometry = new osg::Geometry;
+        buffer._seaGeode->addDrawable(buffer._seaGeometry.get());
+    
+        osg::ref_ptr<Effect> seaEffect = makeEffect(seaEffectProp, true, _options);
+        buffer._seaGeode->setEffect(seaEffect.get());
+        buffer._seaGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
+    }
 
     unsigned int numRows = 20;
     unsigned int numColumns = 20;
@@ -800,25 +924,32 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     bool createSkirt = skirtHeight != 0.0f;
 
     // construct the VertexNormalGenerator which will manage the generation and the vertices and normals
-    VertexNormalGenerator VNG(buffer._masterLocator, centerModel, numRows, numColumns, scaleHeight, constraint_gap, createSkirt);
+    VertexNormalGenerator VNG(buffer._masterLocator, centerModel, numRows, numColumns, scaleHeight, constraint_gap, createSkirt, _useTesselation);
 
     unsigned int numVertices = VNG.capacity();
 
     // allocate and assign vertices
     buffer._landGeometry->setVertexArray(VNG._vertices.get());
-    buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
 
     // allocate and assign texture coordinates
     auto texcoords = new osg::Vec2Array;
     VNG.populateCenter(elevationLayer, colorLayer, atlas, texcoords);
     buffer._landGeometry->setTexCoordArray(0, texcoords);
 
-    // The Sea level mesh is identical to the main center mesh, except that it is at sea level
-    // Therefore we can use the same texture coordinates calculated above.
-    VNG.populateSeaLevel();
-    buffer._seaGeometry->setTexCoordArray(0, texcoords);
+    if (! _useTesselation) {
+        // allocate and assign normals and the sea level mesh
+        buffer._landGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
+        
+        buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
+        buffer._seaGeometry->setNormalArray(VNG._sea_normals.get(), osg::Array::BIND_PER_VERTEX);
 
-    if (terrain/* && terrain->getEqualizeBoundaries() assume this is true */)
+        // The Sea level mesh is identical to the main center mesh, except that it is at sea level
+        // Therefore we can use the same texture coordinates calculated above.
+        VNG.populateSeaLevel();
+        buffer._seaGeometry->setTexCoordArray(0, texcoords);
+    }
+
+    if (terrain)
     {
         TileID tileID = _terrainTile->getTileID();
 
@@ -832,15 +963,18 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         VNG.populateAboveBoundary(top_tile.valid() ? top_tile->getElevationLayer() : 0, colorLayer, atlas);
         VNG.populateBelowBoundary(bottom_tile.valid() ? bottom_tile->getElevationLayer() : 0, colorLayer, atlas);
 
-        osg::ref_ptr<TerrainTile> bottom_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y-1));
-        osg::ref_ptr<TerrainTile> bottom_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y-1));
-        osg::ref_ptr<TerrainTile> top_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y+1));
-        osg::ref_ptr<TerrainTile> top_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y+1));
+        if (_useTesselation) {
+            // If we're using tesselation then we also need corner data
+            osg::ref_ptr<TerrainTile> bottom_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y-1));
+            osg::ref_ptr<TerrainTile> bottom_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y-1));
+            osg::ref_ptr<TerrainTile> top_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y+1));
+            osg::ref_ptr<TerrainTile> top_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y+1));
 
-        VNG.populateCorner(bottom_left_tile.valid() ? bottom_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_LEFT);
-        VNG.populateCorner(bottom_right_tile.valid() ? bottom_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_RIGHT);
-        VNG.populateCorner(top_left_tile.valid() ? top_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_LEFT);
-        VNG.populateCorner(top_right_tile.valid() ? top_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_RIGHT);
+            VNG.populateCorner(bottom_left_tile.valid() ? bottom_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_LEFT);
+            VNG.populateCorner(bottom_right_tile.valid() ? bottom_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_RIGHT);
+            VNG.populateCorner(top_left_tile.valid() ? top_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_LEFT);
+            VNG.populateCorner(top_right_tile.valid() ? top_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_RIGHT);
+        }
 
         _neighbours.clear();
 
@@ -883,303 +1017,390 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         }
     }
 
-    //
-    // populate the primitive data
-    //
-    bool smallTile = numVertices < 65536;
+    if (_useTesselation) {
 
-    osg::ref_ptr<osg::DrawElements> landElements = smallTile ?
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_PATCHES)) :
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_PATCHES));
-    landElements->reserveElements((numRows-1) * (numColumns-1) * 16);
-    buffer._landGeometry->addPrimitiveSet(landElements.get());
+        //
+        // populate the primitive data
+        //
+        bool smallTile = numVertices < 65536;
 
-    unsigned int i, j;
-    for (j = 0; j < numRows-1; ++j) {
-        for (i = 0; i < numColumns-1; ++i) {
-            std::vector<int> vertex_indices;
-            vertex_indices.reserve(16);
+        osg::ref_ptr<osg::DrawElements> landElements = smallTile ?
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_PATCHES)) :
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_PATCHES));
+        landElements->reserveElements((numRows-1) * (numColumns-1) * 16);
+        buffer._landGeometry->addPrimitiveSet(landElements.get());
 
-            // Backup vertex index so we can handle edges with something reasonable.
-            int last_vertex_index = VNG.vertex_index(i, j);
+        unsigned int i, j;
+        for (j = 0; j < numRows-1; ++j) {
+            for (i = 0; i < numColumns-1; ++i) {
+                std::vector<int> vertex_indices;
+                vertex_indices.reserve(16);
 
-            for (int y = -1; y < 3; ++y) {
-                for (int x = -1; x < 3; ++x) {
-                    int vertex_index = VNG.vertex_index(i+x, j+y);
-                    if (vertex_index >= 0) {
-                        vertex_indices.push_back(vertex_index);
-                    } else {
-                        vertex_indices.push_back(last_vertex_index);
+                // Backup vertex index so we can handle edges with something reasonable.
+                int last_vertex_index = VNG.vertex_index(i, j);
+
+                for (int y = -1; y < 3; ++y) {
+                    for (int x = -1; x < 3; ++x) {
+                        int vertex_index = VNG.vertex_index(i+x, j+y);
+                        if (vertex_index >= 0) {
+                            vertex_indices.push_back(vertex_index);
+                        } else {
+                            vertex_indices.push_back(last_vertex_index);
+                        }
+                    }
+                }
+
+                if (vertex_indices.size() == 16) {
+                    for (auto index : vertex_indices) {
+                        landElements->addElement(index);
                     }
                 }
             }
+        }
+    } else {
+        // Non-tesselation case
+        
+        // Compute normals - though not sure why we would need to do that again?
+        osg::ref_ptr<osg::Vec3Array> skirtVectors = new osg::Vec3Array((*VNG._normals));
+        VNG.computeNormals();
 
-            if (vertex_indices.size() == 16) {
-                for (auto index : vertex_indices) {
-                    landElements->addElement(index);
+        //
+        // populate the primitive data
+        //
+        bool swapOrientation = !(buffer._masterLocator->orientationOpenGL());
+        bool smallTile = numVertices < 65536;
+
+        // OSG_NOTICE<<"smallTile = "<<smallTile<<std::endl;
+
+        osg::ref_ptr<osg::DrawElements> landElements = smallTile ?
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+        landElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+        buffer._landGeometry->addPrimitiveSet(landElements.get());
+
+        unsigned int i, j;
+        for(j=0; j<numRows-1; ++j)
+        {
+            for(i=0; i<numColumns-1; ++i)
+            {
+                // remap indices to final vertex positions
+                int i00 = VNG.vertex_index(i,   j);
+                int i01 = VNG.vertex_index(i,   j+1);
+                int i10 = VNG.vertex_index(i+1, j);
+                int i11 = VNG.vertex_index(i+1, j+1);
+
+                if (swapOrientation)
+                {
+                    std::swap(i00,i01);
+                    std::swap(i10,i11);
+                }
+
+                unsigned int numValid = 0;
+                if (i00>=0) ++numValid;
+                if (i01>=0) ++numValid;
+                if (i10>=0) ++numValid;
+                if (i11>=0) ++numValid;
+
+                if (numValid==4)
+                {
+                    // optimize which way to put the diagonal by choosing to
+                    // place it between the two corners that have the least curvature
+                    // relative to each other.
+                    float dot_00_11 = (*VNG._normals)[i00] * (*VNG._normals)[i11];
+                    float dot_01_10 = (*VNG._normals)[i01] * (*VNG._normals)[i10];
+
+                    if (dot_00_11 > dot_01_10)
+                    {
+                        landElements->addElement(i01);
+                        landElements->addElement(i00);
+                        landElements->addElement(i11);
+
+                        landElements->addElement(i00);
+                        landElements->addElement(i10);
+                        landElements->addElement(i11);
+                    }
+                    else
+                    {
+                        landElements->addElement(i01);
+                        landElements->addElement(i00);
+                        landElements->addElement(i10);
+
+                        landElements->addElement(i01);
+                        landElements->addElement(i10);
+                        landElements->addElement(i11);
+                    }
+                }
+                else if (numValid==3)
+                {
+                    if (i00>=0) landElements->addElement(i00);
+                    if (i01>=0) landElements->addElement(i01);
+                    if (i11>=0) landElements->addElement(i11);
+                    if (i10>=0) landElements->addElement(i10);
+                }
+            }
+
+            landElements->resizeElements(landElements->getNumIndices());
+        }       
+
+        osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+        seaElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+        buffer._seaGeometry->addPrimitiveSet(seaElements.get());
+
+        for(j=0; j<numRows-1; ++j)
+        {
+            for(i=0; i<numColumns-1; ++i)
+            {
+                // remap sea indices to final vertex positions.  We're relying on
+                // the indices for both the land and sea geometry to be identical.
+                // That should be the case as long as the number of rows and columns
+                // stays identical.
+                int i00 = VNG.vertex_index(i,   j);
+                int i01 = VNG.vertex_index(i,   j+1);
+                int i10 = VNG.vertex_index(i+1, j);
+                int i11 = VNG.vertex_index(i+1, j+1);
+
+                if (swapOrientation)
+                {
+                    std::swap(i00,i01);
+                    std::swap(i10,i11);
+                }
+
+                unsigned int numValid = 0;
+                if (i00 >= 0) ++numValid;
+                if (i01 >= 0) ++numValid;
+                if (i10 >= 0) ++numValid;
+                if (i11 >= 0) ++numValid;
+
+                if (numValid==4)
+                {
+                    // optimize which way to put the diagonal by choosing to
+                    // place it between the two corners that have the least curvature
+                    // relative to each other.
+                    float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
+                    float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
+
+                    if (dot_00_11 > dot_01_10)
+                    {
+                        seaElements->addElement(i01);
+                        seaElements->addElement(i00);
+                        seaElements->addElement(i11);
+
+                        seaElements->addElement(i00);
+                        seaElements->addElement(i10);
+                        seaElements->addElement(i11);
+                    }
+                    else
+                    {
+                        seaElements->addElement(i01);
+                        seaElements->addElement(i00);
+                        seaElements->addElement(i10);
+
+                        seaElements->addElement(i01);
+                        seaElements->addElement(i10);
+                        seaElements->addElement(i11);
+                    }
+                }
+                else if (numValid==3)
+                {
+                    if (i00>=0) seaElements->addElement(i00);
+                    if (i01>=0) seaElements->addElement(i01);
+                    if (i11>=0) seaElements->addElement(i11);
+                    if (i10>=0) seaElements->addElement(i10);
                 }
             }
         }
-    }
-
-#if 0
-    osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_PATCHES)) :
-        static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_PATCHES));
-    seaElements->reserveElements((numRows-1) * (numColumns-1) * 4);
-    buffer._seaGeometry->addPrimitiveSet(seaElements.get());
-
-    for(j=0; j<numRows-1; ++j)
-    {
-        for(i=0; i<numColumns-1; ++i)
+        if (createSkirt)
         {
-            // remap sea indices to final vertex positions.  We're relying on
-            // the indices for both the land and sea geometry to be identical.
-            // That should be the case as long as the number of rows and columns
-            // stays identical.
-            int i00 = VNG.vertex_index(i,   j);
-            int i01 = VNG.vertex_index(i,   j+1);
-            int i10 = VNG.vertex_index(i+1, j);
-            int i11 = VNG.vertex_index(i+1, j+1);
+            osg::ref_ptr<osg::Vec3Array> vertices = VNG._vertices.get();
+            osg::ref_ptr<osg::Vec3Array> normals = VNG._normals.get();
 
-            if (swapOrientation)
+            osg::ref_ptr<osg::DrawElements> skirtDrawElements = smallTile ?
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+
+            // create bottom skirt vertices
+            int r,c;
+            r=0;
+            for(c=0;c<static_cast<int>(numColumns -1);++c)
             {
-                std::swap(i00,i01);
-                std::swap(i10,i11);
+                // remap indices to final vertex positions
+                int i00 = VNG.vertex_index(c,   r);
+                int i01 = VNG.vertex_index(c+1, r);
+
+                // Generate two additional skirt points below the edge
+                int i10 = vertices->size(); // index of new index of added skirt point
+                osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i00]);
+                texcoords->push_back((*texcoords)[i00]);
+
+                int i11 = vertices->size(); // index of new index of added skirt point
+                new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i01]);
+                texcoords->push_back((*texcoords)[i01]);
+
+                skirtDrawElements->addElement(i01);
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i11);
+
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i10);
+                skirtDrawElements->addElement(i11);
             }
 
-            unsigned int numValid = 0;
-            if (i00 >= 0) ++numValid;
-            if (i01 >= 0) ++numValid;
-            if (i10 >= 0) ++numValid;
-            if (i11 >= 0) ++numValid;
-
-            if (numValid==4)
+            if (skirtDrawElements->getNumIndices()!=0)
             {
-                // optimize which way to put the diagonal by choosing to
-                // place it between the two corners that have the least curvature
-                // relative to each other.
-                // float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
-                // float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
-
-                // if (dot_00_11 > dot_01_10)
-                // {
-                //     seaElements->addElement(i01);
-                //     seaElements->addElement(i00);
-                //     seaElements->addElement(i11);
-
-                //     seaElements->addElement(i00);
-                //     seaElements->addElement(i10);
-                //     seaElements->addElement(i11);
-                // }
-                // else
-                // {
-                //     seaElements->addElement(i01);
-                //     seaElements->addElement(i00);
-                //     seaElements->addElement(i10);
-
-                //     seaElements->addElement(i01);
-                //     seaElements->addElement(i10);
-                //     seaElements->addElement(i11);
-                // }
-                seaElements->addElement(i00);
-                seaElements->addElement(i01);
-                seaElements->addElement(i10);
-                seaElements->addElement(i11);
+                buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
+                skirtDrawElements = smallTile ?
+                    static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                    static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
             }
-            // else if (numValid==3)
-            // {
-            //     if (i00>=0) seaElements->addElement(i00);
-            //     if (i01>=0) seaElements->addElement(i01);
-            //     if (i11>=0) seaElements->addElement(i11);
-            //     if (i10>=0) seaElements->addElement(i10);
-            // }
+
+            // create right skirt vertices
+            c=numColumns-1;
+            for(r=0;r<static_cast<int>(numRows-1);++r)
+            {
+                // remap indices to final vertex positions
+                int i00 = VNG.vertex_index(c,   r);
+                int i01 = VNG.vertex_index(c, r+1);
+
+                // Generate two additional skirt points below the edge
+                int i10 = vertices->size(); // index of new index of added skirt point
+                osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i00]);
+                texcoords->push_back((*texcoords)[i00]);
+
+                int i11 = vertices->size(); // index of new index of added skirt point
+                new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i01]);
+                texcoords->push_back((*texcoords)[i01]);
+
+                skirtDrawElements->addElement(i01);
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i11);
+
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i10);
+                skirtDrawElements->addElement(i11);
+            }
+
+            if (skirtDrawElements->getNumIndices()!=0)
+            {
+                buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
+                skirtDrawElements = smallTile ?
+                    static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                    static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+            }
+
+            // create top skirt vertices
+            r=numRows-1;
+            for(c=numColumns-2;c>=0;--c)
+            {
+                // remap indices to final vertex positions
+                int i00 = VNG.vertex_index(c,   r);
+                int i01 = VNG.vertex_index(c+1, r);
+
+                // Generate two additional skirt points below the edge
+                int i10 = vertices->size(); // index of new index of added skirt point
+                osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i00]);
+                texcoords->push_back((*texcoords)[i00]);
+
+                int i11 = vertices->size(); // index of new index of added skirt point
+                new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i01]);
+                texcoords->push_back((*texcoords)[i01]);
+
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i01);
+                skirtDrawElements->addElement(i11);
+
+                skirtDrawElements->addElement(i10);
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i11);
+            }
+
+            if (skirtDrawElements->getNumIndices()!=0)
+            {
+                buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
+                skirtDrawElements = smallTile ?
+                    static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                    static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+            }
+
+            // create left skirt vertices
+            c=0;
+            for(r=numRows-2;r>=0;--r)
+            {
+                // remap indices to final vertex positions
+                int i00 = VNG.vertex_index(c,   r);
+                int i01 = VNG.vertex_index(c, r+1);
+
+                // Generate two additional skirt points below the edge
+                int i10 = vertices->size(); // index of new index of added skirt point
+                osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i00]);
+                texcoords->push_back((*texcoords)[i00]);
+
+                int i11 = vertices->size(); // index of new index of added skirt point
+                new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
+                (*vertices).push_back(new_v);
+                if (normals.valid()) (*normals).push_back((*normals)[i01]);
+                texcoords->push_back((*texcoords)[i01]);
+
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i01);
+                skirtDrawElements->addElement(i11);
+
+                skirtDrawElements->addElement(i10);
+                skirtDrawElements->addElement(i00);
+                skirtDrawElements->addElement(i11);
+            }
+
+            if (skirtDrawElements->getNumIndices()!=0)
+            {
+                buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
+            }
         }
+
+        landElements->resizeElements(landElements->getNumIndices());
     }
-#endif
 
-    // XXX: Do we need skirts now?
-#if 0
-    if (createSkirt)
-    {
-        osg::ref_ptr<osg::Vec3Array> vertices = VNG._vertices.get();
-        osg::ref_ptr<osg::Vec3Array> normals = VNG._normals.get();
-
-        osg::ref_ptr<osg::DrawElements> skirtDrawElements = smallTile ?
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-
-        // create bottom skirt vertices
-        int r,c;
-        r=0;
-        for(c=0;c<static_cast<int>(numColumns -1);++c)
-        {
-            // remap indices to final vertex positions
-            int i00 = VNG.vertex_index(c,   r);
-            int i01 = VNG.vertex_index(c+1, r);
-
-            // Generate two additional skirt points below the edge
-            int i10 = vertices->size(); // index of new index of added skirt point
-            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i00]);
-            texcoords->push_back((*texcoords)[i00]);
-
-            int i11 = vertices->size(); // index of new index of added skirt point
-            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i01]);
-            texcoords->push_back((*texcoords)[i01]);
-
-            skirtDrawElements->addElement(i01);
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i11);
-
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i10);
-            skirtDrawElements->addElement(i11);
-        }
-
-        if (skirtDrawElements->getNumIndices()!=0)
-        {
-            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-            skirtDrawElements = smallTile ?
-                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-        }
-
-        // create right skirt vertices
-        c=numColumns-1;
-        for(r=0;r<static_cast<int>(numRows-1);++r)
-        {
-            // remap indices to final vertex positions
-            int i00 = VNG.vertex_index(c,   r);
-            int i01 = VNG.vertex_index(c, r+1);
-
-            // Generate two additional skirt points below the edge
-            int i10 = vertices->size(); // index of new index of added skirt point
-            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i00]);
-            texcoords->push_back((*texcoords)[i00]);
-
-            int i11 = vertices->size(); // index of new index of added skirt point
-            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i01]);
-            texcoords->push_back((*texcoords)[i01]);
-
-            skirtDrawElements->addElement(i01);
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i11);
-
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i10);
-            skirtDrawElements->addElement(i11);
-        }
-
-        if (skirtDrawElements->getNumIndices()!=0)
-        {
-            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-            skirtDrawElements = smallTile ?
-                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-        }
-
-        // create top skirt vertices
-        r=numRows-1;
-        for(c=numColumns-2;c>=0;--c)
-        {
-            // remap indices to final vertex positions
-            int i00 = VNG.vertex_index(c,   r);
-            int i01 = VNG.vertex_index(c+1, r);
-
-            // Generate two additional skirt points below the edge
-            int i10 = vertices->size(); // index of new index of added skirt point
-            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i00]);
-            texcoords->push_back((*texcoords)[i00]);
-
-            int i11 = vertices->size(); // index of new index of added skirt point
-            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i01]);
-            texcoords->push_back((*texcoords)[i01]);
-
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i01);
-            skirtDrawElements->addElement(i11);
-
-            skirtDrawElements->addElement(i10);
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i11);
-        }
-
-        if (skirtDrawElements->getNumIndices()!=0)
-        {
-            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-            skirtDrawElements = smallTile ?
-                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-        }
-
-        // create left skirt vertices
-        c=0;
-        for(r=numRows-2;r>=0;--r)
-        {
-            // remap indices to final vertex positions
-            int i00 = VNG.vertex_index(c,   r);
-            int i01 = VNG.vertex_index(c, r+1);
-
-            // Generate two additional skirt points below the edge
-            int i10 = vertices->size(); // index of new index of added skirt point
-            osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i00]);
-            texcoords->push_back((*texcoords)[i00]);
-
-            int i11 = vertices->size(); // index of new index of added skirt point
-            new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
-            (*vertices).push_back(new_v);
-            if (normals.valid()) (*normals).push_back((*normals)[i01]);
-            texcoords->push_back((*texcoords)[i01]);
-
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i01);
-            skirtDrawElements->addElement(i11);
-
-            skirtDrawElements->addElement(i10);
-            skirtDrawElements->addElement(i00);
-            skirtDrawElements->addElement(i11);
-        }
-
-        if (skirtDrawElements->getNumIndices()!=0)
-        {
-            buffer._landGeometry->addPrimitiveSet(skirtDrawElements.get());
-        }
-    }
-#endif
-
-    landElements->resizeElements(landElements->getNumIndices());
+    
 
     buffer._landGeometry->setUseDisplayList(false);
     buffer._landGeometry->setUseVertexBufferObjects(true);
     buffer._landGeometry->computeBoundingBox();
 
-    // buffer._seaGeometry->setUseDisplayList(false);
-    // buffer._seaGeometry->setUseVertexBufferObjects(true);
-    // buffer._seaGeometry->computeBoundingBox();
-    // buffer._seaGeode->runGenerators(buffer._seaGeometry);
+    if (! _useTesselation) 
+    {
+        buffer._landGeode->runGenerators(buffer._landGeometry);
+
+        buffer._seaGeometry->setUseDisplayList(false);
+        buffer._seaGeometry->setUseVertexBufferObjects(true);
+        buffer._seaGeometry->computeBoundingBox();
+        buffer._seaGeode->runGenerators(buffer._seaGeometry);
+    }
 
     // Tile-specific information for the shaders
     osg::StateSet *landStateSet = buffer._landGeode->getOrCreateStateSet();
+    osg::StateSet *seaStateSet;
     osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
     landStateSet->addUniform(level);
-    landStateSet->setAttribute(new osg::PatchParameter(16));
-    osg::StateSet *seaStateSet = buffer._seaGeode->getOrCreateStateSet();
-    seaStateSet->addUniform(level);
-    seaStateSet->setAttribute(new osg::PatchParameter(16));
+    if (_useTesselation) {
+        landStateSet->setAttribute(new osg::PatchParameter(16));
+    } else {
+        seaStateSet = buffer._seaGeode->getOrCreateStateSet();
+        seaStateSet->addUniform(level);
+    }
 
     // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
     // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
@@ -1205,10 +1426,11 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("fg_tileWidth", buffer._width);
     landStateSet->addUniform(twu);
-    seaStateSet->addUniform(twu);
+    if (! _useTesselation) seaStateSet->addUniform(twu);
+
     osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("fg_tileHeight", buffer._height);
     landStateSet->addUniform(thu);
-    seaStateSet->addUniform(thu);
+    if (! _useTesselation) seaStateSet->addUniform(thu);
 
     // Force build of KD trees?
     if (osgDB::Registry::instance()->getBuildKdTreesHint()==osgDB::ReaderWriter::Options::BUILD_KDTREES &&
@@ -1219,7 +1441,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         //OSG_NOTICE<<"osgTerrain::VPBTechnique::build kd tree"<<std::endl;
         osg::ref_ptr<osg::KdTreeBuilder> builder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
         buffer._landGeode->accept(*builder);
-        buffer._seaGeode->accept(*builder);
+        if (! _useTesselation) buffer._seaGeode->accept(*builder);
         //osg::Timer_t after = osg::Timer::instance()->tick();
         //OSG_NOTICE<<"KdTree build time "<<osg::Timer::instance()->delta_m(before, after)<<std::endl;
     }
@@ -1422,9 +1644,10 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
 
 void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache)
 {
-    // XXX: This assumes we use triangles, but we use GL_PATCHES now
-#if 0
+    // XXX: This currently assumes we use triangles, so doesn't work with tesselation
+    if (_useTesselation) return;
     if (!matcache) return;
+    
     pc_init(2718281);
 
     // Define all possible handlers
@@ -1688,7 +1911,6 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
     for (const auto handler : handlers) {
         handler->finish(_options, buffer._transform, loc);
     }
-#endif
 }
 
 osg::Image* VPBTechnique::generateWaterTexture(Atlas* atlas) {  

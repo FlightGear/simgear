@@ -390,8 +390,27 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
 
     osg::Image* landclassImage = colorLayer->getImage();
 
-    // Create a mapping from the [0-1],[0-1] u,v coordinates of the tile to a continguous coordinate
-    // of the 1x1 degree block where 0,0 is the centre, and the corners are 1,1.
+    // For textcoords1 we want a set of uv coordinates such that for each 1x1 degree block they range from (1,1) at each corner to (0,0)
+    // in the center.
+    //
+    //E.g.
+    //
+    //     (1,1)          (0,1)             (1,1)
+    //       +--------------+--------------+
+    //       |                             |
+    //       |                             |
+    //       |            (0,0)            |
+    // (1,0) |              +              | (1,0)
+    //       |                             |
+    //       |                             |
+    //       |                             |
+    //       +--------------+--------------+
+    //  (1,1)          (0,1)             (1,1)
+    //
+    // Due to the way that the 1x1 blocks tile, they end up being continuous.
+    //
+    // They are intended to be used as input into noise systems that require
+    // a continuous set of UV coordinates.
     osgTerrain::TileID tileID = tile->getTileID();
     double dim = (double) std::pow(2, (tileID.level - 1));
 
@@ -435,7 +454,7 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 osg::Vec4d c = landclassImage->getColor(osg::Vec2d(ndc.x(), ndc.y()));
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
-                    ndc.z() = -10.0;
+                    ndc.z() = _useTesselation ? 0.0 : -10.0;
                 }
             }
 

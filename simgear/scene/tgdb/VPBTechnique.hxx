@@ -127,7 +127,7 @@ class VPBTechnique : public TerrainTechnique
 
             VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTesselation);
 
-            void populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osg::Vec2Array* texcoords);
+            void populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osgTerrain::TerrainTile* tile, osg::Vec2Array* texcoords1, osg::Vec2Array* texcoords2);
             void populateSeaLevel();
             void populateLeftBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
             void populateRightBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);

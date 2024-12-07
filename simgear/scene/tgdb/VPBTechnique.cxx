@@ -380,7 +380,7 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _elevationConstraints.assign(numVertices, 9999.0f);
 }
 
-void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osg::Vec2Array* texcoords)
+void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osgTerrain::TerrainTile* tile, osg::Vec2Array* texcoords0, osg::Vec2Array* texcoords1)
 {
     // OSG_NOTICE<<std::endl<<"VertexNormalGenerator::populateCenter("<<elevationLayer<<")"<<std::endl;
 
@@ -389,6 +389,11 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                      (elevationLayer->getNumColumns()!=static_cast<unsigned int>(_numColumns)) );
 
     osg::Image* landclassImage = colorLayer->getImage();
+
+    // Create a mapping from the [0-1],[0-1] u,v coordinates of the tile to a continguous coordinate
+    // of the 1x1 degree block where 0,0 is the centre, and the corners are 1,1.
+    osgTerrain::TileID tileID = tile->getTileID();
+    double dim = (double) std::pow(2, (tileID.level - 1));
 
     // We do two passes to calculate the model coordinates.
     // In the first pass we calculate the x/y location and if there are any elevation constraints at that point.
@@ -454,7 +459,9 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 osg::Vec3d model;
                 _masterLocator->convertLocalToModel(ndc, model);
                 setVertex(i, j, osg::Vec3(model-_centerModel));
-                texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
+                texcoords0->push_back(osg::Vec2(ndc.x(), ndc.y()));
+                texcoords1->push_back(osg::Vec2(2.0 * std::fabs((ndc.x() + (double) tileID.x) / dim - 0.5), 2.0 * std::fabs((ndc.y() + (double) tileID.y) / dim - 0.5)));
+
             } else {
                 // compute the model coordinates and the local normal
                 osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
@@ -465,7 +472,8 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 model_up.normalize();
 
                 setVertex(i, j, osg::Vec3(model-_centerModel), model_up);
-                texcoords->push_back(osg::Vec2(ndc.x(), ndc.y()));
+                texcoords0->push_back(osg::Vec2(ndc.x(), ndc.y()));
+                texcoords1->push_back(osg::Vec2(2.0 * std::abs((ndc.x() + tileID.x) / dim - 0.5), 2.0 * std::abs((ndc.y() + tileID.y) / dim - 0.5)));
             }
         }
     }
@@ -932,9 +940,11 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     buffer._landGeometry->setVertexArray(VNG._vertices.get());
 
     // allocate and assign texture coordinates
-    auto texcoords = new osg::Vec2Array;
-    VNG.populateCenter(elevationLayer, colorLayer, atlas, texcoords);
-    buffer._landGeometry->setTexCoordArray(0, texcoords);
+    auto texcoords0 = new osg::Vec2Array;
+    auto texcoords1 = new osg::Vec2Array;
+    VNG.populateCenter(elevationLayer, colorLayer, atlas, _terrainTile, texcoords0, texcoords1);
+    buffer._landGeometry->setTexCoordArray(0, texcoords0);
+    buffer._landGeometry->setTexCoordArray(1, texcoords1);
 
     if (! _useTesselation) {
         // allocate and assign normals and the sea level mesh
@@ -946,7 +956,8 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         // The Sea level mesh is identical to the main center mesh, except that it is at sea level
         // Therefore we can use the same texture coordinates calculated above.
         VNG.populateSeaLevel();
-        buffer._seaGeometry->setTexCoordArray(0, texcoords);
+        buffer._seaGeometry->setTexCoordArray(0, texcoords0);
+        buffer._seaGeometry->setTexCoordArray(1, texcoords1);
     }
 
     if (terrain)
@@ -1030,9 +1041,9 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         landElements->reserveElements((numRows-1) * (numColumns-1) * 16);
         buffer._landGeometry->addPrimitiveSet(landElements.get());
 
-        unsigned int i, j;
-        for (j = 0; j < numRows-1; ++j) {
-            for (i = 0; i < numColumns-1; ++i) {
+        int i, j;
+        for (j = 0; j < (int) numRows-1; ++j) {
+            for (i = 0; i < (int) numColumns-1; ++i) {
                 std::vector<int> vertex_indices;
                 vertex_indices.reserve(16);
 
@@ -1234,13 +1245,15 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
                 osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i00]);
-                texcoords->push_back((*texcoords)[i00]);
+                texcoords0->push_back((*texcoords0)[i00]);
+                texcoords1->push_back((*texcoords1)[i00]);
 
                 int i11 = vertices->size(); // index of new index of added skirt point
                 new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i01]);
-                texcoords->push_back((*texcoords)[i01]);
+                texcoords0->push_back((*texcoords0)[i01]);
+                texcoords1->push_back((*texcoords1)[i01]);
 
                 skirtDrawElements->addElement(i01);
                 skirtDrawElements->addElement(i00);
@@ -1272,13 +1285,15 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
                 osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i00]);
-                texcoords->push_back((*texcoords)[i00]);
+                texcoords0->push_back((*texcoords0)[i00]);
+                texcoords1->push_back((*texcoords1)[i00]);
 
                 int i11 = vertices->size(); // index of new index of added skirt point
                 new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i01]);
-                texcoords->push_back((*texcoords)[i01]);
+                texcoords1->push_back((*texcoords1)[i01]);
+                texcoords1->push_back((*texcoords1)[i01]);
 
                 skirtDrawElements->addElement(i01);
                 skirtDrawElements->addElement(i00);
@@ -1310,13 +1325,15 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
                 osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i00]);
-                texcoords->push_back((*texcoords)[i00]);
+                texcoords0->push_back((*texcoords0)[i00]);
+                texcoords1->push_back((*texcoords1)[i00]);
 
                 int i11 = vertices->size(); // index of new index of added skirt point
                 new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i01]);
-                texcoords->push_back((*texcoords)[i01]);
+                texcoords0->push_back((*texcoords0)[i01]);
+                texcoords1->push_back((*texcoords1)[i01]);
 
                 skirtDrawElements->addElement(i00);
                 skirtDrawElements->addElement(i01);
@@ -1348,13 +1365,15 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
                 osg::Vec3 new_v = (*vertices)[i00] - ((*skirtVectors)[i00])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i00]);
-                texcoords->push_back((*texcoords)[i00]);
+                texcoords0->push_back((*texcoords0)[i00]);
+                texcoords1->push_back((*texcoords1)[i00]);
 
                 int i11 = vertices->size(); // index of new index of added skirt point
                 new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i01]);
-                texcoords->push_back((*texcoords)[i01]);
+                texcoords0->push_back((*texcoords0)[i01]);
+                texcoords1->push_back((*texcoords1)[i01]);
 
                 skirtDrawElements->addElement(i00);
                 skirtDrawElements->addElement(i01);

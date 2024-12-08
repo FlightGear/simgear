@@ -67,6 +67,8 @@ public:
 
     void setCreateDirHashEntries(bool doCreate);
 
+    SGPath mostRecentExtractedPath() const;
+
 protected:
 
 

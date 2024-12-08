@@ -155,6 +155,10 @@ typedef struct
                 headerPtr = headerBytes;
             }
 
+            if (newState >= ERROR_STATE) {
+                SG_LOG(SG_IO, SG_WARN, "ArchiveExtract entered error state");
+            }
+
             state = newState;
         }
 
@@ -216,10 +220,13 @@ typedef struct
             if (doRemoveTopmostDir()) {
                 const auto firstDir = tarPath.find('/');
                 tarPath.erase(0, firstDir + 1);
+                if (tarPath.empty()) {
+                    skipCurrentEntry = true;
+                }
             }
 
-            if (!isSafePath(tarPath)) {
-                SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping::" << tarPath);
+            if (!skipCurrentEntry && !isSafePath(tarPath)) {
+                SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping:" << tarPath);
                 skipCurrentEntry = true;
             }
 
@@ -239,6 +246,15 @@ typedef struct
                 }
                 setState(READING_HEADER);
             } else if ((header.typeflag == REGTYPE) || (header.typeflag == AREGTYPE)) {
+                // create enclosing directory heirarchy as required
+                Dir parentDir(p.dir());
+                if (!parentDir.exists()) {
+                    bool ok = parentDir.create(0755);
+                    if (!ok) {
+                        throw sg_io_exception("failed to create directory heirarchy for extraction", p);
+                    }
+                }
+
                 currentFileSize = ::strtol(header.size, NULL, 8);
                 bytesRemaining = currentFileSize;
                 if (!skipCurrentEntry) {
@@ -247,7 +263,8 @@ typedef struct
                     sha1_init(&hashState);
                 }
                 setState(READING_FILE);
-                SG_LOG(SG_IO, SG_INFO, "Will extract" << p);
+                mostRecentPath = p;
+                SG_LOG(SG_IO, SG_DEBUG, "Will extract" << p);
             } else if (header.typeflag == PAX_GLOBAL_HEADER) {
                 setState(READING_PAX_GLOBAL_ATTRIBUTES);
                 currentFileSize = ::strtol(header.size, NULL, 8);
@@ -319,7 +336,7 @@ typedef struct
                 auto firstSpace = paxAttributes.find(' ', lineStart);
                 auto firstEq = paxAttributes.find('=', lineStart);
                 if ((firstEq == std::string::npos) || (firstSpace == std::string::npos)) {
-                    SG_LOG(SG_IO, SG_WARN, "Malfroemd PAX attributes in tarfile");
+                    SG_LOG(SG_IO, SG_WARN, "Malformed PAX attributes in tarfile");
                     break;
                 }
 
@@ -621,8 +638,9 @@ public:
 		sg_ofstream outFile;
 		bool eof = false;
 		SGPath path = extractRootPath() / name;
+        mostRecentPath = name;
 
-		// create enclosing directory heirarchy as required
+        // create enclosing directory heirarchy as required
 		Dir parentDir(path.dir());
 		if (!parentDir.exists()) {
 			bool ok = parentDir.create(0755);
@@ -838,5 +856,15 @@ void ArchiveExtractor::setRemoveTopmostDirectory(bool doRemove)
 {
     _removeTopmostDir = doRemove;
 }
+
+SGPath ArchiveExtractor::mostRecentExtractedPath() const
+{
+    if (!d) {
+        return SGPath();
+    }
+
+    return d->mostRecentPath;
+}
+
 
 } // of simgear

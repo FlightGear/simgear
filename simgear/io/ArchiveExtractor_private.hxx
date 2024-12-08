@@ -39,6 +39,7 @@ public:
     State state = INVALID;
     ArchiveExtractor* outer = nullptr;
     sha1nfo hashState;
+    SGPath mostRecentPath;
 
     virtual void extractBytes(const uint8_t* bytes, size_t count) = 0;
 

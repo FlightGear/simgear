@@ -266,10 +266,10 @@ void IPAddress::set ( const char* host, int port )
     return;
   }
 
-//for 2020.4 remove use of <broadcast> and replace with a warning and hint.
+//for 2024.1 remove use of <broadcast> and replace with a warning and hint.
   if (strcmp(host, "<broadcast>") == 0) {
     SG_LOG(SG_IO, SG_ALERT, "Use of <broadcast> to represent a socket broadcast address has been depricated.");
-    SG_LOG(SG_IO, SG_ALERT, "   Please try something like --generic=broadcast,out,10,255.255.255.255,...");
+    SG_LOG(SG_IO, SG_ALERT, "   Please try something like --generic=socket,broadcast,10,255.255.255.255,...");
     SG_LOG(SG_IO, SG_ALERT, "   A directed broadcast address for a specific network may be more appropriate.");
     addr->sin_addr.s_addr = INADDR_BROADCAST;
     return;

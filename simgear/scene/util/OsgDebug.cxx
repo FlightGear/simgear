@@ -36,14 +36,22 @@ namespace simgear
         str += ":";
 
       const osg::NodePath& path = paths.at(i);
-      for(size_t j = 0; j < path.size(); ++j)
-      {
-        const osg::Node* node = path[j];
-        str += "/'" + node->getName() + "'";
-      }
+      str += getNodePathString(path);
     }
 
     return str;
   }
+
+  std::string getNodePathString(const osg::NodePath& np)
+  {
+      std::string str;
+      const auto sz = np.size();
+      for (size_t j = 0; j < sz; ++j) {
+          const osg::Node* node = np[j];
+          str += "/'" + node->getName() + "'";
+      }
+      return str;
+  }
+
 
 } // namespace simgear

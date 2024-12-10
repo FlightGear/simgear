@@ -17,12 +17,14 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef OSGDEBUG_HXX_
-#define OSGDEBUG_HXX_
+#pragma once
 
 #include <string>
-
-namespace osg { class Node; }
+#include <vector>
+namespace osg {
+class Node;
+typedef std::vector<Node*> NodePath;
+} // namespace osg
 namespace simgear
 {
 
@@ -31,7 +33,6 @@ namespace simgear
    */
   std::string getNodePathString(const osg::Node* node);
 
-} // namespace simgear
+  std::string getNodePathString(const osg::NodePath& np);
 
-
-#endif /* OSGDEBUG_HXX_ */
+  } // namespace simgear

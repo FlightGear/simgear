@@ -58,6 +58,12 @@ namespace simgear {
 	std::string rstrip( const std::string& s );
 	std::string strip( const std::string& s );
 
+    // [lr]find - find first left/right occurence of a single character, or one of characters from a set
+    std::string::size_type lfind(const std::string& s, const char c);
+    std::string::size_type rfind(const std::string& s, const char c);
+    std::string::size_type lfind_any_of(const std::string& s, const std::string& chars);
+    std::string::size_type rfind_any_of(const std::string& s, const std::string& chars);
+
     std::string makeStringSafeForPropertyName(const std::string& str);
 
     /**

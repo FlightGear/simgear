@@ -255,6 +255,53 @@ namespace simgear {
 	    return do_strip( s, BOTHSTRIP );
 	}
 
+    std::string::size_type
+    lfind(const string& s, const char c)
+    {
+        return s.find(c); // just an alias for a default c++ string.find() behaviour
+    }
+
+    std::string::size_type
+    rfind(const string& s, const char c)
+    {
+        for (std::string::size_type i = s.length(); i > 0; i--) {
+            if (s[i - 1] == c)
+                return (i - 1);
+        }
+        return string::npos;
+    }
+
+    std::string::size_type
+    lfind_any_of(const std::string& s, const std::string& chars)
+    {
+        if (s.empty() or chars.empty())
+            return string::npos; // skip early if either string is empty
+
+        const auto s_length = s.length();
+
+        for (std::string::size_type i = 0; i < s_length; i++) {
+            if (chars.find(s[i]) != string::npos)
+                return i;
+        }
+
+        return string::npos;
+    }
+
+    std::string::size_type
+    rfind_any_of(const std::string& s, const std::string& chars)
+    {
+        if (s.empty() or chars.empty())
+            return string::npos; // skip early if either string is empty
+
+        for (std::string::size_type i = s.length(); i > 0; i--) {
+            if (chars.find(s[i - 1]) != string::npos)
+                return (i - 1);
+        }
+
+        return string::npos;
+    }
+
+
     string makeStringSafeForPropertyName(const std::string& str)
     {
         // This function replaces all characters in 'str' that are not

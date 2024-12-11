@@ -274,7 +274,7 @@ namespace simgear {
     std::string::size_type
     lfind_any_of(const std::string& s, const std::string& chars)
     {
-        if (s.empty() or chars.empty())
+        if (s.empty() || chars.empty())
             return string::npos; // skip early if either string is empty
 
         const auto s_length = s.length();
@@ -290,7 +290,7 @@ namespace simgear {
     std::string::size_type
     rfind_any_of(const std::string& s, const std::string& chars)
     {
-        if (s.empty() or chars.empty())
+        if (s.empty() || chars.empty())
             return string::npos; // skip early if either string is empty
 
         for (std::string::size_type i = s.length(); i > 0; i--) {

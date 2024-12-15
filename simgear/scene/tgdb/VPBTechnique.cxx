@@ -126,7 +126,7 @@ void VPBTechnique::setOptions(const SGReaderWriterOptions* options)
     if (! _statsPropertyNode) {
         const std::lock_guard<std::mutex> lock(VPBTechnique::_stats_mutex); // Lock the _stats_mutex for this scope
         _statsPropertyNode = _options->getPropertyNode()->getNode("/sim/rendering/statistics/ws30/loading", true);
-        _useTesselationPropNode = _options->getPropertyNode()->getNode("/sim/rendering/shaders/tesselation", true);
+        _useTessellationPropNode = _options->getPropertyNode()->getNode("/sim/rendering/shaders/tessellation", true);
     }    
 }
 
@@ -157,14 +157,14 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 {
     if (!_terrainTile) return;
     
-    // Don't regenerate if the tile is not dirty AND we haven't switched between tesselation
-    // and non-tesselation mode.  A cleaned way to do this would be to have a listener on the
+    // Don't regenerate if the tile is not dirty AND we haven't switched between tessellation
+    // and non-tessellation mode.  A cleaned way to do this would be to have a listener on the
     // property that dirties all tiles.
-    bool b = _useTesselationPropNode->getBoolValue();
-    if ((dirtyMask == 0) && (_useTesselation == b)) return;
+    bool b = _useTessellationPropNode->getBoolValue();
+    if ((dirtyMask == 0) && (_useTessellation == b)) return;
 
-    // Indicate whether to use tesselation for this tile
-    _useTesselation = b;
+    // Indicate whether to use tessellation for this tile
+    _useTessellation = b;
 
     OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_writeBufferMutex);
 
@@ -172,7 +172,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
     osg::ref_ptr<TerrainTile> tile = _terrainTile;
 
     osgTerrain::TileID tileID = tile->getTileID();
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Init of tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << dirtyMask << " _currentBufferData? " << (_currentBufferData != 0));
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Init of tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << dirtyMask << " _useTessellation " << _useTessellation << " _currentBufferData? " << (_currentBufferData != 0));
 
     osg::ref_ptr<BufferData> buffer = new BufferData;
 
@@ -210,7 +210,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
             applyColorLayers(*buffer, matcache);
             VPBLineFeatureRenderer lineFeatureRenderer = VPBLineFeatureRenderer(_terrainTile);
             lineFeatureRenderer.applyLineFeatures(*buffer, _options, matcache);
-            applyMaterials(*buffer, matcache);
+            applyMaterials(*buffer, matcache, loc);
         }
     }
     else
@@ -220,7 +220,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         applyColorLayers(*buffer, matcache);
         VPBLineFeatureRenderer lineFeatureRenderer = VPBLineFeatureRenderer(_terrainTile);
         lineFeatureRenderer.applyLineFeatures(*buffer, _options, matcache);
-        applyMaterials(*buffer, matcache);
+        applyMaterials(*buffer, matcache, loc);
     }
 
     if (buffer->_transform.valid()) buffer->_transform->setThreadSafeRefUnref(true);
@@ -321,8 +321,12 @@ osg::Vec3d VPBTechnique::computeCenterModel(BufferData& buffer)
     osg::Vec3d centerModel = centerNDC;
     buffer._masterLocator->convertLocalToModel(centerNDC, centerModel);
 
+    SGGeod c = SGGeod::fromCart(toSG(centerModel));
+    //osg::Matrix m = osg::Matrixd::inverse(makeZUpFrameRelative(c));
     buffer._transform = new osg::MatrixTransform;
-    buffer._transform->setMatrix(osg::Matrix::translate(centerModel));
+    //buffer._transform->setMatrix(osg::Matrix::translate(centerModel) * m);
+    //buffer._transform->setMatrix(osg::Matrix::translate(centerModel));
+    buffer._transform->setMatrix(makeZUpFrame(c));
 
     return centerModel;
 }
@@ -334,24 +338,26 @@ const SGGeod VPBTechnique::computeCenterGeod(BufferData& buffer)
 }
 
 
-VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColumns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTesselation):
+VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColumns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTessellation):
     _masterLocator(masterLocator),
     _centerModel(centerModel),
     _numRows(numRows),
     _numColumns(numColumns),
     _scaleHeight(scaleHeight),
     _constraint_vtx_gap(vtx_gap),
-    _useTesselation(useTesselation)
+    _useTessellation(useTessellation)
 {
+    _ZUpRotationMatrix = makeZUpFrameRelative(SGGeod::fromCart(toSG(_centerModel)));
+
     int numVerticesInBody = numColumns*numRows;
     int numVertices;
 
-    if (_useTesselation) {
-        // If we're using tesselation then we have the main body plus a boundary around the edge
+    if (_useTessellation) {
+        // If we're using tessellation then we have the main body plus a boundary around the edge
         int numVerticesInBoundary = _numRows*2 + _numColumns*2 + 4;
         numVertices = numVerticesInBody + numVerticesInBoundary;
     } else {
-        // If we're not using tesselation then we may instead have a skirt.
+        // If we're not using tessellation then we may instead have a skirt.
         int numVerticesInSkirt = createSkirt ? numColumns*2 + numRows*2 - 4 : 0;
         numVertices = numVerticesInBody + numVerticesInSkirt;
     }
@@ -361,8 +367,8 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _vertices = new osg::Vec3Array;
     _vertices->reserve(numVertices);
 
-    if (! _useTesselation) {
-        // If we're not using Tesselation then we will have both a sea-level mesh and also generate normals ourselves.
+    if (! _useTessellation) {
+        // If we're not using Tessellation then we will have both a sea-level mesh and also generate normals ourselves.
         _sea_vertices = new osg::Vec3Array;
         _sea_vertices->reserve(numVertices);
 
@@ -454,7 +460,7 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 osg::Vec4d c = landclassImage->getColor(osg::Vec2d(ndc.x(), ndc.y()));
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
-                    ndc.z() = _useTesselation ? 0.0 : -10.0;
+                    ndc.z() = _useTessellation ? 0.0 : -10.0;
                 }
             }
 
@@ -473,24 +479,21 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 }
             }
             
-            if (_useTesselation) {
+            if (_useTessellation) {
                 // compute the model coordinates            
-                osg::Vec3d model;
-                _masterLocator->convertLocalToModel(ndc, model);
-                setVertex(i, j, osg::Vec3(model-_centerModel));
+                setVertex(i, j, convertLocalToModel(ndc));
                 texcoords0->push_back(osg::Vec2(ndc.x(), ndc.y()));
                 texcoords1->push_back(osg::Vec2(2.0 * std::fabs((ndc.x() + (double) tileID.x) / dim - 0.5), 2.0 * std::fabs((ndc.y() + (double) tileID.y) / dim - 0.5)));
 
             } else {
                 // compute the model coordinates and the local normal
                 osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
-                osg::Vec3d model, model_up;
-                _masterLocator->convertLocalToModel(ndc, model);
-                _masterLocator->convertLocalToModel(ndc_up, model_up);
+                osg::Vec3d model = convertLocalToModel(ndc);
+                osg::Vec3d model_up = convertLocalToModel(ndc_up);
                 model_up = model_up - model;
                 model_up.normalize();
 
-                setVertex(i, j, osg::Vec3(model-_centerModel), model_up);
+                setVertex(i, j, model, model_up);
                 texcoords0->push_back(osg::Vec2(ndc.x(), ndc.y()));
                 texcoords1->push_back(osg::Vec2(2.0 * std::abs((ndc.x() + tileID.x) / dim - 0.5), 2.0 * std::abs((ndc.y() + tileID.y) / dim - 0.5)));
             }
@@ -501,22 +504,20 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
 // Generate a set of vertices at sea level - only valid for non-tesselated terrain
 void VPBTechnique::VertexNormalGenerator::populateSeaLevel()
 {
-    assert(! _useTesselation);
+    assert(! _useTessellation);
     // OSG_NOTICE<<std::endl<<"VertexNormalGenerator::populateCenter("<<elevationLayer<<")"<<std::endl;
 
     for(int j=0; j<_numRows; ++j) {
         for(int i=0; i<_numColumns; ++i) {
             osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), 0.0);
 
-           // compute the model coordinates and the local normal
+            // compute the model coordinates and the local normal
             osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
-            osg::Vec3d model, model_up;
-            _masterLocator->convertLocalToModel(ndc, model);
-            _masterLocator->convertLocalToModel(ndc_up, model_up);
+            osg::Vec3d model = convertLocalToModel(ndc);
+            osg::Vec3d model_up = convertLocalToModel(ndc_up);
             model_up = model_up - model;
             model_up.normalize();
-
-            _sea_vertices->push_back(osg::Vec3(model-_centerModel));
+            _sea_vertices->push_back(model);
             _sea_normals->push_back(model_up);
         }
     }
@@ -561,20 +562,18 @@ void VPBTechnique::VertexNormalGenerator::populateLeftBoundary(osgTerrain::Layer
 
             if (validValue)
             {
-                osg::Vec3d model;
-                _masterLocator->convertLocalToModel(ndc, model);
+                osg::Vec3d model = convertLocalToModel(ndc);
 
-                if (_useTesselation) {
-                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                if (_useTessellation) {
+                    setVertex(i, j, model);
                 } else {
                     // compute the local normal
-                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                    osg::Vec3d model_one;
-                    _masterLocator->convertLocalToModel(ndc_one, model_one);
-                    model_one = model_one - model;
-                    model_one.normalize();
+                    osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
+                    osg::Vec3d model_up = convertLocalToModel(ndc_up);
+                    model_up = model_up - model;
+                    model_up.normalize();
 
-                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                    setVertex(i, j, model, model_up);
                 }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
@@ -621,20 +620,18 @@ void VPBTechnique::VertexNormalGenerator::populateRightBoundary(osgTerrain::Laye
 
             if (validValue)
             {
-                osg::Vec3d model;
-                _masterLocator->convertLocalToModel(ndc, model);
+                osg::Vec3d model = convertLocalToModel(ndc);
 
-                if (_useTesselation) {
-                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                if (_useTessellation) {
+                    setVertex(i, j, model);
                 } else {
                     // compute the local normal
-                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                    osg::Vec3d model_one;
-                    _masterLocator->convertLocalToModel(ndc_one, model_one);
-                    model_one = model_one - model;
-                    model_one.normalize();
+                    osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
+                    osg::Vec3d model_up = convertLocalToModel(ndc_up);
+                    model_up = model_up - model;
+                    model_up.normalize();
 
-                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                    setVertex(i, j, model, model_up);
                 }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
@@ -681,20 +678,18 @@ void VPBTechnique::VertexNormalGenerator::populateAboveBoundary(osgTerrain::Laye
 
             if (validValue)
             {
-                osg::Vec3d model;
-                _masterLocator->convertLocalToModel(ndc, model);
+                osg::Vec3d model = convertLocalToModel(ndc);
 
-                if (_useTesselation) {
-                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                if (_useTessellation) {
+                    setVertex(i, j, model);
                 } else {
                     // compute the local normal
-                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                    osg::Vec3d model_one;
-                    _masterLocator->convertLocalToModel(ndc_one, model_one);
-                    model_one = model_one - model;
-                    model_one.normalize();
+                    osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
+                    osg::Vec3d model_up = convertLocalToModel(ndc_up);
+                    model_up = model_up - model;
+                    model_up.normalize();
 
-                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                    setVertex(i, j, model, model_up);
                 }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
@@ -741,20 +736,18 @@ void VPBTechnique::VertexNormalGenerator::populateBelowBoundary(osgTerrain::Laye
 
             if (validValue)
             {
-                osg::Vec3d model;
-                _masterLocator->convertLocalToModel(ndc, model);
+                osg::Vec3d model = convertLocalToModel(ndc);
 
-                if (_useTesselation) {
-                    setVertex(i, j, osg::Vec3(model-_centerModel));
+                if (_useTessellation) {
+                    setVertex(i, j, model);
                 } else {
                     // compute the local normal
-                    osg::Vec3d ndc_one = ndc; ndc_one.z() += 1.0;
-                    osg::Vec3d model_one;
-                    _masterLocator->convertLocalToModel(ndc_one, model_one);
-                    model_one = model_one - model;
-                    model_one.normalize();
+                    osg::Vec3d ndc_up = ndc; ndc_up.z() += 1.0;
+                    osg::Vec3d model_up = convertLocalToModel(ndc_up);
+                    model_up = model_up - model;
+                    model_up.normalize();
 
-                    setVertex(i, j, osg::Vec3(model-_centerModel), model_one);                
+                    setVertex(i, j, model, model_up);
                 }
                 // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
             }
@@ -762,14 +755,14 @@ void VPBTechnique::VertexNormalGenerator::populateBelowBoundary(osgTerrain::Laye
     }
 }
 
-// Only valid with tesselation
+// Only valid with tessellation
 void VPBTechnique::VertexNormalGenerator::populateCorner(
     osgTerrain::Layer* elevationLayer,
     osgTerrain::Layer* colorLayer,
     osg::ref_ptr<Atlas> atlas,
     Corner corner)
 {
-    assert(_useTesselation);
+    assert(_useTessellation);
     if (!elevationLayer)
         return;
 
@@ -824,16 +817,15 @@ void VPBTechnique::VertexNormalGenerator::populateCorner(
     }
 
     if (validValue) {
-        osg::Vec3d model;
-        _masterLocator->convertLocalToModel(ndc, model);
-        setVertex(i, j, osg::Vec3(model-_centerModel));
+        osg::Vec3d model = convertLocalToModel(ndc);
+        setVertex(i, j, model);
         // OSG_NOTICE<<"       setVertex("<<i<<", "<<j<<"..)"<<std::endl;
     }
 }
 
 void VPBTechnique::VertexNormalGenerator::computeNormals()
 {
-    assert(! _useTesselation);
+    assert(! _useTessellation);
     // compute normals for the center section
     for(int j=0; j<_numRows; ++j)
     {
@@ -886,8 +878,8 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     buffer._landGeode->setEffect(landEffect.get());
     buffer._landGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
-    if (! _useTesselation) {
-        // Generate a sea-level mesh if we're not using tesselation.
+    if (! _useTessellation) {
+        // Generate a sea-level mesh if we're not using tessellation.
         SGPropertyNode_ptr seaEffectProp = new SGPropertyNode();
 
         if (matcache) {
@@ -951,7 +943,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     bool createSkirt = skirtHeight != 0.0f;
 
     // construct the VertexNormalGenerator which will manage the generation and the vertices and normals
-    VertexNormalGenerator VNG(buffer._masterLocator, centerModel, numRows, numColumns, scaleHeight, constraint_gap, createSkirt, _useTesselation);
+    VertexNormalGenerator VNG(buffer._masterLocator, centerModel, numRows, numColumns, scaleHeight, constraint_gap, createSkirt, _useTessellation);
 
     unsigned int numVertices = VNG.capacity();
 
@@ -965,7 +957,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     buffer._landGeometry->setTexCoordArray(0, texcoords0);
     buffer._landGeometry->setTexCoordArray(1, texcoords1);
 
-    if (! _useTesselation) {
+    if (! _useTessellation) {
         // allocate and assign normals and the sea level mesh
         buffer._landGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
         
@@ -993,8 +985,8 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         VNG.populateAboveBoundary(top_tile.valid() ? top_tile->getElevationLayer() : 0, colorLayer, atlas);
         VNG.populateBelowBoundary(bottom_tile.valid() ? bottom_tile->getElevationLayer() : 0, colorLayer, atlas);
 
-        if (_useTesselation) {
-            // If we're using tesselation then we also need corner data
+        if (_useTessellation) {
+            // If we're using tessellation then we also need corner data
             osg::ref_ptr<TerrainTile> bottom_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y-1));
             osg::ref_ptr<TerrainTile> bottom_right_tile = terrain->getTile(TileID(tileID.level, tileID.x+1, tileID.y-1));
             osg::ref_ptr<TerrainTile> top_left_tile = terrain->getTile(TileID(tileID.level, tileID.x-1, tileID.y+1));
@@ -1039,7 +1031,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         }
         if (bottom_tile.valid())
         {
-            if (bottom_tile->getTerrainTechnique()==0 || !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (bottom_tile->getTerrainTechnique()==0|| !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
             {
                 int dirtyMask = bottom_tile->getDirtyMask() | TerrainTile::BOTTOM_EDGE_DIRTY;
                 bottom_tile->setDirtyMask(dirtyMask);
@@ -1047,7 +1039,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         }
     }
 
-    if (_useTesselation) {
+    if (_useTessellation) {
 
         //
         // populate the primitive data
@@ -1088,7 +1080,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             }
         }
     } else {
-        // Non-tesselation case
+        // Non-tessellation case
         
         // Compute normals - though not sure why we would need to do that again?
         osg::ref_ptr<osg::Vec3Array> skirtVectors = new osg::Vec3Array((*VNG._normals));
@@ -1418,7 +1410,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     buffer._landGeometry->setUseVertexBufferObjects(true);
     buffer._landGeometry->computeBoundingBox();
 
-    if (! _useTesselation) 
+    if (! _useTessellation) 
     {
         buffer._landGeode->runGenerators(buffer._landGeometry);
 
@@ -1433,7 +1425,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     osg::StateSet *seaStateSet;
     osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
     landStateSet->addUniform(level);
-    if (_useTesselation) {
+    if (_useTessellation) {
         landStateSet->setAttribute(new osg::PatchParameter(16));
     } else {
         seaStateSet = buffer._seaGeode->getOrCreateStateSet();
@@ -1464,11 +1456,11 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("fg_tileWidth", buffer._width);
     landStateSet->addUniform(twu);
-    if (! _useTesselation) seaStateSet->addUniform(twu);
+    if (! _useTessellation) seaStateSet->addUniform(twu);
 
     osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("fg_tileHeight", buffer._height);
     landStateSet->addUniform(thu);
-    if (! _useTesselation) seaStateSet->addUniform(thu);
+    if (! _useTessellation) seaStateSet->addUniform(thu);
 
     // Force build of KD trees?
     if (osgDB::Registry::instance()->getBuildKdTreesHint()==osgDB::ReaderWriter::Options::BUILD_KDTREES &&
@@ -1479,7 +1471,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         //OSG_NOTICE<<"osgTerrain::VPBTechnique::build kd tree"<<std::endl;
         osg::ref_ptr<osg::KdTreeBuilder> builder = osgDB::Registry::instance()->getKdTreeBuilder()->clone();
         buffer._landGeode->accept(*builder);
-        if (! _useTesselation) buffer._seaGeode->accept(*builder);
+        if (! _useTessellation) buffer._seaGeode->accept(*builder);
         //osg::Timer_t after = osg::Timer::instance()->tick();
         //OSG_NOTICE<<"KdTree build time "<<osg::Timer::instance()->delta_m(before, after)<<std::endl;
     }
@@ -1551,7 +1543,6 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             
             
             landStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, true));
-            landStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
             landStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
             atlas->addUniforms(landStateset);
 
@@ -1560,7 +1551,6 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             seaStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
             seaStateset->setTextureAttributeAndModes(7, waterTexture);
             seaStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, true));
-            seaStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
             seaStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
             atlas->addUniforms(seaStateset);
         } else {
@@ -1659,7 +1649,6 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         landStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
         landStateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
         landStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, false));
-        landStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
         landStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
         atlas->addUniforms(landStateset);
         //SG_LOG(SG_TERRAIN, SG_ALERT, "modeOffset:" << buffer._transform->getMatrix().getTrans().length() << " " << buffer._transform->getMatrix().getTrans());
@@ -1669,7 +1658,6 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         seaStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
         seaStateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
         seaStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, false));
-        seaStateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(computeCenterGeod(buffer))))));
         seaStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
         atlas->addUniforms(seaStateset);
     }
@@ -1680,10 +1668,10 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
     return a.x() * b.y() - b.x() * a.y();
 }
 
-void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache)
+void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
 {
-    // XXX: This currently assumes we use triangles, so doesn't work with tesselation
-    if (_useTesselation) return;
+    // XXX: This currently assumes we use triangles, so doesn't work with tessellation
+    if (_useTessellation) return;
     if (!matcache) return;
     
     pc_init(2718281);
@@ -1709,20 +1697,10 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
 
     SGMaterial* mat = 0;
 
-    const SGGeod loc = computeCenterGeod(buffer);
-
     osg::Vec3d up = buffer._transform->getMatrix().getTrans();
     up.normalize();
 
-    const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
-    const SGGeoc cloc = SGGeoc::fromCart(toSG(world));
-
     if (!matcache) return;
-
-    const osg::Matrixd R_vert = osg::Matrixd::rotate(
-     M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
-     loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0),
-     0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
     const osg::Array* vertices = buffer._landGeometry->getVertexArray();
     const osg::Array* texture_coords = buffer._landGeometry->getTexCoordArray(0);
@@ -1749,18 +1727,11 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
 
     const double lon          = loc.getLongitudeRad();
     const double lat          = loc.getLatitudeRad();
-    const double clon         = cloc.getLongitudeRad();
-    const double clat         = cloc.getLatitudeRad();
     const double r_E_lat      = /* 6356752.3 */ 6.375993e+06;
     const double r_E_lon      = /* 6378137.0 */ 6.389377e+06;
     const double C            = r_E_lon * cos(lat);
     const double one_over_C   = (fabs(C) > 1.0e-4) ? (1.0 / C) : 0.0;
     const double one_over_r_E = 1.0 / r_E_lat;
-
-    const osg::Matrix rotation_vertices_c = osg::Matrix::rotate(
-     M_PI / 2 - clat, osg::Vec3d(0.0, 1.0, 0.0),
-     clon, osg::Vec3d(0.0, 0.0, 1.0),
-     0.0, osg::Vec3d(1.0, 0.0, 0.0));
 
     // Compute lat/lon deltas for each handler
     std::vector<std::pair<double, double>> deltas;
@@ -1798,17 +1769,13 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
         osg::Vec3 n = v_x ^ v_y;
         n.normalize();
 
-        const osg::Vec3d v_0_g = R_vert * v0;
-        const osg::Vec3d v_1_g = R_vert * v1;
-        const osg::Vec3d v_2_g = R_vert * v2;
-
-        const osg::Vec2d ll_0 = osg::Vec2d(v_0_g.y() * one_over_C + lon, -v_0_g.x() * one_over_r_E + lat);
-        const osg::Vec2d ll_1 = osg::Vec2d(v_1_g.y() * one_over_C + lon, -v_1_g.x() * one_over_r_E + lat);
-        const osg::Vec2d ll_2 = osg::Vec2d(v_2_g.y() * one_over_C + lon, -v_2_g.x() * one_over_r_E + lat);
+        const osg::Vec2d ll_0 = osg::Vec2d(v0.y() * one_over_C + lon, -v0.x() * one_over_r_E + lat);
+        const osg::Vec2d ll_1 = osg::Vec2d(v1.y() * one_over_C + lon, -v1.x() * one_over_r_E + lat);
+        const osg::Vec2d ll_2 = osg::Vec2d(v2.y() * one_over_C + lon, -v2.x() * one_over_r_E + lat);
 
         const osg::Vec2d ll_O = ll_0;
-        const osg::Vec2d ll_x = osg::Vec2d((v_1_g.y() - v_0_g.y()) * one_over_C, -(v_1_g.x() - v_0_g.x()) * one_over_r_E);
-        const osg::Vec2d ll_y = osg::Vec2d((v_2_g.y() - v_0_g.y()) * one_over_C, -(v_2_g.x() - v_0_g.x()) * one_over_r_E);
+        const osg::Vec2d ll_x = osg::Vec2d((v1.y() - v0.y()) * one_over_C, -(v1.x() - v0.x()) * one_over_r_E);
+        const osg::Vec2d ll_y = osg::Vec2d((v2.y() - v0.y()) * one_over_C, -(v2.x() - v0.x()) * one_over_r_E);
 
         // Each handler may have a different delta/granularity in the scanline.
         // To take advantage of the material caching, we first collect all the
@@ -1941,7 +1908,7 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
                 if (checkAgainstElevationConstraints(lowerPoint * localToGeocentricTransform, upperPoint * localToGeocentricTransform))
                     continue;
 
-                handler->placeObject(vp, up);
+                handler->placeObject(vp);
             }
         }
     }

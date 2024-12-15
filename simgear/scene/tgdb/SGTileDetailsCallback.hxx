@@ -997,7 +997,7 @@ public:
         computeRandomForest(matTris, vegetation_density, randomForest);
 
         if (!randomForest.empty()) {
-          forestNode = createForest(randomForest, osg::Matrix::identity(),_options);
+          forestNode = createForest(randomForest, _options);
           forestNode->setName("Random trees");
         }
       }

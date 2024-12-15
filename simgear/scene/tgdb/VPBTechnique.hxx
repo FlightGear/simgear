@@ -109,7 +109,6 @@ class VPBTechnique : public TerrainTechnique
 
         static void clearConstraints();
 
-        inline static const char* Z_UP_TRANSFORM = "fg_zUpTransform";
         inline static const char* MODEL_OFFSET   = "fg_modelOffset";
         inline static const char* PHOTO_SCENERY  = "fg_photoScenery";
 
@@ -125,7 +124,7 @@ class VPBTechnique : public TerrainTechnique
             typedef std::pair< osg::ref_ptr<osg::Vec2Array>, Locator* > TexCoordLocatorPair;
             typedef std::map< Layer*, TexCoordLocatorPair > LayerToTexCoordMap;
 
-            VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTesselation);
+            VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTessellation);
 
             void populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osgTerrain::TerrainTile* tile, osg::Vec2Array* texcoords1, osg::Vec2Array* texcoords2);
             void populateSeaLevel();
@@ -144,9 +143,18 @@ class VPBTechnique : public TerrainTechnique
 
             void computeNormals();
 
+            //  Convert NDC coordinates into the model coordinates, which centered on the model center and are Z-up
+            osg::Vec3d convertLocalToModel(osg::Vec3d ndc)
+            {
+                osg::Vec3d model;
+                _masterLocator->convertLocalToModel(ndc, model);
+                return _ZUpRotationMatrix * (model - _centerModel);
+                return (model - _centerModel);
+            }
+
             unsigned int capacity() const { return _vertices->capacity(); }
 
-            // Tesselation case - no normal required
+            // Tessellation case - no normal required
             inline void setVertex(int c, int r, const osg::Vec3& v)
             {
                 int& i = index(c,r);
@@ -163,7 +171,7 @@ class VPBTechnique : public TerrainTechnique
                 }
             }
 
-            // Non-tesselation case - normal and boundaries required
+            // Non-tessellation case - normal and boundaries required
             inline void setVertex(int c, int r, const osg::Vec3& v, const osg::Vec3& n)
             {
                 int& i = index(c,r);
@@ -318,7 +326,9 @@ class VPBTechnique : public TerrainTechnique
             std::vector<float>              _elevationConstraints;
 
             osg::ref_ptr<osg::Vec3Array>    _boundaryVertices;
-            bool                            _useTesselation;
+            bool                            _useTessellation;
+
+            osg::Matrix                     _ZUpRotationMatrix;
         };
 
 
@@ -332,7 +342,7 @@ class VPBTechnique : public TerrainTechnique
 
         virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
 
-        virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache);
+        virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
 
         virtual osg::Image* generateWaterTexture(Atlas* atlas);
 
@@ -359,7 +369,7 @@ class VPBTechnique : public TerrainTechnique
         osg::ref_ptr<SGReaderWriterOptions> _options;
         const std::string                   _fileName;
         osg::ref_ptr<osg::Group>            _randomObjectsConstraintGroup;
-        bool                                _useTesselation;
+        bool                                _useTessellation;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
         inline static std::mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
@@ -368,7 +378,7 @@ class VPBTechnique : public TerrainTechnique
         typedef std::pair<unsigned int, float> LoadStat;
         inline static std::map<int, LoadStat> _loadStats;
         inline static SGPropertyNode* _statsPropertyNode;
-        inline static SGPropertyNode* _useTesselationPropNode;
+        inline static SGPropertyNode* _useTessellationPropNode;
 };
 
 };

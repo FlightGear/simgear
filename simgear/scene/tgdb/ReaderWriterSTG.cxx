@@ -348,7 +348,7 @@ struct ReaderWriterSTG::_ModelBin {
                         matrixTransform = new osg::MatrixTransform(makeZUpFrame(SGGeod::fromDegM(b._lon, b._lat, b._elev)));
                         matrixTransform->setName("rotateTrees");
                         matrixTransform->setDataVariance(osg::Object::STATIC);
-                        matrixTransform->addChild(createForest(treeList, osg::Matrix::identity(), _options));
+                        matrixTransform->addChild(createForest(treeList, _options));
                         group->addChild(matrixTransform);
 
                         std::for_each(treeList.begin(), treeList.end(), [](TreeBin* bb) {

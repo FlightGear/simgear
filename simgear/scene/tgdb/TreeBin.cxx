@@ -113,78 +113,73 @@ TreesBoundingBoxCallback::computeBound(const Drawable& drawable) const
     return bb;
 }
 
-Geometry* makeSharedTreeGeometry(int numQuads)
-{
-    // generate a repeatable random seed
-    pc_init(123);
-    // set up the coords
-    osg::Vec3Array* v = new osg::Vec3Array;
-    osg::Vec2Array* t = new osg::Vec2Array;
-    v->reserve(numQuads * 6);
-    t->reserve(numQuads * 6);
-    for (int i = 0; i < numQuads; ++i) {
-        // Apply a random scaling factor and texture index.
-        float h = (pc_rand() + pc_rand()) / 2.0f + 0.5f;
-        float cw = h * .5;
-        // Create the vertices
-        osg::Vec3 v0(0.0f, -cw, 0.0f);
-        osg::Vec3 v1(0.0f,  cw, 0.0f);
-        osg::Vec3 v2(0.0f,  cw,    h);
-        osg::Vec3 v3(0.0f, -cw,    h);
-        v->push_back(v0); v->push_back(v1); v->push_back(v2); // 1st triangle
-        v->push_back(v0); v->push_back(v2); v->push_back(v3); // 2nd triangle
-        // The texture coordinate range is not the entire coordinate
-        // space, as the texture has a number of different trees on
-        // it. Here we assign random coordinates and let the shader
-        // choose the variety.
-        float variety = pc_rand();
-        osg::Vec2 t0(variety, 0.0f);
-        osg::Vec2 t1(variety + 1.0f, 0.0f);
-        osg::Vec2 t2(variety + 1.0f, 0.234f);
-        osg::Vec2 t3(variety, 0.234f);
-        t->push_back(t0); t->push_back(t1); t->push_back(t2); // 1st triangle
-        t->push_back(t0); t->push_back(t2); t->push_back(t3); // 2nd triangle
-    }
-    Geometry* result = new Geometry;
-    result->setUseVertexBufferObjects(true);
-    result->setVertexArray(v);
-    result->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
-    result->setComputeBoundingBoxCallback(new TreesBoundingBoxCallback);
-    return result;
-}
-
 static std::mutex static_sharedGeometryMutex;
-static std::map<std::thread::id, ref_ptr<Geometry>  > sharedTreeGeometryMap;
+static std::map<std::thread::id, ref_ptr<Vec3Array>  > sharedVertexMap;
+static std::map<std::thread::id, ref_ptr<Vec2Array>  > sharedTextureCoordMap;
 
 void clearSharedTreeGeometry()
 {
     std::lock_guard<std::mutex> g(static_sharedGeometryMutex);
-    sharedTreeGeometryMap.clear();
+    sharedVertexMap.clear();
+    sharedTextureCoordMap.clear();
 }
 
-Geometry* createTreeGeometry(float width, float height, int varieties)
+osg::ref_ptr<Geometry> createTreeGeometry(float width, float height, int varieties)
 {
-    Geometry* quadGeom = nullptr;
+    // Get the shared Geometry.  This is only shared within the thread as
+    // the cloned Geometries all end up with the same VertexBufferObject.
+    // This is OK (just about) within a thread, as the VBO will simply be
+    // updated with data for each Geometry sequentially and passed to
+    // the underlying graphics driver.  However in a multithreaded case,
+    // this can result in multiple threads updating the VBO in parallel
+    // and segmentation faults.
+    std::lock_guard<std::mutex> g(static_sharedGeometryMutex);
+    std::thread::id this_id = std::this_thread::get_id();
+    if (!sharedVertexMap[this_id]) {
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "Creating new shared geometry for thread " << this_id);
+        // generate a repeatable random seed
+        pc_init(123);
+        int numQuads = 1600;
 
-    {
-        // Get the shared Geometry.  This is only shared within the thread as
-        // the cloned Geometries all end up with the same VertexBufferObject.
-        // This is OK (just about) within a thread, as the VBO will simply be
-        // updated with data for each Geometry sequentially and passed to
-        // the underlying graphics driver.  However in a multithreaded case,
-        // this can result in multiple threads updating the VBO in parallel
-        // and segmentation faults.
-        std::lock_guard<std::mutex> g(static_sharedGeometryMutex);
-        std::thread::id this_id = std::this_thread::get_id();
-        if (!sharedTreeGeometryMap[this_id]) {
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "Creating new shared geometry for thread " << this_id);
-            sharedTreeGeometryMap[this_id] = makeSharedTreeGeometry(1600);
+        // set up the coords
+        sharedVertexMap[this_id] = new osg::Vec3Array;
+        sharedVertexMap[this_id]->reserve(numQuads * 6);
+
+        sharedTextureCoordMap[this_id] = new osg::Vec2Array;
+        sharedTextureCoordMap[this_id]->reserve(numQuads * 6);
+
+        for (int i = 0; i < numQuads; ++i) {
+            // Apply a random scaling factor and texture index.
+            float h = (pc_rand() + pc_rand()) / 2.0f + 0.5f;
+            float cw = h * .5;
+            // Create the vertices
+            osg::Vec3 v0(0.0f, -cw, 0.0f);
+            osg::Vec3 v1(0.0f,  cw, 0.0f);
+            osg::Vec3 v2(0.0f,  cw,    h);
+            osg::Vec3 v3(0.0f, -cw,    h);
+            sharedVertexMap[this_id]->push_back(v0); sharedVertexMap[this_id]->push_back(v1); sharedVertexMap[this_id]->push_back(v2); // 1st triangle
+            sharedVertexMap[this_id]->push_back(v0); sharedVertexMap[this_id]->push_back(v2); sharedVertexMap[this_id]->push_back(v3); // 2nd triangle
+            // The texture coordinate range is not the entire coordinate
+            // space, as the texture has a number of different trees on
+            // it. Here we assign random coordinates and let the shader
+            // choose the variety.
+            float variety = pc_rand();
+            osg::Vec2 t0(variety, 0.0f);
+            osg::Vec2 t1(variety + 1.0f, 0.0f);
+            osg::Vec2 t2(variety + 1.0f, 0.234f);
+            osg::Vec2 t3(variety, 0.234f);
+            sharedTextureCoordMap[this_id]->push_back(t0); sharedTextureCoordMap[this_id]->push_back(t1); sharedTextureCoordMap[this_id]->push_back(t2); // 1st triangle
+            sharedTextureCoordMap[this_id]->push_back(t0); sharedTextureCoordMap[this_id]->push_back(t2); sharedTextureCoordMap[this_id]->push_back(t3); // 2nd triangle
         }
-        quadGeom = simgear::clone(sharedTreeGeometryMap[this_id].get(),
-                                  CopyOp::SHALLOW_COPY);
     }
 
-    Vec3Array* params = new Vec3Array;
+    osg::ref_ptr<Geometry> quadGeom = new Geometry;
+    quadGeom->setUseVertexBufferObjects(true);
+    quadGeom->setVertexArray(sharedVertexMap[this_id]);
+    quadGeom->setTexCoordArray(0, sharedTextureCoordMap[this_id], Array::BIND_PER_VERTEX);
+    quadGeom->setComputeBoundingBoxCallback(new TreesBoundingBoxCallback);
+
+    osg::ref_ptr<Vec3Array> params = new Vec3Array;
     params->push_back(Vec3(width, height, (float)varieties));
     quadGeom->setNormalArray(params, Array::BIND_OVERALL);
     // Positions
@@ -201,9 +196,9 @@ Geometry* createTreeGeometry(float width, float height, int varieties)
     return quadGeom;
 }
 
-EffectGeode* createTreeGeode(float width, float height, int varieties)
+osg::ref_ptr<EffectGeode> createTreeGeode(float width, float height, int varieties)
 {
-    EffectGeode* result = new EffectGeode;
+    osg::ref_ptr<EffectGeode> result = new EffectGeode;
     result->addDrawable(createTreeGeometry(width, height, varieties));
     return result;
 }
@@ -266,7 +261,7 @@ struct MakeTreesLeaf
             // gradually with distance from _range to 2*_range
             for (float i = 0.0f; i < SG_TREE_FADE_OUT_LEVELS; ++i)
             {
-                if (EffectGeode* geode = createTreeGeode(_width, _height, _varieties); geode) {
+                if (osg::ref_ptr<EffectGeode> geode = createTreeGeode(_width, _height, _varieties); geode) {
                     geode->setEffect(_effect.get());
                     result->addChild(geode, 0, _range * (1.0f + i / (SG_TREE_FADE_OUT_LEVELS - 1.0f)));
                 }
@@ -364,13 +359,12 @@ struct QuadTreeCleaner : public osg::NodeVisitor
 // forest into the local Z-up coordinate system we can reuse the
 // primitive tree geometry for all the forests of the same type.
 
-osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
-                         const SGReaderWriterOptions* options, int depth)
+osg::Group* createForest(SGTreeBinList& forestList, const SGReaderWriterOptions* options, int depth)
 {
-    Matrix transInv = Matrix::inverse(transform);
+    Matrix transInv = Matrix::identity();
     // Set up some shared structures.
     ref_ptr<Group> group;
-    MatrixTransform* mt = new MatrixTransform(transform);
+    MatrixTransform* mt = new MatrixTransform();
 
     SGTreeBinList::iterator i;
 

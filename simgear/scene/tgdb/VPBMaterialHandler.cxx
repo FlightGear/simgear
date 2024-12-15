@@ -190,7 +190,7 @@ bool VegetationHandler::handleIteration(
     return true;
 }
 
-void VegetationHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up) {
+void VegetationHandler::placeObject(const osg::Vec3 vp) {
     bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()));
 }
 
@@ -207,12 +207,7 @@ void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
                    "  " << treeBin->texture << " " << treeBin->getNumTrees());
         }
 
-        const osg::Matrixd R_vert = osg::Matrixd::rotate(
-            M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
-            loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0), 0.0,
-            osg::Vec3d(1.0, 0.0, 0.0));
-
-        osg::Group *trees = createForest(randomForest, R_vert, options, 1);
+        osg::Group *trees = createForest(randomForest, options, 1);
         trees->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
         transform->addChild(trees);
     }
@@ -320,7 +315,7 @@ bool RandomLightsHandler::handleIteration(
     return true;
 }
 
-void RandomLightsHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up)
+void RandomLightsHandler::placeObject(const osg::Vec3 vp)
 {
     float zombie = pc_map_rand(vp.x(), vp.y() + vp.z(), 6);
     float factor = pc_map_rand(vp.x(), vp.y() + vp.z(), 7);
@@ -351,10 +346,8 @@ void RandomLightsHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up)
     double onPeriod = 2; // Turn on randomly around sunset
 
     // Place lights at 3m above ground
-    const osg::Vec3 finalPosition = vp + up * 3;
-
     bin->insert(
-        SGVec3f(finalPosition.x(), finalPosition.y(), finalPosition.z()),
+        SGVec3f(vp.x(), vp.y(), vp.z() + 3.0),
         size, intensity, onPeriod, color);
 }
 
@@ -364,11 +357,6 @@ void RandomLightsHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
     if (bin != NULL && bin->getNumLights() > 0) {
         SG_LOG(SG_TERRAIN, SG_DEBUG,
                "Adding Random Lights " << bin->getNumLights());
-
-        const osg::Matrixd R_vert = osg::Matrixd::rotate(
-            M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
-            loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0), 0.0,
-            osg::Vec3d(1.0, 0.0, 0.0));
 
         transform->addChild(
             createLights(*bin, osg::Matrix::identity(), options));

@@ -551,7 +551,7 @@ private:
   double roughness;
   double occlusion;
 
-  // Noise amplitude for tesselation shader that generates an additional heigh peturbation
+  // Noise amplitude for tessellation shader that generates an additional heigh peturbation
   SGVec4d height_amplitude;
 
   // Noise amplitude for bumpmapping

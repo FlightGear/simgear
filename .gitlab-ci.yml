@@ -90,7 +90,7 @@ macos-build:
   before_script:
       - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
       - export HOMEBREW_NO_INSTALL_CLEANUP=1
-      - brew install ninja cmake boost
+      - brew install ninja cmake boost c-ares
   script:
     - cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja 
       --fresh

@@ -21,9 +21,7 @@
 //
 // $Id$
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include "xmlsound.hxx"
 
@@ -78,8 +76,10 @@ SGXmlSound::~SGXmlSound()
     if (_sample)
         _sample->stop();
 
-    if (_sgrp && (_name != ""))
-        _sgrp->remove(_name);
+    auto group = _sgrp.lock();
+    if (group && !_name.empty()) {
+        group->remove(_name);
+    }
 
     _volume.clear();
     _pitch.clear();
@@ -313,6 +313,7 @@ SGXmlSound::init( SGPropertyNode *root,
    } else {
       _sgrp = sgrp;
    }
+
    string soundFileStr = node->getStringValue("path", "");
    _sample = new SGSoundSample(soundFileStr.c_str(), path);
    if (!_sample->file_path().exists()) {
@@ -329,7 +330,9 @@ SGXmlSound::init( SGPropertyNode *root,
    _sample->set_max_dist( max_dist );
    _sample->set_volume( v );
    _sample->set_pitch( p );
-   _sgrp->add( _sample, _name );
+
+   auto group = _sgrp.lock();
+   group->add(_sample, _name);
 
    return true;
 }

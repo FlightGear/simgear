@@ -54,7 +54,7 @@ static const double MAX_TRANSIT_TIME = 0.1;	// 100 ms.
  * settings, setting up its internal states, and managing sound
  * playback whenever such an event happens.
  */
-class SGXmlSound
+class SGXmlSound : public SGReferenced
 {
 
 public:
@@ -107,16 +107,16 @@ public:
    * @param avionics    A pointer to the pre-initialized avionics sample group.
    * @param path        The path where the audio files remain.
    */
-  virtual bool init( SGPropertyNode *root,
-                     SGPropertyNode *child,
-                     SGSampleGroup *sgrp,
-                     SGSampleGroup *avionics,
-                     const SGPath& path );
+  bool init(SGPropertyNode* root,
+            SGPropertyNode* child,
+            SGSampleGroup* sgrp,
+            SGSampleGroup* avionics,
+            const SGPath& path);
 
   /**
    * Check whether an event has happened and if action has to be taken.
    */
-  virtual void update (double dt);
+  void update(double dt);
 
   /**
    * Compute sample volume
@@ -164,27 +164,28 @@ protected:
   _sound_fn_t _sound_fn;
 
 private:
+    // weak since our group holds an owning ref back to us.
+    SGWeakPtr<SGSampleGroup> _sgrp;
 
-  SGSharedPtr<SGSampleGroup> _sgrp;
-  SGSharedPtr<SGSoundSample> _sample;
+    SGSharedPtr<SGSoundSample> _sample;
 
-  SGSharedPtr<SGCondition> _condition;
-  SGPropertyNode_ptr _property;
+    SGSharedPtr<SGCondition> _condition;
+    SGPropertyNode_ptr _property;
 
-  bool _active;
-  float _version;
-  std::string _name;
-  int _mode;
-  double _prev_value;
-  double _dt_play;
-  double _dt_stop;
-  double _delay;        // time after which the sound should be started (default: 0)
-  double _stopping;     // time after the sound should have stopped.
-                        // This is useful for lost packets in in-transit mode.
+    bool _active;
+    float _version;
+    std::string _name;
+    int _mode;
+    double _prev_value;
+    double _dt_play;
+    double _dt_stop;
+    double _delay;    // time after which the sound should be started (default: 0)
+    double _stopping; // time after the sound should have stopped.
+                      // This is useful for lost packets in in-transit mode.
 
-  // sound system version 1.0
-  std::vector<_snd_prop> _volume;
-  std::vector<_snd_prop> _pitch;
+    // sound system version 1.0
+    std::vector<_snd_prop> _volume;
+    std::vector<_snd_prop> _pitch;
 };
 
 #endif // _SG_SOUND_HXX

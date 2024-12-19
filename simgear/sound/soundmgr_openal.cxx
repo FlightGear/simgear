@@ -434,6 +434,7 @@ bool SGSoundMgr::add( SGSampleGroup *sgrp, const std::string& refname )
     auto sample_grp_it = d->_sample_groups.find( refname );
     if ( sample_grp_it != d->_sample_groups.end() ) {
         // sample group already exists
+        SG_LOG(SG_SOUND, SG_DEV_ALERT, "Duplicate add of sample-group:" << refname);
         return false;
     }
 

@@ -43,7 +43,7 @@ using sample_map = std::map< std::string, SGSharedPtr<SGSoundSample> >;
 
 class SGSoundMgr;
 
-class SGSampleGroup : public SGReferenced
+class SGSampleGroup : public SGWeakReferenced
 {
 public:
 

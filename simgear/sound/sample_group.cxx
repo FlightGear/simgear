@@ -33,7 +33,6 @@
 
 SGSampleGroup::SGSampleGroup ()
 {
-    _samples.clear();
 }
 
 SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr,
@@ -42,14 +41,19 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr,
     _refname(refname)
 {
     _smgr->add(this, refname);
-    _samples.clear();
 }
 
 SGSampleGroup::~SGSampleGroup ()
 {
     _active = false;
     stop();
-    _smgr = nullptr;
+
+    // destroying (or really, shutting down) FGFX removes all
+    // its SGSamples (created by XMLSound instances). So we potentially
+    // have a lot of samples we need to stop+destroy here.
+    for (auto current : _removed_samples) {
+        _smgr->sample_destroy(current.get());
+    }
 }
 
 void SGSampleGroup::cleanup_removed_samples()

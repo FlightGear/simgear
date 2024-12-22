@@ -191,7 +191,7 @@ bool VegetationHandler::handleIteration(
 }
 
 void VegetationHandler::placeObject(const osg::Vec3 vp) {
-    bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()));
+    bin->insert(vp);
 }
 
 void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
@@ -207,7 +207,7 @@ void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
                    "  " << treeBin->texture << " " << treeBin->getNumTrees());
         }
 
-        osg::Group *trees = createForest(randomForest, options, 1);
+        osg::LOD *trees = createForest(randomForest, options, 1);
         trees->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
         transform->addChild(trees);
     }

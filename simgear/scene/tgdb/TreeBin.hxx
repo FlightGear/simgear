@@ -28,6 +28,7 @@
 #include <osg/Geometry>
 #include <osg/Group>
 #include <osg/Matrix>
+#include <osg/LOD>
 
 #include <simgear/scene/util/OsgMath.hxx>
 
@@ -41,15 +42,6 @@ public:
 
     ~TreeBin() = default;   // non-virtual intentional
 
-    struct Tree {
-        Tree(const SGVec3f& p) :
-            position(p)
-        { }
-        SGVec3f position;
-  };
-
-    typedef std::vector<Tree> TreeList;
-
     int texture_varieties;
     double range;
     float height;
@@ -57,29 +49,26 @@ public:
     std::string texture;
     std::string teffect;
     
-    void insert(const Tree& t)
+    void insert(osg::Vec3d t)
     { _trees.push_back(t); }
 
-    void insert(const SGVec3f& p, int t, float s)
-    { insert(Tree(p)); }
+    void insert(const SGVec3f& p)
+    { _trees.push_back(toOsg(p)); }
 
     unsigned getNumTrees() const
     { return _trees.size(); }
 
-    const Tree& getTree(unsigned i) const
+    const osg::Vec3d getTree(unsigned i) const
     {
         assert(i < _trees.size());
         return _trees.at(i);
     }
 
-    TreeList _trees;
-    
+    std::vector<osg::Vec3d> _trees;
 };
-
-void clearSharedTreeGeometry();
 
 typedef std::list<TreeBin*> SGTreeBinList;
 
-osg::Group* createForest(SGTreeBinList& forestList, const SGReaderWriterOptions* options, int depth=3);
+osg::LOD* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWriterOptions> options, int depth=3);
 }
 #endif

@@ -210,7 +210,7 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
 {
     osg::Vec3d modelCenter = localToWorldMatrix.getTrans();
 
-    // We clip to the tile in a geodetic space, as that's what the road information
+    // We clip to the tile in a geocentric space, as that's what the road information
     // is in.
     osg::Vec3d modelNormal = modelCenter;
     modelNormal.normalize();
@@ -220,7 +220,7 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
     // However the geometry is in Z-up space, so "up" is simply (0,0,1)
     osg::Vec3d up = osg::Vec3d(0.0,0.0,1.0);
 
-    // Rotation from the geodetic coordinates to a Z-up coordinate system
+    // Rotation from the geocentric coordinates to a Z-up coordinate system
     osg::Quat rot = localToWorldMatrix.getRotate().inverse();
 
     // We need at least two node to make a road.

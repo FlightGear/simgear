@@ -200,10 +200,22 @@ typedef struct
             }
 
             skipCurrentEntry = false;
-            std::string tarPath = std::string(header.prefix) + std::string(header.fileName);
+
+            // careful handling here for tar compressors which don't use PAX path
+            // attribute to handle filenames longer than 100 bytes, or exactly 100 bytes.
+            // longer than 100 bytes use the prefix, but we need to add a path seperator.
+            // exactly 100 bytes don't use prefix, but there is no trailing NULL.
+            // https://sourceforge.net/p/flightgear/codetickets/2953/
+            std::string tarPath;
             if (!paxPathName.empty()) {
                 tarPath = paxPathName;
                 paxPathName.clear(); // clear for next file
+            } else if (strlen(header.prefix) > 0) {
+                tarPath = std::string(header.prefix) + "/" + std::string(header.fileName);
+            } else {
+                // handle fileNames which are exactly 100 bytes long.
+                const auto len = strnlen(header.fileName, 100);
+                tarPath = std::string(header.fileName, len);
             }
 
             if (!isSafePath(tarPath)) {
@@ -326,6 +338,7 @@ typedef struct
             if (!isGlobalAttr && (attrName == "path")) {
                 // data is UTF-8 encoded path name
                 paxPathName = data;
+                SG_LOG(SG_IO, SG_DEBUG, "Got PAX path attribute:" << data);
             }
         }
 };

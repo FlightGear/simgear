@@ -241,7 +241,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 
     std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - start;
     VPBTechnique::updateStats(tileID.level, elapsed_seconds.count());
-    SG_LOG(SG_TERRAIN, SG_ALERT, "Init complete of tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << elapsed_seconds.count() << " seconds.");
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Init complete of tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << elapsed_seconds.count() << " seconds.");
 }
 
 Locator* VPBTechnique::computeMasterLocator()

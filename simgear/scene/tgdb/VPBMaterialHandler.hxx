@@ -42,8 +42,9 @@ class VPBMaterialHandler {
     // Deltas to define granularity of scanline
     double delta_lat;
     double delta_lon;
+    double max_density_m2;
 
-    VPBMaterialHandler() : delta_lat(0.0), delta_lon(0.0) {}
+    VPBMaterialHandler() : delta_lat(0.0), delta_lon(0.0), max_density_m2(0.0) {}
     virtual ~VPBMaterialHandler() {}
 
     enum ImageChannel { Red, Green, Blue, Alpha };
@@ -55,6 +56,9 @@ class VPBMaterialHandler {
                                 double x, double y, float x_scale,
                                 float y_scale, const osg::Vec2d t_0,
                                 osg::Vec2d t_x, osg::Vec2d t_y);
+    bool checkAgainstObjectMask(osg::Image *objectMaskImage,
+                                ImageChannel channel, double sampleProbability,
+                                float x_scale, float y_scale, const osg::Vec2d t);
 
     double det2(const osg::Vec2d a, const osg::Vec2d b);
 
@@ -87,6 +91,10 @@ class VPBMaterialHandler {
                                  float x_scale, float y_scale,
                                  osg::Vec2f& pointInTriangle) = 0;
 
+    virtual bool handleIterationTessellation(SGMaterial* mat, osg::Image* objectMaskImage,
+                                osg::Vec2d p, const double rand1, const double rand2,
+                                 float x_scale, float y_scale) = 0;
+
     // Place an object at the point given by vp
     virtual void placeObject(const osg::Vec3 vp) = 0;
 
@@ -97,6 +105,8 @@ class VPBMaterialHandler {
 
     double get_delta_lat() { return delta_lat; };
     double get_delta_lon() { return delta_lon; };
+
+    double get_max_density_m2() { return max_density_m2; };
 };
 
 /** Vegetation handler
@@ -121,6 +131,9 @@ class VegetationHandler : public VPBMaterialHandler {
                          const osg::Vec2d ll_x, const osg::Vec2d ll_y,
                          const osg::Vec2d t_0, osg::Vec2d t_x, osg::Vec2d t_y,
                          float x_scale, float y_scale, osg::Vec2f& pointInTriangle);
+    bool handleIterationTessellation(SGMaterial* mat, osg::Image* objectMaskImage,
+                          osg::Vec2d p, const double rand1, const double rand2,
+                          float x_scale, float y_scale);
     void placeObject(const osg::Vec3 vp);
     void finish(osg::ref_ptr<SGReaderWriterOptions> options,
                 osg::ref_ptr<osg::MatrixTransform> transform, const SGGeod loc);
@@ -154,6 +167,9 @@ class RandomLightsHandler : public VPBMaterialHandler {
                          const osg::Vec2d ll_x, const osg::Vec2d ll_y,
                          const osg::Vec2d t_0, osg::Vec2d t_x, osg::Vec2d t_y,
                          float x_scale, float y_scale, osg::Vec2f& pointInTriangle);
+    bool handleIterationTessellation(SGMaterial* mat, osg::Image* objectMaskImage,
+                                osg::Vec2d p, const double rand1, const double rand2,
+                                 float x_scale, float y_scale);
     void placeObject(const osg::Vec3 vp);
     void finish(osg::ref_ptr<SGReaderWriterOptions> options,
                 osg::ref_ptr<osg::MatrixTransform> transform, const SGGeod loc);

@@ -241,7 +241,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 
     std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - start;
     VPBTechnique::updateStats(tileID.level, elapsed_seconds.count());
-    SG_LOG(SG_TERRAIN, SG_DEBUG, "Init complete of tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << elapsed_seconds.count() << " seconds.");
+    SG_LOG(SG_TERRAIN, SG_ALERT, "Init complete of tile " << tileID.x << "," << tileID.y << " level " << tileID.level << " " << elapsed_seconds.count() << " seconds.");
 }
 
 Locator* VPBTechnique::computeMasterLocator()
@@ -1670,8 +1670,252 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
 
 void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
 {
+    if (_useTessellation)
+        applyMaterialsTesselated(buffer, matcache, loc);
+    else 
+        applyMaterialsTriangles(buffer, matcache, loc);
+}
+
+osg::Vec4d VPBTechnique::catmull_rom_interp_basis(const float t)
+{
+    // Catmull-Rom basis matrix for tau=0.5.  See also fgdata/Shaders/HDR/ws30.tese
+    // Note that GLSL is column-major, while OSG is row-major.
+    osg::Matrixd catmull_rom_basis_M = osg::Matrixd(0.0,  1.0,  0.0,  0.0,
+                                                   -0.5,  0.0,  0.5,  0.0,
+                                                    1.0, -2.5,  2.0, -0.5,
+                                                   -0.5,  1.5, -1.5,  0.5);
+
+    return osg::Vec4d(1.0, t, t*t, t*t*t) * catmull_rom_basis_M;
+}
+
+void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
+{
+    assert(_useTessellation);
+    if (!matcache) return;
+
+    osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
+
+    if (!colorLayer) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << _terrainTile->getTileID().x << " " << _terrainTile->getTileID().y << " " << _terrainTile->getTileID().level);
+        return;
+    }
+
+    osg::Image* image = colorLayer->getImage();
+
+    if (!image || ! image->valid()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << _terrainTile->getTileID().x << " " << _terrainTile->getTileID().y << " " << _terrainTile->getTileID().level);
+        return;
+    }
+
+    pc_init((unsigned int) (loc.getLatitudeDeg() * loc.getLongitudeDeg() * 1000.0));
+
+    // Define all possible handlers
+    VegetationHandler vegetationHandler;
+    RandomLightsHandler lightsHandler;
+    std::vector<VPBMaterialHandler *> all_handlers{&vegetationHandler,
+                                                   &lightsHandler};
+
+    // Filter out handlers that do not apply to the current tile
+    std::vector<VPBMaterialHandler *> handlers;
+    for (const auto handler : all_handlers) {
+        if (handler->initialize(_options, _terrainTile)) {
+            handlers.push_back(handler);
+        }
+    }
+
+    // If no handlers are relevant to the current tile, return immediately
+    if (handlers.size() == 0) {
+        return;
+    }
+
+    SGMaterial* mat = 0;
+
+    const osg::PrimitiveSet* primSet = buffer._landGeometry->getPrimitiveSet(0);
+    const osg::DrawElements* drawElements = primSet->getDrawElements();
+    const osg::Array* vertices = buffer._landGeometry->getVertexArray();
+    const osg::Array* texture_coords = buffer._landGeometry->getTexCoordArray(0);
+    const osg::Vec3* vertexPtr = static_cast<const osg::Vec3*>(vertices->getDataPointer());
+    const osg::Vec2* texPtr = static_cast<const osg::Vec2*>(texture_coords->getDataPointer());
+
+    const unsigned int patchCount = drawElements->getNumIndices() / 16u;
+    //const unsigned int dim = std::sqrt(patchCount);
+
+    const double patchArea = buffer._width * buffer._height / (float) patchCount;
+
+    //SG_LOG(SG_TERRAIN, SG_ALERT, "Number of Primitives: " << drawElements->getNumIndices() << " number of patches : " << patchCount << " patchArea (sqm): " << patchArea);
+
+    // At the detailed tile level we are handling various materials, and
+    // as we walk across the tile, the landclass doesn't change regularly 
+    // from point to point within a given triangle.  Cache the required
+    // material information for the current landclass to reduce the
+    // number of lookups into the material cache.
+    int current_land_class = -1;
+    osg::Texture2D* object_mask = NULL;
+    osg::Image* object_mask_image = NULL;
+    float x_scale = 1000.0;
+    float y_scale = 1000.0;
+
+    for (unsigned int i = 0; i < patchCount; ++i) {
+        // We're going to generate points in each patch in turn, which helps with 
+        // temporal locality of materials.  Each patch is defined by 16 points,
+        // and bicubic interpolation for any point within.  See ws30.tesce.
+        double height[16];
+        for (unsigned int j=0; j<16; ++j) {
+            const unsigned int idx = drawElements->index(16 * i + j);
+            const osg::Vec3 v = vertexPtr[idx];
+            height[j] = (double) v[2];
+        }
+
+        const unsigned int idx0 = drawElements->index(16 * i + 5);  // Index of inner bottom left element
+        const unsigned int idx1 = drawElements->index(16 * i + 6);  // Index of the inner bottom right element
+        const unsigned int idx2 = drawElements->index(16 * i + 9);  // Index of the inner top left element
+
+        // Determing both the location of the (0,0) point for this patch,
+        // and the unit vectors in u and v for both the point and the texture.
+        const osg::Vec3 v0 = vertexPtr[idx0];
+        const osg::Vec3 vu = vertexPtr[idx1] - v0;
+        const osg::Vec3 vv = vertexPtr[idx2] - v0;
+        const osg::Vec2 t0 = texPtr[idx0];
+        const osg::Vec2 tu = texPtr[idx1] - t0;
+        const osg::Vec2 tv = texPtr[idx2] - t0;
+
+        //SG_LOG(SG_TERRAIN, SG_ALERT, "Patch v0 " << v0.x() << ", " << v0.y() << ", " << v0.z());
+        //SG_LOG(SG_TERRAIN, SG_ALERT, "Patch vu " << vu.x() << ", " << vu.y() << ", " << vu.z());
+        //SG_LOG(SG_TERRAIN, SG_ALERT, "Patch vv " << vv.x() << ", " << vv.y() << ", " << vv.z());
+
+        //SG_LOG(SG_TERRAIN, SG_ALERT, "Patch t0 " << t0.x() << ", " << t0.y());
+        //SG_LOG(SG_TERRAIN, SG_ALERT, "Patch tu " << tu.x() << ", " << tu.y());
+        //SG_LOG(SG_TERRAIN, SG_ALERT, "Patch tv " << tv.x() << ", " << tv.y());
+
+        osg::Matrixd H = osg::Matrixd(height);
+        osg::Matrixd HT;
+        HT.transpose(H);
+
+        for (const auto handler : handlers) {
+            handler->setLocation(loc, 0.1, 0.1);
+
+            // Determine the number of points to generate for this patch, using a zombie door method to handle low
+            // densities.
+            double zombie = pc_rand();
+            unsigned int pt_count = static_cast<unsigned int>(std::floor(patchArea / handler->get_max_density_m2() + zombie));
+
+            for (unsigned int k = 0; k < pt_count; ++k) {
+                // Create a pseudo-random UV coordinate that is repeatable and relatively unique for this patch.
+                double uvx   = pc_rand();
+                double uvy   = pc_rand();
+                double rand1 = pc_rand();
+                double rand2 = pc_rand();
+                osg::Vec2d uv = osg::Vec2d(uvx, uvy);
+
+                // Location of this actual point.
+                osg::Vec3 p = v0 + vu*uvx + vv*uvy;
+                const osg::Vec2 t = t0 + tu*uvx + tv*uvy;
+
+                // Determine the landclass from the texture coordinates
+                unsigned int tx = (unsigned int) (image->s() * t.x()) % image->s();
+                unsigned int ty = (unsigned int) (image->t() * t.y()) % image->t();
+                const osg::Vec4 tc = image->getColor(tx, ty);
+                const int land_class = int(std::round(tc.x() * 255.0));
+
+                if (land_class != current_land_class) {
+                    // Use temporal locality to reduce material lookup by caching
+                    // some elements for future lookups against the same landclass.
+                    mat = matcache->find(land_class);
+                    if (!mat) {
+                        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find landclass " << land_class << " from point " << tx << ", " << ty);
+                        continue;
+                    }
+
+                    current_land_class = land_class;
+
+                    // We need to notify all handlers of material change, but
+                    // only consider the current handler being processed for
+                    // skipping the loop
+                    bool current_handler_result = true;
+                    for (const auto temp_handler : handlers) {
+                        bool result = temp_handler->handleNewMaterial(mat);
+
+                        if (temp_handler == handler) {
+                            current_handler_result = result;
+                        }
+                    }
+
+                    if (!current_handler_result) {
+                        continue;
+                    }
+
+                    object_mask = mat->get_one_object_mask(0);
+                    object_mask_image = NULL;
+                    if (object_mask != NULL) {
+                        object_mask_image = object_mask->getImage();
+                        if (!object_mask_image || ! object_mask_image->valid()) {
+                            object_mask_image = NULL;
+                            continue;
+                        }
+
+                        // Texture coordinates run [0..1][0..1] across the entire tile whereas
+                        // the texure itself has defined dimensions in m.
+                        // We therefore need to use the tile width and height to determine the correct
+                        // texture coordinate transformation.
+                        x_scale = buffer._width / 1000.0;
+                        y_scale = buffer._height / 1000.0;
+
+                        if (mat->get_xsize() > 0.0) { x_scale = buffer._width / mat->get_xsize(); }
+                        if (mat->get_ysize() > 0.0) { y_scale = buffer._height / mat->get_ysize(); }
+                    }
+                }
+
+                if (!mat) continue;
+
+                // Check against actual material density and objectMask.
+                if (handler->handleIterationTessellation(mat, object_mask_image, t, rand1, rand2, x_scale, y_scale)) {
+
+                    // Check against constraints to stop lights and objects on roads or water.
+                    const osg::Vec3 upperPoint = p + osg::Vec3d(0.0,0.0, 9000.0);
+                    const osg::Vec3 lowerPoint = p + osg::Vec3d(0.0,0.0, -300.0);
+
+                    // Check against water
+                    if (checkAgainstWaterConstraints(buffer, t))
+                        continue;
+
+                    if (checkAgainstRandomObjectsConstraints(buffer, lowerPoint, upperPoint))
+                        continue;
+
+                    const osg::Matrixd localToGeocentricTransform = buffer._transform->getMatrix();
+                    if (checkAgainstElevationConstraints(lowerPoint * localToGeocentricTransform, upperPoint * localToGeocentricTransform))
+                        continue;
+
+                    // If we have got this far, then determine the points height using bicubic interpolation
+                    // We can determine the height using the same calculations that will be used by the tesselation shader.
+                    // See fgdata/Shaders/HDR/ws30.tese
+                    osg::Vec4d u_basis = VPBTechnique::catmull_rom_interp_basis(uv.x());
+                    osg::Vec4d v_basis = VPBTechnique::catmull_rom_interp_basis(uv.y());
+
+                    osg::Vec4d hu = osg::Vec4d(
+                        osg::Vec4d(H(0,0), H(1,0), H(2,0), H(3,0)) * u_basis,
+                        osg::Vec4d(H(0,1), H(1,1), H(2,1), H(3,1)) * u_basis,
+                        osg::Vec4d(H(0,2), H(1,2), H(2,2), H(3,2)) * u_basis,
+                        osg::Vec4d(H(0,3), H(1,3), H(2,3), H(3,3)) * u_basis);
+
+                    float h = hu *  v_basis; // Can also be dot(hv, u_basis)
+                    p.set(p.x(), p.y(), h);
+
+                    // Finally place the object
+                    handler->placeObject(p);
+                }
+            }
+        }
+    }
+
+    for (const auto handler : handlers) {
+        handler->finish(_options, buffer._transform, loc);
+    }
+}
+
+void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
+{
     // XXX: This currently assumes we use triangles, so doesn't work with tessellation
-    if (_useTessellation) return;
+    assert(! _useTessellation);
     if (!matcache) return;
     
     pc_init(2718281);

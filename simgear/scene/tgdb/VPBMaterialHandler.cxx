@@ -43,8 +43,15 @@ bool VPBMaterialHandler::checkAgainstObjectMask(
     osg::Image *objectMaskImage, ImageChannel channel, double sampleProbability,
     double x, double y, float x_scale, float y_scale, const osg::Vec2d t_0,
     osg::Vec2d t_x, osg::Vec2d t_y) {
+
+    osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
+    return checkAgainstObjectMask(objectMaskImage, channel, sampleProbability, x_scale, y_scale, t);
+}
+
+bool VPBMaterialHandler::checkAgainstObjectMask(
+    osg::Image *objectMaskImage, ImageChannel channel, double sampleProbability,
+    float x_scale, float y_scale, osg::Vec2d t) {
     if (objectMaskImage != NULL) {
-        osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
         unsigned int x =
             (unsigned int)(objectMaskImage->s() * t.x() * x_scale) %
             objectMaskImage->s();
@@ -113,7 +120,8 @@ bool VegetationHandler::handleNewMaterial(SGMaterial *mat) {
     if (mat->get_wood_coverage() <= 0)
         return false;
 
-    wood_coverage = 2000.0 / mat->get_wood_coverage();
+    wood_coverage = 2000.0 / mat->get_wood_coverage() * vegetation_density * vegetation_density;
+    max_density_m2 = mat->get_wood_coverage() / (vegetation_density * vegetation_density);
 
     bool found = false;
 
@@ -189,6 +197,31 @@ bool VegetationHandler::handleIteration(
     pointInTriangle.set(x, y);
     return true;
 }
+    
+bool VegetationHandler::handleIterationTessellation(
+    SGMaterial* mat, osg::Image* objectMaskImage,
+    osg::Vec2d p, const double rand1, const double rand2,
+    float x_scale, float y_scale)
+{
+    if (mat->get_wood_coverage() <= 0)
+        return false;
+    if (rand1 > wood_coverage)
+        return false;
+
+    //if (mat->get_is_plantation()) {
+    //    p = osg::Vec2d(lon + 0.1 * delta_lon * pc_map_norm(lon_int, lat_int, 0),
+    //                   lat + 0.1 * delta_lat * pc_map_norm(lon_int, lat_int, 1));
+    //}
+
+    // Check against any object mask using green (for trees) channel
+    if (checkAgainstObjectMask(objectMaskImage, Green,
+                               rand2, x_scale,
+                               y_scale, p)) {
+        return false;
+    }
+    return true;
+}
+
 
 void VegetationHandler::placeObject(const osg::Vec3 vp) {
     bin->insert(vp);
@@ -248,6 +281,7 @@ void RandomLightsHandler::setLocation(const SGGeod loc, double r_E_lat,
     // 1m latitudeDelta [degrees] = 360 [degrees] / (2 * PI * polarRadius)
     // 1m latitudeDelta [radians] = PI / 180 * latitudeDelta [degrees]
     // 31m latitudeDelta [radians] = sqrt(1000) / latitudeDelta [radians]
+    max_density_m2 = 1000.0;
     delta_lat = sqrt(1000.0) / r_E_lat;
 
     // 1m longitudeDelta [degrees] = 360 [degrees] / (2 * PI * equitorialRadius
@@ -315,6 +349,33 @@ bool RandomLightsHandler::handleIteration(
     return true;
 }
 
+
+bool RandomLightsHandler::handleIterationTessellation(
+    SGMaterial* mat, osg::Image* objectMaskImage,
+    osg::Vec2d p, const double rand1, const double rand2,
+    float x_scale, float y_scale)
+{
+    if (mat->get_light_coverage() <= 0)
+        return false;
+
+    // Since we are scanning 31mx31m chunks, 1000/lightCoverage gives the
+    //  probability of a particular 31x31 chunk having a light
+    //  e.g. if lightCoverage = 10000m^2 (i.e. every light point must
+    //  cover around 10000m^2), this roughly equates to
+    //  sqrt(10000) * sqrt(10000) 1mx1m chunks, i.e. 100m x 100m, which
+    //  translates to ~10 31mx31m chunks, giving us a probability of 1/10.
+    if (rand1 > (1000.0 / lightCoverage))
+        return false;
+
+    // Check against any object mask using green (for trees) channel
+    if (checkAgainstObjectMask(objectMaskImage, Blue,
+                               rand2, x_scale,
+                               y_scale, p)) {
+        return false;
+    }
+    return true;
+}
+
 void RandomLightsHandler::placeObject(const osg::Vec3 vp)
 {
     float zombie = pc_map_rand(vp.x(), vp.y() + vp.z(), 6);
@@ -344,6 +405,10 @@ void RandomLightsHandler::placeObject(const osg::Vec3 vp)
     double size = 30;
     double intensity = 500;
     double onPeriod = 2; // Turn on randomly around sunset
+
+    if (bin == NULL) {
+        bin = new LightBin();
+    }
 
     // Place lights at 3m above ground
     bin->insert(

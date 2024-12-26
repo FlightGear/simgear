@@ -343,6 +343,10 @@ class VPBTechnique : public TerrainTechnique
         virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
 
         virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
+        virtual void applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
+        virtual void applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
+
+        virtual osg::Vec4d catmull_rom_interp_basis(const float t);
 
         virtual osg::Image* generateWaterTexture(Atlas* atlas);
 

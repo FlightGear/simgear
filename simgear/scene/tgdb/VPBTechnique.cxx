@@ -194,6 +194,8 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 
     if ((dirtyMask & TerrainTile::IMAGERY_DIRTY)==0)
     {
+        // This path typically used when re-generating a tile following generation
+        // of a neighbouring tile with tessellation, which impacts the borders.
         generateGeometry(*buffer, centerModel, matcache);
 
         osg::ref_ptr<BufferData> read_buffer = _currentBufferData;
@@ -201,20 +203,29 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         osg::StateSet* landStateset = read_buffer->_landGeode->getStateSet();
         if (landStateset)
         {
+            // We already have a full stateset, so re-use it.
             buffer->_landGeode->setStateSet(landStateset);
             osg::StateSet* seaStateset = read_buffer->_seaGeode->getStateSet();
             buffer->_seaGeode->setStateSet(seaStateset);
+            buffer->_waterRasterTexture = read_buffer->_waterRasterTexture;
         }
         else
         {
+            // Generate required textures etc.
             applyColorLayers(*buffer, matcache);
-            VPBLineFeatureRenderer lineFeatureRenderer = VPBLineFeatureRenderer(_terrainTile);
-            lineFeatureRenderer.applyLineFeatures(*buffer, _options, matcache);
-            applyMaterials(*buffer, matcache, loc);
         }
+
+        // We need to regenerate all line features and random vegetation because
+        // our elevation model has changed.
+        VPBLineFeatureRenderer lineFeatureRenderer = VPBLineFeatureRenderer(_terrainTile);
+        lineFeatureRenderer.applyLineFeatures(*buffer, _options, matcache);
+        applyMaterials(*buffer, matcache, loc);
+
     }
     else
     {
+        // We have updated imagery, so re-generate everything.  Could be more efficient, but as
+        // we very rarely use this path, we can accept longer runtime at present.
         generateGeometry(*buffer, centerModel, matcache);
         
         applyColorLayers(*buffer, matcache);

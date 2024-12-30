@@ -860,8 +860,8 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
         // Light map - n=3
         params->getChild("texture", 3, true)->getChild("image", 0, true)->setStringValue(_lightMapName);
 
-        // Normal map - n=4
-        params->getChild("texture", 4, true)->getChild("image", 0, true)->setStringValue(_normalMapName);
+        // Reflection map - n=4
+        params->getChild("texture", 4, true)->getChild("image", 0, true)->setStringValue(_reflectionMapName);
 
         effect = makeEffect(effectProp, true, options);
         if (iter == buildingEffectMap.end())

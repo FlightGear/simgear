@@ -75,7 +75,8 @@ double VPBMaterialHandler::det2(const osg::Vec2d a, const osg::Vec2d b) {
  *  simgear/scene/tgdb/VPBTechnique.cxx : applyTrees()
  */
 bool VegetationHandler::initialize(osg::ref_ptr<SGReaderWriterOptions> options,
-                                   osg::ref_ptr<TerrainTile> terrainTile) {
+                                   osg::ref_ptr<TerrainTile> terrainTile,
+                                   osg::ref_ptr<SGMaterialCache> matcache) {
     bool use_random_vegetation = false;
     int vegetation_lod_level = 6;
     vegetation_density = 1.0;
@@ -98,14 +99,67 @@ bool VegetationHandler::initialize(osg::ref_ptr<SGReaderWriterOptions> options,
 
     // Do not generate vegetation for tiles too far away or if we explicitly
     // don't generate vegetation
+    int level = terrainTile->getTileID().level;
     if ((!use_random_vegetation) ||
-        (terrainTile->getTileID().level < vegetation_lod_level)) {
+        (level < vegetation_lod_level)) {
         return false;
     }
 
-    bin = NULL;
-    wood_coverage = 0.0;
+    // Determine the minimum vegetation density.
+    osgTerrain::Layer* colorLayer = terrainTile->getColorLayer(0);
 
+    if (!colorLayer) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << terrainTile->getTileID().x << " " << terrainTile->getTileID().y << " " << terrainTile->getTileID().level);
+        return false;
+    }
+
+    osg::Image* image = colorLayer->getImage();
+    if (!image || ! image->valid()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << terrainTile->getTileID().x << " " << terrainTile->getTileID().y << " " << terrainTile->getTileID().level);
+        return false;
+    }
+
+    // Determine the maximum density of vegetation for this tile by
+    // building a set of landclassess and looking them up in the material
+    // cache.
+    std::set <int>lcSet;
+    for (int t = 0; t < image->t(); ++t) {
+        for (int s = 0; s < image->s(); ++s) {
+            const osg::Vec4 tc = image->getColor(s, t);
+            int lc = int(std::round(tc.x() * 255.0));
+            lcSet.insert(lc);
+        }
+    }
+
+    const double MAX_MIN_MAT_COVERAGE = 100000.0;
+    min_material_coverage = MAX_MIN_MAT_COVERAGE;
+    for(auto lc = lcSet.begin(); lc != lcSet.end(); ++lc) {
+        int l = *lc;
+        auto mat = matcache->find(l);
+        if (mat && (mat->get_wood_coverage() > 0.0) && (mat->get_wood_coverage() < min_material_coverage)) 
+            min_material_coverage = mat->get_wood_coverage();
+    }
+
+    if (min_material_coverage == MAX_MIN_MAT_COVERAGE) 
+        return false;
+
+    bin = NULL;
+    wood_density = 0.0;
+    // This is the density of points we will generate across the patch before
+    // applying the material vegetation density, object mask etc.  
+    // Note that the units are m2.  I.e. the average area per piece of vegetation.
+    // So a smaller number means more vegetation.
+    //
+    // vegentation_density ranges from 0.1 to 8, and is linear.  I.e. the are density factor varies from
+    // 0.01 to 64.
+    //
+    // Maximum material.xml wood coverage is 4000m^2 - e.g. one tree for every 4000m^2 at medium density,
+    // or one every 4000/64 = 62m^2 or every 4m linearly at maximum density.
+    //  We also generate fewer trees at further out LoD levels.
+    double level_factor = (double) ((7 - level) * (7 - level));
+    min_coverage_m2 = (min_material_coverage / (vegetation_density * vegetation_density)) * level_factor;
+
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Base point density for vegetation: " << min_material_coverage << " / " << vegetation_density << "^2 / " << level_factor << " = " << min_coverage_m2);
     return true;
 }
 
@@ -120,8 +174,10 @@ bool VegetationHandler::handleNewMaterial(SGMaterial *mat) {
     if (mat->get_wood_coverage() <= 0)
         return false;
 
-    wood_coverage = 2000.0 / mat->get_wood_coverage() * vegetation_density * vegetation_density;
-    max_density_m2 = mat->get_wood_coverage() / (vegetation_density * vegetation_density);
+    // Wood coverage is relative to the value above.  E.g. we
+    // will generate one tree for each point if the material
+    // coverage value is equals to min_material_coverage.
+    wood_density = min_material_coverage / mat->get_wood_coverage();
 
     bool found = false;
 
@@ -170,7 +226,7 @@ bool VegetationHandler::handleIteration(
 
     if (mat->get_wood_coverage() <= 0)
         return false;
-    if (pc_map_rand(lon_int, lat_int, 2) > wood_coverage)
+    if (pc_map_rand(lon_int, lat_int, 2) > wood_density)
         return false;
 
     if (mat->get_is_plantation()) {
@@ -205,7 +261,7 @@ bool VegetationHandler::handleIterationTessellation(
 {
     if (mat->get_wood_coverage() <= 0)
         return false;
-    if (rand1 > wood_coverage)
+    if (rand1 > wood_density)
         return false;
 
     //if (mat->get_is_plantation()) {
@@ -240,7 +296,7 @@ void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
                    "  " << treeBin->texture << " " << treeBin->getNumTrees());
         }
 
-        osg::LOD *trees = createForest(randomForest, options, 1);
+        osg::Group *trees = createForest(randomForest, options);
         trees->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
         transform->addChild(trees);
     }
@@ -249,7 +305,8 @@ void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
 /** RandomLightsHandler implementation */
 bool RandomLightsHandler::initialize(
     osg::ref_ptr<SGReaderWriterOptions> options,
-    osg::ref_ptr<TerrainTile> terrainTile) {
+    osg::ref_ptr<TerrainTile> terrainTile,
+    osg::ref_ptr<SGMaterialCache> matcache) {
     SGPropertyNode *propertyNode = options->getPropertyNode().get();
 
     int lightLODLevel = 6;
@@ -270,6 +327,7 @@ bool RandomLightsHandler::initialize(
     }
 
     lightCoverage = 0.0;
+    min_coverage_m2 = 1000.0;
 
     return true;
 }
@@ -281,7 +339,6 @@ void RandomLightsHandler::setLocation(const SGGeod loc, double r_E_lat,
     // 1m latitudeDelta [degrees] = 360 [degrees] / (2 * PI * polarRadius)
     // 1m latitudeDelta [radians] = PI / 180 * latitudeDelta [degrees]
     // 31m latitudeDelta [radians] = sqrt(1000) / latitudeDelta [radians]
-    max_density_m2 = 1000.0;
     delta_lat = sqrt(1000.0) / r_E_lat;
 
     // 1m longitudeDelta [degrees] = 360 [degrees] / (2 * PI * equitorialRadius

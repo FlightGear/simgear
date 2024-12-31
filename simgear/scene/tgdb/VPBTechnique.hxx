@@ -341,6 +341,7 @@ class VPBTechnique : public TerrainTechnique
         virtual void applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache);
 
         virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
+        virtual const int getLandclass(const osg::Vec2d p);
 
         virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
         virtual void applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);

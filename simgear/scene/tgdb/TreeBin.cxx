@@ -162,6 +162,10 @@ EffectGeode* createTreeGeode(TreeBin* forest)
     DrawArrays* primset = new DrawArrays(GL_TRIANGLES, 0, vertexArray->size(), positions->size());
     geometry->addPrimitiveSet(primset);
 
+    // Force generation of the bounding box in this pager thread so that we don't need to do it
+    // in the main update thread later.
+    geometry->getBound();
+
     EffectGeode* result = new EffectGeode;
     result->addDrawable(geometry);
     return result;
@@ -176,11 +180,11 @@ inline static std::mutex treeEffectMapMutex; // Protects the treeEffectMap for m
 // forest into the local Z-up coordinate system we can reuse the
 // primitive tree geometry for all the forests of the same type.
 
-LOD* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWriterOptions> options, int depth)
+Group* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWriterOptions> options)
 {
     Matrix transInv = Matrix::identity();
     // Set up some shared structures.
-    LOD* lod = new LOD;
+    Group* group = new Group;
 
     SGTreeBinList::iterator i;
 
@@ -207,7 +211,7 @@ LOD* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWrite
 
                 if (iter == treeEffectMap.end()) {
                     treeEffectMap.insert(EffectMap::value_type(forest->texture, effect));
-                    SG_LOG(SG_TERRAIN, SG_ALERT, "Created new tree effectMap for " << forest->texture);
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Created new tree effectMap for " << forest->texture);
                 } else {
                     iter->second = effect; // update existing, but empty observer
                 }
@@ -220,11 +224,10 @@ LOD* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWrite
 
         EffectGeode* geode = createTreeGeode(forest);
         geode->setEffect(effect.get());
-
-        lod->addChild(geode, 0, forest->range);
+        group->addChild(geode);
     }
 
-    return lod;
+    return group;
 }
 
 TreeBin::TreeBin(const SGMaterial *mat)

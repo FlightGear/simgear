@@ -881,8 +881,14 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
     static int buildingGroupCounter = 0;
     group->setName("BuildingsGroup_" + std::to_string(buildingGroupCounter++));
 
-    for (size_t j = 0; j < quadbuilding.getRoot()->getNumChildren(); ++j)
-            group->addChild(quadbuilding.getRoot()->getChild(j));
+    for (size_t j = 0; j < quadbuilding.getRoot()->getNumChildren(); ++j) {
+            osg::Node* c = quadbuilding.getRoot()->getChild(j);
+
+            // Force generation of the bounds to happen in the loading thread
+            // rather during a later update in the main thread.
+            c->getBound();
+            group->addChild(c);
+    }
 
     return group;
   }

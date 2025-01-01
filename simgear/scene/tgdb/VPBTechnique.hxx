@@ -377,7 +377,7 @@ class VPBTechnique : public TerrainTechnique
         bool                                _useTessellation;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
-        inline static std::mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
+        inline static std::shared_mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
 
         inline static std::mutex _stats_mutex; // Protects the loading statistics and other static properties
         typedef std::pair<unsigned int, float> LoadStat;

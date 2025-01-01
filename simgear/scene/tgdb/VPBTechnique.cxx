@@ -439,12 +439,16 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
     //   - -10.0 (in the case of sea level)
     //   - any constraints for this point and the surrounding 8 points
 
-    for(int j=0; j<_numRows; ++j) {
-        for(int i=0; i<_numColumns; ++i) {
-            osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), (double) 10000.0);
-            double elev = VPBTechnique::getConstrainedElevation(ndc, _masterLocator, _constraint_vtx_gap);
-            if (elev < 10000.0) {
-                _elevationConstraints[j * _numColumns + i] =  elev;
+    {
+        // Locking the shared_mutex in this scope to remove the need to lock it for each elevation point.
+        const std::lock_guard<std::shared_mutex> lock_shared(VPBTechnique::_elevationConstraintMutex); // Share lock the _elevationConstraintGroup for this scope
+        for(int j=0; j<_numRows; ++j) {
+            for(int i=0; i<_numColumns; ++i) {
+                osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), (double) 10000.0);
+                double elev = VPBTechnique::getConstrainedElevation(ndc, _masterLocator, _constraint_vtx_gap);
+                if (elev < 10000.0) {
+                    _elevationConstraints[j * _numColumns + i] =  elev;
+                }
             }
         }
     }
@@ -2288,24 +2292,24 @@ void VPBTechnique::releaseGLObjects(osg::State* state) const
 // are significantly higher vertices that lie just outside the constraint model.
 void VPBTechnique::addElevationConstraint(osg::ref_ptr<osg::Node> constraint)
 { 
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
     _elevationConstraintGroup->addChild(constraint.get()); 
 }
 
 // Remove a previously added constraint.  E.g on model unload.
 void VPBTechnique::removeElevationConstraint(osg::ref_ptr<osg::Node> constraint)
 { 
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
     _elevationConstraintGroup->removeChild(constraint.get()); 
 }
 
 // Check a given vertex against any elevation constraints  E.g. to ensure the terrain mesh doesn't
 // poke through any airport meshes.  If such a constraint exists, the function will return the elevation
 // in local coordinates.
+//
+// Note that you MUST have already locked the VPBTechnique::_elevationConstraintMutex shared_mutex
 double VPBTechnique::getConstrainedElevation(osg::Vec3d ndc, Locator* masterLocator, double vtx_gap)
 {
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
-
     osg::Vec3d origin, vertex;
     masterLocator->convertLocalToModel(osg::Vec3d(ndc.x(), ndc.y(), -1000), origin);
     masterLocator->convertLocalToModel(ndc, vertex);
@@ -2333,7 +2337,7 @@ double VPBTechnique::getConstrainedElevation(osg::Vec3d ndc, Locator* masterLoca
 
 bool VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex)
 {
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock_shared(VPBTechnique::_elevationConstraintMutex); // Share lock the _elevationConstraintGroup for this scope
     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
     intersector = new osgUtil::LineSegmentIntersector(origin, vertex);
     osgUtil::IntersectionVisitor visitor(intersector.get());
@@ -2367,7 +2371,7 @@ bool VPBTechnique::checkAgainstRandomObjectsConstraints(BufferData& buffer, osg:
 
 void VPBTechnique::clearConstraints()
 {
-    const std::lock_guard<std::mutex> elock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
     _elevationConstraintGroup = new osg::Group();
 }
 

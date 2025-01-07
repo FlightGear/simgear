@@ -13,7 +13,7 @@ variables:
   HOMEBREW_NO_AUTO_UPDATE: 1
 
 linux-build:
-  image: registry.gitlab.com/stuart131/flightgear
+  image: registry.gitlab.com/flightgear/flightgear
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE != "schedule"
@@ -27,7 +27,7 @@ linux-build:
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
   needs:
-    - project: stuart131/openscenegraph
+    - project: flightgear/openscenegraph
       job: linux-build
       ref: $OSG_REF
       artifacts: true
@@ -65,7 +65,7 @@ windows-build:
     - cmake --build $BUILD_DIR --config RelWithDebInfo
     - cmake --build $BUILD_DIR --config RelWithDebInfo --target install
   needs:
-    - project: stuart131/openscenegraph
+    - project: flightgear/openscenegraph
       job: windows_build
       ref: $OSG_REF
       artifacts: true
@@ -104,7 +104,7 @@ macos-build:
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
   needs:
-    - project: stuart131/openscenegraph
+    - project: flightgear/openscenegraph
       job: macos-build
       ref: $OSG_REF
       artifacts: true
@@ -117,7 +117,7 @@ macos-build:
 
 # run tests using the binary built before
 test:
-  image: registry.gitlab.com/stuart131/flightgear
+  image: registry.gitlab.com/flightgear/flightgear
   stage: test
   needs:
     # needed so we have the OSG libs
@@ -139,7 +139,7 @@ test:
 staging:
   stage: deploy
   trigger:
-    project: stuart131/flightgear
+    project: flightgear/flightgear
     branch: $CI_COMMIT_BRANCH
     strategy: depend
   inherit: 

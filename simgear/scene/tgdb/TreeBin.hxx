@@ -69,6 +69,6 @@ public:
 
 typedef std::list<TreeBin*> SGTreeBinList;
 
-osg::LOD* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWriterOptions> options, int depth=3);
+osg::Group* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWriterOptions> options);
 }
 #endif

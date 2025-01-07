@@ -42,9 +42,9 @@ class VPBMaterialHandler {
     // Deltas to define granularity of scanline
     double delta_lat;
     double delta_lon;
-    double max_density_m2;
+    double min_coverage_m2;
 
-    VPBMaterialHandler() : delta_lat(0.0), delta_lon(0.0), max_density_m2(0.0) {}
+    VPBMaterialHandler() : delta_lat(0.0), delta_lon(0.0), min_coverage_m2(0.0) {}
     virtual ~VPBMaterialHandler() {}
 
     enum ImageChannel { Red, Green, Blue, Alpha };
@@ -66,7 +66,8 @@ class VPBMaterialHandler {
     // Initialize internal state and return true if the handler should be called
     // for the current tile.
     virtual bool initialize(osg::ref_ptr<SGReaderWriterOptions> options,
-                            osg::ref_ptr<TerrainTile> terrainTile) = 0;
+                            osg::ref_ptr<TerrainTile> terrainTile,
+                            osg::ref_ptr<SGMaterialCache> matcache) = 0;
 
     // Set the internal state (e.g. deltas) based on the current tile's location
     virtual void setLocation(const SGGeod loc, double r_E_lat,
@@ -106,7 +107,7 @@ class VPBMaterialHandler {
     double get_delta_lat() { return delta_lat; };
     double get_delta_lon() { return delta_lon; };
 
-    double get_max_density_m2() { return max_density_m2; };
+    double get_min_coverage_m2() { return min_coverage_m2; };
 };
 
 /** Vegetation handler
@@ -122,7 +123,8 @@ class VegetationHandler : public VPBMaterialHandler {
     virtual ~VegetationHandler() {}
 
     bool initialize(osg::ref_ptr<SGReaderWriterOptions> options,
-                    osg::ref_ptr<TerrainTile> terrainTile);
+                    osg::ref_ptr<TerrainTile> terrainTile,
+                    osg::ref_ptr<SGMaterialCache> matcache);
     void setLocation(const SGGeod loc, double r_E_lat, double r_E_lon);
     bool handleNewMaterial(SGMaterial *mat);
     bool handleIteration(SGMaterial* mat, osg::Image* objectMaskImage,
@@ -143,7 +145,8 @@ class VegetationHandler : public VPBMaterialHandler {
     SGTreeBinList randomForest;
 
     TreeBin *bin = NULL;
-    float wood_coverage = 0.0;
+    float min_material_coverage;
+    float wood_density = 0.0;
 };
 
 /**  Random Lighting handler
@@ -158,7 +161,8 @@ class RandomLightsHandler : public VPBMaterialHandler {
     virtual ~RandomLightsHandler() {}
 
     bool initialize(osg::ref_ptr<SGReaderWriterOptions> options,
-                    osg::ref_ptr<TerrainTile> terrainTile);
+                    osg::ref_ptr<TerrainTile> terrainTile,
+                    osg::ref_ptr<SGMaterialCache> matcache);
     void setLocation(const SGGeod loc, double r_E_lat, double r_E_lon);
     bool handleNewMaterial(SGMaterial *mat);
     bool handleIteration(SGMaterial* mat, osg::Image* objectMaskImage,

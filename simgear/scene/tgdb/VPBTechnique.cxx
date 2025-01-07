@@ -125,7 +125,7 @@ void VPBTechnique::setOptions(const SGReaderWriterOptions* options)
 
     if (! _statsPropertyNode) {
         const std::lock_guard<std::mutex> lock(VPBTechnique::_stats_mutex); // Lock the _stats_mutex for this scope
-        _statsPropertyNode = _options->getPropertyNode()->getNode("/sim/rendering/statistics/ws30/loading", true);
+        _statsPropertyNode = _options->getPropertyNode()->getNode("/sim/rendering/statistics/lod", true);
         _useTessellationPropNode = _options->getPropertyNode()->getNode("/sim/rendering/shaders/tessellation", true);
     }    
 }
@@ -208,6 +208,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
             osg::StateSet* seaStateset = read_buffer->_seaGeode->getStateSet();
             buffer->_seaGeode->setStateSet(seaStateset);
             buffer->_waterRasterTexture = read_buffer->_waterRasterTexture;
+            buffer->_BVHMaterialMap = read_buffer->_BVHMaterialMap;
         }
         else
         {
@@ -438,12 +439,16 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
     //   - -10.0 (in the case of sea level)
     //   - any constraints for this point and the surrounding 8 points
 
-    for(int j=0; j<_numRows; ++j) {
-        for(int i=0; i<_numColumns; ++i) {
-            osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), (double) 10000.0);
-            double elev = VPBTechnique::getConstrainedElevation(ndc, _masterLocator, _constraint_vtx_gap);
-            if (elev < 10000.0) {
-                _elevationConstraints[j * _numColumns + i] =  elev;
+    {
+        // Locking the shared_mutex in this scope to remove the need to lock it for each elevation point.
+        const std::lock_guard<std::shared_mutex> lock_shared(VPBTechnique::_elevationConstraintMutex); // Share lock the _elevationConstraintGroup for this scope
+        for(int j=0; j<_numRows; ++j) {
+            for(int i=0; i<_numColumns; ++i) {
+                osg::Vec3d ndc( ((double)i)/(double)(_numColumns-1), ((double)j)/(double)(_numRows-1), (double) 10000.0);
+                double elev = VPBTechnique::getConstrainedElevation(ndc, _masterLocator, _constraint_vtx_gap);
+                if (elev < 10000.0) {
+                    _elevationConstraints[j * _numColumns + i] =  elev;
+                }
             }
         }
     }
@@ -789,6 +794,7 @@ void VPBTechnique::VertexNormalGenerator::populateCorner(
     case Corner::BOTTOM_RIGHT: i = _numColumns; j =       -1; break;
     case Corner::TOP_LEFT:     i = -1;          j = _numRows; break;
     case Corner::TOP_RIGHT:    i = _numColumns; j = _numRows; break;
+    default: SG_LOG(SG_TERRAIN, SG_ALERT, "Unknown corner"); return;
     }
 
     osg::Vec3d ndc(double(i) / double(_numColumns-1), double(j) / double(_numRows-1), 0.0);
@@ -1433,15 +1439,11 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     // Tile-specific information for the shaders
     osg::StateSet *landStateSet = buffer._landGeode->getOrCreateStateSet();
-    osg::StateSet *seaStateSet;
     osg::ref_ptr<osg::Uniform> level = new osg::Uniform("tile_level", _terrainTile->getTileID().level);
     landStateSet->addUniform(level);
     if (_useTessellation) {
         landStateSet->setAttribute(new osg::PatchParameter(16));
-    } else {
-        seaStateSet = buffer._seaGeode->getOrCreateStateSet();
-        seaStateSet->addUniform(level);
-    }
+    } 
 
     // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
     // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
@@ -1467,12 +1469,16 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     osg::ref_ptr<osg::Uniform> twu = new osg::Uniform("fg_tileWidth", buffer._width);
     landStateSet->addUniform(twu);
-    if (! _useTessellation) seaStateSet->addUniform(twu);
-
     osg::ref_ptr<osg::Uniform> thu = new osg::Uniform("fg_tileHeight", buffer._height);
     landStateSet->addUniform(thu);
-    if (! _useTessellation) seaStateSet->addUniform(thu);
 
+    if (! _useTessellation) {
+        osg::StateSet *seaStateSet = buffer._seaGeode->getOrCreateStateSet();
+        seaStateSet->addUniform(level);
+        seaStateSet->addUniform(twu);
+        seaStateSet->addUniform(thu);
+    }
+    
     // Force build of KD trees?
     if (osgDB::Registry::instance()->getBuildKdTreesHint()==osgDB::ReaderWriter::Options::BUILD_KDTREES &&
         osgDB::Registry::instance()->getKdTreeBuilder())
@@ -1599,7 +1605,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         // Simple statistics on the raster
         SG_LOG(SG_TERRAIN, SG_DEBUG, "Landclass Raster " << _fileName << " Level " << tileID.level << " X" << tileID.x << " Y" << tileID.y);
         SG_LOG(SG_TERRAIN, SG_DEBUG, "Raster Information:" << image->s() << "x" << image->t() << " (" << (image->s() * image->t()) << " pixels)" << " mipmaps:" << image->getNumMipmapLevels() << " format:" << image->getInternalTextureFormat());
-        for (unsigned int i = 0; i < 256; ++i) { 
+        for (int i = 0; i < 256; ++i) { 
             if (raster_count[i] > 0) {
                 SGMaterial* mat = matcache->find(i);
                 if (mat) {
@@ -1679,6 +1685,28 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
     return a.x() * b.y() - b.x() * a.y();
 }
 
+const int VPBTechnique::getLandclass(const osg::Vec2d p)
+{
+    osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
+
+    if (!colorLayer) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << _terrainTile->getTileID().x << " " << _terrainTile->getTileID().y << " " << _terrainTile->getTileID().level);
+        return 0;
+    }
+
+    osg::Image* image = colorLayer->getImage();
+    if (!image || ! image->valid()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << _terrainTile->getTileID().x << " " << _terrainTile->getTileID().y << " " << _terrainTile->getTileID().level);
+        return 0;
+    }
+
+    unsigned int tx = (unsigned int) (image->s() * p.x()) % image->s();
+    unsigned int ty = (unsigned int) (image->t() * p.y()) % image->t();
+    const osg::Vec4 tc = image->getColor(tx, ty);
+
+    return int(std::round(tc.x() * 255.0));
+}
+
 void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
 {
     if (_useTessellation)
@@ -1729,7 +1757,7 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
     // Filter out handlers that do not apply to the current tile
     std::vector<VPBMaterialHandler *> handlers;
     for (const auto handler : all_handlers) {
-        if (handler->initialize(_options, _terrainTile)) {
+        if (handler->initialize(_options, _terrainTile, matcache)) {
             handlers.push_back(handler);
         }
     }
@@ -1760,7 +1788,7 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
     // from point to point within a given triangle.  Cache the required
     // material information for the current landclass to reduce the
     // number of lookups into the material cache.
-    int current_land_class = -1;
+    int current_land_class = 9999;
     osg::Texture2D* object_mask = NULL;
     osg::Image* object_mask_image = NULL;
     float x_scale = 1000.0;
@@ -1805,10 +1833,12 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
         for (const auto handler : handlers) {
             handler->setLocation(loc, 0.1, 0.1);
 
+            if (handler->get_min_coverage_m2() == 0.0) continue;
+
             // Determine the number of points to generate for this patch, using a zombie door method to handle low
             // densities.
             double zombie = pc_rand();
-            unsigned int pt_count = static_cast<unsigned int>(std::floor(patchArea / handler->get_max_density_m2() + zombie));
+            unsigned int pt_count = static_cast<unsigned int>(std::floor(patchArea / handler->get_min_coverage_m2() + zombie));
 
             for (unsigned int k = 0; k < pt_count; ++k) {
                 // Create a pseudo-random UV coordinate that is repeatable and relatively unique for this patch.
@@ -1822,18 +1852,20 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
                 osg::Vec3 p = v0 + vu*uvx + vv*uvy;
                 const osg::Vec2 t = t0 + tu*uvx + tv*uvy;
 
-                // Determine the landclass from the texture coordinates
-                unsigned int tx = (unsigned int) (image->s() * t.x()) % image->s();
-                unsigned int ty = (unsigned int) (image->t() * t.y()) % image->t();
-                const osg::Vec4 tc = image->getColor(tx, ty);
-                const int land_class = int(std::round(tc.x() * 255.0));
+                int land_class = getLandclass(t);
+
+                if (land_class == 0) {
+                    // Likely a point right at the edge of the landclass raster that doesn't have
+                    // data due to clipping, so ignore
+                    continue;
+                }
 
                 if (land_class != current_land_class) {
                     // Use temporal locality to reduce material lookup by caching
                     // some elements for future lookups against the same landclass.
                     mat = matcache->find(land_class);
                     if (!mat) {
-                        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find landclass " << land_class << " from point " << tx << ", " << ty);
+                        SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find landclass " << land_class << " from point " << t.x() << ", " << t.y());
                         continue;
                     }
 
@@ -1875,8 +1907,6 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
                         if (mat->get_ysize() > 0.0) { y_scale = buffer._height / mat->get_ysize(); }
                     }
                 }
-
-                if (!mat) continue;
 
                 // Check against actual material density and objectMask.
                 if (handler->handleIterationTessellation(mat, object_mask_image, t, rand1, rand2, x_scale, y_scale)) {
@@ -1940,7 +1970,7 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
     // Filter out handlers that do not apply to the current tile
     std::vector<VPBMaterialHandler *> handlers;
     for (const auto handler : all_handlers) {
-        if (handler->initialize(_options, _terrainTile)) {
+        if (handler->initialize(_options, _terrainTile, matcache)) {
             handlers.push_back(handler);
         }
     }
@@ -2087,10 +2117,7 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
             }
 
             osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
-            unsigned int tx = (unsigned int) (image->s() * t.x()) % image->s();
-            unsigned int ty = (unsigned int) (image->t() * t.y()) % image->t();
-            const osg::Vec4 tc = image->getColor(tx, ty);
-            const int land_class = int(std::round(tc.x() * 255.0));
+            int land_class = getLandclass(t);
 
             if (land_class != current_land_class) {
                 // Use temporal locality to reduce material lookup by caching
@@ -2265,24 +2292,24 @@ void VPBTechnique::releaseGLObjects(osg::State* state) const
 // are significantly higher vertices that lie just outside the constraint model.
 void VPBTechnique::addElevationConstraint(osg::ref_ptr<osg::Node> constraint)
 { 
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
     _elevationConstraintGroup->addChild(constraint.get()); 
 }
 
 // Remove a previously added constraint.  E.g on model unload.
 void VPBTechnique::removeElevationConstraint(osg::ref_ptr<osg::Node> constraint)
 { 
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
     _elevationConstraintGroup->removeChild(constraint.get()); 
 }
 
 // Check a given vertex against any elevation constraints  E.g. to ensure the terrain mesh doesn't
 // poke through any airport meshes.  If such a constraint exists, the function will return the elevation
 // in local coordinates.
+//
+// Note that you MUST have already locked the VPBTechnique::_elevationConstraintMutex shared_mutex
 double VPBTechnique::getConstrainedElevation(osg::Vec3d ndc, Locator* masterLocator, double vtx_gap)
 {
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
-
     osg::Vec3d origin, vertex;
     masterLocator->convertLocalToModel(osg::Vec3d(ndc.x(), ndc.y(), -1000), origin);
     masterLocator->convertLocalToModel(ndc, vertex);
@@ -2310,7 +2337,7 @@ double VPBTechnique::getConstrainedElevation(osg::Vec3d ndc, Locator* masterLoca
 
 bool VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3d vertex)
 {
-    const std::lock_guard<std::mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock_shared(VPBTechnique::_elevationConstraintMutex); // Share lock the _elevationConstraintGroup for this scope
     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
     intersector = new osgUtil::LineSegmentIntersector(origin, vertex);
     osgUtil::IntersectionVisitor visitor(intersector.get());
@@ -2344,7 +2371,7 @@ bool VPBTechnique::checkAgainstRandomObjectsConstraints(BufferData& buffer, osg:
 
 void VPBTechnique::clearConstraints()
 {
-    const std::lock_guard<std::mutex> elock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
+    const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
     _elevationConstraintGroup = new osg::Group();
 }
 
@@ -2367,18 +2394,14 @@ BVHMaterial* VPBTechnique::getMaterial(osg::Vec3d point) {
     osg::Vec3d local;
     _currentBufferData->_masterLocator->convertModelToLocal(point, local);
 
-    auto image = _terrainTile->getColorLayer(0)->getImage();
-    // Blue channel indicates if this is water, green channel is an index into the landclass data
-    unsigned int tx = (unsigned int) (image->s() * local.x()) % image->s();
-    unsigned int ty = (unsigned int) (image->t() * local.y()) % image->t();
-    auto c = image->getColor(tx, ty);
-    unsigned int lc = (unsigned int) std::abs(std::round(c.g() * 255.0));
+    int lc = getLandclass(osg::Vec2d(local.x(), local.y()));
+
     SGSharedPtr<SGMaterial> mat = _currentBufferData->_BVHMaterialMap[lc];
     if (mat) {
         //SG_LOG(SG_TERRAIN, SG_ALERT, "Material: " << mat->get_names()[0]);
         return mat;
     } else {
-        SG_LOG(SG_TERRAIN, SG_ALERT, "Unexpected Landclass index in landclass texture: " << lc << " original texture value: " << c.g() << " at point " << local);
+        SG_LOG(SG_TERRAIN, SG_ALERT, "Unexpected Landclass index in landclass texture: " << lc << " at point " << local);
         return new BVHMaterial();
     }
 }

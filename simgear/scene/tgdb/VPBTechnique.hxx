@@ -341,6 +341,7 @@ class VPBTechnique : public TerrainTechnique
         virtual void applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache);
 
         virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
+        virtual const int getLandclass(const osg::Vec2d p);
 
         virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
         virtual void applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
@@ -376,7 +377,7 @@ class VPBTechnique : public TerrainTechnique
         bool                                _useTessellation;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
-        inline static std::mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
+        inline static std::shared_mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
 
         inline static std::mutex _stats_mutex; // Protects the loading statistics and other static properties
         typedef std::pair<unsigned int, float> LoadStat;

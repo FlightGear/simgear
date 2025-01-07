@@ -87,8 +87,7 @@ bool TileBounds::insideTile(osg::Vec3d pt) {
     return ((s<0) && (e<0) && (n<0) && (w<0));
 }
 
-// Get the Tile intersection, and also the corner of the tile to the right of the intersection.
-// This corner can be used to define the seaward edge of some coastline.
+// Get the Tile intersection.
 osg::Vec3d TileBounds::getTileIntersection(osg::Vec3d inside, osg::Vec3d outside) {
 
     if (! insideTile(inside)) {

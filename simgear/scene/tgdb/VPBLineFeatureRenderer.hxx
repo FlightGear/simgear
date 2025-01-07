@@ -57,6 +57,8 @@ class VPBLineFeatureRenderer
 
         osg::ref_ptr<osgTerrain::Locator> _masterLocator;
         unsigned int _tileLevel;
+        osg::ref_ptr<TerrainTile> _tile;
+        bool _useDecals;
 
         virtual void generateLineFeature(BufferData& buffer, 
             LineFeatureBin::LineFeature road, 
@@ -79,6 +81,7 @@ class VPBLineFeatureRenderer
 
         inline static std::list<BucketLineFeatureBinList>  _lineFeatureLists;
         inline static std::mutex _lineFeatureLists_mutex;  // protects the _lineFeatureLists;
+
 };
 
 };

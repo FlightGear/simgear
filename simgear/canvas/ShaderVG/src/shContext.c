@@ -95,10 +95,10 @@ VG_API_CALL void vgResizeSurfaceSH(VGint width, VGint height)
     VG_RETURN(VG_NO_RETVAL);
 }
 
-VG_API_CALL void vgSetModelViewProjectionMatSH(SHfloat mat[16])
+VG_API_CALL void vgSetModelViewProjectionMatSH(float mat[16])
 {
     VG_GETCONTEXT(VG_NO_RETVAL);
-    memcpy(context->mvpMatrix, mat, 16 * sizeof(SHfloat));
+    memcpy(context->mvpMatrix, mat, 16 * sizeof(float));
     VG_RETURN(VG_NO_RETVAL);
 }
 

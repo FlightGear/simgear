@@ -24,10 +24,11 @@
 #include "readwav.hxx"
 #include "sample_group.hxx"
 
-#include <simgear/sg_inlines.h>
-#include <simgear/structure/exception.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/sg_inlines.h>
+#include <simgear/structure/exception.hxx>
 
 #if defined(__APPLE__)
 # include <OpenAL/al.h>
@@ -816,7 +817,7 @@ bool SGSoundMgr::load( const std::string &samplepath,
     if (format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO16) {
         free(data);
         simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::AudioFX,
-                               "SGSoundMgr::load: STEREO files are not supported for 3D audio effects", samplepath);
+                               "SGSoundMgr::load: STEREO files are not supported for 3D audio effects", SGPath::fromUtf8(samplepath));
 
         return false;
     }

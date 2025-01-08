@@ -814,8 +814,10 @@ bool SGSoundMgr::load( const std::string &samplepath,
     }
 
     if (format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO16) {
-         free(data);
-        SG_LOG(SG_IO, SG_DEV_ALERT, "Warning: STEREO files are not supported for 3D audio effects: " << samplepath);
+        free(data);
+        simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::AudioFX,
+                               "SGSoundMgr::load: STEREO files are not supported for 3D audio effects", samplepath);
+
         return false;
     }
 

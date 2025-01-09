@@ -12,6 +12,7 @@
 #include "props.hxx"
 
 #include <algorithm>
+#include <vector>
 
 namespace simgear
 {
@@ -183,7 +184,7 @@ namespace simgear
   bool PropertyInterpolationMgr::interpolate( SGPropertyNode* prop,
                                               const std::string& type,
                                               const PropertyList& values,
-                                              const double_list& deltas,
+                                              const std::vector<double>& deltas,
                                               const std::string& easing )
   {
     if( values.size() != deltas.size() )

@@ -36,7 +36,6 @@
 
 
 using std::string;
-using std::vector;
 using std::cout;
 using std::endl;
 
@@ -230,9 +229,9 @@ static void read_indices(char* buffer,
                          size_t bytes,
                          int indexMask,
                          int vaMask,
-                         int_list& vertices,
-                         int_list& normals,
-                         int_list& colors,
+                         std::vector<int>& vertices,
+                         std::vector<int>& normals,
+                         std::vector<int>& colors,
                          tci_list& texCoords,
                          vai_list& vas
                         )
@@ -306,9 +305,9 @@ template <class T>
 void write_indices(gzFile fp,
     unsigned char indexMask,
     unsigned int vaMask,
-    const int_list& vertices,
-    const int_list& normals,
-    const int_list& colors,
+    const std::vector<int>& vertices,
+    const std::vector<int>& normals,
+    const std::vector<int>& colors,
     const tci_list& texCoords,
     const vai_list& vas )
 {
@@ -450,9 +449,9 @@ void SGBinObject::read_object( gzFile fp,
         char *ptr = buf.get_ptr();
         sgReadBytes( fp, nbytes, ptr );
 
-        int_list vs;
-        int_list ns;
-        int_list cs;
+        std::vector<int> vs;
+        std::vector<int> ns;
+        std::vector<int> cs;
         tci_list tcs;
         vai_list vas;
 
@@ -828,7 +827,7 @@ void SGBinObject::write_objects(gzFile fp, int type,
 
     unsigned int start = 0, end = 1;
     string m;
-    int_list emptyList;
+    std::vector<int> emptyList;
 
     while (start < materials.size()) {
         m = materials[start];
@@ -887,9 +886,9 @@ void SGBinObject::write_objects(gzFile fp, int type,
 
     // elements
         for (unsigned int i=start; i < end; ++i) {
-            const int_list& va(verts[i]);
-            const int_list& na((idx_mask & SG_IDX_NORMALS) ? normals[i] : emptyList);
-            const int_list& ca((idx_mask & SG_IDX_COLORS) ? colors[i] : emptyList);
+            const std::vector<int>& va(verts[i]);
+            const std::vector<int>& na((idx_mask & SG_IDX_NORMALS) ? normals[i] : emptyList);
+            const std::vector<int>& ca((idx_mask & SG_IDX_COLORS) ? colors[i] : emptyList);
 
             // pass the whole texcoord array - we'll figure out which indicies to write
             // in write_indices

@@ -14,6 +14,7 @@
 # error This library requires C++
 #endif
 
+#include <vector>
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/math/sg_types.hxx>
@@ -32,10 +33,10 @@
  * @return list of texture coordinates
  */
 std::vector<SGVec2f> sgCalcTexCoords( const SGBucket& b, const std::vector<SGGeod>& geod_nodes,
-			    const int_list& fan, double scale = 1.0 );
+			    const std::vector<int>& fan, double scale = 1.0 );
 
 std::vector<SGVec2f> sgCalcTexCoords( double centerLat, const std::vector<SGGeod>& geod_nodes,
-			    const int_list& fan, double scale = 1.0 );
+			    const std::vector<int>& fan, double scale = 1.0 );
 
 
 #endif // _TEXCOORD_HXX

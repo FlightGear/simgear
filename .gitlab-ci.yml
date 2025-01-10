@@ -128,6 +128,8 @@ test:
       job: linux-build
       ref: $OSG_REF
       artifacts: true
+    - job: linux-build
+      artifacts: false
   script:
     - cd $BUILD_DIR
     # some tests need OSG libraries
@@ -139,8 +141,27 @@ test:
     paths:
       - $BUILD_DIR
 
+# if we're building a merge request, build the corresponding
+# target branch of FlightGear. This assumes that target
+# branches are identical for SimGear+FlightGear
 staging:
   stage: deploy
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  trigger:
+    project: flightgear/flightgear
+    branch: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    strategy: depend
+  inherit: 
+    variables: false
+
+# if we're NOT building a merge-request, build the
+# same branch as here: again this assumes SimGear+FlightGear
+# branches names match
+staging:
+  stage: deploy
+  rules:
+    - if: $CI_PIPELINE_SOURCE != 'merge_request_event'
   trigger:
     project: flightgear/flightgear
     branch: $CI_COMMIT_BRANCH

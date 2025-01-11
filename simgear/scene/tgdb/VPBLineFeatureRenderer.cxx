@@ -341,20 +341,20 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
 
         // N surface
         v->push_back(a);
-        v->push_back(b);
         v->push_back(e);
+        v->push_back(b);
 
         t->push_back(ta);
-        t->push_back(tb);
         t->push_back(te);
+        t->push_back(tb);
 
         v->push_back(b);
-        v->push_back(f);
         v->push_back(e);
+        v->push_back(f);
 
         t->push_back(tb);
-        t->push_back(tf);
         t->push_back(te);
+        t->push_back(tf);
 
         normal = osg::Vec3d(0.0, -1.0, 0.0);
         for (unsigned int i = 0; i < 6; i++) n->push_back(normal);

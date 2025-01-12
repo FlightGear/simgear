@@ -140,8 +140,8 @@ void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
     
     GeodVector geod_nodes(latPoints * lonPoints);
     VectorArrayAdapter<GeodVector> geodNodesArray(geod_nodes, lonPoints);
-    int_list rectangle(latPoints * lonPoints);
-    VectorArrayAdapter<int_list> rectArray(rectangle, lonPoints);
+    std::vector<int> rectangle(latPoints * lonPoints);
+    VectorArrayAdapter<std::vector<int>> rectArray(rectangle, lonPoints);
     for (int j = 0; j < latPoints; j++) {
         for (int i = 0; i < lonPoints; i++) {
             int index = (j * lonPoints) + i;

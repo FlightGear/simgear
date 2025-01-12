@@ -13,6 +13,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
+#include <vector>
 
 #include "sg_binobj.hxx"
 #include <simgear/debug/logstream.hxx>
@@ -76,9 +77,10 @@ int main( int argc, char **argv ) {
     cout << endl;
 
     std::string material;
-    int_list vertex_index;
-    int_list normal_index;
-    int_list tex_index;
+
+    std::vector<int> vertex_index;
+    std::vector<int> normal_index;
+    std::vector<int> tex_index;
 
     // generate points
     string_list pt_materials = obj.get_pt_materials();

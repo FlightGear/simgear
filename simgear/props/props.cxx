@@ -28,6 +28,7 @@
 #include <exception> // can't use sg_exception because of PROPS_STANDALONE
 #include <mutex>
 #include <thread>
+#include <vector>
 
 #include <stdio.h>
 #include <string.h>
@@ -53,7 +54,6 @@ using std::cerr;
 using std::endl;
 using std::find;
 using std::sort;
-using std::vector;
 using std::stringstream;
 
 using namespace simgear;
@@ -752,7 +752,7 @@ parse_component (const string &path, int &i)
  * Parse a path into its components.
  */
 static void
-parse_path (const string &path, vector<PathComponent> &components)
+parse_path (const string &path, std::vector<PathComponent> &components)
 {
   int pos = 0;
   int max = (int)path.size();
@@ -2326,7 +2326,7 @@ SGPropertyNode::~SGPropertyNode ()
   clearValue();
 
   if (_listeners) {
-    vector<SGPropertyChangeListener*>::iterator it;
+    std::vector<SGPropertyChangeListener*>::iterator it;
     for (it = _listeners->_items.begin(); it != _listeners->_items.end(); ++it)
       (*it)->unregister_property(this);
     delete _listeners;
@@ -3075,7 +3075,7 @@ bool SGPropertyNode::interpolate( const std::string& type,
 //------------------------------------------------------------------------------
 bool SGPropertyNode::interpolate( const std::string& type,
                                   const simgear::PropertyList& values,
-                                  const double_list& deltas,
+                                  const std::vector<double>& deltas,
                                   const std::string& easing )
 {
   if( !_interpolation_mgr )
@@ -3270,7 +3270,7 @@ SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, bool create)
 {
 #if PROPS_STANDALONE
-  vector<PathComponent> components;
+  std::vector<PathComponent> components;
   parse_path(relative_path, components);
   return find_node(this, components, 0, create);
 
@@ -3287,7 +3287,7 @@ SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, int index, bool create)
 {
 #if PROPS_STANDALONE
-  vector<PathComponent> components;
+  std::vector<PathComponent> components;
   parse_path(relative_path, components);
   if (components.size() > 0)
     components.back().index = index;
@@ -3742,7 +3742,7 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
     return;
   /* We use a std::unique_lock rather than a std::lock_guard because we may
   need to unlock early. */
-  vector<SGPropertyChangeListener*>::iterator it =
+  std::vector<SGPropertyChangeListener*>::iterator it =
     find(_listeners->_items.begin(), _listeners->_items.end(), listener);
   if (it != _listeners->_items.end()) {
     assert(_listeners->_num_iterators >= 0);
@@ -3902,7 +3902,7 @@ SGPropertyChangeListener::register_property (SGPropertyNode * node)
 void
 SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
 {
-  vector<SGPropertyNode *>::iterator it =
+  std::vector<SGPropertyNode *>::iterator it =
     find(_properties.begin(), _properties.end(), node);
   if (it != _properties.end())
     _properties.erase(it);

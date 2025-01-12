@@ -23,11 +23,11 @@
 #define MAX_TC_SETS     (4)
 #define MAX_VAS         (8)
 
-typedef std::array<int_list, MAX_TC_SETS> tci_list;
-typedef std::array<int_list, MAX_VAS>     vai_list;
+typedef std::array<std::vector<int>, MAX_TC_SETS> tci_list;
+typedef std::array<std::vector<int>, MAX_VAS>     vai_list;
 
 /** STL Structure used to store (integer index) object information */
-typedef std::vector < int_list > group_list;
+typedef std::vector<std::vector<int>> group_list;
 typedef group_list::iterator group_list_iterator;
 typedef group_list::const_iterator const_group_list_iterator;
 
@@ -49,9 +49,9 @@ class SGPath;
 class SGBinObjectPoint {
 public:
     std::string material;
-    int_list    v_list;
-    int_list    n_list;
-    int_list    c_list;
+    std::vector<int> v_list;
+    std::vector<int> n_list;
+    std::vector<int> c_list;
     
     void clear( void ) {
         material = "";
@@ -64,9 +64,9 @@ public:
 class SGBinObjectTriangle {
 public:
     std::string material;
-    int_list    v_list;
-    int_list    n_list;
-    int_list    c_list;
+    std::vector<int> v_list;
+    std::vector<int> n_list;
+    std::vector<int> c_list;
     
     tci_list    tc_list;
     vai_list    va_list;

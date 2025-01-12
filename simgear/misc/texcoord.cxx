@@ -126,7 +126,7 @@
 
 #include <simgear/compiler.h>
 
-// #include <iostream>
+#include <vector>
 
 #include "texcoord.hxx"
 
@@ -156,13 +156,13 @@ static inline SGVec2f basic_tex_coord( const SGGeod& p,
 // traverse the specified fan/strip/list of vertices and attempt to
 // calculate "none stretching" texture coordinates
 std::vector<SGVec2f> sgCalcTexCoords( const SGBucket& b, const std::vector<SGGeod>& geod_nodes,
-			    const int_list& fan, double scale )
+			    const std::vector<int>& fan, double scale )
 {
     return sgCalcTexCoords(b.get_center_lat(), geod_nodes, fan, scale);
 }
 
 std::vector<SGVec2f> sgCalcTexCoords( double centerLat, const std::vector<SGGeod>& geod_nodes,
-			    const int_list& fan, double scale )
+			    const std::vector<int>& fan, double scale )
 {
     // cout << "calculating texture coordinates for a specific fan of size = "
     //      << fan.size() << endl;

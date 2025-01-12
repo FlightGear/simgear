@@ -24,7 +24,7 @@ public:
   SGTileGeometryBin() {}
 
   static SGVec2f
-  getTexCoord(const std::vector<SGVec2f>& texCoords, const int_list& tc,
+  getTexCoord(const std::vector<SGVec2f>& texCoords, const std::vector<int>& tc,
               const SGVec2f& tcScale, unsigned i)
   {
     if (tc.empty())
@@ -56,8 +56,8 @@ public:
     const std::vector<SGVec3f>& normals(obj.get_normals());
     const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
     const std::vector<SGVec2f>& overlayCoords(obj.get_overlaycoords());
-    const int_list& tris_v(obj.get_tris_v()[grp]);
-    const int_list& tris_n(obj.get_tris_n()[grp]);
+    const std::vector<int>& tris_v(obj.get_tris_v()[grp]);
+    const std::vector<int>& tris_n(obj.get_tris_n()[grp]);
     const tci_list& tris_tc(obj.get_tris_tcs()[grp]);
     bool  num_norms_is_num_verts = true;
 
@@ -115,8 +115,8 @@ public:
       const std::vector<SGVec3d>& vertices(obj.get_wgs84_nodes());
       const std::vector<SGVec3f>& normals(obj.get_normals());
       const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
-      const int_list& strips_v(obj.get_strips_v()[grp]);
-      const int_list& strips_n(obj.get_strips_n()[grp]);
+      const std::vector<int>& strips_v(obj.get_strips_v()[grp]);
+      const std::vector<int>& strips_n(obj.get_strips_n()[grp]);
       const tci_list& strips_tc(obj.get_strips_tcs()[grp]);
       bool  num_norms_is_num_verts = true;
 
@@ -172,8 +172,8 @@ public:
       const std::vector<SGVec3f>& normals(obj.get_normals());
       const std::vector<SGVec2f>& texCoords(obj.get_texcoords());
       const std::vector<SGVec2f>& overlayCoords(obj.get_overlaycoords());
-      const int_list& fans_v(obj.get_fans_v()[grp]);
-      const int_list& fans_n(obj.get_fans_n()[grp]);
+      const std::vector<int>& fans_v(obj.get_fans_v()[grp]);
+      const std::vector<int>& fans_n(obj.get_fans_n()[grp]);
       const tci_list& fans_tc(obj.get_fans_tcs()[grp]);
       bool  num_norms_is_num_verts = true;
 

@@ -60,7 +60,22 @@ class VPBLineFeatureRenderer
         osg::ref_ptr<TerrainTile> _tile;
         bool _useDecals;
 
-        virtual void generateLineFeature(BufferData& buffer, 
+        virtual void generateLineFeatureTriangles(BufferData& buffer, 
+            LineFeatureBin::LineFeature road, 
+            osg::Matrix localToWorldMatrix,
+            osg::Vec3Array* v, 
+            osg::Vec2Array* t, 
+            osg::Vec3Array* n,
+            osg::Vec3Array* lights,
+            double x0,
+            double x1,
+            unsigned int ysize,
+            double light_edge_spacing,
+            double light_edge_height,
+            bool light_edge_offset,
+            double elevation_offset_m);
+
+        virtual void generateLineFeatureTessellated(BufferData& buffer, 
             LineFeatureBin::LineFeature road, 
             osg::Matrix localToWorldMatrix,
             osg::Vec3Array* v, 

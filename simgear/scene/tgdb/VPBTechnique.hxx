@@ -344,7 +344,7 @@ class VPBTechnique : public TerrainTechnique
         virtual const int getLandclass(const osg::Vec2d p);
 
         virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
-        virtual void applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
+        virtual void applyMaterialsTessellated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
         virtual void applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
 
         virtual osg::Vec4d catmull_rom_interp_basis(const float t);

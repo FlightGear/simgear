@@ -43,8 +43,15 @@ bool VPBMaterialHandler::checkAgainstObjectMask(
     osg::Image *objectMaskImage, ImageChannel channel, double sampleProbability,
     double x, double y, float x_scale, float y_scale, const osg::Vec2d t_0,
     osg::Vec2d t_x, osg::Vec2d t_y) {
+
+    osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
+    return checkAgainstObjectMask(objectMaskImage, channel, sampleProbability, x_scale, y_scale, t);
+}
+
+bool VPBMaterialHandler::checkAgainstObjectMask(
+    osg::Image *objectMaskImage, ImageChannel channel, double sampleProbability,
+    float x_scale, float y_scale, osg::Vec2d t) {
     if (objectMaskImage != NULL) {
-        osg::Vec2 t = osg::Vec2(t_0 + t_x * x + t_y * y);
         unsigned int x =
             (unsigned int)(objectMaskImage->s() * t.x() * x_scale) %
             objectMaskImage->s();
@@ -68,7 +75,8 @@ double VPBMaterialHandler::det2(const osg::Vec2d a, const osg::Vec2d b) {
  *  simgear/scene/tgdb/VPBTechnique.cxx : applyTrees()
  */
 bool VegetationHandler::initialize(osg::ref_ptr<SGReaderWriterOptions> options,
-                                   osg::ref_ptr<TerrainTile> terrainTile) {
+                                   osg::ref_ptr<TerrainTile> terrainTile,
+                                   osg::ref_ptr<SGMaterialCache> matcache) {
     bool use_random_vegetation = false;
     int vegetation_lod_level = 6;
     vegetation_density = 1.0;
@@ -91,14 +99,67 @@ bool VegetationHandler::initialize(osg::ref_ptr<SGReaderWriterOptions> options,
 
     // Do not generate vegetation for tiles too far away or if we explicitly
     // don't generate vegetation
+    int level = terrainTile->getTileID().level;
     if ((!use_random_vegetation) ||
-        (terrainTile->getTileID().level < vegetation_lod_level)) {
+        (level < vegetation_lod_level)) {
         return false;
     }
 
-    bin = NULL;
-    wood_coverage = 0.0;
+    // Determine the minimum vegetation density.
+    osgTerrain::Layer* colorLayer = terrainTile->getColorLayer(0);
 
+    if (!colorLayer) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << terrainTile->getTileID().x << " " << terrainTile->getTileID().y << " " << terrainTile->getTileID().level);
+        return false;
+    }
+
+    osg::Image* image = colorLayer->getImage();
+    if (!image || ! image->valid()) {
+        SG_LOG(SG_TERRAIN, SG_ALERT, "No landclass image for " << terrainTile->getTileID().x << " " << terrainTile->getTileID().y << " " << terrainTile->getTileID().level);
+        return false;
+    }
+
+    // Determine the maximum density of vegetation for this tile by
+    // building a set of landclassess and looking them up in the material
+    // cache.
+    std::set <int>lcSet;
+    for (int t = 0; t < image->t(); ++t) {
+        for (int s = 0; s < image->s(); ++s) {
+            const osg::Vec4 tc = image->getColor(s, t);
+            int lc = int(std::round(tc.x() * 255.0));
+            lcSet.insert(lc);
+        }
+    }
+
+    const double MAX_MIN_MAT_COVERAGE = 100000.0;
+    min_material_coverage = MAX_MIN_MAT_COVERAGE;
+    for(auto lc = lcSet.begin(); lc != lcSet.end(); ++lc) {
+        int l = *lc;
+        auto mat = matcache->find(l);
+        if (mat && (mat->get_wood_coverage() > 0.0) && (mat->get_wood_coverage() < min_material_coverage)) 
+            min_material_coverage = mat->get_wood_coverage();
+    }
+
+    if (min_material_coverage == MAX_MIN_MAT_COVERAGE) 
+        return false;
+
+    bin = NULL;
+    wood_density = 0.0;
+    // This is the density of points we will generate across the patch before
+    // applying the material vegetation density, object mask etc.  
+    // Note that the units are m2.  I.e. the average area per piece of vegetation.
+    // So a smaller number means more vegetation.
+    //
+    // vegentation_density ranges from 0.1 to 8, and is linear.  I.e. the are density factor varies from
+    // 0.01 to 64.
+    //
+    // Maximum material.xml wood coverage is 4000m^2 - e.g. one tree for every 4000m^2 at medium density,
+    // or one every 4000/64 = 62m^2 or every 4m linearly at maximum density.
+    //  We also generate fewer trees at further out LoD levels.
+    double level_factor = (double) ((7 - level) * (7 - level));
+    min_coverage_m2 = (min_material_coverage / (vegetation_density * vegetation_density)) * level_factor;
+
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Base point density for vegetation: " << min_material_coverage << " / " << vegetation_density << "^2 / " << level_factor << " = " << min_coverage_m2);
     return true;
 }
 
@@ -113,7 +174,10 @@ bool VegetationHandler::handleNewMaterial(SGMaterial *mat) {
     if (mat->get_wood_coverage() <= 0)
         return false;
 
-    wood_coverage = 2000.0 / mat->get_wood_coverage();
+    // Wood coverage is relative to the value above.  E.g. we
+    // will generate one tree for each point if the material
+    // coverage value is equals to min_material_coverage.
+    wood_density = min_material_coverage / mat->get_wood_coverage();
 
     bool found = false;
 
@@ -162,7 +226,7 @@ bool VegetationHandler::handleIteration(
 
     if (mat->get_wood_coverage() <= 0)
         return false;
-    if (pc_map_rand(lon_int, lat_int, 2) > wood_coverage)
+    if (pc_map_rand(lon_int, lat_int, 2) > wood_density)
         return false;
 
     if (mat->get_is_plantation()) {
@@ -189,9 +253,34 @@ bool VegetationHandler::handleIteration(
     pointInTriangle.set(x, y);
     return true;
 }
+    
+bool VegetationHandler::handleIterationTessellation(
+    SGMaterial* mat, osg::Image* objectMaskImage,
+    osg::Vec2d p, const double rand1, const double rand2,
+    float x_scale, float y_scale)
+{
+    if (mat->get_wood_coverage() <= 0)
+        return false;
+    if (rand1 > wood_density)
+        return false;
 
-void VegetationHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up) {
-    bin->insert(SGVec3f(vp.x(), vp.y(), vp.z()));
+    //if (mat->get_is_plantation()) {
+    //    p = osg::Vec2d(lon + 0.1 * delta_lon * pc_map_norm(lon_int, lat_int, 0),
+    //                   lat + 0.1 * delta_lat * pc_map_norm(lon_int, lat_int, 1));
+    //}
+
+    // Check against any object mask using green (for trees) channel
+    if (checkAgainstObjectMask(objectMaskImage, Green,
+                               rand2, x_scale,
+                               y_scale, p)) {
+        return false;
+    }
+    return true;
+}
+
+
+void VegetationHandler::placeObject(const osg::Vec3 vp) {
+    bin->insert(vp);
 }
 
 void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
@@ -207,12 +296,7 @@ void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
                    "  " << treeBin->texture << " " << treeBin->getNumTrees());
         }
 
-        const osg::Matrixd R_vert = osg::Matrixd::rotate(
-            M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
-            loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0), 0.0,
-            osg::Vec3d(1.0, 0.0, 0.0));
-
-        osg::Group *trees = createForest(randomForest, R_vert, options, 1);
+        osg::Group *trees = createForest(randomForest, options);
         trees->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
         transform->addChild(trees);
     }
@@ -221,7 +305,8 @@ void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
 /** RandomLightsHandler implementation */
 bool RandomLightsHandler::initialize(
     osg::ref_ptr<SGReaderWriterOptions> options,
-    osg::ref_ptr<TerrainTile> terrainTile) {
+    osg::ref_ptr<TerrainTile> terrainTile,
+    osg::ref_ptr<SGMaterialCache> matcache) {
     SGPropertyNode *propertyNode = options->getPropertyNode().get();
 
     int lightLODLevel = 6;
@@ -242,6 +327,7 @@ bool RandomLightsHandler::initialize(
     }
 
     lightCoverage = 0.0;
+    min_coverage_m2 = 1000.0;
 
     return true;
 }
@@ -320,7 +406,34 @@ bool RandomLightsHandler::handleIteration(
     return true;
 }
 
-void RandomLightsHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up)
+
+bool RandomLightsHandler::handleIterationTessellation(
+    SGMaterial* mat, osg::Image* objectMaskImage,
+    osg::Vec2d p, const double rand1, const double rand2,
+    float x_scale, float y_scale)
+{
+    if (mat->get_light_coverage() <= 0)
+        return false;
+
+    // Since we are scanning 31mx31m chunks, 1000/lightCoverage gives the
+    //  probability of a particular 31x31 chunk having a light
+    //  e.g. if lightCoverage = 10000m^2 (i.e. every light point must
+    //  cover around 10000m^2), this roughly equates to
+    //  sqrt(10000) * sqrt(10000) 1mx1m chunks, i.e. 100m x 100m, which
+    //  translates to ~10 31mx31m chunks, giving us a probability of 1/10.
+    if (rand1 > (1000.0 / lightCoverage))
+        return false;
+
+    // Check against any object mask using green (for trees) channel
+    if (checkAgainstObjectMask(objectMaskImage, Blue,
+                               rand2, x_scale,
+                               y_scale, p)) {
+        return false;
+    }
+    return true;
+}
+
+void RandomLightsHandler::placeObject(const osg::Vec3 vp)
 {
     float zombie = pc_map_rand(vp.x(), vp.y() + vp.z(), 6);
     float factor = pc_map_rand(vp.x(), vp.y() + vp.z(), 7);
@@ -350,11 +463,13 @@ void RandomLightsHandler::placeObject(const osg::Vec3 vp, const osg::Vec3d up)
     double intensity = 500;
     double onPeriod = 2; // Turn on randomly around sunset
 
-    // Place lights at 3m above ground
-    const osg::Vec3 finalPosition = vp + up * 3;
+    if (bin == NULL) {
+        bin = new LightBin();
+    }
 
+    // Place lights at 3m above ground
     bin->insert(
-        SGVec3f(finalPosition.x(), finalPosition.y(), finalPosition.z()),
+        SGVec3f(vp.x(), vp.y(), vp.z() + 3.0),
         size, intensity, onPeriod, color);
 }
 
@@ -364,11 +479,6 @@ void RandomLightsHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
     if (bin != NULL && bin->getNumLights() > 0) {
         SG_LOG(SG_TERRAIN, SG_DEBUG,
                "Adding Random Lights " << bin->getNumLights());
-
-        const osg::Matrixd R_vert = osg::Matrixd::rotate(
-            M_PI / 2.0 - loc.getLatitudeRad(), osg::Vec3d(0.0, 1.0, 0.0),
-            loc.getLongitudeRad(), osg::Vec3d(0.0, 0.0, 1.0), 0.0,
-            osg::Vec3d(1.0, 0.0, 0.0));
 
         transform->addChild(
             createLights(*bin, osg::Matrix::identity(), options));

@@ -217,7 +217,7 @@ public:
                 if (pagedLOD.getMinRange(i) <= 0) {
                     osg::ref_ptr<const osgDB::Options> options;
                     options = getOptions(pagedLOD.getDatabaseOptions(), pagedLOD.getDatabasePath());
-                    node = osgDB::readRefNodeFile(pagedLOD.getFileName(i), options.get());
+                    node = osgDB::readRefNodeFile(pagedLOD.getDatabasePath() + pagedLOD.getFileName(i), options.get());
                 }
                 if (!node.valid())
                     node = new osg::Group;

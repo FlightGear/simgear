@@ -28,11 +28,6 @@ TileBounds::TileBounds(Locator *locator, osg::Vec3d up) {
     locator->convertLocalToModel(osg::Vec3d(0.0, 1.0, 0.0), v01);
     locator->convertLocalToModel(osg::Vec3d(1.0, 1.0, 0.0), v11);
 
-    corner[0] = v10;
-    corner[1] = v11;
-    corner[2] = v01;
-    corner[3] = v00;
-
     // Determine the normals of the planes defining the vertical edges of the tiles.
     // This can be found using the cross product of the horizontal line and an appropriate "up"
     // vector.  We will approximate the last using the center rather than working out different

@@ -34,13 +34,13 @@ Atlas::Atlas(osg::ref_ptr<const SGReaderWriterOptions> options) {
     _textureLookup1 = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_textureLookup1", Atlas::MAX_MATERIALS);
     _textureLookup2 = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_textureLookup2", Atlas::MAX_MATERIALS);
     _dimensions = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_dimensionsArray", Atlas::MAX_MATERIALS);
-    _ambient = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_ambientArray", Atlas::MAX_MATERIALS);
-    _diffuse = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_diffuseArray", Atlas::MAX_MATERIALS);
-    _specular = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_specularArray", Atlas::MAX_MATERIALS);
     _materialParams1 = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_materialParams1", Atlas::MAX_MATERIALS);
     _materialParams2 = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_materialParams2", Atlas::MAX_MATERIALS);
-    _materialParams3 = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_materialParams3", Atlas::MAX_MATERIALS);
     _shoreAtlastIndex = new osg::Uniform(osg::Uniform::Type::INT, "fg_shoreAtlasIndex");
+    _bumpmapAmplitude  = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_bumpmapAmplitude", Atlas::MAX_MATERIALS);
+    _heightAmplitude  = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_heightAmplitude", Atlas::MAX_MATERIALS);
+    _PBRParams  = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_materialPBRParams", Atlas::MAX_MATERIALS);
+    _emission = new osg::Uniform(osg::Uniform::Type::FLOAT_VEC4, "fg_materialPBREmission", Atlas::MAX_MATERIALS);
 
     _image = new osg::Texture2DArray();
     _image->setMaxAnisotropy(SGSceneFeatures::instance()->getTextureFilter());
@@ -98,10 +98,7 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
             return;
         }
 
-        _dimensions->setElement(_materialLookupIndex, osg::Vec4f(mat->get_xsize(), mat->get_ysize(), mat->get_shininess(), (double) mat->get_parameter("edge-hardness")));
-        _ambient->setElement(_materialLookupIndex, mat->get_ambient());
-        _diffuse->setElement(_materialLookupIndex, mat->get_diffuse());
-        _specular->setElement(_materialLookupIndex, mat->get_specular());
+        _dimensions->setElement(_materialLookupIndex, osg::Vec4f(mat->get_xsize(), mat->get_ysize(), 0.0, (double) mat->get_parameter("edge-hardness")));
 
         // The following are material parameters that are normally built into the Effect as Uniforms.  In the WS30
         // case we need to pass them as an array, indexed against the material.
@@ -112,13 +109,11 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
             SG_LOG(SG_GENERAL, SG_DEBUG, "Found Sand material inserted into Atlas. Landclass " << landclass << ", index " << _materialLookupIndex);
             _shoreAtlastIndex->set((int) _materialLookupIndex);
         }
-        
-        float water = 0.0;
-        if (_waterAtlas[landclass]) {
-            water = 1.0;
-        }
 
-        _materialParams3->setElement(_materialLookupIndex, osg::Vec4f(water, mat->get_parameter("waterline-start"), mat->get_parameter("waterline-end"), 0.0));
+        _PBRParams->setElement(_materialLookupIndex, osg::Vec4f(mat->get_metallic(), mat->get_roughness(), mat->get_occlusion(), 0.0));
+        _bumpmapAmplitude->setElement(_materialLookupIndex, mat->get_bumpmap_amplitude());
+        _heightAmplitude->setElement(_materialLookupIndex, mat->get_height_amplitude());
+        _emission->setElement(_materialLookupIndex, mat->get_emission());
 
         // Similarly, there are specifically 7 textures that are defined in the materials that need to be passed into
         // the shader as an array based on the material lookup.
@@ -201,14 +196,14 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
 
 void Atlas::addUniforms(osg::StateSet* stateset) {
     stateset->addUniform(_dimensions);
-    stateset->addUniform(_ambient);
-    stateset->addUniform(_diffuse);
-    stateset->addUniform(_specular);
     stateset->addUniform(_textureLookup1);
     stateset->addUniform(_textureLookup2);
     stateset->addUniform(_materialParams1);
     stateset->addUniform(_materialParams2);
-    stateset->addUniform(_materialParams3);
+    stateset->addUniform(_PBRParams);
+    stateset->addUniform(_emission);
+    stateset->addUniform(_bumpmapAmplitude);    
+    stateset->addUniform(_heightAmplitude);    
     stateset->addUniform(_shoreAtlastIndex);
 }
 

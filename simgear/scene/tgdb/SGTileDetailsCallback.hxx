@@ -157,7 +157,7 @@ public:
     addPointGeometry(SGLightBin& lights,
                      const std::vector<SGVec3d>& vertices,
                      const SGVec4f& color,
-                     const int_list& pts_v)
+                     const std::vector<int>& pts_v)
     {
         for (unsigned i = 0; i < pts_v.size(); ++i)
             lights.insert(toVec3f(vertices[pts_v[i]]), color);
@@ -168,8 +168,8 @@ public:
                      const std::vector<SGVec3d>& vertices,
                      const std::vector<SGVec3f>& normals,
                      const SGVec4f& color,
-                     const int_list& pts_v,
-                     const int_list& pts_n)
+                     const std::vector<int>& pts_v,
+                     const std::vector<int>& pts_n)
     {
         // If the normal indices match the vertex indices, use separate
         // normal indices. Else reuse the vertex indices for the normals.
@@ -997,7 +997,7 @@ public:
         computeRandomForest(matTris, vegetation_density, randomForest);
 
         if (!randomForest.empty()) {
-          forestNode = createForest(randomForest, osg::Matrix::identity(),_options);
+          forestNode = createForest(randomForest, _options);
           forestNode->setName("Random trees");
         }
       }

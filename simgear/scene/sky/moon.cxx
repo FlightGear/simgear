@@ -19,7 +19,8 @@ using namespace simgear;
 
 osg::Node* SGMoon::build(double moon_size, const SGReaderWriterOptions* options)
 {
-    EffectGeode* orb = SGMakeSphere(moon_size, 40, 20);
+    osg::ref_ptr<EffectGeode> orb = SGMakeSphere(moon_size, 40, 20);
+    orb->setName("Moon");
 
     Effect* effect = makeEffect("Effects/moon", true, options);
     if (effect) {

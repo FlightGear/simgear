@@ -60,7 +60,7 @@ class VPBLineFeatureRenderer
 
         virtual void generateLineFeature(BufferData& buffer, 
             LineFeatureBin::LineFeature road, 
-            osg::Vec3d modelCenter, 
+            osg::Matrix localToWorldMatrix,
             osg::Vec3Array* v, 
             osg::Vec2Array* t, 
             osg::Vec3Array* n,
@@ -73,7 +73,7 @@ class VPBLineFeatureRenderer
             bool light_edge_offset,
             double elevation_offset_m);
 
-        virtual osg::Vec3d getMeshIntersection(BufferData& buffer, osg::Vec3d pt, osg::Vec3d up);
+        virtual osg::Vec3d getMeshIntersection(BufferData& buffer, osg::Vec3d pt);
 
         typedef std::pair<SGBucket, LineFeatureBinList> BucketLineFeatureBinList;
 

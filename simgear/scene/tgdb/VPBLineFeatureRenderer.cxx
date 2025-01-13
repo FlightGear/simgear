@@ -100,6 +100,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
     // Get all appropriate roads.  We assume that the VPB terrain tile is smaller than a Bucket size.
     LightBin lightbin;
     const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
+
     const SGGeod loc = SGGeod::fromCart(toSG(world));
     const SGBucket bucket = SGBucket(loc);
     std::string material_name = "";
@@ -130,7 +131,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
             const double elevation_offset_m = mat->get_line_feature_offset_m();
 
             //  Generate a geometry for this set of roads.
-           osg::Vec3Array* v = new osg::Vec3Array;
+            osg::Vec3Array* v = new osg::Vec3Array;
             osg::Vec2Array* t = new osg::Vec2Array;
             osg::Vec3Array* n = new osg::Vec3Array;
             osg::Vec4Array* c = new osg::Vec4Array;
@@ -139,7 +140,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
             auto lineFeatures = (*rb)->getLineFeatures();
 
             for (auto r = lineFeatures.begin(); r != lineFeatures.end(); ++r) {
-                if (r->_width > minWidth) generateLineFeature(buffer, *r, world, v, t, n, lights, x0, x1, ysize, light_edge_spacing, light_edge_height, light_edge_offset, elevation_offset_m);
+                if (r->_width > minWidth) generateLineFeature(buffer, *r, buffer._transform->getMatrix(), v, t, n, lights, x0, x1, ysize, light_edge_spacing, light_edge_height, light_edge_offset, elevation_offset_m);
             }
 
             if (v->size() == 0) {
@@ -172,7 +173,6 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
             geode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
             osg::StateSet* stateset = geode->getOrCreateStateSet();
-            stateset->addUniform(new osg::Uniform(VPBTechnique::Z_UP_TRANSFORM, osg::Matrixf(osg::Matrix::inverse(makeZUpFrameRelative(loc)))));
             stateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
 
             atlas->addUniforms(stateset);
@@ -206,14 +206,22 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
     if (lightbin.getNumLights() > 0) buffer._transform->addChild(createLights(lightbin, osg::Matrix::identity(), options));
 }
 
-void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Vec3d modelCenter, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, osg::Vec3Array* lights, double x0, double x1, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset, double elevation_offset_m)
+void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Matrix localToWorldMatrix, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, osg::Vec3Array* lights, double x0, double x1, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset, double elevation_offset_m)
 {
-    // We're in Earth-centered coordinates, so "up" is simply directly away from (0,0,0)
-    osg::Vec3d up = modelCenter;
-    up.normalize();
-    TileBounds tileBounds(buffer._masterLocator, up);
+    osg::Vec3d modelCenter = localToWorldMatrix.getTrans();
 
+    // We clip to the tile in a geocentric space, as that's what the road information
+    // is in.
+    osg::Vec3d modelNormal = modelCenter;
+    modelNormal.normalize();
+    TileBounds tileBounds(buffer._masterLocator, modelNormal);
     std::list<osg::Vec3d> nodes = tileBounds.clipToTile(road._nodes);
+
+    // However the geometry is in Z-up space, so "up" is simply (0,0,1)
+    osg::Vec3d up = osg::Vec3d(0.0,0.0,1.0);
+
+    // Rotation from the geocentric coordinates to a Z-up coordinate system
+    osg::Quat rot = localToWorldMatrix.getRotate().inverse();
 
     // We need at least two node to make a road.
     if (nodes.size() < 2) return; 
@@ -222,11 +230,11 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
     std::list<osg::Vec3d> roadPoints;
     auto road_iter = nodes.begin();
 
-    ma = getMeshIntersection(buffer, *road_iter - modelCenter, up);
+    ma = getMeshIntersection(buffer, rot * (*road_iter - modelCenter));
     road_iter++;
 
     for (; road_iter != nodes.end(); road_iter++) {
-        mb = getMeshIntersection(buffer, *road_iter - modelCenter, up);
+        mb = getMeshIntersection(buffer, rot * (*road_iter - modelCenter));
         auto esl = VPBElevationSlice::computeVPBElevationSlice(buffer._landGeometry, ma, mb, up);
 
         for(auto eslitr = esl.begin(); eslitr != esl.end(); ++eslitr) {
@@ -360,10 +368,10 @@ void VPBLineFeatureRenderer::unloadFeatures(SGBucket bucket)
 }
 
 // Find the intersection of a given SGGeod with the terrain mesh
-osg::Vec3d VPBLineFeatureRenderer::getMeshIntersection(BufferData& buffer, osg::Vec3d pt, osg::Vec3d up) 
+osg::Vec3d VPBLineFeatureRenderer::getMeshIntersection(BufferData& buffer, osg::Vec3d pt) 
 {
     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
-    intersector = new osgUtil::LineSegmentIntersector(pt - up*100.0, pt + up*8000.0);
+    intersector = new osgUtil::LineSegmentIntersector(pt + osg::Vec3d(0.0, 0.0, -100.0), pt + osg::Vec3d(0.0, 0.0, 8000.0));
     osgUtil::IntersectionVisitor visitor(intersector.get());
     buffer._landGeometry->accept(visitor);
 

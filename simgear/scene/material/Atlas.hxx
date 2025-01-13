@@ -81,14 +81,16 @@ private:
     osg::ref_ptr<osg::Uniform> _textureLookup1;
     osg::ref_ptr<osg::Uniform> _textureLookup2;
     osg::ref_ptr<osg::Uniform> _dimensions;
-    osg::ref_ptr<osg::Uniform> _ambient;
-    osg::ref_ptr<osg::Uniform> _diffuse;
-    osg::ref_ptr<osg::Uniform> _specular;
     osg::ref_ptr<osg::Uniform> _shoreAtlastIndex;
 
     osg::ref_ptr<osg::Uniform> _materialParams1;
     osg::ref_ptr<osg::Uniform> _materialParams2;
-    osg::ref_ptr<osg::Uniform> _materialParams3;
+
+    osg::ref_ptr<osg::Uniform> _PBRParams;
+    osg::ref_ptr<osg::Uniform> _emission;
+    osg::ref_ptr<osg::Uniform> _heightAmplitude;
+    osg::ref_ptr<osg::Uniform> _bumpmapAmplitude;
+
 
     unsigned int _imageIndex; // Index into the image
     unsigned int _materialLookupIndex; // Index into the material lookup

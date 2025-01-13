@@ -95,14 +95,14 @@ void SGSky::build( double h_radius_m,
     pre_transform->addChild(dome->build(h_radius_m, v_radius_m, options));
 
     pre_transform->addChild(_ephTransform.get());
-    planets = new SGStars;
+    planets = new SGPlanets;
     _ephTransform->addChild(planets->build(eph.getNumPlanets(), eph.getPlanets(), h_radius_m, options));
 
-    stars = new SGStars(property_tree_node);
+    stars = new SGStars;
     _ephTransform->addChild(stars->build(eph.getNumStars(), eph.getStars(), h_radius_m, options));
 
-    galaxy = new SGGalaxy(property_tree_node);
-    _ephTransform->addChild( galaxy->build(h_radius_m, options));
+    galaxy = new SGGalaxy;
+    _ephTransform->addChild(galaxy->build(h_radius_m, options));
     
     moon = new SGMoon;
     _ephTransform->addChild(moon->build(moon_size, options));
@@ -123,10 +123,6 @@ void SGSky::build( double h_radius_m,
 // 180 degrees = darkest midnight
 bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 {
-    stars->repaint(sc.sun_angle, sc.altitude_m, eph.getNumStars(), eph.getStars());
-    planets->repaint(sc.sun_angle, sc.altitude_m, eph.getNumPlanets(), eph.getPlanets());
-    galaxy->repaint(sc.sun_angle, sc.altitude_m);
-
     return true;
 }
 
@@ -296,11 +292,6 @@ bool SGSky::get_3dCloudUseImpostors() const {
 void SGSky::set_3dCloudUseImpostors(bool imp)
 {
     SGCloudField::setUseImpostors(imp);
-}
-
-void SGSky::set_texture_path( const SGPath& path ) 
-{
-	tex_path = path;
 }
 
 // modify the current visibility based on cloud layers, thickness,

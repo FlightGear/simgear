@@ -47,6 +47,7 @@
 #include <simgear/scene/sky/dome.hxx>
 #include <simgear/scene/sky/moon.hxx>
 #include <simgear/scene/sky/oursun.hxx>
+#include <simgear/scene/sky/planets.hxx>
 #include <simgear/scene/sky/stars.hxx>
 #include <simgear/scene/sky/galaxy.hxx>
 
@@ -223,7 +224,7 @@ private:
     SGSharedPtr<SGSkyDome> dome;
     SGSharedPtr<SGSun> oursun;
     SGSharedPtr<SGMoon> moon;
-    SGSharedPtr<SGStars> planets;
+    SGSharedPtr<SGPlanets> planets;
     SGSharedPtr<SGStars> stars;
     SGSharedPtr<SGGalaxy> galaxy;
     layer_list_type cloud_layers;
@@ -232,8 +233,6 @@ private:
     osg::ref_ptr<osg::Switch> cloud_root;
 
     osg::ref_ptr<osg::MatrixTransform> _ephTransform;
-
-    SGPath tex_path;
 
     // visibility
     float visibility;
@@ -323,13 +322,6 @@ public:
 
     osg::Group* getPreRoot() { return pre_root.get(); }
     osg::Group* getCloudRoot() { return cloud_root.get(); }
-
-    /** 
-     * Specify the texture path (optional, defaults to current directory)
-     *
-     * @param path Base path to texture locations
-     */
-    void set_texture_path( const SGPath& path );
 
     /**
      * Add a cloud layer.

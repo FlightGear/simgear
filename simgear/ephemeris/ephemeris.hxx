@@ -9,6 +9,7 @@
 #ifndef _EPHEMERIS_HXX
 #define _EPHEMERIS_HXX
 
+#include "simgear/debug/debug_types.h"
 #include <string>
 
 #include <simgear/ephemeris/star.hxx>
@@ -149,14 +150,11 @@ public:
     inline int getNumStars() const { return stars->getNumStars(); }
 
     /**
-     * Returns a pointer to an array of star data in sgdVec3
-     * format. An The first element of the sgdVec3 is the right
-     * ascension of the planet, the second is the declination, and the
-     * third is the magnitude.
+     * Returns a pointer to an array of star data.
      * @returns star array
      */
-    inline SGVec3d *getStars() { return stars->getStars(); }
-    inline const SGVec3d *getStars() const { return stars->getStars(); }
+    inline SGStarData::Star *getStars() { return stars->getStars(); }
+    inline const SGStarData::Star *getStars() const { return stars->getStars(); }
 };
 
 

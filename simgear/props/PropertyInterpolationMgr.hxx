@@ -17,6 +17,7 @@
 #include <simgear/structure/subsystem_mgr.hxx>
 
 #include <list>
+#include <vector>
 
 namespace simgear {
 
@@ -81,7 +82,7 @@ public:
     bool interpolate(SGPropertyNode*     prop,
                      const std::string&  type,
                      const PropertyList& values,
-                     const double_list&  deltas,
+                     const std::vector<double>&  deltas,
                      const std::string&  easing);
 
     /**

@@ -628,7 +628,7 @@ VG_API_CALL const VGubyte* vgGetString(VGStringID name);
 VG_API_CALL VGboolean vgCreateContextSH(VGint width, VGint height);
 VG_API_CALL VGboolean vgHasContextSH();
 VG_API_CALL void vgResizeSurfaceSH(VGint width, VGint height);
-VG_API_CALL void vgSetModelViewProjectionMatSH(float *mat);
+VG_API_CALL void vgSetModelViewProjectionMatSH(float mat[16]);
 VG_API_CALL void vgDestroyContextSH(void);
 
 /* Extensions for ShaderVG */

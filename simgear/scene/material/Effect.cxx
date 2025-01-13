@@ -818,6 +818,8 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     PropertyList pGeomShaders = prop->getChildren("geometry-shader");
     PropertyList pFragShaders = prop->getChildren("fragment-shader");
     PropertyList pCompShaders = prop->getChildren("compute-shader");
+    PropertyList pTesscontrolShaders = prop->getChildren("tesscontrol-shader");
+    PropertyList pTessevaluationShaders = prop->getChildren("tessevaluation-shader");
     PropertyList pAttributes = prop->getChildren("attribute");
     ProgramKey prgKey;
     std::back_insert_iterator<vector<ShaderKey> > inserter(prgKey.shaders);
@@ -833,6 +835,12 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     std::transform(pCompShaders.begin(), pCompShaders.end(), inserter,
                    [] (SGPropertyNode_ptr& ptr) {
                        return makeShaderKey(ptr, Shader::COMPUTE); });
+    std::transform(pTesscontrolShaders.begin(), pTesscontrolShaders.end(), inserter,
+                   [] (SGPropertyNode_ptr& ptr) {
+                       return makeShaderKey(ptr, Shader::TESSCONTROL); });
+    std::transform(pTessevaluationShaders.begin(), pTessevaluationShaders.end(), inserter,
+                   [] (SGPropertyNode_ptr& ptr) {
+                       return makeShaderKey(ptr, Shader::TESSEVALUATION); });
     for (PropertyList::iterator itr = pAttributes.begin(),
              e = pAttributes.end();
          itr != e;

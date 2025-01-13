@@ -109,7 +109,6 @@ class VPBTechnique : public TerrainTechnique
 
         static void clearConstraints();
 
-        inline static const char* Z_UP_TRANSFORM = "fg_zUpTransform";
         inline static const char* MODEL_OFFSET   = "fg_modelOffset";
         inline static const char* PHOTO_SCENERY  = "fg_photoScenery";
 
@@ -125,19 +124,54 @@ class VPBTechnique : public TerrainTechnique
             typedef std::pair< osg::ref_ptr<osg::Vec2Array>, Locator* > TexCoordLocatorPair;
             typedef std::map< Layer*, TexCoordLocatorPair > LayerToTexCoordMap;
 
-            VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt);
+            VertexNormalGenerator(Locator* masterLocator, const osg::Vec3d& centerModel, int numRows, int numColmns, float scaleHeight, float vtx_gap, bool createSkirt, bool useTessellation);
 
-            void populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osg::Vec2Array* texcoords);
+            void populateCenter(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, osgTerrain::TerrainTile* tile, osg::Vec2Array* texcoords1, osg::Vec2Array* texcoords2);
             void populateSeaLevel();
             void populateLeftBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
             void populateRightBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
             void populateAboveBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
             void populateBelowBoundary(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas);
 
+            enum class Corner {
+                BOTTOM_LEFT,
+                BOTTOM_RIGHT,
+                TOP_LEFT,
+                TOP_RIGHT
+            };
+            void populateCorner(osgTerrain::Layer* elevationLayer, osgTerrain::Layer* colorLayer, osg::ref_ptr<Atlas> atlas, Corner corner);
+
             void computeNormals();
+
+            //  Convert NDC coordinates into the model coordinates, which centered on the model center and are Z-up
+            osg::Vec3d convertLocalToModel(osg::Vec3d ndc)
+            {
+                osg::Vec3d model;
+                _masterLocator->convertLocalToModel(ndc, model);
+                return _ZUpRotationMatrix * (model - _centerModel);
+                return (model - _centerModel);
+            }
 
             unsigned int capacity() const { return _vertices->capacity(); }
 
+            // Tessellation case - no normal required
+            inline void setVertex(int c, int r, const osg::Vec3& v)
+            {
+                int& i = index(c,r);
+                if (i==0) {
+                    i = _vertices->size() + 1;
+                    _vertices->push_back(v);
+                } else {
+                    if (r<0 || r>=_numRows || c<0 || c>=_numColumns) {
+                        (*_vertices)[i-1] = v;
+                    } else {
+                        // average the vertex positions
+                        (*_vertices)[i-1] = ((*_vertices)[i-1] + v)*0.5f;
+                    }
+                }
+            }
+
+            // Non-tessellation case - normal and boundaries required
             inline void setVertex(int c, int r, const osg::Vec3& v, const osg::Vec3& n)
             {
                 int& i = index(c,r);
@@ -157,22 +191,6 @@ class VPBTechnique : public TerrainTechnique
                     (*_vertices)[i-1] = ((*_vertices)[i-1] + v)*0.5f;
                     (*_normals)[i-1] = n;
                 }
-            }
-
-
-            inline int& index(int c, int r) { return _indices[(r+1)*(_numColumns+2)+c+1]; }
-
-            inline int index(int c, int r) const { return _indices[(r+1)*(_numColumns+2)+c+1]; }
-
-            inline int vertex_index(int c, int r) const { int i = _indices[(r+1)*(_numColumns+2)+c+1]; return i-1; }
-
-            inline bool vertex(int c, int r, osg::Vec3& v) const
-            {
-                int i = index(c,r);
-                if (i==0) return false;
-                if (i<0) v = (*_boundaryVertices)[-i-1];
-                else v = (*_vertices)[i-1];
-                return true;
             }
 
             inline bool computeNormal(int c, int r, osg::Vec3& n) const
@@ -275,6 +293,21 @@ class VPBTechnique : public TerrainTechnique
                 return n.normalize() != 0.0f;
             }
 
+            inline int& index(int c, int r) { return _indices[(r+1)*(_numColumns+2)+c+1]; }
+
+            inline int index(int c, int r) const { return _indices[(r+1)*(_numColumns+2)+c+1]; }
+
+            inline int vertex_index(int c, int r) const { int i = _indices[(r+1)*(_numColumns+2)+c+1]; return i-1; }
+
+            inline bool vertex(int c, int r, osg::Vec3& v) const
+            {
+                int i = index(c,r);
+                if (i==0) return false;
+                if (i<0) v = (*_boundaryVertices)[-i-1];
+                else v = (*_vertices)[i-1];
+                return true;
+            }
+
             Locator*                        _masterLocator;
             const osg::Vec3d                _centerModel;
             int                             _numRows;
@@ -290,9 +323,12 @@ class VPBTechnique : public TerrainTechnique
             osg::ref_ptr<osg::Vec3Array>    _sea_vertices;
             osg::ref_ptr<osg::Vec3Array>    _sea_normals;
 
-            std::vector<float>                _elevationConstraints;
+            std::vector<float>              _elevationConstraints;
 
             osg::ref_ptr<osg::Vec3Array>    _boundaryVertices;
+            bool                            _useTessellation;
+
+            osg::Matrix                     _ZUpRotationMatrix;
         };
 
 
@@ -305,8 +341,13 @@ class VPBTechnique : public TerrainTechnique
         virtual void applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache);
 
         virtual double det2(const osg::Vec2d a, const osg::Vec2d b);
+        virtual const int getLandclass(const osg::Vec2d p);
 
-        virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache);
+        virtual void applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
+        virtual void applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
+        virtual void applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc);
+
+        virtual osg::Vec4d catmull_rom_interp_basis(const float t);
 
         virtual osg::Image* generateWaterTexture(Atlas* atlas);
 
@@ -331,17 +372,18 @@ class VPBTechnique : public TerrainTechnique
         osg::Matrix3                        _filterMatrix;
         osg::ref_ptr<osg::Uniform>          _filterMatrixUniform;
         osg::ref_ptr<SGReaderWriterOptions> _options;
-        const std::string _fileName;
+        const std::string                   _fileName;
         osg::ref_ptr<osg::Group>            _randomObjectsConstraintGroup;
+        bool                                _useTessellation;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
-        inline static std::mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
+        inline static std::shared_mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;
 
-        inline static std::mutex _stats_mutex; // Protects the loading statistics
+        inline static std::mutex _stats_mutex; // Protects the loading statistics and other static properties
         typedef std::pair<unsigned int, float> LoadStat;
         inline static std::map<int, LoadStat> _loadStats;
         inline static SGPropertyNode* _statsPropertyNode;
-
+        inline static SGPropertyNode* _useTessellationPropNode;
 };
 
 };

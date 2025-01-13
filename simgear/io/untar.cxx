@@ -24,6 +24,7 @@
 #include <simgear/structure/exception.hxx>
 
 #include "ArchiveExtractor_private.hxx"
+#include "simgear/debug/debug_types.h"
 
 namespace simgear
 {
@@ -73,7 +74,7 @@ typedef struct
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
+    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 1024 * 1024;
     const int ZLIB_INFLATE_WINDOW_BITS = MAX_WBITS;
     const int ZLIB_DECODE_GZIP_HEADER = 16;
 
@@ -154,6 +155,10 @@ typedef struct
                 headerPtr = headerBytes;
             }
 
+            if (newState >= ERROR_STATE) {
+                SG_LOG(SG_IO, SG_WARN, "ArchiveExtract entered error state");
+            }
+
             state = newState;
         }
 
@@ -170,7 +175,7 @@ typedef struct
 
         void writeDirHashEntry()
         {
-            if (!doCreateDirHashes) {
+            if (!doCreateDirHashes()) {
                 return;
             }
 
@@ -206,14 +211,34 @@ typedef struct
             }
 
             skipCurrentEntry = false;
-            std::string tarPath = std::string(header.prefix) + std::string(header.fileName);
+
+            // careful handling here for tar compressors which don't use PAX path
+            // attribute to handle filenames longer than 100 bytes, or exactly 100 bytes.
+            // longer than 100 bytes use the prefix, but we need to add a path seperator.
+            // exactly 100 bytes don't use prefix, but there is no trailing NULL.
+            // https://sourceforge.net/p/flightgear/codetickets/2953/
+            std::string tarPath;
             if (!paxPathName.empty()) {
                 tarPath = paxPathName;
                 paxPathName.clear(); // clear for next file
+            } else if (strlen(header.prefix) > 0) {
+                tarPath = std::string(header.prefix) + "/" + std::string(header.fileName);
+            } else {
+                // handle fileNames which are exactly 100 bytes long.
+                const auto len = strnlen(header.fileName, 100);
+                tarPath = std::string(header.fileName, len);
             }
 
-            if (!isSafePath(tarPath)) {
-                SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping::" << tarPath);
+            if (doRemoveTopmostDir()) {
+                const auto firstDir = tarPath.find('/');
+                tarPath.erase(0, firstDir + 1);
+                if (tarPath.empty()) {
+                    skipCurrentEntry = true;
+                }
+            }
+
+            if (!skipCurrentEntry && !isSafePath(tarPath)) {
+                SG_LOG(SG_IO, SG_WARN, "unsafe tar path, skipping:" << tarPath);
                 skipCurrentEntry = true;
             }
 
@@ -233,6 +258,15 @@ typedef struct
                 }
                 setState(READING_HEADER);
             } else if ((header.typeflag == REGTYPE) || (header.typeflag == AREGTYPE)) {
+                // create enclosing directory heirarchy as required
+                Dir parentDir(p.dir());
+                if (!parentDir.exists()) {
+                    bool ok = parentDir.create(0755);
+                    if (!ok) {
+                        throw sg_io_exception("failed to create directory heirarchy for extraction", p);
+                    }
+                }
+
                 currentFileSize = ::strtol(header.size, NULL, 8);
                 bytesRemaining = currentFileSize;
                 if (!skipCurrentEntry) {
@@ -241,6 +275,8 @@ typedef struct
                     sha1_init(&hashState);
                 }
                 setState(READING_FILE);
+                mostRecentPath = p;
+                SG_LOG(SG_IO, SG_DEBUG, "Will extract" << p);
             } else if (header.typeflag == PAX_GLOBAL_HEADER) {
                 setState(READING_PAX_GLOBAL_ATTRIBUTES);
                 currentFileSize = ::strtol(header.size, NULL, 8);
@@ -312,7 +348,7 @@ typedef struct
                 auto firstSpace = paxAttributes.find(' ', lineStart);
                 auto firstEq = paxAttributes.find('=', lineStart);
                 if ((firstEq == std::string::npos) || (firstSpace == std::string::npos)) {
-                    SG_LOG(SG_IO, SG_WARN, "Malfroemd PAX attributes in tarfile");
+                    SG_LOG(SG_IO, SG_WARN, "Malformed PAX attributes in tarfile");
                     break;
                 }
 
@@ -334,6 +370,7 @@ typedef struct
             if (!isGlobalAttr && (attrName == "path")) {
                 // data is UTF-8 encoded path name
                 paxPathName = data;
+                SG_LOG(SG_IO, SG_DEBUG, "Got PAX path attribute:" << data);
             }
         }
 };
@@ -435,7 +472,7 @@ public:
     XZTarExtractor(ArchiveExtractor* outer) : TarExtractorPrivate(outer)
     {
         _xzStream = LZMA_STREAM_INIT;
-        _outputBuffer = (uint8_t*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
+        _outputBuffer = (uint8_t*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE * 8);
 
 
         auto ret = lzma_stream_decoder(&_xzStream, UINT64_MAX, LZMA_TELL_ANY_CHECK);
@@ -614,8 +651,9 @@ public:
 		sg_ofstream outFile;
 		bool eof = false;
 		SGPath path = extractRootPath() / name;
+        mostRecentPath = name;
 
-		// create enclosing directory heirarchy as required
+        // create enclosing directory heirarchy as required
 		Dir parentDir(path.dir());
 		if (!parentDir.exists()) {
 			bool ok = parentDir.create(0755);
@@ -824,10 +862,21 @@ auto ArchiveExtractor::filterPath(std::string& pathToExtract)
 
 void ArchiveExtractor::setCreateDirHashEntries(bool doCreate)
 {
-    if (!d)
-        return;
+    _doCreateDirHashes = doCreate;
+}
 
-    d->doCreateDirHashes = doCreate;
+void ArchiveExtractor::setRemoveTopmostDirectory(bool doRemove)
+{
+    _removeTopmostDir = doRemove;
+}
+
+SGPath ArchiveExtractor::mostRecentExtractedPath() const
+{
+    if (!d) {
+        return SGPath();
+    }
+
+    return d->mostRecentPath;
 }
 
 

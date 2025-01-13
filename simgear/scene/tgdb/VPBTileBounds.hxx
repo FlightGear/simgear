@@ -37,12 +37,9 @@ class TileBounds {
 
         // Corners of the tile
         osg::Vec3d v00, v01, v10, v11;
-        osg::Vec3d corner[4];
 
-        // Plan normals for the tile bounds
+        // Plane normals for the tile bounds
         osg::Vec3d north, east, south, west;
-
-        
 };
 
 #endif

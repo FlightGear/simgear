@@ -64,11 +64,8 @@ void MoonPos::updatePositionTopo(double mjd, double lst, double lat, Star *ourSu
     Ls, Lm, D, F, mpar, gclat, rho, HA, g,
     geoRa, geoDec,
     cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl, rcoslatEcl,
-    FlesstwoD, MlesstwoD, twoD, twoM, twolat, alpha;
+    FlesstwoD, MlesstwoD, twoD, twoM, twolat;
 
-  double max_loglux = -0.504030345621;
-  double min_loglux = -4.39964634562;
-  double conv = 1.0319696543787917;    // The log foot-candle to log lux conversion factor.
   updateOrbElements(mjd);
   actTime = sgCalcActTime(mjd);
 
@@ -198,23 +195,15 @@ void MoonPos::updatePositionTopo(double mjd, double lst, double lat, Star *ourSu
 	  "Ra = (" << (SGD_RADIANS_TO_DEGREES *rightAscension)
 	  << "), Dec= (" << (SGD_RADIANS_TO_DEGREES *declination) << ")" ); */
 
-  // Moon age and phase calculation
-  age = lonEcl - ourSun->getlonEcl();
-  phase = (1 - cos(age)) / 2;
-
-  // The log of the illuminance of the moon outside the atmosphere.
-  // This is the base 10 log of equation 20 from Krisciunas K. and Schaefer B.E.
-  // (1991). A model of the brightness of moonlight, Publ. Astron. Soc. Pacif.
-  // 103(667), 1033-1039 (DOI: http://dx.doi.org/10.1086/132921).
-  alpha = SGD_RADIANS_TO_DEGREES * SGMiscd::normalizeAngle(age + SGMiscd::pi());
-  log_I = -0.4 * (3.84 + 0.026*fabs(alpha) + 4e-9*pow(alpha, 4.0));
-
-  // Convert from foot-candles to lux.
-  log_I += conv;
-
-  // The moon's illuminance factor, bracketed between 0 and 1.
-  I_factor = (log_I - max_loglux) / (max_loglux - min_loglux) + 1.0;
-  I_factor = SGMiscd::clip(I_factor, 0, 1);
+  // The phase is defined as the difference in ecliptic longitude between the
+  // Sun and Moon as measured by an observer at the Earth's center.
+  //
+  // This can also be seen as the "Earth phase", i.e. the angle between the Moon
+  // and the Sun as seen from the Earth.
+  phase = std::remainder(lonEcl - ourSun->getlonEcl(), SGD_2PI);
+  // The phase angle is the angle between the Sun and the Earth as seen from
+  // the center of the Moon (the opposite of Earth phase).
+  phase_angle = std::remainder(SGD_PI - phase, SGD_2PI);
 }
 
 
@@ -233,11 +222,8 @@ void MoonPos::updatePosition(double mjd, Star *ourSun)
     xv, yv, v, r, xh, yh, zh, zg, xe,
     Ls, Lm, D, F, geoRa, geoDec,
     cosN, sinN, cosvw, sinvw, sinvw_cosi, cosecl, sinecl, rcoslatEcl,
-    FlesstwoD, MlesstwoD, twoD, twoM, alpha;
+    FlesstwoD, MlesstwoD, twoD, twoM;
 
-  double max_loglux = -0.504030345621;
-  double min_loglux = -4.39964634562;
-  double conv = 1.0319696543787917;    // The log foot-candle to log lux conversion factor.
   updateOrbElements(mjd);
   actTime = sgCalcActTime(mjd);
 
@@ -330,21 +316,13 @@ void MoonPos::updatePosition(double mjd, Star *ourSun)
 	  "Ra = (" << (SGD_RADIANS_TO_DEGREES *rightAscension)
 	  << "), Dec= (" << (SGD_RADIANS_TO_DEGREES *declination) << ")" ); */
 
-  // Moon age and phase calculation
-  age = lonEcl - ourSun->getlonEcl();
-  phase = (1 - cos(age)) / 2;
-
-  // The log of the illuminance of the moon outside the atmosphere.
-  // This is the base 10 log of equation 20 from Krisciunas K. and Schaefer B.E.
-  // (1991). A model of the brightness of moonlight, Publ. Astron. Soc. Pacif.
-  // 103(667), 1033-1039 (DOI: http://dx.doi.org/10.1086/132921).
-  alpha = SGD_RADIANS_TO_DEGREES * SGMiscd::normalizeAngle(age + SGMiscd::pi());
-  log_I = -0.4 * (3.84 + 0.026*fabs(alpha) + 4e-9*pow(alpha, 4.0));
-
-  // Convert from foot-candles to lux.
-  log_I += conv;
-
-  // The moon's illuminance factor, bracketed between 0 and 1.
-  I_factor = (log_I - max_loglux) / (max_loglux - min_loglux) + 1.0;
-  I_factor = SGMiscd::clip(I_factor, 0, 1);
+  // The phase is defined as the difference in ecliptic longitude between the
+  // Sun and Moon as measured by an observer at the Earth's center.
+  //
+  // This can also be seen as the "Earth phase", i.e. the angle between the Moon
+  // and the Sun as seen from the Earth.
+  phase = std::remainder(lonEcl - ourSun->getlonEcl(), SGD_2PI);
+  // The phase angle is the angle between the Sun and the Earth as seen from
+  // the center of the Moon (the opposite of Earth phase).
+  phase_angle = std::remainder(SGD_PI - phase, SGD_2PI);
 }

@@ -235,7 +235,6 @@ private:
     float layer_transition;
     float layer_visibility;
     Coverage layer_coverage;
-    float scale;
     float speed;
     float direction;
 
@@ -244,7 +243,6 @@ private:
     // position, not view position
     // double xoff, yoff;
     SGGeod last_pos;
-    double last_course;
     double max_alpha;
 
     osg::Vec2 base;

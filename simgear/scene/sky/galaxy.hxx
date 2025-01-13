@@ -8,8 +8,6 @@
 #pragma once
 
 #include <osg/ref_ptr>
-#include <osg/MatrixTransform>
-#include <osg/Node>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGReferenced.hxx>
@@ -20,21 +18,8 @@ class SGReaderWriterOptions;
 
 class SGGalaxy : public SGReferenced {
 public:
-    SGGalaxy(SGPropertyNode* props = nullptr);
+    SGGalaxy() = default;
 
     // build the galaxy object
     osg::Node* build(double galaxy_size, const simgear::SGReaderWriterOptions* options);
-
-    // basic repainting according to sky lighting
-    bool repaint(double sun_angle, double altitude_m);
-
-private:
-    osg::ref_ptr<osg::MatrixTransform> galaxy_transform;
-    osg::ref_ptr<osg::Uniform> zenith_brightness_magnitude;
-
-    SGPropertyNode_ptr _magDarkSkyProperty;
-
-    // the darkest sky at zenith has a brightness equals to (in
-    // magnitude per arcsec^2 for the V band)
-    const double _magDarkSkyDefault{22.0};
 };

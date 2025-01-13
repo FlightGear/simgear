@@ -123,7 +123,7 @@ endif()
 ###############################################################################
 # OpenThreads library
 
-add_library(imported_OT SHARED IMPORTED)
+add_library(imported_OT SHARED IMPORTED GLOBAL)
 set_property(TARGET imported_OT PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${OPENTHREADS_INCLUDE_DIR})
 
 setup_imported_lib(imported_OT OpenThreads "${OPENTHREADS_LIBRARY_DEBUG}" "${OPENTHREADS_LIBRARY_RELEASE}" "${OPENTHREADS_LIBRARY}")
@@ -131,7 +131,7 @@ add_library(OSG::OpenThreads ALIAS imported_OT)
 
 ###############################################################################
 # Core OSG library
-add_library(imported_OSG SHARED IMPORTED)
+add_library(imported_OSG SHARED IMPORTED GLOBAL)
 
 set_property(TARGET imported_OSG PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${OSG_INCLUDE_DIR})
 setup_imported_lib(imported_OSG osg "${OSG_LIBRARY_DEBUG}" "${OSG_LIBRARY_RELEASE}" "${OSG_LIBRARY}")

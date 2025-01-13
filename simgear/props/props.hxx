@@ -889,6 +889,12 @@ public:
         LISTENER_SAFE = 1 << 9,       // it's safe to listen to this property, even if it's tied
         VALUE_CHANGED_UP = 1 << 10,   // If true, value changes are propogated to parent's listeners.
         VALUE_CHANGED_DOWN = 1 << 11, // If true, sets new child nodes' VALUE_CHANGED_DOWN and VALUE_CHANGED_UP.
+        
+        /// advisory: treat string value as a translation key. This is not handled by the property code,
+        /// but exists to allow syntactically convenient marking of some properties in XMLs as 'to be
+        /// translated.
+        TRANSLATE = 1 << 12,           
+
         // beware: if you add another attribute here,
         // also update value of "LAST_USED_ATTRIBUTE".
     };
@@ -952,15 +958,6 @@ public:
      */
     SGPropertyNode* addChild( const char* name, int min_index = 0, bool append = true );
     SGPropertyNode* addChild( const std::string& name, int min_index = 0, bool append = true );
-
-    /**
-     * Add existing node as child.
-     *
-     * @param min_index Minimal index for new node (skips lower indices)
-     * @param append    Whether to simply use the index after the last used index
-     *                  or use a lower, unused index if it exists
-     */
-    SGPropertyNode_ptr addChild(SGPropertyNode_ptr node, const std::string& name, int min_index=0, bool append=true);
 
     /**
      * Create multiple child nodes with the given name an unused indices
@@ -1190,7 +1187,7 @@ public:
      */
     bool interpolate( const std::string& type,
                       const simgear::PropertyList& values,
-                      const double_list& deltas,
+                      const std::vector<double>& deltas,
                       const std::string& easing = "swing" );
 
     /** Set the interpolation manager used by the interpolate methods. */
@@ -1399,12 +1396,12 @@ private:
     
     // Core data.
     //
-    int _index;
-    std::string _name;
+    const int _index;
+    const std::string _name;
     SGPropertyNode* _parent;
     simgear::PropertyList _children;
-    simgear::props::Type _type;
-    bool _tied;
+    simgear::props::Type _type = simgear::props::NONE;
+    bool _tied = false;
     int _attr = NO_ATTR;
 
     /**
@@ -1434,7 +1431,7 @@ private:
         char* string_val;
     } _local_val;
 
-    SGPropertyNodeListeners*  _listeners;
+    SGPropertyNodeListeners* _listeners = nullptr;
 };
 
 // Convenience functions for use in templates

@@ -28,6 +28,7 @@
 #include <exception> // can't use sg_exception because of PROPS_STANDALONE
 #include <mutex>
 #include <thread>
+#include <vector>
 
 #include <stdio.h>
 #include <string.h>
@@ -53,7 +54,6 @@ using std::cerr;
 using std::endl;
 using std::find;
 using std::sort;
-using std::vector;
 using std::stringstream;
 
 using namespace simgear;
@@ -752,7 +752,7 @@ parse_component (const string &path, int &i)
  * Parse a path into its components.
  */
 static void
-parse_path (const string &path, vector<PathComponent> &components)
+parse_path (const string &path, std::vector<PathComponent> &components)
 {
   int pos = 0;
   int max = (int)path.size();
@@ -2162,7 +2162,7 @@ SGPropertyNode::clearValue ()
  * Last used attribute
  * Update as needed when enum Attribute is changed
  */
-const int SGPropertyNode::LAST_USED_ATTRIBUTE = VALUE_CHANGED_DOWN;
+const int SGPropertyNode::LAST_USED_ATTRIBUTE = TRANSLATE;
 
 /**
  * Mutex to protect access to nodeOrigins.
@@ -2185,13 +2185,10 @@ static NodeOriginMap* nodeOrigins;
 /**
  * Default constructor: always creates a root node.
  */
-SGPropertyNode::SGPropertyNode ()
-  : _index(0),
-    _parent(nullptr),
-    _type(props::NONE),
-    _tied(false),
-    _attr(READ|WRITE),
-    _listeners(0)
+SGPropertyNode::SGPropertyNode()
+    : _index(0),
+      _parent(nullptr),
+      _attr(READ | WRITE)
 {
   _local_val.string_val = 0;
   _value.val = 0;
@@ -2211,17 +2208,15 @@ SGPropertyNode::SGPropertyNode ()
 /**
  * Copy constructor.
  */
-SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
-  :
-    //SGWeakReferenced(node),
-    SGReferenced(node),
-    _index(node._index),
-    _name(node._name),
-    _parent(nullptr),			// don't copy the parent
-    _type(node._type),
-    _tied(node._tied),
-    _attr(node._attr),
-    _listeners(0)		// CHECK!!
+SGPropertyNode::SGPropertyNode(const SGPropertyNode& node)
+    : //SGWeakReferenced(node),
+      SGReferenced(node),
+      _index(node._index),
+      _name(node._name),
+      _parent(nullptr), // don't copy the parent
+      _type(node._type),
+      _tied(node._tied),
+      _attr(node._attr)
 {
     setLocation(node.getLocation());
 
@@ -2282,17 +2277,14 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 /**
  * Convenience constructor.
  */
-template<typename Itr>
-SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
-				int index,
-				SGPropertyNode* parent)
-  : _index(index),
-    _name(begin, end),
-    _parent(parent),
-    _type(props::NONE),
-    _tied(false),
-    _attr(READ|WRITE),
-    _listeners(0)
+template <typename Itr>
+SGPropertyNode::SGPropertyNode(Itr begin, Itr end,
+                               int index,
+                               SGPropertyNode* parent)
+    : _index(index),
+      _name(begin, end),
+      _parent(parent),
+      _attr(READ | WRITE)
 {
   _local_val.string_val = 0;
   _value.val = 0;
@@ -2307,17 +2299,13 @@ SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
         << "\n";
 }
 
-SGPropertyNode::SGPropertyNode( const std::string& name,
-                                int index,
-                                SGPropertyNode* parent)
-  : _index(index),
-    _name(name),
-    _parent(parent),
-    _type(props::NONE),
-    _tied(false),
-    _attr(READ|WRITE),
-    // REVIEW: Memory Leak - 662 bytes in 32 blocks are indirectly lost
-    _listeners(0)
+SGPropertyNode::SGPropertyNode(const std::string& name,
+                               int index,
+                               SGPropertyNode* parent)
+    : _index(index),
+      _name(name),
+      _parent(parent),
+      _attr(READ | WRITE)
 {
   _local_val.string_val = 0;
   _value.val = 0;
@@ -2338,7 +2326,7 @@ SGPropertyNode::~SGPropertyNode ()
   clearValue();
 
   if (_listeners) {
-    vector<SGPropertyChangeListener*>::iterator it;
+    std::vector<SGPropertyChangeListener*>::iterator it;
     for (it = _listeners->_items.begin(); it != _listeners->_items.end(); ++it)
       (*it)->unregister_property(this);
     delete _listeners;
@@ -2483,21 +2471,6 @@ SGPropertyNode::addChild(const std::string& name, int min_index, bool append)
     return addChild(name.c_str(), min_index, append);
 }
 
-SGPropertyNode_ptr SGPropertyNode::addChild(SGPropertyNode_ptr node, const std::string& name,
-        int min_index, bool append)
-{
-  SGPropertyLockExclusive exclusive(*this);
-  int pos = append
-          ? std::max(find_last_child(exclusive, name.c_str(), _children) + 1, min_index)
-          : first_unused_index(exclusive, name.c_str(), _children, min_index);
-  node->_name = name;
-  node->_parent = this;
-  node->_index = pos;
-  SGPropertyNodeImpl::appendNode(exclusive, *this, node);
-  SGPropertyNodeImpl::fireChildAdded(exclusive, *this, this /*parent*/, node);
-  return node;
-}
-
 /**
  * Create multiple children with unused indices
  */
@@ -2581,12 +2554,12 @@ bool SGPropertyNode::hasValue() const
 
 const std::string& SGPropertyNode::getNameString () const
 {
-    SGPropertyLockShared shared(*this);
+    // no locking: _name is const
     return _name;
 }
 int SGPropertyNode::getIndex () const
 {
-    SGPropertyLockShared shared(*this);
+    // mo locking: _index is const
     return _index;
 }
 
@@ -3102,7 +3075,7 @@ bool SGPropertyNode::interpolate( const std::string& type,
 //------------------------------------------------------------------------------
 bool SGPropertyNode::interpolate( const std::string& type,
                                   const simgear::PropertyList& values,
-                                  const double_list& deltas,
+                                  const std::vector<double>& deltas,
                                   const std::string& easing )
 {
   if( !_interpolation_mgr )
@@ -3297,7 +3270,7 @@ SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, bool create)
 {
 #if PROPS_STANDALONE
-  vector<PathComponent> components;
+  std::vector<PathComponent> components;
   parse_path(relative_path, components);
   return find_node(this, components, 0, create);
 
@@ -3314,7 +3287,7 @@ SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, int index, bool create)
 {
 #if PROPS_STANDALONE
-  vector<PathComponent> components;
+  std::vector<PathComponent> components;
   parse_path(relative_path, components);
   if (components.size() > 0)
     components.back().index = index;
@@ -3769,7 +3742,7 @@ SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
     return;
   /* We use a std::unique_lock rather than a std::lock_guard because we may
   need to unlock early. */
-  vector<SGPropertyChangeListener*>::iterator it =
+  std::vector<SGPropertyChangeListener*>::iterator it =
     find(_listeners->_items.begin(), _listeners->_items.end(), listener);
   if (it != _listeners->_items.end()) {
     assert(_listeners->_num_iterators >= 0);
@@ -3929,7 +3902,7 @@ SGPropertyChangeListener::register_property (SGPropertyNode * node)
 void
 SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
 {
-  vector<SGPropertyNode *>::iterator it =
+  std::vector<SGPropertyNode *>::iterator it =
     find(_properties.begin(), _properties.end(), node);
   if (it != _properties.end())
     _properties.erase(it);

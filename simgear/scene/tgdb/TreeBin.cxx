@@ -46,7 +46,6 @@
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/props/props.hxx>
-#include <simgear/scene/util/QuadTreeBuilder.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
@@ -54,8 +53,7 @@
 
 #include "TreeBin.hxx"
 
-#define SG_TREE_QUAD_TREE_DEPTH 3
-#define SG_TREE_FADE_OUT_LEVELS 10
+const int TREE_INSTANCE_POSITIONS = 6;  // (x,y,z) See also tree.eff
 
 using namespace osg;
 
@@ -71,171 +69,106 @@ namespace simgear
 // The tree quad is rendered twice, with different rotations, to
 // create the crossed tree geometry.
 
-struct TreesBoundingBoxCallback : public Drawable::ComputeBoundingBoxCallback
-{
-    TreesBoundingBoxCallback() {}
-    TreesBoundingBoxCallback(const TreesBoundingBoxCallback&, const CopyOp&) {}
-    META_Object(simgear, TreesBoundingBoxCallback);
-    virtual BoundingBox computeBound(const Drawable&) const;
-};
 
-BoundingBox
-TreesBoundingBoxCallback::computeBound(const Drawable& drawable) const
-{
-    BoundingBox bb;
-    const Geometry* geom = static_cast<const Geometry*>(&drawable);
-    const Vec3Array* v = static_cast<const Vec3Array*>(geom->getVertexArray());
-    const Vec3Array* pos = static_cast<const Vec3Array*>(geom->getColorArray());
-    const Vec3Array* params
-        = static_cast<const Vec3Array*>(geom->getNormalArray());
-    const FloatArray* rot
-        = static_cast<const FloatArray*>(geom->getFogCoordArray());
-    float w = (*params)[0].x();
-    float h = (*params)[0].y();
-    Geometry::PrimitiveSetList primSets = geom->getPrimitiveSetList();
-    FloatArray::const_iterator rotitr = rot->begin();
-    for (Geometry::PrimitiveSetList::const_iterator psitr = primSets.begin(),
-             psend = primSets.end();
-         psitr != psend;
-         ++psitr, ++rotitr) {
-        Matrixd trnsfrm = (Matrixd::scale(w, w, h)
-                           * Matrixd::rotate(*rotitr, Vec3(0.0f, 0.0f, 1.0f)));
-        DrawArrays* da = static_cast<DrawArrays*>(psitr->get());
-        GLint psFirst = da->getFirst();
-        GLint psEndVert = psFirst + da->getCount();
-        for (GLint i = psFirst;i < psEndVert; ++i) {
-            Vec3 pt = (*v)[i];
-            pt = pt * trnsfrm;
-            pt += (*pos)[i];
+struct TreeInstanceBoundingBoxCallback : public Drawable::ComputeBoundingBoxCallback {
+    TreeInstanceBoundingBoxCallback() {}
+    TreeInstanceBoundingBoxCallback(const TreeInstanceBoundingBoxCallback&, const CopyOp&) {}
+    META_Object(simgear, TreeInstanceBoundingBoxCallback);
+    virtual BoundingBox computeBound(const Drawable& drawable) const
+    {
+        BoundingBox bb;
+        const Geometry* geometry = static_cast<const Geometry*>(&drawable);
+        const Vec3Array* instancePositions = static_cast<const Vec3Array*>(geometry->getVertexAttribArray(TREE_INSTANCE_POSITIONS));
+
+        const Vec3Array* normals = static_cast<const Vec3Array*>(geometry->getNormalArray());
+        const osg::Vec3f normal = static_cast<const Vec3f>((*normals)[0]);
+
+        float maxScaleX = (float) normal[0];
+        float maxScaleY = (float) normal[1];
+
+        for (unsigned int v = 0; v < instancePositions->size(); ++v) {
+            Vec3 pt = (*instancePositions)[v];
             bb.expandBy(pt);
         }
+
+        bb = BoundingBox(bb._min - osg::Vec3(maxScaleX, maxScaleX, maxScaleY),
+                         bb._max + osg::Vec3(maxScaleX, maxScaleX, maxScaleY));
+
+        return bb;
     }
-    return bb;
-}
+};
 
-Geometry* makeSharedTreeGeometry(int numQuads)
+
+EffectGeode* createTreeGeode(TreeBin* forest)
 {
-    // generate a repeatable random seed
-    pc_init(123);
-    // set up the coords
-    osg::Vec3Array* v = new osg::Vec3Array;
-    osg::Vec2Array* t = new osg::Vec2Array;
-    v->reserve(numQuads * 6);
-    t->reserve(numQuads * 6);
-    for (int i = 0; i < numQuads; ++i) {
-        // Apply a random scaling factor and texture index.
-        float h = (pc_rand() + pc_rand()) / 2.0f + 0.5f;
-        float cw = h * .5;
-        // Create the vertices
-        osg::Vec3 v0(0.0f, -cw, 0.0f);
-        osg::Vec3 v1(0.0f,  cw, 0.0f);
-        osg::Vec3 v2(0.0f,  cw,    h);
-        osg::Vec3 v3(0.0f, -cw,    h);
-        v->push_back(v0); v->push_back(v1); v->push_back(v2); // 1st triangle
-        v->push_back(v0); v->push_back(v2); v->push_back(v3); // 2nd triangle
-        // The texture coordinate range is not the entire coordinate
-        // space, as the texture has a number of different trees on
-        // it. Here we assign random coordinates and let the shader
-        // choose the variety.
-        float variety = pc_rand();
-        osg::Vec2 t0(variety, 0.0f);
-        osg::Vec2 t1(variety + 1.0f, 0.0f);
-        osg::Vec2 t2(variety + 1.0f, 0.234f);
-        osg::Vec2 t3(variety, 0.234f);
-        t->push_back(t0); t->push_back(t1); t->push_back(t2); // 1st triangle
-        t->push_back(t0); t->push_back(t2); t->push_back(t3); // 2nd triangle
-    }
-    Geometry* result = new Geometry;
-    result->setUseVertexBufferObjects(true);
-    result->setVertexArray(v);
-    result->setTexCoordArray(0, t, Array::BIND_PER_VERTEX);
-    result->setComputeBoundingBoxCallback(new TreesBoundingBoxCallback);
-    return result;
-}
 
-static std::mutex static_sharedGeometryMutex;
-static std::map<std::thread::id, ref_ptr<Geometry>  > sharedTreeGeometryMap;
+    Vec3Array* vertexArray = new Vec3Array;
+    Vec2Array* texCoords   = new Vec2Array;
 
-void clearSharedTreeGeometry()
-{
-    std::lock_guard<std::mutex> g(static_sharedGeometryMutex);
-    sharedTreeGeometryMap.clear();
-}
+    vertexArray->reserve(12);
+    texCoords->reserve(12);
 
-Geometry* createTreeGeometry(float width, float height, int varieties)
-{
-    Geometry* quadGeom = nullptr;
+    // Create the vertices
+    osg::Vec3 v0(0.0f, -0.5f, 0.0f);
+    osg::Vec3 v1(0.0f,  0.5f, 0.0f);
+    osg::Vec3 v2(0.0f,  0.5f, 1.0f);
+    osg::Vec3 v3(0.0f, -0.5f, 1.0f);
+    vertexArray->push_back(v0); vertexArray->push_back(v1); vertexArray->push_back(v2); // 1st triangle
+    vertexArray->push_back(v0); vertexArray->push_back(v2); vertexArray->push_back(v3); // 2nd triangle
 
-    {
-        // Get the shared Geometry.  This is only shared within the thread as
-        // the cloned Geometries all end up with the same VertexBufferObject.
-        // This is OK (just about) within a thread, as the VBO will simply be
-        // updated with data for each Geometry sequentially and passed to
-        // the underlying graphics driver.  However in a multithreaded case,
-        // this can result in multiple threads updating the VBO in parallel
-        // and segmentation faults.
-        std::lock_guard<std::mutex> g(static_sharedGeometryMutex);
-        std::thread::id this_id = std::this_thread::get_id();
-        if (!sharedTreeGeometryMap[this_id]) {
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "Creating new shared geometry for thread " << this_id);
-            sharedTreeGeometryMap[this_id] = makeSharedTreeGeometry(1600);
-        }
-        quadGeom = simgear::clone(sharedTreeGeometryMap[this_id].get(),
-                                  CopyOp::SHALLOW_COPY);
-    }
+    osg::Vec3 v4(-0.5f, 0.0f, 0.0f);
+    osg::Vec3 v5( 0.5f, 0.0f, 0.0f);
+    osg::Vec3 v6( 0.5f, 0.0f, 1.0f);
+    osg::Vec3 v7(-0.5f, 0.0f, 1.0f);
+    vertexArray->push_back(v4); vertexArray->push_back(v5); vertexArray->push_back(v6); // 3rd triangle
+    vertexArray->push_back(v4); vertexArray->push_back(v6); vertexArray->push_back(v7); // 4th triangle
+
+    // The texture coordinate range is not the entire coordinate
+    // space, as the texture has a number of different trees on
+    // it. We let the shader choose the variety.
+    osg::Vec2 t0(0.0f, 0.0f);
+    osg::Vec2 t1(1.0f, 0.0f);
+    osg::Vec2 t2(1.0f, 0.234f);
+    osg::Vec2 t3(0.0f, 0.234f);
+    texCoords->push_back(t0); texCoords->push_back(t1); texCoords->push_back(t2); // 1st triangle
+    texCoords->push_back(t0); texCoords->push_back(t2); texCoords->push_back(t3); // 2nd triangle
+    texCoords->push_back(t0); texCoords->push_back(t1); texCoords->push_back(t2); // 3rd triangle
+    texCoords->push_back(t0); texCoords->push_back(t2); texCoords->push_back(t3); // 4th triangle
+
+    Geometry* geometry = new Geometry;
+    geometry->setUseDisplayList(false);
+    geometry->setUseVertexBufferObjects(true);
+    geometry->setComputeBoundingBoxCallback(new TreeInstanceBoundingBoxCallback);
+
+    geometry->setVertexArray(vertexArray);
+    geometry->setTexCoordArray(0, texCoords, Array::BIND_PER_VERTEX);
 
     Vec3Array* params = new Vec3Array;
-    params->push_back(Vec3(width, height, (float)varieties));
-    quadGeom->setNormalArray(params, Array::BIND_OVERALL);
-    // Positions
-    quadGeom->setColorArray(new Vec3Array, Array::BIND_PER_VERTEX);
-    FloatArray* rotation = new FloatArray(3);
-    (*rotation)[0] = 0.0;
-    (*rotation)[1] = PI_2;
-    quadGeom->setFogCoordArray(rotation, Array::BIND_PER_PRIMITIVE_SET);
-    // The primitive sets render the same geometry, but the second
-    // will rotated 90 degrees by the vertex shader, which uses the
-    // fog coordinate as a rotation.
-    for (int i = 0; i < 2; ++i)
-        quadGeom->addPrimitiveSet(new DrawArrays(PrimitiveSet::TRIANGLES));
-    return quadGeom;
-}
+    params->push_back(Vec3(forest->width, forest->height, (float)forest->texture_varieties));
+    geometry->setNormalArray(params, Array::BIND_OVERALL);
 
-EffectGeode* createTreeGeode(float width, float height, int varieties)
-{
+    osg::Vec3Array* positions = new osg::Vec3Array;
+    positions->reserve(forest->getNumTrees());
+
+    for (auto i = forest->_trees.begin(); i != forest->_trees.end(); ++i) {
+        positions->push_back(*i);
+    }
+
+    geometry->setVertexAttribArray(TREE_INSTANCE_POSITIONS, positions, Array::BIND_PER_VERTEX, 1);
+    //if (_customAttribs != NULL) {
+    //    geometry->setVertexAttribArray(INSTANCE_CUSTOM_ATTRIBS, _customAttribs, Array::BIND_PER_VERTEX, 1);
+    //}
+
+    DrawArrays* primset = new DrawArrays(GL_TRIANGLES, 0, vertexArray->size(), positions->size());
+    geometry->addPrimitiveSet(primset);
+
+    // Force generation of the bounding box in this pager thread so that we don't need to do it
+    // in the main update thread later.
+    geometry->getBound();
+
     EffectGeode* result = new EffectGeode;
-    result->addDrawable(createTreeGeometry(width, height, varieties));
+    result->addDrawable(geometry);
     return result;
-}
-
-void addTreeToLeafGeode(Geode* geode, const SGVec3f& p)
-{
-    Vec3 pos = toOsg(p);
-    unsigned int numDrawables = geode->getNumDrawables();
-    Geometry* geom = static_cast<Geometry*>(geode->getDrawable(numDrawables - 1));
-    Vec3Array* posArray = static_cast<Vec3Array*>(geom->getColorArray());
-
-    if (posArray->size() >= static_cast<Vec3Array*>(geom->getVertexArray())->size()) {
-        Vec3Array* paramsArray = static_cast<Vec3Array*>(geom->getNormalArray());
-        Vec3 params = (*paramsArray)[0];
-        geom = createTreeGeometry(params.x(), params.y(), params.z());
-        posArray = static_cast<Vec3Array*>(geom->getColorArray());
-        geode->addDrawable(geom);
-    }
-
-    if (posArray)
-    {
-        posArray->insert(posArray->end(), 6, pos);
-
-        size_t numVerts = posArray->size();
-        for (unsigned int i = 0; i < 2; ++i) {
-            if (i < geom->getNumPrimitiveSets()) {
-                DrawArrays* primSet = static_cast<DrawArrays*>(geom->getPrimitiveSet(i));
-                if (primSet != nullptr)
-                    primSet->setCount(numVerts);
-            }
-        }
-    }
 }
 
 typedef std::map<std::string, osg::observer_ptr<Effect> > EffectMap;
@@ -243,147 +176,30 @@ typedef std::map<std::string, osg::observer_ptr<Effect> > EffectMap;
 static EffectMap treeEffectMap;
 inline static std::mutex treeEffectMapMutex; // Protects the treeEffectMap for multi-threaded access
 
-// Helper classes for creating the quad tree
-namespace
-{
-struct MakeTreesLeaf
-{
-    MakeTreesLeaf(float range, int varieties, float width, float height,
-        Effect* effect) :
-        _range(range),  _varieties(varieties),
-        _width(width), _height(height), _effect(effect) {}
-
-    MakeTreesLeaf(const MakeTreesLeaf& rhs) :
-        _range(rhs._range),
-        _varieties(rhs._varieties), _width(rhs._width), _height(rhs._height),
-        _effect(rhs._effect)
-    {}
-
-    LOD* operator() () const
-    {
-        if (LOD* result = new LOD; result) {
-            // Create a series of LOD nodes so trees cover decreases slightly
-            // gradually with distance from _range to 2*_range
-            for (float i = 0.0f; i < SG_TREE_FADE_OUT_LEVELS; ++i)
-            {
-                if (EffectGeode* geode = createTreeGeode(_width, _height, _varieties); geode) {
-                    geode->setEffect(_effect.get());
-                    result->addChild(geode, 0, _range * (1.0f + i / (SG_TREE_FADE_OUT_LEVELS - 1.0f)));
-                }
-            }
-
-            return result;
-        }
-
-        return nullptr;
-    }
-
-    float _range;
-    int _varieties;
-    float _width;
-    float _height;
-    ref_ptr<Effect> _effect;
-};
-
-struct AddTreesLeafObject
-{
-    void operator() (LOD* lod, const TreeBin::Tree& tree) const
-    {
-        Geode* geode = static_cast<Geode*>(lod->getChild(int(tree.position.x() * 10.0f) % lod->getNumChildren()));
-        addTreeToLeafGeode(geode, tree.position);
-    }
-};
-
-struct GetTreeCoord
-{
-    Vec3 operator() (const TreeBin::Tree& tree) const
-    {
-        return toOsg(tree.position);
-    }
-};
-
-typedef QuadTreeBuilder<LOD*, TreeBin::Tree, MakeTreesLeaf, AddTreesLeafObject,
-                        GetTreeCoord> ShaderGeometryQuadtree;
-}
-
-struct TreeTransformer
-{
-    TreeTransformer(Matrix& mat_) : mat(mat_) {}
-    TreeBin::Tree operator()(const TreeBin::Tree& tree) const
-    {
-        Vec3 pos = toOsg(tree.position);
-        return TreeBin::Tree(toSG(pos * mat));
-    }
-    Matrix mat;
-};
-
-// We may end up with a quadtree with many empty leaves. One might say
-// that we should avoid constructing the leaves in the first place,
-// but this node visitor tries to clean up after the fact.
-
-struct QuadTreeCleaner : public osg::NodeVisitor
-{
-    QuadTreeCleaner() : NodeVisitor(NodeVisitor::TRAVERSE_ALL_CHILDREN)
-    {
-    }
-    void apply(LOD& lod)
-    {
-        for (int i  = lod.getNumChildren() - 1; i >= 0; --i) {
-            EffectGeode* geode = dynamic_cast<EffectGeode*>(lod.getChild(i));
-            // EffectGeode* geode = nullptr;
-            // try {
-            //     geode = dynamic_cast<EffectGeode*>(lod.getChild(i));
-            // }
-            // catch (std::bad_cast) {
-            //     SG_LOG(SG_TERRAIN, SG_ALERT, "caught bad_cast exception " << typeof(lod.getChild(i)));
-            // }
-            if (!geode)
-                continue;
-            bool geodeEmpty = true;
-            for (unsigned j = 0; j < geode->getNumDrawables(); ++j) {
-                const Geometry* geom = dynamic_cast<Geometry*>(geode->getDrawable(j));
-                if (!geom) {
-                    geodeEmpty = false;
-                    break;
-                }
-                for (unsigned k = 0; k < geom->getNumPrimitiveSets(); k++) {
-                    const PrimitiveSet* ps = geom->getPrimitiveSet(k);
-                    if (ps->getNumIndices() > 0) {
-                        geodeEmpty = false;
-                        break;
-                    }
-                }
-            }
-            if (geodeEmpty)
-                lod.removeChildren(i, 1);
-        }
-    }
-};
-
 // This actually returns a MatrixTransform node. If we rotate the whole
 // forest into the local Z-up coordinate system we can reuse the
 // primitive tree geometry for all the forests of the same type.
 
-osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
-                         const SGReaderWriterOptions* options, int depth)
+Group* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWriterOptions> options)
 {
-    Matrix transInv = Matrix::inverse(transform);
+    Matrix transInv = Matrix::identity();
     // Set up some shared structures.
-    ref_ptr<Group> group;
-    MatrixTransform* mt = new MatrixTransform(transform);
+    Group* group = new Group;
 
     SGTreeBinList::iterator i;
 
     for (i = forestList.begin(); i != forestList.end(); ++i) {
         TreeBin* forest = *i;
 
-        ref_ptr<Effect> effect;
+        // No point generating anything if there aren't any trees.
+        if (forest->getNumTrees() == 0) continue;
+
+        osg::ref_ptr<Effect> effect;
 
         {
             const std::lock_guard<std::mutex> lock(treeEffectMapMutex); // Lock the treeEffectMap for this scope
             EffectMap::iterator iter = treeEffectMap.find(forest->texture);
-            if ((iter == treeEffectMap.end())||
-                (!iter->second.lock(effect)))
+            if (iter == treeEffectMap.end() || (!iter->second.lock(effect)))
             {
                 SGPropertyNode_ptr effectProp = new SGPropertyNode;
                 makeChild(effectProp, "inherits-from")->setStringValue(forest->teffect);
@@ -392,40 +208,26 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
                 params->getChild("texture", 0, true)->getChild("image", 0, true)
                     ->setStringValue(forest->texture);
                 effect = makeEffect(effectProp, true, options);
-                if (iter == treeEffectMap.end())
+
+                if (iter == treeEffectMap.end()) {
                     treeEffectMap.insert(EffectMap::value_type(forest->texture, effect));
-                else
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Created new tree effectMap for " << forest->texture);
+                } else {
                     iter->second = effect; // update existing, but empty observer
+                }
+            }
+
+            if (effect == 0) {
+                SG_LOG(SG_TERRAIN, SG_ALERT, "Unable to find effect for " << forest->texture);
             }
         }
 
-        // Now, create a quadtree for the forest.
-        ShaderGeometryQuadtree
-            quadtree(GetTreeCoord(), AddTreesLeafObject(),
-                     depth,
-                     MakeTreesLeaf(forest->range, forest->texture_varieties,
-                                   forest->width, forest->height, effect));
-        // Transform tree positions from the "geocentric" positions we
-        // get from the scenery polys into the local Z-up coordinate
-        // system.
-        std::vector<TreeBin::Tree> rotatedTrees;
-        rotatedTrees.reserve(forest->_trees.size());
-        std::transform(forest->_trees.begin(), forest->_trees.end(),
-                       std::back_inserter(rotatedTrees),
-                       TreeTransformer(transInv));
-        quadtree.buildQuadTree(rotatedTrees.begin(), rotatedTrees.end());
-        group = quadtree.getRoot();
-
-        for (size_t i = 0; i < group->getNumChildren(); ++i)
-            mt->addChild(group->getChild(i));
-
-        delete forest;
+        EffectGeode* geode = createTreeGeode(forest);
+        geode->setEffect(effect.get());
+        group->addChild(geode);
     }
 
-    forestList.clear();
-    QuadTreeCleaner cleaner;
-    mt->accept(cleaner);
-    return mt;
+    return group;
 }
 
 TreeBin::TreeBin(const SGMaterial *mat)
@@ -477,10 +279,8 @@ TreeBin(mat)
         // these might fail, so check them after we look at failbit
         in >> a >> b >> c;
 
-        SGVec3f loc = SGVec3f(x,y,z);
-        SGVec3f norm = SGVec3f(a,b,c);
-
-        insert(Tree(loc));
+        osg::Vec3d loc = osg::Vec3d(x,y,z);
+        insert(loc);
     }
 
     stream.close();

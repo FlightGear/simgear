@@ -69,8 +69,17 @@ target_precompile_headers(SimGearCore PRIVATE
 # for simgear_config.h
 target_include_directories(SimGearCore PRIVATE ${PROJECT_BINARY_DIR}/simgear)
 
-# we leak Boost in our public APIs :(
-target_include_directories(SimGearCore PUBLIC ${Boost_INCLUDE_DIRS})
+# needed for include of <simgear/simgear_config.h> in superbuild
+target_include_directories(SimGearCore INTERFACE 
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
+
+target_include_directories(SimGearCore PUBLIC
+  ${Boost_INCLUDE_DIRS})
+
+if (MSVC)
+    message(WARNING "FIXME: setting _HAS_STD_BYTE=0 for SimGear build, this needs to be fixed.")
+    target_compile_definitions(SimGearCore PRIVATE _HAS_STD_BYTE=0)
+endif()
 
 install(TARGETS SimGearCore
         EXPORT SimGearTargets

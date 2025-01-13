@@ -18,38 +18,35 @@
 #include "oursun.hxx"
 
 using namespace simgear;
-using std::max;
-using std::min;
 
 osg::Node* SGSun::build(double sun_size, SGPropertyNode *property_tree_Node,
                         const SGReaderWriterOptions* options)
 {
     env_node = property_tree_Node;
 
-    EffectGeode* geode = new EffectGeode;
+    osg::ref_ptr<EffectGeode> geode = new EffectGeode;
     geode->setName("Sun");
 
-    Effect* effect = makeEffect("Effects/moon", true, options);
+    Effect* effect = makeEffect("Effects/oursun", true, options);
     if (effect) {
         geode->setEffect(effect);
     }
 
-    osg::Vec3Array* sun_vl = new osg::Vec3Array;
-    sun_vl->push_back(osg::Vec3(-sun_size, 0, -sun_size));
-    sun_vl->push_back(osg::Vec3( sun_size, 0, -sun_size));
-    sun_vl->push_back(osg::Vec3(-sun_size, 0,  sun_size));
-    sun_vl->push_back(osg::Vec3( sun_size, 0,  sun_size));
+    osg::ref_ptr<osg::Vec3Array> sun_vl = new osg::Vec3Array;
+    sun_vl->push_back(osg::Vec3(-sun_size, 0.0f, -sun_size));
+    sun_vl->push_back(osg::Vec3( sun_size, 0.0f, -sun_size));
+    sun_vl->push_back(osg::Vec3(-sun_size, 0.0f,  sun_size));
+    sun_vl->push_back(osg::Vec3( sun_size, 0.0f,  sun_size));
 
-    osg::Vec2Array* sun_tl = new osg::Vec2Array;
-    sun_tl->push_back(osg::Vec2(0, 0));
-    sun_tl->push_back(osg::Vec2(1, 0));
-    sun_tl->push_back(osg::Vec2(0, 1));
-    sun_tl->push_back(osg::Vec2(1, 1));
+    osg::ref_ptr<osg::Vec2Array> sun_tl = new osg::Vec2Array;
+    sun_tl->push_back(osg::Vec2(0.0f, 0.0f));
+    sun_tl->push_back(osg::Vec2(1.0f, 0.0f));
+    sun_tl->push_back(osg::Vec2(0.0f, 1.0f));
+    sun_tl->push_back(osg::Vec2(1.0f, 1.0f));
 
-    osg::Geometry* geometry = new osg::Geometry;
+    osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry;
     geometry->setUseVertexBufferObjects(true);
     geometry->setVertexArray(sun_vl);
-    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
     geometry->setTexCoordArray(0, sun_tl, osg::Array::BIND_PER_VERTEX);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
 

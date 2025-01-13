@@ -84,9 +84,9 @@ void compareTexCoords(const SGBinObject& rd, const std::vector<SGVec2f>& b)
     }
 }
 
-int_list make_tri(int maxIndex)
+std::vector<int> make_tri(int maxIndex)
 {
-    int_list r;
+    std::vector<int> r;
     int a, b, c;
         
     bool valid = false;
@@ -125,14 +125,14 @@ void compareTris(const SGBinObject& a, const SGBinObject& b)
 {
     unsigned int count = a.get_tri_materials().size();
     for (unsigned int i=0; i<count; i += 39) {
-        const int_list& vA(a.get_tris_v()[i]);
-        const int_list& vB(b.get_tris_v()[i]);
+        const std::vector<int>& vA(a.get_tris_v()[i]);
+        const std::vector<int>& vB(b.get_tris_v()[i]);
         SG_VERIFY(vA == vB);
 
         SG_CHECK_EQUAL(a.get_tri_materials()[i], b.get_tri_materials()[i]);
 
-        const int_list& tA(a.get_tris_tcs()[i][0]);
-        const int_list& tB(b.get_tris_tcs()[i][0]);
+        const std::vector<int>& tA(a.get_tris_tcs()[i][0]);
+        const std::vector<int>& tB(b.get_tris_tcs()[i][0]);
         SG_VERIFY(tA == tB);
     }
 }

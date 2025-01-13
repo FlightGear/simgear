@@ -118,7 +118,7 @@ bool SGFile::open( const SGProtocolDir d ) {
     }
 
     if ( fp == -1 ) {
-        SG_LOG( SG_IO, SG_ALERT, "Error opening file: "	<< file_name );
+        SG_LOG(SG_IO, SG_ALERT, "Error opening file: " << file_name << "; erorr:" << simgear::strutils::error_string(errno));
         return false;
     }
 

@@ -346,13 +346,18 @@ public:
   inline double get_cos_tree_zero_density_slope_angle () const { return cos_tree_zero_density_slope_angle; }
 
   /**
-   * Get the various colour attributes
+   * Get the various PBR  attributes
    */
-  inline osg::Vec4 get_ambient() const { return toOsg(ambient); }
-  inline osg::Vec4 get_diffuse() const { return toOsg(diffuse); }
-  inline osg::Vec4 get_specular() const { return toOsg(specular); }
-  inline osg::Vec4 get_emission() const { return toOsg(emission); }
-  inline double    get_shininess() const { return shininess; }
+  inline osg::Vec4 get_emission()  const { return toOsg(emission); }
+  inline double    get_metallic()  const { return metallic; }
+  inline double    get_roughness() const { return roughness; }
+  inline double    get_occlusion() const { return occlusion; }
+
+  /**
+   * Get the noise amplitude for tesselation shader that generates an additional rough heightmap
+   */
+  inline osg::Vec4 get_height_amplitude() const { return toOsg(height_amplitude);}
+  inline osg::Vec4 get_bumpmap_amplitude() const { return toOsg(bumpmap_amplitude);}
 
   /**
    * Get the list of names for this material
@@ -541,8 +546,16 @@ private:
   double cos_tree_zero_density_slope_angle;
 
   // material properties
-  SGVec4f ambient, diffuse, specular, emission;
-  double shininess;
+  SGVec4f emission;
+  double metallic;
+  double roughness;
+  double occlusion;
+
+  // Noise amplitude for tessellation shader that generates an additional heigh peturbation
+  SGVec4d height_amplitude;
+
+  // Noise amplitude for bumpmapping
+  SGVec4d bumpmap_amplitude;
 
   // region of this material
   std::string region;

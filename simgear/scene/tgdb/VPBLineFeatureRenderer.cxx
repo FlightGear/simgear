@@ -80,8 +80,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
             minWidth = static_lod->getChildren("lod-level")[_tileLevel]->getFloatValue("line-features-min-width", minWidth);
         }
 
-        const SGPropertyNode* useDecals = propertyNode->getNode("/sim/rendering/shaders/decals");
-        _useDecals = useDecals->getBoolValue();
+        _useDecals = propertyNode->getBoolValue("/sim/rendering/shaders/decals", false);
     }
 
     if (! matcache) {
@@ -140,11 +139,18 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
             osg::Vec3Array* n = new osg::Vec3Array;
             osg::Vec4Array* c = new osg::Vec4Array;
             osg::Vec3Array* lights = new osg::Vec3Array;
+            std::vector<osg::Vec2Array*> roads;  // @@FERNANDO - this will contain the road segments for the tile in tile-local UV coordinates, one list for each box of 16 triangles.
 
             auto lineFeatures = (*rb)->getLineFeatures();
 
             for (auto r = lineFeatures.begin(); r != lineFeatures.end(); ++r) {
-                if (r->_width > minWidth) generateLineFeature(buffer, *r, buffer._transform->getMatrix(), v, t, n, lights, x0, x1, ysize, light_edge_spacing, light_edge_height, light_edge_offset, elevation_offset_m);
+                osg::Vec2Array* rlocal = new osg::Vec2Array;  
+                if (r->_width > minWidth) generateLineFeature(buffer, *r, buffer._transform->getMatrix(), v, t, n, rlocal, lights, x0, x1, ysize, light_edge_spacing, light_edge_height, light_edge_offset, elevation_offset_m);
+                if (rlocal->size() > 0) {
+                    roads.push_back(rlocal);
+                } else {
+                    rlocal->unref();
+                }
             }
 
             if (v->size() == 0) {
@@ -210,7 +216,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
     if (lightbin.getNumLights() > 0) buffer._transform->addChild(createLights(lightbin, osg::Matrix::identity(), options));
 }
 
-void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Matrix localToWorldMatrix, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, osg::Vec3Array* lights, double x0, double x1, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset, double elevation_offset_m)
+void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Matrix localToWorldMatrix, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, osg::Vec2Array* roads, osg::Vec3Array* lights, double x0, double x1, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset, double elevation_offset_m)
 {
     osg::Vec3d modelCenter = localToWorldMatrix.getTrans();
 
@@ -238,6 +244,7 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
             osg::Vec3d pt;
             buffer._masterLocator->convertModelToLocal(*iter, pt);
             bb.expandBy(pt);
+            roads->push_back(osg::Vec2(pt.x(), pt.y()));
         }
 
         // Find the min/max heights from the heightfield.
@@ -279,10 +286,10 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
         c = rot * (c - modelCenter);
         d = rot * (d - modelCenter);
 
-        const osg::Vec2d ta = osg::Vec2d(0.0,0.0);
-        const osg::Vec2d tb = osg::Vec2d(1.0,0.0);
-        const osg::Vec2d tc = osg::Vec2d(0.0,1.0);
-        const osg::Vec2d td = osg::Vec2d(1.0,1.0);
+        const osg::Vec2d ta = osg::Vec2d(bb.xMin(),bb.yMin());
+        const osg::Vec2d tb = osg::Vec2d(bb.xMax(),bb.yMin());
+        const osg::Vec2d tc = osg::Vec2d(bb.xMin(),bb.yMax());
+        const osg::Vec2d td = osg::Vec2d(bb.xMax(),bb.yMax());
 
         // Four corners below the terrain mesh
         buffer._masterLocator->convertLocalToModel(osg::Vec3d(bb.xMin(), bb.yMin(), minElevation), e);
@@ -294,10 +301,10 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
         g = rot * (g - modelCenter);
         h = rot * (h - modelCenter);
 
-        const osg::Vec2d te = osg::Vec2d(0.0,0.0);
-        const osg::Vec2d tf = osg::Vec2d(1.0,0.0);
-        const osg::Vec2d tg = osg::Vec2d(0.0,1.0);
-        const osg::Vec2d th = osg::Vec2d(1.0,1.0);
+        const osg::Vec2d te = osg::Vec2d(bb.xMin(),bb.yMin());
+        const osg::Vec2d tf = osg::Vec2d(bb.xMax(),bb.yMin());
+        const osg::Vec2d tg = osg::Vec2d(bb.xMin(),bb.yMax());
+        const osg::Vec2d th = osg::Vec2d(bb.xMax(),bb.yMax());
 
         // Now generate two triangles for the top surface
         v->push_back(a);
@@ -420,7 +427,7 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
         for (unsigned int i = 0; i < 6; i++) n->push_back(normal);
         
     } else {
-        // When we're not using decalse we create a simple quad just above the terrain surface.
+        // When we're not using decals we create a simple quad just above the terrain surface.
         osg::Vec3d ma, mb;
         std::list<osg::Vec3d> roadPoints;
         auto road_iter = nodes.begin();

@@ -66,6 +66,7 @@ class VPBLineFeatureRenderer
             osg::Vec3Array* v, 
             osg::Vec2Array* t, 
             osg::Vec3Array* n,
+            osg::Vec2Array* roads,
             osg::Vec3Array* lights,
             double x0,
             double x1,

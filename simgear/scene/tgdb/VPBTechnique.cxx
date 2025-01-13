@@ -1710,7 +1710,7 @@ const int VPBTechnique::getLandclass(const osg::Vec2d p)
 void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
 {
     if (_useTessellation)
-        applyMaterialsTesselated(buffer, matcache, loc);
+        applyMaterialsTessellated(buffer, matcache, loc);
     else 
         applyMaterialsTriangles(buffer, matcache, loc);
 }
@@ -1727,7 +1727,7 @@ osg::Vec4d VPBTechnique::catmull_rom_interp_basis(const float t)
     return osg::Vec4d(1.0, t, t*t, t*t*t) * catmull_rom_basis_M;
 }
 
-void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
+void VPBTechnique::applyMaterialsTessellated(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache, const SGGeod loc)
 {
     assert(_useTessellation);
     if (!matcache) return;

@@ -362,10 +362,14 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                 throw sg_exception(std::string("Unknown format '") +
                                    formatStr + "'");
 
+            int level = p_binding->getIntValue("level", 0);
+            bool layered = p_binding->getBoolValue("layered", false);
+            int layer = p_binding->getIntValue("layer", 0);
+
             // Make the image available to every child of the pass, overriding
             // existing units
             auto* binding = new osg::BindImageTexture(unit, texture, access,
-                                                      format);
+                                                      format, level, layered, layer);
             camera->getOrCreateStateSet()->setAttributeAndModes(binding,
                 osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
         } catch (sg_exception &e) {

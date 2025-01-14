@@ -28,6 +28,7 @@
 #include <osg/Geometry>
 #include <osg/Group>
 #include <osg/Matrix>
+#include <osg/LOD>
 
 #include <simgear/scene/util/OsgMath.hxx>
 
@@ -58,28 +59,22 @@ public:
     std::string texture;
     std::string teffect;
     
-    void insert(const Tree& t)
-    { _trees.push_back(t); }
-
     void insert(const SGVec3f& p, const SGVec3f& tnorm)
     {
-        _trees.emplace_back(p, tnorm);
+        _trees.emplace_back(Tree(p, tnorm));
     }
 
     unsigned getNumTrees() const
     { return _trees.size(); }
 
-    const Tree& getTree(unsigned i) const
+    const Tree getTree(unsigned i) const
     {
         assert(i < _trees.size());
         return _trees.at(i);
     }
 
-    TreeList _trees;
-    
+    std::vector<Tree> _trees;
 };
-
-void clearSharedTreeGeometry();
 
 typedef std::list<TreeBin*> SGTreeBinList;
 

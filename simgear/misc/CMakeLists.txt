@@ -5,7 +5,6 @@ set(HEADERS
     CSSBorder.hxx
     ListDiff.hxx
     ResourceManager.hxx
-    SimpleMarkdown.hxx
     SVGpreserveAspectRatio.hxx
     argparse.hxx
     inputvalue.hxx
@@ -28,7 +27,6 @@ set(HEADERS
 set(SOURCES
     CSSBorder.cxx
     ResourceManager.cxx
-    SimpleMarkdown.cxx
     SVGpreserveAspectRatio.cxx
     argparse.cxx
     inputvalue.cxx
@@ -62,11 +60,6 @@ add_simgear_autotest(test_path path_test.cxx )
 add_simgear_autotest(test_sg_dir sg_dir_test.cxx)
 
 endif(ENABLE_TESTS)
-
-add_boost_test(SimpleMarkdown
-  SOURCES SimpleMarkdown_test.cxx
-  LIBRARIES SimGearCore
-)
 
 add_boost_test(SVGpreserveAspectRatio
   SOURCES SVGpreserveAspectRatio_test.cxx

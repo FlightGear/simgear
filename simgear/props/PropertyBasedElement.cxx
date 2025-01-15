@@ -17,6 +17,8 @@ namespace simgear
   PropertyBasedElement::PropertyBasedElement(SGPropertyNode* node):
     _node(node)
   {
+    // Propagate value changes upwards
+    _node->setAttribute(SGPropertyNode::VALUE_CHANGED_DOWN, true);
     _node->addChangeListener(this);
   }
 

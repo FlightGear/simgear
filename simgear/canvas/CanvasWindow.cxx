@@ -6,10 +6,11 @@
  * @brief Window for placing a Canvas onto it (for dialogs, menus, etc.)
  */
 
-#include <simgear_config.h>
+#include "CanvasWindow.hxx"
 #include "CanvasMgr.hxx"
 #include "CanvasSystemAdapter.hxx"
-#include "CanvasWindow.hxx"
+#include "simgear/canvas/layout/LayoutItem.hxx"
+#include <simgear_config.h>
 
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/events/CanvasKeyBinding.hxx>
@@ -247,6 +248,17 @@ namespace canvas
     _decoration_border = simgear::CSSBorder::parse(str);
     _attributes_dirty |= DECORATION;
   }
+
+  //----------------------------------------------------------------------------
+  void Window::invalidate()
+  {
+      LayoutItem::invalidate();
+
+      const auto minSz = minimumSize();
+      set<int>("layout-min-size[0]", minSz.x());
+      set<int>("layout-min-size[1]", minSz.y());
+  }
+
 
   //----------------------------------------------------------------------------
   void Window::updateDecoration()

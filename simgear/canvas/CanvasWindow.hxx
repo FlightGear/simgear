@@ -125,6 +125,8 @@ protected:
 
     void parseDecorationBorder(const std::string& str);
     void updateDecoration();
+
+    void invalidate() override;
   };
 
 } // namespace canvas

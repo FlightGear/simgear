@@ -21,35 +21,32 @@
 //
 // $Id$
 
-
-#include <simgear/compiler.h>
-
-#include <simgear_config.h>
-#include <simgear/debug/logstream.hxx>
-#include <simgear/misc/strutils.hxx>
-#include <simgear/io/iostreams/sgstream.hxx>
-
-#include <cstring>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fstream>
+#include <cerrno>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
+
+#include <sys/stat.h>
 
 #if !defined(SG_WINDOWS)
 #  include <sys/types.h>
 #  include <utime.h>
 #  include <unistd.h>
-#endif
-
-#if defined(SG_WINDOWS)
+#else
 #  include <direct.h>
 #  include <sys/utime.h>
 #  include <Shlwapi.h>
 #endif
 
-#include "sg_path.hxx"
+#include <simgear_config.h>
+#include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/strutils.hxx>
+
+#include "sg_path.hxx"
 
 using std::string;
 using simgear::strutils::starts_with;

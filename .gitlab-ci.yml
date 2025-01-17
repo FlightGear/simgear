@@ -12,13 +12,6 @@ variables:
   BRANCH_REF: next
   HOMEBREW_NO_AUTO_UPDATE: 1
 
-# build merge requests, tags and the protected branches 
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
-
 linux-build:
   image: registry.gitlab.com/flightgear/flightgear
   stage: build

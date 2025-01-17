@@ -9,35 +9,33 @@
 
 // $Id$
 
-
-#include <simgear/compiler.h>
-
-#include <simgear_config.h>
-#include <simgear/debug/logstream.hxx>
-#include <simgear/misc/strutils.hxx>
-#include <simgear/io/iostreams/sgstream.hxx>
-
-#include <cstring>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fstream>
+#include <cerrno>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <utility>
+
+#include <sys/stat.h>
 
 #if !defined(SG_WINDOWS)
 #  include <sys/types.h>
 #  include <utime.h>
 #  include <unistd.h>
-#endif
-
-#if defined(SG_WINDOWS)
+#else
 #  include <direct.h>
 #  include <sys/utime.h>
 #  include <Shlwapi.h>
 #endif
 
-#include "sg_path.hxx"
+#include <simgear_config.h>
+#include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/strutils.hxx>
+
+#include "sg_path.hxx"
 
 using std::string;
 using simgear::strutils::starts_with;
@@ -289,6 +287,52 @@ void SGPath::addAllowedPathPattern(const string& pattern, bool write)
 {
     string_list& allowed_paths(write ? write_allowed_paths : read_allowed_paths);
     allowed_paths.push_back(pattern);
+}
+
+// Static member function
+[[nodiscard]]
+bool SGPath::addAllowedPath(const std::string& path, const Permissions& perms)
+{
+    // Normalizes \ to / on Windows, removes any trailing '/', etc.
+    const string normed_path = SGPath(path).realpath().utf8Str();
+
+    if (normed_path.find("*") == string::npos) {
+        if (perms.read) {
+            read_allowed_paths.push_back(normed_path);
+        }
+
+        if (perms.write) {
+            write_allowed_paths.push_back(std::move(normed_path));
+        }
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// Static member function
+[[nodiscard]]
+bool SGPath::addAllowedDirectoryHierarchy(const std::string& path,
+                                          const Permissions& perms)
+{
+    const string normed_path = SGPath(path).realpath().utf8Str();
+
+    if (normed_path.find("*") == string::npos) {
+        if (perms.read) {
+            read_allowed_paths.push_back(normed_path);
+            read_allowed_paths.push_back(normed_path + "/*");
+        }
+
+        if (perms.write) {
+            write_allowed_paths.push_back(normed_path);
+            write_allowed_paths.push_back(normed_path + "/*");
+        }
+
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // Static member function

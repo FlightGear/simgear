@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <utility>
 
 #include <sys/stat.h>
 
@@ -286,6 +287,52 @@ void SGPath::addAllowedPathPattern(const string& pattern, bool write)
 {
     string_list& allowed_paths(write ? write_allowed_paths : read_allowed_paths);
     allowed_paths.push_back(pattern);
+}
+
+// Static member function
+[[nodiscard]]
+bool SGPath::addAllowedPath(const std::string& path, const Permissions& perms)
+{
+    // Normalizes \ to / on Windows, removes any trailing '/', etc.
+    const string normed_path = SGPath(path).realpath().utf8Str();
+
+    if (normed_path.find("*") == string::npos) {
+        if (perms.read) {
+            read_allowed_paths.push_back(normed_path);
+        }
+
+        if (perms.write) {
+            write_allowed_paths.push_back(std::move(normed_path));
+        }
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// Static member function
+[[nodiscard]]
+bool SGPath::addAllowedDirectoryHierarchy(const std::string& path,
+                                          const Permissions& perms)
+{
+    const string normed_path = SGPath(path).realpath().utf8Str();
+
+    if (normed_path.find("*") == string::npos) {
+        if (perms.read) {
+            read_allowed_paths.push_back(normed_path);
+            read_allowed_paths.push_back(normed_path + "/*");
+        }
+
+        if (perms.write) {
+            write_allowed_paths.push_back(normed_path);
+            write_allowed_paths.push_back(normed_path + "/*");
+        }
+
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // Static member function

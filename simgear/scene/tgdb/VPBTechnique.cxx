@@ -1013,45 +1013,50 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             VNG.populateCorner(bottom_right_tile.valid() ? bottom_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_RIGHT);
             VNG.populateCorner(top_left_tile.valid() ? top_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_LEFT);
             VNG.populateCorner(top_right_tile.valid() ? top_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_RIGHT);
-        }
 
-        _neighbours.clear();
+            // Loading this tile will mean that there is new elevation data available for the adjacent tiles.
+            // This is relevant for tessellation beacuse we perform cubic interpolation that will extend beyond
+            // a given tile boundary.  Hence we need to dirty the adjacent tiles so they are re-generated on the
+            // next update.
 
-        if (left_tile.valid())   addNeighbour(left_tile.get());
-        if (right_tile.valid())  addNeighbour(right_tile.get());
-        if (top_tile.valid())    addNeighbour(top_tile.get());
-        if (bottom_tile.valid()) addNeighbour(bottom_tile.get());
+            _neighbours.clear();
 
-        if (left_tile.valid())
-        {
-            if (left_tile->getTerrainTechnique()==0 || !(left_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (left_tile.valid())   addNeighbour(left_tile.get());
+            if (right_tile.valid())  addNeighbour(right_tile.get());
+            if (top_tile.valid())    addNeighbour(top_tile.get());
+            if (bottom_tile.valid()) addNeighbour(bottom_tile.get());
+
+            if (left_tile.valid())
             {
-                int dirtyMask = left_tile->getDirtyMask() | TerrainTile::LEFT_EDGE_DIRTY;
-                left_tile->setDirtyMask(dirtyMask);
+                if (left_tile->getTerrainTechnique()==0 || !(left_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = left_tile->getDirtyMask() | TerrainTile::LEFT_EDGE_DIRTY;
+                    left_tile->setDirtyMask(dirtyMask);
+                }
             }
-        }
-        if (right_tile.valid())
-        {
-            if (right_tile->getTerrainTechnique()==0 || !(right_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (right_tile.valid())
             {
-                int dirtyMask = right_tile->getDirtyMask() | TerrainTile::RIGHT_EDGE_DIRTY;
-                right_tile->setDirtyMask(dirtyMask);
+                if (right_tile->getTerrainTechnique()==0 || !(right_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = right_tile->getDirtyMask() | TerrainTile::RIGHT_EDGE_DIRTY;
+                    right_tile->setDirtyMask(dirtyMask);
+                }
             }
-        }
-        if (top_tile.valid())
-        {
-            if (top_tile->getTerrainTechnique()==0 || !(top_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (top_tile.valid())
             {
-                int dirtyMask = top_tile->getDirtyMask() | TerrainTile::TOP_EDGE_DIRTY;
-                top_tile->setDirtyMask(dirtyMask);
+                if (top_tile->getTerrainTechnique()==0 || !(top_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = top_tile->getDirtyMask() | TerrainTile::TOP_EDGE_DIRTY;
+                    top_tile->setDirtyMask(dirtyMask);
+                }
             }
-        }
-        if (bottom_tile.valid())
-        {
-            if (bottom_tile->getTerrainTechnique()==0|| !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (bottom_tile.valid())
             {
-                int dirtyMask = bottom_tile->getDirtyMask() | TerrainTile::BOTTOM_EDGE_DIRTY;
-                bottom_tile->setDirtyMask(dirtyMask);
+                if (bottom_tile->getTerrainTechnique()==0|| !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = bottom_tile->getDirtyMask() | TerrainTile::BOTTOM_EDGE_DIRTY;
+                    bottom_tile->setDirtyMask(dirtyMask);
+                }
             }
         }
     }

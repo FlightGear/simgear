@@ -105,35 +105,35 @@ EffectGeode* createTreeGeode(TreeBin* forest)
     Vec3Array* vertexArray = new Vec3Array;
     Vec2Array* texCoords   = new Vec2Array;
 
-    vertexArray->reserve(12);
-    texCoords->reserve(12);
+    // Create a number of quads rotated evenly in the z-axis around the origin.
+    const int NUM_QUADS = 3;
 
-    // Create the vertices
-    osg::Vec3 v0(0.0f, -0.5f, 0.0f);
-    osg::Vec3 v1(0.0f,  0.5f, 0.0f);
-    osg::Vec3 v2(0.0f,  0.5f, 1.0f);
-    osg::Vec3 v3(0.0f, -0.5f, 1.0f);
-    vertexArray->push_back(v0); vertexArray->push_back(v1); vertexArray->push_back(v2); // 1st triangle
-    vertexArray->push_back(v0); vertexArray->push_back(v2); vertexArray->push_back(v3); // 2nd triangle
+    vertexArray->reserve(NUM_QUADS * 6);
+    texCoords->reserve(NUM_QUADS * 6);
 
-    osg::Vec3 v4(-0.5f, 0.0f, 0.0f);
-    osg::Vec3 v5( 0.5f, 0.0f, 0.0f);
-    osg::Vec3 v6( 0.5f, 0.0f, 1.0f);
-    osg::Vec3 v7(-0.5f, 0.0f, 1.0f);
-    vertexArray->push_back(v4); vertexArray->push_back(v5); vertexArray->push_back(v6); // 3rd triangle
-    vertexArray->push_back(v4); vertexArray->push_back(v6); vertexArray->push_back(v7); // 4th triangle
+    for (int i = 0; i < NUM_QUADS; ++i) {
+        const double x1 = sin(((double) i) * PI / (double) NUM_QUADS) * 0.5f;
+        const double y1 = cos(((double) i) * PI / (double) NUM_QUADS) * 0.5f;
+        const double x2 = -x1;
+        const double y2 = -y1;
 
-    // The texture coordinate range is not the entire coordinate
-    // space, as the texture has a number of different trees on
-    // it. We let the shader choose the variety.
-    osg::Vec2 t0(0.0f, 0.0f);
-    osg::Vec2 t1(1.0f, 0.0f);
-    osg::Vec2 t2(1.0f, 0.234f);
-    osg::Vec2 t3(0.0f, 0.234f);
-    texCoords->push_back(t0); texCoords->push_back(t1); texCoords->push_back(t2); // 1st triangle
-    texCoords->push_back(t0); texCoords->push_back(t2); texCoords->push_back(t3); // 2nd triangle
-    texCoords->push_back(t0); texCoords->push_back(t1); texCoords->push_back(t2); // 3rd triangle
-    texCoords->push_back(t0); texCoords->push_back(t2); texCoords->push_back(t3); // 4th triangle
+        const osg::Vec3 v0(x1, y1, 0.0f);
+        const osg::Vec3 v1(x2, y2, 0.0f);
+        const osg::Vec3 v2(x2, y2, 1.0f);
+        const osg::Vec3 v3(x1, y1, 1.0f);
+        vertexArray->push_back(v0); vertexArray->push_back(v1); vertexArray->push_back(v2); // 1st triangle
+        vertexArray->push_back(v0); vertexArray->push_back(v2); vertexArray->push_back(v3); // 2nd triangle
+
+        // The texture coordinate range is not the entire coordinate
+        // space, as the texture has a number of different trees on
+        // it. We let the shader choose the variety.
+        const osg::Vec2 t0(0.0f, 0.0f);
+        const osg::Vec2 t1(1.0f, 0.0f);
+        const osg::Vec2 t2(1.0f, 0.234f);
+        const osg::Vec2 t3(0.0f, 0.234f);
+        texCoords->push_back(t0); texCoords->push_back(t1); texCoords->push_back(t2); // 1st triangle
+        texCoords->push_back(t0); texCoords->push_back(t2); texCoords->push_back(t3); // 2nd triangle
+    }
 
     Geometry* geometry = new Geometry;
     geometry->setUseDisplayList(false);

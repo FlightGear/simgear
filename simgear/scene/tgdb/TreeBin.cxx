@@ -207,6 +207,8 @@ Group* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWri
                 // emphasize n = 0
                 params->getChild("texture", 0, true)->getChild("image", 0, true)
                     ->setStringValue(forest->texture);
+                params->getChild("texture", 1, true)->getChild("image", 0, true)
+                    ->setStringValue(forest->normal_map);
                 effect = makeEffect(effectProp, true, options);
 
                 if (iter == treeEffectMap.end()) {
@@ -237,6 +239,7 @@ TreeBin::TreeBin(const SGMaterial *mat)
     height = mat->get_tree_height();
     width = mat->get_tree_width();
     texture = mat->get_tree_texture();
+    normal_map = mat->get_tree_normal_map();
     teffect = mat->get_tree_effect();
 };
 

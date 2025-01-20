@@ -665,6 +665,7 @@ public:
                 bin = new TreeBin();
                 bin->texture = mat->get_tree_texture();
                 SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree texture " << bin->texture);
+                bin->normal_map = mat->get_tree_normal_map();
                 bin->teffect = mat->get_tree_effect();
                 SG_LOG(SG_TERRAIN, SG_DEBUG, "Tree effect " << bin->teffect);
                 bin->range   = mat->get_tree_range();

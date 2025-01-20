@@ -218,7 +218,7 @@ public:
    *
    * @return The texture for auto-generated buildings.
    */
-  inline std::string get_building_texture () const { return building_texture; }
+  const std::string& get_building_texture () const { return building_texture; }
 
   /**
    * Get the building lightmap.
@@ -227,7 +227,7 @@ public:
    *
    * @return The lightmap for auto-generated buildings.
    */
-  inline std::string get_building_lightmap () const { return building_lightmap; }
+  const std::string& get_building_lightmap () const { return building_lightmap; }
 
   // Ratio of the 3 random building sizes
   inline double get_building_small_fraction () const { return building_small_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
@@ -317,21 +317,21 @@ public:
    *
    * @return the texture to use for trees.
    */
-  inline std::string get_tree_texture () const { return  tree_texture; }
+  const std::string& get_tree_texture () const { return  tree_texture; }
 
 /**
    * Get the normal map to use for trees
    *
    * @return the normal map to use for trees.
    */
-  inline std::string get_tree_normal_map () const { return  tree_normal_map; }
+  const std::string& get_tree_normal_map () const { return  tree_normal_map; }
 
   /**
    * Get the effect file name to use for trees
    *
    * @return the effect to use for this set of trees.
    */
-  inline std::string get_tree_effect () const { return  tree_effect; }
+  const std::string& get_tree_effect () const { return  tree_effect; }
 
   /**
    * Get the cosine of the maximum tree density slope angle. We

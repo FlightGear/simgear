@@ -48,6 +48,7 @@
 #include <osgDB/FileUtils>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 
@@ -367,31 +368,25 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     cos_tree_max_density_slope_angle  = cos(props->getFloatValue("tree-max-density-angle-deg", 30.0) * osg::PI/180.0);
     cos_tree_zero_density_slope_angle = cos(props->getFloatValue("tree-zero-density-angle-deg", 45.0) * osg::PI/180.0);
 
-    const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
-
     std::string treeTexPath = props->getStringValue("tree-texture");
 
     if (! treeTexPath.empty()) {
-        SGPath treePath("Textures");
-        treePath.append(treeTexPath);
-        tree_texture = SGModelLib::findDataFile(treePath, options);
-
+        tree_texture = SGModelLib::findDataFile(SGPath::fromUtf8("Textures") / treeTexPath, options);
         if (tree_texture.empty()) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
-                    << treeTexPath << "\" in Textures folders.");
+            simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::LoadingTexture,
+                                   "Cannot find texture \"" + treeTexPath + "\" in Textures folders.",
+                                   SGPath::fromUtf8("Textures") / treeTexPath);
         }
     }
 
     std::string treeNormalMapPath = props->getStringValue("tree-normal-map");
 
     if (! treeNormalMapPath.empty()) {
-        SGPath treePath("Textures");
-        treePath.append(treeNormalMapPath);
-        tree_normal_map = SGModelLib::findDataFile(treePath, options);
-
+        tree_normal_map = SGModelLib::findDataFile(SGPath::fromUtf8("Textures") / treeNormalMapPath, options);
         if (tree_normal_map.empty()) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
-                    << treeNormalMapPath << "\" in Textures folders.");
+            simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::LoadingTexture,
+                                   "Cannot find texture \"" + treeNormalMapPath + "\" in Textures folders.",
+                                   SGPath::fromUtf8("Textures") / treeNormalMapPath);
         }
     }
 

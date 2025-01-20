@@ -369,18 +369,29 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
     const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
 
-    if (treeTexNode) {
-        std::string treeTexPath = props->getStringValue("tree-texture");
+    std::string treeTexPath = props->getStringValue("tree-texture");
 
-        if (! treeTexPath.empty()) {
-            SGPath treePath("Textures");
-            treePath.append(treeTexPath);
-            tree_texture = SGModelLib::findDataFile(treePath, options);
+    if (! treeTexPath.empty()) {
+        SGPath treePath("Textures");
+        treePath.append(treeTexPath);
+        tree_texture = SGModelLib::findDataFile(treePath, options);
 
-            if (tree_texture.empty()) {
-                SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
-                        << treeTexPath << "\" in Textures folders.");
-            }
+        if (tree_texture.empty()) {
+            SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                    << treeTexPath << "\" in Textures folders.");
+        }
+    }
+
+    std::string treeNormalMapPath = props->getStringValue("tree-normal-map");
+
+    if (! treeNormalMapPath.empty()) {
+        SGPath treePath("Textures");
+        treePath.append(treeNormalMapPath);
+        tree_normal_map = SGModelLib::findDataFile(treePath, options);
+
+        if (tree_normal_map.empty()) {
+            SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                    << treeNormalMapPath << "\" in Textures folders.");
         }
     }
 

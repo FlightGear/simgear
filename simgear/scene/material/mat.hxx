@@ -319,6 +319,12 @@ public:
    */
   inline std::string get_tree_texture () const { return  tree_texture; }
 
+/**
+   * Get the normal map to use for trees
+   *
+   * @return the normal map to use for trees.
+   */
+  inline std::string get_tree_normal_map () const { return  tree_normal_map; }
 
   /**
    * Get the effect file name to use for trees
@@ -573,6 +579,9 @@ private:
 
   // Tree texture, typically a strip of applicable tree textures
   std::string tree_texture;
+
+  // Tree normal map, typically a strip of applicable tree textures
+  std::string tree_normal_map;
 
   // Tree effect to be used for a particular material
   std::string tree_effect;

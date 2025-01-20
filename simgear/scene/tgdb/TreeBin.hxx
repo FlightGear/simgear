@@ -47,6 +47,7 @@ public:
     float height;
     float width;
     std::string texture;
+    std::string normal_map;
     std::string teffect;
     
     void insert(osg::Vec3d t)

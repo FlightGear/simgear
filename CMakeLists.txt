@@ -132,7 +132,7 @@ option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support"
 option(USE_AEONWAVE     "Set to ON to use AeonWave instead of OpenAL" ON)
 option(ENABLE_PKGUTIL   "Set to ON to build the sg_pkgutil application (default)" ON)
 option(ENABLE_DNS       "Set to ON to use udns library and DNS service resolver" ON)
-option(ENABLE_SIMD      "Enable SSE/SSE2 support for compilers" ON)
+option(ENABLE_SIMD      "Enable SSE/SSE2 support for compilers" OFF)
 option(ENABLE_SIMD_CODE	"Enable SSE/SSE2 support code for compilers" OFF)
 option(ENABLE_OPENMP    "Enable OpenMP compiler support" OFF)
 

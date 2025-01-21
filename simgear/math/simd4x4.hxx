@@ -24,10 +24,6 @@
 # include <simgear/simgear_config.h>
 #endif
 
-#if defined(__GNUC__) && defined(__ARM_NEON__)
-# include <simgear/math/simd4x4_neon.hxx>
-#endif
-
 #include <simgear/math/simd.hxx>
 
 template<typename T, int N> class simd4x4_t;

@@ -249,6 +249,7 @@ else()
         endif()
 
         if(NOT AAX_FOUND)
+            message(STATUS "AeonWave not found")
             set(USE_AEONWAVE FALSE)
 
             # on macOS, force CONFIG mode to ensure we use OpenAL-soft and not the (deprecated)
@@ -265,6 +266,9 @@ else()
         else()
             message(STATUS "Sound support: OpenAL")
         endif()
+
+        # needed for superbuild so FlightGear sees the same value
+        set(USE_AEONWAVE ${USE_AEONWAVE} PARENT_SCOPE)
     endif(ENABLE_SOUND)
 
     include(CreateOSGImportedTargets)

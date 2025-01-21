@@ -162,6 +162,8 @@ endif()
 
 if(ENABLE_DNS AND SYSTEM_UDNS)
     target_link_libraries(SimGearCore PRIVATE ${UDNS_LIBRARIES})
+else()
+    target_link_libraries(SimGearCore PRIVATE FGUdns)
 endif()
 
 if(NOT SIMGEAR_HEADLESS)

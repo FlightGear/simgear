@@ -18,7 +18,11 @@
 
 #pragma once
 
+#include <cassert>
+
 #include "untar.hxx"
+
+#include <simgear/misc/sg_hash.hxx>
 
 namespace simgear {
 
@@ -49,6 +53,7 @@ public:
 
     State state = INVALID;
     ArchiveExtractor* outer = nullptr;
+    sha1nfo hashState;
     SGPath mostRecentPath;
 
     virtual void extractBytes(const uint8_t* bytes, size_t count) = 0;
@@ -65,6 +70,15 @@ public:
         return outer->filterPath(pathToExtract);
     }
 
+    bool doRemoveTopmostDir() const
+    {
+        return outer->_removeTopmostDir;
+    }
+
+    bool doCreateDirHashes() const
+    {
+        return outer->_doCreateDirHashes;
+    }
 
     bool isSafePath(const std::string& p) const
     {

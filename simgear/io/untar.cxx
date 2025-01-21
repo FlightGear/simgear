@@ -1,30 +1,15 @@
-// Copyright (C) 2016  James Turner - <zakalawe@mac.com>
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: Copyright (C) 2016 James Turner <james@flightgear.org>
 
 #include <simgear_config.h>
 
 #include "untar.hxx"
 
-#include <cstdlib>
-#include <cassert>
-#include <stdint.h>
-#include <cstring>
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <stdint.h>
 
 #include <zlib.h>
 
@@ -39,6 +24,7 @@
 #include <simgear/structure/exception.hxx>
 
 #include "ArchiveExtractor_private.hxx"
+#include "simgear/debug/debug_types.h"
 
 namespace simgear
 {
@@ -67,7 +53,7 @@ typedef struct
     const size_t TAR_HEADER_BLOCK_SIZE = 512;
 
 #define TMAGIC   "ustar"        /* ustar and a null */
-#define TMAGLEN  5              // 5, not 6, becuase some files use 'ustar '
+#define TMAGLEN  5              // 5, not 6, because some files use 'ustar '
 #define TVERSION "00"           /* 00 and no null */
 #define TVERSLEN 2
 
@@ -88,7 +74,7 @@ typedef struct
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
+    const int ZLIB_DECOMPRESS_BUFFER_SIZE = 1024 * 1024;
     const int ZLIB_INFLATE_WINDOW_BITS = MAX_WBITS;
     const int ZLIB_DECODE_GZIP_HEADER = 16;
 
@@ -139,6 +125,7 @@ typedef struct
             if (state == READING_FILE) {
                 if (currentFile) {
                     currentFile->close();
+                    writeDirHashEntry();
                     currentFile.reset();
                 }
                 readPaddingIfRequired();
@@ -186,6 +173,26 @@ typedef struct
             // no-op for tar files, we process everything greedily
         }
 
+        void writeDirHashEntry()
+        {
+            if (!doCreateDirHashes()) {
+                return;
+            }
+
+            std::string hashBytes((char*)sha1_result(&hashState), HASH_LENGTH);
+            SGPath path = currentFile->get_path();
+
+            // force a stat call
+            path.set_cached(false);
+            path.set_cached(true);
+
+            // this code has to match the main version in HTTPRepository.cxx
+            SGPath cachePath = path.dirPath() / ".dirhash";
+            sg_ofstream stream(cachePath, std::ios::out | std::ios::app | std::ios::binary);
+            stream << path.utf8Str() << "*" << path.modTime() << "*"
+                   << path.sizeInBytes() << "*" << strutils::encodeHex(hashBytes) << "\n";
+        }
+
         void processHeader()
         {
             if (headerIsAllZeros()) {
@@ -220,6 +227,14 @@ typedef struct
                 // handle fileNames which are exactly 100 bytes long.
                 const auto len = strnlen(header.fileName, 100);
                 tarPath = std::string(header.fileName, len);
+            }
+
+            if (doRemoveTopmostDir()) {
+                const auto firstDir = tarPath.find('/');
+                tarPath.erase(0, firstDir + 1);
+                if (tarPath.empty()) {
+                    skipCurrentEntry = true;
+                }
             }
 
             if (!skipCurrentEntry && !isSafePath(tarPath)) {
@@ -257,6 +272,7 @@ typedef struct
                 if (!skipCurrentEntry) {
                     currentFile.reset(new SGBinaryFile(p));
                     currentFile->open(SG_IO_OUT);
+                    sha1_init(&hashState);
                 }
                 setState(READING_FILE);
                 mostRecentPath = p;
@@ -291,6 +307,7 @@ typedef struct
             if (state == READING_FILE) {
                 if (currentFile) {
                     currentFile->write(bytes, curBytes);
+                    sha1_write(&hashState, bytes, curBytes);
                 }
                 bytesRemaining -= curBytes;
             } else if ((state == READING_HEADER) || (state == PRE_END_OF_ARCHVE) || (state == END_OF_ARCHIVE)) {
@@ -455,7 +472,7 @@ public:
     XZTarExtractor(ArchiveExtractor* outer) : TarExtractorPrivate(outer)
     {
         _xzStream = LZMA_STREAM_INIT;
-        _outputBuffer = (uint8_t*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
+        _outputBuffer = (uint8_t*)malloc(ZLIB_DECOMPRESS_BUFFER_SIZE * 8);
 
 
         auto ret = lzma_stream_decoder(&_xzStream, UINT64_MAX, LZMA_TELL_ANY_CHECK);
@@ -539,7 +556,7 @@ public:
 
 	void extractBytes(const uint8_t* bytes, size_t count) override
 	{
-		// becuase the .zip central directory is at the end of the file,
+		// because the .zip central directory is at the end of the file,
 		// we have no choice but to simply buffer bytes here until flush()
 		// is called
 		m_buffer.append((const char*) bytes, count);
@@ -762,10 +779,11 @@ ArchiveExtractor::DetermineResult ArchiveExtractor::determineType(const uint8_t*
     }
 
     auto r = isTarData(bytes, count);
-    if ((r == TarData) || (r == InsufficientData) || (r == GZData))
+    if ((r == TarData) || (r == InsufficientData) || (r == GZData)) {
         return r;
+    }
 
-	return Invalid;
+    return Invalid;
 }
 
 
@@ -842,6 +860,16 @@ auto ArchiveExtractor::filterPath(std::string& pathToExtract)
     return Accepted;
 }
 
+void ArchiveExtractor::setCreateDirHashEntries(bool doCreate)
+{
+    _doCreateDirHashes = doCreate;
+}
+
+void ArchiveExtractor::setRemoveTopmostDirectory(bool doRemove)
+{
+    _removeTopmostDir = doRemove;
+}
+
 SGPath ArchiveExtractor::mostRecentExtractedPath() const
 {
     if (!d) {
@@ -850,5 +878,6 @@ SGPath ArchiveExtractor::mostRecentExtractedPath() const
 
     return d->mostRecentPath;
 }
+
 
 } // of simgear

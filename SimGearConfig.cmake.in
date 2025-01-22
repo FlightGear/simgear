@@ -17,12 +17,14 @@ endif()
 set(SIMGEAR_HEADLESS @SIMGEAR_HEADLESS@)
 set(SIMGEAR_SOUND @ENABLE_SOUND@)
 set(USE_AEONWAVE @USE_AEONWAVE@)
+set(SG_SOUND_USES_OPENALSOFT @SG_SOUND_USES_OPENALSOFT@)
 
 # SSE/SSE2 support
 
 set(ENABLE_SIMD @ENABLE_SIMD@)
 
 if (SIMGEAR_SOUND)
+  message(STATUS "Finding sound dependencies")
   # find the sound dependency
   if (USE_AEONWAVE)
     find_dependency(AAX)

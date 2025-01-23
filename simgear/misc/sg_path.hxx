@@ -138,6 +138,13 @@ public:
     SGPath validate(bool write) const;
 
     /**
+     * Normal PermissionChecker for SGPath instances created from Nasal.
+     * @param path an SGPath instance
+     * @return read and write permissions conforming to validate()
+     */
+    static Permissions NasalIORulesChecker(const SGPath& path);
+
+    /**
      * Append another piece to the existing path.  Inserts a path
      * separator between the existing component and the new component.
      * @param p additional path component */

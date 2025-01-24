@@ -127,6 +127,8 @@ EffectGeode* createTreeGeode(TreeBin* forest)
         // The texture coordinate range is not the entire coordinate
         // space, as the texture has a number of different trees on
         // it. We let the shader choose the variety.
+        // Y-value chosen so that we definitely won't get artifacts from the tree trunk on the 
+        // subtexture above in the tree atlas
         const osg::Vec2 t0(0.0f, 0.0f);
         const osg::Vec2 t1(1.0f, 0.0f);
         const osg::Vec2 t2(1.0f, 0.234f);

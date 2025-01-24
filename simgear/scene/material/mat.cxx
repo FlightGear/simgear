@@ -390,7 +390,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         }
     } else if (! treeTexPath.empty()) {
         SGPath texPath = SGPath::fromUtf8("Textures") / treeTexPath;
-        SGPath normalPath = texPath.dirPath() / texPath.file_base().append(".nmap.png");
+        SGPath normalPath = texPath.dirPath() / texPath.file_base().append("-normal.png");
         tree_normal_map = SGModelLib::findDataFile(normalPath, options);
         if (tree_normal_map.empty()) {
             simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::LoadingTexture,

@@ -362,6 +362,7 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _constraint_vtx_gap(vtx_gap),
     _useTessellation(useTessellation)
 {
+    _hasSea = false;
     _ZUpRotationMatrix = makeZUpFrameRelative(SGGeod::fromCart(toSG(_centerModel)));
 
     int numVerticesInBody = numColumns*numRows;
@@ -383,7 +384,7 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _vertices->reserve(numVertices);
 
     if (! _useTessellation) {
-        // If we're not using Tessellation then we will have both a sea-level mesh and also generate normals ourselves.
+        // If we're not using Tessellation then we will generate normals ourselves.
         _sea_vertices = new osg::Vec3Array;
         _sea_vertices->reserve(numVertices);
 
@@ -480,6 +481,7 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.z() = _useTessellation ? 0.0 : -10.0;
+                    _hasSea = true;
                 }
             }
 
@@ -576,6 +578,7 @@ void VPBTechnique::VertexNormalGenerator::populateLeftBoundary(osgTerrain::Layer
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.set(ndc.x(), ndc.y(), 0.0f);
+                    _hasSea = true;
                 }
             }
 
@@ -634,6 +637,7 @@ void VPBTechnique::VertexNormalGenerator::populateRightBoundary(osgTerrain::Laye
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.set(ndc.x(), ndc.y(), 0.0f);
+                    _hasSea = true;
                 }
             }
 
@@ -692,6 +696,7 @@ void VPBTechnique::VertexNormalGenerator::populateAboveBoundary(osgTerrain::Laye
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.set(ndc.x(), ndc.y(), 0.0f);
+                    _hasSea = true;
                 }
             }
 
@@ -833,6 +838,7 @@ void VPBTechnique::VertexNormalGenerator::populateCorner(
         unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
         if (atlas->isSea(lc)) {
             ndc.set(ndc.x(), ndc.y(), 0.0f);
+            _hasSea = true;
         }
     }
 
@@ -980,15 +986,17 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     if (! _useTessellation) {
         // allocate and assign normals and the sea level mesh
         buffer._landGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
-        
-        buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
-        buffer._seaGeometry->setNormalArray(VNG._sea_normals.get(), osg::Array::BIND_PER_VERTEX);
 
-        // The Sea level mesh is identical to the main center mesh, except that it is at sea level
-        // Therefore we can use the same texture coordinates calculated above.
-        VNG.populateSeaLevel();
-        buffer._seaGeometry->setTexCoordArray(0, texcoords0);
-        buffer._seaGeometry->setTexCoordArray(1, texcoords1);
+        if (VNG.hasSea()) {
+            buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
+            buffer._seaGeometry->setNormalArray(VNG._sea_normals.get(), osg::Array::BIND_PER_VERTEX);
+
+            // The Sea level mesh is identical to the main center mesh, except that it is at sea level
+            // Therefore we can use the same texture coordinates calculated above.
+            VNG.populateSeaLevel();
+            buffer._seaGeometry->setTexCoordArray(0, texcoords0);
+            buffer._seaGeometry->setTexCoordArray(1, texcoords1);
+        }
     }
 
     if (terrain)
@@ -1189,75 +1197,78 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             landElements->resizeElements(landElements->getNumIndices());
         }       
 
-        osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-        seaElements->reserveElements((numRows-1) * (numColumns-1) * 6);
-        buffer._seaGeometry->addPrimitiveSet(seaElements.get());
+        if (VNG.hasSea()) {
+            osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+            seaElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+            buffer._seaGeometry->addPrimitiveSet(seaElements.get());
 
-        for(j=0; j<numRows-1; ++j)
-        {
-            for(i=0; i<numColumns-1; ++i)
+            for(j=0; j<numRows-1; ++j)
             {
-                // remap sea indices to final vertex positions.  We're relying on
-                // the indices for both the land and sea geometry to be identical.
-                // That should be the case as long as the number of rows and columns
-                // stays identical.
-                int i00 = VNG.vertex_index(i,   j);
-                int i01 = VNG.vertex_index(i,   j+1);
-                int i10 = VNG.vertex_index(i+1, j);
-                int i11 = VNG.vertex_index(i+1, j+1);
-
-                if (swapOrientation)
+                for(i=0; i<numColumns-1; ++i)
                 {
-                    std::swap(i00,i01);
-                    std::swap(i10,i11);
-                }
+                    // remap sea indices to final vertex positions.  We're relying on
+                    // the indices for both the land and sea geometry to be identical.
+                    // That should be the case as long as the number of rows and columns
+                    // stays identical.
+                    int i00 = VNG.vertex_index(i,   j);
+                    int i01 = VNG.vertex_index(i,   j+1);
+                    int i10 = VNG.vertex_index(i+1, j);
+                    int i11 = VNG.vertex_index(i+1, j+1);
 
-                unsigned int numValid = 0;
-                if (i00 >= 0) ++numValid;
-                if (i01 >= 0) ++numValid;
-                if (i10 >= 0) ++numValid;
-                if (i11 >= 0) ++numValid;
-
-                if (numValid==4)
-                {
-                    // optimize which way to put the diagonal by choosing to
-                    // place it between the two corners that have the least curvature
-                    // relative to each other.
-                    float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
-                    float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
-
-                    if (dot_00_11 > dot_01_10)
+                    if (swapOrientation)
                     {
-                        seaElements->addElement(i01);
-                        seaElements->addElement(i00);
-                        seaElements->addElement(i11);
-
-                        seaElements->addElement(i00);
-                        seaElements->addElement(i10);
-                        seaElements->addElement(i11);
+                        std::swap(i00,i01);
+                        std::swap(i10,i11);
                     }
-                    else
+
+                    unsigned int numValid = 0;
+                    if (i00 >= 0) ++numValid;
+                    if (i01 >= 0) ++numValid;
+                    if (i10 >= 0) ++numValid;
+                    if (i11 >= 0) ++numValid;
+
+                    if (numValid==4)
                     {
-                        seaElements->addElement(i01);
-                        seaElements->addElement(i00);
-                        seaElements->addElement(i10);
+                        // optimize which way to put the diagonal by choosing to
+                        // place it between the two corners that have the least curvature
+                        // relative to each other.
+                        float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
+                        float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
 
-                        seaElements->addElement(i01);
-                        seaElements->addElement(i10);
-                        seaElements->addElement(i11);
+                        if (dot_00_11 > dot_01_10)
+                        {
+                            seaElements->addElement(i01);
+                            seaElements->addElement(i00);
+                            seaElements->addElement(i11);
+
+                            seaElements->addElement(i00);
+                            seaElements->addElement(i10);
+                            seaElements->addElement(i11);
+                        }
+                        else
+                        {
+                            seaElements->addElement(i01);
+                            seaElements->addElement(i00);
+                            seaElements->addElement(i10);
+
+                            seaElements->addElement(i01);
+                            seaElements->addElement(i10);
+                            seaElements->addElement(i11);
+                        }
                     }
-                }
-                else if (numValid==3)
-                {
-                    if (i00>=0) seaElements->addElement(i00);
-                    if (i01>=0) seaElements->addElement(i01);
-                    if (i11>=0) seaElements->addElement(i11);
-                    if (i10>=0) seaElements->addElement(i10);
+                    else if (numValid==3)
+                    {
+                        if (i00>=0) seaElements->addElement(i00);
+                        if (i01>=0) seaElements->addElement(i01);
+                        if (i11>=0) seaElements->addElement(i11);
+                        if (i10>=0) seaElements->addElement(i10);
+                    }
                 }
             }
         }
+
         if (createSkirt)
         {
             osg::ref_ptr<osg::Vec3Array> vertices = VNG._vertices.get();
@@ -1428,8 +1439,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
         landElements->resizeElements(landElements->getNumIndices());
     }
-
-    
 
     buffer._landGeometry->setUseDisplayList(false);
     buffer._landGeometry->setUseVertexBufferObjects(true);

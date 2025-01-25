@@ -361,10 +361,12 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     wood_coverage = props->getDoubleValue("wood-coverage", 0.0);
     is_plantation = props->getBoolValue("plantation",false);
     tree_effect = props->getStringValue("tree-effect", "Effects/tree");
-    tree_height = props->getDoubleValue("tree-height-m", 0.0);
-    tree_width = props->getDoubleValue("tree-width-m", 0.0);
-    tree_range = props->getDoubleValue("tree-range-m", default_object_range);
     tree_varieties = props->getIntValue("tree-varieties", 1);
+    tree_range = props->getDoubleValue("tree-range-m", default_object_range);
+
+    tree_height = props->getDoubleValue("tree-height-m", 0.0);
+    // This defaults to a simple mapping of the texture without squashing as there are 4 trees vertically on the atlas
+    tree_width = props->getDoubleValue("tree-width-m", tree_height*4/tree_varieties);
     cos_tree_max_density_slope_angle  = cos(props->getFloatValue("tree-max-density-angle-deg", 30.0) * osg::PI/180.0);
     cos_tree_zero_density_slope_angle = cos(props->getFloatValue("tree-zero-density-angle-deg", 45.0) * osg::PI/180.0);
 

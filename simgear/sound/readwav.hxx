@@ -3,13 +3,7 @@
 #ifndef SG_SOUND_READWAV_HXX
 #define SG_SOUND_READWAV_HXX
 
-#if defined( __APPLE__ )
-# include <OpenAL/al.h>
-#elif defined(OPENALSDK)
-# include <al.h>
-#else
-# include <AL/al.h>
-#endif
+#include <al.h>
 
 // forward decls
 class SGPath;

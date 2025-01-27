@@ -45,16 +45,8 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 
-#if defined(__APPLE__)
-# include <OpenAL/al.h>
-# include <OpenAL/alc.h>
-#elif defined(OPENALSDK)
-# include <al.h>
-# include <alc.h>
-#else
-# include <AL/al.h>
-# include <AL/alc.h>
-#endif
+#include <al.h>
+#include <alc.h>
 
 using std::vector;
 

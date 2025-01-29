@@ -37,18 +37,19 @@ public:
     virtual ~ArchiveExtractorPrivate() = default;
 
     typedef enum {
-        INVALID = 0,
-        READING_HEADER,
-        READING_FILE,
-        READING_PADDING,
-        READING_PAX_GLOBAL_ATTRIBUTES,
-        READING_PAX_FILE_ATTRIBUTES,
-        PRE_END_OF_ARCHVE,
-        END_OF_ARCHIVE,
-        ERROR_STATE, ///< states above this are error conditions
-        BAD_ARCHIVE,
-        BAD_DATA,
-        FILTER_STOPPED
+      INVALID = 0,
+      READING_HEADER,
+      READING_FILE,
+      READING_PADDING,
+      READING_PAX_GLOBAL_ATTRIBUTES,
+      READING_PAX_FILE_ATTRIBUTES,
+      READING_GNU_LONGNAME,
+      PRE_END_OF_ARCHVE,
+      END_OF_ARCHIVE,
+      ERROR_STATE, ///< states above this are error conditions
+      BAD_ARCHIVE,
+      BAD_DATA,
+      FILTER_STOPPED
     } State;
 
     State state = INVALID;

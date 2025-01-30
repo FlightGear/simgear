@@ -68,6 +68,8 @@ typedef struct
 #define FIFOTYPE '6'            /* FIFO special */
 #define CONTTYPE '7'            /* reserved */
 
+#define GNU_LONGNAME 'L' /* GNU tar systeem for longer file-names */
+
     const char PAX_GLOBAL_HEADER = 'g';
     const char PAX_FILE_ATTRIBUTES = 'x';
 
@@ -91,12 +93,15 @@ typedef struct
 
         size_t bytesRemaining;
         std::unique_ptr<SGFile> currentFile;
-        size_t currentFileSize;
+        size_t currentFileSize; ///< if we're in READING_GNU_LONGNAME, this is
+                                ///< the name length
 
         uint8_t* headerPtr;
         bool skipCurrentEntry = false;
         std::string paxAttributes;
         std::string paxPathName;
+
+        std::string gnuLongName;
 
         TarExtractorPrivate(ArchiveExtractor* o) : ArchiveExtractorPrivate(o)
         {
@@ -145,6 +150,8 @@ typedef struct
                 readPaddingIfRequired();
             } else if (state == READING_PADDING) {
                 setState(READING_HEADER);
+            } else if (state == READING_GNU_LONGNAME) {
+              readPaddingIfRequired();
             }
         }
 
@@ -210,6 +217,14 @@ typedef struct
                 return;
             }
 
+            if (header.typeflag == GNU_LONGNAME) {
+              currentFileSize = ::strtol(header.size, NULL, 8);
+              bytesRemaining = currentFileSize;
+              gnuLongName.clear();
+              setState(READING_GNU_LONGNAME);
+              return;
+            }
+
             skipCurrentEntry = false;
 
             // careful handling here for tar compressors which don't use PAX path
@@ -217,16 +232,22 @@ typedef struct
             // longer than 100 bytes use the prefix, but we need to add a path seperator.
             // exactly 100 bytes don't use prefix, but there is no trailing NULL.
             // https://sourceforge.net/p/flightgear/codetickets/2953/
+
+            // GNU Long-name handling also needs its own case. <sigh
             std::string tarPath;
             if (!paxPathName.empty()) {
                 tarPath = paxPathName;
                 paxPathName.clear(); // clear for next file
+            } else if (!gnuLongName.empty()) {
+              tarPath = gnuLongName;
+              gnuLongName.clear(); // clear for next file
             } else if (strlen(header.prefix) > 0) {
-                tarPath = std::string(header.prefix) + "/" + std::string(header.fileName);
+              tarPath = std::string(header.prefix) + "/" +
+                        std::string(header.fileName);
             } else {
-                // handle fileNames which are exactly 100 bytes long.
-                const auto len = strnlen(header.fileName, 100);
-                tarPath = std::string(header.fileName, len);
+              // handle fileNames which are exactly 100 bytes long.
+              const auto len = strnlen(header.fileName, 100);
+              tarPath = std::string(header.fileName, len);
             }
 
             if (doRemoveTopmostDir()) {
@@ -319,6 +340,9 @@ typedef struct
             } else if ((state == READING_PAX_FILE_ATTRIBUTES) || (state == READING_PAX_GLOBAL_ATTRIBUTES)) {
                 bytesRemaining -= curBytes;
                 paxAttributes.append(bytes, curBytes);
+            } else if (state == READING_GNU_LONGNAME) {
+              bytesRemaining -= curBytes;
+              gnuLongName.append(bytes, curBytes);
             }
 
             checkEndOfState();

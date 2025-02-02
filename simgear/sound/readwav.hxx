@@ -10,7 +10,7 @@
 #ifndef SG_SOUND_READWAV_HXX
 #define SG_SOUND_READWAV_HXX
 
-#if defined( __APPLE__ )
+#if defined( __APPLE__ ) && !defined(SG_SOUND_USES_OPENALSOFT)
 # include <OpenAL/al.h>
 #elif defined(OPENALSDK)
 # include <al.h>

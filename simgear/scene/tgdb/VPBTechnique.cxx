@@ -2246,7 +2246,7 @@ void VPBTechnique::update(osg::NodeVisitor& nv)
 void VPBTechnique::cull(osg::NodeVisitor& nv)
 {
     if (_terrainTile->getDirty() && nv.getDatabaseRequestHandler()) {
-        auto lamda = [this]() {
+        auto reinitTileCallback = [this]() {
             if (this->_terrainTile) {
                 init(this->_terrainTile->getDirtyMask(), true);
             }
@@ -2257,21 +2257,23 @@ void VPBTechnique::cull(osg::NodeVisitor& nv)
 
         // Got up the scenegraph to find the first PagedLOD or ProxyNode and request
         // the DatabasePager to reload the tile.
-        for (auto iter = (nodePath.end() -1); iter != nodePath.begin(); --iter) {
+        for (auto iter = nodePath.rbegin(); iter != nodePath.rend(); ++iter) {
             osg::PagedLOD* pagedLOD = dynamic_cast<osg::PagedLOD*>(*iter);
             osg::ProxyNode* proxyNode = dynamic_cast<osg::ProxyNode*>(*iter);
             if (pagedLOD) {
-                unsigned int idx = pagedLOD->getChildIndex(*(iter+1));
+                // We want to find out what child the next node in the nodePath is.  As we
+                // are back from the end, this is the last iteration.
+                unsigned int idx = pagedLOD->getChildIndex(*(iter-1));
                 if (idx < pagedLOD->getNumChildren()) {
                     SG_LOG(SG_TERRAIN, SG_DEBUG, "Requested PagedLOD reload of tile " << tileID.x << "," << tileID.y << " level " << tileID.level);
-                    nv.getDatabaseRequestHandler()->requestNodeCallback(lamda, nv.getNodePath(), -1, nv.getFrameStamp(), pagedLOD->getDatabaseRequest(idx),  _options);
+                    nv.getDatabaseRequestHandler()->requestNodeCallback(reinitTileCallback, nv.getNodePath(), -1, nv.getFrameStamp(), pagedLOD->getDatabaseRequest(idx),  _options);
                     break;
                 }
             } else if (proxyNode) {
-                unsigned int idx = proxyNode->getChildIndex(*(iter+1));
+                unsigned int idx = proxyNode->getChildIndex(*(iter-1));
                 if (idx < proxyNode->getNumChildren()) {
                     SG_LOG(SG_TERRAIN, SG_ALERT, "Requested ProxyNode reload of tile " << tileID.x << "," << tileID.y << " level " << tileID.level);
-                    nv.getDatabaseRequestHandler()->requestNodeCallback(lamda, nv.getNodePath(), -1, nv.getFrameStamp(), proxyNode->getDatabaseRequest(idx),  _options);
+                    nv.getDatabaseRequestHandler()->requestNodeCallback(reinitTileCallback, nv.getNodePath(), -1, nv.getFrameStamp(), proxyNode->getDatabaseRequest(idx),  _options);
                     break;
                 }
             }

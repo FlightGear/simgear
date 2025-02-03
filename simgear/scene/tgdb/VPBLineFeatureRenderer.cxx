@@ -99,6 +99,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
 
     // Get all appropriate roads.  We assume that the VPB terrain tile is smaller than a Bucket size.
     LightBin lightbin;
+    ObjectInstanceBin streetlampBin;
     const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
 
     const SGGeod loc = SGGeod::fromCart(toSG(world));
@@ -185,6 +186,8 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
                 const SGVec4f color = mat->get_light_edge_colour();
                 const double horiz = mat->get_light_edge_angle_horizontal_deg();
                 const double vertical = mat->get_light_edge_angle_vertical_deg();
+                const std::string lampPostModel = mat->get_light_model();
+
                 // Assume street lights point down.
                 osg::Vec3d up = world;
                 up.normalize();
@@ -192,6 +195,14 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
 
                 std::for_each(lights->begin(), lights->end(), 
                     [&, size, intensity, color, direction, horiz, vertical] (osg::Vec3f p) { lightbin.insert(toSG(p), size, intensity, 1, color, direction, horiz, vertical); } );
+
+                if (lampPostModel != "") {
+                    
+                    ObjectInstanceBin streetlampBin = ObjectInstanceBin(lampPostModel);
+                    std::for_each(lights->begin(), lights->end(), 
+                        [&, size, intensity, color, direction, horiz, vertical] (osg::Vec3f p) { streetlampBin.insert(toSG(p)); } );
+                    if (streetlampBin.getNumInstances() > 0) buffer._transform->addChild(createObjectInstances(streetlampBin, osg::Matrix::identity(), options));
+                }
             }
             lights->unref();
         }

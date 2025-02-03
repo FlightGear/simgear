@@ -49,7 +49,7 @@ public:
     typedef std::vector<ObjectInstance> ObjectInstanceList;
 
     ObjectInstanceBin() = default;
-    ObjectInstanceBin(const std::string modelFileName, const std::string effect = "default", const SGPath& STGFilePath = SGPath("dynamically-generated"), const SGPath& instancesFilePath = SGPath());
+    ObjectInstanceBin(const std::string modelFileName, const std::string effect = "Effects/model-pbr", const SGPath& STGFilePath = SGPath("dynamically-generated"), const SGPath& instancesFilePath = SGPath());
 
     ~ObjectInstanceBin() = default;     // non-virtual intentional
 

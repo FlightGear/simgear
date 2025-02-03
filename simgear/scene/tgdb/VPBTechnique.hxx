@@ -61,7 +61,6 @@ class VPBTechnique : public TerrainTechnique
 
         virtual Locator* computeMasterLocator();
 
-
         virtual void update(osg::NodeVisitor& nv);
 
         virtual void cull(osg::NodeVisitor& nv);
@@ -375,6 +374,7 @@ class VPBTechnique : public TerrainTechnique
         const std::string                   _fileName;
         osg::ref_ptr<osg::Group>            _randomObjectsConstraintGroup;
         bool                                _useTessellation;
+        osg::ref_ptr<osg::Referenced>       _databaseRequest;
 
         inline static osg::ref_ptr<osg::Group>  _elevationConstraintGroup = new osg::Group();
         inline static std::shared_mutex _elevationConstraintMutex;  // protects the _elevationConstraintGroup;

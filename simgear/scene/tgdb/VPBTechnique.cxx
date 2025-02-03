@@ -31,6 +31,8 @@
 #include <osgDB/ReadFile>
 
 #include <osg/io_utils>
+#include <osg/PagedLOD>
+#include <osg/ProxyNode>
 #include <osg/Texture2D>
 #include <osg/Texture2DArray>
 #include <osg/Texture1D>
@@ -72,7 +74,8 @@ VPBTechnique::VPBTechnique()
     setOptions(SGReaderWriterOptions::copyOrCreate(NULL));
 }
 
-VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName) : _fileName(fileName)
+VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName) : 
+    _fileName(fileName)
 {
     setFilterBias(0);
     setFilterWidth(0.1);
@@ -2242,6 +2245,41 @@ void VPBTechnique::update(osg::NodeVisitor& nv)
 
 void VPBTechnique::cull(osg::NodeVisitor& nv)
 {
+    if (_terrainTile->getDirty() && nv.getDatabaseRequestHandler()) {
+        auto reinitTileCallback = [this]() {
+            if (this->_terrainTile) {
+                init(this->_terrainTile->getDirtyMask(), true);
+            }
+        };
+
+        auto tileID = _terrainTile->getTileID();
+        auto nodePath = nv.getNodePath();
+
+        // Got up the scenegraph to find the first PagedLOD or ProxyNode and request
+        // the DatabasePager to reload the tile.
+        for (auto iter = nodePath.rbegin(); iter != nodePath.rend(); ++iter) {
+            osg::PagedLOD* pagedLOD = dynamic_cast<osg::PagedLOD*>(*iter);
+            osg::ProxyNode* proxyNode = dynamic_cast<osg::ProxyNode*>(*iter);
+            if (pagedLOD) {
+                // We want to find out what child the next node in the nodePath is.  As we
+                // are back from the end, this is the last iteration.
+                unsigned int idx = pagedLOD->getChildIndex(*(iter-1));
+                if (idx < pagedLOD->getNumChildren()) {
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Requested PagedLOD reload of tile " << tileID.x << "," << tileID.y << " level " << tileID.level);
+                    nv.getDatabaseRequestHandler()->requestNodeCallback(reinitTileCallback, nv.getNodePath(), -1, nv.getFrameStamp(), pagedLOD->getDatabaseRequest(idx),  _options);
+                    break;
+                }
+            } else if (proxyNode) {
+                unsigned int idx = proxyNode->getChildIndex(*(iter-1));
+                if (idx < proxyNode->getNumChildren()) {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, "Requested ProxyNode reload of tile " << tileID.x << "," << tileID.y << " level " << tileID.level);
+                    nv.getDatabaseRequestHandler()->requestNodeCallback(reinitTileCallback, nv.getNodePath(), -1, nv.getFrameStamp(), proxyNode->getDatabaseRequest(idx),  _options);
+                    break;
+                }
+            }
+        }
+    }
+
     if (_currentBufferData.valid())
     {
         if (_currentBufferData->_transform.valid())
@@ -2251,7 +2289,6 @@ void VPBTechnique::cull(osg::NodeVisitor& nv)
     }
 }
 
-
 void VPBTechnique::traverse(osg::NodeVisitor& nv)
 {
     if (!_terrainTile) return;
@@ -2259,7 +2296,6 @@ void VPBTechnique::traverse(osg::NodeVisitor& nv)
     // if app traversal update the frame count.
     if (nv.getVisitorType()==osg::NodeVisitor::UPDATE_VISITOR)
     {
-        if (_terrainTile->getDirty()) _terrainTile->init(_terrainTile->getDirtyMask(), false);
         update(nv);
         return;
     }

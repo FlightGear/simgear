@@ -109,8 +109,9 @@ macos-build:
       -D CMAKE_BUILD_TYPE=RelWithDebInfo 
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
       -D ENABLE_SIMD=OFF
-      -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist;$CI_PROJECT_DIR/dist
+      -D CMAKE_PREFIX_PATH="$CI_PROJECT_DIR/osg-dist;$CI_PROJECT_DIR/dist"
       -D CMAKE_OSX_ARCHITECTURES=arm64
+
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
   needs:

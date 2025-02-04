@@ -189,7 +189,6 @@ if(NOT SIMGEAR_HEADLESS)
 
     target_link_libraries(SimGearScene PRIVATE
         ${ZLIB_LIBRARY}
-        ${OPENAL_LIBRARY}
         ${OPENGL_LIBRARY}
         ${JPEG_LIBRARY})
 
@@ -215,7 +214,7 @@ if(NOT SIMGEAR_HEADLESS)
     if (USE_AEONWAVE)
         target_include_directories(SimGearScene PRIVATE ${AAX_INCLUDE_DIR} )
     else()
-        target_include_directories(SimGearScene PRIVATE ${OPENAL_INCLUDE_DIR} )
+        target_link_libraries(SimGearScene PUBLIC OpenAL::OpenAL)
     endif()
 
 endif()

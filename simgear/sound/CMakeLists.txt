@@ -45,7 +45,7 @@ if(ENABLE_TESTS AND ENABLE_SOUND)
         set(SOUND_TEST_LIBS ${SOUND_TEST_LIBS} ${AAX_LIBRARY})
         create_test(aeonwave_test1)
     else ()
-        set(SOUND_TEST_LIBS ${SOUND_TEST_LIBS} ${OPENAL_LIBRARY})
+        set(SOUND_TEST_LIBS ${SOUND_TEST_LIBS} OpenAL::OpenAL)
         create_test(openal_test1)
     endif()
 

@@ -289,6 +289,26 @@ void SGPath::set_cached(bool cached)
 // ***************************************************************************
 
 // Static member function
+SGPath::Permissions SGPath::NasalIORulesChecker(const SGPath& path)
+{
+    Permissions perm;
+
+    if (!path.isAbsolute()) {
+        // SGPath caches permissions, which breaks for relative paths if the
+        // current directory changes.
+        SG_LOG(SG_NASAL, SG_ALERT,
+               "SGPath::NasalIORulesChecker(): file operation on '" <<
+               path.utf8Str() << "': access denied (relative paths not "
+               "accepted; use realpath() to obtain an absolute path)");
+    }
+
+    perm.read  = path.isAbsolute() && !path.validate(false).isNull();
+    perm.write = path.isAbsolute() && !path.validate(true).isNull();
+
+    return perm;
+}
+
+// Static member function
 void SGPath::clearListOfAllowedPaths(bool write)
 {
     string_list& allowed_paths(write ? write_allowed_paths : read_allowed_paths);

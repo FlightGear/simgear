@@ -277,6 +277,7 @@ struct GLTFBuilder {
         //  1. PBR Effect: $FG_ROOT/Effects/model-pbr.eff
         //  2. glTF loader: simgear/scene/model/ReaderWriterGLTF.cxx
         //  3. PBR animations: simgear/scene/model/SGPBRAnimation.cxx
+        //  4. Canvas: flightgear/src/Canvas/texture_replace.cxx
         SGPropertyNode* baseColorTexNode = makeChild(params, "texture", 0);
         if (!makeTextureParameters(baseColorTexNode, pbr.baseColorTexture.index))
             makeChild(baseColorTexNode, "type")->setValue("white");

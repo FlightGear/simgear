@@ -57,6 +57,7 @@ public:
         //  1. PBR Effect: $FG_ROOT/Effects/model-pbr.eff
         //  2. glTF loader: simgear/scene/model/ReaderWriterGLTF.cxx
         //  3. PBR animations: simgear/scene/model/SGPBRAnimation.cxx
+        //  4. Canvas: flightgear/src/Canvas/texture_replace.cxx
         buildTextureEntry(config, model_root, 0, "base-color-texture-prop");
         buildTextureEntry(config, model_root, 1, "normalmap-texture-prop");
         buildTextureEntry(config, model_root, 2, "orm-texture-prop");

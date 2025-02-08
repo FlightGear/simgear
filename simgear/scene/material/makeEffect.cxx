@@ -110,9 +110,20 @@ Effect* makeEffect(const string& name,
     {
         OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
         EffectMap::iterator itr = effectMap.find(name);
-        if ((itr != effectMap.end())&&
-            itr->second.valid())
-            return itr->second.get();
+        if ((itr != effectMap.end()) && itr->second.valid()) {
+            ref_ptr<Effect> result = itr->second.get();
+            if (realizeTechniques) {
+                // If the existing effect hasn't been realized, do so now
+                try {
+                    result->realizeTechniques(options);
+                } catch (BuilderException& e) {
+                    simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::LoadEffectsShaders,
+                                           "Failed to build technique:" + e.getFormattedMessage(), result->filePath());
+                    return nullptr;
+                }
+            }
+            return result.release();
+        }
     }
     string effectFileName(name);
     effectFileName += ".eff";
@@ -140,6 +151,17 @@ Effect* makeEffect(const string& name,
             // Another thread beat us to it!. Discard our newly
             // constructed Effect and use the one in the cache.
             result = irslt.first->second;
+
+            if (realizeTechniques) {
+                // If the existing effect hasn't been realized, do so now
+                try {
+                    result->realizeTechniques(options);
+                } catch (BuilderException& e) {
+                    simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::LoadEffectsShaders,
+                                           "Failed to build technique:" + e.getFormattedMessage(), result->filePath());
+                    return nullptr;
+                }
+            }
         }
     }
     return result.release();

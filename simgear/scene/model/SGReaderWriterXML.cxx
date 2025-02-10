@@ -39,6 +39,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 
+#include <simgear/scene/util/FindGroupVisitor.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/structure/exception.hxx>
@@ -469,6 +470,58 @@ static std::optional<SGPath> isModelWithRemovedXMLWrapper(const SGPath& model)
     return {};
 }
 
+/*
+ * Search a parent group by name and attach a child node to it
+ *
+ * @param group     Root group in which to search for the desired parent
+ * @param child     New node to attach to to the parent
+ * @param config    Searched name is set by property "attach-to" under this node
+ * @param path      File path for error reporting
+ *
+ * If "attach-to" is not defined in `config`, silently attach `child` to `group`.
+ * If it is defined, but no such parent is found, report an error and attach to `group` anyways.
+ */
+static void findAndAttach(osg::Group* group, osg::Node* child, const SGPropertyNode_ptr config, const SGPath& path)
+{
+    const SGPropertyNode_ptr attach = config->getNode("attach-to", false);
+    std::string name;
+    std::string err;
+
+    if (attach) {
+        name = attach->getStringValue();
+
+        if (name.empty())
+            err = "Ignoring empty <attach-to> tag";
+    }
+
+    if (!name.empty()) {
+        simgear::FindGroupVisitor visitor(name);
+        group->accept(visitor);
+
+        if (visitor.getGroup()) {
+            if (visitor.foundDuplicates())
+                err = "Found several groups named '" + name + "'";
+            // In case of duplicates, this will be the first group found
+            group = visitor.getGroup();
+        } else {
+            err = "Could not find group '" + name + "'";
+        }
+    }
+
+    // Report error
+    if (!err.empty()) {
+        std::string childName = child->getName();
+        if (childName.empty())
+            childName = "<unnamed>";
+
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
+                               err + " to attach '" + childName + "'", path);
+    }
+
+    // even in case of failure, attach to the root group to have something
+    group->addChild(child);
+}
+
 static std::tuple<int, osg::Node *>
 sgLoad3DModel_internal(const SGPath& path,
                        const osgDB::Options* dbOptions,
@@ -734,11 +787,11 @@ sgLoad3DModel_internal(const SGPath& path,
         if (cond) {
             osg::ref_ptr<osg::Switch> sw = new osg::Switch;
             sw->setUpdateCallback(new SGSwitchUpdateCallback(sgReadCondition(prop_root, cond)));
-            group->addChild(sw.get());
+            findAndAttach(group, sw.get(), sub_props, path);
             sw->addChild(submodel_final.get());
             sw->setName("submodel condition switch");
         } else {
-            group->addChild(submodel_final.get());
+            findAndAttach(group, submodel_final.get(), sub_props, path);
         }
     } // end of submodel loading
 
@@ -756,26 +809,28 @@ sgLoad3DModel_internal(const SGPath& path,
 
                 options2->setDatabasePath(texturepath.utf8Str());
             }
-            group->addChild(particlesManager->appendParticles(particle_nodes[i],
-                                                              prop_root,
-                                                              options2.get()));
+            osg::ref_ptr<osg::Node> particle;
+            particle = particlesManager->appendParticles(particle_nodes[i],
+                                                         prop_root,
+                                                         options2.get());
+            findAndAttach(group, particle, particle_nodes[i], path);
         }
     }
 
     std::vector<SGPropertyNode_ptr> text_nodes;
     text_nodes = props->getChildren("text");
     for (unsigned i = 0; i < text_nodes.size(); ++i) {
-        group->addChild(SGText::appendText(text_nodes[i],
-                        prop_root,
-                        options.get()));
+        osg::ref_ptr<osg::Node> text;
+        text = SGText::appendText(text_nodes[i], prop_root, options.get());
+        findAndAttach(group, text, text_nodes[i], path);
     }
 
     std::vector<SGPropertyNode_ptr> light_nodes;
     light_nodes = props->getChildren("light");
     for (unsigned i = 0; i < light_nodes.size(); ++i) {
-        group->addChild(SGLight::appendLight(light_nodes[i],
-                                             prop_root,
-                                             false /* legacy mode */));
+        osg::ref_ptr<osg::Node> light;
+        light = SGLight::appendLight(light_nodes[i], prop_root, false /* legacy mode */);
+        findAndAttach(group, light, light_nodes[i], path);
     }
 
     PropertyList effect_nodes = props->getChildren("effect");

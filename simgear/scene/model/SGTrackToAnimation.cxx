@@ -20,6 +20,7 @@
 #include "SGTrackToAnimation.hxx"
 
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/FindGroupVisitor.hxx>
 #include <osg/MatrixTransform>
 #include <cassert>
 
@@ -54,53 +55,6 @@ static osg::NodePath subPath( const osg::NodePath& path,
 
   return np;
 }
-
-/**
- * Visitor to find a group by its name.
- */
-class FindGroupVisitor:
-  public osg::NodeVisitor
-{
-  public:
-
-    FindGroupVisitor(const std::string& name):
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _name(name),
-        _group(0)
-    {
-      if( name.empty() )
-        SG_LOG(SG_IO, SG_DEV_WARN, "FindGroupVisitor: empty name provided");
-    }
-
-    osg::Group* getGroup() const
-    {
-      return _group;
-    }
-
-    virtual void apply(osg::Group& group)
-    {
-      if( _name != group.getName() )
-        return traverse(group);
-
-      if( !_group )
-        _group = &group;
-
-      // Different paths can exists for example with a picking animation (pick
-      // render group)
-      else if( _group != &group )
-        SG_LOG
-        (
-          SG_IO,
-          SG_DEV_WARN,
-          "FindGroupVisitor: name not unique '" << _name << "'"
-        );
-    }
-
-  protected:
-
-    std::string _name;
-    osg::Group *_group;
-};
 
 /**
  * Get angle of a triangle given by three side lengths
@@ -379,7 +333,7 @@ SGTrackToAnimation::SGTrackToAnimation(simgear::SGTransientModelData &modelData)
   _slave_group(0)
 {
   std::string target = modelData.getConfigNode()->getStringValue("target-name");
-  FindGroupVisitor target_finder(target);
+  simgear::FindGroupVisitor target_finder(target);
   modelData.getNode()->accept(target_finder);
 
   if( !(_target_group = target_finder.getGroup()) )
@@ -388,7 +342,7 @@ SGTrackToAnimation::SGTrackToAnimation(simgear::SGTransientModelData &modelData)
   std::string slave = modelData.getConfigNode()->getStringValue("slave-name");
   if( !slave.empty() )
   {
-    FindGroupVisitor slave_finder(slave);
+    simgear::FindGroupVisitor slave_finder(slave);
     modelData.getNode()->accept(slave_finder);
     _slave_group = slave_finder.getGroup();
   }

@@ -48,6 +48,7 @@
 #include <simgear/scene/material/EffectCullVisitor.hxx>
 #include <simgear/scene/util/DeletionManager.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/FindGroupVisitor.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
@@ -687,52 +688,6 @@ SGVec3d SGAnimation::readVec3( const std::string& name,
 {
   return readVec3(*_configNode, name, suffix, def);
 }
-/**
-* Visitor to find a group by its name.
-*/
-class FindGroupVisitor :
-    public osg::NodeVisitor
-{
-public:
-
-    FindGroupVisitor(const std::string& name) :
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _name(name),
-        _group(0)
-    {
-        if (name.empty())
-            SG_LOG(SG_IO, SG_DEV_WARN, "FindGroupVisitor: empty name provided");
-    }
-
-    osg::Group* getGroup() const
-    {
-        return _group;
-    }
-
-    virtual void apply(osg::Group& group)
-    {
-        if (_name != group.getName())
-            return traverse(group);
-
-        if (!_group)
-            _group = &group;
-
-        // Different paths can exists for example with a picking animation (pick
-        // render group)
-        else if (_group != &group)
-            SG_LOG
-            (
-                SG_IO,
-                SG_DEV_WARN,
-                "FindGroupVisitor: name not unique '" << _name << "'"
-            );
-    }
-
-protected:
-
-    std::string _name;
-    osg::Group *_group;
-};
 
 /*
  * If an object is specified in the axis tag it is assumed to be a single line segment with two vertices.
@@ -771,7 +726,7 @@ const SGLineSegment<double>* SGAnimation::setCenterAndAxisFromObject(osg::Node* 
             /*
              * Find the object by name
              */
-            FindGroupVisitor axis_object_name_finder(axis_object_name);
+            simgear::FindGroupVisitor axis_object_name_finder(axis_object_name);
             rootNode->accept(axis_object_name_finder);
             osg::Group *object_group = axis_object_name_finder.getGroup();
             if (object_group)

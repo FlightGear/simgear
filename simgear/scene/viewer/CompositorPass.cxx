@@ -208,6 +208,8 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
     camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*GEOM*/", compositor->getMVRViewIdStr(1));
     camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*FRAG*/", compositor->getMVRViewIdStr(2));
 
+    camera->getOrCreateStateSet()->setDefine("FG_MVR_CELLS", std::to_string(compositor->getMVRCells()));
+
     osg::DisplaySettings::ImplicitBufferAttachmentMask implicit_attachments = 0;
     std::stringstream att_ss;
     std::string att_bit;

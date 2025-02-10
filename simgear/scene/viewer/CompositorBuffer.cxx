@@ -145,6 +145,23 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
     if (p_depth)
         depth = p_depth->getIntValue();
 
+    if (type == "2d-mvr") {
+        type = "2d";
+        buffer->mvr = true;
+    } else if (type == "3d-mvr") {
+        type = "3d";
+        buffer->mvr = true;
+    }
+    if (buffer->mvr) {
+        unsigned int mvrCells = compositor->getMVRCells();
+        if (mvrCells > 1) {
+            // Fixed width, expand by mvrCells to give each view its own
+            // identically sized cell
+            if (buffer->width_scale == 0.0f)
+                width *= mvrCells;
+        }
+    }
+
     auto get_mipmap_levels = [&]() -> int {
         int mipmap_levels = 0;
         const SGPropertyNode *p_mipmap_levels = node->getNode("mipmap-levels");

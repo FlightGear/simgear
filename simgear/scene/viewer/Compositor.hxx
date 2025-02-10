@@ -68,6 +68,7 @@ public:
         unsigned int views = 1;
         std::string viewIdGlobalStr = "";
         std::string viewIdStr[3] = {"0", "0", "0"};
+        unsigned int cells = 1;
     };
 
     Compositor(osg::View *view,
@@ -140,6 +141,7 @@ public:
     unsigned int getMVRViews() const { return _mvr.views; }
     const std::string& getMVRViewIdGlobalStr() const { return _mvr.viewIdGlobalStr; }
     const std::string& getMVRViewIdStr(unsigned int index) const { return _mvr.viewIdStr[index]; }
+    unsigned int getMVRCells() const { return _mvr.cells; }
 
     typedef std::unordered_map<std::string, osg::ref_ptr<Buffer>> BufferMap;
     const BufferMap &  getBufferMap() const { return _buffers; }

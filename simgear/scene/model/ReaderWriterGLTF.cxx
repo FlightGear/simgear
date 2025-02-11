@@ -148,8 +148,11 @@ struct GLTFBuilder {
 
             // Read the material information from the glTF by creating an Effect
             SGPropertyNode_ptr effectRoot = new SGPropertyNode;
-            // Material is OPAQUE by default, so inherit from model-pbr
-            makeChild(effectRoot, "inherits-from")->setStringValue("Effects/model-pbr");
+            // Material is OPAQUE by default, so inherit from model-pbr unless something was set
+            // in the Options.
+            std::string effectName = "Effects/model-pbr";
+            if (opts->getDefaultEffect() != "") { effectName = opts->getDefaultEffect(); }
+            makeChild(effectRoot, "inherits-from")->setStringValue(effectName);
             if (primitive.material >= 0) {
                 // We have a material assigned to the primitive, add all the
                 // required material info as parameters to the Effect.

@@ -172,7 +172,7 @@ void ObjectInstanceBin::insert(const ObjectInstance& obj)
 {
     _objectInstances.push_back(obj);
 }
-void ObjectInstanceBin::insert(const SGVec3f& p, const SGVec3f& r, const float& s, const SGVec4f& c)
+void ObjectInstanceBin::insert(const osg::Vec3f& p, const osg::Vec3f& r, const float& s, const osg::Vec4f& c)
 {
     insert(ObjectInstance(p, r, s, c));
 }
@@ -271,26 +271,26 @@ ObjectInstanceBin::ObjectInstanceBin(const std::string modelFileName, const std:
 
         if (!hasCustomAttributes) {
             if (number_of_props == 3) {
-                insert(SGVec3f(props[0], props[1], props[2]));
+                insert(osg::Vec3f(props[0], props[1], props[2]));
             } else if (number_of_props == 4) {
-                insert(SGVec3f(props[0], props[1], props[2]), SGVec3f(0.0f, 0.0f, 0.0f), props[3]);
+                insert(osg::Vec3f(props[0], props[1], props[2]), osg::Vec3f(0.0f, 0.0f, 0.0f), props[3]);
             } else if (number_of_props == 6) {
-                insert(SGVec3f(props[0], props[1], props[2]), SGVec3f(props[3], props[4], props[5]));
+                insert(osg::Vec3f(props[0], props[1], props[2]), osg::Vec3f(props[3], props[4], props[5]));
             } else if (number_of_props == 7) {
-                insert(SGVec3f(props[0], props[1], props[2]), SGVec3f(props[3], props[4], props[5]), props[6]);
+                insert(osg::Vec3f(props[0], props[1], props[2]), osg::Vec3f(props[3], props[4], props[5]), props[6]);
             } else {
                 SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing instanced object entry in: " << instancesFilePath << " line: \"" << line << "\"");
                 continue;
             }
         } else {
             if (number_of_props == 7) {
-                insert(SGVec3f(props[0], props[1], props[2]), SGVec3f(0.0f, 0.0f, 0.0f), 1.0f, SGVec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
+                insert(osg::Vec3f(props[0], props[1], props[2]), osg::Vec3f(0.0f, 0.0f, 0.0f), 1.0f, osg::Vec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
             } else if (number_of_props == 8) {
-                insert(SGVec3f(props[0], props[1], props[2]), SGVec3f(0.0f, 0.0f, 0.0f), props[3], SGVec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
+                insert(osg::Vec3f(props[0], props[1], props[2]), osg::Vec3f(0.0f, 0.0f, 0.0f), props[3], osg::Vec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
             } else if (number_of_props == 10) {
-                insert(SGVec3f(props[0], props[1], props[2]), SGVec3f(props[3], props[4], props[5]), 1.0f, SGVec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
+                insert(osg::Vec3f(props[0], props[1], props[2]), osg::Vec3f(props[3], props[4], props[5]), 1.0f, osg::Vec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
             } else if (number_of_props == 11) {
-                insert(SGVec3f(props[0], props[1], props[2]), SGVec3f(props[3], props[4], props[5]), props[6], SGVec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
+                insert(osg::Vec3f(props[0], props[1], props[2]), osg::Vec3f(props[3], props[4], props[5]), props[6], osg::Vec4f(props[number_of_props - 4], props[number_of_props - 3], props[number_of_props - 2], props[number_of_props - 1]));
             } else {
                 SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing instanced object entry in: " << instancesFilePath << " line: \"" << line << "\"");
                 continue;
@@ -343,7 +343,9 @@ osg::ref_ptr<osg::Node> createObjectInstances(ObjectInstanceBin& objectInstances
 
     opt = sharedOptions(objectInstances.getSTGFilePath().dir(), options);
 
-    if (SGPath(objectInstances.getModelFileName()).lower_extension() == "ac")
+    if (SGPath(objectInstances.getModelFileName()).lower_extension() == "ac"   ||
+        SGPath(objectInstances.getModelFileName()).lower_extension() == "gltf" || 
+        SGPath(objectInstances.getModelFileName()).lower_extension() == "glb"    )
         opt->setInstantiateEffects(true);
     else
         opt->setInstantiateEffects(false);
@@ -377,19 +379,24 @@ osg::ref_ptr<osg::Node> createObjectInstances(ObjectInstanceBin& objectInstances
 
     // Get parameters for instances
     osg::Vec3Array* positions = new osg::Vec3Array;
+    positions->reserve(objectInstances.getNumInstances());
+
     osg::Vec4Array* rotationsAndScales = new osg::Vec4Array;
+    rotationsAndScales->reserve(objectInstances.getNumInstances());
+
     osg::Vec4Array* customAttribs = NULL;
     if (hasCustomAttributes) {
         customAttribs = new osg::Vec4Array;
+        customAttribs->reserve(objectInstances.getNumInstances());
     }
 
     for (unsigned int objectIdx = 0; objectIdx < objectInstances.getNumInstances(); objectIdx++) {
         const auto obj = objectInstances.getInstance(objectIdx);
-        positions->push_back(toOsg(obj.position) * transform);
-        rotationsAndScales->push_back(toOsg(SGVec4f(obj.rotation[0], obj.rotation[1], obj.rotation[2], obj.scale)));
+        positions->push_back(obj.position * transform);
+        rotationsAndScales->push_back(osg::Vec4f(obj.rotation[0], obj.rotation[1], obj.rotation[2], obj.scale));
         if (hasCustomAttributes) {
             // Pass custom attributes
-            customAttribs->push_back(toOsg(obj.customAttribs));
+            customAttribs->push_back(obj.customAttribs);
         }
     }
 

@@ -99,7 +99,6 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
 
     // Get all appropriate roads.  We assume that the VPB terrain tile is smaller than a Bucket size.
     LightBin lightbin;
-    ObjectInstanceBin streetlampBin;
     const osg::Vec3d world = buffer._transform->getMatrix().getTrans();
 
     const SGGeod loc = SGGeod::fromCart(toSG(world));
@@ -136,12 +135,13 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
             osg::Vec2Array* t = new osg::Vec2Array;
             osg::Vec3Array* n = new osg::Vec3Array;
             osg::Vec4Array* c = new osg::Vec4Array;
-            osg::Vec3Array* lights = new osg::Vec3Array;
+            std::vector<osg::Vec3f>* lights = new std::vector<osg::Vec3f>;
+            std::vector<float>* rotations = new std::vector<float>;
 
             auto lineFeatures = (*rb)->getLineFeatures();
 
             for (auto r = lineFeatures.begin(); r != lineFeatures.end(); ++r) {
-                if (r->_width > minWidth) generateLineFeature(buffer, *r, buffer._transform->getMatrix(), v, t, n, lights, x0, x1, ysize, light_edge_spacing, light_edge_height, light_edge_offset, elevation_offset_m);
+                if (r->_width > minWidth) generateLineFeature(buffer, *r, buffer._transform->getMatrix(), v, t, n, lights, rotations, x0, x1, ysize, light_edge_spacing, light_edge_height, light_edge_offset, elevation_offset_m);
             }
 
             if (v->size() == 0) {
@@ -149,7 +149,8 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
                 t->unref();
                 n->unref();
                 c->unref();
-                lights->unref();
+                delete lights;
+                delete rotations;
                 continue;
             }
 
@@ -199,12 +200,15 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
                 if (lampPostModel != "") {
                     
                     ObjectInstanceBin streetlampBin = ObjectInstanceBin(lampPostModel);
-                    std::for_each(lights->begin(), lights->end(), 
-                        [&, size, intensity, color, direction, horiz, vertical] (osg::Vec3f p) { streetlampBin.insert(toSG(p)); } );
+                    for (std::size_t idx = 0; idx < lights->size(); ++idx) {
+                        streetlampBin.insert(lights->at(idx), osg::Vec3f(rotations->at(idx), 0.0f, 0.0f));
+                    }
+
                     if (streetlampBin.getNumInstances() > 0) buffer._transform->addChild(createObjectInstances(streetlampBin, osg::Matrix::identity(), options));
                 }
             }
-            lights->unref();
+            delete lights;
+            delete rotations;
         }
     }
 
@@ -217,7 +221,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
     if (lightbin.getNumLights() > 0) buffer._transform->addChild(createLights(lightbin, osg::Matrix::identity(), options));
 }
 
-void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Matrix localToWorldMatrix, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, osg::Vec3Array* lights, double x0, double x1, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset, double elevation_offset_m)
+void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Matrix localToWorldMatrix, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, std::vector<osg::Vec3f>* lights, std::vector<float>* rotations, double x0, double x1, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset, double elevation_offset_m)
 {
     osg::Vec3d modelCenter = localToWorldMatrix.getTrans();
 
@@ -314,6 +318,15 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
         normal.normalize();
         for (unsigned int i = 0; i < 6; i++) n->push_back(normal);
 
+        // Heading is from the spanwise vector, which will be coordinates
+        // on a unit circle on the x-y plane.  acos returns in range 0-pi, 
+        // so we need to adjust to cover the full -pi - pi range.  Fortunately
+        // this is easy.
+        double theta = acos(spanwise * osg::Vec3d(1.0,0.0,0.0)) *180.0/M_PI;
+        if (spanwise.y() < 0.0f) {
+            theta = - theta;
+        }
+
         start = end;
         yTexBaseA = yTexA;
         yTexBaseB = yTexB;
@@ -333,6 +346,7 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
 
             while (start_a < edge_length) {
                 lights->push_back(a + (osg::Vec3f) p1 * start_a + up * (light_edge_height + 1.0));
+                rotations->push_back(theta - 180.0); // Left side assumed to require rotation
                 start_a += light_edge_spacing;
             }
 
@@ -341,6 +355,7 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
 
             while (start_b < edge_length) {
                 lights->push_back(b + (osg::Vec3f) p2 * start_b + up * (light_edge_height + 1.0));
+                rotations->push_back(theta); //Right side assumed to not to require rotation.
                 start_b += light_edge_spacing;
             }
 

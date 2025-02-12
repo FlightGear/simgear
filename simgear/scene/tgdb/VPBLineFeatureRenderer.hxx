@@ -67,13 +67,7 @@ class VPBLineFeatureRenderer
             osg::Vec3Array* n,
             std::vector<osg::Vec3f>* lights,
             std::vector<float>* rotations,
-            double x0,
-            double x1,
-            unsigned int ysize,
-            double light_edge_spacing,
-            double light_edge_height,
-            bool light_edge_offset,
-            double elevation_offset_m);
+            SGMaterial* mat);
 
         virtual osg::Vec3d getMeshIntersection(BufferData& buffer, osg::Vec3d pt);
 

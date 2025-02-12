@@ -122,14 +122,6 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
                 continue;
             }    
 
-            const unsigned int ysize = mat->get_ysize();
-            const bool   light_edge_offset = mat->get_light_edge_offset();
-            const double light_edge_spacing = mat->get_light_edge_spacing_m();
-            const double light_edge_height = mat->get_light_edge_height_m();
-            const double x0 = mat->get_line_feature_tex_x0();
-            const double x1 = mat->get_line_feature_tex_x1();
-            const double elevation_offset_m = mat->get_line_feature_offset_m();
-
             //  Generate a geometry for this set of roads.
             osg::Vec3Array* v = new osg::Vec3Array;
             osg::Vec2Array* t = new osg::Vec2Array;
@@ -141,7 +133,7 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
             auto lineFeatures = (*rb)->getLineFeatures();
 
             for (auto r = lineFeatures.begin(); r != lineFeatures.end(); ++r) {
-                if (r->_width > minWidth) generateLineFeature(buffer, *r, buffer._transform->getMatrix(), v, t, n, lights, rotations, x0, x1, ysize, light_edge_spacing, light_edge_height, light_edge_offset, elevation_offset_m);
+                if (r->_width > minWidth) generateLineFeature(buffer, *r, buffer._transform->getMatrix(), v, t, n, lights, rotations, mat);
             }
 
             if (v->size() == 0) {
@@ -221,8 +213,18 @@ void VPBLineFeatureRenderer::applyLineFeatures(BufferData& buffer, osg::ref_ptr<
     if (lightbin.getNumLights() > 0) buffer._transform->addChild(createLights(lightbin, osg::Matrix::identity(), options));
 }
 
-void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Matrix localToWorldMatrix, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, std::vector<osg::Vec3f>* lights, std::vector<float>* rotations, double x0, double x1, unsigned int ysize, double light_edge_spacing, double light_edge_height, bool light_edge_offset, double elevation_offset_m)
+void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeatureBin::LineFeature road, osg::Matrix localToWorldMatrix, osg::Vec3Array* v, osg::Vec2Array* t, osg::Vec3Array* n, std::vector<osg::Vec3f>* lights, std::vector<float>* rotations, SGMaterial* mat)
 {
+    const unsigned int ysize = mat->get_ysize();
+    const bool   light_edge_offset = mat->get_light_edge_offset();
+    const bool   light_edge_left = mat->get_light_edge_left();
+    const bool   light_edge_right = mat->get_light_edge_right();
+    const double light_edge_spacing = mat->get_light_edge_spacing_m();
+    const double light_edge_height = mat->get_light_edge_height_m();
+    const double x0 = mat->get_line_feature_tex_x0();
+    const double x1 = mat->get_line_feature_tex_x1();
+    const double elevation_offset_m = mat->get_line_feature_offset_m();
+
     osg::Vec3d modelCenter = localToWorldMatrix.getTrans();
 
     // We clip to the tile in a geocentric space, as that's what the road information
@@ -344,23 +346,31 @@ void VPBLineFeatureRenderer::generateLineFeature(BufferData& buffer, LineFeature
             osg::Vec3f p1 = (c-a);
             p1.normalize();
 
-            while (start_a < edge_length) {
-                lights->push_back(a + (osg::Vec3f) p1 * start_a + up * (light_edge_height + 1.0));
-                rotations->push_back(theta - 180.0); // Left side assumed to require rotation
-                start_a += light_edge_spacing;
+            if (light_edge_left) {
+                while (start_a < edge_length) {
+                    lights->push_back(a + (osg::Vec3f) p1 * start_a + up * (light_edge_height + 1.0));
+                    rotations->push_back(theta - 180.0); // Left side assumed to require rotation
+                    start_a += light_edge_spacing;
+                }
             }
 
-            osg::Vec3f p2 = (d-b);
-            p2.normalize();
+            if (light_edge_right) {
+                osg::Vec3f p2 = (d-b);
+                p2.normalize();
 
-            while (start_b < edge_length) {
-                lights->push_back(b + (osg::Vec3f) p2 * start_b + up * (light_edge_height + 1.0));
-                rotations->push_back(theta); //Right side assumed to not to require rotation.
-                start_b += light_edge_spacing;
+                while (start_b < edge_length) {
+                    lights->push_back(b + (osg::Vec3f) p2 * start_b + up * (light_edge_height + 1.0));
+                    rotations->push_back(theta); //Right side assumed to not to require rotation.
+                    start_b += light_edge_spacing;
+                }
             }
 
             // Determine the position for the first light on the next road segment.
-            last_light_distance = fmodf(start_a + edge_length, light_edge_spacing);
+            if (light_edge_left) {
+                last_light_distance = fmodf(start_a + edge_length, light_edge_spacing);
+            } else {
+                last_light_distance = fmodf(start_b + edge_length, light_edge_spacing);
+            }
         }
     }
 }

@@ -271,6 +271,19 @@ int naIsCCode(naRef r)  { return IS_CCODE(r); }
 int naIsGhost(naRef r)  { return IS_GHOST(r); }
 int naIsIdentical(naRef l, naRef r) { return IDENTICAL(l, r); }
 
+const char* naTypeof(naRef r)
+{
+    const char* t = "unknown";
+    if(naIsNil(r)) t = "nil";
+    else if(naIsNum(r)) t = "scalar";
+    else if(naIsString(r)) t = "scalar";
+    else if(naIsVector(r)) t = "vector";
+    else if(naIsHash(r)) t = "hash";
+    else if(naIsFunc(r)) t = "func";
+    else if(naIsGhost(r)) t = "ghost";
+    return t;
+}
+
 void naSetUserData(naContext c, void* p) { c->userData = p; }
 void* naGetUserData(naContext c)
 {

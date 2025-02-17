@@ -44,6 +44,9 @@ bool loadShaderFromUTF8Path(osg::Shader* shader, const std::string& filename)
     case osg::Shader::FRAGMENT:
         shader->getShaderDefines().insert("FG_VIEW_ID/*FRAG*/");
         break;
+    case osg::Shader::COMPUTE:
+        shader->getShaderDefines().insert("FG_VIEW_ID/*COMP*/");
+        break;
     default:
         break;
     }

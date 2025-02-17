@@ -728,16 +728,10 @@ public:
         osg::Camera* camera = pass->camera;
         camera->setAllowEventFocus(false);
 
-        osg::ref_ptr<EffectGeode> compute = new EffectGeode;
-        camera->addChild(compute);
-        compute->setCullingActive(false);
-
         const std::string eff_file = root->getStringValue("effect");
-        if (!eff_file.empty()) {
-            Effect* eff = makeEffect(eff_file, true, options);
-            if (eff)
-                compute->setEffect(eff);
-        }
+        Effect* eff = nullptr;
+        if (!eff_file.empty())
+            eff = makeEffect(eff_file, true, options);
 
         static const char* dimNames[] = {"x", "y", "z"};
         static const char* dimScaleNames[] = {"x-screen-scale", "y-screen-scale", "z-screen-scale"};
@@ -796,8 +790,37 @@ public:
 
         osg::ref_ptr<osg::Drawable> computeNode = new osg::DispatchCompute(
             wgCount[0], wgCount[1], wgCount[2]);
-        compute->addDrawable(computeNode);
         pass->compute_node = computeNode;
+
+        // Dispatch the compute for each view with a different fg_ViewIndex
+        // uniform value.
+        int numPasses = 1;
+        if (pass->multiview == "multipass") {
+            numPasses = compositor->getMVRViews();
+            if (numPasses > 1) {
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_GLOBAL",
+                                                         "uniform int fg_ViewIndex;");
+                // auto-imported on shader load
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*COMP*/", "fg_ViewIndex");
+            } else {
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_GLOBAL", "");
+                // auto-imported on shader load
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*COMP*/", "0");
+            }
+        }
+        for (int view = 0; view < numPasses; ++view) {
+            osg::ref_ptr<EffectGeode> compute = new EffectGeode;
+            camera->addChild(compute);
+            compute->setCullingActive(false);
+            if (eff)
+                compute->setEffect(eff);
+            if (numPasses > 1) {
+                osg::ref_ptr<osg::StateSet> compute_state = compute->getOrCreateStateSet();
+                compute_state->addUniform(new osg::Uniform("fg_ViewIndex", view));
+            }
+
+            compute->addDrawable(computeNode);
+        }
 
         osg::StateSet* ss = camera->getOrCreateStateSet();
         for (const auto& uniform : compositor->getBuiltinUniforms())

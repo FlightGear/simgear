@@ -9,6 +9,9 @@
 
 // $Id$
 
+#include <simgear/compiler.h>
+#include <simgear_config.h>
+
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -28,8 +31,6 @@
 #  include <Shlwapi.h>
 #endif
 
-#include <simgear_config.h>
-#include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_dir.hxx>

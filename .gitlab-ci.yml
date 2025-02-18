@@ -11,11 +11,19 @@ variables:
   MAC_IMAGE: macos-14-xcode-15
   OSG_REF: release/2024-build
 
+# do not run pipelines on forks
+# build merge requests, tags and the protected branches 
+workflow:
+  rules:
+    - if: $CI_PROJECT_NAMESPACE != "flightgear"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+
 linux-build:
   image: registry.gitlab.com/flightgear/flightgear/stable-build
   stage: build
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule"
   script:
     - rm -f $BUILD_DIR/CMakeCache.txt
     # --fresh would be ideal here
@@ -80,8 +88,6 @@ macos-build:
   tags:
     - saas-macos-medium-m1
   image: $MAC_IMAGE
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule"
   before_script:
       - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
       - export HOMEBREW_NO_INSTALL_CLEANUP=1
@@ -113,8 +119,6 @@ macos-x64-build:
   tags:
     - saas-macos-medium-m1
   image: $MAC_IMAGE
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule"
   before_script:
       - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
       - export HOMEBREW_NO_INSTALL_CLEANUP=1

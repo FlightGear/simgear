@@ -32,6 +32,7 @@ void BoxLayout::ItemData::reset()
     has_align = false;
     has_hfw = false;
     done = false;
+    equal = false;
 }
 
 //----------------------------------------------------------------------------
@@ -221,6 +222,30 @@ int BoxLayout::ItemData::mhfw(int w) const
   }
 
   //----------------------------------------------------------------------------
+  void BoxLayout::setEquals(size_t index)
+  {
+      if (index >= _layout_items.size())
+          return;
+
+      _layout_items.at(index).equal = true;
+      invalidate();
+  }
+
+  //----------------------------------------------------------------------------
+  void BoxLayout::setEquals(const LayoutItemRef& item)
+  {
+      auto it = std::find_if(_layout_items.begin(), _layout_items.end(), [item](const ItemData& idata) {
+          return idata.layout_item == item;
+      });
+
+      if (it == _layout_items.end()) {
+          return;
+      }
+
+      it->equal = true;
+  }
+
+  //----------------------------------------------------------------------------
   void BoxLayout::setSpacing(int spacing)
   {
     if( spacing == _padding )
@@ -287,10 +312,13 @@ int BoxLayout::ItemData::mhfw(int w) const
             size_hint(0, 0);
 
     _layout_data.reset();
+    _equalsMinSize = 0;
+    _equalsSizeHint = 0;
     _hfw_width = _hfw_height = _hfw_min_height = -1;
 
     bool is_first = true;
 
+    // first loop: compute item_data sizes
     for(size_t i = 0; i < _layout_items.size(); ++i)
     {
       ItemData& item_data = _layout_items[i];
@@ -300,15 +328,22 @@ int BoxLayout::ItemData::mhfw(int w) const
       if( !item_data.visible )
         continue;
 
-      item_data.min_size  = (item.minimumSize().*_get_layout_coord)();
-      item_data.max_size  = (item.maximumSize().*_get_layout_coord)();
+
+      item_data.min_size = (item.minimumSize().*_get_layout_coord)();
       item_data.size_hint = (item.sizeHint().*_get_layout_coord)();
+
+      item_data.max_size = (item.maximumSize().*_get_layout_coord)();
       item_data.has_hfw = item.hasHeightForWidth();
 
       uint8_t alignment_mask = horiz()
                              ? AlignHorizontal_Mask
                              : AlignVertical_Mask;
       item_data.has_align = (item.alignment() & alignment_mask) != 0;
+
+      if (item_data.equal) {
+          _equalsMinSize = SGMisc<int>::max(_equalsMinSize, item_data.min_size);
+          _equalsSizeHint = SGMisc<int>::max(_equalsSizeHint, item_data.size_hint);
+      }
 
       if( !dynamic_cast<SpacerItem*>(item_data.layout_item.get()) )
       {
@@ -323,21 +358,37 @@ int BoxLayout::ItemData::mhfw(int w) const
           _layout_data.padding += item_data.padding_orig;
         }
       }
+    }
 
-      // Add sizes of all children in layout direction
-      SGMisc<int>::addClipOverflowInplace(min_size.x(),  item_data.min_size);
-      SGMisc<int>::addClipOverflowInplace(max_size.x(),  item_data.max_size);
-      SGMisc<int>::addClipOverflowInplace(size_hint.x(), item_data.size_hint);
+    // second pass
+    for (size_t i = 0; i < _layout_items.size(); ++i) {
+        ItemData& item_data = _layout_items[i];
+        LayoutItem const& item = *item_data.layout_item;
 
-      // Take maximum in fixed (non-layouted) direction
-      min_size.y()  = std::max( min_size.y(),
-                                (item.minimumSize().*_get_fixed_coord)() );
-      max_size.y()  = std::max( max_size.y(),
-                                (item.maximumSize().*_get_fixed_coord)() );
-      size_hint.y() = std::max( size_hint.y(),
-                                (item.sizeHint().*_get_fixed_coord)() );
+        if( !item_data.visible )
+          continue;
 
-      _layout_data.has_hfw = _layout_data.has_hfw || item.hasHeightForWidth();
+        // override the min-size and size-hint with the equal-size values
+        // we computed in the loop abive
+        if (item_data.equal) {
+            item_data.min_size = _equalsMinSize;
+            item_data.size_hint = _equalsSizeHint;
+        }
+
+        // Add sizes of all children in layout direction
+        SGMisc<int>::addClipOverflowInplace(min_size.x(), item_data.min_size);
+        SGMisc<int>::addClipOverflowInplace(max_size.x(), item_data.max_size);
+        SGMisc<int>::addClipOverflowInplace(size_hint.x(), item_data.size_hint);
+
+        // Take maximum in fixed (non-layouted) direction
+        min_size.y() = std::max(min_size.y(),
+                                (item.minimumSize().*_get_fixed_coord)());
+        max_size.y() = std::max(max_size.y(),
+                                (item.maximumSize().*_get_fixed_coord)());
+        size_hint.y() = std::max(size_hint.y(),
+                                 (item.sizeHint().*_get_fixed_coord)());
+
+        _layout_data.has_hfw = _layout_data.has_hfw || item.hasHeightForWidth();
     }
 
     SGMisc<int>::addClipOverflowInplace(min_size.x(),  _layout_data.padding);
@@ -480,8 +531,8 @@ int BoxLayout::ItemData::mhfw(int w) const
                                   - data.layout_item->minimumSize().y();
           _layout_data.size_hint += data.size_hint
                                   - data.layout_item->sizeHint().y();
-        }
-      }
+        } // of item has height-for-width
+      } // of items iteration
     }
 
     // now do the actual layouting

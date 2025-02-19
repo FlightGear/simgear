@@ -31,6 +31,8 @@
 #include <osgDB/ReadFile>
 
 #include <osg/io_utils>
+#include <osg/PagedLOD>
+#include <osg/ProxyNode>
 #include <osg/Texture2D>
 #include <osg/Texture2DArray>
 #include <osg/Texture1D>
@@ -72,7 +74,8 @@ VPBTechnique::VPBTechnique()
     setOptions(SGReaderWriterOptions::copyOrCreate(NULL));
 }
 
-VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName) : _fileName(fileName)
+VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName) : 
+    _fileName(fileName)
 {
     setFilterBias(0);
     setFilterWidth(0.1);
@@ -359,6 +362,7 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _constraint_vtx_gap(vtx_gap),
     _useTessellation(useTessellation)
 {
+    _hasSea = false;
     _ZUpRotationMatrix = makeZUpFrameRelative(SGGeod::fromCart(toSG(_centerModel)));
 
     int numVerticesInBody = numColumns*numRows;
@@ -380,7 +384,7 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
     _vertices->reserve(numVertices);
 
     if (! _useTessellation) {
-        // If we're not using Tessellation then we will have both a sea-level mesh and also generate normals ourselves.
+        // If we're not using Tessellation then we will generate normals ourselves.
         _sea_vertices = new osg::Vec3Array;
         _sea_vertices->reserve(numVertices);
 
@@ -477,6 +481,7 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.z() = _useTessellation ? 0.0 : -10.0;
+                    _hasSea = true;
                 }
             }
 
@@ -573,6 +578,7 @@ void VPBTechnique::VertexNormalGenerator::populateLeftBoundary(osgTerrain::Layer
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.set(ndc.x(), ndc.y(), 0.0f);
+                    _hasSea = true;
                 }
             }
 
@@ -631,6 +637,7 @@ void VPBTechnique::VertexNormalGenerator::populateRightBoundary(osgTerrain::Laye
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.set(ndc.x(), ndc.y(), 0.0f);
+                    _hasSea = true;
                 }
             }
 
@@ -689,6 +696,7 @@ void VPBTechnique::VertexNormalGenerator::populateAboveBoundary(osgTerrain::Laye
                 unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
                 if (atlas->isSea(lc)) {
                     ndc.set(ndc.x(), ndc.y(), 0.0f);
+                    _hasSea = true;
                 }
             }
 
@@ -830,6 +838,7 @@ void VPBTechnique::VertexNormalGenerator::populateCorner(
         unsigned int lc = (unsigned int) std::abs(std::round(c.x() * 255.0));
         if (atlas->isSea(lc)) {
             ndc.set(ndc.x(), ndc.y(), 0.0f);
+            _hasSea = true;
         }
     }
 
@@ -977,15 +986,17 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     if (! _useTessellation) {
         // allocate and assign normals and the sea level mesh
         buffer._landGeometry->setNormalArray(VNG._normals.get(), osg::Array::BIND_PER_VERTEX);
-        
-        buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
-        buffer._seaGeometry->setNormalArray(VNG._sea_normals.get(), osg::Array::BIND_PER_VERTEX);
 
-        // The Sea level mesh is identical to the main center mesh, except that it is at sea level
-        // Therefore we can use the same texture coordinates calculated above.
-        VNG.populateSeaLevel();
-        buffer._seaGeometry->setTexCoordArray(0, texcoords0);
-        buffer._seaGeometry->setTexCoordArray(1, texcoords1);
+        if (VNG.hasSea()) {
+            buffer._seaGeometry->setVertexArray(VNG._sea_vertices.get());
+            buffer._seaGeometry->setNormalArray(VNG._sea_normals.get(), osg::Array::BIND_PER_VERTEX);
+
+            // The Sea level mesh is identical to the main center mesh, except that it is at sea level
+            // Therefore we can use the same texture coordinates calculated above.
+            VNG.populateSeaLevel();
+            buffer._seaGeometry->setTexCoordArray(0, texcoords0);
+            buffer._seaGeometry->setTexCoordArray(1, texcoords1);
+        }
     }
 
     if (terrain)
@@ -1013,45 +1024,50 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             VNG.populateCorner(bottom_right_tile.valid() ? bottom_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::BOTTOM_RIGHT);
             VNG.populateCorner(top_left_tile.valid() ? top_left_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_LEFT);
             VNG.populateCorner(top_right_tile.valid() ? top_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_RIGHT);
-        }
 
-        _neighbours.clear();
+            // Loading this tile will mean that there is new elevation data available for the adjacent tiles.
+            // This is relevant for tessellation beacuse we perform cubic interpolation that will extend beyond
+            // a given tile boundary.  Hence we need to dirty the adjacent tiles so they are re-generated on the
+            // next update.
 
-        if (left_tile.valid())   addNeighbour(left_tile.get());
-        if (right_tile.valid())  addNeighbour(right_tile.get());
-        if (top_tile.valid())    addNeighbour(top_tile.get());
-        if (bottom_tile.valid()) addNeighbour(bottom_tile.get());
+            _neighbours.clear();
 
-        if (left_tile.valid())
-        {
-            if (left_tile->getTerrainTechnique()==0 || !(left_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (left_tile.valid())   addNeighbour(left_tile.get());
+            if (right_tile.valid())  addNeighbour(right_tile.get());
+            if (top_tile.valid())    addNeighbour(top_tile.get());
+            if (bottom_tile.valid()) addNeighbour(bottom_tile.get());
+
+            if (left_tile.valid())
             {
-                int dirtyMask = left_tile->getDirtyMask() | TerrainTile::LEFT_EDGE_DIRTY;
-                left_tile->setDirtyMask(dirtyMask);
+                if (left_tile->getTerrainTechnique()==0 || !(left_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = left_tile->getDirtyMask() | TerrainTile::LEFT_EDGE_DIRTY;
+                    left_tile->setDirtyMask(dirtyMask);
+                }
             }
-        }
-        if (right_tile.valid())
-        {
-            if (right_tile->getTerrainTechnique()==0 || !(right_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (right_tile.valid())
             {
-                int dirtyMask = right_tile->getDirtyMask() | TerrainTile::RIGHT_EDGE_DIRTY;
-                right_tile->setDirtyMask(dirtyMask);
+                if (right_tile->getTerrainTechnique()==0 || !(right_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = right_tile->getDirtyMask() | TerrainTile::RIGHT_EDGE_DIRTY;
+                    right_tile->setDirtyMask(dirtyMask);
+                }
             }
-        }
-        if (top_tile.valid())
-        {
-            if (top_tile->getTerrainTechnique()==0 || !(top_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (top_tile.valid())
             {
-                int dirtyMask = top_tile->getDirtyMask() | TerrainTile::TOP_EDGE_DIRTY;
-                top_tile->setDirtyMask(dirtyMask);
+                if (top_tile->getTerrainTechnique()==0 || !(top_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = top_tile->getDirtyMask() | TerrainTile::TOP_EDGE_DIRTY;
+                    top_tile->setDirtyMask(dirtyMask);
+                }
             }
-        }
-        if (bottom_tile.valid())
-        {
-            if (bottom_tile->getTerrainTechnique()==0|| !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+            if (bottom_tile.valid())
             {
-                int dirtyMask = bottom_tile->getDirtyMask() | TerrainTile::BOTTOM_EDGE_DIRTY;
-                bottom_tile->setDirtyMask(dirtyMask);
+                if (bottom_tile->getTerrainTechnique()==0|| !(bottom_tile->getTerrainTechnique()->containsNeighbour(_terrainTile)))
+                {
+                    int dirtyMask = bottom_tile->getDirtyMask() | TerrainTile::BOTTOM_EDGE_DIRTY;
+                    bottom_tile->setDirtyMask(dirtyMask);
+                }
             }
         }
     }
@@ -1181,75 +1197,78 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             landElements->resizeElements(landElements->getNumIndices());
         }       
 
-        osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
-            static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
-        seaElements->reserveElements((numRows-1) * (numColumns-1) * 6);
-        buffer._seaGeometry->addPrimitiveSet(seaElements.get());
+        if (VNG.hasSea()) {
+            osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUShort(GL_TRIANGLES)) :
+                static_cast<osg::DrawElements*>(new osg::DrawElementsUInt(GL_TRIANGLES));
+            seaElements->reserveElements((numRows-1) * (numColumns-1) * 6);
+            buffer._seaGeometry->addPrimitiveSet(seaElements.get());
 
-        for(j=0; j<numRows-1; ++j)
-        {
-            for(i=0; i<numColumns-1; ++i)
+            for(j=0; j<numRows-1; ++j)
             {
-                // remap sea indices to final vertex positions.  We're relying on
-                // the indices for both the land and sea geometry to be identical.
-                // That should be the case as long as the number of rows and columns
-                // stays identical.
-                int i00 = VNG.vertex_index(i,   j);
-                int i01 = VNG.vertex_index(i,   j+1);
-                int i10 = VNG.vertex_index(i+1, j);
-                int i11 = VNG.vertex_index(i+1, j+1);
-
-                if (swapOrientation)
+                for(i=0; i<numColumns-1; ++i)
                 {
-                    std::swap(i00,i01);
-                    std::swap(i10,i11);
-                }
+                    // remap sea indices to final vertex positions.  We're relying on
+                    // the indices for both the land and sea geometry to be identical.
+                    // That should be the case as long as the number of rows and columns
+                    // stays identical.
+                    int i00 = VNG.vertex_index(i,   j);
+                    int i01 = VNG.vertex_index(i,   j+1);
+                    int i10 = VNG.vertex_index(i+1, j);
+                    int i11 = VNG.vertex_index(i+1, j+1);
 
-                unsigned int numValid = 0;
-                if (i00 >= 0) ++numValid;
-                if (i01 >= 0) ++numValid;
-                if (i10 >= 0) ++numValid;
-                if (i11 >= 0) ++numValid;
-
-                if (numValid==4)
-                {
-                    // optimize which way to put the diagonal by choosing to
-                    // place it between the two corners that have the least curvature
-                    // relative to each other.
-                    float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
-                    float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
-
-                    if (dot_00_11 > dot_01_10)
+                    if (swapOrientation)
                     {
-                        seaElements->addElement(i01);
-                        seaElements->addElement(i00);
-                        seaElements->addElement(i11);
-
-                        seaElements->addElement(i00);
-                        seaElements->addElement(i10);
-                        seaElements->addElement(i11);
+                        std::swap(i00,i01);
+                        std::swap(i10,i11);
                     }
-                    else
+
+                    unsigned int numValid = 0;
+                    if (i00 >= 0) ++numValid;
+                    if (i01 >= 0) ++numValid;
+                    if (i10 >= 0) ++numValid;
+                    if (i11 >= 0) ++numValid;
+
+                    if (numValid==4)
                     {
-                        seaElements->addElement(i01);
-                        seaElements->addElement(i00);
-                        seaElements->addElement(i10);
+                        // optimize which way to put the diagonal by choosing to
+                        // place it between the two corners that have the least curvature
+                        // relative to each other.
+                        float dot_00_11 = (*VNG._sea_normals)[i00] * (*VNG._sea_normals)[i11];
+                        float dot_01_10 = (*VNG._sea_normals)[i01] * (*VNG._sea_normals)[i10];
 
-                        seaElements->addElement(i01);
-                        seaElements->addElement(i10);
-                        seaElements->addElement(i11);
+                        if (dot_00_11 > dot_01_10)
+                        {
+                            seaElements->addElement(i01);
+                            seaElements->addElement(i00);
+                            seaElements->addElement(i11);
+
+                            seaElements->addElement(i00);
+                            seaElements->addElement(i10);
+                            seaElements->addElement(i11);
+                        }
+                        else
+                        {
+                            seaElements->addElement(i01);
+                            seaElements->addElement(i00);
+                            seaElements->addElement(i10);
+
+                            seaElements->addElement(i01);
+                            seaElements->addElement(i10);
+                            seaElements->addElement(i11);
+                        }
                     }
-                }
-                else if (numValid==3)
-                {
-                    if (i00>=0) seaElements->addElement(i00);
-                    if (i01>=0) seaElements->addElement(i01);
-                    if (i11>=0) seaElements->addElement(i11);
-                    if (i10>=0) seaElements->addElement(i10);
+                    else if (numValid==3)
+                    {
+                        if (i00>=0) seaElements->addElement(i00);
+                        if (i01>=0) seaElements->addElement(i01);
+                        if (i11>=0) seaElements->addElement(i11);
+                        if (i10>=0) seaElements->addElement(i10);
+                    }
                 }
             }
         }
+
         if (createSkirt)
         {
             osg::ref_ptr<osg::Vec3Array> vertices = VNG._vertices.get();
@@ -1420,8 +1439,6 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
         landElements->resizeElements(landElements->getNumIndices());
     }
-
-    
 
     buffer._landGeometry->setUseDisplayList(false);
     buffer._landGeometry->setUseVertexBufferObjects(true);
@@ -2237,6 +2254,41 @@ void VPBTechnique::update(osg::NodeVisitor& nv)
 
 void VPBTechnique::cull(osg::NodeVisitor& nv)
 {
+    if (_terrainTile->getDirty() && nv.getDatabaseRequestHandler()) {
+        auto reinitTileCallback = [this]() {
+            if (this->_terrainTile) {
+                init(this->_terrainTile->getDirtyMask(), true);
+            }
+        };
+
+        auto tileID = _terrainTile->getTileID();
+        auto nodePath = nv.getNodePath();
+
+        // Got up the scenegraph to find the first PagedLOD or ProxyNode and request
+        // the DatabasePager to reload the tile.
+        for (auto iter = nodePath.rbegin(); iter != nodePath.rend(); ++iter) {
+            osg::PagedLOD* pagedLOD = dynamic_cast<osg::PagedLOD*>(*iter);
+            osg::ProxyNode* proxyNode = dynamic_cast<osg::ProxyNode*>(*iter);
+            if (pagedLOD) {
+                // We want to find out what child the next node in the nodePath is.  As we
+                // are back from the end, this is the last iteration.
+                unsigned int idx = pagedLOD->getChildIndex(*(iter-1));
+                if (idx < pagedLOD->getNumChildren()) {
+                    SG_LOG(SG_TERRAIN, SG_DEBUG, "Requested PagedLOD reload of tile " << tileID.x << "," << tileID.y << " level " << tileID.level);
+                    nv.getDatabaseRequestHandler()->requestNodeCallback(reinitTileCallback, nv.getNodePath(), -1, nv.getFrameStamp(), pagedLOD->getDatabaseRequest(idx),  _options);
+                    break;
+                }
+            } else if (proxyNode) {
+                unsigned int idx = proxyNode->getChildIndex(*(iter-1));
+                if (idx < proxyNode->getNumChildren()) {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, "Requested ProxyNode reload of tile " << tileID.x << "," << tileID.y << " level " << tileID.level);
+                    nv.getDatabaseRequestHandler()->requestNodeCallback(reinitTileCallback, nv.getNodePath(), -1, nv.getFrameStamp(), proxyNode->getDatabaseRequest(idx),  _options);
+                    break;
+                }
+            }
+        }
+    }
+
     if (_currentBufferData.valid())
     {
         if (_currentBufferData->_transform.valid())
@@ -2246,7 +2298,6 @@ void VPBTechnique::cull(osg::NodeVisitor& nv)
     }
 }
 
-
 void VPBTechnique::traverse(osg::NodeVisitor& nv)
 {
     if (!_terrainTile) return;
@@ -2254,7 +2305,6 @@ void VPBTechnique::traverse(osg::NodeVisitor& nv)
     // if app traversal update the frame count.
     if (nv.getVisitorType()==osg::NodeVisitor::UPDATE_VISITOR)
     {
-        if (_terrainTile->getDirty()) _terrainTile->init(_terrainTile->getDirtyMask(), false);
         update(nv);
         return;
     }

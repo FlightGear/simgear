@@ -60,6 +60,22 @@ namespace simgear::canvas
       virtual void clear();
 
       /**
+       * @brief Set the item at position @a index to have equal size (in the layor direction)
+       * to all other items with the equal flag set. (Stretch is ignored for 'equal' items)
+       */
+      void setEquals(size_t index);
+
+      /**
+       * @brief Set the item rto have equal size to all other items with equal set
+       */
+      void setEquals(const LayoutItemRef& item);
+
+      /**
+       * @brief query if the item at @a index has requested equal sizing
+       */
+      bool isEquals(size_t index);
+
+      /**
        * Set the stretch factor of the item at position @a index to @a stretch.
        */
       void setStretch(size_t index, int stretch);
@@ -71,6 +87,7 @@ namespace simgear::canvas
        * @return true, if the @a item was found in the layout
        */
       bool setStretchFactor(const LayoutItemRef& item, int stretch);
+
 
       /**
        * Get the stretch factor of the item at position @a index
@@ -102,7 +119,8 @@ namespace simgear::canvas
             bool visible : 1,
                 has_align : 1, //!< Has alignment factor set (!= AlignFill)
                 has_hfw : 1,   //!< height for width
-                done : 1;      //!< layouting done
+                done : 1,      //!< layouting done
+                equal : 1;     //! equal sizing to other equal items
 
             /** Clear values (reset to default/empty state) */
             void reset();
@@ -158,6 +176,9 @@ namespace simgear::canvas
             _space_stretch = 0, //!< space currently assigned to all not yet layouted
                                 //   stretchable children
             _space_left = 0;    //!< remaining space not used by any child yet
+
+        mutable int _equalsMinSize = 0;  //!< largest minimum size of all 'equals' items
+        mutable int _equalsSizeHint = 0; //!< largest size hint of all 'equals' items
   };
 
   /**

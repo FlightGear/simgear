@@ -119,10 +119,32 @@ public:
      */
     static void clearListOfAllowedPaths(bool write);
     /**
-     * Add a path pattern to the specified access control list.
+     * Add a path pattern to the specified access control list for Nasal I/O.
      * @param write True for write operations, false for read operations
      */
     static void addAllowedPathPattern(const std::string& pattern, bool write);
+    /**
+     * Add a path to the specified access control list(s) for Nasal I/O.
+     * @param path path to add to the list(s)
+     * @param perms whether to add to the read-allowed, write-allowed or to
+     *              both lists
+     * @return true if successful, false otherwise (false is returned if the
+     *         normalized path contains at least an “*” character)
+     */
+    [[nodiscard]]
+    static bool addAllowedPath(const std::string& path, const Permissions& perms);
+    /**
+     * Add a whole directory hierarchy to the specified access control list(s)
+     * for Nasal I/O.
+     * @param path root of the directory hierarchy
+     * @param perms whether to add to the read-allowed, write-allowed or to
+     *              both lists
+     * @return true if successful, false otherwise (false is returned if the
+     *         normalized path contains at least an “*” character)
+     */
+    [[nodiscard]]
+    static bool addAllowedDirectoryHierarchy(const std::string& path,
+                                             const Permissions& perms);
     /**
      * Get a const reference to the specified access control list.
      * @param write True for write operations, false for read operations
@@ -139,6 +161,13 @@ public:
      * original one.
      */
     SGPath validate(bool write) const;
+
+    /**
+     * Normal PermissionChecker for SGPath instances created from Nasal.
+     * @param path an SGPath instance
+     * @return read and write permissions conforming to validate()
+     */
+    static Permissions NasalIORulesChecker(const SGPath& path);
 
     /**
      * Append another piece to the existing path.  Inserts a path

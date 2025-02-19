@@ -441,6 +441,45 @@ BOOST_AUTO_TEST_CASE( boxlayout_visibility )
   BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(50, 0, 19, 32));
 }
 
+
+//------------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE(boxlayout_equal)
+{
+    sc::BoxLayoutRef hbox( new sc::HBoxLayout );
+    TestWidgetRef w1(new TestWidget(SGVec2i(16, 16),
+                                    SGVec2i(32, 32),
+                                    SGVec2i(9999, 9999))),
+        w2(new TestWidget(*w1)),
+        w3(new TestWidget(*w1));
+
+
+    w2->setMinSize(SGVec2i(40, 12));
+    w2->setSizeHint(SGVec2i(60, 40));
+
+    hbox->addItem(w1);
+    hbox->addItem(w2);
+    hbox->addItem(w3);
+
+    hbox->setEquals(w1);
+    hbox->setEquals(w2);
+    hbox->setStretchFactor(w3, 1);
+
+    BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(106, 16));
+    BOOST_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(162, 40));
+
+    hbox->setGeometry(SGRecti(0, 0, 256, 40));
+
+    BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 60, 40));
+    BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(65, 0, 60, 40));
+    BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(130, 0, 126, 40));
+
+  // visibility
+    w2->setVisible(false);
+
+    BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(37, 16));
+    BOOST_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(69, 32));
+}
+
 //------------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( boxlayout_contents_margins )
 {

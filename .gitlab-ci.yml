@@ -146,9 +146,9 @@ test:
   artifacts:
     when: always
     paths:
-      - result.xml
+      - $BUILD_DIR/result.xml
     reports:
-      junit: result.xml
+      junit: $BUILD_DIR/result.xml
 
 # if we're building a merge request, build the corresponding
 # target branch of FlightGear. This assumes that target

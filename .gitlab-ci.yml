@@ -137,12 +137,18 @@ test:
     - cd $BUILD_DIR
     # some tests need OSG libraries
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
-    - ctest --output-on-failure
+    - ctest --output-on-failure --output-junit result.xml
   cache:
     key: "linux-x64-$CI_COMMIT_REF_SLUG"
     policy: pull
     paths:
       - $BUILD_DIR
+  artifacts:
+    when: always
+    paths:
+      - result.xml
+    reports:
+      junit: result.xml
 
 # if we're building a merge request, build the corresponding
 # target branch of FlightGear. This assumes that target

@@ -162,7 +162,13 @@ test:
     - cd $BUILD_DIR
     # some tests need OSG libraries
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
-    - ctest --output-on-failure
+    - ctest --output-on-failure --output-junit result.xml
   cache:
     paths:
       - $BUILD_DIR
+  artifacts:
+    when: always
+    paths:
+      - $BUILD_DIR/result.xml
+    reports:
+      junit: $BUILD_DIR/result.xml

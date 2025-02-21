@@ -63,6 +63,7 @@ struct Pass : public osg::Referenced {
     float                            viewport_width_scale;
     float                            viewport_height_scale;
     SGSharedPtr<SGCondition>         render_condition;
+    std::string                      multiview;
 
     osg::ref_ptr<osg::Drawable>      compute_node;
     osg::Vec2i                       compute_wg_size;
@@ -73,6 +74,9 @@ struct Pass : public osg::Referenced {
         virtual void updatePass(Pass &pass,
                                 const osg::Matrix &view_matrix,
                                 const osg::Matrix &proj_matrix) = 0;
+        virtual void updateSubView(Pass& pass, unsigned int sub_view_index,
+                                   const osg::Matrix& view_matrix,
+                                   const osg::Matrix& proj_matrix) {}
     };
 
     osg::ref_ptr<PassUpdateCallback> update_callback;

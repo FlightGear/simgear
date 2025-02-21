@@ -29,6 +29,27 @@ bool loadShaderFromUTF8Path(osg::Shader* shader, const std::string& filename)
     }
     shader->setFileName(filename);
     shader->setShaderSource(inStream.read_all());
+
+    // Defines are reset by setShaderSource()
+    // Set some builtin shader defines that don't need to be imported
+    shader->getShaderDefines().insert("FG_NUM_VIEWS");
+    shader->getShaderDefines().insert("FG_VIEW_GLOBAL");
+    switch (shader->getType()) {
+    case osg::Shader::VERTEX:
+        shader->getShaderDefines().insert("FG_VIEW_ID/*VERT*/");
+        break;
+    case osg::Shader::GEOMETRY:
+        shader->getShaderDefines().insert("FG_VIEW_ID/*GEOM*/");
+        break;
+    case osg::Shader::FRAGMENT:
+        shader->getShaderDefines().insert("FG_VIEW_ID/*FRAG*/");
+        break;
+    case osg::Shader::COMPUTE:
+        shader->getShaderDefines().insert("FG_VIEW_ID/*COMP*/");
+        break;
+    default:
+        break;
+    }
     return true;
 }
 

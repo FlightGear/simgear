@@ -50,9 +50,12 @@ PropStringMap<osg::Camera::BufferComponent> buffer_component_map = {
 
 class CSMCullCallback : public osg::NodeCallback {
 public:
-    CSMCullCallback(const std::string &suffix) {
+    CSMCullCallback(Compositor *compositor, const std::string &suffix) :
+        _real_inverse_view(compositor->getMVRViews())
+    {
         _light_matrix_uniform = new osg::Uniform(
-            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix);
+            osg::Uniform::FLOAT_MAT4, std::string("fg_LightMatrix_") + suffix,
+            compositor->getMVRViews());
     }
 
     virtual void operator()(osg::Node *node, osg::NodeVisitor *nv) {
@@ -60,22 +63,27 @@ public:
 
         traverse(node, nv);
 
-        // The light matrix uniform is updated after the traverse in case the
-        // OSG near/far plane calculations were enabled
-        osg::Matrixf light_matrix =
-            // Include the real camera inverse view matrix because if the shader
-            // used world coordinates, there would be precision issues.
-            _real_inverse_view *
-            camera->getViewMatrix() *
-            camera->getProjectionMatrix() *
-            // Bias matrices
-            osg::Matrix::translate(1.0, 1.0, 1.0) *
-            osg::Matrix::scale(0.5, 0.5, 0.5);
-        _light_matrix_uniform->set(light_matrix);
+        for (unsigned int i = 0; i < _real_inverse_view.size(); ++i) {
+            // The light matrix uniform is updated after the traverse in case
+            // the OSG near/far plane calculations were enabled
+            osg::Matrixf light_matrix =
+                // Include the real camera inverse view matrix because if the
+                // shader used world coordinates, there would be precision
+                // issues.
+                _real_inverse_view[i] *
+                camera->getViewMatrix() *
+                camera->getProjectionMatrix() *
+                // Bias matrices
+                osg::Matrix::translate(1.0, 1.0, 1.0) *
+                osg::Matrix::scale(0.5, 0.5, 0.5);
+            _light_matrix_uniform->setElement(i, light_matrix);
+        }
     }
 
-    void setRealInverseViewMatrix(const osg::Matrix &matrix) {
-        _real_inverse_view = matrix;
+    void setRealInverseViewMatrix(unsigned int sub_view_index,
+                                  const osg::Matrix& matrix)
+    {
+        _real_inverse_view[sub_view_index] = matrix;
     }
 
     osg::Uniform *getLightMatrixUniform() const {
@@ -83,7 +91,7 @@ public:
     }
 
 protected:
-    osg::Matrix                _real_inverse_view;
+    std::vector<osg::Matrix>   _real_inverse_view;
     osg::ref_ptr<osg::Uniform> _light_matrix_uniform;
 };
 
@@ -131,6 +139,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
                << pass->name << ") uses unknown Effect scheme \"" << pass->effect_scheme << "\"");
     }
     pass->render_once = root->getBoolValue("render-once", false);
+    pass->multiview = root->getStringValue("multiview");
 
     const SGPropertyNode *p_render_condition = root->getChild("render-condition");
     if (p_render_condition)
@@ -189,6 +198,17 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
         else if (mask_bit == "stencil") clear_mask |= GL_STENCIL_BUFFER_BIT;
     }
     camera->setClearMask(clear_mask);
+
+    // Single-pass rendering of multiple views
+    // These allow easy indexing of per-view FG uniforms
+    camera->getOrCreateStateSet()->setDefine("FG_NUM_VIEWS", std::to_string(compositor->getMVRViews()));
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_GLOBAL", compositor->getMVRViewIdGlobalStr());
+    // auto-imported on shader load
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*VERT*/", compositor->getMVRViewIdStr(0));
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*GEOM*/", compositor->getMVRViewIdStr(1));
+    camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*FRAG*/", compositor->getMVRViewIdStr(2));
+
+    camera->getOrCreateStateSet()->setDefine("FG_MVR_CELLS", std::to_string(compositor->getMVRCells()));
 
     osg::DisplaySettings::ImplicitBufferAttachmentMask implicit_attachments = 0;
     std::stringstream att_ss;
@@ -548,7 +568,7 @@ PassBuilder::build(Compositor *compositor, const SGPropertyNode *root,
 
     osg::Viewport *viewport = camera->getViewport();
     auto &uniforms = compositor->getBuiltinUniforms();
-    uniforms[Compositor::SG_UNIFORM_VIEWPORT]->set(
+    uniforms[Compositor::SG_UNIFORM_VIEWPORT]->setElement(0,
         osg::Vec4f(viewport->x(),
                    viewport->y(),
                    viewport->width(),
@@ -708,16 +728,10 @@ public:
         osg::Camera* camera = pass->camera;
         camera->setAllowEventFocus(false);
 
-        osg::ref_ptr<EffectGeode> compute = new EffectGeode;
-        camera->addChild(compute);
-        compute->setCullingActive(false);
-
         const std::string eff_file = root->getStringValue("effect");
-        if (!eff_file.empty()) {
-            Effect* eff = makeEffect(eff_file, true, options);
-            if (eff)
-                compute->setEffect(eff);
-        }
+        Effect* eff = nullptr;
+        if (!eff_file.empty())
+            eff = makeEffect(eff_file, true, options);
 
         static const char* dimNames[] = {"x", "y", "z"};
         static const char* dimScaleNames[] = {"x-screen-scale", "y-screen-scale", "z-screen-scale"};
@@ -776,8 +790,37 @@ public:
 
         osg::ref_ptr<osg::Drawable> computeNode = new osg::DispatchCompute(
             wgCount[0], wgCount[1], wgCount[2]);
-        compute->addDrawable(computeNode);
         pass->compute_node = computeNode;
+
+        // Dispatch the compute for each view with a different fg_ViewIndex
+        // uniform value.
+        int numPasses = 1;
+        if (pass->multiview == "multipass") {
+            numPasses = compositor->getMVRViews();
+            if (numPasses > 1) {
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_GLOBAL",
+                                                         "uniform int fg_ViewIndex;");
+                // auto-imported on shader load
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*COMP*/", "fg_ViewIndex");
+            } else {
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_GLOBAL", "");
+                // auto-imported on shader load
+                camera->getOrCreateStateSet()->setDefine("FG_VIEW_ID/*COMP*/", "0");
+            }
+        }
+        for (int view = 0; view < numPasses; ++view) {
+            osg::ref_ptr<EffectGeode> compute = new EffectGeode;
+            camera->addChild(compute);
+            compute->setCullingActive(false);
+            if (eff)
+                compute->setEffect(eff);
+            if (numPasses > 1) {
+                osg::ref_ptr<osg::StateSet> compute_state = compute->getOrCreateStateSet();
+                compute_state->addUniform(new osg::Uniform("fg_ViewIndex", view));
+            }
+
+            compute->addDrawable(computeNode);
+        }
 
         osg::StateSet* ss = camera->getOrCreateStateSet();
         for (const auto& uniform : compositor->getBuiltinUniforms())
@@ -819,7 +862,7 @@ public:
         }
 
         osg::Matrix view_inverse = osg::Matrix::inverse(view_matrix);
-        _cull_callback->setRealInverseViewMatrix(view_inverse);
+        _cull_callback->setRealInverseViewMatrix(0, view_inverse);
 
         if (!_render_at_night) {
             osg::Vec3 camera_pos = osg::Vec3(0.0f, 0.0f, 0.0f) * view_inverse;
@@ -881,6 +924,15 @@ public:
         light_proj_matrix *= round_matrix;
     }
 
+    virtual void updateSubView(Pass& pass, unsigned int sub_view_index,
+                               const osg::Matrix& view_matrix,
+                               const osg::Matrix& proj_matrix)
+    {
+        // Allow cull callback to update per-subview uniforms
+        osg::Matrix view_inverse = osg::Matrix::inverse(view_matrix);
+        _cull_callback->setRealInverseViewMatrix(sub_view_index, view_inverse);
+    }
+
 protected:
     osg::observer_ptr<CSMCullCallback> _cull_callback;
     const osg::Uniform*           _sundir_uniform;
@@ -901,7 +953,7 @@ struct CSMPassBuilder : public PassBuilder {
         //camera->setComputeNearFarMode(
         //    osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
 
-        CSMCullCallback *cull_callback = new CSMCullCallback(pass->name);
+        CSMCullCallback* cull_callback = new CSMCullCallback(compositor, pass->name);
         camera->setCullCallback(cull_callback);
 
         auto builtin_uniforms = compositor->getBuiltinUniforms();

@@ -16,7 +16,7 @@ namespace compositor {
 class Compositor;
 
 struct Buffer : public osg::Referenced {
-    Buffer() : width_scale(0.0f), height_scale(0.0f) {}
+    Buffer() : width_scale(0.0f), height_scale(0.0f), mvr(false) {}
 
     osg::ref_ptr<osg::Texture> texture;
 
@@ -25,6 +25,9 @@ struct Buffer : public osg::Referenced {
      * A factor of 0.0 means that the buffer has a fixed size.
      */
     float width_scale, height_scale;
+
+    /// Whether this is an MVR buffer.
+    bool mvr;
 };
 
 Buffer *buildBuffer(Compositor *compositor, const SGPropertyNode *node,

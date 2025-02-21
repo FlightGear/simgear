@@ -69,6 +69,8 @@ void SGProgram::apply(osg::State& state) const
         for (unsigned int i = 0; i < getNumShaders(); ++i) {
             const auto shader = getShader(i);
             auto pcs = shader->getPCS(state);
+            if (!pcs)
+                continue;
 
             std::string shaderLog;
             pcs->getInfoLog(shaderLog);

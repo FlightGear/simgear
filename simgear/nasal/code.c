@@ -494,66 +494,115 @@ static const char* ghostGetMember(naContext ctx, naRef obj, naRef field, naRef* 
     if (!gtype->get_member) return "ghost does not support member access";
     return gtype->get_member(ctx, PTR(obj).ghost->ptr, field, out);
 }
-    
-// Funky API: returns null to indicate no member, an empty string to
-// indicate success, or a non-empty error message.  Works this way so
-// we can generate smart error messages without throwing them with a
-// longjmp -- this gets called under naMember_get() from C code.
-static const char* getMember_r(naContext ctx, naRef obj, naRef field, naRef* out, int count)
+
+
+/*
+ * Return values for all member access implementation functions.
+ */
+enum GetMemberResult {
+    SUCCESS = 0,
+    NOT_FOUND,
+    NOT_OBJECT,         // When reporting this, set result to invalid object
+    PARENT_NOT_VECTOR,  // When reporting this, set result to invalid parent
+    PARENT_TOO_DEEP,
+};
+
+/*
+ * Recursive object member lookup
+ *
+ * @param ctx       Nasal context.
+ * @param obj       Queried object.
+ * @param field     Name of member to query.
+ * @param out       Result. In case of error: faulty object.
+ * @param count     Bound on recursion depth.
+ * @return          Error code, 0 on success.
+ */
+enum GetMemberResult getMember_r(naContext ctx, naRef obj, naRef field, naRef* out, int count)
 {
     int i;
     naRef p;
     struct VecRec* pv;
-    if(--count < 0) return "too many parents";
+    if(--count < 0) return PARENT_TOO_DEEP;
 
     if (IS_GHOST(obj)) {
-        if (ghostGetMember(ctx, obj, field, out)) return "";
-        if(!ghostGetMember(ctx, obj, globals->parentsRef, &p)) return 0;
+        if (ghostGetMember(ctx, obj, field, out)) return SUCCESS;
+        if(!ghostGetMember(ctx, obj, globals->parentsRef, &p)) return NOT_FOUND;
     } else if (IS_HASH(obj)) {
-        if(naHash_get(obj, field, out)) return "";
-        if(!naHash_get(obj, globals->parentsRef, &p)) return 0;
+        if(naHash_get(obj, field, out)) return SUCCESS;
+        if(!naHash_get(obj, globals->parentsRef, &p)) return NOT_FOUND;
     } else if (IS_STR(obj) ) {
         return getMember_r(ctx, getStringMethods(ctx), field, out, count);
     } else {
-        return "non-objects have no members";
+        *out = obj;
+        return NOT_OBJECT;
     }
-    
-    if(!IS_VEC(p)) return "object \"parents\" field not vector";
+
+    if(!IS_VEC(p)) {
+        *out = p;
+        return PARENT_NOT_VECTOR;
+    }
     pv = PTR(p).vec->rec;
     for(i=0; pv && i<pv->size; i++) {
-        const char* err = getMember_r(ctx, pv->array[i], field, out, count);
-        if(err) return err; /* either an error or success */
+        enum GetMemberResult err = getMember_r(ctx, pv->array[i], field, out, count);
+        if (err != NOT_FOUND) return err; /* either an error or success */
     }
-    return 0;
+    return NOT_FOUND;
 }
 
 static void getMember(naContext ctx, naRef obj, naRef fld,
                       naRef* result, int count)
 {
-    const char* err = getMember_r(ctx, obj, fld, result, count);
-    if(!err)   naRuntimeError(ctx, "No such member: %s", naStr_data(fld));
-    if(err[0]) naRuntimeError(ctx, err);
+    // Don't directly pass 'result' to getMember_r to avoid overwritting it in case of failure.
+    naRef out = naNil();
+    enum GetMemberResult err = getMember_r(ctx, obj, fld, &out, count);
+    if (err == SUCCESS) {
+        *result = out;
+        return;
+    }
+
+    const char *fld_name = naStr_data(fld);
+    switch (err) {
+        case NOT_FOUND:
+            naRuntimeError(ctx, "No such member: %s", fld_name);
+            break;
+        case NOT_OBJECT:
+            naRuntimeError(ctx, "While accessing member '%s': Type %s is not an object, it cannot have members", fld_name, naTypeof(out));
+            break;
+        case PARENT_NOT_VECTOR:
+            naRuntimeError(ctx, "While accessing member '%s': Found object with field 'parents' of type %s instead of vector", fld_name, naTypeof(out));
+            break;
+        case PARENT_TOO_DEEP:
+            naRuntimeError(ctx, "While accessing member '%s': Parent recursion depth exceeded", fld_name);
+            break;
+        default:
+            naRuntimeError(ctx, "Unknown error while accessing member '%s'", fld_name);
+            break;
+    }
 }
 
 static void setMember(naContext ctx, naRef obj, naRef fld, naRef value)
 {
     if (IS_GHOST(obj)) {
         naGhostType* gtype = PTR(obj).ghost->gtype;
-        if (!gtype->set_member) ERR(ctx, "ghost does not support member access");
+        if (!gtype->set_member) {
+            const char* gname = gtype->name;
+            if (!(gname && gname[0]))
+                gname = "<unknown>";
+            naRuntimeError(ctx, "Tried to set member '%s' of read-only ghost type '%s'", naStr_data(fld), gname);
+        }
         gtype->set_member(ctx, PTR(obj).ghost->ptr, fld, value);
         ctx->opTop -= 2;
         return;
     }
-    
-    if(!IS_HASH(obj)) naRuntimeError(ctx, "non-object does not have member: %s", naStr_data(fld));
+
+    if(!IS_HASH(obj)) naRuntimeError(ctx, "While setting member '%s': Type %s is not an object, it cannot have members", naStr_data(fld), naTypeof(obj));
     naHash_set(obj, fld, value);
     ctx->opTop -= 2;
 }
 
 int naMember_get(naContext ctx, naRef obj, naRef field, naRef* out)
 {
-    const char* err = getMember_r(ctx, obj, field, out, 64);
-    return err && !err[0];
+    return (getMember_r(ctx, obj, field, out, 64) == SUCCESS);
 }
 
 // OP_EACH works like a vector get, except that it leaves the vector

@@ -288,14 +288,7 @@ static naRef f_vecindex(naContext c, naRef me, int argc, naRef* args)
 static naRef f_typeof(naContext c, naRef me, int argc, naRef* args)
 {
     naRef r = argc > 0 ? args[0] : naNil();
-    char* t = "unknown";
-    if(naIsNil(r)) t = "nil";
-    else if(naIsNum(r)) t = "scalar";
-    else if(naIsString(r)) t = "scalar";
-    else if(naIsVector(r)) t = "vector";
-    else if(naIsHash(r)) t = "hash";
-    else if(naIsFunc(r)) t = "func";
-    else if(naIsGhost(r)) t = "ghost";
+    const char* t = naTypeof(r);
     return NEWCSTR(c, t);
 }
 

@@ -634,25 +634,27 @@ ReaderWriterGLTF::readNode(const std::string& location,
         return ReadResult::NOT_IMPLEMENTED;
     }
 
+    std::string filename = osgDB::findDataFile(location, sgOpts);
+
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
     std::string err, warn;
     bool ret;
 
     if (ext == "gltf") {
-        ret = loader.LoadASCIIFromFile(&model, &err, &warn, location);
+        ret = loader.LoadASCIIFromFile(&model, &err, &warn, filename);
     } else if (ext == "glb") {
-        ret = loader.LoadBinaryFromFile(&model, &err, &warn, location);
+        ret = loader.LoadBinaryFromFile(&model, &err, &warn, filename);
     } else {
         return ReadResult::FILE_NOT_HANDLED;
     }
 
     if (!warn.empty()) {
-        SG_LOG(SG_INPUT, SG_WARN, "glTF loader: TinyGLTF warning while reading '" << location << "'");
+        SG_LOG(SG_INPUT, SG_WARN, "glTF loader: TinyGLTF warning while reading '" << filename << "'");
         SG_LOG(SG_INPUT, SG_WARN, "  " << warn);
     }
     if (!err.empty()) {
-        SG_LOG(SG_INPUT, SG_ALERT, "glTF loader: TinyGLTF error while reading '" << location << "'");
+        SG_LOG(SG_INPUT, SG_ALERT, "glTF loader: TinyGLTF error while reading '" << filename << "'");
         SG_LOG(SG_INPUT, SG_ALERT, "  " << err);
     }
     if (!ret) {

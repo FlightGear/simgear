@@ -67,6 +67,8 @@ class EffectGeode : public osg::Geode
     void setEffect(Effect* effect);
     SGMaterial* getMaterial() const { return _material; }
     void setMaterial(SGMaterial* mat) { _material = mat; }
+    SGPropertyNode_ptr getEffectPropTree() { return _effectPropTree; }
+    void setEffectPropTree(SGPropertyNode_ptr effectPropTree) { _effectPropTree = effectPropTree; }
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* = 0) const;
 
@@ -78,6 +80,7 @@ class EffectGeode : public osg::Geode
 private:
     osg::ref_ptr<Effect> _effect;
     SGMaterial* _material;
+    SGPropertyNode_ptr _effectPropTree;
 };
 }
 #endif

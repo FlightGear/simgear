@@ -82,11 +82,13 @@ public:
     typedef std::set<osg::ref_ptr<osg::Drawable>> DrawableSet;
     typedef std::set<osg::ref_ptr<EffectGeode>> EffectGeodeSet;
 
-    InstancingVisitor(osg::Vec3Array* positions, osg::Vec4Array* rotationsAndScales, osg::Vec4Array* customAttribs) : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+    InstancingVisitor(osg::Vec3Array* positions, osg::Vec4Array* rotationsAndScales, osg::Vec4Array* customAttribs, std::string effect, const SGReaderWriterOptions* opts) : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
     {
         _positions = positions;
         _rotationsAndScales = rotationsAndScales;
         _customAttribs = customAttribs;
+        _effect = effect;
+        _opts = opts;
     }
 
     void setPropsOnDrawable(osg::Drawable* drawable)
@@ -123,7 +125,16 @@ public:
     {
         EffectGeode* eg = dynamic_cast<EffectGeode*>(&node);
         if (eg) {
-            // Only modify Drawables that have an associated EffectGeode
+            // Update the Effect with the new Effect name and force instantiation.
+            SGPropertyNode_ptr effectRoot = eg->getEffectPropTree();
+            if (effectRoot) {
+                effectRoot->getNode("inherits-from")->setStringValue(_effect);
+                Effect* effect = makeEffect(effectRoot, true, _opts);
+                if (effect) {
+                    eg->setEffect(effect);
+                }                
+            }
+
             for (unsigned int i = 0; i < node.getNumDrawables(); ++i) {
                 osg::Drawable* drawable = node.getDrawable(i);
                 if (drawable) {
@@ -163,7 +174,9 @@ private:
     osg::Vec3Array* _positions;
     osg::Vec4Array* _rotationsAndScales;
     osg::Vec4Array* _customAttribs;
-
+    std::string _effect;
+    const SGReaderWriterOptions* _opts;
+ 
     DrawableSet _drawableSet;
     EffectGeodeSet _effectGeodeSet;
 };
@@ -350,6 +363,9 @@ osg::ref_ptr<osg::Node> createObjectInstances(ObjectInstanceBin& objectInstances
     else
         opt->setInstantiateEffects(false);
 
+    // Don't realize the techniques automatically - we will do so ourselves.
+    opt->setMakeEffectsOnLoad(false);
+
     opt->setDefaultEffect(objectInstances.getEffect());
     opt->setObjectCacheHint(osgDB::Options::CACHE_NONE);
 
@@ -400,8 +416,10 @@ osg::ref_ptr<osg::Node> createObjectInstances(ObjectInstanceBin& objectInstances
         }
     }
 
+    std::string effect = hasCustomAttributes ? "Effects/model-pbr-instancing-coloured" : "Effects/model-pbr-instancing";
+
     // Modify loaded model with instancing parameters
-    InstancingVisitor visitor(positions, rotationsAndScales, customAttribs);
+    InstancingVisitor visitor(positions, rotationsAndScales, customAttribs, effect, options);
     model->accept(visitor);
 
     if (visitor.getNumDrawables() > 1) {

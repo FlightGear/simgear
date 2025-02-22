@@ -36,6 +36,7 @@
 #include <simgear/scene/tgdb/AreaFeatureBin.hxx>
 #include <simgear/scene/tgdb/LightBin.hxx>
 #include <simgear/scene/tgdb/LineFeatureBin.hxx>
+#include <simgear/scene/tgdb/ObjectInstanceBin.hxx>
 #include <simgear/scene/tgdb/CoastlineBin.hxx>
 #include <simgear/scene/tgdb/VPBBufferData.hxx>
 
@@ -64,14 +65,9 @@ class VPBLineFeatureRenderer
             osg::Vec3Array* v, 
             osg::Vec2Array* t, 
             osg::Vec3Array* n,
-            osg::Vec3Array* lights,
-            double x0,
-            double x1,
-            unsigned int ysize,
-            double light_edge_spacing,
-            double light_edge_height,
-            bool light_edge_offset,
-            double elevation_offset_m);
+            std::vector<osg::Vec3f>* lights,
+            std::vector<float>* rotations,
+            SGMaterial* mat);
 
         virtual osg::Vec3d getMeshIntersection(BufferData& buffer, osg::Vec3d pt);
 

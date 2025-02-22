@@ -55,6 +55,7 @@ public:
     SGReaderWriterOptions() : _materialLib(0),
                               _instantiateEffects(false),
                               _instantiateMaterialEffects(false),
+                              _makeEffectsOnLoad(true),
                               _autoTooltipsMaster(false),
                               _autoTooltipsMasterMax(0),
                               _LoadOriginHint(ORIGIN_MODEL),
@@ -65,6 +66,7 @@ public:
                                                     _materialLib(0),
                                                     _instantiateEffects(false),
                                                     _instantiateMaterialEffects(false),
+                                                    _makeEffectsOnLoad(true),
                                                     _autoTooltipsMaster(false),
                                                     _autoTooltipsMasterMax(0),
                                                     _LoadOriginHint(ORIGIN_MODEL),
@@ -76,6 +78,7 @@ public:
                                                                                    _materialLib(0),
                                                                                    _instantiateEffects(false),
                                                                                    _instantiateMaterialEffects(false),
+                                                                                   _makeEffectsOnLoad(true),
                                                                                    _autoTooltipsMaster(false),
                                                                                    _autoTooltipsMasterMax(0),
                                                                                    _LoadOriginHint(ORIGIN_MODEL),
@@ -92,6 +95,7 @@ public:
                                                                                    _model_data(options._model_data),
                                                                                    _instantiateEffects(options._instantiateEffects),
                                                                                    _instantiateMaterialEffects(options._instantiateMaterialEffects),
+                                                                                   _makeEffectsOnLoad(true),
                                                                                    _materialName(options._materialName),
                                                                                    _sceneryPathSuffixes(options._sceneryPathSuffixes),
                                                                                    _autoTooltipsMaster(options._autoTooltipsMaster),
@@ -135,6 +139,11 @@ public:
     { return _instantiateMaterialEffects; }
     void setInstantiateMaterialEffects(bool instantiateMaterialEffects)
     { _instantiateMaterialEffects = instantiateMaterialEffects; }
+
+    bool getMakeEffectsOnLoad() const
+    { return _makeEffectsOnLoad; }
+    void setMakeEffectsOnLoad(bool makeEffectsOnLoad)
+    { _makeEffectsOnLoad = makeEffectsOnLoad; }
 
     std::string getMaterialName() const
     { return _materialName; }
@@ -210,6 +219,7 @@ private:
     
     bool _instantiateEffects;
     bool _instantiateMaterialEffects;
+    bool _makeEffectsOnLoad;
     std::string _materialName;
     string_list _sceneryPathSuffixes;
     bool _autoTooltipsMaster;

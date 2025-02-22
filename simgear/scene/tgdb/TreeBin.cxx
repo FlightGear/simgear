@@ -184,7 +184,6 @@ inline static std::mutex treeEffectMapMutex; // Protects the treeEffectMap for m
 
 Group* createForest(SGTreeBinList& forestList, osg::ref_ptr<simgear::SGReaderWriterOptions> options)
 {
-    Matrix transInv = Matrix::identity();
     // Set up some shared structures.
     Group* group = new Group;
 

@@ -155,9 +155,14 @@ struct GLTFBuilder {
                 // required material info as parameters to the Effect.
                 makeMaterialParameters(effectRoot, model.materials[primitive.material]);
             }
-            Effect* effect = makeEffect(effectRoot, true, opts);
-            if (effect) {
-                eg->setEffect(effect);
+
+            if (opts->getMakeEffectsOnLoad()) {
+                Effect* effect = makeEffect(effectRoot, true, opts);
+                if (effect) {
+                    eg->setEffect(effect);
+                }
+            } else {
+                eg->setEffectPropTree(effectRoot);
             }
 
             osg::Geometry* geom = new osg::Geometry;

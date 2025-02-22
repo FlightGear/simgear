@@ -188,6 +188,9 @@ public:
   inline double get_light_edge_angle_vertical_deg() const { return light_edge_angle_vertical_deg; };
   inline SGVec4f get_light_edge_colour() const { return light_edge_colour; };
   inline bool   get_light_edge_offset() const { return light_edge_offset; };
+  inline bool   get_light_edge_left() const { return light_edge_left; };
+  inline bool   get_light_edge_right() const { return light_edge_right; };
+  inline std::string get_light_model() const { return light_model; };
   inline double get_line_feature_tex_x0() const { return line_feature_tex_x0; };
   inline double get_line_feature_tex_x1() const { return line_feature_tex_x1; };
   inline double get_line_feature_offset_m() const { return line_feature_offset_m; };
@@ -472,6 +475,9 @@ private:
   double light_edge_angle_vertical_deg;
   SGVec4f light_edge_colour; 
   bool   light_edge_offset;
+  bool   light_edge_left;
+  bool   light_edge_right;
+  std::string light_model;
   double line_feature_tex_x0;
   double line_feature_tex_x1;
   double line_feature_offset_m;

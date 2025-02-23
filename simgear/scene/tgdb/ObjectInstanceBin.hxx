@@ -38,12 +38,12 @@ class ObjectInstanceBin final
 public:
     struct ObjectInstance {
         // Object with position, rotation scale and customAttribs
-        ObjectInstance(const SGVec3f& p, const SGVec3f& r = SGVec3f(0.0f, 0.0f, 0.0f), const float& s = 1.0f, const SGVec4f& c = SGVec4f(0.0f, 0.0f, 0.0f, 0.0f)) : position(p), rotation(r), scale(s), customAttribs(c) {}
+        ObjectInstance(const osg::Vec3f& p, const osg::Vec3f& r = osg::Vec3f(0.0f, 0.0f, 0.0f), const float& s = 1.0f, const osg::Vec4f& c = osg::Vec4f(0.0f, 0.0f, 0.0f, 0.0f)) : position(p), rotation(r), scale(s), customAttribs(c) {}
 
-        SGVec3f position;
-        SGVec3f rotation; // hdg, pitch, roll
+        osg::Vec3f position;
+        osg::Vec3f rotation; // hdg, pitch, roll
         float scale;
-        SGVec4f customAttribs;
+        osg::Vec4f customAttribs;
     };
 
     typedef std::vector<ObjectInstance> ObjectInstanceList;
@@ -54,7 +54,7 @@ public:
     ~ObjectInstanceBin() = default;     // non-virtual intentional
 
     void insert(const ObjectInstance& light);
-    void insert(const SGVec3f& p, const SGVec3f& r = SGVec3f(0.0f, 0.0f, 0.0f), const float& s = 1.0f, const SGVec4f& c = SGVec4f(0.0f, 0.0f, 0.0f, 0.0f));
+    void insert(const osg::Vec3f& p, const osg::Vec3f& r = osg::Vec3f(0.0f, 0.0f, 0.0f), const float& s = 1.0f, const osg::Vec4f& c = osg::Vec4f(0.0f, 0.0f, 0.0f, 0.0f));
 
     const std::string getModelFileName() const;
     const SGPath getSTGFilePath() const;

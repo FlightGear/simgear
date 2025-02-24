@@ -39,6 +39,7 @@ set(HEADERS
     project.hxx
     SGProgram.hxx
     LoadShader.hxx
+    FindGroupVisitor.hxx
     )
 
 set(SOURCES
@@ -69,6 +70,7 @@ set(SOURCES
     project.cxx
     SGProgram.cxx
     LoadShader.cxx
+    FindGroupVisitor.cxx
     )
 
 simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")

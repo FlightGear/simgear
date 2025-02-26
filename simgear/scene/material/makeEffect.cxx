@@ -107,6 +107,8 @@ Effect* makeEffect(const string& name,
                    const SGReaderWriterOptions* options,
                    const SGPath& modelPath)
 {
+    ErrorReportContext ec("effect", name);
+
     {
         OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
         EffectMap::iterator itr = effectMap.find(name);
@@ -204,6 +206,8 @@ Effect* makeEffect(SGPropertyNode* prop,
         setValue(prop->getChild("name", 0, true), "noname");
     }
     SGPropertyNode_ptr nameProp = prop->getChild("name");
+    ErrorReportContext ec("effect", nameProp->getStringValue());
+
     // Merge with the parent effect, if any
     SGPropertyNode_ptr inheritProp = prop->getChild("inherits-from");
     Effect* parent = 0;

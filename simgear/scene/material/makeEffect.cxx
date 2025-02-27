@@ -134,6 +134,7 @@ Effect* makeEffect(const string& name,
         simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadEffectsShaders, "Couldn't find Effect:" + effectFileName);
         return nullptr;
     }
+
     SGPropertyNode_ptr effectProps = new SGPropertyNode();
     try {
         readProperties(absFileName, effectProps.ptr(), 0, true);
@@ -175,6 +176,8 @@ Effect* makeEffect(SGPropertyNode* prop,
                    const SGReaderWriterOptions* options,
                    const SGPath& filePath)
 {
+    ErrorReportContext ec("effect", filePath.file_base());
+
     // Give default names to techniques and passes
     vector<SGPropertyNode_ptr> techniques = prop->getChildren("technique");
     for (int i = 0; i < (int)techniques.size(); ++i) {
@@ -206,7 +209,6 @@ Effect* makeEffect(SGPropertyNode* prop,
         setValue(prop->getChild("name", 0, true), "noname");
     }
     SGPropertyNode_ptr nameProp = prop->getChild("name");
-    ErrorReportContext ec("effect", nameProp->getStringValue());
 
     // Merge with the parent effect, if any
     SGPropertyNode_ptr inheritProp = prop->getChild("inherits-from");

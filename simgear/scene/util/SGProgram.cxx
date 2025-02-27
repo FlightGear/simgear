@@ -49,6 +49,10 @@ void SGProgram::apply(osg::State& state) const
 
     auto pcp = state.getLastAppliedProgramObject();
     if (!pcp) {
+        // this doesn't quite align with what makeEffect does, but should be close enough?
+        // alternative is to *also* store the actual effect name in another member variable.
+        simgear::ErrorReportContext ec("effect", _effectFilePath.file_base());
+        
         std::string infoLog;
         _checkState = FailedToApply;
         getPCP(state)->getInfoLog(infoLog);

@@ -425,10 +425,21 @@ include(AddSimGearTest) # helper to setup a test
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 
-if(SYSTEM_UDNS)
-    message(STATUS "Requested to use system udns library, forcing SIMGEAR_SHARED to true")
-    set(SIMGEAR_SHARED ON)
-    find_package(Udns REQUIRED)
+find_package(c-ares 1.27)
+if(c-ares_FOUND)
+    # needed for SimGearConfig.cmaake generation
+    set(SIMGEAR_USING_CARES_DNS 1)
+
+    message(STATUS "Found c-ares, not using UDNS")
+else()
+  message(STATUS "NOT found c-ares, using UDNS, unit-tests disabled. Expect missing terrasync sources.")
+  set(SIMGEAR_USING_CARES_DNS 0)
+
+  if(SYSTEM_UDNS)
+      message(STATUS "Requested to use system udns library, forcing SIMGEAR_SHARED to true")
+      set(SIMGEAR_SHARED ON)
+      find_package(Udns REQUIRED)
+  endif()
 endif()
 
 add_subdirectory(3rdparty)

@@ -45,8 +45,19 @@ set(SOURCES
     HTTPRepository.cxx
     HTTPRepository_private.hxx
     untar.cxx
-    DNSClient.cxx
     )
+
+if(c-ares_FOUND)
+    set(SOURCES ${SOURCES}
+        DNSClient_cares.cxx
+    )
+else()
+    set(SOURCES ${SOURCES}
+        DNSClient.cxx
+    )
+endif()
+
+
 
 if (CycloneDDS_FOUND)
     set(HEADERS ${HEADERS}
@@ -65,7 +76,9 @@ if(ENABLE_TESTS)
 
 add_simgear_test(test_sock socktest.cxx)
 add_simgear_autotest(test_http test_HTTP.cxx)
-add_simgear_autotest(test_dns test_DNS.cxx)
+if(c-ares_FOUND)
+    add_simgear_autotest(test_dns test_DNS.cxx)
+endif()
 add_simgear_test(httpget httpget.cxx)
 add_simgear_test(http_repo_sync http_repo_sync.cxx)
 add_simgear_test(decode_binobj decode_binobj.cxx)

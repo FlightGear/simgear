@@ -8,6 +8,8 @@ find_dependency(LibLZMA)
 find_dependency(Threads)
 find_dependency(CURL)
 
+set(SIMGEAR_HEADLESS @SIMGEAR_HEADLESS@)
+
 # OSG
 if (NOT SIMGEAR_HEADLESS)
   # this does a find_package on OpenSceneGraph,
@@ -15,7 +17,6 @@ if (NOT SIMGEAR_HEADLESS)
   include(${CMAKE_CURRENT_LIST_DIR}/CreateOSGImportedTargets.cmake)
 endif()
 
-set(SIMGEAR_HEADLESS @SIMGEAR_HEADLESS@)
 set(SIMGEAR_SOUND @ENABLE_SOUND@)
 set(USE_AEONWAVE @USE_AEONWAVE@)
 set(SG_SOUND_USES_OPENALSOFT @SG_SOUND_USES_OPENALSOFT@)
@@ -31,6 +32,12 @@ set(ENABLE_SIMD @ENABLE_SIMD@)
 set(SG_HAVE_DDS @SG_HAVE_DDS@)
 if(SG_HAVE_DDS)
     find_dependency(CycloneDDS)
+endif()
+
+# if we're a static build, we still need to link against this, even though
+# it's a PRIVATE dependency
+if (NOT SIMGEAR_SHARED AND @SIMGEAR_USING_CARES_DNS@)
+  find_dependency(c-ares 1.27)
 endif()
 
 

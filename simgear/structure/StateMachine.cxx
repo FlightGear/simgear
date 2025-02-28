@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// SPDX-FileCopyrightText: 2013 James Turner
+// SPDX-FileCopyrightText: 2013 James Turner <james@flightgear.org>
 
 #include <simgear_config.h>
 
@@ -170,7 +170,7 @@ StateMachine::State* StateMachine::Transition::target() const
 
 void StateMachine::Transition::addSourceState(State* aSource)
 {
-    if (aSource == d->_target) { // should this be disallowed outright?
+    if (aSource == d->_target) { // @todo: Should this be disallowed outright?
         SG_LOG(SG_GENERAL, SG_WARN, d->_name << ": adding target state as source");
     }
 
@@ -274,7 +274,7 @@ void StateMachine::innerChangeState(State_ptr aState, Transition_ptr aTrans)
         d->_currentState->fireExitBindings();
         SG_LOG(SG_GENERAL, SG_INFO, "Changing from state " << d->_currentState->name() << " to state:" << aState->name());
     } else {
-        SG_LOG(SG_GENERAL, SG_INFO, "Initializing to state:" << aState->name());      
+        SG_LOG(SG_GENERAL, SG_INFO, "Initializing to state:" << aState->name());
     }
 
 // fire bindings before we change the state, hmmmm
@@ -316,7 +316,7 @@ void StateMachine::changeToStateName(const std::string& aName, bool aOnlyIfDiffe
 {
     State_ptr st = findStateByName(aName);
     if (!st) {
-        throw sg_range_exception("unknown state:" + aName);
+        throw sg_range_exception("Unknown state:" + aName);
     }
 
     changeToState(st, aOnlyIfDifferent);
@@ -380,6 +380,7 @@ StateMachine::State_ptr StateMachine::stateByIndex(unsigned int aIndex) const
     return d->_states[aIndex];
 }
 
+/** @todo: Perhaps return std::optional<int> or throw an error instead of -1?*/
 int StateMachine::indexOfState(State_ptr aState) const
 {
     StatePtrVec::const_iterator it = std::find(d->_states.begin(), d->_states.end(), aState);
